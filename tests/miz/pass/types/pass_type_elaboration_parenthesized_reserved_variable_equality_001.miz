@@ -1,0 +1,2 @@
+reserve x for set;
+theorem ParenthesizedReservedVariableEqualityPayloadBoundary: (x) = x;

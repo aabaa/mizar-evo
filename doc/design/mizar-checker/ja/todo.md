@@ -3841,6 +3841,14 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - active fixture と backlink 6 件は、既存 expectation を変更せず active runner 170、385 cases、349 requirements、type-elaboration coverage 217/205、pass/fail 201/184 を計上する。relevant-crate と workspace verification は成功した。checker source/module-layout change は不要であった。
     - 依存: Tasks 74、198、208、211-221。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+223. [x] **Exact transparent single-parenthesized reserved-variable equality を bridge する。**
+    - `reserve x for set;` と `ParenthesizedReservedVariableEqualityPayloadBoundary: (x) = x;` だけを追加する。real parser `ParenthesizedTerm` と Task 119 の reserve extraction、`BindingEnv` lookup、builtin-set projection、equality consumer を合成し、direct/direct Task 119 route は変更しない。
+    - direct `(` / `)` token、nested `TermExpression` 1 個、identifier `TermReference` 1 個を持つ unrecovered left wrapper 1 個だけを検証し、direct right `x` を要求する。source payload metadata で distinct wrapper/inner/right site/range を保持し、inner/right reference を ordinal 1/2 で `BindingId(0)` へ解決し、inner reference の real reserve-derived type/value を再利用して wrapper を透明に lower する。parenthesis 独自 type/axiom/fact/FOL node または fabricated child payload は emit しない。
+    - exact frontend/resolver sidecar、direct/right/both/nested/empty/non-identifier/recovered/malformed wrapper rejection、non-exact reserve/theorem/label/operator/operand rejection、独立 wrapper/inner/right site/range、binding、ordinal、spelling、head、result/expected-type corruption、matched output、immutable output、先行 reserved-variable binary-formula owner route 52 件との bidirectional isolation を test する。
+    - 分類は `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。arbitrary nesting/operand、general precedence、formula parenthesization、closure/order materialization、equality truth/fact、theorem acceptance、proof/CoreIr/ControlFlowIr/VC、child graph、broader term/formula semantics は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままとする。
+    - active fixture と backlink 5 件は、既存 expectation を変更せず active runner 171、386 cases、350 requirements、type-elaboration coverage 218/206、pass/fail 202/184 を計上する。focused、relevant-crate、workspace verification は成功した。checker source/module-layout change は不要であった。
+    - 依存: Tasks 9、119。参照: Step 5、mizar-test task 10、specs 4、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

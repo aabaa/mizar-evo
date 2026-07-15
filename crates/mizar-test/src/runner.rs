@@ -201,6 +201,8 @@ const TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_MEMBERSHIP_INVALID_PAYLOAD_K
     "type_elaboration.checker.multiple_reserve_declaration_membership.invalid_payload";
 const TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_variable_equality.invalid_payload";
+const TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.parenthesized_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_RESERVED_OBJECT_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_object_variable_equality.invalid_payload";
 const TYPE_ELABORATION_RESERVED_OBJECT_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
@@ -1716,6 +1718,13 @@ fn source_type_elaboration_detail_keys(
     if let Some(keys) =
         source_reserved_object_variable_equality_detail_keys(ast, module.clone(), symbols)
     {
+        return keys;
+    }
+    if let Some(keys) = source_parenthesized_reserved_variable_equality_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
         return keys;
     }
     if let Some(keys) = source_reserved_variable_equality_detail_keys(ast, module.clone(), symbols)
@@ -3580,6 +3589,28 @@ const SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableBinaryForm
         left_expected_role: Some("reserved-variable-left-expected"),
         right_expected_role: Some("reserved-variable-right-expected"),
     };
+
+const SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "ParenthesizedReservedVariableEqualityPayloadBoundary",
+    operator: "=",
+    formula_kind: FormulaKind::Equality,
+    invalid_payload_key:
+        TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["x"],
+    binding_types: &[SourceReservedVariableBuiltinType::Set],
+    binding_source_mode_spellings: &[None],
+    mode_definitions: &[],
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "parenthesized-reserved-variable-left-result",
+    right_result_role: "parenthesized-reserved-variable-right-result",
+    left_expected_role: Some("parenthesized-reserved-variable-left-expected"),
+    right_expected_role: Some("parenthesized-reserved-variable-right-expected"),
+};
 
 const SOURCE_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableBinaryFormulaConfig =
     SourceReservedVariableBinaryFormulaConfig {
@@ -5483,6 +5514,22 @@ struct SourceReservedVariableBinaryFormulaOutput {
 }
 
 #[derive(Debug)]
+struct SourceParenthesizedReservedVariableEquality {
+    wrapper_site: TypedSiteRef,
+    wrapper_range: SourceRange,
+    formula: SourceReservedVariableBinaryFormula,
+}
+
+#[derive(Debug)]
+struct SourceParenthesizedReservedVariableEqualityOutput {
+    source_wrapper_site: TypedSiteRef,
+    source_wrapper_range: SourceRange,
+    wrapper_site: TypedSiteRef,
+    wrapper_range: SourceRange,
+    formula: SourceReservedVariableBinaryFormulaOutput,
+}
+
+#[derive(Debug)]
 struct SourceReservedVariableTypeAssertion {
     reserve: SourceReserveExtraction,
     config: &'static SourceReservedVariableTypeAssertionConfig,
@@ -5516,6 +5563,25 @@ fn source_reserved_variable_equality_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
     ))
+}
+
+fn source_parenthesized_reserved_variable_equality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_parenthesized_reserved_variable_equality(ast, module, symbols)?;
+    Some(
+        match build_source_parenthesized_reserved_variable_equality_output(payload, symbols) {
+            Ok(output) => {
+                source_parenthesized_reserved_variable_equality_output_detail_keys(&output)
+            }
+            Err(_) => vec![
+                TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned(),
+            ],
+        },
+    )
 }
 
 fn source_reserved_object_variable_equality_detail_keys(
@@ -6916,6 +6982,18 @@ fn source_reserved_variable_formula_output_detail_keys(
     keys
 }
 
+fn source_parenthesized_reserved_variable_equality_output_detail_keys(
+    output: &SourceParenthesizedReservedVariableEqualityOutput,
+) -> Vec<String> {
+    if assert_source_parenthesized_reserved_variable_equality_output(output).is_err() {
+        return vec![
+            TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY
+                .to_owned(),
+        ];
+    }
+    source_reserved_variable_formula_output_detail_keys(&output.formula)
+}
+
 #[cfg(test)]
 fn source_reserved_variable_equality_output(
     ast: &SurfaceAst,
@@ -6924,6 +7002,16 @@ fn source_reserved_variable_equality_output(
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_reserved_variable_equality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_parenthesized_reserved_variable_equality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceParenthesizedReservedVariableEqualityOutput> {
+    let payload = extract_source_parenthesized_reserved_variable_equality(ast, module, symbols)?;
+    build_source_parenthesized_reserved_variable_equality_output(payload, symbols).ok()
 }
 
 #[cfg(test)]
@@ -8233,6 +8321,27 @@ fn build_source_reserved_variable_formula_output(
     })
 }
 
+fn build_source_parenthesized_reserved_variable_equality_output(
+    payload: SourceParenthesizedReservedVariableEquality,
+    symbols: &SymbolEnv,
+) -> Result<SourceParenthesizedReservedVariableEqualityOutput, String> {
+    let SourceParenthesizedReservedVariableEquality {
+        wrapper_site,
+        wrapper_range,
+        formula,
+    } = payload;
+    let source_wrapper_site = wrapper_site.clone();
+    let source_wrapper_range = wrapper_range;
+    let formula = build_source_reserved_variable_formula_output(formula, symbols)?;
+    Ok(SourceParenthesizedReservedVariableEqualityOutput {
+        source_wrapper_site,
+        source_wrapper_range,
+        wrapper_site,
+        wrapper_range,
+        formula,
+    })
+}
+
 fn assert_source_reserved_variable_type_assertion_output(
     output: &SourceReservedVariableTypeAssertionOutput,
 ) -> Result<(), String> {
@@ -8783,6 +8892,56 @@ fn assert_source_reserved_variable_formula_output(
         {
             return Err("reserved-variable formula canonical source mismatch".to_owned());
         }
+    }
+    Ok(())
+}
+
+fn assert_source_parenthesized_reserved_variable_equality_output(
+    output: &SourceParenthesizedReservedVariableEqualityOutput,
+) -> Result<(), String> {
+    assert_source_reserved_variable_formula_output(&output.formula)?;
+    let payload = &output.formula.payload;
+    if payload.config.label != SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG.label
+        || output.wrapper_site != output.source_wrapper_site
+        || output.wrapper_range != output.source_wrapper_range
+        || output.wrapper_site == payload.formula_site
+        || output.wrapper_site == payload.left_site
+        || output.wrapper_site == payload.right_site
+        || payload.left_site == payload.right_site
+        || output.wrapper_range.source_id != payload.left_range.source_id
+        || output.wrapper_range.source_id != payload.right_range.source_id
+        || output.wrapper_range.source_id != payload.formula_range.source_id
+        || output.wrapper_range.start >= payload.left_range.start
+        || output.wrapper_range.end <= payload.left_range.end
+        || output.wrapper_range.end > payload.right_range.start
+        || payload.formula_range.start > output.wrapper_range.start
+        || payload.formula_range.end < payload.right_range.end
+        || output
+            .formula
+            .term_formula
+            .terms()
+            .iter()
+            .any(|(_, term)| term.site.node() == output.wrapper_site.node())
+        || output
+            .formula
+            .term_formula
+            .type_entries()
+            .iter()
+            .any(|(_, entry)| entry.owner.node() == output.wrapper_site.node())
+        || output
+            .formula
+            .term_formula
+            .formulas()
+            .iter()
+            .any(|(_, formula)| {
+                formula.site.node() == output.wrapper_site.node()
+                    || formula
+                        .terms
+                        .iter()
+                        .any(|term| term.node() == output.wrapper_site.node())
+            })
+    {
+        return Err("parenthesized reserved-variable equality wrapper mismatch".to_owned());
     }
     Ok(())
 }
@@ -9686,6 +9845,120 @@ fn extract_source_reserved_variable_equality(
         symbols,
         &SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     )
+}
+
+fn extract_source_parenthesized_reserved_variable_equality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceParenthesizedReservedVariableEquality> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_parenthesized_reserved_variable_equality_bridge_node(node))
+    {
+        return None;
+    }
+
+    let config = &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG;
+    let reserve_items = surface_nodes_with_kind(ast, SurfaceNodeKind::ReserveItem);
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let parenthesized_terms = surface_nodes_with_kind(ast, SurfaceNodeKind::ParenthesizedTerm);
+    let mode_definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
+    let [(_, reserve_item)] = reserve_items.as_slice() else {
+        return None;
+    };
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    let [(parenthesized_id, _)] = parenthesized_terms.as_slice() else {
+        return None;
+    };
+    if !mode_definitions.is_empty()
+        || reserve_item.range.end > theorem.range.start
+        || subtree_has_recovery(ast, reserve_item)
+        || subtree_has_recovery(ast, theorem)
+        || direct_token_texts(ast, theorem).as_slice() != ["theorem", config.label, ":", ";"]
+        || !source_reserved_variable_mode_definition_is_exact(ast, config.mode_definitions)
+    {
+        return None;
+    }
+
+    let reserve =
+        extract_builtin_source_reserve_declarations_after_node_guard(ast, module, symbols).ok()?;
+    let [source_binding] = reserve.bridge.bindings() else {
+        return None;
+    };
+    if source_binding.spelling != config.binding_spellings[0]
+        || !source_binding_matches_reserved_builtin_type(
+            source_binding,
+            config.binding_types[0],
+            config.binding_source_mode_spellings[0],
+            &reserve.mode_expansions,
+        )
+        || !source_reserved_variable_mode_expansions_are_exact(&reserve, config.mode_definitions)
+    {
+        return None;
+    }
+
+    let theorem_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression)
+        || !direct_token_texts(ast, formula_expression).is_empty()
+    {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+        || direct_token_texts(ast, formula).as_slice() != [config.operator]
+        || subtree_has_recovery(ast, formula)
+    {
+        return None;
+    }
+    let predicate_children = structural_child_ids(ast, formula);
+    let [left_expression_id, right_expression_id] = predicate_children.as_slice() else {
+        return None;
+    };
+    let (wrapper_id, wrapper_range, left_id, left_range, left_spelling) =
+        exact_single_parenthesized_identifier_term_operand(ast, *left_expression_id)?;
+    let (right_id, right_range, right_spelling) =
+        exact_identifier_term_operand(ast, *right_expression_id)?;
+    if wrapper_id != *parenthesized_id
+        || left_id == right_id
+        || left_spelling != source_binding.spelling
+        || right_spelling != source_binding.spelling
+        || wrapper_range.end > right_range.start
+    {
+        return None;
+    }
+    let [left_lookup_ordinal, right_lookup_ordinal] =
+        source_binding_use_ordinals(reserve.bridge.bindings(), [left_range, right_range]).ok()?;
+
+    Some(SourceParenthesizedReservedVariableEquality {
+        wrapper_site: surface_site(wrapper_id),
+        wrapper_range,
+        formula: SourceReservedVariableBinaryFormula {
+            reserve,
+            config,
+            formula_site: surface_site(*formula_id),
+            formula_range: formula.range,
+            left_site: surface_site(left_id),
+            left_range,
+            left_spelling,
+            left_lookup_ordinal,
+            right_site: surface_site(right_id),
+            right_range,
+            right_spelling,
+            right_lookup_ordinal,
+        },
+    })
 }
 
 fn extract_source_reserved_object_variable_equality(
@@ -11338,6 +11611,53 @@ fn exact_identifier_term_operand(
     Some((*reference_id, reference.range, (*spelling).to_owned()))
 }
 
+fn exact_single_parenthesized_identifier_term_operand(
+    ast: &SurfaceAst,
+    term_expression_id: SurfaceNodeId,
+) -> Option<(SurfaceNodeId, SourceRange, SurfaceNodeId, SourceRange, String)> {
+    let expression = ast.node(term_expression_id)?;
+    if !matches!(expression.kind, SurfaceNodeKind::TermExpression)
+        || subtree_has_recovery(ast, expression)
+        || !direct_token_texts(ast, expression).is_empty()
+    {
+        return None;
+    }
+    let expression_children = structural_child_ids(ast, expression);
+    let [parenthesized_id] = expression_children.as_slice() else {
+        return None;
+    };
+    let parenthesized = ast.node(*parenthesized_id)?;
+    if !matches!(parenthesized.kind, SurfaceNodeKind::ParenthesizedTerm)
+        || direct_token_texts(ast, parenthesized).as_slice() != ["(", ")"]
+        || parenthesized.range != expression.range
+    {
+        return None;
+    }
+    let parenthesized_children = structural_child_ids(ast, parenthesized);
+    let [inner_expression_id] = parenthesized_children.as_slice() else {
+        return None;
+    };
+    let inner_expression = ast.node(*inner_expression_id)?;
+    if !direct_token_texts(ast, inner_expression).is_empty() {
+        return None;
+    }
+    let (reference_id, reference_range, spelling) =
+        exact_identifier_term_operand(ast, *inner_expression_id)?;
+    if parenthesized.range.source_id != reference_range.source_id
+        || parenthesized.range.start >= reference_range.start
+        || parenthesized.range.end <= reference_range.end
+    {
+        return None;
+    }
+    Some((
+        *parenthesized_id,
+        parenthesized.range,
+        reference_id,
+        reference_range,
+        spelling,
+    ))
+}
+
 fn source_binding_use_ordinals<const N: usize>(
     bindings: &[SourceReserveBindingInput],
     use_ranges: [SourceRange; N],
@@ -12267,6 +12587,13 @@ fn is_supported_reserved_variable_binary_formula_bridge_node(node: &SurfaceNode)
             | SurfaceNodeKind::TermReference
             | SurfaceNodeKind::Token(_)
     )
+}
+
+fn is_supported_parenthesized_reserved_variable_equality_bridge_node(
+    node: &SurfaceNode,
+) -> bool {
+    is_supported_reserved_variable_binary_formula_bridge_node(node)
+        || matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm)
 }
 
 fn is_supported_reserved_variable_type_assertion_bridge_node(node: &SurfaceNode) -> bool {
@@ -19379,6 +19706,452 @@ mod tests {
         for gap_case in gap_cases {
             assert_eq!(
                 source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
+    fn source_parenthesized_reserved_variable_equality_bridge_is_transparent() {
+        let source_id = source_id(223);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("parenthesized_reserved_variable_equality"),
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let reserve = || vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))];
+        let parenthesized = |spelling| ParenthesizedIdentifierOperandShape::Identifier {
+            spelling,
+            depth: 1,
+            recovered: false,
+            open: "(",
+            close: ")",
+        };
+        let exact_spec = ParenthesizedIdentifierBinaryTheoremSpec {
+            status: None,
+            label: "ParenthesizedReservedVariableEqualityPayloadBoundary",
+            left: parenthesized("x"),
+            operator: "=",
+            right: ParenthesizedIdentifierOperandShape::Direct("x"),
+            recovered_label: false,
+        };
+        let exact = reserve_then_parenthesized_identifier_binary_theorem_ast(
+            source_id,
+            reserve(),
+            exact_spec,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = super::extract_source_parenthesized_reserved_variable_equality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact parenthesized reserved-variable equality should extract");
+        assert_eq!(payload.formula.reserve.bridge.bindings().len(), 1);
+        assert_eq!(payload.formula.reserve.bridge.bindings()[0].spelling, "x");
+        assert_eq!(
+            payload.formula.reserve.bridge.bindings()[0].type_head,
+            TypeHeadInput::BuiltinSet
+        );
+        assert_eq!(payload.formula.left_spelling, "x");
+        assert_eq!(payload.formula.right_spelling, "x");
+        assert_eq!(payload.formula.left_lookup_ordinal, 1);
+        assert_eq!(payload.formula.right_lookup_ordinal, 2);
+        assert_ne!(payload.wrapper_site, payload.formula.left_site);
+        assert_ne!(payload.wrapper_site, payload.formula.right_site);
+        assert!(payload.wrapper_range.start < payload.formula.left_range.start);
+        assert!(payload.wrapper_range.end > payload.formula.left_range.end);
+        assert!(payload.wrapper_range.end <= payload.formula.right_range.start);
+
+        let output = super::source_parenthesized_reserved_variable_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact parenthesized equality should reach the real equality checker");
+        assert_eq!(output.wrapper_site, output.source_wrapper_site);
+        assert_eq!(output.wrapper_range, output.source_wrapper_range);
+        super::assert_source_parenthesized_reserved_variable_equality_output(&output)
+            .expect("parenthesized equality output invariants should hold");
+        assert_eq!(output.formula.left_binding, BindingId::new(0));
+        assert_eq!(output.formula.right_binding, BindingId::new(0));
+        assert_eq!(output.formula.term_formula.terms().len(), 2);
+        assert_eq!(output.formula.term_formula.type_entries().len(), 6);
+        assert_eq!(output.formula.term_formula.normalized_types().len(), 1);
+        assert!(output.formula.term_formula.candidate_sets().is_empty());
+        assert!(output.formula.term_formula.facts().is_empty());
+        assert!(output.formula.term_formula.diagnostics().is_empty());
+        let (_, normalized) = output
+            .formula
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("parenthesized equality normalized set identity should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(
+            normalized.source.range,
+            output.formula.payload.reserve.bridge.bindings()[0].type_range
+        );
+        let (_, checked_formula) = output
+            .formula
+            .term_formula
+            .formulas()
+            .iter()
+            .next()
+            .expect("parenthesized equality formula should be checked");
+        assert_eq!(checked_formula.kind, FormulaKind::Equality);
+        assert_eq!(checked_formula.status, FormulaStatus::Checked);
+        assert_eq!(
+            checked_formula.terms,
+            [
+                output.formula.payload.left_site.clone(),
+                output.formula.payload.right_site.clone(),
+            ]
+        );
+        assert_eq!(checked_formula.expected_types.len(), 2);
+        assert!(checked_formula.facts.is_empty());
+        assert!(checked_formula.deferred.is_empty());
+        let role_names = output
+            .formula
+            .term_formula
+            .type_entries()
+            .iter()
+            .filter_map(|(_, entry)| match &entry.owner {
+                TypedSiteRef::Role { role, .. } => Some(role.as_str().to_owned()),
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            role_names,
+            BTreeSet::from([
+                "parenthesized-reserved-variable-left-expected".to_owned(),
+                "parenthesized-reserved-variable-left-result".to_owned(),
+                "parenthesized-reserved-variable-right-expected".to_owned(),
+                "parenthesized-reserved-variable-right-result".to_owned(),
+            ])
+        );
+        assert!(
+            output
+                .formula
+                .term_formula
+                .terms()
+                .iter()
+                .all(|(_, term)| term.site.node() != output.wrapper_site.node())
+        );
+        assert!(
+            output
+                .formula
+                .term_formula
+                .type_entries()
+                .iter()
+                .all(|(_, entry)| entry.owner.node() != output.wrapper_site.node())
+        );
+
+        let invalid_key =
+            super::TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY;
+        let mut collapsed_wrapper =
+            super::source_parenthesized_reserved_variable_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a wrapper corruption target");
+        collapsed_wrapper.wrapper_site = collapsed_wrapper.formula.payload.left_site.clone();
+        assert_eq!(
+            super::source_parenthesized_reserved_variable_equality_output_detail_keys(
+                &collapsed_wrapper
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mut collapsed_wrapper_range =
+            super::source_parenthesized_reserved_variable_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a wrapper-range corruption target");
+        collapsed_wrapper_range.wrapper_range = collapsed_wrapper_range.formula.payload.left_range;
+        assert_eq!(
+            super::source_parenthesized_reserved_variable_equality_output_detail_keys(
+                &collapsed_wrapper_range
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mut unrelated_wrapper_site =
+            super::source_parenthesized_reserved_variable_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce an unrelated-site corruption target");
+        unrelated_wrapper_site.wrapper_site = TypedSiteRef::Role {
+            node: unrelated_wrapper_site.wrapper_site.node(),
+            role: super::TypeRole::new("unrelated-parenthesized-wrapper"),
+        };
+        assert_eq!(
+            super::source_parenthesized_reserved_variable_equality_output_detail_keys(
+                &unrelated_wrapper_site
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mut plausible_wrapper_range =
+            super::source_parenthesized_reserved_variable_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a plausible-range corruption target");
+        plausible_wrapper_range.wrapper_range.end =
+            plausible_wrapper_range.formula.payload.right_range.start;
+        assert_eq!(
+            super::source_parenthesized_reserved_variable_equality_output_detail_keys(
+                &plausible_wrapper_range
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mut collapsed_inner = super::source_parenthesized_reserved_variable_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce an inner-provenance corruption target");
+        collapsed_inner.formula.payload.left_site = collapsed_inner.wrapper_site.clone();
+        assert_eq!(
+            super::source_parenthesized_reserved_variable_equality_output_detail_keys(
+                &collapsed_inner
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mut collapsed_right = super::source_parenthesized_reserved_variable_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a right-provenance corruption target");
+        collapsed_right.formula.payload.right_range = collapsed_right.formula.payload.left_range;
+        assert_eq!(
+            super::source_parenthesized_reserved_variable_equality_output_detail_keys(
+                &collapsed_right
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mut wrong_binding = super::source_parenthesized_reserved_variable_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a checker corruption target");
+        wrong_binding.formula.left_binding = BindingId::new(1);
+        assert_eq!(
+            super::source_parenthesized_reserved_variable_equality_output_detail_keys(
+                &wrong_binding
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mut immutable_wrapper_payload =
+            super::extract_source_parenthesized_reserved_variable_equality(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce an immutable-output target");
+        immutable_wrapper_payload.wrapper_range = immutable_wrapper_payload.formula.left_range;
+        let immutable_wrapper_output =
+            super::build_source_parenthesized_reserved_variable_equality_output(
+                immutable_wrapper_payload,
+                &symbols,
+            )
+            .expect("wrapper-only corruption must not fabricate or mutate checker payloads");
+        assert_eq!(immutable_wrapper_output.formula.term_formula.terms().len(), 2);
+        assert_eq!(immutable_wrapper_output.formula.term_formula.type_entries().len(), 6);
+        assert_eq!(
+            super::source_parenthesized_reserved_variable_equality_output_detail_keys(
+                &immutable_wrapper_output
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mismatched_symbols = SymbolEnv::new(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("other_module")),
+            SymbolEnvIndexes::default(),
+        );
+        let mismatched_payload = super::extract_source_parenthesized_reserved_variable_equality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a module-corruption payload");
+        assert!(
+            super::build_source_parenthesized_reserved_variable_equality_output(
+                mismatched_payload,
+                &mismatched_symbols,
+            )
+            .is_err()
+        );
+
+        let direct_task_119 = reserve_then_identifier_equality_theorem_ast(
+            source_id,
+            reserve(),
+            "ReservedVariableEqualityPayloadBoundary",
+            "x",
+            "x",
+        );
+        assert!(
+            super::extract_source_parenthesized_reserved_variable_equality(
+                &direct_task_119,
+                module.clone(),
+                &symbols,
+            )
+            .is_none()
+        );
+        assert!(
+            extract_source_reserved_variable_equality(
+                &direct_task_119,
+                module.clone(),
+                &symbols,
+            )
+            .is_some()
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&direct_task_119, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+
+        let near_misses = [
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: ParenthesizedIdentifierOperandShape::Direct("x"),
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: ParenthesizedIdentifierOperandShape::Direct("x"),
+                right: parenthesized("x"),
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                right: parenthesized("x"),
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: ParenthesizedIdentifierOperandShape::Identifier {
+                    spelling: "x",
+                    depth: 2,
+                    recovered: false,
+                    open: "(",
+                    close: ")",
+                },
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: parenthesized("y"),
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                right: ParenthesizedIdentifierOperandShape::Direct("y"),
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: ParenthesizedIdentifierOperandShape::Identifier {
+                    spelling: "x",
+                    depth: 1,
+                    recovered: true,
+                    open: "(",
+                    close: ")",
+                },
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: ParenthesizedIdentifierOperandShape::Identifier {
+                    spelling: "x",
+                    depth: 1,
+                    recovered: false,
+                    open: "[",
+                    close: "]",
+                },
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: ParenthesizedIdentifierOperandShape::Numeral("1"),
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: ParenthesizedIdentifierOperandShape::Empty,
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                left: ParenthesizedIdentifierOperandShape::DoubleIdentifier("x"),
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                label: "OtherPayloadBoundary",
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                operator: "<>",
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                status: Some("registration"),
+                ..exact_spec
+            },
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                recovered_label: true,
+                ..exact_spec
+            },
+        ]
+        .into_iter()
+        .map(|spec| {
+            reserve_then_parenthesized_identifier_binary_theorem_ast(
+                source_id,
+                reserve(),
+                spec,
+            )
+        })
+        .chain([
+            reserve_then_parenthesized_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                exact_spec,
+            ),
+            reserve_then_parenthesized_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                exact_spec,
+            ),
+            reserve_then_parenthesized_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
+                exact_spec,
+            ),
+            reserve_then_parenthesized_identifier_binary_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                exact_spec,
+            ),
+        ]);
+        for near_miss in near_misses {
+            assert!(
+                super::extract_source_parenthesized_reserved_variable_equality(
+                    &near_miss,
+                    module.clone(),
+                    &symbols,
+                )
+                .is_none()
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
@@ -55171,6 +55944,260 @@ mod tests {
     }
 
     #[test]
+    fn active_parenthesized_reserved_variable_equality_fixture_preserves_real_checker_payload() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("Task 223 repository plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_parenthesized_reserved_variable_equality_001"
+            })
+            .expect("Task 223 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 223 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 223 fixture should produce a real AST");
+        let parenthesized_terms =
+            surface_nodes_with_kind(&ast, SurfaceNodeKind::ParenthesizedTerm);
+        let [(wrapper_id, wrapper)] = parenthesized_terms.as_slice() else {
+            panic!("Task 223 real AST should contain exactly one ParenthesizedTerm");
+        };
+        assert_eq!(super::direct_token_texts(&ast, wrapper), ["(", ")"]);
+        assert_eq!(super::structural_child_ids(&ast, wrapper).len(), 1);
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = super::source_parenthesized_reserved_variable_equality_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 223 real AST should reach the parenthesized equality seam");
+        assert_eq!(output.wrapper_site, surface_site(*wrapper_id));
+        assert_eq!(output.wrapper_range, wrapper.range);
+        super::assert_source_parenthesized_reserved_variable_equality_output(&output)
+            .expect("Task 223 real AST should preserve every checked payload invariant");
+        assert_eq!(output.formula.payload.left_lookup_ordinal, 1);
+        assert_eq!(output.formula.payload.right_lookup_ordinal, 2);
+        assert_eq!(output.formula.left_binding, BindingId::new(0));
+        assert_eq!(output.formula.right_binding, BindingId::new(0));
+    }
+
+    #[test]
+    fn parenthesized_reserved_variable_equality_route_isolated_from_all_prior_binary_owners() {
+        type PriorExtractor = fn(
+            &SurfaceAst,
+            ResolverModuleId,
+            &SymbolEnv,
+        ) -> Option<super::SourceReservedVariableBinaryFormula>;
+        macro_rules! prior_extractors {
+            ($($extractor:path),+ $(,)?) => {
+                [$(
+                    (stringify!($extractor), $extractor as PriorExtractor),
+                )+]
+            };
+        }
+        let prior_extractors: [(&str, PriorExtractor); 52] = prior_extractors![
+            super::extract_source_reserved_variable_equality,
+            super::extract_source_reserved_object_variable_equality,
+            super::extract_source_distinct_reserved_object_variable_equality,
+            super::extract_source_distinct_reserved_object_variable_inequality,
+            super::extract_source_reserved_object_variable_inequality,
+            super::extract_source_distinct_reserved_variable_equality,
+            super::extract_source_distinct_reserved_variable_membership,
+            super::extract_source_distinct_reserved_variable_inequality,
+            super::extract_source_heterogeneous_reserve_membership,
+            super::extract_source_local_mode_reserved_variable_membership,
+            super::extract_source_chained_local_mode_reserved_variable_membership,
+            super::extract_source_two_edge_local_mode_reserved_variable_membership,
+            super::extract_source_three_edge_local_mode_reserved_variable_membership,
+            super::extract_source_four_edge_local_mode_reserved_variable_membership,
+            super::extract_source_four_edge_local_object_mode_reserved_variable_membership,
+            super::extract_source_three_edge_local_object_mode_reserved_variable_membership,
+            super::extract_source_two_edge_local_object_mode_reserved_variable_membership,
+            super::extract_source_chained_local_object_mode_reserved_variable_membership,
+            super::extract_source_local_object_mode_reserved_variable_membership,
+            super::extract_source_local_mode_reserved_variable_equality,
+            super::extract_source_local_mode_reserved_variable_inequality,
+            super::extract_source_local_object_mode_reserved_variable_inequality,
+            super::extract_source_chained_local_mode_reserved_variable_equality,
+            super::extract_source_two_edge_local_mode_reserved_variable_equality,
+            super::extract_source_three_edge_local_mode_reserved_variable_equality,
+            super::extract_source_four_edge_local_mode_reserved_variable_equality,
+            super::extract_source_local_mode_long_chain_reserved_variable_equality,
+            super::extract_source_local_object_mode_long_chain_reserved_variable_equality,
+            super::extract_source_local_object_mode_long_chain_reserved_variable_inequality,
+            super::extract_source_local_object_mode_long_chain_reserved_variable_membership,
+            super::extract_source_local_mode_long_chain_reserved_variable_inequality,
+            super::extract_source_local_mode_long_chain_reserved_variable_membership,
+            super::extract_source_four_edge_local_mode_reserved_variable_inequality,
+            super::extract_source_four_edge_local_object_mode_reserved_variable_equality,
+            super::extract_source_four_edge_local_object_mode_reserved_variable_inequality,
+            super::extract_source_three_edge_local_object_mode_reserved_variable_equality,
+            super::extract_source_three_edge_local_mode_reserved_variable_inequality,
+            super::extract_source_three_edge_local_object_mode_reserved_variable_inequality,
+            super::extract_source_two_edge_local_mode_reserved_variable_inequality,
+            super::extract_source_two_edge_local_object_mode_reserved_variable_inequality,
+            super::extract_source_two_edge_local_object_mode_reserved_variable_equality,
+            super::extract_source_chained_local_mode_reserved_variable_inequality,
+            super::extract_source_chained_local_object_mode_reserved_variable_equality,
+            super::extract_source_chained_local_object_mode_reserved_variable_inequality,
+            super::extract_source_local_object_mode_reserved_variable_equality,
+            super::extract_source_multiple_reserve_declaration_equality,
+            super::extract_source_multiple_object_reserve_declaration_equality,
+            super::extract_source_multiple_object_reserve_declaration_inequality,
+            super::extract_source_multiple_reserve_declaration_inequality,
+            super::extract_source_multiple_reserve_declaration_membership,
+            super::extract_source_reserved_variable_membership,
+            super::extract_source_reserved_variable_inequality,
+        ];
+
+        let source_id = source_id(223);
+        let task_223_module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("parenthesized_reserved_variable_equality_isolation"),
+        );
+        let task_223_symbols =
+            SymbolEnv::new(task_223_module.clone(), SymbolEnvIndexes::default());
+        let task_223_ast = reserve_then_parenthesized_identifier_binary_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ParenthesizedIdentifierBinaryTheoremSpec {
+                status: None,
+                label: "ParenthesizedReservedVariableEqualityPayloadBoundary",
+                left: ParenthesizedIdentifierOperandShape::Identifier {
+                    spelling: "x",
+                    depth: 1,
+                    recovered: false,
+                    open: "(",
+                    close: ")",
+                },
+                operator: "=",
+                right: ParenthesizedIdentifierOperandShape::Direct("x"),
+                recovered_label: false,
+            },
+        );
+        assert!(
+            super::extract_source_parenthesized_reserved_variable_equality(
+                &task_223_ast,
+                task_223_module.clone(),
+                &task_223_symbols,
+            )
+            .is_some()
+        );
+        for (name, extractor) in prior_extractors {
+            assert!(
+                extractor(
+                    &task_223_ast,
+                    task_223_module.clone(),
+                    &task_223_symbols,
+                )
+                .is_none(),
+                "Task 223 source must not be owned by {name}",
+            );
+        }
+
+        struct PriorOwnerFixture {
+            id: String,
+            ast: SurfaceAst,
+            module: ResolverModuleId,
+            symbols: SymbolEnv,
+        }
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("Task 223 isolation plan should build");
+        let mut candidates = Vec::new();
+        for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
+            let id = case.id.0.as_str();
+            if id == "pass_type_elaboration_parenthesized_reserved_variable_equality_001"
+                || !(id.contains("equality")
+                    || id.contains("inequality")
+                    || id.contains("membership"))
+            {
+                continue;
+            }
+            let frontend = run_frontend(&workspace_root, case, ordinal)
+                .expect("prior binary owner fixture should run through the real frontend");
+            assert!(frontend.diagnostics.is_empty(), "unexpected frontend diagnostics for {id}");
+            let ast = frontend
+                .ast
+                .expect("prior binary owner fixture should produce an AST");
+            let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+            assert!(resolver.detail_keys.is_empty(), "unexpected resolver diagnostics for {id}");
+            let module = resolver.module;
+            let symbols = augment_type_elaboration_import_summaries(&ast, &module, resolver.env);
+            candidates.push(PriorOwnerFixture {
+                id: id.to_owned(),
+                ast,
+                module,
+                symbols,
+            });
+        }
+
+        let mut matched_fixture_ids = BTreeSet::new();
+        for (name, extractor) in prior_extractors {
+            let matches = candidates
+                .iter()
+                .filter(|candidate| {
+                    extractor(
+                        &candidate.ast,
+                        candidate.module.clone(),
+                        &candidate.symbols,
+                    )
+                    .is_some()
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                matches.len(),
+                1,
+                "{name} should retain exactly one real active owner fixture; matches={:?}",
+                matches
+                    .iter()
+                    .map(|candidate| candidate.id.as_str())
+                    .collect::<Vec<_>>()
+            );
+            let owner = matches[0];
+            assert!(matched_fixture_ids.insert(owner.id.clone()));
+            assert!(
+                super::extract_source_parenthesized_reserved_variable_equality(
+                    &owner.ast,
+                    owner.module.clone(),
+                    &owner.symbols,
+                )
+                .is_none(),
+                "prior owner {} must not be captured by Task 223",
+                owner.id,
+            );
+        }
+        assert_eq!(matched_fixture_ids.len(), 52);
+    }
+
+    #[test]
     fn active_reserved_object_variable_equality_fixture_preserves_real_checker_payload() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -65328,6 +66355,53 @@ mod tests {
         reserve_then_identifier_binary_theorem_ast(source_id, items, label, left, "=", right)
     }
 
+    #[derive(Clone, Copy)]
+    enum ParenthesizedIdentifierOperandShape<'a> {
+        Direct(&'a str),
+        Identifier {
+            spelling: &'a str,
+            depth: usize,
+            recovered: bool,
+            open: &'a str,
+            close: &'a str,
+        },
+        Numeral(&'a str),
+        Empty,
+        DoubleIdentifier(&'a str),
+    }
+
+    #[derive(Clone, Copy)]
+    struct ParenthesizedIdentifierBinaryTheoremSpec<'a> {
+        status: Option<&'a str>,
+        label: &'a str,
+        left: ParenthesizedIdentifierOperandShape<'a>,
+        operator: &'a str,
+        right: ParenthesizedIdentifierOperandShape<'a>,
+        recovered_label: bool,
+    }
+
+    fn reserve_then_parenthesized_identifier_binary_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        spec: ParenthesizedIdentifierBinaryTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        root_children.push(add_parenthesized_identifier_binary_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            spec,
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
     fn reserve_then_identifier_binary_theorem_ast(
         source_id: SourceId,
         items: Vec<ReserveItemSpec>,
@@ -67124,6 +68198,108 @@ mod tests {
         )
     }
 
+    fn add_parenthesized_identifier_binary_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: ParenthesizedIdentifierBinaryTheoremSpec<'_>,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let status_token = spec.status.map(|status| {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                status,
+            )
+        });
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = if spec.recovered_label {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        };
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let left_term = add_parenthesized_identifier_operand_expression(
+            builder,
+            source_id,
+            offset,
+            spec.left,
+        );
+        let operator = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            spec.operator,
+        );
+        let right_term = add_parenthesized_identifier_operand_expression(
+            builder,
+            source_id,
+            offset,
+            spec.right,
+        );
+        let formula_end = builder
+            .node_range(right_term)
+            .expect("just-created right term should exist")
+            .end;
+        let formula = builder.add_node(
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            range(source_id, formula_start, formula_end),
+            vec![left_term, operator, right_term],
+        );
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![formula],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        let mut children = Vec::new();
+        children.extend(status_token);
+        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            children,
+        )
+    }
+
     struct BuiltinBinaryTheoremShape<'a> {
         label: &'a str,
         left: &'a str,
@@ -68108,6 +69284,213 @@ mod tests {
             SurfaceNodeKind::TermExpression,
             range(source_id, start, end),
             vec![reference],
+        )
+    }
+
+    fn add_parenthesized_identifier_operand_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        shape: ParenthesizedIdentifierOperandShape<'_>,
+    ) -> SurfaceBuilderNodeId {
+        match shape {
+            ParenthesizedIdentifierOperandShape::Direct(spelling) => {
+                add_identifier_term_expression(builder, source_id, offset, spelling)
+            }
+            ParenthesizedIdentifierOperandShape::Identifier {
+                spelling,
+                depth,
+                recovered,
+                open,
+                close,
+            } => {
+                let start = *offset;
+                let open_token = add_token(
+                    builder,
+                    source_id,
+                    offset,
+                    SurfaceTokenKind::ReservedSymbol,
+                    open,
+                );
+                let inner = if depth <= 1 {
+                    add_identifier_term_expression_with_recovery(
+                        builder, source_id, offset, spelling, recovered,
+                    )
+                } else {
+                    add_parenthesized_identifier_operand_expression(
+                        builder,
+                        source_id,
+                        offset,
+                        ParenthesizedIdentifierOperandShape::Identifier {
+                            spelling,
+                            depth: depth - 1,
+                            recovered,
+                            open,
+                            close,
+                        },
+                    )
+                };
+                let close_token = add_token(
+                    builder,
+                    source_id,
+                    offset,
+                    SurfaceTokenKind::ReservedSymbol,
+                    close,
+                );
+                let end = builder
+                    .node_range(close_token)
+                    .expect("just-created parenthesized close should exist")
+                    .end;
+                let parenthesized = builder.add_node(
+                    SurfaceNodeKind::ParenthesizedTerm,
+                    range(source_id, start, end),
+                    vec![open_token, inner, close_token],
+                );
+                builder.add_node(
+                    SurfaceNodeKind::TermExpression,
+                    range(source_id, start, end),
+                    vec![parenthesized],
+                )
+            }
+            ParenthesizedIdentifierOperandShape::Numeral(spelling) => {
+                add_parenthesized_non_identifier_operand_expression(
+                    builder,
+                    source_id,
+                    offset,
+                    Some(add_numeral_term_expression),
+                    spelling,
+                )
+            }
+            ParenthesizedIdentifierOperandShape::Empty => {
+                add_parenthesized_non_identifier_operand_expression(
+                    builder, source_id, offset, None, "",
+                )
+            }
+            ParenthesizedIdentifierOperandShape::DoubleIdentifier(spelling) => {
+                let start = *offset;
+                let open = add_token(
+                    builder,
+                    source_id,
+                    offset,
+                    SurfaceTokenKind::ReservedSymbol,
+                    "(",
+                );
+                let first = add_identifier_term_expression(builder, source_id, offset, spelling);
+                let second = add_identifier_term_expression(builder, source_id, offset, spelling);
+                let close = add_token(
+                    builder,
+                    source_id,
+                    offset,
+                    SurfaceTokenKind::ReservedSymbol,
+                    ")",
+                );
+                let end = builder
+                    .node_range(close)
+                    .expect("just-created doubled parenthesized close should exist")
+                    .end;
+                let parenthesized = builder.add_node(
+                    SurfaceNodeKind::ParenthesizedTerm,
+                    range(source_id, start, end),
+                    vec![open, first, second, close],
+                );
+                builder.add_node(
+                    SurfaceNodeKind::TermExpression,
+                    range(source_id, start, end),
+                    vec![parenthesized],
+                )
+            }
+        }
+    }
+
+    fn add_identifier_term_expression_with_recovery(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spelling: &str,
+        recovered: bool,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let token = if recovered {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spelling,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spelling,
+            )
+        };
+        let end = builder
+            .node_range(token)
+            .expect("just-created identifier token should exist")
+            .end;
+        let reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, start, end),
+            vec![token],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![reference],
+        )
+    }
+
+    type ParenthesizedInnerBuilder = fn(
+        &mut SurfaceAstBuilder,
+        SourceId,
+        &mut usize,
+        &str,
+    ) -> SurfaceBuilderNodeId;
+
+    fn add_parenthesized_non_identifier_operand_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        inner_builder: Option<ParenthesizedInnerBuilder>,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let open = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+        );
+        let inner = inner_builder.map(|inner_builder| {
+            inner_builder(builder, source_id, offset, spelling)
+        });
+        let close = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+        );
+        let end = builder
+            .node_range(close)
+            .expect("just-created parenthesized close should exist")
+            .end;
+        let mut children = vec![open];
+        children.extend(inner);
+        children.push(close);
+        let parenthesized = builder.add_node(
+            SurfaceNodeKind::ParenthesizedTerm,
+            range(source_id, start, end),
+            children,
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![parenthesized],
         )
     }
 

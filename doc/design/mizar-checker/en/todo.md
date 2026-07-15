@@ -4041,6 +4041,14 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - The active fixture and six backlinks account for active runner 170, 385 cases, 349 requirements, type-elaboration coverage 217/205, and pass/fail 201/184 without changing existing expectations. Relevant-crate and workspace verification passed. No checker source or module-layout change was required.
     - Dependencies: Tasks 74, 198, 208, and 211-221. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
 
+223. [x] **Bridge the exact transparent single-parenthesized reserved-variable equality.**
+    - Add only `reserve x for set;` and `ParenthesizedReservedVariableEqualityPayloadBoundary: (x) = x;`. Compose the real parser `ParenthesizedTerm` with Task 119's reserve extraction, `BindingEnv` lookup, builtin-set projection, and equality consumer; leave the direct/direct Task 119 route unchanged.
+    - Validate exactly one unrecovered left wrapper with direct `(` / `)` tokens, one nested `TermExpression`, and one identifier `TermReference`; require a direct right `x`. Preserve distinct wrapper/inner/right sites and ranges in source payload metadata, resolve inner/right references at ordinals 1/2 to `BindingId(0)`, and transparently lower the wrapper by reusing the inner reference's real reserve-derived type/value. Do not emit an independent parenthesis type, axiom, fact, FOL node, or fabricated child payload.
+    - Test exact frontend/resolver sidecar behavior; direct/right/both/nested/empty/non-identifier/recovered/malformed wrapper rejection; non-exact reserve/theorem/label/operator/operand rejection; independent wrapper/inner/right site/range, binding, ordinal, spelling, head, and result/expected-type corruption; matched output; immutable output; and bidirectional isolation against all 52 prior reserved-variable binary-formula owner routes.
+    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Arbitrary nesting and operands, general precedence, formula parenthesization, closure/order materialization, equality truth/facts, theorem acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader term/formula semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
+    - The active fixture and five backlinks account for active runner 171, 386 cases, 350 requirements, type-elaboration coverage 218/206, and pass/fail 202/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
+    - Dependencies: Tasks 9 and 119. References: Step 5, mizar-test task 10, specs 4, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

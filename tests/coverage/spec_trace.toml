@@ -782,6 +782,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -1797,7 +1798,7 @@ tests = [
 [[requirement]]
 id = "spec.en.13.term_expressions.type_elaboration_payload_gap"
 source = "doc/spec/en/13.term_expression.md"
-section = "13.1 Primary Expressions; 13.1.4 Numerals; 13.2 Functor Applications; 13.4 Set Expressions; 13.4.1 Set Enumeration"
+section = "13.1 Primary Expressions; 13.1.3 Parenthesized Expressions; 13.1.4 Numerals; 13.2 Functor Applications; 13.4 Set Expressions; 13.4.1 Set Enumeration; 13.8.8 Parenthesization"
 stage = "type_elaboration"
 status = "covered"
 required = true
@@ -1889,6 +1890,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -2043,6 +2045,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -2410,6 +2413,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -3967,6 +3971,19 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
 ]
 notes = "Task 162 coverage is limited to the exact two-declaration same-set membership type/well-formedness slice. The production route, full near-miss/corruption coverage, and a real frontend/resolver sidecar guard distinct written ranges, one canonical identity, the left-result/right-result/right-expected roles, no left expected input, and exactly one right-owned constraint; truth, closure/order, theorem acceptance, proof, and downstream payloads remain uncredited. The active runner contains 113 cases."
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.parenthesized_reserved_variable_equality_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 223 exact transparent parenthesized reserved-variable equality checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
+]
+notes = "Task 223 coverage is limited to the exact single-left-parenthesized reserved-variable equality type/well-formedness slice. The production route validates one real unrecovered ParenthesizedTerm wrapper containing exactly one TermExpression and one identifier TermReference, resolves the inner x and direct right x through the real reserve BindingEnv at source-order ordinals 1 and 2 to BindingId(0), and transparently lowers the wrapper by reusing the inner identifier's real source-derived builtin-set type and value in the existing equality consumer. Parentheses contribute no independent type, axiom, fact, or FOL node. Independent wrapper/inner provenance, right/both/nested/non-identifier/recovered rejection, matched-output and BindingEnv/type corruption, immutable output, bidirectional isolation against all 52 prior binary-formula owner routes, and a real frontend/resolver sidecar protect active runner 171. Arbitrary nesting or operands, precedence semantics, formula parenthesization, implicit universal-closure materialization/order, equality truth/facts, theorem acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader term/formula semantics remain uncredited."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction"
