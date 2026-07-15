@@ -4130,6 +4130,14 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - The test-first fixture and six backlinks account for active runner 181, 396 cases, 360 requirements, type-elaboration 228/216, and pass/fail 212/184 without changing existing expectations. No checker source or module-layout change was required.
     - Dependencies: Tasks 74, 199, 230, and 231. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
 
+236. [x] **Bridge the exact seven-expansion object-terminal full-distance six-hop asserted head.**
+    - Add only the seven ordered bare `BaseObjectMode -> object` through `ChainObjectMode6 -> ChainObjectMode5` definitions, one `ChainObjectMode6` reserve, and `LongLocalObjectModeSixHopAssertedHeadPayloadBoundary: x is BaseObjectMode`. Compose Task 74's real object expansion producer with Task 200's real formula/checker consumer.
+    - Reuse the closed `BindingSixHopRadix` byte-for-byte and directly validate all six pairwise-distinct links through `BaseObjectMode`; use `BaseObjectMode -> object` only for terminal normalization. Preserve distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion.
+    - Test all 5,039 nonidentity orders, the finite definition/reserve/formula/head/provenance/removal/corruption matrix, immutable output, a real sidecar, focused siblings, and bidirectional isolation against all 57 prior type-assertion owners.
+    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
+    - The test-first fixture and six backlinks account for active runner 182, 397 cases, 361 requirements, type-elaboration 229/217, and pass/fail 213/184 without changing existing expectations. No checker source or module-layout change was required.
+    - Dependencies: Tasks 74, 200, 231, and 234. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

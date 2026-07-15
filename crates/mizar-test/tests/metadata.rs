@@ -4732,8 +4732,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 181);
-    assert_eq!(report.passed_count(), 181);
+    assert_eq!(report.results.len(), 182);
+    assert_eq!(report.passed_count(), 182);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -9184,8 +9184,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 181"));
-    assert!(stdout.contains("passed: 181"));
+    assert!(stdout.contains("type-elaboration cases: 182"));
+    assert!(stdout.contains("passed: 182"));
     assert!(stdout.contains("failed: 0"));
 }
 

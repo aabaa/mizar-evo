@@ -3930,6 +3930,14 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - test-first fixture と backlink 6 件は既存 expectation を変更せず active runner 181、396 cases、360 requirements、type-elaboration 228/216、pass/fail 212/184 を計上する。checker source/module-layout change は不要であった。
     - 依存: Tasks 74、199、230、231。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+236. [x] **Exact seven-expansion object-terminal full-distance six-hop asserted head を bridge する。**
+    - ordered bare definition 7 個 `BaseObjectMode -> object` から `ChainObjectMode6 -> ChainObjectMode5`、`ChainObjectMode6` reserve 1 個、`LongLocalObjectModeSixHopAssertedHeadPayloadBoundary: x is BaseObjectMode` だけを追加する。Task 74 の real object expansion producer と Task 200 の real formula/checker consumer を合成する。
+    - closed `BindingSixHopRadix` を byte-for-byte unchanged で再利用し、`BaseObjectMode` までの pairwise-distinct link 6 本すべてを直接検証し、`BaseObjectMode -> object` は terminal normalization のみに使う。distinct subject/asserted provenance、ordinal 1 / `BindingId(0)`、real expansion 7 個、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を object/set coercion なしで保持する。
+    - 全5,039 nonidentity order、finite definition/reserve/formula/head/provenance/removal/corruption matrix、immutable output、real sidecar、focused sibling、先行 type-assertion owner 57 件との bidirectional isolation を検証する。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。imported-positive/attributed/argument-bearing head、generic reachability/widening/`qua`、acceptance、truth/fact、proof/CoreIr/ControlFlowIr/VC、child graph、broader semantics は deferred。Step 5 は active、Steps 6/7 は deferred のままとする。
+    - test-first fixture と backlink 6 件は既存 expectation を変更せず active runner 182、397 cases、361 requirements、type-elaboration 229/217、pass/fail 213/184 を計上する。checker source/module-layout change は不要であった。
+    - 依存: Tasks 74、200、231、234。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:
