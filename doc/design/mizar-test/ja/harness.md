@@ -2164,3 +2164,19 @@ active task 234 route は labeled/ordered/bare set-terminal long-chain definitio
 ## task 236 object-terminal six-hop asserted-head active harness contract
 
 active task 236 route は labeled/ordered/bare object-terminal long-chain definition 7 個、`ChainObjectMode6` reserve 1 個、`BaseObjectMode` assertion 1 個だけを受理する。unchanged closed `BindingSixHopRadix` は `ChainObjectMode6 -> ChainObjectMode5`、`ChainObjectMode5 -> ChainObjectMode4`、`ChainObjectMode4 -> ChainObjectMode3`、`ChainObjectMode3 -> ChainObjectMode2`、`ChainObjectMode2 -> ChainObjectMode1`、`ChainObjectMode1 -> BaseObjectMode` を直接検証し、`BaseObjectMode -> object` は terminal normalization のみに使う。matrix は全5,039 nonidentity order、non-exact definition/reserve/formula/head/provenance shape、各 expansion/relation/terminal corruption、set mixing、connected deeper head を reject し、unrelated-import positive、immutable output、先行 owner 57 件との bidirectional isolation、real frontend/resolver sidecar を検証する。object/set coercion、generic reachability、widening、`qua`、acceptance、truth/fact、proof、child graph、downstream IR は activate しない。
+
+## Task 241 Parenthesized Reserved-Variable Inequality Active Harness Contract
+
+active Task 241 route は builtin-set reserve 1 個と、left operand が identifier
+`x` 1 個だけを含む unrecovered `ParenthesizedTerm`、right operand が direct `x`
+である inequality 1 個だけを受理する。独立した wrapper/inner/right metadata
+を保持し、inner/right reference だけを解決し、独立 wrapper payload なしで
+canonical builtin-set identity 1 個を既存 inequality consumer へ透過的に渡す。
+matrix は direct/right/both/nested/empty/nonidentifier/recovered/malformed
+operand、wrong label/operator/reserve/type/status/item、exact parenthesized
+membership、exact builtin-object `<>` を reject し、provenance、binding/ordinal、
+role/expected input、canonical source、matched config を独立に corrupt し、
+immutable output、focused equality behavior、先行 binary-formula owner 54 件との
+bidirectional isolation、real frontend/resolver sidecar を検証する。arbitrary
+parenthesization/precedence、formula grouping、inequality desugaring/truth、
+acceptance、proof、child graph、downstream IR は activate しない。

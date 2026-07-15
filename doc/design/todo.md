@@ -1658,3 +1658,25 @@ Task 234 classifies the exact seven-expansion set-terminal full-distance six-hop
 ## Step 5 Task 236 Active Addendum
 
 Task 236 classifies the exact seven-expansion object-terminal full-distance six-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Task 74 supplies seven real object AST expansions and Task 200 supplies the real formula/checker consumer. The byte-for-byte unchanged closed `BindingSixHopRadix` directly validates pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode`; `BaseObjectMode -> object` remains terminal-normalization evidence only. The route preserves distinct provenance, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS builtin-object identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Six backlinks, all 5,039 nonidentity orders, the finite structural/provenance/corruption matrix, all 57 prior owners, immutable output, and a real sidecar protect active case 182 within 397 cases / 361 requirements, type-elaboration 229/217, and pass/fail 213/184 without changing existing expectations. Imported-positive definitions, broader semantics, and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+
+## Step 5 Task 241 Active Addendum
+
+Task 241 closes the exact single-left-parenthesized builtin-set reserved-variable
+inequality `test_gap`, narrow `source_drift`, and `design_drift` slice without a
+`spec_gap`. The active source is only `reserve x for set; theorem
+ParenthesizedReservedVariableInequalityPayloadBoundary: (x) <> x;`. Task 223
+supplies the real one-child `ParenthesizedTerm` producer and Task 121 the real
+reserve/`BindingEnv`/inequality consumer. The route preserves independent
+wrapper/inner/right provenance, resolves ordinal 1/2 to `BindingId(0)`, reuses
+one canonical builtin-set identity for two inferred terms and two ordered
+expected constraints, and produces one fact/candidate/diagnostic/deferred-free
+checked inequality without an independent wrapper payload. Four shared plus one
+dedicated backlink, the finite exact/near-miss/provenance/corruption matrix, all
+54 prior binary-formula owners bidirectionally, focused equality regressions,
+immutable output, and a real sidecar protect active case 183 within 398 cases /
+362 requirements, type-elaboration 230/218, and pass/fail 214/184 without
+changing existing fixtures or expectations. Parenthesized membership,
+imported/other parenthesized variants, desugaring/truth, acceptance, proof/IR/VC,
+child graphs, and downstream payloads receive no Task 241 credit. Step 5 stays
+active and Steps 6/7 stay deferred. No checker source/API/module-layout change
+was required.

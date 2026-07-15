@@ -3968,3 +3968,22 @@ cargo test -p mizar-test
 - 依存スライスと fingerprint の統合（アーキテクチャ 18）は `mizar-cache`
   とともに到来する。checker はスライスが計算可能であり続けるよう、
   ソース単位の寄与追跡を正確に保つだけでよい。
+
+## Task 241 Active Addendum
+
+- [x] Task 223 の exact real single-left `ParenthesizedTerm` producer と Task
+  121 の real builtin-set inequality consumer を `(x) <> x` だけに合成する。
+  独立した wrapper/inner/right provenance、ordinal 1/2 の `BindingId(0)`
+  lookup、canonical `BuiltinSet` 1 個、inferred term 2 個、ordered expected
+  constraint 2 個、fact/candidate/diagnostic/deferred 0 個の checked inequality
+  1 個を保持する。private shared helper のみ binary-formula generic とし、
+  closed equality/object wrapper を維持する。
+- [x] exact/near-miss/corruption/immutable-output/active-sidecar/focused
+  equality regression と先行 owner 54 件との bidirectional isolation で route
+  を保護する。active runner/count は 183、398/362、type-elaboration 230/218、
+  pass/fail 214/184。
+- 分類は `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。
+  parenthesized membership、imported/other parenthesized variant、desugaring/
+  truth、acceptance、proof/CoreIr/ControlFlowIr/VC、downstream payload は Task
+  241 の credit 外。Step 5 は active、Steps 6/7 は deferred。checker
+  source/API/module-layout update は不要。

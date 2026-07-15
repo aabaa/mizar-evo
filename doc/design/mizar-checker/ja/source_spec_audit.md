@@ -2198,3 +2198,23 @@ Task 234 は exact seven-expansion set-terminal full-distance six-hop asserted-h
 ## Task 236 MC-G020 active override
 
 Task 236 は exact seven-expansion object-terminal full-distance six-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real object expansion 7 個、Task 200 は real formula/checker consumer を供給する。unchanged closed `BindingSixHopRadix` は pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode` を直接検証し、`BaseObjectMode -> object` は terminal-normalization evidence のみに使う。credit は distinct source provenance、ordinal 1 / `BindingId(0)`、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個で object/set coercion のない checked assertion 1 個に限定する。backlink 6 件、全5,039 order finite matrix、先行 owner 57 件、immutable output、focused sibling、real sidecar は既存 expectation を変更せず 397 cases / 361 requirements、type-elaboration 229/217、pass/fail 213/184 内の active runner 182 を保護する。imported-positive definition、broader semantics、downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred。checker source/module-layout change は不要であった。
+
+## Task 241 MC-G020 Active Override
+
+Task 241 は exact single-left-parenthesized builtin-set inequality seam を
+`test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とは
+しない。Chapter 04/13/14/16 は reserved theorem-variable typing、
+type-preserving/FOL-transparent parenthesis、builtin `<>`、theorem formula を
+直接支える。Task 223 は real wrapper producer、Task 121 は real inequality
+consumer を供給する。credit は exact source、独立した wrapper/inner/right
+provenance、ordinal 1/2 の `BindingId(0)` lookup、canonical `BuiltinSet` 1 個、
+inferred term 2 個、ordered expected constraint 2 個、独立 wrapper payload の
+ない checked inequality 1 個に限定する。shared 4 + dedicated 1 backlink、
+parenthesized membership と builtin-object near miss を含む finite matrix、
+先行 owner 54 件との bidirectional isolation、immutable output、real sidecar
+は active runner 183、398 cases / 362 requirements、type-elaboration 230/218、
+pass/fail 214/184 を保護する。既存 fixture/expectation は rebaseline しない。
+parenthesized membership、imported/other parenthesized variant、inequality
+desugaring/truth、acceptance、proof/CoreIr/ControlFlowIr/VC、downstream payload
+は Task 241 の credit 外。Step 5 は active、Steps 6/7 は deferred。checker
+source/API/module-layout change は不要であった。

@@ -1827,3 +1827,20 @@ Task 234 adds one active test-first seven-expansion set-terminal full-distance s
 ## Task 236 Active Traceability
 
 Task 236 adds one active test-first seven-expansion object-terminal full-distance six-hop asserted-head row with shared Chapter 4/13/14/16 and Task 74 structural-producer references plus one dedicated checker reference. Credit is limited to seven real object expansions, distinct `ChainObjectMode6`/`BaseObjectMode` provenance, six directly validated bare links, terminal-only `BaseObjectMode -> object` normalization, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Six backlinks, the all-5,039-order finite matrix, all 57 prior owners, immutable output, focused siblings, and a real sidecar protect active count 182. The active corpus has 397 cases / 361 requirements, type-elaboration 229/217, and pass/fail 213/184 without rebaselining existing expectations; broader semantics receive no credit.
+
+## Task 241 Active Traceability
+
+Task 241 adds one exact single-left-parenthesized builtin-set reserved-variable
+inequality row with shared Chapter 04/13/14/16 references plus one dedicated
+checker reference. Credit is limited to one real unrecovered `ParenthesizedTerm`,
+one inner and one direct-right `x`, independent wrapper/inner/right metadata,
+ordinal 1/2 `BindingId(0)` lookup, transparent reuse of one canonical reserve-
+derived `BuiltinSet`, two inferred terms, two ordered expected constraints, and
+one checked inequality without an independent wrapper payload. Four shared plus
+one dedicated backlink, the finite matrix, all 54 prior binary-formula owners,
+immutable output, focused equality regressions, and a real sidecar protect active
+count 183. The active corpus has 398 cases / 362 requirements, type-elaboration
+230/218, and pass/fail 214/184 without rebaselining existing expectations.
+Parenthesized membership, imported/other parenthesized variants, desugaring/
+truth, acceptance, proof/IR/VC, child graphs, and broader semantics receive no
+Task 241 credit.

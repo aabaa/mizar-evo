@@ -1748,3 +1748,20 @@ task 234 は shared Chapter 4/13/14/16 と Task 74 structural-producer reference
 ## task 236 active traceability
 
 task 236 は shared Chapter 4/13/14/16 と Task 74 structural-producer reference 5 件、dedicated checker reference 1 件を持つ active test-first seven-expansion object-terminal full-distance six-hop asserted-head row 1 件を追加する。credit は real object expansion 7 個、distinct `ChainObjectMode6`/`BaseObjectMode` provenance、直接検証する bare link 6 本、terminal-only `BaseObjectMode -> object` normalization、ordinal 1 / `BindingId(0)`、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個で object/set coercion のない checked assertion 1 個に限定する。backlink 6 件、全5,039 order finite matrix、先行 owner 57 件、immutable output、focused sibling、real sidecar は active count 182 を保護する。active corpus は既存 expectation を rebaseline せず 397 cases / 361 requirements、type-elaboration 229/217、pass/fail 213/184 を持ち、broader semantics は credit しない。
+
+## Task 241 Active Traceability
+
+Task 241 は shared Chapter 04/13/14/16 reference と dedicated checker reference
+1 件を持つ exact single-left-parenthesized builtin-set reserved-variable
+inequality row 1 件を追加する。credit は real unrecovered `ParenthesizedTerm`
+1 個、inner `x` と direct-right `x` 各 1 個、独立した wrapper/inner/right
+metadata、ordinal 1/2 の `BindingId(0)` lookup、reserve-derived canonical
+`BuiltinSet` 1 個の透過的再利用、inferred term 2 個、ordered expected
+constraint 2 個、独立 wrapper payload のない checked inequality 1 個に限定
+する。shared 4 + dedicated 1 backlink、finite matrix、先行 binary-formula owner
+54 件、immutable output、focused equality regression、real sidecar は active
+count 183 を保護する。active corpus は既存 expectation を rebaseline せず
+398 cases / 362 requirements、type-elaboration 230/218、pass/fail 214/184 を
+持つ。parenthesized membership、imported/other parenthesized variant、
+desugaring/truth、acceptance、proof/IR/VC、child graph、broader semantics は
+Task 241 の credit 外。

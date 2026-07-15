@@ -683,3 +683,16 @@ Check the task off here once tests pass.
   pass/fail mix is a corpus-wide target, not per-directory.
 - Snapshot baselines are the stability surface for internal renderings;
   the renderings themselves are not stable artifacts.
+
+## Task 241 Active Addendum
+
+- [x] Add the exact test-first `(x) <> x` builtin-set fixture, a new expectation
+  derived from Chapters 04/13/14/16, four shared backlinks, and one dedicated
+  checker row. Do not modify or rebaseline existing fixtures or expectations.
+- [x] Add active metadata/CLI assertions for runner 183 and protect the real
+  frontend/resolver/checker payload with exact/negative/corruption/immutable/
+  focused-regression and all-54-prior-owner bidirectional tests.
+- [x] Synchronize the 398 cases / 362 requirements, type-elaboration 230/218,
+  and pass/fail 214/184 counts. Parenthesized membership, imported/other
+  parenthesized variants, proof/IR/VC, and broader semantics receive no Task 241
+  credit. Step 5 remains active; Steps 6/7 remain deferred.

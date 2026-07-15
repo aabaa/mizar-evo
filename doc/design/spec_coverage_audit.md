@@ -2020,3 +2020,27 @@ For chapters `03.type_system.md`, `04.variables_and_constants.md`, `07.modes.md`
 ## Task 236 Active Coverage Addendum
 
 For chapters `03.type_system.md`, `04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`, `14.formulas.md`, and `16.theorems_and_proofs.md`, Task 236 classifies the exact seven-expansion object-terminal full-distance six-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Credit is limited to seven real source-derived object expansions, distinct `ChainObjectMode6` subject and `BaseObjectMode` asserted provenance, the six directly validated bare `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode` links, terminal-only `BaseObjectMode -> object` normalization, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS builtin-object identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Task 74 supplies the producer and Task 200 the consumer; Tasks 231/234 are shorter-distance and terminal siblings. Six backlinks, all 5,039 nonidentity orders, the finite source/provenance/corruption matrix, all 57 prior owners, immutable output, and a real sidecar protect active runner 182. The active corpus contains 397 cases / 361 requirements, type-elaboration 229/217, and pass/fail 213/184 without changing existing expectations. Imported-positive definitions, broader semantics, and downstream payloads receive no credit; Step 5 remains active and Steps 6/7 remain deferred. No checker source or module-layout update was required.
+
+## Task 241 Exact Parenthesized Reserved-Variable Inequality Coverage Addendum
+
+For chapters `04.variables_and_constants.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`, Task 241 classifies the exact
+single-left-parenthesized builtin-set reserved-variable inequality seam as
+`test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Task 223
+supplies the real unrecovered one-child `ParenthesizedTerm` producer and Task 121
+the real reserve/`BindingEnv`/inequality consumer. Credit is limited to the exact
+`(x) <> x` source, independent wrapper/inner/right provenance, ordinal 1/2
+`BindingId(0)` lookup, one canonical reserve-derived `BuiltinSet`, two inferred
+terms, two ordered expected constraints, one fact/candidate/diagnostic/deferred-
+free checked inequality, and no independent wrapper term/type/formula node.
+Four shared backlinks plus one dedicated row, the finite structural/provenance/
+corruption matrix including parenthesized membership and builtin-object near
+misses, all 54 prior binary-formula owners bidirectionally, immutable output,
+focused Task 223/233 regressions, and a real sidecar protect active runner 183.
+The active corpus contains 398 cases / 362 requirements, type-elaboration
+230/218, and pass/fail 214/184 without changing existing fixtures or
+expectations. Parenthesized membership, imported or other parenthesized variants,
+inequality desugaring/truth, acceptance, proof/CoreIr/ControlFlowIr/VC, child
+graphs, and downstream payloads receive no Task 241 credit. Step 5 remains
+active; Steps 6/7 remain deferred. No checker source/API/module-layout update was
+required.

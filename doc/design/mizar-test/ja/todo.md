@@ -614,3 +614,16 @@ cargo test -p mizar-proof
   pass/fail 比率はコーパス全体の目標であり、ディレクトリごとではない。
 - snapshot ベースラインは内部レンダリングの安定性表面である。
   レンダリング自体は安定 artifact ではない。
+
+## Task 241 Active Addendum
+
+- [x] exact test-first builtin-set `(x) <> x` fixture、Chapter 04/13/14/16 から
+  導く新規 expectation、shared backlink 4 件、dedicated checker row 1 件を追加
+  する。既存 fixture/expectation は変更も rebaseline もしない。
+- [x] active metadata/CLI の runner 183 assertion を追加し、real frontend/
+  resolver/checker payload を exact/negative/corruption/immutable/focused
+  regression/先行 owner 54 件との bidirectional test で保護する。
+- [x] 398 cases / 362 requirements、type-elaboration 230/218、pass/fail 214/184
+  を同期する。parenthesized membership、imported/other parenthesized variant、
+  proof/IR/VC、broader semantics は Task 241 の credit 外。Step 5 は active、
+  Steps 6/7 は deferred。

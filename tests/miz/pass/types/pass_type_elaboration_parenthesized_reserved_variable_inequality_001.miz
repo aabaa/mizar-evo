@@ -1,0 +1,2 @@
+reserve x for set;
+theorem ParenthesizedReservedVariableInequalityPayloadBoundary: (x) <> x;

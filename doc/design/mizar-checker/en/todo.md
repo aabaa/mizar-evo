@@ -4169,3 +4169,22 @@ Check the task off here once tests pass.
 - Dependency-slice and fingerprint integration (architecture 18) arrives
   with `mizar-cache`; the checker only has to keep per-source contribution
   tracking accurate so slices stay computable.
+
+## Task 241 Active Addendum
+
+- [x] Compose Task 223's exact real single-left `ParenthesizedTerm` producer
+  with Task 121's real builtin-set inequality consumer for only `(x) <> x`.
+  Preserve independent wrapper/inner/right provenance, ordinal 1/2
+  `BindingId(0)` lookup, one canonical `BuiltinSet`, two inferred terms, two
+  ordered expected constraints, and one fact/candidate/diagnostic/deferred-free
+  checked inequality. Keep private shared helpers binary-formula-generic while
+  retaining closed equality/object wrappers.
+- [x] Protect the route with exact, near-miss, corruption, immutable-output,
+  active-sidecar, focused equality regression, and all-54-prior-owner
+  bidirectional isolation tests. Active runner/counts are 183, 398/362,
+  type-elaboration 230/218, and pass/fail 214/184.
+- Classification: `test_gap`, narrow `source_drift`, `design_drift`, no
+  `spec_gap`. Parenthesized membership, imported/other parenthesized variants,
+  desugaring/truth, acceptance, proof/CoreIr/ControlFlowIr/VC, and downstream
+  payloads receive no Task 241 credit. Step 5 remains active; Steps 6/7 remain
+  deferred. No checker source/API/module-layout update is required.

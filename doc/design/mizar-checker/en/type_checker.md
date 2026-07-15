@@ -2813,3 +2813,36 @@ The active implementation adds a closed `BindingSixHopRadix` relation that direc
 Task 236 is limited to the seven ordered bare definitions from `BaseObjectMode -> object` through `ChainObjectMode6 -> ChainObjectMode5`, one `ChainObjectMode6` reserve, and `LongLocalObjectModeSixHopAssertedHeadPayloadBoundary: x is BaseObjectMode`. Specs 03/04/07/13/14/16 directly require mode unfolding, reserved theorem-variable typing, and static admissibility of the asserted type. Task 74 supplies all seven real AST-derived object expansions and Task 200 supplies the real reserve/BindingEnv/type-assertion checker consumer.
 
 The active implementation reuses the closed `BindingSixHopRadix` byte-for-byte and directly validates the six pairwise-distinct bare links `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode`; `BaseObjectMode -> object` is terminal-normalization evidence only. It preserves distinct raw subject/asserted symbols, sites, and ranges; resolves ordinal 1 to `BindingId(0)`; normalizes all three known type entries to one BaseObjectModeDef-RHS `BuiltinObject`; and records one inferred variable plus one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. The contract covers all 5,039 nonidentity expansion orders, finite structural/provenance/removal/corruption cases, immutable output, all 57 prior owner routes bidirectionally, focused siblings, and a real frontend/resolver sidecar. Generic reachability/widening/`qua`, imported-positive/attributed/argument-bearing heads, acceptance, truth/facts, child graphs, proof/CoreIr/ControlFlowIr/VC, and general chain semantics remain deferred. No checker source/API/module-layout change was required.
+
+## Task 241 Active Exact Transparent Parenthesized Reserved-Variable Inequality Checker Bridge
+
+The active source is exactly `reserve x for set; theorem
+ParenthesizedReservedVariableInequalityPayloadBoundary: (x) <> x;`. Chapters 04,
+13, 14, and 16 derive the complete intent: the reserved theorem variable has its
+written builtin-set type, parentheses preserve that type without adding FOL
+meaning, `<>` is one builtin atomic inequality, and the formula is a theorem
+statement. Task 223 supplies the real unrecovered one-child `ParenthesizedTerm`;
+Task 121 supplies the existing real inequality consumer.
+
+The route validates one wrapper with one inner identifier `x` and one direct
+right `x`, resolves the inner/right references at ordinals 1/2 to `BindingId(0)`,
+and transparently reuses one canonical reserve-derived `BuiltinSet`. Only the
+inner/right sites produce two inferred variable terms and two ordered expected
+constraints; the wrapper produces no independent term/type/formula node. The
+result is one fact/candidate/diagnostic/deferred-free `Checked Inequality` before
+desugaring. Distinct Task 241 key/config/roles call private binary-formula-generic
+parenthesis helpers; the Task 223/233 equality wrappers/configs/routes remain
+closed and unchanged.
+
+The executable contract rejects direct/right/both/nested/empty/nonidentifier/
+recovered/malformed operands, wrong labels/operators/reserves/types/status/items,
+exact parenthesized membership, and exact builtin-object `<>`; independently
+corrupts wrapper/inner/right provenance, binding/ordinal, roles/expected input,
+canonical source, and matched config; proves output immutability; retains
+focused Task 223/233 behavior; isolates all 52 direct plus both parenthesized
+equality owners bidirectionally; and uses the real frontend/resolver sidecar.
+Parenthesized membership, imported or other parenthesized variants, arbitrary
+parentheses/precedence, formula grouping, closure/order, inequality desugaring/
+truth, acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and downstream
+payloads receive no Task 241 credit. No checker source/API/module-layout change
+was required.

@@ -2258,3 +2258,20 @@ The active Task 234 route accepts only the seven labeled, ordered, bare set-term
 ## Task 236 Object-Terminal Six-Hop Asserted-Head Active Harness Contract
 
 The active Task 236 route accepts only the seven labeled, ordered, bare object-terminal long-chain definitions, one `ChainObjectMode6` reserve, and one assertion of `BaseObjectMode`. The unchanged closed `BindingSixHopRadix` validates `ChainObjectMode6 -> ChainObjectMode5`, `ChainObjectMode5 -> ChainObjectMode4`, `ChainObjectMode4 -> ChainObjectMode3`, `ChainObjectMode3 -> ChainObjectMode2`, `ChainObjectMode2 -> ChainObjectMode1`, and `ChainObjectMode1 -> BaseObjectMode` directly and uses `BaseObjectMode -> object` only for terminal normalization. The matrix rejects all 5,039 nonidentity orders, non-exact definition/reserve/formula/head/provenance shapes, every expansion and relation/terminal corruption, set mixing, and connected deeper heads; retains an unrelated-import positive; proves immutable output; isolates all 57 prior owners bidirectionally; and uses a real frontend/resolver sidecar. The harness does not activate object/set coercion, generic reachability, widening, `qua`, acceptance, truth/facts, proof, child graphs, or downstream IR.
+
+## Task 241 Parenthesized Reserved-Variable Inequality Active Harness Contract
+
+The active Task 241 route accepts only one builtin-set reserve and one inequality
+whose left operand is one unrecovered `ParenthesizedTerm` containing exactly one
+identifier `x` and whose right operand is direct `x`. It preserves independent
+wrapper/inner/right metadata, resolves only the inner and right references, and
+transparently feeds one canonical builtin-set identity to the existing inequality
+consumer without an independent wrapper payload. The matrix rejects direct,
+right/both/nested/empty/nonidentifier/recovered/malformed operands, wrong labels/
+operators/reserves/types/status/items, exact parenthesized membership, and exact
+builtin-object `<>`; corrupts provenance, binding/ordinal, roles/expected input,
+canonical source, and matched config independently; proves immutable output;
+retains focused equality behavior; isolates all 54 prior binary-formula owners
+bidirectionally; and uses a real frontend/resolver sidecar. The harness does not
+activate arbitrary parenthesization/precedence, formula grouping, inequality
+desugaring/truth, acceptance, proof, child graphs, or downstream IR.

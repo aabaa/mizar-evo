@@ -2277,3 +2277,24 @@ Task 234 classifies the exact seven-expansion set-terminal full-distance six-hop
 ## Task 236 MC-G020 Active Override
 
 Task 236 classifies the exact seven-expansion object-terminal full-distance six-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real object expansions and Task 200 the real formula/checker consumer. The unchanged closed `BindingSixHopRadix` directly validates pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode`; `BaseObjectMode -> object` is terminal-normalization evidence only. Credit is limited to distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons and no object/set coercion. Six backlinks, the all-5,039-order finite matrix, all 57 prior owners, immutable output, focused siblings, and a real sidecar protect active runner 182 within 397 cases / 361 requirements, type-elaboration 229/217, and pass/fail 213/184 without changing existing expectations. Imported-positive definitions, broader semantics, and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+
+## Task 241 MC-G020 Active Override
+
+Task 241 classifies the exact single-left-parenthesized builtin-set inequality
+seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
+Chapters 04, 13, 14, and 16 directly support reserved theorem-variable typing,
+type-preserving/FOL-transparent parentheses, builtin `<>`, and the theorem
+formula. Task 223 supplies the real wrapper producer and Task 121 the real
+inequality consumer. Credit is limited to the exact source, independent wrapper/
+inner/right provenance, ordinal 1/2 `BindingId(0)` lookup, one canonical
+`BuiltinSet`, two inferred terms, two ordered expected constraints, and one
+checked inequality without an independent wrapper payload. Four shared plus one
+dedicated backlink, the finite matrix including parenthesized membership and
+builtin-object near misses, all 54 prior owners bidirectionally, immutable
+output, and a real sidecar protect active runner 183 within 398 cases / 362
+requirements, type-elaboration 230/218, and pass/fail 214/184. Existing fixtures
+and expectations were not rebaselined. Parenthesized membership, imported or
+other parenthesized variants, inequality desugaring/truth, acceptance, proof/
+CoreIr/ControlFlowIr/VC, and downstream payloads receive no Task 241 credit.
+Step 5 stays active; Steps 6/7 stay deferred. No checker source/API/module-layout
+change was required.

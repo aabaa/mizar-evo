@@ -2670,3 +2670,34 @@ active implementation は pairwise-distinct bare link 6 本 `ChainMode6 -> Chain
 task 236 は ordered bare definition 7 個 `BaseObjectMode -> object` から `ChainObjectMode6 -> ChainObjectMode5`、`ChainObjectMode6` reserve 1 個、`LongLocalObjectModeSixHopAssertedHeadPayloadBoundary: x is BaseObjectMode` だけを対象とする。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、asserted type の static admissibility を直接要求する。Task 74 は real AST-derived object expansion 7 個すべて、Task 200 は real reserve/BindingEnv/type-assertion checker consumer を供給する。
 
 active implementation は closed `BindingSixHopRadix` を byte-for-byte unchanged で再利用し、pairwise-distinct bare link 6 本 `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode` を直接検証し、`BaseObjectMode -> object` は terminal-normalization evidence のみに使う。distinct raw subject/asserted symbol/site/range、ordinal 1 の `BindingId(0)`、BaseObjectModeDef-RHS `BuiltinObject` 1 個へ normalize する known type entry 3 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を object/set coercion なしで保持する。contract は全5,039 nonidentity expansion order、finite structural/provenance/removal/corruption case、immutable output、先行 owner route 57 件との bidirectional isolation、focused sibling、real frontend/resolver sidecar を検証する。generic reachability/widening/`qua`、imported-positive/attributed/argument-bearing head、acceptance、truth/fact、child graph、proof/CoreIr/ControlFlowIr/VC、general chain semantics は deferred。checker source/API/module-layout change は不要であった。
+
+## Task 241 Active Exact Transparent Parenthesized Reserved-Variable Inequality Checker Bridge
+
+active source は exact `reserve x for set; theorem
+ParenthesizedReservedVariableInequalityPayloadBoundary: (x) <> x;`。Chapter
+04/13/14/16 から、reserved theorem variable が written builtin-set type を持つ
+こと、parenthesis が FOL meaning を追加せず type を保持すること、`<>` が
+builtin atomic inequality 1 個であること、formula が theorem statement で
+あることを直接導く。Task 223 は real unrecovered one-child
+`ParenthesizedTerm`、Task 121 は既存 real inequality consumer を供給する。
+
+route は child identifier `x` 1 個の wrapper と direct right `x` 1 個を検証し、
+inner/right reference を ordinal 1/2 で `BindingId(0)` に解決し、reserve-derived
+canonical `BuiltinSet` 1 個を透過的に再利用する。inner/right site だけが
+inferred variable term 2 個と ordered expected constraint 2 個を生成し、wrapper
+は独立 term/type/formula node を生成しない。結果は desugaring 前の fact/
+candidate/diagnostic/deferred 0 個の `Checked Inequality` 1 個。distinct Task 241
+key/config/role は private binary-formula-generic parenthesis helper を呼び、
+Task 223/233 equality wrapper/config/route は closed のまま維持する。
+
+executable contract は direct/right/both/nested/empty/nonidentifier/recovered/
+malformed operand、wrong label/operator/reserve/type/status/item、exact
+parenthesized membership、exact builtin-object `<>` を reject し、wrapper/inner/
+right provenance、binding/ordinal、role/expected input、canonical source、matched
+config を独立に corrupt し、output immutability、focused Task 223/233 behavior、
+direct 52 + parenthesized equality 2 owner との bidirectional isolation、real
+frontend/resolver sidecar を検証する。parenthesized membership、imported/other
+parenthesized variant、arbitrary parenthesis/precedence、formula grouping、closure/
+order、inequality desugaring/truth、acceptance、proof/CoreIr/ControlFlowIr/VC、
+child graph、downstream payload は Task 241 の credit 外。checker source/API/
+module-layout change は不要であった。
