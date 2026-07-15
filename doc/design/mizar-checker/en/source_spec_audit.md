@@ -2342,3 +2342,30 @@ active imported provenance remain outside Task 243 credit; missing imported
 expansion/evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
 dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
 checker source/API/module-layout change was required.
+
+## Task 244 MC-G020 Active Override
+
+Task 244 classifies the exact two-reserve single-left-parenthesized
+heterogeneous membership seam as `test_gap` + narrow `source_drift` +
+`design_drift`, not `spec_gap`. The authoritative source is `reserve x for
+object; reserve y for set; theorem
+ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;`, derived
+from Chapters 03/04/13/14/16 and the existing direct Task 125 intent.
+
+The real Task 233 wrapper producer now reaches Task 125's real two-binding
+consumer. A finite config-driven private helper validates the exact ordered
+reserve/binding matrix, selected operand indices, and shared/distinct written
+type-range policy while preserving all five earlier configs. The resulting
+payload keeps ordinals 2/3, distinct `BindingId(0/1)`, two written-range-anchored
+object/set identities, two inferred terms, five type entries, a right-only
+expected-set constraint, and one checked membership without coercion or wrapper
+semantics. A 57-owner isolation matrix, real imported-gap diagnostic guard, and
+real frontend/resolver sidecar bound the override.
+
+The trace adds five shared backlinks and one dedicated requirement. The active
+runner is 186; metadata is 401/365, type 233/221, and pass/fail 217/184. Only the
+exact source receives Task 244 credit. Other parenthesized shapes and imported
+positive provenance remain outside its credit; missing imported expansion/
+evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
+dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
+checker source/API/module-layout change is required.

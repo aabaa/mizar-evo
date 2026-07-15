@@ -726,3 +726,23 @@ Check the task off here once tests pass.
   receive no Task 243 credit; missing imported expansion/evidence/signature
   payloads and proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains
   active; Steps 6/7 remain deferred.
+
+## Task 244 Active Addendum
+
+- [x] Add the test-first `.miz`/expectation pair for the exact two-reserve source
+  `reserve x for object; reserve y for set; theorem
+  ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;`.
+- [x] Activate the real frontend/resolver runner route with ordered distinct
+  bindings, ordinals 2/3, `BindingId(0/1)`, two written-range-anchored object/set
+  identities, two inferred terms, five type entries, right-only expected-set
+  input, and a checked membership without wrapper semantics or coercion.
+- [x] Cover finite exact/near-miss/provenance/corruption behavior, immutable
+  output, all 57 prior binary owners, Tasks 120/125/223/233/241/242/243, the real
+  imported-mode-gap diagnostic fixture, and the real active sidecar.
+- [x] Add five shared backlinks plus one dedicated requirement and synchronize
+  active runner 186, cases/requirements 401/365, type 233/221, and pass/fail
+  217/184.
+- [x] Limit extraction-gap discharge to the exact source. Other parenthesized
+  shapes and imported-positive provenance receive no Task 244 credit; missing
+  imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/
+  VC remain deferred. Step 5 remains active; Steps 6/7 remain deferred.

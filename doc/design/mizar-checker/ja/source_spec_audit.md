@@ -2262,3 +2262,28 @@ Task 243 credit 外。未成立 imported expansion/evidence/signature payload、
 proof/CoreIr/ControlFlowIr/VC、broader dependency は deferred。Step 5 は
 active、Steps 6/7 は deferred。checker source/API/module-layout change は不要
 であった。
+
+## Task 244 MC-G020 Active Override
+
+Task 244 は exact two-reserve single-left-parenthesized heterogeneous membership
+seam を `test_gap` + narrow `source_drift` + `design_drift` と分類する。
+`spec_gap` ではない。authority source は `reserve x for object; reserve y for
+set; theorem ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in
+y;` であり、Chapters 03/04/13/14/16 と既存 Task 125 intent から導く。
+
+real Task 233 wrapper producer を Task 125 の real two-binding consumer へ接続
+する。finite config-driven private helper が exact ordered reserve/binding
+matrix、operand index、shared/distinct written type-range policy を検査し、
+従来5 config を維持する。payload は ordinal 2/3、distinct `BindingId(0/1)`、
+written range に anchor された object/set identity 2件、inferred term 2件、
+type entry 5件、right-only expected-set constraint、coercion/wrapper semantics
+なしの checked membership を保持する。57-owner isolation、real imported-gap
+diagnostic guard、real frontend/resolver sidecar が override を限定する。
+
+trace は shared backlink 5件と dedicated requirement 1件を追加する。active
+runner は186、metadata は401/365、type は233/221、pass/fail は217/184。
+Task 244 credit は exact source だけ。その他 parenthesized shape と imported-
+positive provenance は credit 外。未成立 imported expansion/evidence/signature
+payload、proof/CoreIr/ControlFlowIr/VC、broader dependency は deferred。Step 5
+は active、Steps 6/7 は deferred。checker source/API/module-layout change は
+不要。

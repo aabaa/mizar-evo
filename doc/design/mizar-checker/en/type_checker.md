@@ -2915,3 +2915,45 @@ formula grouping, truth/facts, acceptance, child graphs, and downstream payloads
 receive no Task 243 credit. Missing imported expansion/evidence/signature
 payloads and proof/CoreIr/ControlFlowIr/VC remain deferred. No checker source/
 API/module-layout change was required.
+
+## Task 244 Active Exact Transparent Parenthesized Heterogeneous Reserved-Variable Membership Checker Bridge
+
+The active route is intentionally exact:
+
+```mizar
+reserve x for object;
+reserve y for set;
+theorem ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;
+```
+
+The real Task 233 object `ParenthesizedTerm` producer supplies the wrapper/inner
+provenance and the real Task 125 heterogeneous membership consumer supplies the
+two-binding formula path and direct-right expected-set input. The private helper
+accepts a finite config containing the exact reserve count, ordered binding
+spellings and type heads, left/right binding indices, and shared/distinct type-
+range requirements. It rejects missing, reordered, merged, repeated,
+attributed, or extra reserves and collapsed or reversed type ranges. The five
+earlier parenthesized routes retain their previous configs and output contracts.
+
+The inner `x` and direct-right `y` resolve over the complete source-ordered
+environment at ordinals 2 and 3 to `BindingId(0)` and `BindingId(1)`. Transparent
+lowering emits no wrapper value/type/formula reference. The checker output has
+two inferred operands, exactly five type entries, separate normalized
+`BuiltinObject` and `BuiltinSet` identities anchored to their written reserve
+ranges, no left expected input, exactly one right-owned expected-set constraint,
+and one fact/candidate/diagnostic/deferred-free checked membership. It performs
+no object/set coercion.
+
+The finite positive and near-miss matrix, payload-corruption and immutable-
+output probes, all 57 prior owners in both directions, focused Tasks
+120/125/223/233/241/242/243 regressions, the real active imported-mode-gap
+fixture with its existing two diagnostic keys, and a real frontend/resolver
+sidecar define the boundary. The active runner is 186, with metadata 401/365,
+type 233/221, and pass/fail 217/184; five shared references and one dedicated
+requirement trace the fixture. Only this exact source discharges the extraction
+gap. Other parenthesized operands/shapes, imported-positive provenance,
+precedence and formula grouping, implicit closure materialization, membership
+truth/facts, theorem acceptance, child graphs, and downstream payloads receive
+no Task 244 credit. Missing imported expansion/evidence/signature payloads and
+proof/CoreIr/ControlFlowIr/VC remain deferred. No checker source/API/module-
+layout change is required.

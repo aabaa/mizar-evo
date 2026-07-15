@@ -1882,3 +1882,32 @@ without rebaselining existing expectations. Only this exact source discharges
 the extraction gap. Object-left/set-right parenthesized membership and active
 imported provenance receive no Task 243 credit; missing imported expansion/
 evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred.
+
+## Task 244 Active Traceability
+
+Task 244 adds one exact two-reserve single-left-parenthesized heterogeneous
+membership fixture. Its expectation cites the shared Chapter 04 reserved-
+variable closure/source-order requirement, Chapter 13 transparent term
+parenthesis requirement, Chapter 14 membership formula requirement, Chapter 16
+theorem requirement, the builtin type-expression bridge, and the dedicated
+`spec.en.checker.type_elaboration.parenthesized_heterogeneous_reserve_membership_source_bridge`
+requirement. Therefore the fixture appears in five shared requirement lists and
+one dedicated row.
+
+The route composes the real Task 233 object `ParenthesizedTerm` producer with
+Task 125's real two-binding consumer and unchanged direct-right expected-set
+producer. It preserves ordered distinct written object/set ranges, ordinals 2/3,
+`BindingId(0/1)`, two normalized identities, two inferred terms, five type
+entries, a right-only expected constraint, and a checked membership without
+facts, candidates, diagnostics, deferred work, coercion, or wrapper semantic
+references. The finite helper config also preserves the five earlier
+parenthesized routes.
+
+The exact/near-miss/provenance/corruption matrix, immutable-output probes, all
+57 prior owners, focused Tasks 120/125/223/233/241/242/243, real imported-gap
+diagnostic preservation, and a real frontend/resolver sidecar guard the trace.
+The active runner is 186; repository metadata is 401 cases / 365 requirements,
+type 233/221, and pass/fail 217/184. Only this exact source discharges the gap.
+Other parenthesized shapes and imported-positive provenance receive no Task 244
+credit; missing imported expansion/evidence/signature payloads and proof/CoreIr/
+ControlFlowIr/VC remain deferred.

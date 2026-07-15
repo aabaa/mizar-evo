@@ -4028,3 +4028,25 @@ cargo test -p mizar-test
   外。未成立 imported expansion/evidence/signature payload と proof/CoreIr/
   ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は deferred。
   checker source/API/module-layout update は不要。
+
+## Task 244 Active Addendum
+
+- [x] Chapters 03/04/13/14/16 と既存 Task 125 direct membership intent から、
+  exact two-reserve source `reserve x for object; reserve y for set; theorem
+  ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;` を追加。
+- [x] private parenthesized binary extractor を finite config に限定して一般化。
+  exact reserve count、ordered spelling/type arrays、operand binding indices、
+  shared/distinct written type-range policy を検査し、従来5 config は不変。
+- [x] ordinal 2/3、`BindingId(0/1)`、別々の written object/set identity、
+  inferred term 2件、type entry 5件、left expected なし、right expected-set
+  constraint 1件、fact/candidate/diagnostic/deferred/coercion/wrapper semantics
+  なしの checked membership を保持。
+- [x] exact/near-miss/corruption/provenance、immutable output、既存 binary owner
+  57件、Tasks 120/125/223/233/241/242/243、real imported-mode-gap diagnostic
+  fixture、real frontend/resolver sidecar を guard。
+- [x] shared backlink 5件 + dedicated trace 1件と count を同期: active 186、
+  cases/requirements 401/365、type 233/221、pass/fail 217/184。
+- [x] その他 parenthesized shape と imported-positive provenance は Task 244
+  credit 外。未成立 imported expansion/evidence/signature payload と proof/
+  CoreIr/ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は deferred。
+  checker source/API/module-layout update は不要。

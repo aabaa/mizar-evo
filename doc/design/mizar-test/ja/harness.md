@@ -2221,3 +2221,32 @@ extraction gap の解除はこの exact source だけ。object-left/set-right
 parenthesized membership と active imported provenance は Task 243 credit 外。
 未成立 imported expansion/evidence/signature payload、proof、downstream IR は
 deferred。
+
+## Task 244 Parenthesized Heterogeneous Reserve Membership Active Harness Contract
+
+active Task 244 route は ordered reserve 2件、すなわち written `object` の `x`
+と distinct written `set` の `y`、続く theorem
+`ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;` だけを
+受理する。real frontend は left identifier を包む unrecovered
+`ParenthesizedTerm` exactly 1件を生成する。real resolver と complete binding
+environment は inner `x` / direct-right `y` を ordinal 2/3 で
+`BindingId(0/1)` に解決する。
+
+finite config-driven bridge は wrapper、inner、right、formula、reserve type 2件
+の provenance を独立に保つ。unchanged Task 125 direct-right producer が唯一の
+expected-set input を供給する。output contract は inferred term 2件、type
+entry exactly 5件、distinct written range に anchor された normalized identity
+2件、left expected なし、right-owned expected-set constraint 1件、fact/
+candidate/diagnostic/deferred なしの checked membership を要求する。wrapper
+semantic reference と object/set coercion は禁止。従来5 parenthesized config
+の contract は維持する。
+
+focused coverage は exact、near-miss、collapsed/reversed provenance、payload
+corruption、immutable output、既存 owner route 57件の双方向、Tasks
+120/125/223/233/241/242/243、diagnostic 不変の real active imported-mode-gap
+fixture、real frontend/resolver sidecar を含む。active runner は186件、plan は
+401/365、type 233/221、pass/fail 217/184。既存 expectation の rebaseline なし
+で shared reference 5件と dedicated requirement 1件を trace する。extraction
+gap の解除は exact source だけ。その他 parenthesized shape と imported-
+positive provenance は Task 244 credit 外。未成立 imported expansion/evidence/
+signature payload、proof、downstream IR は deferred。

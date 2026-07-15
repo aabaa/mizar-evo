@@ -797,6 +797,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_membership_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -1919,6 +1920,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_membership_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -2088,6 +2090,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_membership_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -2470,6 +2473,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_membership_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -3015,6 +3019,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_inequality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_heterogeneous_reserve_membership_001.expect.toml",
 ]
 
 [[requirement]]
@@ -4169,6 +4174,19 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
 ]
 notes = "Task 162 coverage is limited to the exact two-declaration same-set membership type/well-formedness slice. The production route, full near-miss/corruption coverage, and a real frontend/resolver sidecar guard distinct written ranges, one canonical identity, the left-result/right-result/right-expected roles, no left expected input, and exactly one right-owned constraint; truth, closure/order, theorem acceptance, proof, and downstream payloads remain uncredited. The active runner contains 113 cases."
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.parenthesized_heterogeneous_reserve_membership_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 244 Active Exact Transparent Parenthesized Heterogeneous Reserved-Variable Membership Checker Bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_heterogeneous_reserve_membership_001.expect.toml",
+]
+notes = "Task 244 coverage is limited to the exact two-reserve single-left-parenthesized heterogeneous membership type/well-formedness slice. The real object ParenthesizedTerm producer established by Task 233 composes with Task 125's real two-binding heterogeneous membership consumer: ordered written object/set reserves remain distinct, inner x and direct-right y resolve over the complete BindingEnv at source-order ordinals 2 and 3 to BindingId(0) and BindingId(1), and transparent lowering preserves two written-range-anchored BuiltinObject/BuiltinSet identities while Task 125's unchanged direct-right producer supplies the sole expected-set input. The finite exact/near-miss/provenance/corruption matrix, immutable output, all 57 prior binary-formula owners bidirectionally, focused Tasks 120/125/223/233/241/242/243 regressions, one real imported-gap diagnostic-preservation guard, and a real frontend/resolver sidecar protect active runner 186. Other parenthesized shapes, arbitrary parenthesization or operands, precedence, formula grouping, closure/order materialization, membership truth/facts, theorem acceptance, child graphs, broader semantics, and imported-positive provenance receive no Task 244 credit. Missing imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.parenthesized_reserved_object_variable_equality_source_bridge"

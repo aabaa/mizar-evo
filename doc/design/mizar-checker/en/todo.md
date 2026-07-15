@@ -4229,3 +4229,28 @@ Check the task off here once tests pass.
   Task 243 credit; missing imported expansion/evidence/signature payloads and
   proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps
   6/7 remain deferred. No checker source/API/module-layout update is required.
+
+## Task 244 Active Addendum
+
+- [x] Add the exact two-reserve source-derived intent `reserve x for object;
+  reserve y for set; theorem
+  ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;` from
+  Chapters 03/04/13/14/16 and the existing Task 125 direct membership intent.
+- [x] Generalize the private parenthesized binary extractor only through a
+  finite config: exact reserve count, ordered spelling/type arrays, operand
+  binding indices, and shared/distinct written type-range policy. Preserve the
+  five existing parenthesized configs unchanged.
+- [x] Preserve ordinals 2/3, `BindingId(0/1)`, distinct written object/set
+  identities, two inferred terms, five type entries, no left expected input,
+  one right expected-set constraint, and a fact/candidate/diagnostic/deferred-
+  free checked membership without coercion or wrapper semantics.
+- [x] Guard exact/near-miss/corruption/provenance behavior, immutable output,
+  all 57 prior binary owners, Tasks 120/125/223/233/241/242/243, one real
+  imported-mode-gap diagnostic fixture, and one real frontend/resolver sidecar.
+- [x] Synchronize five shared backlinks plus one dedicated trace row and runner/
+  metadata counts: active 186, cases/requirements 401/365, type 233/221,
+  pass/fail 217/184.
+- [x] Give no Task 244 credit to other parenthesized shapes or imported-positive
+  provenance. Missing imported expansion/evidence/signature payloads and proof/
+  CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps 6/7
+  remain deferred. No checker source/API/module-layout update is required.

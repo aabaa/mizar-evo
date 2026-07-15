@@ -656,3 +656,22 @@ cargo test -p mizar-proof
   right parenthesized membership と active imported provenance は Task 243 の
   credit 外。未成立 imported expansion/evidence/signature payload と proof/
   CoreIr/ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は deferred。
+
+## Task 244 Active Addendum
+
+- [x] exact two-reserve source `reserve x for object; reserve y for set; theorem
+  ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;` の
+  test-first `.miz` / expectation pair を追加。
+- [x] ordered distinct binding、ordinal 2/3、`BindingId(0/1)`、written range に
+  anchor された object/set identity 2件、inferred term 2件、type entry 5件、
+  right-only expected-set input、wrapper semantics/coercion なしの checked
+  membership を real frontend/resolver runner で active 化。
+- [x] finite exact/near-miss/provenance/corruption、immutable output、既存 binary
+  owner 57件、Tasks 120/125/223/233/241/242/243、real imported-mode-gap
+  diagnostic fixture、real active sidecar を cover。
+- [x] shared backlink 5件 + dedicated requirement 1件を追加し、active runner
+  186、cases/requirements 401/365、type 233/221、pass/fail 217/184 を同期。
+- [x] extraction gap の解除は exact source だけ。その他 parenthesized shape
+  と imported-positive provenance は Task 244 credit 外。未成立 imported
+  expansion/evidence/signature payload と proof/CoreIr/ControlFlowIr/VC は
+  deferred。Step 5 は active、Steps 6/7 は deferred。

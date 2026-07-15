@@ -2766,3 +2766,42 @@ grouping、truth/fact、acceptance、child graph、downstream payload は Task 2
 credit 外。未成立 imported expansion/evidence/signature payload と proof/
 CoreIr/ControlFlowIr/VC は deferred。checker source/API/module-layout change は
 不要であった。
+
+## Task 244 Active Exact Transparent Parenthesized Heterogeneous Reserved-Variable Membership Checker Bridge
+
+active route は次の exact source だけを受理する。
+
+```mizar
+reserve x for object;
+reserve y for set;
+theorem ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;
+```
+
+Task 233 の real object `ParenthesizedTerm` producer が wrapper/inner provenance
+を供給し、Task 125 の real heterogeneous membership consumer が two-binding
+formula path と direct-right expected-set input を供給する。private helper の
+finite config は exact reserve count、ordered binding spelling/type head、
+left/right binding index、shared/distinct type-range requirement を持つ。
+missing/reordered/merged/repeated/attributed/extra reserve と collapsed/reversed
+type range を拒否する。従来5 parenthesized route の config/output contract は
+維持する。
+
+inner `x` と direct-right `y` は完全な source-ordered environment 上の ordinal
+2/3 で `BindingId(0)` / `BindingId(1)` に解決する。transparent lowering は
+wrapper value/type/formula reference を生成しない。checker output は inferred
+operand 2件、type entry exactly 5件、written reserve range に anchor された
+別々の normalized `BuiltinObject` / `BuiltinSet` identity、left expected なし、
+right-owned expected-set constraint exactly 1件、fact/candidate/diagnostic/
+deferred なしの checked membership を持つ。object/set coercion は行わない。
+
+finite positive/near-miss matrix、payload-corruption/immutable-output probe、
+既存 owner 57件の双方向 isolation、Tasks 120/125/223/233/241/242/243 focused
+regression、既存2 diagnostic key を保つ real active imported-mode-gap fixture、
+real frontend/resolver sidecar が boundary を定める。active runner は186、
+metadata 401/365、type 233/221、pass/fail 217/184。shared reference 5件と
+dedicated requirement 1件で trace する。extraction gap の解除は exact source
+だけ。その他 parenthesized operand/shape、imported-positive provenance、
+precedence/formula grouping、implicit closure materialization、membership truth/
+fact、theorem acceptance、child graph、downstream payload は Task 244 credit 外。
+未成立 imported expansion/evidence/signature payload と proof/CoreIr/
+ControlFlowIr/VC は deferred。checker source/API/module-layout change は不要。

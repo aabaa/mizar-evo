@@ -1803,3 +1803,30 @@ expectation を rebaseline せず 400 cases / 364 requirements、type-elaboratio
 だけ。object-left/set-right parenthesized membership と active imported
 provenance は Task 243 credit 外。未成立 imported expansion/evidence/signature
 payload と proof/CoreIr/ControlFlowIr/VC は deferred。
+
+## Task 244 Active Traceability
+
+Task 244 は exact two-reserve single-left-parenthesized heterogeneous membership
+fixture 1件を追加する。expectation は shared Chapter 04 reserved-variable
+closure/source-order、Chapter 13 transparent term parenthesis、Chapter 14
+membership formula、Chapter 16 theorem、builtin type-expression bridge、dedicated
+`spec.en.checker.type_elaboration.parenthesized_heterogeneous_reserve_membership_source_bridge`
+requirement を参照する。このため fixture は shared requirement list 5件と
+dedicated row 1件に現れる。
+
+route は Task 233 の real object `ParenthesizedTerm` producer と Task 125 の
+real two-binding consumer / unchanged direct-right expected-set producer を合成
+する。ordered distinct written object/set range、ordinal 2/3、
+`BindingId(0/1)`、normalized identity 2件、inferred term 2件、type entry 5件、
+right-only expected constraint、fact/candidate/diagnostic/deferred/coercion/
+wrapper semantic reference なしの checked membership を保持する。finite
+helper config は従来5 parenthesized route も維持する。
+
+exact/near-miss/provenance/corruption matrix、immutable-output probe、既存 owner
+57件、Tasks 120/125/223/233/241/242/243 focused regression、real imported-gap
+diagnostic preservation、real frontend/resolver sidecar が trace を guard する。
+active runner は186、repository metadata は cases/requirements 401/365、type
+233/221、pass/fail 217/184。gap を解除するのは exact source だけ。その他
+parenthesized shape と imported-positive provenance は Task 244 credit 外。
+未成立 imported expansion/evidence/signature payload と proof/CoreIr/
+ControlFlowIr/VC は deferred。

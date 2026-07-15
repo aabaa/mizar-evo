@@ -2092,3 +2092,34 @@ membership and active imported provenance receive no Task 243 credit; missing
 imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC
 remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
 source/API/module-layout update was required.
+
+## Task 244 Exact Parenthesized Heterogeneous Reserve Membership Coverage Addendum
+
+Under the existing authority in Chapters 03/04/13/14/16 and Task 125's direct
+heterogeneous membership test intent, Task 244 classifies the exact source
+`reserve x for object; reserve y for set; theorem
+ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;` as a
+`test_gap`, narrow `source_drift`, and `design_drift`, not a `spec_gap`. The new
+fixture cites five shared requirements plus the dedicated
+`spec.en.checker.type_elaboration.parenthesized_heterogeneous_reserve_membership_source_bridge`
+row.
+
+The real Task 233 object `ParenthesizedTerm` producer composes with Task 125's
+real two-binding consumer and unchanged direct-right expected-set producer. A
+finite config-driven helper preserves all five earlier parenthesized contracts
+while requiring two ordered distinct reserves, ordinals 2/3,
+`BindingId(0/1)`, separate written-range-anchored object/set identities, two
+inferred terms, five type entries, a right-only expected-set constraint, and one
+checked membership without facts, candidates, diagnostics, deferred work,
+coercion, or wrapper semantic references.
+
+The exact/near-miss/provenance/corruption and immutable-output matrix, all 57
+prior binary owners, focused Tasks 120/125/223/233/241/242/243 regressions, real
+imported-mode-gap diagnostic preservation, and a real frontend/resolver sidecar
+bound coverage. The active runner is 186; metadata is 401 cases / 365
+requirements, type 233/221, and pass/fail 217/184. Existing expectations are not
+rebaselined. Only this exact source receives Task 244 credit. Other
+parenthesized shapes and imported-positive provenance remain uncredited; missing
+imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC
+remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
+source/API/module-layout update is required.

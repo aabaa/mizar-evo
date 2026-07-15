@@ -1728,3 +1728,31 @@ provenance receive no Task 243 credit; missing imported expansion/evidence/
 signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5
 stays active and Steps 6/7 stay deferred. No checker source/API/module-layout
 change was required.
+
+## Step 5 Task 244 Active Addendum
+
+Task 244 closes the exact two-reserve single-left-parenthesized heterogeneous
+membership `test_gap` plus narrow `source_drift` and `design_drift`, not a
+`spec_gap`. The test-first source is `reserve x for object; reserve y for set;
+theorem ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;`,
+derived from Chapters 03/04/13/14/16, Task 233's real object wrapper producer,
+and Task 125's existing two-binding membership intent.
+
+The finite config-driven bridge preserves all five prior parenthesized routes
+and requires two ordered distinct reserves, ordinals 2/3, `BindingId(0/1)`, two
+written-range-anchored object/set identities, two inferred terms, five type
+entries, no left expected input, one right expected-set constraint, and a
+fact/candidate/diagnostic/deferred/coercion/wrapper-semantic-free checked
+membership. Exact/near-miss/provenance/corruption and immutable-output probes,
+all 57 prior owners, Tasks 120/125/223/233/241/242/243 regressions, a real
+imported-mode-gap diagnostic guard, and a real frontend/resolver sidecar protect
+the seam.
+
+The active runner becomes 186. Traceability adds five shared backlinks plus one
+dedicated requirement; metadata becomes 401 cases / 365 requirements, type
+233/221, and pass/fail 217/184 without rebaselining existing expectations. Only
+the exact source discharges the extraction gap. Other parenthesized shapes and
+imported-positive provenance receive no Task 244 credit; missing imported
+expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain
+deferred. Step 5 stays active and Steps 6/7 stay deferred. No checker source/
+API/module-layout change is required.

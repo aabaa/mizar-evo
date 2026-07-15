@@ -2318,3 +2318,32 @@ exact source discharges the extraction gap. Object-left/set-right parenthesized
 membership and active imported provenance receive no Task 243 credit; missing
 imported expansion/evidence/signature payloads, proof, and downstream IR remain
 deferred.
+
+## Task 244 Parenthesized Heterogeneous Reserve Membership Active Harness Contract
+
+The active Task 244 route accepts exactly two ordered reserves, `x` for written
+`object` and `y` for a distinct written `set`, followed by the theorem
+`ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;`. The
+real frontend must produce exactly one unrecovered `ParenthesizedTerm` around
+the left identifier. The real resolver and complete binding environment must
+resolve inner `x` and direct-right `y` at ordinals 2/3 to `BindingId(0/1)`.
+
+The finite config-driven bridge preserves independent wrapper, inner, right,
+formula, and two reserve-type provenances. The unchanged Task 125 direct-right
+producer supplies the sole expected-set input. The output contract requires two
+inferred terms, exactly five type entries, two normalized identities anchored to
+their distinct written ranges, no left expected input, one right-owned expected-
+set constraint, and one fact/candidate/diagnostic/deferred-free checked
+membership. The wrapper owns no semantic reference and object/set coercion is
+forbidden. The five prior parenthesized configs must retain their old contracts.
+
+Focused coverage contains exact, near-miss, collapsed/reversed provenance,
+payload corruption, immutable output, all 57 prior owner routes in both
+directions, Tasks 120/125/223/233/241/242/243, the real active imported-mode-gap
+fixture with unchanged diagnostics, and a real frontend/resolver sidecar. The
+active runner count is 186; plan counts are 401/365, type 233/221, and pass/fail
+217/184. Five shared references and one dedicated requirement trace the case
+without rebaselining existing expectations. Only this exact source discharges
+the extraction gap. Other parenthesized shapes and imported-positive provenance
+receive no Task 244 credit; missing imported expansion/evidence/signature
+payloads, proof, and downstream IR remain deferred.
