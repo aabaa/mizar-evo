@@ -165,9 +165,9 @@ Required layout-focused scenarios:
 - missing optional known roots produce warnings;
 - unknown-directory inventory is sorted deterministically.
 
-Direct module-level coverage remains open for raw payload/sidecar ordering,
-missing-known-root warnings, and multiple-unknown-root ordering. Current
-harness/expectation integration covers missing-sidecar rejection, rejects
+`crates/mizar-test/tests/layout.rs` directly covers raw payload/sidecar
+ordering, missing-known-root warnings, and multiple-unknown-root ordering.
+Current harness/expectation integration covers missing-sidecar rejection, rejects
 duplicate test ids, retains generated and fuzz-minimized origin metadata, and
 applies explicit validation-mode policy to unknown directories.
 

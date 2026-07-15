@@ -160,8 +160,8 @@ required layout-focused scenarios:
 - optional known root の欠落は warning になる
 - unknown-directory inventory は deterministic に sort される
 
-raw payload/sidecar ordering、missing-known-root warning、複数 unknown-root
-ordering の direct module-level coverage は open のままである。現在の
+`crates/mizar-test/tests/layout.rs` は raw payload/sidecar ordering、
+missing-known-root warning、複数 unknown-root ordering を直接検証する。現在の
 harness/expectation integration は missing-sidecar rejection を検証し、duplicate
 test id を reject し、generated / fuzz-minimized origin metadata を保持し、
 unknown directory に explicit validation-mode policy を適用する。
