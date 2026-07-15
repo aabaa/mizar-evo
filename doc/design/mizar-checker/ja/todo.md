@@ -3825,6 +3825,14 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - focused Task 220、Tasks 208 と 211-219 regression、`cargo test -p mizar-test`、`cargo test -p mizar-checker`、`cargo fmt --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test`、`git diff --check` は成功した。
     - 依存: tasks 74、198、208、211-219。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+221. [x] **Exact four-edge set-terminal full-distance four-hop asserted head を bridge する。**
+    - ordered definition 5 個 `BaseFourEdgeModeFourHopAssertedHead -> set`、`InnerFourEdgeModeFourHopAssertedHead -> BaseFourEdgeModeFourHopAssertedHead`、`MiddleFourEdgeModeFourHopAssertedHead -> InnerFourEdgeModeFourHopAssertedHead`、`OuterFourEdgeModeFourHopAssertedHead -> MiddleFourEdgeModeFourHopAssertedHead`、`TooDeepFourEdgeModeFourHopAssertedHead -> OuterFourEdgeModeFourHopAssertedHead`、TooDeep reserve 1 個、`FourEdgeLocalModeFourHopAssertedHeadPayloadBoundary: x is BaseFourEdgeModeFourHopAssertedHead` だけを追加する。Task 74 の real AST-derived set expansion 5 個と Task 197 の formula/checker consumer を合成する。
+    - closed `BindingFourHopRadix` で pairwise-distinct な TooDeep-to-Outer、Outer-to-Middle、Middle-to-Inner、Inner-to-Base link を直接検証し、Base-to-set は terminal-normalization evidence のみに保つ。distinct raw TooDeep/Base symbol/site/range provenance、ordinal 1 / `BindingId(0)`、real expansion 5 個、Base-definition-RHS builtin-set identity 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。
+    - 全119 nonidentity definition order、各 definition の missing/duplicate/label/spelling/radix/recovery/contextual/parameterized/argument-bearing/attributed variant、exact reserve/formula/head restriction、全5 symbol の imported/ambiguous rejection と unrelated-import positive、全 expansion removal、独立 binding/ordinal/head/spelling/site/range/four-link/terminal/`BuiltinObject`/canonical corruption、unconnected-deeper と connected sixth-definition/fifth-link の独立 guard、immutable output、real sidecar、Task 207 と Tasks 211-220 focused regression、先行 type-assertion owner route 46 件との bidirectional isolation を検証する。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。object sibling、longer chain、imported-positive definition、attributed/argument-bearing head、generic reachability/widening/`qua`、acceptance、truth/fact、proof/CoreIr/ControlFlowIr/VC、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままとする。
+    - active fixture と backlink 6 件は、既存 expectation を変更せず active runner 169、384 cases、348 requirements、type-elaboration coverage 216/204、pass/fail 200/184 を計上する。relevant crate verification は成功し、checker source/module-layout change は不要であった。
+    - 依存: tasks 74、197、207、211-220。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

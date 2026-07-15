@@ -247,6 +247,8 @@ const TYPE_ELABORATION_THREE_EDGE_LOCAL_OBJECT_MODE_THREE_HOP_ASSERTED_HEAD_INVA
     "type_elaboration.checker.three_edge_local_object_mode_three_hop_asserted_head.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_THREE_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.four_edge_local_mode_three_hop_asserted_head.invalid_payload";
+const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_FOUR_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.four_edge_local_mode_four_hop_asserted_head.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_THREE_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.four_edge_local_object_mode_three_hop_asserted_head.invalid_payload";
@@ -1375,6 +1377,11 @@ fn source_type_elaboration_detail_keys(
     ) {
         return keys;
     }
+    if let Some(keys) =
+        source_four_edge_local_mode_four_hop_asserted_head_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     if let Some(keys) = source_two_edge_local_object_mode_radix_asserted_head_detail_keys(
         ast,
         module.clone(),
@@ -1974,6 +1981,12 @@ enum SourceReservedVariableAssertedHeadRelation {
         second_intermediate_spelling: &'static str,
         asserted_spelling: &'static str,
     },
+    BindingFourHopRadix {
+        first_intermediate_spelling: &'static str,
+        second_intermediate_spelling: &'static str,
+        third_intermediate_spelling: &'static str,
+        asserted_spelling: &'static str,
+    },
 }
 
 impl SourceReservedVariableAssertedHeadRelation {
@@ -1985,6 +1998,9 @@ impl SourceReservedVariableAssertedHeadRelation {
                 asserted_spelling, ..
             }
             | Self::BindingThreeHopRadix {
+                asserted_spelling, ..
+            }
+            | Self::BindingFourHopRadix {
                 asserted_spelling, ..
             } => Some(asserted_spelling),
         }
@@ -2664,6 +2680,51 @@ const SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_THREE_HOP_ASSERTED_HEAD_CONFIG:
         asserted_spelling: "InnerFourEdgeObjectModeThreeHopAssertedHead",
     },
     subject_result_role: "four-edge-local-object-mode-three-hop-asserted-head-subject-result",
+};
+
+const SOURCE_FOUR_EDGE_LOCAL_MODE_FOUR_HOP_ASSERTED_HEAD_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "FourEdgeLocalModeFourHopAssertedHeadPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_FOUR_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Set,
+    binding_source_mode_spelling: Some("TooDeepFourEdgeModeFourHopAssertedHead"),
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseFourEdgeModeFourHopAssertedHeadDef",
+            spelling: "BaseFourEdgeModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerFourEdgeModeFourHopAssertedHeadDef",
+            spelling: "InnerFourEdgeModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode("BaseFourEdgeModeFourHopAssertedHead"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleFourEdgeModeFourHopAssertedHeadDef",
+            spelling: "MiddleFourEdgeModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode("InnerFourEdgeModeFourHopAssertedHead"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterFourEdgeModeFourHopAssertedHeadDef",
+            spelling: "OuterFourEdgeModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleFourEdgeModeFourHopAssertedHead"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "TooDeepFourEdgeModeFourHopAssertedHeadDef",
+            spelling: "TooDeepFourEdgeModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode("OuterFourEdgeModeFourHopAssertedHead"),
+        },
+    ],
+    asserted_type: SourceReservedVariableBuiltinType::Set,
+    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::BindingFourHopRadix {
+        first_intermediate_spelling: "OuterFourEdgeModeFourHopAssertedHead",
+        second_intermediate_spelling: "MiddleFourEdgeModeFourHopAssertedHead",
+        third_intermediate_spelling: "InnerFourEdgeModeFourHopAssertedHead",
+        asserted_spelling: "BaseFourEdgeModeFourHopAssertedHead",
+    },
+    subject_result_role: "four-edge-local-mode-four-hop-asserted-head-subject-result",
 };
 
 const SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_CONFIG:
@@ -6307,6 +6368,19 @@ fn source_four_edge_local_object_mode_three_hop_asserted_head_detail_keys(
     ))
 }
 
+fn source_four_edge_local_mode_four_hop_asserted_head_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_four_edge_local_mode_four_hop_asserted_head(ast, module, symbols)?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
 fn source_two_edge_local_object_mode_radix_asserted_head_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -7527,6 +7601,16 @@ fn source_four_edge_local_object_mode_three_hop_asserted_head_output(
 ) -> Option<SourceReservedVariableTypeAssertionOutput> {
     let payload =
         extract_source_four_edge_local_object_mode_three_hop_asserted_head(ast, module, symbols)?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_four_edge_local_mode_four_hop_asserted_head_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload = extract_source_four_edge_local_mode_four_hop_asserted_head(ast, module, symbols)?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
@@ -8832,6 +8916,97 @@ fn source_reserved_variable_asserted_head_relation_is_exact(
                 && second_intermediate_expansion.radix.spelling == expected_asserted_spelling
                 && second_intermediate_expansion.radix.args.is_empty()
                 && second_intermediate_expansion.radix.attributes.is_empty()
+                && source_mode_terminal_builtin_input(
+                    asserted_symbol,
+                    config.asserted_type,
+                    mode_expansions,
+                )
+                .is_some()
+        }
+        SourceReservedVariableAssertedHeadRelation::BindingFourHopRadix {
+            first_intermediate_spelling,
+            second_intermediate_spelling,
+            third_intermediate_spelling,
+            asserted_spelling: expected_asserted_spelling,
+        } => {
+            let Some(binding_spelling) = config.binding_source_mode_spelling else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(binding_symbol) = &source_binding.type_head else {
+                return false;
+            };
+            let Some(binding_expansion) = mode_expansions.get(binding_symbol) else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(first_intermediate_symbol) = &binding_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(first_intermediate_expansion) = mode_expansions.get(first_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(second_intermediate_symbol) =
+                &first_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(second_intermediate_expansion) =
+                mode_expansions.get(second_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(third_intermediate_symbol) =
+                &second_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(third_intermediate_expansion) = mode_expansions.get(third_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(asserted_symbol) = asserted_head else {
+                return false;
+            };
+            let spellings = [
+                binding_spelling,
+                first_intermediate_spelling,
+                second_intermediate_spelling,
+                third_intermediate_spelling,
+                expected_asserted_spelling,
+            ];
+            let symbols = [
+                binding_symbol,
+                first_intermediate_symbol,
+                second_intermediate_symbol,
+                third_intermediate_symbol,
+                asserted_symbol,
+            ];
+            spellings.iter().enumerate().all(|(index, spelling)| {
+                spellings[index + 1..].iter().all(|other| spelling != other)
+            }) && symbols
+                .iter()
+                .enumerate()
+                .all(|(index, symbol)| symbols[index + 1..].iter().all(|other| symbol != other))
+                && source_binding.type_spelling == binding_spelling
+                && asserted_spelling == expected_asserted_spelling
+                && binding_expansion.attributes.is_empty()
+                && binding_expansion.radix.spelling == first_intermediate_spelling
+                && binding_expansion.radix.args.is_empty()
+                && binding_expansion.radix.attributes.is_empty()
+                && first_intermediate_expansion.attributes.is_empty()
+                && first_intermediate_expansion.radix.spelling == second_intermediate_spelling
+                && first_intermediate_expansion.radix.args.is_empty()
+                && first_intermediate_expansion.radix.attributes.is_empty()
+                && second_intermediate_expansion.attributes.is_empty()
+                && second_intermediate_expansion.radix.spelling == third_intermediate_spelling
+                && second_intermediate_expansion.radix.args.is_empty()
+                && second_intermediate_expansion.radix.attributes.is_empty()
+                && third_intermediate_expansion.attributes.is_empty()
+                && third_intermediate_expansion.radix.head == *asserted_head
+                && third_intermediate_expansion.radix.spelling == expected_asserted_spelling
+                && third_intermediate_expansion.radix.args.is_empty()
+                && third_intermediate_expansion.radix.attributes.is_empty()
                 && source_mode_terminal_builtin_input(
                     asserted_symbol,
                     config.asserted_type,
@@ -10330,6 +10505,19 @@ fn extract_source_four_edge_local_object_mode_three_hop_asserted_head(
         module,
         symbols,
         &SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_THREE_HOP_ASSERTED_HEAD_CONFIG,
+    )
+}
+
+fn extract_source_four_edge_local_mode_four_hop_asserted_head(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_FOUR_EDGE_LOCAL_MODE_FOUR_HOP_ASSERTED_HEAD_CONFIG,
     )
 }
 
@@ -14781,6 +14969,7 @@ mod tests {
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_FOUR_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
@@ -14867,6 +15056,7 @@ mod tests {
         extract_source_distinct_reserved_variable_inequality,
         extract_source_distinct_reserved_variable_membership,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
+        extract_source_four_edge_local_mode_four_hop_asserted_head,
         extract_source_four_edge_local_mode_radix_asserted_head,
         extract_source_four_edge_local_mode_reserved_variable_equality,
         extract_source_four_edge_local_mode_reserved_variable_inequality,
@@ -14956,6 +15146,7 @@ mod tests {
         source_distinct_reserved_variable_inequality_output,
         source_distinct_reserved_variable_membership_output,
         source_formula_connective_quantifier_output, source_formula_statement_output,
+        source_four_edge_local_mode_four_hop_asserted_head_output,
         source_four_edge_local_mode_radix_asserted_head_output,
         source_four_edge_local_mode_reserved_variable_equality_output,
         source_four_edge_local_mode_reserved_variable_inequality_output,
@@ -85245,6 +85436,1049 @@ mod tests {
                 ),
             ];
             assert_eq!(prior_results.len(), 45);
+            assert!(prior_results.into_iter().all(|result| result.is_none()));
+        }
+    }
+    mod task_221_four_edge_four_hop_asserted_head {
+        use super::*;
+
+        const BASE: &str = "BaseFourEdgeModeFourHopAssertedHead";
+        const INNER: &str = "InnerFourEdgeModeFourHopAssertedHead";
+        const MIDDLE: &str = "MiddleFourEdgeModeFourHopAssertedHead";
+        const OUTER: &str = "OuterFourEdgeModeFourHopAssertedHead";
+        const TOO_DEEP: &str = "TooDeepFourEdgeModeFourHopAssertedHead";
+        const OTHER: &str = "OtherFourEdgeModeFourHopAssertedHead";
+        const DEEPER: &str = "DeeperFourEdgeModeFourHopAssertedHead";
+
+        fn theorem() -> IdentifierTypeAssertionTheoremSpec<'static> {
+            IdentifierTypeAssertionTheoremSpec {
+                status: None,
+                label: "FourEdgeLocalModeFourHopAssertedHeadPayloadBoundary",
+                subject: "x",
+                asserted_type: ReserveTypeShape::QualifiedSymbol(BASE),
+                recovered_label: false,
+                negated: false,
+            }
+        }
+
+        fn exact_modes() -> Vec<ModeDefinitionSpec> {
+            vec![
+                mode_definition_with_label(
+                    BASE,
+                    "BaseFourEdgeModeFourHopAssertedHeadDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition_with_label(
+                    INNER,
+                    "InnerFourEdgeModeFourHopAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol(BASE),
+                ),
+                mode_definition_with_label(
+                    MIDDLE,
+                    "MiddleFourEdgeModeFourHopAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol(INNER),
+                ),
+                mode_definition_with_label(
+                    OUTER,
+                    "OuterFourEdgeModeFourHopAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol(MIDDLE),
+                ),
+                mode_definition_with_label(
+                    TOO_DEEP,
+                    "TooDeepFourEdgeModeFourHopAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol(OUTER),
+                ),
+            ]
+        }
+
+        fn reserve() -> Vec<ReserveItemSpec> {
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol(TOO_DEEP),
+            )]
+        }
+
+        #[test]
+        fn active_fixture_consumes_five_real_expansions() {
+            let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .and_then(Path::parent)
+                .expect("mizar-test crate should live below the workspace root")
+                .to_path_buf();
+            let config = DiscoveryConfig {
+                workspace_root: workspace_root.clone(),
+                tests_root: workspace_root.join("tests"),
+                manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+                profile: TestProfile::Fast,
+                validation_mode: ValidationMode::Metadata,
+            };
+            let plan = build_test_plan(&config).expect("Task 221 repository plan should build");
+            let (ordinal, case) = active_type_elaboration_cases(&plan)
+                .enumerate()
+                .find(|(_, case)| {
+                    case.id.0
+                        == "pass_type_elaboration_four_edge_local_mode_four_hop_asserted_head_001"
+                })
+                .expect("Task 221 active fixture should be discoverable");
+            let frontend = run_frontend(&workspace_root, case, ordinal)
+                .expect("Task 221 fixture should run through the real frontend");
+            assert!(frontend.diagnostics.is_empty());
+            let ast = frontend
+                .ast
+                .expect("Task 221 fixture should produce an AST");
+            let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+            assert!(resolver.detail_keys.is_empty());
+            let symbols =
+                augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+            assert_eq!(
+                source_type_elaboration_detail_keys(&ast, resolver.module.clone(), &symbols),
+                Vec::<String>::new()
+            );
+            let output = source_four_edge_local_mode_four_hop_asserted_head_output(
+                &ast,
+                resolver.module,
+                &symbols,
+            )
+            .expect("Task 221 real AST should reach the exact four-link asserted-head seam");
+            assert_source_reserved_variable_type_assertion_output(&output)
+                .expect("Task 221 real AST should preserve every checked payload invariant");
+            assert_eq!(output.payload.reserve.mode_expansions.len(), 5);
+            assert_eq!(output.subject_binding, BindingId::new(0));
+            assert_eq!(output.payload.subject_lookup_ordinal, 1);
+            assert_eq!(output.term_formula.type_entries().len(), 3);
+            assert_eq!(output.term_formula.normalized_types().len(), 1);
+            assert_eq!(output.subject_result_input.spelling, TOO_DEEP);
+            assert_eq!(output.asserted_type_input.spelling, BASE);
+            assert_ne!(
+                output.subject_result_input.head,
+                output.asserted_type_input.head
+            );
+            assert_ne!(
+                output.subject_result_input.site,
+                output.asserted_type_input.site
+            );
+            assert_ne!(
+                output.subject_result_input.source_range,
+                output.asserted_type_input.source_range
+            );
+            let expansion = |spelling| {
+                output
+                    .payload
+                    .reserve
+                    .mode_expansions
+                    .iter()
+                    .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(spelling))
+                    .map(|(_, expansion)| expansion)
+                    .unwrap()
+            };
+            let too_deep = expansion(TOO_DEEP);
+            let outer = expansion(OUTER);
+            let middle = expansion(MIDDLE);
+            let inner = expansion(INNER);
+            let base = expansion(BASE);
+            assert_eq!(too_deep.radix.spelling, OUTER);
+            assert_eq!(outer.radix.spelling, MIDDLE);
+            assert_eq!(middle.radix.spelling, INNER);
+            assert_eq!(inner.radix.spelling, BASE);
+            assert_eq!(inner.radix.head, output.asserted_type_input.head);
+            assert_eq!(base.radix.spelling, "set");
+            assert_eq!(base.radix.head, TypeHeadInput::BuiltinSet);
+            let (_, normalized) = output
+                .term_formula
+                .normalized_types()
+                .iter()
+                .next()
+                .unwrap();
+            assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+            assert_eq!(normalized.source.range, base.radix.source_range);
+            assert_eq!(normalized.source.spelling, "set");
+            let (_, term) = output.term_formula.terms().iter().next().unwrap();
+            assert_eq!(term.status, TermStatus::Inferred);
+            assert!(term.deferred.is_empty());
+            let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+            assert_eq!(formula.kind, FormulaKind::TypeAssertion);
+            assert_eq!(formula.status, FormulaStatus::Checked);
+            assert!(formula.expected_types.is_empty());
+            assert!(formula.candidate_set.is_none());
+            assert!(formula.facts.is_empty());
+            assert!(formula.deferred.is_empty());
+            assert!(output.term_formula.candidate_sets().is_empty());
+            assert!(output.term_formula.facts().is_empty());
+            assert!(output.term_formula.diagnostics().is_empty());
+        }
+
+        #[test]
+        fn synthetic_exactness_matrix_rejects_every_near_miss() {
+            let source_id = source_id(221);
+            let module = ResolverModuleId::new(
+                PackageId::new("test"),
+                ModulePath::new("four_edge_local_mode_four_hop_asserted_head"),
+            );
+            let all_modes = [BASE, INNER, MIDDLE, OUTER, TOO_DEEP];
+            let symbols = source_local_symbols_env(
+                module.clone(),
+                &[
+                    (BASE, SymbolKind::Mode),
+                    (INNER, SymbolKind::Mode),
+                    (MIDDLE, SymbolKind::Mode),
+                    (OUTER, SymbolKind::Mode),
+                    (TOO_DEEP, SymbolKind::Mode),
+                    (OTHER, SymbolKind::Mode),
+                    (DEEPER, SymbolKind::Mode),
+                ],
+            );
+            let exact = mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem(),
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+                Vec::<String>::new()
+            );
+            let payload = extract_source_four_edge_local_mode_four_hop_asserted_head(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("the exact set-terminal four-edge four-hop source should extract");
+            assert_eq!(payload.reserve.mode_expansions.len(), 5);
+            assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+            assert_eq!(payload.subject_lookup_ordinal, 1);
+            assert_eq!(payload.reserve.bridge.bindings()[0].type_spelling, TOO_DEEP);
+            assert_eq!(payload.asserted_type.spelling, BASE);
+
+            let exact_output = || {
+                source_four_edge_local_mode_four_hop_asserted_head_output(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                )
+                .unwrap()
+            };
+            let output = exact_output();
+            assert_source_reserved_variable_type_assertion_output(&output)
+                .expect("Task 221 exact checker output must satisfy every invariant");
+
+            let assert_invalid_output = |invalid| {
+                let invalid_result =
+                    assert_source_reserved_variable_type_assertion_output(&invalid)
+                        .map(|()| invalid);
+                assert_eq!(
+                    source_reserved_variable_type_assertion_result_detail_keys(
+                        invalid_result,
+                        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_FOUR_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+                    ),
+                    vec![
+                        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_FOUR_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY
+                            .to_owned()
+                    ]
+                );
+            };
+            for removed in all_modes {
+                let mut invalid = exact_output();
+                invalid
+                    .payload
+                    .reserve
+                    .mode_expansions
+                    .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+                assert_invalid_output(invalid);
+            }
+            let mut corruptions = Vec::new();
+            let mut invalid = exact_output();
+            invalid.subject_binding = BindingId::new(1);
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.payload.subject_lookup_ordinal = 2;
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.subject_result_input.spelling = OUTER.to_owned();
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.subject_result_input.head = invalid.asserted_type_input.head.clone();
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.subject_result_input.site = invalid.asserted_type_input.site.clone();
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.subject_result_input.source_range = invalid.asserted_type_input.source_range;
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.asserted_type_input.spelling = INNER.to_owned();
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.asserted_type_input.head = invalid.subject_result_input.head.clone();
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.asserted_type_input.site = invalid.subject_result_input.site.clone();
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            invalid.asserted_type_input.source_range = invalid.subject_result_input.source_range;
+            corruptions.push(invalid);
+
+            let mut invalid = exact_output();
+            let middle_symbol = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .keys()
+                .find(|symbol| source_mode_symbol_spelling(symbol) == Some(MIDDLE))
+                .unwrap()
+                .clone();
+            let (_, too_deep) = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .iter_mut()
+                .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(TOO_DEEP))
+                .unwrap();
+            too_deep.radix.spelling = MIDDLE.to_owned();
+            too_deep.radix.head = TypeHeadInput::Symbol(middle_symbol);
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            let inner_symbol = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .keys()
+                .find(|symbol| source_mode_symbol_spelling(symbol) == Some(INNER))
+                .unwrap()
+                .clone();
+            let (_, outer) = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .iter_mut()
+                .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(OUTER))
+                .unwrap();
+            outer.radix.spelling = INNER.to_owned();
+            outer.radix.head = TypeHeadInput::Symbol(inner_symbol);
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            let base_symbol = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .keys()
+                .find(|symbol| source_mode_symbol_spelling(symbol) == Some(BASE))
+                .unwrap()
+                .clone();
+            let (_, middle) = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .iter_mut()
+                .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(MIDDLE))
+                .unwrap();
+            middle.radix.spelling = BASE.to_owned();
+            middle.radix.head = TypeHeadInput::Symbol(base_symbol);
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            let (_, inner) = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .iter_mut()
+                .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(INNER))
+                .unwrap();
+            inner.radix.spelling = "set".to_owned();
+            inner.radix.head = TypeHeadInput::BuiltinSet;
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            let (_, base) = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .iter_mut()
+                .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(BASE))
+                .unwrap();
+            base.radix.spelling = "object".to_owned();
+            base.radix.head = TypeHeadInput::BuiltinObject;
+            corruptions.push(invalid);
+            let mut invalid = exact_output();
+            let (_, base) = invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .iter_mut()
+                .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(BASE))
+                .unwrap();
+            base.radix.source_range = range(source_id, 0, 1);
+            corruptions.push(invalid);
+            for invalid in corruptions {
+                assert_invalid_output(invalid);
+            }
+            assert_source_reserved_variable_type_assertion_output(&exact_output())
+                .expect("mutating cloned Task 221 outputs must not mutate the exact output");
+
+            let assert_extraction_gap = |ast, context: &str| {
+                assert_eq!(
+                    source_type_elaboration_detail_keys(&ast, module.clone(), &symbols),
+                    vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()],
+                    "{context}"
+                );
+            };
+            let ordered = exact_modes();
+            let mut permutation_count = 0;
+            for a in 0..5 {
+                for b in 0..5 {
+                    for c in 0..5 {
+                        for d in 0..5 {
+                            for e in 0..5 {
+                                let order = [a, b, c, d, e];
+                                if order
+                                    .iter()
+                                    .enumerate()
+                                    .any(|(index, value)| order[index + 1..].contains(value))
+                                {
+                                    continue;
+                                }
+                                if order == [0, 1, 2, 3, 4] {
+                                    continue;
+                                }
+                                permutation_count += 1;
+                                assert_extraction_gap(
+                                    mode_then_reserve_identifier_type_assertion_theorem_ast(
+                                        source_id,
+                                        vec![
+                                            ordered[a], ordered[b], ordered[c], ordered[d],
+                                            ordered[e],
+                                        ],
+                                        reserve(),
+                                        theorem(),
+                                    ),
+                                    &format!("definition permutation {a}{b}{c}{d}{e}"),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            assert_eq!(permutation_count, 119);
+
+            for index in 0..5 {
+                let expected_radix = match index {
+                    0 => "set",
+                    1 => BASE,
+                    2 => INNER,
+                    3 => MIDDLE,
+                    _ => OUTER,
+                };
+                let mut near_misses = Vec::new();
+                let mut missing = exact_modes();
+                missing.remove(index);
+                near_misses.push(missing);
+                let mut duplicate = exact_modes();
+                duplicate.push(duplicate[index]);
+                near_misses.push(duplicate);
+                let mut wrong_label = exact_modes();
+                wrong_label[index].label = Some("WrongFourEdgeModeFourHopAssertedHeadDef");
+                near_misses.push(wrong_label);
+                let mut wrong_pattern = exact_modes();
+                wrong_pattern[index].pattern = OTHER;
+                near_misses.push(wrong_pattern);
+                let mut wrong_radix = exact_modes();
+                wrong_radix[index].rhs_shape = if index == 0 {
+                    ReserveTypeShape::Builtin("object")
+                } else {
+                    ReserveTypeShape::QualifiedSymbol(OTHER)
+                };
+                near_misses.push(wrong_radix);
+                let mut recovered = exact_modes();
+                recovered[index].recovered = true;
+                near_misses.push(recovered);
+                let mut contextual = exact_modes();
+                contextual[index].local_context = true;
+                near_misses.push(contextual);
+                let mut parameterized = exact_modes();
+                parameterized[index].parameterized_pattern = true;
+                near_misses.push(parameterized);
+                let mut args = exact_modes();
+                args[index].rhs_shape = ReserveTypeShape::QualifiedSymbolWithArgs(expected_radix);
+                near_misses.push(args);
+                let mut attributed = exact_modes();
+                attributed[index].rhs_shape = if index == 0 {
+                    ReserveTypeShape::AttributedSet
+                } else {
+                    ReserveTypeShape::AttributedQualifiedSymbol(expected_radix)
+                };
+                near_misses.push(attributed);
+                for (variant, modes) in near_misses.into_iter().enumerate() {
+                    assert_extraction_gap(
+                        mode_then_reserve_identifier_type_assertion_theorem_ast(
+                            source_id,
+                            modes,
+                            reserve(),
+                            theorem(),
+                        ),
+                        &format!("definition {index} near miss {variant}"),
+                    );
+                }
+            }
+
+            for (context, index, wrong_radix) in [
+                ("TooDeep-to-Outer relation link", 4, MIDDLE),
+                ("Outer-to-Middle relation link", 3, INNER),
+                ("Middle-to-Inner relation link", 2, BASE),
+                ("Inner-to-Base relation link", 1, MIDDLE),
+            ] {
+                let mut modes = exact_modes();
+                modes[index].rhs_shape = ReserveTypeShape::QualifiedSymbol(wrong_radix);
+                assert_extraction_gap(
+                    mode_then_reserve_identifier_type_assertion_theorem_ast(
+                        source_id,
+                        modes,
+                        reserve(),
+                        theorem(),
+                    ),
+                    context,
+                );
+            }
+
+            let mut source_near_misses = Vec::new();
+            for bad_reserve in [
+                ReserveTypeShape::QualifiedSymbol(BASE),
+                ReserveTypeShape::QualifiedSymbol(INNER),
+                ReserveTypeShape::QualifiedSymbol(MIDDLE),
+                ReserveTypeShape::QualifiedSymbol(OUTER),
+                ReserveTypeShape::QualifiedSymbolWithArgs(TOO_DEEP),
+                ReserveTypeShape::AttributedQualifiedSymbol(TOO_DEEP),
+                ReserveTypeShape::Builtin("set"),
+                ReserveTypeShape::Builtin("object"),
+            ] {
+                source_near_misses.push(mode_then_reserve_identifier_type_assertion_theorem_ast(
+                    source_id,
+                    exact_modes(),
+                    vec![reserve_item(vec!["x"], bad_reserve)],
+                    theorem(),
+                ));
+            }
+            source_near_misses.push(mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::QualifiedSymbol(TOO_DEEP)),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                theorem(),
+            ));
+            for near_miss_theorem in [
+                IdentifierTypeAssertionTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    subject: "y",
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(TOO_DEEP),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(OUTER),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(MIDDLE),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(INNER),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::Builtin("set"),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::Builtin("object"),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(OTHER),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(DEEPER),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbolWithArgs(BASE),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::AttributedQualifiedSymbol(BASE),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    negated: true,
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    status: Some("registration"),
+                    ..theorem()
+                },
+                IdentifierTypeAssertionTheoremSpec {
+                    recovered_label: true,
+                    ..theorem()
+                },
+            ] {
+                source_near_misses.push(mode_then_reserve_identifier_type_assertion_theorem_ast(
+                    source_id,
+                    exact_modes(),
+                    reserve(),
+                    near_miss_theorem,
+                ));
+            }
+            let mut connected_deeper_modes = exact_modes();
+            connected_deeper_modes.push(mode_definition_with_label(
+                DEEPER,
+                "DeeperFourEdgeModeFourHopAssertedHeadDef",
+                ReserveTypeShape::QualifiedSymbol(TOO_DEEP),
+            ));
+            source_near_misses.push(mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                connected_deeper_modes,
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol(DEEPER),
+                )],
+                theorem(),
+            ));
+            source_near_misses.push(
+                modes_then_empty_definition_reserve_identifier_type_assertion_theorem_ast(
+                    source_id,
+                    exact_modes(),
+                    reserve(),
+                    theorem(),
+                ),
+            );
+            for (index, near_miss) in source_near_misses.into_iter().enumerate() {
+                assert_extraction_gap(near_miss, &format!("source near miss {index}"));
+            }
+
+            let unrelated_import = source_local_and_imported_symbols_env(
+                module.clone(),
+                &all_modes.map(|spelling| (spelling, SymbolKind::Mode)),
+                &[("UnrelatedFourHopMode", SymbolKind::Mode)],
+            );
+            assert!(
+                extract_source_four_edge_local_mode_four_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &unrelated_import,
+                )
+                .is_some()
+            );
+            for imported_index in 0..5 {
+                let locals = all_modes
+                    .iter()
+                    .enumerate()
+                    .filter(|(index, _)| *index != imported_index)
+                    .map(|(_, spelling)| (*spelling, SymbolKind::Mode))
+                    .collect::<Vec<_>>();
+                for imports in [
+                    vec![(all_modes[imported_index], SymbolKind::Mode)],
+                    vec![
+                        (all_modes[imported_index], SymbolKind::Mode),
+                        (all_modes[imported_index], SymbolKind::Mode),
+                    ],
+                ] {
+                    let provenance_near_miss =
+                        source_local_and_imported_symbols_env(module.clone(), &locals, &imports);
+                    assert_eq!(
+                        source_type_elaboration_detail_keys(
+                            &exact,
+                            module.clone(),
+                            &provenance_near_miss,
+                        ),
+                        vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+                    );
+                }
+            }
+            for imports in [
+                all_modes
+                    .iter()
+                    .map(|spelling| (*spelling, SymbolKind::Mode))
+                    .collect::<Vec<_>>(),
+                all_modes
+                    .iter()
+                    .flat_map(|spelling| {
+                        [(*spelling, SymbolKind::Mode), (*spelling, SymbolKind::Mode)]
+                    })
+                    .collect::<Vec<_>>(),
+            ] {
+                let provenance_near_miss =
+                    source_local_and_imported_symbols_env(module.clone(), &[], &imports);
+                assert_eq!(
+                    source_type_elaboration_detail_keys(
+                        &exact,
+                        module.clone(),
+                        &provenance_near_miss,
+                    ),
+                    vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+                );
+            }
+        }
+
+        #[test]
+        fn route_rejects_all_46_prior_owner_fixtures_including_task_207_and_tasks_211_through_220()
+        {
+            let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .and_then(Path::parent)
+                .expect("mizar-test crate should live below the workspace root")
+                .to_path_buf();
+            let config = DiscoveryConfig {
+                workspace_root: workspace_root.clone(),
+                tests_root: workspace_root.join("tests"),
+                manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+                profile: TestProfile::Fast,
+                validation_mode: ValidationMode::Metadata,
+            };
+            let plan = build_test_plan(&config).expect("Task 221 repository plan should build");
+            let prior_owner_ids = [
+                "pass_type_elaboration_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_reserved_object_variable_type_assertion_001",
+                "pass_type_elaboration_local_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_local_object_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_local_mode_asserted_head_001",
+                "pass_type_elaboration_local_object_mode_asserted_head_001",
+                "pass_type_elaboration_chained_local_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_chained_local_object_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_chained_local_mode_asserted_head_001",
+                "pass_type_elaboration_chained_local_object_mode_asserted_head_001",
+                "pass_type_elaboration_chained_local_mode_radix_asserted_head_001",
+                "pass_type_elaboration_chained_local_object_mode_radix_asserted_head_001",
+                "pass_type_elaboration_two_edge_local_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_two_edge_local_object_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_two_edge_local_mode_asserted_head_001",
+                "pass_type_elaboration_two_edge_local_object_mode_asserted_head_001",
+                "pass_type_elaboration_two_edge_local_mode_radix_asserted_head_001",
+                "pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001",
+                "pass_type_elaboration_three_edge_local_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_three_edge_local_object_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_three_edge_local_mode_asserted_head_001",
+                "pass_type_elaboration_three_edge_local_object_mode_asserted_head_001",
+                "pass_type_elaboration_three_edge_local_mode_radix_asserted_head_001",
+                "pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001",
+                "pass_type_elaboration_four_edge_local_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_four_edge_local_object_mode_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_four_edge_local_mode_asserted_head_001",
+                "pass_type_elaboration_four_edge_local_object_mode_asserted_head_001",
+                "pass_type_elaboration_four_edge_local_mode_radix_asserted_head_001",
+                "pass_type_elaboration_four_edge_local_object_mode_radix_asserted_head_001",
+                "pass_type_elaboration_local_mode_long_chain_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_local_object_mode_long_chain_reserved_variable_type_assertion_001",
+                "pass_type_elaboration_local_mode_long_chain_asserted_head_001",
+                "pass_type_elaboration_local_object_mode_long_chain_asserted_head_001",
+                "pass_type_elaboration_local_mode_long_chain_radix_asserted_head_001",
+                "pass_type_elaboration_local_object_mode_long_chain_radix_asserted_head_001",
+                "pass_type_elaboration_two_edge_local_mode_two_hop_asserted_head_001",
+                "pass_type_elaboration_two_edge_local_object_mode_two_hop_asserted_head_001",
+                "pass_type_elaboration_three_edge_local_mode_two_hop_asserted_head_001",
+                "pass_type_elaboration_three_edge_local_object_mode_two_hop_asserted_head_001",
+                "pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001",
+                "pass_type_elaboration_four_edge_local_object_mode_two_hop_asserted_head_001",
+                "pass_type_elaboration_three_edge_local_mode_three_hop_asserted_head_001",
+                "pass_type_elaboration_three_edge_local_object_mode_three_hop_asserted_head_001",
+                "pass_type_elaboration_four_edge_local_mode_three_hop_asserted_head_001",
+                "pass_type_elaboration_four_edge_local_object_mode_three_hop_asserted_head_001",
+            ];
+            assert_eq!(prior_owner_ids.len(), 46);
+            assert_eq!(
+                &prior_owner_ids[36..],
+                &[
+                    "pass_type_elaboration_two_edge_local_mode_two_hop_asserted_head_001",
+                    "pass_type_elaboration_two_edge_local_object_mode_two_hop_asserted_head_001",
+                    "pass_type_elaboration_three_edge_local_mode_two_hop_asserted_head_001",
+                    "pass_type_elaboration_three_edge_local_object_mode_two_hop_asserted_head_001",
+                    "pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001",
+                    "pass_type_elaboration_four_edge_local_object_mode_two_hop_asserted_head_001",
+                    "pass_type_elaboration_three_edge_local_mode_three_hop_asserted_head_001",
+                    "pass_type_elaboration_three_edge_local_object_mode_three_hop_asserted_head_001",
+                    "pass_type_elaboration_four_edge_local_mode_three_hop_asserted_head_001",
+                    "pass_type_elaboration_four_edge_local_object_mode_three_hop_asserted_head_001",
+                ]
+            );
+            for owner_id in prior_owner_ids {
+                let (ordinal, case) = active_type_elaboration_cases(&plan)
+                    .enumerate()
+                    .find(|(_, case)| case.id.0 == owner_id)
+                    .unwrap_or_else(|| panic!("prior owner fixture {owner_id} must be active"));
+                let frontend = run_frontend(&workspace_root, case, ordinal)
+                    .unwrap_or_else(|error| panic!("owner fixture {owner_id} must parse: {error}"));
+                assert!(frontend.diagnostics.is_empty());
+                let ast = frontend
+                    .ast
+                    .unwrap_or_else(|| panic!("owner fixture {owner_id} must produce an AST"));
+                let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+                assert!(resolver.detail_keys.is_empty());
+                let symbols =
+                    augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+                assert_eq!(
+                    source_type_elaboration_detail_keys(&ast, resolver.module.clone(), &symbols),
+                    Vec::<String>::new(),
+                    "prior owner fixture {owner_id} must still reach its active route"
+                );
+                assert!(
+                    extract_source_four_edge_local_mode_four_hop_asserted_head(
+                        &ast,
+                        resolver.module,
+                        &symbols,
+                    )
+                    .is_none(),
+                    "Task 221 must reject prior owner fixture {owner_id}"
+                );
+            }
+        }
+
+        #[test]
+        fn task221_synthetic_is_rejected_by_all_46_prior_type_assertion_extractors() {
+            let source_id = source_id(221);
+            let module = ResolverModuleId::new(
+                PackageId::new("test"),
+                ModulePath::new("task221_prior_extractor_isolation"),
+            );
+            let symbols = source_local_symbols_env(
+                module.clone(),
+                &[
+                    (BASE, SymbolKind::Mode),
+                    (INNER, SymbolKind::Mode),
+                    (MIDDLE, SymbolKind::Mode),
+                    (OUTER, SymbolKind::Mode),
+                    (TOO_DEEP, SymbolKind::Mode),
+                ],
+            );
+            let exact = mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem(),
+            );
+            assert!(
+                extract_source_four_edge_local_mode_four_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                )
+                .is_some()
+            );
+            let prior_results = [
+                extract_source_reserved_variable_type_assertion(&exact, module.clone(), &symbols),
+                super::super::extract_source_reserved_object_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_local_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_local_object_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_local_mode_asserted_head(&exact, module.clone(), &symbols),
+                extract_source_local_object_mode_asserted_head(&exact, module.clone(), &symbols),
+                extract_source_chained_local_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_chained_local_object_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_chained_local_mode_asserted_head(&exact, module.clone(), &symbols),
+                extract_source_chained_local_object_mode_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_chained_local_mode_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_chained_local_object_mode_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_two_edge_local_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_two_edge_local_object_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_two_edge_local_mode_asserted_head(&exact, module.clone(), &symbols),
+                extract_source_two_edge_local_object_mode_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_two_edge_local_mode_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_two_edge_local_object_mode_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_object_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_mode_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_object_mode_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_mode_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_object_mode_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_four_edge_local_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_four_edge_local_object_mode_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                super::super::extract_source_four_edge_local_mode_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                super::super::extract_source_four_edge_local_object_mode_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_four_edge_local_mode_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_four_edge_local_object_mode_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_local_mode_long_chain_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_local_object_mode_long_chain_reserved_variable_type_assertion(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                super::super::extract_source_local_mode_long_chain_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                super::super::extract_source_local_object_mode_long_chain_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_local_mode_long_chain_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                super::super::extract_source_local_object_mode_long_chain_radix_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_two_edge_local_mode_two_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_two_edge_local_object_mode_two_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_mode_two_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_object_mode_two_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_four_edge_local_mode_two_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_four_edge_local_object_mode_two_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_mode_three_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_three_edge_local_object_mode_three_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_four_edge_local_mode_three_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+                extract_source_four_edge_local_object_mode_three_hop_asserted_head(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                ),
+            ];
+            assert_eq!(prior_results.len(), 46);
             assert!(prior_results.into_iter().all(|result| result.is_none()));
         }
     }

@@ -729,6 +729,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001.expect.toml",
@@ -1819,6 +1820,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001.expect.toml",
@@ -1970,6 +1972,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001.expect.toml",
@@ -2337,6 +2340,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001.expect.toml",
@@ -3186,6 +3190,19 @@ tests = [
 notes = "Task 197 coverage is limited to the exact four-edge set-terminal same-outermost-mode formula-side asserted-head normalized-reflexive type/well-formedness slice. The production route must preserve independent raw reserve-subject and formula-side asserted inputs for the same TooDeepFourEdgeModeAssertedHead symbol, BindingId(0) at ordinal 1, five real expansions, and three known type entries interning to one terminal-base-definition-RHS builtin-set identity before one inferred variable and one fact/candidate/diagnostic/deferred-free checked type assertion with zero expected constraints and no general reachability, widening, or qua. Exact/near-miss/corruption and a real frontend/resolver sidecar must protect active runner 145. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, attributed/argument-bearing/imported/object-terminal/other-depth/other asserted-head shapes, broader term/formula/child-graph semantics, general chain semantics, and downstream payloads remain uncredited."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.four_edge_local_mode_four_hop_asserted_head_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 221 exact four-edge set-terminal formula-side four-hop local-mode asserted-head checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_four_hop_asserted_head_001.expect.toml",
+]
+notes = "Task 221 coverage is limited to the exact four-edge set-terminal formula-side full-distance four-hop local-mode asserted-head normalized-reflexive type/well-formedness slice. The production route preserves independent raw TooDeepFourEdgeModeFourHopAssertedHead reserve-subject and BaseFourEdgeModeFourHopAssertedHead asserted inputs with distinct symbols/sites/ranges, ordinal 1 / BindingId(0), five real set expansions, and the exact bare TooDeep-to-Outer, Outer-to-Middle, Middle-to-Inner, and Inner-to-Base relation links. Base-to-set is terminal-normalization evidence only; generic terminal traversal does not establish the four-link relation. Three known type entries intern to one BaseFourEdgeModeFourHopAssertedHeadDef-RHS builtin-set identity before one inferred variable and one zero-constraint/fact/candidate/diagnostic/deferred checked type assertion. All 119 nonidentity definition orders, the finite structural/provenance/corruption matrix with separate guards for an unconnected unsupported deeper asserted head and an actual connected sixth-definition/fifth-link asserted head, focused Task 207 and Tasks 211-220 regressions, bidirectional isolation against all 46 pre-existing type-assertion owner routes, immutable output, and a real frontend/resolver sidecar protect active runner 169. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, the object sibling, longer chains, deeper/imported-positive/attributed/argument-bearing asserted heads, widening/qua, general reachability/chain semantics, broader term/formula/child-graph semantics, CoreIr/ControlFlowIr/VC, and other downstream payloads remain uncredited."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.four_edge_local_mode_radix_asserted_head_source_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 207 exact four-edge set-terminal formula-side immediate-radix local-mode asserted-head checker bridge"
@@ -3645,6 +3662,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_four_edge_chain_expansion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001.expect.toml",
