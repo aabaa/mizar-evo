@@ -1028,6 +1028,8 @@ def emit_beamer(
         r"\setbeamersize{text margin left=8mm,text margin right=8mm}",
         r"\setbeamercolor{keyphrase}{bg=blue!8,fg=black!85}",
         r"\setbeameroption{show notes}" if show_notes else r"\setbeameroption{hide notes}",
+        r"\usepackage{pgfpages}",
+        r"\pgfpagesuselayout{resize to}[a4paper,landscape]",
         r"\usepackage[T1]{fontenc}",
         r"\usepackage{tabularx}",
         r"\usepackage{array}",

@@ -19,8 +19,10 @@ EBNF is intentionally absent; `doc/spec/en/` remains the grammar authority.
   page, status-label badges, key-phrase blocks, Mizar syntax highlighting,
   booktabs tables, embedded figures, deep-dive tags.
 - `bialystok_detail.tex` / `bialystok_detail.pdf` - generated discussion deck.
+  The PDF uses A4 landscape physical pages for reliable printer-side handout
+  layouts; the 16:9 slide content is scaled proportionally and centered.
 - `bialystok_detail_notes.tex` / `bialystok_detail_notes.pdf` - generated
-  deck with presenter notes.
+  deck with presenter notes, also on A4 landscape physical pages.
 - `references.bib` - seed bibliography for the talk and the paper outline
   (Backup D); entries must be verified against publishers before final use.
 - `figures/` - TikZ standalone sources and compiled PDFs. All nine diagrams
