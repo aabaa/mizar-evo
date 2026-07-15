@@ -4097,6 +4097,14 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - The test-first fixture and six backlinks account for active runner 177, 392 cases, 356 requirements, type-elaboration 224/212, and pass/fail 208/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
     - Dependencies: Tasks 74, 200, 221, 222, 225, 227, and 228. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
 
+230. [x] **Bridge the exact seven-expansion set-terminal five-hop asserted head.**
+    - Added only the seven ordered bare `BaseMode -> set` through `ChainMode6 -> ChainMode5` definitions, one `ChainMode6` reserve, and `LongLocalModeFiveHopAssertedHeadPayloadBoundary: x is ChainMode1`. The route composes Task 74's real expansion producer with Task 199's real formula/checker consumer and a new closed `BindingFiveHopRadix`; Tasks 224/226/228 and Task 229 remain shorter-distance and terminal guards.
+    - Directly validates the pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1` links. It treats `ChainMode1 -> BaseMode -> set` only as cycle-safe terminal-normalization evidence and preserves distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion.
+    - Tests all 5,039 nonidentity orders; the finite definition/reserve/formula/head/provenance/removal/corruption matrix; all five relation links and every tail/terminal/canonical/binding/source property; connected sixth-hop rejection; unrelated-import positive; immutable output; a real sidecar; focused siblings; and bidirectional isolation against all 54 prior type-assertion owners.
+    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Object-terminal five-hop, imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
+    - The test-first fixture and six backlinks account for active runner 178, 393 cases, 357 requirements, type-elaboration 225/213, and pass/fail 209/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
+    - Dependencies: Tasks 74, 199, 221, 224, 226, 228, and 229. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

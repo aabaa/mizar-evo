@@ -1,0 +1,31 @@
+definition
+  mode BaseModeDef: BaseMode is set;
+end;
+
+definition
+  mode ChainMode1Def: ChainMode1 is BaseMode;
+end;
+
+definition
+  mode ChainMode2Def: ChainMode2 is ChainMode1;
+end;
+
+definition
+  mode ChainMode3Def: ChainMode3 is ChainMode2;
+end;
+
+definition
+  mode ChainMode4Def: ChainMode4 is ChainMode3;
+end;
+
+definition
+  mode ChainMode5Def: ChainMode5 is ChainMode4;
+end;
+
+definition
+  mode ChainMode6Def: ChainMode6 is ChainMode5;
+end;
+
+reserve x for ChainMode6;
+theorem LongLocalModeFiveHopAssertedHeadPayloadBoundary:
+  x is ChainMode1;

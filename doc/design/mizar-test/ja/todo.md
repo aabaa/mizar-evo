@@ -339,12 +339,12 @@ regression test を追加した。
       checker task 93 の proof-local declaration extraction-gap boundary、checker task 94 の proof-local inline definition extraction-gap boundary、checker task 95 の registration block extraction-gap boundary、checker task 96 の redefinition/notation extraction-gap boundary も
       prepared/implemented increment として記録する。
       この historical inline selection の latest-numbered checker entry は
-      task 138 である。checker tasks 139-229 の詳細 lifecycle は paired
+      task 138 である。checker tasks 139-230 の詳細 lifecycle は paired
       [crate plan](./00.crate_plan.md)、[harness](./harness.md)、
       [traceability](./traceability.md) で管理する。現在の active corpus は
-      392 cases / 356 requirements 内の type-elaboration case 177 件、
-      type-elaboration coverage 224/212、pass/fail 208/184 を持ち、Step 5 は
-      active、Steps 6/7 は deferred である。checker task 229 は既存 expectation
+      393 cases / 357 requirements 内の type-elaboration case 178 件、
+      type-elaboration coverage 225/213、pass/fail 209/184 を持ち、Step 5 は
+      active、Steps 6/7 は deferred である。checker task 230 は既存 expectation
       を rebaseline せず最新の active case と requirement を供給する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
