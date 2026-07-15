@@ -1911,3 +1911,22 @@ type 233/221, and pass/fail 217/184. Only this exact source discharges the gap.
 Other parenthesized shapes and imported-positive provenance receive no Task 244
 credit; missing imported expansion/evidence/signature payloads and proof/CoreIr/
 ControlFlowIr/VC remain deferred.
+
+## Task 245 Active Traceability
+
+Task 245 adds one exact right-parenthesized builtin-set membership fixture. Its
+expectation cites shared Chapter 04 reserved-variable, Chapter 13 transparent-
+parenthesis, Chapter 14 membership, and Chapter 16 theorem requirements plus
+`spec.en.checker.type_elaboration.right_parenthesized_reserved_variable_membership_source_bridge`.
+Thus it has four shared backlinks and one dedicated row.
+
+The real frontend/resolver sidecar proves the right-side wrapper producer; Task
+120 supplies the real membership and expected-set consumer. The route preserves
+explicit `Right` side/config identity, ordinals 1/2 to `BindingId(0)`, one
+written-set identity, two inferred terms, five type entries, right-inner-only
+expected ownership, and no wrapper semantic reference. The finite matrix,
+Task-243 cross-route rejection, all 58 prior owners bidirectionally, and six
+left-route regressions guard active runner 187. Repository metadata is 402 cases
+/ 366 requirements, type 234/222, and pass/fail 218/184. Only this exact shape
+receives credit; other shapes/imported-positive provenance remain uncredited and
+missing imported/proof/downstream payloads remain deferred.

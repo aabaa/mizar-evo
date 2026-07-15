@@ -2347,3 +2347,26 @@ without rebaselining existing expectations. Only this exact source discharges
 the extraction gap. Other parenthesized shapes and imported-positive provenance
 receive no Task 244 credit; missing imported expansion/evidence/signature
 payloads, proof, and downstream IR remain deferred.
+
+## Task 245 Right-Parenthesized Reserved-Variable Membership Active Harness Contract
+
+The active fixture is exactly `reserve x for set; theorem
+RightParenthesizedReservedVariableMembershipPayloadBoundary: x in (x);`. The
+real frontend must produce one unrecovered right-operand `ParenthesizedTerm`
+containing one identifier, and the resolver must preserve distinct wrapper,
+direct-left, right-inner, and formula provenance. Both semantic identifiers
+resolve at ordinals 1/2 to `BindingId(0)`.
+
+The route requires explicit `Right` side metadata and a Task-245-only config,
+key, and result/expected roles. Task 120's consumer produces two inferred terms,
+five type entries sharing one written-set identity, no left expected input, one
+right-inner-owned expected-set constraint, and one clean checked membership.
+The wrapper owns no semantic reference. Coverage independently rejects left,
+direct, both, nested, malformed, recovered, wrong reserve/operator/label, side,
+config, range, role, constraint, and term-order corruptions; cross-rejects Task
+243; proves immutable/module boundaries; isolates 58 prior owners in both
+directions; retains all six left routes; and exercises a real frontend/resolver
+sidecar. Active runner 187 and plan 402/366, type 234/222, pass/fail 218/184 are
+traced by four shared plus one dedicated reference without rebaselining. Other
+shapes, imported-positive provenance, proof, and downstream IR remain outside
+credit or deferred as applicable.

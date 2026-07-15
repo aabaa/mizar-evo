@@ -746,3 +746,19 @@ Check the task off here once tests pass.
   shapes and imported-positive provenance receive no Task 244 credit; missing
   imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/
   VC remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
+
+## Task 245 Active Addendum
+
+- [x] Add the exact test-first `x in (x)` fixture/expectation from Chapters 04/
+  13/14/16, four shared backlinks, and one dedicated checker requirement.
+- [x] Activate explicit `Right` wrapper-side metadata and a Task-245-only key/
+  config/role namespace while retaining the six earlier `Left` routes.
+- [x] Verify the real frontend/resolver/checker payload, right-inner expected-set
+  ownership, side/config/range/constraint corruptions, Task-243 cross-route
+  rejection, immutable/module boundaries, and all 58 prior owners in both
+  directions.
+- [x] Synchronize active runner 187, cases/requirements 402/366, type 234/222,
+  and pass/fail 218/184. Other shapes and imported-positive provenance receive
+  no credit; missing imported expansion/evidence/signature and proof/CoreIr/
+  ControlFlowIr/VC remain deferred. Step 5 remains active; Steps 6/7 remain
+  deferred.

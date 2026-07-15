@@ -1756,3 +1756,28 @@ imported-positive provenance receive no Task 244 credit; missing imported
 expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain
 deferred. Step 5 stays active and Steps 6/7 stay deferred. No checker source/
 API/module-layout change is required.
+
+## Step 5 Task 245 Active Addendum
+
+Task 245 closes the exact right-parenthesized builtin-set membership `test_gap`
+plus narrow `source_drift` and `design_drift`, not a `spec_gap`. The test-first
+source is `reserve x for set; theorem
+RightParenthesizedReservedVariableMembershipPayloadBoundary: x in (x);`, derived
+from Chapters 04/13/14/16, the real parser wrapper producer, and Task 120's
+existing real membership/expected-set consumer.
+
+The route retains an explicit `Right` side and Task-245-only config/key/roles,
+resolves direct-left/right-inner ordinals 1/2 to `BindingId(0)`, preserves one
+written-set identity, two inferred terms, five type entries, a right-inner-owned
+sole expected constraint, and one clean checked membership without wrapper
+semantic output. Side/config/range/constraint corruptions, Task-243 cross-route
+rejection, all 58 prior owners bidirectionally, all six left routes, immutable/
+module boundaries, and a real sidecar guard the seam.
+
+The active runner becomes 187. Traceability adds four shared backlinks plus one
+dedicated row; metadata becomes 402/366, type 234/222, pass/fail 218/184 without
+rebaselining. Only the exact source receives credit. Other shapes and imported-
+positive provenance remain uncredited; missing imported expansion/evidence/
+signature and proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 stays active
+and Steps 6/7 stay deferred. No checker source/API/module-layout update was
+required.

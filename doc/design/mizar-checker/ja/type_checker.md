@@ -2805,3 +2805,30 @@ precedence/formula grouping、implicit closure materialization、membership trut
 fact、theorem acceptance、child graph、downstream payload は Task 244 credit 外。
 未成立 imported expansion/evidence/signature payload と proof/CoreIr/
 ControlFlowIr/VC は deferred。checker source/API/module-layout change は不要。
+
+## Task 245 Active Exact Transparent Right-Parenthesized Reserved-Variable Membership Checker Bridge
+
+active route は次だけを受理する。
+
+```mizar
+reserve x for set;
+theorem RightParenthesizedReservedVariableMembershipPayloadBoundary: x in (x);
+```
+
+parser は right operand に unrecovered one-child `ParenthesizedTerm` 1件を
+生成する。Task-245-only config/key/left-result/right-result/right-expected roles
+と explicit `Right` side を extracted/built payload に保持する。direct-left
+range は wrapper より前、wrapper は right-inner range だけを strict に包み、
+formula は両 operand を包む。wrapper/left/right-inner/formula site は distinct。
+
+両 semantic identifier は ordinal 1/2 で `BindingId(0)`。transparent lowering
+は inferred variable 2件、written-range-anchored `BuiltinSet` 1件を共有する
+type entry exactly 5件を生成する。left expected はなく、sole expected-set
+constraint は right-inner-owned。wrapper-owned semantic output はない。
+
+finite near-miss/corruption、side/config/range/constraint、Task-243 cross-route、
+immutable/module、既存 owner 58件の双方向、Left config 6件、Task 120、real
+sidecar を検証する。runner 187、plan 402/366、type 234/222、pass/fail
+218/184、shared 4 + dedicated 1 backlink。その他 operands/nesting/truth/
+acceptance/imported-positive/child/downstream は credit 外または deferred。
+checker source/API/module-layout change は不要。

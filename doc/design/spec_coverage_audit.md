@@ -2123,3 +2123,25 @@ parenthesized shapes and imported-positive provenance remain uncredited; missing
 imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC
 remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
 source/API/module-layout update is required.
+
+## Task 245 Exact Right-Parenthesized Reserved-Variable Membership Coverage Addendum
+
+For Chapters 04/13/14/16, Task 245 classifies the exact `reserve x for set;
+theorem RightParenthesizedReservedVariableMembershipPayloadBoundary: x in (x);`
+seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
+The real parser wrapper producer composes with Task 120's real membership and
+expected-set consumer. Credit is limited to explicit `Right` side/config
+identity, distinct wrapper/left/right-inner/formula provenance, ordinals 1/2
+with both lookups resolving to `BindingId(0)`, one written-set `BuiltinSet`, two
+inferred terms, five type entries, a right-inner-owned sole expected constraint,
+one clean checked membership, and no wrapper semantic output.
+
+Four shared backlinks plus the dedicated Task 245 row, the finite corruption
+matrix, matched Task-243 cross-route rejection, all 58 prior owners in both
+directions, six left-route regressions, and a real sidecar protect active runner
+187. The plan is 402 cases / 366 requirements, type 234/222, and pass/fail
+218/184 without expectation rebaselining. Only the exact source receives credit;
+other shapes and imported-positive provenance remain uncredited, while missing
+imported expansion/evidence/signature and proof/CoreIr/ControlFlowIr/VC remain
+deferred. Step 5 stays active; Steps 6/7 stay deferred. No checker source/API/
+module-layout update was required.

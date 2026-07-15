@@ -1,0 +1,19 @@
+schema_version = 1
+id = "pass_type_elaboration_right_parenthesized_reserved_variable_membership_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_right_parenthesized_reserved_variable_membership_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.right_parenthesized_reserved_variable_membership_source_bridge",
+]
+notes = "Spec-derived Task 245 intent for the exact single-right-parenthesized reserved-variable membership type/well-formedness slice. The real ParenthesizedTerm wrapper must contain exactly one unrecovered right-operand identifier expression, the direct-left x and right-inner x must resolve through the real reserve BindingEnv at source-order ordinals 1 and 2 with both lookups resolving to BindingId(0), and transparent parenthesis lowering must preserve one written-set-anchored canonical BuiltinSet identity while the unchanged real Task 120 right-operand producer supplies the sole expected-set input owned by the right-inner site. The checker must record two Inferred variable operands, exactly five type entries, exactly one right-inner-owned expected constraint and no left expected input, and one fact/candidate/diagnostic/deferred-free Checked membership without an independent wrapper type/value/formula node. Task 245 owns a dedicated exact config, stable invalid-payload key, left-result/right-result/right-expected role namespace, and explicit Right wrapper-side invariant: the direct-left range precedes the wrapper, the wrapper strictly encloses the right-inner range, the formula encloses both operands, all sites remain distinct, and no semantic output is wrapper-owned. Left/both/nested parenthesization, arbitrary terms or precedence, formula grouping, implicit-closure materialization, membership truth/facts, theorem acceptance, imported-positive provenance, proof, CoreIr, ControlFlowIr, VC, and child graphs receive no Task 245 credit."

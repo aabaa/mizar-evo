@@ -1830,3 +1830,20 @@ active runner は186、repository metadata は cases/requirements 401/365、type
 parenthesized shape と imported-positive provenance は Task 244 credit 外。
 未成立 imported expansion/evidence/signature payload と proof/CoreIr/
 ControlFlowIr/VC は deferred。
+
+## Task 245 Active Traceability
+
+Task 245 は exact right-parenthesized builtin-set membership fixture 1件を追加。
+expectation は shared Chapter 04 reserved-variable、Chapter 13 transparent
+parenthesis、Chapter 14 membership、Chapter 16 theorem と dedicated
+`spec.en.checker.type_elaboration.right_parenthesized_reserved_variable_membership_source_bridge`
+を参照する。shared backlink 4件 + dedicated row 1件。
+
+real sidecar は right wrapper producer、Task 120 は membership/expected-set
+consumer を証明する。explicit `Right` side/config、ordinal 1/2 の双方
+`BindingId(0)`、written-set identity 1件、inferred term 2件、type entry 5件、
+right-inner-only expected ownership、wrapper semantic reference なしを保持。
+finite matrix、Task-243 cross-route、既存 owner 58件の双方向、Left route 6件
+で runner 187 を guard。metadata 402/366、type 234/222、pass/fail 218/184。
+credit は exact shape だけ。その他 shape/imported-positive は uncredited、
+未成立 imported/proof/downstream payload は deferred。

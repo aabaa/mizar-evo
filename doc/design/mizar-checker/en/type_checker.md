@@ -2957,3 +2957,38 @@ truth/facts, theorem acceptance, child graphs, and downstream payloads receive
 no Task 244 credit. Missing imported expansion/evidence/signature payloads and
 proof/CoreIr/ControlFlowIr/VC remain deferred. No checker source/API/module-
 layout change is required.
+
+## Task 245 Active Exact Transparent Right-Parenthesized Reserved-Variable Membership Checker Bridge
+
+The active route accepts only:
+
+```mizar
+reserve x for set;
+theorem RightParenthesizedReservedVariableMembershipPayloadBoundary: x in (x);
+```
+
+The parser produces exactly one unrecovered one-child `ParenthesizedTerm` on
+the right operand. A Task-245-only config, stable invalid-payload key, and
+left-result/right-result/right-expected roles retain an explicit `Right` side in
+the extracted and built payload. The direct-left range precedes the wrapper;
+the wrapper strictly contains only the right-inner range; the formula contains
+both operands; and wrapper, left, right-inner, and formula sites remain distinct.
+
+Both semantic identifiers resolve through the complete reserve `BindingEnv` at
+ordinals 1/2 to `BindingId(0)`. Transparent lowering produces two inferred
+variables and exactly five type entries sharing one written-range-anchored
+`BuiltinSet`. There is no left expected input; the sole expected-set constraint
+is owned by the right-inner site. The result is one checked membership without
+facts, candidates, diagnostics, deferred work, coercion, or wrapper-owned term,
+type, formula, or expected input.
+
+The executable boundary covers exact and finite near misses, independent side/
+config/range/provenance/role/expected-input corruptions, matched Task-243-vs-
+Task-245 rejection, immutable output, mismatched modules, all 58 prior binary
+owners in both directions, all six earlier `Left` configs, Task 120, and a real
+frontend/resolver sidecar. Active runner 187 is traced by four shared references
+and one dedicated row within plan 402/366, type 234/222, pass/fail 218/184.
+Other operands, nesting, formula grouping, truth/facts, acceptance, imported-
+positive provenance, child graphs, and downstream payloads receive no credit;
+missing imported expansion/evidence/signature and proof/CoreIr/ControlFlowIr/VC
+remain deferred. No checker source/API/module-layout change was required.

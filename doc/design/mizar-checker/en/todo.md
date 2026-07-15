@@ -4254,3 +4254,21 @@ Check the task off here once tests pass.
   provenance. Missing imported expansion/evidence/signature payloads and proof/
   CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps 6/7
   remain deferred. No checker source/API/module-layout update is required.
+
+## Task 245 Active Addendum
+
+- [x] Add only the exact Chapter 04/13/14/16-derived source `reserve x for set;
+  theorem RightParenthesizedReservedVariableMembershipPayloadBoundary: x in
+  (x);` and its dedicated active route.
+- [x] Retain explicit `Left` for all six earlier configs and add a private
+  `Right` side plus a Task-245-only key/config/role namespace. Preserve ordinal
+  1/2 lookups to `BindingId(0)`, one canonical `BuiltinSet`, two inferred terms,
+  five type entries, and the right-inner-owned sole expected-set constraint.
+- [x] Guard side/config/range/role/expected-input corruption, Task-243 cross-
+  route rejection, immutable output, mismatched modules, all 58 prior binary
+  owners bidirectionally, the six left routes, Task 120, and a real sidecar.
+- [x] Synchronize runner 187, plan 402/366, type 234/222, and pass/fail 218/184
+  with four shared plus one dedicated backlink. Other shapes receive no credit;
+  imported expansion/evidence/signature and proof/CoreIr/ControlFlowIr/VC remain
+  deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source/
+  API/module-layout update was required.

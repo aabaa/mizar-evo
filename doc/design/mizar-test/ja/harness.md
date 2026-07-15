@@ -2250,3 +2250,21 @@ fixture、real frontend/resolver sidecar を含む。active runner は186件、p
 gap の解除は exact source だけ。その他 parenthesized shape と imported-
 positive provenance は Task 244 credit 外。未成立 imported expansion/evidence/
 signature payload、proof、downstream IR は deferred。
+
+## Task 245 Right-Parenthesized Reserved-Variable Membership Active Harness Contract
+
+active fixture は exact `reserve x for set; theorem
+RightParenthesizedReservedVariableMembershipPayloadBoundary: x in (x);`。
+frontend は right operand の one-child unrecovered `ParenthesizedTerm` 1件、
+resolver は distinct wrapper/direct-left/right-inner/formula provenance と
+ordinal 1/2 の双方 `BindingId(0)` を保持する。
+
+Task-245-only config/key/roles と explicit `Right` side を要求する。Task 120
+consumer は one written-set identity、inferred term 2件、type entry 5件、left
+expected なし、right-inner-owned sole expected-set constraint、clean checked
+membership を生成し、wrapper は semantic reference を持たない。finite
+left/direct/both/nested/malformed と side/config/range/constraint corruption、
+Task-243 cross-route、immutable/module、既存 owner 58件の双方向、Left route
+6件、real sidecar を検証。runner 187、plan 402/366、type 234/222、pass/fail
+218/184、shared 4 + dedicated 1 trace。その他 shape/imported-positive/proof/
+downstream は credit 外または deferred。

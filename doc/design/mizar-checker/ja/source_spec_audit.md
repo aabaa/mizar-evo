@@ -2287,3 +2287,21 @@ positive provenance は credit 外。未成立 imported expansion/evidence/signa
 payload、proof/CoreIr/ControlFlowIr/VC、broader dependency は deferred。Step 5
 は active、Steps 6/7 は deferred。checker source/API/module-layout change は
 不要。
+
+## Task 245 MC-G020 Active Override
+
+Task 245 は exact `x in (x)` builtin-set membership seam を `test_gap`、narrow
+`source_drift`、`design_drift` と分類する。`spec_gap` ではない。Chapters
+04/13/14/16、real right-side wrapper producer、Task 120 real consumer が根拠。
+credit は explicit `Right` side/config、distinct wrapper/left/right-inner/
+formula provenance、ordinal 1/2 の双方 `BindingId(0)`、written-set
+`BuiltinSet` 1件、inferred term 2件、type entry 5件、right-inner-owned sole
+expected constraint、wrapper semantics なしの checked membership に限定する。
+
+side/config/range/expected corruption、Task-243 cross-route rejection、既存
+owner 58件の双方向、Left route 6件、real sidecar が override を限定する。
+runner 187、plan 402/366、type 234/222、pass/fail 218/184、shared 4 + dedicated
+1 backlink を expectation rebaseline なしで同期。その他 shape/imported-
+positive provenance は credit 外、未成立 imported/proof/downstream payload は
+deferred。Step 5 は active、Steps 6/7 は deferred。checker source/API/module-
+layout change は不要。

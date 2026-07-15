@@ -2369,3 +2369,25 @@ positive provenance remain outside its credit; missing imported expansion/
 evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
 dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
 checker source/API/module-layout change is required.
+
+## Task 245 MC-G020 Active Override
+
+Task 245 classifies the exact `x in (x)` builtin-set membership seam as
+`test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Chapters
+04/13/14/16 directly support the source, the parser supplies the real right-side
+`ParenthesizedTerm`, and Task 120 supplies the real membership/expected-set
+consumer. Credit is limited to explicit `Right` side identity, distinct wrapper/
+left/right-inner/formula provenance, ordinals 1/2 with both lookups resolving to
+`BindingId(0)`, one written-set `BuiltinSet`, two inferred terms, five type
+entries, no left expected input, one right-inner-owned expected constraint, and
+one checked membership without wrapper semantics.
+
+Side/config/range/expected-input corruption, matched Task-243 cross-route
+rejection, all 58 prior owners bidirectionally, six left-route regressions, and
+a real frontend/resolver sidecar bound the override. Active runner 187 and plan
+402/366, type 234/222, pass/fail 218/184 are traced by four shared plus one
+dedicated backlink without expectation rebaselining. Other shapes and imported-
+positive provenance receive no credit; missing imported expansion/evidence/
+signature, proof/CoreIr/ControlFlowIr/VC, and broader dependencies remain
+deferred. Step 5 stays active; Steps 6/7 stay deferred. No checker source/API/
+module-layout change was required.

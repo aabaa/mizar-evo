@@ -675,3 +675,16 @@ cargo test -p mizar-proof
   と imported-positive provenance は Task 244 credit 外。未成立 imported
   expansion/evidence/signature payload と proof/CoreIr/ControlFlowIr/VC は
   deferred。Step 5 は active、Steps 6/7 は deferred。
+
+## Task 245 Active Addendum
+
+- [x] exact test-first `x in (x)` fixture/expectation、Chapters 04/13/14/16 の
+  shared backlink 4件、dedicated checker row 1件を追加。
+- [x] explicit `Right` wrapper side と Task-245-only key/config/role を active
+  化し、従来6 `Left` route を維持。
+- [x] real frontend/resolver/checker payload、right-inner expected ownership、
+  side/config/range/constraint corruption、Task-243 cross-route、immutable/
+  module、既存 owner 58件の双方向を検証。
+- [x] runner 187、plan 402/366、type 234/222、pass/fail 218/184 を同期。
+  その他 shape/imported-positive は credit 外、未成立 imported/proof/
+  downstream payload は deferred。Step 5 active、Steps 6/7 deferred。

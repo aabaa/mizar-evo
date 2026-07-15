@@ -4050,3 +4050,19 @@ cargo test -p mizar-test
   credit 外。未成立 imported expansion/evidence/signature payload と proof/
   CoreIr/ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は deferred。
   checker source/API/module-layout update は不要。
+
+## Task 245 Active Addendum
+
+- [x] Chapters 04/13/14/16 から exact `reserve x for set; theorem
+  RightParenthesizedReservedVariableMembershipPayloadBoundary: x in (x);` を追加。
+- [x] 従来6 config を explicit `Left` とし、Task-245-only key/config/role と
+  private `Right` side を追加。ordinal 1/2 の双方 `BindingId(0)`、canonical
+  `BuiltinSet` 1件、inferred term 2件、type entry 5件、right-inner-owned sole
+  expected-set constraint を保持。
+- [x] side/config/range/expected corruption、Task-243 cross-route、immutable/
+  module boundary、既存 owner 58件の双方向、Left route 6件、real sidecar を
+  guard。
+- [x] runner 187、plan 402/366、type 234/222、pass/fail 218/184、shared 4 +
+  dedicated 1 backlink を同期。その他 shape は credit 外、未成立 imported/
+  proof/downstream payload は deferred。Step 5 active、Steps 6/7 deferred。
+  checker source/API/module-layout update は不要。
