@@ -3873,6 +3873,14 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - test-first fixture と backlink 6 件は既存 expectation を変更せず active runner 174、389 cases、353 requirements、type-elaboration 221/209、pass/fail 205/184 を計上する。focused、relevant-crate、workspace verification は成功した。checker source/module-layout change は不要であった。
     - Dependencies: Tasks 74, 199, 209, 217, 219, 224。References: Step 5、mizar-test task 10、specs 3, 4, 7, 13, 14, 16。
 
+227. [x] **exact seven-expansion object-terminal three-hop asserted head を bridge する。**
+    - ordered bare definition 7 個 `BaseObjectMode -> object` から `ChainObjectMode6 -> ChainObjectMode5`、`ChainObjectMode6` reserve 1 個、`LongLocalObjectModeThreeHopAssertedHeadPayloadBoundary: x is ChainObjectMode3` だけを追加する。Task 74 の real object expansion producer、Task 200 の formula/checker consumer、byte-for-byte unchanged `BindingThreeHopRadix` を合成し、Tasks 210/225、217/220、226 は shorter-distance/terminal sibling として使う。
+    - pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3` link を直接検証する。`ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object` は cycle-safe terminal-normalization evidence のみに使う。distinct subject/asserted provenance、ordinal 1 / `BindingId(0)`、real expansion 7 個、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、object/set coercion なしの constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。
+    - 全5,039 nonidentity order、finite definition/reserve/formula/head/provenance/removal/corruption variant、relation link 3 本、全 tail link、terminal/canonical anchor/binding/ordinal/site/range、connected eighth-edge rejection、unrelated-import positive、immutable output、real sidecar、focused sibling、先行 type-assertion owner 51 件との bidirectional isolation を test する。
+    - 分類は `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。imported-positive definition、attributed/argument-bearing head、generic reachability/widening/`qua`、acceptance、truth/fact、proof/CoreIr/ControlFlowIr/VC、broader semantics は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままとする。
+    - test-first fixture と backlink 6 件は既存 expectation を変更せず active runner 175、390 cases、354 requirements、type-elaboration 222/210、pass/fail 206/184 を計上する。focused、relevant-crate、workspace verification は成功した。checker source/module-layout change は不要であった。
+    - Dependencies: Tasks 74, 200, 210, 217, 220, 225, 226。References: Step 5、mizar-test task 10、specs 3, 4, 7, 13, 14, 16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

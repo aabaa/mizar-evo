@@ -1,0 +1,31 @@
+definition
+  mode BaseObjectModeDef: BaseObjectMode is object;
+end;
+
+definition
+  mode ChainObjectMode1Def: ChainObjectMode1 is BaseObjectMode;
+end;
+
+definition
+  mode ChainObjectMode2Def: ChainObjectMode2 is ChainObjectMode1;
+end;
+
+definition
+  mode ChainObjectMode3Def: ChainObjectMode3 is ChainObjectMode2;
+end;
+
+definition
+  mode ChainObjectMode4Def: ChainObjectMode4 is ChainObjectMode3;
+end;
+
+definition
+  mode ChainObjectMode5Def: ChainObjectMode5 is ChainObjectMode4;
+end;
+
+definition
+  mode ChainObjectMode6Def: ChainObjectMode6 is ChainObjectMode5;
+end;
+
+reserve x for ChainObjectMode6;
+theorem LongLocalObjectModeThreeHopAssertedHeadPayloadBoundary:
+  x is ChainObjectMode3;
