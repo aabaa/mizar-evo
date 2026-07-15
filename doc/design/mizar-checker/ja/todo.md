@@ -3815,7 +3815,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - TooDeep-to-Outer、Outer-to-Middle、Middle-to-Inner link を直接検証し、Inner-to-Base-to-set tail は terminal normalization evidence のみに保った。distinct raw TooDeep/Inner symbol/site/range provenance、ordinal 1 / `BindingId(0)`、real expansion 5 個、Base-definition-RHS builtin-set identity 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。全119 nonidentity order、unconnected unsupported deeper asserted head と actual connected sixth-definition/sixth-edge asserted head の独立 guard を含む finite definition/reserve/formula/provenance/corruption matrix、immutable output、real sidecar、Tasks 211-218 focused regression、先行 type-assertion owner route 44 件との bidirectional isolation を網羅した。
     - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。object sibling、Base full-distance assertion、imported-positive/attributed/argument-bearing head、generic reachability/widening/`qua`、acceptance、truth/fact、proof/CoreIr/ControlFlowIr/VC、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままとする。checker source/module-layout change は不要であった。
     - 検証: focused Task 219 と Tasks 211-218 regression、`cargo test -p mizar-test`、`cargo test -p mizar-checker`、workspace Rust verification。
-    - 依存: tasks 74、197、211-218。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
+    - 依存: tasks 74、197、207、211-218。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
 ## 推奨検証
 
