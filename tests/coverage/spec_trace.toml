@@ -745,6 +745,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_two_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_three_hop_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_two_hop_asserted_head_001.expect.toml",
@@ -1842,6 +1843,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_two_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_three_hop_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_two_hop_asserted_head_001.expect.toml",
@@ -2000,6 +2002,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_two_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_three_hop_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_two_hop_asserted_head_001.expect.toml",
@@ -2341,6 +2344,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_two_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_three_hop_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_two_hop_asserted_head_001.expect.toml",
@@ -3572,6 +3576,19 @@ tests = [
 notes = "Task 199 coverage is limited to the exact seven-expansion set-terminal same-ChainMode6 formula-side asserted-head normalized-reflexive type/well-formedness slice. The production route must preserve independent raw reserve-subject and formula-side asserted inputs for the same ChainMode6 symbol, BindingId(0) at ordinal 1, seven real expansions, and three known type entries interning to one terminal-BaseModeDef-RHS builtin-set identity before one inferred variable and one fact/candidate/diagnostic/deferred-free checked type assertion with zero expected constraints and no general reachability, widening, or qua. Full reverse, connected deeper, exact structural/provenance/corruption guards, and a real frontend/resolver sidecar must protect active runner 147. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, attributed/argument-bearing/imported/object-terminal/other-depth/other asserted-head shapes, broader term/formula/child-graph semantics, general unbounded chain semantics, and downstream payloads remain uncredited."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.local_mode_long_chain_four_hop_asserted_head_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 228 exact seven-expansion set-terminal formula-side four-hop local-mode asserted-head checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_four_hop_asserted_head_001.expect.toml",
+]
+notes = "Task 228 active coverage is limited to the exact seven-expansion set-terminal formula-side four-hop local-mode asserted-head normalized-reflexive type/well-formedness slice. The production route preserves distinct raw ChainMode6 reserve-subject and ChainMode2 asserted symbols/sites/ranges, ordinal 1 / BindingId(0), seven real expansions, and the exact pairwise-distinct bare ChainMode6-to-ChainMode5, ChainMode5-to-ChainMode4, ChainMode4-to-ChainMode3, and ChainMode3-to-ChainMode2 relation links. ChainMode2 through BaseMode to set is terminal-normalization evidence only, never relation evidence. Three known type entries intern to one BaseModeDef-RHS builtin-set identity before one inferred variable and one zero-constraint/fact/candidate/diagnostic/deferred checked type assertion. The finite all-5,039-orders source/provenance/corruption matrix, bidirectional isolation against all 52 prior type-assertion owner routes, immutable output, focused shorter-depth/terminal siblings, and a real frontend/resolver sidecar protect active runner 176. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, object-terminal/imported-positive/attributed/argument-bearing/other asserted heads, widening/qua, generic reachability/general chain semantics, broader term/formula/child-graph semantics, CoreIr/ControlFlowIr/VC, and other downstream payloads remain uncredited."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.local_mode_long_chain_radix_asserted_head_source_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 209 exact seven-expansion set-terminal formula-side immediate-radix local-mode asserted-head checker bridge"
@@ -3740,6 +3757,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_two_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_three_hop_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_four_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_three_hop_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_long_chain_two_hop_asserted_head_001.expect.toml",
