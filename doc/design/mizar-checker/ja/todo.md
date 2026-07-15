@@ -3913,6 +3913,15 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - fixture と backlink 6 件は active runner 179、394 cases、358 requirements、type-elaboration 226/214、pass/fail 210/184 を既存 expectation の変更なしで構成する。focused、relevant-crate、workspace verification は成功した。checker source/module-layout change は不要であった。
     - 依存: Tasks 74、200、229、230。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+233. [x] **exact parenthesized builtin-object reserved-variable equality を bridge する。**
+    - `reserve x for object; theorem ParenthesizedReservedObjectVariableEqualityPayloadBoundary: (x) = x;` だけを追加し、Task 223 の real `ParenthesizedTerm` producer と Task 188 の real object reserve/BindingEnv/equality consumer を合成した。
+    - private parenthesized extraction/output assertion path だけを exact static config で parameterize した。Task 223 は object reserve を、Task 188 は parenthesized operand を引き続き reject し、新 public route は両者の exact intersection だけを所有する。
+    - 独立 wrapper/inner/right site/range、ordinal 1/2 の `BindingId(0)` lookup、canonical `BuiltinObject` 1 個、inferred variable 2 個、ordered expected constraint 2 個、object/set coercion と独立 wrapper type/value のない checked equality 1 個を保持する。
+    - finite structural/provenance/lookup/type/matched-output corruption matrix、immutable output、real frontend/resolver sidecar、先行 binary-formula owner 53 件との bidirectional isolation を test する。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。arbitrary parenthesis/operand/precedence、formula grouping、closure/order、truth/fact、acceptance、proof/CoreIr/ControlFlowIr/VC、child graph、broader semantics は deferred。Step 5 は active、Steps 6/7 は deferred のままとする。
+    - test-first fixture と backlink 6 件は既存 expectation を変更せず active runner 180、395 cases、359 requirements、type-elaboration 227/215、pass/fail 211/184 を計上する。checker source/module-layout change は不要であった。
+    - 依存: Tasks 9、119、188、223。参照: Step 5、mizar-test task 10、specs 3、4、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

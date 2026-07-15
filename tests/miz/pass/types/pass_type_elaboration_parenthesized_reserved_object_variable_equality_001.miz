@@ -1,0 +1,2 @@
+reserve x for object;
+theorem ParenthesizedReservedObjectVariableEqualityPayloadBoundary: (x) = x;

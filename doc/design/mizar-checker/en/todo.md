@@ -4113,6 +4113,15 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - The fixture and six backlinks account for active runner 179, 394 cases, 358 requirements, type-elaboration 226/214, and pass/fail 210/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
     - Dependencies: Tasks 74, 200, 229, and 230. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
 
+233. [x] **Bridge the exact parenthesized builtin-object reserved-variable equality.**
+    - Added only `reserve x for object; theorem ParenthesizedReservedObjectVariableEqualityPayloadBoundary: (x) = x;`, composing Task 223's real `ParenthesizedTerm` producer with Task 188's real object reserve/BindingEnv/equality consumer.
+    - Parameterized only the private parenthesized extraction/output assertion path by an exact static config. Task 223 still rejects object reserves, Task 188 still rejects parenthesized operands, and the new public route owns only their exact intersection.
+    - Preserves independent wrapper/inner/right sites and ranges, ordinal 1/2 lookup to `BindingId(0)`, one canonical `BuiltinObject`, two inferred variables, two ordered expected constraints, and one checked equality without object/set coercion or an independent wrapper type/value.
+    - Tests the finite structural/provenance/lookup/type/matched-output corruption matrix, immutable output, a real frontend/resolver sidecar, and bidirectional isolation against all 53 prior binary-formula owners.
+    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Arbitrary parentheses/operands/precedence, formula grouping, closure/order, truth/facts, acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
+    - The test-first fixture and six backlinks account for active runner 180, 395 cases, 359 requirements, type-elaboration 227/215, and pass/fail 211/184 without changing existing expectations. No checker source or module-layout change was required.
+    - Dependencies: Tasks 9, 119, 188, and 223. References: Step 5, mizar-test task 10, specs 3, 4, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:
