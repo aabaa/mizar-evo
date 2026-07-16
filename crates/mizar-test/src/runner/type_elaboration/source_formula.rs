@@ -1,7 +1,7 @@
 use mizar_checker::type_checker::{FormulaKind, TypeHeadInput};
 use mizar_checker::typed_ast::TypedSiteRef;
-use mizar_resolve::env::SymbolEnv;
-use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
+use mizar_resolve::env::{ContributionKind, NamespacePath, SymbolEnv, SymbolKind};
+use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
 use mizar_session::SourceRange;
 use mizar_syntax::{
     SurfaceAst, SurfaceFormulaConstant, SurfaceNode, SurfaceNodeId, SurfaceNodeKind,
@@ -12,6 +12,50 @@ use super::source_ast::{
     surface_site,
 };
 use super::source_reserve::{SourceTypeExpression, extract_builtin_source_type_expression};
+
+pub(in crate::runner) fn resolve_imported_fixture_term_formula_symbol(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    spelling: &str,
+    kind: SymbolKind,
+) -> Result<ResolverSymbolId, ()> {
+    let namespace = NamespacePath::new(module.path().as_str());
+    let candidates = symbols
+        .symbols()
+        .visible_candidates(&namespace, spelling)
+        .into_iter()
+        .filter(|entry| entry.kind() == kind)
+        .collect::<Vec<_>>();
+    let [entry] = candidates.as_slice() else {
+        return Err(());
+    };
+    if is_imported_fixture_term_formula_symbol(symbols, module, entry.symbol(), spelling, kind) {
+        Ok(entry.symbol().clone())
+    } else {
+        Err(())
+    }
+}
+
+fn is_imported_fixture_term_formula_symbol(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    symbol: &ResolverSymbolId,
+    spelling: &str,
+    kind: SymbolKind,
+) -> bool {
+    let Some(entry) = symbols.symbols().get(symbol) else {
+        return false;
+    };
+    let Some(contribution) = symbols.contributions().get(entry.contribution()) else {
+        return false;
+    };
+    symbol.module() != module
+        && contribution.module() == symbol.module()
+        && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
+        && symbol.module().path().as_str() == "parser.type_fixtures"
+        && entry.kind() == kind
+        && entry.primary_spelling() == spelling
+}
 
 #[derive(Debug, Clone, Copy)]
 pub(in crate::runner) struct SourceBuiltinBinaryTermFormulaConfig {

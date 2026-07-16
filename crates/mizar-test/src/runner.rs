@@ -41,7 +41,7 @@ use mizar_core::{
     },
 };
 use mizar_frontend::orchestration::{DiagnosticCode, FrontendDiagnostic};
-use mizar_resolve::env::{ContributionKind, NamespacePath, SymbolEnv, SymbolKind};
+use mizar_resolve::env::{SymbolEnv, SymbolKind};
 use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
 use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{
@@ -80,7 +80,8 @@ use type_elaboration::{
     extract_builtin_source_type_expression, extract_source_builtin_binary_term_formula,
     extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
     extract_source_formula_statement, is_exact_parser_type_fixtures_import,
-    mode_definition_pattern_spelling, qualified_symbol_spelling, source_mode_symbol_spelling,
+    mode_definition_pattern_spelling, qualified_symbol_spelling,
+    resolve_imported_fixture_term_formula_symbol, source_mode_symbol_spelling,
     structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
 };
 
@@ -13701,50 +13702,6 @@ struct SourceReserveHandoff {
     declarations: DeclarationCheckingOutput,
     typed_ast: TypedAst,
     resolved: ResolvedTypedAst,
-}
-
-fn resolve_imported_fixture_term_formula_symbol(
-    symbols: &SymbolEnv,
-    module: &ResolverModuleId,
-    spelling: &str,
-    kind: SymbolKind,
-) -> Result<ResolverSymbolId, ()> {
-    let namespace = NamespacePath::new(module.path().as_str());
-    let candidates = symbols
-        .symbols()
-        .visible_candidates(&namespace, spelling)
-        .into_iter()
-        .filter(|entry| entry.kind() == kind)
-        .collect::<Vec<_>>();
-    let [entry] = candidates.as_slice() else {
-        return Err(());
-    };
-    if is_imported_fixture_term_formula_symbol(symbols, module, entry.symbol(), spelling, kind) {
-        Ok(entry.symbol().clone())
-    } else {
-        Err(())
-    }
-}
-
-fn is_imported_fixture_term_formula_symbol(
-    symbols: &SymbolEnv,
-    module: &ResolverModuleId,
-    symbol: &ResolverSymbolId,
-    spelling: &str,
-    kind: SymbolKind,
-) -> bool {
-    let Some(entry) = symbols.symbols().get(symbol) else {
-        return false;
-    };
-    let Some(contribution) = symbols.contributions().get(entry.contribution()) else {
-        return false;
-    };
-    symbol.module() != module
-        && contribution.module() == symbol.module()
-        && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
-        && symbol.module().path().as_str() == "parser.type_fixtures"
-        && entry.kind() == kind
-        && entry.primary_spelling() == spelling
 }
 
 fn assemble_source_reserve_checker_handoff(
