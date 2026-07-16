@@ -256,9 +256,10 @@ intent; Task 257D has 11 distinct/multiple/heterogeneous reserve fixtures;
 Task 257E has 26 mode-chain fixtures; Task 257F has 35 active
 reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route
 isolation guards; Task 257G has three source-gap/equality tests; and Task 257H
-has 12 root plus 28 tests nested in the existing Task
-216-222 modules. The eight counts total the remaining 113 root and 28 nested
-tests. Parent Task 257 remains pending through 257H.
+has nine root source/active bridge fixtures, three root synthetic/route-
+isolation tests, plus 28 tests nested in the existing Task 216-222 modules.
+The eight counts total the remaining 113 root and 28 nested tests. Parent Task
+257 remains pending through 257H.
 
 Task 257A root-included
 `src/runner/tests/type_elaboration/binary_route_fixtures.rs` without a wrapper
@@ -513,7 +514,7 @@ Task 255E.
 | 257E | Complete: moved the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`, retaining the Task 257F separator. |
 | 257F | Complete: moved the 35 active reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route isolation guards to `asserted_head_fixtures.rs`, retaining the Task 257G separator. |
 | 257G | Complete: moved the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`, retaining the immediate long-chain include and Task 257H boundary. |
-| 257H | Move the final 12 root and 28 nested corruption/isolation tests while retaining Task 216-222 modules; complete Task 257. |
+| 257H | Move the final nine root bridge fixtures, three root isolation tests, and 28 nested tests to `remaining_bridges_and_nested_isolation.rs` while retaining Task 216-222 modules; complete Task 257. |
 | 258 | Move shared source/frontend staging helpers after the test layout is stable. |
 | 259 | Move parse-only production helpers. |
 | 260 | Move existing declaration-symbol production helpers; this is not a test move. |
