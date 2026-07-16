@@ -1,6 +1,8 @@
 use mizar_checker::typed_ast::{TypedNodeId, TypedSiteRef};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 
+use crate::runner::import_fixtures::module_path_spelling;
+
 pub(in crate::runner) fn exact_compilation_item_list(ast: &SurfaceAst) -> Option<&SurfaceNode> {
     let root = ast.node(ast.root()?)?;
     if !matches!(root.kind, SurfaceNodeKind::Root) {
@@ -110,4 +112,36 @@ pub(in crate::runner) fn subtree_has_recovery(ast: &SurfaceAst, node: &SurfaceNo
             .iter()
             .filter_map(|child| ast.node(*child))
             .any(|child| subtree_has_recovery(ast, child))
+}
+
+pub(in crate::runner) fn is_exact_parser_type_fixtures_import(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+) -> bool {
+    if !matches!(node.kind, SurfaceNodeKind::ImportItem)
+        || subtree_has_recovery(ast, node)
+        || direct_token_texts(ast, node).as_slice() != ["import", ";"]
+    {
+        return false;
+    }
+    let import_children = structural_child_ids(ast, node);
+    let [decl_id] = import_children.as_slice() else {
+        return false;
+    };
+    let Some(decl) = ast.node(*decl_id) else {
+        return false;
+    };
+    if !matches!(decl.kind, SurfaceNodeKind::ImportAliasDecl)
+        || !direct_token_texts(ast, decl).is_empty()
+    {
+        return false;
+    }
+    let decl_children = structural_child_ids(ast, decl);
+    let [module_path_id] = decl_children.as_slice() else {
+        return false;
+    };
+    let Some(module_path) = ast.node(*module_path_id) else {
+        return false;
+    };
+    module_path_spelling(ast, module_path).is_ok_and(|spelling| spelling == "parser.type_fixtures")
 }

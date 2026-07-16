@@ -2,8 +2,9 @@ mod source_ast;
 mod source_reserve;
 
 pub(super) use source_ast::{
-    direct_token_texts, exact_compilation_item_list, qualified_symbol_spelling,
-    structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
+    direct_token_texts, exact_compilation_item_list, is_exact_parser_type_fixtures_import,
+    qualified_symbol_spelling, structural_child_ids, subtree_has_recovery, surface_nodes_with_kind,
+    surface_site,
 };
 pub(super) use source_reserve::{
     SourceTypeExpression, extract_builtin_source_type_expression,

@@ -819,9 +819,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   private shared frontend and parse-only owners, Tasks 260A-260B moved the
   shared resolver leaf and declaration-symbol owner, and Task 261 moved the
   fixture/import-summary owner. Tasks 262A-262B moved the common source-AST leaf,
-  and Task 262C moved the reserve type-expression/symbol-projection leaf. The
-  remaining Task 262 declaration/mode and formula extraction families and Task
-  263 keep this parent item open.
+  Task 262C moved the reserve type-expression/symbol-projection leaf, and Task
+  262D moved the shared exact fixture-import AST projection. The remaining Task
+  262 declaration/mode and formula extraction families and Task 263 keep this
+  parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

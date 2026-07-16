@@ -61,9 +61,7 @@ mod shared;
 mod type_elaboration;
 
 use declaration_symbol::{declaration_symbol_failure_diagnostic, run_declaration_symbol_case};
-use import_fixtures::{
-    ParseOnlyImportProvider, augment_type_elaboration_import_summaries, module_path_spelling,
-};
+use import_fixtures::{ParseOnlyImportProvider, augment_type_elaboration_import_summaries};
 use parse_only::{parse_only_failure_diagnostic, run_parse_only_case};
 use shared::{
     FrontendRun, normalized_tests_root, normalized_workspace_root, resolver_symbol_collection,
@@ -72,9 +70,9 @@ use shared::{
 use type_elaboration::{
     SourceTypeExpression, direct_token_texts, exact_compilation_item_list,
     extract_builtin_source_type_expression, imported_fixture_reserve_attribute_spelling,
-    is_imported_fixture_reserve_attribute, qualified_symbol_spelling,
-    source_reserve_symbol_head_kind, structural_child_ids, subtree_has_recovery,
-    surface_nodes_with_kind, surface_site,
+    is_exact_parser_type_fixtures_import, is_imported_fixture_reserve_attribute,
+    qualified_symbol_spelling, source_reserve_symbol_head_kind, structural_child_ids,
+    subtree_has_recovery, surface_nodes_with_kind, surface_site,
 };
 #[cfg(test)]
 use type_elaboration::{resolve_visible_attribute, resolve_visible_type_head};
@@ -13897,35 +13895,6 @@ fn exact_numeral_term_node(
     } else {
         None
     }
-}
-
-fn is_exact_parser_type_fixtures_import(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
-    if !matches!(node.kind, SurfaceNodeKind::ImportItem)
-        || subtree_has_recovery(ast, node)
-        || direct_token_texts(ast, node).as_slice() != ["import", ";"]
-    {
-        return false;
-    }
-    let import_children = structural_child_ids(ast, node);
-    let [decl_id] = import_children.as_slice() else {
-        return false;
-    };
-    let Some(decl) = ast.node(*decl_id) else {
-        return false;
-    };
-    if !matches!(decl.kind, SurfaceNodeKind::ImportAliasDecl)
-        || !direct_token_texts(ast, decl).is_empty()
-    {
-        return false;
-    }
-    let decl_children = structural_child_ids(ast, decl);
-    let [module_path_id] = decl_children.as_slice() else {
-        return false;
-    };
-    let Some(module_path) = ast.node(*module_path_id) else {
-        return false;
-    };
-    module_path_spelling(ast, module_path).is_ok_and(|spelling| spelling == "parser.type_fixtures")
 }
 
 fn is_supported_formula_statement_theorem_bridge_node(node: &SurfaceNode) -> bool {
