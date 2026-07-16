@@ -344,6 +344,25 @@ All 26 fully qualified names, original order positions, assertions, the Task
 257F boundary, and both 272-test list hashes are unchanged. Task 257E is
 complete; parent Task 257 remains pending.
 
+## Task 257F Move Result
+
+Task 257F root-included
+`src/runner/tests/type_elaboration/asserted_head_fixtures.rs` without a wrapper
+module. The byte-identical 3,374-line fragment contains 35 audited active
+reserve/asserted-head/type-assertion fixtures plus the four interleaved
+two-hop owner-route isolation guards. It contains no helper, unrelated item,
+or long-chain test. Its hash is
+`19623c52e34c57fc664f01370139ce253a834513c47fe0f6b7b2563f7684bf26`.
+The retained 13,535 lines, including the separator before Task 257G, remained
+byte-identical with hash
+`4c19658998190c21cbd8a72efa112e29659664d55a7c5b3040ef54ec7cbbb3e8`;
+the resulting 13,536-line `tests.rs` hash is
+`9e3bb0de8742d0371e4e686815ba70337b8c278a1e26799069baef8758e093ec`.
+All 39 fully qualified names, original order positions, expansion/payload and
+prior-owner rejection assertions, the Task 257G boundary, and both 272-test
+list hashes are unchanged. Task 257F is complete; parent Task 257 remains
+pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -475,7 +494,7 @@ Task 255E.
 | 257C | Complete: moved only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`, retaining both reserve-family boundaries. |
 | 257D | Complete: moved the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`, retaining the Task 257E separator. |
 | 257E | Complete: moved the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`, retaining the Task 257F separator. |
-| 257F | Move the 35 active reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route isolation guards to `asserted_head_fixtures.rs`. |
+| 257F | Complete: moved the 35 active reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route isolation guards to `asserted_head_fixtures.rs`, retaining the Task 257G separator. |
 | 257G | Move the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`. |
 | 257H | Move the final 12 root and 28 nested corruption/isolation tests while retaining Task 216-222 modules; complete Task 257. |
 | 258 | Move shared source/frontend staging helpers after the test layout is stable. |
