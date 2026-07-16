@@ -2114,6 +2114,74 @@ workspace tests, and diff cleanliness pass. Task 262Q is complete and Task 263
 is next. No `spec_coverage_audit.md` update is required because authority,
 behavior, coverage credit, owner crate, and deferred status are unchanged.
 
+## Task 263A Pre-Move Inventory and Specification
+
+Fresh Task 263 inventory classifies the retained checker-handoff substrate as
+the first acyclic bounded family. The exact `runner.rs:11542-12047` fragment is
+506 lines with hash
+`95532967e13e1ab39b4ebc23c3403ffe15e57b5a73bda2810d915ccf170175f0`.
+It starts at `source_module_binding_env` and ends at
+`typing_for_type_entry`. It owns the empty module binding environment, the
+`SourceReserveHandoff` transport, reserve declaration-to-`TypedAst` and
+`ResolvedTypedAst` assembly, handoff validation, bounded Core context
+readiness checks, and the test-only complete handoff entry.
+
+Task 263A mechanically moves this fragment to new private
+`type_elaboration/checker_handoff.rs`. The leaf depends only on checker, Core,
+resolver, session, and syntax inputs, plus the sibling `SourceReserveExtraction`
+transport for its test-only entry. It does not reference a concrete route
+config, named source extractor, detail key, expected-output projection,
+failure diagnostic, or top-level orchestration. This establishes the acyclic
+direction `source_reserve -> checker_handoff -> retained checker/output and
+orchestration consumers` before later Task 263 families move.
+
+While those consumers remain in `runner.rs`, runner-scoped visibility is
+limited to `source_module_binding_env`, `SourceReserveHandoff` and its four
+fields, `assemble_source_reserve_checker_handoff`,
+`assert_source_reserve_handoff`,
+`assert_source_reserve_core_summary_readiness`, and
+`assert_source_reserve_core_context_readiness`. The test-only
+`assemble_source_checker_handoff` is exposed only under `#[cfg(test)]`.
+Resolved/typed assembly and type-entry projection helpers remain leaf-private.
+
+This is move-only `design_drift`; there is no test prerequisite. The existing
+direct handoff test in `source_extraction.rs`, generic output validators and
+corruption matrices, all 272 unit tests, and all 188 active type cases form the
+preservation matrix. Configs, named wrappers, source extraction, payloads,
+detail keys, diagnostics, ordering, fail-closed behavior, public API, tests,
+and authority artifacts must not change. `spec_coverage_audit.md` remains
+unchanged because behavior, coverage credit, owner crate, and deferred status
+do not change.
+
+## Task 263A Move Result
+
+Task 263A moved the inventoried checker-handoff substrate to the new private
+`type_elaboration/checker_handoff.rs` leaf. After stripping only the reviewed
+runner-scoped visibility and restoring the former separator newline, the moved
+fragment retains exact hash `95532967e13e1ab39b4ebc23c3403ffe15e57b5a73bda2810d915ccf170175f0`.
+No body, control-flow branch, validation string, payload, or ordering changed.
+The resolved/typed assembly and type-entry helpers remain leaf-private; the
+complete handoff entry and its sibling source-reserve dependency remain
+`#[cfg(test)]` only.
+
+The resulting `runner.rs` has 11,617 lines and hash
+`4c0aa87165f31fe66816666f1fc33f47b64643e7d644d30db21e8e8f4eb4ed8b`;
+the 46-line phase facade has hash
+`daf8415255a5af402436c792414c5fd635b32c5cf397deaff051efbfb16d7ece`;
+and the 550-line checker-handoff leaf has hash
+`a7cf9bcd076dbc68098ddecbab6c58eca988ecdd8ea378324bad44a32cf5288b`.
+Only moved-only imports were removed from `runner.rs`. The existing
+`SourceReserveDeclarationBridge` test namespace alias remains explicitly
+`#[cfg(test)]` for the unchanged corruption tests.
+
+The direct handoff test, all 272 unit tests, and all 188 active type cases pass.
+Plan/count remains 403/367, type coverage 235/223, and pass/fail 219/184. The
+raw/normalized test-list hashes and all four CLI byte hashes remain unchanged.
+Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
+pass. Task 263A is complete; fresh Task 263 inventory selects the next bounded
+family. `spec_coverage_audit.md` remains unchanged because authority, behavior,
+coverage credit, owner crate, and deferred status are unchanged.
+
 `spec_coverage_audit.md` remains unchanged for Tasks 262N0-262Q because these
 tasks preserve authority, behavior, coverage credit, owner crate, and deferred
 status. Forbidden changes are accepted-shape expansion, route generalization,
@@ -2130,7 +2198,7 @@ assertion weakening, test deletion or ignore, and checker/output movement.
 | parse-only execution | Surface-AST snapshots and parse-only failure projection | shared frontend to parse-only result | Moved in Task 259 to private `parse_only.rs` with minimal parent-only visibility. |
 | fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
 | declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
-| type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Remains in `runner.rs` through Tasks 262-263. The current `type_elaboration.rs` is a private facade for the `source_ast`, `source_formula`, and `source_reserve` leaves; later moves make it the orchestration owner. |
+| type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Task 263A moved generic checker-handoff assembly/validation to private `checker_handoff.rs`; top-level admission, dispatch, configs, and output consumers remain in `runner.rs` for later Task 263 families. The phase facade now owns four private leaves. |
 | source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262Q moved standalone formula constants, shared exact numerals, builtin binary and type-assertion formulas, the shared imported-formula symbol resolver/provenance pair, imported predicate/functor, imported attribute assertion, set-enumeration, connective/quantifier families, and the shared, direct-binary, parenthesized, and type-assertion reserved-variable source substrate to private `type_elaboration/source_formula.rs`. Formula source extraction is complete; retained configs/wrappers and checker/output consumers stay in `runner.rs` for Task 263 inventory. |
 | payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Private type-elaboration leaf owner; no key or ordering edits. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
@@ -2160,6 +2228,7 @@ public runner facade
            shared imported-symbol, imported predicate/functor, imported attribute,
            set-enumeration, connective/quantifier, and shared/direct-binary/
            parenthesized/type-assertion reserved-variable source projections
+     -> checker-handoff assembly and readiness validation
      -> checker/core payload validation
      -> deterministic detail keys and failure diagnostics
 
@@ -2184,7 +2253,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | `src/runner/parse_only.rs` | Parse-only case execution, snapshots, and parse-only failure projection. |
 | `src/runner/declaration_symbol.rs` | Declaration-symbol case execution, resolver observation, payload keys, and failure projection. |
 | `src/runner/import_fixtures.rs` | Existing parser fixture summaries/adapters used by active phases. |
-| `src/runner/type_elaboration.rs` and `src/runner/type_elaboration/` | Type-elaboration orchestration plus private source-extraction and payload-validation/detail/diagnostic leaves. |
+| `src/runner/type_elaboration.rs` and `src/runner/type_elaboration/` | Type-elaboration orchestration plus private source-extraction, checker-handoff, and payload-validation/detail/diagnostic leaves. |
 | `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
 | `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
 | `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
@@ -2298,7 +2367,8 @@ Task 255E.
 | 262P | Complete: moved only the parenthesized reserved-variable source enum/transport, generic extractor, single-parenthesized operand projection, and family allowlist; both binary allowlists are now leaf-private. |
 | 262Q0 | Complete: strengthened the existing base reserved-variable type-assertion test for all ten source fields, exact config, direct rejection of all 15 near misses, and four bounded structural corruptions without changing test count or production. |
 | 262Q | Complete: moved only the reserved-variable type-assertion source transport, generic extractor, and family allowlist after Q0; retained all 58 configs/wrappers and checker/output consumers. |
-| 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
+| 263 | Decomposed parent: move checker-handoff, payload-validation, detail-key, expected-output, and failure-diagnostic leaves in bounded dependency order. |
+| 263A | Complete: moved the exact 506-line checker-handoff substrate to private `type_elaboration/checker_handoff.rs` with minimal runner-scoped visibility. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a

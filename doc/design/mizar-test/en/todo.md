@@ -843,8 +843,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   Task 262N, direct-binary Task 262O, parenthesized-binary Task 262P, and
   type-assertion Task 262Q. Tasks 262N0, 262N, 262O, and 262P are complete.
   Fresh review inserted test-only preservation Task 262Q0 before move-only Task
-  262Q; both and parent Task 262 are complete, and Task 263 is next. Task 263
-  keeps this parent item open.
+  262Q; both and parent Task 262 are complete. Fresh dependency inventory
+  decomposes Task 263 and selects bounded checker-handoff substrate Task 263A
+  first; Task 263A is complete, and fresh inventory selects the next
+  validation/detail/expected/failure family. Task 263 keeps this parent item
+  open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

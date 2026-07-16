@@ -1,7 +1,15 @@
+mod checker_handoff;
 mod source_ast;
 mod source_formula;
 mod source_reserve;
 
+#[cfg(test)]
+pub(super) use checker_handoff::assemble_source_checker_handoff;
+pub(super) use checker_handoff::{
+    SourceReserveHandoff, assemble_source_reserve_checker_handoff,
+    assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
+    assert_source_reserve_handoff, source_module_binding_env,
+};
 #[cfg(test)]
 pub(super) use source_ast::{
     direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site,
@@ -31,9 +39,7 @@ pub(super) use source_formula::{
 };
 pub(super) use source_reserve::extract_builtin_source_reserve_declarations;
 #[cfg(test)]
-pub(super) use source_reserve::{
-    SourceReserveExtraction, extract_builtin_source_reserve_declarations_after_node_guard,
-};
+pub(super) use source_reserve::extract_builtin_source_reserve_declarations_after_node_guard;
 #[cfg(test)]
 pub(super) use source_reserve::{
     resolve_visible_attribute, resolve_visible_type_head, source_mode_symbol_spelling,
