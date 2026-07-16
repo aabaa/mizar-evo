@@ -776,9 +776,10 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   fresh Task 263 inventory が選んだ正確な277行 checker-output builder family Task
   263F も exact-body/byte-stability を維持して完了した。fresh inventory は正確な229行
   type-assertion validator/shared normalized-type predicate family Task 263G を選び、
-  exact-body/byte-stability を維持して完了した。fresh inventory は次の bounded
-  binary/parenthesized-validator または detail family を選ぶため、Task 263 parent item は
-  open のままにする。
+  exact-body/byte-stability を維持して完了した。fresh inventory は正確な380行
+  binary-formula validator/helper family Task 263H を選び、exact-body/byte-stability を
+  維持して完了した。fresh inventory は次の bounded parenthesized-validator または
+  detail family を選ぶため、Task 263 parent item は open のままにする。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

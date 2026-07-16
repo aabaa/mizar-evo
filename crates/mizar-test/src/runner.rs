@@ -1,20 +1,15 @@
-use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-use mizar_checker::binding_env::{
-    BindingContextId, BindingId, BindingLookupResult, BindingLookupSite,
-};
+use mizar_checker::binding_env::BindingContextId;
 #[cfg(test)]
 use mizar_checker::type_checker::SourceReserveDeclarationBridge;
 use mizar_checker::type_checker::{
-    FormulaDeferredReason, FormulaInput, FormulaKind, FormulaStatus, SourceReserveBindingInput,
-    TermFormulaChecker, TermFormulaInferenceOutput, TermInput, TermKind, TermReference, TermStatus,
-    TypeExpressionInput, TypeHeadInput,
+    FormulaDeferredReason, FormulaInput, FormulaKind, TermFormulaChecker,
+    TermFormulaInferenceOutput, TermInput, TermKind, TermReference, TypeExpressionInput,
 };
-use mizar_checker::typed_ast::{
-    NormalizedTypeId, TypeEntryActual, TypeEntryId, TypeRole, TypeStatus, TypedNodeId, TypedSiteRef,
-};
+#[cfg(test)]
+use mizar_checker::typed_ast::TypeRole;
 use mizar_resolve::env::SymbolEnv;
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_syntax::SurfaceAst;
@@ -55,6 +50,7 @@ use type_elaboration::{
     SourceReservedVariableTypeAssertionConfig, SourceReservedVariableTypeAssertionOutput,
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
+    assert_source_reserved_variable_formula_output,
     assert_source_reserved_variable_type_assertion_output,
     build_source_parenthesized_reserved_variable_binary_formula_output,
     build_source_reserved_variable_formula_output,
@@ -68,11 +64,8 @@ use type_elaboration::{
     extract_source_parenthesized_reserved_variable_binary_formula_with_config,
     extract_source_reserved_variable_binary_formula,
     extract_source_reserved_variable_type_assertion_with_config,
-    extract_source_set_enumeration_formula, is_active_type_elaboration,
-    normalized_type_is_reserved_builtin_type, source_binding_matches_reserved_builtin_type,
-    source_binding_use_ordinals, source_mode_terminal_builtin_input, source_module_binding_env,
-    source_reserved_variable_mode_expansions_are_exact, type_elaboration_failure_diagnostic,
-    validate_active_type_elaboration_tags,
+    extract_source_set_enumeration_formula, is_active_type_elaboration, source_module_binding_env,
+    type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -8439,345 +8432,6 @@ fn source_local_object_mode_reserved_variable_type_assertion_output(
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
-fn assert_source_reserved_variable_formula_output(
-    output: &SourceReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    let payload = &output.payload;
-    let source_bindings = payload.reserve.bridge.bindings();
-    if source_bindings.len() != payload.config.binding_spellings.len()
-        || source_bindings.len() != payload.config.binding_types.len()
-        || source_bindings.len() != payload.config.binding_source_mode_spellings.len()
-    {
-        return Err("reserved-variable formula binding count mismatch".to_owned());
-    }
-    assert_source_reserve_handoff(&output.handoff, &payload.reserve.bridge)?;
-    if source_bindings.iter().enumerate().any(|(index, binding)| {
-        let spelling = payload.config.binding_spellings[index];
-        binding.spelling != spelling
-            || !source_binding_matches_reserved_builtin_type(
-                binding,
-                payload.config.binding_types[index],
-                payload.config.binding_source_mode_spellings[index],
-                &payload.reserve.mode_expansions,
-            )
-    }) || !source_reserved_variable_mode_expansions_are_exact(
-        &payload.reserve,
-        payload.config.mode_definitions,
-    ) || (payload.config.require_shared_type_range
-        && source_bindings
-            .windows(2)
-            .any(|pair| pair[0].type_range != pair[1].type_range))
-        || (payload.config.require_distinct_type_ranges
-            && source_bindings.windows(2).any(|pair| {
-                pair[0].type_range == pair[1].type_range
-                    || (pair[0].type_range.start, pair[0].type_range.end)
-                        >= (pair[1].type_range.start, pair[1].type_range.end)
-            }))
-        || output.handoff.binding_env.bindings().len() != source_bindings.len()
-        || !output.handoff.binding_env.diagnostics().is_empty()
-        || output
-            .handoff
-            .binding_env
-            .bindings()
-            .iter()
-            .any(|(_, binding)| !binding.diagnostics.is_empty())
-        || output.handoff.declarations.declarations().len() != source_bindings.len()
-        || !output.handoff.declarations.facts().is_empty()
-        || !output.handoff.declarations.diagnostics().is_empty()
-    {
-        return Err("reserved-variable formula declaration payload mismatch".to_owned());
-    }
-
-    let expected_ordinals = source_binding_use_ordinals(
-        payload.reserve.bridge.bindings(),
-        [payload.left_range, payload.right_range],
-    )?;
-    let expected_left_binding = BindingId::new(payload.config.left_binding_index);
-    let expected_right_binding = BindingId::new(payload.config.right_binding_index);
-    if [payload.left_lookup_ordinal, payload.right_lookup_ordinal] != expected_ordinals
-        || output.left_binding != expected_left_binding
-        || output.right_binding != expected_right_binding
-    {
-        return Err("reserved-variable formula lookup metadata mismatch".to_owned());
-    }
-    for (spelling, ordinal, expected_binding) in [
-        (
-            payload.left_spelling.as_str(),
-            payload.left_lookup_ordinal,
-            output.left_binding,
-        ),
-        (
-            payload.right_spelling.as_str(),
-            payload.right_lookup_ordinal,
-            output.right_binding,
-        ),
-    ] {
-        match output
-            .handoff
-            .binding_env
-            .lookup(&BindingLookupSite::new(
-                spelling,
-                payload.reserve.bridge.module_context(),
-                None,
-                ordinal,
-            ))
-            .map_err(|error| error.to_string())?
-        {
-            BindingLookupResult::Local(binding) if binding == expected_binding => {}
-            _ => return Err("reserved-variable formula lookup result mismatch".to_owned()),
-        }
-    }
-
-    for (input, source_binding, node, role) in [
-        (
-            &output.left_result_input,
-            &source_bindings[payload.config.left_binding_index],
-            payload.left_site.node(),
-            payload.config.left_result_role,
-        ),
-        (
-            &output.right_result_input,
-            &source_bindings[payload.config.right_binding_index],
-            payload.right_site.node(),
-            payload.config.right_result_role,
-        ),
-    ] {
-        if !source_type_projection_matches(input, source_binding, node, role) {
-            return Err("reserved-variable formula result input provenance mismatch".to_owned());
-        }
-    }
-    for (input, source_binding, node, role) in [
-        (
-            output.left_expected_input.as_ref(),
-            &source_bindings[payload.config.left_binding_index],
-            payload.left_site.node(),
-            payload.config.left_expected_role,
-        ),
-        (
-            output.right_expected_input.as_ref(),
-            &source_bindings[payload.config.right_binding_index],
-            payload.right_site.node(),
-            payload.config.right_expected_role,
-        ),
-    ] {
-        match (input, role) {
-            (Some(input), Some(role))
-                if source_type_projection_matches(input, source_binding, node, role) => {}
-            (None, None) => {}
-            _ => {
-                return Err(
-                    "reserved-variable formula expected input provenance mismatch".to_owned(),
-                );
-            }
-        }
-    }
-
-    let term_formula = &output.term_formula;
-    let expected_type_count = usize::from(payload.config.left_expected_role.is_some())
-        + usize::from(payload.config.right_expected_role.is_some());
-    if term_formula.terms().len() != 2
-        || term_formula.formulas().len() != 1
-        || !term_formula.candidate_sets().is_empty()
-        || !term_formula.facts().is_empty()
-        || !term_formula.diagnostics().is_empty()
-        || term_formula.type_entries().len() != 4 + expected_type_count
-    {
-        return Err(format!(
-            "reserved-variable formula checker count mismatch: terms={} formulas={} candidates={} facts={} diagnostics={} type_entries={} expected_type_entries={}",
-            term_formula.terms().len(),
-            term_formula.formulas().len(),
-            term_formula.candidate_sets().len(),
-            term_formula.facts().len(),
-            term_formula.diagnostics().len(),
-            term_formula.type_entries().len(),
-            4 + expected_type_count,
-        ));
-    }
-    let mut term_actuals = BTreeMap::new();
-    let mut semantic_ids_by_type = BTreeMap::new();
-    for (site, binding, binding_index) in [
-        (
-            &payload.left_site,
-            output.left_binding,
-            payload.config.left_binding_index,
-        ),
-        (
-            &payload.right_site,
-            output.right_binding,
-            payload.config.right_binding_index,
-        ),
-    ] {
-        let term = term_formula
-            .terms()
-            .iter()
-            .map(|(_, term)| term)
-            .find(|term| &term.site == site)
-            .ok_or_else(|| "reserved-variable formula term missing".to_owned())?;
-        if term.context != payload.reserve.bridge.module_context()
-            || term.kind != TermKind::Variable
-            || term.reference != Some(TermReference::Binding(binding))
-            || term.expected_type.is_some()
-            || term.candidate_set.is_some()
-            || term.status != TermStatus::Inferred
-            || !term.deferred.is_empty()
-        {
-            return Err("reserved-variable formula term payload mismatch".to_owned());
-        }
-        let expected_type = payload.config.binding_types[binding_index];
-        let actual = assert_reserved_variable_builtin_type_entry(
-            term_formula,
-            &term.site,
-            Some(term.type_entry),
-            expected_type,
-        )?;
-        if semantic_ids_by_type
-            .insert(expected_type, actual)
-            .is_some_and(|existing| existing != actual)
-        {
-            return Err("reserved-variable formula semantic type identity mismatch".to_owned());
-        }
-        term_actuals.insert(term.site.clone(), actual);
-    }
-
-    let formula = term_formula
-        .formulas()
-        .iter()
-        .map(|(_, formula)| formula)
-        .next()
-        .ok_or_else(|| "reserved-variable formula missing".to_owned())?;
-    if formula.site != payload.formula_site
-        || formula.context != payload.reserve.bridge.module_context()
-        || formula.kind != payload.config.formula_kind
-        || formula.terms != [payload.left_site.clone(), payload.right_site.clone()]
-        || formula.asserted_type.is_some()
-        || formula.candidate_set.is_some()
-        || formula.status != FormulaStatus::Checked
-        || !formula.facts.is_empty()
-        || !formula.deferred.is_empty()
-        || formula.expected_types.len() != expected_type_count
-    {
-        return Err("reserved-variable formula payload mismatch".to_owned());
-    }
-    let expected_constraints = [
-        payload.config.left_expected_role.map(|role| {
-            (
-                &payload.left_site,
-                payload.left_range,
-                role,
-                payload.config.left_binding_index,
-            )
-        }),
-        payload.config.right_expected_role.map(|role| {
-            (
-                &payload.right_site,
-                payload.right_range,
-                role,
-                payload.config.right_binding_index,
-            )
-        }),
-    ]
-    .into_iter()
-    .flatten()
-    .collect::<Vec<_>>();
-    for (constraint, (site, range, role, binding_index)) in formula
-        .expected_types
-        .iter()
-        .zip(expected_constraints.iter().copied())
-    {
-        let expected_type = payload.config.binding_types[binding_index];
-        if &constraint.term != site
-            || constraint.source_range != range
-            || constraint.status != TypeStatus::Known
-            || !normalized_type_is_reserved_builtin_type(
-                term_formula,
-                constraint.expected,
-                expected_type,
-            )
-        {
-            return Err("reserved-variable formula expected type mismatch".to_owned());
-        }
-        let owner = TypedSiteRef::Role {
-            node: site.node(),
-            role: TypeRole::new(role),
-        };
-        let role_actual =
-            assert_reserved_variable_builtin_type_entry(term_formula, &owner, None, expected_type)?;
-        if role_actual != constraint.expected || term_actuals.get(site) != Some(&role_actual) {
-            return Err("reserved-variable expected role is not referenced".to_owned());
-        }
-    }
-    for (site, role, binding_index) in [
-        (
-            &payload.left_site,
-            payload.config.left_result_role,
-            payload.config.left_binding_index,
-        ),
-        (
-            &payload.right_site,
-            payload.config.right_result_role,
-            payload.config.right_binding_index,
-        ),
-    ] {
-        let owner = TypedSiteRef::Role {
-            node: site.node(),
-            role: TypeRole::new(role),
-        };
-        let role_actual = assert_reserved_variable_builtin_type_entry(
-            term_formula,
-            &owner,
-            None,
-            payload.config.binding_types[binding_index],
-        )?;
-        if term_actuals.get(site) != Some(&role_actual) {
-            return Err("reserved-variable result role is not referenced".to_owned());
-        }
-    }
-    let expected_semantic_type_count = payload
-        .config
-        .binding_types
-        .iter()
-        .copied()
-        .collect::<BTreeSet<_>>()
-        .len();
-    if semantic_ids_by_type.len() != expected_semantic_type_count
-        || term_formula.normalized_types().len() != expected_semantic_type_count
-    {
-        return Err("reserved-variable formula semantic type identity mismatch".to_owned());
-    }
-    for (expected_type, semantic_id) in semantic_ids_by_type {
-        let canonical_source = source_bindings
-            .iter()
-            .enumerate()
-            .filter(|(index, _)| payload.config.binding_types[*index] == expected_type)
-            .filter_map(|(index, binding)| {
-                let Some(_) = payload.config.binding_source_mode_spellings[index] else {
-                    return Some((binding.type_range, binding.type_spelling.as_str()));
-                };
-                let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
-                    return None;
-                };
-                source_mode_terminal_builtin_input(
-                    symbol,
-                    expected_type,
-                    &payload.reserve.mode_expansions,
-                )
-                .map(|terminal| (terminal.source_range, terminal.spelling.as_str()))
-            })
-            .min_by_key(|(range, _)| (range.start, range.end))
-            .ok_or_else(|| "reserved-variable formula canonical source missing".to_owned())?;
-        let normalized = term_formula
-            .normalized_types()
-            .get(semantic_id)
-            .ok_or_else(|| "reserved-variable formula normalized type missing".to_owned())?;
-        if normalized.source.range != canonical_source.0
-            || normalized.source.spelling != canonical_source.1
-        {
-            return Err("reserved-variable formula canonical source mismatch".to_owned());
-        }
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 fn assert_source_parenthesized_reserved_variable_equality_output(
     output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
@@ -8932,50 +8586,6 @@ fn assert_source_parenthesized_reserved_variable_binary_formula_output_with_conf
         return Err("parenthesized reserved-variable binary formula wrapper mismatch".to_owned());
     }
     Ok(())
-}
-
-fn source_type_projection_matches(
-    input: &TypeExpressionInput,
-    source_binding: &SourceReserveBindingInput,
-    node: TypedNodeId,
-    role: &str,
-) -> bool {
-    input.site
-        == (TypedSiteRef::Role {
-            node,
-            role: TypeRole::new(role),
-        })
-        && input.source_range == source_binding.type_range
-        && input.spelling == source_binding.type_spelling
-        && input.head == source_binding.type_head
-        && input.args.is_empty()
-        && input.attributes == source_binding.type_attributes
-}
-
-fn assert_reserved_variable_builtin_type_entry(
-    output: &TermFormulaInferenceOutput,
-    owner: &TypedSiteRef,
-    expected_id: Option<TypeEntryId>,
-    expected_type: SourceReservedVariableBuiltinType,
-) -> Result<NormalizedTypeId, String> {
-    let (id, entry) = output
-        .type_entries()
-        .iter()
-        .find(|(_, entry)| &entry.owner == owner)
-        .ok_or_else(|| "reserved-variable equality type entry missing".to_owned())?;
-    if expected_id.is_some_and(|expected| expected != id)
-        || entry.expected.is_some()
-        || entry.status != TypeStatus::Known
-    {
-        return Err("reserved-variable equality type entry mismatch".to_owned());
-    }
-    let TypeEntryActual::Known(actual) = entry.actual else {
-        return Err("reserved-variable equality type entry is not known".to_owned());
-    };
-    if !normalized_type_is_reserved_builtin_type(output, actual, expected_type) {
-        return Err("reserved-variable equality normalized type mismatch".to_owned());
-    }
-    Ok(actual)
 }
 
 fn source_formula_statement_detail_keys(
