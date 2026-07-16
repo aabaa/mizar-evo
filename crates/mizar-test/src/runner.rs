@@ -67,18 +67,22 @@ use shared::{
     FrontendRun, normalized_tests_root, normalized_workspace_root, resolver_symbol_collection,
     run_frontend,
 };
+#[cfg(test)]
+use type_elaboration::{
+    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, resolve_visible_attribute,
+    resolve_visible_type_head,
+};
 use type_elaboration::{
     SourceReserveExtraction, SourceTypeExpression, direct_token_texts, exact_compilation_item_list,
     exact_numeral_term_node_or_expression, exact_numeral_term_operand,
     extract_builtin_source_reserve_declarations,
     extract_builtin_source_reserve_declarations_after_node_guard,
-    extract_builtin_source_type_expression, extract_source_contradiction_formula,
-    extract_source_formula_statement, is_exact_parser_type_fixtures_import,
-    mode_definition_pattern_spelling, qualified_symbol_spelling, source_mode_symbol_spelling,
-    structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
+    extract_builtin_source_type_expression, extract_source_builtin_binary_term_formula,
+    extract_source_contradiction_formula, extract_source_formula_statement,
+    is_exact_parser_type_fixtures_import, mode_definition_pattern_spelling,
+    qualified_symbol_spelling, source_mode_symbol_spelling, structural_child_ids,
+    subtree_has_recovery, surface_nodes_with_kind, surface_site,
 };
-#[cfg(test)]
-use type_elaboration::{resolve_visible_attribute, resolve_visible_type_head};
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
 const ACTIVE_DECLARATION_SYMBOL_TAG: &str = "active_declaration_symbol";
@@ -1639,50 +1643,6 @@ fn source_type_elaboration_detail_keys(
         return vec!["type_elaboration.core.context_invalid".to_owned()];
     }
     Vec::new()
-}
-
-#[derive(Debug, Clone, Copy)]
-struct SourceBuiltinBinaryTermFormulaConfig {
-    label: &'static str,
-    operator: &'static str,
-    left: &'static str,
-    right: &'static str,
-    formula_kind: FormulaKind,
-}
-
-const SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS: &[SourceBuiltinBinaryTermFormulaConfig] = &[
-    SourceBuiltinBinaryTermFormulaConfig {
-        label: "TermFormulaPayloadBoundary",
-        operator: "=",
-        left: "1",
-        right: "1",
-        formula_kind: FormulaKind::Equality,
-    },
-    SourceBuiltinBinaryTermFormulaConfig {
-        label: "BuiltinInequalityPayloadBoundary",
-        operator: "<>",
-        left: "1",
-        right: "2",
-        formula_kind: FormulaKind::Inequality,
-    },
-    SourceBuiltinBinaryTermFormulaConfig {
-        label: "BuiltinMembershipPayloadBoundary",
-        operator: "in",
-        left: "1",
-        right: "1",
-        formula_kind: FormulaKind::Membership,
-    },
-];
-
-#[derive(Debug, Clone)]
-struct SourceBuiltinBinaryTermFormula {
-    formula_site: TypedSiteRef,
-    formula_range: SourceRange,
-    formula_kind: FormulaKind,
-    left_site: TypedSiteRef,
-    left_range: SourceRange,
-    right_site: TypedSiteRef,
-    right_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -13025,90 +12985,6 @@ fn source_binding_use_ordinals<const N: usize>(
     Ok(ordinals)
 }
 
-fn extract_source_builtin_binary_term_formula(
-    ast: &SurfaceAst,
-) -> Option<SourceBuiltinBinaryTermFormula> {
-    if ast
-        .nodes()
-        .iter()
-        .any(|node| !is_supported_builtin_binary_theorem_bridge_node(node))
-    {
-        return None;
-    }
-    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
-    let [(_, theorem)] = theorem_items.as_slice() else {
-        return None;
-    };
-    if subtree_has_recovery(ast, theorem) {
-        return None;
-    }
-    let theorem_tokens = direct_token_texts(ast, theorem);
-    let config = SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS
-        .iter()
-        .copied()
-        .find(|config| theorem_tokens.as_slice() == ["theorem", config.label, ":", ";"])?;
-
-    let theorem_structural_children = structural_child_ids(ast, theorem);
-    let formula_expressions = theorem_structural_children
-        .iter()
-        .copied()
-        .filter(|id| {
-            ast.node(*id)
-                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::FormulaExpression))
-        })
-        .collect::<Vec<_>>();
-    if formula_expressions.len() != 1
-        || theorem_structural_children
-            .iter()
-            .any(|child| !formula_expressions.contains(child))
-    {
-        return None;
-    }
-    let formula_expression = ast.node(formula_expressions[0])?;
-    let formula_children = structural_child_ids(ast, formula_expression);
-    let [formula_id] = formula_children.as_slice() else {
-        return None;
-    };
-    let formula = ast.node(*formula_id)?;
-    let operator_tokens = direct_token_texts(ast, formula);
-    if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
-        || subtree_has_recovery(ast, formula)
-        || operator_tokens.len() != 1
-        || operator_tokens[0] != config.operator
-    {
-        return None;
-    }
-
-    let predicate_structural_children = structural_child_ids(ast, formula);
-    let term_expressions = predicate_structural_children
-        .iter()
-        .copied()
-        .filter(|id| {
-            ast.node(*id)
-                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::TermExpression))
-        })
-        .collect::<Vec<_>>();
-    if term_expressions.len() != 2
-        || predicate_structural_children
-            .iter()
-            .any(|child| !term_expressions.contains(child))
-    {
-        return None;
-    }
-
-    let left = exact_numeral_term_operand(ast, term_expressions[0], config.left)?;
-    let right = exact_numeral_term_operand(ast, term_expressions[1], config.right)?;
-    Some(SourceBuiltinBinaryTermFormula {
-        formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
-        formula_kind: config.formula_kind,
-        left_site: surface_site(left.0),
-        left_range: left.1,
-        right_site: surface_site(right.0),
-        right_range: right.1,
-    })
-}
-
 fn extract_source_builtin_type_assertion_formula(
     ast: &SurfaceAst,
     module: &ResolverModuleId,
@@ -13803,21 +13679,6 @@ fn is_supported_reserved_variable_type_assertion_bridge_node(node: &SurfaceNode)
             | SurfaceNodeKind::IsAssertion
             | SurfaceNodeKind::TermExpression
             | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::Token(_)
-    )
-}
-
-fn is_supported_builtin_binary_theorem_bridge_node(node: &SurfaceNode) -> bool {
-    matches!(
-        node.kind,
-        SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::TheoremItem
-            | SurfaceNodeKind::FormulaExpression
-            | SurfaceNodeKind::BuiltinPredicateApplication
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::Token(_)
     )
 }
