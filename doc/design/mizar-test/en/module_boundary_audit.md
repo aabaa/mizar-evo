@@ -508,6 +508,33 @@ all four CLI byte hashes, both 272-test list hashes, counts, payloads,
 diagnostics, ordering, and fail-closed behavior are unchanged. Tasks 260A-260B
 are complete; Task 261 is next.
 
+## Task 261 Move Result
+
+Task 261 created the private `src/runner/import_fixtures.rs` owner and moved
+the two families that share the single `parser.type_fixtures` vocabulary. The
+original 161-line type-elaboration import-summary adapter fragment had hash
+`98d9ebc8ff104583bca469f66a89c5f90dfd91085f811012fc06d173b6224d8b`;
+the original 167-line lexical-summary provider and 15-symbol vocabulary
+fragment had hash
+`3097dc061f34ef0d08482aa785f7827b38b17a8b15dbc8f9fc0e7ca876a49c34`.
+The resulting 349-line `import_fixtures.rs`, including direct dependency
+imports, has hash
+`bb2d10572184600c2121ae680ff936586a8b525eaea7e2a358f1d3b4305bc04d`,
+and `runner.rs` has 16,293 lines with hash
+`5e878da91e11b7d69709e94dfc9ad851e298fe7b46ed111c174696c2e2b12363`.
+Only `ParseOnlyImportProvider`, the type import-summary adapter entry, and the
+module-path projection still consumed by a Task 262 parent caller use
+parent-only `pub(super)` visibility; vocabulary, environment cloning, imported
+module discovery, and symbol-kind mapping remain private. The parent keeps
+private aliases so `shared.rs` and existing test support retain their imports
+without test edits. Stub order/span identity, per-module deduplication,
+fingerprints, the exact 15-symbol kind/arity/operator/rank order, resolver
+symbol/provenance order, and diagnostics are unchanged. Public surface hash
+`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
+all four CLI byte hashes, both 272-test list hashes, counts, payloads,
+diagnostics, ordering, and fail-closed behavior are unchanged. Task 261 is
+complete; Task 262 is next.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -516,7 +543,7 @@ are complete; Task 261 is next.
 | source/frontend and resolver staging | Source package preparation and cleanup, root/path/snapshot identity, frontend execution/result transport, and resolver shell/projection/symbol collection | shared by parse, declaration-symbol, and type-elaboration as applicable | Frontend staging moved in Task 258 and the declaration/type resolver leaf in Task 260A to private `shared.rs` with minimal parent-only visibility. |
 | active-case admission and stable failure assembly | Tag/phase gates, expected-output matching, and deterministic failure diagnostics | phase-specific facade-to-owner transition | Tasks 259 and 260B moved parse-only and declaration case/failure boundaries; keep the remaining type boundary in `runner.rs` until Tasks 262-263 move it. |
 | parse-only execution | Surface-AST snapshots and parse-only failure projection | shared frontend to parse-only result | Moved in Task 259 to private `parse_only.rs` with minimal parent-only visibility. |
-| fixture import provider | Parser fixture lexical summaries and adapters | parser/frontend seams shared by active phases | Keep in `runner.rs` until Task 261; preserve its use by later phases. |
+| fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
 | declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
 | type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Private type-elaboration owner. |
 | source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Private type-elaboration leaf owner, moved before its callers. |
@@ -532,11 +559,14 @@ The permitted dependency direction is:
 public runner facade
   -> parse-only owner
      -> shared plan/admission/source/frontend staging
+        -> fixture/import-summary owner (lexical provider)
   -> declaration-symbol owner
      -> shared plan/admission/source/frontend/resolver staging
+        -> fixture/import-summary owner (lexical provider)
   -> type-elaboration owner
      -> shared plan/admission/source/frontend/resolver staging
-     -> fixture/import-summary adapter
+        -> fixture/import-summary owner (lexical provider)
+     -> fixture/import-summary owner (resolver adapter)
      -> source extraction
      -> checker/core payload validation
      -> deterministic detail keys and failure diagnostics
@@ -648,7 +678,7 @@ Task 255E.
 | 259 | Complete: moved parse-only case execution, Surface-AST snapshot comparison, and failure projection to private `parse_only.rs`. |
 | 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
 | 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
-| 261 | Move fixture/import-summary production helpers. |
+| 261 | Complete: moved the lexical provider, exact fixture vocabulary, and type import-summary adapter to private `import_fixtures.rs`. |
 | 262 | Move type-elaboration source-extraction leaves. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |

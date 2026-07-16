@@ -741,8 +741,9 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   限定する。internal visibility を最小に保ち、detail key、diagnostic、payload
   contract、fixture ownership、ordering、fail-closed behavior を変更しない。
   Tasks 258-259 で private shared frontend と parse-only owner、Tasks 260A-260B
-  で shared resolver leaf と declaration-symbol owner を移動した。次は Task 261
-  であり、Tasks 261-263 が残るため、この parent item は open のまま。
+  で shared resolver leaf と declaration-symbol owner、Task 261 で
+  fixture/import-summary owner を移動した。次は Task 262 であり、Tasks 262-263
+  が残るため、この parent item は open のまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
