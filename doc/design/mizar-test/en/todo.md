@@ -821,8 +821,9 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   fixture/import-summary owner. Tasks 262A-262B moved the common source-AST leaf,
   Task 262C moved the reserve type-expression/symbol-projection leaf, Task 262D
   moved the shared exact fixture-import AST projection, and Task 262E moved the
-  reserve declaration/local-mode extraction family. The remaining Task 262
-  formula extraction families and Task 263 keep this parent item open.
+  reserve declaration/local-mode extraction family, and Task 262F moved only
+  the standalone formula-constant source leaf. The remaining Task 262 formula
+  extraction families and Task 263 keep this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

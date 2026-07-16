@@ -71,7 +71,8 @@ use type_elaboration::{
     SourceReserveExtraction, SourceTypeExpression, direct_token_texts, exact_compilation_item_list,
     extract_builtin_source_reserve_declarations,
     extract_builtin_source_reserve_declarations_after_node_guard,
-    extract_builtin_source_type_expression, is_exact_parser_type_fixtures_import,
+    extract_builtin_source_type_expression, extract_source_contradiction_formula,
+    extract_source_formula_statement, is_exact_parser_type_fixtures_import,
     mode_definition_pattern_spelling, qualified_symbol_spelling, source_mode_symbol_spelling,
     structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
 };
@@ -1742,12 +1743,6 @@ struct SourceFormulaConnectiveQuantifier {
     negation_range: SourceRange,
     body_constant_site: TypedSiteRef,
     body_constant_range: SourceRange,
-}
-
-#[derive(Debug, Clone)]
-struct SourceFormulaStatement {
-    formula_site: TypedSiteRef,
-    formula_range: SourceRange,
 }
 
 #[derive(Debug)]
@@ -10836,91 +10831,6 @@ fn source_formula_connective_quantifier_output(
     Some(output)
 }
 
-fn extract_source_formula_statement(ast: &SurfaceAst) -> Option<SourceFormulaStatement> {
-    extract_exact_source_formula_constant(
-        ast,
-        "FormulaPayloadBoundary",
-        SurfaceFormulaConstant::Thesis,
-    )
-}
-
-fn extract_source_contradiction_formula(ast: &SurfaceAst) -> Option<SourceFormulaStatement> {
-    extract_exact_source_formula_constant(
-        ast,
-        "SourceDerivedContradictionConstantBoundary",
-        SurfaceFormulaConstant::Contradiction,
-    )
-}
-
-fn extract_exact_source_formula_constant(
-    ast: &SurfaceAst,
-    expected_label: &str,
-    expected_constant: SurfaceFormulaConstant,
-) -> Option<SourceFormulaStatement> {
-    if ast
-        .nodes()
-        .iter()
-        .any(|node| !is_supported_formula_statement_theorem_bridge_node(node))
-    {
-        return None;
-    }
-    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
-    let [(_, theorem)] = theorem_items.as_slice() else {
-        return None;
-    };
-    if subtree_has_recovery(ast, theorem) {
-        return None;
-    }
-    let theorem_tokens = direct_token_texts(ast, theorem);
-    if theorem_tokens.len() != 4
-        || theorem_tokens[0] != "theorem"
-        || theorem_tokens[1] != expected_label
-        || theorem_tokens[2] != ":"
-        || theorem_tokens[3] != ";"
-    {
-        return None;
-    }
-
-    let theorem_structural_children = structural_child_ids(ast, theorem);
-    let [formula_expression_id] = theorem_structural_children.as_slice() else {
-        return None;
-    };
-    let formula_expression = ast.node(*formula_expression_id)?;
-    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
-        return None;
-    }
-    let formula_children = structural_child_ids(ast, formula_expression);
-    let [formula_id] = formula_children.as_slice() else {
-        return None;
-    };
-    let formula = ast.node(*formula_id)?;
-    let expected_spelling = match expected_constant {
-        SurfaceFormulaConstant::Thesis => "thesis",
-        SurfaceFormulaConstant::Contradiction => "contradiction",
-    };
-    let constant_matches = match expected_constant {
-        SurfaceFormulaConstant::Thesis => matches!(
-            formula.kind,
-            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis)
-        ),
-        SurfaceFormulaConstant::Contradiction => matches!(
-            formula.kind,
-            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction)
-        ),
-    };
-    if !constant_matches
-        || direct_token_texts(ast, formula).as_slice() != [expected_spelling]
-        || !structural_child_ids(ast, formula).is_empty()
-    {
-        return None;
-    }
-
-    Some(SourceFormulaStatement {
-        formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
-    })
-}
-
 fn extract_source_reserved_variable_equality(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -13896,19 +13806,6 @@ fn exact_numeral_term_node(
     } else {
         None
     }
-}
-
-fn is_supported_formula_statement_theorem_bridge_node(node: &SurfaceNode) -> bool {
-    matches!(
-        node.kind,
-        SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::TheoremItem
-            | SurfaceNodeKind::FormulaExpression
-            | SurfaceNodeKind::FormulaConstant(_)
-            | SurfaceNodeKind::Token(_)
-    )
 }
 
 fn is_supported_reserved_variable_binary_formula_bridge_node(node: &SurfaceNode) -> bool {
