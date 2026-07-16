@@ -177,6 +177,23 @@ Both fully qualified names, all four helper owners, their original order
 position, the Task 255C boundary, and both 272-test list hashes are unchanged.
 Parent Task 255 remains pending.
 
+## Task 255C Move Result
+
+Task 255C root-included
+`src/runner/tests/type_elaboration/asserted_head_three_edge_object_radix.rs`
+without a wrapper module. The byte-identical 1,278-line fragment contains the
+one audited three-edge object-radix source test and its two dedicated Task 206
+helper functions. Its hash is
+`c5c1b04ab663fe3557e24c86b551352d6d1c54c5511870ba224edb7538f95442`.
+The retained 52,058 lines, including the separator before Task 255D, remained
+byte-identical with hash
+`e841b80390d879d910bfc50a34547ef56b8b2ab40c6c4b9681e8b07f707dc12b`;
+the resulting 52,059-line `tests.rs` hash is
+`23caa0585a96be2db997295fccad436de5bfefdbe033fdd4516ca8e30dacea9f`.
+The fully qualified name, both helper owners, original order position, Task
+255D boundary, and both 272-test list hashes are unchanged. Parent Task 255
+remains pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -298,7 +315,7 @@ Task 255E.
 | 253B | Complete: moved the two direct reserved-variable membership and inequality tests to `reserved_direct.rs`, retained the following Task 255 boundary, and completed Task 253. |
 | 255A | Complete: moved the leading 12 type-assertion/asserted-head source tests and their two dedicated Task 205 helpers to `asserted_head_base.rs`. |
 | 255B | Complete: moved the two four-edge radix source tests and dedicated Task 208/207 helpers to `asserted_head_four_edge_radix.rs`. |
-| 255C | Move the three-edge object-radix source test and dedicated Task 206 helper. |
+| 255C | Complete: moved the three-edge object-radix source test and dedicated Task 206 helpers. |
 | 255D | Move the two-edge object-radix source test and dedicated Task 204 helper. |
 | 255E | Move the final 16 non-long-chain source tests, retain the active-fixture boundary, and complete Task 255. |
 | 256 | Move long-chain bridge tests. |
