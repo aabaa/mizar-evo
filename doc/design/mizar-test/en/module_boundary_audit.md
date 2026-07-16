@@ -381,6 +381,24 @@ fail-closed assertions, the immediately following `long_chain.rs` include,
 Task 257H start, and both 272-test list hashes are unchanged. Task 257G is
 complete; parent Task 257 remains pending.
 
+## Task 257H Move Result
+
+Task 257H root-included
+`src/runner/tests/type_elaboration/remaining_bridges_and_nested_isolation.rs`
+without a wrapper module. The byte-identical 10,578-line fragment contains
+the final nine root source/active bridge fixtures, three root synthetic or
+route-isolation tests, and all 28 tests inside the existing seven Task
+216-222 modules. Its hash is
+`96a64963bc06ec3f6f076d00296ebb48450611fb6a512d5f16283c2999e43d50`.
+The retained 36 lines remained byte-identical with hash
+`a3cba5854fc315b6c9c3dd20be2fdeaf7a5e972cb7a626299d2dcb2bb6c56f06`;
+the resulting 37-line `tests.rs` hash is
+`0e9b7e861a13fe593435ee8169c28658b5290f054789a3e2f73b896fa2b39061`.
+All 40 fully qualified names, original order positions, seven nested module
+names, bridge and isolation assertions, and both canonical 272-test list
+hashes are unchanged. Task 257H and parent Task 257 are complete; the private
+test layout is stable, and Task 258 is next.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -506,7 +524,7 @@ Task 255E.
 | 255D | Complete: moved the two-edge object-radix source test and dedicated Task 204 helper. |
 | 255E | Complete: moved the final 16 non-long-chain source tests, retained the active-fixture boundary, and completed Task 255. |
 | 256 | Complete: moved all 44 long-chain source/active bridge tests and their 12 test-local finite guards to `long_chain.rs`, retaining both adjacent four-edge boundaries. |
-| 257 | Parent: move the eight inventoried remaining fixture, bridge-gap, corruption, and isolation families; pending through Task 257H. |
+| 257 | Complete: moved all eight inventoried remaining fixture, bridge-gap, corruption, and isolation families through Task 257H. |
 | 257A | Complete: moved the leading 18 binary/parenthesized fixture and route-isolation tests to `binary_route_fixtures.rs`, retaining the Task 257B separator. |
 | 257B | Complete: moved the three builtin-object reserve active fixtures to `reserve_object_fixtures.rs`, retaining the Task 257C separator. |
 | 257C | Complete: moved only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`, retaining both reserve-family boundaries. |
@@ -514,7 +532,7 @@ Task 255E.
 | 257E | Complete: moved the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`, retaining the Task 257F separator. |
 | 257F | Complete: moved the 35 active reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route isolation guards to `asserted_head_fixtures.rs`, retaining the Task 257G separator. |
 | 257G | Complete: moved the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`, retaining the immediate long-chain include and Task 257H boundary. |
-| 257H | Move the final nine root bridge fixtures, three root isolation tests, and 28 nested tests to `remaining_bridges_and_nested_isolation.rs` while retaining Task 216-222 modules; complete Task 257. |
+| 257H | Complete: moved the final nine root bridge fixtures, three root isolation tests, and 28 nested tests to `remaining_bridges_and_nested_isolation.rs` while retaining Task 216-222 modules; completed Task 257. |
 | 258 | Move shared source/frontend staging helpers after the test layout is stable. |
 | 259 | Move parse-only production helpers. |
 | 260 | Move existing declaration-symbol production helpers; this is not a test move. |

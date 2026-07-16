@@ -798,7 +798,7 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   Preserve module privacy, test names, test discovery, helper behavior, and all
   public APIs. Do not combine the move with renaming, deduplication,
   generalization, or semantic cleanup. Commit the move as one task.
-- [ ] Split the private tests into shared support plus parse-only,
+- [x] Split the private tests into shared support plus parse-only,
   declaration-symbol, and type-elaboration owners. Split type-elaboration
   further by cohesive source-bridge family when needed; use one bounded
   move-only task/commit per family and keep cross-owner isolation tests intact.
@@ -809,8 +809,8 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   object, two-edge object, and final type-assertion asserted-head fragments;
   parent Task 255 and Task 256 are complete. Task 257A completed the leading
   binary-route fixture/isolation family. Fresh authority review isolates the
-  Task 180 formula-constant fixture. Tasks 257A-257G are complete; bounded
-  Task 257H remains.
+  Task 180 formula-constant fixture. Tasks 257A-257H and parent Task 257 are
+  complete; the private test layout is stable.
 - [ ] After the test layout is stable, split production helpers along the
   audited phase and ownership boundaries. Leave `runner.rs` as the public
   facade and top-level orchestration owner. Keep internal visibility minimal

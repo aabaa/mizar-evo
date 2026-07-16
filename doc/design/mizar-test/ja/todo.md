@@ -723,7 +723,7 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   module privacy、test name/discovery、helper behavior、全 public API を保持し、
   rename、deduplication、generalization、semantic cleanup と混ぜない。move
   だけを 1 task/commit とする。
-- [ ] private tests を shared support、parse-only、declaration-symbol、
+- [x] private tests を shared support、parse-only、declaration-symbol、
   type-elaboration owner に分割する。必要なら type-elaboration を cohesive な
   source-bridge family ごとに追加分割し、family ごとに bounded move-only
   task/commit として cross-owner isolation test を保持する。
@@ -734,8 +734,8 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   asserted-head fragment と最後の type-assertion asserted-head fragment は完了。
   parent Task 255 と Task 256 は完了。Task 257A で先頭 binary-route
   fixture/isolation family は完了。fresh authority review により Task 180
-  formula-constant fixture を分離した。Tasks 257A-257G は完了し、bounded
-  Task 257H は残る。
+  formula-constant fixture を分離した。Tasks 257A-257H と parent Task 257 は
+  完了し、private test layout は安定した。
 - [ ] test layout 安定後、production helper を監査済み phase/ownership boundary
   で分割する。`runner.rs` は public facade と top-level orchestration owner に
   限定する。internal visibility を最小に保ち、detail key、diagnostic、payload
