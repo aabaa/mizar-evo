@@ -67,6 +67,20 @@ the resulting 87,574-line `tests.rs` hash is
 `7d85a8ecd4dffcb0475afc53693e581af661ccbb01b44eab974e030abb046a66`.
 All 272 tests remain in `runner::tests` with the same sorted-name hash.
 
+## Task 251 Move Result
+
+Task 251 root-included `src/runner/tests/parse_only.rs` without a wrapper
+module. The byte-identical 111-line fragment contains only
+`parse_only_provider_resolves_every_stub_and_deduplicates_fixture_summaries`
+and has hash
+`3cddce85155b72597cfc4c2ea5841dbf3fe5f88d0c8123d98ba9cb958f90a3a8`.
+The retained 87,463 lines, including the separator blank, remained
+byte-identical with hash
+`010f86378bca27c0620998c0de0242d6376fb8b3c37c002d0ca430fb01f7e35c`;
+the resulting 87,464-line `tests.rs` hash is
+`16480c65416a611c732153360775f10180f609b012027b0a0a970cff1f5a3d84`.
+The fully qualified test name and sorted 272-test list are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -138,7 +152,7 @@ when it would change the discovered test list.
 | 248 | Add this paired audit, update the paired crate plan, and establish the preservation matrix. No source move. |
 | 249 | Complete: mechanically moved the complete inline private `mod tests` body to `src/runner/tests.rs`. |
 | 250 | Complete: moved nonempty shared test support into a root-included support fragment. |
-| 251 | Move the nonempty parse-only private test family into a root-included fragment. |
+| 251 | Complete: moved the nonempty parse-only private test family into a root-included fragment. |
 | 252 | Move the baseline type-elaboration source-extraction and real handoff tests. |
 | 253 | Move reserved-variable and binary-formula bridge tests. |
 | 254 | Move local-mode/object-mode chain bridge tests. |
