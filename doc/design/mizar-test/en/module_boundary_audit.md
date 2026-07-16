@@ -1699,6 +1699,45 @@ also pass. Task 262M0 is complete and move-only Task 262M is next. No
 `spec_coverage_audit.md` update is required because behavior, test intent,
 coverage credit, owner crate, and deferred status are unchanged.
 
+## Task 262M Move Result
+
+Task 262M moved only the three inventoried formula connective/quantifier
+fragments into the existing private `source_formula.rs` leaf. After removing
+only required runner-subtree visibility, the 13-line transport, 135-line
+extractor, and 18-line allowlist retain baseline hashes
+`98f4a9a771cebc18faa43d1b266dd78f931f00a7d9435c7f6606cfd807a6e424`,
+`a64080512c757a0a8f85357ec5a086285d7139257bd816bdbb85a5ae19bcd56f`,
+and `80c39e182da04f34e2598f0670fcba4c17785dbea34373ef7d7847e3488cce1f`.
+
+The transport and all ten fields use runner-subtree visibility; only the exact
+extractor crosses the phase facade, no transport type alias was added, and the
+allowlist remains leaf-private. The retained
+`source_formula_connective_quantifier_output` checker/detail consumer remains
+byte-identical to HEAD with hash
+`7bc5d0899674fda17899b4c78463ac1d83e9ed8ad99196a4b0bb2eaf11f844f0`.
+Only the four now-unused production runner syntax-enum imports were removed;
+test support, `TypeHeadInput`, the builtin type-expression extractor, and all
+still-used source-AST facade aliases remain unchanged. Dependency direction is
+acyclic.
+
+`runner.rs` is now 13,573 lines with hash
+`1ea8e97e9f87e92bbcdd5b9e17e8a1d829b46f34f14c1a53d983529ece9ce58f`;
+the 26-line phase facade has hash
+`1eb16a6815df883433ef6de6e7814cba7102e5962c8b5425ac875caba0c5fb69`;
+and the 1,173-line source-formula leaf has hash
+`d418905106d5b6313fe62644c4145c83428c056880f2f9b2d74cc2eb2d00760d`.
+Tests, authority artifacts, public API, diagnostics, payloads, ordering,
+accepted shapes, and fail-closed behavior are unchanged.
+
+The focused preservation test, relevant-crate tests, all 272 unit tests, and
+all 188 active type cases pass. Plan/count remains 403/367, type coverage
+235/223, pass/fail 219/184, and the raw/normalized test-list plus four CLI
+hashes are unchanged. Formatting, all-target/all-feature Clippy, workspace
+tests, and diff cleanliness also pass. Task 262M is complete; parent Task 262
+remains open for fresh bounded inventory of the remaining formula families. No
+`spec_coverage_audit.md` update is required because behavior, authority,
+coverage credit, owner crate, and deferred status are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -1710,7 +1749,7 @@ coverage credit, owner crate, and deferred status are unchanged.
 | fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
 | declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
 | type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Remains in `runner.rs` through Tasks 262-263. The current `type_elaboration.rs` is a private facade for the `source_ast`, `source_formula`, and `source_reserve` leaves; later moves make it the orchestration owner. |
-| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262L moved standalone formula constants, shared exact numerals, builtin binary and type-assertion formulas, the shared imported-formula symbol resolver/provenance pair, imported predicate/functor, imported attribute assertion, and set-enumeration families to private `type_elaboration/source_formula.rs`. Other formula extraction and retained callers stay in `runner.rs` for later Task 262 subtasks. |
+| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262M moved standalone formula constants, shared exact numerals, builtin binary and type-assertion formulas, the shared imported-formula symbol resolver/provenance pair, imported predicate/functor, imported attribute assertion, set-enumeration, and connective/quantifier families to private `type_elaboration/source_formula.rs`. Other formula extraction and retained callers stay in `runner.rs` for later Task 262 subtasks. |
 | payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Private type-elaboration leaf owner; no key or ordering edits. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
@@ -1736,8 +1775,8 @@ public runner facade
            -> fixture/import-summary owner (module-path projection)
         -> reserve type-expression, declaration, and local-mode projection
         -> standalone formula-constant, shared exact numeral, builtin binary/type-assertion,
-           shared imported-symbol, imported predicate/functor, imported attribute, and
-           set-enumeration projections
+           shared imported-symbol, imported predicate/functor, imported attribute,
+           set-enumeration, and connective/quantifier projections
      -> checker/core payload validation
      -> deterministic detail keys and failure diagnostics
 
@@ -1849,7 +1888,7 @@ Task 255E.
 | 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
 | 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
 | 261 | Complete: moved the lexical provider, exact fixture vocabulary, and type import-summary adapter to private `import_fixtures.rs`. |
-| 262 | Parent: move type-elaboration source-extraction leaves; remains open after completed Task 262M0, with move-only Task 262M next. |
+| 262 | Parent: move type-elaboration source-extraction leaves; remains open after completed Task 262M for fresh bounded inventory. |
 | 262A | Complete: moved the five common exact source-AST primitives behind the private type-elaboration phase facade. |
 | 262B | Complete: moved shared node-kind traversal and qualified-symbol spelling projections into the common source-AST leaf. |
 | 262C | Complete: moved reserve type-expression, visible symbol/admission, and source-text projection into the private source-reserve leaf; retained declaration/mode callers for Task 262E. |
@@ -1869,7 +1908,7 @@ Task 255E.
 | 262L0 | Complete: strengthened the existing exact set-enumeration matrix for independent eight-field grouping/punctuation/order preservation and bounded direct-rejection corruption coverage without changing production or test count. |
 | 262L | Complete: moved only the set-enumeration transport, exact extractor, exact-set projection, and dedicated allowlist into the private source-formula leaf. |
 | 262M0 | Complete: strengthened the existing exact connective/quantifier matrix for independent ten-field binder/output/diagnostic preservation and bounded direct-rejection corruption coverage without changing production or test count. |
-| 262M | Next: move only the connective/quantifier transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
+| 262M | Complete: moved only the connective/quantifier transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 

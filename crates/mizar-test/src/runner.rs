@@ -44,10 +44,7 @@ use mizar_frontend::orchestration::{DiagnosticCode, FrontendDiagnostic};
 use mizar_resolve::env::SymbolEnv;
 use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
 use mizar_session::{SourceAnchor, SourceRange};
-use mizar_syntax::{
-    SurfaceAst, SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,
-    SurfaceNode, SurfaceNodeId, SurfaceNodeKind, SurfaceQuantifierKind,
-};
+use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{ExpectedOutcome, PipelinePhase};
@@ -78,7 +75,8 @@ use type_elaboration::{
     extract_builtin_source_reserve_declarations_after_node_guard,
     extract_builtin_source_type_expression, extract_source_builtin_binary_term_formula,
     extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
-    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
+    extract_source_formula_connective_quantifier, extract_source_formula_statement,
+    extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
     mode_definition_pattern_spelling, source_mode_symbol_spelling, structural_child_ids,
@@ -1644,20 +1642,6 @@ fn source_type_elaboration_detail_keys(
         return vec!["type_elaboration.core.context_invalid".to_owned()];
     }
     Vec::new()
-}
-
-#[derive(Debug, Clone)]
-struct SourceFormulaConnectiveQuantifier {
-    premise_constant_site: TypedSiteRef,
-    premise_constant_range: SourceRange,
-    implication_site: TypedSiteRef,
-    implication_range: SourceRange,
-    quantified_site: TypedSiteRef,
-    quantified_range: SourceRange,
-    negation_site: TypedSiteRef,
-    negation_range: SourceRange,
-    body_constant_site: TypedSiteRef,
-    body_constant_range: SourceRange,
 }
 
 #[derive(Debug)]
@@ -12939,142 +12923,6 @@ fn source_binding_use_ordinals<const N: usize>(
     Ok(ordinals)
 }
 
-fn extract_source_formula_connective_quantifier(
-    ast: &SurfaceAst,
-    module: &ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceFormulaConnectiveQuantifier> {
-    if ast
-        .nodes()
-        .iter()
-        .any(|node| !is_supported_formula_connective_quantifier_theorem_bridge_node(node))
-    {
-        return None;
-    }
-    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
-    let [(_, theorem)] = theorem_items.as_slice() else {
-        return None;
-    };
-    if subtree_has_recovery(ast, theorem) {
-        return None;
-    }
-    let theorem_tokens = direct_token_texts(ast, theorem);
-    if theorem_tokens.as_slice()
-        != [
-            "theorem",
-            "FormulaConnectiveQuantifierPayloadBoundary",
-            ":",
-            ";",
-        ]
-    {
-        return None;
-    }
-
-    let theorem_structural_children = structural_child_ids(ast, theorem);
-    let [formula_expression_id] = theorem_structural_children.as_slice() else {
-        return None;
-    };
-    let formula_expression = ast.node(*formula_expression_id)?;
-    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
-        return None;
-    }
-    let formula_children = structural_child_ids(ast, formula_expression);
-    let [implication_id] = formula_children.as_slice() else {
-        return None;
-    };
-    let implication = ast.node(*implication_id)?;
-    if !matches!(
-        implication.kind,
-        SurfaceNodeKind::BinaryFormula(operator)
-            if operator.connective == SurfaceFormulaConnective::Implies && !operator.repeated
-    ) || subtree_has_recovery(ast, implication)
-        || direct_token_texts(ast, implication).as_slice() != ["implies"]
-    {
-        return None;
-    }
-    let implication_children = structural_child_ids(ast, implication);
-    let [left_id, quantified_id] = implication_children.as_slice() else {
-        return None;
-    };
-    let left = ast.node(*left_id)?;
-    if !matches!(
-        left.kind,
-        SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction)
-    ) || direct_token_texts(ast, left).as_slice() != ["contradiction"]
-    {
-        return None;
-    }
-
-    let quantified = ast.node(*quantified_id)?;
-    if !matches!(
-        quantified.kind,
-        SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal)
-    ) || subtree_has_recovery(ast, quantified)
-        || direct_token_texts(ast, quantified).as_slice() != ["for", "holds"]
-    {
-        return None;
-    }
-    let quantified_children = structural_child_ids(ast, quantified);
-    let [segment_id, negation_id] = quantified_children.as_slice() else {
-        return None;
-    };
-    let segment = ast.node(*segment_id)?;
-    if !matches!(segment.kind, SurfaceNodeKind::QuantifierVariableSegment)
-        || subtree_has_recovery(ast, segment)
-        || direct_token_texts(ast, segment).as_slice() != ["x", "being"]
-    {
-        return None;
-    }
-    let segment_children = structural_child_ids(ast, segment);
-    let [type_expression_id] = segment_children.as_slice() else {
-        return None;
-    };
-    let type_expression = ast.node(*type_expression_id)?;
-    let binder_type =
-        extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
-    if binder_type.spelling != "set"
-        || binder_type.head != TypeHeadInput::BuiltinSet
-        || !binder_type.attributes.is_empty()
-    {
-        return None;
-    }
-
-    let negation = ast.node(*negation_id)?;
-    if !matches!(
-        negation.kind,
-        SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
-    ) || subtree_has_recovery(ast, negation)
-        || direct_token_texts(ast, negation).as_slice() != ["not"]
-    {
-        return None;
-    }
-    let negation_children = structural_child_ids(ast, negation);
-    let [negated_id] = negation_children.as_slice() else {
-        return None;
-    };
-    let negated = ast.node(*negated_id)?;
-    if !matches!(
-        negated.kind,
-        SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction)
-    ) || direct_token_texts(ast, negated).as_slice() != ["contradiction"]
-    {
-        return None;
-    }
-
-    Some(SourceFormulaConnectiveQuantifier {
-        premise_constant_site: surface_site(*left_id),
-        premise_constant_range: left.range,
-        implication_site: surface_site(*implication_id),
-        implication_range: implication.range,
-        quantified_site: surface_site(*quantified_id),
-        quantified_range: quantified.range,
-        negation_site: surface_site(*negation_id),
-        negation_range: negation.range,
-        body_constant_site: surface_site(*negated_id),
-        body_constant_range: negated.range,
-    })
-}
-
 fn is_supported_reserved_variable_binary_formula_bridge_node(node: &SurfaceNode) -> bool {
     matches!(
         node.kind,
@@ -13116,25 +12964,6 @@ fn is_supported_reserved_variable_type_assertion_bridge_node(node: &SurfaceNode)
             | SurfaceNodeKind::IsAssertion
             | SurfaceNodeKind::TermExpression
             | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::Token(_)
-    )
-}
-
-fn is_supported_formula_connective_quantifier_theorem_bridge_node(node: &SurfaceNode) -> bool {
-    matches!(
-        node.kind,
-        SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::TheoremItem
-            | SurfaceNodeKind::FormulaExpression
-            | SurfaceNodeKind::BinaryFormula(_)
-            | SurfaceNodeKind::QuantifiedFormula(_)
-            | SurfaceNodeKind::QuantifierVariableSegment
-            | SurfaceNodeKind::PrefixFormula(_)
-            | SurfaceNodeKind::FormulaConstant(_)
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::TypeHead
             | SurfaceNodeKind::Token(_)
     )
 }

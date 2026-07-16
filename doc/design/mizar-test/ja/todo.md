@@ -759,9 +759,9 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   262K に分割し、両方とも完了した。次の fresh inventory は set-enumeration
   family を test-only preservation Task 262L0、その後の move-only Task 262L に
   分割し、両方とも完了した。次の fresh inventory は connective/quantifier family
-  を完了済み test-only preservation Task 262M0、その後の move-only Task 262M に
-  分割する。残る formula family と Task 263 のため、この parent item は open の
-  ままにする。
+  を test-only preservation Task 262M0、その後の move-only Task 262M に分割し、
+  両方とも完了した。残る formula family は fresh bounded inventory が必要であり、
+  Task 263 と共にこの parent item を open のままにする。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
