@@ -34,7 +34,8 @@ use shared::{
 };
 #[cfg(test)]
 use type_elaboration::{
-    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, assemble_source_checker_handoff,
+    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, SourceReservedVariableTypeAssertionOutput,
+    assemble_source_checker_handoff, assert_source_reserved_variable_type_assertion_output,
     direct_token_texts, extract_builtin_source_reserve_declarations_after_node_guard,
     resolve_visible_attribute, resolve_visible_type_head, source_mode_symbol_spelling,
     structural_child_ids, surface_nodes_with_kind, surface_site,
@@ -47,12 +48,10 @@ use type_elaboration::{
     SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBinaryFormulaOutput,
     SourceReservedVariableBuiltinType, SourceReservedVariableModeDefinition,
     SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
-    SourceReservedVariableTypeAssertionConfig, SourceReservedVariableTypeAssertionOutput,
-    assemble_source_reserve_checker_handoff,
+    SourceReservedVariableTypeAssertionConfig, assemble_source_reserve_checker_handoff,
     assert_source_parenthesized_reserved_variable_binary_formula_output_with_config,
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
     assert_source_reserve_handoff, assert_source_reserved_variable_formula_output,
-    assert_source_reserved_variable_type_assertion_output,
     build_source_parenthesized_reserved_variable_binary_formula_output,
     build_source_reserved_variable_formula_output,
     build_source_reserved_variable_type_assertion_output, expected_type_elaboration_detail_keys,
@@ -66,6 +65,7 @@ use type_elaboration::{
     extract_source_reserved_variable_binary_formula,
     extract_source_reserved_variable_type_assertion_with_config,
     extract_source_set_enumeration_formula, is_active_type_elaboration, source_module_binding_env,
+    source_reserved_variable_type_assertion_result_detail_keys,
     type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
 };
 
@@ -6968,53 +6968,6 @@ fn source_local_object_mode_reserved_variable_type_assertion_detail_keys(
         build_source_reserved_variable_type_assertion_output(payload, symbols),
         TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
     ))
-}
-
-fn source_reserved_variable_type_assertion_result_detail_keys(
-    output: Result<SourceReservedVariableTypeAssertionOutput, String>,
-    invalid_payload_key: &str,
-) -> Vec<String> {
-    match output.and_then(|output| {
-        assert_source_reserved_variable_type_assertion_output(&output)?;
-        Ok(output)
-    }) {
-        Ok(output) => source_reserved_variable_type_assertion_output_detail_keys(&output),
-        Err(_) => vec![invalid_payload_key.to_owned()],
-    }
-}
-
-fn source_reserved_variable_type_assertion_output_detail_keys(
-    output: &SourceReservedVariableTypeAssertionOutput,
-) -> Vec<String> {
-    let mut keys = output
-        .handoff
-        .binding_env
-        .diagnostics()
-        .canonical_iter()
-        .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
-        .chain(
-            output
-                .handoff
-                .declarations
-                .diagnostics()
-                .canonical_iter()
-                .map(|(_, diagnostic)| {
-                    format!("type_elaboration.checker.{}", diagnostic.message_key)
-                }),
-        )
-        .chain(
-            output
-                .term_formula
-                .diagnostics()
-                .canonical_iter()
-                .map(|(_, diagnostic)| {
-                    format!("type_elaboration.checker.{}", diagnostic.message_key)
-                }),
-        )
-        .collect::<Vec<_>>();
-    keys.sort();
-    keys.dedup();
-    keys
 }
 
 fn source_reserved_variable_formula_result_detail_keys(

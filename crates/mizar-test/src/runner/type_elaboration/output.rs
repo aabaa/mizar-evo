@@ -533,6 +533,53 @@ pub(in crate::runner) fn assert_source_reserved_variable_type_assertion_output(
     Ok(())
 }
 
+pub(in crate::runner) fn source_reserved_variable_type_assertion_result_detail_keys(
+    output: Result<SourceReservedVariableTypeAssertionOutput, String>,
+    invalid_payload_key: &str,
+) -> Vec<String> {
+    match output.and_then(|output| {
+        assert_source_reserved_variable_type_assertion_output(&output)?;
+        Ok(output)
+    }) {
+        Ok(output) => source_reserved_variable_type_assertion_output_detail_keys(&output),
+        Err(_) => vec![invalid_payload_key.to_owned()],
+    }
+}
+
+fn source_reserved_variable_type_assertion_output_detail_keys(
+    output: &SourceReservedVariableTypeAssertionOutput,
+) -> Vec<String> {
+    let mut keys = output
+        .handoff
+        .binding_env
+        .diagnostics()
+        .canonical_iter()
+        .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
+        .chain(
+            output
+                .handoff
+                .declarations
+                .diagnostics()
+                .canonical_iter()
+                .map(|(_, diagnostic)| {
+                    format!("type_elaboration.checker.{}", diagnostic.message_key)
+                }),
+        )
+        .chain(
+            output
+                .term_formula
+                .diagnostics()
+                .canonical_iter()
+                .map(|(_, diagnostic)| {
+                    format!("type_elaboration.checker.{}", diagnostic.message_key)
+                }),
+        )
+        .collect::<Vec<_>>();
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
 fn type_entry_known_actual_for_owner(
     output: &TermFormulaInferenceOutput,
     owner: &TypedSiteRef,

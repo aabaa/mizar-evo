@@ -2481,6 +2481,57 @@ bounded detail または config/named-wrapper family を選ぶ。path、authorit
 coverage credit、owner crate、deferred status は変わらないため Source Inventory と
 `spec_coverage_audit.md` は不変。
 
+## Task 263J Pre-Move Inventory and Specification
+
+fresh dependency inventory は `runner.rs:6973-7018` の正確な type-assertion
+result/detail core を選ぶ（46行、hash
+`3d4f7e8ce9ff1b60d0960e33fb8e1689fb4862a1730cf3144137e720db053fb8`）。
+parent 向け result projection は既存 consumer 125個を持ち、output diagnostic collector
+は選択 core 内だけで使われる。
+
+Task 263J はこの family を既存 private `type_elaboration/output.rs` へ機械的に移動する。
+result projection は保持 named detail wrapper のため parent-only、collector は Task 263G
+validator/output transport の隣で leaf-private とする。binary/parenthesized detail core、
+config、named wrapper、output wrapper、call site、orchestration は `runner.rs` に残す。
+
+これは move-only `design_drift` で、Task 263J0 prerequisite はない。既存8 test module
+の direct matrix と active/report consumer が validator-first rejection、invalid-key
+fallback、binding/declaration/formula diagnostic collection、checker prefix、canonical
+iteration、sort/dedup、empty success、corruption rejection、fail-closed behavior を固定する。
+exact-body equivalence、272-test、active case 188件、repository/report/CLI byte-stability、
+全 gate により、全 key、fallback、ordering decision、payload、failure boundary を保持する。
+test、expectation、config、wrapper logic、semantic behavior、authority artifact は変更しない。
+既存 `output.rs` path を拡張し、coverage credit、owner crate、deferred status は変わらない
+ため Source Inventory と `spec_coverage_audit.md` は不変。
+
+## Task 263J Move Result
+
+Task 263J は正確な type-assertion result/detail core だけを既存 private
+`type_elaboration/output.rs` へ移動した。必要な `pub(in crate::runner)` qualifier を
+除去すると、moved lines 536-581 は hash
+`3d4f7e8ce9ff1b60d0960e33fb8e1689fb4862a1730cf3144137e720db053fb8`
+を維持する。result projection は parent-only、diagnostic collector は leaf-private。
+production detail consumer は result projection だけを使うため、facade/runner の direct
+validator/output type alias は test-only に gate した。binary/parenthesized detail、config、
+named/output wrapper、call site は `runner.rs` に残す。
+
+結果の `runner.rs` は10,444行、hash
+`66bda6fe475617e30298b8dfb9384b92d55a033a23ee11726ada2e8ba9e6a8c2`、
+68行 `type_elaboration.rs` facade は hash
+`5a2412bfbf81a7505ccc03d68a12266a9ce5ec238247ed2c583c5cf08666ec4a`、
+1,067行 `output.rs` は hash
+`0afb49bbd16b8eb320e70d6997818302290cf1352fefe0b2c7ad3a3a2e9be1df`。
+validator-first rejection、fallback selection、diagnostic source/prefix、canonical
+iteration、sort/dedup、empty success、fail-closed behavior は不変。
+
+focused type-assertion test 47件、unit test 272件、active parse 96件、
+declaration-symbol 4件、type-elaboration 188件は全成功。plan/count は403/367、type
+coverage は235/223、pass/fail は219/184 のまま。272行 raw/normalized test-list hash と
+4つの CLI byte hash は不変。Task 263J は完了し、fresh Task 263 inventory で次の
+bounded binary/parenthesized detail または config/named-wrapper family を選ぶ。path、
+authority、behavior、coverage credit、owner crate、deferred status は変わらないため
+Source Inventory と `spec_coverage_audit.md` は不変。
+
 Tasks 262N0-262Q は authority、behavior、coverage credit、owner crate、deferred
 status を維持するため `spec_coverage_audit.md` は変更しない。accepted-shape expansion、
 route generalization、config/result-role edit、payload/detail/diagnostic/order change、
@@ -2498,7 +2549,7 @@ assertion weakening、test deletion/ignore、checker/output move を禁止する
 | declaration-symbol observation | shared resolver result を consume し、deterministic payload、expected-value、failure projection を組み立てる | shared resolver output から declaration-symbol result | Task 260B で private `declaration_symbol.rs` へ移動済み。既存 integration test は `tests/metadata.rs` に残す。 |
 | type-elaboration admission/execution | lower-stage fail-closed gate と checker/core handoff dispatch | resolver output から source bridge | Task 263A で generic checker-handoff assembly/validation を private `checker_handoff.rs`、Task 263C で expected-key/failure projection を private `result.rs`、Task 263D で active admission を private `admission.rs`、Tasks 263E-263F で checker-output transport/builder、Tasks 263G-263I で type-assertion/binary/shared-parenthesized validation を private `output.rs` へ移動。top-level case execution/dispatch、concrete config/named wrapper、detail logic、他の output consumer は後続 Task 263 family のため `runner.rs` に残り、phase facade は private leaf 7個を所有する。 |
 | source extraction | exact source-shape recognition と real AST/resolver payload construction | syntax/resolver input から checker input | Tasks 262A-262B で common source-AST primitive/projection、Task 262D で shared exact fixture-import projection を private `type_elaboration/source_ast.rs`、Tasks 262C/262E で reserve type-expression/symbol projection、declaration segmentation、local-mode expansion を private `type_elaboration/source_reserve.rs`、Tasks 262F-262Q で standalone formula constant、shared exact numeral、builtin binary/type-assertion formula、shared imported-formula symbol resolver/provenance pair、imported predicate/functor、imported attribute assertion、set-enumeration、connective/quantifier family、shared/direct-binary/parenthesized/type-assertion reserved-variable source substrate を private `type_elaboration/source_formula.rs` へ移動済み。formula source extraction は完了し、保持 config/wrapper と checker/output consumer は Task 263 inventory まで `runner.rs` に残す。 |
-| payload validation と detail-key rendering | exact checker/core output validation、expected/actual matching、deterministic key、diagnostic | source bridge output から runner result | Tasks 263E-263I で shared output transport/builder 3個と type-assertion/binary/shared-parenthesized validator/private helper を private `type_elaboration/output.rs` へ移動。named wrapper/config と detail projection は後続 bounded work に残す。key/order は編集しない。 |
+| payload validation と detail-key rendering | exact checker/core output validation、expected/actual matching、deterministic key、diagnostic | source bridge output から runner result | Tasks 263E-263I で shared output transport/builder 3個と type-assertion/binary/shared-parenthesized validator/private helper を private `type_elaboration/output.rs` へ移動。Task 263J で type-assertion detail core も移動し、binary/parenthesized detail と named wrapper/config は後続 bounded work に残す。key/order は編集しない。 |
 | fixture builder と corruption probe | AST/env/sidecar builder と finite negative matrix | test support から private production seam | private test support/fragment のみ。 |
 | cross-owner isolation test | bidirectional route rejection と immutable/module guard | 全 supported source-bridge owner | cohesive fragment として保持して移す。 |
 
@@ -2528,7 +2579,7 @@ public runner facade
            set-enumeration、connective/quantifier、shared/direct-binary/parenthesized/
            type-assertion reserved-variable source projection
      -> checker-handoff assembly と readiness validation
-     -> checker-output transport、builder、type-assertion/binary/parenthesized validation
+     -> checker-output transport、builder、validation、type-assertion detail projection
      -> expected-result と failure projection
      -> checker/core payload validation と deterministic actual-detail keys
 
@@ -2673,6 +2724,7 @@ subtask は long-chain test を含まない。parent Task 255 は Task 255E ま�
 | 263G | 完了: 正確な229行 type-assertion validator/private role helper/shared normalized-type predicate family だけを既存 private `type_elaboration/output.rs` へ移動。validator と一時 shared predicate は parent-only、role helper は leaf-private、全 preservation gate 成功。 |
 | 263H | 完了: 正確な380行 binary-formula validator/source-projection/type-entry-helper family だけを既存 private `type_elaboration/output.rs` へ移動。validator だけ parent-only、全 helper は leaf-private、全 preservation gate 成功。 |
 | 263I | 完了: 正確な67行 config-independent parenthesized-binary validator core だけを parent-only entry 1個で既存 private `type_elaboration/output.rs` へ移動。全 config、named wrapper、detail、call site を保持し、全 preservation gate 成功。 |
+| 263J | 完了: 正確な46行 type-assertion result/detail core だけを既存 private `type_elaboration/output.rs` へ移動。result projection は parent-only、collector は leaf-private、direct validator/output alias は test-only、全 preservation gate 成功。 |
 | 264 | paired source-layout inventory、path table、todo/plan state、ownership guard を closeout。 |
 
 各 source-moving task は nonempty でなければならない。fresh inventory により
