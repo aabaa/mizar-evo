@@ -269,7 +269,8 @@
         source_two_edge_local_object_mode_reserved_variable_membership_output,
         source_two_edge_local_object_mode_reserved_variable_type_assertion_output,
         source_two_edge_local_object_mode_two_hop_asserted_head_output,
-        source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
+        source_type_elaboration_detail_keys, structural_child_ids, surface_nodes_with_kind,
+        surface_site,
     };
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
     use mizar_checker::binding_env::{BindingContextId, BindingId};
@@ -3212,15 +3213,30 @@
         items: Vec<ReserveItemSpec>,
         spec: IdentifierTypeAssertionTheoremSpec<'_>,
     ) -> SurfaceAst {
+        reserve_then_identifier_type_assertion_theorem_ast_with_corruption(
+            source_id,
+            items,
+            spec,
+            BuiltinTypeAssertionTheoremCorruption::default(),
+        )
+    }
+
+    fn reserve_then_identifier_type_assertion_theorem_ast_with_corruption(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        spec: IdentifierTypeAssertionTheoremSpec<'_>,
+        corruption: BuiltinTypeAssertionTheoremCorruption,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
-        root_children.push(add_type_assertion_theorem_item_with_status(
+        root_children.push(add_type_assertion_theorem_item_with_status_and_corruption(
             &mut builder,
             source_id,
             &mut offset,
             spec,
             true,
+            corruption,
         ));
         let root = builder.add_node(
             SurfaceNodeKind::Root,

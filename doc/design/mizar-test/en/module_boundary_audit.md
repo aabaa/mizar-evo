@@ -1998,6 +1998,94 @@ workspace tests, and diff cleanliness pass. Task 262P is complete and Task
 262Q is next. No `spec_coverage_audit.md` update is required because authority,
 behavior, coverage credit, owner crate, and deferred status are unchanged.
 
+## Task 262Q Pre-Move Inventory and Specification
+
+Fresh test-sufficiency and source inventory identifies exactly three remaining
+reserved-variable type-assertion source-core fragments for Task 262Q:
+
+- the 13-line source transport, hash
+  `1a8d06350de32059528b6af1240457874a323a24cb17cbedce128f560c50b00e`;
+- the 121-line generic type-assertion extractor, hash
+  `9334dbda0d88f8efbd75a7597471f08777df7f651761c132af4672034bcdf89e`;
+- the 18-line type-assertion node allowlist, hash
+  `2fd9587c78d740ffa0893baac5dfc18031ff43296e76bfa69819c2e2ba6b41d1`.
+
+The 152 lines move from `runner.rs` into the existing private
+`source_formula.rs` leaf with normalized equivalence. Only the source transport
+and its ten fields plus the generic extractor receive runner-scoped visibility;
+the allowlist remains leaf-private. The move uses only the formula leaf's
+existing common source-AST, source-reserve, mode-expansion, and exact identifier
+dependencies, so dependency direction remains acyclic.
+
+All 58 concrete configs and named route wrappers, source-output transport,
+checker/output conversion and validation, detail keys, diagnostics, and tests
+remain in `runner.rs` unchanged. Existing base/object, local-mode, asserted-head,
+two-through-six-hop, long-chain, exact/near-miss, source/range/ordinal/head/
+provenance corruption, immutable-output, cross-route isolation, and real
+frontend/resolver coverage includes 58 paired active `.miz` slices and 137
+matching unit-test names. Fresh review must confirm that this matrix is
+sufficient before implementation; if it finds a bounded preservation gap, a
+separate test-only prerequisite task and commit must precede 262Q.
+
+Completion requires all three normalized hashes, minimum visibility, preserved
+accepted shape and exact asserted-head relation, unchanged fail-closed behavior
+and 272-name/188-active inventories, unchanged plan/count/coverage/pass-fail/
+CLI hashes, full Rust verification, diff cleanliness, and no-findings
+implementation/source-doc review. No chain generalization, config/wrapper
+split, rename, deduplication, semantic cleanup, or checker/output movement is
+permitted.
+
+## Task 262Q0 Test Repair Specification
+
+The required fresh review classified a bounded `test_gap` before Task 262Q.
+The existing base reserved-variable type-assertion test reaches the real source
+extractor and checker handoff from a synthetic AST, but does not independently
+fix all ten source transport fields and config identity, observes its 15 near
+misses only through aggregate detail keys, and does not feed four already
+modeled structural corruptions through the identifier-subject generic
+extractor. The broader active family supplies the real frontend/resolver
+sidecars, but another extraction route could still mask a generic-core
+regression after the move.
+
+Task 262Q0 is test-only. It makes the existing private identifier type-assertion
+AST builder's corruption argument available through a default-off wrapper and
+strengthens only
+`source_reserved_variable_type_assertion_bridge_checks_reflexive_admissibility`.
+The positive assertions must independently derive the formula, subject, and
+asserted-type sites/ranges from the AST; fix the exact config identity and every
+config field; and fix the reserve, spelling, ordinal, asserted type, and
+distinct-range payload. Every existing near miss must directly return `None`
+from the named extractor before also producing the aggregate extraction-gap
+key. Four bounded identifier-route corruptions—recovered `is`, duplicate
+formula expression, extra formula child, and extra assertion operand—must have
+the same direct and aggregate rejection assertions.
+
+Q0 adds no test and changes no production source, `.miz`, expectation, trace,
+specification, public API, behavior, diagnostic, or coverage credit. Test name
+and count hashes, active cases, repository counts, and CLI output must remain
+unchanged. Task 262Q may proceed only after Q0 review and full verification.
+
+## Task 262Q0 Test Repair Result
+
+Task 262Q0 strengthened only the existing base reflexive-admissibility test and
+its private default-off AST builder. The test now derives and fixes all ten
+source transport fields from the AST, fixes all nine config values through the
+named extractor route, and fixes the reserve payload, spelling, ordinal,
+asserted type, and distinct source ranges. All 15 existing near misses now
+directly reject through the named extractor before the aggregate gap check.
+Recovered `is`, duplicate formula expression, extra formula child, and extra
+assertion operand corruptions receive the same direct and aggregate rejection.
+
+No production source, `.miz`, expectation, trace, specification, public API,
+behavior, diagnostic, coverage credit, test name, or test count changed. All
+272 unit tests and 188 active type cases pass. Plan/count remains 403/367, type
+coverage 235/223, and pass/fail 219/184. The raw/normalized test-list and four
+CLI hashes remain unchanged. Formatting, all-target/all-feature Clippy,
+workspace tests, and diff cleanliness pass. Task 262Q0 is complete and
+move-only Task 262Q is next. No `spec_coverage_audit.md` update is required
+because authority, behavior, coverage credit, owner crate, and deferred status
+are unchanged.
+
 `spec_coverage_audit.md` remains unchanged for Tasks 262N0-262Q because these
 tasks preserve authority, behavior, coverage credit, owner crate, and deferred
 status. Forbidden changes are accepted-shape expansion, route generalization,
@@ -2180,7 +2268,8 @@ Task 255E.
 | 262N | Complete: moved the four normalized shared reserved-variable config/model, predicate, mode/identifier, and ordinal substrate fragments with minimal runner-scoped visibility. |
 | 262O | Complete: moved only the direct reserved-variable binary source transport, generic extractor, and family allowlist into the private source-formula leaf; the temporary allowlist alias remains solely for Task 262P's retained parenthesized family. |
 | 262P | Complete: moved only the parenthesized reserved-variable source enum/transport, generic extractor, single-parenthesized operand projection, and family allowlist; both binary allowlists are now leaf-private. |
-| 262Q | Pending: after fresh test-sufficiency review, move the reserved-variable type-assertion source transport, generic extractor, and family allowlist. |
+| 262Q0 | Complete: strengthened the existing base reserved-variable type-assertion test for all ten source fields, exact config, direct rejection of all 15 near misses, and four bounded structural corruptions without changing test count or production. |
+| 262Q | Pending after 262Q0: move the reserved-variable type-assertion source transport, generic extractor, and family allowlist. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
@@ -2214,7 +2303,7 @@ before Task 253A is
 | Class | Result |
 |---|---|
 | `design_drift` | Active: source layout obscures phase and ownership review boundaries. Tasks 249-264 repair it without changing behavior. |
-| `test_gap` | Tasks 262H0, 262I0, 262J0, 262K0, 262L0, 262M0, and 262N0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
+| `test_gap` | Tasks 262H0, 262I0, 262J0, 262K0, 262L0, 262M0, 262N0, and 262Q0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
 | `spec_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
 | `source_undocumented_behavior`, `boundary_violation` | No new finding; existing runner behavior remains governed by the paired harness plan and higher authorities. |
 | `repo_metadata_conflict` | None found. |

@@ -19,6 +19,71 @@
         let payload =
             extract_source_reserved_variable_type_assertion(&ast, module.clone(), &symbols)
                 .expect("exact reserved-variable type assertion should extract");
+        let formula_nodes = surface_nodes_with_kind(&ast, SurfaceNodeKind::IsAssertion);
+        let [(formula_id, formula)] = formula_nodes.as_slice() else {
+            panic!("exact type assertion should contain one assertion formula");
+        };
+        let formula_children = structural_child_ids(&ast, formula);
+        let [subject_expression_id, asserted_type_id] = formula_children.as_slice() else {
+            panic!("exact type assertion should contain one subject and asserted type");
+        };
+        let subject_expression = ast
+            .node(*subject_expression_id)
+            .expect("exact type assertion subject expression should exist");
+        let subject_children = structural_child_ids(&ast, subject_expression);
+        let [subject_id] = subject_children.as_slice() else {
+            panic!("exact type assertion should contain one subject reference");
+        };
+        let subject = ast
+            .node(*subject_id)
+            .expect("exact type assertion subject reference should exist");
+        let asserted_type = ast
+            .node(*asserted_type_id)
+            .expect("exact asserted type should exist");
+        assert_eq!(payload.formula_site, surface_site(*formula_id));
+        assert_eq!(payload.formula_range, formula.range);
+        assert_eq!(payload.subject_site, surface_site(*subject_id));
+        assert_eq!(payload.subject_range, subject.range);
+        assert_eq!(payload.asserted_type_site, surface_site(*asserted_type_id));
+        assert_eq!(payload.asserted_type.range, asserted_type.range);
+        assert_ne!(payload.formula_site, payload.subject_site);
+        assert_ne!(payload.formula_site, payload.asserted_type_site);
+        assert_ne!(payload.subject_site, payload.asserted_type_site);
+        assert!(payload.subject_range.end <= payload.asserted_type.range.start);
+        assert_eq!(
+            payload.config.label,
+            "ReservedVariableTypeAssertionPayloadBoundary"
+        );
+        assert_eq!(
+            payload.config.invalid_payload_key,
+            super::TYPE_ELABORATION_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY
+        );
+        assert_eq!(payload.config.binding_spelling, "x");
+        assert_eq!(
+            payload.config.binding_type,
+            super::SourceReservedVariableBuiltinType::Set
+        );
+        assert_eq!(payload.config.binding_source_mode_spelling, None);
+        assert!(payload.config.mode_definitions.is_empty());
+        assert_eq!(
+            payload.config.asserted_type,
+            super::SourceReservedVariableBuiltinType::Set
+        );
+        assert_eq!(
+            payload.config.asserted_head_relation,
+            super::SourceReservedVariableAssertedHeadRelation::Builtin
+        );
+        assert_eq!(
+            payload.config.subject_result_role,
+            "reserved-variable-type-assertion-subject-result"
+        );
+        let [source_binding] = payload.reserve.bridge.bindings() else {
+            panic!("exact type assertion should contain one reserve binding");
+        };
+        assert_eq!(source_binding.spelling, "x");
+        assert_eq!(source_binding.type_spelling, "set");
+        assert_eq!(source_binding.type_head, TypeHeadInput::BuiltinSet);
+        assert!(payload.reserve.mode_expansions.is_empty());
         assert_eq!(payload.subject_spelling, "x");
         assert_eq!(payload.subject_lookup_ordinal, 1);
         assert_eq!(payload.asserted_type.spelling, "set");
@@ -169,6 +234,54 @@
             identifier_type_assertion_theorem_then_reserve_ast(source_id),
         ];
         for gap_case in gap_cases {
+            assert!(
+                extract_source_reserved_variable_type_assertion(
+                    &gap_case,
+                    module.clone(),
+                    &symbols
+                )
+                .is_none()
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for corruption in [
+            BuiltinTypeAssertionTheoremCorruption {
+                recovered_is: true,
+                ..BuiltinTypeAssertionTheoremCorruption::default()
+            },
+            BuiltinTypeAssertionTheoremCorruption {
+                duplicate_formula_expression: true,
+                ..BuiltinTypeAssertionTheoremCorruption::default()
+            },
+            BuiltinTypeAssertionTheoremCorruption {
+                extra_formula_child: true,
+                ..BuiltinTypeAssertionTheoremCorruption::default()
+            },
+            BuiltinTypeAssertionTheoremCorruption {
+                extra_assertion_operand: true,
+                ..BuiltinTypeAssertionTheoremCorruption::default()
+            },
+        ] {
+            let gap_case = reserve_then_identifier_type_assertion_theorem_ast_with_corruption(
+                source_id,
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                exact,
+                corruption,
+            );
+            assert!(
+                extract_source_reserved_variable_type_assertion(
+                    &gap_case,
+                    module.clone(),
+                    &symbols
+                )
+                .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
