@@ -48,9 +48,10 @@ use type_elaboration::{
     SourceReservedVariableBuiltinType, SourceReservedVariableModeDefinition,
     SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
     SourceReservedVariableTypeAssertionConfig, SourceReservedVariableTypeAssertionOutput,
-    assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
-    assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
-    assert_source_reserved_variable_formula_output,
+    assemble_source_reserve_checker_handoff,
+    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config,
+    assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
+    assert_source_reserve_handoff, assert_source_reserved_variable_formula_output,
     assert_source_reserved_variable_type_assertion_output,
     build_source_parenthesized_reserved_variable_binary_formula_output,
     build_source_reserved_variable_formula_output,
@@ -8518,74 +8519,6 @@ fn assert_source_parenthesized_reserved_object_variable_inequality_output(
         &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
         SourceParenthesizedOperandSide::Left,
     )
-}
-
-fn assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-    config: &'static SourceReservedVariableBinaryFormulaConfig,
-    expected_side: SourceParenthesizedOperandSide,
-) -> Result<(), String> {
-    assert_source_reserved_variable_formula_output(&output.formula)?;
-    let payload = &output.formula.payload;
-    let wrapper_range_is_valid = match expected_side {
-        SourceParenthesizedOperandSide::Left => {
-            output.wrapper_range.start < payload.left_range.start
-                && output.wrapper_range.end > payload.left_range.end
-                && output.wrapper_range.end <= payload.right_range.start
-                && payload.formula_range.start <= output.wrapper_range.start
-                && payload.formula_range.end >= payload.right_range.end
-        }
-        SourceParenthesizedOperandSide::Right => {
-            payload.left_range.end <= output.wrapper_range.start
-                && output.wrapper_range.start < payload.right_range.start
-                && output.wrapper_range.end > payload.right_range.end
-                && payload.formula_range.start <= payload.left_range.start
-                && payload.formula_range.end >= output.wrapper_range.end
-        }
-    };
-    if !std::ptr::eq(payload.config, config)
-        || output.source_wrapper_side != expected_side
-        || output.wrapper_side != output.source_wrapper_side
-        || output.wrapper_site != output.source_wrapper_site
-        || output.wrapper_range != output.source_wrapper_range
-        || output.wrapper_site == payload.formula_site
-        || output.wrapper_site == payload.left_site
-        || output.wrapper_site == payload.right_site
-        || payload.formula_site == payload.left_site
-        || payload.formula_site == payload.right_site
-        || payload.left_site == payload.right_site
-        || output.wrapper_range.source_id != payload.left_range.source_id
-        || output.wrapper_range.source_id != payload.right_range.source_id
-        || output.wrapper_range.source_id != payload.formula_range.source_id
-        || !wrapper_range_is_valid
-        || output
-            .formula
-            .term_formula
-            .terms()
-            .iter()
-            .any(|(_, term)| term.site.node() == output.wrapper_site.node())
-        || output
-            .formula
-            .term_formula
-            .type_entries()
-            .iter()
-            .any(|(_, entry)| entry.owner.node() == output.wrapper_site.node())
-        || output
-            .formula
-            .term_formula
-            .formulas()
-            .iter()
-            .any(|(_, formula)| {
-                formula.site.node() == output.wrapper_site.node()
-                    || formula
-                        .terms
-                        .iter()
-                        .any(|term| term.node() == output.wrapper_site.node())
-            })
-    {
-        return Err("parenthesized reserved-variable binary formula wrapper mismatch".to_owned());
-    }
-    Ok(())
 }
 
 fn source_formula_statement_detail_keys(
