@@ -399,12 +399,38 @@ names, bridge and isolation assertions, and both canonical 272-test list
 hashes are unchanged. Task 257H and parent Task 257 are complete; the private
 test layout is stable, and Task 258 is next.
 
+## Task 258 Move Result
+
+Task 258 created the private `src/runner/shared.rs` owner and moved the two
+cohesive source/frontend staging fragments out of `runner.rs`. The original
+30-line frontend-execution/result fragment had hash
+`7d03c8561f87b95d5b777beba830998f44c0cd1cbe72a245c29573a64fa1b0f6`;
+the original 89-line package/root/path/snapshot fragment had hash
+`34fd4b86829394b95f5ae3125c5bf2f010b0ca0357254ea93446e50e7f384672`.
+The resulting 138-line `shared.rs`, including its direct dependency imports,
+has hash
+`11a52bf7fb0e729ac680df33dfa4b7fd65b9fdd922ee9aca6e9ba4a96d7f8f56`,
+and `runner.rs` has 17,022 lines with hash
+`dde9e23dfb8092be02f3b1139b59dbfddcbb8e55c0c21eac7ad70e1f1fcbda04`.
+Only `run_frontend`, `FrontendRun` and its fields, root normalization, and the
+shared module-path projection use parent-only `pub(super)` visibility;
+package preparation, cleanup, temp naming, and snapshot identity remain
+private to `shared.rs`. Direct imports keep the owner independent of the
+facade namespace; the explicitly imported parent-owned
+`ParseOnlyImportProvider` is the sole temporary parent dependency until Task
+261 rather than being generalized or moved early. Public surface hash
+`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
+all four CLI byte hashes, both 272-test list hashes, counts, payloads,
+diagnostics, ordering, and fail-closed behavior are unchanged. Task 258 is
+complete; Task 259 is next.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
 |---|---|---|---|
 | public report/result/status types and `run_*_corpus` functions | Stable public runner facade and corpus-level orchestration | plan/discovery to phase execution | Keep in `runner.rs`. |
-| active-case admission and source/frontend staging | Tag/phase gates, source package preparation, frontend execution, stable failure assembly | shared by parse, declaration-symbol, and type-elaboration | Move only after tests stabilize, into private shared helpers. |
+| source/frontend staging | Source package preparation and cleanup, root/path/snapshot identity, and frontend execution/result transport | shared by parse, declaration-symbol, and type-elaboration | Moved in Task 258 to private `shared.rs` with parent-only visibility. |
+| active-case admission and stable failure assembly | Tag/phase gates, expected-output matching, and deterministic failure diagnostics | phase-specific facade-to-owner transition | Keep in `runner.rs` until the owning Tasks 259-263 move each phase boundary. |
 | parse-only execution and fixture import provider | Surface-AST snapshots and parser fixture lexical summaries | shared frontend plus parser/frontend seams | Private parse-only owner; preserve the provider's use by later phases. |
 | declaration-symbol observation | Resolver shell/projection/symbol collection and deterministic payload keys | frontend AST to resolver output | Private declaration-symbol owner; existing integration tests remain in `tests/metadata.rs`. |
 | type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Private type-elaboration owner. |
@@ -533,7 +559,7 @@ Task 255E.
 | 257F | Complete: moved the 35 active reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route isolation guards to `asserted_head_fixtures.rs`, retaining the Task 257G separator. |
 | 257G | Complete: moved the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`, retaining the immediate long-chain include and Task 257H boundary. |
 | 257H | Complete: moved the final nine root bridge fixtures, three root isolation tests, and 28 nested tests to `remaining_bridges_and_nested_isolation.rs` while retaining Task 216-222 modules; completed Task 257. |
-| 258 | Move shared source/frontend staging helpers after the test layout is stable. |
+| 258 | Complete: moved shared source/frontend staging helpers to private `shared.rs` after the test layout stabilized. |
 | 259 | Move parse-only production helpers. |
 | 260 | Move existing declaration-symbol production helpers; this is not a test move. |
 | 261 | Move fixture/import-summary production helpers. |
