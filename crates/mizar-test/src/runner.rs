@@ -55,10 +55,10 @@ use type_elaboration::{
     SourceReservedVariableTypeAssertion, SourceReservedVariableTypeAssertionConfig,
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
-    extract_builtin_source_reserve_declarations, extract_source_builtin_binary_term_formula,
-    extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
-    extract_source_formula_connective_quantifier, extract_source_formula_statement,
-    extract_source_imported_attribute_assertion_formula,
+    expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
+    extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
+    extract_source_contradiction_formula, extract_source_formula_connective_quantifier,
+    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,
     extract_source_parenthesized_reserved_variable_binary_formula_with_config,
@@ -68,7 +68,7 @@ use type_elaboration::{
     source_binding_use_ordinals, source_mode_terminal_builtin_input, source_module_binding_env,
     source_reserved_variable_asserted_head_relation_is_exact,
     source_reserved_variable_mode_expansions_are_exact,
-    source_type_expression_matches_reserved_builtin_type,
+    source_type_expression_matches_reserved_builtin_type, type_elaboration_failure_diagnostic,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -11506,31 +11506,6 @@ fn extract_source_local_object_mode_reserved_variable_type_assertion(
         module,
         symbols,
         &SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
-    )
-}
-
-fn expected_type_elaboration_detail_keys(case: &TestCase) -> Vec<String> {
-    if !case.expectation.diagnostic_payloads.is_empty() {
-        return case.expectation.diagnostic_payloads.clone();
-    }
-    case.expectation.stable_detail_key.iter().cloned().collect()
-}
-
-fn type_elaboration_failure_diagnostic(
-    case: &TestCase,
-    result: &TypeElaborationCaseResult,
-) -> ValidationDiagnostic {
-    ValidationDiagnostic::error(
-        &case.expectation_path,
-        "type_elaboration",
-        "E-TYPE-ELABORATION-ASSERT",
-        format!("type_elaboration.{}", case.id.0),
-        format!(
-            "type-elaboration case `{}` expected detail keys {:?} but got {:?}",
-            case.id.0,
-            expected_type_elaboration_detail_keys(case),
-            result.actual_detail_keys
-        ),
     )
 }
 
