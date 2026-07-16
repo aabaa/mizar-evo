@@ -841,8 +841,8 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   complete. Fresh inventory decomposes the remaining reserved-variable
   formula work into test-only preservation Task 262N0, shared source-substrate
   Task 262N, direct-binary Task 262O, parenthesized-binary Task 262P, and
-  type-assertion Task 262Q. Task 262N0 is complete and Task 262N is next; these
-  tasks plus Task 263 keep this parent item open.
+  type-assertion Task 262Q. Tasks 262N0 and 262N are complete and Task 262O is
+  next; these tasks plus Task 263 keep this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

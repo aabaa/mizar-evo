@@ -1,4 +1,9 @@
-use mizar_checker::type_checker::{FormulaKind, TypeHeadInput};
+use std::collections::{BTreeMap, BTreeSet};
+
+use mizar_checker::type_checker::{
+    FormulaKind, ModeExpansion, SourceReserveBindingInput, TypeExpressionInput, TypeHeadInput,
+    TypeHeadRef,
+};
 use mizar_checker::typed_ast::TypedSiteRef;
 use mizar_resolve::env::{ContributionKind, NamespacePath, SymbolEnv, SymbolKind};
 use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
@@ -13,7 +18,873 @@ use super::source_ast::{
     qualified_symbol_spelling, structural_child_ids, subtree_has_recovery, surface_nodes_with_kind,
     surface_site,
 };
-use super::source_reserve::{SourceTypeExpression, extract_builtin_source_type_expression};
+use super::source_reserve::{
+    SourceReserveExtraction, SourceTypeExpression, extract_builtin_source_type_expression,
+    mode_definition_pattern_spelling, source_mode_symbol_spelling,
+};
+#[derive(Debug)]
+pub(in crate::runner) struct SourceReservedVariableBinaryFormulaConfig {
+    pub(in crate::runner) label: &'static str,
+    pub(in crate::runner) operator: &'static str,
+    pub(in crate::runner) formula_kind: FormulaKind,
+    pub(in crate::runner) invalid_payload_key: &'static str,
+    pub(in crate::runner) reserve_item_count: usize,
+    pub(in crate::runner) binding_spellings: &'static [&'static str],
+    pub(in crate::runner) binding_types: &'static [SourceReservedVariableBuiltinType],
+    pub(in crate::runner) binding_source_mode_spellings: &'static [Option<&'static str>],
+    pub(in crate::runner) mode_definitions: &'static [SourceReservedVariableModeDefinition],
+    pub(in crate::runner) left_binding_index: usize,
+    pub(in crate::runner) right_binding_index: usize,
+    pub(in crate::runner) require_shared_type_range: bool,
+    pub(in crate::runner) require_distinct_type_ranges: bool,
+    pub(in crate::runner) left_result_role: &'static str,
+    pub(in crate::runner) right_result_role: &'static str,
+    pub(in crate::runner) left_expected_role: Option<&'static str>,
+    pub(in crate::runner) right_expected_role: Option<&'static str>,
+}
+
+#[derive(Debug)]
+pub(in crate::runner) struct SourceReservedVariableTypeAssertionConfig {
+    pub(in crate::runner) label: &'static str,
+    pub(in crate::runner) invalid_payload_key: &'static str,
+    pub(in crate::runner) binding_spelling: &'static str,
+    pub(in crate::runner) binding_type: SourceReservedVariableBuiltinType,
+    pub(in crate::runner) binding_source_mode_spelling: Option<&'static str>,
+    pub(in crate::runner) mode_definitions: &'static [SourceReservedVariableModeDefinition],
+    pub(in crate::runner) asserted_type: SourceReservedVariableBuiltinType,
+    pub(in crate::runner) asserted_head_relation: SourceReservedVariableAssertedHeadRelation,
+    pub(in crate::runner) subject_result_role: &'static str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceReservedVariableAssertedHeadRelation {
+    Builtin,
+    SameMode(&'static str),
+    BindingImmediateRadix(&'static str),
+    BindingTwoHopRadix {
+        intermediate_spelling: &'static str,
+        asserted_spelling: &'static str,
+    },
+    BindingThreeHopRadix {
+        first_intermediate_spelling: &'static str,
+        second_intermediate_spelling: &'static str,
+        asserted_spelling: &'static str,
+    },
+    BindingFourHopRadix {
+        first_intermediate_spelling: &'static str,
+        second_intermediate_spelling: &'static str,
+        third_intermediate_spelling: &'static str,
+        asserted_spelling: &'static str,
+    },
+    BindingFiveHopRadix {
+        first_intermediate_spelling: &'static str,
+        second_intermediate_spelling: &'static str,
+        third_intermediate_spelling: &'static str,
+        fourth_intermediate_spelling: &'static str,
+        asserted_spelling: &'static str,
+    },
+    BindingSixHopRadix {
+        first_intermediate_spelling: &'static str,
+        second_intermediate_spelling: &'static str,
+        third_intermediate_spelling: &'static str,
+        fourth_intermediate_spelling: &'static str,
+        fifth_intermediate_spelling: &'static str,
+        asserted_spelling: &'static str,
+    },
+}
+
+impl SourceReservedVariableAssertedHeadRelation {
+    pub(in crate::runner) fn source_mode_spelling(self) -> Option<&'static str> {
+        match self {
+            Self::Builtin => None,
+            Self::SameMode(spelling) | Self::BindingImmediateRadix(spelling) => Some(spelling),
+            Self::BindingTwoHopRadix {
+                asserted_spelling, ..
+            }
+            | Self::BindingThreeHopRadix {
+                asserted_spelling, ..
+            }
+            | Self::BindingFourHopRadix {
+                asserted_spelling, ..
+            }
+            | Self::BindingFiveHopRadix {
+                asserted_spelling, ..
+            }
+            | Self::BindingSixHopRadix {
+                asserted_spelling, ..
+            } => Some(asserted_spelling),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(in crate::runner) struct SourceReservedVariableModeDefinition {
+    pub(in crate::runner) label: &'static str,
+    pub(in crate::runner) spelling: &'static str,
+    pub(in crate::runner) radix: SourceReservedVariableModeRadix,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(in crate::runner) enum SourceReservedVariableModeRadix {
+    Builtin(SourceReservedVariableBuiltinType),
+    Mode(&'static str),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(in crate::runner) enum SourceReservedVariableBuiltinType {
+    Object,
+    Set,
+}
+
+impl SourceReservedVariableBuiltinType {
+    fn spelling(self) -> &'static str {
+        match self {
+            Self::Object => "object",
+            Self::Set => "set",
+        }
+    }
+
+    fn input_head(self) -> TypeHeadInput {
+        match self {
+            Self::Object => TypeHeadInput::BuiltinObject,
+            Self::Set => TypeHeadInput::BuiltinSet,
+        }
+    }
+
+    pub(in crate::runner) fn normalized_head(self) -> TypeHeadRef {
+        match self {
+            Self::Object => TypeHeadRef::BuiltinObject,
+            Self::Set => TypeHeadRef::BuiltinSet,
+        }
+    }
+}
+
+pub(in crate::runner) fn source_binding_matches_reserved_builtin_type(
+    binding: &SourceReserveBindingInput,
+    expected_type: SourceReservedVariableBuiltinType,
+    source_mode_spelling: Option<&str>,
+    mode_expansions: &BTreeMap<ResolverSymbolId, ModeExpansion>,
+) -> bool {
+    if !binding.type_attributes.is_empty() {
+        return false;
+    }
+    let Some(source_mode_spelling) = source_mode_spelling else {
+        return binding.type_spelling == expected_type.spelling()
+            && binding.type_head == expected_type.input_head();
+    };
+    let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
+        return false;
+    };
+    binding.type_spelling == source_mode_spelling
+        && source_mode_terminal_builtin_input(symbol, expected_type, mode_expansions).is_some()
+}
+
+pub(in crate::runner) fn source_type_expression_matches_reserved_builtin_type(
+    expression: &SourceTypeExpression,
+    expected_type: SourceReservedVariableBuiltinType,
+    source_mode_spelling: Option<&str>,
+    mode_expansions: &BTreeMap<ResolverSymbolId, ModeExpansion>,
+) -> bool {
+    if !expression.attributes.is_empty() {
+        return false;
+    }
+    let Some(source_mode_spelling) = source_mode_spelling else {
+        return expression.spelling == expected_type.spelling()
+            && expression.head == expected_type.input_head();
+    };
+    let TypeHeadInput::Symbol(symbol) = &expression.head else {
+        return false;
+    };
+    expression.spelling == source_mode_spelling
+        && source_mode_terminal_builtin_input(symbol, expected_type, mode_expansions).is_some()
+}
+
+pub(in crate::runner) fn source_reserved_variable_asserted_head_relation_is_exact(
+    source_binding: &SourceReserveBindingInput,
+    asserted_spelling: &str,
+    asserted_head: &TypeHeadInput,
+    config: &SourceReservedVariableTypeAssertionConfig,
+    mode_expansions: &BTreeMap<ResolverSymbolId, ModeExpansion>,
+) -> bool {
+    match config.asserted_head_relation {
+        SourceReservedVariableAssertedHeadRelation::Builtin => {
+            asserted_spelling == config.asserted_type.spelling()
+                && asserted_head == &config.asserted_type.input_head()
+        }
+        SourceReservedVariableAssertedHeadRelation::SameMode(expected_spelling) => {
+            config.binding_source_mode_spelling == Some(expected_spelling)
+                && source_binding.type_spelling == expected_spelling
+                && asserted_spelling == expected_spelling
+                && asserted_head == &source_binding.type_head
+        }
+        SourceReservedVariableAssertedHeadRelation::BindingImmediateRadix(expected_spelling) => {
+            let Some(binding_spelling) = config.binding_source_mode_spelling else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(binding_symbol) = &source_binding.type_head else {
+                return false;
+            };
+            let Some(binding_expansion) = mode_expansions.get(binding_symbol) else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(asserted_symbol) = asserted_head else {
+                return false;
+            };
+            binding_spelling != expected_spelling
+                && source_binding.type_spelling == binding_spelling
+                && asserted_spelling == expected_spelling
+                && asserted_symbol != binding_symbol
+                && asserted_head == &binding_expansion.radix.head
+                && binding_expansion.radix.spelling == expected_spelling
+                && binding_expansion.radix.args.is_empty()
+                && binding_expansion.radix.attributes.is_empty()
+                && mode_expansions.contains_key(asserted_symbol)
+                && source_mode_terminal_builtin_input(
+                    asserted_symbol,
+                    config.asserted_type,
+                    mode_expansions,
+                )
+                .is_some()
+        }
+        SourceReservedVariableAssertedHeadRelation::BindingTwoHopRadix {
+            intermediate_spelling,
+            asserted_spelling: expected_asserted_spelling,
+        } => {
+            let Some(binding_spelling) = config.binding_source_mode_spelling else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(binding_symbol) = &source_binding.type_head else {
+                return false;
+            };
+            let Some(binding_expansion) = mode_expansions.get(binding_symbol) else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(intermediate_symbol) = &binding_expansion.radix.head else {
+                return false;
+            };
+            let Some(intermediate_expansion) = mode_expansions.get(intermediate_symbol) else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(asserted_symbol) = asserted_head else {
+                return false;
+            };
+            binding_spelling != intermediate_spelling
+                && binding_spelling != expected_asserted_spelling
+                && intermediate_spelling != expected_asserted_spelling
+                && source_binding.type_spelling == binding_spelling
+                && asserted_spelling == expected_asserted_spelling
+                && binding_symbol != intermediate_symbol
+                && binding_symbol != asserted_symbol
+                && intermediate_symbol != asserted_symbol
+                && binding_expansion.attributes.is_empty()
+                && binding_expansion.radix.spelling == intermediate_spelling
+                && binding_expansion.radix.args.is_empty()
+                && binding_expansion.radix.attributes.is_empty()
+                && intermediate_expansion.attributes.is_empty()
+                && intermediate_expansion.radix.head == *asserted_head
+                && intermediate_expansion.radix.spelling == expected_asserted_spelling
+                && intermediate_expansion.radix.args.is_empty()
+                && intermediate_expansion.radix.attributes.is_empty()
+                && source_mode_terminal_builtin_input(
+                    asserted_symbol,
+                    config.asserted_type,
+                    mode_expansions,
+                )
+                .is_some()
+        }
+        SourceReservedVariableAssertedHeadRelation::BindingThreeHopRadix {
+            first_intermediate_spelling,
+            second_intermediate_spelling,
+            asserted_spelling: expected_asserted_spelling,
+        } => {
+            let Some(binding_spelling) = config.binding_source_mode_spelling else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(binding_symbol) = &source_binding.type_head else {
+                return false;
+            };
+            let Some(binding_expansion) = mode_expansions.get(binding_symbol) else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(first_intermediate_symbol) = &binding_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(first_intermediate_expansion) = mode_expansions.get(first_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(second_intermediate_symbol) =
+                &first_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(second_intermediate_expansion) =
+                mode_expansions.get(second_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(asserted_symbol) = asserted_head else {
+                return false;
+            };
+            let spellings = [
+                binding_spelling,
+                first_intermediate_spelling,
+                second_intermediate_spelling,
+                expected_asserted_spelling,
+            ];
+            let symbols = [
+                binding_symbol,
+                first_intermediate_symbol,
+                second_intermediate_symbol,
+                asserted_symbol,
+            ];
+            spellings.iter().enumerate().all(|(index, spelling)| {
+                spellings[index + 1..].iter().all(|other| spelling != other)
+            }) && symbols
+                .iter()
+                .enumerate()
+                .all(|(index, symbol)| symbols[index + 1..].iter().all(|other| symbol != other))
+                && source_binding.type_spelling == binding_spelling
+                && asserted_spelling == expected_asserted_spelling
+                && binding_expansion.attributes.is_empty()
+                && binding_expansion.radix.spelling == first_intermediate_spelling
+                && binding_expansion.radix.args.is_empty()
+                && binding_expansion.radix.attributes.is_empty()
+                && first_intermediate_expansion.attributes.is_empty()
+                && first_intermediate_expansion.radix.spelling == second_intermediate_spelling
+                && first_intermediate_expansion.radix.args.is_empty()
+                && first_intermediate_expansion.radix.attributes.is_empty()
+                && second_intermediate_expansion.attributes.is_empty()
+                && second_intermediate_expansion.radix.head == *asserted_head
+                && second_intermediate_expansion.radix.spelling == expected_asserted_spelling
+                && second_intermediate_expansion.radix.args.is_empty()
+                && second_intermediate_expansion.radix.attributes.is_empty()
+                && source_mode_terminal_builtin_input(
+                    asserted_symbol,
+                    config.asserted_type,
+                    mode_expansions,
+                )
+                .is_some()
+        }
+        SourceReservedVariableAssertedHeadRelation::BindingFourHopRadix {
+            first_intermediate_spelling,
+            second_intermediate_spelling,
+            third_intermediate_spelling,
+            asserted_spelling: expected_asserted_spelling,
+        } => {
+            let Some(binding_spelling) = config.binding_source_mode_spelling else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(binding_symbol) = &source_binding.type_head else {
+                return false;
+            };
+            let Some(binding_expansion) = mode_expansions.get(binding_symbol) else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(first_intermediate_symbol) = &binding_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(first_intermediate_expansion) = mode_expansions.get(first_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(second_intermediate_symbol) =
+                &first_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(second_intermediate_expansion) =
+                mode_expansions.get(second_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(third_intermediate_symbol) =
+                &second_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(third_intermediate_expansion) = mode_expansions.get(third_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(asserted_symbol) = asserted_head else {
+                return false;
+            };
+            let spellings = [
+                binding_spelling,
+                first_intermediate_spelling,
+                second_intermediate_spelling,
+                third_intermediate_spelling,
+                expected_asserted_spelling,
+            ];
+            let symbols = [
+                binding_symbol,
+                first_intermediate_symbol,
+                second_intermediate_symbol,
+                third_intermediate_symbol,
+                asserted_symbol,
+            ];
+            spellings.iter().enumerate().all(|(index, spelling)| {
+                spellings[index + 1..].iter().all(|other| spelling != other)
+            }) && symbols
+                .iter()
+                .enumerate()
+                .all(|(index, symbol)| symbols[index + 1..].iter().all(|other| symbol != other))
+                && source_binding.type_spelling == binding_spelling
+                && asserted_spelling == expected_asserted_spelling
+                && binding_expansion.attributes.is_empty()
+                && binding_expansion.radix.spelling == first_intermediate_spelling
+                && binding_expansion.radix.args.is_empty()
+                && binding_expansion.radix.attributes.is_empty()
+                && first_intermediate_expansion.attributes.is_empty()
+                && first_intermediate_expansion.radix.spelling == second_intermediate_spelling
+                && first_intermediate_expansion.radix.args.is_empty()
+                && first_intermediate_expansion.radix.attributes.is_empty()
+                && second_intermediate_expansion.attributes.is_empty()
+                && second_intermediate_expansion.radix.spelling == third_intermediate_spelling
+                && second_intermediate_expansion.radix.args.is_empty()
+                && second_intermediate_expansion.radix.attributes.is_empty()
+                && third_intermediate_expansion.attributes.is_empty()
+                && third_intermediate_expansion.radix.head == *asserted_head
+                && third_intermediate_expansion.radix.spelling == expected_asserted_spelling
+                && third_intermediate_expansion.radix.args.is_empty()
+                && third_intermediate_expansion.radix.attributes.is_empty()
+                && source_mode_terminal_builtin_input(
+                    asserted_symbol,
+                    config.asserted_type,
+                    mode_expansions,
+                )
+                .is_some()
+        }
+        SourceReservedVariableAssertedHeadRelation::BindingFiveHopRadix {
+            first_intermediate_spelling,
+            second_intermediate_spelling,
+            third_intermediate_spelling,
+            fourth_intermediate_spelling,
+            asserted_spelling: expected_asserted_spelling,
+        } => {
+            let Some(binding_spelling) = config.binding_source_mode_spelling else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(binding_symbol) = &source_binding.type_head else {
+                return false;
+            };
+            let Some(binding_expansion) = mode_expansions.get(binding_symbol) else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(first_intermediate_symbol) = &binding_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(first_intermediate_expansion) = mode_expansions.get(first_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(second_intermediate_symbol) =
+                &first_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(second_intermediate_expansion) =
+                mode_expansions.get(second_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(third_intermediate_symbol) =
+                &second_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(third_intermediate_expansion) = mode_expansions.get(third_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(fourth_intermediate_symbol) =
+                &third_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(fourth_intermediate_expansion) =
+                mode_expansions.get(fourth_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(asserted_symbol) = asserted_head else {
+                return false;
+            };
+            let spellings = [
+                binding_spelling,
+                first_intermediate_spelling,
+                second_intermediate_spelling,
+                third_intermediate_spelling,
+                fourth_intermediate_spelling,
+                expected_asserted_spelling,
+            ];
+            let symbols = [
+                binding_symbol,
+                first_intermediate_symbol,
+                second_intermediate_symbol,
+                third_intermediate_symbol,
+                fourth_intermediate_symbol,
+                asserted_symbol,
+            ];
+            spellings.iter().enumerate().all(|(index, spelling)| {
+                spellings[index + 1..].iter().all(|other| spelling != other)
+            }) && symbols
+                .iter()
+                .enumerate()
+                .all(|(index, symbol)| symbols[index + 1..].iter().all(|other| symbol != other))
+                && source_binding.type_spelling == binding_spelling
+                && asserted_spelling == expected_asserted_spelling
+                && binding_expansion.attributes.is_empty()
+                && binding_expansion.radix.spelling == first_intermediate_spelling
+                && binding_expansion.radix.args.is_empty()
+                && binding_expansion.radix.attributes.is_empty()
+                && first_intermediate_expansion.attributes.is_empty()
+                && first_intermediate_expansion.radix.spelling == second_intermediate_spelling
+                && first_intermediate_expansion.radix.args.is_empty()
+                && first_intermediate_expansion.radix.attributes.is_empty()
+                && second_intermediate_expansion.attributes.is_empty()
+                && second_intermediate_expansion.radix.spelling == third_intermediate_spelling
+                && second_intermediate_expansion.radix.args.is_empty()
+                && second_intermediate_expansion.radix.attributes.is_empty()
+                && third_intermediate_expansion.attributes.is_empty()
+                && third_intermediate_expansion.radix.spelling == fourth_intermediate_spelling
+                && third_intermediate_expansion.radix.args.is_empty()
+                && third_intermediate_expansion.radix.attributes.is_empty()
+                && fourth_intermediate_expansion.attributes.is_empty()
+                && fourth_intermediate_expansion.radix.head == *asserted_head
+                && fourth_intermediate_expansion.radix.spelling == expected_asserted_spelling
+                && fourth_intermediate_expansion.radix.args.is_empty()
+                && fourth_intermediate_expansion.radix.attributes.is_empty()
+                && source_mode_terminal_builtin_input(
+                    asserted_symbol,
+                    config.asserted_type,
+                    mode_expansions,
+                )
+                .is_some()
+        }
+        SourceReservedVariableAssertedHeadRelation::BindingSixHopRadix {
+            first_intermediate_spelling,
+            second_intermediate_spelling,
+            third_intermediate_spelling,
+            fourth_intermediate_spelling,
+            fifth_intermediate_spelling,
+            asserted_spelling: expected_asserted_spelling,
+        } => {
+            let Some(binding_spelling) = config.binding_source_mode_spelling else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(binding_symbol) = &source_binding.type_head else {
+                return false;
+            };
+            let Some(binding_expansion) = mode_expansions.get(binding_symbol) else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(first_intermediate_symbol) = &binding_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(first_intermediate_expansion) = mode_expansions.get(first_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(second_intermediate_symbol) =
+                &first_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(second_intermediate_expansion) =
+                mode_expansions.get(second_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(third_intermediate_symbol) =
+                &second_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(third_intermediate_expansion) = mode_expansions.get(third_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(fourth_intermediate_symbol) =
+                &third_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(fourth_intermediate_expansion) =
+                mode_expansions.get(fourth_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(fifth_intermediate_symbol) =
+                &fourth_intermediate_expansion.radix.head
+            else {
+                return false;
+            };
+            let Some(fifth_intermediate_expansion) = mode_expansions.get(fifth_intermediate_symbol)
+            else {
+                return false;
+            };
+            let TypeHeadInput::Symbol(asserted_symbol) = asserted_head else {
+                return false;
+            };
+            let spellings = [
+                binding_spelling,
+                first_intermediate_spelling,
+                second_intermediate_spelling,
+                third_intermediate_spelling,
+                fourth_intermediate_spelling,
+                fifth_intermediate_spelling,
+                expected_asserted_spelling,
+            ];
+            let symbols = [
+                binding_symbol,
+                first_intermediate_symbol,
+                second_intermediate_symbol,
+                third_intermediate_symbol,
+                fourth_intermediate_symbol,
+                fifth_intermediate_symbol,
+                asserted_symbol,
+            ];
+            spellings.iter().enumerate().all(|(index, spelling)| {
+                spellings[index + 1..].iter().all(|other| spelling != other)
+            }) && symbols
+                .iter()
+                .enumerate()
+                .all(|(index, symbol)| symbols[index + 1..].iter().all(|other| symbol != other))
+                && source_binding.type_spelling == binding_spelling
+                && asserted_spelling == expected_asserted_spelling
+                && binding_expansion.attributes.is_empty()
+                && binding_expansion.radix.spelling == first_intermediate_spelling
+                && binding_expansion.radix.args.is_empty()
+                && binding_expansion.radix.attributes.is_empty()
+                && first_intermediate_expansion.attributes.is_empty()
+                && first_intermediate_expansion.radix.spelling == second_intermediate_spelling
+                && first_intermediate_expansion.radix.args.is_empty()
+                && first_intermediate_expansion.radix.attributes.is_empty()
+                && second_intermediate_expansion.attributes.is_empty()
+                && second_intermediate_expansion.radix.spelling == third_intermediate_spelling
+                && second_intermediate_expansion.radix.args.is_empty()
+                && second_intermediate_expansion.radix.attributes.is_empty()
+                && third_intermediate_expansion.attributes.is_empty()
+                && third_intermediate_expansion.radix.spelling == fourth_intermediate_spelling
+                && third_intermediate_expansion.radix.args.is_empty()
+                && third_intermediate_expansion.radix.attributes.is_empty()
+                && fourth_intermediate_expansion.attributes.is_empty()
+                && fourth_intermediate_expansion.radix.spelling == fifth_intermediate_spelling
+                && fourth_intermediate_expansion.radix.args.is_empty()
+                && fourth_intermediate_expansion.radix.attributes.is_empty()
+                && fifth_intermediate_expansion.attributes.is_empty()
+                && fifth_intermediate_expansion.radix.head == *asserted_head
+                && fifth_intermediate_expansion.radix.spelling == expected_asserted_spelling
+                && fifth_intermediate_expansion.radix.args.is_empty()
+                && fifth_intermediate_expansion.radix.attributes.is_empty()
+                && source_mode_terminal_builtin_input(
+                    asserted_symbol,
+                    config.asserted_type,
+                    mode_expansions,
+                )
+                .is_some()
+        }
+    }
+}
+
+pub(in crate::runner) fn source_mode_terminal_builtin_input<'a>(
+    symbol: &ResolverSymbolId,
+    expected_type: SourceReservedVariableBuiltinType,
+    mode_expansions: &'a BTreeMap<ResolverSymbolId, ModeExpansion>,
+) -> Option<&'a TypeExpressionInput> {
+    let mut visiting = BTreeSet::new();
+    let mut current = symbol;
+    while visiting.insert(current.clone()) {
+        let expansion = mode_expansions.get(current)?;
+        if !expansion.attributes.is_empty()
+            || !expansion.radix.args.is_empty()
+            || !expansion.radix.attributes.is_empty()
+        {
+            return None;
+        }
+        match &expansion.radix.head {
+            head if head == &expected_type.input_head()
+                && expansion.radix.spelling == expected_type.spelling() =>
+            {
+                return Some(&expansion.radix);
+            }
+            TypeHeadInput::Symbol(next) => current = next,
+            _ => return None,
+        }
+    }
+    None
+}
+
+pub(in crate::runner) fn source_reserved_variable_mode_definition_is_exact(
+    ast: &SurfaceAst,
+    mode_definition_specs: &[SourceReservedVariableModeDefinition],
+) -> bool {
+    let definition_blocks = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionBlockItem);
+    let mode_definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
+    if mode_definition_specs.is_empty() {
+        return definition_blocks.is_empty() && mode_definitions.is_empty();
+    }
+    if definition_blocks.len() != mode_definition_specs.len()
+        || mode_definitions.len() != mode_definition_specs.len()
+    {
+        return false;
+    }
+    definition_blocks
+        .iter()
+        .zip(mode_definitions.iter())
+        .zip(mode_definition_specs.iter())
+        .all(|(((_, block), (definition_id, definition)), expected)| {
+            if subtree_has_recovery(ast, block)
+                || direct_token_texts(ast, block).as_slice() != ["definition", "end", ";"]
+                || structural_child_ids(ast, block).as_slice() != [*definition_id]
+                || direct_token_texts(ast, definition).as_slice()
+                    != ["mode", expected.label, ":", "is", ";"]
+            {
+                return false;
+            }
+            let definition_children = structural_child_ids(ast, definition);
+            let [pattern_id, rhs_id] = definition_children.as_slice() else {
+                return false;
+            };
+            ast.node(*pattern_id)
+                .is_some_and(|pattern| matches!(pattern.kind, SurfaceNodeKind::ModePattern))
+                && ast
+                    .node(*rhs_id)
+                    .is_some_and(|rhs| matches!(rhs.kind, SurfaceNodeKind::TypeExpression))
+                && mode_definition_pattern_spelling(ast, definition).as_deref()
+                    == Some(expected.spelling)
+        })
+}
+
+pub(in crate::runner) fn source_reserved_variable_mode_expansions_are_exact(
+    reserve: &SourceReserveExtraction,
+    mode_definition_specs: &[SourceReservedVariableModeDefinition],
+) -> bool {
+    if reserve.mode_expansions.len() != mode_definition_specs.len() {
+        return false;
+    }
+    mode_definition_specs.iter().all(|expected| {
+        let Some((_, expansion)) =
+            source_mode_expansion_for_spelling(&reserve.mode_expansions, expected.spelling)
+        else {
+            return false;
+        };
+        if !expansion.attributes.is_empty()
+            || !expansion.radix.args.is_empty()
+            || !expansion.radix.attributes.is_empty()
+        {
+            return false;
+        }
+        match expected.radix {
+            SourceReservedVariableModeRadix::Builtin(expected_type) => {
+                expansion.radix.head == expected_type.input_head()
+                    && expansion.radix.spelling == expected_type.spelling()
+            }
+            SourceReservedVariableModeRadix::Mode(expected_spelling) => {
+                expansion.radix.spelling == expected_spelling
+                    && matches!(
+                        &expansion.radix.head,
+                        TypeHeadInput::Symbol(symbol)
+                            if source_mode_symbol_spelling(symbol) == Some(expected_spelling)
+                    )
+            }
+        }
+    })
+}
+
+fn source_mode_expansion_for_spelling<'a>(
+    mode_expansions: &'a BTreeMap<ResolverSymbolId, ModeExpansion>,
+    spelling: &str,
+) -> Option<(&'a ResolverSymbolId, &'a ModeExpansion)> {
+    let mut matches = mode_expansions
+        .iter()
+        .filter(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(spelling));
+    let matched = matches.next()?;
+    matches.next().is_none().then_some(matched)
+}
+
+pub(in crate::runner) fn exact_identifier_term_operand(
+    ast: &SurfaceAst,
+    term_expression_id: SurfaceNodeId,
+) -> Option<(SurfaceNodeId, SourceRange, String)> {
+    let expression = ast.node(term_expression_id)?;
+    if !matches!(expression.kind, SurfaceNodeKind::TermExpression)
+        || subtree_has_recovery(ast, expression)
+    {
+        return None;
+    }
+    let expression_children = structural_child_ids(ast, expression);
+    let [reference_id] = expression_children.as_slice() else {
+        return None;
+    };
+    let reference = ast.node(*reference_id)?;
+    let direct_tokens = direct_token_texts(ast, reference);
+    let [spelling] = direct_tokens.as_slice() else {
+        return None;
+    };
+    if !matches!(reference.kind, SurfaceNodeKind::TermReference)
+        || !structural_child_ids(ast, reference).is_empty()
+    {
+        return None;
+    }
+    Some((*reference_id, reference.range, (*spelling).to_owned()))
+}
+
+pub(in crate::runner) fn source_binding_use_ordinals<const N: usize>(
+    bindings: &[SourceReserveBindingInput],
+    use_ranges: [SourceRange; N],
+) -> Result<[usize; N], String> {
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Event {
+        Binding(usize),
+        Use(usize),
+    }
+
+    let mut events = bindings
+        .iter()
+        .enumerate()
+        .map(|(index, binding)| (binding.binding_range, Event::Binding(index)))
+        .chain(
+            use_ranges
+                .iter()
+                .copied()
+                .enumerate()
+                .map(|(index, range)| (range, Event::Use(index))),
+        )
+        .collect::<Vec<_>>();
+    if events.iter().any(|(range, _)| range.start >= range.end) {
+        return Err("source binding/use event has an empty range".to_owned());
+    }
+    events.sort_by_key(|(range, _)| (range.start, range.end));
+    if events
+        .windows(2)
+        .any(|pair| pair[0].0.source_id != pair[1].0.source_id || pair[0].0.end > pair[1].0.start)
+    {
+        return Err("source binding/use events overlap or cross sources".to_owned());
+    }
+
+    let mut ordinals = [usize::MAX; N];
+    for (ordinal, (_, event)) in events.into_iter().enumerate() {
+        match event {
+            Event::Binding(index) if index == ordinal && index < bindings.len() => {}
+            Event::Binding(_) => {
+                return Err("source binding order does not match binding ordinals".to_owned());
+            }
+            Event::Use(index) if index < N => ordinals[index] = ordinal,
+            Event::Use(_) => return Err("source use ordinal index overflow".to_owned()),
+        }
+    }
+    if ordinals.contains(&usize::MAX) {
+        return Err("source use ordinal missing".to_owned());
+    }
+    Ok(ordinals)
+}
 
 pub(in crate::runner) fn resolve_imported_fixture_term_formula_symbol(
     symbols: &SymbolEnv,
