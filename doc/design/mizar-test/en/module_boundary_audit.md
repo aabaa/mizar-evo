@@ -2434,6 +2434,73 @@ Task 263 inventory selects the next bounded builder/validator/detail family.
 No `spec_coverage_audit.md` change is required because authority, behavior,
 coverage credit, owner crate, and deferred status are unchanged.
 
+## Task 263F Pre-Move Inventory and Specification
+
+Fresh dependency inventory selects the three contiguous checker-output
+builders at `runner.rs:8441-8701` (261 lines, hash
+`cb4396e080d9f31f79e57feebfd5de5badad92f3aedfdf358b0eb277eb416b25`)
+and their sole 16-line `source_reserved_type_projection` helper at
+`runner.rs:9473-9488` (hash
+`c450e8588af637f3f3a8dc04f522ef988dc470a54b4d005001c4ba5f102f33b0`).
+Concatenated in source order, the exact 277-line producer family hashes to
+`b4939bbe52118a6b6e1d268bff26c6fa11e2994e14e0bb0b4e7215e94a41efaa`.
+
+Task 263F mechanically moves this family into the existing private
+`type_elaboration/output.rs` transport owner. The type-assertion, binary-
+formula, and parenthesized-binary builder entries become parent-only through
+the type-elaboration facade; the projection helper remains leaf-private. Their
+direct dependencies are the Task 263E output transports, sibling source
+payload/config transports, sibling checker-handoff assembly, resolver symbols,
+and checker binding/type/formula input APIs. The family has no dependency on
+retained validators, detail projections, named wrappers, active orchestration,
+or public result DTOs.
+
+This is move-only `design_drift`; there is no Task 263F0 prerequisite. Existing
+source-output, field-provenance, lookup-ordinal, checker-payload, corruption,
+and active fixture matrices already execute all three builders and their
+fail-closed branches. Exact-body equivalence plus 272-test, 188-active-case,
+repository/report/CLI byte-stability, and full gates preserve construction
+order, error strings, source ranges, binding identities, inputs, payloads, and
+failure boundaries. No test, expectation, validator, detail key, config,
+semantic behavior, or authority artifact may change. The Source Inventory is
+unchanged because the existing `output.rs` owner is extended.
+`spec_coverage_audit.md` remains unchanged because coverage credit, owner
+crate, and deferred status do not change.
+
+## Task 263F Move Result
+
+Task 263F moved the exact three-builder and sole projection-helper producer
+family into existing private `type_elaboration/output.rs`. After removing only
+the three required `pub(in crate::runner)` builder qualifiers, moved lines
+51-311 retain hash
+`cb4396e080d9f31f79e57feebfd5de5badad92f3aedfdf358b0eb277eb416b25`;
+the private helper at lines 313-328 retains hash
+`c450e8588af637f3f3a8dc04f522ef988dc470a54b4d005001c4ba5f102f33b0`;
+their source-order combination retains
+`b4939bbe52118a6b6e1d268bff26c6fa11e2994e14e0bb0b4e7215e94a41efaa`.
+The facade exposes exactly the three builders parent-only. Validators, detail
+projections, named wrappers, configs, and call sites remain in `runner.rs`.
+
+The resulting `runner.rs` has 11,180 lines and hash
+`cfefc3b316fe7d9ff33153475ed42540fcf8605a16ad11132f4380c7ca0350a7`;
+the 60-line `type_elaboration.rs` facade has hash
+`c673946fddb223a2ae566073205bffaac56ce34ccbb393ae0e755ad6d5c15658`;
+the 328-line `output.rs` has hash
+`41a151db0d3e6fc4ba45c04989e1bbf577cfc4a8ae55ba9d570998794c90bbcd`.
+Construction order, error text, source ranges, binding identities, checker
+inputs, payloads, and fail-closed flow are unchanged.
+
+The four focused builder tests, all 272 unit tests, and all 96 parse, four
+declaration-symbol, and 188 type-elaboration active cases pass. One initial
+full-crate run encountered a transient unrelated missing `/tmp` fixture path;
+the exact failing route-isolation test and the full crate rerun both pass.
+Plan/count remains 403/367, type coverage 235/223, and pass/fail 219/184. The
+raw/normalized test-list hashes and four CLI byte hashes remain unchanged.
+Task 263F is complete; fresh Task 263 inventory selects the next bounded
+validator/detail family. Source Inventory and `spec_coverage_audit.md` remain
+unchanged because no path, authority, behavior, coverage credit, owner crate,
+or deferred status changed.
+
 `spec_coverage_audit.md` remains unchanged for Tasks 262N0-262Q because these
 tasks preserve authority, behavior, coverage credit, owner crate, and deferred
 status. Forbidden changes are accepted-shape expansion, route generalization,
@@ -2450,9 +2517,9 @@ assertion weakening, test deletion or ignore, and checker/output movement.
 | parse-only execution | Surface-AST snapshots and parse-only failure projection | shared frontend to parse-only result | Moved in Task 259 to private `parse_only.rs` with minimal parent-only visibility. |
 | fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
 | declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
-| type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Task 263A moved generic checker-handoff assembly/validation to private `checker_handoff.rs`, Task 263C moved expected-key/failure projection to private `result.rs`, Task 263D moved active admission to private `admission.rs`, and Task 263E moved checker-output transports to private `output.rs`; top-level case execution, dispatch, configs, output builders/validators/detail logic, and other output consumers remain in `runner.rs` for later Task 263 families. The phase facade now owns seven private leaves. |
+| type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Task 263A moved generic checker-handoff assembly/validation to private `checker_handoff.rs`, Task 263C moved expected-key/failure projection to private `result.rs`, Task 263D moved active admission to private `admission.rs`, Task 263E moved checker-output transports, and Task 263F moved their builders to private `output.rs`; top-level case execution, dispatch, configs, output validators/detail logic, and other output consumers remain in `runner.rs` for later Task 263 families. The phase facade owns seven private leaves. |
 | source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262Q moved standalone formula constants, shared exact numerals, builtin binary and type-assertion formulas, the shared imported-formula symbol resolver/provenance pair, imported predicate/functor, imported attribute assertion, set-enumeration, connective/quantifier families, and the shared, direct-binary, parenthesized, and type-assertion reserved-variable source substrate to private `type_elaboration/source_formula.rs`. Formula source extraction is complete; retained configs/wrappers and checker/output consumers stay in `runner.rs` for Task 263 inventory. |
-| payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Task 263E moved the three shared output transports to private `type_elaboration/output.rs`; builders, validators, and detail projection remain pending bounded leaf work. No key or ordering edits. |
+| payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Tasks 263E-263F moved the three shared output transports and their builders to private `type_elaboration/output.rs`; validators and detail projection remain pending bounded leaf work. No key or ordering edits. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
 
@@ -2482,7 +2549,7 @@ public runner facade
            set-enumeration, connective/quantifier, and shared/direct-binary/
            parenthesized/type-assertion reserved-variable source projections
      -> checker-handoff assembly and readiness validation
-     -> checker-output transports
+     -> checker-output transports and builders
      -> expected-result and failure projection
      -> checker/core payload validation and deterministic actual-detail keys
 
@@ -2627,6 +2694,7 @@ Task 255E.
 | 263C | Complete: moved the exact 24-line expected-result/failure-projection family into private `type_elaboration/result.rs` with two parent-only entries and exact-body/byte-stability preservation. |
 | 263D | Complete: moved the exact four-fragment 50-line type active-admission gate into private `type_elaboration/admission.rs` with two parent-only entries and exact-body/byte-stability preservation. |
 | 263E | Complete: moved the exact 33-line three-transport checker-output substrate into private `type_elaboration/output.rs` with runner-scoped field visibility and exact-body/byte-stability preservation. |
+| 263F | Complete: moved the exact 277-line three-builder/output-projection producer family into existing private `type_elaboration/output.rs` with three parent-only builder entries and exact-body/byte-stability preservation. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a
