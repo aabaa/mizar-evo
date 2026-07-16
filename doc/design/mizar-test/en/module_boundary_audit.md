@@ -274,6 +274,24 @@ All 18 fully qualified names, original order positions, assertions, the Task
 257B boundary, and both 272-test list hashes are unchanged. Task 257A is
 complete; parent Task 257 remains pending.
 
+## Task 257B Move Result
+
+Task 257B root-included
+`src/runner/tests/type_elaboration/reserve_object_fixtures.rs` without a
+wrapper module. The byte-identical 156-line fragment contains only the three
+audited Task 188/190/189 builtin-object reserve equality, inequality, and
+type-assertion active fixtures. Its hash is
+`9cfb91fad7f537fbe790ac8e8206e383b0068a8bdcb14158c554219702d9446f`.
+The retained 19,275 lines, including the separator before Task 257C, remained
+byte-identical with hash
+`c4459d3170895c98e4d6018ae491adce8889f12351a9a4b834c8669e84eb285d`;
+the resulting 19,276-line `tests.rs` hash is
+`509d784ce5f2b23c98675fdfcb74324dfede166204067c8c3bdd0a1339ba6d18`.
+All three fully qualified names, original order positions, assertions, and
+both 272-test list hashes are unchanged. The Task 180 contradiction fixture
+remains in `tests.rs` as the first Task 257C item. Task 257B is complete;
+parent Task 257 remains pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -401,7 +419,7 @@ Task 255E.
 | 256 | Complete: moved all 44 long-chain source/active bridge tests and their 12 test-local finite guards to `long_chain.rs`, retaining both adjacent four-edge boundaries. |
 | 257 | Parent: move the eight inventoried remaining fixture, bridge-gap, corruption, and isolation families; pending through Task 257H. |
 | 257A | Complete: moved the leading 18 binary/parenthesized fixture and route-isolation tests to `binary_route_fixtures.rs`, retaining the Task 257B separator. |
-| 257B | Move the three builtin-object reserve active fixtures to `reserve_object_fixtures.rs`. |
+| 257B | Complete: moved the three builtin-object reserve active fixtures to `reserve_object_fixtures.rs`, retaining the Task 257C separator. |
 | 257C | Move only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`. |
 | 257D | Move the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`. |
 | 257E | Move the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`. |

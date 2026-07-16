@@ -734,7 +734,8 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   asserted-head fragment と最後の type-assertion asserted-head fragment は完了。
   parent Task 255 と Task 256 は完了。Task 257A で先頭 binary-route
   fixture/isolation family は完了。fresh authority review により Task 180
-  formula-constant fixture を分離し、bounded Tasks 257B-257H は残る。
+  formula-constant fixture を分離した。Tasks 257A-257B は完了し、bounded
+  Tasks 257C-257H は残る。
 - [ ] test layout 安定後、production helper を監査済み phase/ownership boundary
   で分割する。`runner.rs` は public facade と top-level orchestration owner に
   限定する。internal visibility を最小に保ち、detail key、diagnostic、payload
