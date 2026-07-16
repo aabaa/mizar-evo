@@ -797,8 +797,10 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   Task 263Qとして選び、token-identical body/byte-stabilityを維持して完了した。fresh
   inventoryは正確な10 fragment/183行direct local-mode membership/equality/inequality
   route familyをTask 263Rとして選び、token-identical body/byte-stabilityを維持して完了した。
-  fresh inventoryは残るobject-mode/deeper-chain binary route-owner familyへ戻るため、Task
-  263 parent itemはopenのまま。
+  fresh inventoryは正確な10 fragment/190行direct local-object-mode membership/equality/
+  inequality route familyをTask 263Sとして選び、token-identical body/byte-stabilityを維持
+  して完了した。fresh inventoryは残るchained/deeper-chain binary route-owner familyへ
+  戻るため、Task 263 parent itemはopenのまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
