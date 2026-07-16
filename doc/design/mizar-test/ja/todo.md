@@ -742,9 +742,10 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   contract、fixture ownership、ordering、fail-closed behavior を変更しない。
   Tasks 258-259 で private shared frontend と parse-only owner、Tasks 260A-260B
   で shared resolver leaf と declaration-symbol owner、Task 261 で
-  fixture/import-summary owner、Tasks 262A-262B で common source-AST leaf を移動した。
-  残る Task 262 source-extraction family と Task 263 のため、この parent item は
-  open のまま。
+  fixture/import-summary owner、Tasks 262A-262B で common source-AST leaf、
+  Task 262C で reserve type-expression/symbol-projection leaf を移動した。残る
+  Task 262 declaration/mode と formula extraction family、および Task 263 のため、
+  この parent item は open のまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
