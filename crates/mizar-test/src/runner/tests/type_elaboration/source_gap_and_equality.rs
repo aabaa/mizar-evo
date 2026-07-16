@@ -1219,12 +1219,16 @@
         }
         let imported_attribute_assertion_symbols =
             imported_empty_fixture_attribute_symbol_env(symbols.module_id().clone());
+        let imported_attribute_assertion_import = "parser.type_fixtures";
+        let imported_attribute_assertion_label = "ImportedAttributeAssertionPayloadBoundary";
+        let imported_attribute_assertion_subject = "1";
+        let imported_attribute_assertion_attribute = "empty";
         let imported_attribute_assertion_theorem = imported_attribute_assertion_theorem_ast(
             source_id,
-            &["parser.type_fixtures"],
-            "ImportedAttributeAssertionPayloadBoundary",
-            "1",
-            "empty",
+            &[imported_attribute_assertion_import],
+            imported_attribute_assertion_label,
+            imported_attribute_assertion_subject,
+            imported_attribute_assertion_attribute,
         );
         let imported_attribute_assertion_detail_keys = vec![
             "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
@@ -1253,15 +1257,113 @@
                 &imported_attribute_assertion_symbols,
             )
             .expect("exact imported attribute assertion bridge should extract source payload");
+        let imported_attribute_assertion_formula_start = [
+            "import",
+            "parser",
+            ".",
+            "type_fixtures",
+            ";",
+            "theorem",
+            imported_attribute_assertion_label,
+            ":",
+        ]
+        .iter()
+        .map(|token| token.len() + 1)
+        .sum::<usize>();
+        let imported_attribute_assertion_subject_range = range(
+            source_id,
+            imported_attribute_assertion_formula_start,
+            imported_attribute_assertion_formula_start + imported_attribute_assertion_subject.len(),
+        );
+        let imported_attribute_assertion_attribute_start =
+            imported_attribute_assertion_subject_range.end + 1 + "is".len() + 1;
+        let imported_attribute_assertion_attribute_range = range(
+            source_id,
+            imported_attribute_assertion_attribute_start,
+            imported_attribute_assertion_attribute_start
+                + imported_attribute_assertion_attribute.len(),
+        );
+        let imported_attribute_assertion_formula_range = range(
+            source_id,
+            imported_attribute_assertion_formula_start,
+            imported_attribute_assertion_attribute_range.end,
+        );
+        let expected_imported_attribute_subject_sites = surface_sites_for_kind_ranges(
+            &imported_attribute_assertion_theorem,
+            SurfaceNodeKind::NumeralTerm,
+            &[imported_attribute_assertion_subject_range],
+        );
+        let expected_imported_attribute_formula_sites = surface_sites_for_kind_ranges(
+            &imported_attribute_assertion_theorem,
+            SurfaceNodeKind::IsAssertion,
+            &[imported_attribute_assertion_formula_range],
+        );
+        let imported_attribute_refs = surface_nodes_with_kind(
+            &imported_attribute_assertion_theorem,
+            SurfaceNodeKind::AttributeRef,
+        );
+        let [(_, imported_attribute_ref)] = imported_attribute_refs.as_slice() else {
+            panic!("exact imported attribute assertion should have one attribute ref");
+        };
+        assert!(surface_direct_token_texts(
+            &imported_attribute_assertion_theorem,
+            imported_attribute_ref
+        )
+        .is_empty());
+        assert_eq!(
+            imported_attribute_assertion_payload.formula_site,
+            expected_imported_attribute_formula_sites[0]
+        );
+        assert_eq!(
+            imported_attribute_assertion_payload.formula_range,
+            imported_attribute_assertion_formula_range
+        );
+        assert_eq!(
+            imported_attribute_assertion_payload.subject_site,
+            expected_imported_attribute_subject_sites[0]
+        );
+        assert_eq!(
+            imported_attribute_assertion_payload.subject_range,
+            imported_attribute_assertion_subject_range
+        );
         assert_eq!(
             imported_attribute_assertion_payload
                 .attribute_symbol
                 .module()
                 .path()
                 .as_str(),
-            "parser.type_fixtures"
+            imported_attribute_assertion_import
         );
+        let imported_attribute_entry = imported_attribute_assertion_symbols
+            .symbols()
+            .get(&imported_attribute_assertion_payload.attribute_symbol)
+            .expect("imported attribute symbol should exist");
+        assert_eq!(imported_attribute_entry.kind(), SymbolKind::Attribute);
+        assert_eq!(
+            imported_attribute_entry.primary_spelling(),
+            imported_attribute_assertion_attribute
+        );
+        let imported_attribute_contribution = imported_attribute_assertion_symbols
+            .contributions()
+            .get(imported_attribute_entry.contribution())
+            .expect("imported attribute contribution should exist");
+        assert_eq!(
+            imported_attribute_contribution.module(),
+            imported_attribute_assertion_payload.attribute_symbol.module()
+        );
+        assert!(matches!(
+            imported_attribute_contribution.kind(),
+            ContributionKind::ImportedSource { .. }
+        ));
         assert_eq!(imported_attribute_assertion_output.terms().len(), 1);
+        assert_eq!(
+            imported_attribute_assertion_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term.site.clone())
+                .collect::<Vec<_>>(),
+            vec![expected_imported_attribute_subject_sites[0].clone()]
+        );
         let (_, checked_attribute_subject) = imported_attribute_assertion_output
             .terms()
             .iter()
@@ -1271,11 +1373,19 @@
         assert_eq!(checked_attribute_subject.status, TermStatus::Partial);
         assert_eq!(
             checked_attribute_subject.site,
-            imported_attribute_assertion_payload.subject_site
+            expected_imported_attribute_subject_sites[0]
         );
         assert_eq!(checked_attribute_subject.context, BindingContextId::new(0));
         assert!(checked_attribute_subject.candidate_set.is_none());
         assert_eq!(imported_attribute_assertion_output.formulas().len(), 1);
+        assert_eq!(
+            imported_attribute_assertion_output
+                .formulas()
+                .iter()
+                .map(|(_, formula)| formula.site.clone())
+                .collect::<Vec<_>>(),
+            vec![expected_imported_attribute_formula_sites[0].clone()]
+        );
         let (_, checked_attribute_formula) = imported_attribute_assertion_output
             .formulas()
             .iter()
@@ -1283,7 +1393,7 @@
             .expect("attribute assertion formula should be checked");
         assert_eq!(
             checked_attribute_formula.site,
-            imported_attribute_assertion_payload.formula_site
+            expected_imported_attribute_formula_sites[0]
         );
         assert_eq!(
             checked_attribute_formula.kind,
@@ -1293,7 +1403,7 @@
         assert_eq!(checked_attribute_formula.context, BindingContextId::new(0));
         assert_eq!(
             checked_attribute_formula.terms,
-            vec![imported_attribute_assertion_payload.subject_site.clone()]
+            vec![expected_imported_attribute_subject_sites[0].clone()]
         );
         assert!(checked_attribute_formula.facts.is_empty());
         assert_eq!(
@@ -1349,6 +1459,14 @@
             ),
         ];
         for gap_case in imported_attribute_assertion_gap_cases {
+            assert!(
+                extract_source_imported_attribute_assertion_formula(
+                    &gap_case,
+                    imported_attribute_assertion_symbols.module_id(),
+                    &imported_attribute_assertion_symbols,
+                )
+                .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(
                     &gap_case,
@@ -1358,6 +1476,93 @@
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
+        let imported_attribute_assertion_corruption_cases = [
+            ImportedAttributeAssertionCorruption {
+                recovered_label: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                recovered_attribute_symbol: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                duplicate_theorem: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                duplicate_formula_expression: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_formula_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_assertion_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_attribute_chain_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_attribute_ref_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_qualified_symbol_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_numeral_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_non: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+        ]
+        .map(|corruption| {
+            imported_attribute_assertion_theorem_ast_with_corruption(
+                source_id,
+                &[imported_attribute_assertion_import],
+                imported_attribute_assertion_label,
+                imported_attribute_assertion_subject,
+                imported_attribute_assertion_attribute,
+                false,
+                corruption,
+            )
+        });
+        for gap_case in imported_attribute_assertion_corruption_cases {
+            assert!(
+                extract_source_imported_attribute_assertion_formula(
+                    &gap_case,
+                    imported_attribute_assertion_symbols.module_id(),
+                    &imported_attribute_assertion_symbols,
+                )
+                .is_none()
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_attribute_assertion_symbols.module_id().clone(),
+                    &imported_attribute_assertion_symbols,
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let imported_attribute_contribution_control = imported_attribute_contribution_env(
+            imported_attribute_assertion_symbols.module_id().clone(),
+            true,
+        );
+        assert!(
+            extract_source_imported_attribute_assertion_formula(
+                &imported_attribute_assertion_theorem,
+                imported_attribute_contribution_control.module_id(),
+                &imported_attribute_contribution_control,
+            )
+            .is_some()
+        );
         for gap_symbols in [
             source_local_symbol_env(
                 imported_attribute_assertion_symbols.module_id().clone(),
@@ -1374,7 +1579,18 @@
             ambiguous_imported_attribute_assertion_env(
                 imported_attribute_assertion_symbols.module_id().clone(),
             ),
+            imported_attribute_local_contribution_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+            ),
         ] {
+            assert!(
+                extract_source_imported_attribute_assertion_formula(
+                    &imported_attribute_assertion_theorem,
+                    gap_symbols.module_id(),
+                    &gap_symbols,
+                )
+                .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(
                     &imported_attribute_assertion_theorem,
@@ -1386,13 +1602,18 @@
         }
         let imported_non_empty_attribute_assertion_symbols =
             imported_empty_fixture_attribute_symbol_env(symbols.module_id().clone());
+        let imported_non_empty_attribute_assertion_import = "parser.type_fixtures";
+        let imported_non_empty_attribute_assertion_label =
+            "ImportedNonEmptyAttributeAssertionPayloadBoundary";
+        let imported_non_empty_attribute_assertion_subject = "1";
+        let imported_non_empty_attribute_assertion_attribute = "empty";
         let imported_non_empty_attribute_assertion_theorem =
             imported_non_empty_attribute_assertion_theorem_ast(
                 source_id,
-                &["parser.type_fixtures"],
-                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
-                "1",
-                "empty",
+                &[imported_non_empty_attribute_assertion_import],
+                imported_non_empty_attribute_assertion_label,
+                imported_non_empty_attribute_assertion_subject,
+                imported_non_empty_attribute_assertion_attribute,
             );
         let imported_non_empty_attribute_assertion_detail_keys = vec![
             "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
@@ -1427,17 +1648,128 @@
                 &imported_non_empty_attribute_assertion_symbols,
             )
             .expect("exact imported non-empty attribute assertion bridge should extract payload");
+        let imported_non_empty_attribute_assertion_formula_start = [
+            "import",
+            "parser",
+            ".",
+            "type_fixtures",
+            ";",
+            "theorem",
+            imported_non_empty_attribute_assertion_label,
+            ":",
+        ]
+        .iter()
+        .map(|token| token.len() + 1)
+        .sum::<usize>();
+        let imported_non_empty_attribute_assertion_subject_range = range(
+            source_id,
+            imported_non_empty_attribute_assertion_formula_start,
+            imported_non_empty_attribute_assertion_formula_start
+                + imported_non_empty_attribute_assertion_subject.len(),
+        );
+        let imported_non_empty_attribute_assertion_non_start =
+            imported_non_empty_attribute_assertion_subject_range.end + 1 + "is".len() + 1;
+        let imported_non_empty_attribute_assertion_attribute_start =
+            imported_non_empty_attribute_assertion_non_start + "non".len() + 1;
+        let imported_non_empty_attribute_assertion_attribute_range = range(
+            source_id,
+            imported_non_empty_attribute_assertion_attribute_start,
+            imported_non_empty_attribute_assertion_attribute_start
+                + imported_non_empty_attribute_assertion_attribute.len(),
+        );
+        let imported_non_empty_attribute_assertion_formula_range = range(
+            source_id,
+            imported_non_empty_attribute_assertion_formula_start,
+            imported_non_empty_attribute_assertion_attribute_range.end,
+        );
+        let expected_imported_non_empty_attribute_subject_sites = surface_sites_for_kind_ranges(
+            &imported_non_empty_attribute_assertion_theorem,
+            SurfaceNodeKind::NumeralTerm,
+            &[imported_non_empty_attribute_assertion_subject_range],
+        );
+        let expected_imported_non_empty_attribute_formula_sites = surface_sites_for_kind_ranges(
+            &imported_non_empty_attribute_assertion_theorem,
+            SurfaceNodeKind::IsAssertion,
+            &[imported_non_empty_attribute_assertion_formula_range],
+        );
+        let imported_non_empty_attribute_refs = surface_nodes_with_kind(
+            &imported_non_empty_attribute_assertion_theorem,
+            SurfaceNodeKind::AttributeRef,
+        );
+        let [(_, imported_non_empty_attribute_ref)] =
+            imported_non_empty_attribute_refs.as_slice()
+        else {
+            panic!("exact imported non-empty assertion should have one attribute ref");
+        };
+        assert_eq!(
+            surface_direct_token_texts(
+                &imported_non_empty_attribute_assertion_theorem,
+                imported_non_empty_attribute_ref,
+            ),
+            vec!["non"]
+        );
+        assert_eq!(
+            imported_non_empty_attribute_assertion_payload.formula_site,
+            expected_imported_non_empty_attribute_formula_sites[0]
+        );
+        assert_eq!(
+            imported_non_empty_attribute_assertion_payload.formula_range,
+            imported_non_empty_attribute_assertion_formula_range
+        );
+        assert_eq!(
+            imported_non_empty_attribute_assertion_payload.subject_site,
+            expected_imported_non_empty_attribute_subject_sites[0]
+        );
+        assert_eq!(
+            imported_non_empty_attribute_assertion_payload.subject_range,
+            imported_non_empty_attribute_assertion_subject_range
+        );
         assert_eq!(
             imported_non_empty_attribute_assertion_payload
                 .attribute_symbol
                 .module()
                 .path()
                 .as_str(),
-            "parser.type_fixtures"
+            imported_non_empty_attribute_assertion_import
         );
+        let imported_non_empty_attribute_entry = imported_non_empty_attribute_assertion_symbols
+            .symbols()
+            .get(&imported_non_empty_attribute_assertion_payload.attribute_symbol)
+            .expect("imported non-empty attribute symbol should exist");
+        assert_eq!(
+            imported_non_empty_attribute_entry.kind(),
+            SymbolKind::Attribute
+        );
+        assert_eq!(
+            imported_non_empty_attribute_entry.primary_spelling(),
+            imported_non_empty_attribute_assertion_attribute
+        );
+        let imported_non_empty_attribute_contribution =
+            imported_non_empty_attribute_assertion_symbols
+                .contributions()
+                .get(imported_non_empty_attribute_entry.contribution())
+                .expect("imported non-empty attribute contribution should exist");
+        assert_eq!(
+            imported_non_empty_attribute_contribution.module(),
+            imported_non_empty_attribute_assertion_payload
+                .attribute_symbol
+                .module()
+        );
+        assert!(matches!(
+            imported_non_empty_attribute_contribution.kind(),
+            ContributionKind::ImportedSource { .. }
+        ));
         assert_eq!(
             imported_non_empty_attribute_assertion_output.terms().len(),
             1
+        );
+        assert_eq!(
+            imported_non_empty_attribute_assertion_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term.site.clone())
+                .collect::<Vec<_>>(),
+            vec![expected_imported_non_empty_attribute_subject_sites[0].clone()]
         );
         let (_, checked_non_empty_subject) = imported_non_empty_attribute_assertion_output
             .terms()
@@ -1448,7 +1780,7 @@
         assert_eq!(checked_non_empty_subject.status, TermStatus::Partial);
         assert_eq!(
             checked_non_empty_subject.site,
-            imported_non_empty_attribute_assertion_payload.subject_site
+            expected_imported_non_empty_attribute_subject_sites[0]
         );
         assert_eq!(checked_non_empty_subject.context, BindingContextId::new(0));
         assert!(checked_non_empty_subject.candidate_set.is_none());
@@ -1458,6 +1790,14 @@
                 .len(),
             1
         );
+        assert_eq!(
+            imported_non_empty_attribute_assertion_output
+                .formulas()
+                .iter()
+                .map(|(_, formula)| formula.site.clone())
+                .collect::<Vec<_>>(),
+            vec![expected_imported_non_empty_attribute_formula_sites[0].clone()]
+        );
         let (_, checked_non_empty_formula) = imported_non_empty_attribute_assertion_output
             .formulas()
             .iter()
@@ -1465,7 +1805,7 @@
             .expect("non-empty attribute assertion formula should be checked");
         assert_eq!(
             checked_non_empty_formula.site,
-            imported_non_empty_attribute_assertion_payload.formula_site
+            expected_imported_non_empty_attribute_formula_sites[0]
         );
         assert_eq!(
             checked_non_empty_formula.kind,
@@ -1475,11 +1815,7 @@
         assert_eq!(checked_non_empty_formula.context, BindingContextId::new(0));
         assert_eq!(
             checked_non_empty_formula.terms,
-            vec![
-                imported_non_empty_attribute_assertion_payload
-                    .subject_site
-                    .clone()
-            ]
+            vec![expected_imported_non_empty_attribute_subject_sites[0].clone()]
         );
         assert!(checked_non_empty_formula.facts.is_empty());
         assert_eq!(
@@ -1542,6 +1878,14 @@
             ),
         ];
         for gap_case in imported_non_empty_attribute_assertion_gap_cases {
+            assert!(
+                extract_source_imported_non_empty_attribute_assertion_formula(
+                    &gap_case,
+                    imported_non_empty_attribute_assertion_symbols.module_id(),
+                    &imported_non_empty_attribute_assertion_symbols,
+                )
+                .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(
                     &gap_case,
@@ -1553,6 +1897,98 @@
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
+        let imported_non_empty_attribute_assertion_corruption_cases = [
+            ImportedAttributeAssertionCorruption {
+                recovered_label: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                recovered_attribute_symbol: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                duplicate_theorem: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                duplicate_formula_expression: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_formula_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_assertion_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_attribute_chain_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_attribute_ref_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_qualified_symbol_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_numeral_child: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+            ImportedAttributeAssertionCorruption {
+                extra_non: true,
+                ..ImportedAttributeAssertionCorruption::default()
+            },
+        ]
+        .map(|corruption| {
+            imported_attribute_assertion_theorem_ast_with_corruption(
+                source_id,
+                &[imported_non_empty_attribute_assertion_import],
+                imported_non_empty_attribute_assertion_label,
+                imported_non_empty_attribute_assertion_subject,
+                imported_non_empty_attribute_assertion_attribute,
+                true,
+                corruption,
+            )
+        });
+        for gap_case in imported_non_empty_attribute_assertion_corruption_cases {
+            assert!(
+                extract_source_imported_non_empty_attribute_assertion_formula(
+                    &gap_case,
+                    imported_non_empty_attribute_assertion_symbols.module_id(),
+                    &imported_non_empty_attribute_assertion_symbols,
+                )
+                .is_none()
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_non_empty_attribute_assertion_symbols
+                        .module_id()
+                        .clone(),
+                    &imported_non_empty_attribute_assertion_symbols,
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let imported_non_empty_attribute_contribution_control =
+            imported_attribute_contribution_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                true,
+            );
+        assert!(
+            extract_source_imported_non_empty_attribute_assertion_formula(
+                &imported_non_empty_attribute_assertion_theorem,
+                imported_non_empty_attribute_contribution_control.module_id(),
+                &imported_non_empty_attribute_contribution_control,
+            )
+            .is_some()
+        );
         for gap_symbols in [
             source_local_symbol_env(
                 imported_non_empty_attribute_assertion_symbols
@@ -1577,7 +2013,20 @@
                     .module_id()
                     .clone(),
             ),
+            imported_attribute_local_contribution_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+            ),
         ] {
+            assert!(
+                extract_source_imported_non_empty_attribute_assertion_formula(
+                    &imported_non_empty_attribute_assertion_theorem,
+                    gap_symbols.module_id(),
+                    &gap_symbols,
+                )
+                .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(
                     &imported_non_empty_attribute_assertion_theorem,

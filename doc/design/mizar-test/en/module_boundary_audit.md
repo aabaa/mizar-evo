@@ -1320,6 +1320,100 @@ fresh bounded inventory of the remaining formula families. No
 `spec_coverage_audit.md` update is required because behavior, authority,
 coverage credit, owner crate, and deferred status are unchanged.
 
+## Tasks 262K0-K Pre-Move Inventory and Specification
+
+Fresh inventory at clean HEAD `9625d0a1` isolates the exact imported attribute
+assertion family in three `runner.rs` fragments:
+
+- the 8-line five-field transport at lines 1,649-1,656, hash
+  `f6b78fea06f451c61eac5286ea41b8f85e33bfa80d4b392cfd68d65e9117f5ca`;
+- the 141-line exact `empty`/`non empty` two-entry and shared-shape extractor at
+  lines 12,963-13,103, hash
+  `a7aa82e3b3a97cbdcf2b7506920bda40cf7d4ddeef2feb5a1124c5d7e3b93c05`;
+- the 21-line dedicated node allowlist at lines 13,388-13,408, hash
+  `3f13f99cd6fe64cd8baddceefdeed904e4b118d2132c6cecd06a2fe7187f0e76`.
+
+The exact active bridges distinguish positive `empty` from attribute-level
+`non empty`; the latter is not formula-level negation. Both import
+`parser.type_fixtures`, require the imported `empty` attribute, pass one real
+source-derived numeral and one attribute-assertion formula to the checker, and
+then fail closed on missing numeric and formula/attribute semantic payloads.
+Chapter 14 and the canonical harness preserve that polarity boundary and keep
+broader attribute semantics deferred.
+
+Task 262K moves only these three fragments after K0. Both exact extractor
+entries use runner-subtree visibility and unconditional parent-facade aliases;
+the shared-shape extractor and allowlist remain leaf-private. The transport and
+all five fields use runner-subtree visibility without a facade type alias.
+Checker/detail/orchestration consumers stay in `runner.rs`. The moved family
+reuses the leaf-owned imported-symbol resolver, exact numeral projection, and
+source-AST projections. After their last external caller moves, K also removes
+only the obsolete runner/facade aliases for `exact_compilation_item_list`,
+`is_exact_parser_type_fixtures_import`, `qualified_symbol_spelling`, and
+`resolve_imported_fixture_term_formula_symbol`, plus the runner-only
+`SymbolKind` import. The leaf implementations and visibility remain unchanged.
+No new reverse dependency is introduced.
+
+## Task 262K0 Test-Gap Inventory and Specification
+
+The K test-sufficiency review found an independent `test_gap`. Both current
+positive matrices locate checker terms/formulas through extractor-returned
+sites and check imported provenance only by module path. They do not
+independently fix formula/subject sites and ranges, all five transport fields,
+exact `AttributeRef` polarity, symbol kind/spelling/module/contribution
+provenance, or singleton checker ordering and formula-to-subject handoff.
+
+Existing source and environment near misses assert only the rendered gap
+detail. They lack direct extractor rejection, recovery, duplicate theorem or
+formula expression, formula/assertion/attribute-chain/attribute-ref/qualified-
+symbol/numeral cardinality corruption, duplicate or mismatched `non`, and an
+isolated imported-contribution-kind corruption. Task 262K0 is a test-only
+repair: add default-off family-specific corruption controls to existing support
+and strengthen the existing test for both variants with independently derived
+source expectations, exact provenance/order, direct `None`, and the unchanged
+`type_elaboration.external_dependency.ast_payload_extraction` detail key.
+
+Task 262K0 adds no test and changes no production source, `.miz`, expectation,
+trace, specification, public API, diagnostic, payload behavior, test name, or
+test count. It is a separate commit before move-only K. Coverage credit, owner
+crate, follow-up ownership, and deferred rationale remain unchanged, so
+`spec_coverage_audit.md` remains unchanged.
+
+## Task 262K0 Test Repair Result
+
+Task 262K0 strengthened both existing imported attribute assertion variants
+without adding or renaming a test. Each positive matrix now derives formula and
+subject ranges from the exact source spellings, selects the `IsAssertion` and
+`NumeralTerm` sites independently, fixes all five transport fields, checks
+direct `AttributeRef` polarity (`[]` versus `["non"]`), and fixes exact imported
+attribute kind, spelling, module, and contribution provenance. Singleton checker
+term/formula order and formula-to-subject handoff are anchored to those
+independent sites.
+
+The default-off bounded builder covers recovered label and attribute symbol,
+duplicate theorem and formula expression, formula/assertion/attribute-chain/
+attribute-ref/qualified-symbol/numeral cardinality, and unexpected or duplicate
+`non` for both variants. Every existing source/environment near miss and all 22
+corruption cases return no direct extraction plus the unchanged
+`type_elaboration.external_dependency.ast_payload_extraction` detail key. A
+shared boolean environment builder proves an otherwise-identical ImportedSource
+control extracts before its LocalSource contribution twin rejects.
+
+`support.rs` is 7,146 lines with hash
+`46340ae9aa4ac03b7e5e458a515814bea4db86de177625c97b57762d894a8025`;
+`source_gap_and_equality.rs` is 3,974 lines with hash
+`101fb755532276a12ce2202f297c318ad77249eab9aa27ce2670fe59e08ab47c`.
+Production source, `.miz`, specification, trace, expectation, public API,
+diagnostics, payload behavior, test names, and test count are unchanged.
+
+The focused test, relevant-crate tests, all 272 unit tests, and all 188 active
+type cases pass. Plan/count remains 403/367, type coverage 235/223, pass/fail
+219/184, and the raw/normalized test-list plus four CLI hashes are unchanged.
+Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
+also pass. Task 262K0 is complete and move-only Task 262K is next. No
+`spec_coverage_audit.md` update is required because behavior, test intent,
+coverage credit, owner crate, and deferred status are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -1484,6 +1578,8 @@ Task 255E.
 | 262J0 | Complete: strengthened the existing imported predicate/functor matrix for independent payload/checker/import provenance plus recovery, duplicate, and structural-cardinality preservation without changing production or test count. |
 | 262J1 | Complete: moved only the shared imported formula symbol resolver/provenance pair into the private source-formula leaf with all three callers unchanged. |
 | 262J2 | Complete: moved only the imported predicate/functor transport, exact extractor, exact infix projection, and dedicated allowlist into the private source-formula leaf. |
+| 262K0 | Complete: strengthened both existing imported attribute assertion variants for independent five-field payload/provenance/order preservation and bounded direct-rejection corruption coverage without changing production or test count. |
+| 262K | Next: move only the imported attribute assertion transport, two-entry/shared extractor, and dedicated allowlist into the private source-formula leaf. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
@@ -1517,7 +1613,7 @@ before Task 253A is
 | Class | Result |
 |---|---|
 | `design_drift` | Active: source layout obscures phase and ownership review boundaries. Tasks 249-264 repair it without changing behavior. |
-| `test_gap` | Tasks 262H0, 262I0, and 262J0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
+| `test_gap` | Tasks 262H0, 262I0, 262J0, and 262K0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
 | `spec_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
 | `source_undocumented_behavior`, `boundary_violation` | No new finding; existing runner behavior remains governed by the paired harness plan and higher authorities. |
 | `repo_metadata_conflict` | None found. |

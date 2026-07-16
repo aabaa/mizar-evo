@@ -831,8 +831,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   Task 262I moved only that family after I0. Task 262J0 completed the test-only
   preservation prerequisite for the imported predicate/functor family. The
   shared symbol projection moved in Task 262J1, and Task 262J2 moved the exact
-  imported predicate/functor family. Remaining Task 262 formula families require
-  fresh bounded inventory; they and Task 263 keep this parent item open.
+  imported predicate/functor family. Fresh inventory decomposes the exact
+  imported attribute assertion family into test-only preservation Task 262K0,
+  now complete, followed by move-only Task 262K. Remaining formula families and
+  Task 263 keep this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

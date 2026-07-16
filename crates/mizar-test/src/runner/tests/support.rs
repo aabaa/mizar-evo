@@ -939,6 +939,22 @@
         imported_parser_fixture_symbol_env(module, "empty", SymbolKind::Mode)
     }
 
+    fn imported_attribute_contribution_env(
+        module: ResolverModuleId,
+        imported_source: bool,
+    ) -> SymbolEnv {
+        term_formula_symbol_env_with_imported_contribution(
+            module,
+            &[],
+            &[("empty", SymbolKind::Attribute)],
+            imported_source,
+        )
+    }
+
+    fn imported_attribute_local_contribution_env(module: ResolverModuleId) -> SymbolEnv {
+        imported_attribute_contribution_env(module, false)
+    }
+
     fn ambiguous_imported_attribute_assertion_env(module: ResolverModuleId) -> SymbolEnv {
         term_formula_symbol_env(
             module,
@@ -3470,6 +3486,29 @@
         builder.finish(Some(root), None)
     }
 
+    #[derive(Clone, Copy, Default)]
+    struct ImportedAttributeAssertionCorruption {
+        recovered_label: bool,
+        recovered_attribute_symbol: bool,
+        duplicate_theorem: bool,
+        duplicate_formula_expression: bool,
+        extra_formula_child: bool,
+        extra_assertion_child: bool,
+        extra_attribute_chain_child: bool,
+        extra_attribute_ref_child: bool,
+        extra_qualified_symbol_child: bool,
+        extra_numeral_child: bool,
+        extra_non: bool,
+    }
+
+    #[derive(Clone, Copy)]
+    struct ImportedAttributeAssertionTheoremSpec<'a> {
+        label: &'a str,
+        subject: &'a str,
+        attribute: &'a str,
+        negative_attribute: bool,
+    }
+
     fn imported_attribute_assertion_theorem_ast(
         source_id: SourceId,
         imports: &[&str],
@@ -3477,21 +3516,15 @@
         subject: &str,
         attribute: &str,
     ) -> SurfaceAst {
-        let mut builder = SurfaceAstBuilder::new(source_id);
-        let mut offset = 0;
-        let mut items = imports
-            .iter()
-            .map(|import| add_import_item(&mut builder, source_id, &mut offset, import))
-            .collect::<Vec<_>>();
-        items.push(add_attribute_assertion_theorem_item(
-            &mut builder,
+        imported_attribute_assertion_theorem_ast_with_corruption(
             source_id,
-            &mut offset,
+            imports,
             label,
             subject,
             attribute,
-        ));
-        finish_compilation_ast(builder, source_id, items)
+            false,
+            ImportedAttributeAssertionCorruption::default(),
+        )
     }
 
     fn imported_non_empty_attribute_assertion_theorem_ast(
@@ -3501,21 +3534,47 @@
         subject: &str,
         attribute: &str,
     ) -> SurfaceAst {
+        imported_attribute_assertion_theorem_ast_with_corruption(
+            source_id,
+            imports,
+            label,
+            subject,
+            attribute,
+            true,
+            ImportedAttributeAssertionCorruption::default(),
+        )
+    }
+
+    fn imported_attribute_assertion_theorem_ast_with_corruption(
+        source_id: SourceId,
+        imports: &[&str],
+        label: &str,
+        subject: &str,
+        attribute: &str,
+        negative_attribute: bool,
+        corruption: ImportedAttributeAssertionCorruption,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let mut items = imports
             .iter()
             .map(|import| add_import_item(&mut builder, source_id, &mut offset, import))
             .collect::<Vec<_>>();
-        items.push(add_attribute_assertion_theorem_item_with_polarity(
-            &mut builder,
-            source_id,
-            &mut offset,
-            label,
-            subject,
-            attribute,
-            true,
-        ));
+        let theorem_count = if corruption.duplicate_theorem { 2 } else { 1 };
+        items.extend((0..theorem_count).map(|_| {
+            add_attribute_assertion_theorem_item_with_corruption(
+                &mut builder,
+                source_id,
+                &mut offset,
+                ImportedAttributeAssertionTheoremSpec {
+                    label,
+                    subject,
+                    attribute,
+                    negative_attribute,
+                },
+                corruption,
+            )
+        }));
         finish_compilation_ast(builder, source_id, items)
     }
 
@@ -4836,6 +4895,27 @@
         attribute: &str,
         negative_attribute: bool,
     ) -> SurfaceBuilderNodeId {
+        add_attribute_assertion_theorem_item_with_corruption(
+            builder,
+            source_id,
+            offset,
+            ImportedAttributeAssertionTheoremSpec {
+                label,
+                subject,
+                attribute,
+                negative_attribute,
+            },
+            ImportedAttributeAssertionCorruption::default(),
+        )
+    }
+
+    fn add_attribute_assertion_theorem_item_with_corruption(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: ImportedAttributeAssertionTheoremSpec<'_>,
+        corruption: ImportedAttributeAssertionCorruption,
+    ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let theorem = add_token(
             builder,
@@ -4844,13 +4924,23 @@
             SurfaceTokenKind::ReservedWord,
             "theorem",
         );
-        let label_token = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::Identifier,
-            label,
-        );
+        let label_token = if corruption.recovered_label {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        };
         let colon = add_token(
             builder,
             source_id,
@@ -4859,7 +4949,26 @@
             ":",
         );
         let formula_start = *offset;
-        let subject_term = add_numeral_term_expression(builder, source_id, offset, subject);
+        let subject_term = if corruption.extra_numeral_child {
+            let subject_start = *offset;
+            let numeral = add_numeral_term(builder, source_id, offset, spec.subject);
+            let subject_end = builder
+                .node_range(numeral)
+                .expect("just-created numeral term should exist")
+                .end;
+            let extra_numeral = builder.add_node(
+                SurfaceNodeKind::NumeralTerm,
+                range(source_id, subject_start, subject_end),
+                Vec::new(),
+            );
+            builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, subject_start, subject_end),
+                vec![numeral, extra_numeral],
+            )
+        } else {
+            add_numeral_term_expression(builder, source_id, offset, spec.subject)
+        };
         let is_token = add_token(
             builder,
             source_id,
@@ -4869,7 +4978,9 @@
         );
         let attribute_start = *offset;
         let mut attribute_children = Vec::new();
-        if negative_attribute {
+        let non_count =
+            usize::from(spec.negative_attribute) + usize::from(corruption.extra_non);
+        for _ in 0..non_count {
             attribute_children.push(add_token(
                 builder,
                 source_id,
@@ -4878,31 +4989,107 @@
                 "non",
             ));
         }
-        let attribute_symbol = add_attribute_symbol(builder, source_id, offset, attribute, false);
+        let attribute_symbol = if corruption.recovered_attribute_symbol
+            || corruption.extra_qualified_symbol_child
+        {
+            let symbol_start = *offset;
+            let symbol_token = if corruption.recovered_attribute_symbol {
+                add_recovered_token(
+                    builder,
+                    source_id,
+                    offset,
+                    SurfaceTokenKind::UserSymbol,
+                    spec.attribute,
+                )
+            } else {
+                add_token(
+                    builder,
+                    source_id,
+                    offset,
+                    SurfaceTokenKind::UserSymbol,
+                    spec.attribute,
+                )
+            };
+            let symbol_end = builder
+                .node_range(symbol_token)
+                .expect("just-created attribute token should exist")
+                .end;
+            let segment = builder.add_node(
+                SurfaceNodeKind::PathSegment,
+                range(source_id, symbol_start, symbol_end),
+                vec![symbol_token],
+            );
+            let mut symbol_children = vec![segment];
+            if corruption.extra_qualified_symbol_child {
+                symbol_children.push(builder.add_node(
+                    SurfaceNodeKind::PathSegment,
+                    range(source_id, symbol_start, symbol_end),
+                    Vec::new(),
+                ));
+            }
+            builder.add_node(
+                SurfaceNodeKind::QualifiedSymbol,
+                range(source_id, symbol_start, symbol_end),
+                symbol_children,
+            )
+        } else {
+            add_attribute_symbol(builder, source_id, offset, spec.attribute, false)
+        };
         attribute_children.push(attribute_symbol);
         let attribute_end = builder
             .node_range(attribute_symbol)
             .expect("just-created attribute symbol should exist")
             .end;
+        if corruption.extra_attribute_ref_child {
+            attribute_children.push(builder.add_node(
+                SurfaceNodeKind::QualifiedSymbol,
+                range(source_id, attribute_start, attribute_end),
+                Vec::new(),
+            ));
+        }
         let attribute_ref = builder.add_node(
             SurfaceNodeKind::AttributeRef,
             range(source_id, attribute_start, attribute_end),
             attribute_children,
         );
+        let mut chain_children = vec![attribute_ref];
+        if corruption.extra_attribute_chain_child {
+            chain_children.push(builder.add_node(
+                SurfaceNodeKind::AttributeRef,
+                range(source_id, attribute_start, attribute_end),
+                Vec::new(),
+            ));
+        }
         let attribute_chain = builder.add_node(
             SurfaceNodeKind::AttributeTestChain,
             range(source_id, attribute_start, attribute_end),
-            vec![attribute_ref],
+            chain_children,
         );
+        let mut assertion_children = vec![subject_term, is_token, attribute_chain];
+        if corruption.extra_assertion_child {
+            assertion_children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, formula_start, attribute_end),
+                Vec::new(),
+            ));
+        }
         let formula = builder.add_node(
             SurfaceNodeKind::IsAssertion,
             range(source_id, formula_start, attribute_end),
-            vec![subject_term, is_token, attribute_chain],
+            assertion_children,
         );
+        let mut formula_children = vec![formula];
+        if corruption.extra_formula_child {
+            formula_children.push(builder.add_node(
+                SurfaceNodeKind::IsAssertion,
+                range(source_id, formula_start, attribute_end),
+                Vec::new(),
+            ));
+        }
         let formula_expression = builder.add_node(
             SurfaceNodeKind::FormulaExpression,
             range(source_id, formula_start, attribute_end),
-            vec![formula],
+            formula_children,
         );
         let semicolon = add_token(
             builder,
@@ -4915,10 +5102,19 @@
             .node_range(semicolon)
             .expect("just-created semicolon should exist")
             .end;
+        let mut theorem_children = vec![theorem, label_token, colon, formula_expression];
+        if corruption.duplicate_formula_expression {
+            theorem_children.push(builder.add_node(
+                SurfaceNodeKind::FormulaExpression,
+                range(source_id, formula_start, attribute_end),
+                Vec::new(),
+            ));
+        }
+        theorem_children.push(semicolon);
         builder.add_node(
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
-            vec![theorem, label_token, colon, formula_expression, semicolon],
+            theorem_children,
         )
     }
 
@@ -6918,6 +7114,13 @@
             .collect::<Vec<_>>();
         assert_eq!(sites.len(), ranges.len());
         sites
+    }
+
+    fn surface_direct_token_texts(
+        ast: &SurfaceAst,
+        node: &mizar_syntax::SurfaceNode,
+    ) -> Vec<String> {
+        super::direct_token_texts(ast, node)
     }
 
     const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
