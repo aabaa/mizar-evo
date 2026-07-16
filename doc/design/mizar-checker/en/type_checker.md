@@ -2992,3 +2992,19 @@ Other operands, nesting, formula grouping, truth/facts, acceptance, imported-
 positive provenance, child graphs, and downstream payloads receive no credit;
 missing imported expansion/evidence/signature and proof/CoreIr/ControlFlowIr/VC
 remain deferred. No checker source/API/module-layout change was required.
+
+## Task 246 Active Exact Transparent Parenthesized Two-Edge Local-Mode Reserved-Variable Equality Checker Bridge
+
+The route accepts only the exact ordered Base-to-set, Middle-to-Base, and Outer-
+to-Middle bare definitions followed by an Outer reserve and `(z) = z`. A
+Task-246-only config conditionally extends the private parenthesized node guard
+only when mode definitions are expected. It keeps the wrapper, formula, inner-
+left, and direct-right sites distinct, resolves ordinals 1/2 to `BindingId(0)`,
+and passes three real `ModeExpansion`s with four raw Outer role inputs into the
+unchanged equality checker. The output has one Base-RHS `BuiltinSet`, two
+inferred variables, six type entries, two ordered expected constraints, and one
+checked equality with no facts, candidates, diagnostics, deferred work, or
+wrapper-owned semantic entry. Finite order/shape/provenance/corruption,
+immutable/module, Tasks 134/223, all 59 prior owners, and the real sidecar bound
+the route. Active runner 188 is traced in plan 403/367, type 235/223, pass/fail
+219/184. Broader semantics and downstream payloads remain outside credit.

@@ -1847,3 +1847,15 @@ finite matrix、Task-243 cross-route、既存 owner 58件の双方向、Left rou
 で runner 187 を guard。metadata 402/366、type 234/222、pass/fail 218/184。
 credit は exact shape だけ。その他 shape/imported-positive は uncredited、
 未成立 imported/proof/downstream payload は deferred。
+
+## Task 246 Active Traceability
+
+Task 246 は exact parenthesized two-edge set-terminal local-mode equality
+fixture 1件を追加。shared 5件（Chapters 04/13/14/16 と Task-72 structural
+producer）+ dedicated 1件が closed source を trace。executable contract は
+expansion 3件、raw Outer input 4件、ordinal 1/2 の `BindingId(0)`、Base-RHS
+`BuiltinSet` 1件へ normalize する type entry 6件、ordered constraint 2件、
+checked equality 1件、wrapper semantic reference なしを保持。finite matrix、
+Tasks 134/223 cross-rejection、既存 owner 59件が runner 188 を guard。
+metadata 403/367、type 235/223、pass/fail 219/184。broader/downstream は
+credit 外または deferred。

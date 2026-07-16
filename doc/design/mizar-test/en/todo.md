@@ -762,3 +762,15 @@ Check the task off here once tests pass.
   no credit; missing imported expansion/evidence/signature and proof/CoreIr/
   ControlFlowIr/VC remain deferred. Step 5 remains active; Steps 6/7 remain
   deferred.
+
+## Task 246 Active Addendum
+
+- [x] Add the exact three-mode set-terminal `(z) = z` fixture and six trace
+  references without changing existing expectations.
+- [x] Require conditional mode-node admission, three expansions, four raw Outer
+  inputs, ordinal 1/2 `BindingId(0)`, one terminal set identity, two terms, six
+  entries, two constraints, one checked equality, and no wrapper ownership.
+- [x] Cover all five nonidentity orders, finite structure/provenance/corruption,
+  Tasks 134/223, immutable/module behavior, 59 prior owners, and a real sidecar.
+- [x] Synchronize runner 188, plan 403/367, type 235/223, pass/fail 219/184.
+  Step 5 remains active; Steps 6/7 remain deferred.

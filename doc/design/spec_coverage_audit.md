@@ -2145,3 +2145,18 @@ other shapes and imported-positive provenance remain uncredited, while missing
 imported expansion/evidence/signature and proof/CoreIr/ControlFlowIr/VC remain
 deferred. Step 5 stays active; Steps 6/7 stay deferred. No checker source/API/
 module-layout update was required.
+
+## Task 246 Exact Parenthesized Two-Edge Local-Mode Equality Coverage Addendum
+
+For Chapters 04/07/13/14/16, Task 246 classifies the exact ordered three-mode
+set-terminal chain, Outer reserve, and `(z) = z` intersection as `test_gap`,
+narrow `source_drift`, and `design_drift`, not `spec_gap`. The real Task-72
+expansion producer, Task-223 wrapper producer, and Task-134 equality consumer
+compose while their existing exact rows remain unchanged. Credit is limited to
+three real expansions, four raw Outer inputs, ordinal 1/2 `BindingId(0)`, one
+Base-RHS `BuiltinSet`, two inferred terms, six entries, two ordered constraints,
+one clean checked equality, and no wrapper output. Five shared plus one dedicated
+backlink, the finite matrix, and 59-owner isolation protect runner 188 within
+plan 403/367, type 235/223, pass/fail 219/184 without rebaselining. Broader modes,
+parentheses, acceptance/truth/child graphs, imported provenance, and proof/IR/VC
+remain uncredited or deferred. Step 5 stays active; Steps 6/7 stay deferred.

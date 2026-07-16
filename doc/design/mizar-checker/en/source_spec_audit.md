@@ -2391,3 +2391,21 @@ positive provenance receive no credit; missing imported expansion/evidence/
 signature, proof/CoreIr/ControlFlowIr/VC, and broader dependencies remain
 deferred. Step 5 stays active; Steps 6/7 stay deferred. No checker source/API/
 module-layout change was required.
+
+## Task 246 MC-G020 Active Override
+
+Task 246 classifies only the exact three-definition set-terminal chain plus
+single-left-parenthesized equality as `test_gap`, narrow `source_drift`, and
+`design_drift`, not `spec_gap`. Chapters 04/07/13/14/16 establish reserved
+theorem-variable typing, mode use, transparent term parentheses, atomic
+equality, and theorem syntax; Tasks 134 and 223 provide the closed primary test
+intent. The route retains pairwise-distinct Base/Middle/Outer provenance, one
+wrapper plus inner-left/direct-right sites, three real expansions, four raw
+Outer inputs, ordinal 1/2 `BindingId(0)` lookups, one terminal-RHS `BuiltinSet`,
+two inferred terms, six entries, two ordered constraints, and one clean checked
+equality without wrapper semantics. Conditional node admission and the finite
+matrix leave all old empty-mode configs closed. Runner 188 and metadata 403/367,
+type 235/223, pass/fail 219/184 are traced by five shared plus one dedicated row.
+Imported/attributed/argument-bearing modes, other sides/nesting/depths,
+declaration acceptance, truth/facts, child graphs, and proof/IR/VC remain
+uncredited or deferred. Step 5 is active; Steps 6/7 are deferred.

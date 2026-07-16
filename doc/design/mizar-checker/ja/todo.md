@@ -4066,3 +4066,18 @@ cargo test -p mizar-test
   dedicated 1 backlink を同期。その他 shape は credit 外、未成立 imported/
   proof/downstream payload は deferred。Step 5 active、Steps 6/7 deferred。
   checker source/API/module-layout update は不要。
+
+## Task 246 Active Addendum
+
+- [x] exact 3-definition set-terminal chain、`reserve z for
+  OuterTwoEdgeModeEquality`、`(z) = z` だけを Task-246-only key/config/role と
+  transparent Left wrapper で追加。
+- [x] mode-definition node は nonempty-mode parenthesized config だけ許可し、
+  旧 empty-mode route、expansion 3件、raw Outer input 4件、ordinal 1/2 の
+  `BindingId(0)`、entry 6件、constraint 2件、wrapper output なしの clean
+  equality を保持。
+- [x] 全5 definition order、finite corruption、Tasks 134/223 cross-rejection、
+  immutable/module、既存 owner 59件の双方向、real sidecar を guard。
+- [x] runner 188、plan 403/367、type 235/223、pass/fail 219/184、shared 5 +
+  dedicated 1 を同期。Step 5 active、Steps 6/7 deferred、broader/downstream
+  semantics は credit 外。

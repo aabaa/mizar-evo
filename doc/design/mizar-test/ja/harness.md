@@ -2268,3 +2268,15 @@ Task-243 cross-route、immutable/module、既存 owner 58件の双方向、Left 
 6件、real sidecar を検証。runner 187、plan 402/366、type 234/222、pass/fail
 218/184、shared 4 + dedicated 1 trace。その他 shape/imported-positive/proof/
 downstream は credit 外または deferred。
+
+## Task 246 Parenthesized Two-Edge Local-Mode Equality Active Harness Contract
+
+active case は ordered 3-mode set-terminal source、Outer reserve、`(z) = z`
+の exact shape。runner は unrecovered Left wrapper 1件、distinct wrapper/
+formula/inner/right provenance、ordinal 1/2 の same binding、real expansion
+3件、raw Outer input 4件、Base-RHS set identity 1件、inferred term 2件、type
+entry 6件、ordered expected constraint 2件、clean equality 1件を検証する。
+mode AST node は Task-246 nonempty config だけ許可し、旧 empty-mode config
+は closed のまま。全5 definition order、finite near-miss/corruption、cross-
+route、immutable/module、既存 owner 59件の双方向、real sidecar が runner
+188 を保護。trace は 403/367、type 235/223、pass/fail 219/184。

@@ -2370,3 +2370,16 @@ sidecar. Active runner 187 and plan 402/366, type 234/222, pass/fail 218/184 are
 traced by four shared plus one dedicated reference without rebaselining. Other
 shapes, imported-positive provenance, proof, and downstream IR remain outside
 credit or deferred as applicable.
+
+## Task 246 Parenthesized Two-Edge Local-Mode Equality Active Harness Contract
+
+The active case is the exact ordered three-mode set-terminal source followed by
+an Outer reserve and `(z) = z`. The runner must observe one unrecovered left
+wrapper, distinct wrapper/formula/inner/right provenance, ordinals 1/2 to the
+same binding, three real expansions, four raw Outer inputs, one Base-RHS set
+identity, two inferred terms, six type entries, two ordered expected constraints,
+and one clean equality. Mode AST nodes are admitted only for the Task-246
+nonempty config; old empty-mode configs remain closed. Five definition orders,
+finite near misses/corruptions, cross-route, immutable/module, 59-owner
+bidirectional isolation, and a real frontend/resolver sidecar protect runner
+188. Trace counts are 403/367, type 235/223, and pass/fail 219/184.

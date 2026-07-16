@@ -1781,3 +1781,19 @@ positive provenance remain uncredited; missing imported expansion/evidence/
 signature and proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 stays active
 and Steps 6/7 stay deferred. No checker source/API/module-layout update was
 required.
+
+## Step 5 Task 246 Active Addendum
+
+Task 246 closes the exact parenthesized two-edge set-terminal local-mode equality
+`test_gap` plus narrow `source_drift` and `design_drift`, not a `spec_gap`. The
+test-first source contains three ordered bare definitions `Base -> set`, `Middle
+-> Base`, `Outer -> Middle`, an Outer reserve, and `(z) = z`. A Task-246-only
+route conditionally admits mode-definition nodes, preserves three real
+expansions and four raw Outer inputs, resolves ordinals 1/2 to `BindingId(0)`,
+and emits two inferred terms, six entries, two ordered constraints, and one clean
+checked equality sharing a Base-RHS `BuiltinSet`, with no wrapper output.
+Finite order/shape/provenance/corruption, Tasks 134/223 cross-rejection,
+immutable/module, 59 prior owners, and a real sidecar guard runner 188. Trace is
+shared 5 + dedicated 1; metadata is 403/367, type 235/223, pass/fail 219/184.
+Step 5 remains active; Steps 6/7 remain deferred. The next handoff must begin
+with a fresh inventory rather than assuming a fixed successor seam.

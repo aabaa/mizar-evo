@@ -1930,3 +1930,15 @@ left-route regressions guard active runner 187. Repository metadata is 402 cases
 / 366 requirements, type 234/222, and pass/fail 218/184. Only this exact shape
 receives credit; other shapes/imported-positive provenance remain uncredited and
 missing imported/proof/downstream payloads remain deferred.
+
+## Task 246 Active Traceability
+
+Task 246 adds one exact parenthesized two-edge set-terminal local-mode equality
+fixture. Five shared references (Chapters 04/13/14/16 and the Task-72 structural
+producer) plus one dedicated requirement trace the closed source. The executable
+contract preserves three expansions, four raw Outer inputs, ordinals 1/2 to
+`BindingId(0)`, six type entries normalized to one Base-RHS `BuiltinSet`, two
+ordered constraints, one checked equality, and no wrapper semantic reference.
+The finite matrix, Tasks 134/223 cross-rejection, and all 59 prior owners guard
+runner 188. Metadata is 403/367, type 235/223, pass/fail 219/184. Broader and
+downstream behavior remains uncredited or deferred.

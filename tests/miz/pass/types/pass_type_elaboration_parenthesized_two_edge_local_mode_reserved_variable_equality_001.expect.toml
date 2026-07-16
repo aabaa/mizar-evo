@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_parenthesized_two_edge_local_mode_reserved_variable_equality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_parenthesized_two_edge_local_mode_reserved_variable_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_two_edge_chain_source_bridge",
+  "spec.en.checker.type_elaboration.parenthesized_two_edge_local_mode_reserved_variable_equality_source_bridge",
+]
+notes = "Spec-derived Task 246 intent for the exact single-left-parenthesized two-edge set-terminal local-mode-chain reserved-variable equality type/well-formedness slice. Three separate exact bare definitions establish BaseTwoEdgeModeEquality -> set, MiddleTwoEdgeModeEquality -> BaseTwoEdgeModeEquality, and OuterTwoEdgeModeEquality -> MiddleTwoEdgeModeEquality before z is reserved for the Outer mode. The real unrecovered ParenthesizedTerm contains only the left z; inner-left and direct-right z resolve at source-order ordinals 1 and 2 to BindingId(0). Transparent lowering must preserve three real source-derived expansions, four raw Outer result/expected inputs, and normalize six type entries to one Base-definition-RHS-anchored BuiltinSet before recording two Inferred variable operands, two ordered expected constraints, and one fact/candidate/diagnostic/deferred-free Checked equality. The wrapper owns no independent term, type, formula, axiom, fact, FOL, or child-graph payload. Other sides, nesting, operators, mode depths, object terminals, imported/attributed/argument-bearing modes, declaration acceptance or inhabitation, closure/order materialization, equality truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC receive no Task 246 credit."

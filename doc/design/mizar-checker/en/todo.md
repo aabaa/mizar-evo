@@ -4272,3 +4272,19 @@ Check the task off here once tests pass.
   imported expansion/evidence/signature and proof/CoreIr/ControlFlowIr/VC remain
   deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source/
   API/module-layout update was required.
+
+## Task 246 Active Addendum
+
+- [x] Add only the exact three-definition set-terminal chain with `reserve z for
+  OuterTwoEdgeModeEquality` and `(z) = z`, using a Task-246-only key/config/role
+  namespace and a Left transparent wrapper.
+- [x] Admit mode-definition nodes only for nonempty-mode parenthesized configs;
+  preserve all old empty-mode routes, three expansions, four raw Outer inputs,
+  ordinal 1/2 `BindingId(0)`, six entries, two constraints, and one clean
+  equality without wrapper-owned output.
+- [x] Guard all five definition orders, finite definition/wrapper/reserve/
+  payload corruption, Tasks 134/223 cross-rejection, immutable/module behavior,
+  59 prior owners bidirectionally, and a real sidecar.
+- [x] Synchronize runner 188, plan 403/367, type 235/223, pass/fail 219/184,
+  five shared plus one dedicated backlink. Step 5 remains active; Steps 6/7
+  remain deferred; broader and downstream semantics receive no credit.

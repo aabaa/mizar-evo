@@ -688,3 +688,15 @@ cargo test -p mizar-proof
 - [x] runner 187、plan 402/366、type 234/222、pass/fail 218/184 を同期。
   その他 shape/imported-positive は credit 外、未成立 imported/proof/
   downstream payload は deferred。Step 5 active、Steps 6/7 deferred。
+
+## Task 246 Active Addendum
+
+- [x] exact 3-mode set-terminal `(z) = z` fixture と trace 6件を既存
+  expectation 変更なしで追加。
+- [x] conditional mode-node admission、expansion 3件、raw Outer input 4件、
+  ordinal 1/2 の `BindingId(0)`、terminal set identity 1件、term 2件、entry
+  6件、constraint 2件、checked equality 1件、wrapper ownership なしを要求。
+- [x] 全5 nonidentity order、finite structure/provenance/corruption、Tasks
+  134/223、immutable/module、既存 owner 59件、real sidecar を cover。
+- [x] runner 188、plan 403/367、type 235/223、pass/fail 219/184 を同期。
+  Step 5 active、Steps 6/7 deferred。

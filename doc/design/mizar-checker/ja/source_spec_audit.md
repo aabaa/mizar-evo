@@ -2305,3 +2305,19 @@ runner 187、plan 402/366、type 234/222、pass/fail 218/184、shared 4 + dedica
 positive provenance は credit 外、未成立 imported/proof/downstream payload は
 deferred。Step 5 は active、Steps 6/7 は deferred。checker source/API/module-
 layout change は不要。
+
+## Task 246 MC-G020 Active Override
+
+Task 246 は exact 3-definition set-terminal chain と single-left-parenthesized
+equality の交差だけを `test_gap`、narrow `source_drift`、`design_drift` とし、
+`spec_gap` とはしない。Chapters 04/07/13/14/16 と primary Tasks 134/223 が
+intent を直接支える。route は pairwise-distinct Base/Middle/Outer provenance、
+wrapper/inner-left/direct-right/formula site、real expansion 3件、raw Outer
+input 4件、ordinal 1/2 の `BindingId(0)`、terminal-RHS `BuiltinSet` 1件、
+inferred term 2件、entry 6件、ordered constraint 2件、clean checked equality
+1件を保持し、wrapper semantics を生成しない。conditional node admission と
+finite matrix により旧 empty-mode config は closed のまま。runner 188、
+metadata 403/367、type 235/223、pass/fail 219/184、shared 5 + dedicated 1。
+imported/attributed/argument-bearing、他 side/nesting/depth、acceptance、truth/
+facts、child graph、proof/IR/VC は credit 外または deferred。Step 5 active、
+Steps 6/7 deferred。

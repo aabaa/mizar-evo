@@ -2832,3 +2832,17 @@ sidecar を検証する。runner 187、plan 402/366、type 234/222、pass/fail
 218/184、shared 4 + dedicated 1 backlink。その他 operands/nesting/truth/
 acceptance/imported-positive/child/downstream は credit 外または deferred。
 checker source/API/module-layout change は不要。
+
+## Task 246 Active Exact Transparent Parenthesized Two-Edge Local-Mode Reserved-Variable Equality Checker Bridge
+
+route は ordered Base-to-set、Middle-to-Base、Outer-to-Middle bare definition、
+Outer reserve、`(z) = z` の exact source だけを受理する。Task-246-only config
+は mode definition を期待する場合だけ private parenthesized node guard を
+拡張する。wrapper/formula/inner-left/direct-right site を分離し、ordinal 1/2
+を `BindingId(0)` に解決し、real `ModeExpansion` 3件と raw Outer role input
+4件を unchanged equality checker へ渡す。output は Base-RHS `BuiltinSet`
+1件、inferred variable 2件、type entry 6件、ordered expected constraint 2件、
+facts/candidates/diagnostics/deferred/wrapper-owned entry なしの checked equality
+1件。finite order/shape/provenance/corruption、immutable/module、Tasks 134/223、
+既存 owner 59件、real sidecar を guard。runner 188、plan 403/367、type
+235/223、pass/fail 219/184。broader/downstream は credit 外。
