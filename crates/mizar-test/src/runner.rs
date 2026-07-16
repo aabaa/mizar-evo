@@ -44,7 +44,7 @@ use mizar_frontend::orchestration::{DiagnosticCode, FrontendDiagnostic};
 use mizar_resolve::env::SymbolEnv;
 use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
 use mizar_session::{SourceAnchor, SourceRange};
-use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind};
+use mizar_syntax::SurfaceAst;
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{ExpectedOutcome, PipelinePhase};
@@ -66,32 +66,31 @@ use shared::{
 };
 #[cfg(test)]
 use type_elaboration::{
-    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, resolve_visible_attribute,
-    resolve_visible_type_head, source_mode_symbol_spelling,
+    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, SourceReserveExtraction, direct_token_texts,
+    extract_builtin_source_reserve_declarations_after_node_guard, resolve_visible_attribute,
+    resolve_visible_type_head, source_mode_symbol_spelling, structural_child_ids,
+    surface_nodes_with_kind, surface_site,
 };
 use type_elaboration::{
     SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
-    SourceParenthesizedReservedVariableBinaryFormula, SourceReserveExtraction,
-    SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
-    SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBuiltinType,
-    SourceReservedVariableModeDefinition, SourceReservedVariableModeRadix,
-    SourceReservedVariableTypeAssertionConfig, SourceTypeExpression, direct_token_texts,
-    exact_identifier_term_operand, extract_builtin_source_reserve_declarations,
-    extract_builtin_source_reserve_declarations_after_node_guard,
-    extract_builtin_source_type_expression, extract_source_builtin_binary_term_formula,
-    extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
-    extract_source_formula_connective_quantifier, extract_source_formula_statement,
-    extract_source_imported_attribute_assertion_formula,
+    SourceParenthesizedReservedVariableBinaryFormula, SourceReservedVariableAssertedHeadRelation,
+    SourceReservedVariableBinaryFormula, SourceReservedVariableBinaryFormulaConfig,
+    SourceReservedVariableBuiltinType, SourceReservedVariableModeDefinition,
+    SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
+    SourceReservedVariableTypeAssertionConfig, extract_builtin_source_reserve_declarations,
+    extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
+    extract_source_contradiction_formula, extract_source_formula_connective_quantifier,
+    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,
     extract_source_parenthesized_reserved_variable_binary_formula_with_config,
-    extract_source_reserved_variable_binary_formula, extract_source_set_enumeration_formula,
-    source_binding_matches_reserved_builtin_type, source_binding_use_ordinals,
-    source_mode_terminal_builtin_input, source_reserved_variable_asserted_head_relation_is_exact,
-    source_reserved_variable_mode_definition_is_exact,
+    extract_source_reserved_variable_binary_formula,
+    extract_source_reserved_variable_type_assertion_with_config,
+    extract_source_set_enumeration_formula, source_binding_matches_reserved_builtin_type,
+    source_binding_use_ordinals, source_mode_terminal_builtin_input,
+    source_reserved_variable_asserted_head_relation_is_exact,
     source_reserved_variable_mode_expansions_are_exact,
-    source_type_expression_matches_reserved_builtin_type, structural_child_ids,
-    subtree_has_recovery, surface_nodes_with_kind, surface_site,
+    source_type_expression_matches_reserved_builtin_type,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -5462,20 +5461,6 @@ struct SourceParenthesizedReservedVariableBinaryFormulaOutput {
     wrapper_site: TypedSiteRef,
     wrapper_range: SourceRange,
     formula: SourceReservedVariableBinaryFormulaOutput,
-}
-
-#[derive(Debug)]
-struct SourceReservedVariableTypeAssertion {
-    reserve: SourceReserveExtraction,
-    config: &'static SourceReservedVariableTypeAssertionConfig,
-    formula_site: TypedSiteRef,
-    formula_range: SourceRange,
-    subject_site: TypedSiteRef,
-    subject_range: SourceRange,
-    subject_spelling: String,
-    subject_lookup_ordinal: usize,
-    asserted_type_site: TypedSiteRef,
-    asserted_type: SourceTypeExpression,
 }
 
 #[derive(Debug)]
@@ -11551,147 +11536,6 @@ fn extract_source_local_object_mode_reserved_variable_type_assertion(
         module,
         symbols,
         &SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
-    )
-}
-
-fn extract_source_reserved_variable_type_assertion_with_config(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-    config: &'static SourceReservedVariableTypeAssertionConfig,
-) -> Option<SourceReservedVariableTypeAssertion> {
-    if ast.nodes().iter().any(|node| {
-        !(is_supported_reserved_variable_type_assertion_bridge_node(node)
-            || !config.mode_definitions.is_empty()
-                && matches!(
-                    node.kind,
-                    SurfaceNodeKind::DefinitionBlockItem
-                        | SurfaceNodeKind::ModeDefinition
-                        | SurfaceNodeKind::ModePattern
-                        | SurfaceNodeKind::QualifiedSymbol
-                        | SurfaceNodeKind::PathSegment
-                ))
-    }) {
-        return None;
-    }
-    let reserve_items = surface_nodes_with_kind(ast, SurfaceNodeKind::ReserveItem);
-    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
-    let mode_definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
-    let ([(_, reserve_item)], [(_, theorem)]) =
-        (reserve_items.as_slice(), theorem_items.as_slice())
-    else {
-        return None;
-    };
-    if mode_definitions.len() != config.mode_definitions.len()
-        || !source_reserved_variable_mode_definition_is_exact(ast, config.mode_definitions)
-        || reserve_item.range.end > theorem.range.start
-        || subtree_has_recovery(ast, reserve_item)
-        || subtree_has_recovery(ast, theorem)
-        || direct_token_texts(ast, theorem).as_slice() != ["theorem", config.label, ":", ";"]
-    {
-        return None;
-    }
-
-    let reserve =
-        extract_builtin_source_reserve_declarations_after_node_guard(ast, module.clone(), symbols)
-            .ok()?;
-    let [source_binding] = reserve.bridge.bindings() else {
-        return None;
-    };
-    if source_binding.spelling != config.binding_spelling
-        || !source_binding_matches_reserved_builtin_type(
-            source_binding,
-            config.binding_type,
-            config.binding_source_mode_spelling,
-            &reserve.mode_expansions,
-        )
-        || !source_reserved_variable_mode_expansions_are_exact(&reserve, config.mode_definitions)
-    {
-        return None;
-    }
-
-    let theorem_children = structural_child_ids(ast, theorem);
-    let [formula_expression_id] = theorem_children.as_slice() else {
-        return None;
-    };
-    let formula_expression = ast.node(*formula_expression_id)?;
-    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
-        return None;
-    }
-    let formula_children = structural_child_ids(ast, formula_expression);
-    let [formula_id] = formula_children.as_slice() else {
-        return None;
-    };
-    let formula = ast.node(*formula_id)?;
-    if !matches!(formula.kind, SurfaceNodeKind::IsAssertion)
-        || subtree_has_recovery(ast, formula)
-        || direct_token_texts(ast, formula).as_slice() != ["is"]
-    {
-        return None;
-    }
-    let assertion_children = structural_child_ids(ast, formula);
-    let [subject_expression_id, asserted_type_id] = assertion_children.as_slice() else {
-        return None;
-    };
-    let (subject_id, subject_range, subject_spelling) =
-        exact_identifier_term_operand(ast, *subject_expression_id)?;
-    if subject_spelling != source_binding.spelling {
-        return None;
-    }
-    let asserted_type_node = ast.node(*asserted_type_id)?;
-    if !matches!(asserted_type_node.kind, SurfaceNodeKind::TypeExpression) {
-        return None;
-    }
-    let asserted_type =
-        extract_builtin_source_type_expression(ast, asserted_type_node, &module, symbols).ok()?;
-    if !source_type_expression_matches_reserved_builtin_type(
-        &asserted_type,
-        config.asserted_type,
-        config.asserted_head_relation.source_mode_spelling(),
-        &reserve.mode_expansions,
-    ) || !source_reserved_variable_asserted_head_relation_is_exact(
-        source_binding,
-        &asserted_type.spelling,
-        &asserted_type.head,
-        config,
-        &reserve.mode_expansions,
-    ) || asserted_type.range == source_binding.type_range
-    {
-        return None;
-    }
-    let [subject_lookup_ordinal] =
-        source_binding_use_ordinals(reserve.bridge.bindings(), [subject_range]).ok()?;
-
-    Some(SourceReservedVariableTypeAssertion {
-        reserve,
-        config,
-        formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
-        subject_site: surface_site(subject_id),
-        subject_range,
-        subject_spelling,
-        subject_lookup_ordinal,
-        asserted_type_site: surface_site(*asserted_type_id),
-        asserted_type,
-    })
-}
-
-fn is_supported_reserved_variable_type_assertion_bridge_node(node: &SurfaceNode) -> bool {
-    matches!(
-        node.kind,
-        SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::ReserveItem
-            | SurfaceNodeKind::ReserveSegment
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::TypeHead
-            | SurfaceNodeKind::TheoremItem
-            | SurfaceNodeKind::FormulaExpression
-            | SurfaceNodeKind::IsAssertion
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::Token(_)
     )
 }
 
