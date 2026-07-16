@@ -6,6 +6,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use mizar_frontend::orchestration::{Frontend, FrontendDiagnostic};
 use mizar_frontend::parsing::MizarParserSeam;
 use mizar_frontend::source::{FrontendSourceLoader, SourceUnitRequest};
+use mizar_resolve::declarations::DeclarationShellCollector;
+use mizar_resolve::env::{NamespacePath, SymbolEnv};
+use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
+use mizar_resolve::symbols::{
+    SignatureProjectionExtractor, SymbolCollector, SymbolDiagnostic, SymbolDiagnosticClass,
+};
 use mizar_session::{
     BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
     SourceInput, SourceOriginInput, normalize_path,
@@ -45,6 +51,36 @@ pub(super) struct FrontendRun {
     pub(super) ast: Option<SurfaceAst>,
     pub(super) ast_snapshot: Option<String>,
     pub(super) diagnostics: Vec<FrontendDiagnostic>,
+}
+
+#[derive(Debug)]
+pub(super) struct ResolverSymbolCollection {
+    pub(super) module: ResolverModuleId,
+    pub(super) env: SymbolEnv,
+    pub(super) detail_keys: Vec<String>,
+}
+
+pub(super) fn resolver_symbol_collection(
+    workspace_root: &Path,
+    case: &TestCase,
+    ast: &SurfaceAst,
+) -> ResolverSymbolCollection {
+    let module = resolver_module_id(workspace_root, &case.source_path);
+    let namespace = NamespacePath::new(module.path().as_str());
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let projections = SignatureProjectionExtractor::new(ast, &shells, namespace).extract();
+    let result = SymbolCollector::new(ast.source_id, &module, &shells, &projections).collect();
+
+    let detail_keys = result
+        .diagnostics()
+        .iter()
+        .map(symbol_diagnostic_detail_key)
+        .collect();
+    ResolverSymbolCollection {
+        module,
+        env: result.into_env(),
+        detail_keys,
+    }
 }
 
 fn prepare_source_package(
@@ -127,6 +163,35 @@ pub(super) fn module_path(workspace_root: &Path, source_path: &Path) -> String {
         .filter_map(|component| component.as_os_str().to_str())
         .collect::<Vec<_>>()
         .join(".")
+}
+
+fn resolver_module_id(workspace_root: &Path, source_path: &Path) -> ResolverModuleId {
+    ResolverModuleId::new(
+        PackageId::new("mizar-test-corpus"),
+        ModulePath::new(module_path(workspace_root, source_path)),
+    )
+}
+
+fn symbol_diagnostic_detail_key(diagnostic: &SymbolDiagnostic) -> String {
+    match diagnostic.class() {
+        SymbolDiagnosticClass::SameSignatureReturnConflict => {
+            "declaration_symbol.signature.same_signature_return_conflict".to_owned()
+        }
+        class => format!(
+            "declaration_symbol.symbol.{}",
+            symbol_diagnostic_class_key(class)
+        ),
+    }
+}
+
+const fn symbol_diagnostic_class_key(class: SymbolDiagnosticClass) -> &'static str {
+    match class {
+        SymbolDiagnosticClass::MissingShell => "missing_shell",
+        SymbolDiagnosticClass::ContextOnlyShell => "context_only_shell",
+        SymbolDiagnosticClass::DuplicateDeclaration => "duplicate_declaration",
+        SymbolDiagnosticClass::IllegalOverloadGroup => "illegal_overload_group",
+        _ => "unknown",
+    }
 }
 
 fn snapshot_id(ordinal: usize) -> BuildSnapshotId {

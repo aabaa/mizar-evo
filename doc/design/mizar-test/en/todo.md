@@ -816,8 +816,9 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   facade and top-level orchestration owner. Keep internal visibility minimal
   and do not change detail keys, diagnostics, payload contracts, fixture
   ownership, ordering, or fail-closed behavior. Tasks 258-259 completed the
-  private shared staging and parse-only owners; Task 260 is next, and Tasks
-  260-263 keep this parent item open.
+  private shared frontend and parse-only owners, and Task 260A moved the shared
+  resolver leaf before its callers. Task 260B is next, and Tasks 260B-263 keep
+  this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

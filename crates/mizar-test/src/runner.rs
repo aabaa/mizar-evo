@@ -49,7 +49,6 @@ use mizar_frontend::lexical_env::{
     UserSymbolKind,
 };
 use mizar_frontend::orchestration::{DiagnosticCode, FrontendDiagnostic};
-use mizar_resolve::declarations::DeclarationShellCollector;
 use mizar_resolve::env::{
     ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SymbolEntry, SymbolEnv,
     SymbolEnvIndexes, SymbolKind, Visibility,
@@ -58,10 +57,7 @@ use mizar_resolve::resolved_ast::{
     FullyQualifiedName, LocalSymbolId, ModuleId as ResolverModuleId, SemanticOrigin,
     SymbolId as ResolverSymbolId,
 };
-use mizar_resolve::symbols::{
-    SignatureProjectionExtractor, SymbolCollector, SymbolDiagnostic, SymbolDiagnosticClass,
-};
-use mizar_session::{ModulePath, PackageId, SourceAnchor, SourceRange};
+use mizar_session::{ModulePath, SourceAnchor, SourceRange};
 use mizar_syntax::{
     SurfaceAst, SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,
     SurfaceNode, SurfaceNodeId, SurfaceNodeKind, SurfaceQuantifierKind, SurfaceTokenKind,
@@ -77,7 +73,8 @@ mod shared;
 
 use parse_only::{parse_only_failure_diagnostic, run_parse_only_case};
 use shared::{
-    FrontendRun, module_path, normalized_tests_root, normalized_workspace_root, run_frontend,
+    FrontendRun, normalized_tests_root, normalized_workspace_root, resolver_symbol_collection,
+    run_frontend,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -879,36 +876,6 @@ fn frontend_detail_keys(case: &TestCase, diagnostics: &[FrontendDiagnostic]) -> 
         .into_iter()
         .map(|code| format!("frontend:{code}"))
         .collect()
-}
-
-#[derive(Debug)]
-struct ResolverSymbolCollection {
-    module: ResolverModuleId,
-    env: SymbolEnv,
-    detail_keys: Vec<String>,
-}
-
-fn resolver_symbol_collection(
-    workspace_root: &Path,
-    case: &TestCase,
-    ast: &SurfaceAst,
-) -> ResolverSymbolCollection {
-    let module = resolver_module_id(workspace_root, &case.source_path);
-    let namespace = NamespacePath::new(module.path().as_str());
-    let shells = DeclarationShellCollector::new(ast, &module).collect();
-    let projections = SignatureProjectionExtractor::new(ast, &shells, namespace).extract();
-    let result = SymbolCollector::new(ast.source_id, &module, &shells, &projections).collect();
-
-    let detail_keys = result
-        .diagnostics()
-        .iter()
-        .map(symbol_diagnostic_detail_key)
-        .collect();
-    ResolverSymbolCollection {
-        module,
-        env: result.into_env(),
-        detail_keys,
-    }
 }
 
 fn augment_type_elaboration_import_summaries(
@@ -16471,25 +16438,6 @@ fn typing_for_type_entry(types: &TypeTable, type_entry: Option<TypeEntryId>) -> 
         })
 }
 
-fn resolver_module_id(workspace_root: &Path, source_path: &Path) -> ResolverModuleId {
-    ResolverModuleId::new(
-        PackageId::new("mizar-test-corpus"),
-        ModulePath::new(module_path(workspace_root, source_path)),
-    )
-}
-
-fn symbol_diagnostic_detail_key(diagnostic: &SymbolDiagnostic) -> String {
-    match diagnostic.class() {
-        SymbolDiagnosticClass::SameSignatureReturnConflict => {
-            "declaration_symbol.signature.same_signature_return_conflict".to_owned()
-        }
-        class => format!(
-            "declaration_symbol.symbol.{}",
-            symbol_diagnostic_class_key(class)
-        ),
-    }
-}
-
 fn declaration_symbol_payload_keys(env: &SymbolEnv) -> Vec<String> {
     let mut payloads = Vec::new();
     for symbol in env.symbols().iter() {
@@ -16540,16 +16488,6 @@ const fn hex_digit(value: u8) -> char {
         0..=9 => (b'0' + value) as char,
         10..=15 => (b'A' + (value - 10)) as char,
         _ => '?',
-    }
-}
-
-const fn symbol_diagnostic_class_key(class: SymbolDiagnosticClass) -> &'static str {
-    match class {
-        SymbolDiagnosticClass::MissingShell => "missing_shell",
-        SymbolDiagnosticClass::ContextOnlyShell => "context_only_shell",
-        SymbolDiagnosticClass::DuplicateDeclaration => "duplicate_declaration",
-        SymbolDiagnosticClass::IllegalOverloadGroup => "illegal_overload_group",
-        _ => "unknown",
     }
 }
 
