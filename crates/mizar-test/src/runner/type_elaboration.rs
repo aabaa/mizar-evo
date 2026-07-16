@@ -24,6 +24,7 @@ pub(super) use binary_routes::{
     SOURCE_MULTIPLE_RESERVE_DECLARATION_MEMBERSHIP_CONFIG,
     SOURCE_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
     SOURCE_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG, SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG, SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     extract_source_distinct_reserved_object_variable_equality,
     extract_source_distinct_reserved_object_variable_inequality,
     extract_source_distinct_reserved_variable_equality,
@@ -37,6 +38,7 @@ pub(super) use binary_routes::{
     extract_source_multiple_reserve_declaration_membership,
     extract_source_reserved_object_variable_equality,
     extract_source_reserved_object_variable_inequality, extract_source_reserved_variable_equality,
+    extract_source_reserved_variable_inequality, extract_source_reserved_variable_membership,
     source_distinct_reserved_object_variable_equality_output,
     source_distinct_reserved_object_variable_inequality_output,
     source_distinct_reserved_variable_equality_output,
@@ -50,6 +52,7 @@ pub(super) use binary_routes::{
     source_multiple_reserve_declaration_membership_output,
     source_reserved_object_variable_equality_output,
     source_reserved_object_variable_inequality_output, source_reserved_variable_equality_output,
+    source_reserved_variable_inequality_output, source_reserved_variable_membership_output,
 };
 pub(super) use binary_routes::{
     source_distinct_reserved_object_variable_equality_detail_keys,
@@ -65,7 +68,8 @@ pub(super) use binary_routes::{
     source_multiple_reserve_declaration_membership_detail_keys,
     source_reserved_object_variable_equality_detail_keys,
     source_reserved_object_variable_inequality_detail_keys,
-    source_reserved_variable_equality_detail_keys,
+    source_reserved_variable_equality_detail_keys, source_reserved_variable_inequality_detail_keys,
+    source_reserved_variable_membership_detail_keys,
 };
 #[cfg(test)]
 pub(super) use checker_handoff::assemble_source_checker_handoff;
