@@ -774,3 +774,48 @@ Check the task off here once tests pass.
   Tasks 134/223, immutable/module behavior, 59 prior owners, and a real sidecar.
 - [x] Synchronize runner 188, plan 403/367, type 235/223, pass/fail 219/184.
   Step 5 remains active; Steps 6/7 remain deferred.
+
+## Runner Module-Boundary Refactor Backlog
+
+Priority: complete this maintenance series before adding the next Step 5
+semantic bridge. Classify it as behavior-preserving `design_drift` in source
+layout and reviewability, not as new language or runner coverage. At Task 246
+closeout, `src/runner.rs` has 111,262 lines: a 17,142-line pre-test-module
+prefix containing 137 `#[cfg(test)]` helpers, followed by a single
+approximately 94,120-line test module containing 272 `#[test]` attributes.
+
+- [ ] Audit the runner boundary and add paired EN/JA module-boundary documents.
+  Inventory orchestration, parse-only, declaration-symbol, type-elaboration,
+  source-extraction, payload-validation, fixture-builder, and corruption-test
+  ownership; record the dependency map, target source layout, move order, and
+  exit criteria. Before any source move, update the paired `00.crate_plan.md`
+  files with task IDs, affected files/tests, coverage-audit impact, completion
+  conditions, and forbidden behavior. Keep this an audit/docs-only task and
+  commit.
+- [ ] Mechanically move the monolithic private `mod tests` out of `runner.rs`.
+  Preserve module privacy, test names, test discovery, helper behavior, and all
+  public APIs. Do not combine the move with renaming, deduplication,
+  generalization, or semantic cleanup. Commit the move as one task.
+- [ ] Split the private tests into shared support plus parse-only,
+  declaration-symbol, and type-elaboration owners. Split type-elaboration
+  further by cohesive source-bridge family when needed; use one bounded
+  move-only task/commit per family and keep cross-owner isolation tests intact.
+- [ ] After the test layout is stable, split production helpers along the
+  audited phase and ownership boundaries. Leave `runner.rs` as the public
+  facade and top-level orchestration owner. Keep internal visibility minimal
+  and do not change detail keys, diagnostics, payload contracts, fixture
+  ownership, ordering, or fail-closed behavior.
+- [ ] Close out the series by synchronizing the paired source-layout inventory,
+  crate plan, todo, harness/source-path tables, and ownership guards. Confirm
+  that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
+  219/184, all 272 discovered unit tests, expectation/trace credit, and all
+  existing `.miz` intent remain unchanged before fresh inventory resumes
+  Step 5.
+
+For every source-moving task, require review-only checks for visibility drift,
+test-discovery drift, owner-boundary drift, source/docs inconsistency, and
+accidental behavior changes. Run focused tests, `cargo test -p mizar-test`,
+`cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`,
+workspace `cargo test`, and `git diff --check`; repair and rerun failures until
+all commands pass. A test or verification failure is not itself a reason to
+stop this series.

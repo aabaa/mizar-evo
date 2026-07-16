@@ -700,3 +700,45 @@ cargo test -p mizar-proof
   134/223、immutable/module、既存 owner 59件、real sidecar を cover。
 - [x] runner 188、plan 403/367、type 235/223、pass/fail 219/184 を同期。
   Step 5 active、Steps 6/7 deferred。
+
+## Runner Module-Boundary Refactor Backlog
+
+優先度: 次の Step 5 semantic bridge を追加する前に、この maintenance series
+を完了する。新しい language/runner coverage ではなく、source layout と
+reviewability の behavior-preserving `design_drift` と分類する。Task 246
+closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 137件を
+含む pre-test-module prefix 17,142行の後に、`#[test]` attribute 272件を含む
+単一の test module 約94,120行が続く。
+
+- [ ] runner boundary を監査し、paired EN/JA module-boundary 文書を追加する。
+  orchestration、parse-only、declaration-symbol、type-elaboration、source
+  extraction、payload validation、fixture builder、corruption test の ownership
+  を inventory し、dependency map、target source layout、move order、exit
+  criteria を記録する。source move 前に paired `00.crate_plan.md` へ task ID、
+  affected files/tests、coverage-audit impact、completion conditions、forbidden
+  behavior を記録する。audit/docs-only task として commit する。
+- [ ] monolithic private `mod tests` を `runner.rs` 外へ機械的に移動する。
+  module privacy、test name/discovery、helper behavior、全 public API を保持し、
+  rename、deduplication、generalization、semantic cleanup と混ぜない。move
+  だけを 1 task/commit とする。
+- [ ] private tests を shared support、parse-only、declaration-symbol、
+  type-elaboration owner に分割する。必要なら type-elaboration を cohesive な
+  source-bridge family ごとに追加分割し、family ごとに bounded move-only
+  task/commit として cross-owner isolation test を保持する。
+- [ ] test layout 安定後、production helper を監査済み phase/ownership boundary
+  で分割する。`runner.rs` は public facade と top-level orchestration owner に
+  限定する。internal visibility を最小に保ち、detail key、diagnostic、payload
+  contract、fixture ownership、ordering、fail-closed behavior を変更しない。
+- [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
+  ownership guard を同期して series を closeout する。fresh inventory が Step 5
+  を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
+  pass/fail 219/184、discovered unit test 272件、expectation/trace credit、既存
+  `.miz` intent が不変であることを確認する。
+
+各 source-moving task で review-only により visibility drift、test-discovery
+drift、owner-boundary drift、source/docs inconsistency、意図しない behavior
+change を確認する。focused tests、`cargo test -p mizar-test`、
+`cargo fmt --check`、`cargo clippy --all-targets --all-features -- -D warnings`、
+workspace `cargo test`、`git diff --check` を実行し、全 command が成功するまで
+failure を修正して再実行する。test/verification failure 自体を series の停止
+理由にしない。
