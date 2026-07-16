@@ -68,7 +68,10 @@ use type_elaboration::{
     SOURCE_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
     SOURCE_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG, SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG, SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-    SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG, SourceParenthesizedOperandSide,
+    SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula,
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableBinaryFormulaOutput, SourceReservedVariableTypeAssertionOutput,
@@ -118,7 +121,10 @@ use type_elaboration::{
     extract_source_reserved_object_variable_equality,
     extract_source_reserved_object_variable_inequality, extract_source_reserved_variable_equality,
     extract_source_reserved_variable_inequality, extract_source_reserved_variable_membership,
-    extract_source_right_parenthesized_reserved_variable_membership, resolve_visible_attribute,
+    extract_source_right_parenthesized_reserved_variable_membership,
+    extract_source_two_edge_local_mode_reserved_variable_equality,
+    extract_source_two_edge_local_mode_reserved_variable_inequality,
+    extract_source_two_edge_local_mode_reserved_variable_membership, resolve_visible_attribute,
     resolve_visible_type_head, source_chained_local_mode_reserved_variable_equality_output,
     source_chained_local_mode_reserved_variable_inequality_output,
     source_chained_local_mode_reserved_variable_membership_output,
@@ -163,7 +169,10 @@ use type_elaboration::{
     source_reserved_variable_inequality_output, source_reserved_variable_membership_output,
     source_right_parenthesized_reserved_variable_membership_output,
     source_right_parenthesized_reserved_variable_membership_output_detail_keys,
-    structural_child_ids, surface_nodes_with_kind, surface_site,
+    source_two_edge_local_mode_reserved_variable_equality_output,
+    source_two_edge_local_mode_reserved_variable_inequality_output,
+    source_two_edge_local_mode_reserved_variable_membership_output, structural_child_ids,
+    surface_nodes_with_kind, surface_site,
 };
 use type_elaboration::{
     SourceImportedAttributeAssertionFormula, SourceReservedVariableAssertedHeadRelation,
@@ -221,6 +230,9 @@ use type_elaboration::{
     source_reserved_variable_membership_detail_keys,
     source_reserved_variable_type_assertion_result_detail_keys,
     source_right_parenthesized_reserved_variable_membership_detail_keys,
+    source_two_edge_local_mode_reserved_variable_equality_detail_keys,
+    source_two_edge_local_mode_reserved_variable_inequality_detail_keys,
+    source_two_edge_local_mode_reserved_variable_membership_detail_keys,
     type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
 };
 
@@ -334,10 +346,17 @@ const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVA
 #[cfg(test)]
 const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
     &str = SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG.invalid_payload_key;
 const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
-const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.two_edge_local_mode_reserved_variable_membership.invalid_payload";
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.three_edge_local_mode_reserved_variable_membership.invalid_payload";
@@ -349,8 +368,6 @@ const TYPE_ELABORATION_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP
     &str = "type_elaboration.checker.three_edge_local_object_mode_reserved_variable_membership.invalid_payload";
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.two_edge_local_object_mode_reserved_variable_membership.invalid_payload";
-const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.two_edge_local_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.three_edge_local_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
@@ -419,8 +436,6 @@ const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALI
     "type_elaboration.checker.three_edge_local_mode_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.three_edge_local_object_mode_reserved_variable_inequality.invalid_payload";
-const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.two_edge_local_mode_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.two_edge_local_object_mode_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
@@ -3259,47 +3274,6 @@ const SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     subject_result_role: "local-object-mode-reserved-variable-type-assertion-subject-result",
 };
 
-const SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "TwoEdgeLocalModeReservedVariableMembershipPayloadBoundary",
-    operator: "in",
-    formula_kind: FormulaKind::Membership,
-    invalid_payload_key:
-        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 2,
-    binding_spellings: &["x", "y"],
-    binding_types: &[
-        SourceReservedVariableBuiltinType::Set,
-        SourceReservedVariableBuiltinType::Set,
-    ],
-    binding_source_mode_spellings: &[Some("OuterTwoEdgeModeMembership"), None],
-    mode_definitions: &[
-        SourceReservedVariableModeDefinition {
-            label: "BaseTwoEdgeModeMembershipDef",
-            spelling: "BaseTwoEdgeModeMembership",
-            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "MiddleTwoEdgeModeMembershipDef",
-            spelling: "MiddleTwoEdgeModeMembership",
-            radix: SourceReservedVariableModeRadix::Mode("BaseTwoEdgeModeMembership"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "OuterTwoEdgeModeMembershipDef",
-            spelling: "OuterTwoEdgeModeMembership",
-            radix: SourceReservedVariableModeRadix::Mode("MiddleTwoEdgeModeMembership"),
-        },
-    ],
-    left_binding_index: 0,
-    right_binding_index: 1,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: true,
-    left_result_role: "two-edge-local-mode-reserved-variable-membership-left-result",
-    right_result_role: "two-edge-local-mode-reserved-variable-membership-right-result",
-    left_expected_role: None,
-    right_expected_role: Some("two-edge-local-mode-reserved-variable-membership-right-expected"),
-};
-
 const SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
     label: "ThreeEdgeLocalModeReservedVariableMembershipPayloadBoundary",
@@ -3545,44 +3519,6 @@ const SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
     right_expected_role: Some(
         "two-edge-local-object-mode-reserved-variable-membership-right-expected",
     ),
-};
-
-const SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "TwoEdgeLocalModeReservedVariableEqualityPayloadBoundary",
-    operator: "=",
-    formula_kind: FormulaKind::Equality,
-    invalid_payload_key:
-        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["z"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[Some("OuterTwoEdgeModeEquality")],
-    mode_definitions: &[
-        SourceReservedVariableModeDefinition {
-            label: "BaseTwoEdgeModeEqualityDef",
-            spelling: "BaseTwoEdgeModeEquality",
-            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "MiddleTwoEdgeModeEqualityDef",
-            spelling: "MiddleTwoEdgeModeEquality",
-            radix: SourceReservedVariableModeRadix::Mode("BaseTwoEdgeModeEquality"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "OuterTwoEdgeModeEqualityDef",
-            spelling: "OuterTwoEdgeModeEquality",
-            radix: SourceReservedVariableModeRadix::Mode("MiddleTwoEdgeModeEquality"),
-        },
-    ],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "two-edge-local-mode-reserved-variable-left-result",
-    right_result_role: "two-edge-local-mode-reserved-variable-right-result",
-    left_expected_role: Some("two-edge-local-mode-reserved-variable-left-expected"),
-    right_expected_role: Some("two-edge-local-mode-reserved-variable-right-expected"),
 };
 
 const SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
@@ -4466,44 +4402,6 @@ const SOURCE_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
     ),
 };
 
-const SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "TwoEdgeLocalModeReservedVariableInequalityPayloadBoundary",
-    operator: "<>",
-    formula_kind: FormulaKind::Inequality,
-    invalid_payload_key:
-        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["z"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[Some("OuterTwoEdgeModeInequality")],
-    mode_definitions: &[
-        SourceReservedVariableModeDefinition {
-            label: "BaseTwoEdgeModeInequalityDef",
-            spelling: "BaseTwoEdgeModeInequality",
-            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "MiddleTwoEdgeModeInequalityDef",
-            spelling: "MiddleTwoEdgeModeInequality",
-            radix: SourceReservedVariableModeRadix::Mode("BaseTwoEdgeModeInequality"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "OuterTwoEdgeModeInequalityDef",
-            spelling: "OuterTwoEdgeModeInequality",
-            radix: SourceReservedVariableModeRadix::Mode("MiddleTwoEdgeModeInequality"),
-        },
-    ],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "two-edge-local-mode-reserved-variable-inequality-left-result",
-    right_result_role: "two-edge-local-mode-reserved-variable-inequality-right-result",
-    left_expected_role: Some("two-edge-local-mode-reserved-variable-inequality-left-expected"),
-    right_expected_role: Some("two-edge-local-mode-reserved-variable-inequality-right-expected"),
-};
-
 const SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
     label: "TwoEdgeLocalObjectModeReservedVariableInequalityPayloadBoundary",
@@ -4588,19 +4486,6 @@ const SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
     right_expected_role: Some("two-edge-local-object-mode-reserved-variable-right-expected"),
 };
 
-fn source_two_edge_local_mode_reserved_variable_membership_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_two_edge_local_mode_reserved_variable_membership(ast, module, symbols)?;
-    Some(source_reserved_variable_formula_result_detail_keys(
-        build_source_reserved_variable_formula_output(payload, symbols),
-        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
-    ))
-}
-
 fn source_three_edge_local_mode_reserved_variable_membership_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -4666,19 +4551,6 @@ fn source_two_edge_local_object_mode_reserved_variable_membership_detail_keys(
     Some(source_reserved_variable_formula_result_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
-    ))
-}
-
-fn source_two_edge_local_mode_reserved_variable_equality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_two_edge_local_mode_reserved_variable_equality(ast, module, symbols)?;
-    Some(source_reserved_variable_formula_result_detail_keys(
-        build_source_reserved_variable_formula_output(payload, symbols),
-        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
     ))
 }
 
@@ -4868,19 +4740,6 @@ fn source_three_edge_local_object_mode_reserved_variable_inequality_detail_keys(
     Some(source_reserved_variable_formula_result_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
-    ))
-}
-
-fn source_two_edge_local_mode_reserved_variable_inequality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_two_edge_local_mode_reserved_variable_inequality(ast, module, symbols)?;
-    Some(source_reserved_variable_formula_result_detail_keys(
-        build_source_reserved_variable_formula_output(payload, symbols),
-        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
     ))
 }
 
@@ -5703,17 +5562,6 @@ fn source_local_object_mode_reserved_variable_type_assertion_detail_keys(
 }
 
 #[cfg(test)]
-fn source_two_edge_local_mode_reserved_variable_membership_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_two_edge_local_mode_reserved_variable_membership(ast, module, symbols)?;
-    build_source_reserved_variable_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
 fn source_three_edge_local_mode_reserved_variable_membership_output(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -5768,17 +5616,6 @@ fn source_two_edge_local_object_mode_reserved_variable_membership_output(
     let payload = extract_source_two_edge_local_object_mode_reserved_variable_membership(
         ast, module, symbols,
     )?;
-    build_source_reserved_variable_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_two_edge_local_mode_reserved_variable_equality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_two_edge_local_mode_reserved_variable_equality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -5940,17 +5777,6 @@ fn source_three_edge_local_object_mode_reserved_variable_inequality_output(
     let payload = extract_source_three_edge_local_object_mode_reserved_variable_inequality(
         ast, module, symbols,
     )?;
-    build_source_reserved_variable_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_two_edge_local_mode_reserved_variable_inequality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_two_edge_local_mode_reserved_variable_inequality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -6992,19 +6818,6 @@ fn source_formula_connective_quantifier_output(
     Some(output)
 }
 
-fn extract_source_two_edge_local_mode_reserved_variable_membership(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormula> {
-    extract_source_reserved_variable_binary_formula(
-        ast,
-        module,
-        symbols,
-        &SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-    )
-}
-
 fn extract_source_three_edge_local_mode_reserved_variable_membership(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -7067,19 +6880,6 @@ fn extract_source_two_edge_local_object_mode_reserved_variable_membership(
         module,
         symbols,
         &SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-    )
-}
-
-fn extract_source_two_edge_local_mode_reserved_variable_equality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormula> {
-    extract_source_reserved_variable_binary_formula(
-        ast,
-        module,
-        symbols,
-        &SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     )
 }
 
@@ -7262,19 +7062,6 @@ fn extract_source_three_edge_local_object_mode_reserved_variable_inequality(
         module,
         symbols,
         &SOURCE_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
-    )
-}
-
-fn extract_source_two_edge_local_mode_reserved_variable_inequality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormula> {
-    extract_source_reserved_variable_binary_formula(
-        ast,
-        module,
-        symbols,
-        &SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     )
 }
 
