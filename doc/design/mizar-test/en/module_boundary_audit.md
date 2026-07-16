@@ -477,16 +477,47 @@ all four CLI byte hashes, both 272-test list hashes, counts, payloads,
 diagnostics, ordering, and fail-closed behavior are unchanged. Task 260A is
 complete; Task 260B is next.
 
+## Task 260B Move Result
+
+Task 260B created the private `src/runner/declaration_symbol.rs` owner after
+Task 260A had moved its shared resolver prerequisite. The original 37-line
+case-execution fragment had hash
+`b58aebc17cd350c5107775b9027d78037b32e0bb1d72782e101746dd6c2d318f`;
+the original 36-line observation fragment had hash
+`8e9bb3e70c1368aa1882bf623b13664ea12129ffc9f6f44a079148f5eee29631`;
+the original 125-line payload encoding, classification, and expected-value
+projection fragment had hash
+`02df2d29157e2469ca8139178dec9cabd199d25fdfa554749d999556b2b05376`;
+the original 19-line failure-diagnostic fragment had hash
+`3b366648f438663e7412c2e567bb307ff7245b92739f9bbed38a16fd8862573e`.
+The resulting 231-line `declaration_symbol.rs`, including direct dependency
+imports, has hash
+`cf29e362d3109fc8a45e366c8abaa9f98baae7329f83c3556fe8452ec3347232`,
+and `runner.rs` has 16,632 lines with hash
+`a6e9d547d68e18e1de2d22ce4393552cf760e8f6b8081fe608f8ffdcab67005d`.
+Only the case runner and failure projection use parent-only `pub(super)`
+visibility; observation, payload encoding, classification, and expected-value
+projection remain private. The owner consumes `shared::run_frontend` and
+`shared::resolver_symbol_collection` directly. Its sole temporary parent
+dependency, `frontend_detail_keys`, retains plain private visibility because a
+child module can access its parent's private item; Task 263 will move the
+common diagnostic family. Existing `tests/metadata.rs` integration ownership
+is unchanged. Public surface hash
+`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
+all four CLI byte hashes, both 272-test list hashes, counts, payloads,
+diagnostics, ordering, and fail-closed behavior are unchanged. Tasks 260A-260B
+are complete; Task 261 is next.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
 |---|---|---|---|
 | public report/result/status types and `run_*_corpus` functions | Stable public runner facade and corpus-level orchestration | plan/discovery to phase execution | Keep in `runner.rs`. |
 | source/frontend and resolver staging | Source package preparation and cleanup, root/path/snapshot identity, frontend execution/result transport, and resolver shell/projection/symbol collection | shared by parse, declaration-symbol, and type-elaboration as applicable | Frontend staging moved in Task 258 and the declaration/type resolver leaf in Task 260A to private `shared.rs` with minimal parent-only visibility. |
-| active-case admission and stable failure assembly | Tag/phase gates, expected-output matching, and deterministic failure diagnostics | phase-specific facade-to-owner transition | Keep the remaining declaration/type boundaries in `runner.rs` until the owning Tasks 260B-263 move them; Task 259 moved the parse-only case runner and failure projection. |
+| active-case admission and stable failure assembly | Tag/phase gates, expected-output matching, and deterministic failure diagnostics | phase-specific facade-to-owner transition | Tasks 259 and 260B moved parse-only and declaration case/failure boundaries; keep the remaining type boundary in `runner.rs` until Tasks 262-263 move it. |
 | parse-only execution | Surface-AST snapshots and parse-only failure projection | shared frontend to parse-only result | Moved in Task 259 to private `parse_only.rs` with minimal parent-only visibility. |
 | fixture import provider | Parser fixture lexical summaries and adapters | parser/frontend seams shared by active phases | Keep in `runner.rs` until Task 261; preserve its use by later phases. |
-| declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Move in Task 260B to the private declaration-symbol owner; existing integration tests remain in `tests/metadata.rs`. |
+| declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
 | type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Private type-elaboration owner. |
 | source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Private type-elaboration leaf owner, moved before its callers. |
 | payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Private type-elaboration leaf owner; no key or ordering edits. |
@@ -616,7 +647,7 @@ Task 255E.
 | 258 | Complete: moved shared source/frontend staging helpers to private `shared.rs` after the test layout stabilized. |
 | 259 | Complete: moved parse-only case execution, Surface-AST snapshot comparison, and failure projection to private `parse_only.rs`. |
 | 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
-| 260B | Move existing declaration-symbol case/observation/payload/expectation/failure helpers; this is not a test move. |
+| 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
 | 261 | Move fixture/import-summary production helpers. |
 | 262 | Move type-elaboration source-extraction leaves. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
