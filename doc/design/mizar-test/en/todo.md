@@ -864,9 +864,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   validator core Task 263I, which is complete with exact-body and byte-
   stability preservation. Fresh inventory now selects exact 46-line type-
   assertion result/detail core Task 263J, which is complete with exact-body and
-  byte-stability preservation. Fresh inventory now selects the next bounded
-  binary/parenthesized detail or config/named-wrapper family; Task 263 keeps
-  this parent item open.
+  byte-stability preservation. Fresh inventory selected the exact 36-line
+  binary-formula result/detail core as Task 263K, which is complete with exact-
+  body and byte-stability preservation. Fresh inventory now selects the next
+  bounded parenthesized-detail or config/named-wrapper family, so Task 263
+  keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
