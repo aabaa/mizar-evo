@@ -897,9 +897,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   inventory selected the exact fifteen-fragment/222-line two-edge local-mode
   membership, equality, and inequality route family as Task 263V, which is
   complete with token-identical body and byte-stability preservation. Fresh
-  inventory returns to the two-edge object-mode and remaining three-/four-edge
-  and long-chain binary route-owner families, so Task 263 keeps this parent
-  item open.
+  inventory selected the exact eleven-fragment/241-line two-edge local-object-
+  mode membership, equality, and inequality route family as Task 263W, which
+  is complete with token-identical body and byte-stability preservation. Fresh
+  inventory returns to the remaining three-/four-edge and long-chain binary
+  route-owner families, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

@@ -40,6 +40,9 @@ pub(super) use binary_routes::{
     SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     extract_source_chained_local_mode_reserved_variable_equality,
     extract_source_chained_local_mode_reserved_variable_inequality,
     extract_source_chained_local_mode_reserved_variable_membership,
@@ -69,6 +72,9 @@ pub(super) use binary_routes::{
     extract_source_two_edge_local_mode_reserved_variable_equality,
     extract_source_two_edge_local_mode_reserved_variable_inequality,
     extract_source_two_edge_local_mode_reserved_variable_membership,
+    extract_source_two_edge_local_object_mode_reserved_variable_equality,
+    extract_source_two_edge_local_object_mode_reserved_variable_inequality,
+    extract_source_two_edge_local_object_mode_reserved_variable_membership,
     source_chained_local_mode_reserved_variable_equality_output,
     source_chained_local_mode_reserved_variable_inequality_output,
     source_chained_local_mode_reserved_variable_membership_output,
@@ -98,6 +104,9 @@ pub(super) use binary_routes::{
     source_two_edge_local_mode_reserved_variable_equality_output,
     source_two_edge_local_mode_reserved_variable_inequality_output,
     source_two_edge_local_mode_reserved_variable_membership_output,
+    source_two_edge_local_object_mode_reserved_variable_equality_output,
+    source_two_edge_local_object_mode_reserved_variable_inequality_output,
+    source_two_edge_local_object_mode_reserved_variable_membership_output,
 };
 pub(super) use binary_routes::{
     source_chained_local_mode_reserved_variable_equality_detail_keys,
@@ -130,6 +139,9 @@ pub(super) use binary_routes::{
     source_two_edge_local_mode_reserved_variable_equality_detail_keys,
     source_two_edge_local_mode_reserved_variable_inequality_detail_keys,
     source_two_edge_local_mode_reserved_variable_membership_detail_keys,
+    source_two_edge_local_object_mode_reserved_variable_equality_detail_keys,
+    source_two_edge_local_object_mode_reserved_variable_inequality_detail_keys,
+    source_two_edge_local_object_mode_reserved_variable_membership_detail_keys,
 };
 #[cfg(test)]
 pub(super) use checker_handoff::assemble_source_checker_handoff;
