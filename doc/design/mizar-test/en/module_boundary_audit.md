@@ -228,6 +228,24 @@ All 16 fully qualified names, their original order positions, assertions, the
 following active-fixture boundary, and both 272-test list hashes are unchanged.
 Parent Task 255 is complete.
 
+## Task 256 Move Result
+
+Task 256 root-included `src/runner/tests/type_elaboration/long_chain.rs`
+without a wrapper module. The byte-identical 20,977-line fragment contains all
+44 audited long-chain source/active seven-expansion tests. Its 12
+`next_permutation` functions remain nested test-local finite guards; no
+module-level helper or unrelated item moved. The fragment hash is
+`c4bcb161ac7bbb03593beff0fd55c6fbf8bc1960618a92263d127856e709d8b0`.
+The retained 22,389 lines remained byte-identical with hash
+`d737b5160458533039c7535423cffa03265deacb719d167e486897a612d7afbf`;
+the resulting 22,390-line `tests.rs` hash is
+`603263b325a00d45a41ec3087dafab05ab4ebe448fe3be70a7c0d107f907df8d`.
+All 44 fully qualified names, original order positions, finite guards,
+assertions, and both 272-test list hashes are unchanged. The preceding
+four-edge equality test and following four-edge inequality test remain in
+`tests.rs`, and Task 257's nested Task 216-222 modules remain outside the
+fragment. Task 256 is complete; Task 257 is next.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -352,7 +370,7 @@ Task 255E.
 | 255C | Complete: moved the three-edge object-radix source test and dedicated Task 206 helpers. |
 | 255D | Complete: moved the two-edge object-radix source test and dedicated Task 204 helper. |
 | 255E | Complete: moved the final 16 non-long-chain source tests, retained the active-fixture boundary, and completed Task 255. |
-| 256 | Move long-chain bridge tests. |
+| 256 | Complete: moved all 44 long-chain source/active bridge tests and their 12 test-local finite guards to `long_chain.rs`, retaining both adjacent four-edge boundaries. |
 | 257 | Move corruption and cross-owner isolation tests while retaining existing nested modules. |
 | 258 | Move shared source/frontend staging helpers after the test layout is stable. |
 | 259 | Move parse-only production helpers. |

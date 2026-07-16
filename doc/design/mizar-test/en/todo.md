@@ -807,7 +807,7 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   non-long-chain mode, and direct reserved fragments. Tasks 253/253B are now
   complete. Tasks 255A-255E completed the leading, four-edge, three-edge
   object, two-edge object, and final type-assertion asserted-head fragments;
-  parent Task 255 is complete, and Tasks 256-257 remain.
+  parent Task 255 and Task 256 are complete, and Task 257 remains.
 - [ ] After the test layout is stable, split production helpers along the
   audited phase and ownership boundaries. Leave `runner.rs` as the public
   facade and top-level orchestration owner. Keep internal visibility minimal
