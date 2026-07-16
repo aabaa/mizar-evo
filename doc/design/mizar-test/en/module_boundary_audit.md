@@ -160,6 +160,23 @@ All 12 fully qualified names, helper ownership, their original order position,
 the Task 255B boundary, and both 272-test list hashes are unchanged. Parent
 Task 255 remains pending.
 
+## Task 255B Move Result
+
+Task 255B root-included
+`src/runner/tests/type_elaboration/asserted_head_four_edge_radix.rs` without a
+wrapper module. The byte-identical 3,303-line fragment contains the two audited
+four-edge radix source tests and four dedicated Task 208/207 helper functions.
+Its hash is
+`5fcc4240fff400bda08e3d6678a61f3db444f0a8c6c055802d7ba7bea961092e`.
+The retained 53,335 lines, including the separator before Task 255C, remained
+byte-identical with hash
+`16d36bc1978973931a673a7620c569c70b021fe4ed210e19540a0ee8fa7c7d9d`;
+the resulting 53,336-line `tests.rs` hash is
+`78594f98a92a30445d251cf0fb394e5537ecab73cf9b8e9c67c357e4a0135389`.
+Both fully qualified names, all four helper owners, their original order
+position, the Task 255C boundary, and both 272-test list hashes are unchanged.
+Parent Task 255 remains pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -280,7 +297,7 @@ Task 255E.
 | 254 | Complete: moved the 26-test non-long-chain local-mode/object-mode chain bridge block, retaining the following Task 253B boundary. |
 | 253B | Complete: moved the two direct reserved-variable membership and inequality tests to `reserved_direct.rs`, retained the following Task 255 boundary, and completed Task 253. |
 | 255A | Complete: moved the leading 12 type-assertion/asserted-head source tests and their two dedicated Task 205 helpers to `asserted_head_base.rs`. |
-| 255B | Move the two four-edge radix source tests and dedicated Task 208/207 helpers to `asserted_head_four_edge_radix.rs`. |
+| 255B | Complete: moved the two four-edge radix source tests and dedicated Task 208/207 helpers to `asserted_head_four_edge_radix.rs`. |
 | 255C | Move the three-edge object-radix source test and dedicated Task 206 helper. |
 | 255D | Move the two-edge object-radix source test and dedicated Task 204 helper. |
 | 255E | Move the final 16 non-long-chain source tests, retain the active-fixture boundary, and complete Task 255. |
