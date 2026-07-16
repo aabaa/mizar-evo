@@ -309,6 +309,23 @@ The fully qualified name, original order position, assertions, both
 reserve-family boundaries, and both 272-test list hashes are unchanged. Task
 257C is complete; Task 257D is next and parent Task 257 remains pending.
 
+## Task 257D Move Result
+
+Task 257D root-included
+`src/runner/tests/type_elaboration/reserve_fixtures.rs` without a wrapper
+module. The byte-identical 739-line fragment contains the 11 audited distinct,
+multiple-declaration, and heterogeneous reserve active fixtures and no
+module-level helper or unrelated item. Its hash is
+`24b4811f26418afe9de5efbf0cf3d7ea54be329ddf1255f89bafc38546301b40`.
+The retained 18,485 lines, including the separator before Task 257E, remained
+byte-identical with hash
+`5dfbf14737caf47e36f7a0c6bb6a1cab58bea8d608da41c0d74cf1fd58eeda4f`;
+the resulting 18,486-line `tests.rs` hash is
+`4e40491533df5102655f803e899c032d20adbcaf4c68c6e4980867da87849cf0`.
+All 11 fully qualified names, original order positions, assertions, the Task
+257E mode-chain boundary, and both 272-test list hashes are unchanged. Task
+257D is complete; parent Task 257 remains pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -438,7 +455,7 @@ Task 255E.
 | 257A | Complete: moved the leading 18 binary/parenthesized fixture and route-isolation tests to `binary_route_fixtures.rs`, retaining the Task 257B separator. |
 | 257B | Complete: moved the three builtin-object reserve active fixtures to `reserve_object_fixtures.rs`, retaining the Task 257C separator. |
 | 257C | Complete: moved only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`, retaining both reserve-family boundaries. |
-| 257D | Move the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`. |
+| 257D | Complete: moved the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`, retaining the Task 257E separator. |
 | 257E | Move the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`. |
 | 257F | Move the 39 active asserted-head/type-assertion fixture tests to `asserted_head_fixtures.rs`. |
 | 257G | Move the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`. |

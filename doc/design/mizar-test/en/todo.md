@@ -809,8 +809,8 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   object, two-edge object, and final type-assertion asserted-head fragments;
   parent Task 255 and Task 256 are complete. Task 257A completed the leading
   binary-route fixture/isolation family. Fresh authority review isolates the
-  Task 180 formula-constant fixture. Tasks 257A-257C are complete; bounded
-  Tasks 257D-257H remain.
+  Task 180 formula-constant fixture. Tasks 257A-257D are complete; bounded
+  Tasks 257E-257H remain.
 - [ ] After the test layout is stable, split production helpers along the
   audited phase and ownership boundaries. Leave `runner.rs` as the public
   facade and top-level orchestration owner. Keep internal visibility minimal
