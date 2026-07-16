@@ -2322,3 +2322,257 @@ pub(in crate::runner) fn extract_source_two_edge_local_object_mode_reserved_vari
         &SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     )
 }
+
+const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
+    &str =
+    "type_elaboration.checker.three_edge_local_mode_reserved_variable_membership.invalid_payload";
+
+const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.three_edge_local_mode_reserved_variable_equality.invalid_payload";
+
+const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
+    &str =
+    "type_elaboration.checker.three_edge_local_mode_reserved_variable_inequality.invalid_payload";
+
+pub(in crate::runner) const SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "ThreeEdgeLocalModeReservedVariableMembershipPayloadBoundary",
+    operator: "in",
+    formula_kind: FormulaKind::Membership,
+    invalid_payload_key:
+        TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 2,
+    binding_spellings: &["x", "y"],
+    binding_types: &[
+        SourceReservedVariableBuiltinType::Set,
+        SourceReservedVariableBuiltinType::Set,
+    ],
+    binding_source_mode_spellings: &[Some("OuterThreeEdgeModeMembership"), None],
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseThreeEdgeModeMembershipDef",
+            spelling: "BaseThreeEdgeModeMembership",
+            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerThreeEdgeModeMembershipDef",
+            spelling: "InnerThreeEdgeModeMembership",
+            radix: SourceReservedVariableModeRadix::Mode("BaseThreeEdgeModeMembership"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleThreeEdgeModeMembershipDef",
+            spelling: "MiddleThreeEdgeModeMembership",
+            radix: SourceReservedVariableModeRadix::Mode("InnerThreeEdgeModeMembership"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterThreeEdgeModeMembershipDef",
+            spelling: "OuterThreeEdgeModeMembership",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleThreeEdgeModeMembership"),
+        },
+    ],
+    left_binding_index: 0,
+    right_binding_index: 1,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: true,
+    left_result_role: "three-edge-local-mode-reserved-variable-membership-left-result",
+    right_result_role: "three-edge-local-mode-reserved-variable-membership-right-result",
+    left_expected_role: None,
+    right_expected_role: Some("three-edge-local-mode-reserved-variable-membership-right-expected"),
+};
+
+pub(in crate::runner) const SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "ThreeEdgeLocalModeReservedVariableEqualityPayloadBoundary",
+    operator: "=",
+    formula_kind: FormulaKind::Equality,
+    invalid_payload_key:
+        TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Set],
+    binding_source_mode_spellings: &[Some("OuterThreeEdgeModeEquality")],
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseThreeEdgeModeEqualityDef",
+            spelling: "BaseThreeEdgeModeEquality",
+            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerThreeEdgeModeEqualityDef",
+            spelling: "InnerThreeEdgeModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("BaseThreeEdgeModeEquality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleThreeEdgeModeEqualityDef",
+            spelling: "MiddleThreeEdgeModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("InnerThreeEdgeModeEquality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterThreeEdgeModeEqualityDef",
+            spelling: "OuterThreeEdgeModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleThreeEdgeModeEquality"),
+        },
+    ],
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "three-edge-local-mode-reserved-variable-left-result",
+    right_result_role: "three-edge-local-mode-reserved-variable-right-result",
+    left_expected_role: Some("three-edge-local-mode-reserved-variable-left-expected"),
+    right_expected_role: Some("three-edge-local-mode-reserved-variable-right-expected"),
+};
+
+pub(in crate::runner) const SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "ThreeEdgeLocalModeReservedVariableInequalityPayloadBoundary",
+    operator: "<>",
+    formula_kind: FormulaKind::Inequality,
+    invalid_payload_key:
+        TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Set],
+    binding_source_mode_spellings: &[Some("OuterThreeEdgeModeInequality")],
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseThreeEdgeModeInequalityDef",
+            spelling: "BaseThreeEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerThreeEdgeModeInequalityDef",
+            spelling: "InnerThreeEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("BaseThreeEdgeModeInequality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleThreeEdgeModeInequalityDef",
+            spelling: "MiddleThreeEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("InnerThreeEdgeModeInequality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterThreeEdgeModeInequalityDef",
+            spelling: "OuterThreeEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleThreeEdgeModeInequality"),
+        },
+    ],
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "three-edge-local-mode-reserved-variable-inequality-left-result",
+    right_result_role: "three-edge-local-mode-reserved-variable-inequality-right-result",
+    left_expected_role: Some("three-edge-local-mode-reserved-variable-inequality-left-expected"),
+    right_expected_role: Some("three-edge-local-mode-reserved-variable-inequality-right-expected"),
+};
+
+pub(in crate::runner) fn source_three_edge_local_mode_reserved_variable_membership_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_three_edge_local_mode_reserved_variable_membership(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+pub(in crate::runner) fn source_three_edge_local_mode_reserved_variable_equality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_three_edge_local_mode_reserved_variable_equality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+pub(in crate::runner) fn source_three_edge_local_mode_reserved_variable_inequality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_three_edge_local_mode_reserved_variable_inequality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_three_edge_local_mode_reserved_variable_membership_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_three_edge_local_mode_reserved_variable_membership(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_three_edge_local_mode_reserved_variable_equality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_three_edge_local_mode_reserved_variable_equality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_three_edge_local_mode_reserved_variable_inequality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_three_edge_local_mode_reserved_variable_inequality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+pub(in crate::runner) fn extract_source_three_edge_local_mode_reserved_variable_membership(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    )
+}
+
+pub(in crate::runner) fn extract_source_three_edge_local_mode_reserved_variable_equality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    )
+}
+
+pub(in crate::runner) fn extract_source_three_edge_local_mode_reserved_variable_inequality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    )
+}
