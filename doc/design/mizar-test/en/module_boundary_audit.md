@@ -292,6 +292,23 @@ both 272-test list hashes are unchanged. The Task 180 contradiction fixture
 remains in `tests.rs` as the first Task 257C item. Task 257B is complete;
 parent Task 257 remains pending.
 
+## Task 257C Move Result
+
+Task 257C root-included
+`src/runner/tests/type_elaboration/formula_constant_fixture.rs` without a
+wrapper module. The byte-identical 53-line fragment contains only the audited
+Task 180 standalone contradiction active fixture and its exact checked
+`FormulaKind::Contradiction` payload assertions. Its hash is
+`986b9120d84a487093c4ce3392a11eba03d65441cfb66d09ec9c34bc72dc03c5`.
+The retained 19,223 lines, including the separator before Task 257D, remained
+byte-identical with hash
+`e271687874a614c317a3d0a6a7ff3da5b1081235c9ec18233ddefc91167122a0`;
+the resulting 19,224-line `tests.rs` hash is
+`a8140de0a533cb4e2f3d4093155d14f188abcef707094a2b10fe5dda469958ad`.
+The fully qualified name, original order position, assertions, both
+reserve-family boundaries, and both 272-test list hashes are unchanged. Task
+257C is complete; Task 257D is next and parent Task 257 remains pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -420,7 +437,7 @@ Task 255E.
 | 257 | Parent: move the eight inventoried remaining fixture, bridge-gap, corruption, and isolation families; pending through Task 257H. |
 | 257A | Complete: moved the leading 18 binary/parenthesized fixture and route-isolation tests to `binary_route_fixtures.rs`, retaining the Task 257B separator. |
 | 257B | Complete: moved the three builtin-object reserve active fixtures to `reserve_object_fixtures.rs`, retaining the Task 257C separator. |
-| 257C | Move only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`. |
+| 257C | Complete: moved only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`, retaining both reserve-family boundaries. |
 | 257D | Move the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`. |
 | 257E | Move the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`. |
 | 257F | Move the 39 active asserted-head/type-assertion fixture tests to `asserted_head_fixtures.rs`. |
