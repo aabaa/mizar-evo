@@ -26,7 +26,7 @@ It does not own compiler semantics. It encodes expected behavior so implementati
 | [staged_model.md](./staged_model.md) | `crates/mizar-test/src/staged_model.rs` | Pipeline-first staged test admission model and spec coverage mapping | Draft |
 | [traceability.md](./traceability.md) | `crates/mizar-test/src/traceability.rs` | Spec-to-test manifest schema, bidirectional validation, and coverage reporting | Draft |
 | [minimal_crate.md](./minimal_crate.md) | `crates/mizar-test` | First implementation scope for metadata-only discovery and validation | Draft |
-| [miz_corpus.md](./miz_corpus.md) | `crates/mizar-test/src/corpus.rs` | `.miz` corpus classes, growth targets, generation policy, and review rules | Draft |
+| [miz_corpus.md](./miz_corpus.md) | `crates/mizar-test/src/layout.rs`, `crates/mizar-test/src/expectation.rs`, `crates/mizar-test/src/harness.rs` | `.miz` corpus classes, growth targets, generation policy, and review rules | Draft |
 | [fail_soundness.md](./fail_soundness.md) | `crates/mizar-test/src/expectation.rs`, `crates/mizar-test/src/harness.rs` | Negative tests that must not pass, expected failure categories, and rejection reasons | Draft |
 | [snapshot.md](./snapshot.md) | `crates/mizar-test/src/snapshot.rs` | Snapshot artifact format, canonical hashing, and update policy | Draft |
 | [harness.md](./harness.md) | `crates/mizar-test/src/harness.rs` | Pass/fail runner, snapshot runner, determinism checks, and reporting | Draft |
