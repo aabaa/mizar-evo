@@ -78,10 +78,10 @@ use type_elaboration::{
     extract_builtin_source_reserve_declarations,
     extract_builtin_source_reserve_declarations_after_node_guard,
     extract_builtin_source_type_expression, extract_source_builtin_binary_term_formula,
-    extract_source_contradiction_formula, extract_source_formula_statement,
-    is_exact_parser_type_fixtures_import, mode_definition_pattern_spelling,
-    qualified_symbol_spelling, source_mode_symbol_spelling, structural_child_ids,
-    subtree_has_recovery, surface_nodes_with_kind, surface_site,
+    extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
+    extract_source_formula_statement, is_exact_parser_type_fixtures_import,
+    mode_definition_pattern_spelling, qualified_symbol_spelling, source_mode_symbol_spelling,
+    structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -1643,16 +1643,6 @@ fn source_type_elaboration_detail_keys(
         return vec!["type_elaboration.core.context_invalid".to_owned()];
     }
     Vec::new()
-}
-
-#[derive(Debug, Clone)]
-struct SourceBuiltinTypeAssertionFormula {
-    formula_site: TypedSiteRef,
-    formula_range: SourceRange,
-    subject_site: TypedSiteRef,
-    subject_range: SourceRange,
-    asserted_type_site: TypedSiteRef,
-    asserted_type: SourceTypeExpression,
 }
 
 #[derive(Debug, Clone)]
@@ -12985,89 +12975,6 @@ fn source_binding_use_ordinals<const N: usize>(
     Ok(ordinals)
 }
 
-fn extract_source_builtin_type_assertion_formula(
-    ast: &SurfaceAst,
-    module: &ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceBuiltinTypeAssertionFormula> {
-    if ast
-        .nodes()
-        .iter()
-        .any(|node| !is_supported_builtin_type_assertion_theorem_bridge_node(node))
-    {
-        return None;
-    }
-    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
-    let [(_, theorem)] = theorem_items.as_slice() else {
-        return None;
-    };
-    if subtree_has_recovery(ast, theorem) {
-        return None;
-    }
-    let theorem_tokens = direct_token_texts(ast, theorem);
-    if theorem_tokens.as_slice() != ["theorem", "BuiltinTypeAssertionPayloadBoundary", ":", ";"] {
-        return None;
-    }
-
-    let theorem_structural_children = structural_child_ids(ast, theorem);
-    let formula_expressions = theorem_structural_children
-        .iter()
-        .copied()
-        .filter(|id| {
-            ast.node(*id)
-                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::FormulaExpression))
-        })
-        .collect::<Vec<_>>();
-    if formula_expressions.len() != 1
-        || theorem_structural_children
-            .iter()
-            .any(|child| !formula_expressions.contains(child))
-    {
-        return None;
-    }
-    let formula_expression = ast.node(formula_expressions[0])?;
-    let formula_children = structural_child_ids(ast, formula_expression);
-    let [formula_id] = formula_children.as_slice() else {
-        return None;
-    };
-    let formula = ast.node(*formula_id)?;
-    if !matches!(formula.kind, SurfaceNodeKind::IsAssertion)
-        || subtree_has_recovery(ast, formula)
-        || direct_token_texts(ast, formula).as_slice() != ["is"]
-    {
-        return None;
-    }
-
-    let assertion_structural_children = structural_child_ids(ast, formula);
-    let [term_expression_id, type_expression_id] = assertion_structural_children.as_slice() else {
-        return None;
-    };
-    let term_expression = ast.node(*term_expression_id)?;
-    let type_expression = ast.node(*type_expression_id)?;
-    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
-        || !matches!(type_expression.kind, SurfaceNodeKind::TypeExpression)
-    {
-        return None;
-    }
-    let subject = exact_numeral_term_operand(ast, *term_expression_id, "1")?;
-    let asserted_type =
-        extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
-    if asserted_type.spelling != "set"
-        || asserted_type.head != TypeHeadInput::BuiltinSet
-        || !asserted_type.attributes.is_empty()
-    {
-        return None;
-    }
-    Some(SourceBuiltinTypeAssertionFormula {
-        formula_site: surface_site(*formula_id),
-        formula_range: formula.range,
-        subject_site: surface_site(subject.0),
-        subject_range: subject.1,
-        asserted_type_site: surface_site(*type_expression_id),
-        asserted_type,
-    })
-}
-
 fn extract_source_imported_predicate_functor_formula(
     ast: &SurfaceAst,
     module: &ResolverModuleId,
@@ -13679,23 +13586,6 @@ fn is_supported_reserved_variable_type_assertion_bridge_node(node: &SurfaceNode)
             | SurfaceNodeKind::IsAssertion
             | SurfaceNodeKind::TermExpression
             | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::Token(_)
-    )
-}
-
-fn is_supported_builtin_type_assertion_theorem_bridge_node(node: &SurfaceNode) -> bool {
-    matches!(
-        node.kind,
-        SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::TheoremItem
-            | SurfaceNodeKind::FormulaExpression
-            | SurfaceNodeKind::IsAssertion
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::NumeralTerm
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::TypeHead
             | SurfaceNodeKind::Token(_)
     )
 }

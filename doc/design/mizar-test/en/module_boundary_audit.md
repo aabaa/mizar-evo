@@ -1107,9 +1107,46 @@ The focused test, all relevant-crate tests, all 272 unit tests, all 188 active
 type cases, formatting, all-target/all-feature Clippy, and workspace tests pass.
 Plan/count remains 403/367, type coverage 235/223, pass/fail 219/184, and the
 raw/normalized test-list and four CLI hashes remain unchanged. Task 262I0 is
-complete and move-only Task 262I is next. No `spec_coverage_audit.md` update is
-required because behavior, test intent, coverage credit, and owner crate are
-unchanged.
+complete, and move-only Task 262I subsequently completed the production move.
+No `spec_coverage_audit.md` update is required because behavior, test intent,
+coverage credit, and owner crate are unchanged.
+
+## Task 262I Move Result
+
+Task 262I moved the three inventoried builtin type-assertion fragments into the
+existing private `source_formula.rs` leaf. Review normalization confirms that
+the transport, extractor, and allowlist bodies are byte-equivalent to HEAD
+`1b113e8b` after removing only the required runner-subtree visibility. The
+strengthened Task 262I0 test/support files and every production checker/detail
+consumer remain byte-for-byte unchanged.
+
+`runner.rs` is now 14,320 lines with hash
+`7d347e8a932ec5a4115540a6e6822b0ee23a6e41e919300ec56c04e5511303e4`;
+the 24-line phase facade has hash
+`61b5b82055f4f726d3b5209e2e6b57a176d0acaac5fbef9e1614780460306270`;
+and the 423-line source-formula leaf has hash
+`a055d6e2220961f5445bbf4b5394b2ffc72738160dbd228af399e267241ec43d`.
+The unchanged 147-line source-AST and 1,474-line source-reserve leaves retain
+hashes `baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`
+and `88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`.
+
+The extraction entry crosses the private phase facade unconditionally. The
+inferred transport and all six runner-consumed fields use runner-subtree
+visibility without a facade type alias, while the dedicated allowlist remains
+leaf-private. `source_formula` now directly consumes the existing
+`SourceTypeExpression` and builtin type-expression projection from
+`source_reserve`; there is no reverse import, so the dependency remains
+acyclic. Checker payload construction, detail rendering, route ordering, and
+top-level orchestration stay in `runner.rs`.
+
+The focused preservation test, all relevant-crate tests, all 272 unit tests,
+and all 188 active type cases pass. Plan/count remains 403/367, type coverage
+235/223, pass/fail 219/184, and the raw/normalized test-list plus four CLI
+hashes are unchanged. Formatting, all-target/all-feature Clippy, workspace
+tests, and diff cleanliness also pass. Task 262I is complete. It changes no
+behavior, authority, coverage credit, owner crate, or deferred status, so
+`spec_coverage_audit.md` remains unchanged. Parent Task 262 remains open for a
+fresh bounded inventory of the remaining formula families.
 
 ## Current Ownership
 
@@ -1122,7 +1159,7 @@ unchanged.
 | fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
 | declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
 | type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Remains in `runner.rs` through Tasks 262-263. The current `type_elaboration.rs` is a private facade for the `source_ast`, `source_formula`, and `source_reserve` leaves; later moves make it the orchestration owner. |
-| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262H moved standalone formula constants, shared exact numerals, and builtin binary formulas to private `type_elaboration/source_formula.rs`. Other formula extraction and retained callers stay in `runner.rs` for later Task 262 subtasks. |
+| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262I moved standalone formula constants, shared exact numerals, builtin binary formulas, and builtin type-assertion formulas to private `type_elaboration/source_formula.rs`. Other formula extraction and retained callers stay in `runner.rs` for later Task 262 subtasks. |
 | payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Private type-elaboration leaf owner; no key or ordering edits. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
@@ -1259,7 +1296,7 @@ Task 255E.
 | 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
 | 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
 | 261 | Complete: moved the lexical provider, exact fixture vocabulary, and type import-summary adapter to private `import_fixtures.rs`. |
-| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262I0, with Task 262I next. |
+| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262I. |
 | 262A | Complete: moved the five common exact source-AST primitives behind the private type-elaboration phase facade. |
 | 262B | Complete: moved shared node-kind traversal and qualified-symbol spelling projections into the common source-AST leaf. |
 | 262C | Complete: moved reserve type-expression, visible symbol/admission, and source-text projection into the private source-reserve leaf; retained declaration/mode callers for Task 262E. |
@@ -1270,7 +1307,7 @@ Task 255E.
 | 262H0 | Complete: strengthened the existing builtin-binary unit matrix for config order, payload provenance, recovery, duplicate, and cardinality preservation without changing production or test count. |
 | 262H | Complete: moved only the builtin equality/inequality/membership config, source transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
 | 262I0 | Complete: strengthened the existing builtin type-assertion unit matrix for independently derived payload/checker provenance, recovery, duplicate, token-shape, and cardinality preservation without changing production or test count. |
-| 262I | Next: move only the builtin type-assertion transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
+| 262I | Complete: moved only the builtin type-assertion transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 

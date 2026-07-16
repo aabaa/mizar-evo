@@ -751,7 +751,7 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   equality/inequality/membership family の test-only preservation prerequisite
   は完了し、Task 262H でその後の move も完了した。Task 262I0 で bounded
   builtin type-assertion family の test-only preservation prerequisite は完了し、
-  次の Task 262I ではその family だけを移動する。残る Task 262 formula
+  Task 262I で I0 後にその family だけを移動した。残る Task 262 formula
   extraction family と Task 263 のため、この parent item は open のまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
