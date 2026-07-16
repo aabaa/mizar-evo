@@ -1,4 +1,5 @@
 mod admission;
+mod binary_routes;
 mod checker_handoff;
 mod output;
 mod parenthesized_routes;
@@ -8,6 +9,44 @@ mod source_formula;
 mod source_reserve;
 
 pub(super) use admission::{is_active_type_elaboration, validate_active_type_elaboration_tags};
+#[cfg(test)]
+pub(super) use binary_routes::{
+    SOURCE_DISTINCT_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_DISTINCT_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_DISTINCT_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_DISTINCT_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_DISTINCT_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG,
+    SOURCE_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG, SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    extract_source_distinct_reserved_object_variable_equality,
+    extract_source_distinct_reserved_object_variable_inequality,
+    extract_source_distinct_reserved_variable_equality,
+    extract_source_distinct_reserved_variable_inequality,
+    extract_source_distinct_reserved_variable_membership,
+    extract_source_heterogeneous_reserve_membership,
+    extract_source_reserved_object_variable_equality,
+    extract_source_reserved_object_variable_inequality, extract_source_reserved_variable_equality,
+    source_distinct_reserved_object_variable_equality_output,
+    source_distinct_reserved_object_variable_inequality_output,
+    source_distinct_reserved_variable_equality_output,
+    source_distinct_reserved_variable_inequality_output,
+    source_distinct_reserved_variable_membership_output,
+    source_heterogeneous_reserve_membership_output,
+    source_reserved_object_variable_equality_output,
+    source_reserved_object_variable_inequality_output, source_reserved_variable_equality_output,
+};
+pub(super) use binary_routes::{
+    source_distinct_reserved_object_variable_equality_detail_keys,
+    source_distinct_reserved_object_variable_inequality_detail_keys,
+    source_distinct_reserved_variable_equality_detail_keys,
+    source_distinct_reserved_variable_inequality_detail_keys,
+    source_distinct_reserved_variable_membership_detail_keys,
+    source_heterogeneous_reserve_membership_detail_keys,
+    source_reserved_object_variable_equality_detail_keys,
+    source_reserved_object_variable_inequality_detail_keys,
+    source_reserved_variable_equality_detail_keys,
+};
 #[cfg(test)]
 pub(super) use checker_handoff::assemble_source_checker_handoff;
 pub(super) use checker_handoff::{
