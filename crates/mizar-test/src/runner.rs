@@ -69,6 +69,7 @@ use shared::{
 };
 use type_elaboration::{
     SourceReserveExtraction, SourceTypeExpression, direct_token_texts, exact_compilation_item_list,
+    exact_numeral_term_node_or_expression, exact_numeral_term_operand,
     extract_builtin_source_reserve_declarations,
     extract_builtin_source_reserve_declarations_after_node_guard,
     extract_builtin_source_type_expression, extract_source_contradiction_formula,
@@ -13759,53 +13760,6 @@ fn exact_imported_infix_functor_term(
         left,
         right,
     })
-}
-
-fn exact_numeral_term_node_or_expression(
-    ast: &SurfaceAst,
-    id: SurfaceNodeId,
-    expected_spelling: &str,
-) -> Option<(SurfaceNodeId, SourceRange)> {
-    let node = ast.node(id)?;
-    match node.kind {
-        SurfaceNodeKind::TermExpression => exact_numeral_term_operand(ast, id, expected_spelling),
-        SurfaceNodeKind::NumeralTerm => exact_numeral_term_node(ast, id, expected_spelling),
-        _ => None,
-    }
-}
-
-fn exact_numeral_term_operand(
-    ast: &SurfaceAst,
-    term_expression_id: SurfaceNodeId,
-    expected_spelling: &str,
-) -> Option<(SurfaceNodeId, SourceRange)> {
-    let term_expression = ast.node(term_expression_id)?;
-    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
-        || subtree_has_recovery(ast, term_expression)
-    {
-        return None;
-    }
-    let term_children = structural_child_ids(ast, term_expression);
-    let [term_id] = term_children.as_slice() else {
-        return None;
-    };
-    exact_numeral_term_node(ast, *term_id, expected_spelling)
-}
-
-fn exact_numeral_term_node(
-    ast: &SurfaceAst,
-    term_id: SurfaceNodeId,
-    expected_spelling: &str,
-) -> Option<(SurfaceNodeId, SourceRange)> {
-    let term = ast.node(term_id)?;
-    if matches!(term.kind, SurfaceNodeKind::NumeralTerm)
-        && direct_token_texts(ast, term).as_slice() == [expected_spelling]
-        && structural_child_ids(ast, term).is_empty()
-    {
-        Some((term_id, term.range))
-    } else {
-        None
-    }
 }
 
 fn is_supported_reserved_variable_binary_formula_bridge_node(node: &SurfaceNode) -> bool {

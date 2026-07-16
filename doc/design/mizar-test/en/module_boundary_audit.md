@@ -794,6 +794,75 @@ remaining reserved/binary, builtin/imported, enumeration, and
 connective/quantifier formula families. No `spec_coverage_audit.md` update is
 required because behavior, tests, trace credit, and owner crate are unchanged.
 
+## Task 262G Pre-Move Inventory and Specification
+
+Fresh inventory classifies the shared exact numeral projection as the same
+`design_drift`. Its three AST-only helpers are formula-source policy but remain
+in `runner.rs`. The 47-line contiguous fragment has hash
+`b415692ed2ee250be1bd4b66bfe90d21cc5cb444124eb249cca8890d1d488631`.
+`exact_numeral_term_operand` has seven retained call sites across the builtin
+binary, builtin type-assertion, imported predicate/functor, imported attribute,
+and set-enumeration extractors. `exact_numeral_term_node_or_expression` has two
+retained call sites in the imported infix-functor projection, and the common
+`exact_numeral_term_node` recognizer is called only by the other two helpers.
+The connective/quantifier and standalone constant families do not consume this
+prerequisite.
+
+Task 262G moves only that fragment into the existing private
+`src/runner/type_elaboration/source_formula.rs` leaf. The operand and
+node-or-expression entries receive runner-subtree-only visibility, parent-only
+facade re-exports, and private `runner.rs` aliases; the numeral-node recognizer
+remains leaf-private. The leaf continues to consume `SurfaceAst`,
+`SurfaceNodeId`, `SurfaceNodeKind`, `SourceRange`, and the existing common
+source-AST token, structural-child, and recovery projections. All five caller
+families, their transports/configuration, resolver use, node allowlists,
+checker consumers, detail keys, diagnostics, and failure assembly remain in
+`runner.rs` with unchanged bodies.
+
+This is a move-only prerequisite. It preserves exact `TermExpression` wrapper
+and single-child cardinality, recovery rejection, `NumeralTerm` kind, direct
+token spelling (`1`/`2` as requested by each caller), empty structural-child
+requirement, returned real node identity/range, caller order, and fail-closed
+behavior. The existing spec-derived `.miz` sources, trace/expectation rows,
+exact/near-miss/corruption matrices, active fixtures, and bidirectional route
+isolation form the preservation matrix. No test-first addition is appropriate,
+and no spec, test, trace, expectation, API, public surface, or
+`spec_coverage_audit.md` change is permitted. Formula-family moves, helper
+renaming/deduplication/generalization, semantic payload changes, theorem
+acceptance, facts, proof, CoreIr, ControlFlowIr, and VC are excluded.
+
+## Task 262G Move Result
+
+Task 262G moved the inventoried three-helper fragment into the existing private
+`source_formula.rs` leaf. After stripping the required visibility qualifiers,
+the moved 47 lines retain the original hash
+`b415692ed2ee250be1bd4b66bfe90d21cc5cb444124eb249cca8890d1d488631`.
+`runner.rs` is now 14,569 lines with hash
+`f3858539557d392e1d85fcf98bbfac615ef2564c1b3b9475c522994e7a6d94d4`;
+the 21-line phase facade has hash
+`702a81c671cc435d8dd1c1c4e1444070823372340308e319eeaf8790a0fcb8db`;
+and the 165-line source-formula leaf has hash
+`ffbb81c4b76339f26c23423785e1139260d92426b6b56fc9295c0065635ab3f6`.
+The unchanged 147-line source-AST and 1,474-line source-reserve leaves retain
+hashes `baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`
+and `88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`.
+
+The exact numeral-node recognizer is leaf-private. Only the operand and
+node-or-expression entries cross the parent-only facade, and all seven plus
+two retained caller sites remain in `runner.rs` in their original order. The
+caller bodies, transports/configuration, resolver dependencies, node
+allowlists, checker consumers, detail keys, diagnostics, and failure assembly
+are unchanged. Focused preservation and all 188 active type cases pass. All
+272 unit tests and the relevant-crate suite pass; the sorted raw and normalized
+test-list hashes remain
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+
+Task 262G is complete. Parent Task 262 remains open for fresh bounded inventory
+of the remaining reserved/binary, builtin/imported, enumeration, and
+connective/quantifier formula families. No `spec_coverage_audit.md` update is
+required because behavior, tests, trace credit, and owner crate are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -805,7 +874,7 @@ required because behavior, tests, trace credit, and owner crate are unchanged.
 | fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
 | declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
 | type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Remains in `runner.rs` through Tasks 262-263. The current `type_elaboration.rs` is a private facade for the `source_ast`, `source_formula`, and `source_reserve` leaves; later moves make it the orchestration owner. |
-| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Task 262F moved the standalone formula-constant projection to private `type_elaboration/source_formula.rs`. Other formula extraction and retained callers stay in `runner.rs` for later Task 262 subtasks. |
+| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262G moved the standalone formula-constant and shared exact numeral projections to private `type_elaboration/source_formula.rs`. Other formula extraction and retained callers stay in `runner.rs` for later Task 262 subtasks. |
 | payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Private type-elaboration leaf owner; no key or ordering edits. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
@@ -830,7 +899,7 @@ public runner facade
         -> common source-AST primitives
            -> fixture/import-summary owner (module-path projection)
         -> reserve type-expression, declaration, and local-mode projection
-        -> standalone formula-constant projection
+        -> standalone formula-constant and shared exact numeral projections
      -> checker/core payload validation
      -> deterministic detail keys and failure diagnostics
 
@@ -942,13 +1011,14 @@ Task 255E.
 | 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
 | 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
 | 261 | Complete: moved the lexical provider, exact fixture vocabulary, and type import-summary adapter to private `import_fixtures.rs`. |
-| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262F. |
+| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262G. |
 | 262A | Complete: moved the five common exact source-AST primitives behind the private type-elaboration phase facade. |
 | 262B | Complete: moved shared node-kind traversal and qualified-symbol spelling projections into the common source-AST leaf. |
 | 262C | Complete: moved reserve type-expression, visible symbol/admission, and source-text projection into the private source-reserve leaf; retained declaration/mode callers for Task 262E. |
 | 262D | Complete: moved the shared exact `parser.type_fixtures` import-item AST projection to the common source-AST leaf before its formula and reserve callers. |
 | 262E | Complete: moved the bounded reserve declaration-segmentation and local-mode traversal/expansion family, retained handoff/formula ownership, and narrowed the three temporary Task 262C helpers. |
 | 262F | Complete: moved only the standalone `thesis`/`contradiction` formula-constant transport, exact extractor, and dedicated node allowlist into the new private source-formula leaf, with facade aliases for only the two entries. |
+| 262G | Complete: moved only the shared three-helper exact numeral AST projection into the private source-formula leaf while retaining all five caller families in `runner.rs`. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 

@@ -8,6 +8,7 @@ pub(super) use source_ast::{
     surface_site,
 };
 pub(super) use source_formula::{
+    exact_numeral_term_node_or_expression, exact_numeral_term_operand,
     extract_source_contradiction_formula, extract_source_formula_statement,
 };
 pub(super) use source_reserve::{
