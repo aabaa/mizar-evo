@@ -3112,3 +3112,287 @@ pub(in crate::runner) fn extract_source_four_edge_local_mode_reserved_variable_i
         &SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     )
 }
+
+const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.four_edge_local_object_mode_reserved_variable_membership.invalid_payload";
+
+const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.four_edge_local_object_mode_reserved_variable_equality.invalid_payload";
+const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.four_edge_local_object_mode_reserved_variable_inequality.invalid_payload";
+
+pub(in crate::runner) const SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "FourEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary",
+    operator: "in",
+    formula_kind: FormulaKind::Membership,
+    invalid_payload_key:
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 2,
+    binding_spellings: &["x", "y"],
+    binding_types: &[
+        SourceReservedVariableBuiltinType::Object,
+        SourceReservedVariableBuiltinType::Set,
+    ],
+    binding_source_mode_spellings: &[Some("TooDeepFourEdgeObjectModeMembership"), None],
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseFourEdgeObjectModeMembershipDef",
+            spelling: "BaseFourEdgeObjectModeMembership",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerFourEdgeObjectModeMembershipDef",
+            spelling: "InnerFourEdgeObjectModeMembership",
+            radix: SourceReservedVariableModeRadix::Mode("BaseFourEdgeObjectModeMembership"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleFourEdgeObjectModeMembershipDef",
+            spelling: "MiddleFourEdgeObjectModeMembership",
+            radix: SourceReservedVariableModeRadix::Mode("InnerFourEdgeObjectModeMembership"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterFourEdgeObjectModeMembershipDef",
+            spelling: "OuterFourEdgeObjectModeMembership",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleFourEdgeObjectModeMembership"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "TooDeepFourEdgeObjectModeMembershipDef",
+            spelling: "TooDeepFourEdgeObjectModeMembership",
+            radix: SourceReservedVariableModeRadix::Mode("OuterFourEdgeObjectModeMembership"),
+        },
+    ],
+    left_binding_index: 0,
+    right_binding_index: 1,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: true,
+    left_result_role: "four-edge-local-object-mode-reserved-variable-membership-left-result",
+    right_result_role: "four-edge-local-object-mode-reserved-variable-membership-right-result",
+    left_expected_role: None,
+    right_expected_role: Some(
+        "four-edge-local-object-mode-reserved-variable-membership-right-expected",
+    ),
+};
+
+pub(in crate::runner) const SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "FourEdgeLocalObjectModeReservedVariableEqualityPayloadBoundary",
+    operator: "=",
+    formula_kind: FormulaKind::Equality,
+    invalid_payload_key:
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Object],
+    binding_source_mode_spellings: &[Some("TooDeepFourEdgeObjectModeEquality")],
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseFourEdgeObjectModeEqualityDef",
+            spelling: "BaseFourEdgeObjectModeEquality",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerFourEdgeObjectModeEqualityDef",
+            spelling: "InnerFourEdgeObjectModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("BaseFourEdgeObjectModeEquality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleFourEdgeObjectModeEqualityDef",
+            spelling: "MiddleFourEdgeObjectModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("InnerFourEdgeObjectModeEquality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterFourEdgeObjectModeEqualityDef",
+            spelling: "OuterFourEdgeObjectModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleFourEdgeObjectModeEquality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "TooDeepFourEdgeObjectModeEqualityDef",
+            spelling: "TooDeepFourEdgeObjectModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("OuterFourEdgeObjectModeEquality"),
+        },
+    ],
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "four-edge-local-object-mode-reserved-variable-left-result",
+    right_result_role: "four-edge-local-object-mode-reserved-variable-right-result",
+    left_expected_role: Some("four-edge-local-object-mode-reserved-variable-left-expected"),
+    right_expected_role: Some("four-edge-local-object-mode-reserved-variable-right-expected"),
+};
+
+pub(in crate::runner) const SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "FourEdgeLocalObjectModeReservedVariableInequalityPayloadBoundary",
+    operator: "<>",
+    formula_kind: FormulaKind::Inequality,
+    invalid_payload_key:
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Object],
+    binding_source_mode_spellings: &[Some("TooDeepFourEdgeObjectModeInequality")],
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseFourEdgeObjectModeInequalityDef",
+            spelling: "BaseFourEdgeObjectModeInequality",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerFourEdgeObjectModeInequalityDef",
+            spelling: "InnerFourEdgeObjectModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("BaseFourEdgeObjectModeInequality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleFourEdgeObjectModeInequalityDef",
+            spelling: "MiddleFourEdgeObjectModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("InnerFourEdgeObjectModeInequality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterFourEdgeObjectModeInequalityDef",
+            spelling: "OuterFourEdgeObjectModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleFourEdgeObjectModeInequality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "TooDeepFourEdgeObjectModeInequalityDef",
+            spelling: "TooDeepFourEdgeObjectModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("OuterFourEdgeObjectModeInequality"),
+        },
+    ],
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "four-edge-local-object-mode-reserved-variable-inequality-left-result",
+    right_result_role: "four-edge-local-object-mode-reserved-variable-inequality-right-result",
+    left_expected_role: Some(
+        "four-edge-local-object-mode-reserved-variable-inequality-left-expected",
+    ),
+    right_expected_role: Some(
+        "four-edge-local-object-mode-reserved-variable-inequality-right-expected",
+    ),
+};
+
+pub(in crate::runner) fn source_four_edge_local_object_mode_reserved_variable_membership_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_four_edge_local_object_mode_reserved_variable_membership(
+        ast, module, symbols,
+    )?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+pub(in crate::runner) fn source_four_edge_local_object_mode_reserved_variable_equality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_four_edge_local_object_mode_reserved_variable_equality(
+        ast, module, symbols,
+    )?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+pub(in crate::runner) fn source_four_edge_local_object_mode_reserved_variable_inequality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_four_edge_local_object_mode_reserved_variable_inequality(
+        ast, module, symbols,
+    )?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_four_edge_local_object_mode_reserved_variable_membership_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_four_edge_local_object_mode_reserved_variable_membership(
+        ast, module, symbols,
+    )?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_four_edge_local_object_mode_reserved_variable_equality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_four_edge_local_object_mode_reserved_variable_equality(
+        ast, module, symbols,
+    )?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_four_edge_local_object_mode_reserved_variable_inequality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_four_edge_local_object_mode_reserved_variable_inequality(
+        ast, module, symbols,
+    )?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+pub(in crate::runner) fn extract_source_four_edge_local_object_mode_reserved_variable_membership(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    )
+}
+
+pub(in crate::runner) fn extract_source_four_edge_local_object_mode_reserved_variable_equality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    )
+}
+
+pub(in crate::runner) fn extract_source_four_edge_local_object_mode_reserved_variable_inequality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    )
+}
