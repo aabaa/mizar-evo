@@ -39,6 +39,20 @@ At Task 248 inventory:
   403 cases / 367 requirements, type-elaboration coverage is 235 / 223,
   pass/fail is 219 / 184, and the unit-test count is 272.
 
+## Task 249 Move Result
+
+Task 249 replaced the inline module with private `#[cfg(test)]`,
+`#[rustfmt::skip] mod tests;` and moved its body byte-for-byte to
+`src/runner/tests.rs`. The formatter guard prevents the newly top-level test
+imports and body from being reordered or reflowed during this move-only task.
+The runner file is now 17,144 lines and the test module is 94,118 lines. The
+exact extracted body hash is
+`ab658ad10bcbb2d415778f6289cbb9ae2bed48e21c19b5496fa8f676309d3b69`;
+the sorted 272-test list remained
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`.
+Module privacy, qualified test names, public API, active-runner counts,
+diagnostics, payloads, ordering, and fail-closed behavior are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -108,7 +122,7 @@ when it would change the discovered test list.
 | Task | Bounded action |
 |---|---|
 | 248 | Add this paired audit, update the paired crate plan, and establish the preservation matrix. No source move. |
-| 249 | Mechanically move the complete inline private `mod tests` body to `src/runner/tests.rs`. |
+| 249 | Complete: mechanically moved the complete inline private `mod tests` body to `src/runner/tests.rs`. |
 | 250 | Move nonempty shared test support into a root-included support fragment. |
 | 251 | Move the nonempty parse-only private test family into a root-included fragment. |
 | 252 | Move the baseline type-elaboration source-extraction and real handoff tests. |

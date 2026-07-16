@@ -793,7 +793,8 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   files with task IDs, affected files/tests, coverage-audit impact, completion
   conditions, and forbidden behavior. Keep this an audit/docs-only task and
   commit.
-- [ ] Mechanically move the monolithic private `mod tests` out of `runner.rs`.
+- [x] Task 249 mechanically moved the monolithic private `mod tests` out of
+  `runner.rs` into `src/runner/tests.rs`.
   Preserve module privacy, test names, test discovery, helper behavior, and all
   public APIs. Do not combine the move with renaming, deduplication,
   generalization, or semantic cleanup. Commit the move as one task.

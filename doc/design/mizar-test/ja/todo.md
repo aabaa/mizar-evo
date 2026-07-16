@@ -718,7 +718,8 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   criteria を記録する。source move 前に paired `00.crate_plan.md` へ task ID、
   affected files/tests、coverage-audit impact、completion conditions、forbidden
   behavior を記録する。audit/docs-only task として commit する。
-- [ ] monolithic private `mod tests` を `runner.rs` 外へ機械的に移動する。
+- [x] Task 249 で monolithic private `mod tests` を `runner.rs` から
+  `src/runner/tests.rs` へ機械的に移動した。
   module privacy、test name/discovery、helper behavior、全 public API を保持し、
   rename、deduplication、generalization、semantic cleanup と混ぜない。move
   だけを 1 task/commit とする。
