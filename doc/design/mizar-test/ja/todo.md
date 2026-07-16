@@ -753,9 +753,9 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   builtin type-assertion family の test-only preservation prerequisite は完了し、
   Task 262I で I0 後にその family だけを移動した。Task 262J0 で imported
   predicate/functor family の test-only preservation prerequisite は完了した。
-  shared symbol projection は Task 262J1 で移動した。残る Task 262 formula
-  extraction は J2 の imported predicate/functor family move から継続する。残る
-  formula family と Task 263 のため、この parent item は open のまま。
+  shared symbol projection は Task 262J1、exact imported predicate/functor family は
+  Task 262J2 で移動した。残る Task 262 formula family は fresh bounded inventory が
+  必要であり、Task 263 と共にこの parent item を open のままにする。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

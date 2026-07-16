@@ -8,7 +8,8 @@ use mizar_syntax::{
 };
 
 use super::source_ast::{
-    direct_token_texts, structural_child_ids, subtree_has_recovery, surface_nodes_with_kind,
+    direct_token_texts, exact_compilation_item_list, is_exact_parser_type_fixtures_import,
+    qualified_symbol_spelling, structural_child_ids, subtree_has_recovery, surface_nodes_with_kind,
     surface_site,
 };
 use super::source_reserve::{SourceTypeExpression, extract_builtin_source_type_expression};
@@ -110,6 +111,22 @@ pub(in crate::runner) struct SourceBuiltinTypeAssertionFormula {
     pub(in crate::runner) subject_range: SourceRange,
     pub(in crate::runner) asserted_type_site: TypedSiteRef,
     pub(in crate::runner) asserted_type: SourceTypeExpression,
+}
+
+#[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceImportedPredicateFunctorFormula {
+    pub(in crate::runner) formula_site: TypedSiteRef,
+    pub(in crate::runner) formula_range: SourceRange,
+    pub(in crate::runner) predicate_symbol: ResolverSymbolId,
+    pub(in crate::runner) left_site: TypedSiteRef,
+    pub(in crate::runner) left_range: SourceRange,
+    pub(in crate::runner) functor_site: TypedSiteRef,
+    pub(in crate::runner) functor_range: SourceRange,
+    pub(in crate::runner) functor_symbol: ResolverSymbolId,
+    pub(in crate::runner) functor_left_site: TypedSiteRef,
+    pub(in crate::runner) functor_left_range: SourceRange,
+    pub(in crate::runner) functor_right_site: TypedSiteRef,
+    pub(in crate::runner) functor_right_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -305,6 +322,134 @@ pub(in crate::runner) fn extract_source_builtin_type_assertion_formula(
     })
 }
 
+pub(in crate::runner) fn extract_source_imported_predicate_functor_formula(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceImportedPredicateFunctorFormula> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_imported_predicate_functor_theorem_bridge_node(node))
+    {
+        return None;
+    }
+
+    let item_list = exact_compilation_item_list(ast)?;
+    let item_children = structural_child_ids(ast, item_list);
+    let [import_item_id, theorem_id] = item_children.as_slice() else {
+        return None;
+    };
+    let import_item = ast.node(*import_item_id)?;
+    if !is_exact_parser_type_fixtures_import(ast, import_item) {
+        return None;
+    }
+
+    let theorem = ast.node(*theorem_id)?;
+    if !matches!(theorem.kind, SurfaceNodeKind::TheoremItem) || subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice()
+        != [
+            "theorem",
+            "ImportedPredicateFunctorPayloadBoundary",
+            ":",
+            ";",
+        ]
+    {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::PredicateApplication)
+        || subtree_has_recovery(ast, formula)
+        || !direct_token_texts(ast, formula).is_empty()
+    {
+        return None;
+    }
+
+    let predicate_children = structural_child_ids(ast, formula);
+    let [segment_id] = predicate_children.as_slice() else {
+        return None;
+    };
+    let segment = ast.node(*segment_id)?;
+    if !matches!(segment.kind, SurfaceNodeKind::PredicateSegment)
+        || !direct_token_texts(ast, segment).is_empty()
+    {
+        return None;
+    }
+    let segment_children = structural_child_ids(ast, segment);
+    let [
+        left_term_expression_id,
+        predicate_head_id,
+        right_term_expression_id,
+    ] = segment_children.as_slice()
+    else {
+        return None;
+    };
+
+    let predicate_head = ast.node(*predicate_head_id)?;
+    if !matches!(predicate_head.kind, SurfaceNodeKind::PredicateHead)
+        || !direct_token_texts(ast, predicate_head).is_empty()
+    {
+        return None;
+    }
+    let predicate_head_children = structural_child_ids(ast, predicate_head);
+    let [predicate_symbol_id] = predicate_head_children.as_slice() else {
+        return None;
+    };
+    let predicate_symbol_node = ast.node(*predicate_symbol_id)?;
+    if !matches!(predicate_symbol_node.kind, SurfaceNodeKind::QualifiedSymbol)
+        || qualified_symbol_spelling(ast, predicate_symbol_node)
+            .ok()?
+            .as_str()
+            != "divides"
+    {
+        return None;
+    }
+    let predicate_symbol = resolve_imported_fixture_term_formula_symbol(
+        symbols,
+        module,
+        "divides",
+        SymbolKind::Predicate,
+    )
+    .ok()?;
+
+    let left = exact_numeral_term_operand(ast, *left_term_expression_id, "1")?;
+    let functor = exact_imported_infix_functor_term(ast, *right_term_expression_id)?;
+    let functor_symbol =
+        resolve_imported_fixture_term_formula_symbol(symbols, module, "++", SymbolKind::Functor)
+            .ok()?;
+
+    Some(SourceImportedPredicateFunctorFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        predicate_symbol,
+        left_site: surface_site(left.0),
+        left_range: left.1,
+        functor_site: surface_site(functor.term_id),
+        functor_range: functor.term_range,
+        functor_symbol,
+        functor_left_site: surface_site(functor.left.0),
+        functor_left_range: functor.left.1,
+        functor_right_site: surface_site(functor.right.0),
+        functor_right_range: functor.right.1,
+    })
+}
+
 fn extract_exact_source_formula_constant(
     ast: &SurfaceAst,
     expected_label: &str,
@@ -405,6 +550,68 @@ pub(in crate::runner) fn exact_numeral_term_operand(
     exact_numeral_term_node(ast, *term_id, expected_spelling)
 }
 
+#[derive(Debug, Clone, Copy)]
+struct ExactImportedInfixFunctorTerm {
+    term_id: SurfaceNodeId,
+    term_range: SourceRange,
+    left: (SurfaceNodeId, SourceRange),
+    right: (SurfaceNodeId, SourceRange),
+}
+
+fn exact_imported_infix_functor_term(
+    ast: &SurfaceAst,
+    term_expression_id: SurfaceNodeId,
+) -> Option<ExactImportedInfixFunctorTerm> {
+    let term_expression = ast.node(term_expression_id)?;
+    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
+        || subtree_has_recovery(ast, term_expression)
+    {
+        return None;
+    }
+    let term_children = structural_child_ids(ast, term_expression);
+    let [parenthesized_id] = term_children.as_slice() else {
+        return None;
+    };
+    let parenthesized = ast.node(*parenthesized_id)?;
+    if !matches!(parenthesized.kind, SurfaceNodeKind::ParenthesizedTerm)
+        || direct_token_texts(ast, parenthesized).as_slice() != ["(", ")"]
+    {
+        return None;
+    }
+    let parenthesized_children = structural_child_ids(ast, parenthesized);
+    let [inner_expression_id] = parenthesized_children.as_slice() else {
+        return None;
+    };
+    let inner_expression = ast.node(*inner_expression_id)?;
+    if !matches!(inner_expression.kind, SurfaceNodeKind::TermExpression) {
+        return None;
+    }
+    let inner_children = structural_child_ids(ast, inner_expression);
+    let [infix_id] = inner_children.as_slice() else {
+        return None;
+    };
+    let infix = ast.node(*infix_id)?;
+    if !matches!(
+        &infix.kind,
+        SurfaceNodeKind::InfixExpression(operator) if operator.spelling.as_ref() == "++"
+    ) || direct_token_texts(ast, infix).as_slice() != ["++"]
+    {
+        return None;
+    }
+    let infix_children = structural_child_ids(ast, infix);
+    let [left_expression_id, right_expression_id] = infix_children.as_slice() else {
+        return None;
+    };
+    let left = exact_numeral_term_node_or_expression(ast, *left_expression_id, "1")?;
+    let right = exact_numeral_term_node_or_expression(ast, *right_expression_id, "2")?;
+    Some(ExactImportedInfixFunctorTerm {
+        term_id: *infix_id,
+        term_range: infix.range,
+        left,
+        right,
+    })
+}
+
 fn exact_numeral_term_node(
     ast: &SurfaceAst,
     term_id: SurfaceNodeId,
@@ -462,6 +669,30 @@ fn is_supported_builtin_type_assertion_theorem_bridge_node(node: &SurfaceNode) -
             | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::TypeExpression
             | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_imported_predicate_functor_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::PredicateApplication
+            | SurfaceNodeKind::PredicateSegment
+            | SurfaceNodeKind::PredicateHead
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::InfixExpression(_)
             | SurfaceNodeKind::Token(_)
     )
 }

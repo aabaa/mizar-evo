@@ -10,9 +10,9 @@ pub(super) use source_ast::{
 #[cfg(test)]
 pub(super) use source_formula::SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS;
 pub(super) use source_formula::{
-    exact_numeral_term_node_or_expression, exact_numeral_term_operand,
-    extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
-    extract_source_contradiction_formula, extract_source_formula_statement,
+    exact_numeral_term_operand, extract_source_builtin_binary_term_formula,
+    extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
+    extract_source_formula_statement, extract_source_imported_predicate_functor_formula,
     resolve_imported_fixture_term_formula_symbol,
 };
 pub(super) use source_reserve::{
