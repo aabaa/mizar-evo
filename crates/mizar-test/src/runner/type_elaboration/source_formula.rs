@@ -904,6 +904,20 @@ pub(in crate::runner) struct SourceReservedVariableBinaryFormula {
     pub(in crate::runner) right_lookup_ordinal: usize,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(in crate::runner) enum SourceParenthesizedOperandSide {
+    Left,
+    Right,
+}
+
+#[derive(Debug)]
+pub(in crate::runner) struct SourceParenthesizedReservedVariableBinaryFormula {
+    pub(in crate::runner) wrapper_side: SourceParenthesizedOperandSide,
+    pub(in crate::runner) wrapper_site: TypedSiteRef,
+    pub(in crate::runner) wrapper_range: SourceRange,
+    pub(in crate::runner) formula: SourceReservedVariableBinaryFormula,
+}
+
 pub(in crate::runner) fn extract_source_reserved_variable_binary_formula(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -1030,9 +1044,245 @@ pub(in crate::runner) fn extract_source_reserved_variable_binary_formula(
     })
 }
 
-pub(in crate::runner) fn is_supported_reserved_variable_binary_formula_bridge_node(
-    node: &SurfaceNode,
-) -> bool {
+pub(in crate::runner) fn extract_source_parenthesized_reserved_variable_binary_formula_with_config(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+    config: &'static SourceReservedVariableBinaryFormulaConfig,
+    wrapper_side: SourceParenthesizedOperandSide,
+) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
+    if ast.nodes().iter().any(|node| {
+        let supported_bridge_node =
+            is_supported_parenthesized_reserved_variable_binary_formula_bridge_node(node);
+        let supported_mode_definition_node = !config.mode_definitions.is_empty()
+            && matches!(
+                node.kind,
+                SurfaceNodeKind::DefinitionBlockItem
+                    | SurfaceNodeKind::ModeDefinition
+                    | SurfaceNodeKind::ModePattern
+                    | SurfaceNodeKind::QualifiedSymbol
+                    | SurfaceNodeKind::PathSegment
+            );
+        !supported_bridge_node && !supported_mode_definition_node
+    }) {
+        return None;
+    }
+
+    let reserve_items = surface_nodes_with_kind(ast, SurfaceNodeKind::ReserveItem);
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let parenthesized_terms = surface_nodes_with_kind(ast, SurfaceNodeKind::ParenthesizedTerm);
+    let mode_definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    let [(parenthesized_id, _)] = parenthesized_terms.as_slice() else {
+        return None;
+    };
+    if reserve_items.len() != config.reserve_item_count
+        || mode_definitions.len() != config.mode_definitions.len()
+        || reserve_items
+            .iter()
+            .any(|(_, item)| item.range.end > theorem.range.start)
+        || reserve_items
+            .iter()
+            .any(|(_, item)| subtree_has_recovery(ast, item))
+        || subtree_has_recovery(ast, theorem)
+        || direct_token_texts(ast, theorem).as_slice() != ["theorem", config.label, ":", ";"]
+        || !source_reserved_variable_mode_definition_is_exact(ast, config.mode_definitions)
+    {
+        return None;
+    }
+
+    let reserve =
+        extract_builtin_source_reserve_declarations_after_node_guard(ast, module, symbols).ok()?;
+    let source_bindings = reserve.bridge.bindings();
+    if source_bindings.len() != config.binding_spellings.len()
+        || source_bindings.len() != config.binding_types.len()
+        || source_bindings.len() != config.binding_source_mode_spellings.len()
+        || source_bindings.iter().enumerate().any(|(index, binding)| {
+            binding.spelling != config.binding_spellings[index]
+                || !source_binding_matches_reserved_builtin_type(
+                    binding,
+                    config.binding_types[index],
+                    config.binding_source_mode_spellings[index],
+                    &reserve.mode_expansions,
+                )
+        })
+        || !source_reserved_variable_mode_expansions_are_exact(&reserve, config.mode_definitions)
+        || (config.require_shared_type_range
+            && source_bindings
+                .windows(2)
+                .any(|pair| pair[0].type_range != pair[1].type_range))
+        || (config.require_distinct_type_ranges
+            && source_bindings.windows(2).any(|pair| {
+                pair[0].type_range == pair[1].type_range
+                    || (pair[0].type_range.start, pair[0].type_range.end)
+                        >= (pair[1].type_range.start, pair[1].type_range.end)
+            }))
+    {
+        return None;
+    }
+    let left_source_binding = source_bindings.get(config.left_binding_index)?;
+    let right_source_binding = source_bindings.get(config.right_binding_index)?;
+
+    let theorem_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression)
+        || !direct_token_texts(ast, formula_expression).is_empty()
+    {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+        || direct_token_texts(ast, formula).as_slice() != [config.operator]
+        || subtree_has_recovery(ast, formula)
+    {
+        return None;
+    }
+    let predicate_children = structural_child_ids(ast, formula);
+    let [left_expression_id, right_expression_id] = predicate_children.as_slice() else {
+        return None;
+    };
+    let (
+        wrapper_id,
+        wrapper_range,
+        left_id,
+        left_range,
+        left_spelling,
+        right_id,
+        right_range,
+        right_spelling,
+    ) = match wrapper_side {
+        SourceParenthesizedOperandSide::Left => {
+            let (wrapper_id, wrapper_range, left_id, left_range, left_spelling) =
+                exact_single_parenthesized_identifier_term_operand(ast, *left_expression_id)?;
+            let (right_id, right_range, right_spelling) =
+                exact_identifier_term_operand(ast, *right_expression_id)?;
+            (
+                wrapper_id,
+                wrapper_range,
+                left_id,
+                left_range,
+                left_spelling,
+                right_id,
+                right_range,
+                right_spelling,
+            )
+        }
+        SourceParenthesizedOperandSide::Right => {
+            let (left_id, left_range, left_spelling) =
+                exact_identifier_term_operand(ast, *left_expression_id)?;
+            let (wrapper_id, wrapper_range, right_id, right_range, right_spelling) =
+                exact_single_parenthesized_identifier_term_operand(ast, *right_expression_id)?;
+            (
+                wrapper_id,
+                wrapper_range,
+                left_id,
+                left_range,
+                left_spelling,
+                right_id,
+                right_range,
+                right_spelling,
+            )
+        }
+    };
+    let wrapper_is_ordered = match wrapper_side {
+        SourceParenthesizedOperandSide::Left => wrapper_range.end <= right_range.start,
+        SourceParenthesizedOperandSide::Right => left_range.end <= wrapper_range.start,
+    };
+    if wrapper_id != *parenthesized_id
+        || left_id == right_id
+        || left_spelling != left_source_binding.spelling
+        || right_spelling != right_source_binding.spelling
+        || !wrapper_is_ordered
+    {
+        return None;
+    }
+    let [left_lookup_ordinal, right_lookup_ordinal] =
+        source_binding_use_ordinals(reserve.bridge.bindings(), [left_range, right_range]).ok()?;
+
+    Some(SourceParenthesizedReservedVariableBinaryFormula {
+        wrapper_side,
+        wrapper_site: surface_site(wrapper_id),
+        wrapper_range,
+        formula: SourceReservedVariableBinaryFormula {
+            reserve,
+            config,
+            formula_site: surface_site(*formula_id),
+            formula_range: formula.range,
+            left_site: surface_site(left_id),
+            left_range,
+            left_spelling,
+            left_lookup_ordinal,
+            right_site: surface_site(right_id),
+            right_range,
+            right_spelling,
+            right_lookup_ordinal,
+        },
+    })
+}
+
+fn exact_single_parenthesized_identifier_term_operand(
+    ast: &SurfaceAst,
+    term_expression_id: SurfaceNodeId,
+) -> Option<(
+    SurfaceNodeId,
+    SourceRange,
+    SurfaceNodeId,
+    SourceRange,
+    String,
+)> {
+    let expression = ast.node(term_expression_id)?;
+    if !matches!(expression.kind, SurfaceNodeKind::TermExpression)
+        || subtree_has_recovery(ast, expression)
+        || !direct_token_texts(ast, expression).is_empty()
+    {
+        return None;
+    }
+    let expression_children = structural_child_ids(ast, expression);
+    let [parenthesized_id] = expression_children.as_slice() else {
+        return None;
+    };
+    let parenthesized = ast.node(*parenthesized_id)?;
+    if !matches!(parenthesized.kind, SurfaceNodeKind::ParenthesizedTerm)
+        || direct_token_texts(ast, parenthesized).as_slice() != ["(", ")"]
+        || parenthesized.range != expression.range
+    {
+        return None;
+    }
+    let parenthesized_children = structural_child_ids(ast, parenthesized);
+    let [inner_expression_id] = parenthesized_children.as_slice() else {
+        return None;
+    };
+    let inner_expression = ast.node(*inner_expression_id)?;
+    if !direct_token_texts(ast, inner_expression).is_empty() {
+        return None;
+    }
+    let (reference_id, reference_range, spelling) =
+        exact_identifier_term_operand(ast, *inner_expression_id)?;
+    if parenthesized.range.source_id != reference_range.source_id
+        || parenthesized.range.start >= reference_range.start
+        || parenthesized.range.end <= reference_range.end
+    {
+        return None;
+    }
+    Some((
+        *parenthesized_id,
+        parenthesized.range,
+        reference_id,
+        reference_range,
+        spelling,
+    ))
+}
+
+fn is_supported_reserved_variable_binary_formula_bridge_node(node: &SurfaceNode) -> bool {
     matches!(
         node.kind,
         SurfaceNodeKind::Root
@@ -1049,6 +1299,13 @@ pub(in crate::runner) fn is_supported_reserved_variable_binary_formula_bridge_no
             | SurfaceNodeKind::TermReference
             | SurfaceNodeKind::Token(_)
     )
+}
+
+fn is_supported_parenthesized_reserved_variable_binary_formula_bridge_node(
+    node: &SurfaceNode,
+) -> bool {
+    is_supported_reserved_variable_binary_formula_bridge_node(node)
+        || matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm)
 }
 
 pub(in crate::runner) fn resolve_imported_fixture_term_formula_symbol(
