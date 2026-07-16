@@ -363,6 +363,23 @@ prior-owner rejection assertions, the Task 257G boundary, and both 272-test
 list hashes are unchanged. Task 257F is complete; parent Task 257 remains
 pending.
 
+## Task 257G Move Result
+
+Task 257G root-included
+`src/runner/tests/type_elaboration/source_gap_and_equality.rs` without a
+wrapper module. The byte-identical 2,923-line fragment contains only the
+source-reserve gap/evidence fail-closed test and the four-edge local-mode
+equality source/active pair. Its hash is
+`7726ee451322c547406da5c5b3800be2527685df41ca2de4dc60d47644164487`.
+The retained 10,613 lines remained byte-identical with hash
+`2ebb32f99fa9001d0a5d303deb5f477a369074b54b3b71ba2ea690aa3f38e49c`;
+the resulting 10,614-line `tests.rs` hash is
+`b1a22962fefb7a2cc54aa37ff5f601c9995bce432d78fa499cfca8e6c35423bf`.
+All three fully qualified names, original order positions, detail-key and
+fail-closed assertions, the immediately following `long_chain.rs` include,
+Task 257H start, and both 272-test list hashes are unchanged. Task 257G is
+complete; parent Task 257 remains pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -495,7 +512,7 @@ Task 255E.
 | 257D | Complete: moved the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`, retaining the Task 257E separator. |
 | 257E | Complete: moved the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`, retaining the Task 257F separator. |
 | 257F | Complete: moved the 35 active reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route isolation guards to `asserted_head_fixtures.rs`, retaining the Task 257G separator. |
-| 257G | Move the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`. |
+| 257G | Complete: moved the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`, retaining the immediate long-chain include and Task 257H boundary. |
 | 257H | Move the final 12 root and 28 nested corruption/isolation tests while retaining Task 216-222 modules; complete Task 257. |
 | 258 | Move shared source/frontend staging helpers after the test layout is stable. |
 | 259 | Move parse-only production helpers. |

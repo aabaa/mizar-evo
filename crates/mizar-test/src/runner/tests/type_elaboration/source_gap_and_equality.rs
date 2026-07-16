@@ -1,0 +1,2923 @@
+    #[test]
+    fn source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes() {
+        let source_id = source_id(95);
+        let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let symbols = source_symbol_env(module.clone());
+        let non_builtin = reserve_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::NonBuiltin("T"))],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&non_builtin, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let formula_statement_theorem =
+            formula_statement_theorem_ast(source_id, exact_formula_statement_spec());
+        let formula_statement_detail_keys =
+            vec!["type_elaboration.checker.checker.formula.external.formula_payload".to_owned()];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &formula_statement_theorem,
+                module.clone(),
+                &symbols
+            ),
+            formula_statement_detail_keys
+        );
+        let formula_statement_output =
+            source_formula_statement_output(&formula_statement_theorem, module.clone(), &symbols)
+                .expect("exact formula statement bridge should produce checker output");
+        let formula_statement_payload =
+            extract_source_formula_statement(&formula_statement_theorem)
+                .expect("exact formula statement bridge should extract source payload");
+        let expected_formula_statement_range = range(source_id, 33, 39);
+        let expected_formula_statement_sites = surface_sites_for_kind_ranges(
+            &formula_statement_theorem,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            &[expected_formula_statement_range],
+        );
+        assert_eq!(
+            formula_statement_payload.formula_site,
+            expected_formula_statement_sites[0]
+        );
+        assert_eq!(
+            formula_statement_payload.formula_range,
+            expected_formula_statement_range
+        );
+        assert_eq!(formula_statement_output.terms().len(), 0);
+        assert_eq!(formula_statement_output.formulas().len(), 1);
+        let (_, checked_formula_statement) = formula_statement_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("formula statement payload should be checked");
+        assert_eq!(
+            checked_formula_statement.site,
+            formula_statement_payload.formula_site
+        );
+        assert_eq!(checked_formula_statement.kind, FormulaKind::Thesis);
+        assert_eq!(checked_formula_statement.status, FormulaStatus::Partial);
+        assert_eq!(checked_formula_statement.context, BindingContextId::new(0));
+        assert!(checked_formula_statement.terms.is_empty());
+        assert!(checked_formula_statement.facts.is_empty());
+        assert_eq!(
+            checked_formula_statement.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        let diagnostic_ranges = formula_statement_output
+            .diagnostics()
+            .canonical_iter()
+            .filter_map(|(_, diagnostic)| {
+                (diagnostic.message_key == "checker.formula.external.formula_payload")
+                    .then_some(diagnostic.source_range)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            diagnostic_ranges,
+            vec![expected_formula_statement_range],
+            "missing formula payload diagnostic should be anchored to thesis"
+        );
+        let contradiction_theorem =
+            formula_statement_theorem_ast(source_id, exact_contradiction_formula_spec());
+        assert_eq!(
+            source_type_elaboration_detail_keys(&contradiction_theorem, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let contradiction_output =
+            source_contradiction_formula_output(&contradiction_theorem, module.clone(), &symbols)
+                .expect("exact standalone contradiction bridge should produce checker output");
+        let contradiction_payload = extract_source_contradiction_formula(&contradiction_theorem)
+            .expect("exact standalone contradiction bridge should extract source payload");
+        let expected_contradiction_range = range(source_id, 53, 66);
+        let expected_contradiction_sites = surface_sites_for_kind_ranges(
+            &contradiction_theorem,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            &[expected_contradiction_range],
+        );
+        assert_eq!(
+            contradiction_payload.formula_site,
+            expected_contradiction_sites[0]
+        );
+        assert_eq!(
+            contradiction_payload.formula_range,
+            expected_contradiction_range
+        );
+        assert!(contradiction_output.terms().is_empty());
+        assert_eq!(contradiction_output.formulas().len(), 1);
+        assert!(contradiction_output.diagnostics().is_empty());
+        let (_, checked_contradiction) = contradiction_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("standalone contradiction should be checked");
+        assert_eq!(
+            checked_contradiction.site,
+            contradiction_payload.formula_site
+        );
+        assert_eq!(checked_contradiction.context, BindingContextId::new(0));
+        assert_eq!(checked_contradiction.kind, FormulaKind::Contradiction);
+        assert_eq!(checked_contradiction.status, FormulaStatus::Checked);
+        assert!(checked_contradiction.terms.is_empty());
+        assert!(checked_contradiction.asserted_type.is_none());
+        assert!(checked_contradiction.expected_types.is_empty());
+        assert!(checked_contradiction.candidate_set.is_none());
+        assert!(checked_contradiction.facts.is_empty());
+        assert!(checked_contradiction.deferred.is_empty());
+        let equality_theorem =
+            builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "1");
+        assert_eq!(
+            source_type_elaboration_detail_keys(&equality_theorem, module.clone(), &symbols),
+            vec![
+                "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+                "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            ]
+        );
+        let inequality_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinInequalityPayloadBoundary",
+            "1",
+            "<>",
+            "2",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&inequality_theorem, module.clone(), &symbols),
+            vec![
+                "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+                "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            ]
+        );
+        let membership_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinMembershipPayloadBoundary",
+            "1",
+            "in",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&membership_theorem, module.clone(), &symbols),
+            vec![
+                "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+                "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            ]
+        );
+        let type_assertion_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "BuiltinTypeAssertionPayloadBoundary",
+            "1",
+            ReserveTypeShape::Builtin("set"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&type_assertion_theorem, module.clone(), &symbols),
+            vec![
+                "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+                "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            ]
+        );
+        let type_assertion_output = source_builtin_type_assertion_formula_output(
+            &type_assertion_theorem,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact builtin type assertion bridge should produce checker output");
+        let type_assertion_payload = extract_source_builtin_type_assertion_formula(
+            &type_assertion_theorem,
+            &module,
+            &symbols,
+        )
+        .expect("exact builtin type assertion bridge should extract source payload");
+        assert_eq!(type_assertion_output.terms().len(), 1);
+        let (_, checked_subject) = type_assertion_output
+            .terms()
+            .iter()
+            .next()
+            .expect("subject term should be checked");
+        assert_eq!(checked_subject.kind, TermKind::Numeral);
+        assert_eq!(checked_subject.status, TermStatus::Partial);
+        assert_eq!(checked_subject.site, type_assertion_payload.subject_site);
+        assert_eq!(type_assertion_output.formulas().len(), 1);
+        let (_, checked_formula) = type_assertion_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("type assertion formula should be checked");
+        assert_eq!(checked_formula.site, type_assertion_payload.formula_site);
+        assert_eq!(checked_formula.kind, FormulaKind::TypeAssertion);
+        assert_eq!(checked_formula.status, FormulaStatus::Partial);
+        assert_eq!(checked_formula.terms, vec![checked_subject.site.clone()]);
+        let asserted_type = checked_formula
+            .asserted_type
+            .and_then(|id| type_assertion_output.normalized_types().get(id))
+            .expect("type assertion bridge must pass the asserted type to the checker");
+        assert_eq!(asserted_type.head, TypeHeadRef::BuiltinSet);
+        assert!(asserted_type.attributes.positive().is_empty());
+        assert!(asserted_type.attributes.negative().is_empty());
+        assert_eq!(asserted_type.source.spelling, "set");
+        assert_eq!(
+            asserted_type.source.range,
+            type_assertion_payload.asserted_type.range
+        );
+        let imported_predicate_functor_symbols =
+            imported_predicate_functor_symbol_env(symbols.module_id().clone());
+        let imported_predicate_functor_theorem = imported_predicate_functor_theorem_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            exact_imported_predicate_functor_theorem_spec(),
+        );
+        let imported_predicate_functor_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.predicate_signature_payload"
+                .to_owned(),
+            "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+            "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            "type_elaboration.checker.checker.term.external.signature_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_predicate_functor_theorem,
+                imported_predicate_functor_symbols.module_id().clone(),
+                &imported_predicate_functor_symbols
+            ),
+            imported_predicate_functor_detail_keys
+        );
+        let set_enumeration_theorem = set_enumeration_equality_theorem_ast(
+            source_id,
+            "SetEnumerationPayloadBoundary",
+            ["1", "2"],
+            "=",
+            ["1", "2"],
+        );
+        let set_enumeration_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+            "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            "type_elaboration.checker.checker.term.external.result_type_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(&set_enumeration_theorem, module.clone(), &symbols),
+            set_enumeration_detail_keys
+        );
+        let set_enumeration_output = source_set_enumeration_formula_output(
+            &set_enumeration_theorem,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact set-enumeration bridge should produce checker output");
+        let set_enumeration_payload =
+            extract_source_set_enumeration_formula(&set_enumeration_theorem)
+                .expect("exact set-enumeration bridge should extract source payload");
+        let expected_item_ranges = vec![
+            range(source_id, 42, 43),
+            range(source_id, 46, 47),
+            range(source_id, 54, 55),
+            range(source_id, 58, 59),
+        ];
+        let expected_set_ranges = vec![range(source_id, 40, 49), range(source_id, 52, 61)];
+        let expected_formula_range = range(source_id, 40, 61);
+        let expected_item_sites = surface_sites_for_kind_ranges(
+            &set_enumeration_theorem,
+            SurfaceNodeKind::NumeralTerm,
+            &expected_item_ranges,
+        );
+        let expected_set_sites = surface_sites_for_kind_ranges(
+            &set_enumeration_theorem,
+            SurfaceNodeKind::SetEnumeration,
+            &expected_set_ranges,
+        );
+        let expected_formula_sites = surface_sites_for_kind_ranges(
+            &set_enumeration_theorem,
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            &[expected_formula_range],
+        );
+        assert_eq!(
+            set_enumeration_payload
+                .left_items
+                .iter()
+                .chain(set_enumeration_payload.right_items.iter())
+                .map(|(site, _)| site.clone())
+                .collect::<Vec<_>>(),
+            expected_item_sites
+        );
+        assert_eq!(
+            set_enumeration_payload
+                .left_items
+                .iter()
+                .chain(set_enumeration_payload.right_items.iter())
+                .map(|(_, range)| *range)
+                .collect::<Vec<_>>(),
+            expected_item_ranges
+        );
+        assert_eq!(
+            vec![
+                set_enumeration_payload.left_site.clone(),
+                set_enumeration_payload.right_site.clone(),
+            ],
+            expected_set_sites
+        );
+        assert_eq!(
+            vec![
+                set_enumeration_payload.left_range,
+                set_enumeration_payload.right_range,
+            ],
+            expected_set_ranges
+        );
+        assert_eq!(
+            set_enumeration_payload.formula_site,
+            expected_formula_sites[0]
+        );
+        assert_eq!(
+            set_enumeration_payload.formula_range,
+            expected_formula_range
+        );
+        assert_eq!(set_enumeration_output.terms().len(), 6);
+        for (site, _) in set_enumeration_payload
+            .left_items
+            .iter()
+            .chain(set_enumeration_payload.right_items.iter())
+        {
+            let checked_numeral = set_enumeration_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term)
+                .find(|term| term.site == *site)
+                .expect("set-enumeration item numeral should be checked");
+            assert_eq!(checked_numeral.kind, TermKind::Numeral);
+            assert_eq!(checked_numeral.status, TermStatus::Partial);
+            assert_eq!(
+                set_enumeration_output
+                    .type_entries()
+                    .get(checked_numeral.type_entry)
+                    .expect("numeral term type entry should exist")
+                    .status,
+                TypeStatus::Unknown
+            );
+            assert!(checked_numeral.candidate_set.is_none());
+        }
+        for site in [
+            &set_enumeration_payload.left_site,
+            &set_enumeration_payload.right_site,
+        ] {
+            let checked_set = set_enumeration_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term)
+                .find(|term| term.site == *site)
+                .expect("set-enumeration term should be checked");
+            assert_eq!(checked_set.kind, TermKind::SetEnumeration);
+            assert_eq!(checked_set.status, TermStatus::Partial);
+            assert_eq!(
+                set_enumeration_output
+                    .type_entries()
+                    .get(checked_set.type_entry)
+                    .expect("set-enumeration term type entry should exist")
+                    .status,
+                TypeStatus::Unknown
+            );
+            assert!(checked_set.candidate_set.is_none());
+        }
+        assert_eq!(set_enumeration_output.formulas().len(), 1);
+        let (_, checked_set_formula) = set_enumeration_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("set-enumeration equality formula should be checked");
+        assert_eq!(
+            checked_set_formula.site,
+            set_enumeration_payload.formula_site
+        );
+        assert_eq!(checked_set_formula.kind, FormulaKind::Equality);
+        assert_eq!(checked_set_formula.status, FormulaStatus::Partial);
+        assert_eq!(
+            checked_set_formula.terms,
+            vec![
+                set_enumeration_payload.left_site.clone(),
+                set_enumeration_payload.right_site.clone(),
+            ]
+        );
+        assert!(checked_set_formula.candidate_set.is_none());
+        assert!(checked_set_formula.facts.is_empty());
+        let formula_connective_quantifier_theorem =
+            formula_connective_quantifier_theorem_ast(source_id, exact_formula_shell_spec());
+        let formula_shell_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
+            "type_elaboration.checker.checker.formula.external.quantifier_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &formula_connective_quantifier_theorem,
+                module.clone(),
+                &symbols
+            ),
+            formula_shell_detail_keys
+        );
+        let formula_shell_output = source_formula_connective_quantifier_output(
+            &formula_connective_quantifier_theorem,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact formula connective/quantifier bridge should produce checker output");
+        let formula_shell_payload = extract_source_formula_connective_quantifier(
+            &formula_connective_quantifier_theorem,
+            &module,
+            &symbols,
+        )
+        .expect("exact formula connective/quantifier bridge should extract source payload");
+        let expected_implication_range = range(source_id, 53, 114);
+        let expected_premise_constant_range = range(source_id, 53, 66);
+        let expected_quantified_range = range(source_id, 75, 114);
+        let expected_negation_range = range(source_id, 97, 114);
+        let expected_body_constant_range = range(source_id, 101, 114);
+        let expected_contradiction_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            &[
+                expected_premise_constant_range,
+                expected_body_constant_range,
+            ],
+        );
+        let expected_implication_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                connective: SurfaceFormulaConnective::Implies,
+                repeated: false,
+            }),
+            &[expected_implication_range],
+        );
+        let expected_quantified_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+            &[expected_quantified_range],
+        );
+        let expected_negation_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
+            &[expected_negation_range],
+        );
+        assert_eq!(
+            formula_shell_payload.premise_constant_site,
+            expected_contradiction_sites[0]
+        );
+        assert_eq!(
+            formula_shell_payload.premise_constant_range,
+            expected_premise_constant_range
+        );
+        assert_eq!(
+            formula_shell_payload.implication_site,
+            expected_implication_sites[0]
+        );
+        assert_eq!(
+            formula_shell_payload.implication_range,
+            expected_implication_range
+        );
+        assert_eq!(
+            formula_shell_payload.quantified_site,
+            expected_quantified_sites[0]
+        );
+        assert_eq!(
+            formula_shell_payload.quantified_range,
+            expected_quantified_range
+        );
+        assert_eq!(
+            formula_shell_payload.negation_site,
+            expected_negation_sites[0]
+        );
+        assert_eq!(
+            formula_shell_payload.negation_range,
+            expected_negation_range
+        );
+        assert_eq!(
+            formula_shell_payload.body_constant_site,
+            expected_contradiction_sites[1]
+        );
+        assert_eq!(
+            formula_shell_payload.body_constant_range,
+            expected_body_constant_range
+        );
+        assert_eq!(formula_shell_output.terms().len(), 0);
+        assert_eq!(formula_shell_output.formulas().len(), 5);
+        for (site, range) in [
+            (
+                &formula_shell_payload.premise_constant_site,
+                expected_premise_constant_range,
+            ),
+            (
+                &formula_shell_payload.body_constant_site,
+                expected_body_constant_range,
+            ),
+        ] {
+            let checked_constant = formula_shell_output
+                .formulas()
+                .iter()
+                .map(|(_, formula)| formula)
+                .find(|formula| formula.site == *site)
+                .expect("contradiction constant formula should be checked");
+            assert_eq!(checked_constant.kind, FormulaKind::Contradiction);
+            assert_eq!(checked_constant.context, BindingContextId::new(0));
+            assert_eq!(checked_constant.status, FormulaStatus::Partial);
+            assert!(checked_constant.terms.is_empty());
+            assert!(checked_constant.facts.is_empty());
+            assert_eq!(
+                checked_constant.deferred,
+                vec![FormulaDeferredReason::MissingFormulaPayload]
+            );
+            let diagnostic_ranges = formula_shell_output
+                .diagnostics()
+                .canonical_iter()
+                .filter_map(|(_, diagnostic)| {
+                    (diagnostic.message_key == "checker.formula.external.formula_payload"
+                        && diagnostic.source_range == range)
+                        .then_some(diagnostic.source_range)
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                diagnostic_ranges,
+                vec![range],
+                "missing formula payload diagnostic should be anchored to contradiction constant"
+            );
+        }
+        let checked_implication = formula_shell_output
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .find(|formula| formula.site == formula_shell_payload.implication_site)
+            .expect("implication shell formula should be checked");
+        assert_eq!(checked_implication.kind, FormulaKind::Implication);
+        assert_eq!(checked_implication.context, BindingContextId::new(0));
+        assert_eq!(checked_implication.status, FormulaStatus::Partial);
+        assert!(checked_implication.terms.is_empty());
+        assert!(checked_implication.facts.is_empty());
+        assert_eq!(
+            checked_implication.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        let checked_quantified = formula_shell_output
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .find(|formula| formula.site == formula_shell_payload.quantified_site)
+            .expect("quantified shell formula should be checked");
+        assert_eq!(checked_quantified.kind, FormulaKind::Quantified);
+        assert_eq!(checked_quantified.context, BindingContextId::new(0));
+        assert_eq!(checked_quantified.status, FormulaStatus::Partial);
+        assert!(checked_quantified.terms.is_empty());
+        assert!(checked_quantified.facts.is_empty());
+        assert_eq!(
+            checked_quantified.deferred,
+            vec![FormulaDeferredReason::MissingQuantifierPayload]
+        );
+        let checked_negation = formula_shell_output
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .find(|formula| formula.site == formula_shell_payload.negation_site)
+            .expect("negation shell formula should be checked");
+        assert_eq!(checked_negation.kind, FormulaKind::Negation);
+        assert_eq!(checked_negation.context, BindingContextId::new(0));
+        assert_eq!(checked_negation.status, FormulaStatus::Partial);
+        assert!(checked_negation.terms.is_empty());
+        assert!(checked_negation.facts.is_empty());
+        assert_eq!(
+            checked_negation.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        let imported_predicate_functor_output = source_imported_predicate_functor_formula_output(
+            &imported_predicate_functor_theorem,
+            imported_predicate_functor_symbols.module_id().clone(),
+            &imported_predicate_functor_symbols,
+        )
+        .expect("exact imported predicate/functor bridge should produce checker output");
+        let imported_predicate_functor_payload = extract_source_imported_predicate_functor_formula(
+            &imported_predicate_functor_theorem,
+            imported_predicate_functor_symbols.module_id(),
+            &imported_predicate_functor_symbols,
+        )
+        .expect("exact imported predicate/functor bridge should extract source payload");
+        assert_eq!(
+            imported_predicate_functor_payload
+                .predicate_symbol
+                .module()
+                .path()
+                .as_str(),
+            "parser.type_fixtures"
+        );
+        assert_eq!(
+            imported_predicate_functor_payload
+                .functor_symbol
+                .module()
+                .path()
+                .as_str(),
+            "parser.type_fixtures"
+        );
+        assert_eq!(imported_predicate_functor_output.terms().len(), 4);
+        let checked_left = imported_predicate_functor_output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == imported_predicate_functor_payload.left_site)
+            .expect("left numeral term should be checked");
+        assert_eq!(checked_left.kind, TermKind::Numeral);
+        assert_eq!(checked_left.status, TermStatus::Partial);
+        let checked_functor_left = imported_predicate_functor_output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == imported_predicate_functor_payload.functor_left_site)
+            .expect("functor left numeral term should be checked");
+        assert_eq!(checked_functor_left.kind, TermKind::Numeral);
+        assert_eq!(checked_functor_left.status, TermStatus::Partial);
+        let checked_functor_right = imported_predicate_functor_output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == imported_predicate_functor_payload.functor_right_site)
+            .expect("functor right numeral term should be checked");
+        assert_eq!(checked_functor_right.kind, TermKind::Numeral);
+        assert_eq!(checked_functor_right.status, TermStatus::Partial);
+        let checked_functor = imported_predicate_functor_output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == imported_predicate_functor_payload.functor_site)
+            .expect("infix functor application term should be checked");
+        assert_eq!(checked_functor.kind, TermKind::FunctorApplication);
+        assert_eq!(checked_functor.status, TermStatus::Partial);
+        assert_eq!(
+            checked_functor.reference,
+            Some(TermReference::Symbol(
+                imported_predicate_functor_payload.functor_symbol.clone()
+            ))
+        );
+        assert!(checked_functor.candidate_set.is_none());
+        assert_eq!(imported_predicate_functor_output.formulas().len(), 1);
+        let (_, checked_predicate_formula) = imported_predicate_functor_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("predicate application formula should be checked");
+        assert_eq!(
+            checked_predicate_formula.site,
+            imported_predicate_functor_payload.formula_site
+        );
+        assert_eq!(
+            checked_predicate_formula.kind,
+            FormulaKind::PredicateApplication
+        );
+        assert_eq!(checked_predicate_formula.status, FormulaStatus::Partial);
+        assert_eq!(
+            checked_predicate_formula.terms,
+            vec![
+                imported_predicate_functor_payload.left_site.clone(),
+                imported_predicate_functor_payload.functor_site.clone(),
+            ]
+        );
+        assert!(checked_predicate_formula.candidate_set.is_none());
+        assert!(checked_predicate_formula.facts.is_empty());
+
+        let imported_predicate_functor_gap_cases = [
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    predicate: "<=",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    functor: "**",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    left: "2",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    functor_left: "2",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    functor_right: "1",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &[],
+                exact_imported_predicate_functor_theorem_spec(),
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["other.module"],
+                exact_imported_predicate_functor_theorem_spec(),
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures", "parser.type_fixtures"],
+                exact_imported_predicate_functor_theorem_spec(),
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures", "other.module"],
+                exact_imported_predicate_functor_theorem_spec(),
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    status: Some("open"),
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            reserve_then_imported_predicate_functor_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+        ];
+        for gap_case in imported_predicate_functor_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_predicate_functor_symbols.module_id().clone(),
+                    &imported_predicate_functor_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for gap_symbols in [
+            source_local_predicate_and_imported_functor_env(symbols.module_id().clone()),
+            source_local_functor_and_imported_predicate_env(symbols.module_id().clone()),
+            imported_predicate_wrong_functor_kind_env(symbols.module_id().clone()),
+            imported_functor_wrong_predicate_kind_env(symbols.module_id().clone()),
+            ambiguous_imported_predicate_functor_env(symbols.module_id().clone(), "divides"),
+            ambiguous_imported_predicate_functor_env(symbols.module_id().clone(), "++"),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &imported_predicate_functor_theorem,
+                    gap_symbols.module_id().clone(),
+                    &gap_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let imported_attribute_assertion_symbols =
+            imported_empty_fixture_attribute_symbol_env(symbols.module_id().clone());
+        let imported_attribute_assertion_theorem = imported_attribute_assertion_theorem_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            "ImportedAttributeAssertionPayloadBoundary",
+            "1",
+            "empty",
+        );
+        let imported_attribute_assertion_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
+            "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+            "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_attribute_assertion_theorem,
+                imported_attribute_assertion_symbols.module_id().clone(),
+                &imported_attribute_assertion_symbols
+            ),
+            imported_attribute_assertion_detail_keys
+        );
+        let imported_attribute_assertion_output =
+            source_imported_attribute_assertion_formula_output(
+                &imported_attribute_assertion_theorem,
+                imported_attribute_assertion_symbols.module_id().clone(),
+                &imported_attribute_assertion_symbols,
+            )
+            .expect("exact imported attribute assertion bridge should produce checker output");
+        let imported_attribute_assertion_payload =
+            extract_source_imported_attribute_assertion_formula(
+                &imported_attribute_assertion_theorem,
+                imported_attribute_assertion_symbols.module_id(),
+                &imported_attribute_assertion_symbols,
+            )
+            .expect("exact imported attribute assertion bridge should extract source payload");
+        assert_eq!(
+            imported_attribute_assertion_payload
+                .attribute_symbol
+                .module()
+                .path()
+                .as_str(),
+            "parser.type_fixtures"
+        );
+        assert_eq!(imported_attribute_assertion_output.terms().len(), 1);
+        let (_, checked_attribute_subject) = imported_attribute_assertion_output
+            .terms()
+            .iter()
+            .next()
+            .expect("attribute assertion subject term should be checked");
+        assert_eq!(checked_attribute_subject.kind, TermKind::Numeral);
+        assert_eq!(checked_attribute_subject.status, TermStatus::Partial);
+        assert_eq!(
+            checked_attribute_subject.site,
+            imported_attribute_assertion_payload.subject_site
+        );
+        assert_eq!(checked_attribute_subject.context, BindingContextId::new(0));
+        assert!(checked_attribute_subject.candidate_set.is_none());
+        assert_eq!(imported_attribute_assertion_output.formulas().len(), 1);
+        let (_, checked_attribute_formula) = imported_attribute_assertion_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("attribute assertion formula should be checked");
+        assert_eq!(
+            checked_attribute_formula.site,
+            imported_attribute_assertion_payload.formula_site
+        );
+        assert_eq!(
+            checked_attribute_formula.kind,
+            FormulaKind::AttributeAssertion
+        );
+        assert_eq!(checked_attribute_formula.status, FormulaStatus::Partial);
+        assert_eq!(checked_attribute_formula.context, BindingContextId::new(0));
+        assert_eq!(
+            checked_attribute_formula.terms,
+            vec![imported_attribute_assertion_payload.subject_site.clone()]
+        );
+        assert!(checked_attribute_formula.facts.is_empty());
+        assert_eq!(
+            checked_attribute_formula.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        let imported_attribute_assertion_gap_cases = [
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "OtherPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "2",
+                "empty",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "1",
+                "TypeCaseAttr",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &[],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["other.module"],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures", "parser.type_fixtures"],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            reserve_then_imported_attribute_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+        ];
+        for gap_case in imported_attribute_assertion_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_attribute_assertion_symbols.module_id().clone(),
+                    &imported_attribute_assertion_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for gap_symbols in [
+            source_local_symbol_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+                "empty",
+                SymbolKind::Attribute,
+            ),
+            local_and_imported_attribute_symbol_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+                "empty",
+            ),
+            imported_empty_fixture_wrong_kind_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+            ),
+            ambiguous_imported_attribute_assertion_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &imported_attribute_assertion_theorem,
+                    gap_symbols.module_id().clone(),
+                    &gap_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let imported_non_empty_attribute_assertion_symbols =
+            imported_empty_fixture_attribute_symbol_env(symbols.module_id().clone());
+        let imported_non_empty_attribute_assertion_theorem =
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            );
+        let imported_non_empty_attribute_assertion_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
+            "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+            "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_non_empty_attribute_assertion_theorem,
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                &imported_non_empty_attribute_assertion_symbols
+            ),
+            imported_non_empty_attribute_assertion_detail_keys
+        );
+        let imported_non_empty_attribute_assertion_output =
+            source_imported_non_empty_attribute_assertion_formula_output(
+                &imported_non_empty_attribute_assertion_theorem,
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                &imported_non_empty_attribute_assertion_symbols,
+            )
+            .expect(
+                "exact imported non-empty attribute assertion bridge should produce checker output",
+            );
+        let imported_non_empty_attribute_assertion_payload =
+            extract_source_imported_non_empty_attribute_assertion_formula(
+                &imported_non_empty_attribute_assertion_theorem,
+                imported_non_empty_attribute_assertion_symbols.module_id(),
+                &imported_non_empty_attribute_assertion_symbols,
+            )
+            .expect("exact imported non-empty attribute assertion bridge should extract payload");
+        assert_eq!(
+            imported_non_empty_attribute_assertion_payload
+                .attribute_symbol
+                .module()
+                .path()
+                .as_str(),
+            "parser.type_fixtures"
+        );
+        assert_eq!(
+            imported_non_empty_attribute_assertion_output.terms().len(),
+            1
+        );
+        let (_, checked_non_empty_subject) = imported_non_empty_attribute_assertion_output
+            .terms()
+            .iter()
+            .next()
+            .expect("non-empty attribute assertion subject term should be checked");
+        assert_eq!(checked_non_empty_subject.kind, TermKind::Numeral);
+        assert_eq!(checked_non_empty_subject.status, TermStatus::Partial);
+        assert_eq!(
+            checked_non_empty_subject.site,
+            imported_non_empty_attribute_assertion_payload.subject_site
+        );
+        assert_eq!(checked_non_empty_subject.context, BindingContextId::new(0));
+        assert!(checked_non_empty_subject.candidate_set.is_none());
+        assert_eq!(
+            imported_non_empty_attribute_assertion_output
+                .formulas()
+                .len(),
+            1
+        );
+        let (_, checked_non_empty_formula) = imported_non_empty_attribute_assertion_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("non-empty attribute assertion formula should be checked");
+        assert_eq!(
+            checked_non_empty_formula.site,
+            imported_non_empty_attribute_assertion_payload.formula_site
+        );
+        assert_eq!(
+            checked_non_empty_formula.kind,
+            FormulaKind::AttributeAssertion
+        );
+        assert_eq!(checked_non_empty_formula.status, FormulaStatus::Partial);
+        assert_eq!(checked_non_empty_formula.context, BindingContextId::new(0));
+        assert_eq!(
+            checked_non_empty_formula.terms,
+            vec![
+                imported_non_empty_attribute_assertion_payload
+                    .subject_site
+                    .clone()
+            ]
+        );
+        assert!(checked_non_empty_formula.facts.is_empty());
+        assert_eq!(
+            checked_non_empty_formula.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        let imported_non_empty_attribute_assertion_gap_cases = [
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "OtherPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "2",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "TypeCaseAttr",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &[],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["other.module"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures", "parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            reserve_then_imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+        ];
+        for gap_case in imported_non_empty_attribute_assertion_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_non_empty_attribute_assertion_symbols
+                        .module_id()
+                        .clone(),
+                    &imported_non_empty_attribute_assertion_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for gap_symbols in [
+            source_local_symbol_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                "empty",
+                SymbolKind::Attribute,
+            ),
+            local_and_imported_attribute_symbol_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                "empty",
+            ),
+            imported_empty_fixture_wrong_kind_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+            ),
+            ambiguous_imported_attribute_assertion_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &imported_non_empty_attribute_assertion_theorem,
+                    gap_symbols.module_id().clone(),
+                    &gap_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let set_enumeration_gap_cases = [
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "OtherPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["1", "2"],
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "SetEnumerationPayloadBoundary",
+                ["1", "2"],
+                "<>",
+                ["1", "2"],
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "SetEnumerationPayloadBoundary",
+                ["2", "1"],
+                "=",
+                ["1", "2"],
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "SetEnumerationPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["1", "1"],
+            ),
+            set_enumeration_equality_theorem_ast_with_status(
+                source_id,
+                "open",
+                "SetEnumerationPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["1", "2"],
+            ),
+            reserve_then_set_enumeration_equality_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+            import_then_set_enumeration_equality_theorem_ast(source_id, "parser.type_fixtures"),
+            double_set_enumeration_equality_theorem_ast(source_id),
+            recovered_set_enumeration_equality_theorem_ast(source_id),
+        ];
+        for gap_case in set_enumeration_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let formula_shell_gap_cases = [
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    connective: SurfaceFormulaConnective::Or,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    quantifier: SurfaceQuantifierKind::Existential,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    binder_type: ReserveTypeShape::Builtin("object"),
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    negated: false,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    status: Some("open"),
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    recovered_label: true,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            reserve_then_formula_connective_quantifier_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+            double_formula_connective_quantifier_theorem_ast(source_id),
+            builtin_binary_theorem_ast(
+                source_id,
+                "FormulaConnectiveQuantifierPayloadBoundary",
+                "1",
+                "in",
+                "1",
+            ),
+            builtin_type_assertion_theorem_ast(
+                source_id,
+                "FormulaConnectiveQuantifierPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+            ),
+            attribute_assertion_theorem_ast(
+                source_id,
+                "FormulaConnectiveQuantifierPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "FormulaConnectiveQuantifierPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["1", "2"],
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    label: "FormulaConnectiveQuantifierPayloadBoundary",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            proof_block_formula_shell_label_ast(source_id),
+        ];
+        for gap_case in formula_shell_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let non_connective_same_label = builtin_equality_theorem_ast(
+            source_id,
+            "FormulaConnectiveQuantifierPayloadBoundary",
+            "1",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &non_connective_same_label,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let non_set_enumeration_equality =
+            builtin_equality_theorem_ast(source_id, "SetEnumerationPayloadBoundary", "1", "1");
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &non_set_enumeration_equality,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_label_theorem =
+            builtin_equality_theorem_ast(source_id, "OtherPayloadBoundary", "1", "1");
+        assert_eq!(
+            source_type_elaboration_detail_keys(&other_label_theorem, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let formula_statement_gap_cases = vec![
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact_formula_statement_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    constant: SurfaceFormulaConstant::Contradiction,
+                    ..exact_formula_statement_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    status: Some("open"),
+                    ..exact_formula_statement_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    recovered_label: true,
+                    ..exact_formula_statement_spec()
+                },
+            ),
+            reserve_then_formula_statement_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+            double_formula_statement_theorem_ast(source_id),
+            proof_block_formula_theorem_ast(source_id, "FormulaPayloadBoundary"),
+        ];
+        for gap_case in formula_statement_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let contradiction_formula_gap_cases = vec![
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact_contradiction_formula_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    constant: SurfaceFormulaConstant::Thesis,
+                    ..exact_contradiction_formula_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    status: Some("open"),
+                    ..exact_contradiction_formula_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    recovered_label: true,
+                    ..exact_contradiction_formula_spec()
+                },
+            ),
+            reserve_then_exact_formula_constant_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                exact_contradiction_formula_spec(),
+            ),
+            double_exact_formula_constant_theorem_ast(
+                source_id,
+                exact_contradiction_formula_spec(),
+            ),
+        ];
+        for gap_case in contradiction_formula_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let other_literal_theorem =
+            builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "2");
+        assert_eq!(
+            source_type_elaboration_detail_keys(&other_literal_theorem, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_inequality_label_theorem =
+            builtin_binary_theorem_ast(source_id, "OtherPayloadBoundary", "1", "<>", "2");
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_inequality_label_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_inequality_literal_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinInequalityPayloadBoundary",
+            "1",
+            "<>",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_inequality_literal_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_operator_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinInequalityPayloadBoundary",
+            "1",
+            "=",
+            "2",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&other_operator_theorem, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_membership_label_theorem =
+            builtin_binary_theorem_ast(source_id, "OtherPayloadBoundary", "1", "in", "1");
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_membership_label_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_membership_literal_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinMembershipPayloadBoundary",
+            "1",
+            "in",
+            "2",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_membership_literal_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_membership_operator_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinMembershipPayloadBoundary",
+            "1",
+            "=",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_membership_operator_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let mixed_reserve_and_membership_theorem = reserve_then_builtin_binary_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            "BuiltinMembershipPayloadBoundary",
+            "1",
+            "in",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mixed_reserve_and_membership_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        for config in SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS {
+            let status_prefixed_builtin_binary_theorem = builtin_binary_theorem_ast_with_status(
+                source_id,
+                "open",
+                config.label,
+                config.left,
+                config.operator,
+                config.right,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &status_prefixed_builtin_binary_theorem,
+                    module.clone(),
+                    &symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()],
+                "status-prefixed builtin binary theorem should not satisfy exact token guard for {}",
+                config.label
+            );
+        }
+        let other_type_assertion_label_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "OtherPayloadBoundary",
+            "1",
+            ReserveTypeShape::Builtin("set"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_type_assertion_label_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let status_prefixed_type_assertion_theorem = builtin_type_assertion_theorem_ast_with_status(
+            source_id,
+            "open",
+            "BuiltinTypeAssertionPayloadBoundary",
+            "1",
+            ReserveTypeShape::Builtin("set"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &status_prefixed_type_assertion_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_type_assertion_literal_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "BuiltinTypeAssertionPayloadBoundary",
+            "2",
+            ReserveTypeShape::Builtin("set"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_type_assertion_literal_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_type_assertion_type_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "BuiltinTypeAssertionPayloadBoundary",
+            "1",
+            ReserveTypeShape::Builtin("object"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_type_assertion_type_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let attributed_type_assertion_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "BuiltinTypeAssertionPayloadBoundary",
+            "1",
+            ReserveTypeShape::AttributedSet,
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_type_assertion_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let mixed_reserve_and_type_assertion_theorem =
+            reserve_then_builtin_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+            );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mixed_reserve_and_type_assertion_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let mixed_reserve_and_inequality_theorem = reserve_then_builtin_binary_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            "BuiltinInequalityPayloadBoundary",
+            "1",
+            "<>",
+            "2",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mixed_reserve_and_inequality_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let mixed_reserve_and_theorem = reserve_then_builtin_equality_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            "TermFormulaPayloadBoundary",
+            "1",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mixed_reserve_and_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let mixed = reserve_ast(
+            source_id,
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                reserve_item(vec!["y"], ReserveTypeShape::AttributedSet),
+            ],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&mixed, module, &symbols),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let attributed = reserve_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&attributed, symbols.module_id().clone(), &symbols),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let imported_symbols = imported_attribute_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed,
+                imported_symbols.module_id().clone(),
+                &imported_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let imported_fixture_attribute_symbols =
+            imported_fixture_attribute_symbol_env(symbols.module_id().clone());
+        let imported_fixture_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["a"],
+                ReserveTypeShape::AttributedSetWithNamedAttribute("TypeCaseAttr"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_attribute,
+                imported_fixture_attribute_symbols.module_id().clone(),
+                &imported_fixture_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+        let imported_fixture_negative_type_case_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["a"],
+                ReserveTypeShape::AttributedSetWithNegativeNamedAttribute("TypeCaseAttr"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_negative_type_case_attribute,
+                imported_fixture_attribute_symbols.module_id().clone(),
+                &imported_fixture_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_attribute_object = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedObjectWithNamedAttribute("TypeCaseAttr"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_attribute_object,
+                imported_fixture_attribute_symbols.module_id().clone(),
+                &imported_fixture_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_attribute_local_structure_symbols =
+            local_structure_and_imported_fixture_attribute_symbol_env(
+                symbols.module_id().clone(),
+                "Struct",
+                "TypeCaseAttr",
+            );
+        let imported_fixture_attribute_local_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbolWithNamedAttribute(
+                    "TypeCaseAttr",
+                    "Struct",
+                ),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_attribute_local_structure,
+                imported_fixture_attribute_local_structure_symbols
+                    .module_id()
+                    .clone(),
+                &imported_fixture_attribute_local_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let imported_fixture_empty_attribute_symbols = imported_parser_fixture_symbol_env(
+            symbols.module_id().clone(),
+            "empty",
+            SymbolKind::Attribute,
+        );
+        let imported_fixture_negative_empty_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_negative_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+        let imported_fixture_positive_empty_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedSetWithNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_positive_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+        let imported_fixture_missing_import_empty_attribute = imported_reserve_ast(
+            source_id,
+            &[],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedSetWithNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_missing_import_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_wrong_import_empty_attribute = imported_reserve_ast(
+            source_id,
+            &["other.module"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedSetWithNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_wrong_import_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_duplicate_import_empty_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures", "parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedSetWithNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_duplicate_import_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_extra_definition_empty_attribute =
+            imported_reserve_ast_with_extra_definition(
+                source_id,
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::AttributedSetWithNamedAttribute("empty"),
+                )],
+            );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_extra_definition_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_extra_recovery_empty_attribute =
+            imported_reserve_ast_with_extra_recovery(
+                source_id,
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::AttributedSetWithNamedAttribute("empty"),
+                )],
+            );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_extra_recovery_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_mixed_polarity_empty_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedSetWithMixedPolarityNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_mixed_polarity_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_positive_empty_object_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedObjectWithNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_positive_empty_object_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_empty_object_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedObject)],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_empty_object_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+        let imported_fixture_duplicate_empty_object_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedObjectWithDuplicateNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_duplicate_empty_object_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_duplicate_empty_set_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedSetWithDuplicateNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_duplicate_empty_set_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_argumented_empty_set_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedSetWithAttributeArgs,
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_argumented_empty_set_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_multiple_name_empty_set_attribute = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![reserve_item(
+                vec!["x", "y"],
+                ReserveTypeShape::AttributedSetWithNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_multiple_name_empty_set_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_exact_mixed_empty_set = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                reserve_item(vec!["y"], ReserveTypeShape::AttributedSet),
+            ],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_exact_mixed_empty_set,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+        let imported_fixture_reordered_mixed_empty_set = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![
+                reserve_item(vec!["y"], ReserveTypeShape::AttributedSet),
+                reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+            ],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_reordered_mixed_empty_set,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_extra_mixed_empty_set = imported_reserve_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                reserve_item(vec!["y"], ReserveTypeShape::AttributedSet),
+                reserve_item(vec!["z"], ReserveTypeShape::Builtin("set")),
+            ],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_extra_mixed_empty_set,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_empty_local_structure_symbols =
+            local_structure_and_imported_fixture_attribute_symbol_env(
+                symbols.module_id().clone(),
+                "Struct",
+                "empty",
+            );
+        let imported_fixture_empty_local_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbol("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_empty_local_structure,
+                imported_fixture_empty_local_structure_symbols
+                    .module_id()
+                    .clone(),
+                &imported_fixture_empty_local_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let shadowed_imported_attribute_symbols =
+            local_and_imported_attribute_symbol_env(symbols.module_id().clone(), "TypeCaseAttr");
+        let resolved_shadowed_attribute = resolve_visible_attribute(
+            &shadowed_imported_attribute_symbols,
+            shadowed_imported_attribute_symbols.module_id(),
+            "TypeCaseAttr",
+        )
+        .expect("a local attribute should shadow an imported attribute of the same spelling");
+        assert_eq!(
+            resolved_shadowed_attribute.module(),
+            shadowed_imported_attribute_symbols.module_id()
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_attribute,
+                shadowed_imported_attribute_symbols.module_id().clone(),
+                &shadowed_imported_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let local_mode = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("Mode"),
+            )],
+        );
+        let mode_symbols = source_mode_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &local_mode,
+                mode_symbols.module_id().clone(),
+                &mode_symbols
+            ),
+            vec![
+                "type_elaboration.checker.checker.type.external.mode_expansion_payload".to_owned(),
+                "type_elaboration.checker.checker.type.recovery".to_owned(),
+            ]
+        );
+
+        let local_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+            )],
+        );
+        let structure_symbols = source_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &local_structure,
+                structure_symbols.module_id().clone(),
+                &structure_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let imported_mode_symbols = imported_mode_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &local_mode,
+                imported_mode_symbols.module_id().clone(),
+                &imported_mode_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let shadowed_imported_mode_symbols =
+            local_and_imported_mode_symbol_env(symbols.module_id().clone(), "TypeCaseMode");
+        let shadowed_imported_mode = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("TypeCaseMode"),
+            )],
+        );
+        let resolved_shadowed_head = resolve_visible_type_head(
+            &shadowed_imported_mode_symbols,
+            shadowed_imported_mode_symbols.module_id(),
+            "TypeCaseMode",
+        )
+        .expect("a local mode should shadow an imported mode of the same spelling");
+        assert_eq!(
+            resolved_shadowed_head.module(),
+            shadowed_imported_mode_symbols.module_id()
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &shadowed_imported_mode,
+                shadowed_imported_mode_symbols.module_id().clone(),
+                &shadowed_imported_mode_symbols
+            ),
+            vec![
+                "type_elaboration.checker.checker.type.external.mode_expansion_payload".to_owned(),
+                "type_elaboration.checker.checker.type.recovery".to_owned(),
+            ]
+        );
+
+        let imported_structure_symbols = imported_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &local_structure,
+                imported_structure_symbols.module_id().clone(),
+                &imported_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let imported_fixture_structure_symbols =
+            imported_fixture_structure_symbol_env(symbols.module_id().clone());
+        let imported_fixture_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("R"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_structure,
+                imported_fixture_structure_symbols.module_id().clone(),
+                &imported_fixture_structure_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let shadowed_imported_structure_symbols =
+            local_and_imported_structure_symbol_env(symbols.module_id().clone(), "R");
+        let resolved_shadowed_structure_head = resolve_visible_type_head(
+            &shadowed_imported_structure_symbols,
+            shadowed_imported_structure_symbols.module_id(),
+            "R",
+        )
+        .expect("a local structure should shadow an imported structure of the same spelling");
+        assert_eq!(
+            resolved_shadowed_structure_head.module(),
+            shadowed_imported_structure_symbols.module_id()
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_structure,
+                shadowed_imported_structure_symbols.module_id().clone(),
+                &shadowed_imported_structure_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let imported_fixture_type_case_struct_symbols = imported_parser_fixture_symbol_env(
+            symbols.module_id().clone(),
+            "TypeCaseStruct",
+            SymbolKind::Structure,
+        );
+        let imported_fixture_type_case_struct = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("TypeCaseStruct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_type_case_struct,
+                imported_fixture_type_case_struct_symbols
+                    .module_id()
+                    .clone(),
+                &imported_fixture_type_case_struct_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let ambiguous_mode_symbols = ambiguous_mode_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &local_mode,
+                ambiguous_mode_symbols.module_id().clone(),
+                &ambiguous_mode_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let ambiguous_structure_symbols =
+            ambiguous_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &local_structure,
+                ambiguous_structure_symbols.module_id().clone(),
+                &ambiguous_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let mode_with_args = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbolWithArgs("Mode"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mode_with_args,
+                mode_symbols.module_id().clone(),
+                &mode_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let structure_with_args = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbolWithArgs("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &structure_with_args,
+                structure_symbols.module_id().clone(),
+                &structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let mode_attribute_symbols = source_mode_attribute_symbol_env(symbols.module_id().clone());
+        let attributed_mode = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbol("Mode"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_mode,
+                mode_attribute_symbols.module_id().clone(),
+                &mode_attribute_symbols
+            ),
+            vec![
+                "type_elaboration.checker.checker.type.external.mode_expansion_payload".to_owned(),
+                "type_elaboration.checker.checker.type.recovery".to_owned(),
+            ]
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_mode,
+                mode_symbols.module_id().clone(),
+                &mode_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let imported_attribute_mode_symbols =
+            imported_attribute_mode_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_mode,
+                imported_attribute_mode_symbols.module_id().clone(),
+                &imported_attribute_mode_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let structure_attribute_symbols =
+            source_structure_attribute_symbol_env(symbols.module_id().clone());
+        let attributed_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbol("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure,
+                structure_attribute_symbols.module_id().clone(),
+                &structure_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure,
+                structure_symbols.module_id().clone(),
+                &structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let imported_attribute_structure_symbols =
+            imported_attribute_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure,
+                imported_attribute_structure_symbols.module_id().clone(),
+                &imported_attribute_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let ambiguous_attribute_structure_symbols =
+            ambiguous_attribute_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure,
+                ambiguous_attribute_structure_symbols.module_id().clone(),
+                &ambiguous_attribute_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let attributed_structure_with_attribute_args = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbolWithAttributeArgs("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure_with_attribute_args,
+                structure_attribute_symbols.module_id().clone(),
+                &structure_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let attributed_mode_with_attribute_args = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbolWithAttributeArgs("Mode"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_mode_with_attribute_args,
+                mode_attribute_symbols.module_id().clone(),
+                &mode_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let qualified_attribute_mode = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedAttributeQualifiedSymbol("Mode"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &qualified_attribute_mode,
+                mode_attribute_symbols.module_id().clone(),
+                &mode_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let qualified_attribute_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedAttributeQualifiedSymbol("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &qualified_attribute_structure,
+                structure_attribute_symbols.module_id().clone(),
+                &structure_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+    }
+
+    #[test]
+    fn source_four_edge_local_mode_reserved_variable_equality_consumes_five_expansions() {
+        let source_id = source_id(166);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("four_edge_local_mode_reserved_variable_equality"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseFourEdgeModeEquality", SymbolKind::Mode),
+                ("InnerFourEdgeModeEquality", SymbolKind::Mode),
+                ("MiddleFourEdgeModeEquality", SymbolKind::Mode),
+                ("OuterFourEdgeModeEquality", SymbolKind::Mode),
+                ("TooDeepFourEdgeModeEquality", SymbolKind::Mode),
+                ("ExtraFourEdgeModeEquality", SymbolKind::Mode),
+            ],
+        );
+        let theorem = IdentifierBinaryTheoremSpec {
+            status: None,
+            label: "FourEdgeLocalModeReservedVariableEqualityPayloadBoundary",
+            left: "z",
+            operator: "=",
+            right: "z",
+            recovered_label: false,
+        };
+        let exact_modes = || {
+            vec![
+                mode_definition_with_label(
+                    "BaseFourEdgeModeEquality",
+                    "BaseFourEdgeModeEqualityDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition_with_label(
+                    "InnerFourEdgeModeEquality",
+                    "InnerFourEdgeModeEqualityDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeEquality"),
+                ),
+                mode_definition_with_label(
+                    "MiddleFourEdgeModeEquality",
+                    "MiddleFourEdgeModeEqualityDef",
+                    ReserveTypeShape::QualifiedSymbol("InnerFourEdgeModeEquality"),
+                ),
+                mode_definition_with_label(
+                    "OuterFourEdgeModeEquality",
+                    "OuterFourEdgeModeEqualityDef",
+                    ReserveTypeShape::QualifiedSymbol("MiddleFourEdgeModeEquality"),
+                ),
+                mode_definition_with_label(
+                    "TooDeepFourEdgeModeEquality",
+                    "TooDeepFourEdgeModeEqualityDef",
+                    ReserveTypeShape::QualifiedSymbol("OuterFourEdgeModeEquality"),
+                ),
+            ]
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("TooDeepFourEdgeModeEquality"),
+            )]
+        };
+        let exact = mode_then_reserve_identifier_binary_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserve(),
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_four_edge_local_mode_reserved_variable_equality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact four-edge local-mode reserved-variable equality should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 5);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(payload.reserve.bridge.bindings()[0].spelling, "z");
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_spelling,
+            "TooDeepFourEdgeModeEquality"
+        );
+        assert_eq!(payload.left_lookup_ordinal, 1);
+        assert_eq!(payload.right_lookup_ordinal, 2);
+
+        let output = source_four_edge_local_mode_reserved_variable_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact four-edge local-mode equality should reach TermFormulaChecker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("four-edge local-mode equality invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        for input in [
+            &output.left_result_input,
+            &output.right_result_input,
+            output
+                .left_expected_input
+                .as_ref()
+                .expect("left expected input should exist"),
+            output
+                .right_expected_input
+                .as_ref()
+                .expect("right expected input should exist"),
+        ] {
+            assert_eq!(input.spelling, "TooDeepFourEdgeModeEquality");
+            assert!(matches!(input.head, TypeHeadInput::Symbol(_)));
+            assert_eq!(
+                input.source_range,
+                payload.reserve.bridge.bindings()[0].type_range
+            );
+        }
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseFourEdgeModeEquality")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("base mode terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("one normalized terminal type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+        assert_ne!(
+            payload.reserve.bridge.bindings()[0].type_range,
+            terminal.source_range
+        );
+        assert_eq!(output.term_formula.terms().len(), 2);
+        for (_, term) in output.term_formula.terms().iter() {
+            assert_eq!(term.kind, TermKind::Variable);
+            assert_eq!(
+                term.reference,
+                Some(TermReference::Binding(BindingId::new(0)))
+            );
+            assert_eq!(term.status, TermStatus::Inferred);
+        }
+        let (_, formula) = output
+            .term_formula
+            .formulas()
+            .iter()
+            .next()
+            .expect("equality formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Equality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 2);
+        assert_eq!(formula.expected_types[0].source_range, payload.left_range);
+        assert_eq!(formula.expected_types[1].source_range, payload.right_range);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
+
+        let invalid_key = || {
+            vec![
+                TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned(),
+            ]
+        };
+        let mut missing_left_expected =
+            source_four_edge_local_mode_reserved_variable_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a missing-left-expected corruption target");
+        missing_left_expected.left_expected_input = None;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&missing_left_expected),
+            invalid_key()
+        );
+        let mut missing_right_expected =
+            source_four_edge_local_mode_reserved_variable_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a missing-right-expected corruption target");
+        missing_right_expected.right_expected_input = None;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&missing_right_expected),
+            invalid_key()
+        );
+
+        for removed in [
+            "BaseFourEdgeModeEquality",
+            "InnerFourEdgeModeEquality",
+            "MiddleFourEdgeModeEquality",
+            "OuterFourEdgeModeEquality",
+            "TooDeepFourEdgeModeEquality",
+        ] {
+            let mut invalid = source_four_edge_local_mode_reserved_variable_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a five-expansion corruption target");
+            invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+            assert_eq!(
+                source_reserved_variable_formula_output_detail_keys(&invalid),
+                vec![
+                    TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY
+                        .to_owned()
+                ]
+            );
+        }
+
+        let assert_extraction_gap = |modes| {
+            let near_miss = mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                modes,
+                reserve(),
+                theorem,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        };
+
+        for index in 0..5 {
+            let mut missing = exact_modes();
+            missing.remove(index);
+            assert_extraction_gap(missing);
+
+            let mut wrong_label = exact_modes();
+            wrong_label[index].label = Some("OtherDef");
+            assert_extraction_gap(wrong_label);
+
+            let mut recovered = exact_modes();
+            recovered[index].recovered = true;
+            assert_extraction_gap(recovered);
+
+            let mut contextual = exact_modes();
+            contextual[index].local_context = true;
+            assert_extraction_gap(contextual);
+
+            let mut parameterized = exact_modes();
+            parameterized[index].parameterized_pattern = true;
+            assert_extraction_gap(parameterized);
+        }
+
+        for (index, radix) in [
+            "BaseFourEdgeModeEquality",
+            "InnerFourEdgeModeEquality",
+            "MiddleFourEdgeModeEquality",
+            "OuterFourEdgeModeEquality",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let index = index + 1;
+            let mut argument_bearing = exact_modes();
+            argument_bearing[index].rhs_shape = ReserveTypeShape::QualifiedSymbolWithArgs(radix);
+            assert_extraction_gap(argument_bearing);
+
+            let mut wrong_radix = exact_modes();
+            wrong_radix[index].rhs_shape =
+                ReserveTypeShape::QualifiedSymbol("ExtraFourEdgeModeEquality");
+            assert_extraction_gap(wrong_radix);
+        }
+
+        let mut duplicate = exact_modes();
+        duplicate.push(duplicate[0]);
+        assert_extraction_gap(duplicate);
+
+        let mut attributed_terminal = exact_modes();
+        attributed_terminal[0].rhs_shape = ReserveTypeShape::AttributedSet;
+        assert_extraction_gap(attributed_terminal);
+
+        let mut object_terminal = exact_modes();
+        object_terminal[0].rhs_shape = ReserveTypeShape::Builtin("object");
+        assert_extraction_gap(object_terminal);
+
+        let mut forward_order = exact_modes();
+        forward_order.reverse();
+        assert_extraction_gap(forward_order);
+
+        let mut direct_outermost_radix = exact_modes();
+        direct_outermost_radix[4].rhs_shape = ReserveTypeShape::Builtin("set");
+        assert_extraction_gap(direct_outermost_radix);
+
+        let mut one_edge_outermost_radix = exact_modes();
+        one_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeEquality");
+        assert_extraction_gap(one_edge_outermost_radix);
+
+        let mut two_edge_outermost_radix = exact_modes();
+        two_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("InnerFourEdgeModeEquality");
+        assert_extraction_gap(two_edge_outermost_radix);
+
+        let mut three_edge_outermost_radix = exact_modes();
+        three_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("MiddleFourEdgeModeEquality");
+        assert_extraction_gap(three_edge_outermost_radix);
+
+        let mut cyclic = exact_modes();
+        cyclic[0].rhs_shape = ReserveTypeShape::QualifiedSymbol("TooDeepFourEdgeModeEquality");
+        assert_extraction_gap(cyclic);
+
+        assert_extraction_gap(vec![
+            exact_modes()[0],
+            mode_definition_with_label(
+                "ExtraFourEdgeModeEquality",
+                "ExtraFourEdgeModeEqualityDef",
+                ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeEquality"),
+            ),
+            mode_definition_with_label(
+                "InnerFourEdgeModeEquality",
+                "InnerFourEdgeModeEqualityDef",
+                ReserveTypeShape::QualifiedSymbol("ExtraFourEdgeModeEquality"),
+            ),
+            exact_modes()[2],
+            exact_modes()[3],
+            exact_modes()[4],
+        ]);
+
+        for near_miss in [
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("TooDeepFourEdgeModeEquality"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    left: "y",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    right: "y",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    operator: "<>",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: Some("open"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    recovered_label: true,
+                    ..theorem
+                },
+            ),
+            modes_then_empty_definition_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem,
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+
+        let unresolved_symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module, &unresolved_symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+    }
+    #[test]
+    fn active_four_edge_local_mode_reserved_variable_equality_fixture_consumes_five_expansions() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_four_edge_local_mode_reserved_variable_equality_001"
+            })
+            .expect("Task 166 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 166 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 166 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_four_edge_local_mode_reserved_variable_equality_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 166 real AST should reach the four-edge local-mode equality seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 166 real AST should preserve every checked payload invariant");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 5);
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        assert!(matches!(
+            output.left_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert!(matches!(
+            output.right_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseFourEdgeModeEquality")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("Task 166 base terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("Task 166 normalized set type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+    }
