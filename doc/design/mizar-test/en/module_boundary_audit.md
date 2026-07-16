@@ -53,6 +53,20 @@ the sorted 272-test list remained
 Module privacy, qualified test names, public API, active-runner counts,
 diagnostics, payloads, ordering, and fail-closed behavior are unchanged.
 
+## Task 250 Move Result
+
+Task 250 root-included `src/runner/tests/support.rs` without a wrapper module.
+The 6,546-line fragment contains the 17 import groups and the contiguous shared
+environment, fixture-specification, AST-builder, corruption, range, and id
+support: 201 non-test functions and 24 type/constant items. Its exact moved
+hash is
+`b880b4605345b1156f125292134d62aff91a32799b5f5834fe7d2a1e5de068a8`.
+The retained 87,572 lines remained byte-identical with hash
+`197f2d6dc31da2130674954667383bb9aec502a613f3e5b1c33bf0299ea2959b`;
+the resulting 87,574-line `tests.rs` hash is
+`7d85a8ecd4dffcb0475afc53693e581af661ccbb01b44eab974e030abb046a66`.
+All 272 tests remain in `runner::tests` with the same sorted-name hash.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -123,7 +137,7 @@ when it would change the discovered test list.
 |---|---|
 | 248 | Add this paired audit, update the paired crate plan, and establish the preservation matrix. No source move. |
 | 249 | Complete: mechanically moved the complete inline private `mod tests` body to `src/runner/tests.rs`. |
-| 250 | Move nonempty shared test support into a root-included support fragment. |
+| 250 | Complete: moved nonempty shared test support into a root-included support fragment. |
 | 251 | Move the nonempty parse-only private test family into a root-included fragment. |
 | 252 | Move the baseline type-elaboration source-extraction and real handoff tests. |
 | 253 | Move reserved-variable and binary-formula bridge tests. |
