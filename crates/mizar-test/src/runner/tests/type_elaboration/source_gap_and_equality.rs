@@ -656,6 +656,8 @@
         let expected_implication_range = range(source_id, 53, 114);
         let expected_premise_constant_range = range(source_id, 53, 66);
         let expected_quantified_range = range(source_id, 75, 114);
+        let expected_binder_segment_range = range(source_id, 79, 90);
+        let expected_binder_type_range = range(source_id, 87, 90);
         let expected_negation_range = range(source_id, 97, 114);
         let expected_body_constant_range = range(source_id, 101, 114);
         let expected_contradiction_sites = surface_sites_for_kind_ranges(
@@ -684,6 +686,46 @@
             SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
             &[expected_negation_range],
         );
+        let expected_binder_segment_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::QuantifierVariableSegment,
+            &[expected_binder_segment_range],
+        );
+        let expected_binder_type_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::TypeExpression,
+            &[expected_binder_type_range],
+        );
+        let expected_binder_head_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::TypeHead,
+            &[expected_binder_type_range],
+        );
+        let binder_segments = surface_nodes_with_kind(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::QuantifierVariableSegment,
+        );
+        let [(_, binder_segment)] = binder_segments.as_slice() else {
+            panic!("exact formula shell should have one binder segment");
+        };
+        assert_eq!(
+            surface_direct_token_texts(&formula_connective_quantifier_theorem, binder_segment),
+            vec!["x", "being"]
+        );
+        let binder_type_heads = surface_nodes_with_kind(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::TypeHead,
+        );
+        let [(_, binder_type_head)] = binder_type_heads.as_slice() else {
+            panic!("exact formula shell should have one binder type head");
+        };
+        assert_eq!(
+            surface_direct_token_texts(&formula_connective_quantifier_theorem, binder_type_head),
+            vec!["set"]
+        );
+        assert_eq!(expected_binder_segment_sites.len(), 1);
+        assert_eq!(expected_binder_type_sites.len(), 1);
+        assert_eq!(expected_binder_head_sites.len(), 1);
         assert_eq!(
             formula_shell_payload.premise_constant_site,
             expected_contradiction_sites[0]
@@ -726,6 +768,95 @@
         );
         assert_eq!(formula_shell_output.terms().len(), 0);
         assert_eq!(formula_shell_output.formulas().len(), 5);
+        let ordered_formula_shells = formula_shell_output
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            ordered_formula_shells
+                .iter()
+                .map(|formula| formula.site.clone())
+                .collect::<Vec<_>>(),
+            vec![
+                expected_contradiction_sites[1].clone(),
+                expected_negation_sites[0].clone(),
+                expected_quantified_sites[0].clone(),
+                expected_implication_sites[0].clone(),
+                expected_contradiction_sites[0].clone(),
+            ]
+        );
+        assert_eq!(
+            ordered_formula_shells
+                .iter()
+                .map(|formula| formula.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                FormulaKind::Contradiction,
+                FormulaKind::Negation,
+                FormulaKind::Quantified,
+                FormulaKind::Implication,
+                FormulaKind::Contradiction,
+            ]
+        );
+        for (formula, deferred) in ordered_formula_shells.iter().zip([
+            FormulaDeferredReason::MissingFormulaPayload,
+            FormulaDeferredReason::MissingFormulaPayload,
+            FormulaDeferredReason::MissingQuantifierPayload,
+            FormulaDeferredReason::MissingFormulaPayload,
+            FormulaDeferredReason::MissingFormulaPayload,
+        ]) {
+            assert_eq!(formula.context, BindingContextId::new(0));
+            assert_eq!(formula.status, FormulaStatus::Partial);
+            assert!(formula.terms.is_empty());
+            assert!(formula.facts.is_empty());
+            assert_eq!(formula.deferred, vec![deferred]);
+        }
+        let mut formula_shell_diagnostics = formula_shell_output
+            .diagnostics()
+            .canonical_iter()
+            .map(|(_, diagnostic)| {
+                (diagnostic.message_key.clone(), diagnostic.source_range)
+            })
+            .collect::<Vec<_>>();
+        formula_shell_diagnostics.sort_by(|left, right| {
+            left.0
+                .cmp(&right.0)
+                .then_with(|| left.1.start.cmp(&right.1.start))
+                .then_with(|| left.1.end.cmp(&right.1.end))
+        });
+        let mut expected_formula_shell_diagnostics = vec![
+            (
+                "checker.formula.external.formula_payload".to_owned(),
+                expected_premise_constant_range,
+            ),
+            (
+                "checker.formula.external.formula_payload".to_owned(),
+                expected_implication_range,
+            ),
+            (
+                "checker.formula.external.formula_payload".to_owned(),
+                expected_negation_range,
+            ),
+            (
+                "checker.formula.external.formula_payload".to_owned(),
+                expected_body_constant_range,
+            ),
+            (
+                "checker.formula.external.quantifier_payload".to_owned(),
+                expected_quantified_range,
+            ),
+        ];
+        expected_formula_shell_diagnostics.sort_by(|left, right| {
+            left.0
+                .cmp(&right.0)
+                .then_with(|| left.1.start.cmp(&right.1.start))
+                .then_with(|| left.1.end.cmp(&right.1.end))
+        });
+        assert_eq!(
+            formula_shell_diagnostics,
+            expected_formula_shell_diagnostics
+        );
         for (site, range) in [
             (
                 &formula_shell_payload.premise_constant_site,
@@ -2224,6 +2355,13 @@
             formula_connective_quantifier_theorem_ast(
                 source_id,
                 FormulaConnectiveQuantifierTheoremSpec {
+                    binder_type: ReserveTypeShape::AttributedSet,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
                     negated: false,
                     ..exact_formula_shell_spec()
                 },
@@ -2284,6 +2422,41 @@
             proof_block_formula_shell_label_ast(source_id),
         ];
         for gap_case in formula_shell_gap_cases {
+            assert!(
+                extract_source_formula_connective_quantifier(&gap_case, &module, &symbols)
+                    .is_none()
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for corruption in [
+            FormulaConnectiveQuantifierCorruption::DuplicateFormulaExpression,
+            FormulaConnectiveQuantifierCorruption::FormulaExpressionKind,
+            FormulaConnectiveQuantifierCorruption::ExtraFormulaChild,
+            FormulaConnectiveQuantifierCorruption::RepeatedImplication,
+            FormulaConnectiveQuantifierCorruption::ImplicationToken,
+            FormulaConnectiveQuantifierCorruption::ExtraImplicationOperand,
+            FormulaConnectiveQuantifierCorruption::PremiseConstantKind,
+            FormulaConnectiveQuantifierCorruption::PremiseConstantToken,
+            FormulaConnectiveQuantifierCorruption::UniversalToken,
+            FormulaConnectiveQuantifierCorruption::ExtraQuantifiedChild,
+            FormulaConnectiveQuantifierCorruption::SegmentKind,
+            FormulaConnectiveQuantifierCorruption::SegmentToken,
+            FormulaConnectiveQuantifierCorruption::ExtraSegmentChild,
+            FormulaConnectiveQuantifierCorruption::NegationToken,
+            FormulaConnectiveQuantifierCorruption::ExtraNegationChild,
+            FormulaConnectiveQuantifierCorruption::BodyConstantKind,
+            FormulaConnectiveQuantifierCorruption::BodyConstantToken,
+            FormulaConnectiveQuantifierCorruption::RecoveredInnerToken,
+        ] {
+            let gap_case =
+                corrupted_formula_connective_quantifier_theorem_ast(source_id, corruption);
+            assert!(
+                extract_source_formula_connective_quantifier(&gap_case, &module, &symbols)
+                    .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
@@ -2294,6 +2467,14 @@
             "FormulaConnectiveQuantifierPayloadBoundary",
             "1",
             "1",
+        );
+        assert!(
+            extract_source_formula_connective_quantifier(
+                &non_connective_same_label,
+                &module,
+                &symbols
+            )
+            .is_none()
         );
         assert_eq!(
             source_type_elaboration_detail_keys(

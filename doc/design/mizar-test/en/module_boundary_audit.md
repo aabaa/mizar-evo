@@ -1594,6 +1594,111 @@ remains open for fresh bounded inventory of the remaining formula families. No
 `spec_coverage_audit.md` update is required because behavior, authority,
 coverage credit, owner crate, and deferred status are unchanged.
 
+## Tasks 262M0-M Pre-Move Inventory and Specification
+
+Fresh inventory at clean HEAD `334b83e2` isolates the exact formula
+connective/quantifier family in three `runner.rs` fragments:
+
+- the 13-line ten-field transport at lines 1,649-1,661, hash
+  `98f4a9a771cebc18faa43d1b266dd78f931f00a7d9435c7f6606cfd807a6e424`;
+- the 135-line exact extractor at lines 12,942-13,076, hash
+  `a64080512c757a0a8f85357ec5a086285d7139257bd816bdbb85a5ae19bcd56f`;
+- the 18-line dedicated node allowlist at lines 13,123-13,140, hash
+  `80c39e182da04f34e2598f0670fcba4c17785dbea34373ef7d7847e3488cce1f`.
+
+The exact active bridge recognizes only a contradiction premise implying a
+universal `set`-typed binder whose body is a negated contradiction. It projects
+two contradiction constants plus implication, quantified, and negation shells
+from the real source AST, then fails closed on missing formula and quantifier
+payloads. Canonical Chapter 14, the exact `.miz`, trace row, expectation, and
+harness agree; broader connective, binder, child-formula, and theorem semantics
+remain deferred.
+
+Task 262M moves only these three fragments after M0. The ten-field transport
+and its fields use runner-subtree visibility, and only the exact extraction
+entry receives an unconditional parent-facade alias. The allowlist remains
+leaf-private. The checker/detail consumer
+`source_formula_connective_quantifier_output` stays byte-identical in
+`runner.rs`; because it does not name the transport type, no facade type
+re-export is required. The moved extractor directly reuses the leaf-owned
+source-AST projections and `source_reserve` builtin type-expression projection,
+so dependency direction remains acyclic. After the move, remove only the now-
+unused production runner imports `SurfaceFormulaConnective`,
+`SurfaceFormulaConstant`, `SurfaceFormulaPrefixOperator`, and
+`SurfaceQuantifierKind`; test-support imports are independent. Retain
+`extract_builtin_source_type_expression`, `TypeHeadInput`, and all source-AST
+facade aliases because other runner callers still require them.
+
+## Task 262M0 Test-Gap Inventory and Specification
+
+The M test-sufficiency review found an independent `test_gap`. The positive
+matrix independently fixes all ten transport fields and the five shell states,
+but locates checker formulas with unordered searches through extractor-returned
+sites. It does not fix deterministic five-site/five-kind output order or the
+complete diagnostic provenance: only the two contradiction-constant formula
+diagnostics are source-anchored, while implication, quantified, and negation
+diagnostic key/range pairs are not checked. Binder segment/type-expression/head
+shape and direct `x being` / `set` tokens also lack independent assertions.
+
+The existing near-miss matrix checks only the rendered extraction-gap detail
+and does not call the extractor directly. It lacks allowlisted corruption for
+formula-expression, implication/repetition/token/operands, premise constant,
+universal token/children, binder segment/token/children, negation token/children,
+body constant, and recovered inner nodes. An attributed-set binder is a separate
+non-allowlisted near miss because its `AttributeChain`, `QualifiedSymbol`, and
+`PathSegment` nodes necessarily fail the current family allowlist; M0 must not
+widen that production boundary or claim to isolate the later attributes-empty
+guard. Task 262M0 is a test-only repair: add default-off family-specific
+allowlisted corruption controls to existing support, add that separate
+attributed-set near miss, and strengthen the existing test with independent
+binder, output-order/state, diagnostic key/range, direct `None`, and unchanged
+`type_elaboration.external_dependency.ast_payload_extraction` detail-key
+assertions. The default-off corruptions must preserve the family allowlist and
+preceding guards so each rejection remains isolated.
+
+Task 262M0 adds no test and changes no production source, `.miz`, expectation,
+trace, specification, public API, diagnostic, payload behavior, test name, or
+test count. It is a separate commit before move-only M. Coverage credit, owner
+crate, follow-up ownership, and deferred rationale remain unchanged, so
+`spec_coverage_audit.md` remains unchanged.
+
+## Task 262M0 Test Repair Result
+
+Task 262M0 strengthened the existing exact connective/quantifier matrix without
+adding or renaming a test. The positive path now fixes the binder segment,
+type-expression, and type-head ranges plus direct `x`, `being`, and `set`
+tokens. All ten transport fields remain independently anchored. The observed
+deterministic checker order is fixed as body contradiction, negation,
+quantified shell, implication, then premise contradiction, with exact site,
+kind, context, partial status, and deferred reason for all five entries. The
+four formula-payload and one quantifier-payload diagnostic key/range pairs are
+fixed as a complete multiset.
+
+Every existing connective/quantifier near miss now asserts direct extractor
+rejection before the unchanged detail key. The attributed-set binder is kept as
+an explicit non-allowlisted near miss without widening production or claiming
+the later attributes-empty guard. Eighteen default-off, allowlisted corruptions
+independently cover theorem/formula-expression shape, implication repetition/
+token/operands, premise kind/token, universal token/children, binder segment
+kind/token/children, negation token/children, body kind/token, and descendant
+recovery. Each returns no direct extraction plus the unchanged
+`type_elaboration.external_dependency.ast_payload_extraction` detail key.
+
+`support.rs` is 7,551 lines with hash
+`7315c2d22d5d0e7dbf27c2086e34f3177e6b1fba6c57f3e9db0cd51660081af0`;
+`source_gap_and_equality.rs` is 4,260 lines with hash
+`dd39dcbaf71644d6e6a9d0035fb9d838925e6d2db0892b58009c53e495fe6369`.
+Production source, `.miz`, specification, trace, expectation, public API,
+diagnostics, payload behavior, test names, and test count are unchanged.
+
+The focused test, relevant-crate tests, all 272 unit tests, and all 188 active
+type cases pass. Plan/count remains 403/367, type coverage 235/223, pass/fail
+219/184, and the raw/normalized test-list plus four CLI hashes are unchanged.
+Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
+also pass. Task 262M0 is complete and move-only Task 262M is next. No
+`spec_coverage_audit.md` update is required because behavior, test intent,
+coverage credit, owner crate, and deferred status are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -1744,7 +1849,7 @@ Task 255E.
 | 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
 | 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
 | 261 | Complete: moved the lexical provider, exact fixture vocabulary, and type import-summary adapter to private `import_fixtures.rs`. |
-| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262I. |
+| 262 | Parent: move type-elaboration source-extraction leaves; remains open after completed Task 262M0, with move-only Task 262M next. |
 | 262A | Complete: moved the five common exact source-AST primitives behind the private type-elaboration phase facade. |
 | 262B | Complete: moved shared node-kind traversal and qualified-symbol spelling projections into the common source-AST leaf. |
 | 262C | Complete: moved reserve type-expression, visible symbol/admission, and source-text projection into the private source-reserve leaf; retained declaration/mode callers for Task 262E. |
@@ -1763,6 +1868,8 @@ Task 255E.
 | 262K | Complete: moved only the imported attribute assertion transport, two-entry/shared extractor, and dedicated allowlist into the private source-formula leaf. |
 | 262L0 | Complete: strengthened the existing exact set-enumeration matrix for independent eight-field grouping/punctuation/order preservation and bounded direct-rejection corruption coverage without changing production or test count. |
 | 262L | Complete: moved only the set-enumeration transport, exact extractor, exact-set projection, and dedicated allowlist into the private source-formula leaf. |
+| 262M0 | Complete: strengthened the existing exact connective/quantifier matrix for independent ten-field binder/output/diagnostic preservation and bounded direct-rejection corruption coverage without changing production or test count. |
+| 262M | Next: move only the connective/quantifier transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
@@ -1796,7 +1903,7 @@ before Task 253A is
 | Class | Result |
 |---|---|
 | `design_drift` | Active: source layout obscures phase and ownership review boundaries. Tasks 249-264 repair it without changing behavior. |
-| `test_gap` | Tasks 262H0, 262I0, 262J0, 262K0, and 262L0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
+| `test_gap` | Tasks 262H0, 262I0, 262J0, 262K0, 262L0, and 262M0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
 | `spec_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
 | `source_undocumented_behavior`, `boundary_violation` | No new finding; existing runner behavior remains governed by the paired harness plan and higher authorities. |
 | `repo_metadata_conflict` | None found. |

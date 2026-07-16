@@ -3387,6 +3387,31 @@
         quantifier: SurfaceQuantifierKind,
         binder_type: ReserveTypeShape,
         negated: bool,
+        corruption: FormulaConnectiveQuantifierCorruption,
+    }
+
+    #[derive(Clone, Copy, Default)]
+    enum FormulaConnectiveQuantifierCorruption {
+        #[default]
+        None,
+        DuplicateFormulaExpression,
+        FormulaExpressionKind,
+        ExtraFormulaChild,
+        RepeatedImplication,
+        ImplicationToken,
+        ExtraImplicationOperand,
+        PremiseConstantKind,
+        PremiseConstantToken,
+        UniversalToken,
+        ExtraQuantifiedChild,
+        SegmentKind,
+        SegmentToken,
+        ExtraSegmentChild,
+        NegationToken,
+        ExtraNegationChild,
+        BodyConstantKind,
+        BodyConstantToken,
+        RecoveredInnerToken,
     }
 
     fn exact_formula_shell_spec() -> FormulaConnectiveQuantifierTheoremSpec<'static> {
@@ -3398,7 +3423,21 @@
             quantifier: SurfaceQuantifierKind::Universal,
             binder_type: ReserveTypeShape::Builtin("set"),
             negated: true,
+            corruption: FormulaConnectiveQuantifierCorruption::None,
         }
+    }
+
+    fn corrupted_formula_connective_quantifier_theorem_ast(
+        source_id: SourceId,
+        corruption: FormulaConnectiveQuantifierCorruption,
+    ) -> SurfaceAst {
+        formula_connective_quantifier_theorem_ast(
+            source_id,
+            FormulaConnectiveQuantifierTheoremSpec {
+                corruption,
+                ..exact_formula_shell_spec()
+            },
+        )
     }
 
     fn formula_connective_quantifier_theorem_ast(
@@ -4879,10 +4918,29 @@
             .node_range(formula)
             .expect("just-created connective/quantifier formula should exist")
             .end;
+        let mut formula_expression_children = vec![formula];
+        if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::ExtraFormulaChild
+        ) {
+            formula_expression_children.push(builder.add_node(
+                SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        let formula_expression_kind = if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::FormulaExpressionKind
+        ) {
+            SurfaceNodeKind::TypeExpression
+        } else {
+            SurfaceNodeKind::FormulaExpression
+        };
         let formula_expression = builder.add_node(
-            SurfaceNodeKind::FormulaExpression,
+            formula_expression_kind,
             range(source_id, formula_start, formula_end),
-            vec![formula],
+            formula_expression_children,
         );
         let semicolon = add_token(
             builder,
@@ -4899,7 +4957,18 @@
         if let Some(status_token) = status_token {
             children.push(status_token);
         }
-        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        children.extend([theorem, label_token, colon, formula_expression]);
+        if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::DuplicateFormulaExpression
+        ) {
+            children.push(builder.add_node(
+                SurfaceNodeKind::FormulaExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        children.push(semicolon);
         builder.add_node(
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
@@ -5248,31 +5317,83 @@
         spec: FormulaConnectiveQuantifierTheoremSpec<'_>,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
-        let left = add_formula_constant(
+        let premise_kind = if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::PremiseConstantKind
+        ) {
+            SurfaceFormulaConstant::Thesis
+        } else {
+            SurfaceFormulaConstant::Contradiction
+        };
+        let premise_spelling = if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::PremiseConstantToken
+        ) {
+            "thesis"
+        } else {
+            "contradiction"
+        };
+        let left = add_formula_shell_constant(
             builder,
             source_id,
             offset,
-            SurfaceFormulaConstant::Contradiction,
+            premise_kind,
+            premise_spelling,
         );
-        let connective = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::ReservedWord,
-            formula_connective_text(spec.connective),
-        );
+        let connective_spelling = if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::ImplicationToken
+        ) {
+            "and"
+        } else {
+            formula_connective_text(spec.connective)
+        };
+        let connective = if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::RecoveredInnerToken
+        ) {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                connective_spelling,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                connective_spelling,
+            )
+        };
         let right = add_quantified_formula_shell(builder, source_id, offset, spec);
         let end = builder
             .node_range(right)
             .expect("just-created quantified formula should exist")
             .end;
+        let mut children = vec![left, connective, right];
+        if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::ExtraImplicationOperand
+        ) {
+            children.push(builder.add_node(
+                SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
         builder.add_node(
             SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
                 connective: spec.connective,
-                repeated: false,
+                repeated: matches!(
+                    spec.corruption,
+                    FormulaConnectiveQuantifierCorruption::RepeatedImplication
+                ),
             }),
             range(source_id, start, end),
-            vec![left, connective, right],
+            children,
         )
     }
 
@@ -5288,7 +5409,14 @@
             source_id,
             offset,
             SurfaceTokenKind::ReservedWord,
-            quantifier_text(spec.quantifier),
+            if matches!(
+                spec.corruption,
+                FormulaConnectiveQuantifierCorruption::UniversalToken
+            ) {
+                "ex"
+            } else {
+                quantifier_text(spec.quantifier)
+            },
         );
         let segment_start = *offset;
         let variable = add_token(
@@ -5296,7 +5424,14 @@
             source_id,
             offset,
             SurfaceTokenKind::Identifier,
-            "x",
+            if matches!(
+                spec.corruption,
+                FormulaConnectiveQuantifierCorruption::SegmentToken
+            ) {
+                "y"
+            } else {
+                "x"
+            },
         );
         let being = add_token(
             builder,
@@ -5311,10 +5446,29 @@
             .node_range(type_expression)
             .expect("just-created quantified binder type should exist")
             .end;
+        let mut segment_children = vec![variable, being, type_expression];
+        if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::ExtraSegmentChild
+        ) {
+            segment_children.push(builder.add_node(
+                SurfaceNodeKind::TypeExpression,
+                range(source_id, segment_start, segment_end),
+                Vec::new(),
+            ));
+        }
+        let segment_kind = if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::SegmentKind
+        ) {
+            SurfaceNodeKind::TypeExpression
+        } else {
+            SurfaceNodeKind::QuantifierVariableSegment
+        };
         let segment = builder.add_node(
-            SurfaceNodeKind::QuantifierVariableSegment,
+            segment_kind,
             range(source_id, segment_start, segment_end),
-            vec![variable, being, type_expression],
+            segment_children,
         );
         let holds = add_token(
             builder,
@@ -5324,12 +5478,7 @@
             "holds",
         );
         let body = if spec.negated {
-            add_negated_formula_constant(
-                builder,
-                source_id,
-                offset,
-                SurfaceFormulaConstant::Contradiction,
-            )
+            add_negated_formula_constant(builder, source_id, offset, spec.corruption)
         } else {
             add_formula_constant(
                 builder,
@@ -5342,10 +5491,21 @@
             .node_range(body)
             .expect("just-created quantified body should exist")
             .end;
+        let mut quantified_children = vec![quantifier, segment, holds, body];
+        if matches!(
+            spec.corruption,
+            FormulaConnectiveQuantifierCorruption::ExtraQuantifiedChild
+        ) {
+            quantified_children.push(builder.add_node(
+                SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
         builder.add_node(
             SurfaceNodeKind::QuantifiedFormula(spec.quantifier),
             range(source_id, start, end),
-            vec![quantifier, segment, holds, body],
+            quantified_children,
         )
     }
 
@@ -5353,7 +5513,7 @@
         builder: &mut SurfaceAstBuilder,
         source_id: SourceId,
         offset: &mut usize,
-        constant: SurfaceFormulaConstant,
+        corruption: FormulaConnectiveQuantifierCorruption,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let not = add_token(
@@ -5361,17 +5521,78 @@
             source_id,
             offset,
             SurfaceTokenKind::ReservedWord,
-            "not",
+            if matches!(
+                corruption,
+                FormulaConnectiveQuantifierCorruption::NegationToken
+            ) {
+                "contradiction"
+            } else {
+                "not"
+            },
         );
-        let formula = add_formula_constant(builder, source_id, offset, constant);
+        let body_kind = if matches!(
+            corruption,
+            FormulaConnectiveQuantifierCorruption::BodyConstantKind
+        ) {
+            SurfaceFormulaConstant::Thesis
+        } else {
+            SurfaceFormulaConstant::Contradiction
+        };
+        let body_spelling = if matches!(
+            corruption,
+            FormulaConnectiveQuantifierCorruption::BodyConstantToken
+        ) {
+            "thesis"
+        } else {
+            "contradiction"
+        };
+        let formula =
+            add_formula_shell_constant(builder, source_id, offset, body_kind, body_spelling);
         let end = builder
             .node_range(formula)
             .expect("just-created negated formula should exist")
             .end;
+        let mut children = vec![not, formula];
+        if matches!(
+            corruption,
+            FormulaConnectiveQuantifierCorruption::ExtraNegationChild
+        ) {
+            children.push(builder.add_node(
+                SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
         builder.add_node(
             SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
             range(source_id, start, end),
-            vec![not, formula],
+            children,
+        )
+    }
+
+    fn add_formula_shell_constant(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        kind: SurfaceFormulaConstant,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            spelling,
+        );
+        let end = builder
+            .node_range(token)
+            .expect("just-created formula shell constant token should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::FormulaConstant(kind),
+            range(source_id, start, end),
+            vec![token],
         )
     }
 
