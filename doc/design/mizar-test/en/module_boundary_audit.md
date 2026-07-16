@@ -113,6 +113,21 @@ All 23 fully qualified names, their original order position, and both the
 canonical raw and secondary normalized 272-test list hashes are unchanged.
 Task 253 remains pending until Task 253B.
 
+## Task 254 Move Result
+
+Task 254 root-included
+`src/runner/tests/type_elaboration/mode_chain.rs` without a wrapper module.
+The byte-identical 10,232-line fragment contains the 26 audited non-long-chain
+local-mode/object-mode tests. Its hash is
+`2989031d64871c726f325a5d5bd2ebb4ed4b9a078b83bab3c4f04f456cf3225f`.
+The retained 63,572 lines, including the separator before Task 253B, remained
+byte-identical with hash
+`6725980d7842af5c398f58139ce371ac64d8912ba744f4417ac20c88165d5d81`;
+the resulting 63,573-line `tests.rs` hash is
+`7e5d0f5735c551be19ac13b2dc96732bf4a9f3cd7088317beb22c760e0d03b68`.
+All 26 fully qualified names, their original order position, the Task 253B
+boundary, and both 272-test list hashes are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -190,6 +205,13 @@ then Task 253B moves the following direct reserved-variable membership and
 inequality tests. Task 255 begins with the direct reserved-variable
 type-assertion test. This sequence preserves source and discovery order.
 
+Fresh Task 254 inventory fixes that intervening block at 26 complete tests:
+the non-long-chain direct-through-four-edge set/object membership, equality,
+and inequality families. It contains no long-chain test or non-test helper/item.
+The separator after the block is retained, and Task 253B begins immediately
+after it. Task 254 moves only this contiguous block to
+`src/runner/tests/type_elaboration/mode_chain.rs`.
+
 ## Ordered Move Tasks
 
 | Task | Bounded action |
@@ -200,7 +222,7 @@ type-assertion test. This sequence preserves source and discovery order.
 | 251 | Complete: moved the nonempty parse-only private test family into a root-included fragment. |
 | 252 | Complete: moved the baseline type-elaboration source-extraction and real handoff tests. |
 | 253A | Complete: moved the leading 23-test baseline reserved-variable/binary-formula block; Task 253 remains pending. |
-| 254 | Move local-mode/object-mode chain bridge tests. |
+| 254 | Complete: moved the 26-test non-long-chain local-mode/object-mode chain bridge block, retaining the following Task 253B boundary. |
 | 253B | Complete Task 253 by moving the following direct reserved-variable membership and inequality tests. |
 | 255 | Move type-assertion and asserted-head bridge tests. |
 | 256 | Move long-chain bridge tests. |
