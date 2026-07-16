@@ -19,8 +19,10 @@ use super::source_ast::{
     surface_site,
 };
 use super::source_reserve::{
-    SourceReserveExtraction, SourceTypeExpression, extract_builtin_source_type_expression,
-    mode_definition_pattern_spelling, source_mode_symbol_spelling,
+    SourceReserveExtraction, SourceTypeExpression,
+    extract_builtin_source_reserve_declarations_after_node_guard,
+    extract_builtin_source_type_expression, mode_definition_pattern_spelling,
+    source_mode_symbol_spelling,
 };
 #[derive(Debug)]
 pub(in crate::runner) struct SourceReservedVariableBinaryFormulaConfig {
@@ -884,6 +886,169 @@ pub(in crate::runner) fn source_binding_use_ordinals<const N: usize>(
         return Err("source use ordinal missing".to_owned());
     }
     Ok(ordinals)
+}
+
+#[derive(Debug)]
+pub(in crate::runner) struct SourceReservedVariableBinaryFormula {
+    pub(in crate::runner) reserve: SourceReserveExtraction,
+    pub(in crate::runner) config: &'static SourceReservedVariableBinaryFormulaConfig,
+    pub(in crate::runner) formula_site: TypedSiteRef,
+    pub(in crate::runner) formula_range: SourceRange,
+    pub(in crate::runner) left_site: TypedSiteRef,
+    pub(in crate::runner) left_range: SourceRange,
+    pub(in crate::runner) left_spelling: String,
+    pub(in crate::runner) left_lookup_ordinal: usize,
+    pub(in crate::runner) right_site: TypedSiteRef,
+    pub(in crate::runner) right_range: SourceRange,
+    pub(in crate::runner) right_spelling: String,
+    pub(in crate::runner) right_lookup_ordinal: usize,
+}
+
+pub(in crate::runner) fn extract_source_reserved_variable_binary_formula(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+    config: &'static SourceReservedVariableBinaryFormulaConfig,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    if ast.nodes().iter().any(|node| {
+        !(is_supported_reserved_variable_binary_formula_bridge_node(node)
+            || !config.mode_definitions.is_empty()
+                && matches!(
+                    node.kind,
+                    SurfaceNodeKind::DefinitionBlockItem
+                        | SurfaceNodeKind::ModeDefinition
+                        | SurfaceNodeKind::ModePattern
+                        | SurfaceNodeKind::QualifiedSymbol
+                        | SurfaceNodeKind::PathSegment
+                ))
+    }) {
+        return None;
+    }
+
+    let reserve_items = surface_nodes_with_kind(ast, SurfaceNodeKind::ReserveItem);
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let mode_definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    if reserve_items.len() != config.reserve_item_count
+        || mode_definitions.len() != config.mode_definitions.len()
+        || !source_reserved_variable_mode_definition_is_exact(ast, config.mode_definitions)
+        || reserve_items
+            .last()
+            .is_none_or(|(_, item)| item.range.end > theorem.range.start)
+        || reserve_items
+            .iter()
+            .any(|(_, item)| subtree_has_recovery(ast, item))
+        || subtree_has_recovery(ast, theorem)
+        || direct_token_texts(ast, theorem).as_slice() != ["theorem", config.label, ":", ";"]
+    {
+        return None;
+    }
+
+    let reserve =
+        extract_builtin_source_reserve_declarations_after_node_guard(ast, module, symbols).ok()?;
+    let source_bindings = reserve.bridge.bindings();
+    if source_bindings.len() != config.binding_spellings.len()
+        || source_bindings.len() != config.binding_types.len()
+        || source_bindings.len() != config.binding_source_mode_spellings.len()
+        || source_bindings.iter().enumerate().any(|(index, binding)| {
+            binding.spelling != config.binding_spellings[index]
+                || !source_binding_matches_reserved_builtin_type(
+                    binding,
+                    config.binding_types[index],
+                    config.binding_source_mode_spellings[index],
+                    &reserve.mode_expansions,
+                )
+        })
+        || !source_reserved_variable_mode_expansions_are_exact(&reserve, config.mode_definitions)
+        || (config.require_shared_type_range
+            && source_bindings
+                .windows(2)
+                .any(|pair| pair[0].type_range != pair[1].type_range))
+        || (config.require_distinct_type_ranges
+            && source_bindings.windows(2).any(|pair| {
+                pair[0].type_range == pair[1].type_range
+                    || (pair[0].type_range.start, pair[0].type_range.end)
+                        >= (pair[1].type_range.start, pair[1].type_range.end)
+            }))
+    {
+        return None;
+    }
+    let left_source_binding = source_bindings.get(config.left_binding_index)?;
+    let right_source_binding = source_bindings.get(config.right_binding_index)?;
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+        || direct_token_texts(ast, formula).as_slice() != [config.operator]
+        || subtree_has_recovery(ast, formula)
+    {
+        return None;
+    }
+    let predicate_children = structural_child_ids(ast, formula);
+    let [left_expression_id, right_expression_id] = predicate_children.as_slice() else {
+        return None;
+    };
+    let (left_id, left_range, left_spelling) =
+        exact_identifier_term_operand(ast, *left_expression_id)?;
+    let (right_id, right_range, right_spelling) =
+        exact_identifier_term_operand(ast, *right_expression_id)?;
+    if left_id == right_id
+        || left_spelling != left_source_binding.spelling
+        || right_spelling != right_source_binding.spelling
+    {
+        return None;
+    }
+    let [left_lookup_ordinal, right_lookup_ordinal] =
+        source_binding_use_ordinals(reserve.bridge.bindings(), [left_range, right_range]).ok()?;
+
+    Some(SourceReservedVariableBinaryFormula {
+        reserve,
+        config,
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        left_site: surface_site(left_id),
+        left_range,
+        left_spelling,
+        left_lookup_ordinal,
+        right_site: surface_site(right_id),
+        right_range,
+        right_spelling,
+        right_lookup_ordinal,
+    })
+}
+
+pub(in crate::runner) fn is_supported_reserved_variable_binary_formula_bridge_node(
+    node: &SurfaceNode,
+) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::BuiltinPredicateApplication
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::Token(_)
+    )
 }
 
 pub(in crate::runner) fn resolve_imported_fixture_term_formula_symbol(
