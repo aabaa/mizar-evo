@@ -239,9 +239,10 @@ order-preserving な8 family に分割する。Task 257A は binary-route test 1
 Task 257B は builtin-object reserve fixture 3件、Task 257C は専用 trace intent
 を持つ Task 180 standalone contradiction formula-constant fixture 1件だけを
 分離する。Task 257D は distinct/multiple/heterogeneous reserve fixture 11件、
-Task 257E は mode-chain fixture 26件、Task 257F は asserted-head/type-assertion
-fixture 39件、Task 257G は source-gap/equality test 3件、Task 257H は root
-test 12件と既存 Task 216-222 module 内 nested test 28件を含む。8 count の
+Task 257E は mode-chain fixture 26件、Task 257F は active
+reserve/asserted-head/type-assertion fixture 35件と interleaved owner-route
+isolation guard 4件、Task 257G は source-gap/equality test 3件、Task 257H は
+root test 12件と既存 Task 216-222 module 内 nested test 28件を含む。8 count の
 合計は残る root test 113件と nested test 28件に一致する。parent Task 257
 は 257H まで pending。
 
@@ -455,7 +456,7 @@ subtask は long-chain test を含まない。parent Task 255 は Task 255E ま�
 | 257C | 完了: Task 180 standalone contradiction fixture だけを `formula_constant_fixture.rs` へ移動し、両 reserve-family boundary を保持。 |
 | 257D | 完了: distinct/multiple/heterogeneous reserve fixture 11件を `reserve_fixtures.rs` へ移動し、Task 257E separator を保持。 |
 | 257E | 完了: non-long-chain active mode-chain fixture test 26件を `mode_chain_fixtures.rs` へ移動し、Task 257F separator を保持。 |
-| 257F | active asserted-head/type-assertion fixture test 39件を `asserted_head_fixtures.rs` へ移動。 |
+| 257F | active reserve/asserted-head/type-assertion fixture 35件と interleaved owner-route isolation guard 4件を `asserted_head_fixtures.rs` へ移動。 |
 | 257G | source-gap/four-edge-equality test 3件を `source_gap_and_equality.rs` へ移動。 |
 | 257H | Task 216-222 module を保持して最後の root test 12件/nested corruption/isolation test 28件を移動し、Task 257 を完了。 |
 | 258 | test layout 安定後、shared source/frontend staging helper を移動。 |

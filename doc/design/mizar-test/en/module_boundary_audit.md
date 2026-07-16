@@ -253,9 +253,10 @@ order-preserving families. Task 257A has 18 binary-route tests; Task 257B has
 three builtin-object reserve fixtures; Task 257C isolates the one standalone
 Task 180 contradiction formula-constant fixture under its dedicated trace
 intent; Task 257D has 11 distinct/multiple/heterogeneous reserve fixtures;
-Task 257E has 26 mode-chain fixtures; Task 257F has 39
-asserted-head/type-assertion fixtures; Task 257G has three source-gap/equality
-tests; and Task 257H has 12 root plus 28 tests nested in the existing Task
+Task 257E has 26 mode-chain fixtures; Task 257F has 35 active
+reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route
+isolation guards; Task 257G has three source-gap/equality tests; and Task 257H
+has 12 root plus 28 tests nested in the existing Task
 216-222 modules. The eight counts total the remaining 113 root and 28 nested
 tests. Parent Task 257 remains pending through 257H.
 
@@ -474,7 +475,7 @@ Task 255E.
 | 257C | Complete: moved only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`, retaining both reserve-family boundaries. |
 | 257D | Complete: moved the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`, retaining the Task 257E separator. |
 | 257E | Complete: moved the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`, retaining the Task 257F separator. |
-| 257F | Move the 39 active asserted-head/type-assertion fixture tests to `asserted_head_fixtures.rs`. |
+| 257F | Move the 35 active reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route isolation guards to `asserted_head_fixtures.rs`. |
 | 257G | Move the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`. |
 | 257H | Move the final 12 root and 28 nested corruption/isolation tests while retaining Task 216-222 modules; complete Task 257. |
 | 258 | Move shared source/frontend staging helpers after the test layout is stable. |
