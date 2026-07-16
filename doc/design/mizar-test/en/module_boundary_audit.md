@@ -211,6 +211,23 @@ The fully qualified name, helper owner, original order position, Task 255E
 boundary, and both 272-test list hashes are unchanged. Parent Task 255 remains
 pending.
 
+## Task 255E Move Result
+
+Task 255E root-included
+`src/runner/tests/type_elaboration/asserted_head_type_assertion.rs` without a
+wrapper module. The byte-identical 7,649-line fragment contains the final 16
+audited non-long-chain type-assertion/asserted-head source tests and no helper
+functions. Its hash is
+`27bb8b3f17cabfce79ec9e32e390fbad3c9356c845dab4c7fb53dfd9f3b5160a`.
+The retained 43,365 lines, including the separator before the first active
+fixture, remained byte-identical with hash
+`b0465c9378a8f0151e0c58ba4986876f3de163ceb5918b7ceb49db4462b6d1c3`;
+the resulting 43,366-line `tests.rs` hash is
+`75fc0ff2b4a48362a1184185ea1315c0d8dab90b9b5a9b45a3fafe13b14d7278`.
+All 16 fully qualified names, their original order positions, assertions, the
+following active-fixture boundary, and both 272-test list hashes are unchanged.
+Parent Task 255 is complete.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -334,7 +351,7 @@ Task 255E.
 | 255B | Complete: moved the two four-edge radix source tests and dedicated Task 208/207 helpers to `asserted_head_four_edge_radix.rs`. |
 | 255C | Complete: moved the three-edge object-radix source test and dedicated Task 206 helpers. |
 | 255D | Complete: moved the two-edge object-radix source test and dedicated Task 204 helper. |
-| 255E | Move the final 16 non-long-chain source tests, retain the active-fixture boundary, and complete Task 255. |
+| 255E | Complete: moved the final 16 non-long-chain source tests, retained the active-fixture boundary, and completed Task 255. |
 | 256 | Move long-chain bridge tests. |
 | 257 | Move corruption and cross-owner isolation tests while retaining existing nested modules. |
 | 258 | Move shared source/frontend staging helpers after the test layout is stable. |
