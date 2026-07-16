@@ -40,9 +40,11 @@ use type_elaboration::{
     assemble_source_checker_handoff,
     assert_source_parenthesized_reserved_variable_binary_formula_output_with_config,
     assert_source_reserved_variable_formula_output,
-    assert_source_reserved_variable_type_assertion_output, direct_token_texts,
+    assert_source_reserved_variable_type_assertion_output,
+    build_source_parenthesized_reserved_variable_binary_formula_output, direct_token_texts,
     extract_builtin_source_reserve_declarations_after_node_guard, resolve_visible_attribute,
     resolve_visible_type_head, source_mode_symbol_spelling,
+    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config,
     source_reserved_variable_formula_output_detail_keys, structural_child_ids,
     surface_nodes_with_kind, surface_site,
 };
@@ -54,9 +56,7 @@ use type_elaboration::{
     SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
     SourceReservedVariableTypeAssertionConfig, assemble_source_reserve_checker_handoff,
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
-    assert_source_reserve_handoff,
-    build_source_parenthesized_reserved_variable_binary_formula_output,
-    build_source_reserved_variable_formula_output,
+    assert_source_reserve_handoff, build_source_reserved_variable_formula_output,
     build_source_reserved_variable_type_assertion_output, expected_type_elaboration_detail_keys,
     extract_builtin_source_reserve_declarations, extract_source_builtin_binary_term_formula,
     extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
@@ -68,7 +68,7 @@ use type_elaboration::{
     extract_source_reserved_variable_binary_formula,
     extract_source_reserved_variable_type_assertion_with_config,
     extract_source_set_enumeration_formula, is_active_type_elaboration, source_module_binding_env,
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config,
+    source_parenthesized_reserved_variable_binary_formula_payload_detail_keys,
     source_reserved_variable_formula_result_detail_keys,
     source_reserved_variable_type_assertion_result_detail_keys,
     type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
@@ -5503,24 +5503,6 @@ fn source_parenthesized_reserved_object_variable_inequality_detail_keys(
             SourceParenthesizedOperandSide::Left,
         ),
     )
-}
-
-fn source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-    payload: SourceParenthesizedReservedVariableBinaryFormula,
-    symbols: &SymbolEnv,
-    config: &'static SourceReservedVariableBinaryFormulaConfig,
-    expected_side: SourceParenthesizedOperandSide,
-) -> Vec<String> {
-    match build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols) {
-        Ok(output) => {
-            source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-                &output,
-                config,
-                expected_side,
-            )
-        }
-        Err(_) => vec![config.invalid_payload_key.to_owned()],
-    }
 }
 
 fn source_reserved_object_variable_equality_detail_keys(

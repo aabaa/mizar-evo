@@ -1119,3 +1119,21 @@ pub(in crate::runner) fn source_parenthesized_reserved_variable_binary_formula_o
     }
     source_reserved_variable_formula_output_detail_keys(&output.formula)
 }
+
+pub(in crate::runner) fn source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
+    payload: SourceParenthesizedReservedVariableBinaryFormula,
+    symbols: &SymbolEnv,
+    config: &'static SourceReservedVariableBinaryFormulaConfig,
+    expected_side: SourceParenthesizedOperandSide,
+) -> Vec<String> {
+    match build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols) {
+        Ok(output) => {
+            source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
+                &output,
+                config,
+                expected_side,
+            )
+        }
+        Err(_) => vec![config.invalid_payload_key.to_owned()],
+    }
+}
