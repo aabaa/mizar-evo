@@ -876,8 +876,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   exact-body and byte-stability preservation. Fresh inventory selected the
   exact eight-fragment/546-line leading direct-binary route owner as Task 263O,
   which is complete with token-identical body and byte-stability preservation.
-  Fresh inventory now returns to the later direct-binary route-owner families,
-  so Task 263 keeps this parent item open.
+  Fresh inventory selected the corrected exact five-fragment/313-line
+  multiple-reserve declaration binary route family as Task 263P, which is
+  complete with token-identical body and byte-stability preservation. Fresh
+  inventory now returns to the remaining base and mode-chain binary route-owner
+  families, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
