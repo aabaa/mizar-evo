@@ -17,9 +17,10 @@ pub(super) use checker_handoff::{
 pub(super) use output::{
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableBinaryFormulaOutput, SourceReservedVariableTypeAssertionOutput,
+    assert_source_reserved_variable_type_assertion_output,
     build_source_parenthesized_reserved_variable_binary_formula_output,
     build_source_reserved_variable_formula_output,
-    build_source_reserved_variable_type_assertion_output,
+    build_source_reserved_variable_type_assertion_output, normalized_type_is_reserved_builtin_type,
 };
 pub(super) use result::{
     expected_type_elaboration_detail_keys, type_elaboration_failure_diagnostic,
