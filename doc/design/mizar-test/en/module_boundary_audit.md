@@ -96,6 +96,23 @@ the resulting 83,785-line `tests.rs` hash is
 `16f3d6ceb1e75655ea39825f0294896393e676d0a7391bb2a409e14b3b904d22`.
 All three fully qualified names and the sorted 272-test list are unchanged.
 
+## Task 253A Move Result
+
+Task 253A root-included
+`src/runner/tests/type_elaboration/reserved_binary.rs` without a wrapper
+module. The byte-identical 9,982-line fragment contains the leading 23
+baseline reserved-variable and binary-formula bridge tests, including the
+audited Task 189 and Task 246 ownership exceptions. Its hash is
+`88f1a793e139ea808c823fd68956d0dc9863735905ae3fb34e214efa86a11d8e`.
+The retained 73,803 lines, including the separator before Task 254, remained
+byte-identical with hash
+`faf592952a4c871b840b6a1cbbb977ca3f1bbddc98def4f99d54c1a900fdcb06`;
+the resulting 73,804-line `tests.rs` hash is
+`97d05a3dc35774246af301ad7b4dc6601d2ab85ca669bebfdbcfa140767d150f`.
+All 23 fully qualified names, their original order position, and both the
+canonical raw and secondary normalized 272-test list hashes are unchanged.
+Task 253 remains pending until Task 253B.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -160,6 +177,19 @@ new wrapper module. This preserves existing qualified test names, including the
 already nested Task 216-222 module names. A child-module split is forbidden
 when it would change the discovered test list.
 
+Fresh Task 253 inventory splits the reserved/binary owner into two physical,
+order-preserving fragments around the Task 254 mode-chain block. Task 253A is
+the leading 23-test baseline reserve/binary block. It retains Task 189's
+reserved-object type-assertion test because that test is embedded in and owns
+the baseline reserved-object bridge boundary; it also retains Task 246's
+parenthesized two-edge local-mode equality because that test belongs to the
+parenthesized binary route. These classifications do not transfer either test
+to the broader asserted-head or mode-chain families. Task 253 remains pending
+after 253A: Task 254 moves the intervening local-mode/object-mode chain block,
+then Task 253B moves the following direct reserved-variable membership and
+inequality tests. Task 255 begins with the direct reserved-variable
+type-assertion test. This sequence preserves source and discovery order.
+
 ## Ordered Move Tasks
 
 | Task | Bounded action |
@@ -169,8 +199,9 @@ when it would change the discovered test list.
 | 250 | Complete: moved nonempty shared test support into a root-included support fragment. |
 | 251 | Complete: moved the nonempty parse-only private test family into a root-included fragment. |
 | 252 | Complete: moved the baseline type-elaboration source-extraction and real handoff tests. |
-| 253 | Move reserved-variable and binary-formula bridge tests. |
+| 253A | Complete: moved the leading 23-test baseline reserved-variable/binary-formula block; Task 253 remains pending. |
 | 254 | Move local-mode/object-mode chain bridge tests. |
+| 253B | Complete Task 253 by moving the following direct reserved-variable membership and inequality tests. |
 | 255 | Move type-assertion and asserted-head bridge tests. |
 | 256 | Move long-chain bridge tests. |
 | 257 | Move corruption and cross-owner isolation tests while retaining existing nested modules. |
@@ -198,8 +229,14 @@ commit.
 | fail-closed behavior | Unsupported, malformed, ambiguous, imported-gap, evidence-gap, and lower-stage cases continue to reject at the same boundary. |
 | authority | No `doc/spec`, `.miz`, expectation, or traceability edit is allowed merely to accommodate a move. |
 
-Before and after each move, capture and compare the exact sorted
-`cargo test -p mizar-test -- --list` output in addition to running the tests.
+Before and after each move, capture and compare the exact sorted test lines
+from `cargo test -p mizar-test --lib -- --list` in addition to running the
+tests. The canonical raw-list oracle, including the `: test` suffix, has 272
+lines and hash
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`.
+The suffix-stripped normalized-name list is only a secondary oracle; its hash
+before Task 253A is
+`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
 
 ## Classification And Coverage-Audit Impact
 

@@ -727,8 +727,9 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   type-elaboration owner に分割する。必要なら type-elaboration を cohesive な
   source-bridge family ごとに追加分割し、family ごとに bounded move-only
   task/commit として cross-owner isolation test を保持する。
-  Tasks 250-252 で shared-support、parse-only、baseline type-elaboration
-  source-extraction/handoff fragment は完了。Tasks 253-257 は残る。
+  Tasks 250-252 と 253A で shared-support、parse-only、baseline
+  type-elaboration source-extraction/handoff、先頭 reserved/binary fragment は
+  完了。Task 253 は 253B まで pending で、Tasks 254-257 は残る。
 - [ ] test layout 安定後、production helper を監査済み phase/ownership boundary
   で分割する。`runner.rs` は public facade と top-level orchestration owner に
   限定する。internal visibility を最小に保ち、detail key、diagnostic、payload
