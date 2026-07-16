@@ -1148,6 +1148,105 @@ behavior, authority, coverage credit, owner crate, or deferred status, so
 `spec_coverage_audit.md` remains unchanged. Parent Task 262 remains open for a
 fresh bounded inventory of the remaining formula families.
 
+## Tasks 262J1-J2 Pre-Move Inventory and Specification
+
+Fresh inventory at clean HEAD `fdce5d8a` isolates the imported
+predicate/functor formula work into five `runner.rs` fragments:
+
+- the 15-line transport at lines 1,648-1,662, hash
+  `474b345cfa983e95fcce895a08a56c89a51bd1d3b8cf542b0fbacb16c42fe76e`;
+- the 127-line family extractor at lines 12,978-13,104, hash
+  `6b967aff4d407f448cd8fd72aac205e88824c327f0048bb325786ef9a73e8bd4`;
+- the 61-line exact infix transport/helper at lines 13,486-13,546, hash
+  `9b6b8d4f5fd417f6654f4232448514a279f006309c1308219514024bee4421b2`;
+- the 23-line dedicated allowlist at lines 13,593-13,615, hash
+  `2daf39d17bde7186fe4a7fff4ad7fe6270ffc7a71e6ec1bdb44dbc2ba03fdafa`;
+- the 43-line shared imported symbol resolver/provenance pair at lines
+  13,706-13,748, hash
+  `fc4914d1c4a557f1401db035032c22e84430faf0ac9355b8d3a1cf3716761955`.
+
+The exact active sidecar is governed by imported visibility/conflict semantics,
+import-prelude semantics, the parenthesized infix term surface, and predicate
+application syntax. It supplies real imported `divides` predicate and `++`
+functor symbols, three numeral sites, one infix functor site, and one predicate
+formula before failing closed on missing numeric/signature/predicate-signature
+payloads and partial formula checking.
+
+The shared resolver has three callers: predicate and functor resolution in this
+family plus the retained imported-attribute extractor. Task 262J1 therefore
+moves only that resolver/provenance pair first. The resolver entry receives
+runner-subtree visibility and an unconditional parent-facade alias; the
+provenance predicate remains leaf-private, and all callers remain unchanged.
+
+After J1, Task 262J2 moves only the transport, exact family extractor, exact
+infix projection, and dedicated allowlist. The extractor crosses the facade
+unconditionally. The transport and all 12 fields use runner-subtree visibility
+without a facade type alias; the infix transport/helper and allowlist remain
+leaf-private. Checker/detail/orchestration callers and the imported-attribute
+family remain in `runner.rs`. Both tasks are move-only and forbid renaming,
+deduplication, generalization, accepted-shape or symbol-admission changes,
+operator metadata changes, diagnostics/detail/order changes, tests, and
+authority edits. The dependency direction remains acyclic through
+`source_formula -> source_ast` plus the existing `source_formula ->
+source_reserve` edge.
+
+## Task 262J0 Test-Gap Inventory and Specification
+
+The J1/J2 test-sufficiency review found an independent `test_gap`. The current
+positive matrix finds checker terms and formulas through extractor-returned
+sites and checks imported symbols only by module path. It does not independently
+fix the formula, outer numeral, infix term, or both infix operand sites/ranges,
+all 12 transport fields, exact symbol kind/spelling/module/contribution
+provenance, or checker ordering.
+
+The existing negative matrix covers 12 source near-misses and six symbol-env
+cases but lacks direct extractor assertions plus bounded recovery, duplicate,
+predicate segment/head cardinality, parenthesized/infix cardinality, and
+imported-contribution provenance corruption. Task 262J0 is a test-only repair:
+extend the existing builder/environment support with default-off bounded
+corruption controls, strengthen the existing test with independently derived
+source expectations and exact checker handoff/order, and require every negative
+case to return no extraction plus the unchanged extraction-gap detail key.
+
+Task 262J0 adds no test and changes no production source, `.miz`, expectation,
+trace, specification, public API, diagnostics, payload behavior, test name, or
+test count. It is a separate commit before move-only J1/J2. Coverage credit,
+owner crate, follow-up ownership, and deferred rationale remain unchanged, so
+`spec_coverage_audit.md` remains unchanged.
+
+## Task 262J0 Test Repair Result
+
+Task 262J0 strengthened the existing imported predicate/functor test without
+adding or renaming a test. The positive matrix now derives the formula, outer
+numeral, infix term, both infix operands, and predicate formula sites and
+ranges independently from the source spellings. It fixes all 12 extraction
+transport fields, exact imported predicate/functor kind, spelling, module, and
+contribution provenance, the checker term order, and the checked formula/term
+site handoff.
+
+The default-off bounded corruption builder covers recovered label/functor,
+duplicate theorem/formula, formula/segment/head cardinality, parenthesized and
+infix cardinality, and imported-contribution provenance. The 12 existing source
+near misses, 11 structural corruptions, six existing symbol-environment cases,
+and the isolated local-contribution case all return no direct extraction and
+the unchanged `type_elaboration.external_dependency.ast_payload_extraction`
+detail key.
+
+`support.rs` is 6,943 lines with hash
+`68e90fa32900462fbeac2065209d183762d85e4e32ddbe16d261680d564eed98`;
+`source_gap_and_equality.rs` is 3,525 lines with hash
+`69e2a9f82e83d95247f5ec1d88244b38a071db1a09bcae34ed4772401b35924d`.
+Production source, `.miz`, specification, trace, expectation, public API,
+diagnostics, payload behavior, test names, and test count are unchanged.
+
+The focused test, relevant-crate tests, all 272 unit tests, and all 188 active
+type cases pass. Plan/count remains 403/367, type coverage 235/223, pass/fail
+219/184, and the raw/normalized test-list plus four CLI hashes are unchanged.
+Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
+also pass. Task 262J0 is complete and move-only Task 262J1 is next. No
+`spec_coverage_audit.md` update is required because behavior, test intent,
+coverage credit, owner crate, and deferred status are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -1308,6 +1407,9 @@ Task 255E.
 | 262H | Complete: moved only the builtin equality/inequality/membership config, source transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
 | 262I0 | Complete: strengthened the existing builtin type-assertion unit matrix for independently derived payload/checker provenance, recovery, duplicate, token-shape, and cardinality preservation without changing production or test count. |
 | 262I | Complete: moved only the builtin type-assertion transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
+| 262J0 | Complete: strengthened the existing imported predicate/functor matrix for independent payload/checker/import provenance plus recovery, duplicate, and structural-cardinality preservation without changing production or test count. |
+| 262J1 | Next: move only the shared imported formula symbol resolver/provenance pair into the private source-formula leaf. |
+| 262J2 | After J1: move only the imported predicate/functor transport, exact extractor, exact infix projection, and dedicated allowlist into the private source-formula leaf. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
@@ -1341,7 +1443,7 @@ before Task 253A is
 | Class | Result |
 |---|---|
 | `design_drift` | Active: source layout obscures phase and ownership review boundaries. Tasks 249-264 repair it without changing behavior. |
-| `test_gap` | Tasks 262H0 and 262I0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
+| `test_gap` | Tasks 262H0, 262I0, and 262J0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
 | `spec_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
 | `source_undocumented_behavior`, `boundary_violation` | No new finding; existing runner behavior remains governed by the paired harness plan and higher authorities. |
 | `repo_metadata_conflict` | None found. |

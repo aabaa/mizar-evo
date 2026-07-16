@@ -381,10 +381,12 @@
         );
         let imported_predicate_functor_symbols =
             imported_predicate_functor_symbol_env(symbols.module_id().clone());
+        let imported_predicate_functor_import = "parser.type_fixtures";
+        let imported_predicate_functor_spec = exact_imported_predicate_functor_theorem_spec();
         let imported_predicate_functor_theorem = imported_predicate_functor_theorem_ast(
             source_id,
-            &["parser.type_fixtures"],
-            exact_imported_predicate_functor_theorem_spec(),
+            &[imported_predicate_functor_import],
+            imported_predicate_functor_spec,
         );
         let imported_predicate_functor_detail_keys = vec![
             "type_elaboration.checker.checker.formula.external.predicate_signature_payload"
@@ -752,28 +754,165 @@
             &imported_predicate_functor_symbols,
         )
         .expect("exact imported predicate/functor bridge should extract source payload");
-        assert_eq!(
-            imported_predicate_functor_payload
-                .predicate_symbol
-                .module()
-                .path()
-                .as_str(),
-            "parser.type_fixtures"
+        let imported_predicate_functor_formula_start = [
+            "import",
+            "parser",
+            ".",
+            "type_fixtures",
+            ";",
+            "theorem",
+            imported_predicate_functor_spec.label,
+            ":",
+        ]
+        .iter()
+        .map(|token| token.len() + 1)
+        .sum::<usize>();
+        let imported_predicate_left_range = range(
+            source_id,
+            imported_predicate_functor_formula_start,
+            imported_predicate_functor_formula_start
+                + imported_predicate_functor_spec.left.len(),
+        );
+        let imported_predicate_start = imported_predicate_left_range.end + 1;
+        let imported_parenthesized_start = imported_predicate_start
+            + imported_predicate_functor_spec.predicate.len()
+            + 1;
+        let imported_functor_left_start = imported_parenthesized_start + 2;
+        let imported_functor_left_range = range(
+            source_id,
+            imported_functor_left_start,
+            imported_functor_left_start + imported_predicate_functor_spec.functor_left.len(),
+        );
+        let imported_functor_operator_start = imported_functor_left_range.end + 1;
+        let imported_functor_right_start = imported_functor_operator_start
+            + imported_predicate_functor_spec.functor.len()
+            + 1;
+        let imported_functor_right_range = range(
+            source_id,
+            imported_functor_right_start,
+            imported_functor_right_start + imported_predicate_functor_spec.functor_right.len(),
+        );
+        let imported_functor_range = range(
+            source_id,
+            imported_functor_left_start,
+            imported_functor_right_range.end,
+        );
+        let imported_predicate_formula_range = range(
+            source_id,
+            imported_predicate_functor_formula_start,
+            imported_functor_right_range.end + 2,
+        );
+        let expected_imported_numeral_sites = surface_sites_for_kind_ranges(
+            &imported_predicate_functor_theorem,
+            SurfaceNodeKind::NumeralTerm,
+            &[
+                imported_predicate_left_range,
+                imported_functor_left_range,
+                imported_functor_right_range,
+            ],
+        );
+        let expected_imported_functor_sites = surface_sites_for_kind_ranges(
+            &imported_predicate_functor_theorem,
+            SurfaceNodeKind::InfixExpression(mizar_syntax::SurfaceInfixOperator {
+                spelling: imported_predicate_functor_spec.functor.into(),
+                precedence: 10,
+                associativity: mizar_syntax::SurfaceOperatorAssociativity::Left,
+            }),
+            &[imported_functor_range],
+        );
+        let expected_imported_formula_sites = surface_sites_for_kind_ranges(
+            &imported_predicate_functor_theorem,
+            SurfaceNodeKind::PredicateApplication,
+            &[imported_predicate_formula_range],
         );
         assert_eq!(
-            imported_predicate_functor_payload
-                .functor_symbol
-                .module()
-                .path()
-                .as_str(),
-            "parser.type_fixtures"
+            imported_predicate_functor_payload.formula_site,
+            expected_imported_formula_sites[0]
         );
+        assert_eq!(
+            imported_predicate_functor_payload.formula_range,
+            imported_predicate_formula_range
+        );
+        assert_eq!(
+            imported_predicate_functor_payload.left_site,
+            expected_imported_numeral_sites[0]
+        );
+        assert_eq!(
+            imported_predicate_functor_payload.left_range,
+            imported_predicate_left_range
+        );
+        assert_eq!(
+            imported_predicate_functor_payload.functor_site,
+            expected_imported_functor_sites[0]
+        );
+        assert_eq!(
+            imported_predicate_functor_payload.functor_range,
+            imported_functor_range
+        );
+        assert_eq!(
+            imported_predicate_functor_payload.functor_left_site,
+            expected_imported_numeral_sites[1]
+        );
+        assert_eq!(
+            imported_predicate_functor_payload.functor_left_range,
+            imported_functor_left_range
+        );
+        assert_eq!(
+            imported_predicate_functor_payload.functor_right_site,
+            expected_imported_numeral_sites[2]
+        );
+        assert_eq!(
+            imported_predicate_functor_payload.functor_right_range,
+            imported_functor_right_range
+        );
+        for (symbol, expected_kind, expected_spelling) in [
+            (
+                &imported_predicate_functor_payload.predicate_symbol,
+                SymbolKind::Predicate,
+                imported_predicate_functor_spec.predicate,
+            ),
+            (
+                &imported_predicate_functor_payload.functor_symbol,
+                SymbolKind::Functor,
+                imported_predicate_functor_spec.functor,
+            ),
+        ] {
+            assert_eq!(symbol.module().path().as_str(), imported_predicate_functor_import);
+            let entry = imported_predicate_functor_symbols
+                .symbols()
+                .get(symbol)
+                .expect("imported predicate/functor symbol should exist");
+            assert_eq!(entry.kind(), expected_kind);
+            assert_eq!(entry.primary_spelling(), expected_spelling);
+            let contribution = imported_predicate_functor_symbols
+                .contributions()
+                .get(entry.contribution())
+                .expect("imported predicate/functor contribution should exist");
+            assert_eq!(contribution.module(), symbol.module());
+            assert!(matches!(
+                contribution.kind(),
+                ContributionKind::ImportedSource { .. }
+            ));
+        }
         assert_eq!(imported_predicate_functor_output.terms().len(), 4);
+        assert_eq!(
+            imported_predicate_functor_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term.site.clone())
+                .collect::<Vec<_>>(),
+            vec![
+                expected_imported_numeral_sites[0].clone(),
+                expected_imported_numeral_sites[1].clone(),
+                expected_imported_numeral_sites[2].clone(),
+                expected_imported_functor_sites[0].clone(),
+            ]
+        );
         let checked_left = imported_predicate_functor_output
             .terms()
             .iter()
             .map(|(_, term)| term)
-            .find(|term| term.site == imported_predicate_functor_payload.left_site)
+            .find(|term| term.site == expected_imported_numeral_sites[0])
             .expect("left numeral term should be checked");
         assert_eq!(checked_left.kind, TermKind::Numeral);
         assert_eq!(checked_left.status, TermStatus::Partial);
@@ -781,7 +920,7 @@
             .terms()
             .iter()
             .map(|(_, term)| term)
-            .find(|term| term.site == imported_predicate_functor_payload.functor_left_site)
+            .find(|term| term.site == expected_imported_numeral_sites[1])
             .expect("functor left numeral term should be checked");
         assert_eq!(checked_functor_left.kind, TermKind::Numeral);
         assert_eq!(checked_functor_left.status, TermStatus::Partial);
@@ -789,7 +928,7 @@
             .terms()
             .iter()
             .map(|(_, term)| term)
-            .find(|term| term.site == imported_predicate_functor_payload.functor_right_site)
+            .find(|term| term.site == expected_imported_numeral_sites[2])
             .expect("functor right numeral term should be checked");
         assert_eq!(checked_functor_right.kind, TermKind::Numeral);
         assert_eq!(checked_functor_right.status, TermStatus::Partial);
@@ -797,7 +936,7 @@
             .terms()
             .iter()
             .map(|(_, term)| term)
-            .find(|term| term.site == imported_predicate_functor_payload.functor_site)
+            .find(|term| term.site == expected_imported_functor_sites[0])
             .expect("infix functor application term should be checked");
         assert_eq!(checked_functor.kind, TermKind::FunctorApplication);
         assert_eq!(checked_functor.status, TermStatus::Partial);
@@ -816,7 +955,7 @@
             .expect("predicate application formula should be checked");
         assert_eq!(
             checked_predicate_formula.site,
-            imported_predicate_functor_payload.formula_site
+            expected_imported_formula_sites[0]
         );
         assert_eq!(
             checked_predicate_formula.kind,
@@ -826,8 +965,8 @@
         assert_eq!(
             checked_predicate_formula.terms,
             vec![
-                imported_predicate_functor_payload.left_site.clone(),
-                imported_predicate_functor_payload.functor_site.clone(),
+                expected_imported_numeral_sites[0].clone(),
+                expected_imported_functor_sites[0].clone(),
             ]
         );
         assert!(checked_predicate_formula.candidate_set.is_none());
@@ -916,11 +1055,138 @@
             ),
         ];
         for gap_case in imported_predicate_functor_gap_cases {
+            assert!(
+                extract_source_imported_predicate_functor_formula(
+                    &gap_case,
+                    imported_predicate_functor_symbols.module_id(),
+                    &imported_predicate_functor_symbols,
+                )
+                .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(
                     &gap_case,
                     imported_predicate_functor_symbols.module_id().clone(),
                     &imported_predicate_functor_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let imported_predicate_functor_corruption_cases = [
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    recovered_label: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    recovered_functor: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    duplicate_theorem: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    duplicate_formula_expression: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    extra_formula_child: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    extra_predicate_segment: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    extra_segment_child: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    extra_predicate_head_child: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    extra_parenthesized_child: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    extra_inner_expression_child: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+            imported_predicate_functor_theorem_ast_with_corruption(
+                source_id,
+                &[imported_predicate_functor_import],
+                imported_predicate_functor_spec,
+                ImportedPredicateFunctorTheoremCorruption {
+                    extra_infix_operand: true,
+                    ..ImportedPredicateFunctorTheoremCorruption::default()
+                },
+            ),
+        ];
+        for gap_case in imported_predicate_functor_corruption_cases {
+            assert!(
+                extract_source_imported_predicate_functor_formula(
+                    &gap_case,
+                    imported_predicate_functor_symbols.module_id(),
+                    &imported_predicate_functor_symbols,
+                )
+                .is_none()
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_predicate_functor_symbols.module_id().clone(),
+                    &imported_predicate_functor_symbols,
                 ),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
@@ -932,7 +1198,16 @@
             imported_functor_wrong_predicate_kind_env(symbols.module_id().clone()),
             ambiguous_imported_predicate_functor_env(symbols.module_id().clone(), "divides"),
             ambiguous_imported_predicate_functor_env(symbols.module_id().clone(), "++"),
+            imported_predicate_functor_local_contribution_env(symbols.module_id().clone()),
         ] {
+            assert!(
+                extract_source_imported_predicate_functor_formula(
+                    &imported_predicate_functor_theorem,
+                    gap_symbols.module_id(),
+                    &gap_symbols,
+                )
+                .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(
                     &imported_predicate_functor_theorem,

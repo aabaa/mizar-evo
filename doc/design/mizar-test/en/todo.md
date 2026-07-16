@@ -828,8 +828,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   the bounded builtin equality, inequality, and membership family, and Task
   262H completed the subsequent move. Task 262I0 completed the test-only
   preservation prerequisite for the bounded builtin type-assertion family;
-  Task 262I moved only that family after I0. The remaining Task 262 formula
-  extraction families and Task 263 keep this parent item open.
+  Task 262I moved only that family after I0. Task 262J0 completed the test-only
+  preservation prerequisite for the imported predicate/functor family. The
+  remaining Task 262 formula extraction work continues with the shared symbol
+  projection in J1 and the family move in J2. Remaining formula families and
+  Task 263 keep this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

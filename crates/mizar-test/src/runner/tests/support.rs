@@ -1293,6 +1293,18 @@
         )
     }
 
+    fn imported_predicate_functor_local_contribution_env(module: ResolverModuleId) -> SymbolEnv {
+        term_formula_symbol_env_with_imported_contribution(
+            module,
+            &[],
+            &[
+                ("divides", SymbolKind::Predicate),
+                ("++", SymbolKind::Functor),
+            ],
+            false,
+        )
+    }
+
     fn source_local_predicate_and_imported_functor_env(module: ResolverModuleId) -> SymbolEnv {
         term_formula_symbol_env(
             module,
@@ -1369,6 +1381,20 @@
         local_symbols: &[(&'static str, SymbolKind)],
         imported_symbols: &[(&'static str, SymbolKind)],
     ) -> SymbolEnv {
+        term_formula_symbol_env_with_imported_contribution(
+            module,
+            local_symbols,
+            imported_symbols,
+            true,
+        )
+    }
+
+    fn term_formula_symbol_env_with_imported_contribution(
+        module: ResolverModuleId,
+        local_symbols: &[(&'static str, SymbolKind)],
+        imported_symbols: &[(&'static str, SymbolKind)],
+        imported_source: bool,
+    ) -> SymbolEnv {
         let source = source_id(201);
         let imported_module = ResolverModuleId::new(
             module.package().clone(),
@@ -1382,7 +1408,11 @@
         );
         let imported_contribution = indexes.contributions.insert(
             imported_module.clone(),
-            ContributionKind::ImportedSource { source_id: source },
+            if imported_source {
+                ContributionKind::ImportedSource { source_id: source }
+            } else {
+                ContributionKind::LocalSource { source_id: source }
+            },
             SourceAnchor::Range(range(source, 1, 2)),
         );
         for (ordinal, (spelling, kind)) in local_symbols.iter().copied().enumerate() {
@@ -3718,6 +3748,21 @@
         functor_right: &'a str,
     }
 
+    #[derive(Clone, Copy, Default)]
+    struct ImportedPredicateFunctorTheoremCorruption {
+        recovered_label: bool,
+        recovered_functor: bool,
+        duplicate_theorem: bool,
+        duplicate_formula_expression: bool,
+        extra_formula_child: bool,
+        extra_predicate_segment: bool,
+        extra_segment_child: bool,
+        extra_predicate_head_child: bool,
+        extra_parenthesized_child: bool,
+        extra_inner_expression_child: bool,
+        extra_infix_operand: bool,
+    }
+
     fn exact_imported_predicate_functor_theorem_spec()
     -> ImportedPredicateFunctorTheoremSpec<'static> {
         ImportedPredicateFunctorTheoremSpec {
@@ -3736,18 +3781,36 @@
         imports: &[&str],
         spec: ImportedPredicateFunctorTheoremSpec<'_>,
     ) -> SurfaceAst {
+        imported_predicate_functor_theorem_ast_with_corruption(
+            source_id,
+            imports,
+            spec,
+            ImportedPredicateFunctorTheoremCorruption::default(),
+        )
+    }
+
+    fn imported_predicate_functor_theorem_ast_with_corruption(
+        source_id: SourceId,
+        imports: &[&str],
+        spec: ImportedPredicateFunctorTheoremSpec<'_>,
+        corruption: ImportedPredicateFunctorTheoremCorruption,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let mut items = imports
             .iter()
             .map(|import| add_import_item(&mut builder, source_id, &mut offset, import))
             .collect::<Vec<_>>();
-        items.push(add_imported_predicate_functor_theorem_item(
-            &mut builder,
-            source_id,
-            &mut offset,
-            spec,
-        ));
+        let theorem_count = if corruption.duplicate_theorem { 2 } else { 1 };
+        items.extend((0..theorem_count).map(|_| {
+            add_imported_predicate_functor_theorem_item_with_corruption(
+                &mut builder,
+                source_id,
+                &mut offset,
+                spec,
+                corruption,
+            )
+        }));
         finish_compilation_ast(builder, source_id, items)
     }
 
@@ -3939,6 +4002,22 @@
         offset: &mut usize,
         spec: ImportedPredicateFunctorTheoremSpec<'_>,
     ) -> SurfaceBuilderNodeId {
+        add_imported_predicate_functor_theorem_item_with_corruption(
+            builder,
+            source_id,
+            offset,
+            spec,
+            ImportedPredicateFunctorTheoremCorruption::default(),
+        )
+    }
+
+    fn add_imported_predicate_functor_theorem_item_with_corruption(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: ImportedPredicateFunctorTheoremSpec<'_>,
+        corruption: ImportedPredicateFunctorTheoremCorruption,
+    ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let status_token = spec.status.map(|status| {
             add_token(
@@ -3956,13 +4035,23 @@
             SurfaceTokenKind::ReservedWord,
             "theorem",
         );
-        let label_token = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::Identifier,
-            spec.label,
-        );
+        let label_token = if corruption.recovered_label {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        };
         let colon = add_token(
             builder,
             source_id,
@@ -3972,7 +4061,8 @@
         );
         let formula_start = *offset;
         let left_term = add_numeral_term_expression(builder, source_id, offset, spec.left);
-        let predicate_head = add_predicate_head(builder, source_id, offset, spec.predicate);
+        let predicate_head =
+            add_predicate_head(builder, source_id, offset, spec.predicate, corruption);
         let right_term = add_parenthesized_infix_term_expression(
             builder,
             source_id,
@@ -3980,25 +4070,50 @@
             spec.functor,
             spec.functor_left,
             spec.functor_right,
+            corruption,
         );
         let formula_end = builder
             .node_range(right_term)
             .expect("just-created predicate right term should exist")
             .end;
+        let mut segment_children = vec![left_term, predicate_head, right_term];
+        if corruption.extra_segment_child {
+            segment_children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
         let segment = builder.add_node(
             SurfaceNodeKind::PredicateSegment,
             range(source_id, formula_start, formula_end),
-            vec![left_term, predicate_head, right_term],
+            segment_children,
         );
+        let mut predicate_segments = vec![segment];
+        if corruption.extra_predicate_segment {
+            predicate_segments.push(builder.add_node(
+                SurfaceNodeKind::PredicateSegment,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
         let formula = builder.add_node(
             SurfaceNodeKind::PredicateApplication,
             range(source_id, formula_start, formula_end),
-            vec![segment],
+            predicate_segments,
         );
+        let mut formula_children = vec![formula];
+        if corruption.extra_formula_child {
+            formula_children.push(builder.add_node(
+                SurfaceNodeKind::PredicateApplication,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
         let formula_expression = builder.add_node(
             SurfaceNodeKind::FormulaExpression,
             range(source_id, formula_start, formula_end),
-            vec![formula],
+            formula_children,
         );
         let semicolon = add_token(
             builder,
@@ -4015,7 +4130,15 @@
         if let Some(status_token) = status_token {
             children.push(status_token);
         }
-        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        children.extend([theorem, label_token, colon, formula_expression]);
+        if corruption.duplicate_formula_expression {
+            children.push(builder.add_node(
+                SurfaceNodeKind::FormulaExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        children.push(semicolon);
         builder.add_node(
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
@@ -4028,6 +4151,7 @@
         source_id: SourceId,
         offset: &mut usize,
         predicate: &str,
+        corruption: ImportedPredicateFunctorTheoremCorruption,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let symbol = add_qualified_symbol(builder, source_id, offset, predicate);
@@ -4035,10 +4159,18 @@
             .node_range(symbol)
             .expect("just-created predicate symbol should exist")
             .end;
+        let mut children = vec![symbol];
+        if corruption.extra_predicate_head_child {
+            children.push(builder.add_node(
+                SurfaceNodeKind::QualifiedSymbol,
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
         builder.add_node(
             SurfaceNodeKind::PredicateHead,
             range(source_id, start, end),
-            vec![symbol],
+            children,
         )
     }
 
@@ -4049,6 +4181,7 @@
         operator: &str,
         left: &str,
         right: &str,
+        corruption: ImportedPredicateFunctorTheoremCorruption,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let open = add_token(
@@ -4058,7 +4191,15 @@
             SurfaceTokenKind::ReservedSymbol,
             "(",
         );
-        let inner = add_infix_term_expression(builder, source_id, offset, operator, left, right);
+        let inner = add_infix_term_expression(
+            builder,
+            source_id,
+            offset,
+            operator,
+            left,
+            right,
+            corruption,
+        );
         let close = add_token(
             builder,
             source_id,
@@ -4070,10 +4211,19 @@
             .node_range(close)
             .expect("just-created parenthesized close should exist")
             .end;
+        let mut parenthesized_children = vec![open, inner];
+        if corruption.extra_parenthesized_child {
+            parenthesized_children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
+        parenthesized_children.push(close);
         let parenthesized = builder.add_node(
             SurfaceNodeKind::ParenthesizedTerm,
             range(source_id, start, end),
-            vec![open, inner, close],
+            parenthesized_children,
         );
         builder.add_node(
             SurfaceNodeKind::TermExpression,
@@ -4089,34 +4239,62 @@
         operator: &str,
         left: &str,
         right: &str,
+        corruption: ImportedPredicateFunctorTheoremCorruption,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let left_term = add_numeral_term(builder, source_id, offset, left);
-        let operator_token = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::UserSymbol,
-            operator,
-        );
+        let operator_token = if corruption.recovered_functor {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::UserSymbol,
+                operator,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::UserSymbol,
+                operator,
+            )
+        };
         let right_term = add_numeral_term(builder, source_id, offset, right);
         let end = builder
             .node_range(right_term)
             .expect("just-created infix right term should exist")
             .end;
+        let infix_kind = mizar_syntax::SurfaceInfixOperator {
+            spelling: operator.into(),
+            precedence: 10,
+            associativity: mizar_syntax::SurfaceOperatorAssociativity::Left,
+        };
+        let mut infix_children = vec![left_term, operator_token, right_term];
+        if corruption.extra_infix_operand {
+            infix_children.push(builder.add_node(
+                SurfaceNodeKind::NumeralTerm,
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
         let infix = builder.add_node(
-            SurfaceNodeKind::InfixExpression(mizar_syntax::SurfaceInfixOperator {
-                spelling: operator.into(),
-                precedence: 10,
-                associativity: mizar_syntax::SurfaceOperatorAssociativity::Left,
-            }),
+            SurfaceNodeKind::InfixExpression(infix_kind.clone()),
             range(source_id, start, end),
-            vec![left_term, operator_token, right_term],
+            infix_children,
         );
+        let mut inner_children = vec![infix];
+        if corruption.extra_inner_expression_child {
+            inner_children.push(builder.add_node(
+                SurfaceNodeKind::InfixExpression(infix_kind),
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
         builder.add_node(
             SurfaceNodeKind::TermExpression,
             range(source_id, start, end),
-            vec![infix],
+            inner_children,
         )
     }
 
