@@ -1,9 +1,11 @@
+mod admission;
 mod checker_handoff;
 mod result;
 mod source_ast;
 mod source_formula;
 mod source_reserve;
 
+pub(super) use admission::{is_active_type_elaboration, validate_active_type_elaboration_tags};
 #[cfg(test)]
 pub(super) use checker_handoff::assemble_source_checker_handoff;
 pub(super) use checker_handoff::{

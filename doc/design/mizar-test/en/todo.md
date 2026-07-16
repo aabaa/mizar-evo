@@ -849,8 +849,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   diagnostic projection Task 263B, which is also complete. Fresh inventory
   selected expected-result/failure-projection Task 263C, which is complete with
   exact-body and byte-stability preservation. Fresh Task 263 inventory now
-  selects the next bounded validation/detail family; Task 263 keeps this parent
-  item open.
+  selected the exact 50-line type active-admission gate Task 263D, which is
+  complete with exact-body and byte-stability preservation. Fresh Task 263
+  inventory now selects the next bounded validation/detail family; Task 263
+  keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

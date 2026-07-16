@@ -2131,6 +2131,68 @@ paired Source Inventory に新しい leaf を追加した。Task 263C は完了�
 coverage credit、owner crate、deferred status は不変なので
 `spec_coverage_audit.md` の変更は不要。
 
+## Task 263D Pre-Move Inventory and Specification
+
+fresh inventory は type-elaboration active-admission family を正確な4 fragment として
+選ぶ。1行 `ACTIVE_TYPE_ELABORATION_TAG` constant
+(`4629969fa68b61384e96b345b2a646d786b6f843ca5ad128fa17723d473d68ac`)、
+13行 runnable predicate
+(`5303e0c27405121d8aeefb7c6e2163dfcd288419c44b6e44779b1df4e0a41c9d`)、
+6行 tag predicate
+(`c91740986c91df19297de24f8c6f7441fed4886de246e18c65b5361e4a1fdd5b`)、
+30行 gate validator
+(`b0cb1652b4046473ce2bc12285ac09a69411c08d32b6a7144a501a9f27818945`)
+である。source order で連結した正確な50行の hash は
+`937c032b2504225dbe5e79f5526545d969929afbd8dbfc9c09faf4cc5ad7a429`。
+
+Task 263D はこの family を新しい private `type_elaboration/admission.rs` へ機械的に
+移動する。tag constant と tag predicate は leaf-private のままにする。
+`is_active_type_elaboration` と `validate_active_type_elaboration_tags` だけを
+type-elaboration facade 経由の parent-only entry とする。public
+`active_type_elaboration_cases` iterator と corpus-level orchestration は
+`runner.rs` に残す。direct dependency は `ValidationDiagnostic`、`ExpectedOutcome`、
+`PipelinePhase`、`TestCase`、`TestPlan`、`Stage` だけで、source、checker、output、
+parent DTO dependency はない。
+
+これは move-only `design_drift` で、Task 263D0 prerequisite はない。既存の non-type、
+wrong-phase、public-diagnostic-code gate test が gate branch、diagnostic code、silent-
+skip rejection を直接保持する。normalized exact-body equivalence と repository/report/
+CLI byte-stability が detail key、text、order、active case 188件の iteration behavior を
+保持する。test、
+expectation、diagnostic、API、payload、behavior、authority artifact は変更しない。
+新しい source path は move と同時に paired Source Inventory へ追加する。coverage
+credit、owner crate、deferred status は変わらないため
+`spec_coverage_audit.md` は変更しない。
+
+## Task 263D Move Result
+
+Task 263D は正確な4 fragment/50行 type active-admission family を新しい private
+`type_elaboration/admission.rs` へ移動した。必要な
+`pub(in crate::runner)` visibility qualifier 2個だけを除去し、ASCII whitespace を
+fold し、rustfmt の trailing `TestPlan` signature comma だけを正規化すると、旧/moved
+family はともに hash
+`ea1a50947f895bcbc5bcca417432b3860369174677ea9b8b4b7626ca651157c4`
+となる。tag constant/tag predicate は leaf-private のまま、facade は runnable
+predicate と gate validator だけを parent-only expose する。public iterator と corpus
+orchestration は `runner.rs` に残す。
+
+結果の `runner.rs` は11,490行、hash
+`5d58dcfe62d1d724a731f5421ad6547d7e8e7757581297efe7b6a000adec2230`、
+52行 `type_elaboration.rs` facade は hash
+`b06293cc471453df1bb373a53b51cbba2d8b3991ec5206c5b0ecd719047839e7`、
+新しい60行 `admission.rs` は hash
+`b5261a23dae29eb656ba6f414a622a4cc40501dabd0fcf457fedf53b23aba150`。
+admission branch、diagnostic code/key/text、case内 diagnostic order、silent-skip
+rejection は不変。
+
+focused gate test 3件、unit test 272件、active parse 96件、declaration-symbol 4件、
+type-elaboration 188件は全成功。plan/count は403/367、type coverage は235/223、
+pass/fail は219/184 のまま。raw/normalized test-list hash と4つの CLI byte hash は
+不変。paired Source Inventory に新しい leaf を追加した。Task 263D は完了し、fresh
+Task 263 inventory で次の bounded validation/detail family を選ぶ。authority、
+behavior、coverage credit、owner crate、deferred status は不変なので
+`spec_coverage_audit.md` の変更は不要。
+
 Tasks 262N0-262Q は authority、behavior、coverage credit、owner crate、deferred
 status を維持するため `spec_coverage_audit.md` は変更しない。accepted-shape expansion、
 route generalization、config/result-role edit、payload/detail/diagnostic/order change、
@@ -2142,11 +2204,11 @@ assertion weakening、test deletion/ignore、checker/output move を禁止する
 |---|---|---|---|
 | public report/result/status type と `run_*_corpus` function | stable public runner facade と corpus-level orchestration | plan/discovery から phase execution | `runner.rs` に残す。 |
 | source/frontend と resolver staging | source package preparation/cleanup、root/path/snapshot identity、frontend execution/result transport、common frontend diagnostic projection、resolver shell/projection/symbol collection | 適用範囲で parse、declaration-symbol、type-elaboration が共有 | frontend staging は Task 258、declaration/type resolver collection は Task 260A、common frontend diagnostic projection は Task 263B で最小 parent-only visibility の private `shared.rs` へ移動済み。 |
-| active-case admission と stable failure assembly | tag/phase gate、expected-output matching、deterministic failure diagnostic | phase-specific facade-to-owner transition | Tasks 259/260B で parse-only/declaration case/failure boundary は移動済み。Task 263C で type expected-key/failure projection を private `type_elaboration/result.rs` へ移動し、type admission、case execution、actual-detail dispatch は fresh Task 263 inventory のため `runner.rs` に保持。 |
+| active-case admission と stable failure assembly | tag/phase gate、expected-output matching、deterministic failure diagnostic | phase-specific facade-to-owner transition | Tasks 259/260B で parse-only/declaration case/failure boundary は移動済み。Task 263C で type expected-key/failure projection を private `type_elaboration/result.rs`、Task 263D で type tag/runnable/gate admission を private `type_elaboration/admission.rs` へ移動し、type case execution/actual-detail dispatch は fresh Task 263 inventory のため `runner.rs` に保持。 |
 | parse-only execution | Surface-AST snapshot と parse-only failure projection | shared frontend から parse-only result | Task 259 で最小 parent-only visibility の private `parse_only.rs` へ移動済み。 |
 | fixture import provider | parser fixture lexical summary と type import-summary adapter | active phase が共有する parser/frontend seam | Task 261 で private `import_fixtures.rs` へ移動済み。後段 phase は同じ provider/adapter path を維持。 |
 | declaration-symbol observation | shared resolver result を consume し、deterministic payload、expected-value、failure projection を組み立てる | shared resolver output から declaration-symbol result | Task 260B で private `declaration_symbol.rs` へ移動済み。既存 integration test は `tests/metadata.rs` に残す。 |
-| type-elaboration admission/execution | lower-stage fail-closed gate と checker/core handoff dispatch | resolver output から source bridge | Task 263A で generic checker-handoff assembly/validation を private `checker_handoff.rs`、Task 263C で expected-key/failure projection を private `result.rs` へ移動。top-level admission/dispatch、config、actual-detail logic、他の output consumer は後続 Task 263 family のため `runner.rs` に残り、phase facade は private leaf 5個を所有する。 |
+| type-elaboration admission/execution | lower-stage fail-closed gate と checker/core handoff dispatch | resolver output から source bridge | Task 263A で generic checker-handoff assembly/validation を private `checker_handoff.rs`、Task 263C で expected-key/failure projection を private `result.rs`、Task 263D で active admission を private `admission.rs` へ移動。top-level case execution/dispatch、config、actual-detail logic、他の output consumer は後続 Task 263 family のため `runner.rs` に残り、phase facade は private leaf 6個を所有する。 |
 | source extraction | exact source-shape recognition と real AST/resolver payload construction | syntax/resolver input から checker input | Tasks 262A-262B で common source-AST primitive/projection、Task 262D で shared exact fixture-import projection を private `type_elaboration/source_ast.rs`、Tasks 262C/262E で reserve type-expression/symbol projection、declaration segmentation、local-mode expansion を private `type_elaboration/source_reserve.rs`、Tasks 262F-262Q で standalone formula constant、shared exact numeral、builtin binary/type-assertion formula、shared imported-formula symbol resolver/provenance pair、imported predicate/functor、imported attribute assertion、set-enumeration、connective/quantifier family、shared/direct-binary/parenthesized/type-assertion reserved-variable source substrate を private `type_elaboration/source_formula.rs` へ移動済み。formula source extraction は完了し、保持 config/wrapper と checker/output consumer は Task 263 inventory まで `runner.rs` に残す。 |
 | payload validation と detail-key rendering | exact checker/core output validation、expected/actual matching、deterministic key、diagnostic | source bridge output から runner result | private type-elaboration leaf owner。key/order は編集しない。 |
 | fixture builder と corruption probe | AST/env/sidecar builder と finite negative matrix | test support から private production seam | private test support/fragment のみ。 |
@@ -2165,6 +2227,7 @@ public runner facade
      -> shared plan/admission/source/frontend/diagnostic/resolver staging
         -> fixture/import-summary owner (lexical provider)
   -> type-elaboration owner
+     -> active tag、runnable-admission、gate validation
      -> shared plan/admission/source/frontend/diagnostic/resolver staging
         -> fixture/import-summary owner (lexical provider)
      -> fixture/import-summary owner (resolver adapter)
@@ -2315,6 +2378,7 @@ subtask は long-chain test を含まない。parent Task 255 は Task 255E ま�
 | 263A | 完了: 正確な506行 checker-handoff substrate を最小 runner-scoped visibility で private `type_elaboration/checker_handoff.rs` へ移動。 |
 | 263B | 完了: 正確な49行 common frontend diagnostic projection を parent-only entry 3個で既存 private `shared.rs` へ移動。 |
 | 263C | 完了: 正確な24行 expected-result/failure-projection family を parent-only entry 2個で private `type_elaboration/result.rs` へ移動し、exact-body/byte-stability を維持。 |
+| 263D | 完了: 正確な4 fragment/50行 type active-admission gate を parent-only entry 2個で private `type_elaboration/admission.rs` へ移動し、exact-body/byte-stability を維持。 |
 | 264 | paired source-layout inventory、path table、todo/plan state、ownership guard を closeout。 |
 
 各 source-moving task は nonempty でなければならない。fresh inventory により

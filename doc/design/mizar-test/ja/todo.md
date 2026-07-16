@@ -770,8 +770,9 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   inventory は common frontend diagnostic projection Task 263B を次に選び、これも
   完了した。fresh inventory が選んだ expected-result/failure-projection Task 263C も
   exact-body/byte-stability を維持して完了した。fresh Task 263 inventory は次の
-  bounded validation/detail family を選ぶため、Task 263 parent item は open のままに
-  する。
+  正確な50行 type active-admission gate Task 263D を選び、exact-body/byte-stability を
+  維持して完了した。fresh Task 263 inventory は次の bounded validation/detail family
+  を選ぶため、Task 263 parent item は open のままにする。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

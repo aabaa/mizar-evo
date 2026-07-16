@@ -64,16 +64,17 @@ use type_elaboration::{
     extract_source_parenthesized_reserved_variable_binary_formula_with_config,
     extract_source_reserved_variable_binary_formula,
     extract_source_reserved_variable_type_assertion_with_config,
-    extract_source_set_enumeration_formula, source_binding_matches_reserved_builtin_type,
-    source_binding_use_ordinals, source_mode_terminal_builtin_input, source_module_binding_env,
+    extract_source_set_enumeration_formula, is_active_type_elaboration,
+    source_binding_matches_reserved_builtin_type, source_binding_use_ordinals,
+    source_mode_terminal_builtin_input, source_module_binding_env,
     source_reserved_variable_asserted_head_relation_is_exact,
     source_reserved_variable_mode_expansions_are_exact,
     source_type_expression_matches_reserved_builtin_type, type_elaboration_failure_diagnostic,
+    validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
 const ACTIVE_DECLARATION_SYMBOL_TAG: &str = "active_declaration_symbol";
-const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
 const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
 const TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
@@ -620,20 +621,6 @@ fn is_active_declaration_symbol(case: &TestCase) -> bool {
             .is_some_and(|extension| extension == "miz")
 }
 
-fn is_active_type_elaboration(case: &TestCase) -> bool {
-    has_active_type_elaboration_tag(case)
-        && case.expectation.stage == Stage::TypeElaboration
-        && case.expectation.expected_phase == Some(PipelinePhase::TypeCheck)
-        && matches!(
-            case.expectation.expected_outcome,
-            ExpectedOutcome::Pass | ExpectedOutcome::Fail
-        )
-        && case
-            .source_path
-            .extension()
-            .is_some_and(|extension| extension == "miz")
-}
-
 fn has_active_parse_only_tag(case: &TestCase) -> bool {
     case.expectation
         .tags
@@ -646,13 +633,6 @@ fn has_active_declaration_symbol_tag(case: &TestCase) -> bool {
         .tags
         .iter()
         .any(|tag| tag == ACTIVE_DECLARATION_SYMBOL_TAG)
-}
-
-fn has_active_type_elaboration_tag(case: &TestCase) -> bool {
-    case.expectation
-        .tags
-        .iter()
-        .any(|tag| tag == ACTIVE_TYPE_ELABORATION_TAG)
 }
 
 fn validate_active_parse_only_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic> {
@@ -696,37 +676,6 @@ fn validate_active_declaration_symbol_tags(plan: &TestPlan) -> Vec<ValidationDia
                 "E-DECLARATION-SYMBOL-PUBLIC-DIAGNOSTIC-CODES",
                 format!("declaration_symbol.public_codes.{}", case.id.0),
                 "active_declaration_symbol cases must keep diagnostic_codes empty until public resolver diagnostic codes are specified; use diagnostic_payloads or stable_detail_key for internal detail keys",
-            ));
-        }
-    }
-    diagnostics
-}
-
-fn validate_active_type_elaboration_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic> {
-    let mut diagnostics = Vec::new();
-    for case in plan
-        .cases
-        .iter()
-        .filter(|case| has_active_type_elaboration_tag(case))
-    {
-        if !is_active_type_elaboration(case) {
-            diagnostics.push(
-                ValidationDiagnostic::error(
-                    &case.expectation_path,
-                    "type_elaboration",
-                    "E-TYPE-ELABORATION-ACTIVE-GATE",
-                    format!("type_elaboration.active_gate.{}", case.id.0),
-                    "active_type_elaboration cases must be .miz pass/fail expectations at stage type_elaboration and phase type_check",
-                ),
-            );
-        }
-        if !case.expectation.diagnostic_codes.is_empty() {
-            diagnostics.push(ValidationDiagnostic::error(
-                &case.expectation_path,
-                "type_elaboration",
-                "E-TYPE-ELABORATION-PUBLIC-DIAGNOSTIC-CODES",
-                format!("type_elaboration.public_codes.{}", case.id.0),
-                "active_type_elaboration cases must keep diagnostic_codes empty until public checker diagnostic codes are specified; use diagnostic_payloads or stable_detail_key for internal detail keys",
             ));
         }
     }
