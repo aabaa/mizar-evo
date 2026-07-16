@@ -1,6 +1,7 @@
 mod admission;
 mod binary_routes;
 mod checker_handoff;
+mod long_chain_config;
 mod output;
 mod parenthesized_routes;
 mod result;
@@ -197,6 +198,9 @@ pub(super) use checker_handoff::{
     SourceReserveHandoff, assemble_source_reserve_checker_handoff,
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
     assert_source_reserve_handoff, source_module_binding_env,
+};
+pub(super) use long_chain_config::{
+    SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS, SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_DEFINITIONS,
 };
 #[cfg(test)]
 pub(super) use output::{

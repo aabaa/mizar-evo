@@ -817,7 +817,10 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   選び、token-identical body/byte-stabilityを維持して完了した。fresh inventoryは
   正確な11 fragment/273行four-edge local-object-mode membership/equality/inequality route
   familyをTask 263ZAとして選び、token-identical body/byte-stabilityを維持して完了した。
-  fresh inventoryはlong-chain binary route-owner familyへ戻るため、Task 263 parent itemは
+  fresh dependency inventoryは正確な2 fragment/74行の共有long-chain seven-expansion
+  definition tableをTask 263ZBとして選び、token-identical body/byte-stabilityを維持して
+  完了した。fresh inventoryはparent dependencyやconsumer-family混在なしでlocal-mode/
+  local-object-mode long-chain binary route familyを分離できるため、Task 263 parent itemは
   openのまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
