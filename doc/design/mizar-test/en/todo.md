@@ -815,9 +815,9 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   audited phase and ownership boundaries. Leave `runner.rs` as the public
   facade and top-level orchestration owner. Keep internal visibility minimal
   and do not change detail keys, diagnostics, payload contracts, fixture
-  ownership, ordering, or fail-closed behavior. Task 258 completed the private
-  shared source/frontend staging owner; Task 259 is next, and Tasks 259-263
-  keep this parent item open.
+  ownership, ordering, or fail-closed behavior. Tasks 258-259 completed the
+  private shared staging and parse-only owners; Task 260 is next, and Tasks
+  260-263 keep this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

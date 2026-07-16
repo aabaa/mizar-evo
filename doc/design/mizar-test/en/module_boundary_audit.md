@@ -424,14 +424,42 @@ all four CLI byte hashes, both 272-test list hashes, counts, payloads,
 diagnostics, ordering, and fail-closed behavior are unchanged. Task 258 is
 complete; Task 259 is next.
 
+## Task 259 Move Result
+
+Task 259 created the private `src/runner/parse_only.rs` owner and moved the
+three cohesive parse-only fragments out of `runner.rs`. The original 51-line
+case-execution fragment had hash
+`6ff68ec8610c9e5ded44f69369850e11d7adfbaf1685f540398fd465d58f4361`;
+the original 24-line failure-projection fragment had hash
+`2504fbeae49d240c8897f50f00303124ab7c0c3d4bde56393a316dc2419d4275`;
+the original 32-line Surface-AST snapshot comparison fragment had hash
+`e8e1698aa3af9e86e80baf03f799af89490782e3202c20ab22a58011f6d65176`.
+The resulting 121-line `parse_only.rs`, including direct dependency imports,
+has hash
+`d1c1dd0f0c322f3bd4a6e829e66bf6aeaf0dc01b46d60dd177a7fe8e4619ae5a`,
+and `runner.rs` has 16,913 lines with hash
+`5579a126eccfbbb937e36149d74a940e146619254c1bb8301dca57d191cdfec9`.
+Only the case runner and failure projection use parent-only `pub(super)`
+visibility; snapshot comparison remains private. The owner calls sibling
+`shared::run_frontend` directly and keeps only
+`assertion_diagnostic_codes` and `frontend_error_code` as explicit temporary
+parent diagnostic dependencies until Task 263. The fixture import provider
+and its adapters remain in `runner.rs` for Task 261; no fixture ownership moved
+early. Public surface hash
+`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
+all four CLI byte hashes, both 272-test list hashes, counts, payloads,
+diagnostics, ordering, and fail-closed behavior are unchanged. Task 259 is
+complete; Task 260 is next.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
 |---|---|---|---|
 | public report/result/status types and `run_*_corpus` functions | Stable public runner facade and corpus-level orchestration | plan/discovery to phase execution | Keep in `runner.rs`. |
 | source/frontend staging | Source package preparation and cleanup, root/path/snapshot identity, and frontend execution/result transport | shared by parse, declaration-symbol, and type-elaboration | Moved in Task 258 to private `shared.rs` with parent-only visibility. |
-| active-case admission and stable failure assembly | Tag/phase gates, expected-output matching, and deterministic failure diagnostics | phase-specific facade-to-owner transition | Keep in `runner.rs` until the owning Tasks 259-263 move each phase boundary. |
-| parse-only execution and fixture import provider | Surface-AST snapshots and parser fixture lexical summaries | shared frontend plus parser/frontend seams | Private parse-only owner; preserve the provider's use by later phases. |
+| active-case admission and stable failure assembly | Tag/phase gates, expected-output matching, and deterministic failure diagnostics | phase-specific facade-to-owner transition | Keep the remaining declaration/type boundaries in `runner.rs` until the owning Tasks 260-263 move them; Task 259 moved the parse-only case runner and failure projection. |
+| parse-only execution | Surface-AST snapshots and parse-only failure projection | shared frontend to parse-only result | Moved in Task 259 to private `parse_only.rs` with minimal parent-only visibility. |
+| fixture import provider | Parser fixture lexical summaries and adapters | parser/frontend seams shared by active phases | Keep in `runner.rs` until Task 261; preserve its use by later phases. |
 | declaration-symbol observation | Resolver shell/projection/symbol collection and deterministic payload keys | frontend AST to resolver output | Private declaration-symbol owner; existing integration tests remain in `tests/metadata.rs`. |
 | type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Private type-elaboration owner. |
 | source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Private type-elaboration leaf owner, moved before its callers. |
@@ -560,7 +588,7 @@ Task 255E.
 | 257G | Complete: moved the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`, retaining the immediate long-chain include and Task 257H boundary. |
 | 257H | Complete: moved the final nine root bridge fixtures, three root isolation tests, and 28 nested tests to `remaining_bridges_and_nested_isolation.rs` while retaining Task 216-222 modules; completed Task 257. |
 | 258 | Complete: moved shared source/frontend staging helpers to private `shared.rs` after the test layout stabilized. |
-| 259 | Move parse-only production helpers. |
+| 259 | Complete: moved parse-only case execution, Surface-AST snapshot comparison, and failure projection to private `parse_only.rs`. |
 | 260 | Move existing declaration-symbol production helpers; this is not a test move. |
 | 261 | Move fixture/import-summary production helpers. |
 | 262 | Move type-elaboration source-extraction leaves. |

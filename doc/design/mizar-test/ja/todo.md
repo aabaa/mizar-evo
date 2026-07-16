@@ -740,8 +740,8 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   で分割する。`runner.rs` は public facade と top-level orchestration owner に
   限定する。internal visibility を最小に保ち、detail key、diagnostic、payload
   contract、fixture ownership、ordering、fail-closed behavior を変更しない。
-  Task 258 で private shared source/frontend staging owner は完了。次は Task 259
-  であり、Tasks 259-263 が残るため、この parent item は open のままである。
+  Tasks 258-259 で private shared staging と parse-only owner は完了。次は
+  Task 260 であり、Tasks 260-263 が残るため、この parent item は open のまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
