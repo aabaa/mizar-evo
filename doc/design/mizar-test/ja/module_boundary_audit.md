@@ -122,6 +122,21 @@ hash は
 26 fully qualified names、元の order 位置、Task 253B boundary、両 272-test list
 hash はすべて不変である。
 
+## Task 253B Move Result
+
+Task 253B は wrapper module を作らず
+`src/runner/tests/type_elaboration/reserved_direct.rs` を root-include した。
+byte-identical な 284 行の fragment は監査済み direct reserved-variable
+membership/inequality 2 tests を含み、hash は
+`c65a5f27463950979368bc702e36f42fa0398884029cff450b54b31095f30e4e`。
+Task 255 前の separator を含む retained 63,289 行は byte-identical のままで
+hash は
+`fffe06106cca615e370bb4c2da222da5a4bc21a264cadb5ae8c2d79ed7fdbcce`、
+結果の 63,290 行の `tests.rs` hash は
+`c90905d94abd1a43c0d65d4abffe8bc970262eee2d64e22da1db4024d614bbf4`。
+2 fully qualified names、元の order 位置、Task 255 boundary、両 272-test list
+hash はすべて不変である。parent Task 253 は完了。
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -205,6 +220,14 @@ block 後の separator を retained とし、その直後から Task 253B が始
 はこの contiguous block だけを
 `src/runner/tests/type_elaboration/mode_chain.rs` へ移動する。
 
+Task 253B の fresh inventory により、次の block を 2 complete direct
+reserved-variable tests（membership と inequality）に固定する。non-test
+helper/item は含まない。直後の separator を retained とし、その後の direct
+reserved-variable type-assertion test から Task 255 が始まる。Task 253B はこの
+284-line block だけを
+`src/runner/tests/type_elaboration/reserved_direct.rs` へ移動し、この move の完了で
+parent Task 253 を完了する。
+
 ## Ordered Move Tasks
 
 | Task | Bounded action |
@@ -216,7 +239,7 @@ block 後の separator を retained とし、その直後から Task 253B が始
 | 252 | 完了: baseline type-elaboration source-extraction / real handoff test を移動。 |
 | 253A | 完了: 先頭の baseline reserved-variable/binary-formula 23-test block を移動。Task 253 は pending のまま。 |
 | 254 | 完了: 26-test non-long-chain local-mode/object-mode chain bridge block を移動し、直後の Task 253B boundary を保持。 |
-| 253B | 直後の direct reserved-variable membership/inequality test を移動して Task 253 を完了。 |
+| 253B | 完了: 2 direct reserved-variable membership/inequality test を `reserved_direct.rs` へ移動し、直後の Task 255 boundary を保持して Task 253 を完了。 |
 | 255 | type-assertion / asserted-head bridge test を移動。 |
 | 256 | long-chain bridge test を移動。 |
 | 257 | 既存 nested module を保持して corruption / cross-owner isolation test を移動。 |

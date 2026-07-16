@@ -802,10 +802,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   declaration-symbol, and type-elaboration owners. Split type-elaboration
   further by cohesive source-bridge family when needed; use one bounded
   move-only task/commit per family and keep cross-owner isolation tests intact.
-  Tasks 250-252, 253A, and 254 completed the shared-support, parse-only,
+  Tasks 250-252, 253A, 254, and 253B completed the shared-support, parse-only,
   baseline type-elaboration source-extraction/handoff, leading reserved/binary,
-  and non-long-chain mode fragments. Task 253 remains pending through 253B;
-  Tasks 253B and 255-257 remain.
+  non-long-chain mode, and direct reserved fragments. Tasks 253/253B are now
+  complete; Tasks 255-257 remain.
 - [ ] After the test layout is stable, split production helpers along the
   audited phase and ownership boundaries. Leave `runner.rs` as the public
   facade and top-level orchestration owner. Keep internal visibility minimal

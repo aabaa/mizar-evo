@@ -128,6 +128,22 @@ the resulting 63,573-line `tests.rs` hash is
 All 26 fully qualified names, their original order position, the Task 253B
 boundary, and both 272-test list hashes are unchanged.
 
+## Task 253B Move Result
+
+Task 253B root-included
+`src/runner/tests/type_elaboration/reserved_direct.rs` without a wrapper
+module. The byte-identical 284-line fragment contains the two audited direct
+reserved-variable membership and inequality tests. Its hash is
+`c65a5f27463950979368bc702e36f42fa0398884029cff450b54b31095f30e4e`.
+The retained 63,289 lines, including the separator before Task 255, remained
+byte-identical with hash
+`fffe06106cca615e370bb4c2da222da5a4bc21a264cadb5ae8c2d79ed7fdbcce`;
+the resulting 63,290-line `tests.rs` hash is
+`c90905d94abd1a43c0d65d4abffe8bc970262eee2d64e22da1db4024d614bbf4`.
+Both fully qualified names, their original order position, the Task 255
+boundary, and both 272-test list hashes are unchanged. Parent Task 253 is
+complete.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -212,6 +228,14 @@ The separator after the block is retained, and Task 253B begins immediately
 after it. Task 254 moves only this contiguous block to
 `src/runner/tests/type_elaboration/mode_chain.rs`.
 
+Fresh Task 253B inventory fixes the next block at two complete direct
+reserved-variable tests: membership and inequality. It contains no non-test
+helper/item. The following separator is retained, and Task 255 begins with the
+direct reserved-variable type-assertion test immediately after it. Task 253B
+moves only this 284-line block to
+`src/runner/tests/type_elaboration/reserved_direct.rs`; completing that move
+completes parent Task 253.
+
 ## Ordered Move Tasks
 
 | Task | Bounded action |
@@ -223,7 +247,7 @@ after it. Task 254 moves only this contiguous block to
 | 252 | Complete: moved the baseline type-elaboration source-extraction and real handoff tests. |
 | 253A | Complete: moved the leading 23-test baseline reserved-variable/binary-formula block; Task 253 remains pending. |
 | 254 | Complete: moved the 26-test non-long-chain local-mode/object-mode chain bridge block, retaining the following Task 253B boundary. |
-| 253B | Complete Task 253 by moving the following direct reserved-variable membership and inequality tests. |
+| 253B | Complete: moved the two direct reserved-variable membership and inequality tests to `reserved_direct.rs`, retained the following Task 255 boundary, and completed Task 253. |
 | 255 | Move type-assertion and asserted-head bridge tests. |
 | 256 | Move long-chain bridge tests. |
 | 257 | Move corruption and cross-owner isolation tests while retaining existing nested modules. |
