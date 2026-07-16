@@ -730,7 +730,8 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   Tasks 250-252、253A、254、253B で shared-support、parse-only、baseline
   type-elaboration source-extraction/handoff、先頭 reserved/binary、
   non-long-chain mode、direct reserved fragment は完了。Tasks 253/253B は完了し、
-  Tasks 255-257 は残る。
+  Task 255A で先頭 asserted-head fragment は完了。bounded Tasks 255B-255E と
+  Tasks 256-257 は残る。
 - [ ] test layout 安定後、production helper を監査済み phase/ownership boundary
   で分割する。`runner.rs` は public facade と top-level orchestration owner に
   限定する。internal visibility を最小に保ち、detail key、diagnostic、payload

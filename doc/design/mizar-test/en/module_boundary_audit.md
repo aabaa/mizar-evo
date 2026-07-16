@@ -144,6 +144,22 @@ Both fully qualified names, their original order position, the Task 255
 boundary, and both 272-test list hashes are unchanged. Parent Task 253 is
 complete.
 
+## Task 255A Move Result
+
+Task 255A root-included
+`src/runner/tests/type_elaboration/asserted_head_base.rs` without a wrapper
+module. The byte-identical 6,653-line fragment contains the 12 audited leading
+source tests and both dedicated Task 205 isolation helpers. Its hash is
+`9ecea3c52ae64b83d6d5de9b825307f31c7d331e3ba29d78bb69cd931709d020`.
+The retained 56,637 lines, including the separator before Task 255B, remained
+byte-identical with hash
+`d9f772962e590f49d188ca1d0cbe8cf5863b7dd84bb9e73606f878f33036007a`;
+the resulting 56,638-line `tests.rs` hash is
+`535968a53524b3741d9adeed0ee6e42f2e4c45184af285a2bae077810b3bd682`.
+All 12 fully qualified names, helper ownership, their original order position,
+the Task 255B boundary, and both 272-test list hashes are unchanged. Parent
+Task 255 remains pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -236,6 +252,21 @@ moves only this 284-line block to
 `src/runner/tests/type_elaboration/reserved_direct.rs`; completing that move
 completes parent Task 253.
 
+Fresh Task 255 inventory splits the non-long-chain type-assertion/asserted-head
+source family into five physical, order-preserving blocks. Task 255A contains
+6,653 lines: 12 leading source tests through the three-edge set-side radix
+owner plus the two dedicated Task 205 isolation helpers that only those tests
+consume. Task 255B contains 3,303 lines: the two four-edge set/object radix
+tests plus their dedicated Task 208/207 helpers. Task 255C and Task 255D keep
+the single three-edge and two-edge object-radix source tests with their
+dedicated Task 206 and Task 204 helpers, respectively. Task 255E contains the
+final 16 contiguous source tests and stops before the active-fixture block.
+Each separator between these blocks remains in `tests.rs`. These dedicated
+helper items move with their owner tests; standalone active-fixture and
+cross-owner-isolation tests remain for later fresh inventory. No Task 255
+subtask includes a long-chain test. Parent Task 255 remains pending through
+Task 255E.
+
 ## Ordered Move Tasks
 
 | Task | Bounded action |
@@ -248,7 +279,11 @@ completes parent Task 253.
 | 253A | Complete: moved the leading 23-test baseline reserved-variable/binary-formula block; Task 253 remains pending. |
 | 254 | Complete: moved the 26-test non-long-chain local-mode/object-mode chain bridge block, retaining the following Task 253B boundary. |
 | 253B | Complete: moved the two direct reserved-variable membership and inequality tests to `reserved_direct.rs`, retained the following Task 255 boundary, and completed Task 253. |
-| 255 | Move type-assertion and asserted-head bridge tests. |
+| 255A | Complete: moved the leading 12 type-assertion/asserted-head source tests and their two dedicated Task 205 helpers to `asserted_head_base.rs`. |
+| 255B | Move the two four-edge radix source tests and dedicated Task 208/207 helpers to `asserted_head_four_edge_radix.rs`. |
+| 255C | Move the three-edge object-radix source test and dedicated Task 206 helper. |
+| 255D | Move the two-edge object-radix source test and dedicated Task 204 helper. |
+| 255E | Move the final 16 non-long-chain source tests, retain the active-fixture boundary, and complete Task 255. |
 | 256 | Move long-chain bridge tests. |
 | 257 | Move corruption and cross-owner isolation tests while retaining existing nested modules. |
 | 258 | Move shared source/frontend staging helpers after the test layout is stable. |
