@@ -446,10 +446,49 @@
             SurfaceNodeKind::SetEnumeration,
             &expected_set_ranges,
         );
+        let exact_set_nodes = surface_nodes_with_kind(
+            &set_enumeration_theorem,
+            SurfaceNodeKind::SetEnumeration,
+        )
+        .into_iter()
+        .filter(|(_, node)| expected_set_ranges.contains(&node.range))
+        .map(|(_, node)| node)
+        .collect::<Vec<_>>();
+        assert_eq!(exact_set_nodes.len(), 2);
+        for set_node in exact_set_nodes {
+            assert_eq!(
+                surface_direct_token_texts(&set_enumeration_theorem, set_node),
+                vec!["{", ",", "}"]
+            );
+        }
         let expected_formula_sites = surface_sites_for_kind_ranges(
             &set_enumeration_theorem,
             SurfaceNodeKind::BuiltinPredicateApplication,
             &[expected_formula_range],
+        );
+        assert_eq!(
+            set_enumeration_payload
+                .left_items
+                .iter()
+                .map(|(site, range)| (site.clone(), *range))
+                .collect::<Vec<_>>(),
+            expected_item_sites[..2]
+                .iter()
+                .cloned()
+                .zip(expected_item_ranges[..2].iter().copied())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            set_enumeration_payload
+                .right_items
+                .iter()
+                .map(|(site, range)| (site.clone(), *range))
+                .collect::<Vec<_>>(),
+            expected_item_sites[2..]
+                .iter()
+                .cloned()
+                .zip(expected_item_ranges[2..].iter().copied())
+                .collect::<Vec<_>>()
         );
         assert_eq!(
             set_enumeration_payload
@@ -492,6 +531,36 @@
             expected_formula_range
         );
         assert_eq!(set_enumeration_output.terms().len(), 6);
+        assert_eq!(
+            set_enumeration_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term.site.clone())
+                .collect::<Vec<_>>(),
+            vec![
+                expected_set_sites[0].clone(),
+                expected_item_sites[2].clone(),
+                expected_item_sites[3].clone(),
+                expected_set_sites[1].clone(),
+                expected_item_sites[0].clone(),
+                expected_item_sites[1].clone(),
+            ]
+        );
+        assert_eq!(
+            set_enumeration_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                TermKind::SetEnumeration,
+                TermKind::Numeral,
+                TermKind::Numeral,
+                TermKind::SetEnumeration,
+                TermKind::Numeral,
+                TermKind::Numeral,
+            ]
+        );
         for (site, _) in set_enumeration_payload
             .left_items
             .iter()
@@ -545,15 +614,15 @@
             .expect("set-enumeration equality formula should be checked");
         assert_eq!(
             checked_set_formula.site,
-            set_enumeration_payload.formula_site
+            expected_formula_sites[0]
         );
         assert_eq!(checked_set_formula.kind, FormulaKind::Equality);
         assert_eq!(checked_set_formula.status, FormulaStatus::Partial);
         assert_eq!(
             checked_set_formula.terms,
             vec![
-                set_enumeration_payload.left_site.clone(),
-                set_enumeration_payload.right_site.clone(),
+                expected_set_sites[0].clone(),
+                expected_set_sites[1].clone(),
             ]
         );
         assert!(checked_set_formula.candidate_set.is_none());
@@ -2054,9 +2123,23 @@
             set_enumeration_equality_theorem_ast(
                 source_id,
                 "SetEnumerationPayloadBoundary",
-                ["2", "1"],
+                ["2", "2"],
                 "=",
                 ["1", "2"],
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "SetEnumerationPayloadBoundary",
+                ["1", "1"],
+                "=",
+                ["1", "2"],
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "SetEnumerationPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["2", "2"],
             ),
             set_enumeration_equality_theorem_ast(
                 source_id,
@@ -2082,6 +2165,28 @@
             recovered_set_enumeration_equality_theorem_ast(source_id),
         ];
         for gap_case in set_enumeration_gap_cases {
+            assert!(extract_source_set_enumeration_formula(&gap_case).is_none());
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for corruption in [
+            SetEnumerationTheoremCorruption::DuplicateFormulaExpression,
+            SetEnumerationTheoremCorruption::FormulaExpressionKind,
+            SetEnumerationTheoremCorruption::ExtraFormulaChild,
+            SetEnumerationTheoremCorruption::FormulaKind,
+            SetEnumerationTheoremCorruption::ExtraFormulaOperand,
+            SetEnumerationTheoremCorruption::TermWrapperKind,
+            SetEnumerationTheoremCorruption::ExtraTermWrapperChild,
+            SetEnumerationTheoremCorruption::SetKind,
+            SetEnumerationTheoremCorruption::SetPunctuation,
+            SetEnumerationTheoremCorruption::ExtraSetItem,
+            SetEnumerationTheoremCorruption::ExtraNumeralChild,
+        ] {
+            let gap_case =
+                corrupted_set_enumeration_equality_theorem_ast(source_id, corruption);
+            assert!(extract_source_set_enumeration_formula(&gap_case).is_none());
             assert_eq!(
                 source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]

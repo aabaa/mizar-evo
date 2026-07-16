@@ -3662,6 +3662,24 @@
         left: [&'a str; 2],
         operator: &'a str,
         right: [&'a str; 2],
+        corruption: SetEnumerationTheoremCorruption,
+    }
+
+    #[derive(Clone, Copy, Default)]
+    enum SetEnumerationTheoremCorruption {
+        #[default]
+        None,
+        DuplicateFormulaExpression,
+        FormulaExpressionKind,
+        ExtraFormulaChild,
+        FormulaKind,
+        ExtraFormulaOperand,
+        TermWrapperKind,
+        ExtraTermWrapperChild,
+        SetKind,
+        SetPunctuation,
+        ExtraSetItem,
+        ExtraNumeralChild,
     }
 
     fn exact_set_enumeration_theorem_spec() -> SetEnumerationTheoremSpec<'static> {
@@ -3672,6 +3690,7 @@
             left: ["1", "2"],
             operator: "=",
             right: ["1", "2"],
+            corruption: SetEnumerationTheoremCorruption::None,
         }
     }
 
@@ -3689,8 +3708,22 @@
             left,
             operator,
             right,
+            corruption: SetEnumerationTheoremCorruption::None,
         };
         set_enumeration_theorem_ast(source_id, spec)
+    }
+
+    fn corrupted_set_enumeration_equality_theorem_ast(
+        source_id: SourceId,
+        corruption: SetEnumerationTheoremCorruption,
+    ) -> SurfaceAst {
+        set_enumeration_theorem_ast(
+            source_id,
+            SetEnumerationTheoremSpec {
+                corruption,
+                ..exact_set_enumeration_theorem_spec()
+            },
+        )
     }
 
     fn set_enumeration_equality_theorem_ast_with_status(
@@ -3708,6 +3741,7 @@
             left,
             operator,
             right,
+            corruption: SetEnumerationTheoremCorruption::None,
         };
         set_enumeration_theorem_ast(source_id, spec)
     }
@@ -5437,7 +5471,13 @@
             ":",
         );
         let formula_start = *offset;
-        let left_term = add_set_enumeration_term_expression(builder, source_id, offset, spec.left);
+        let left_term = add_set_enumeration_term_expression(
+            builder,
+            source_id,
+            offset,
+            spec.left,
+            spec.corruption,
+        );
         let operator = add_token(
             builder,
             source_id,
@@ -5445,21 +5485,64 @@
             SurfaceTokenKind::ReservedSymbol,
             spec.operator,
         );
-        let right_term =
-            add_set_enumeration_term_expression(builder, source_id, offset, spec.right);
+        let right_term = add_set_enumeration_term_expression(
+            builder,
+            source_id,
+            offset,
+            spec.right,
+            SetEnumerationTheoremCorruption::None,
+        );
         let formula_end = builder
             .node_range(right_term)
             .expect("just-created set-enumeration right term should exist")
             .end;
+        let mut formula_children = vec![left_term, operator, right_term];
+        if matches!(
+            spec.corruption,
+            SetEnumerationTheoremCorruption::ExtraFormulaOperand
+        ) {
+            formula_children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        let formula_kind = if matches!(
+            spec.corruption,
+            SetEnumerationTheoremCorruption::FormulaKind
+        ) {
+            SurfaceNodeKind::TermExpression
+        } else {
+            SurfaceNodeKind::BuiltinPredicateApplication
+        };
         let formula = builder.add_node(
-            SurfaceNodeKind::BuiltinPredicateApplication,
+            formula_kind,
             range(source_id, formula_start, formula_end),
-            vec![left_term, operator, right_term],
+            formula_children,
         );
+        let mut formula_expression_children = vec![formula];
+        if matches!(
+            spec.corruption,
+            SetEnumerationTheoremCorruption::ExtraFormulaChild
+        ) {
+            formula_expression_children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        let formula_expression_kind = if matches!(
+            spec.corruption,
+            SetEnumerationTheoremCorruption::FormulaExpressionKind
+        ) {
+            SurfaceNodeKind::TermExpression
+        } else {
+            SurfaceNodeKind::FormulaExpression
+        };
         let formula_expression = builder.add_node(
-            SurfaceNodeKind::FormulaExpression,
+            formula_expression_kind,
             range(source_id, formula_start, formula_end),
-            vec![formula],
+            formula_expression_children,
         );
         let semicolon = add_token(
             builder,
@@ -5476,7 +5559,18 @@
         if let Some(status_token) = status_token {
             children.push(status_token);
         }
-        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        children.extend([theorem, label_token, colon, formula_expression]);
+        if matches!(
+            spec.corruption,
+            SetEnumerationTheoremCorruption::DuplicateFormulaExpression
+        ) {
+            children.push(builder.add_node(
+                SurfaceNodeKind::FormulaExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        children.push(semicolon);
         builder.add_node(
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
@@ -5729,17 +5823,37 @@
         source_id: SourceId,
         offset: &mut usize,
         items: [&str; 2],
+        corruption: SetEnumerationTheoremCorruption,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
-        let set = add_set_enumeration_term(builder, source_id, offset, items);
+        let set = add_set_enumeration_term(builder, source_id, offset, items, corruption);
         let end = builder
             .node_range(set)
             .expect("just-created set-enumeration term should exist")
             .end;
+        let mut children = vec![set];
+        if matches!(
+            corruption,
+            SetEnumerationTheoremCorruption::ExtraTermWrapperChild
+        ) {
+            children.push(builder.add_node(
+                SurfaceNodeKind::SetEnumeration,
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
+        let kind = if matches!(
+            corruption,
+            SetEnumerationTheoremCorruption::TermWrapperKind
+        ) {
+            SurfaceNodeKind::FormulaExpression
+        } else {
+            SurfaceNodeKind::TermExpression
+        };
         builder.add_node(
-            SurfaceNodeKind::TermExpression,
+            kind,
             range(source_id, start, end),
-            vec![set],
+            children,
         )
     }
 
@@ -5748,6 +5862,7 @@
         source_id: SourceId,
         offset: &mut usize,
         items: [&str; 2],
+        corruption: SetEnumerationTheoremCorruption,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let open = add_token(
@@ -5757,15 +5872,32 @@
             SurfaceTokenKind::ReservedSymbol,
             "{",
         );
-        let first = add_numeral_term_expression(builder, source_id, offset, items[0]);
+        let first = add_set_enumeration_item_expression(
+            builder,
+            source_id,
+            offset,
+            items[0],
+            matches!(
+                corruption,
+                SetEnumerationTheoremCorruption::ExtraNumeralChild
+            ),
+        );
         let comma = add_token(
             builder,
             source_id,
             offset,
             SurfaceTokenKind::ReservedSymbol,
-            ",",
+            if matches!(
+                corruption,
+                SetEnumerationTheoremCorruption::SetPunctuation
+            ) {
+                ":"
+            } else {
+                ","
+            },
         );
-        let second = add_numeral_term_expression(builder, source_id, offset, items[1]);
+        let second =
+            add_set_enumeration_item_expression(builder, source_id, offset, items[1], false);
         let close = add_token(
             builder,
             source_id,
@@ -5777,10 +5909,62 @@
             .node_range(close)
             .expect("just-created set-enumeration close should exist")
             .end;
-        builder.add_node(
-            SurfaceNodeKind::SetEnumeration,
+        let mut children = vec![open, first, comma, second];
+        if matches!(
+            corruption,
+            SetEnumerationTheoremCorruption::ExtraSetItem
+        ) {
+            children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
+        children.push(close);
+        let kind = if matches!(corruption, SetEnumerationTheoremCorruption::SetKind) {
+            SurfaceNodeKind::NumeralTerm
+        } else {
+            SurfaceNodeKind::SetEnumeration
+        };
+        builder.add_node(kind, range(source_id, start, end), children)
+    }
+
+    fn add_set_enumeration_item_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spelling: &str,
+        extra_numeral_child: bool,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Numeral,
+            spelling,
+        );
+        let end = builder
+            .node_range(token)
+            .expect("just-created numeral token should exist")
+            .end;
+        let mut numeral_children = vec![token];
+        if extra_numeral_child {
+            numeral_children.push(builder.add_node(
+                SurfaceNodeKind::NumeralTerm,
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
+        let numeral = builder.add_node(
+            SurfaceNodeKind::NumeralTerm,
             range(source_id, start, end),
-            vec![open, first, comma, second, close],
+            numeral_children,
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![numeral],
         )
     }
 
