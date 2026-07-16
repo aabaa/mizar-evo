@@ -81,6 +81,21 @@ the resulting 87,464-line `tests.rs` hash is
 `16480c65416a611c732153360775f10180f609b012027b0a0a970cff1f5a3d84`.
 The fully qualified test name and sorted 272-test list are unchanged.
 
+## Task 252 Move Result
+
+Task 252 root-included
+`src/runner/tests/type_elaboration/source_extraction.rs` without a wrapper
+module. The byte-identical 3,680-line fragment contains the three baseline
+reserve extraction, local-mode expansion-chain extraction, and real
+declaration-checked `ResolvedTypedAst` handoff tests. Its hash is
+`aa9a16c3ed36439ac8c5a4756e3818d6e5f0abd7e076e2e2df8b46487e88c358`.
+The retained 83,784 lines, including the separator before Task 253, remained
+byte-identical with hash
+`2d9ef7d8369c4d654af3bd91598d306c8a9777c9d0981454ce9396095c8a6d79`;
+the resulting 83,785-line `tests.rs` hash is
+`16f3d6ceb1e75655ea39825f0294896393e676d0a7391bb2a409e14b3b904d22`.
+All three fully qualified names and the sorted 272-test list are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -153,7 +168,7 @@ when it would change the discovered test list.
 | 249 | Complete: mechanically moved the complete inline private `mod tests` body to `src/runner/tests.rs`. |
 | 250 | Complete: moved nonempty shared test support into a root-included support fragment. |
 | 251 | Complete: moved the nonempty parse-only private test family into a root-included fragment. |
-| 252 | Move the baseline type-elaboration source-extraction and real handoff tests. |
+| 252 | Complete: moved the baseline type-elaboration source-extraction and real handoff tests. |
 | 253 | Move reserved-variable and binary-formula bridge tests. |
 | 254 | Move local-mode/object-mode chain bridge tests. |
 | 255 | Move type-assertion and asserted-head bridge tests. |
