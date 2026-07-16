@@ -122,6 +122,69 @@
         assert!(checked_contradiction.candidate_set.is_none());
         assert!(checked_contradiction.facts.is_empty());
         assert!(checked_contradiction.deferred.is_empty());
+        let expected_builtin_binary_configs = [
+            (
+                "TermFormulaPayloadBoundary",
+                "1",
+                "=",
+                "1",
+                FormulaKind::Equality,
+            ),
+            (
+                "BuiltinInequalityPayloadBoundary",
+                "1",
+                "<>",
+                "2",
+                FormulaKind::Inequality,
+            ),
+            (
+                "BuiltinMembershipPayloadBoundary",
+                "1",
+                "in",
+                "1",
+                FormulaKind::Membership,
+            ),
+        ];
+        assert_eq!(
+            SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS.len(),
+            expected_builtin_binary_configs.len()
+        );
+        for (config, (label, left, operator, right, formula_kind)) in
+            SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS
+                .iter()
+                .zip(expected_builtin_binary_configs)
+        {
+            assert_eq!(
+                (config.label, config.left, config.operator, config.right),
+                (label, left, operator, right)
+            );
+            let theorem =
+                builtin_binary_theorem_ast(source_id, label, left, operator, right);
+            let payload = extract_source_builtin_binary_term_formula(&theorem)
+                .expect("exact builtin binary theorem should extract source payload");
+            let formula_start = 11 + label.len();
+            let left_range = range(source_id, formula_start, formula_start + left.len());
+            let right_start = formula_start + left.len() + operator.len() + 2;
+            let right_range = range(source_id, right_start, right_start + right.len());
+            let formula_range = range(source_id, formula_start, right_start + right.len());
+            let expected_operand_sites = surface_sites_for_kind_ranges(
+                &theorem,
+                SurfaceNodeKind::NumeralTerm,
+                &[left_range, right_range],
+            );
+            let expected_formula_sites = surface_sites_for_kind_ranges(
+                &theorem,
+                SurfaceNodeKind::BuiltinPredicateApplication,
+                &[formula_range],
+            );
+            assert_eq!(payload.formula_site, expected_formula_sites[0]);
+            assert_eq!(payload.formula_range, formula_range);
+            assert_eq!(payload.formula_kind, formula_kind);
+            assert_eq!(payload.left_site, expected_operand_sites[0]);
+            assert_eq!(payload.left_range, left_range);
+            assert_eq!(payload.right_site, expected_operand_sites[1]);
+            assert_eq!(payload.right_range, right_range);
+        }
         let equality_theorem =
             builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "1");
         assert_eq!(
@@ -1512,6 +1575,27 @@
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
         for config in SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS {
+            let wrong_left_builtin_binary_theorem = builtin_binary_theorem_ast(
+                source_id,
+                config.label,
+                "2",
+                config.operator,
+                config.right,
+            );
+            assert!(
+                extract_source_builtin_binary_term_formula(&wrong_left_builtin_binary_theorem)
+                    .is_none(),
+                "wrong-left builtin binary theorem should not extract for {}",
+                config.label
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &wrong_left_builtin_binary_theorem,
+                    module.clone(),
+                    &symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
             let status_prefixed_builtin_binary_theorem = builtin_binary_theorem_ast_with_status(
                 source_id,
                 "open",
@@ -1529,6 +1613,66 @@
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()],
                 "status-prefixed builtin binary theorem should not satisfy exact token guard for {}",
                 config.label
+            );
+        }
+        let builtin_binary_corruption_cases = [
+            builtin_binary_theorem_ast_with_corruption(
+                source_id,
+                "TermFormulaPayloadBoundary",
+                "1",
+                "=",
+                "1",
+                BuiltinBinaryTheoremCorruption {
+                    recovered_label: true,
+                    ..BuiltinBinaryTheoremCorruption::default()
+                },
+            ),
+            builtin_binary_theorem_ast_with_corruption(
+                source_id,
+                "TermFormulaPayloadBoundary",
+                "1",
+                "=",
+                "1",
+                BuiltinBinaryTheoremCorruption {
+                    recovered_operator: true,
+                    ..BuiltinBinaryTheoremCorruption::default()
+                },
+            ),
+            double_builtin_binary_theorem_ast(
+                source_id,
+                "TermFormulaPayloadBoundary",
+                "1",
+                "=",
+                "1",
+            ),
+            builtin_binary_theorem_ast_with_corruption(
+                source_id,
+                "TermFormulaPayloadBoundary",
+                "1",
+                "=",
+                "1",
+                BuiltinBinaryTheoremCorruption {
+                    duplicate_formula_expression: true,
+                    ..BuiltinBinaryTheoremCorruption::default()
+                },
+            ),
+            builtin_binary_theorem_ast_with_corruption(
+                source_id,
+                "TermFormulaPayloadBoundary",
+                "1",
+                "=",
+                "1",
+                BuiltinBinaryTheoremCorruption {
+                    extra_term_expression: true,
+                    ..BuiltinBinaryTheoremCorruption::default()
+                },
+            ),
+        ];
+        for gap_case in builtin_binary_corruption_cases {
+            assert!(extract_source_builtin_binary_term_formula(&gap_case).is_none());
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
         let other_type_assertion_label_theorem = builtin_type_assertion_theorem_ast(

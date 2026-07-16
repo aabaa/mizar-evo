@@ -81,6 +81,7 @@
         TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_TWO_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+        extract_source_builtin_binary_term_formula,
         active_type_elaboration_cases, assemble_source_checker_handoff,
         assert_source_reserved_variable_formula_output,
         assert_source_reserved_variable_type_assertion_output,
@@ -2079,21 +2080,80 @@
         operator: &str,
         right: &str,
     ) -> SurfaceAst {
-        let mut builder = SurfaceAstBuilder::new(source_id);
-        let mut offset = 0;
-        let theorem = add_builtin_binary_theorem_item(
-            &mut builder,
+        builtin_binary_theorem_ast_with_corruption(
             source_id,
-            &mut offset,
             label,
             left,
             operator,
             right,
+            BuiltinBinaryTheoremCorruption::default(),
+        )
+    }
+
+    fn builtin_binary_theorem_ast_with_corruption(
+        source_id: SourceId,
+        label: &str,
+        left: &str,
+        operator: &str,
+        right: &str,
+        corruption: BuiltinBinaryTheoremCorruption,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_builtin_binary_theorem_item_with_status(
+            &mut builder,
+            source_id,
+            &mut offset,
+            None,
+            BuiltinBinaryTheoremShape {
+                label,
+                left,
+                operator,
+                right,
+                corruption,
+            },
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
             range(source_id, 0, offset.saturating_sub(2)),
             vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn double_builtin_binary_theorem_ast(
+        source_id: SourceId,
+        label: &str,
+        left: &str,
+        operator: &str,
+        right: &str,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorems = [
+            add_builtin_binary_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                label,
+                left,
+                operator,
+                right,
+            ),
+            add_builtin_binary_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                label,
+                left,
+                operator,
+                right,
+            ),
+        ];
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            theorems.to_vec(),
         );
         builder.finish(Some(root), None)
     }
@@ -2113,6 +2173,7 @@
             left,
             operator,
             right,
+            corruption: BuiltinBinaryTheoremCorruption::default(),
         };
         let theorem = add_builtin_binary_theorem_item_with_status(
             &mut builder,
@@ -4051,6 +4112,7 @@
             left,
             operator,
             right,
+            corruption: BuiltinBinaryTheoremCorruption::default(),
         };
         add_builtin_binary_theorem_item_with_status(builder, source_id, offset, None, shape)
     }
@@ -4253,11 +4315,20 @@
         )
     }
 
+    #[derive(Clone, Copy, Default)]
+    struct BuiltinBinaryTheoremCorruption {
+        recovered_label: bool,
+        recovered_operator: bool,
+        duplicate_formula_expression: bool,
+        extra_term_expression: bool,
+    }
+
     struct BuiltinBinaryTheoremShape<'a> {
         label: &'a str,
         left: &'a str,
         operator: &'a str,
         right: &'a str,
+        corruption: BuiltinBinaryTheoremCorruption,
     }
 
     fn add_builtin_binary_theorem_item_with_status(
@@ -4284,13 +4355,23 @@
             SurfaceTokenKind::ReservedWord,
             "theorem",
         );
-        let label_token = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::Identifier,
-            shape.label,
-        );
+        let label_token = if shape.corruption.recovered_label {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                shape.label,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                shape.label,
+            )
+        };
         let colon = add_token(
             builder,
             source_id,
@@ -4300,22 +4381,40 @@
         );
         let formula_start = *offset;
         let left_term = add_numeral_term_expression(builder, source_id, offset, shape.left);
-        let operator = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::ReservedSymbol,
-            shape.operator,
-        );
+        let operator = if shape.corruption.recovered_operator {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedSymbol,
+                shape.operator,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedSymbol,
+                shape.operator,
+            )
+        };
         let right_term = add_numeral_term_expression(builder, source_id, offset, shape.right);
         let formula_end = builder
             .node_range(right_term)
             .expect("just-created right term should exist")
             .end;
+        let mut formula_children = vec![left_term, operator, right_term];
+        if shape.corruption.extra_term_expression {
+            formula_children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
         let formula = builder.add_node(
             SurfaceNodeKind::BuiltinPredicateApplication,
             range(source_id, formula_start, formula_end),
-            vec![left_term, operator, right_term],
+            formula_children,
         );
         let formula_expression = builder.add_node(
             SurfaceNodeKind::FormulaExpression,
@@ -4333,9 +4432,19 @@
             .node_range(semicolon)
             .expect("just-created semicolon should exist")
             .end;
+        let mut formula_expressions = vec![formula_expression];
+        if shape.corruption.duplicate_formula_expression {
+            formula_expressions.push(builder.add_node(
+                SurfaceNodeKind::FormulaExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
         let mut children = Vec::new();
         children.extend(status_token);
-        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        children.extend([theorem, label_token, colon]);
+        children.extend(formula_expressions);
+        children.push(semicolon);
         builder.add_node(
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
