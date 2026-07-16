@@ -14,21 +14,22 @@ pub(super) use checker_handoff::{
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
     assert_source_reserve_handoff, source_module_binding_env,
 };
+#[cfg(test)]
 pub(super) use output::{
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
+    SourceReservedVariableBinaryFormulaOutput, SourceReservedVariableTypeAssertionOutput,
     assert_source_parenthesized_reserved_variable_binary_formula_output_with_config,
+    assert_source_reserved_variable_formula_output,
+    assert_source_reserved_variable_type_assertion_output,
+    source_reserved_variable_formula_output_detail_keys,
+};
+pub(super) use output::{
     build_source_parenthesized_reserved_variable_binary_formula_output,
     build_source_reserved_variable_formula_output,
     build_source_reserved_variable_type_assertion_output,
-    source_reserved_variable_formula_output_detail_keys,
+    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config,
     source_reserved_variable_formula_result_detail_keys,
     source_reserved_variable_type_assertion_result_detail_keys,
-};
-#[cfg(test)]
-pub(super) use output::{
-    SourceReservedVariableBinaryFormulaOutput, SourceReservedVariableTypeAssertionOutput,
-    assert_source_reserved_variable_formula_output,
-    assert_source_reserved_variable_type_assertion_output,
 };
 pub(super) use result::{
     expected_type_elaboration_detail_keys, type_elaboration_failure_diagnostic,

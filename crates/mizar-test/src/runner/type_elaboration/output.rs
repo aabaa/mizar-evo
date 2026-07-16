@@ -1102,3 +1102,20 @@ pub(in crate::runner) fn assert_source_parenthesized_reserved_variable_binary_fo
     }
     Ok(())
 }
+
+pub(in crate::runner) fn source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
+    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
+    config: &'static SourceReservedVariableBinaryFormulaConfig,
+    expected_side: SourceParenthesizedOperandSide,
+) -> Vec<String> {
+    if assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
+        output,
+        config,
+        expected_side,
+    )
+    .is_err()
+    {
+        return vec![config.invalid_payload_key.to_owned()];
+    }
+    source_reserved_variable_formula_output_detail_keys(&output.formula)
+}
