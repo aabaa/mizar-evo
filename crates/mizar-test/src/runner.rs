@@ -18,7 +18,6 @@ use mizar_checker::typed_ast::{
 };
 use mizar_resolve::env::SymbolEnv;
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
-use mizar_session::SourceRange;
 use mizar_syntax::SurfaceAst;
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
@@ -48,11 +47,13 @@ use type_elaboration::{
 };
 use type_elaboration::{
     SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
-    SourceParenthesizedReservedVariableBinaryFormula, SourceReserveHandoff,
+    SourceParenthesizedReservedVariableBinaryFormula,
+    SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
-    SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBuiltinType,
-    SourceReservedVariableModeDefinition, SourceReservedVariableModeRadix,
-    SourceReservedVariableTypeAssertion, SourceReservedVariableTypeAssertionConfig,
+    SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBinaryFormulaOutput,
+    SourceReservedVariableBuiltinType, SourceReservedVariableModeDefinition,
+    SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
+    SourceReservedVariableTypeAssertionConfig, SourceReservedVariableTypeAssertionOutput,
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
@@ -5357,40 +5358,6 @@ const SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
     left_expected_role: Some("local-object-mode-reserved-variable-left-expected"),
     right_expected_role: Some("local-object-mode-reserved-variable-right-expected"),
 };
-
-#[derive(Debug)]
-struct SourceReservedVariableBinaryFormulaOutput {
-    payload: SourceReservedVariableBinaryFormula,
-    handoff: SourceReserveHandoff,
-    left_binding: BindingId,
-    right_binding: BindingId,
-    left_result_input: TypeExpressionInput,
-    right_result_input: TypeExpressionInput,
-    left_expected_input: Option<TypeExpressionInput>,
-    right_expected_input: Option<TypeExpressionInput>,
-    term_formula: TermFormulaInferenceOutput,
-}
-
-#[derive(Debug)]
-struct SourceParenthesizedReservedVariableBinaryFormulaOutput {
-    source_wrapper_side: SourceParenthesizedOperandSide,
-    source_wrapper_site: TypedSiteRef,
-    source_wrapper_range: SourceRange,
-    wrapper_side: SourceParenthesizedOperandSide,
-    wrapper_site: TypedSiteRef,
-    wrapper_range: SourceRange,
-    formula: SourceReservedVariableBinaryFormulaOutput,
-}
-
-#[derive(Debug)]
-struct SourceReservedVariableTypeAssertionOutput {
-    payload: SourceReservedVariableTypeAssertion,
-    handoff: SourceReserveHandoff,
-    subject_binding: BindingId,
-    subject_result_input: TypeExpressionInput,
-    asserted_type_input: TypeExpressionInput,
-    term_formula: TermFormulaInferenceOutput,
-}
 
 fn source_reserved_variable_equality_detail_keys(
     ast: &SurfaceAst,

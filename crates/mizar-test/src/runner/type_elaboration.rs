@@ -1,5 +1,6 @@
 mod admission;
 mod checker_handoff;
+mod output;
 mod result;
 mod source_ast;
 mod source_formula;
@@ -12,6 +13,10 @@ pub(super) use checker_handoff::{
     SourceReserveHandoff, assemble_source_reserve_checker_handoff,
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
     assert_source_reserve_handoff, source_module_binding_env,
+};
+pub(super) use output::{
+    SourceParenthesizedReservedVariableBinaryFormulaOutput,
+    SourceReservedVariableBinaryFormulaOutput, SourceReservedVariableTypeAssertionOutput,
 };
 pub(super) use result::{
     expected_type_elaboration_detail_keys, type_elaboration_failure_diagnostic,
