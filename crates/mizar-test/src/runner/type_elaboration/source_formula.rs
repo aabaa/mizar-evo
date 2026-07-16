@@ -130,6 +130,15 @@ pub(in crate::runner) struct SourceImportedPredicateFunctorFormula {
 }
 
 #[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceImportedAttributeAssertionFormula {
+    pub(in crate::runner) formula_site: TypedSiteRef,
+    pub(in crate::runner) formula_range: SourceRange,
+    pub(in crate::runner) subject_site: TypedSiteRef,
+    pub(in crate::runner) subject_range: SourceRange,
+    pub(in crate::runner) attribute_symbol: ResolverSymbolId,
+}
+
+#[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceFormulaStatement {
     pub(in crate::runner) formula_site: TypedSiteRef,
     pub(in crate::runner) formula_range: SourceRange,
@@ -450,6 +459,148 @@ pub(in crate::runner) fn extract_source_imported_predicate_functor_formula(
     })
 }
 
+pub(in crate::runner) fn extract_source_imported_attribute_assertion_formula(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceImportedAttributeAssertionFormula> {
+    extract_source_imported_attribute_assertion_formula_with_shape(
+        ast,
+        module,
+        symbols,
+        "ImportedAttributeAssertionPayloadBoundary",
+        false,
+    )
+}
+
+pub(in crate::runner) fn extract_source_imported_non_empty_attribute_assertion_formula(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceImportedAttributeAssertionFormula> {
+    extract_source_imported_attribute_assertion_formula_with_shape(
+        ast,
+        module,
+        symbols,
+        "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+        true,
+    )
+}
+
+fn extract_source_imported_attribute_assertion_formula_with_shape(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+    expected_label: &str,
+    negative_attribute: bool,
+) -> Option<SourceImportedAttributeAssertionFormula> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_imported_attribute_assertion_theorem_bridge_node(node))
+    {
+        return None;
+    }
+
+    let item_list = exact_compilation_item_list(ast)?;
+    let item_children = structural_child_ids(ast, item_list);
+    let [import_item_id, theorem_id] = item_children.as_slice() else {
+        return None;
+    };
+    let import_item = ast.node(*import_item_id)?;
+    if !is_exact_parser_type_fixtures_import(ast, import_item) {
+        return None;
+    }
+
+    let theorem = ast.node(*theorem_id)?;
+    if !matches!(theorem.kind, SurfaceNodeKind::TheoremItem) || subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice() != ["theorem", expected_label, ":", ";"] {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::IsAssertion)
+        || subtree_has_recovery(ast, formula)
+        || direct_token_texts(ast, formula).as_slice() != ["is"]
+    {
+        return None;
+    }
+
+    let assertion_structural_children = structural_child_ids(ast, formula);
+    let [term_expression_id, attribute_chain_id] = assertion_structural_children.as_slice() else {
+        return None;
+    };
+    let term_expression = ast.node(*term_expression_id)?;
+    let attribute_chain = ast.node(*attribute_chain_id)?;
+    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
+        || !matches!(attribute_chain.kind, SurfaceNodeKind::AttributeTestChain)
+        || !direct_token_texts(ast, attribute_chain).is_empty()
+    {
+        return None;
+    }
+
+    let attribute_children = structural_child_ids(ast, attribute_chain);
+    let [attribute_ref_id] = attribute_children.as_slice() else {
+        return None;
+    };
+    let attribute_ref = ast.node(*attribute_ref_id)?;
+    if !matches!(attribute_ref.kind, SurfaceNodeKind::AttributeRef) {
+        return None;
+    }
+    let attribute_ref_tokens = direct_token_texts(ast, attribute_ref);
+    if negative_attribute {
+        if attribute_ref_tokens.as_slice() != ["non"] {
+            return None;
+        }
+    } else if !attribute_ref_tokens.is_empty() {
+        return None;
+    }
+    let attribute_ref_children = structural_child_ids(ast, attribute_ref);
+    let [attribute_symbol_id] = attribute_ref_children.as_slice() else {
+        return None;
+    };
+    let attribute_symbol_node = ast.node(*attribute_symbol_id)?;
+    if !matches!(attribute_symbol_node.kind, SurfaceNodeKind::QualifiedSymbol)
+        || qualified_symbol_spelling(ast, attribute_symbol_node)
+            .ok()?
+            .as_str()
+            != "empty"
+    {
+        return None;
+    }
+    let attribute_symbol = resolve_imported_fixture_term_formula_symbol(
+        symbols,
+        module,
+        "empty",
+        SymbolKind::Attribute,
+    )
+    .ok()?;
+    let subject = exact_numeral_term_operand(ast, *term_expression_id, "1")?;
+
+    Some(SourceImportedAttributeAssertionFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        subject_site: surface_site(subject.0),
+        subject_range: subject.1,
+        attribute_symbol,
+    })
+}
+
 fn extract_exact_source_formula_constant(
     ast: &SurfaceAst,
     expected_label: &str,
@@ -693,6 +844,28 @@ fn is_supported_imported_predicate_functor_theorem_bridge_node(node: &SurfaceNod
             | SurfaceNodeKind::ParenthesizedTerm
             | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_imported_attribute_assertion_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::IsAssertion
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::AttributeTestChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::QualifiedSymbol
             | SurfaceNodeKind::Token(_)
     )
 }
