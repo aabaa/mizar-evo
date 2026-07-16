@@ -222,11 +222,15 @@
                 "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
             ]
         );
+        let type_assertion_label = "BuiltinTypeAssertionPayloadBoundary";
+        let type_assertion_subject = "1";
+        let type_assertion_operator = "is";
+        let type_assertion_asserted_type = "set";
         let type_assertion_theorem = builtin_type_assertion_theorem_ast(
             source_id,
-            "BuiltinTypeAssertionPayloadBoundary",
-            "1",
-            ReserveTypeShape::Builtin("set"),
+            type_assertion_label,
+            type_assertion_subject,
+            ReserveTypeShape::Builtin(type_assertion_asserted_type),
         );
         assert_eq!(
             source_type_elaboration_detail_keys(&type_assertion_theorem, module.clone(), &symbols),
@@ -247,6 +251,89 @@
             &symbols,
         )
         .expect("exact builtin type assertion bridge should extract source payload");
+        let type_assertion_formula_start = 11 + type_assertion_label.len();
+        let expected_type_assertion_subject_range = range(
+            source_id,
+            type_assertion_formula_start,
+            type_assertion_formula_start + type_assertion_subject.len(),
+        );
+        let type_assertion_asserted_type_start = type_assertion_formula_start
+            + type_assertion_subject.len()
+            + type_assertion_operator.len()
+            + 2;
+        let expected_type_assertion_asserted_type_range = range(
+            source_id,
+            type_assertion_asserted_type_start,
+            type_assertion_asserted_type_start + type_assertion_asserted_type.len(),
+        );
+        let expected_type_assertion_formula_range = range(
+            source_id,
+            type_assertion_formula_start,
+            type_assertion_asserted_type_start + type_assertion_asserted_type.len(),
+        );
+        let expected_type_assertion_formula_sites = surface_sites_for_kind_ranges(
+            &type_assertion_theorem,
+            SurfaceNodeKind::IsAssertion,
+            &[expected_type_assertion_formula_range],
+        );
+        let expected_type_assertion_subject_sites = surface_sites_for_kind_ranges(
+            &type_assertion_theorem,
+            SurfaceNodeKind::NumeralTerm,
+            &[expected_type_assertion_subject_range],
+        );
+        let expected_type_assertion_asserted_type_sites = surface_sites_for_kind_ranges(
+            &type_assertion_theorem,
+            SurfaceNodeKind::TypeExpression,
+            &[expected_type_assertion_asserted_type_range],
+        );
+        assert_eq!(
+            type_assertion_payload.formula_site,
+            expected_type_assertion_formula_sites[0]
+        );
+        assert_eq!(
+            type_assertion_payload.formula_range,
+            expected_type_assertion_formula_range
+        );
+        assert_eq!(
+            type_assertion_payload.subject_site,
+            expected_type_assertion_subject_sites[0]
+        );
+        assert_eq!(
+            type_assertion_payload.subject_range,
+            expected_type_assertion_subject_range
+        );
+        assert_eq!(
+            type_assertion_payload.asserted_type_site,
+            expected_type_assertion_asserted_type_sites[0]
+        );
+        assert_eq!(
+            type_assertion_payload.asserted_type.range,
+            expected_type_assertion_asserted_type_range
+        );
+        assert_eq!(
+            type_assertion_payload.asserted_type.spelling,
+            type_assertion_asserted_type
+        );
+        assert_eq!(
+            type_assertion_payload.asserted_type.head,
+            TypeHeadInput::BuiltinSet
+        );
+        assert!(type_assertion_payload.asserted_type.attributes.is_empty());
+        assert_eq!(type_assertion_output.type_entries().len(), 2);
+        let asserted_type_entries = type_assertion_output
+            .type_entries()
+            .iter()
+            .filter(|(_, entry)| {
+                entry.owner == expected_type_assertion_asserted_type_sites[0]
+            })
+            .collect::<Vec<_>>();
+        let [(_, asserted_type_entry)] = asserted_type_entries.as_slice() else {
+            panic!("asserted type should have exactly one checker type entry");
+        };
+        assert_eq!(
+            asserted_type_entry.owner,
+            expected_type_assertion_asserted_type_sites[0]
+        );
         assert_eq!(type_assertion_output.terms().len(), 1);
         let (_, checked_subject) = type_assertion_output
             .terms()
@@ -255,14 +342,28 @@
             .expect("subject term should be checked");
         assert_eq!(checked_subject.kind, TermKind::Numeral);
         assert_eq!(checked_subject.status, TermStatus::Partial);
-        assert_eq!(checked_subject.site, type_assertion_payload.subject_site);
+        assert_eq!(
+            checked_subject.site,
+            expected_type_assertion_subject_sites[0]
+        );
+        assert_eq!(
+            type_assertion_output
+                .type_entries()
+                .get(checked_subject.type_entry)
+                .expect("subject term type entry should exist")
+                .owner,
+            expected_type_assertion_subject_sites[0]
+        );
         assert_eq!(type_assertion_output.formulas().len(), 1);
         let (_, checked_formula) = type_assertion_output
             .formulas()
             .iter()
             .next()
             .expect("type assertion formula should be checked");
-        assert_eq!(checked_formula.site, type_assertion_payload.formula_site);
+        assert_eq!(
+            checked_formula.site,
+            expected_type_assertion_formula_sites[0]
+        );
         assert_eq!(checked_formula.kind, FormulaKind::TypeAssertion);
         assert_eq!(checked_formula.status, FormulaStatus::Partial);
         assert_eq!(checked_formula.terms, vec![checked_subject.site.clone()]);
@@ -276,7 +377,7 @@
         assert_eq!(asserted_type.source.spelling, "set");
         assert_eq!(
             asserted_type.source.range,
-            type_assertion_payload.asserted_type.range
+            expected_type_assertion_asserted_type_range
         );
         let imported_predicate_functor_symbols =
             imported_predicate_functor_symbol_env(symbols.module_id().clone());
@@ -1746,6 +1847,88 @@
             ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
+        let builtin_type_assertion_corruption_cases = [
+            builtin_type_assertion_theorem_ast_with_corruption(
+                source_id,
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+                BuiltinTypeAssertionTheoremCorruption {
+                    recovered_label: true,
+                    ..BuiltinTypeAssertionTheoremCorruption::default()
+                },
+            ),
+            builtin_type_assertion_theorem_ast_with_corruption(
+                source_id,
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+                BuiltinTypeAssertionTheoremCorruption {
+                    recovered_is: true,
+                    ..BuiltinTypeAssertionTheoremCorruption::default()
+                },
+            ),
+            builtin_type_assertion_theorem_ast_with_corruption(
+                source_id,
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+                BuiltinTypeAssertionTheoremCorruption {
+                    duplicate_theorem: true,
+                    ..BuiltinTypeAssertionTheoremCorruption::default()
+                },
+            ),
+            builtin_type_assertion_theorem_ast_with_corruption(
+                source_id,
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+                BuiltinTypeAssertionTheoremCorruption {
+                    duplicate_formula_expression: true,
+                    ..BuiltinTypeAssertionTheoremCorruption::default()
+                },
+            ),
+            builtin_type_assertion_theorem_ast_with_corruption(
+                source_id,
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+                BuiltinTypeAssertionTheoremCorruption {
+                    extra_formula_child: true,
+                    ..BuiltinTypeAssertionTheoremCorruption::default()
+                },
+            ),
+            builtin_type_assertion_theorem_ast_with_corruption(
+                source_id,
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+                BuiltinTypeAssertionTheoremCorruption {
+                    negated: true,
+                    ..BuiltinTypeAssertionTheoremCorruption::default()
+                },
+            ),
+            builtin_type_assertion_theorem_ast_with_corruption(
+                source_id,
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+                BuiltinTypeAssertionTheoremCorruption {
+                    extra_assertion_operand: true,
+                    ..BuiltinTypeAssertionTheoremCorruption::default()
+                },
+            ),
+        ];
+        for gap_case in builtin_type_assertion_corruption_cases {
+            assert!(
+                extract_source_builtin_type_assertion_formula(&gap_case, &module, &symbols)
+                    .is_none()
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
         let mixed_reserve_and_type_assertion_theorem =
             reserve_then_builtin_type_assertion_theorem_ast(
                 source_id,

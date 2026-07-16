@@ -826,8 +826,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   exact numeral AST-projection prerequisite for the remaining formula
   extractors. Task 262H0 completed the test-only preservation prerequisite for
   the bounded builtin equality, inequality, and membership family, and Task
-  262H completed the subsequent move. The remaining Task 262 formula extraction
-  families and Task 263 keep this parent item open.
+  262H completed the subsequent move. Task 262I0 completed the test-only
+  preservation prerequisite for the bounded builtin type-assertion family;
+  Task 262I is next and moves only that family. The remaining Task 262 formula
+  extraction families and Task 263 keep this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

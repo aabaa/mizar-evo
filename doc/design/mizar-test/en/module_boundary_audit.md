@@ -1004,6 +1004,113 @@ set-enumeration, and connective/quantifier formula families. No
 `spec_coverage_audit.md` update is required because behavior, authority,
 coverage credit, and owner crate are unchanged.
 
+## Task 262I Pre-Move Inventory and Specification
+
+Fresh inventory at clean HEAD `628b3272` isolates the builtin type-assertion
+formula family as three contiguous `runner.rs` fragments:
+
+- the 8-line `SourceBuiltinTypeAssertionFormula` transport at lines
+  1,649-1,656, hash
+  `88bc334c400dd92327d5fdc25e90efef1560cc097f5f2ecd6a5a822883082da4`;
+- the 82-line `extract_source_builtin_type_assertion_formula` entry at lines
+  12,988-13,069, hash
+  `c4d2a3911147e0ceefdb6d4f0b767e19ea829cc66e8f52d67fb5c146e2b3540d`;
+- the 16-line dedicated node allowlist at lines 13,686-13,701, hash
+  `1e7c125594df441e775eac25259e0dd5c3a1081896ac461a5c441fb53748a844`.
+
+The family implements the exact source-derived slice for Chapter 14.2.3's
+type-assertion shape and the active
+`fail_type_elaboration_builtin_type_assertion_formula_gap_001.miz` sidecar. Its
+trace and expectation require the real numeral term, type-assertion formula,
+and builtin-set type payload before fail-closed numeric-type and partial-formula
+diagnostics. The production checker/detail caller remains in `runner.rs`.
+
+Task 262I moves only these three fragments into the existing private
+`source_formula.rs` leaf. The extractor directly consumes
+`SourceTypeExpression` and `extract_builtin_source_type_expression` from the
+existing lower-level `source_reserve.rs` leaf. This establishes the acyclic
+`source_formula -> source_reserve` projection dependency; `source_reserve` has
+no reverse dependency. The extraction entry crosses the phase facade
+unconditionally. The inferred transport and all six consumed fields need only
+runner-subtree visibility, the allowlist remains leaf-private, and no config,
+test-only re-export, or facade type alias is needed.
+
+Task 262I is move-only: theorem label/tokens, recovery policy, structural
+cardinality, numeral spelling, asserted builtin-set constraints, payload sites
+and ranges, checker outputs, detail keys, ordering, and fail-closed behavior
+must not change. There is no helper rename, deduplication, generalization,
+semantic edit, or test rewrite. The exact active source, trace, expectation,
+Task 262I0 matrix, route-isolation cases, 188 active type cases, and 272-test
+list are the preservation oracle. No `spec_coverage_audit.md` update is required
+because coverage credit, owner crate, and deferred status remain unchanged.
+
+## Task 262I0 Test-Gap Inventory and Specification
+
+The Task 262I test-sufficiency review found an independent `test_gap` that must
+be repaired before the production move. The existing positive unit test checks
+checker kind/status and compares formula/subject sites and asserted range back
+to values from the same extraction payload. It does not independently fix the
+formula, subject, and asserted-type `TypedSiteRef`s or their source ranges, and
+does not directly assert `payload.asserted_type_site` or the payload-level
+builtin-set spelling, head, and empty attributes.
+
+The negative matrix already rejects a wrong label, status prefix, wrong numeral,
+builtin `object`, attributed `set`, and extra reserve/root content. It does not
+exercise recovery on the exact theorem label or `is` token, duplicate theorem
+or formula-expression nodes, an extra formula child, negation/wrong direct
+formula tokens, or an extra assertion operand. These branches guard the exact
+recovery, singleton, token, and two-operand contract that Task 262I must
+preserve.
+
+Task 262I0 is a test-only repair. Extend the existing shared synthetic builder
+with a bounded builtin type-assertion corruption shape, and strengthen the
+existing `source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes`
+test. Independently derive the expected source offsets from the fixed theorem
+label, numeral, `is`, and `set` spellings; assert source/node kind plus exact
+site/range for formula, subject, and asserted type; assert payload spelling,
+head, attributes, and checker handoff; and require every recovery/duplicate/
+token/cardinality corruption to return no extraction and the unchanged payload
+extraction-gap detail key.
+
+Task 262I0 adds no test and changes no production source, `.miz`, expectation,
+trace, specification, public API, diagnostic, payload behavior, test name, or
+test count. It must be a separate commit before move-only Task 262I. This
+repairs preservation coverage only, so `spec_coverage_audit.md` remains
+unchanged.
+
+## Task 262I0 Test Repair Result
+
+Task 262I0 strengthened the existing test without adding or renaming any test.
+The positive matrix now derives formula, numeral-subject, and asserted-type
+ranges from the exact label, subject, `is`, and `set` spellings; selects each
+expected site independently by node kind and range; and fixes every extraction
+payload field. It also fixes the checker type-entry cardinality at two, requires
+exactly one asserted-type entry owned by the asserted-type site, requires the
+subject term entry to retain the subject site, and anchors the checked formula
+and normalized asserted type to the independent source expectations.
+
+The bounded corruption builder adds only default-off recovery, duplicate,
+token-shape, and structural-cardinality controls. The existing negative matrix
+now verifies recovered exact label, recovered `is`, duplicate theorem,
+duplicate formula expression, extra formula child, negation, and extra
+assertion operand cases. Every case returns no extraction and the unchanged
+`type_elaboration.external_dependency.ast_payload_extraction` detail key.
+
+`support.rs` is 6,765 lines with hash
+`757e507c998c0a0acdc6334b3d9ea1c68a0dbe9b87bb0eb623fca93e49942b4b`;
+`source_gap_and_equality.rs` is 3,250 lines with hash
+`ed70cdc2536d6f44362c56b303cedee4ac0c666809abc4c1189b283963ce4b90`.
+Production source, `.miz`, specification, trace, expectation, public API,
+diagnostics, payload behavior, test names, and test count are unchanged.
+
+The focused test, all relevant-crate tests, all 272 unit tests, all 188 active
+type cases, formatting, all-target/all-feature Clippy, and workspace tests pass.
+Plan/count remains 403/367, type coverage 235/223, pass/fail 219/184, and the
+raw/normalized test-list and four CLI hashes remain unchanged. Task 262I0 is
+complete and move-only Task 262I is next. No `spec_coverage_audit.md` update is
+required because behavior, test intent, coverage credit, and owner crate are
+unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -1152,7 +1259,7 @@ Task 255E.
 | 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
 | 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
 | 261 | Complete: moved the lexical provider, exact fixture vocabulary, and type import-summary adapter to private `import_fixtures.rs`. |
-| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262H. |
+| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262I0, with Task 262I next. |
 | 262A | Complete: moved the five common exact source-AST primitives behind the private type-elaboration phase facade. |
 | 262B | Complete: moved shared node-kind traversal and qualified-symbol spelling projections into the common source-AST leaf. |
 | 262C | Complete: moved reserve type-expression, visible symbol/admission, and source-text projection into the private source-reserve leaf; retained declaration/mode callers for Task 262E. |
@@ -1162,6 +1269,8 @@ Task 255E.
 | 262G | Complete: moved only the shared three-helper exact numeral AST projection into the private source-formula leaf while retaining all five caller families in `runner.rs`. |
 | 262H0 | Complete: strengthened the existing builtin-binary unit matrix for config order, payload provenance, recovery, duplicate, and cardinality preservation without changing production or test count. |
 | 262H | Complete: moved only the builtin equality/inequality/membership config, source transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
+| 262I0 | Complete: strengthened the existing builtin type-assertion unit matrix for independently derived payload/checker provenance, recovery, duplicate, token-shape, and cardinality preservation without changing production or test count. |
+| 262I | Next: move only the builtin type-assertion transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
@@ -1195,7 +1304,8 @@ before Task 253A is
 | Class | Result |
 |---|---|
 | `design_drift` | Active: source layout obscures phase and ownership review boundaries. Tasks 249-264 repair it without changing behavior. |
-| `spec_gap`, `test_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
+| `test_gap` | Tasks 262H0 and 262I0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
+| `spec_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
 | `source_undocumented_behavior`, `boundary_violation` | No new finding; existing runner behavior remains governed by the paired harness plan and higher authorities. |
 | `repo_metadata_conflict` | None found. |
 

@@ -2196,20 +2196,42 @@
         subject: &str,
         type_shape: ReserveTypeShape,
     ) -> SurfaceAst {
-        let mut builder = SurfaceAstBuilder::new(source_id);
-        let mut offset = 0;
-        let theorem = add_builtin_type_assertion_theorem_item(
-            &mut builder,
+        builtin_type_assertion_theorem_ast_with_corruption(
             source_id,
-            &mut offset,
             label,
             subject,
             type_shape,
-        );
+            BuiltinTypeAssertionTheoremCorruption::default(),
+        )
+    }
+
+    fn builtin_type_assertion_theorem_ast_with_corruption(
+        source_id: SourceId,
+        label: &str,
+        subject: &str,
+        type_shape: ReserveTypeShape,
+        corruption: BuiltinTypeAssertionTheoremCorruption,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem_count = if corruption.duplicate_theorem { 2 } else { 1 };
+        let theorems = (0..theorem_count)
+            .map(|_| {
+                add_builtin_type_assertion_theorem_item_with_corruption(
+                    &mut builder,
+                    source_id,
+                    &mut offset,
+                    label,
+                    subject,
+                    type_shape,
+                    corruption,
+                )
+            })
+            .collect::<Vec<_>>();
         let root = builder.add_node(
             SurfaceNodeKind::Root,
             range(source_id, 0, offset.saturating_sub(2)),
-            vec![theorem],
+            theorems,
         );
         builder.finish(Some(root), None)
     }
@@ -5101,6 +5123,43 @@
         )
     }
 
+    #[derive(Clone, Copy, Default)]
+    struct BuiltinTypeAssertionTheoremCorruption {
+        recovered_label: bool,
+        recovered_is: bool,
+        duplicate_theorem: bool,
+        duplicate_formula_expression: bool,
+        extra_formula_child: bool,
+        negated: bool,
+        extra_assertion_operand: bool,
+    }
+
+    fn add_builtin_type_assertion_theorem_item_with_corruption(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        label: &str,
+        subject: &str,
+        type_shape: ReserveTypeShape,
+        corruption: BuiltinTypeAssertionTheoremCorruption,
+    ) -> SurfaceBuilderNodeId {
+        add_type_assertion_theorem_item_with_status_and_corruption(
+            builder,
+            source_id,
+            offset,
+            IdentifierTypeAssertionTheoremSpec {
+                status: None,
+                label,
+                subject,
+                asserted_type: type_shape,
+                recovered_label: corruption.recovered_label,
+                negated: corruption.negated,
+            },
+            false,
+            corruption,
+        )
+    }
+
     fn add_builtin_type_assertion_theorem_item_with_status(
         builder: &mut SurfaceAstBuilder,
         source_id: SourceId,
@@ -5132,6 +5191,24 @@
         offset: &mut usize,
         spec: IdentifierTypeAssertionTheoremSpec<'_>,
         identifier_subject: bool,
+    ) -> SurfaceBuilderNodeId {
+        add_type_assertion_theorem_item_with_status_and_corruption(
+            builder,
+            source_id,
+            offset,
+            spec,
+            identifier_subject,
+            BuiltinTypeAssertionTheoremCorruption::default(),
+        )
+    }
+
+    fn add_type_assertion_theorem_item_with_status_and_corruption(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: IdentifierTypeAssertionTheoremSpec<'_>,
+        identifier_subject: bool,
+        corruption: BuiltinTypeAssertionTheoremCorruption,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let status_token = spec.status.map(|status| {
@@ -5180,13 +5257,23 @@
         } else {
             add_numeral_term_expression(builder, source_id, offset, spec.subject)
         };
-        let is_token = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::ReservedWord,
-            "is",
-        );
+        let is_token = if corruption.recovered_is {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                "is",
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                "is",
+            )
+        };
         let not_token = spec.negated.then(|| {
             add_token(
                 builder,
@@ -5207,15 +5294,30 @@
             formula_children.push(not_token);
         }
         formula_children.push(asserted_type);
+        if corruption.extra_assertion_operand {
+            formula_children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
         let formula = builder.add_node(
             SurfaceNodeKind::IsAssertion,
             range(source_id, formula_start, formula_end),
             formula_children,
         );
+        let mut formula_children = vec![formula];
+        if corruption.extra_formula_child {
+            formula_children.push(builder.add_node(
+                SurfaceNodeKind::IsAssertion,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
         let formula_expression = builder.add_node(
             SurfaceNodeKind::FormulaExpression,
             range(source_id, formula_start, formula_end),
-            vec![formula],
+            formula_children,
         );
         let semicolon = add_token(
             builder,
@@ -5232,7 +5334,15 @@
         if let Some(status_token) = status_token {
             children.push(status_token);
         }
-        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        children.extend([theorem, label_token, colon, formula_expression]);
+        if corruption.duplicate_formula_expression {
+            children.push(builder.add_node(
+                SurfaceNodeKind::FormulaExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        children.push(semicolon);
         builder.add_node(
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
