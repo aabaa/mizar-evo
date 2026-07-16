@@ -2519,14 +2519,29 @@
         items: Vec<ReserveItemSpec>,
         spec: IdentifierBinaryTheoremSpec<'_>,
     ) -> SurfaceAst {
+        reserve_then_identifier_binary_theorem_ast_with_corruption(
+            source_id,
+            items,
+            spec,
+            IdentifierBinaryTheoremCorruption::None,
+        )
+    }
+
+    fn reserve_then_identifier_binary_theorem_ast_with_corruption(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        spec: IdentifierBinaryTheoremSpec<'_>,
+        corruption: IdentifierBinaryTheoremCorruption,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
-        root_children.push(add_identifier_binary_theorem_item(
+        root_children.push(add_identifier_binary_theorem_item_with_corruption(
             &mut builder,
             source_id,
             &mut offset,
             spec,
+            corruption,
         ));
         let root = builder.add_node(
             SurfaceNodeKind::Root,
@@ -4459,11 +4474,49 @@
         recovered_label: bool,
     }
 
+    #[derive(Clone, Copy, Default)]
+    enum IdentifierBinaryTheoremCorruption {
+        #[default]
+        None,
+        DuplicateFormulaExpression,
+        FormulaExpressionKind,
+        ExtraFormulaChild,
+        PredicateKind,
+        ExtraPredicateOperand,
+        LeftTermExpressionKind,
+        ExtraLeftTermChild,
+        LeftReferenceKind,
+        ExtraLeftReferenceChild,
+        RecoveredLeftReference,
+        RightTermExpressionKind,
+        ExtraRightTermChild,
+        RightReferenceKind,
+        ExtraRightReferenceChild,
+        RecoveredRightReference,
+        RecoveredOperator,
+    }
+
     fn add_identifier_binary_theorem_item(
         builder: &mut SurfaceAstBuilder,
         source_id: SourceId,
         offset: &mut usize,
         spec: IdentifierBinaryTheoremSpec<'_>,
+    ) -> SurfaceBuilderNodeId {
+        add_identifier_binary_theorem_item_with_corruption(
+            builder,
+            source_id,
+            offset,
+            spec,
+            IdentifierBinaryTheoremCorruption::None,
+        )
+    }
+
+    fn add_identifier_binary_theorem_item_with_corruption(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: IdentifierBinaryTheoremSpec<'_>,
+        corruption: IdentifierBinaryTheoremCorruption,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let status_token = spec.status.map(|status| {
@@ -4507,28 +4560,93 @@
             ":",
         );
         let formula_start = *offset;
-        let left_term = add_identifier_term_expression(builder, source_id, offset, spec.left);
-        let operator = add_token(
+        let left_term = add_identifier_binary_operand_expression(
             builder,
             source_id,
             offset,
-            SurfaceTokenKind::ReservedSymbol,
-            spec.operator,
+            spec.left,
+            true,
+            corruption,
         );
-        let right_term = add_identifier_term_expression(builder, source_id, offset, spec.right);
+        let operator = if matches!(
+            corruption,
+            IdentifierBinaryTheoremCorruption::RecoveredOperator
+        ) {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedSymbol,
+                spec.operator,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedSymbol,
+                spec.operator,
+            )
+        };
+        let right_term = add_identifier_binary_operand_expression(
+            builder,
+            source_id,
+            offset,
+            spec.right,
+            false,
+            corruption,
+        );
         let formula_end = builder
             .node_range(right_term)
             .expect("just-created right term should exist")
             .end;
+        let mut formula_children = vec![left_term, operator, right_term];
+        if matches!(
+            corruption,
+            IdentifierBinaryTheoremCorruption::ExtraPredicateOperand
+        ) {
+            formula_children.push(builder.add_node(
+                SurfaceNodeKind::TermExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        let formula_kind = if matches!(
+            corruption,
+            IdentifierBinaryTheoremCorruption::PredicateKind
+        ) {
+            SurfaceNodeKind::TermExpression
+        } else {
+            SurfaceNodeKind::BuiltinPredicateApplication
+        };
         let formula = builder.add_node(
-            SurfaceNodeKind::BuiltinPredicateApplication,
+            formula_kind,
             range(source_id, formula_start, formula_end),
-            vec![left_term, operator, right_term],
+            formula_children,
         );
+        let mut formula_expression_children = vec![formula];
+        if matches!(
+            corruption,
+            IdentifierBinaryTheoremCorruption::ExtraFormulaChild
+        ) {
+            formula_expression_children.push(builder.add_node(
+                SurfaceNodeKind::BuiltinPredicateApplication,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            ));
+        }
+        let formula_expression_kind = if matches!(
+            corruption,
+            IdentifierBinaryTheoremCorruption::FormulaExpressionKind
+        ) {
+            SurfaceNodeKind::TypeExpression
+        } else {
+            SurfaceNodeKind::FormulaExpression
+        };
         let formula_expression = builder.add_node(
-            SurfaceNodeKind::FormulaExpression,
+            formula_expression_kind,
             range(source_id, formula_start, formula_end),
-            vec![formula],
+            formula_expression_children,
         );
         let semicolon = add_token(
             builder,
@@ -4546,10 +4664,133 @@
             children.push(status_token);
         }
         children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        if matches!(
+            corruption,
+            IdentifierBinaryTheoremCorruption::DuplicateFormulaExpression
+        ) {
+            let duplicate = builder.add_node(
+                SurfaceNodeKind::FormulaExpression,
+                range(source_id, formula_start, formula_end),
+                Vec::new(),
+            );
+            children.insert(children.len() - 1, duplicate);
+        }
         builder.add_node(
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
             children,
+        )
+    }
+
+    fn add_identifier_binary_operand_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spelling: &str,
+        left: bool,
+        corruption: IdentifierBinaryTheoremCorruption,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let recovered = matches!(
+            (left, corruption),
+            (
+                true,
+                IdentifierBinaryTheoremCorruption::RecoveredLeftReference
+            ) | (
+                false,
+                IdentifierBinaryTheoremCorruption::RecoveredRightReference
+            )
+        );
+        let token = if recovered {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spelling,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spelling,
+            )
+        };
+        let end = builder
+            .node_range(token)
+            .expect("just-created identifier token should exist")
+            .end;
+        let corrupt_reference_kind = matches!(
+            (left, corruption),
+            (true, IdentifierBinaryTheoremCorruption::LeftReferenceKind)
+                | (
+                    false,
+                    IdentifierBinaryTheoremCorruption::RightReferenceKind
+                )
+        );
+        let mut reference_children = vec![token];
+        if matches!(
+            (left, corruption),
+            (
+                true,
+                IdentifierBinaryTheoremCorruption::ExtraLeftReferenceChild
+            ) | (
+                false,
+                IdentifierBinaryTheoremCorruption::ExtraRightReferenceChild
+            )
+        ) {
+            reference_children.push(builder.add_node(
+                SurfaceNodeKind::TermReference,
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
+        let reference = builder.add_node(
+            if corrupt_reference_kind {
+                SurfaceNodeKind::TypeHead
+            } else {
+                SurfaceNodeKind::TermReference
+            },
+            range(source_id, start, end),
+            reference_children,
+        );
+        let mut expression_children = vec![reference];
+        if matches!(
+            (left, corruption),
+            (
+                true,
+                IdentifierBinaryTheoremCorruption::ExtraLeftTermChild
+            ) | (
+                false,
+                IdentifierBinaryTheoremCorruption::ExtraRightTermChild
+            )
+        ) {
+            expression_children.push(builder.add_node(
+                SurfaceNodeKind::TermReference,
+                range(source_id, start, end),
+                Vec::new(),
+            ));
+        }
+        let corrupt_expression_kind = matches!(
+            (left, corruption),
+            (
+                true,
+                IdentifierBinaryTheoremCorruption::LeftTermExpressionKind
+            ) | (
+                false,
+                IdentifierBinaryTheoremCorruption::RightTermExpressionKind
+            )
+        );
+        builder.add_node(
+            if corrupt_expression_kind {
+                SurfaceNodeKind::TypeExpression
+            } else {
+                SurfaceNodeKind::TermExpression
+            },
+            range(source_id, start, end),
+            expression_children,
         )
     }
 

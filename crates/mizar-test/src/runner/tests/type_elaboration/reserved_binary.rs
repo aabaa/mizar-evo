@@ -20,6 +20,60 @@
         );
         let payload = extract_source_reserved_variable_equality(&ast, module.clone(), &symbols)
             .expect("exact reserved-variable equality source should extract");
+        let formula_nodes =
+            surface_nodes_with_kind(&ast, SurfaceNodeKind::BuiltinPredicateApplication);
+        let [(formula_id, formula)] = formula_nodes.as_slice()
+        else {
+            panic!("exact equality source should contain one predicate application");
+        };
+        let reference_nodes = surface_nodes_with_kind(&ast, SurfaceNodeKind::TermReference);
+        let [(left_id, left), (right_id, right)] = reference_nodes.as_slice()
+        else {
+            panic!("exact equality source should contain two term references");
+        };
+        assert_eq!(payload.formula_site, surface_site(*formula_id));
+        assert_eq!(payload.formula_range, formula.range);
+        assert_eq!(payload.left_site, surface_site(*left_id));
+        assert_eq!(payload.left_range, left.range);
+        assert_eq!(payload.right_site, surface_site(*right_id));
+        assert_eq!(payload.right_range, right.range);
+        assert_ne!(payload.left_site, payload.right_site);
+        assert!(payload.left_range.end <= payload.right_range.start);
+        assert_eq!(payload.config.label, "ReservedVariableEqualityPayloadBoundary");
+        assert_eq!(payload.config.operator, "=");
+        assert_eq!(payload.config.formula_kind, FormulaKind::Equality);
+        assert_eq!(
+            payload.config.invalid_payload_key,
+            super::TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY
+        );
+        assert_eq!(payload.config.reserve_item_count, 1);
+        assert_eq!(payload.config.binding_spellings, ["x"]);
+        assert_eq!(
+            payload.config.binding_types,
+            [super::SourceReservedVariableBuiltinType::Set]
+        );
+        assert_eq!(payload.config.binding_source_mode_spellings, [None]);
+        assert!(payload.config.mode_definitions.is_empty());
+        assert_eq!(payload.config.left_binding_index, 0);
+        assert_eq!(payload.config.right_binding_index, 0);
+        assert!(!payload.config.require_shared_type_range);
+        assert!(!payload.config.require_distinct_type_ranges);
+        assert_eq!(
+            payload.config.left_result_role,
+            "reserved-variable-left-result"
+        );
+        assert_eq!(
+            payload.config.right_result_role,
+            "reserved-variable-right-result"
+        );
+        assert_eq!(
+            payload.config.left_expected_role,
+            Some("reserved-variable-left-expected")
+        );
+        assert_eq!(
+            payload.config.right_expected_role,
+            Some("reserved-variable-right-expected")
+        );
         assert_eq!(payload.reserve.bridge.bindings().len(), 1);
         assert_eq!(payload.reserve.bridge.bindings()[0].spelling, "x");
         assert_eq!(payload.left_spelling, "x");
@@ -218,6 +272,61 @@
             ),
         ];
         for gap_case in gap_cases {
+            assert!(
+                extract_source_reserved_variable_equality(
+                    &gap_case,
+                    module.clone(),
+                    &symbols
+                )
+                .is_none()
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for corruption in [
+            IdentifierBinaryTheoremCorruption::DuplicateFormulaExpression,
+            IdentifierBinaryTheoremCorruption::FormulaExpressionKind,
+            IdentifierBinaryTheoremCorruption::ExtraFormulaChild,
+            IdentifierBinaryTheoremCorruption::PredicateKind,
+            IdentifierBinaryTheoremCorruption::ExtraPredicateOperand,
+            IdentifierBinaryTheoremCorruption::LeftTermExpressionKind,
+            IdentifierBinaryTheoremCorruption::ExtraLeftTermChild,
+            IdentifierBinaryTheoremCorruption::LeftReferenceKind,
+            IdentifierBinaryTheoremCorruption::ExtraLeftReferenceChild,
+            IdentifierBinaryTheoremCorruption::RecoveredLeftReference,
+            IdentifierBinaryTheoremCorruption::RightTermExpressionKind,
+            IdentifierBinaryTheoremCorruption::ExtraRightTermChild,
+            IdentifierBinaryTheoremCorruption::RightReferenceKind,
+            IdentifierBinaryTheoremCorruption::ExtraRightReferenceChild,
+            IdentifierBinaryTheoremCorruption::RecoveredRightReference,
+            IdentifierBinaryTheoremCorruption::RecoveredOperator,
+        ] {
+            let gap_case = reserve_then_identifier_binary_theorem_ast_with_corruption(
+                source_id,
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                IdentifierBinaryTheoremSpec {
+                    status: None,
+                    label: "ReservedVariableEqualityPayloadBoundary",
+                    left: "x",
+                    operator: "=",
+                    right: "x",
+                    recovered_label: false,
+                },
+                corruption,
+            );
+            assert!(
+                extract_source_reserved_variable_equality(
+                    &gap_case,
+                    module.clone(),
+                    &symbols
+                )
+                .is_none()
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]

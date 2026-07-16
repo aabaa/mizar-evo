@@ -1738,6 +1738,75 @@ remains open for fresh bounded inventory of the remaining formula families. No
 `spec_coverage_audit.md` update is required because behavior, authority,
 coverage credit, owner crate, and deferred status are unchanged.
 
+## Tasks 262N0-262Q Fresh Reserved-Variable Formula Inventory
+
+Fresh inventory after Task 262M classifies the remaining source-formula code
+as one shared reserved-variable source model/substrate followed by three
+bounded extraction owners: direct binary, parenthesized binary, and type
+assertion. Checker-output transports, builders, validators, detail keys, and
+diagnostics remain Task 263 work. Concrete configs and their thin named route
+wrappers stay paired in `runner.rs` until a later inventory can move them
+without coupling source extraction to the result-role and invalid-detail-key
+contracts consumed by Task 263.
+
+The shared source substrate comprises the reserved-variable config/model type
+definitions and schemas (not the concrete config values/statics), builtin/mode
+projection predicates, asserted-head relation check, exact
+mode-definition/expansion checks, the shared identifier operand projection,
+and source-use ordinal calculation. The single-parenthesized operand projection
+and the three family-specific node allowlists stay with their generic cores in
+Tasks 262P and 262O-262Q respectively. The first candidate family range ending
+at `runner.rs:12974` was rejected by review because it included the opening of
+`source_module_binding_env`; the clean overall reserved-variable helper and
+allowlist region ends at line 12969, with each task selecting only its assigned
+subfragments. The projection predicates cannot move before their model type
+definitions because that would invert ownership back toward runner-owned
+source configuration. Task 262N therefore moves those definitions and the
+shared substrate together, with only the aliases still required by retained
+validators exposed parent-only. Concrete config values/statics and their thin
+named wrappers remain paired in `runner.rs` pending later inventory at the Task
+263 contract boundary.
+
+Independent test review found a bounded `test_gap` before that move. The
+existing exact equality bridge proves real checker handoff and many detail-key
+failures, but it does not independently lock every config field, the formula
+and two operand sites/ranges, direct extractor rejection for its existing
+near-miss matrix, or allowlisted expression/predicate/term kind and cardinality
+corruptions. Task 262N0 is test-only: strengthen the existing equality test and
+its default-off private AST builder with those preservation assertions. It
+adds no test and changes no production source, `.miz`, expectation, trace,
+specification, public API, behavior, or coverage credit. Task 262N follows only
+after N0 review and verification. Tasks 262O, 262P, and 262Q then move the
+direct-binary, parenthesized-binary, and type-assertion source cores
+respectively, with a fresh test-sufficiency review before 262Q.
+
+## Task 262N0 Test Repair Result
+
+Task 262N0 strengthened the existing exact reserved-variable equality test
+without adding or renaming a test. It now independently derives and fixes the
+formula plus both operand sites/ranges from the AST, fixes every binary config
+field, directly rejects all 13 retained near misses, and rejects 16 default-off
+corruptions. The corruption matrix independently covers formula-expression and
+predicate kind/cardinality, left/right term-expression and reference
+kind/cardinality, and left/right/operator recovery. The default path retains
+the prior node/token sequence, kinds, ranges, order, and IDs.
+
+No production source, `.miz`, expectation, trace, specification, API,
+diagnostic, payload, ordering, or coverage artifact changed. The focused exact
+test, all 272 unit tests, all 188 active type cases, relevant-crate tests, and
+workspace tests pass. Plan/count remains 403/367, type coverage 235/223, and
+pass/fail 219/184. The raw/normalized test-list and four CLI hashes remain
+unchanged. Formatting, all-target/all-feature Clippy, and diff cleanliness also
+pass. Task 262N0 is complete and move-only Task 262N is next. No
+`spec_coverage_audit.md` update is required because authority, behavior,
+coverage credit, owner crate, and deferred status are unchanged.
+
+`spec_coverage_audit.md` remains unchanged for Tasks 262N0-262Q because these
+tasks preserve authority, behavior, coverage credit, owner crate, and deferred
+status. Forbidden changes are accepted-shape expansion, route generalization,
+config or result-role edits, payload/detail/diagnostic/order changes,
+assertion weakening, test deletion or ignore, and checker/output movement.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -1909,6 +1978,11 @@ Task 255E.
 | 262L | Complete: moved only the set-enumeration transport, exact extractor, exact-set projection, and dedicated allowlist into the private source-formula leaf. |
 | 262M0 | Complete: strengthened the existing exact connective/quantifier matrix for independent ten-field binder/output/diagnostic preservation and bounded direct-rejection corruption coverage without changing production or test count. |
 | 262M | Complete: moved only the connective/quantifier transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
+| 262N0 | Complete: strengthened the existing exact reserved-variable equality matrix for all config fields, independently derived formula/operand provenance, direct near-miss rejection, and 16 bounded default-off corruptions without changing production or test count. |
+| 262N | Pending: move the shared reserved-variable config/model type definitions and common source projection/predicate/ordinal substrate after N0. |
+| 262O | Pending: move the direct reserved-variable binary source transport, generic extractor, and family allowlist. |
+| 262P | Pending: move the parenthesized reserved-variable source enum/transport, generic extractor, single-parenthesized operand projection, and family allowlist. |
+| 262Q | Pending: after fresh test-sufficiency review, move the reserved-variable type-assertion source transport, generic extractor, and family allowlist. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
@@ -1942,7 +2016,7 @@ before Task 253A is
 | Class | Result |
 |---|---|
 | `design_drift` | Active: source layout obscures phase and ownership review boundaries. Tasks 249-264 repair it without changing behavior. |
-| `test_gap` | Tasks 262H0, 262I0, 262J0, 262K0, 262L0, and 262M0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
+| `test_gap` | Tasks 262H0, 262I0, 262J0, 262K0, 262L0, 262M0, and 262N0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
 | `spec_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
 | `source_undocumented_behavior`, `boundary_violation` | No new finding; existing runner behavior remains governed by the paired harness plan and higher authorities. |
 | `repo_metadata_conflict` | None found. |

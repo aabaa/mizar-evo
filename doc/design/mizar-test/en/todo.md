@@ -838,8 +838,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   followed by move-only Task 262L; both are now complete. Fresh inventory now
   decomposes the connective/quantifier family into test-only
   preservation Task 262M0, followed by move-only Task 262M; both are now
-  complete. Remaining formula families require fresh bounded inventory, and
-  they plus Task 263 keep this parent item open.
+  complete. Fresh inventory decomposes the remaining reserved-variable
+  formula work into test-only preservation Task 262N0, shared source-substrate
+  Task 262N, direct-binary Task 262O, parenthesized-binary Task 262P, and
+  type-assertion Task 262Q. Task 262N0 is complete and Task 262N is next; these
+  tasks plus Task 263 keep this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
