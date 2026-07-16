@@ -845,9 +845,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   Fresh review inserted test-only preservation Task 262Q0 before move-only Task
   262Q; both and parent Task 262 are complete. Fresh dependency inventory
   decomposes Task 263 and selects bounded checker-handoff substrate Task 263A
-  first; Task 263A is complete, and fresh inventory selects the next
-  validation/detail/expected/failure family. Task 263 keeps this parent item
-  open.
+  first; Task 263A is complete. Fresh inventory selected common frontend
+  diagnostic projection Task 263B, which is also complete; fresh inventory now
+  selects the next validation/detail/expected/failure family. Task 263 keeps
+  this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

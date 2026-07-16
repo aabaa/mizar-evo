@@ -5,10 +5,8 @@ use crate::diagnostic::ValidationDiagnostic;
 use crate::expectation::ExpectedOutcome;
 use crate::harness::TestCase;
 
-use super::shared::run_frontend;
-use super::{
-    ParseOnlyCaseResult, ParseOnlyCaseStatus, assertion_diagnostic_codes, frontend_error_code,
-};
+use super::shared::{assertion_diagnostic_codes, frontend_error_code, run_frontend};
+use super::{ParseOnlyCaseResult, ParseOnlyCaseStatus};
 
 pub(super) fn run_parse_only_case(
     workspace_root: &Path,

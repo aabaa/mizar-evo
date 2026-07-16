@@ -767,8 +767,9 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   Task 262Q の前へ test-only preservation Task 262Q0 を追加し、両方と parent Task
   262 は完了した。fresh dependency inventory は Task 263 を分割し、bounded
   checker-handoff substrate Task 263A を最初に選び、Task 263A は完了した。fresh
-  inventory で次の validation/detail/expected/failure family を選ぶ。Task 263 のため
-  parent item を open のままにする。
+  inventory は common frontend diagnostic projection Task 263B を次に選び、これも
+  完了した。fresh inventory は次の validation/detail/expected/failure family を選ぶ。
+  Task 263 のため parent item を open のままにする。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

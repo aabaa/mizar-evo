@@ -6,8 +6,8 @@ use crate::diagnostic::ValidationDiagnostic;
 use crate::expectation::ExpectedOutcome;
 use crate::harness::TestCase;
 
-use super::shared::{FrontendRun, resolver_symbol_collection, run_frontend};
-use super::{DeclarationSymbolCaseResult, DeclarationSymbolCaseStatus, frontend_detail_keys};
+use super::shared::{FrontendRun, frontend_detail_keys, resolver_symbol_collection, run_frontend};
+use super::{DeclarationSymbolCaseResult, DeclarationSymbolCaseStatus};
 
 pub(super) fn run_declaration_symbol_case(
     workspace_root: &Path,

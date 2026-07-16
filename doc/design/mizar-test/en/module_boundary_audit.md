@@ -2182,6 +2182,70 @@ pass. Task 263A is complete; fresh Task 263 inventory selects the next bounded
 family. `spec_coverage_audit.md` remains unchanged because authority, behavior,
 coverage credit, owner crate, and deferred status are unchanged.
 
+## Task 263B Pre-Move Inventory and Specification
+
+Fresh inventory selects the common frontend diagnostic projection as the next
+acyclic bounded family. It consists of three exact `runner.rs` fragments: the
+one-line recovery-tag constant at line 78, the seven-line
+`frontend_detail_keys` fragment at lines 794-800 with hash
+`394797911f19bd3904b4f66d8beed648d418bec9c6f172218f7e8912d21d2038`, and
+the 41-line diagnostic-code/assertion/error fragment at lines 11528-11568 with
+hash `ea3f9ffb0862e0a37575de150b82a3d654000778e87fa5abd0d9d41a40ff50a3`.
+The recovery-tag hash in full is
+`381e1d7f0e9ab985a0ce5436a8b6e19f63ca169da43f54c35fcfb42d68972b04`.
+Their source-order
+concatenation is 49 lines with hash
+`0a4d80ff40dbf1d936ea0f5a965047e1a5f3a961812ede65deca56a8866a4ba5`.
+
+Task 263B mechanically moves those fragments into existing private
+`runner/shared.rs`, which already owns `FrontendRun` and directly imports
+`FrontendDiagnostic` and `TestCase`; its frontend import adds `DiagnosticCode`.
+The recovery tag and
+`frontend_diagnostic_code` remain leaf-private. Only `frontend_detail_keys`,
+`assertion_diagnostic_codes`, and `frontend_error_code` become parent-only
+entries. Parse-only and declaration-symbol import their shared sibling
+entries directly; `runner.rs` imports the shared detail-key entry for the
+retained type consumer and removes its now-unused `DiagnosticCode` and
+`FrontendDiagnostic` imports. This establishes `shared frontend/diagnostic projection -> phase
+consumers` without a child-to-parent or checker dependency.
+
+This is move-only `design_drift`; there is no Task 263B0 test prerequisite.
+The active parse matrix including recovery-tag cases, declaration/type
+lower-stage cases, active-runner byte-stability and repository execution tests,
+and all four CLI projections already preserve code mapping, key prefixes,
+ordering, and fallback behavior. No test, expectation, public API, diagnostic,
+payload, source behavior, or authority artifact may change. No source file is
+added, so the paired Source Inventory file list is unchanged.
+`spec_coverage_audit.md` remains unchanged because coverage credit, owner crate,
+and deferred status do not change.
+
+## Task 263B Move Result
+
+Task 263B moved the exact common frontend diagnostic family into existing
+private `shared.rs`. After removing the three reviewed `pub(super)` modifiers,
+folding whitespace, and normalizing rustfmt's optional trailing signature
+commas, the old and moved families both hash to
+`f7b793a4a93ec14cb24869c5de1e8b87ad35c79012185308c7ebaaf06d2f994b`.
+The recovery tag and fallback mapper remain leaf-private. Parse-only and
+declaration-symbol now import their shared entries directly; the retained type
+consumer imports only `frontend_detail_keys` through the runner owner.
+
+The resulting `runner.rs` has 11,566 lines and hash
+`6cc0b8a7a70f4298761df02f1d8be755ba22416625cffd8e8fcf6d8660dc5f59`;
+the 260-line `shared.rs` has hash
+`1c5f780fbb0df10faf8f363594e5b19fbd7eb19abc852ece67308559141689b8`.
+No diagnostic string, match arm, syntax/non-syntax branch, iteration order,
+prefix, wildcard fallback, or frontend-error formatting changed.
+
+All 272 unit tests and all 96 parse, four declaration-symbol, and 188
+type-elaboration active cases pass. Plan/count remains 403/367, type coverage
+235/223, and pass/fail 219/184. The raw/normalized test-list hashes and four
+CLI byte hashes remain unchanged. Formatting, all-target/all-feature Clippy,
+workspace tests, and diff cleanliness pass. Task 263B is complete; fresh Task
+263 inventory selects the next bounded family. No Source Inventory or
+`spec_coverage_audit.md` change is required because files, authority, behavior,
+coverage credit, owner crate, and deferred status are unchanged.
+
 `spec_coverage_audit.md` remains unchanged for Tasks 262N0-262Q because these
 tasks preserve authority, behavior, coverage credit, owner crate, and deferred
 status. Forbidden changes are accepted-shape expansion, route generalization,
@@ -2193,7 +2257,7 @@ assertion weakening, test deletion or ignore, and checker/output movement.
 | Current area | Responsibility | Dependency direction | Audit decision |
 |---|---|---|---|
 | public report/result/status types and `run_*_corpus` functions | Stable public runner facade and corpus-level orchestration | plan/discovery to phase execution | Keep in `runner.rs`. |
-| source/frontend and resolver staging | Source package preparation and cleanup, root/path/snapshot identity, frontend execution/result transport, and resolver shell/projection/symbol collection | shared by parse, declaration-symbol, and type-elaboration as applicable | Frontend staging moved in Task 258 and the declaration/type resolver leaf in Task 260A to private `shared.rs` with minimal parent-only visibility. |
+| source/frontend and resolver staging | Source package preparation and cleanup, root/path/snapshot identity, frontend execution/result transport, common frontend diagnostic projection, and resolver shell/projection/symbol collection | shared by parse, declaration-symbol, and type-elaboration as applicable | Frontend staging moved in Task 258, declaration/type resolver collection in Task 260A, and common frontend diagnostic projection in Task 263B to private `shared.rs` with minimal parent-only visibility. |
 | active-case admission and stable failure assembly | Tag/phase gates, expected-output matching, and deterministic failure diagnostics | phase-specific facade-to-owner transition | Tasks 259 and 260B moved parse-only and declaration case/failure boundaries; keep the remaining type boundary in `runner.rs` until Tasks 262-263 move it. |
 | parse-only execution | Surface-AST snapshots and parse-only failure projection | shared frontend to parse-only result | Moved in Task 259 to private `parse_only.rs` with minimal parent-only visibility. |
 | fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
@@ -2211,13 +2275,13 @@ The permitted dependency direction is:
 ```text
 public runner facade
   -> parse-only owner
-     -> shared plan/admission/source/frontend staging
+     -> shared plan/admission/source/frontend/diagnostic staging
         -> fixture/import-summary owner (lexical provider)
   -> declaration-symbol owner
-     -> shared plan/admission/source/frontend/resolver staging
+     -> shared plan/admission/source/frontend/diagnostic/resolver staging
         -> fixture/import-summary owner (lexical provider)
   -> type-elaboration owner
-     -> shared plan/admission/source/frontend/resolver staging
+     -> shared plan/admission/source/frontend/diagnostic/resolver staging
         -> fixture/import-summary owner (lexical provider)
      -> fixture/import-summary owner (resolver adapter)
      -> source extraction
@@ -2249,7 +2313,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | Target path | Ownership |
 |---|---|
 | `src/runner.rs` | Public facade, public report/result/status types, public active-case iterators, and top-level corpus orchestration only. |
-| `src/runner/shared.rs` | Private source package preparation, frontend execution, admission support, and genuinely cross-phase helpers. |
+| `src/runner/shared.rs` | Private source package preparation, frontend execution, common frontend diagnostic projection, admission support, and genuinely cross-phase helpers. |
 | `src/runner/parse_only.rs` | Parse-only case execution, snapshots, and parse-only failure projection. |
 | `src/runner/declaration_symbol.rs` | Declaration-symbol case execution, resolver observation, payload keys, and failure projection. |
 | `src/runner/import_fixtures.rs` | Existing parser fixture summaries/adapters used by active phases. |
@@ -2369,6 +2433,7 @@ Task 255E.
 | 262Q | Complete: moved only the reserved-variable type-assertion source transport, generic extractor, and family allowlist after Q0; retained all 58 configs/wrappers and checker/output consumers. |
 | 263 | Decomposed parent: move checker-handoff, payload-validation, detail-key, expected-output, and failure-diagnostic leaves in bounded dependency order. |
 | 263A | Complete: moved the exact 506-line checker-handoff substrate to private `type_elaboration/checker_handoff.rs` with minimal runner-scoped visibility. |
+| 263B | Complete: moved the exact 49-line common frontend diagnostic projection into existing private `shared.rs` with three parent-only entries. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a

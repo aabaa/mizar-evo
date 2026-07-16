@@ -16,7 +16,6 @@ use mizar_checker::type_checker::{
 use mizar_checker::typed_ast::{
     NormalizedTypeId, TypeEntryActual, TypeEntryId, TypeRole, TypeStatus, TypedNodeId, TypedSiteRef,
 };
-use mizar_frontend::orchestration::{DiagnosticCode, FrontendDiagnostic};
 use mizar_resolve::env::SymbolEnv;
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_session::SourceRange;
@@ -37,8 +36,8 @@ use declaration_symbol::{declaration_symbol_failure_diagnostic, run_declaration_
 use import_fixtures::{ParseOnlyImportProvider, augment_type_elaboration_import_summaries};
 use parse_only::{parse_only_failure_diagnostic, run_parse_only_case};
 use shared::{
-    FrontendRun, normalized_tests_root, normalized_workspace_root, resolver_symbol_collection,
-    run_frontend,
+    FrontendRun, frontend_detail_keys, normalized_tests_root, normalized_workspace_root,
+    resolver_symbol_collection, run_frontend,
 };
 #[cfg(test)]
 use type_elaboration::{
@@ -75,7 +74,6 @@ use type_elaboration::{
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
 const ACTIVE_DECLARATION_SYMBOL_TAG: &str = "active_declaration_symbol";
 const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
-const ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG: &str = "allow_frontend_recovery_diagnostics";
 const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
 const TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
@@ -789,13 +787,6 @@ fn type_elaboration_detail_keys(
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
     source_type_elaboration_detail_keys(&ast, resolver.module, &symbols)
-}
-
-fn frontend_detail_keys(case: &TestCase, diagnostics: &[FrontendDiagnostic]) -> Vec<String> {
-    assertion_diagnostic_codes(case, diagnostics)
-        .into_iter()
-        .map(|code| format!("frontend:{code}"))
-        .collect()
 }
 
 fn source_type_elaboration_detail_keys(
@@ -11523,48 +11514,6 @@ fn expected_type_elaboration_detail_keys(case: &TestCase) -> Vec<String> {
         return case.expectation.diagnostic_payloads.clone();
     }
     case.expectation.stable_detail_key.iter().cloned().collect()
-}
-
-fn frontend_diagnostic_code(diagnostic: &FrontendDiagnostic) -> String {
-    match &diagnostic.code {
-        DiagnosticCode::SourceLoad => "source_load".to_owned(),
-        DiagnosticCode::Preprocess(kind) => format!("preprocess:{kind:?}"),
-        DiagnosticCode::LexicalEnvironment(code) => {
-            format!("lexical_environment:{code:?}")
-        }
-        DiagnosticCode::Lexing(kind) => format!("lexing:{kind:?}"),
-        DiagnosticCode::Syntax(code) => code.to_string(),
-        _ => "frontend_diagnostic".to_owned(),
-    }
-}
-
-fn assertion_diagnostic_codes(case: &TestCase, diagnostics: &[FrontendDiagnostic]) -> Vec<String> {
-    let syntax_codes = diagnostics
-        .iter()
-        .filter_map(|diagnostic| match &diagnostic.code {
-            DiagnosticCode::Syntax(code) => Some(code.to_string()),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-    let has_non_syntax = diagnostics
-        .iter()
-        .any(|diagnostic| !matches!(diagnostic.code, DiagnosticCode::Syntax(_)));
-    if !syntax_codes.is_empty()
-        && (!has_non_syntax
-            || case
-                .expectation
-                .tags
-                .iter()
-                .any(|tag| tag == ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG))
-    {
-        syntax_codes
-    } else {
-        diagnostics.iter().map(frontend_diagnostic_code).collect()
-    }
-}
-
-fn frontend_error_code(error: &str) -> String {
-    format!("frontend_error:{error}")
 }
 
 fn type_elaboration_failure_diagnostic(

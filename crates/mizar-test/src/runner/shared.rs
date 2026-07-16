@@ -3,7 +3,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use mizar_frontend::orchestration::{Frontend, FrontendDiagnostic};
+use mizar_frontend::orchestration::{DiagnosticCode, Frontend, FrontendDiagnostic};
 use mizar_frontend::parsing::MizarParserSeam;
 use mizar_frontend::source::{FrontendSourceLoader, SourceUnitRequest};
 use mizar_resolve::declarations::DeclarationShellCollector;
@@ -22,6 +22,63 @@ use crate::harness::{DiscoveryConfig, HarnessError, TestCase};
 use crate::path_rules::absolute_from;
 
 use super::ParseOnlyImportProvider;
+
+const ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG: &str = "allow_frontend_recovery_diagnostics";
+
+pub(super) fn frontend_detail_keys(
+    case: &TestCase,
+    diagnostics: &[FrontendDiagnostic],
+) -> Vec<String> {
+    assertion_diagnostic_codes(case, diagnostics)
+        .into_iter()
+        .map(|code| format!("frontend:{code}"))
+        .collect()
+}
+
+fn frontend_diagnostic_code(diagnostic: &FrontendDiagnostic) -> String {
+    match &diagnostic.code {
+        DiagnosticCode::SourceLoad => "source_load".to_owned(),
+        DiagnosticCode::Preprocess(kind) => format!("preprocess:{kind:?}"),
+        DiagnosticCode::LexicalEnvironment(code) => {
+            format!("lexical_environment:{code:?}")
+        }
+        DiagnosticCode::Lexing(kind) => format!("lexing:{kind:?}"),
+        DiagnosticCode::Syntax(code) => code.to_string(),
+        _ => "frontend_diagnostic".to_owned(),
+    }
+}
+
+pub(super) fn assertion_diagnostic_codes(
+    case: &TestCase,
+    diagnostics: &[FrontendDiagnostic],
+) -> Vec<String> {
+    let syntax_codes = diagnostics
+        .iter()
+        .filter_map(|diagnostic| match &diagnostic.code {
+            DiagnosticCode::Syntax(code) => Some(code.to_string()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let has_non_syntax = diagnostics
+        .iter()
+        .any(|diagnostic| !matches!(diagnostic.code, DiagnosticCode::Syntax(_)));
+    if !syntax_codes.is_empty()
+        && (!has_non_syntax
+            || case
+                .expectation
+                .tags
+                .iter()
+                .any(|tag| tag == ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG))
+    {
+        syntax_codes
+    } else {
+        diagnostics.iter().map(frontend_diagnostic_code).collect()
+    }
+}
+
+pub(super) fn frontend_error_code(error: &str) -> String {
+    format!("frontend_error:{error}")
+}
 
 pub(super) fn run_frontend(
     workspace_root: &Path,
