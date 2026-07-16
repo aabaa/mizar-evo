@@ -784,7 +784,8 @@ closeout, `src/runner.rs` has 111,262 lines: a 17,142-line pre-test-module
 prefix containing 137 `#[cfg(test)]` helpers, followed by a single
 approximately 94,120-line test module containing 272 `#[test]` attributes.
 
-- [ ] Audit the runner boundary and add paired EN/JA module-boundary documents.
+- [x] Audit the runner boundary and add paired EN/JA module-boundary documents
+  in Task 248.
   Inventory orchestration, parse-only, declaration-symbol, type-elaboration,
   source-extraction, payload-validation, fixture-builder, and corruption-test
   ownership; record the dependency map, target source layout, move order, and

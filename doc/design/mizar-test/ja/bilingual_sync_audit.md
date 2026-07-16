@@ -19,6 +19,10 @@ document check を再実行する。この follow-up は同じ変更で更新す
 `fail_soundness.md`、`layout.md`、`expectation_schema.md`、`todo.md`、
 `00.crate_plan.md`、および kernel `soundness_argument.md` reference を対象にする。
 
+Task 248 は paired `module_boundary_audit.md` document を追加・review し、runner
+refactor の task decomposition、preservation matrix、source inventory、backlog
+state を両言語で同期する。
+
 この audit は language behavior、corpus expectations、既存 `.miz` fixtures、
 expectation の意味を変更しない。
 
@@ -60,6 +64,16 @@ task 21 follow-up は次を確認した。
   `doc/design/spec_coverage_audit.md` が unchanged であることを記録する。
 - paired kernel `soundness_argument.md` は F7 を resolved として記録する。
 
+Task 248 follow-up は次を確認した。
+
+- current runner/test count と ownership fact が companion 間で一致する。
+- target private source layout、dependency direction、Tasks 249-264、
+  move-only prohibition が一致する。
+- declaration-symbol integration-test owner は `tests/metadata.rs` のままで、
+  empty private test owner を捏造しない。
+- coverage、traceability、owner、deferred-status mapping を変更しないため、
+  `doc/design/spec_coverage_audit.md` は unchanged。
+
 ## Pair Status
 
 | Document | Synchronized content |
@@ -69,6 +83,7 @@ task 21 follow-up は次を確認した。
 | `expectation_schema.md` | sidecar schema、origin metadata、corrected certificate soundness fields、public enum policy。 |
 | `fail_soundness.md` | required soundness cases、corrected kernel rejection vocabulary、failure contract、validation rules。 |
 | `harness.md` | public API、runner pacing ledger、determinism requirements、architecture-22 matrix reporting、tests。 |
+| `module_boundary_audit.md` | Task-248 runner ownership inventory、dependency map、target layout、preservation matrix、ordered move task。 |
 | `layout.md` | directory layout、naming rules、corrected certificate rejection reasons、expected-result files、public enum cross-reference。 |
 | `minimal_crate.md` | minimal metadata-only crate scope、CLI behavior、verification expectations。 |
 | `miz_corpus.md` | corpus classes、size/review policy、provenance、stress、fuzz、property rules。 |
@@ -81,7 +96,7 @@ task 21 follow-up は次を確認した。
 ## Result
 
 現在の task scope では bilingual documentation drift は残っていない。Japanese
-companions は task 21 の corrected-path vocabulary update までの mizar-test design
+companions は Task 248 の runner module-boundary gate までの mizar-test design
 surface について English canonical documents と同期している。
 
 task 15 の source/spec follow-up では、blocking な `spec_gap`、採用すべき
@@ -113,3 +128,7 @@ task 21 はさらに commit 前に `cargo test -p mizar-test` と `git diff --ch
 証明しない。残るリスクはこの audit に通常伴う manual-review risk である。file set、
 major sections、task status、recorded inventories、corrected-vocabulary metadata が
 一致していても、sentence level の wording drift が残る可能性はある。
+
+Task 248 はさらに full required workspace verification の前に、paired
+module-boundary heading、table、task id、preservation invariant、backlog status を
+比較する。

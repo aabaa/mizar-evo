@@ -710,7 +710,8 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
 含む pre-test-module prefix 17,142行の後に、`#[test]` attribute 272件を含む
 単一の test module 約94,120行が続く。
 
-- [ ] runner boundary を監査し、paired EN/JA module-boundary 文書を追加する。
+- [x] Task 248 で runner boundary を監査し、paired EN/JA module-boundary 文書を
+  追加する。
   orchestration、parse-only、declaration-symbol、type-elaboration、source
   extraction、payload validation、fixture builder、corruption test の ownership
   を inventory し、dependency map、target source layout、move order、exit

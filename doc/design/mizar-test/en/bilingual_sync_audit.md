@@ -20,6 +20,10 @@ corrected-path soundness vocabulary. The follow-up covers `fail_soundness.md`,
 `layout.md`, `expectation_schema.md`, `todo.md`, `00.crate_plan.md`, and the
 kernel `soundness_argument.md` references updated in the same change.
 
+Task 248 adds and reviews the paired `module_boundary_audit.md` documents and
+synchronizes the runner-refactor task decomposition, preservation matrix,
+source inventory, and backlog state in both languages.
+
 This audit does not change language behavior, corpus expectations, existing
 `.miz` fixtures, or expectation meaning.
 
@@ -61,6 +65,16 @@ The task 21 follow-up checked:
   `doc/design/spec_coverage_audit.md` remains unchanged;
 - the paired kernel `soundness_argument.md` files mark F7 resolved.
 
+The task 248 follow-up checked:
+
+- current runner/test counts and ownership facts match between companions;
+- the target private source layout, dependency direction, Tasks 249-264, and
+  move-only prohibitions match;
+- the declaration-symbol integration-test owner remains `tests/metadata.rs`
+  and no empty private test owner is invented;
+- `doc/design/spec_coverage_audit.md` remains unchanged because no coverage,
+  traceability, owner, or deferred-status mapping changes.
+
 ## Pair Status
 
 | Document | Synchronized content |
@@ -70,6 +84,7 @@ The task 21 follow-up checked:
 | `expectation_schema.md` | Sidecar schema, origin metadata, corrected certificate soundness fields, and public enum policy. |
 | `fail_soundness.md` | Required soundness cases, corrected kernel rejection vocabulary, failure contract, and validation rules. |
 | `harness.md` | Public API, runner pacing ledger, determinism requirements, architecture-22 matrix reporting, and tests. |
+| `module_boundary_audit.md` | Task-248 runner ownership inventory, dependency map, target layout, preservation matrix, and ordered move tasks. |
 | `layout.md` | Directory layout, naming rules, corrected certificate rejection reasons, expected-result files, and public enum cross-reference. |
 | `minimal_crate.md` | Minimal metadata-only crate scope, CLI behavior, and verification expectations. |
 | `miz_corpus.md` | Corpus classes, size/review policy, provenance, stress, fuzz, and property rules. |
@@ -83,8 +98,7 @@ The task 21 follow-up checked:
 
 No bilingual documentation drift remains for the current task scope. The
 Japanese companions are synchronized with the English canonical documents for
-the mizar-test design surface through task 21's corrected-path vocabulary
-update.
+the mizar-test design surface through Task 248's runner module-boundary gate.
 
 The task-15 source/spec follow-up found no blocking `spec_gap`, accepted
 `repo_metadata_conflict`, language behavior change, or need to change existing
@@ -116,3 +130,7 @@ semantic equivalence. The remaining risk is the normal manual-review risk of
 this audit: wording may still diverge at sentence level even when file sets,
 major sections, task status, recorded inventories, and corrected-vocabulary
 metadata match.
+
+Task 248 additionally compares the paired module-boundary headings, tables,
+task ids, preservation invariants, and backlog status before the full required
+workspace verification.
