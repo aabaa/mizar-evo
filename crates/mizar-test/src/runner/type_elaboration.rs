@@ -11,6 +11,9 @@ mod source_reserve;
 pub(super) use admission::{is_active_type_elaboration, validate_active_type_elaboration_tags};
 #[cfg(test)]
 pub(super) use binary_routes::{
+    SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     SOURCE_DISTINCT_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
     SOURCE_DISTINCT_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_DISTINCT_RESERVED_VARIABLE_EQUALITY_CONFIG,
@@ -31,6 +34,9 @@ pub(super) use binary_routes::{
     SOURCE_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
     SOURCE_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG, SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG, SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    extract_source_chained_local_mode_reserved_variable_equality,
+    extract_source_chained_local_mode_reserved_variable_inequality,
+    extract_source_chained_local_mode_reserved_variable_membership,
     extract_source_distinct_reserved_object_variable_equality,
     extract_source_distinct_reserved_object_variable_inequality,
     extract_source_distinct_reserved_variable_equality,
@@ -51,6 +57,9 @@ pub(super) use binary_routes::{
     extract_source_reserved_object_variable_equality,
     extract_source_reserved_object_variable_inequality, extract_source_reserved_variable_equality,
     extract_source_reserved_variable_inequality, extract_source_reserved_variable_membership,
+    source_chained_local_mode_reserved_variable_equality_output,
+    source_chained_local_mode_reserved_variable_inequality_output,
+    source_chained_local_mode_reserved_variable_membership_output,
     source_distinct_reserved_object_variable_equality_output,
     source_distinct_reserved_object_variable_inequality_output,
     source_distinct_reserved_variable_equality_output,
@@ -73,6 +82,9 @@ pub(super) use binary_routes::{
     source_reserved_variable_inequality_output, source_reserved_variable_membership_output,
 };
 pub(super) use binary_routes::{
+    source_chained_local_mode_reserved_variable_equality_detail_keys,
+    source_chained_local_mode_reserved_variable_inequality_detail_keys,
+    source_chained_local_mode_reserved_variable_membership_detail_keys,
     source_distinct_reserved_object_variable_equality_detail_keys,
     source_distinct_reserved_object_variable_inequality_detail_keys,
     source_distinct_reserved_variable_equality_detail_keys,

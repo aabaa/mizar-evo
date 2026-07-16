@@ -888,8 +888,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   selected the exact ten-fragment/190-line direct local-object-mode membership,
   equality, and inequality route family as Task 263S, which is complete with
   token-identical body and byte-stability preservation. Fresh inventory now
-  returns to the remaining chained and deeper-chain binary route-owner
-  families, so Task 263 keeps this parent item open.
+  selected the exact fourteen-fragment/207-line chained local-mode membership,
+  equality, and inequality route family as Task 263T, which is complete with
+  token-identical body and byte-stability preservation. Fresh inventory now
+  returns to the remaining chained object-mode and deeper-chain binary
+  route-owner families, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
