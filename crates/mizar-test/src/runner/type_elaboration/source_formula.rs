@@ -139,6 +139,18 @@ pub(in crate::runner) struct SourceImportedAttributeAssertionFormula {
 }
 
 #[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceSetEnumerationFormula {
+    pub(in crate::runner) formula_site: TypedSiteRef,
+    pub(in crate::runner) formula_range: SourceRange,
+    pub(in crate::runner) left_site: TypedSiteRef,
+    pub(in crate::runner) left_range: SourceRange,
+    pub(in crate::runner) left_items: Vec<(TypedSiteRef, SourceRange)>,
+    pub(in crate::runner) right_site: TypedSiteRef,
+    pub(in crate::runner) right_range: SourceRange,
+    pub(in crate::runner) right_items: Vec<(TypedSiteRef, SourceRange)>,
+}
+
+#[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceFormulaStatement {
     pub(in crate::runner) formula_site: TypedSiteRef,
     pub(in crate::runner) formula_range: SourceRange,
@@ -601,6 +613,110 @@ fn extract_source_imported_attribute_assertion_formula_with_shape(
     })
 }
 
+pub(in crate::runner) fn extract_source_set_enumeration_formula(
+    ast: &SurfaceAst,
+) -> Option<SourceSetEnumerationFormula> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_set_enumeration_theorem_bridge_node(node))
+    {
+        return None;
+    }
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    if subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice() != ["theorem", "SetEnumerationPayloadBoundary", ":", ";"] {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+        || subtree_has_recovery(ast, formula)
+        || direct_token_texts(ast, formula).as_slice() != ["="]
+    {
+        return None;
+    }
+
+    let formula_structural_children = structural_child_ids(ast, formula);
+    let [left_expression_id, right_expression_id] = formula_structural_children.as_slice() else {
+        return None;
+    };
+    let left = exact_set_enumeration_term_operand(ast, *left_expression_id)?;
+    let right = exact_set_enumeration_term_operand(ast, *right_expression_id)?;
+    Some(SourceSetEnumerationFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        left_site: surface_site(left.term_id),
+        left_range: left.term_range,
+        left_items: left.items,
+        right_site: surface_site(right.term_id),
+        right_range: right.term_range,
+        right_items: right.items,
+    })
+}
+
+#[derive(Debug, Clone)]
+struct ExactSetEnumerationTerm {
+    term_id: SurfaceNodeId,
+    term_range: SourceRange,
+    items: Vec<(TypedSiteRef, SourceRange)>,
+}
+
+fn exact_set_enumeration_term_operand(
+    ast: &SurfaceAst,
+    term_expression_id: SurfaceNodeId,
+) -> Option<ExactSetEnumerationTerm> {
+    let term_expression = ast.node(term_expression_id)?;
+    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
+        || subtree_has_recovery(ast, term_expression)
+    {
+        return None;
+    }
+    let term_children = structural_child_ids(ast, term_expression);
+    let [set_id] = term_children.as_slice() else {
+        return None;
+    };
+    let set = ast.node(*set_id)?;
+    if !matches!(set.kind, SurfaceNodeKind::SetEnumeration)
+        || subtree_has_recovery(ast, set)
+        || direct_token_texts(ast, set).as_slice() != ["{", ",", "}"]
+    {
+        return None;
+    }
+    let item_children = structural_child_ids(ast, set);
+    let [first_expression_id, second_expression_id] = item_children.as_slice() else {
+        return None;
+    };
+    let first = exact_numeral_term_operand(ast, *first_expression_id, "1")?;
+    let second = exact_numeral_term_operand(ast, *second_expression_id, "2")?;
+    Some(ExactSetEnumerationTerm {
+        term_id: *set_id,
+        term_range: set.range,
+        items: vec![
+            (surface_site(first.0), first.1),
+            (surface_site(second.0), second.1),
+        ],
+    })
+}
+
 fn extract_exact_source_formula_constant(
     ast: &SurfaceAst,
     expected_label: &str,
@@ -866,6 +982,22 @@ fn is_supported_imported_attribute_assertion_theorem_bridge_node(node: &SurfaceN
             | SurfaceNodeKind::AttributeTestChain
             | SurfaceNodeKind::AttributeRef
             | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_set_enumeration_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::BuiltinPredicateApplication
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::SetEnumeration
+            | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::Token(_)
     )
 }
