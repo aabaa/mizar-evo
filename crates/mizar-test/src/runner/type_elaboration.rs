@@ -7,9 +7,10 @@ pub(super) use source_ast::{
     surface_site,
 };
 pub(super) use source_reserve::{
-    SourceTypeExpression, extract_builtin_source_type_expression,
-    imported_fixture_reserve_attribute_spelling, is_imported_fixture_reserve_attribute,
-    source_reserve_symbol_head_kind,
+    SourceReserveExtraction, SourceTypeExpression, extract_builtin_source_reserve_declarations,
+    extract_builtin_source_reserve_declarations_after_node_guard,
+    extract_builtin_source_type_expression, mode_definition_pattern_spelling,
+    source_mode_symbol_spelling,
 };
 #[cfg(test)]
 pub(super) use source_reserve::{resolve_visible_attribute, resolve_visible_type_head};

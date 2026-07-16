@@ -654,6 +654,78 @@ cardinality, direct-token filtering, recovery rejection, exact module spelling,
 caller order, and fail-closed behavior are unchanged. Task 262D is complete;
 parent Task 262 remains open and Task 262E is next.
 
+## Task 262E Pre-Move Inventory and Specification
+
+Fresh inventory classifies the remaining reserve-family placement in
+`runner.rs` as `design_drift`: the exact source-derived declaration and
+local-mode payload producer is cohesive with the existing private
+`type_elaboration/source_reserve.rs` owner, while its current parent placement
+does not express that ownership. No language, test, expectation, trace, or
+metadata disagreement was found. The move consists of the contiguous 1,074-line
+fragment from `SourceReserveExtraction` through
+`extract_builtin_reserve_segment`, whose hash is
+`31f8e27a1835ea31e6d65ff67acbfa8fcc040fc588df7f24453ff848e0bd690b`,
+plus the separate 10-line `merge_optional_range` helper, whose hash is
+`aa186a9105816e62352473111ffe3b9958a332086e9d1fc459c024fbc2cfac5c`.
+
+The move preserves one runner-subtree transport boundary:
+`SourceReserveExtraction` and its `bridge`/`mode_expansions` fields, including
+the existing test-only accessors. It also preserves four runner-subtree helper
+boundaries: `extract_builtin_source_reserve_declarations`,
+`extract_builtin_source_reserve_declarations_after_node_guard`,
+`source_mode_symbol_spelling`, and `mode_definition_pattern_spelling`. The
+private phase facade re-exports only those five boundary items to its parent,
+and `runner.rs` keeps private aliases for unchanged callers. All other moved
+items become or remain leaf-private. The three Task 262C temporary helpers
+`source_reserve_symbol_head_kind`,
+`is_imported_fixture_reserve_attribute`, and
+`imported_fixture_reserve_attribute_spelling` become leaf-private once their
+remaining callers move.
+
+`source_reserve` will consume the common source-AST projections directly,
+including the Task 262D fixture-import recognizer, and will continue to consume
+its own Task 262C type-expression/symbol projections without a child-to-parent
+dependency. `SourceReserveHandoff`, `source_module_binding_env`, formula-only
+imported term/formula resolution, checker handoff/validation, and later
+orchestration stay in `runner.rs`. The preservation matrix is exact AST/import
+shape, node allowlist, recovery rejection, traversal budget/order, dependency
+and provenance admission, attribute polarity/order, spelling/range, payload
+contents, diagnostics/detail keys, and fail-closed behavior. This task changes
+no test body or name, public API, spec/trace/expectation artifact, harness count,
+or specification-coverage credit.
+
+## Task 262E Move Result
+
+Task 262E moved both inventoried fragments into the existing private
+`src/runner/type_elaboration/source_reserve.rs` owner. After rustfmt and the
+minimal import/visibility adjustments, `runner.rs` is 14,718 lines with hash
+`f38352151d71474b676fb3c2a50e313c33f6de6dad5a09097c28aa9de729ce62`;
+the 16-line phase facade has hash
+`07c19a11381d002cd3a6503470df6e1e63d09a2b435350608b1cc8fe1724a50a`;
+and the 1,474-line `source_reserve.rs` has hash
+`88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`.
+The unchanged 147-line `source_ast.rs` retains hash
+`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`.
+
+The extraction transport, its two fields/test-only accessors, the two
+extraction entries, and the two spelling helpers use runner-subtree visibility,
+parent-only facade re-exports, and private `runner.rs` aliases. The three
+temporary Task 262C helpers are now leaf-private. `source_reserve` consumes the
+common source-AST primitives and fixture-import recognizer directly; no
+child-to-parent source dependency was introduced. `SourceReserveHandoff`, the
+module binding environment, formula-only imported symbol resolver, checker
+handoff/validation, and orchestration remain in `runner.rs`.
+
+The moved declaration/import gates, node allowlist, recovery checks, traversal
+budget, dependency ordering, expansion provenance, segment/range assembly, and
+fail-closed branches are unchanged apart from required visibility and rustfmt
+wrapping. All 272 unit tests pass, and the sorted raw and normalized test-list
+hashes remain `5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+Task 262E is complete. Parent Task 262 remains open for fresh inventory of the
+remaining formula-extraction families; no `spec_coverage_audit.md` update is
+required because behavior, tests, trace credit, and owner crate are unchanged.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -665,7 +737,7 @@ parent Task 262 remains open and Task 262E is next.
 | fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
 | declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
 | type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Remains in `runner.rs` through Tasks 262-263. The current `type_elaboration.rs` is a private facade for the `source_ast` and `source_reserve` leaves; later moves make it the orchestration owner. |
-| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Task 262C moved reserve type-expression/symbol projection to private `type_elaboration/source_reserve.rs`. Declaration segmentation, mode expansion, formula extraction, and retained callers stay in `runner.rs` for later Task 262 subtasks. |
+| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`. Formula extraction and retained callers stay in `runner.rs` for later Task 262 subtasks. |
 | payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Private type-elaboration leaf owner; no key or ordering edits. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
@@ -689,7 +761,7 @@ public runner facade
      -> source extraction
         -> common source-AST primitives
            -> fixture/import-summary owner (module-path projection)
-        -> reserve type-expression and symbol projection
+        -> reserve type-expression, declaration, and local-mode projection
      -> checker/core payload validation
      -> deterministic detail keys and failure diagnostics
 
@@ -801,12 +873,12 @@ Task 255E.
 | 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
 | 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
 | 261 | Complete: moved the lexical provider, exact fixture vocabulary, and type import-summary adapter to private `import_fixtures.rs`. |
-| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262D. |
+| 262 | Parent: move type-elaboration source-extraction leaves; remains open after Tasks 262A-262E. |
 | 262A | Complete: moved the five common exact source-AST primitives behind the private type-elaboration phase facade. |
 | 262B | Complete: moved shared node-kind traversal and qualified-symbol spelling projections into the common source-AST leaf. |
 | 262C | Complete: moved reserve type-expression, visible symbol/admission, and source-text projection into the private source-reserve leaf; retained declaration/mode callers for Task 262E. |
 | 262D | Complete: moved the shared exact `parser.type_fixtures` import-item AST projection to the common source-AST leaf before its formula and reserve callers. |
-| 262E | Next: move the bounded reserve declaration-segmentation and local-mode traversal/expansion family, and narrow the three temporary Task 262C helper visibilities. |
+| 262E | Complete: moved the bounded reserve declaration-segmentation and local-mode traversal/expansion family, retained handoff/formula ownership, and narrowed the three temporary Task 262C helpers. |
 | 263 | Move payload validation, detail-key, expected-output, and failure-diagnostic leaves. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
