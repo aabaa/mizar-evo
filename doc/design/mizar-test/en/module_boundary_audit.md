@@ -326,6 +326,23 @@ All 11 fully qualified names, original order positions, assertions, the Task
 257E mode-chain boundary, and both 272-test list hashes are unchanged. Task
 257D is complete; parent Task 257 remains pending.
 
+## Task 257E Move Result
+
+Task 257E root-included
+`src/runner/tests/type_elaboration/mode_chain_fixtures.rs` without a wrapper
+module. The byte-identical 1,578-line fragment contains the 26 audited
+non-long-chain local-mode/object-mode active membership, equality, and
+inequality fixtures and no helper or unrelated item. Its hash is
+`9e3c1a6e11b01dc257982002379d884f9de24ec5093982d7604e9a988dc2e593`.
+The retained 16,908 lines, including the separator before Task 257F, remained
+byte-identical with hash
+`dd144c50d0b24adfc690e99f160e5ab73362f6b972107ac71ff6bed0513a3774`;
+the resulting 16,909-line `tests.rs` hash is
+`cacc1dd5a5fcd2e14526bac47e277d900b0c0f9b56c6cc1bee2b7ea2e7229c3f`.
+All 26 fully qualified names, original order positions, assertions, the Task
+257F boundary, and both 272-test list hashes are unchanged. Task 257E is
+complete; parent Task 257 remains pending.
+
 ## Current Ownership
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -456,7 +473,7 @@ Task 255E.
 | 257B | Complete: moved the three builtin-object reserve active fixtures to `reserve_object_fixtures.rs`, retaining the Task 257C separator. |
 | 257C | Complete: moved only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`, retaining both reserve-family boundaries. |
 | 257D | Complete: moved the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`, retaining the Task 257E separator. |
-| 257E | Move the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`. |
+| 257E | Complete: moved the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`, retaining the Task 257F separator. |
 | 257F | Move the 39 active asserted-head/type-assertion fixture tests to `asserted_head_fixtures.rs`. |
 | 257G | Move the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`. |
 | 257H | Move the final 12 root and 28 nested corruption/isolation tests while retaining Task 216-222 modules; complete Task 257. |
