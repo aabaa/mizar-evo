@@ -40,6 +40,34 @@ pub(in crate::runner) fn structural_child_ids(
         .collect()
 }
 
+pub(in crate::runner) fn surface_nodes_with_kind(
+    ast: &SurfaceAst,
+    kind: SurfaceNodeKind,
+) -> Vec<(SurfaceNodeId, &SurfaceNode)> {
+    let mut output = Vec::new();
+    if let Some(root) = ast.root() {
+        collect_surface_nodes_with_kind(ast, root, &kind, &mut output);
+    }
+    output
+}
+
+fn collect_surface_nodes_with_kind<'a>(
+    ast: &'a SurfaceAst,
+    id: SurfaceNodeId,
+    kind: &SurfaceNodeKind,
+    output: &mut Vec<(SurfaceNodeId, &'a SurfaceNode)>,
+) {
+    let Some(node) = ast.node(id) else {
+        return;
+    };
+    if &node.kind == kind {
+        output.push((id, node));
+    }
+    for child in &node.children {
+        collect_surface_nodes_with_kind(ast, *child, kind, output);
+    }
+}
+
 pub(in crate::runner) fn direct_token_texts(ast: &SurfaceAst, node: &SurfaceNode) -> Vec<String> {
     node.children
         .iter()
@@ -47,6 +75,28 @@ pub(in crate::runner) fn direct_token_texts(ast: &SurfaceAst, node: &SurfaceNode
         .filter_map(SurfaceNode::token_text)
         .map(str::to_owned)
         .collect()
+}
+
+pub(in crate::runner) fn qualified_symbol_spelling(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+) -> Result<String, ()> {
+    if !matches!(node.kind, SurfaceNodeKind::QualifiedSymbol) || node.children.is_empty() {
+        return Err(());
+    }
+    let mut segments = Vec::new();
+    for child_id in &node.children {
+        let child = ast.node(*child_id).ok_or(())?;
+        if !matches!(child.kind, SurfaceNodeKind::PathSegment) || child.children.len() != 1 {
+            return Err(());
+        }
+        let token = ast
+            .node(child.children[0])
+            .and_then(SurfaceNode::token_text)
+            .ok_or(())?;
+        segments.push(token.to_owned());
+    }
+    Ok(segments.join("."))
 }
 
 pub(in crate::runner) fn surface_site(id: SurfaceNodeId) -> TypedSiteRef {

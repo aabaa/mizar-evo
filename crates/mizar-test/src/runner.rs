@@ -71,8 +71,8 @@ use shared::{
     run_frontend,
 };
 use type_elaboration::{
-    direct_token_texts, exact_compilation_item_list, structural_child_ids, subtree_has_recovery,
-    surface_site,
+    direct_token_texts, exact_compilation_item_list, qualified_symbol_spelling,
+    structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -15060,34 +15060,6 @@ fn extract_source_mode_rhs(
     Some(rhs)
 }
 
-fn surface_nodes_with_kind(
-    ast: &SurfaceAst,
-    kind: SurfaceNodeKind,
-) -> Vec<(SurfaceNodeId, &SurfaceNode)> {
-    let mut output = Vec::new();
-    if let Some(root) = ast.root() {
-        collect_surface_nodes_with_kind(ast, root, &kind, &mut output);
-    }
-    output
-}
-
-fn collect_surface_nodes_with_kind<'a>(
-    ast: &'a SurfaceAst,
-    id: SurfaceNodeId,
-    kind: &SurfaceNodeKind,
-    output: &mut Vec<(SurfaceNodeId, &'a SurfaceNode)>,
-) {
-    let Some(node) = ast.node(id) else {
-        return;
-    };
-    if &node.kind == kind {
-        output.push((id, node));
-    }
-    for child in &node.children {
-        collect_surface_nodes_with_kind(ast, *child, kind, output);
-    }
-}
-
 fn mode_definition_has_local_context(ast: &SurfaceAst, mode_id: SurfaceNodeId) -> bool {
     let Some(block_id) = containing_definition_block(ast, mode_id) else {
         return false;
@@ -15436,25 +15408,6 @@ fn extract_builtin_source_attribute(
         node.range,
         source_text_from_children(ast, node).ok_or(())?,
     ))
-}
-
-fn qualified_symbol_spelling(ast: &SurfaceAst, node: &SurfaceNode) -> Result<String, ()> {
-    if !matches!(node.kind, SurfaceNodeKind::QualifiedSymbol) || node.children.is_empty() {
-        return Err(());
-    }
-    let mut segments = Vec::new();
-    for child_id in &node.children {
-        let child = ast.node(*child_id).ok_or(())?;
-        if !matches!(child.kind, SurfaceNodeKind::PathSegment) || child.children.len() != 1 {
-            return Err(());
-        }
-        let token = ast
-            .node(child.children[0])
-            .and_then(SurfaceNode::token_text)
-            .ok_or(())?;
-        segments.push(token.to_owned());
-    }
-    Ok(segments.join("."))
 }
 
 fn resolve_visible_attribute(

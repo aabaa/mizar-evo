@@ -818,7 +818,7 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   ownership, ordering, or fail-closed behavior. Tasks 258-259 completed the
   private shared frontend and parse-only owners, Tasks 260A-260B moved the
   shared resolver leaf and declaration-symbol owner, and Task 261 moved the
-  fixture/import-summary owner. Task 262A moved the common source-AST leaf;
+  fixture/import-summary owner. Tasks 262A-262B moved the common source-AST leaf;
   the remaining Task 262 source-extraction families and Task 263 keep this
   parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
