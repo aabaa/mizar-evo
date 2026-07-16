@@ -2952,6 +2952,53 @@ remaining config/named-wrapper family. Source Inventory and
 `spec_coverage_audit.md` remain unchanged because no path, authority, behavior,
 coverage credit, owner crate, or deferred status changed.
 
+## Task 263N Pre-Move Inventory and Specification
+
+Fresh dependency inventory selects a cohesive private parenthesized route
+owner made of seven exact `runner.rs` fragments: invalid keys at 220-235 (16
+lines, `f0a67ec1...`), eight configs at 3099-3298 (200, `d374247d...`), eight
+production detail routes at 5374-5506 (133, `683e4c79...`), test-only named
+detail wrappers at 6960-7046 (87, `08f628be...`), output wrappers at 7058-7142
+(85, `9139389e...`), validator wrappers at 8322-8408 (87, `87d26ecb...`), and
+eight source extractors at 8819-8930 (112, `95dce665...`). Total: 720 lines.
+
+Task 263N mechanically moves only those fragments into new private
+`type_elaboration/parenthesized_routes.rs`. Keeping configs with thin source,
+detail, and test wrappers avoids reverse source/output ownership. Only the
+eight production detail routes cross the normal phase facade; configs and
+test-consumed wrappers/extractors cross under `#[cfg(test)]`. No call site,
+name, config value, key, payload, ordering, fallback, or fail-closed behavior
+changes. Existing active routes and parenthesized matrices in
+`reserved_binary.rs` and `binary_route_fixtures.rs` are the preservation oracle.
+
+This is move-only `design_drift`; no N0 is needed. The new real source path
+must be added to the paired Source Inventory with the move and is already
+listed in the paired target layout, while
+`spec_coverage_audit.md` remains unchanged because authority, behavior,
+coverage credit, owner crate, and deferred status do not change.
+
+## Task 263N Move Result
+
+The seven moved fragments retain their exact normalized hashes
+`f0a67ec1...`, `d374247d...`, `683e4c79...`, `08f628be...`, `9139389e...`,
+`87d26ecb...`, and `95dce665...`; their combined normalized hash is
+`93a45180...`. The new 745-line private owner has raw hash `490cc42b...`,
+while `runner.rs` is 9,721 lines with raw hash `9cb5f972...`. Invalid-key
+constants remain leaf-private. Existing runner test names resolve through
+config-derived test-only aliases, and configs, 24 named test wrappers, and
+eight extractors cross only the test facade. The normal facade exposes only
+the eight production detail routes.
+
+All 25 focused parenthesized tests and all 272 crate unit tests pass. The raw
+and normalized 272-name list hashes, four CLI byte hashes, active counts
+96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
+warnings/zero errors remain unchanged. Formatting, all-target/all-feature
+Clippy with warnings denied, workspace tests, and diff cleanliness pass. Task
+263N is complete; fresh Task 263 inventory returns to the remaining
+non-parenthesized route-owner families. The paired Source Inventory now lists
+the new real path, while `spec_coverage_audit.md` remains unchanged because no
+authority, behavior, coverage credit, owner crate, or deferred status changed.
+
 `spec_coverage_audit.md` remains unchanged for Tasks 262N0-262Q because these
 tasks preserve authority, behavior, coverage credit, owner crate, and deferred
 status. Forbidden changes are accepted-shape expansion, route generalization,
@@ -2968,9 +3015,9 @@ assertion weakening, test deletion or ignore, and checker/output movement.
 | parse-only execution | Surface-AST snapshots and parse-only failure projection | shared frontend to parse-only result | Moved in Task 259 to private `parse_only.rs` with minimal parent-only visibility. |
 | fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
 | declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
-| type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Task 263A moved generic checker-handoff assembly/validation to private `checker_handoff.rs`, Task 263C moved expected-key/failure projection to private `result.rs`, Task 263D moved active admission to private `admission.rs`, Tasks 263E-263F moved checker-output transports/builders, Tasks 263G-263I moved type-assertion/binary/shared-parenthesized validation, and Tasks 263J-263M moved type-assertion/binary/parenthesized detail and payload-detail cores to private `output.rs`; top-level case execution, dispatch, concrete configs/named wrappers, and other output consumers remain in `runner.rs` for later Task 263 families. The phase facade owns seven private leaves. |
-| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262Q moved standalone formula constants, shared exact numerals, builtin binary and type-assertion formulas, the shared imported-formula symbol resolver/provenance pair, imported predicate/functor, imported attribute assertion, set-enumeration, connective/quantifier families, and the shared, direct-binary, parenthesized, and type-assertion reserved-variable source substrate to private `type_elaboration/source_formula.rs`. Formula source extraction is complete; retained configs/wrappers and checker/output consumers stay in `runner.rs` for Task 263 inventory. |
-| payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Tasks 263E-263I moved the three shared output transports/builders plus type-assertion/binary/shared-parenthesized validators and private helpers to private `type_elaboration/output.rs`; Tasks 263J-263M moved the type-assertion, binary, and shared parenthesized result/detail plus payload-detail cores there too, while named wrappers/configs remain later bounded work. No key or ordering edits. |
+| type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Task 263A moved generic checker-handoff assembly/validation to private `checker_handoff.rs`, Task 263C moved expected-key/failure projection to private `result.rs`, Task 263D moved active admission to private `admission.rs`, Tasks 263E-263F moved checker-output transports/builders, Tasks 263G-263I moved type-assertion/binary/shared-parenthesized validation, Tasks 263J-263M moved type-assertion/binary/parenthesized detail and payload-detail cores to private `output.rs`, and Task 263N moved the cohesive parenthesized config/named-route owner to private `parenthesized_routes.rs`; top-level case execution, dispatch, non-parenthesized configs/named wrappers, and other output consumers remain in `runner.rs` for later Task 263 families. The phase facade owns eight private leaves. |
+| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262Q moved standalone formula constants, shared exact numerals, builtin binary and type-assertion formulas, the shared imported-formula symbol resolver/provenance pair, imported predicate/functor, imported attribute assertion, set-enumeration, connective/quantifier families, and the shared, direct-binary, parenthesized, and type-assertion reserved-variable source substrate to private `type_elaboration/source_formula.rs`. Formula source extraction is complete; Task 263N colocated the parenthesized named extractors with their route owner, while non-parenthesized configs/wrappers and checker/output consumers remain in `runner.rs` for Task 263 inventory. |
+| payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Tasks 263E-263I moved the three shared output transports/builders plus type-assertion/binary/shared-parenthesized validators and private helpers to private `type_elaboration/output.rs`; Tasks 263J-263M moved the type-assertion, binary, and shared parenthesized result/detail plus payload-detail cores there too; Task 263N moved the parenthesized configs and named detail/output/validator wrappers to `parenthesized_routes.rs`. Non-parenthesized named wrappers/configs remain later bounded work. No key or ordering edits. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
 
@@ -3026,6 +3073,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | `src/runner/declaration_symbol.rs` | Declaration-symbol case execution, resolver observation, payload keys, and failure projection. |
 | `src/runner/import_fixtures.rs` | Existing parser fixture summaries/adapters used by active phases. |
 | `src/runner/type_elaboration.rs` and `src/runner/type_elaboration/` | Type-elaboration orchestration plus private source-extraction, checker-handoff, and payload-validation/detail/diagnostic leaves. |
+| `src/runner/type_elaboration/parenthesized_routes.rs` | Cohesive parenthesized reserved-variable configs plus thin source/detail/test route wrappers. |
 | `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
 | `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
 | `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
@@ -3153,6 +3201,7 @@ Task 255E.
 | 263K | Complete: moved only the exact 36-line binary-formula result/detail core into existing private `type_elaboration/output.rs`; both entries are parent-only, direct validator/output aliases test-only, all parenthesized/config/wrapper/call-site work retained, and all preservation gates pass. |
 | 263L | Complete: moved only the exact 16-line shared parenthesized-binary output-detail core into existing private `type_elaboration/output.rs`; shared core parent-only, direct parenthesized validator/output and binary detail-collector aliases test-only, all payload/config/wrapper/call-site work retained, and all preservation gates pass. |
 | 263M | Complete: moved only the exact 17-line parenthesized-binary payload-detail wrapper into existing private `type_elaboration/output.rs`; wrapper parent-only, direct builder/shared-detail aliases test-only, all config/named-wrapper/extractor/call-site work retained, and all preservation gates pass. |
+| 263N | Complete: moved only the exact seven-fragment/720-line parenthesized config/named-route family into new private `type_elaboration/parenthesized_routes.rs`; normal facade exposes eight detail routes, the test facade exposes only retained test consumers, and all preservation gates pass. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a

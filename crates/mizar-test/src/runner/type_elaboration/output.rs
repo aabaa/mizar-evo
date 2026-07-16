@@ -12,8 +12,10 @@ use mizar_checker::typed_ast::{
 use mizar_resolve::env::SymbolEnv;
 use mizar_session::SourceRange;
 
-use super::{
+use super::source_formula::{
     SourceParenthesizedOperandSide, SourceParenthesizedReservedVariableBinaryFormula,
+};
+use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
     SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBuiltinType,
     SourceReservedVariableTypeAssertion, assemble_source_reserve_checker_handoff,

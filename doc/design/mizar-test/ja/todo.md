@@ -786,8 +786,10 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   を維持して完了した。fresh inventory は正確な16行 parenthesized-binary output-
   detail core を Task 263L として選び、exact-body/byte-stability を維持して完了した。
   fresh inventory は正確な17行 parenthesized-binary payload-detail wrapper を Task 263M
-  として選び、exact-body/byte-stability を維持して完了した。fresh inventory は残る
-  config/named-wrapper family を選ぶため、Task 263 parent item は open のまま。
+  として選び、exact-body/byte-stability を維持して完了した。fresh inventory は正確な
+  7 fragment/720行の cohesive parenthesized config/named-route owner を Task 263N として
+  選び、exact-body/byte-stability を維持して完了した。fresh inventory は残る
+  non-parenthesized route-owner familyへ戻るため、Task 263 parent item は open のまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

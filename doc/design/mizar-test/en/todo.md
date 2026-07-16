@@ -871,8 +871,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   complete with exact-body and byte-stability preservation. Fresh inventory
   selected the exact 17-line parenthesized-binary payload-detail wrapper as
   Task 263M, which is complete with exact-body and byte-stability preservation.
-  Fresh inventory now selects the remaining config/named-wrapper family, so
-  Task 263 keeps this parent item open.
+  Fresh inventory selected the exact seven-fragment/720-line cohesive
+  parenthesized config/named-route owner as Task 263N, which is complete with
+  exact-body and byte-stability preservation. Fresh inventory now returns to
+  the remaining non-parenthesized route-owner families, so Task 263 keeps this
+  parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

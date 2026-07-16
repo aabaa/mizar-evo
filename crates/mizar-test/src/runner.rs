@@ -35,22 +35,61 @@ use shared::{
 #[cfg(test)]
 use type_elaboration::{
     SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS,
+    SOURCE_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG, SourceParenthesizedOperandSide,
+    SourceParenthesizedReservedVariableBinaryFormula,
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableBinaryFormulaOutput, SourceReservedVariableTypeAssertionOutput,
     assemble_source_checker_handoff,
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config,
+    assert_source_parenthesized_heterogeneous_reserve_membership_output,
+    assert_source_parenthesized_reserved_object_variable_equality_output,
+    assert_source_parenthesized_reserved_object_variable_inequality_output,
+    assert_source_parenthesized_reserved_variable_equality_output,
+    assert_source_parenthesized_reserved_variable_inequality_output,
+    assert_source_parenthesized_reserved_variable_membership_output,
+    assert_source_parenthesized_two_edge_local_mode_reserved_variable_equality_output,
     assert_source_reserved_variable_formula_output,
     assert_source_reserved_variable_type_assertion_output,
+    assert_source_right_parenthesized_reserved_variable_membership_output,
     build_source_parenthesized_reserved_variable_binary_formula_output, direct_token_texts,
-    extract_builtin_source_reserve_declarations_after_node_guard, resolve_visible_attribute,
+    extract_builtin_source_reserve_declarations_after_node_guard,
+    extract_source_parenthesized_heterogeneous_reserve_membership,
+    extract_source_parenthesized_reserved_object_variable_equality,
+    extract_source_parenthesized_reserved_object_variable_inequality,
+    extract_source_parenthesized_reserved_variable_equality,
+    extract_source_parenthesized_reserved_variable_inequality,
+    extract_source_parenthesized_reserved_variable_membership,
+    extract_source_parenthesized_two_edge_local_mode_reserved_variable_equality,
+    extract_source_right_parenthesized_reserved_variable_membership, resolve_visible_attribute,
     resolve_visible_type_head, source_mode_symbol_spelling,
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config,
-    source_reserved_variable_formula_output_detail_keys, structural_child_ids,
-    surface_nodes_with_kind, surface_site,
+    source_parenthesized_heterogeneous_reserve_membership_output,
+    source_parenthesized_heterogeneous_reserve_membership_output_detail_keys,
+    source_parenthesized_reserved_object_variable_equality_output,
+    source_parenthesized_reserved_object_variable_equality_output_detail_keys,
+    source_parenthesized_reserved_object_variable_inequality_output,
+    source_parenthesized_reserved_object_variable_inequality_output_detail_keys,
+    source_parenthesized_reserved_variable_binary_formula_payload_detail_keys,
+    source_parenthesized_reserved_variable_equality_output,
+    source_parenthesized_reserved_variable_equality_output_detail_keys,
+    source_parenthesized_reserved_variable_inequality_output,
+    source_parenthesized_reserved_variable_inequality_output_detail_keys,
+    source_parenthesized_reserved_variable_membership_output,
+    source_parenthesized_reserved_variable_membership_output_detail_keys,
+    source_parenthesized_two_edge_local_mode_reserved_variable_equality_output,
+    source_parenthesized_two_edge_local_mode_reserved_variable_equality_output_detail_keys,
+    source_reserved_variable_formula_output_detail_keys,
+    source_right_parenthesized_reserved_variable_membership_output,
+    source_right_parenthesized_reserved_variable_membership_output_detail_keys,
+    structural_child_ids, surface_nodes_with_kind, surface_site,
 };
 use type_elaboration::{
-    SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
-    SourceParenthesizedReservedVariableBinaryFormula, SourceReservedVariableAssertedHeadRelation,
+    SourceImportedAttributeAssertionFormula, SourceReservedVariableAssertedHeadRelation,
     SourceReservedVariableBinaryFormula, SourceReservedVariableBinaryFormulaConfig,
     SourceReservedVariableBuiltinType, SourceReservedVariableModeDefinition,
     SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
@@ -64,18 +103,48 @@ use type_elaboration::{
     extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config,
     extract_source_reserved_variable_binary_formula,
     extract_source_reserved_variable_type_assertion_with_config,
     extract_source_set_enumeration_formula, is_active_type_elaboration, source_module_binding_env,
-    source_parenthesized_reserved_variable_binary_formula_payload_detail_keys,
+    source_parenthesized_heterogeneous_reserve_membership_detail_keys,
+    source_parenthesized_reserved_object_variable_equality_detail_keys,
+    source_parenthesized_reserved_object_variable_inequality_detail_keys,
+    source_parenthesized_reserved_variable_equality_detail_keys,
+    source_parenthesized_reserved_variable_inequality_detail_keys,
+    source_parenthesized_reserved_variable_membership_detail_keys,
+    source_parenthesized_two_edge_local_mode_reserved_variable_equality_detail_keys,
     source_reserved_variable_formula_result_detail_keys,
     source_reserved_variable_type_assertion_result_detail_keys,
+    source_right_parenthesized_reserved_variable_membership_detail_keys,
     type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
 const ACTIVE_DECLARATION_SYMBOL_TAG: &str = "active_declaration_symbol";
+#[cfg(test)]
+const TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG.invalid_payload_key;
 const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
 const TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
@@ -217,22 +286,6 @@ const TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_MEMBERSHIP_INVALID_PAYLOAD_K
     "type_elaboration.checker.multiple_reserve_declaration_membership.invalid_payload";
 const TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_variable_equality.invalid_payload";
-const TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.parenthesized_reserved_variable_equality.invalid_payload";
-const TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.parenthesized_reserved_variable_inequality.invalid_payload";
-const TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.parenthesized_reserved_variable_membership.invalid_payload";
-const TYPE_ELABORATION_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.parenthesized_heterogeneous_reserve_membership.invalid_payload";
-const TYPE_ELABORATION_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.right_parenthesized_reserved_variable_membership.invalid_payload";
-const TYPE_ELABORATION_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.parenthesized_two_edge_local_mode_reserved_variable_equality.invalid_payload";
-const TYPE_ELABORATION_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.parenthesized_reserved_object_variable_equality.invalid_payload";
-const TYPE_ELABORATION_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.parenthesized_reserved_object_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_RESERVED_OBJECT_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_object_variable_equality.invalid_payload";
 const TYPE_ELABORATION_RESERVED_OBJECT_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
@@ -3096,207 +3149,6 @@ const SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableBinaryForm
         right_expected_role: Some("reserved-variable-right-expected"),
     };
 
-static SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "ParenthesizedReservedVariableEqualityPayloadBoundary",
-    operator: "=",
-    formula_kind: FormulaKind::Equality,
-    invalid_payload_key:
-        TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["x"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[None],
-    mode_definitions: &[],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "parenthesized-reserved-variable-left-result",
-    right_result_role: "parenthesized-reserved-variable-right-result",
-    left_expected_role: Some("parenthesized-reserved-variable-left-expected"),
-    right_expected_role: Some("parenthesized-reserved-variable-right-expected"),
-};
-
-static SOURCE_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "ParenthesizedReservedVariableInequalityPayloadBoundary",
-    operator: "<>",
-    formula_kind: FormulaKind::Inequality,
-    invalid_payload_key:
-        TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["x"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[None],
-    mode_definitions: &[],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "parenthesized-reserved-variable-inequality-left-result",
-    right_result_role: "parenthesized-reserved-variable-inequality-right-result",
-    left_expected_role: Some("parenthesized-reserved-variable-inequality-left-expected"),
-    right_expected_role: Some("parenthesized-reserved-variable-inequality-right-expected"),
-};
-
-static SOURCE_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "ParenthesizedReservedVariableMembershipPayloadBoundary",
-    operator: "in",
-    formula_kind: FormulaKind::Membership,
-    invalid_payload_key:
-        TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["x"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[None],
-    mode_definitions: &[],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "parenthesized-reserved-variable-membership-left-result",
-    right_result_role: "parenthesized-reserved-variable-membership-right-result",
-    left_expected_role: None,
-    right_expected_role: Some("parenthesized-reserved-variable-membership-right-expected"),
-};
-
-static SOURCE_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "ParenthesizedHeterogeneousReserveMembershipPayloadBoundary",
-    operator: "in",
-    formula_kind: FormulaKind::Membership,
-    invalid_payload_key:
-        TYPE_ELABORATION_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 2,
-    binding_spellings: &["x", "y"],
-    binding_types: &[
-        SourceReservedVariableBuiltinType::Object,
-        SourceReservedVariableBuiltinType::Set,
-    ],
-    binding_source_mode_spellings: &[None, None],
-    mode_definitions: &[],
-    left_binding_index: 0,
-    right_binding_index: 1,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: true,
-    left_result_role: "parenthesized-heterogeneous-reserve-membership-left-result",
-    right_result_role: "parenthesized-heterogeneous-reserve-membership-right-result",
-    left_expected_role: None,
-    right_expected_role: Some("parenthesized-heterogeneous-reserve-membership-right-expected"),
-};
-
-static SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "RightParenthesizedReservedVariableMembershipPayloadBoundary",
-    operator: "in",
-    formula_kind: FormulaKind::Membership,
-    invalid_payload_key:
-        TYPE_ELABORATION_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["x"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[None],
-    mode_definitions: &[],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "right-parenthesized-reserved-variable-membership-left-result",
-    right_result_role: "right-parenthesized-reserved-variable-membership-right-result",
-    left_expected_role: None,
-    right_expected_role: Some("right-parenthesized-reserved-variable-membership-right-expected"),
-};
-
-static SOURCE_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "ParenthesizedTwoEdgeLocalModeReservedVariableEqualityPayloadBoundary",
-    operator: "=",
-    formula_kind: FormulaKind::Equality,
-    invalid_payload_key:
-        TYPE_ELABORATION_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["z"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[Some("OuterTwoEdgeModeEquality")],
-    mode_definitions: &[
-        SourceReservedVariableModeDefinition {
-            label: "BaseTwoEdgeModeEqualityDef",
-            spelling: "BaseTwoEdgeModeEquality",
-            radix: SourceReservedVariableModeRadix::Builtin(
-                SourceReservedVariableBuiltinType::Set,
-            ),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "MiddleTwoEdgeModeEqualityDef",
-            spelling: "MiddleTwoEdgeModeEquality",
-            radix: SourceReservedVariableModeRadix::Mode("BaseTwoEdgeModeEquality"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "OuterTwoEdgeModeEqualityDef",
-            spelling: "OuterTwoEdgeModeEquality",
-            radix: SourceReservedVariableModeRadix::Mode("MiddleTwoEdgeModeEquality"),
-        },
-    ],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "parenthesized-two-edge-local-mode-reserved-variable-equality-left-result",
-    right_result_role: "parenthesized-two-edge-local-mode-reserved-variable-equality-right-result",
-    left_expected_role: Some(
-        "parenthesized-two-edge-local-mode-reserved-variable-equality-left-expected",
-    ),
-    right_expected_role: Some(
-        "parenthesized-two-edge-local-mode-reserved-variable-equality-right-expected",
-    ),
-};
-
-static SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "ParenthesizedReservedObjectVariableEqualityPayloadBoundary",
-    operator: "=",
-    formula_kind: FormulaKind::Equality,
-    invalid_payload_key:
-        TYPE_ELABORATION_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["x"],
-    binding_types: &[SourceReservedVariableBuiltinType::Object],
-    binding_source_mode_spellings: &[None],
-    mode_definitions: &[],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "parenthesized-reserved-object-variable-left-result",
-    right_result_role: "parenthesized-reserved-object-variable-right-result",
-    left_expected_role: Some("parenthesized-reserved-object-variable-left-expected"),
-    right_expected_role: Some("parenthesized-reserved-object-variable-right-expected"),
-};
-
-static SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "ParenthesizedReservedObjectVariableInequalityPayloadBoundary",
-    operator: "<>",
-    formula_kind: FormulaKind::Inequality,
-    invalid_payload_key:
-        TYPE_ELABORATION_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["x"],
-    binding_types: &[SourceReservedVariableBuiltinType::Object],
-    binding_source_mode_spellings: &[None],
-    mode_definitions: &[],
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "parenthesized-reserved-object-variable-inequality-left-result",
-    right_result_role: "parenthesized-reserved-object-variable-inequality-right-result",
-    left_expected_role: Some("parenthesized-reserved-object-variable-inequality-left-expected"),
-    right_expected_role: Some("parenthesized-reserved-object-variable-inequality-right-expected"),
-};
-
 const SOURCE_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableBinaryFormulaConfig =
     SourceReservedVariableBinaryFormulaConfig {
         label: "ReservedObjectVariableEqualityPayloadBoundary",
@@ -5371,140 +5223,6 @@ fn source_reserved_variable_equality_detail_keys(
     ))
 }
 
-fn source_parenthesized_reserved_variable_equality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_parenthesized_reserved_variable_equality(ast, module, symbols)?;
-    Some(
-        source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-            payload,
-            symbols,
-            &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG,
-            SourceParenthesizedOperandSide::Left,
-        ),
-    )
-}
-
-fn source_parenthesized_reserved_variable_inequality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_parenthesized_reserved_variable_inequality(ast, module, symbols)?;
-    Some(
-        source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-            payload,
-            symbols,
-            &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_CONFIG,
-            SourceParenthesizedOperandSide::Left,
-        ),
-    )
-}
-
-fn source_parenthesized_reserved_variable_membership_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_parenthesized_reserved_variable_membership(ast, module, symbols)?;
-    Some(
-        source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-            payload,
-            symbols,
-            &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-            SourceParenthesizedOperandSide::Left,
-        ),
-    )
-}
-
-fn source_parenthesized_heterogeneous_reserve_membership_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_parenthesized_heterogeneous_reserve_membership(ast, module, symbols)?;
-    Some(
-        source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-            payload,
-            symbols,
-            &SOURCE_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG,
-            SourceParenthesizedOperandSide::Left,
-        ),
-    )
-}
-
-fn source_right_parenthesized_reserved_variable_membership_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_right_parenthesized_reserved_variable_membership(ast, module, symbols)?;
-    Some(
-        source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-            payload,
-            symbols,
-            &SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-            SourceParenthesizedOperandSide::Right,
-        ),
-    )
-}
-
-fn source_parenthesized_two_edge_local_mode_reserved_variable_equality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_parenthesized_two_edge_local_mode_reserved_variable_equality(
-        ast, module, symbols,
-    )?;
-    Some(
-        source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-            payload,
-            symbols,
-            &SOURCE_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
-            SourceParenthesizedOperandSide::Left,
-        ),
-    )
-}
-
-fn source_parenthesized_reserved_object_variable_equality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_parenthesized_reserved_object_variable_equality(ast, module, symbols)?;
-    Some(
-        source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-            payload,
-            symbols,
-            &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
-            SourceParenthesizedOperandSide::Left,
-        ),
-    )
-}
-
-fn source_parenthesized_reserved_object_variable_inequality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_parenthesized_reserved_object_variable_inequality(ast, module, symbols)?;
-    Some(
-        source_parenthesized_reserved_variable_binary_formula_payload_detail_keys(
-            payload,
-            symbols,
-            &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
-            SourceParenthesizedOperandSide::Left,
-        ),
-    )
-}
-
 fn source_reserved_object_variable_equality_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -6958,94 +6676,6 @@ fn source_local_object_mode_reserved_variable_type_assertion_detail_keys(
 }
 
 #[cfg(test)]
-fn source_parenthesized_reserved_variable_equality_output_detail_keys(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Vec<String> {
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_variable_inequality_output_detail_keys(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Vec<String> {
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_variable_membership_output_detail_keys(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Vec<String> {
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn source_parenthesized_heterogeneous_reserve_membership_output_detail_keys(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Vec<String> {
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn source_right_parenthesized_reserved_variable_membership_output_detail_keys(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Vec<String> {
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-        output,
-        &SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Right,
-    )
-}
-
-#[cfg(test)]
-fn source_parenthesized_two_edge_local_mode_reserved_variable_equality_output_detail_keys(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Vec<String> {
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_object_variable_equality_output_detail_keys(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Vec<String> {
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_object_variable_inequality_output_detail_keys(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Vec<String> {
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
 fn source_reserved_variable_equality_output(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -7053,92 +6683,6 @@ fn source_reserved_variable_equality_output(
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_reserved_variable_equality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_variable_equality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormulaOutput> {
-    let payload = extract_source_parenthesized_reserved_variable_equality(ast, module, symbols)?;
-    build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_variable_inequality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormulaOutput> {
-    let payload = extract_source_parenthesized_reserved_variable_inequality(ast, module, symbols)?;
-    build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_variable_membership_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormulaOutput> {
-    let payload = extract_source_parenthesized_reserved_variable_membership(ast, module, symbols)?;
-    build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_parenthesized_heterogeneous_reserve_membership_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_parenthesized_heterogeneous_reserve_membership(ast, module, symbols)?;
-    build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_right_parenthesized_reserved_variable_membership_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_right_parenthesized_reserved_variable_membership(ast, module, symbols)?;
-    build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_parenthesized_two_edge_local_mode_reserved_variable_equality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormulaOutput> {
-    let payload = extract_source_parenthesized_two_edge_local_mode_reserved_variable_equality(
-        ast, module, symbols,
-    )?;
-    build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_object_variable_equality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_parenthesized_reserved_object_variable_equality(ast, module, symbols)?;
-    build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_parenthesized_reserved_object_variable_inequality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_parenthesized_reserved_object_variable_inequality(ast, module, symbols)?;
-    build_source_parenthesized_reserved_variable_binary_formula_output(payload, symbols).ok()
 }
 
 #[cfg(test)]
@@ -8319,94 +7863,6 @@ fn source_local_object_mode_reserved_variable_type_assertion_output(
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
-#[cfg(test)]
-fn assert_source_parenthesized_reserved_variable_equality_output(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn assert_source_parenthesized_reserved_variable_inequality_output(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn assert_source_parenthesized_reserved_variable_membership_output(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn assert_source_parenthesized_heterogeneous_reserve_membership_output(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn assert_source_right_parenthesized_reserved_variable_membership_output(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-        output,
-        &SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Right,
-    )
-}
-
-#[cfg(test)]
-fn assert_source_parenthesized_two_edge_local_mode_reserved_variable_equality_output(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn assert_source_parenthesized_reserved_object_variable_equality_output(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-#[cfg(test)]
-fn assert_source_parenthesized_reserved_object_variable_inequality_output(
-    output: &SourceParenthesizedReservedVariableBinaryFormulaOutput,
-) -> Result<(), String> {
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config(
-        output,
-        &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
 fn source_formula_statement_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -8813,118 +8269,6 @@ fn extract_source_reserved_variable_equality(
         module,
         symbols,
         &SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG,
-    )
-}
-
-fn extract_source_parenthesized_reserved_variable_equality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-fn extract_source_parenthesized_reserved_variable_inequality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-fn extract_source_parenthesized_reserved_variable_membership(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-fn extract_source_parenthesized_heterogeneous_reserve_membership(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-fn extract_source_right_parenthesized_reserved_variable_membership(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-        SourceParenthesizedOperandSide::Right,
-    )
-}
-
-fn extract_source_parenthesized_two_edge_local_mode_reserved_variable_equality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-fn extract_source_parenthesized_reserved_object_variable_equality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
-    )
-}
-
-fn extract_source_parenthesized_reserved_object_variable_inequality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceParenthesizedReservedVariableBinaryFormula> {
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
-        SourceParenthesizedOperandSide::Left,
     )
 }
 

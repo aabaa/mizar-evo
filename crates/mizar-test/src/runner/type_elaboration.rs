@@ -1,6 +1,7 @@
 mod admission;
 mod checker_handoff;
 mod output;
+mod parenthesized_routes;
 mod result;
 mod source_ast;
 mod source_formula;
@@ -18,19 +19,70 @@ pub(super) use checker_handoff::{
 pub(super) use output::{
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableBinaryFormulaOutput, SourceReservedVariableTypeAssertionOutput,
-    assert_source_parenthesized_reserved_variable_binary_formula_output_with_config,
     assert_source_reserved_variable_formula_output,
     assert_source_reserved_variable_type_assertion_output,
     build_source_parenthesized_reserved_variable_binary_formula_output,
-    source_parenthesized_reserved_variable_binary_formula_output_detail_keys_with_config,
+    source_parenthesized_reserved_variable_binary_formula_payload_detail_keys,
     source_reserved_variable_formula_output_detail_keys,
 };
 pub(super) use output::{
     build_source_reserved_variable_formula_output,
     build_source_reserved_variable_type_assertion_output,
-    source_parenthesized_reserved_variable_binary_formula_payload_detail_keys,
     source_reserved_variable_formula_result_detail_keys,
     source_reserved_variable_type_assertion_result_detail_keys,
+};
+#[cfg(test)]
+pub(super) use parenthesized_routes::{
+    SOURCE_PARENTHESIZED_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_PARENTHESIZED_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    assert_source_parenthesized_heterogeneous_reserve_membership_output,
+    assert_source_parenthesized_reserved_object_variable_equality_output,
+    assert_source_parenthesized_reserved_object_variable_inequality_output,
+    assert_source_parenthesized_reserved_variable_equality_output,
+    assert_source_parenthesized_reserved_variable_inequality_output,
+    assert_source_parenthesized_reserved_variable_membership_output,
+    assert_source_parenthesized_two_edge_local_mode_reserved_variable_equality_output,
+    assert_source_right_parenthesized_reserved_variable_membership_output,
+    extract_source_parenthesized_heterogeneous_reserve_membership,
+    extract_source_parenthesized_reserved_object_variable_equality,
+    extract_source_parenthesized_reserved_object_variable_inequality,
+    extract_source_parenthesized_reserved_variable_equality,
+    extract_source_parenthesized_reserved_variable_inequality,
+    extract_source_parenthesized_reserved_variable_membership,
+    extract_source_parenthesized_two_edge_local_mode_reserved_variable_equality,
+    extract_source_right_parenthesized_reserved_variable_membership,
+    source_parenthesized_heterogeneous_reserve_membership_output,
+    source_parenthesized_heterogeneous_reserve_membership_output_detail_keys,
+    source_parenthesized_reserved_object_variable_equality_output,
+    source_parenthesized_reserved_object_variable_equality_output_detail_keys,
+    source_parenthesized_reserved_object_variable_inequality_output,
+    source_parenthesized_reserved_object_variable_inequality_output_detail_keys,
+    source_parenthesized_reserved_variable_equality_output,
+    source_parenthesized_reserved_variable_equality_output_detail_keys,
+    source_parenthesized_reserved_variable_inequality_output,
+    source_parenthesized_reserved_variable_inequality_output_detail_keys,
+    source_parenthesized_reserved_variable_membership_output,
+    source_parenthesized_reserved_variable_membership_output_detail_keys,
+    source_parenthesized_two_edge_local_mode_reserved_variable_equality_output,
+    source_parenthesized_two_edge_local_mode_reserved_variable_equality_output_detail_keys,
+    source_right_parenthesized_reserved_variable_membership_output,
+    source_right_parenthesized_reserved_variable_membership_output_detail_keys,
+};
+pub(super) use parenthesized_routes::{
+    source_parenthesized_heterogeneous_reserve_membership_detail_keys,
+    source_parenthesized_reserved_object_variable_equality_detail_keys,
+    source_parenthesized_reserved_object_variable_inequality_detail_keys,
+    source_parenthesized_reserved_variable_equality_detail_keys,
+    source_parenthesized_reserved_variable_inequality_detail_keys,
+    source_parenthesized_reserved_variable_membership_detail_keys,
+    source_parenthesized_two_edge_local_mode_reserved_variable_equality_detail_keys,
+    source_right_parenthesized_reserved_variable_membership_detail_keys,
 };
 pub(super) use result::{
     expected_type_elaboration_detail_keys, type_elaboration_failure_diagnostic,
@@ -40,10 +92,12 @@ pub(super) use source_ast::{
     direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site,
 };
 #[cfg(test)]
-pub(super) use source_formula::SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS;
 pub(super) use source_formula::{
-    SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
-    SourceParenthesizedReservedVariableBinaryFormula, SourceReservedVariableAssertedHeadRelation,
+    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, SourceParenthesizedOperandSide,
+    SourceParenthesizedReservedVariableBinaryFormula,
+};
+pub(super) use source_formula::{
+    SourceImportedAttributeAssertionFormula, SourceReservedVariableAssertedHeadRelation,
     SourceReservedVariableBinaryFormula, SourceReservedVariableBinaryFormulaConfig,
     SourceReservedVariableBuiltinType, SourceReservedVariableModeDefinition,
     SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
@@ -53,7 +107,6 @@ pub(super) use source_formula::{
     extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,
-    extract_source_parenthesized_reserved_variable_binary_formula_with_config,
     extract_source_reserved_variable_binary_formula,
     extract_source_reserved_variable_type_assertion_with_config,
     extract_source_set_enumeration_formula, source_binding_matches_reserved_builtin_type,
