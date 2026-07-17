@@ -355,6 +355,7 @@ pub(super) use type_assertion_routes::{
     SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     extract_source_chained_local_object_mode_asserted_head,
     extract_source_chained_local_object_mode_radix_asserted_head,
@@ -380,6 +381,7 @@ pub(super) use type_assertion_routes::{
     extract_source_local_object_mode_reserved_variable_type_assertion,
     extract_source_three_edge_local_object_mode_reserved_variable_type_assertion,
     extract_source_two_edge_local_object_mode_asserted_head,
+    extract_source_two_edge_local_object_mode_radix_asserted_head,
     extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
     source_chained_local_object_mode_asserted_head_output,
     source_chained_local_object_mode_radix_asserted_head_output,
@@ -405,6 +407,7 @@ pub(super) use type_assertion_routes::{
     source_local_object_mode_reserved_variable_type_assertion_output,
     source_three_edge_local_object_mode_reserved_variable_type_assertion_output,
     source_two_edge_local_object_mode_asserted_head_output,
+    source_two_edge_local_object_mode_radix_asserted_head_output,
     source_two_edge_local_object_mode_reserved_variable_type_assertion_output,
 };
 pub(super) use type_assertion_routes::{
@@ -432,5 +435,6 @@ pub(super) use type_assertion_routes::{
     source_local_object_mode_reserved_variable_type_assertion_detail_keys,
     source_three_edge_local_object_mode_reserved_variable_type_assertion_detail_keys,
     source_two_edge_local_object_mode_asserted_head_detail_keys,
+    source_two_edge_local_object_mode_radix_asserted_head_detail_keys,
     source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys,
 };
