@@ -1073,8 +1073,12 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   four-expansion object-terminal same-mode behavior, and fail-closed behavior;
   it is complete. Fresh inventory finds no physical local-object-mode asserted-
   head route left in `runner.rs` and returns to the remaining production-helper
-  families. Task 263 keeps this parent item open pending the next bounded
-  selection.
+  families. It selects the exact five-fragment/53-line direct local-mode same-
+  mode asserted-head route as Task 263ZZO in the same owner. Preserve its token-
+  identical body, byte stability, one-expansion set-terminal same-mode behavior,
+  and fail-closed behavior; it is complete. Fresh inventory returns to the
+  remaining production-helper families. Task 263 keeps this parent item open
+  pending the next bounded selection.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

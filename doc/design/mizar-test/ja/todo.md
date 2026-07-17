@@ -944,7 +944,11 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   選ぶ。token-identical body、byte stability、four-expansion object-terminal same-
   mode behavior、fail-closed behaviorを維持して完了した。fresh inventoryでは
   `runner.rs`に物理的local-object-mode asserted-head routeは残らず、残るproduction-
-  helper familyへ戻る。Task 263 parent itemは次のbounded selectionまでopenを維持する。
+  helper familyへ戻る。同じownerのTask 263ZZOとして、正確な5 fragment/53行direct
+  local-mode same-mode asserted-head routeを選ぶ。token-identical body、byte
+  stability、one-expansion set-terminal same-mode behavior、fail-closed behaviorを
+  維持して完了した。fresh inventoryは残るproduction-helper familyへ戻る。Task
+  263 parent itemは次のbounded selectionまでopenを維持する。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
