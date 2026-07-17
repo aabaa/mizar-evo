@@ -921,8 +921,12 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   selects the exact fifteen-fragment/186-line local-object-mode long-chain
   membership, equality, and inequality binary route sibling as Task 263ZD;
   it is complete with token-identical body and byte-stability preservation.
-  Fresh inventory returns to the remaining long-chain type-assertion and
-  asserted-head route families, so Task 263 keeps this parent item open.
+  Fresh inventory selects the exact five-fragment/52-line local-mode long-chain
+  reserved-variable type-assertion route as Task 263ZE and the first nonempty
+  owner in private `type_assertion_routes.rs`; it is complete with token-
+  identical body and byte-stability preservation. Fresh inventory returns to
+  the remaining long-chain asserted-head and local-object-mode type-assertion
+  route families, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
