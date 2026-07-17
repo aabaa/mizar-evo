@@ -968,6 +968,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   long-chain immediate-radix asserted-head route as Task 263ZR in the same
   owner; it is complete with token-identical body, byte-stability, and object-
   terminal fail-closed preservation.
+  Fresh inventory returns to the exact five-fragment/50-line local-object-mode
+  long-chain same-mode asserted-head route as Task 263ZS in the same owner; it
+  is complete with token-identical body, byte-stability, and object-terminal
+  fail-closed preservation.
   Fresh inventory returns to the remaining local-object-mode long-chain
   asserted-head routes, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
