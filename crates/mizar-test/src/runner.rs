@@ -53,6 +53,9 @@ use type_elaboration::{
     SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     SOURCE_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG,
+    SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     SOURCE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
@@ -121,6 +124,9 @@ use type_elaboration::{
     extract_source_four_edge_local_object_mode_reserved_variable_inequality,
     extract_source_four_edge_local_object_mode_reserved_variable_membership,
     extract_source_heterogeneous_reserve_membership,
+    extract_source_local_mode_long_chain_reserved_variable_equality,
+    extract_source_local_mode_long_chain_reserved_variable_inequality,
+    extract_source_local_mode_long_chain_reserved_variable_membership,
     extract_source_local_mode_reserved_variable_equality,
     extract_source_local_mode_reserved_variable_inequality,
     extract_source_local_mode_reserved_variable_membership,
@@ -174,6 +180,9 @@ use type_elaboration::{
     source_four_edge_local_object_mode_reserved_variable_inequality_output,
     source_four_edge_local_object_mode_reserved_variable_membership_output,
     source_heterogeneous_reserve_membership_output,
+    source_local_mode_long_chain_reserved_variable_equality_output,
+    source_local_mode_long_chain_reserved_variable_inequality_output,
+    source_local_mode_long_chain_reserved_variable_membership_output,
     source_local_mode_reserved_variable_equality_output,
     source_local_mode_reserved_variable_inequality_output,
     source_local_mode_reserved_variable_membership_output,
@@ -257,6 +266,9 @@ use type_elaboration::{
     source_four_edge_local_object_mode_reserved_variable_inequality_detail_keys,
     source_four_edge_local_object_mode_reserved_variable_membership_detail_keys,
     source_heterogeneous_reserve_membership_detail_keys,
+    source_local_mode_long_chain_reserved_variable_equality_detail_keys,
+    source_local_mode_long_chain_reserved_variable_inequality_detail_keys,
+    source_local_mode_long_chain_reserved_variable_membership_detail_keys,
     source_local_mode_reserved_variable_equality_detail_keys,
     source_local_mode_reserved_variable_inequality_detail_keys,
     source_local_mode_reserved_variable_membership_detail_keys,
@@ -462,22 +474,23 @@ const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_IN
 #[cfg(test)]
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
     &str = SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
+    &str = SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG.invalid_payload_key;
+#[cfg(test)]
+const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
+    &str = SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG.invalid_payload_key;
 const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
-const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.local_mode_long_chain_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.local_object_mode_long_chain_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.local_object_mode_long_chain_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.local_object_mode_long_chain_reserved_variable_membership.invalid_payload";
-const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
-    &str =
-    "type_elaboration.checker.local_mode_long_chain_reserved_variable_inequality.invalid_payload";
-const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
-    &str =
-    "type_elaboration.checker.local_mode_long_chain_reserved_variable_membership.invalid_payload";
 const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.local_mode_long_chain_reserved_variable_type_assertion.invalid_payload";
 const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
@@ -3349,28 +3362,6 @@ const SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     subject_result_role: "local-object-mode-reserved-variable-type-assertion-subject-result",
 };
 
-const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "LongLocalModeReservedVariableEqualityPayloadBoundary",
-    operator: "=",
-    formula_kind: FormulaKind::Equality,
-    invalid_payload_key:
-        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["z"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[Some("ChainMode6")],
-    mode_definitions: SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS,
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "long-local-mode-reserved-variable-left-result",
-    right_result_role: "long-local-mode-reserved-variable-right-result",
-    left_expected_role: Some("long-local-mode-reserved-variable-left-expected"),
-    right_expected_role: Some("long-local-mode-reserved-variable-right-expected"),
-};
-
 const SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
     label: "LongLocalObjectModeReservedVariableEqualityPayloadBoundary",
@@ -3444,53 +3435,6 @@ const SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
     right_expected_role: Some(
         "long-local-object-mode-reserved-variable-membership-right-expected",
     ),
-};
-
-const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "LongLocalModeReservedVariableInequalityPayloadBoundary",
-    operator: "<>",
-    formula_kind: FormulaKind::Inequality,
-    invalid_payload_key:
-        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 1,
-    binding_spellings: &["z"],
-    binding_types: &[SourceReservedVariableBuiltinType::Set],
-    binding_source_mode_spellings: &[Some("ChainMode6")],
-    mode_definitions: SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS,
-    left_binding_index: 0,
-    right_binding_index: 0,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: false,
-    left_result_role: "long-local-mode-reserved-variable-inequality-left-result",
-    right_result_role: "long-local-mode-reserved-variable-inequality-right-result",
-    left_expected_role: Some("long-local-mode-reserved-variable-inequality-left-expected"),
-    right_expected_role: Some("long-local-mode-reserved-variable-inequality-right-expected"),
-};
-
-const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
-    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
-    label: "LongLocalModeReservedVariableMembershipPayloadBoundary",
-    operator: "in",
-    formula_kind: FormulaKind::Membership,
-    invalid_payload_key:
-        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
-    reserve_item_count: 2,
-    binding_spellings: &["x", "y"],
-    binding_types: &[
-        SourceReservedVariableBuiltinType::Set,
-        SourceReservedVariableBuiltinType::Set,
-    ],
-    binding_source_mode_spellings: &[Some("ChainMode6"), None],
-    mode_definitions: SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS,
-    left_binding_index: 0,
-    right_binding_index: 1,
-    require_shared_type_range: false,
-    require_distinct_type_ranges: true,
-    left_result_role: "long-local-mode-reserved-variable-membership-left-result",
-    right_result_role: "long-local-mode-reserved-variable-membership-right-result",
-    left_expected_role: None,
-    right_expected_role: Some("long-local-mode-reserved-variable-membership-right-expected"),
 };
 
 const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
@@ -3774,19 +3718,6 @@ const SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_TYPE_ASSERTION_CONFI
         "long-local-object-mode-reserved-variable-type-assertion-subject-result",
 };
 
-fn source_local_mode_long_chain_reserved_variable_equality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_local_mode_long_chain_reserved_variable_equality(ast, module, symbols)?;
-    Some(source_reserved_variable_formula_result_detail_keys(
-        build_source_reserved_variable_formula_output(payload, symbols),
-        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
-    ))
-}
-
 fn source_local_object_mode_long_chain_reserved_variable_equality_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -3826,32 +3757,6 @@ fn source_local_object_mode_long_chain_reserved_variable_membership_detail_keys(
     Some(source_reserved_variable_formula_result_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
-    ))
-}
-
-fn source_local_mode_long_chain_reserved_variable_inequality_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_local_mode_long_chain_reserved_variable_inequality(ast, module, symbols)?;
-    Some(source_reserved_variable_formula_result_detail_keys(
-        build_source_reserved_variable_formula_output(payload, symbols),
-        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
-    ))
-}
-
-fn source_local_mode_long_chain_reserved_variable_membership_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload =
-        extract_source_local_mode_long_chain_reserved_variable_membership(ast, module, symbols)?;
-    Some(source_reserved_variable_formula_result_detail_keys(
-        build_source_reserved_variable_formula_output(payload, symbols),
-        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
     ))
 }
 
@@ -4647,17 +4552,6 @@ fn source_local_object_mode_reserved_variable_type_assertion_detail_keys(
 }
 
 #[cfg(test)]
-fn source_local_mode_long_chain_reserved_variable_equality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_local_mode_long_chain_reserved_variable_equality(ast, module, symbols)?;
-    build_source_reserved_variable_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
 fn source_local_object_mode_long_chain_reserved_variable_equality_output(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -4690,28 +4584,6 @@ fn source_local_object_mode_long_chain_reserved_variable_membership_output(
     let payload = extract_source_local_object_mode_long_chain_reserved_variable_membership(
         ast, module, symbols,
     )?;
-    build_source_reserved_variable_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_local_mode_long_chain_reserved_variable_inequality_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_local_mode_long_chain_reserved_variable_inequality(ast, module, symbols)?;
-    build_source_reserved_variable_formula_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_local_mode_long_chain_reserved_variable_membership_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormulaOutput> {
-    let payload =
-        extract_source_local_mode_long_chain_reserved_variable_membership(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -5730,19 +5602,6 @@ fn source_formula_connective_quantifier_output(
     Some(output)
 }
 
-fn extract_source_local_mode_long_chain_reserved_variable_equality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormula> {
-    extract_source_reserved_variable_binary_formula(
-        ast,
-        module,
-        symbols,
-        &SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG,
-    )
-}
-
 fn extract_source_local_object_mode_long_chain_reserved_variable_equality(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -5779,32 +5638,6 @@ fn extract_source_local_object_mode_long_chain_reserved_variable_membership(
         module,
         symbols,
         &SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
-    )
-}
-
-fn extract_source_local_mode_long_chain_reserved_variable_inequality(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormula> {
-    extract_source_reserved_variable_binary_formula(
-        ast,
-        module,
-        symbols,
-        &SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG,
-    )
-}
-
-fn extract_source_local_mode_long_chain_reserved_variable_membership(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableBinaryFormula> {
-    extract_source_reserved_variable_binary_formula(
-        ast,
-        module,
-        symbols,
-        &SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     )
 }
 
