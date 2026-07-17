@@ -981,7 +981,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   object-mode reserved-variable builtin type-assertion route as Task 263ZU in
   the same owner; it is complete with token-identical body, byte-stability,
   and object-terminal fail-closed preservation.
-  Fresh inventory returns to the remaining local-object-mode type-assertion/
+  Fresh inventory selects the exact five-fragment/67-line chained local-object-
+  mode reserved-variable builtin type-assertion route as Task 263ZV in the same
+  owner; it is complete with token-identical body, byte-stability, two-
+  expansion object-terminal chain, and fail-closed preservation. Fresh
+  inventory returns to the remaining local-object-mode type-assertion/
   asserted-head routes, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm

@@ -41,6 +41,7 @@ use type_elaboration::{
     SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_DISTINCT_RESERVED_OBJECT_VARIABLE_EQUALITY_CONFIG,
     SOURCE_DISTINCT_RESERVED_OBJECT_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_DISTINCT_RESERVED_VARIABLE_EQUALITY_CONFIG,
@@ -132,6 +133,7 @@ use type_elaboration::{
     extract_source_chained_local_object_mode_reserved_variable_equality,
     extract_source_chained_local_object_mode_reserved_variable_inequality,
     extract_source_chained_local_object_mode_reserved_variable_membership,
+    extract_source_chained_local_object_mode_reserved_variable_type_assertion,
     extract_source_distinct_reserved_object_variable_equality,
     extract_source_distinct_reserved_object_variable_inequality,
     extract_source_distinct_reserved_variable_equality,
@@ -208,6 +210,7 @@ use type_elaboration::{
     source_chained_local_object_mode_reserved_variable_equality_output,
     source_chained_local_object_mode_reserved_variable_inequality_output,
     source_chained_local_object_mode_reserved_variable_membership_output,
+    source_chained_local_object_mode_reserved_variable_type_assertion_output,
     source_distinct_reserved_object_variable_equality_output,
     source_distinct_reserved_object_variable_inequality_output,
     source_distinct_reserved_variable_equality_output,
@@ -311,6 +314,7 @@ use type_elaboration::{
     source_chained_local_object_mode_reserved_variable_equality_detail_keys,
     source_chained_local_object_mode_reserved_variable_inequality_detail_keys,
     source_chained_local_object_mode_reserved_variable_membership_detail_keys,
+    source_chained_local_object_mode_reserved_variable_type_assertion_detail_keys,
     source_distinct_reserved_object_variable_equality_detail_keys,
     source_distinct_reserved_object_variable_inequality_detail_keys,
     source_distinct_reserved_variable_equality_detail_keys,
@@ -690,9 +694,10 @@ const TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_
 const TYPE_ELABORATION_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.chained_local_mode_reserved_variable_type_assertion.invalid_payload";
+#[cfg(test)]
 const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
-    "type_elaboration.checker.chained_local_object_mode_reserved_variable_type_assertion.invalid_payload";
+    SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG.invalid_payload_key;
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.two_edge_local_mode_reserved_variable_type_assertion.invalid_payload";
@@ -3180,34 +3185,6 @@ const SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     subject_result_role: "chained-local-mode-reserved-variable-type-assertion-subject-result",
 };
 
-const SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
-    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
-    label: "ChainedLocalObjectModeReservedVariableTypeAssertionPayloadBoundary",
-    invalid_payload_key:
-        TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
-    binding_spelling: "x",
-    binding_type: SourceReservedVariableBuiltinType::Object,
-    binding_source_mode_spelling: Some("ChainObjectModeTypeAssertion"),
-    mode_definitions: &[
-        SourceReservedVariableModeDefinition {
-            label: "BaseObjectModeTypeAssertionDef",
-            spelling: "BaseObjectModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Builtin(
-                SourceReservedVariableBuiltinType::Object,
-            ),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "ChainObjectModeTypeAssertionDef",
-            spelling: "ChainObjectModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Mode("BaseObjectModeTypeAssertion"),
-        },
-    ],
-    asserted_type: SourceReservedVariableBuiltinType::Object,
-    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::Builtin,
-    subject_result_role:
-        "chained-local-object-mode-reserved-variable-type-assertion-subject-result",
-};
-
 const SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
     label: "TwoEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary",
@@ -3887,21 +3864,6 @@ fn source_chained_local_mode_reserved_variable_type_assertion_detail_keys(
     ))
 }
 
-fn source_chained_local_object_mode_reserved_variable_type_assertion_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_chained_local_object_mode_reserved_variable_type_assertion(
-        ast, module, symbols,
-    )?;
-    let invalid_payload_key = payload.config.invalid_payload_key;
-    Some(source_reserved_variable_type_assertion_result_detail_keys(
-        build_source_reserved_variable_type_assertion_output(payload, symbols),
-        invalid_payload_key,
-    ))
-}
-
 fn source_two_edge_local_mode_reserved_variable_type_assertion_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -4340,18 +4302,6 @@ fn source_chained_local_mode_reserved_variable_type_assertion_output(
 ) -> Option<SourceReservedVariableTypeAssertionOutput> {
     let payload =
         extract_source_chained_local_mode_reserved_variable_type_assertion(ast, module, symbols)?;
-    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_chained_local_object_mode_reserved_variable_type_assertion_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertionOutput> {
-    let payload = extract_source_chained_local_object_mode_reserved_variable_type_assertion(
-        ast, module, symbols,
-    )?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
@@ -5260,19 +5210,6 @@ fn extract_source_chained_local_mode_reserved_variable_type_assertion(
         module,
         symbols,
         &SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
-    )
-}
-
-fn extract_source_chained_local_object_mode_reserved_variable_type_assertion(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertion> {
-    extract_source_reserved_variable_type_assertion_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     )
 }
 
