@@ -939,8 +939,12 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   local-object-mode same-mode asserted-head routeを同じownerのTask 263ZZMとして
   選ぶ。token-identical body、byte stability、five-expansion object-terminal same-
   mode behavior、fail-closed behaviorを維持して完了した。fresh inventoryは残る
-  local-object-mode asserted-head routeへ戻る。Task 263 parent itemは次のbounded
-  selectionまでopenを維持する。
+  local-object-mode asserted-head routeへ戻り、正確な5 fragment/73行three-edge
+  local-object-mode same-mode asserted-head routeを同じownerのTask 263ZZNとして
+  選ぶ。token-identical body、byte stability、four-expansion object-terminal same-
+  mode behavior、fail-closed behaviorを維持して完了した。fresh inventoryでは
+  `runner.rs`に物理的local-object-mode asserted-head routeは残らず、残るproduction-
+  helper familyへ戻る。Task 263 parent itemは次のbounded selectionまでopenを維持する。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
