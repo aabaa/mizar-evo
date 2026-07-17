@@ -1107,8 +1107,14 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   route as Task 263ZZU in the same owner. Preserve its token-identical body,
   byte stability, five-expansion set-terminal two-hop behavior, and fail-closed
   behavior without moving a three-hop or other route; it is complete. Fresh
-  inventory returns to the remaining production-helper families. Task 263
-  keeps this parent item open pending the next bounded selection.
+  inventory returns to the remaining production-helper families and selects
+  the exact five-fragment/75-line three-edge local-mode three-hop asserted-head
+  route as Task 263ZZV in the same owner. Preserve its token-identical body,
+  byte stability, four-expansion set-terminal three-hop behavior, and fail-
+  closed behavior without moving its four-edge or other siblings; it is
+  complete. Fresh inventory returns to the remaining production-helper
+  families. Task 263 keeps this parent item open pending the next bounded
+  selection.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
