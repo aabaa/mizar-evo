@@ -224,9 +224,7 @@ pub(super) use checker_handoff::{
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
     assert_source_reserve_handoff, source_module_binding_env,
 };
-pub(super) use long_chain_config::{
-    SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS, SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_DEFINITIONS,
-};
+pub(super) use long_chain_config::SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_DEFINITIONS;
 #[cfg(test)]
 pub(super) use output::{
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
@@ -339,6 +337,7 @@ pub(super) use type_assertion_routes::{
     SOURCE_LOCAL_MODE_LONG_CHAIN_FOUR_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_LOCAL_MODE_LONG_CHAIN_RADIX_ASSERTED_HEAD_CONFIG,
     SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
+    SOURCE_LOCAL_MODE_LONG_CHAIN_SIX_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_LOCAL_MODE_LONG_CHAIN_THREE_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_LOCAL_MODE_LONG_CHAIN_TWO_HOP_ASSERTED_HEAD_CONFIG,
     extract_source_local_mode_long_chain_asserted_head,
@@ -346,6 +345,7 @@ pub(super) use type_assertion_routes::{
     extract_source_local_mode_long_chain_four_hop_asserted_head,
     extract_source_local_mode_long_chain_radix_asserted_head,
     extract_source_local_mode_long_chain_reserved_variable_type_assertion,
+    extract_source_local_mode_long_chain_six_hop_asserted_head,
     extract_source_local_mode_long_chain_three_hop_asserted_head,
     extract_source_local_mode_long_chain_two_hop_asserted_head,
     source_local_mode_long_chain_asserted_head_output,
@@ -353,6 +353,7 @@ pub(super) use type_assertion_routes::{
     source_local_mode_long_chain_four_hop_asserted_head_output,
     source_local_mode_long_chain_radix_asserted_head_output,
     source_local_mode_long_chain_reserved_variable_type_assertion_output,
+    source_local_mode_long_chain_six_hop_asserted_head_output,
     source_local_mode_long_chain_three_hop_asserted_head_output,
     source_local_mode_long_chain_two_hop_asserted_head_output,
 };
@@ -362,6 +363,7 @@ pub(super) use type_assertion_routes::{
     source_local_mode_long_chain_four_hop_asserted_head_detail_keys,
     source_local_mode_long_chain_radix_asserted_head_detail_keys,
     source_local_mode_long_chain_reserved_variable_type_assertion_detail_keys,
+    source_local_mode_long_chain_six_hop_asserted_head_detail_keys,
     source_local_mode_long_chain_three_hop_asserted_head_detail_keys,
     source_local_mode_long_chain_two_hop_asserted_head_detail_keys,
 };
