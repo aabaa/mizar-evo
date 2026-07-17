@@ -977,6 +977,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   the same owner; it is complete with token-identical body, byte-stability,
   direct sibling-table ownership, and object-terminal fail-closed
   preservation.
+  Fresh inventory returns to the exact five-fragment/53-line direct local-
+  object-mode reserved-variable builtin type-assertion route as Task 263ZU in
+  the same owner; it is complete with token-identical body, byte-stability,
+  and object-terminal fail-closed preservation.
   Fresh inventory returns to the remaining local-object-mode type-assertion/
   asserted-head routes, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,

@@ -868,6 +868,9 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   type-assertion routeを同じownerのTask 263ZTとして選び、token-identical body/byte-
   stability/direct sibling-table ownership/object-terminal fail-closed preservationを維持して
   完了した。fresh
+  inventoryは正確な5 fragment/53行direct local-object-mode reserved-variable builtin type-
+  assertion routeを同じownerのTask 263ZUとして選び、token-identical body/byte-stability/
+  object-terminal fail-closed preservationを維持して完了した。fresh
   inventoryは残るlocal-object-mode type-assertion/asserted-head
   routeへ戻るため、Task 263 parent itemはopenのまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
