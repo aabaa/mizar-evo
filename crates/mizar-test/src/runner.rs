@@ -34,7 +34,7 @@ use shared::{
 };
 #[cfg(test)]
 use type_elaboration::{
-    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS,
+    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, SOURCE_CHAINED_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
     SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
@@ -145,6 +145,7 @@ use type_elaboration::{
     build_source_parenthesized_reserved_variable_binary_formula_output,
     build_source_reserved_variable_formula_output, direct_token_texts,
     extract_builtin_source_reserve_declarations_after_node_guard,
+    extract_source_chained_local_mode_asserted_head,
     extract_source_chained_local_mode_reserved_variable_equality,
     extract_source_chained_local_mode_reserved_variable_inequality,
     extract_source_chained_local_mode_reserved_variable_membership,
@@ -239,7 +240,8 @@ use type_elaboration::{
     extract_source_two_edge_local_object_mode_reserved_variable_membership,
     extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
     extract_source_two_edge_local_object_mode_two_hop_asserted_head, resolve_visible_attribute,
-    resolve_visible_type_head, source_chained_local_mode_reserved_variable_equality_output,
+    resolve_visible_type_head, source_chained_local_mode_asserted_head_output,
+    source_chained_local_mode_reserved_variable_equality_output,
     source_chained_local_mode_reserved_variable_inequality_output,
     source_chained_local_mode_reserved_variable_membership_output,
     source_chained_local_object_mode_asserted_head_output,
@@ -361,6 +363,7 @@ use type_elaboration::{
     extract_source_imported_predicate_functor_formula,
     extract_source_reserved_variable_type_assertion_with_config,
     extract_source_set_enumeration_formula, is_active_type_elaboration,
+    source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_reserved_variable_equality_detail_keys,
     source_chained_local_mode_reserved_variable_inequality_detail_keys,
     source_chained_local_mode_reserved_variable_membership_detail_keys,
@@ -705,8 +708,9 @@ const TYPE_ELABORATION_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
 #[cfg(test)]
 const TYPE_ELABORATION_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
     SOURCE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG.invalid_payload_key;
+#[cfg(test)]
 const TYPE_ELABORATION_CHAINED_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.chained_local_mode_asserted_head.invalid_payload";
+    SOURCE_CHAINED_LOCAL_MODE_ASSERTED_HEAD_CONFIG.invalid_payload_key;
 const TYPE_ELABORATION_CHAINED_LOCAL_MODE_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.chained_local_mode_radix_asserted_head.invalid_payload";
 #[cfg(test)]
@@ -2090,34 +2094,6 @@ const SOURCE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     subject_result_role: "local-mode-reserved-variable-type-assertion-subject-result",
 };
 
-const SOURCE_CHAINED_LOCAL_MODE_ASSERTED_HEAD_CONFIG: SourceReservedVariableTypeAssertionConfig =
-    SourceReservedVariableTypeAssertionConfig {
-        label: "ChainedLocalModeAssertedHeadPayloadBoundary",
-        invalid_payload_key: TYPE_ELABORATION_CHAINED_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
-        binding_spelling: "x",
-        binding_type: SourceReservedVariableBuiltinType::Set,
-        binding_source_mode_spelling: Some("ChainModeAssertedHead"),
-        mode_definitions: &[
-            SourceReservedVariableModeDefinition {
-                label: "BaseModeAssertedHeadDef",
-                spelling: "BaseModeAssertedHead",
-                radix: SourceReservedVariableModeRadix::Builtin(
-                    SourceReservedVariableBuiltinType::Set,
-                ),
-            },
-            SourceReservedVariableModeDefinition {
-                label: "ChainModeAssertedHeadDef",
-                spelling: "ChainModeAssertedHead",
-                radix: SourceReservedVariableModeRadix::Mode("BaseModeAssertedHead"),
-            },
-        ],
-        asserted_type: SourceReservedVariableBuiltinType::Set,
-        asserted_head_relation: SourceReservedVariableAssertedHeadRelation::SameMode(
-            "ChainModeAssertedHead",
-        ),
-        subject_result_role: "chained-local-mode-asserted-head-subject-result",
-    };
-
 const SOURCE_CHAINED_LOCAL_MODE_RADIX_ASSERTED_HEAD_CONFIG:
     SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
     label: "ChainedLocalModeRadixAssertedHeadPayloadBoundary",
@@ -2782,19 +2758,6 @@ fn source_local_mode_reserved_variable_type_assertion_detail_keys(
     ))
 }
 
-fn source_chained_local_mode_asserted_head_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_chained_local_mode_asserted_head(ast, module, symbols)?;
-    let invalid_payload_key = payload.config.invalid_payload_key;
-    Some(source_reserved_variable_type_assertion_result_detail_keys(
-        build_source_reserved_variable_type_assertion_output(payload, symbols),
-        invalid_payload_key,
-    ))
-}
-
 fn source_chained_local_mode_radix_asserted_head_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -3050,16 +3013,6 @@ fn source_local_mode_reserved_variable_type_assertion_output(
     symbols: &SymbolEnv,
 ) -> Option<SourceReservedVariableTypeAssertionOutput> {
     let payload = extract_source_local_mode_reserved_variable_type_assertion(ast, module, symbols)?;
-    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_chained_local_mode_asserted_head_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertionOutput> {
-    let payload = extract_source_chained_local_mode_asserted_head(ast, module, symbols)?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
@@ -3672,19 +3625,6 @@ fn extract_source_local_mode_reserved_variable_type_assertion(
         module,
         symbols,
         &SOURCE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
-    )
-}
-
-fn extract_source_chained_local_mode_asserted_head(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertion> {
-    extract_source_reserved_variable_type_assertion_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_CHAINED_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
     )
 }
 

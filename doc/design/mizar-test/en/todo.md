@@ -1077,6 +1077,11 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   mode asserted-head route as Task 263ZZO in the same owner. Preserve its token-
   identical body, byte stability, one-expansion set-terminal same-mode behavior,
   and fail-closed behavior; it is complete. Fresh inventory returns to the
+  remaining production-helper families and selects the exact five-fragment/62-
+  line chained local-mode same-mode asserted-head route as Task 263ZZP in the
+  same owner. Preserve its token-identical body, byte stability, two-expansion
+  set-terminal same-mode behavior, and fail-closed behavior without moving its
+  immediate-radix sibling; it is complete. Fresh inventory returns to the
   remaining production-helper families. Task 263 keeps this parent item open
   pending the next bounded selection.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
