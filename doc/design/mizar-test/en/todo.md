@@ -972,7 +972,12 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   long-chain same-mode asserted-head route as Task 263ZS in the same owner; it
   is complete with token-identical body, byte-stability, and object-terminal
   fail-closed preservation.
-  Fresh inventory returns to the remaining local-object-mode long-chain
+  Fresh inventory returns to the exact five-fragment/52-line local-object-mode
+  long-chain reserved-variable builtin type-assertion route as Task 263ZT in
+  the same owner; it is complete with token-identical body, byte-stability,
+  direct sibling-table ownership, and object-terminal fail-closed
+  preservation.
+  Fresh inventory returns to the remaining local-object-mode type-assertion/
   asserted-head routes, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
