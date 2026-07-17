@@ -1246,3 +1246,89 @@ pub(in crate::runner) fn extract_source_three_edge_local_object_mode_reserved_va
         &SOURCE_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     )
 }
+
+const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.four_edge_local_object_mode_reserved_variable_type_assertion.invalid_payload";
+
+pub(in crate::runner) const SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "FourEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Object,
+    binding_source_mode_spelling: Some("TooDeepFourEdgeObjectModeTypeAssertion"),
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseFourEdgeObjectModeTypeAssertionDef",
+            spelling: "BaseFourEdgeObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerFourEdgeObjectModeTypeAssertionDef",
+            spelling: "InnerFourEdgeObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("BaseFourEdgeObjectModeTypeAssertion"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleFourEdgeObjectModeTypeAssertionDef",
+            spelling: "MiddleFourEdgeObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("InnerFourEdgeObjectModeTypeAssertion"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterFourEdgeObjectModeTypeAssertionDef",
+            spelling: "OuterFourEdgeObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleFourEdgeObjectModeTypeAssertion"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "TooDeepFourEdgeObjectModeTypeAssertionDef",
+            spelling: "TooDeepFourEdgeObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("OuterFourEdgeObjectModeTypeAssertion"),
+        },
+    ],
+    asserted_type: SourceReservedVariableBuiltinType::Object,
+    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::Builtin,
+    subject_result_role:
+        "four-edge-local-object-mode-reserved-variable-type-assertion-subject-result",
+};
+
+pub(in crate::runner) fn source_four_edge_local_object_mode_reserved_variable_type_assertion_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_four_edge_local_object_mode_reserved_variable_type_assertion(
+        ast, module, symbols,
+    )?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_four_edge_local_object_mode_reserved_variable_type_assertion_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload = extract_source_four_edge_local_object_mode_reserved_variable_type_assertion(
+        ast, module, symbols,
+    )?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+pub(in crate::runner) fn extract_source_four_edge_local_object_mode_reserved_variable_type_assertion(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
+    )
+}
