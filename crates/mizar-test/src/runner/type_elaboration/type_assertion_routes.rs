@@ -1332,3 +1332,64 @@ pub(in crate::runner) fn extract_source_four_edge_local_object_mode_reserved_var
         &SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     )
 }
+
+const TYPE_ELABORATION_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.local_object_mode_asserted_head.invalid_payload";
+
+#[rustfmt::skip]
+pub(in crate::runner) const SOURCE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG: SourceReservedVariableTypeAssertionConfig =
+    SourceReservedVariableTypeAssertionConfig {
+        label: "LocalObjectModeAssertedHeadPayloadBoundary",
+        invalid_payload_key: TYPE_ELABORATION_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+        binding_spelling: "x",
+        binding_type: SourceReservedVariableBuiltinType::Object,
+        binding_source_mode_spelling: Some("LocalObjectModeAssertedHead"),
+        mode_definitions: &[SourceReservedVariableModeDefinition {
+            label: "LocalObjectModeAssertedHeadDef",
+            spelling: "LocalObjectModeAssertedHead",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        }],
+        asserted_type: SourceReservedVariableBuiltinType::Object,
+        asserted_head_relation: SourceReservedVariableAssertedHeadRelation::SameMode(
+            "LocalObjectModeAssertedHead",
+        ),
+        subject_result_role: "local-object-mode-asserted-head-subject-result",
+    };
+
+pub(in crate::runner) fn source_local_object_mode_asserted_head_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_local_object_mode_asserted_head(ast, module, symbols)?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_local_object_mode_asserted_head_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload = extract_source_local_object_mode_asserted_head(ast, module, symbols)?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+pub(in crate::runner) fn extract_source_local_object_mode_asserted_head(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG,
+    )
+}
