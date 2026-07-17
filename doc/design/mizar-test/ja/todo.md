@@ -849,7 +849,10 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   fail-closed preservationを維持して完了した。fresh inventoryは正確な5 fragment/57行
   local-object-mode long-chain five-hop asserted-head routeを同じownerのTask 263ZNとして
   選び、token-identical body/byte-stability/object-terminal fail-closed preservationを
-  維持して完了した。fresh inventoryは残るlocal-object-mode long-chain asserted-head
+  維持して完了した。fresh inventoryは正確な5 fragment/56行local-object-mode long-chain
+  four-hop asserted-head routeを同じownerのTask 263ZOとして選び、token-identical body/
+  byte-stability/object-terminal fail-closed preservationを維持して完了した。fresh
+  inventoryは残るlocal-object-mode long-chain asserted-head
   routeへ戻るため、Task 263 parent itemはopenのまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
