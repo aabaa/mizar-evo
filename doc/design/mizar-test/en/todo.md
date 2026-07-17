@@ -933,7 +933,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   body and byte-stability preservation. Fresh inventory selects the exact
   five-fragment/51-line local-mode long-chain two-hop asserted-head route as
   Task 263ZH in the same owner; it is complete with token-identical body and
-  byte-stability preservation. Fresh inventory returns to the deeper-hop and
+  byte-stability preservation. Fresh inventory selects the exact five-
+  fragment/54-line local-mode long-chain three-hop asserted-head route as Task
+  263ZI in the same owner; it is complete with token-identical body and byte-
+  stability preservation. Fresh inventory returns to the four-or-deeper and
   local-object-mode long-chain asserted-head routes, so Task 263 keeps this
   parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,

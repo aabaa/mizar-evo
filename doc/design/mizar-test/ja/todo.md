@@ -835,7 +835,9 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   として選び、token-identical body/byte-stabilityを維持して完了した。fresh inventoryは
   正確な5 fragment/51行local-mode long-chain two-hop asserted-head routeを同じownerの
   Task 263ZHとして選び、token-identical body/byte-stabilityを維持して完了した。fresh
-  inventoryはdeeper-hop/local-object-mode long-chain asserted-head routeへ戻るため、
+  inventoryは正確な5 fragment/54行local-mode long-chain three-hop asserted-head routeを
+  同じownerのTask 263ZIとして選び、token-identical body/byte-stabilityを維持して完了した。
+  fresh inventoryはfour-or-deeper/local-object-mode long-chain asserted-head routeへ戻るため、
   Task 263 parent itemはopenのまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
