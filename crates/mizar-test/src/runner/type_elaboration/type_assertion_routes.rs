@@ -781,3 +781,60 @@ pub(in crate::runner) fn extract_source_local_object_mode_long_chain_two_hop_ass
         &SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_TWO_HOP_ASSERTED_HEAD_CONFIG,
     )
 }
+
+const TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.local_object_mode_long_chain_radix_asserted_head.invalid_payload";
+
+pub(in crate::runner) const SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RADIX_ASSERTED_HEAD_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "LongLocalObjectModeRadixAssertedHeadPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Object,
+    binding_source_mode_spelling: Some("ChainObjectMode6"),
+    mode_definitions: SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_DEFINITIONS,
+    asserted_type: SourceReservedVariableBuiltinType::Object,
+    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::BindingImmediateRadix(
+        "ChainObjectMode5",
+    ),
+    subject_result_role: "long-local-object-mode-radix-asserted-head-subject-result",
+};
+
+pub(in crate::runner) fn source_local_object_mode_long_chain_radix_asserted_head_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_local_object_mode_long_chain_radix_asserted_head(ast, module, symbols)?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_local_object_mode_long_chain_radix_asserted_head_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload =
+        extract_source_local_object_mode_long_chain_radix_asserted_head(ast, module, symbols)?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+pub(in crate::runner) fn extract_source_local_object_mode_long_chain_radix_asserted_head(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RADIX_ASSERTED_HEAD_CONFIG,
+    )
+}
