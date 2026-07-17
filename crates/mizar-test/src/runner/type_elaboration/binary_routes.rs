@@ -3,7 +3,9 @@ use mizar_resolve::env::SymbolEnv;
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_syntax::SurfaceAst;
 
-use super::long_chain_config::SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS;
+use super::long_chain_config::{
+    SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS, SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_DEFINITIONS,
+};
 #[cfg(test)]
 use super::output::SourceReservedVariableBinaryFormulaOutput;
 use super::output::{
@@ -3586,5 +3588,204 @@ pub(in crate::runner) fn extract_source_local_mode_long_chain_reserved_variable_
         module,
         symbols,
         &SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    )
+}
+
+const TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.local_object_mode_long_chain_reserved_variable_equality.invalid_payload";
+const TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.local_object_mode_long_chain_reserved_variable_inequality.invalid_payload";
+const TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.local_object_mode_long_chain_reserved_variable_membership.invalid_payload";
+
+pub(in crate::runner) const SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "LongLocalObjectModeReservedVariableEqualityPayloadBoundary",
+    operator: "=",
+    formula_kind: FormulaKind::Equality,
+    invalid_payload_key:
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Object],
+    binding_source_mode_spellings: &[Some("ChainObjectMode6")],
+    mode_definitions: SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_DEFINITIONS,
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "long-local-object-mode-reserved-variable-left-result",
+    right_result_role: "long-local-object-mode-reserved-variable-right-result",
+    left_expected_role: Some("long-local-object-mode-reserved-variable-left-expected"),
+    right_expected_role: Some("long-local-object-mode-reserved-variable-right-expected"),
+};
+
+pub(in crate::runner) const SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "LongLocalObjectModeReservedVariableInequalityPayloadBoundary",
+    operator: "<>",
+    formula_kind: FormulaKind::Inequality,
+    invalid_payload_key:
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Object],
+    binding_source_mode_spellings: &[Some("ChainObjectMode6")],
+    mode_definitions: SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_DEFINITIONS,
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "long-local-object-mode-reserved-variable-inequality-left-result",
+    right_result_role: "long-local-object-mode-reserved-variable-inequality-right-result",
+    left_expected_role: Some(
+        "long-local-object-mode-reserved-variable-inequality-left-expected",
+    ),
+    right_expected_role: Some(
+        "long-local-object-mode-reserved-variable-inequality-right-expected",
+    ),
+};
+
+pub(in crate::runner) const SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "LongLocalObjectModeReservedVariableMembershipPayloadBoundary",
+    operator: "in",
+    formula_kind: FormulaKind::Membership,
+    invalid_payload_key:
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 2,
+    binding_spellings: &["x", "y"],
+    binding_types: &[
+        SourceReservedVariableBuiltinType::Object,
+        SourceReservedVariableBuiltinType::Set,
+    ],
+    binding_source_mode_spellings: &[Some("ChainObjectMode6"), None],
+    mode_definitions: SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_DEFINITIONS,
+    left_binding_index: 0,
+    right_binding_index: 1,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: true,
+    left_result_role: "long-local-object-mode-reserved-variable-membership-left-result",
+    right_result_role: "long-local-object-mode-reserved-variable-membership-right-result",
+    left_expected_role: None,
+    right_expected_role: Some(
+        "long-local-object-mode-reserved-variable-membership-right-expected",
+    ),
+};
+
+pub(in crate::runner) fn source_local_object_mode_long_chain_reserved_variable_equality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_local_object_mode_long_chain_reserved_variable_equality(
+        ast, module, symbols,
+    )?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+pub(in crate::runner) fn source_local_object_mode_long_chain_reserved_variable_inequality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_local_object_mode_long_chain_reserved_variable_inequality(
+        ast, module, symbols,
+    )?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+pub(in crate::runner) fn source_local_object_mode_long_chain_reserved_variable_membership_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_local_object_mode_long_chain_reserved_variable_membership(
+        ast, module, symbols,
+    )?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_local_object_mode_long_chain_reserved_variable_equality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_local_object_mode_long_chain_reserved_variable_equality(
+        ast, module, symbols,
+    )?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_local_object_mode_long_chain_reserved_variable_inequality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_local_object_mode_long_chain_reserved_variable_inequality(
+        ast, module, symbols,
+    )?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_local_object_mode_long_chain_reserved_variable_membership_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_local_object_mode_long_chain_reserved_variable_membership(
+        ast, module, symbols,
+    )?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+pub(in crate::runner) fn extract_source_local_object_mode_long_chain_reserved_variable_equality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    )
+}
+
+pub(in crate::runner) fn extract_source_local_object_mode_long_chain_reserved_variable_inequality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    )
+}
+
+pub(in crate::runner) fn extract_source_local_object_mode_long_chain_reserved_variable_membership(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     )
 }

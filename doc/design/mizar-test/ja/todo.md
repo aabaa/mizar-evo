@@ -823,7 +823,10 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   local-object-mode long-chain binary route familyを分離でき、正確な15 fragment/176行の
   local-mode long-chain membership/equality/inequality binary route familyをTask 263ZCとして
   選び、token-identical body/byte-stabilityを維持して完了した。fresh inventoryは
-  local-object-mode long-chain siblingへ戻るため、Task 263 parent itemはopenのまま。
+  正確な15 fragment/186行local-object-mode long-chain membership/equality/inequality
+  binary route siblingをTask 263ZDとして選び、token-identical body/byte-stabilityを
+  維持して完了した。fresh inventoryは残るlong-chain type-assertion/asserted-head route
+  familyへ戻るため、Task 263 parent itemはopenのまま。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
