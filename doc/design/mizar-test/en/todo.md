@@ -956,6 +956,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   long-chain four-hop asserted-head route as Task 263ZO in the same owner; it is
   complete with token-identical body, byte-stability, and object-terminal fail-
   closed preservation.
+  Fresh inventory returns to the exact five-fragment/55-line local-object-mode
+  long-chain three-hop asserted-head route as Task 263ZP in the same owner; it
+  is complete with token-identical body, byte-stability, and object-terminal
+  fail-closed preservation.
   Fresh inventory returns to the remaining local-object-mode long-chain
   asserted-head routes, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
