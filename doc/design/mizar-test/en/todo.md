@@ -945,8 +945,12 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   Fresh inventory selects the exact five-fragment/55-line local-mode long-chain
   six-hop asserted-head route as Task 263ZL in the same owner; it is complete
   with token-identical body, byte-stability, and stale local-table runner-
-  exposure removal. Fresh inventory returns to the local-object-mode long-chain
-  asserted-head routes, so Task 263 keeps this parent item open.
+  exposure removal. Fresh inventory selects the exact five-fragment/58-line
+  local-object-mode long-chain six-hop asserted-head route as Task 263ZM in the
+  same owner; it is complete with token-identical body, byte-stability, and
+  object-terminal fail-closed preservation. Fresh inventory returns to the
+  remaining local-object-mode long-chain asserted-head routes, so Task 263 keeps
+  this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
