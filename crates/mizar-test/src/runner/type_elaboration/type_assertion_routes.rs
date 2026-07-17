@@ -2133,3 +2133,101 @@ pub(in crate::runner) fn extract_source_four_edge_local_object_mode_three_hop_as
         &SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_THREE_HOP_ASSERTED_HEAD_CONFIG,
     )
 }
+
+const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_FOUR_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY:
+    &str =
+    "type_elaboration.checker.four_edge_local_object_mode_four_hop_asserted_head.invalid_payload";
+
+#[rustfmt::skip]
+pub(in crate::runner) const SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_FOUR_HOP_ASSERTED_HEAD_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "FourEdgeLocalObjectModeFourHopAssertedHeadPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_FOUR_HOP_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Object,
+    binding_source_mode_spelling: Some("TooDeepFourEdgeObjectModeFourHopAssertedHead"),
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseFourEdgeObjectModeFourHopAssertedHeadDef",
+            spelling: "BaseFourEdgeObjectModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerFourEdgeObjectModeFourHopAssertedHeadDef",
+            spelling: "InnerFourEdgeObjectModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode(
+                "BaseFourEdgeObjectModeFourHopAssertedHead",
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleFourEdgeObjectModeFourHopAssertedHeadDef",
+            spelling: "MiddleFourEdgeObjectModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode(
+                "InnerFourEdgeObjectModeFourHopAssertedHead",
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterFourEdgeObjectModeFourHopAssertedHeadDef",
+            spelling: "OuterFourEdgeObjectModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode(
+                "MiddleFourEdgeObjectModeFourHopAssertedHead",
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "TooDeepFourEdgeObjectModeFourHopAssertedHeadDef",
+            spelling: "TooDeepFourEdgeObjectModeFourHopAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode(
+                "OuterFourEdgeObjectModeFourHopAssertedHead",
+            ),
+        },
+    ],
+    asserted_type: SourceReservedVariableBuiltinType::Object,
+    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::BindingFourHopRadix {
+        first_intermediate_spelling: "OuterFourEdgeObjectModeFourHopAssertedHead",
+        second_intermediate_spelling: "MiddleFourEdgeObjectModeFourHopAssertedHead",
+        third_intermediate_spelling: "InnerFourEdgeObjectModeFourHopAssertedHead",
+        asserted_spelling: "BaseFourEdgeObjectModeFourHopAssertedHead",
+    },
+    subject_result_role: "four-edge-local-object-mode-four-hop-asserted-head-subject-result",
+};
+
+pub(in crate::runner) fn source_four_edge_local_object_mode_four_hop_asserted_head_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_four_edge_local_object_mode_four_hop_asserted_head(ast, module, symbols)?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_four_edge_local_object_mode_four_hop_asserted_head_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload =
+        extract_source_four_edge_local_object_mode_four_hop_asserted_head(ast, module, symbols)?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+pub(in crate::runner) fn extract_source_four_edge_local_object_mode_four_hop_asserted_head(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_FOUR_HOP_ASSERTED_HEAD_CONFIG,
+    )
+}
