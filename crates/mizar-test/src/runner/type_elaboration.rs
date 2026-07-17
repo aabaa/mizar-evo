@@ -340,6 +340,7 @@ pub(super) use type_assertion_routes::{
     SOURCE_LOCAL_MODE_LONG_CHAIN_SIX_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_LOCAL_MODE_LONG_CHAIN_THREE_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_LOCAL_MODE_LONG_CHAIN_TWO_HOP_ASSERTED_HEAD_CONFIG,
+    SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_FIVE_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_LOCAL_OBJECT_MODE_LONG_CHAIN_SIX_HOP_ASSERTED_HEAD_CONFIG,
     extract_source_local_mode_long_chain_asserted_head,
     extract_source_local_mode_long_chain_five_hop_asserted_head,
@@ -349,6 +350,7 @@ pub(super) use type_assertion_routes::{
     extract_source_local_mode_long_chain_six_hop_asserted_head,
     extract_source_local_mode_long_chain_three_hop_asserted_head,
     extract_source_local_mode_long_chain_two_hop_asserted_head,
+    extract_source_local_object_mode_long_chain_five_hop_asserted_head,
     extract_source_local_object_mode_long_chain_six_hop_asserted_head,
     source_local_mode_long_chain_asserted_head_output,
     source_local_mode_long_chain_five_hop_asserted_head_output,
@@ -358,6 +360,7 @@ pub(super) use type_assertion_routes::{
     source_local_mode_long_chain_six_hop_asserted_head_output,
     source_local_mode_long_chain_three_hop_asserted_head_output,
     source_local_mode_long_chain_two_hop_asserted_head_output,
+    source_local_object_mode_long_chain_five_hop_asserted_head_output,
     source_local_object_mode_long_chain_six_hop_asserted_head_output,
 };
 pub(super) use type_assertion_routes::{
@@ -369,5 +372,6 @@ pub(super) use type_assertion_routes::{
     source_local_mode_long_chain_six_hop_asserted_head_detail_keys,
     source_local_mode_long_chain_three_hop_asserted_head_detail_keys,
     source_local_mode_long_chain_two_hop_asserted_head_detail_keys,
+    source_local_object_mode_long_chain_five_hop_asserted_head_detail_keys,
     source_local_object_mode_long_chain_six_hop_asserted_head_detail_keys,
 };
