@@ -991,7 +991,12 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   263ZW in the same owner. Preserve its token-identical body, byte-stability,
   three-expansion object-terminal chain, and fail-closed behavior; it is
   complete. Fresh inventory returns to the remaining local-object-mode type-
-  assertion/asserted-head routes, so Task 263 keeps this parent item open.
+  assertion/asserted-head routes and selects the exact five-fragment/82-line
+  three-edge local-object-mode reserved-variable builtin type-assertion route
+  as Task 263ZX in the same owner. Preserve its token-identical body, byte-
+  stability, four-expansion object-terminal chain, and fail-closed behavior;
+  it is complete. Fresh inventory returns to the remaining local-object-mode
+  type-assertion/asserted-head routes, so Task 263 keeps this parent item open.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
