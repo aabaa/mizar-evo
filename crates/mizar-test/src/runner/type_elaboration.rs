@@ -332,10 +332,16 @@ pub(super) use source_reserve::extract_builtin_source_reserve_declarations_after
 pub(super) use source_reserve::{
     resolve_visible_attribute, resolve_visible_type_head, source_mode_symbol_spelling,
 };
-pub(super) use type_assertion_routes::source_local_mode_long_chain_reserved_variable_type_assertion_detail_keys;
 #[cfg(test)]
 pub(super) use type_assertion_routes::{
+    SOURCE_LOCAL_MODE_LONG_CHAIN_ASSERTED_HEAD_CONFIG,
     SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
+    extract_source_local_mode_long_chain_asserted_head,
     extract_source_local_mode_long_chain_reserved_variable_type_assertion,
+    source_local_mode_long_chain_asserted_head_output,
     source_local_mode_long_chain_reserved_variable_type_assertion_output,
+};
+pub(super) use type_assertion_routes::{
+    source_local_mode_long_chain_asserted_head_detail_keys,
+    source_local_mode_long_chain_reserved_variable_type_assertion_detail_keys,
 };
