@@ -1083,3 +1083,79 @@ pub(in crate::runner) fn extract_source_chained_local_object_mode_reserved_varia
         &SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     )
 }
+
+const TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.two_edge_local_object_mode_reserved_variable_type_assertion.invalid_payload";
+
+pub(in crate::runner) const SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "TwoEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Object,
+    binding_source_mode_spelling: Some("OuterTwoEdgeObjectModeTypeAssertion"),
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseTwoEdgeObjectModeTypeAssertionDef",
+            spelling: "BaseTwoEdgeObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleTwoEdgeObjectModeTypeAssertionDef",
+            spelling: "MiddleTwoEdgeObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("BaseTwoEdgeObjectModeTypeAssertion"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterTwoEdgeObjectModeTypeAssertionDef",
+            spelling: "OuterTwoEdgeObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleTwoEdgeObjectModeTypeAssertion"),
+        },
+    ],
+    asserted_type: SourceReservedVariableBuiltinType::Object,
+    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::Builtin,
+    subject_result_role:
+        "two-edge-local-object-mode-reserved-variable-type-assertion-subject-result",
+};
+
+pub(in crate::runner) fn source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_two_edge_local_object_mode_reserved_variable_type_assertion(
+        ast, module, symbols,
+    )?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_two_edge_local_object_mode_reserved_variable_type_assertion_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload = extract_source_two_edge_local_object_mode_reserved_variable_type_assertion(
+        ast, module, symbols,
+    )?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+pub(in crate::runner) fn extract_source_two_edge_local_object_mode_reserved_variable_type_assertion(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
+    )
+}

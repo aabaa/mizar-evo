@@ -111,6 +111,7 @@ use type_elaboration::{
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SourceParenthesizedOperandSide, SourceParenthesizedReservedVariableBinaryFormula,
     SourceParenthesizedReservedVariableBinaryFormulaOutput, SourceReservedVariableBinaryFormula,
     SourceReservedVariableTypeAssertionOutput, assemble_source_checker_handoff,
@@ -203,6 +204,7 @@ use type_elaboration::{
     extract_source_two_edge_local_object_mode_reserved_variable_equality,
     extract_source_two_edge_local_object_mode_reserved_variable_inequality,
     extract_source_two_edge_local_object_mode_reserved_variable_membership,
+    extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
     resolve_visible_attribute, resolve_visible_type_head,
     source_chained_local_mode_reserved_variable_equality_output,
     source_chained_local_mode_reserved_variable_inequality_output,
@@ -290,8 +292,9 @@ use type_elaboration::{
     source_two_edge_local_mode_reserved_variable_membership_output,
     source_two_edge_local_object_mode_reserved_variable_equality_output,
     source_two_edge_local_object_mode_reserved_variable_inequality_output,
-    source_two_edge_local_object_mode_reserved_variable_membership_output, structural_child_ids,
-    surface_nodes_with_kind, surface_site,
+    source_two_edge_local_object_mode_reserved_variable_membership_output,
+    source_two_edge_local_object_mode_reserved_variable_type_assertion_output,
+    structural_child_ids, surface_nodes_with_kind, surface_site,
 };
 use type_elaboration::{
     SourceImportedAttributeAssertionFormula, SourceReservedVariableAssertedHeadRelation,
@@ -386,6 +389,7 @@ use type_elaboration::{
     source_two_edge_local_object_mode_reserved_variable_equality_detail_keys,
     source_two_edge_local_object_mode_reserved_variable_inequality_detail_keys,
     source_two_edge_local_object_mode_reserved_variable_membership_detail_keys,
+    source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys,
     type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
 };
 
@@ -701,8 +705,10 @@ const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTIO
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.two_edge_local_mode_reserved_variable_type_assertion.invalid_payload";
+#[cfg(test)]
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
-    &str = "type_elaboration.checker.two_edge_local_object_mode_reserved_variable_type_assertion.invalid_payload";
+    &str =
+    SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG.invalid_payload_key;
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.three_edge_local_mode_reserved_variable_type_assertion.invalid_payload";
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
@@ -3215,39 +3221,6 @@ const SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     subject_result_role: "two-edge-local-mode-reserved-variable-type-assertion-subject-result",
 };
 
-const SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
-    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
-    label: "TwoEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary",
-    invalid_payload_key:
-        TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
-    binding_spelling: "x",
-    binding_type: SourceReservedVariableBuiltinType::Object,
-    binding_source_mode_spelling: Some("OuterTwoEdgeObjectModeTypeAssertion"),
-    mode_definitions: &[
-        SourceReservedVariableModeDefinition {
-            label: "BaseTwoEdgeObjectModeTypeAssertionDef",
-            spelling: "BaseTwoEdgeObjectModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Builtin(
-                SourceReservedVariableBuiltinType::Object,
-            ),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "MiddleTwoEdgeObjectModeTypeAssertionDef",
-            spelling: "MiddleTwoEdgeObjectModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Mode("BaseTwoEdgeObjectModeTypeAssertion"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "OuterTwoEdgeObjectModeTypeAssertionDef",
-            spelling: "OuterTwoEdgeObjectModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Mode("MiddleTwoEdgeObjectModeTypeAssertion"),
-        },
-    ],
-    asserted_type: SourceReservedVariableBuiltinType::Object,
-    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::Builtin,
-    subject_result_role:
-        "two-edge-local-object-mode-reserved-variable-type-assertion-subject-result",
-};
-
 const SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
     label: "ThreeEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary",
@@ -3878,21 +3851,6 @@ fn source_two_edge_local_mode_reserved_variable_type_assertion_detail_keys(
     ))
 }
 
-fn source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_two_edge_local_object_mode_reserved_variable_type_assertion(
-        ast, module, symbols,
-    )?;
-    let invalid_payload_key = payload.config.invalid_payload_key;
-    Some(source_reserved_variable_type_assertion_result_detail_keys(
-        build_source_reserved_variable_type_assertion_output(payload, symbols),
-        invalid_payload_key,
-    ))
-}
-
 fn source_three_edge_local_mode_reserved_variable_type_assertion_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -4313,18 +4271,6 @@ fn source_two_edge_local_mode_reserved_variable_type_assertion_output(
 ) -> Option<SourceReservedVariableTypeAssertionOutput> {
     let payload =
         extract_source_two_edge_local_mode_reserved_variable_type_assertion(ast, module, symbols)?;
-    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_two_edge_local_object_mode_reserved_variable_type_assertion_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertionOutput> {
-    let payload = extract_source_two_edge_local_object_mode_reserved_variable_type_assertion(
-        ast, module, symbols,
-    )?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
@@ -5223,19 +5169,6 @@ fn extract_source_two_edge_local_mode_reserved_variable_type_assertion(
         module,
         symbols,
         &SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
-    )
-}
-
-fn extract_source_two_edge_local_object_mode_reserved_variable_type_assertion(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertion> {
-    extract_source_reserved_variable_type_assertion_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     )
 }
 
