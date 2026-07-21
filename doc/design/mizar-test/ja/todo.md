@@ -1006,8 +1006,12 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   byte stability、正確なchecked contradiction payload、空diagnostic/deferred/
   fact、normal detail consumer 1個、test-only output consumerを維持し、他formula
   family/routeを移動せず完了した。fresh inventoryは残るproduction-helper
-  familyへ戻る。Task 263 parent itemは次のfresh bounded selectionまでopenを
-  維持する。
+  familyへ戻り、既存private `type_elaboration/output.rs`の正確な2 fragment/30行
+  formula-statement output/detail familyをTask 263ZZZCとして選ぶ。token-
+  identical body、byte stability、partial thesis payload、missing-formula deferred
+  reason/diagnostic 1個、normal detail consumer、test-only output/extractor consumer
+  を維持し、他formula family/routeは移動せず、全preservation gateをpassして
+  完了した。Task 263 parent itemは次のfresh bounded selectionまでopenを維持する。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

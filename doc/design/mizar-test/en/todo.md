@@ -1149,8 +1149,14 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   stability, exact checked contradiction payload, empty diagnostics/deferred/
   facts, one normal detail consumer, and test-only output consumers without
   moving another formula family or route; it is complete. Fresh inventory
-  returns to the remaining production-helper families. Task 263 keeps this
-  parent item open pending the next fresh bounded selection.
+  returns to the remaining production-helper families and selects the exact
+  two-fragment/30-line formula-statement output/detail family as Task 263ZZZC
+  in existing private `type_elaboration/output.rs`. Preserve its token-
+  identical bodies, byte stability, partial thesis payload, one missing-formula
+  deferred reason and diagnostic, normal detail consumer, and test-only output/
+  extractor consumers without moving another formula family or route; it is
+  complete with all preservation gates passing. Task 263 keeps this parent item
+  open pending the next fresh bounded selection.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

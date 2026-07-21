@@ -4,9 +4,10 @@ use mizar_checker::binding_env::{
     BindingContextId, BindingId, BindingLookupResult, BindingLookupSite,
 };
 use mizar_checker::type_checker::{
-    ExpectedTypeInput, FormulaInput, FormulaKind, FormulaStatus, NormalizedTypeStatus,
-    SourceReserveBindingInput, TermFormulaChecker, TermFormulaInferenceOutput, TermInput, TermKind,
-    TermReference, TermStatus, TypeExpressionInput, TypeHeadInput, TypeNormalizer,
+    ExpectedTypeInput, FormulaDeferredReason, FormulaInput, FormulaKind, FormulaStatus,
+    NormalizedTypeStatus, SourceReserveBindingInput, TermFormulaChecker,
+    TermFormulaInferenceOutput, TermInput, TermKind, TermReference, TermStatus,
+    TypeExpressionInput, TypeHeadInput, TypeNormalizer,
 };
 use mizar_checker::typed_ast::{
     NormalizedTypeId, TypeEntryActual, TypeEntryId, TypeRole, TypeStatus, TypedNodeId, TypedSiteRef,
@@ -18,7 +19,7 @@ use mizar_syntax::SurfaceAst;
 
 use super::source_formula::{
     SourceParenthesizedOperandSide, SourceParenthesizedReservedVariableBinaryFormula,
-    extract_source_contradiction_formula,
+    extract_source_contradiction_formula, extract_source_formula_statement,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
@@ -627,6 +628,38 @@ pub(in crate::runner) fn source_contradiction_formula_output(
             FormulaKind::Contradiction,
         )],
     ))
+}
+
+pub(in crate::runner) fn source_formula_statement_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_formula_statement_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
+pub(in crate::runner) fn source_formula_statement_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_formula_statement(ast)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::Thesis,
+        )
+        .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
+    );
+    Some(output)
 }
 
 fn type_entry_known_actual_for_owner(
