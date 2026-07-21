@@ -1169,7 +1169,14 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   source-derived numeral/formula/asserted-type payloads, type-entry ownership,
   normalized builtin-set type, diagnostic ordering, normal detail consumer,
   and test-only output/extractor consumers; it is complete with all
-  preservation gates passing. Task 263 remains open pending fresh inventory.
+  preservation gates passing. Task 263 remains open. Fresh inventory selects
+  the exact five-fragment/52-line direct local-mode reserved-variable type-
+  assertion route as Task 263ZZZF in existing private
+  `type_elaboration/type_assertion_routes.rs`. Preserve token-identical bodies,
+  key/test alias, one real expansion, normalized-reflexive Task138 output,
+  normal detail, test-only config/output/extractor, and all fail-closed/isolation
+  boundaries. It is complete with all preservation gates passing. Task 263
+  remains open pending fresh inventory.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
