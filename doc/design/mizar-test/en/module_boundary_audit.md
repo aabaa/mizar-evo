@@ -8853,10 +8853,84 @@ names, expectations, diagnostics, payloads, ordering, deferred/fact state,
 fail-closed behavior, coverage, and roadmap are unchanged;
 `spec_coverage_audit.md` remains unchanged.
 
+## Task 263ZZZK Pre-Move Inventory and Specification
+
+Fresh authority/test/trace/expectation/design/source/API/consumer inventory
+selects only the attribute-level-negative imported-attribute assertion detail
+wrapper as the next smallest dependency-closed helper. The exact 9-line
+`source_imported_non_empty_attribute_assertion_formula_detail_keys` at
+2666-2674 has raw hash
+`db8b9053883cfacd797222d2844c8cf761a401ca5d19278cdb1512f795b529c8`
+and whitespace-normalized hash
+`c46e5fbe9775604cf3d2c60ce76841bd4b9471963b00a2111142af5a726144b3`.
+It has exactly two occurrences in `runner.rs`: definition and production
+dispatch. Existing private `type_elaboration/output.rs` already owns its output
+wrapper and canonical diagnostic-key dependency.
+
+Move only those nine lines into existing private
+`type_elaboration/output.rs`. Detail crosses the phase facade/root normally.
+The output wrapper then crosses only under `cfg(test)` for the retained direct
+Task114 matrix; the exact extractor likewise crosses the facade/root only under
+`cfg(test)`, while the owner imports it directly. Keep the set-enumeration
+family and every other formula/route sibling in place. Current inventory is
+`runner.rs` 2,987 /
+`70078201c777fb75e581e769934a7266f11b5b945b9896e76161c86f78a0fe90`,
+facade 534 /
+`cf2d6f775fccdf1e2efb7c27bd4e7409348d0cf8f83a109850fa02c5c330a278`,
+and `output.rs` 1,363 /
+`5855ec61dd781ad8cfa1e82f4b440420627d9bc04388000fc548c988878498bf`.
+
+Authority remains canonical Chapter 6 attribute negation/composition and
+§14.2.4, Task114's exact `1 is non empty` source, its expectation, and its trace
+requirement. Preserve exact output-to-canonical-key projection and the same
+three ordered/deduplicated diagnostics. The existing Task114 source/output/
+detail assertions, bounded near-miss/corruption/isolation matrix, active
+fixture, and full byte/hash oracles sufficiently cover the boundary; no
+ZZZK0 test is needed. Changing output/core/positive wrappers, either extractor,
+payload/status/diagnostics/order, deferred/fact state, attribute semantics,
+API/test name/expectation/trace, coverage/deferred state, another formula
+family, or any route is forbidden. `spec_coverage_audit.md` remains unchanged
+because no coverage, owner, credit, follow-up, or deferred rationale changes.
+
+## Task 263ZZZK Move Result
+
+Task 263ZZZK moved only the approved 9-line attribute-level-negative imported-
+attribute assertion detail wrapper into existing private
+`type_elaboration/output.rs`. Detail crosses normally; the output wrapper and
+exact extractor cross the facade/root only under `cfg(test)`, while the owner
+imports the extractor directly. The set-enumeration family and every sibling
+remain in place.
+
+After stripping only `pub(in crate::runner)`, raw hash remains
+`db8b9053883cfacd797222d2844c8cf761a401ca5d19278cdb1512f795b529c8`
+and whitespace-normalized hash remains
+`c46e5fbe9775604cf3d2c60ce76841bd4b9471963b00a2111142af5a726144b3`.
+The resulting inventory is `runner.rs` 2,978 /
+`375964fe40c9f0a9716beb7aa27f24433e95be4cb4953856ff37024dc6f7da22`,
+facade 535 /
+`4133ab105202a928dec81c59833cfcf2d7291b4dab4946ea33b3e43039e84e6b`,
+and `output.rs` 1,373 /
+`573ddc0bb6c421cb0ed4e1501d644eb938222282fa8c787fc7cc6556b7110274`.
+
+The focused Task114 test and all 272 unit tests pass. Raw/normalized test-list
+hashes remain `5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+The four CLI hashes remain `f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
+and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
+Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
+errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
+pass. Final specification, test-sufficiency, implementation, and source/
+documentation consistency reviews report no findings. Semantics, API, test
+names, expectations, diagnostics, payloads, ordering, deferred/fact state,
+fail-closed behavior, coverage, and roadmap are unchanged;
+`spec_coverage_audit.md` remains unchanged.
+
 ## Current Ownership
 
 Rows whose cumulative task range ends at 263ZZX are the retained base; the
-explicit 263ZZY through 263ZZZJ delta rows below extend the type-assertion and
+explicit 263ZZY through 263ZZZK delta rows below extend the type-assertion and
 diagnostic-detail ownership surfaces.
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -8883,6 +8957,7 @@ diagnostic-detail ownership surfaces.
 | Task 263ZZZH positive imported-attribute output-wrapper ownership delta | The exact positive extractor-to-core wrapper extends the payload-rendering row above through Task 263ZZZH while retaining its detail consumer. | exact positive source extraction to shared checker core | Owned by private `output.rs`; one normal parent-only wrapper entry crosses the facade, extractor access crosses only under `cfg(test)`, and the detail/non-empty families remain in `runner.rs`. |
 | Task 263ZZZI positive imported-attribute detail ownership delta | The exact output-to-canonical-key wrapper extends payload rendering through Task 263ZZZI. | positive checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally, output/extractor only under `cfg(test)`, and the non-empty family remains in `runner.rs`. |
 | Task 263ZZZJ attribute-level-negative imported-attribute output ownership delta | The exact direct-`non` extractor-to-core wrapper extends payload rendering through Task 263ZZZJ. | exact attribute-level-negative source extraction to shared checker core | Owned by private `output.rs`; the wrapper crosses normally for its retained detail consumer, extractor access crosses the facade/root only under `cfg(test)`, the shared core no longer crosses, and the detail/set-enumeration families remain in `runner.rs`. |
+| Task 263ZZZK attribute-level-negative imported-attribute detail ownership delta | The exact output-to-canonical-key wrapper extends payload rendering through Task 263ZZZK. | attribute-level-negative checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally, output/extractor cross the facade/root only under `cfg(test)`, and the set-enumeration family remains in `runner.rs`. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
 
@@ -8955,6 +9030,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | `src/runner/type_elaboration/output.rs` Task 263ZZZH delta | Adds the exact positive imported-attribute assertion output wrapper; its detail consumer, the non-empty family, and every sibling remain in `runner.rs`. |
 | `src/runner/type_elaboration/output.rs` Task 263ZZZI delta | Adds the exact positive imported-attribute assertion detail wrapper; the non-empty family and every sibling remain in `runner.rs`. |
 | `src/runner/type_elaboration/output.rs` Task 263ZZZJ delta | Adds the exact attribute-level-negative imported-attribute assertion output wrapper; its detail consumer, the set-enumeration family, and every sibling remain in `runner.rs`. |
+| `src/runner/type_elaboration/output.rs` Task 263ZZZK delta | Adds the exact attribute-level-negative imported-attribute assertion detail wrapper; the set-enumeration family and every sibling remain in `runner.rs`. |
 | `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
 | `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
 | `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
@@ -9157,6 +9233,7 @@ Task 255E.
 | 263ZZZH | Complete: moved only the exact 8-line positive imported-attribute assertion output wrapper into existing private `type_elaboration/output.rs`; its detail wrapper, the non-empty family, and every other formula/route remain in place. |
 | 263ZZZI | Complete: moved only the exact 8-line positive imported-attribute assertion detail wrapper into existing private `type_elaboration/output.rs`; the non-empty family and every other formula/route remain in place. |
 | 263ZZZJ | Complete: moved only the exact 9-line attribute-level-negative imported-attribute assertion output wrapper into existing private `type_elaboration/output.rs`; its detail wrapper and every other formula/route remain in place. |
+| 263ZZZK | Complete: moved only the exact 9-line attribute-level-negative imported-attribute assertion detail wrapper into existing private `type_elaboration/output.rs`; the set-enumeration family and every other formula/route remain in place. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a

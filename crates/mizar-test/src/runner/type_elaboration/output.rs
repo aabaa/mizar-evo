@@ -804,6 +804,16 @@ pub(in crate::runner) fn source_imported_non_empty_attribute_assertion_formula_o
     source_imported_attribute_assertion_formula_output_from_payload(ast, module, symbols, payload)
 }
 
+pub(in crate::runner) fn source_imported_non_empty_attribute_assertion_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output =
+        source_imported_non_empty_attribute_assertion_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
 fn type_entry_known_actual_for_owner(
     output: &TermFormulaInferenceOutput,
     owner: &TypedSiteRef,

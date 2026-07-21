@@ -1204,6 +1204,13 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   visibility, the retained detail wrapper, exact diagnostics, and all fail-
   closed/isolation boundaries. It is complete with all preservation gates
   passing. Task 263 remains open pending fresh inventory.
+  Fresh inventory selects the exact 9-line attribute-level-negative imported-
+  attribute assertion detail wrapper as Task 263ZZZK in existing private
+  `type_elaboration/output.rs`. Preserve token-identical output-to-canonical-
+  key projection, normal detail visibility, test-only output/extractor
+  crossings, exact diagnostics, and all fail-closed/isolation boundaries. It is
+  complete with all preservation gates passing. Task 263 remains open pending
+  fresh inventory.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

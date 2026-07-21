@@ -299,8 +299,9 @@ use type_elaboration::{
     source_four_edge_local_object_mode_three_hop_asserted_head_output,
     source_four_edge_local_object_mode_two_hop_asserted_head_output,
     source_heterogeneous_reserve_membership_output,
-    source_imported_attribute_assertion_formula_output, source_local_mode_asserted_head_output,
-    source_local_mode_long_chain_asserted_head_output,
+    source_imported_attribute_assertion_formula_output,
+    source_imported_non_empty_attribute_assertion_formula_output,
+    source_local_mode_asserted_head_output, source_local_mode_long_chain_asserted_head_output,
     source_local_mode_long_chain_five_hop_asserted_head_output,
     source_local_mode_long_chain_four_hop_asserted_head_output,
     source_local_mode_long_chain_radix_asserted_head_output,
@@ -434,7 +435,7 @@ use type_elaboration::{
     source_four_edge_local_object_mode_two_hop_asserted_head_detail_keys,
     source_heterogeneous_reserve_membership_detail_keys,
     source_imported_attribute_assertion_formula_detail_keys,
-    source_imported_non_empty_attribute_assertion_formula_output,
+    source_imported_non_empty_attribute_assertion_formula_detail_keys,
     source_local_mode_asserted_head_detail_keys,
     source_local_mode_long_chain_asserted_head_detail_keys,
     source_local_mode_long_chain_five_hop_asserted_head_detail_keys,
@@ -2660,16 +2661,6 @@ fn source_imported_predicate_functor_formula_detail_keys(
     symbols: &SymbolEnv,
 ) -> Option<Vec<String>> {
     let output = source_imported_predicate_functor_formula_output(ast, module, symbols)?;
-    Some(term_formula_output_detail_keys(&output))
-}
-
-fn source_imported_non_empty_attribute_assertion_formula_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let output =
-        source_imported_non_empty_attribute_assertion_formula_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
 }
 
