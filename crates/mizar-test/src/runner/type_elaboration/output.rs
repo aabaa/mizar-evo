@@ -18,9 +18,10 @@ use mizar_session::SourceRange;
 use mizar_syntax::SurfaceAst;
 
 use super::source_formula::{
-    SourceParenthesizedOperandSide, SourceParenthesizedReservedVariableBinaryFormula,
-    extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
-    extract_source_contradiction_formula, extract_source_formula_statement,
+    SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
+    SourceParenthesizedReservedVariableBinaryFormula, extract_source_builtin_binary_term_formula,
+    extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
+    extract_source_formula_statement,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
@@ -740,6 +741,36 @@ pub(in crate::runner) fn source_builtin_type_assertion_formula_output(
         )
         .with_terms(vec![payload.subject_site])
         .with_asserted_type(asserted_type)],
+    );
+    Some(output)
+}
+
+pub(in crate::runner) fn source_imported_attribute_assertion_formula_output_from_payload(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+    payload: SourceImportedAttributeAssertionFormula,
+) -> Option<TermFormulaInferenceOutput> {
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let _attribute_symbol = payload.attribute_symbol.clone();
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [TermInput::new(
+            payload.subject_site.clone(),
+            context,
+            payload.subject_range,
+            TermKind::Numeral,
+        )],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::AttributeAssertion,
+        )
+        .with_terms(vec![payload.subject_site])
+        .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
     );
     Some(output)
 }

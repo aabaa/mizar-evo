@@ -241,6 +241,7 @@ pub(super) use output::{
     source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys, source_contradiction_formula_detail_keys,
     source_formula_statement_detail_keys,
+    source_imported_attribute_assertion_formula_output_from_payload,
     source_reserved_variable_type_assertion_result_detail_keys, term_formula_output_detail_keys,
 };
 #[cfg(test)]
@@ -311,11 +312,11 @@ pub(super) use source_formula::{
     extract_source_formula_statement,
 };
 pub(super) use source_formula::{
-    SourceImportedAttributeAssertionFormula, SourceReservedVariableAssertedHeadRelation,
-    SourceReservedVariableBinaryFormula, SourceReservedVariableBinaryFormulaConfig,
-    SourceReservedVariableBuiltinType, SourceReservedVariableModeDefinition,
-    SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
-    SourceReservedVariableTypeAssertionConfig, extract_source_formula_connective_quantifier,
+    SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
+    SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBuiltinType,
+    SourceReservedVariableModeDefinition, SourceReservedVariableModeRadix,
+    SourceReservedVariableTypeAssertion, SourceReservedVariableTypeAssertionConfig,
+    extract_source_formula_connective_quantifier,
     extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,

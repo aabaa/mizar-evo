@@ -385,14 +385,13 @@ use type_elaboration::{
     surface_nodes_with_kind, surface_site,
 };
 use type_elaboration::{
-    SourceImportedAttributeAssertionFormula, SourceReservedVariableAssertedHeadRelation,
-    SourceReservedVariableBuiltinType, SourceReservedVariableModeDefinition,
-    SourceReservedVariableModeRadix, SourceReservedVariableTypeAssertion,
-    SourceReservedVariableTypeAssertionConfig, assemble_source_reserve_checker_handoff,
-    assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
-    assert_source_reserve_handoff, build_source_reserved_variable_type_assertion_output,
-    expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
-    extract_source_formula_connective_quantifier,
+    SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBuiltinType,
+    SourceReservedVariableModeDefinition, SourceReservedVariableModeRadix,
+    SourceReservedVariableTypeAssertion, SourceReservedVariableTypeAssertionConfig,
+    assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
+    assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
+    build_source_reserved_variable_type_assertion_output, expected_type_elaboration_detail_keys,
+    extract_builtin_source_reserve_declarations, extract_source_formula_connective_quantifier,
     extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,
@@ -433,6 +432,7 @@ use type_elaboration::{
     source_four_edge_local_object_mode_three_hop_asserted_head_detail_keys,
     source_four_edge_local_object_mode_two_hop_asserted_head_detail_keys,
     source_heterogeneous_reserve_membership_detail_keys,
+    source_imported_attribute_assertion_formula_output_from_payload,
     source_local_mode_asserted_head_detail_keys,
     source_local_mode_long_chain_asserted_head_detail_keys,
     source_local_mode_long_chain_five_hop_asserted_head_detail_keys,
@@ -2765,36 +2765,6 @@ fn source_imported_non_empty_attribute_assertion_formula_output(
     let payload =
         extract_source_imported_non_empty_attribute_assertion_formula(ast, &module, symbols)?;
     source_imported_attribute_assertion_formula_output_from_payload(ast, module, symbols, payload)
-}
-
-fn source_imported_attribute_assertion_formula_output_from_payload(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-    payload: SourceImportedAttributeAssertionFormula,
-) -> Option<TermFormulaInferenceOutput> {
-    let binding_env = source_module_binding_env(ast, module).ok()?;
-    let context = BindingContextId::new(0);
-    let _attribute_symbol = payload.attribute_symbol.clone();
-    let output = TermFormulaChecker::default().infer(
-        symbols,
-        &binding_env,
-        [TermInput::new(
-            payload.subject_site.clone(),
-            context,
-            payload.subject_range,
-            TermKind::Numeral,
-        )],
-        [FormulaInput::new(
-            payload.formula_site,
-            context,
-            payload.formula_range,
-            FormulaKind::AttributeAssertion,
-        )
-        .with_terms(vec![payload.subject_site])
-        .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
-    );
-    Some(output)
 }
 
 fn source_set_enumeration_formula_output(

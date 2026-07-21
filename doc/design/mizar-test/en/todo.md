@@ -1176,7 +1176,13 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   key/test alias, one real expansion, normalized-reflexive Task138 output,
   normal detail, test-only config/output/extractor, and all fail-closed/isolation
   boundaries. It is complete with all preservation gates passing. Task 263
-  remains open pending fresh inventory.
+  remains open. Corrected fresh inventory selects the exact 29-line shared
+  imported-attribute assertion checker-output core as Task 263ZZZG in existing
+  private `type_elaboration/output.rs`. Preserve its token-identical body,
+  shared Task113/114 numeral/attribute-assertion payload, context, deferred
+  reason, diagnostics, both retained wrappers, normal parent-only visibility,
+  and all fail-closed/isolation boundaries. It is complete with all
+  preservation gates passing. Task 263 remains open pending fresh inventory.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

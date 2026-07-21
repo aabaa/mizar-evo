@@ -8523,10 +8523,106 @@ no findings. All semantics, API, tests, expectations, diagnostics, keys,
 payloads, ordering, fail-closed behavior, coverage, and deferred state are
 unchanged; `spec_coverage_audit.md` remains unchanged.
 
+## Task 263ZZZG Pre-Move Inventory and Specification
+
+Fresh authority, test, trace, expectation, design, source, API, and consumer
+inventory, corrected after the first specification review, selects only the
+shared imported-attribute assertion checker-output core as the next smallest
+dependency-closed production helper. The exact 29-line
+`source_imported_attribute_assertion_formula_output_from_payload` at 2770-2798
+has raw hash
+`5783af1eb43f6211f6fc16274b2c005d5c953e0b062e3c5df29974626c0c11b1`
+and whitespace-normalized hash
+`7f559eb4a72bae9ef777f02c4435dcaf3bea89719dcf180bd7401e47208d051a`.
+It has exactly three occurrences in `runner.rs`: the definition and the two
+positive/attribute-level-negative wrapper consumers. Existing private
+`type_elaboration/output.rs` is the dependency-first owner.
+
+Move only those 29 lines. The helper crosses the private phase facade through
+one normal parent-only entry because both wrappers remain production-owned by
+`runner.rs`. The owner imports `SourceImportedAttributeAssertionFormula`
+directly from sibling `source_formula.rs`, without a reverse dependency. Both
+wrapper/extractor/detail families and every other formula/route sibling remain
+in place. Current inventory is `runner.rs` 3,043 /
+`6753a749bc418fe0d419c8477bd41d3c6544f45abe7d877666f67a0b8f8bc786`,
+facade 533 /
+`dd9d067be513353ee5dd8aa3cf8dde22a925b6fbdcf918394cc5c93e10f264c0`,
+and `output.rs` 1,303 /
+`fdc30d1225f9f69848e4547e73f8449e828aae74d481d45bb2c600a7d7897182`.
+
+The authority slice is canonical `doc/spec/en/14.formulas.md` §14.2.4 and its
+attribute-level `non` distinction, Tasks 113/114 in canonical `harness.md`, the
+two exact active sources `ImportedAttributeAssertionPayloadBoundary: 1 is
+empty` and `ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty`,
+their expectations, and traced requirements ending in
+`imported_attribute_assertion_formula_gap` and
+`imported_non_empty_attribute_assertion_formula_gap`. Preserve the extracted
+payload selected by each retained wrapper, binding context zero, one source-
+derived numeral `TermInput`, one `AttributeAssertion` `FormulaInput` that
+references that subject site, and the exact `MissingFormulaPayload` deferred
+reason. Preserve the imported `empty` symbol provenance in the payload without
+synthesizing `AttributeInput` or attribute-chain semantics, the three exact
+sorted/deduplicated diagnostic keys, partial term/formula status, empty facts,
+and no theorem acceptance, proof, CoreIr, ControlFlowIr, or VC payload.
+
+The direct exact source/output matrix in
+`source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes`,
+its bounded near-miss/corruption and cross-family isolation matrices, and the
+two active fixtures/expectations cover positive and attribute-level-negative
+payload provenance, checker status, diagnostics, and fail-closed boundaries.
+Coverage is sufficient; no ZZZG0 test is needed. Changing either wrapper or
+extractor, input/site/range/order, kind/status/reference, diagnostic content/
+order/deduplication, deferred/fact state, attribute-chain or admissibility
+semantics, API, test names, expectations, trace intent, coverage/deferred state,
+another formula family, or any route is forbidden.
+`spec_coverage_audit.md` remains unchanged because coverage mapping, owner
+crate, trace credit, follow-up ownership, and deferred rationale do not change.
+
+## Task 263ZZZG Move Result
+
+Task 263ZZZG moved only the approved 29-line shared imported-attribute
+assertion checker-output core into existing private
+`type_elaboration/output.rs`. The owner imports its payload type directly from
+sibling `source_formula.rs`; one normal parent-only entry crosses the phase
+facade. Both positive and attribute-level-negative wrappers remain token-
+identical in `runner.rs`; no extractor, detail wrapper, sibling formula family,
+or route moved.
+
+After stripping only `pub(in crate::runner)`, raw hash remains
+`5783af1eb43f6211f6fc16274b2c005d5c953e0b062e3c5df29974626c0c11b1`
+and whitespace-normalized hash remains
+`7f559eb4a72bae9ef777f02c4435dcaf3bea89719dcf180bd7401e47208d051a`.
+The resulting inventory is `runner.rs` 3,013 /
+`290e5457611677dcd3f8dce1e45291e103a5897c6efa4e75eefdfd2c3692ce9c`,
+the 534-line facade /
+`ccd6b359d80bb8302a049d08872a0614b9fa5b34e101e2a3b202970bdf5afede`,
+and `output.rs` 1,334 /
+`e3658b209b728054d73a0668bd19cc6acc34e71daa5309609094c880eca3771c`.
+
+The exact shared positive/negative source test and all 272 crate unit tests
+pass. Raw/normalized test-list hashes remain
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and
+`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+Plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
+`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
+and
+`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
+Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
+errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
+pass. The initial specification review found and corrected the smaller-family
+inventory; repeated specification review, test-sufficiency review, and full
+implementation review then reported no findings. Semantics, API, test names,
+expectations, diagnostics, payloads, ordering, deferred/fact state, fail-closed
+behavior, coverage, and deferred roadmap state are unchanged;
+`spec_coverage_audit.md` remains unchanged.
+
 ## Current Ownership
 
 Rows whose cumulative task range ends at 263ZZX are the retained base; the
-explicit 263ZZY through 263ZZZF delta rows below extend the type-assertion and
+explicit 263ZZY through 263ZZZG delta rows below extend the type-assertion and
 diagnostic-detail ownership surfaces.
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -8549,6 +8645,7 @@ diagnostic-detail ownership surfaces.
 | Task 263ZZZD builtin-binary term/formula detail ownership delta | The exact inline two-term checker producer and deterministic detail projection extend the payload-rendering row above through Task 263ZZZD. | real source numerals and builtin formula through checker output to facade detail consumer | Owned by private `output.rs`; detail crosses normally, its extractor crosses the facade only under `cfg(test)`, and every other formula family remains in `runner.rs`. |
 | Task 263ZZZE builtin type-assertion formula ownership delta | The exact asserted-type checker producer and deterministic detail projection extend the payload-rendering row above through Task 263ZZZE. | real source numeral/formula/type through checker output to facade detail/test consumers | Owned by private `output.rs`; detail crosses normally, output/extractor only under `cfg(test)`, and every other formula family remains in `runner.rs`. |
 | Task 263ZZZF direct local-mode reserved-variable type-assertion ownership delta | The exact config, extractor, detail, test output, and leaf-private key extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZZF. | real local-mode source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; only detail crosses normally, config/output/extractor and the config-derived key alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
+| Task 263ZZZG shared imported-attribute output-core ownership delta | The exact shared checker producer extends the payload-rendering row above through Task 263ZZZG while retaining both positive/attribute-level-negative wrappers. | wrapper-selected imported-attribute source payload to checker output | Owned by private `output.rs`; one normal parent-only entry crosses the facade, the payload type is imported directly from `source_formula.rs`, and every wrapper/sibling remains in `runner.rs`. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
 
@@ -8617,6 +8714,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | `src/runner/type_elaboration/output.rs` Task 263ZZZD delta | Adds the exact inline builtin-binary term/formula checker/detail producer; every other formula family remains in `runner.rs`. |
 | `src/runner/type_elaboration/output.rs` Task 263ZZZE delta | Adds the exact builtin type-assertion formula checker-output/detail family; every other formula family remains in `runner.rs`. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZF delta | Adds the exact direct local-mode reserved-variable type-assertion route; every sibling route and formula family remains in `runner.rs`. |
+| `src/runner/type_elaboration/output.rs` Task 263ZZZG delta | Adds the exact shared imported-attribute assertion checker-output core; both wrappers and every sibling formula family remain in `runner.rs`. |
 | `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
 | `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
 | `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
@@ -8815,6 +8913,7 @@ Task 255E.
 | 263ZZZD | Complete: moved only the exact 35-line inline builtin-binary term/formula checker/detail producer into existing private `type_elaboration/output.rs`; every other formula family and route remains in place. |
 | 263ZZZE | Complete: moved only the exact two-fragment/43-line builtin type-assertion formula output/detail family into existing private `type_elaboration/output.rs`; every other formula family and route remains in place. |
 | 263ZZZF | Complete: moved only the exact five-fragment/52-line direct local-mode reserved-variable type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every other route and formula family remains in place. |
+| 263ZZZG | Complete after one corrected inventory: moved only the exact 29-line shared imported-attribute assertion checker-output core into existing private `type_elaboration/output.rs`; both wrappers and every other formula family/route remain in place. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a
