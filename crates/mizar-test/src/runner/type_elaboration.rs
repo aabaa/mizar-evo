@@ -234,6 +234,7 @@ pub(super) use output::{
     source_contradiction_formula_output, source_formula_statement_output,
     source_imported_attribute_assertion_formula_output,
     source_imported_non_empty_attribute_assertion_formula_output,
+    source_imported_predicate_functor_formula_output,
     source_parenthesized_reserved_variable_binary_formula_payload_detail_keys,
     source_reserved_variable_formula_output_detail_keys,
     source_reserved_variable_formula_result_detail_keys, source_set_enumeration_formula_output,
@@ -244,7 +245,7 @@ pub(super) use output::{
     source_builtin_type_assertion_formula_detail_keys, source_contradiction_formula_detail_keys,
     source_formula_statement_detail_keys, source_imported_attribute_assertion_formula_detail_keys,
     source_imported_non_empty_attribute_assertion_formula_detail_keys,
-    source_imported_predicate_functor_formula_output,
+    source_imported_predicate_functor_formula_detail_keys,
     source_reserved_variable_type_assertion_result_detail_keys,
     source_set_enumeration_formula_detail_keys, term_formula_output_detail_keys,
 };
