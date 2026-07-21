@@ -1135,8 +1135,16 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   diagnostic traversal, prefix, sorting, deduplication, byte stability, and
   nine existing parent consumers without moving a wrapper or changing any
   key, diagnostic, payload, or fail-closed behavior; it is complete. Fresh
-  inventory returns to the remaining production-helper families. Task 263
-  keeps this parent item open pending the next fresh bounded selection.
+  inventory returns to the remaining production-helper families and selects
+  the exact five-fragment/47-line direct builtin-object reserved-variable type-
+  assertion route as Task 263ZZZA in existing private
+  `type_elaboration/type_assertion_routes.rs`. Preserve its token-identical
+  body, byte stability, independent reserve and formula-side source provenance,
+  normalized-reflexive builtin-object behavior, and fail-closed behavior
+  without moving its builtin-set, local-mode, chained, or other siblings; it is
+  complete. Fresh inventory returns to the remaining production-helper
+  families. Task 263 keeps this parent item open pending the next fresh bounded
+  selection.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

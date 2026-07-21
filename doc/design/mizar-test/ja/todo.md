@@ -994,8 +994,14 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   token-identical body、canonical diagnostic traversal、prefix、sort、dedup、
   byte stability、既存parent consumer 9個を維持し、wrapperを移動せず、key/
   diagnostic/payload/fail-closed behaviorを変えず完了した。fresh inventoryは
-  残るproduction-helper familyへ戻る。Task 263 parent itemは次のfresh bounded
-  selectionまでopenを維持する。
+  残るproduction-helper familyへ戻り、既存private
+  `type_elaboration/type_assertion_routes.rs`の正確な5 fragment/47行direct
+  builtin-object reserved-variable type-assertion routeをTask 263ZZZAとして選ぶ。
+  token-identical body、byte stability、独立したreserve/formula-side source
+  provenance、normalized-reflexive builtin-object behavior、fail-closed behavior
+  を維持し、builtin-set/local-mode/chained/他siblingを移動せず完了した。fresh
+  inventoryは残るproduction-helper familyへ戻る。Task 263 parent itemは次の
+  fresh bounded selectionまでopenを維持する。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
