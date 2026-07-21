@@ -811,7 +811,7 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   binary-route fixture/isolation family. Fresh authority review isolates the
   Task 180 formula-constant fixture. Tasks 257A-257H and parent Task 257 are
   complete; the private test layout is stable.
-- [ ] After the test layout is stable, split production helpers along the
+- [x] After the test layout is stable, split production helpers along the
   audited phase and ownership boundaries. Leave `runner.rs` as the public
   facade and top-level orchestration owner. Keep internal visibility minimal
   and do not change detail keys, diagnostics, payload contracts, fixture
@@ -1313,6 +1313,16 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   normalization/provenance, and every fail-closed/isolation boundary. It is
   complete with every preservation gate passing; Task 263 remains open pending
   fresh inventory.
+  Fresh inventory finds the exact five-fragment/78-line Task 197 four-edge
+  local-mode same-mode asserted-head route as the sole remaining production-
+  helper family and selects it as Task 263ZZZZ in private
+  `type_elaboration/type_assertion_routes.rs`. Preserve the leaf-private key,
+  config-derived test alias, normal detail route, test-only config/output/
+  extractor crossings, exact same-TooDeep relation and five-expansion
+  normalization/provenance, and every fail-closed/isolation boundary. It is
+  complete with every preservation gate passing. Fresh production-helper
+  inventory finds only top-level dispatch/orchestration in `runner.rs`; Task
+  263 is complete and Task 264 remains pending as a separate closeout.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

@@ -736,7 +736,7 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   fixture/isolation family は完了。fresh authority review により Task 180
   formula-constant fixture を分離した。Tasks 257A-257H と parent Task 257 は
   完了し、private test layout は安定した。
-- [ ] test layout 安定後、production helper を監査済み phase/ownership boundary
+- [x] test layout 安定後、production helper を監査済み phase/ownership boundary
   で分割する。`runner.rs` は public facade と top-level orchestration owner に
   限定する。internal visibility を最小に保ち、detail key、diagnostic、payload
   contract、fixture ownership、ordering、fail-closed behavior を変更しない。
@@ -1153,6 +1153,16 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   extractor crossing、正確なbuiltin relationと5 expansionのnormalization/
   provenance、全fail-closed/isolation boundaryを保存する。全preservation gate
   通過で完了し、Task 263はfresh inventory待ちでopenのままである。
+  fresh inventoryは正確な5 fragment/78行Task 197 four-edge local-mode
+  same-mode asserted-head routeをsole remaining production-helper familyとして
+  確認し、Task 263ZZZZとして既存private
+  `type_elaboration/type_assertion_routes.rs`に選ぶ。leaf-private key、
+  config-derived test alias、normal detail route、test-only config/output/
+  extractor crossing、正確なsame-TooDeep relationと5 expansionのnormalization/
+  provenance、全fail-closed/isolation boundaryを保存する。全preservation gate
+  通過で完了した。fresh production-helper inventoryは`runner.rs`にtop-level
+  dispatch/orchestrationだけを確認し、Task 263は完了、Task 264は独立closeout
+  としてpendingのままである。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

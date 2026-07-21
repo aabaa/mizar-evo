@@ -46,6 +46,7 @@ use type_elaboration::{
     SOURCE_DISTINCT_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_DISTINCT_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_DISTINCT_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_FOUR_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
     SOURCE_FOUR_EDGE_LOCAL_MODE_FOUR_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_FOUR_EDGE_LOCAL_MODE_RADIX_ASSERTED_HEAD_CONFIG,
     SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
@@ -144,8 +145,10 @@ use type_elaboration::{
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_TWO_HOP_ASSERTED_HEAD_CONFIG, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula,
-    SourceParenthesizedReservedVariableBinaryFormulaOutput, SourceReservedVariableBinaryFormula,
-    SourceReservedVariableTypeAssertionOutput, assemble_source_checker_handoff,
+    SourceParenthesizedReservedVariableBinaryFormulaOutput,
+    SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
+    SourceReservedVariableBuiltinType, SourceReservedVariableTypeAssertion,
+    assemble_source_checker_handoff,
     assert_source_parenthesized_heterogeneous_reserve_membership_output,
     assert_source_parenthesized_reserved_object_variable_equality_output,
     assert_source_parenthesized_reserved_object_variable_inequality_output,
@@ -157,7 +160,8 @@ use type_elaboration::{
     assert_source_reserved_variable_type_assertion_output,
     assert_source_right_parenthesized_reserved_variable_membership_output,
     build_source_parenthesized_reserved_variable_binary_formula_output,
-    build_source_reserved_variable_formula_output, direct_token_texts,
+    build_source_reserved_variable_formula_output,
+    build_source_reserved_variable_type_assertion_output, direct_token_texts,
     extract_builtin_source_reserve_declarations_after_node_guard,
     extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
     extract_source_chained_local_mode_asserted_head,
@@ -179,6 +183,7 @@ use type_elaboration::{
     extract_source_distinct_reserved_variable_inequality,
     extract_source_distinct_reserved_variable_membership,
     extract_source_formula_connective_quantifier, extract_source_formula_statement,
+    extract_source_four_edge_local_mode_asserted_head,
     extract_source_four_edge_local_mode_four_hop_asserted_head,
     extract_source_four_edge_local_mode_radix_asserted_head,
     extract_source_four_edge_local_mode_reserved_variable_equality,
@@ -298,6 +303,7 @@ use type_elaboration::{
     source_distinct_reserved_variable_inequality_output,
     source_distinct_reserved_variable_membership_output,
     source_formula_connective_quantifier_output, source_formula_statement_output,
+    source_four_edge_local_mode_asserted_head_output,
     source_four_edge_local_mode_four_hop_asserted_head_output,
     source_four_edge_local_mode_radix_asserted_head_output,
     source_four_edge_local_mode_reserved_variable_equality_output,
@@ -377,6 +383,7 @@ use type_elaboration::{
     source_reserved_variable_formula_result_detail_keys,
     source_reserved_variable_inequality_output, source_reserved_variable_membership_output,
     source_reserved_variable_type_assertion_output,
+    source_reserved_variable_type_assertion_result_detail_keys,
     source_right_parenthesized_reserved_variable_membership_output,
     source_right_parenthesized_reserved_variable_membership_output_detail_keys,
     source_set_enumeration_formula_output, source_three_edge_local_mode_asserted_head_output,
@@ -412,15 +419,10 @@ use type_elaboration::{
     surface_nodes_with_kind, surface_site,
 };
 use type_elaboration::{
-    SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBuiltinType,
-    SourceReservedVariableModeDefinition, SourceReservedVariableModeRadix,
-    SourceReservedVariableTypeAssertion, SourceReservedVariableTypeAssertionConfig,
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
-    build_source_reserved_variable_type_assertion_output, expected_type_elaboration_detail_keys,
-    extract_builtin_source_reserve_declarations,
-    extract_source_reserved_variable_type_assertion_with_config, is_active_type_elaboration,
-    source_builtin_binary_term_formula_detail_keys,
+    expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
+    is_active_type_elaboration, source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
@@ -441,6 +443,7 @@ use type_elaboration::{
     source_distinct_reserved_variable_inequality_detail_keys,
     source_distinct_reserved_variable_membership_detail_keys,
     source_formula_connective_quantifier_detail_keys, source_formula_statement_detail_keys,
+    source_four_edge_local_mode_asserted_head_detail_keys,
     source_four_edge_local_mode_four_hop_asserted_head_detail_keys,
     source_four_edge_local_mode_radix_asserted_head_detail_keys,
     source_four_edge_local_mode_reserved_variable_equality_detail_keys,
@@ -512,7 +515,6 @@ use type_elaboration::{
     source_reserved_variable_equality_detail_keys, source_reserved_variable_inequality_detail_keys,
     source_reserved_variable_membership_detail_keys,
     source_reserved_variable_type_assertion_detail_keys,
-    source_reserved_variable_type_assertion_result_detail_keys,
     source_right_parenthesized_reserved_variable_membership_detail_keys,
     source_set_enumeration_formula_detail_keys,
     source_three_edge_local_mode_asserted_head_detail_keys,
@@ -867,8 +869,9 @@ const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &s
 #[cfg(test)]
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
     SOURCE_THREE_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG.invalid_payload_key;
+#[cfg(test)]
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
-    "type_elaboration.checker.four_edge_local_mode_asserted_head.invalid_payload";
+    SOURCE_FOUR_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG.invalid_payload_key;
 #[cfg(test)]
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
     SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG.invalid_payload_key;
@@ -2148,86 +2151,6 @@ fn source_type_elaboration_detail_keys(
         return vec!["type_elaboration.core.context_invalid".to_owned()];
     }
     Vec::new()
-}
-
-const SOURCE_FOUR_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG: SourceReservedVariableTypeAssertionConfig =
-    SourceReservedVariableTypeAssertionConfig {
-        label: "FourEdgeLocalModeAssertedHeadPayloadBoundary",
-        invalid_payload_key:
-            TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
-        binding_spelling: "x",
-        binding_type: SourceReservedVariableBuiltinType::Set,
-        binding_source_mode_spelling: Some("TooDeepFourEdgeModeAssertedHead"),
-        mode_definitions: &[
-            SourceReservedVariableModeDefinition {
-                label: "BaseFourEdgeModeAssertedHeadDef",
-                spelling: "BaseFourEdgeModeAssertedHead",
-                radix: SourceReservedVariableModeRadix::Builtin(
-                    SourceReservedVariableBuiltinType::Set,
-                ),
-            },
-            SourceReservedVariableModeDefinition {
-                label: "InnerFourEdgeModeAssertedHeadDef",
-                spelling: "InnerFourEdgeModeAssertedHead",
-                radix: SourceReservedVariableModeRadix::Mode("BaseFourEdgeModeAssertedHead"),
-            },
-            SourceReservedVariableModeDefinition {
-                label: "MiddleFourEdgeModeAssertedHeadDef",
-                spelling: "MiddleFourEdgeModeAssertedHead",
-                radix: SourceReservedVariableModeRadix::Mode("InnerFourEdgeModeAssertedHead"),
-            },
-            SourceReservedVariableModeDefinition {
-                label: "OuterFourEdgeModeAssertedHeadDef",
-                spelling: "OuterFourEdgeModeAssertedHead",
-                radix: SourceReservedVariableModeRadix::Mode("MiddleFourEdgeModeAssertedHead"),
-            },
-            SourceReservedVariableModeDefinition {
-                label: "TooDeepFourEdgeModeAssertedHeadDef",
-                spelling: "TooDeepFourEdgeModeAssertedHead",
-                radix: SourceReservedVariableModeRadix::Mode("OuterFourEdgeModeAssertedHead"),
-            },
-        ],
-        asserted_type: SourceReservedVariableBuiltinType::Set,
-        asserted_head_relation: SourceReservedVariableAssertedHeadRelation::SameMode(
-            "TooDeepFourEdgeModeAssertedHead",
-        ),
-        subject_result_role: "four-edge-local-mode-asserted-head-subject-result",
-    };
-
-fn source_four_edge_local_mode_asserted_head_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_four_edge_local_mode_asserted_head(ast, module, symbols)?;
-    let invalid_payload_key = payload.config.invalid_payload_key;
-    Some(source_reserved_variable_type_assertion_result_detail_keys(
-        build_source_reserved_variable_type_assertion_output(payload, symbols),
-        invalid_payload_key,
-    ))
-}
-
-#[cfg(test)]
-fn source_four_edge_local_mode_asserted_head_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertionOutput> {
-    let payload = extract_source_four_edge_local_mode_asserted_head(ast, module, symbols)?;
-    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
-}
-
-fn extract_source_four_edge_local_mode_asserted_head(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertion> {
-    extract_source_reserved_variable_type_assertion_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_FOUR_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
-    )
 }
 
 impl fmt::Display for ParseOnlyCaseStatus {
