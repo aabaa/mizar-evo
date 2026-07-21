@@ -1156,6 +1156,13 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   deferred reason and diagnostic, normal detail consumer, and test-only output/
   extractor consumers without moving another formula family or route; it is
   complete with all preservation gates passing. Task 263 keeps this parent item
+  open. Fresh inventory selects the exact 35-line inline builtin-binary term/
+  formula checker/detail producer as Task 263ZZZD in existing private
+  `type_elaboration/output.rs`. Preserve its token-identical body, byte
+  stability, two ordered numeral terms, source-selected equality/inequality/
+  membership formula, ordered/deduplicated diagnostics, normal detail consumer,
+  and test-only extractor consumers without moving another formula family or
+  route; it is complete with all preservation gates passing. Task 263 remains
   open pending the next fresh bounded selection.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm

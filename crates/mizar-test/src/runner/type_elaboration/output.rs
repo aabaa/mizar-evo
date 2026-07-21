@@ -19,7 +19,8 @@ use mizar_syntax::SurfaceAst;
 
 use super::source_formula::{
     SourceParenthesizedOperandSide, SourceParenthesizedReservedVariableBinaryFormula,
-    extract_source_contradiction_formula, extract_source_formula_statement,
+    extract_source_builtin_binary_term_formula, extract_source_contradiction_formula,
+    extract_source_formula_statement,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
@@ -660,6 +661,42 @@ pub(in crate::runner) fn source_formula_statement_output(
         .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
     );
     Some(output)
+}
+
+pub(in crate::runner) fn source_builtin_binary_term_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_builtin_binary_term_formula(ast)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [
+            TermInput::new(
+                payload.left_site.clone(),
+                context,
+                payload.left_range,
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                payload.right_site.clone(),
+                context,
+                payload.right_range,
+                TermKind::Numeral,
+            ),
+        ],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            payload.formula_kind,
+        )
+        .with_terms(vec![payload.left_site, payload.right_site])],
+    );
+    Some(term_formula_output_detail_keys(&output))
 }
 
 fn type_entry_known_actual_for_owner(

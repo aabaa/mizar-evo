@@ -155,7 +155,7 @@ use type_elaboration::{
     build_source_parenthesized_reserved_variable_binary_formula_output,
     build_source_reserved_variable_formula_output, direct_token_texts,
     extract_builtin_source_reserve_declarations_after_node_guard,
-    extract_source_chained_local_mode_asserted_head,
+    extract_source_builtin_binary_term_formula, extract_source_chained_local_mode_asserted_head,
     extract_source_chained_local_mode_radix_asserted_head,
     extract_source_chained_local_mode_reserved_variable_equality,
     extract_source_chained_local_mode_reserved_variable_inequality,
@@ -387,13 +387,13 @@ use type_elaboration::{
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
     assert_source_reserve_handoff, build_source_reserved_variable_type_assertion_output,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
-    extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
-    extract_source_formula_connective_quantifier,
+    extract_source_builtin_type_assertion_formula, extract_source_formula_connective_quantifier,
     extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,
     extract_source_reserved_variable_type_assertion_with_config,
     extract_source_set_enumeration_formula, is_active_type_elaboration,
+    source_builtin_binary_term_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
     source_chained_local_mode_reserved_variable_equality_detail_keys,
@@ -2683,42 +2683,6 @@ fn source_four_edge_local_mode_reserved_variable_type_assertion_output(
     let payload =
         extract_source_four_edge_local_mode_reserved_variable_type_assertion(ast, module, symbols)?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
-}
-
-fn source_builtin_binary_term_formula_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_builtin_binary_term_formula(ast)?;
-    let binding_env = source_module_binding_env(ast, module).ok()?;
-    let context = BindingContextId::new(0);
-    let output = TermFormulaChecker::default().infer(
-        symbols,
-        &binding_env,
-        [
-            TermInput::new(
-                payload.left_site.clone(),
-                context,
-                payload.left_range,
-                TermKind::Numeral,
-            ),
-            TermInput::new(
-                payload.right_site.clone(),
-                context,
-                payload.right_range,
-                TermKind::Numeral,
-            ),
-        ],
-        [FormulaInput::new(
-            payload.formula_site,
-            context,
-            payload.formula_range,
-            payload.formula_kind,
-        )
-        .with_terms(vec![payload.left_site, payload.right_site])],
-    );
-    Some(term_formula_output_detail_keys(&output))
 }
 
 fn source_builtin_type_assertion_formula_detail_keys(
