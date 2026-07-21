@@ -362,6 +362,7 @@ use type_elaboration::{
     source_reserved_variable_type_assertion_output,
     source_right_parenthesized_reserved_variable_membership_output,
     source_right_parenthesized_reserved_variable_membership_output_detail_keys,
+    source_set_enumeration_formula_output,
     source_three_edge_local_mode_reserved_variable_equality_output,
     source_three_edge_local_mode_reserved_variable_inequality_output,
     source_three_edge_local_mode_reserved_variable_membership_output,
@@ -488,7 +489,7 @@ use type_elaboration::{
     source_reserved_variable_type_assertion_detail_keys,
     source_reserved_variable_type_assertion_result_detail_keys,
     source_right_parenthesized_reserved_variable_membership_detail_keys,
-    source_set_enumeration_formula_output,
+    source_set_enumeration_formula_detail_keys,
     source_three_edge_local_mode_reserved_variable_equality_detail_keys,
     source_three_edge_local_mode_reserved_variable_inequality_detail_keys,
     source_three_edge_local_mode_reserved_variable_membership_detail_keys,
@@ -2662,15 +2663,6 @@ fn source_imported_predicate_functor_formula_detail_keys(
     symbols: &SymbolEnv,
 ) -> Option<Vec<String>> {
     let output = source_imported_predicate_functor_formula_output(ast, module, symbols)?;
-    Some(term_formula_output_detail_keys(&output))
-}
-
-fn source_set_enumeration_formula_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let output = source_set_enumeration_formula_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
 }
 

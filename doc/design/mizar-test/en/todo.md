@@ -1219,6 +1219,13 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   normal parent-only visibility, retained detail wrapper, and all fail-closed/
   isolation boundaries. It is complete with all preservation gates passing.
   Task 263 remains open pending fresh inventory.
+  Fresh inventory selects the exact 8-line set-enumeration formula detail
+  wrapper as Task 263ZZZM in existing private
+  `type_elaboration/output.rs`. Preserve token-identical output-to-canonical-
+  key projection, normal detail visibility, test-only output and extractor
+  crossings, exact diagnostics, and every fail-closed/
+  isolation boundary. It is complete with all preservation gates passing.
+  Task 263 remains open pending fresh inventory.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
