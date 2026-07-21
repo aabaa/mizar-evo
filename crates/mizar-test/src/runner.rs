@@ -115,6 +115,7 @@ use type_elaboration::{
     SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_MODE_THREE_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_MODE_TWO_HOP_ASSERTED_HEAD_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG,
@@ -248,6 +249,7 @@ use type_elaboration::{
     extract_source_three_edge_local_mode_reserved_variable_equality,
     extract_source_three_edge_local_mode_reserved_variable_inequality,
     extract_source_three_edge_local_mode_reserved_variable_membership,
+    extract_source_three_edge_local_mode_reserved_variable_type_assertion,
     extract_source_three_edge_local_mode_three_hop_asserted_head,
     extract_source_three_edge_local_mode_two_hop_asserted_head,
     extract_source_three_edge_local_object_mode_asserted_head,
@@ -374,6 +376,7 @@ use type_elaboration::{
     source_three_edge_local_mode_reserved_variable_equality_output,
     source_three_edge_local_mode_reserved_variable_inequality_output,
     source_three_edge_local_mode_reserved_variable_membership_output,
+    source_three_edge_local_mode_reserved_variable_type_assertion_output,
     source_three_edge_local_mode_three_hop_asserted_head_output,
     source_three_edge_local_mode_two_hop_asserted_head_output,
     source_three_edge_local_object_mode_asserted_head_output,
@@ -506,6 +509,7 @@ use type_elaboration::{
     source_three_edge_local_mode_reserved_variable_equality_detail_keys,
     source_three_edge_local_mode_reserved_variable_inequality_detail_keys,
     source_three_edge_local_mode_reserved_variable_membership_detail_keys,
+    source_three_edge_local_mode_reserved_variable_type_assertion_detail_keys,
     source_three_edge_local_mode_three_hop_asserted_head_detail_keys,
     source_three_edge_local_mode_two_hop_asserted_head_detail_keys,
     source_three_edge_local_object_mode_asserted_head_detail_keys,
@@ -875,8 +879,9 @@ const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVA
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG.invalid_payload_key;
+#[cfg(test)]
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
-    &str = "type_elaboration.checker.three_edge_local_mode_reserved_variable_type_assertion.invalid_payload";
+    &str = SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG.invalid_payload_key;
 #[cfg(test)]
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
@@ -2256,41 +2261,6 @@ const SOURCE_FOUR_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG: SourceReservedVariableTy
         subject_result_role: "four-edge-local-mode-asserted-head-subject-result",
     };
 
-const SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
-    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
-    label: "ThreeEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary",
-    invalid_payload_key:
-        TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
-    binding_spelling: "x",
-    binding_type: SourceReservedVariableBuiltinType::Set,
-    binding_source_mode_spelling: Some("OuterThreeEdgeModeTypeAssertion"),
-    mode_definitions: &[
-        SourceReservedVariableModeDefinition {
-            label: "BaseThreeEdgeModeTypeAssertionDef",
-            spelling: "BaseThreeEdgeModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "InnerThreeEdgeModeTypeAssertionDef",
-            spelling: "InnerThreeEdgeModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Mode("BaseThreeEdgeModeTypeAssertion"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "MiddleThreeEdgeModeTypeAssertionDef",
-            spelling: "MiddleThreeEdgeModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Mode("InnerThreeEdgeModeTypeAssertion"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "OuterThreeEdgeModeTypeAssertionDef",
-            spelling: "OuterThreeEdgeModeTypeAssertion",
-            radix: SourceReservedVariableModeRadix::Mode("MiddleThreeEdgeModeTypeAssertion"),
-        },
-    ],
-    asserted_type: SourceReservedVariableBuiltinType::Set,
-    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::Builtin,
-    subject_result_role: "three-edge-local-mode-reserved-variable-type-assertion-subject-result",
-};
-
 const SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
     label: "FourEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary",
@@ -2370,21 +2340,6 @@ fn source_four_edge_local_mode_asserted_head_detail_keys(
     ))
 }
 
-fn source_three_edge_local_mode_reserved_variable_type_assertion_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let payload = extract_source_three_edge_local_mode_reserved_variable_type_assertion(
-        ast, module, symbols,
-    )?;
-    let invalid_payload_key = payload.config.invalid_payload_key;
-    Some(source_reserved_variable_type_assertion_result_detail_keys(
-        build_source_reserved_variable_type_assertion_output(payload, symbols),
-        invalid_payload_key,
-    ))
-}
-
 fn source_four_edge_local_mode_reserved_variable_type_assertion_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -2426,18 +2381,6 @@ fn source_four_edge_local_mode_asserted_head_output(
     symbols: &SymbolEnv,
 ) -> Option<SourceReservedVariableTypeAssertionOutput> {
     let payload = extract_source_four_edge_local_mode_asserted_head(ast, module, symbols)?;
-    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
-}
-
-#[cfg(test)]
-fn source_three_edge_local_mode_reserved_variable_type_assertion_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertionOutput> {
-    let payload = extract_source_three_edge_local_mode_reserved_variable_type_assertion(
-        ast, module, symbols,
-    )?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
@@ -2488,19 +2431,6 @@ fn extract_source_four_edge_local_mode_asserted_head(
         module,
         symbols,
         &SOURCE_FOUR_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
-    )
-}
-
-fn extract_source_three_edge_local_mode_reserved_variable_type_assertion(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableTypeAssertion> {
-    extract_source_reserved_variable_type_assertion_with_config(
-        ast,
-        module,
-        symbols,
-        &SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     )
 }
 
