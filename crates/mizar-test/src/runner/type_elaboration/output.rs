@@ -928,6 +928,15 @@ pub(in crate::runner) fn source_formula_connective_quantifier_output(
     Some(output)
 }
 
+pub(in crate::runner) fn source_formula_connective_quantifier_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_formula_connective_quantifier_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
 pub(in crate::runner) fn source_set_enumeration_formula_output(
     ast: &SurfaceAst,
     module: ResolverModuleId,

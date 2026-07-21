@@ -280,7 +280,8 @@ use type_elaboration::{
     source_distinct_reserved_object_variable_inequality_output,
     source_distinct_reserved_variable_equality_output,
     source_distinct_reserved_variable_inequality_output,
-    source_distinct_reserved_variable_membership_output, source_formula_statement_output,
+    source_distinct_reserved_variable_membership_output,
+    source_formula_connective_quantifier_output, source_formula_statement_output,
     source_four_edge_local_mode_four_hop_asserted_head_output,
     source_four_edge_local_mode_reserved_variable_equality_output,
     source_four_edge_local_mode_reserved_variable_inequality_output,
@@ -416,7 +417,7 @@ use type_elaboration::{
     source_distinct_reserved_variable_equality_detail_keys,
     source_distinct_reserved_variable_inequality_detail_keys,
     source_distinct_reserved_variable_membership_detail_keys,
-    source_formula_connective_quantifier_output, source_formula_statement_detail_keys,
+    source_formula_connective_quantifier_detail_keys, source_formula_statement_detail_keys,
     source_four_edge_local_mode_four_hop_asserted_head_detail_keys,
     source_four_edge_local_mode_reserved_variable_equality_detail_keys,
     source_four_edge_local_mode_reserved_variable_inequality_detail_keys,
@@ -514,8 +515,7 @@ use type_elaboration::{
     source_two_edge_local_object_mode_reserved_variable_membership_detail_keys,
     source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys,
     source_two_edge_local_object_mode_two_hop_asserted_head_detail_keys,
-    term_formula_output_detail_keys, type_elaboration_failure_diagnostic,
-    validate_active_type_elaboration_tags,
+    type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -2654,15 +2654,6 @@ fn source_four_edge_local_mode_reserved_variable_type_assertion_output(
     let payload =
         extract_source_four_edge_local_mode_reserved_variable_type_assertion(ast, module, symbols)?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
-}
-
-fn source_formula_connective_quantifier_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let output = source_formula_connective_quantifier_output(ast, module, symbols)?;
-    Some(term_formula_output_detail_keys(&output))
 }
 
 fn extract_source_three_edge_local_mode_radix_asserted_head(
