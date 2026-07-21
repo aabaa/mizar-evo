@@ -1163,7 +1163,13 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   membership formula, ordered/deduplicated diagnostics, normal detail consumer,
   and test-only extractor consumers without moving another formula family or
   route; it is complete with all preservation gates passing. Task 263 remains
-  open pending the next fresh bounded selection.
+  open. Fresh inventory selects the exact two-fragment/43-line builtin type-
+  assertion formula output/detail family as Task 263ZZZE in existing private
+  `type_elaboration/output.rs`. Preserve token-identical bodies, byte stability,
+  source-derived numeral/formula/asserted-type payloads, type-entry ownership,
+  normalized builtin-set type, diagnostic ordering, normal detail consumer,
+  and test-only output/extractor consumers; it is complete with all
+  preservation gates passing. Task 263 remains open pending fresh inventory.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

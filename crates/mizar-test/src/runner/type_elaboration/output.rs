@@ -19,8 +19,8 @@ use mizar_syntax::SurfaceAst;
 
 use super::source_formula::{
     SourceParenthesizedOperandSide, SourceParenthesizedReservedVariableBinaryFormula,
-    extract_source_builtin_binary_term_formula, extract_source_contradiction_formula,
-    extract_source_formula_statement,
+    extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
+    extract_source_contradiction_formula, extract_source_formula_statement,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
@@ -697,6 +697,51 @@ pub(in crate::runner) fn source_builtin_binary_term_formula_detail_keys(
         .with_terms(vec![payload.left_site, payload.right_site])],
     );
     Some(term_formula_output_detail_keys(&output))
+}
+
+pub(in crate::runner) fn source_builtin_type_assertion_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_builtin_type_assertion_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
+pub(in crate::runner) fn source_builtin_type_assertion_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_builtin_type_assertion_formula(ast, &module, symbols)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let asserted_type = TypeExpressionInput::new(
+        payload.asserted_type_site,
+        payload.asserted_type.range,
+        payload.asserted_type.spelling,
+        payload.asserted_type.head,
+    )
+    .with_attributes(payload.asserted_type.attributes);
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [TermInput::new(
+            payload.subject_site.clone(),
+            context,
+            payload.subject_range,
+            TermKind::Numeral,
+        )],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![payload.subject_site])
+        .with_asserted_type(asserted_type)],
+    );
+    Some(output)
 }
 
 fn type_entry_known_actual_for_owner(

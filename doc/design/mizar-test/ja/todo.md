@@ -1018,7 +1018,13 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   membership formula、ordered/deduplicated diagnostic、normal detail consumer、
   test-only extractor consumerを維持し、他formula family/routeは移動しない。
   全preservation gateをpassして完了した。Task 263 parent itemは次のfresh bounded
-  selectionまでopenを維持する。
+  selectionまでopenを維持する。fresh inventoryは既存private
+  `type_elaboration/output.rs`の正確な2 fragment/43行builtin type-assertion formula
+  output/detail familyをTask 263ZZZEとして選ぶ。token-identical body、byte
+  stability、source-derived numeral/formula/asserted-type payload、type-entry ownership、
+  normalized builtin-set type、diagnostic ordering、normal detail consumer、test-only
+  output/extractor consumerを維持し、全preservation gateをpassして完了した。Task
+  263 parent itemはfresh inventoryまでopenを維持する。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
