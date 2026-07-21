@@ -9967,9 +9967,10 @@ remains unchanged.
 ## Task 263ZZZX Pre-Move Inventory and Specification
 
 Fresh inventory compares the three production-helper route families remaining
-in `runner.rs`; they total 76, 77, and 78 lines. Task 263ZZZX selects the
-smallest: Task 207's exact four-edge local-mode immediate-radix asserted-head
-route, totaling 76 lines and 69 occurrences across seven source/test files.
+in `runner.rs`; they total 76, 76, and 78 lines. Task 263ZZZX selects Task 207's
+exact four-edge local-mode immediate-radix asserted-head route from the 76-line
+minimum tie because its 69-occurrence consumer surface is smaller than the
+other route's 70 occurrences across source/test files.
 Its five exact fragments are the invalid key at 847-848 (2 lines,
 `e7453ea087d66a9320ec79d81ca900032513edec79f178f2be2c6815d8cedf80`),
 config at 2143-2183 (41,
@@ -10063,10 +10064,110 @@ expectations, diagnostics, keys, payloads, ordering, fail-closed behavior,
 coverage/deferred state, and roadmap are unchanged; `spec_coverage_audit.md`
 remains unchanged.
 
+## Task 263ZZZY Pre-Move Inventory and Specification
+
+Corrected fresh inventory compares the two production-helper route families
+remaining in `runner.rs`; they total 76 and 78 lines. Task 263ZZZY selects the
+unique minimum: Task 152's exact four-edge local-mode reserved-variable builtin
+type-assertion route, totaling 76 lines and 70 occurrences across eight
+source/test files. Its five exact fragments are the invalid key at 898-899 (2
+lines,
+`a67174987a91290cb0d66b13f740b4ace6a303fac18ffd9dc5977e0c0c5536b5`),
+config at 2192-2230 (39,
+`0b402f826dc0c24e3382f6ad0140bb500574bf830657d3da506006bd3b3a8a07`),
+production detail at 2245-2257 (13,
+`82a05ef79e82c1cda1a770970cd9bab4880c5e0ccfa863ab85c2197e7f617a07`),
+test-only output including `#[cfg(test)]` at 2269-2278 (10,
+`27a25fd70008218df86bec216e8f3fd08926ac2b25da664a3535602f7d6a4996`),
+and extractor at 2293-2304 (12,
+`fa1061836f967115b098e0328b8a810a407098c3a41ff72203ce5072afe7383e`).
+Combined raw hash is
+`e0fa5934cd53044681debcec2664948f21dc15b24ffa0b563c6cf4b82ecfa698`
+and whitespace-normalized hash is
+`dab9d154332071fd501038ab375bdfd2b9c1a2f1c71b92093de0e5bf37c5179f`.
+Current inventory is `runner.rs` 2,335 /
+`eac1a1f196a938dbcd49105756d91dabea88a3c974e3a1c058b68f7f8e32cb23`,
+facade 566 /
+`22abf42b79d785366a70792e458a7bbdaee03251792c4a394d73851ff560ff29`,
+and `type_assertion_routes.rs` 4,021 /
+`6005a0cb3ca53355f6469bb1ce7cd782df8a991f34f393e288f7eb077143e309`.
+
+Task 263ZZZY moves only those five fragments into existing private
+`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
+a config-derived test alias retains its runner name/value. Only detail crosses
+normally; config, output, and extractor cross only under `cfg(test)`. Every
+sibling, dispatch, and orchestration route remains in `runner.rs`; oracle-
+external formatting control may preserve token identity.
+
+Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 152's exact
+`.miz` source, expectation, trace requirement, and checker-boundary tests.
+Preserve Base-to-set, Inner-to-Base, Middle-to-Inner, Outer-to-Middle, and
+TooDeep-to-Outer definitions; independent raw TooDeep reserve-subject and
+formula-side builtin-set inputs at distinct sites/ranges; ordinal 1 and
+`BindingId(0)`; five real expansions with subject and asserted inputs normalized
+to the terminal Base-definition-RHS builtin-set identity; and one inferred
+variable plus one zero-constraint/fact/candidate/diagnostic/deferred checked
+type assertion. The asserted relation remains exactly builtin identity;
+general reachability, widening, qua, and formula-side local-mode asserted heads
+remain absent. Existing exact, fixture, corruption, near-miss, long-chain, and
+cross-owner isolation matrices are sufficient; no ZZZY0 test is needed.
+
+Key/config/label/spelling/definition/relation/range/normalization/provenance/
+binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
+expectation/trace/coverage/deferred, semantic, sibling, or route changes are
+forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
+unchanged.
+
+## Task 263ZZZY Move Result
+
+Task 263ZZZY moved only the approved five fragments totaling 76 lines into
+existing private `type_elaboration/type_assertion_routes.rs`. The key is
+leaf-private; only the production detail route crosses normally, while config,
+output, and extractor cross the facade/root only under `cfg(test)`. The runner
+retains a test-only config-derived key alias. Every sibling route, production
+dispatch site, and top-level orchestration path remains in place. The oracle-
+external `#[rustfmt::skip]` preserves the config fragment without changing it.
+
+After stripping only `pub(in crate::runner)`, the five raw hashes remain
+`a67174987a91290cb0d66b13f740b4ace6a303fac18ffd9dc5977e0c0c5536b5`,
+`0b402f826dc0c24e3382f6ad0140bb500574bf830657d3da506006bd3b3a8a07`,
+`82a05ef79e82c1cda1a770970cd9bab4880c5e0ccfa863ab85c2197e7f617a07`,
+`27a25fd70008218df86bec216e8f3fd08926ac2b25da664a3535602f7d6a4996`,
+and `fa1061836f967115b098e0328b8a810a407098c3a41ff72203ce5072afe7383e`.
+Combined raw remains
+`e0fa5934cd53044681debcec2664948f21dc15b24ffa0b563c6cf4b82ecfa698`
+and normalized remains
+`dab9d154332071fd501038ab375bdfd2b9c1a2f1c71b92093de0e5bf37c5179f`.
+The resulting inventory is `runner.rs` 2,262 /
+`1eb119b58ddab93e6069e442005e9610ddb6062fdfda6f70661f4ea4ae9ae4c0`,
+facade 570 /
+`bf7b0f78e0a168ead0349491fa469bfa3909b674fd23eaa77cecb63d81dbb33a`,
+and `type_assertion_routes.rs` 4,103 /
+`4aecdd97b07d9362f4b64367d954835e2942387937972803bdb4b8833acc6755`.
+Expected forwarding changes the five-symbol inventory from 70 occurrences
+across eight source/test files to 80 across ten source/facade/test files.
+
+Both focused Task 152 tests and all 272 unit tests pass. Raw/normalized
+test-list hashes remain
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+The four CLI hashes remain
+`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
+and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
+Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
+errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
+pass. Specification, test-sufficiency, implementation, and source/documentation
+consistency reviews report no findings. Semantics, API, test names,
+expectations, diagnostics, keys, payloads, ordering, fail-closed behavior,
+coverage/deferred state, and roadmap are unchanged; `spec_coverage_audit.md`
+remains unchanged.
+
 ## Current Ownership
 
 Rows whose cumulative task range ends at 263ZZX are the retained base; the
-explicit 263ZZY through 263ZZZX delta rows below extend the type-assertion and
+explicit 263ZZY through 263ZZZY delta rows below extend the type-assertion and
 diagnostic-detail ownership surfaces.
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -10107,6 +10208,7 @@ diagnostic-detail ownership surfaces.
 | Task 263ZZZV three-edge local-mode builtin type-assertion ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZV. | real three-edge local-mode source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
 | Task 263ZZZW three-edge local-mode same-mode ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZW. | real three-edge local-mode same-Outer source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
 | Task 263ZZZX four-edge local-mode immediate-radix ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZX. | real four-edge local-mode TooDeep-to-Outer source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
+| Task 263ZZZY four-edge local-mode builtin type-assertion ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZY. | real four-edge local-mode builtin-set source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
 
@@ -10193,6 +10295,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZV delta | Adds the exact three-edge local-mode reserved-variable builtin type-assertion config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZW delta | Adds the exact three-edge local-mode same-mode asserted-head config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZX delta | Adds the exact four-edge local-mode immediate-radix asserted-head config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
+| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZY delta | Adds the exact four-edge local-mode reserved-variable builtin type-assertion config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
 | `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
 | `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
 | `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
@@ -10409,6 +10512,7 @@ Task 255E.
 | 263ZZZV | Complete: moved only the exact five-fragment/73-line three-edge local-mode reserved-variable builtin type-assertion route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
 | 263ZZZW | Complete: moved only the exact five-fragment/73-line three-edge local-mode same-mode asserted-head route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
 | 263ZZZX | Complete: moved only the exact five-fragment/76-line four-edge local-mode immediate-radix asserted-head route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
+| 263ZZZY | Complete: moved only the exact five-fragment/76-line four-edge local-mode reserved-variable builtin type-assertion route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a

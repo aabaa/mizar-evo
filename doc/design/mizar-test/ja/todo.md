@@ -1146,6 +1146,13 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   extractor crossing、正確なimmediate-radix relationとnormalization/provenance、全
   fail-closed/isolation boundaryを保存する。全preservation gate通過で完了し、
   Task 263はfresh inventory待ちでopenのままである。
+  修正済みfresh inventoryは正確な5 fragment/76行Task 152 four-edge local-mode
+  reserved-variable builtin type-assertion routeをTask 263ZZZYとして既存private
+  `type_elaboration/type_assertion_routes.rs`に選ぶ。leaf-private key、
+  config-derived test alias、normal detail route、test-only config/output/
+  extractor crossing、正確なbuiltin relationと5 expansionのnormalization/
+  provenance、全fail-closed/isolation boundaryを保存する。全preservation gate
+  通過で完了し、Task 263はfresh inventory待ちでopenのままである。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
