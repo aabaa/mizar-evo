@@ -241,6 +241,7 @@ use type_elaboration::{
     extract_source_reserved_variable_equality, extract_source_reserved_variable_inequality,
     extract_source_reserved_variable_membership, extract_source_reserved_variable_type_assertion,
     extract_source_right_parenthesized_reserved_variable_membership,
+    extract_source_set_enumeration_formula,
     extract_source_three_edge_local_mode_reserved_variable_equality,
     extract_source_three_edge_local_mode_reserved_variable_inequality,
     extract_source_three_edge_local_mode_reserved_variable_membership,
@@ -397,8 +398,7 @@ use type_elaboration::{
     build_source_reserved_variable_type_assertion_output, expected_type_elaboration_detail_keys,
     extract_builtin_source_reserve_declarations, extract_source_formula_connective_quantifier,
     extract_source_imported_predicate_functor_formula,
-    extract_source_reserved_variable_type_assertion_with_config,
-    extract_source_set_enumeration_formula, is_active_type_elaboration,
+    extract_source_reserved_variable_type_assertion_with_config, is_active_type_elaboration,
     source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
@@ -488,6 +488,7 @@ use type_elaboration::{
     source_reserved_variable_type_assertion_detail_keys,
     source_reserved_variable_type_assertion_result_detail_keys,
     source_right_parenthesized_reserved_variable_membership_detail_keys,
+    source_set_enumeration_formula_output,
     source_three_edge_local_mode_reserved_variable_equality_detail_keys,
     source_three_edge_local_mode_reserved_variable_inequality_detail_keys,
     source_three_edge_local_mode_reserved_variable_membership_detail_keys,
@@ -2728,50 +2729,6 @@ fn source_imported_predicate_functor_formula_output(
             FormulaKind::PredicateApplication,
         )
         .with_terms(vec![payload.left_site, payload.functor_site])],
-    );
-    Some(output)
-}
-
-fn source_set_enumeration_formula_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<TermFormulaInferenceOutput> {
-    let payload = extract_source_set_enumeration_formula(ast)?;
-    let binding_env = source_module_binding_env(ast, module).ok()?;
-    let context = BindingContextId::new(0);
-    let mut term_inputs = Vec::new();
-    for (site, range) in payload.left_items.iter().chain(payload.right_items.iter()) {
-        term_inputs.push(TermInput::new(
-            site.clone(),
-            context,
-            *range,
-            TermKind::Numeral,
-        ));
-    }
-    term_inputs.push(TermInput::new(
-        payload.left_site.clone(),
-        context,
-        payload.left_range,
-        TermKind::SetEnumeration,
-    ));
-    term_inputs.push(TermInput::new(
-        payload.right_site.clone(),
-        context,
-        payload.right_range,
-        TermKind::SetEnumeration,
-    ));
-    let output = TermFormulaChecker::default().infer(
-        symbols,
-        &binding_env,
-        term_inputs,
-        [FormulaInput::new(
-            payload.formula_site,
-            context,
-            payload.formula_range,
-            FormulaKind::Equality,
-        )
-        .with_terms(vec![payload.left_site, payload.right_site])],
     );
     Some(output)
 }

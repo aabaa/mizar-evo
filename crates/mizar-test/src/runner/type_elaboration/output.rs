@@ -23,6 +23,7 @@ use super::source_formula::{
     extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
     extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
+    extract_source_set_enumeration_formula,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
@@ -812,6 +813,50 @@ pub(in crate::runner) fn source_imported_non_empty_attribute_assertion_formula_d
     let output =
         source_imported_non_empty_attribute_assertion_formula_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
+}
+
+pub(in crate::runner) fn source_set_enumeration_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_set_enumeration_formula(ast)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let mut term_inputs = Vec::new();
+    for (site, range) in payload.left_items.iter().chain(payload.right_items.iter()) {
+        term_inputs.push(TermInput::new(
+            site.clone(),
+            context,
+            *range,
+            TermKind::Numeral,
+        ));
+    }
+    term_inputs.push(TermInput::new(
+        payload.left_site.clone(),
+        context,
+        payload.left_range,
+        TermKind::SetEnumeration,
+    ));
+    term_inputs.push(TermInput::new(
+        payload.right_site.clone(),
+        context,
+        payload.right_range,
+        TermKind::SetEnumeration,
+    ));
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        term_inputs,
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::Equality,
+        )
+        .with_terms(vec![payload.left_site, payload.right_site])],
+    );
+    Some(output)
 }
 
 fn type_entry_known_actual_for_owner(

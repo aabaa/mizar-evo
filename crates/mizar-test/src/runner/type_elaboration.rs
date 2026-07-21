@@ -244,7 +244,8 @@ pub(super) use output::{
     source_builtin_type_assertion_formula_detail_keys, source_contradiction_formula_detail_keys,
     source_formula_statement_detail_keys, source_imported_attribute_assertion_formula_detail_keys,
     source_imported_non_empty_attribute_assertion_formula_detail_keys,
-    source_reserved_variable_type_assertion_result_detail_keys, term_formula_output_detail_keys,
+    source_reserved_variable_type_assertion_result_detail_keys,
+    source_set_enumeration_formula_output, term_formula_output_detail_keys,
 };
 #[cfg(test)]
 pub(super) use parenthesized_routes::{
@@ -313,6 +314,7 @@ pub(super) use source_formula::{
     extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
     extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
+    extract_source_set_enumeration_formula,
 };
 pub(super) use source_formula::{
     SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
@@ -322,9 +324,8 @@ pub(super) use source_formula::{
     extract_source_formula_connective_quantifier,
     extract_source_imported_predicate_functor_formula,
     extract_source_reserved_variable_type_assertion_with_config,
-    extract_source_set_enumeration_formula, source_binding_matches_reserved_builtin_type,
-    source_binding_use_ordinals, source_mode_terminal_builtin_input,
-    source_reserved_variable_asserted_head_relation_is_exact,
+    source_binding_matches_reserved_builtin_type, source_binding_use_ordinals,
+    source_mode_terminal_builtin_input, source_reserved_variable_asserted_head_relation_is_exact,
     source_reserved_variable_mode_expansions_are_exact,
     source_type_expression_matches_reserved_builtin_type,
 };

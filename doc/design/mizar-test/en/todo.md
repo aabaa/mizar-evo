@@ -1211,6 +1211,14 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   crossings, exact diagnostics, and all fail-closed/isolation boundaries. It is
   complete with all preservation gates passing. Task 263 remains open pending
   fresh inventory.
+  Corrected fresh inventory selects the exact 43-line set-enumeration checker-
+  output producer as Task 263ZZZL in existing private
+  `type_elaboration/output.rs`. Preserve token-identical four ordered numeral
+  items, two ordered set-enumeration terms, equality formula, context, payload/
+  status/diagnostics,
+  normal parent-only visibility, retained detail wrapper, and all fail-closed/
+  isolation boundaries. It is complete with all preservation gates passing.
+  Task 263 remains open pending fresh inventory.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
