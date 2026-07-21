@@ -23,7 +23,7 @@ use super::source_formula::{
     extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
     extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
-    extract_source_set_enumeration_formula,
+    extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
@@ -813,6 +813,56 @@ pub(in crate::runner) fn source_imported_non_empty_attribute_assertion_formula_d
     let output =
         source_imported_non_empty_attribute_assertion_formula_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
+}
+
+pub(in crate::runner) fn source_imported_predicate_functor_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_imported_predicate_functor_formula(ast, &module, symbols)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let _predicate_symbol = payload.predicate_symbol.clone();
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [
+            TermInput::new(
+                payload.left_site.clone(),
+                context,
+                payload.left_range,
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                payload.functor_left_site.clone(),
+                context,
+                payload.functor_left_range,
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                payload.functor_right_site.clone(),
+                context,
+                payload.functor_right_range,
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                payload.functor_site.clone(),
+                context,
+                payload.functor_range,
+                TermKind::FunctorApplication,
+            )
+            .with_reference(TermReference::Symbol(payload.functor_symbol)),
+        ],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::PredicateApplication,
+        )
+        .with_terms(vec![payload.left_site, payload.functor_site])],
+    );
+    Some(output)
 }
 
 pub(in crate::runner) fn source_set_enumeration_formula_output(

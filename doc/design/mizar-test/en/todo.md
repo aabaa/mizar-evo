@@ -1226,6 +1226,14 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   crossings, exact diagnostics, and every fail-closed/
   isolation boundary. It is complete with all preservation gates passing.
   Task 263 remains open pending fresh inventory.
+  Fresh inventory selects the exact 49-line imported predicate/functor
+  checker-output producer as Task 263ZZZN in existing private
+  `type_elaboration/output.rs`. Preserve token-identical ordered inputs,
+  imported functor reference and both symbol provenances, predicate formula,
+  context, payload/status/diagnostics, normal producer visibility, test-only
+  extractor crossing, retained detail/connective families, and every fail-
+  closed/isolation boundary. It is complete with all preservation gates
+  passing. Task 263 remains open pending fresh inventory.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

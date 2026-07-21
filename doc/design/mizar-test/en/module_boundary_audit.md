@@ -9082,10 +9082,90 @@ names, expectations, diagnostics, payloads, ordering, deferred/fact state,
 fail-closed behavior, coverage, and roadmap are unchanged;
 `spec_coverage_audit.md` remains unchanged.
 
+## Task 263ZZZN Pre-Move Inventory and Specification
+
+Fresh authority/test/trace/expectation/design/source/API/consumer inventory
+selects the imported predicate/functor checker-output producer as the next
+smallest dependency-closed family. The exact 49-line
+`source_imported_predicate_functor_formula_output` at 2678-2726 has raw hash
+`f6cd24d9727310205ecf6bccd2ef8d305dda6151aeb1830a56281f04609b2f2c`
+and whitespace-normalized hash
+`85be481df55ca82de1bea0199a3062596d24942e95114105a5c8f875d556ceac`.
+It has four occurrences across `runner.rs` and two test files: definition, the
+retained production detail consumer, one direct Task110 output matrix, and the
+test-support import. Existing private `type_elaboration/output.rs` already owns
+the checker input/output types, binding-environment projection, and canonical
+diagnostic-key helper; `source_formula.rs` owns the exact extractor.
+
+Move only those 49 lines into existing private
+`type_elaboration/output.rs`. The producer crosses the phase facade/root
+normally for its retained detail consumer and direct tests. The owner imports
+the exact extractor directly from `source_formula.rs`; extractor access then
+crosses the facade/root only under `cfg(test)` for retained direct extraction
+tests. Keep the detail wrapper, connective-quantifier family, and every route
+sibling in place. Current inventory is `runner.rs` 2,927 /
+`6187ce68d51fde79b686029e92131f83dad94ccb230452149554ca8c814c5cd5`,
+facade 536 /
+`ce7c6c7a1b598bc9eb56546329a607c7cb8b6254eb9dbceabedded947e79dffb`,
+and `output.rs` 1,427 /
+`e08a86cdce43198d45db57fb23897a782999dd433b7c915d12e5dc22bbc4638f`.
+
+Authority remains canonical Chapters 11, 12, 13, 14, and 16, Task110's exact
+`1 divides (1 ++ 2)` imported source, its expectation, and its trace
+requirement. Preserve three ordered numeral inputs followed by the imported
+functor-application input with its symbol reference, the predicate-application
+formula over the left numeral and functor sites, both imported-symbol
+provenances, binding context zero, exact diagnostic order/deduplication, and
+empty fact state. Existing Task110 source/output/detail assertions plus bounded
+near-miss, corruption, provenance, and isolation matrices sufficiently cover
+the boundary; no ZZZN0 test is needed. Changing the detail wrapper, extractor,
+term/formula input count/order/kind/site/range/reference, symbol provenance,
+binding context, payload/status/diagnostics, deferred/fact state, API/test
+name/expectation/trace, coverage/deferred state, another formula family, or any
+route is forbidden. `spec_coverage_audit.md` remains unchanged because no
+coverage, owner, credit, follow-up, or deferred rationale changes.
+
+## Task 263ZZZN Move Result
+
+Task 263ZZZN moved only the approved 49-line imported predicate/functor
+checker-output producer into existing private `type_elaboration/output.rs`.
+The producer crosses normally for its retained production detail consumer and
+direct tests; the exact extractor crosses the facade/root only under
+`cfg(test)`, while the owner imports it directly. The detail wrapper,
+connective-quantifier family, and every sibling remain in place.
+
+After stripping only `pub(in crate::runner)`, raw hash remains
+`f6cd24d9727310205ecf6bccd2ef8d305dda6151aeb1830a56281f04609b2f2c`
+and whitespace-normalized hash remains
+`85be481df55ca82de1bea0199a3062596d24942e95114105a5c8f875d556ceac`.
+The resulting inventory is `runner.rs` 2,877 /
+`82a02705035ed776ea7d56dd8a5c46deae83aa159f1675ee804d573c7d68c4cb`,
+facade 536 /
+`13e44ae1df6ebd80d7d1ec24d8ebb4fbbdf9cf2adade14272d6c65b1a5da4119`,
+and `output.rs` 1,477 /
+`840b57f9d0dfc67113458795a772c2817d512926ec88bf5e91016b2212e3d746`.
+
+The focused Task110 matrix and all 272 unit tests pass. Raw/normalized
+test-list hashes remain
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+The four CLI hashes remain
+`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
+and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
+Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
+errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
+pass. Final specification, test-sufficiency, implementation, and source/
+documentation consistency reviews report no findings. Semantics, API, test
+names, expectations, diagnostics, payloads, ordering, deferred/fact state,
+fail-closed behavior, coverage, and roadmap are unchanged;
+`spec_coverage_audit.md` remains unchanged.
+
 ## Current Ownership
 
 Rows whose cumulative task range ends at 263ZZX are the retained base; the
-explicit 263ZZY through 263ZZZM delta rows below extend the type-assertion and
+explicit 263ZZY through 263ZZZN delta rows below extend the type-assertion and
 diagnostic-detail ownership surfaces.
 
 | Current area | Responsibility | Dependency direction | Audit decision |
@@ -9115,6 +9195,7 @@ diagnostic-detail ownership surfaces.
 | Task 263ZZZK attribute-level-negative imported-attribute detail ownership delta | The exact output-to-canonical-key wrapper extends payload rendering through Task 263ZZZK. | attribute-level-negative checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally, output/extractor cross the facade/root only under `cfg(test)`, and the set-enumeration family remains in `runner.rs`. |
 | Task 263ZZZL set-enumeration output ownership delta | The exact four-numeral/two-set equality checker producer extends payload rendering through Task 263ZZZL. | exact set-enumeration source extraction to checker output | Owned by private `output.rs`; the producer crosses normally for its retained detail/direct tests, extractor access crosses the facade/root only under `cfg(test)`, and the detail/imported-predicate/connective families remain in `runner.rs`. |
 | Task 263ZZZM set-enumeration detail ownership delta | The exact output-to-canonical-key wrapper extends payload rendering through Task 263ZZZM. | set-enumeration checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally, output/extractor cross the facade/root only under `cfg(test)`, and the imported-predicate/connective families remain in `runner.rs`. |
+| Task 263ZZZN imported predicate/functor output ownership delta | The exact imported-symbol checker producer extends payload rendering through Task 263ZZZN. | exact imported predicate/functor source extraction to checker output | Owned by private `output.rs`; producer crosses normally for retained detail/direct tests, extractor crosses the facade/root only under `cfg(test)`, and detail/connective families remain in `runner.rs`. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
 
@@ -9190,6 +9271,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | `src/runner/type_elaboration/output.rs` Task 263ZZZK delta | Adds the exact attribute-level-negative imported-attribute assertion detail wrapper; the set-enumeration family and every sibling remain in `runner.rs`. |
 | `src/runner/type_elaboration/output.rs` Task 263ZZZL delta | Adds the exact set-enumeration checker-output producer; its detail consumer, imported-predicate/connective families, and every sibling remain in `runner.rs`. |
 | `src/runner/type_elaboration/output.rs` Task 263ZZZM delta | Adds the exact set-enumeration detail wrapper, narrows output/extractor facade crossings to `cfg(test)`, and leaves imported-predicate/connective families and every sibling in `runner.rs`. |
+| `src/runner/type_elaboration/output.rs` Task 263ZZZN delta | Adds the exact imported predicate/functor checker-output producer; its detail consumer, connective family, and every sibling remain in `runner.rs`. |
 | `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
 | `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
 | `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
@@ -9395,6 +9477,7 @@ Task 255E.
 | 263ZZZK | Complete: moved only the exact 9-line attribute-level-negative imported-attribute assertion detail wrapper into existing private `type_elaboration/output.rs`; the set-enumeration family and every other formula/route remain in place. |
 | 263ZZZL | Complete after corrected inventory: moved only the exact 43-line set-enumeration checker-output producer into existing private `type_elaboration/output.rs`; its detail wrapper and every other formula/route remain in place. |
 | 263ZZZM | Complete: moved only the exact 8-line set-enumeration formula detail wrapper into existing private `type_elaboration/output.rs`; its output/extractor now cross the facade/root only under `cfg(test)`, and every other formula/route remains in place. |
+| 263ZZZN | Complete: moved only the exact 49-line imported predicate/functor checker-output producer into existing private `type_elaboration/output.rs`; its detail wrapper and every other formula/route remain in place. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a
