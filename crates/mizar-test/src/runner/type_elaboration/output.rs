@@ -21,7 +21,7 @@ use super::source_formula::{
     SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula, extract_source_builtin_binary_term_formula,
     extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
-    extract_source_formula_statement,
+    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
@@ -773,6 +773,15 @@ pub(in crate::runner) fn source_imported_attribute_assertion_formula_output_from
         .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
     );
     Some(output)
+}
+
+pub(in crate::runner) fn source_imported_attribute_assertion_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_imported_attribute_assertion_formula(ast, &module, symbols)?;
+    source_imported_attribute_assertion_formula_output_from_payload(ast, module, symbols, payload)
 }
 
 fn type_entry_known_actual_for_owner(
