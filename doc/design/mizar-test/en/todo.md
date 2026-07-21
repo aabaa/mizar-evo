@@ -1123,8 +1123,14 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   Preserve its token-identical body, byte stability, five-expansion set-terminal
   four-hop behavior, and fail-closed behavior without moving another route;
   it is complete. Fresh inventory returns to the remaining production-helper
-  families. Task 263 keeps this parent item open pending the next bounded
-  selection.
+  families and selects the exact five-fragment/47-line direct builtin-set
+  reserved-variable type-assertion route as Task 263ZZY in the same owner.
+  Preserve its token-identical body, byte stability, independent reserve and
+  formula-side source provenance, normalized-reflexive builtin-set behavior,
+  and fail-closed behavior without moving its builtin-object, local-mode, or
+  other siblings; it is complete. Fresh inventory returns to the remaining
+  production-helper families. Task 263 keeps this parent item open pending the
+  next bounded selection.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
