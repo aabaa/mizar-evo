@@ -237,7 +237,7 @@ pub(super) use output::{
 };
 pub(super) use output::{
     build_source_reserved_variable_type_assertion_output,
-    source_reserved_variable_type_assertion_result_detail_keys,
+    source_reserved_variable_type_assertion_result_detail_keys, term_formula_output_detail_keys,
 };
 #[cfg(test)]
 pub(super) use parenthesized_routes::{

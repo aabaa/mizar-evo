@@ -7818,11 +7818,89 @@ keys, payload, ordering, fail-closed behavior, authority, coverage, and
 deferred state are unchanged; `spec_coverage_audit.md` remains unchanged.
 Final formatting, denied-warning Clippy, workspace tests, and diff checks pass.
 
+## Task 263ZZZ Pre-Move Inventory and Specification
+
+Fresh authority, test, trace, expectation, design, source, API, and real-
+producer/consumer inventory selects only the shared term/formula diagnostic-
+key projection as the next bounded production-helper move. The exact
+`runner.rs` fragment is `term_formula_output_detail_keys` at 2825-2834: 10
+lines with raw hash
+`70bede8293d57a58a1a9360c80b775c126dbdadd5fb776308da45138e9822458`
+and whitespace-normalized hash
+`b7a0eb7327dc52681a911edddd4235644a8bb5463def99c7aefa9784b11ab010`.
+It is consumed by the nine remaining formula-detail wrappers at 2722, 2731,
+2767, 2776, 2785, 2794, 2804, 2813, and 2822. The dependency-first private
+owner is existing `type_elaboration/output.rs`, which already owns the
+`TermFormulaInferenceOutput` transport/build/validation surface.
+
+Task 263ZZZ mechanically moves only that one fragment. The helper crosses the
+private phase facade with `pub(in crate::runner)` visibility solely for those
+nine existing parent consumers. The output algorithm remains exact: traverse
+checker diagnostics in canonical order, prefix each unchanged `message_key`
+with `type_elaboration.checker.`, sort the rendered keys, deduplicate them, and
+return the resulting vector. No wrapper, producer, dispatch call, output
+payload, or test helper moves in this task.
+
+The authority slice is the deterministic detail-key and diagnostic projection
+contract in `harness.md` and `expectation_schema.md`, together with the exact
+formula-gap expectations and direct ordered-key assertions in
+`runner/tests/type_elaboration/source_gap_and_equality.rs`. Those assertions
+exercise all represented formula diagnostic families, while the active
+contradiction fixture exercises the empty-key path. The 272-test raw and
+normalized list oracles plus all four CLI stdout hashes cover discovery and
+end-to-end byte stability. Test sufficiency is therefore adequate for this
+move-only `design_drift`; no ZZZ0 prerequisite test is needed.
+
+Changing the prefix, message-key source, canonical traversal, sorting,
+deduplication, key text/order, diagnostics, payloads, fail-closed behavior, any
+consumer body, test/expectation/trace/spec intent, or deferred state is
+forbidden. `spec_coverage_audit.md` remains unchanged because this task changes
+no specification coverage, design mapping, follow-up owner, trace credit, or
+deferred rationale.
+
+## Task 263ZZZ Move Result
+
+Task 263ZZZ moved only the approved 10-line helper into existing private
+`type_elaboration/output.rs`. The function crosses the phase facade with
+`pub(in crate::runner)` and `pub(super)` only for its nine unchanged parent
+consumers. The `#[rustfmt::skip]` control is outside the oracle and preserves
+the original one-line signature. After stripping only
+`pub(in crate::runner)`, the moved fragment remains byte-identical with raw
+hash
+`70bede8293d57a58a1a9360c80b775c126dbdadd5fb776308da45138e9822458`
+and whitespace-normalized hash
+`b7a0eb7327dc52681a911edddd4235644a8bb5463def99c7aefa9784b11ab010`.
+The resulting inventory is `runner.rs` 3,274 /
+`794d9602195c9b8791fe2d94da31af4bb2461e41fd15b98b67b1d3a7fc00e4e2`,
+the 521-line phase facade /
+`e42f8fd2db3ea725c080b71631ae2fe71d3200193a8177363b4d9aa7152b8b27`,
+and `output.rs` 1,153 /
+`7f107a2cae8166ebf0cb53e8ae0f0ac93d7ce5c0e44e231ee16ed823b1e0c7b3`.
+
+The focused formula-gap ordered-key test and active contradiction empty-key
+test pass. All 272 crate unit tests pass, and the raw/normalized test-list
+hashes remain
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and
+`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+The plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
+`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
+and
+`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
+Counts remain 96/4/188, 403/367, 235/223, and 219/184 with 23 warnings and
+zero errors. Formatting, denied-warning Clippy, crate/workspace tests, and diff
+checks pass. The test-sufficiency and implementation reviews report no
+findings. No API, consumer body, key, prefix, diagnostic, payload, ordering,
+fail-closed behavior, coverage, or deferred state changed;
+`spec_coverage_audit.md` remains unchanged.
+
 ## Current Ownership
 
 Rows whose cumulative task range ends at 263ZZX are the retained base; the
-explicit 263ZZY delta row below extends all three type-assertion ownership
-surfaces through the direct builtin-set reserved-variable route.
+explicit 263ZZY and 263ZZZ delta rows below extend the type-assertion and
+diagnostic-detail ownership surfaces.
 
 | Current area | Responsibility | Dependency direction | Audit decision |
 |---|---|---|---|
@@ -7837,6 +7915,7 @@ surfaces through the direct builtin-set reserved-variable route.
 | payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Tasks 263E-263I moved the three shared output transports/builders plus type-assertion/binary/shared-parenthesized validators and private helpers to private `type_elaboration/output.rs`; Tasks 263J-263M moved the type-assertion, binary, and shared parenthesized result/detail plus payload-detail cores there too; Tasks 263N-263ZZW moved the parenthesized through both long-chain binary configs, all local-mode long-chain type-assertion/asserted-head configs, and the local-object-mode direct/chained/two-edge/three-edge/four-edge/long-chain builtin reserved-variable type assertions plus the direct, chained, two-edge, three-edge, and four-edge same-mode, and the chained, two-edge, three-edge, and four-edge immediate-radix, two-edge, three-edge, and four-edge two-hop, the three-edge and four-edge three-hop, the four-edge four-hop, and long-chain same-mode, immediate-radix, six-, five-, four-, three-, and two-hop configs and named detail/output wrappers to their route leaves, together with the direct and chained local-mode same-mode plus chained and two-edge local-mode immediate-radix, two-edge, three-edge, and four-edge local-mode two-hop, and three-edge and four-edge local-mode three-hop configs and wrappers. Remaining local-mode type-assertion/asserted-head/formula named wrappers/configs remain bounded work. No key or ordering edits. |
 | Task 263ZZX four-hop ownership delta | The exact four-edge local-mode four-hop config, extractor, detail, and test output now extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZX. | real source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; only detail crosses normally, config/output/extractor cross under `cfg(test)`, and every other route remains in `runner.rs`. |
 | Task 263ZZY direct builtin-set type-assertion ownership delta | The exact direct reserved-variable config, extractor, detail, and test output extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZY. | real source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
+| Task 263ZZZ shared diagnostic-key projection ownership delta | The exact canonical diagnostic-message-key prefix/sort/dedup helper extends the payload-rendering row above without moving any consumer wrapper. | checker term/formula diagnostics to nine facade-owned formula detail wrappers | Owned by private `output.rs`; one parent-only entry crosses the phase facade and every wrapper remains in `runner.rs`. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
 
@@ -7898,6 +7977,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | `src/runner/type_elaboration/parenthesized_routes.rs` | Cohesive parenthesized reserved-variable configs plus thin source/detail/test route wrappers. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZX delta | Adds the exact four-edge local-mode four-hop asserted-head config/extractor/detail/test-output route to the preceding cumulative owner row. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZY delta | Adds the exact direct builtin-set reserved-variable type-assertion config/extractor/detail/test-output route to the preceding cumulative owner rows. |
+| `src/runner/type_elaboration/output.rs` Task 263ZZZ delta | Adds the exact shared term/formula diagnostic-key projection; nine formula wrappers remain in `runner.rs`. |
 | `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
 | `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
 | `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
@@ -8089,6 +8169,7 @@ Task 255E.
 | 263ZZW | Complete: moved only the exact five-fragment/80-line four-edge local-mode three-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every four-hop and other route remains in place. |
 | 263ZZX | Complete: moved only the exact five-fragment/79-line four-edge local-mode four-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
 | 263ZZY | Complete: moved only the exact five-fragment/47-line direct builtin-set reserved-variable type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every builtin-object, local-mode, chained, and other route remains in place. |
+| 263ZZZ | Complete: moved only the exact 10-line shared term/formula diagnostic-key projection into existing private `type_elaboration/output.rs`; all nine parent wrappers and every other production helper remain in place. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a

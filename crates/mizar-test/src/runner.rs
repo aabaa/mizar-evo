@@ -497,7 +497,8 @@ use type_elaboration::{
     source_two_edge_local_object_mode_reserved_variable_membership_detail_keys,
     source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys,
     source_two_edge_local_object_mode_two_hop_asserted_head_detail_keys,
-    type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
+    term_formula_output_detail_keys, type_elaboration_failure_diagnostic,
+    validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -2820,17 +2821,6 @@ fn source_formula_connective_quantifier_detail_keys(
 ) -> Option<Vec<String>> {
     let output = source_formula_connective_quantifier_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
-}
-
-fn term_formula_output_detail_keys(output: &TermFormulaInferenceOutput) -> Vec<String> {
-    let mut keys = output
-        .diagnostics()
-        .canonical_iter()
-        .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
-        .collect::<Vec<_>>();
-    keys.sort();
-    keys.dedup();
-    keys
 }
 
 fn source_formula_statement_output(

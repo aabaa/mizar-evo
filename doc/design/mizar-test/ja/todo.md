@@ -989,8 +989,13 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   byte stability、独立したreserve/formula-side source provenance、normalized-
   reflexive builtin-set behavior、fail-closed behaviorを維持し、builtin-object、
   local-mode、他siblingは移動せず完了した。fresh inventoryは残るproduction-
-  helper familyへ戻る。Task 263 parent itemは次のbounded selectionまでopenを
-  維持する。
+  helper familyへ戻り、既存private `type_elaboration/output.rs`の正確な10行
+  shared term/formula diagnostic-key projectionをTask 263ZZZとして選ぶ。
+  token-identical body、canonical diagnostic traversal、prefix、sort、dedup、
+  byte stability、既存parent consumer 9個を維持し、wrapperを移動せず、key/
+  diagnostic/payload/fail-closed behaviorを変えず完了した。fresh inventoryは
+  残るproduction-helper familyへ戻る。Task 263 parent itemは次のfresh bounded
+  selectionまでopenを維持する。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

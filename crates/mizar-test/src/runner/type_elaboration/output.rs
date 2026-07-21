@@ -582,6 +582,18 @@ fn source_reserved_variable_type_assertion_output_detail_keys(
     keys
 }
 
+#[rustfmt::skip]
+pub(in crate::runner) fn term_formula_output_detail_keys(output: &TermFormulaInferenceOutput) -> Vec<String> {
+    let mut keys = output
+        .diagnostics()
+        .canonical_iter()
+        .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
+        .collect::<Vec<_>>();
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
 fn type_entry_known_actual_for_owner(
     output: &TermFormulaInferenceOutput,
     owner: &TypedSiteRef,
