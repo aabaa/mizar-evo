@@ -190,8 +190,9 @@ use type_elaboration::{
     extract_source_four_edge_local_object_mode_three_hop_asserted_head,
     extract_source_four_edge_local_object_mode_two_hop_asserted_head,
     extract_source_heterogeneous_reserve_membership,
-    extract_source_imported_attribute_assertion_formula, extract_source_local_mode_asserted_head,
-    extract_source_local_mode_long_chain_asserted_head,
+    extract_source_imported_attribute_assertion_formula,
+    extract_source_imported_non_empty_attribute_assertion_formula,
+    extract_source_local_mode_asserted_head, extract_source_local_mode_long_chain_asserted_head,
     extract_source_local_mode_long_chain_five_hop_asserted_head,
     extract_source_local_mode_long_chain_four_hop_asserted_head,
     extract_source_local_mode_long_chain_radix_asserted_head,
@@ -394,7 +395,6 @@ use type_elaboration::{
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     build_source_reserved_variable_type_assertion_output, expected_type_elaboration_detail_keys,
     extract_builtin_source_reserve_declarations, extract_source_formula_connective_quantifier,
-    extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,
     extract_source_reserved_variable_type_assertion_with_config,
     extract_source_set_enumeration_formula, is_active_type_elaboration,
@@ -434,7 +434,7 @@ use type_elaboration::{
     source_four_edge_local_object_mode_two_hop_asserted_head_detail_keys,
     source_heterogeneous_reserve_membership_detail_keys,
     source_imported_attribute_assertion_formula_detail_keys,
-    source_imported_attribute_assertion_formula_output_from_payload,
+    source_imported_non_empty_attribute_assertion_formula_output,
     source_local_mode_asserted_head_detail_keys,
     source_local_mode_long_chain_asserted_head_detail_keys,
     source_local_mode_long_chain_five_hop_asserted_head_detail_keys,
@@ -2739,16 +2739,6 @@ fn source_imported_predicate_functor_formula_output(
         .with_terms(vec![payload.left_site, payload.functor_site])],
     );
     Some(output)
-}
-
-fn source_imported_non_empty_attribute_assertion_formula_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<TermFormulaInferenceOutput> {
-    let payload =
-        extract_source_imported_non_empty_attribute_assertion_formula(ast, &module, symbols)?;
-    source_imported_attribute_assertion_formula_output_from_payload(ast, module, symbols, payload)
 }
 
 fn source_set_enumeration_formula_output(
