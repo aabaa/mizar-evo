@@ -1088,6 +1088,12 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   only output/extractor crossing、正確なdiagnostic、全fail-closed/isolation boundary
   を保存し、全preservation gateをpassして完了した。Task 263 parent itemはfresh
   inventoryまでopenを維持する。
+  Fresh inventoryは既存private `type_elaboration/output.rs`の正確な52行formula
+  connective/quantifier checker-output producerをTask 263ZZZPとして選ぶ。token-
+  identicalなordered formula shell 5個、context、deferred reason、payload/status/
+  diagnostic、normal producer visibility、test-only extractor crossing、保持する
+  detail、全fail-closed/isolation boundaryを保存し、全preservation gateをpassして
+  完了した。Task 263 parent itemはfresh inventoryまでopenを維持する。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、

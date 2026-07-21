@@ -21,7 +21,8 @@ use super::source_formula::{
     SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula, extract_source_builtin_binary_term_formula,
     extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
-    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
+    extract_source_formula_connective_quantifier, extract_source_formula_statement,
+    extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
 };
@@ -872,6 +873,59 @@ pub(in crate::runner) fn source_imported_predicate_functor_formula_detail_keys(
 ) -> Option<Vec<String>> {
     let output = source_imported_predicate_functor_formula_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
+}
+
+pub(in crate::runner) fn source_formula_connective_quantifier_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_formula_connective_quantifier(ast, &module, symbols)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [],
+        [
+            FormulaInput::new(
+                payload.premise_constant_site,
+                context,
+                payload.premise_constant_range,
+                FormulaKind::Contradiction,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+            FormulaInput::new(
+                payload.implication_site,
+                context,
+                payload.implication_range,
+                FormulaKind::Implication,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+            FormulaInput::new(
+                payload.quantified_site,
+                context,
+                payload.quantified_range,
+                FormulaKind::Quantified,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingQuantifierPayload]),
+            FormulaInput::new(
+                payload.negation_site,
+                context,
+                payload.negation_range,
+                FormulaKind::Negation,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+            FormulaInput::new(
+                payload.body_constant_site,
+                context,
+                payload.body_constant_range,
+                FormulaKind::Contradiction,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+        ],
+    );
+    Some(output)
 }
 
 pub(in crate::runner) fn source_set_enumeration_formula_output(

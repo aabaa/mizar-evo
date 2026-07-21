@@ -1,13 +1,8 @@
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-use mizar_checker::binding_env::BindingContextId;
 #[cfg(test)]
 use mizar_checker::type_checker::SourceReserveDeclarationBridge;
-use mizar_checker::type_checker::{
-    FormulaDeferredReason, FormulaInput, FormulaKind, TermFormulaChecker,
-    TermFormulaInferenceOutput,
-};
 #[cfg(test)]
 use mizar_checker::typed_ast::TypeRole;
 use mizar_resolve::env::SymbolEnv;
@@ -173,7 +168,8 @@ use type_elaboration::{
     extract_source_distinct_reserved_object_variable_inequality,
     extract_source_distinct_reserved_variable_equality,
     extract_source_distinct_reserved_variable_inequality,
-    extract_source_distinct_reserved_variable_membership, extract_source_formula_statement,
+    extract_source_distinct_reserved_variable_membership,
+    extract_source_formula_connective_quantifier, extract_source_formula_statement,
     extract_source_four_edge_local_mode_four_hop_asserted_head,
     extract_source_four_edge_local_mode_reserved_variable_equality,
     extract_source_four_edge_local_mode_reserved_variable_inequality,
@@ -399,7 +395,7 @@ use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     build_source_reserved_variable_type_assertion_output, expected_type_elaboration_detail_keys,
-    extract_builtin_source_reserve_declarations, extract_source_formula_connective_quantifier,
+    extract_builtin_source_reserve_declarations,
     extract_source_reserved_variable_type_assertion_with_config, is_active_type_elaboration,
     source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
@@ -419,7 +415,8 @@ use type_elaboration::{
     source_distinct_reserved_object_variable_inequality_detail_keys,
     source_distinct_reserved_variable_equality_detail_keys,
     source_distinct_reserved_variable_inequality_detail_keys,
-    source_distinct_reserved_variable_membership_detail_keys, source_formula_statement_detail_keys,
+    source_distinct_reserved_variable_membership_detail_keys,
+    source_formula_connective_quantifier_output, source_formula_statement_detail_keys,
     source_four_edge_local_mode_four_hop_asserted_head_detail_keys,
     source_four_edge_local_mode_reserved_variable_equality_detail_keys,
     source_four_edge_local_mode_reserved_variable_inequality_detail_keys,
@@ -471,7 +468,7 @@ use type_elaboration::{
     source_local_object_mode_reserved_variable_inequality_detail_keys,
     source_local_object_mode_reserved_variable_membership_detail_keys,
     source_local_object_mode_reserved_variable_type_assertion_detail_keys,
-    source_module_binding_env, source_multiple_object_reserve_declaration_equality_detail_keys,
+    source_multiple_object_reserve_declaration_equality_detail_keys,
     source_multiple_object_reserve_declaration_inequality_detail_keys,
     source_multiple_reserve_declaration_equality_detail_keys,
     source_multiple_reserve_declaration_inequality_detail_keys,
@@ -2666,59 +2663,6 @@ fn source_formula_connective_quantifier_detail_keys(
 ) -> Option<Vec<String>> {
     let output = source_formula_connective_quantifier_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
-}
-
-fn source_formula_connective_quantifier_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<TermFormulaInferenceOutput> {
-    let payload = extract_source_formula_connective_quantifier(ast, &module, symbols)?;
-    let binding_env = source_module_binding_env(ast, module).ok()?;
-    let context = BindingContextId::new(0);
-    let output = TermFormulaChecker::default().infer(
-        symbols,
-        &binding_env,
-        [],
-        [
-            FormulaInput::new(
-                payload.premise_constant_site,
-                context,
-                payload.premise_constant_range,
-                FormulaKind::Contradiction,
-            )
-            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
-            FormulaInput::new(
-                payload.implication_site,
-                context,
-                payload.implication_range,
-                FormulaKind::Implication,
-            )
-            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
-            FormulaInput::new(
-                payload.quantified_site,
-                context,
-                payload.quantified_range,
-                FormulaKind::Quantified,
-            )
-            .with_deferred(vec![FormulaDeferredReason::MissingQuantifierPayload]),
-            FormulaInput::new(
-                payload.negation_site,
-                context,
-                payload.negation_range,
-                FormulaKind::Negation,
-            )
-            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
-            FormulaInput::new(
-                payload.body_constant_site,
-                context,
-                payload.body_constant_range,
-                FormulaKind::Contradiction,
-            )
-            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
-        ],
-    );
-    Some(output)
 }
 
 fn extract_source_three_edge_local_mode_radix_asserted_head(
