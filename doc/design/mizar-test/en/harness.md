@@ -151,6 +151,47 @@ No exhaustive public enum exceptions are owned by this module.
 | fuzz-regression | run minimized fuzz cases as ordinary committed tests |
 | update | rewrite snapshots only when explicitly requested |
 
+## Runner Source Ownership (Task 264 Closeout)
+
+The final production runner layout contains exactly 17 paths and 18,952 lines.
+This is the canonical crate-relative source-path table after the behavior-
+preserving Tasks 249-263 split.
+
+| Production path | Lines | Ownership |
+|---|---:|---|
+| `src/runner.rs` | 2,185 | Public reports/statuses, corpus orchestration, public active iterators, parse/declaration admission, type-case execution, and top-level detail dispatch. |
+| `src/runner/shared.rs` | 260 | Cross-phase source/frontend/resolver staging and common diagnostic support. |
+| `src/runner/parse_only.rs` | 119 | Parse-only case execution and failure projection. |
+| `src/runner/declaration_symbol.rs` | 231 | Declaration-symbol execution, observation, payload, and failure projection. |
+| `src/runner/import_fixtures.rs` | 349 | Fixture lexical summaries and import-summary adapters. |
+| `src/runner/type_elaboration.rs` | 573 | Private type-elaboration facade over exactly eleven private leaves. |
+| `src/runner/type_elaboration/admission.rs` | 60 | Active type-case admission and tag validation. |
+| `src/runner/type_elaboration/binary_routes.rs` | 3,791 | Reserved-variable binary route configs, extraction, output, and details. |
+| `src/runner/type_elaboration/checker_handoff.rs` | 550 | Checker-owned binding/declaration handoff assembly and validation. |
+| `src/runner/type_elaboration/long_chain_config.rs` | 82 | Shared exact long-chain definition tables. |
+| `src/runner/type_elaboration/output.rs` | 1,549 | Checker outputs, validation, result/detail projection, and diagnostics. |
+| `src/runner/type_elaboration/parenthesized_routes.rs` | 745 | Parenthesized reserved-variable route ownership. |
+| `src/runner/type_elaboration/result.rs` | 29 | Expected-key and stable failure projection. |
+| `src/runner/type_elaboration/source_ast.rs` | 147 | Common exact AST and import projection. |
+| `src/runner/type_elaboration/source_formula.rs` | 2,621 | Common formula/source payload extraction. |
+| `src/runner/type_elaboration/source_reserve.rs` | 1,474 | Reserve declaration, type, symbol, and mode-expansion extraction. |
+| `src/runner/type_elaboration/type_assertion_routes.rs` | 4,187 | Reserved-variable type-assertion and asserted-head route ownership. |
+
+For hashing, prefix every displayed path with `crates/mizar-test/`. From the
+repository root, the exact input is the sorted tracked path list selected from
+`crates/mizar-test/src/runner.rs` and `crates/mizar-test/src/runner`, excluding
+`tests.rs` and every path below `tests/`. Its newline-delimited path-list hash is
+`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
+Passing those same repository-relative paths in order to `sha256sum` and
+hashing the corresponding ordered output lines yields
+`62d30627cddba5ec67279de0c0cea571baf6144602d52fa01896649e1d4a0ea0`.
+Production `runner.rs` owns no route config, source extractor, output builder,
+or detail-wrapper definition; its route aliases remain test-only. The private
+facade's eleven `mod` declarations, the 17-path/hash pair, the unchanged public
+API, and the exact discovered-test/CLI oracles are the ownership guards. Test
+sources remain under `src/runner/tests.rs`, `src/runner/tests/`, and existing
+integration-test files so fully qualified names and nesting do not change.
+
 Task 75/76/77 addendum for `type-elaboration`: forward same-module local-mode
 reserve heads, local-structure reserve heads, and local-attribute reserve type
 expressions that name later declarations are active lower-stage boundary cases.

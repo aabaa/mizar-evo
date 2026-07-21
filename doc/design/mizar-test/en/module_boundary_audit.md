@@ -10266,13 +10266,96 @@ coverage/deferred state, and roadmap are unchanged; `spec_coverage_audit.md`
 remains unchanged. Fresh production-helper inventory finds no route/config/
 extractor/output family in `runner.rs`; its sole private `source_*` function is
 the top-level `source_type_elaboration_detail_keys` dispatch chain. Task 263 is
-complete, and Task 264 remains a separate closeout task.
+complete, and the series advances to the separate Task 264 closeout.
+
+## Task 264 Closeout Inventory And Specification
+
+Task 264 is a documentation-only closeout governed by the Task 264 row in the
+canonical English crate plan and todo, this audit's exit criteria, and the
+unchanged higher authority in `doc/spec/en/`, existing `.miz` tests,
+traceability metadata, and expectations. Its target fragments are only the
+paired English/Japanese crate-plan inventory and task rows, todo entry, harness
+source-path table, and this module-boundary ownership/exit audit. Their
+consumers are architecture reviewers and the next fresh Step 5 inventory; no
+source visibility or runtime consumer changes.
+
+At clean HEAD `f8bd2e0d499517316e4bfdaa7b462804339e3fc3`, the final source oracles
+are:
+
+- `src/runner.rs`: 2,185 lines and
+  `e1f8b5ef40e441f26a3601e07c435c72afd60c2ebb8687170211d9a874a003b1`;
+- `src/runner/type_elaboration.rs`: 573 lines and
+  `e541b3870f1d0a01d43adfb5957781927408a153a48b6a2e043171a5ea252ad6`;
+- `src/runner/type_elaboration/type_assertion_routes.rs`: 4,187 lines and
+  `cf0a242ec346ba7bea87dfc82c41545358ea2d33dada3c379acaf2819d85bcf4`;
+- 17 production runner paths and 18,952 total production lines. The paths shown
+  in the harness table are crate-relative; the hash input is the corresponding
+  repository-relative path list with the `crates/mizar-test/` prefix. From the
+  repository root, sort the tracked paths selected from
+  `crates/mizar-test/src/runner.rs` and `crates/mizar-test/src/runner`, excluding
+  `tests.rs` and every path below `tests/`. The SHA-256 of that exact sorted
+  newline-delimited list is
+  `b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
+  Passing those same repository-relative paths in order to `sha256sum`, then
+  hashing the resulting ordered output lines, yields
+  `62d30627cddba5ec67279de0c0cea571baf6144602d52fa01896649e1d4a0ea0`.
+
+`runner.rs` production ownership is limited to public reports/statuses,
+`run_*` corpus orchestration, public active-case iterators, parse/declaration
+admission helpers, type-case execution, and top-level detail dispatch. Its
+large route aliases and derived keys are test-only; it owns no production
+route config, extractor, output builder, or detail wrapper. The private
+type-elaboration facade declares exactly eleven private leaves. The sole
+private production `source_*` function in `runner.rs` is the top-level
+`source_type_elaboration_detail_keys` dispatch chain.
+
+The forbidden scope is every production/test source, `doc/spec`, `.miz`,
+expectation, and traceability edit; semantic cleanup; API, test-name,
+diagnostic, key, payload, ordering, fail-closed, coverage, or deferred-state
+change; and promotion of Steps 6/7. No new test is justified for this
+documentation-only task. The existing ownership/isolation tests plus focused
+lint-policy, format, denied-warning Clippy, crate/workspace tests, four CLI
+oracles, raw/normalized test-list hashes, source path/content manifests, and
+diff checks are sufficient. The review-only specification audit reported no
+findings before implementation.
 
 ## Current Ownership
 
-Rows whose cumulative task range ends at 263ZZX are the retained base; the
-explicit 263ZZY through 263ZZZZ delta rows below extend the type-assertion and
-diagnostic-detail ownership surfaces.
+This compact Task 264 table is the canonical final state. The cumulative table
+that follows is retained only as the historical per-move ledger.
+
+| Current area | Final owner and boundary |
+|---|---|
+| Public runner surface | `src/runner.rs` owns public reports/statuses, `run_*` corpus orchestration, public active iterators, parse/declaration admission, type-case execution, and top-level detail dispatch only. |
+| Shared staging | Private `shared.rs` owns cross-phase source/frontend/resolver staging; private `import_fixtures.rs` owns fixture summary adapters. |
+| Parse and declaration phases | Private `parse_only.rs` and `declaration_symbol.rs` own their case execution, observations, payload/failure projection, and phase-specific helpers. |
+| Type-elaboration facade | Private `type_elaboration.rs` dispatches to exactly eleven private leaves and exposes only the minimum parent/test seams. |
+| Type source owners | Private `source_ast.rs`, `source_formula.rs`, and `source_reserve.rs` own common exact source projection; route-specific extractors are colocated with `binary_routes.rs`, `parenthesized_routes.rs`, or `type_assertion_routes.rs`. |
+| Type checker/result owners | Private `checker_handoff.rs`, `admission.rs`, `result.rs`, and `output.rs` own checker assembly, admission, stable failure/result projection, validation, checker output, detail keys, and diagnostics. |
+| Type route/config owners | Private `binary_routes.rs`, `parenthesized_routes.rs`, `type_assertion_routes.rs`, and `long_chain_config.rs` own all route configs, extractors, output/detail wrappers, and shared long-chain tables. |
+| Tests | `runner/tests.rs`, `runner/tests/`, and existing integration tests retain every discovered name, nesting boundary, and owner-isolation matrix. |
+
+## Ownership Guards
+
+- The sorted production path list has exactly 17 entries and the path/content
+  hashes recorded above; the paired harness table enumerates all entries.
+- `type_elaboration.rs` has exactly eleven private `mod` declarations. No leaf
+  is public outside the runner implementation.
+- Production `runner.rs` has no route config, source extractor, output builder,
+  or detail-wrapper definition. Test compatibility aliases remain behind
+  `cfg(test)`.
+- The public API, 272-name discovered unit-test list, four CLI bytes, and every
+  count/hash in the preservation matrix are immutable closeout oracles.
+- Any later ownership change requires a new nonempty canonical task; Task 264
+  does not authorize semantic cleanup or a Steps 6/7 promotion.
+
+## Historical Cumulative Ownership Ledger
+
+Rows whose cumulative task range ends at 263ZZX are the retained historical
+base. The explicit 263ZZY through 263ZZZZ delta rows record how the
+type-assertion and diagnostic-detail ownership surfaces reached the final
+Task 264 state above; statements about siblings that then remained in
+`runner.rs` describe their respective move-time snapshots.
 
 | Current area | Responsibility | Dependency direction | Audit decision |
 |---|---|---|---|
@@ -10356,10 +10439,12 @@ Leaf helpers move before their callers. Phase modules may depend on shared
 staging, but parse-only and declaration-symbol must not depend on checker/core
 payload validation. Metadata `plan` remains payload-free.
 
-## Target Source Layout
+## Historical Target Source Layout Ledger
 
-The exact leaf split may be made smaller when fresh inventory proves a family
-is still too large, but no empty or synthetic owner module is permitted.
+This table preserves the ordered target and delta history used by Tasks
+249-263. The compact current-ownership table and paired harness source-path
+table above are canonical after Task 264. No empty or synthetic owner module
+was created.
 
 | Target path | Ownership |
 |---|---|
@@ -10620,7 +10705,7 @@ Task 255E.
 | 263ZZZX | Complete: moved only the exact five-fragment/76-line four-edge local-mode immediate-radix asserted-head route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
 | 263ZZZY | Complete: moved only the exact five-fragment/76-line four-edge local-mode reserved-variable builtin type-assertion route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
 | 263ZZZZ | Complete: moved only the final exact five-fragment/78-line four-edge local-mode same-mode asserted-head route into private `type_elaboration/type_assertion_routes.rs`; `runner.rs` retains only top-level detail dispatch. |
-| 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
+| 264 | Complete: closed out paired source-layout inventories, path tables, todo/plan state, and ownership guards; fresh canonical Step 5 inventory found no next nonempty task. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a
 smaller family, add a bounded subtask before editing; never create a no-op
@@ -10651,7 +10736,7 @@ before Task 253A is
 
 | Class | Result |
 |---|---|
-| `design_drift` | Active: source layout obscures phase and ownership review boundaries. Tasks 249-264 repair it without changing behavior. |
+| `design_drift` | Repaired: Tasks 249-264 expose the phase and ownership review boundaries without changing behavior. MT-AUDIT-022 is closed. |
 | `test_gap` | Tasks 262H0, 262I0, 262J0, 262K0, 262L0, 262M0, 262N0, and 262Q0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
 | `spec_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
 | `source_undocumented_behavior`, `boundary_violation` | No new finding; existing runner behavior remains governed by the paired harness plan and higher authorities. |
@@ -10684,9 +10769,22 @@ and type-elaboration 188.
 
 ## Exit Criteria
 
-The series is complete only when `runner.rs` is limited to the public facade
-and top-level orchestration; every private owner has minimal visibility; the
-preservation matrix passes; paired source-layout, crate-plan, todo, harness
+Task 264 satisfies the exit criteria: `runner.rs` is limited to the public
+facade and top-level orchestration; every private owner has minimal visibility;
+the preservation matrix passes; paired source-layout, crate-plan, todo, harness
 path-table, bilingual, and ownership-guard documentation is synchronized; and
-all verification is green. Fresh Step 5 inventory resumes only after Task 264.
-Steps 6 and 7 remain deferred until their existing dependency gates are met.
+all required verification is green. Counts remain 96/4/188, 403/367, 235/223,
+219/184, 23 warnings, zero errors, and 272 unit tests. The plan, parse-only,
+declaration-symbol, and type-elaboration CLI stdout hashes are respectively
+`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
+and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`;
+the raw/normalized test-list hashes remain
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+Specification, test-sufficiency, implementation,
+and source/documentation consistency reviews end with no findings.
+`spec_coverage_audit.md` remains unchanged. Fresh canonical todo inventory has
+no next nonempty Step 5 task; Steps 6 and 7 remain deferred until their existing
+dependency gates are met.

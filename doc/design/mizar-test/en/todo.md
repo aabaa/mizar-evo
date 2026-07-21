@@ -1322,13 +1322,19 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   normalization/provenance, and every fail-closed/isolation boundary. It is
   complete with every preservation gate passing. Fresh production-helper
   inventory finds only top-level dispatch/orchestration in `runner.rs`; Task
-  263 is complete and Task 264 remains pending as a separate closeout.
-- [ ] Close out the series by synchronizing the paired source-layout inventory,
+  263 is complete and the series advances to separate Task 264 closeout.
+- [x] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
   219/184, all 272 discovered unit tests, expectation/trace credit, and all
   existing `.miz` intent remain unchanged before fresh inventory resumes
-  Step 5.
+  Step 5. Task 264 is complete: the paired final inventory records 17
+  production runner paths/18,952 lines, path/content manifest hashes
+  `b36d96fe...`/`62d30627...`, eleven private type-elaboration leaves, and a
+  facade/top-level-orchestration-only `runner.rs`. All preservation counts,
+  four CLI hashes, and raw/normalized test-list hashes remain unchanged;
+  `spec_coverage_audit.md` remains unchanged. Fresh canonical Step 5 inventory
+  finds no next nonempty unchecked task. Steps 6/7 remain deferred.
 
 For every source-moving task, require review-only checks for visibility drift,
 test-discovery drift, owner-boundary drift, source/docs inconsistency, and

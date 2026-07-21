@@ -1162,12 +1162,18 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   provenance、全fail-closed/isolation boundaryを保存する。全preservation gate
   通過で完了した。fresh production-helper inventoryは`runner.rs`にtop-level
   dispatch/orchestrationだけを確認し、Task 263は完了、Task 264は独立closeout
-  としてpendingのままである。
-- [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
+  へ進む。
+- [x] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
   pass/fail 219/184、discovered unit test 272件、expectation/trace credit、既存
-  `.miz` intent が不変であることを確認する。
+  `.miz` intent が不変であることを確認する。Task 264は完了し、paired final
+  inventoryはproduction runner path 17個/18,952行、path/content manifest hash
+  `b36d96fe...`/`62d30627...`、private type-elaboration leaf 11個、facade/top-
+  level-orchestration-only `runner.rs`を記録する。全preservation count、4 CLI
+  hash、raw/normalized test-list hashは不変で、`spec_coverage_audit.md`も変更しない。
+  fresh canonical Step 5 inventoryには次のnonempty unchecked taskがなく、Steps
+  6/7はdeferredのままである。
 
 各 source-moving task で review-only により visibility drift、test-discovery
 drift、owner-boundary drift、source/docs inconsistency、意図しない behavior
