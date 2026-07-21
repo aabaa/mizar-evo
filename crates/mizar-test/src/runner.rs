@@ -166,6 +166,7 @@ use type_elaboration::{
     extract_source_chained_local_object_mode_reserved_variable_inequality,
     extract_source_chained_local_object_mode_reserved_variable_membership,
     extract_source_chained_local_object_mode_reserved_variable_type_assertion,
+    extract_source_contradiction_formula,
     extract_source_distinct_reserved_object_variable_equality,
     extract_source_distinct_reserved_object_variable_inequality,
     extract_source_distinct_reserved_variable_equality,
@@ -271,7 +272,7 @@ use type_elaboration::{
     source_chained_local_object_mode_reserved_variable_inequality_output,
     source_chained_local_object_mode_reserved_variable_membership_output,
     source_chained_local_object_mode_reserved_variable_type_assertion_output,
-    source_distinct_reserved_object_variable_equality_output,
+    source_contradiction_formula_output, source_distinct_reserved_object_variable_equality_output,
     source_distinct_reserved_object_variable_inequality_output,
     source_distinct_reserved_variable_equality_output,
     source_distinct_reserved_variable_inequality_output,
@@ -387,8 +388,8 @@ use type_elaboration::{
     assert_source_reserve_handoff, build_source_reserved_variable_type_assertion_output,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
     extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
-    extract_source_contradiction_formula, extract_source_formula_connective_quantifier,
-    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
+    extract_source_formula_connective_quantifier, extract_source_formula_statement,
+    extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula,
     extract_source_reserved_variable_type_assertion_with_config,
@@ -404,6 +405,7 @@ use type_elaboration::{
     source_chained_local_object_mode_reserved_variable_inequality_detail_keys,
     source_chained_local_object_mode_reserved_variable_membership_detail_keys,
     source_chained_local_object_mode_reserved_variable_type_assertion_detail_keys,
+    source_contradiction_formula_detail_keys,
     source_distinct_reserved_object_variable_equality_detail_keys,
     source_distinct_reserved_object_variable_inequality_detail_keys,
     source_distinct_reserved_variable_equality_detail_keys,
@@ -2692,15 +2694,6 @@ fn source_formula_statement_detail_keys(
     Some(term_formula_output_detail_keys(&output))
 }
 
-fn source_contradiction_formula_detail_keys(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<Vec<String>> {
-    let output = source_contradiction_formula_output(ast, module, symbols)?;
-    Some(term_formula_output_detail_keys(&output))
-}
-
 fn source_builtin_binary_term_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -2813,27 +2806,6 @@ fn source_formula_statement_output(
         .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
     );
     Some(output)
-}
-
-fn source_contradiction_formula_output(
-    ast: &SurfaceAst,
-    module: ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<TermFormulaInferenceOutput> {
-    let payload = extract_source_contradiction_formula(ast)?;
-    let binding_env = source_module_binding_env(ast, module).ok()?;
-    let context = BindingContextId::new(0);
-    Some(TermFormulaChecker::default().infer(
-        symbols,
-        &binding_env,
-        [],
-        [FormulaInput::new(
-            payload.formula_site,
-            context,
-            payload.formula_range,
-            FormulaKind::Contradiction,
-        )],
-    ))
 }
 
 fn source_builtin_type_assertion_formula_output(

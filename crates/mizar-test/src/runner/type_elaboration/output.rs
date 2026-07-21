@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use mizar_checker::binding_env::{BindingId, BindingLookupResult, BindingLookupSite};
+use mizar_checker::binding_env::{
+    BindingContextId, BindingId, BindingLookupResult, BindingLookupSite,
+};
 use mizar_checker::type_checker::{
     ExpectedTypeInput, FormulaInput, FormulaKind, FormulaStatus, NormalizedTypeStatus,
     SourceReserveBindingInput, TermFormulaChecker, TermFormulaInferenceOutput, TermInput, TermKind,
@@ -10,17 +12,20 @@ use mizar_checker::typed_ast::{
     NormalizedTypeId, TypeEntryActual, TypeEntryId, TypeRole, TypeStatus, TypedNodeId, TypedSiteRef,
 };
 use mizar_resolve::env::SymbolEnv;
+use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_session::SourceRange;
+use mizar_syntax::SurfaceAst;
 
 use super::source_formula::{
     SourceParenthesizedOperandSide, SourceParenthesizedReservedVariableBinaryFormula,
+    extract_source_contradiction_formula,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
     SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBuiltinType,
     SourceReservedVariableTypeAssertion, assemble_source_reserve_checker_handoff,
     assert_source_reserve_handoff, source_binding_matches_reserved_builtin_type,
-    source_binding_use_ordinals, source_mode_terminal_builtin_input,
+    source_binding_use_ordinals, source_mode_terminal_builtin_input, source_module_binding_env,
     source_reserved_variable_asserted_head_relation_is_exact,
     source_reserved_variable_mode_expansions_are_exact,
     source_type_expression_matches_reserved_builtin_type,
@@ -592,6 +597,36 @@ pub(in crate::runner) fn term_formula_output_detail_keys(output: &TermFormulaInf
     keys.sort();
     keys.dedup();
     keys
+}
+
+pub(in crate::runner) fn source_contradiction_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_contradiction_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
+pub(in crate::runner) fn source_contradiction_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_contradiction_formula(ast)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    Some(TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::Contradiction,
+        )],
+    ))
 }
 
 fn type_entry_known_actual_for_owner(

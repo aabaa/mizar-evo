@@ -1143,8 +1143,14 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   normalized-reflexive builtin-object behavior, and fail-closed behavior
   without moving its builtin-set, local-mode, chained, or other siblings; it is
   complete. Fresh inventory returns to the remaining production-helper
-  families. Task 263 keeps this parent item open pending the next fresh bounded
-  selection.
+  families and selects the exact two-fragment/28-line standalone contradiction
+  formula output/detail family as Task 263ZZZB in existing private
+  `type_elaboration/output.rs`. Preserve its token-identical bodies, byte
+  stability, exact checked contradiction payload, empty diagnostics/deferred/
+  facts, one normal detail consumer, and test-only output consumers without
+  moving another formula family or route; it is complete. Fresh inventory
+  returns to the remaining production-helper families. Task 263 keeps this
+  parent item open pending the next fresh bounded selection.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail

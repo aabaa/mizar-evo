@@ -8003,11 +8003,118 @@ report no findings. No sibling route, behavior, API, test name, expectation,
 diagnostic, key, payload, ordering, fail-closed behavior, coverage, or deferred
 state changed; `spec_coverage_audit.md` remains unchanged.
 
+## Task 263ZZZB Pre-Move Inventory and Specification
+
+Fresh authority, test, trace, expectation, design, source, API, and real-
+producer/consumer inventory compares every remaining production-helper family
+and selects only the standalone contradiction formula output/detail pair. It
+is the smallest cohesive family: 28 lines, below the 30-line formula-statement
+pair and the 52-line smallest remaining route family. The exact `runner.rs`
+fragments are the 8-line `source_contradiction_formula_detail_keys` at
+2695-2702 with raw hash
+`491f8ae31131b146fb4743641a909a82aa3777dfcd1611064548a51a11e842e7`
+and the 20-line `source_contradiction_formula_output` at 2818-2837 with raw
+hash
+`72b129ff0f1413b0bc1ca8ece6cf3e46365317d5ac3901a2aa92c21011748de9`.
+Their combined raw hash is
+`61ca02cac3608f02e5c1048df0ef1d34d8bb94db0f6b9750cf091fd0aa49fde1`
+and whitespace-normalized hash is
+`7688d6cefe9529a3406799b7742093485859195498aa31a66fc95782b62b2e88`.
+The two route symbols have seven occurrences across `runner.rs` and three test
+files. The dependency-first owner is existing private
+`type_elaboration/output.rs`, which already owns the shared term/formula
+diagnostic-key projection and checker-output transport/build/validation logic.
+
+Task 263ZZZB mechanically moves only those two fragments. The production
+detail entry crosses the private phase facade normally. The output producer is
+used internally by that detail entry and crosses the facade only under
+`cfg(test)` for its existing direct consumers. Required owner imports are
+limited to the existing source extractor, module-binding-env producer, AST and
+resolver identifiers, and checker context type; no reverse dependency is
+introduced. Current inventory is `runner.rs` 3,230 /
+`94706f70852b1f4207151cfc7d6b50ced43908f9fd81510ab77bee85b29fb96c`,
+the 525-line phase facade /
+`75ac599add4469dcc5dd68e8d00c600c07c600d049e5511e46a2507d974d8acc`,
+and `output.rs` 1,153 /
+`7f107a2cae8166ebf0cb53e8ae0f0ac93d7ce5c0e44e231ee16ed823b1e0c7b3`.
+
+The authority slice is Task 180's exact source
+`theorem SourceDerivedContradictionConstantBoundary: contradiction;`, the
+canonical source-derived payload contract in `harness.md`, and requirement
+`spec.en.checker.type_elaboration.contradiction_formula_constant_source_bridge`
+traced to its active fixture and expectation. The producer must preserve the
+real formula leaf site/range and module-root `BindingContextId(0)`, pass exactly
+one `FormulaKind::Contradiction` to the checker, and return one `Checked`
+formula with no terms, asserted type, expected constraints, candidates, facts,
+deferred reasons, or diagnostics. The exact bridge test covers provenance,
+shape, status, empty payload surfaces, and ordered detail output; the active-
+fixture test covers real frontend/resolver discovery and checker payload. The
+existing near-miss matrix remains fail-closed. The 272-test raw/normalized list
+oracles and four CLI stdout hashes cover discovery and end-to-end byte
+stability. Test sufficiency is therefore adequate for this move-only
+`design_drift`; no ZZZB0 prerequisite test is needed.
+
+Changing `FormulaKind`, adding a deferred reason, truth/fact publication,
+theorem acceptance, proof-goal closure, child graphs, `formula_statement`,
+proof, CoreIr, ControlFlowIr, verification conditions, extractor shape,
+diagnostics, keys, payloads, ordering, fail-closed behavior, API, test names,
+expectations, trace/spec intent, coverage, deferred state, another formula
+family, or any route sibling is forbidden. `spec_coverage_audit.md` remains
+unchanged because this task changes no specification coverage, design mapping,
+follow-up owner, trace credit, or deferred rationale.
+
+## Task 263ZZZB Move Result
+
+Task 263ZZZB moved only the approved two-fragment/28-line standalone
+contradiction formula output/detail family into existing private
+`type_elaboration/output.rs`. The detail entry crosses the phase facade
+normally. The output producer remains available through the facade only under
+`cfg(test)`, as does its source extractor; the owner imports both the extractor
+and module-binding-env producer directly without a reverse dependency. The
+initial compile check identified and removed the now-unused normal parent
+extractor import by narrowing its existing parent consumers to `cfg(test)`.
+
+After stripping only `pub(in crate::runner)`, the 8-line detail fragment retains
+raw hash
+`491f8ae31131b146fb4743641a909a82aa3777dfcd1611064548a51a11e842e7`,
+the 20-line output retains raw hash
+`72b129ff0f1413b0bc1ca8ece6cf3e46365317d5ac3901a2aa92c21011748de9`,
+their combined raw hash remains
+`61ca02cac3608f02e5c1048df0ef1d34d8bb94db0f6b9750cf091fd0aa49fde1`,
+and the whitespace-normalized hash remains
+`7688d6cefe9529a3406799b7742093485859195498aa31a66fc95782b62b2e88`.
+The resulting inventory is `runner.rs` 3,202 /
+`282cfbec687307a0b623abecc811cf08781ee03f65a5164e15bf64b35c0a8104`,
+the 524-line phase facade /
+`7e058025d3b96135576841a2f2749a256eb95747dead1d3f8e477b8bf984262c`,
+and `output.rs` 1,188 /
+`40c93a2a65a1b7b0feb05d616dedfe8bf1b9851d59ad302053bfe44bd31fc590`.
+
+The exact source-gap/detail test and active-fixture real-checker test pass. All
+272 crate unit tests pass, and the raw/normalized test-list hashes remain
+`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
+and
+`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+The plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
+`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
+and
+`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
+Counts remain 96/4/188, 403/367, 235/223, and 219/184 with 23 warnings and
+zero errors. Formatting, denied-warning Clippy, crate/workspace tests, and diff
+checks pass. Specification review ended with no findings after correcting the
+fresh-inventory comparator from 53 to 52 lines; test-sufficiency and
+implementation reviews report no findings. No sibling, behavior, API, test
+name, expectation, diagnostic, key, payload, ordering, fail-closed behavior,
+coverage, or deferred state changed; `spec_coverage_audit.md` remains
+unchanged.
+
 ## Current Ownership
 
 Rows whose cumulative task range ends at 263ZZX are the retained base; the
-explicit 263ZZY, 263ZZZ, and 263ZZZA delta rows below extend the type-assertion
-and diagnostic-detail ownership surfaces.
+explicit 263ZZY through 263ZZZB delta rows below extend the type-assertion and
+diagnostic-detail ownership surfaces.
 
 | Current area | Responsibility | Dependency direction | Audit decision |
 |---|---|---|---|
@@ -8024,6 +8131,7 @@ and diagnostic-detail ownership surfaces.
 | Task 263ZZY direct builtin-set type-assertion ownership delta | The exact direct reserved-variable config, extractor, detail, and test output extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZY. | real source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
 | Task 263ZZZ shared diagnostic-key projection ownership delta | The exact canonical diagnostic-message-key prefix/sort/dedup helper extends the payload-rendering row above without moving any consumer wrapper. | checker term/formula diagnostics to nine facade-owned formula detail wrappers | Owned by private `output.rs`; one parent-only entry crosses the phase facade and every wrapper remains in `runner.rs`. |
 | Task 263ZZZA direct builtin-object type-assertion ownership delta | The exact direct reserved-object-variable config, extractor, detail, and test output extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZZA. | real source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
+| Task 263ZZZB contradiction output/detail ownership delta | The exact standalone contradiction checker producer and deterministic detail projection extend the payload-rendering row above through Task 263ZZZB. | real source leaf through checker output to facade detail/test consumers | Owned by private `output.rs`; detail crosses normally, output and its extractor cross the facade only under `cfg(test)`, and every other formula family remains in `runner.rs`. |
 | fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
 | cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
 
@@ -8087,6 +8195,7 @@ is still too large, but no empty or synthetic owner module is permitted.
 | `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZY delta | Adds the exact direct builtin-set reserved-variable type-assertion config/extractor/detail/test-output route to the preceding cumulative owner rows. |
 | `src/runner/type_elaboration/output.rs` Task 263ZZZ delta | Adds the exact shared term/formula diagnostic-key projection; nine formula wrappers remain in `runner.rs`. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZA delta | Adds the exact direct builtin-object reserved-variable type-assertion config/extractor/detail/test-output route to the preceding cumulative owner rows. |
+| `src/runner/type_elaboration/output.rs` Task 263ZZZB delta | Adds the exact standalone contradiction checker-output producer and detail wrapper; every other formula family remains in `runner.rs`. |
 | `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
 | `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
 | `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
@@ -8280,6 +8389,7 @@ Task 255E.
 | 263ZZY | Complete: moved only the exact five-fragment/47-line direct builtin-set reserved-variable type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every builtin-object, local-mode, chained, and other route remains in place. |
 | 263ZZZ | Complete: moved only the exact 10-line shared term/formula diagnostic-key projection into existing private `type_elaboration/output.rs`; all nine parent wrappers and every other production helper remain in place. |
 | 263ZZZA | Complete: moved only the exact five-fragment/47-line direct builtin-object reserved-variable type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every builtin-set, local-mode, chained, and other route remains in place. |
+| 263ZZZB | Complete: moved only the exact two-fragment/28-line standalone contradiction formula output/detail family into existing private `type_elaboration/output.rs`; every other formula family and route remains in place. |
 | 264 | Close out paired source-layout inventories, path tables, todo/plan state, and ownership guards. |
 
 Every listed source-moving task must be nonempty. If fresh inventory requires a
