@@ -1260,6 +1260,13 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   extractor crossings, exact Task 146 normalization and provenance, and every
   fail-closed/isolation boundary. It is complete with every preservation gate
   passing; Task 263 remains open pending fresh inventory.
+  Fresh inventory selects the exact five-fragment/67-line two-edge local-mode
+  reserved-variable builtin type-assertion route as Task 263ZZZS in private
+  `type_elaboration/type_assertion_routes.rs`. Preserve the leaf-private key,
+  normal detail, test-only config/output/extractor, exact Task 148 provenance/
+  normalization, and all fail-closed/isolation boundaries. It is complete with
+  every preservation gate passing; Task 263 remains open pending fresh
+  inventory.
 - [ ] Close out the series by synchronizing the paired source-layout inventory,
   crate plan, todo, harness/source-path tables, and ownership guards. Confirm
   that active runner 188, plan 403/367, type-elaboration 235/223, pass/fail
