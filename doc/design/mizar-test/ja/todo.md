@@ -1042,7 +1042,13 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   selectionと移動済みshared coreへのpayload forwarding、normal parent-only
   visibility、保持するdetail/non-empty wrapper、正確なdiagnostic、全fail-closed/
   isolation boundaryを維持し、全preservation gateをpassして完了した。Task 263
-  parent itemはfresh inventoryまでopenを維持する。
+  parent itemはopenを維持する。fresh inventoryは既存private
+  `type_elaboration/output.rs`の正確な8行positive imported-attribute assertion
+  detail wrapperをTask 263ZZZIとして選ぶ。token-identicalなoutput-to-canonical-
+  key projection、normal detail visibility、test-only output/extractor crossing、
+  保持するnon-empty family、正確なdiagnostic、全fail-closed/isolation boundaryを
+  維持し、全preservation gateをpassして完了した。Task 263 parent itemはfresh
+  inventoryまでopenを維持する。
 - [ ] paired source-layout inventory、crate plan、todo、harness/source-path table、
   ownership guard を同期して series を closeout する。fresh inventory が Step 5
   を再開する前に、active runner 188、plan 403/367、type-elaboration 235/223、
