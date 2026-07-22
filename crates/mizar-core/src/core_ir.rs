@@ -450,6 +450,7 @@ pub enum CoreProofStatus {
     Open,
     Assumed,
     Conditional,
+    PendingAutomaticProof,
     Error,
 }
 

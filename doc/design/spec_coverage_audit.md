@@ -2247,3 +2247,34 @@ implicit closure, CoreIr/ControlFlowIr, VC, or discharge credit. Core Task 31
 is now the next executable exact consumer. Checker Task 247 retains all
 broader proof-family ownership, Step 5 remains active, and Steps 6/7 remain
 deferred.
+
+## Core Task 31 Exact CoreIr Snapshot Coverage Update
+
+Core Task 31 closes the exact source-to-Core `source_drift` and task-local
+`test_gap` selected by Tasks 265-268, but only for the existing Task-180
+source. The active type-elaboration runner now consumes the complete real
+checker-owned owner/formula/pending-proof/direct-terminal bundle and invokes a
+borrowed transactional adapter. The result is exactly one public structurally
+`Valid` theorem item, one `False` formula, one `PendingAutomaticProof`, one
+direct terminal node, and one Active undischarged `TheoremProof` seed at
+`proof/0`, with exact source maps and versioned resolver/checker/proof-skeleton
+provenance. Preflight, generic lowering, enrichment, or postvalidation failure
+publishes no partial `CoreIr`.
+
+The existing sidecar is the sole backlink for new covered snapshot requirement
+`spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot`. The runner
+builds the CoreIr twice, requires structural/debug equality, and performs a
+verify-only complete-byte comparison with the committed baseline. This raises
+the plan from 403/367 to 403/368 and type-elaboration coverage from 235/223 to
+236/224; active cases remain 188 and pass/fail remains 219/184. The `.miz`,
+pass outcome, phase, and diagnostics are unchanged.
+
+The coverage-matrix rows for Chapters 14, 15, and 16 remain `partial`, refined
+by this exact-only credit. Chapter 14 gains the `False` Core representation,
+not truth/fact publication. Chapters 15/16 gain the pending direct-terminal
+Core handoff and deterministic snapshot, not proof-statement execution,
+implicit closure, proof verification, theorem acceptance, discharge, or a
+verified premise. The broad non-Task-180 CoreIr row, every ControlFlowIr row,
+CFG/VC/proof/kernel/artifact behavior, and all other proof/formula families
+remain deferred to checker Task 247, Core Task 32 and its descendants, and the
+named downstream owners. Step 5 remains active; Steps 6/7 remain deferred.

@@ -169,8 +169,13 @@ fn core_source_stays_off_frontend_and_downstream_boundaries() {
             .chars()
             .filter(|character| !character.is_whitespace())
             .collect::<String>();
-        let resolver_aliases = resolver_crate_aliases(&compact_source);
-        if resolver_braced_import_contains_forbidden_api(&compact_source) {
+        let allow_exact_task31_metadata = path
+            .strip_prefix(&root)
+            .is_ok_and(|relative| relative == Path::new("src/elaborator.rs"));
+        let boundary_source =
+            strip_exact_task31_metadata_import(&compact_source, allow_exact_task31_metadata);
+        let resolver_aliases = resolver_crate_aliases(&boundary_source);
+        if resolver_braced_import_contains_forbidden_api(&boundary_source) {
             let display_path = path.strip_prefix(&root).unwrap_or(&path);
             violations.push(format!(
                 "{}: mizar_resolve::{{env/resolved_ast}}",
@@ -182,14 +187,14 @@ fn core_source_stays_off_frontend_and_downstream_boundaries() {
                 .chars()
                 .filter(|character| !character.is_whitespace())
                 .collect::<String>();
-            if compact_source.contains(&compact_token) {
+            if boundary_source.contains(&compact_token) {
                 let display_path = path.strip_prefix(&root).unwrap_or(&path);
                 violations.push(format!("{}: {token}", display_path.display()));
             }
         }
         for alias in &resolver_aliases {
-            if resolver_alias_uses_forbidden_api(&compact_source, alias)
-                || resolver_alias_imports_forbidden_api(&compact_source, alias)
+            if resolver_alias_uses_forbidden_api(&boundary_source, alias)
+                || resolver_alias_imports_forbidden_api(&boundary_source, alias)
             {
                 let display_path = path.strip_prefix(&root).unwrap_or(&path);
                 violations.push(format!(
@@ -234,8 +239,38 @@ fn resolver_boundary_scanner_catches_braced_and_nested_imports() {
         .filter(|character| !character.is_whitespace())
         .collect::<String>();
     assert!(!resolver_braced_import_contains_forbidden_api(
-        &compact_allowed
+        &compact_allowed,
     ));
+
+    let task31_metadata = "use mizar_resolve::env::{ExportStatus, Visibility};";
+    let compact_task31_metadata = task31_metadata
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect::<String>();
+    assert!(compact_task31_metadata.contains("mizar_resolve::env"));
+    assert_eq!(
+        strip_exact_task31_metadata_import(&compact_task31_metadata, true),
+        ""
+    );
+    assert_eq!(
+        strip_exact_task31_metadata_import(&compact_task31_metadata, false),
+        compact_task31_metadata
+    );
+
+    for sample in [
+        "use mizar_resolve::env::{Visibility};",
+        "use mizar_resolve::env::{ExportStatus, SymbolEnv, Visibility};",
+        "use mizar_resolve::env::{ExportStatus as Status, Visibility};",
+    ] {
+        let compact_sample = sample
+            .chars()
+            .filter(|character| !character.is_whitespace())
+            .collect::<String>();
+        assert!(
+            strip_exact_task31_metadata_import(&compact_sample, true)
+                .contains("mizar_resolve::env")
+        );
+    }
 }
 
 #[test]
@@ -1025,6 +1060,19 @@ fn brace_delta(line: &str) -> i32 {
     }
 
     delta
+}
+
+fn strip_exact_task31_metadata_import(
+    compact_source: &str,
+    allow_exact_task31_metadata: bool,
+) -> String {
+    const EXACT_IMPORT: &str = "usemizar_resolve::env::{ExportStatus,Visibility};";
+
+    if allow_exact_task31_metadata {
+        compact_source.replacen(EXACT_IMPORT, "", 1)
+    } else {
+        compact_source.to_owned()
+    }
 }
 
 fn resolver_braced_import_contains_forbidden_api(compact_source: &str) -> bool {

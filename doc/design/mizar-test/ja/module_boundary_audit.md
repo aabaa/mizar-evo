@@ -9659,3 +9659,25 @@ production manifestは17 path、path hash
 production owner/visibility boundaryは不変。existing `.miz`、expectation、trace
 status/test list、active runner/count、4 CLI bytesは不変。Core Task 31はexecutable、
 Steps 6/7はdeferredのままである。
+
+## Core Task 31 / Task-10 consumer current-state addendum
+
+Core Task 31はexisting top-level orchestration、type-elaboration output、
+result-projection owner内だけでbehaviorを変更し、production path/private leafを
+追加しない。`runner.rs`はfacade/top-level orchestrationのみで、type-elaboration
+facadeはprivate leaf 11件を維持する。exact Task-180 output ownerはborrowed core
+adapterを2回callし、top-level orchestrationはsingular verify-only baseline comparison、
+result leafはsnapshot failureのstable diagnostic identityを所有する。
+
+production manifestは17 path、path hash
+`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`のまま。
+total 19,803行、content-manifest hash
+`5f9e716169964a861b71576957c05e2dc2538b5e0ff9d1025ef51a4bea6aa306`、
+`runner.rs` 2,266行、`type_elaboration.rs` 578行、`checker_handoff.rs` 1,259行、
+`output.rs` 1,566行、
+`result.rs` 38行となる。active
+parse/declaration/type countは96/4/188、272-test name listは不変。new exact
+snapshot requirementによりplanは意図的に403/368、type coverageは236/224となり、
+pass/failは219/184のまま。existing `.miz`、pass outcome、phase、diagnostic、
+broader trace rowは不変。non-Task-180 CoreIr/ControlFlowIr全familyはdeferredのままで、
+Steps 6/7はpromoteしない。

@@ -339,9 +339,9 @@ Rules:
 
 ### Task 267 Exact Task-180 Core Projection
 
-Task 267 fixes a target-state specialization for Core Task 31; the Rust variant
-and adapter remain unimplemented until that task. Task 31 consumes only the
-explicit Task-268 checker bundle. It does not scan syntax or infer omission,
+Task 267 fixes the target-state specialization implemented by Core Task 31.
+The public exact adapter consumes only the explicit Task-268 checker bundle.
+It does not scan syntax or infer omission,
 status, visibility, or a terminal goal. Resolver `Exported` is an exact-input
 preflight condition and is intentionally erased because `CoreItem` has no
 export-status field. Only declared visibility becomes
@@ -437,6 +437,24 @@ non-dense, reordered, recovered, cross-source/module, corrupt, or mismatched
 data returns `Err` and no `CoreIr`; the exact adapter never publishes generic
 `Error` or `Partial` rows. This contract adds no proof search, fact
 publication, acceptance, ControlFlowIr, VC, artifact, or Step 6/7 semantics.
+
+For this exact adapter, "complete checker bundle" is an allowlist, not a
+minimum subset. The input is one borrowed `ResolvedTypedAst` with the Task-266
+three-node source-preserved tree (formula, theorem, module root), one checked
+`Contradiction` formula, one statement semantic row, and the three singleton
+Task-268 proof tables. Singleton semantic/proof table ids are dense zero ids,
+and the compact Task-266 tree ids are formula 0, theorem 1, and root 2. The
+real `formula_site` node id is preserved and canonically encoded independently;
+it need not be zero or equal to compact `formula_node` zero. Every source
+id/module id/range/recovery/owner/origin link must agree. The formula is
+`Checked`, normal, term/fact/constraint/candidate/
+deferred-free, and uses a `TypedSiteRef::Node`. The owner origin is local,
+unrecovered, range-anchored, and has no import edge; the owner is explicitly
+`Public` and `Exported`. Expression metadata, overload/candidate/template/
+coercion/cluster/diagnostic tables and all other semantic payload tables are
+empty. Extra nodes, rows, diagnostics, or unrelated checker payloads are
+rejected rather than silently erased. This strict allowlist is intentionally
+not a general source-derived CoreIr entry point.
 
 ### Algorithm Shells
 

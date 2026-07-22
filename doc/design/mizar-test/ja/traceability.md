@@ -1561,10 +1561,13 @@ coherence proof-obligation payload、overload candidate payload、Chapter 11
 alias semantic resolution、Chapter 19 overload / redefinition semantics、fact、
 `formula_statement` または `advanced_semantics` runner support、CoreIr、
 ControlFlowIr、VC、proof payload は credit しない。
-これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
-prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
-`proof_verification` row は deferred のままにする。summary/context readiness read は
-CoreIr / ControlFlowIr / VC / proof の昇格ではない。
+これらのgap testはbroader task 7-11 semantic pass/fail coverageを満たさない。
+Core Task 31は
+`spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot`だけをseparately
+promoteし、existing Task-180 sidecarをsole backlinkとしてreal exact CoreIrを
+verify-compareする。broad `CoreIr`、全`ControlFlowIr`、`proof_verification` rowは
+prepared consumer executionが存在するまでdeferredのまま。summary/context
+readinessだけではCoreIr/ControlFlowIr/VC/proof promotionにならない。
 
 ## Reporting
 

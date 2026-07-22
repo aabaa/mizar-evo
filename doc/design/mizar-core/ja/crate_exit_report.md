@@ -123,7 +123,7 @@ helper extraction は crate-owned blocker ではなく external または deferr
 | ID | Reason | Owner | Unblock condition |
 |---|---|---|---|
 | CORE-AUDIT-G001 | Source-to-checker extraction が full source-derived `ResolvedTypedAst` payload と production source-to-core fixture をまだ blocking している。 | Checker extraction / mizar-test integration follow-up。 | `mizar-core` が raw syntax を再走査しなくても checker-ready AST-wide payload extraction が存在する。 |
-| CORE-AUDIT-G002 | `CoreIr` と `ControlFlowIr` 用の active source-derived `type_elaboration` / `proof_verification` snapshot runner がまだ存在しない。 | `mizar-test` staged runner follow-up。 | real checker-derived `CoreIr` / `ControlFlowIr` baseline を比較できる stage runner が存在する。 |
+| CORE-AUDIT-G002 | Core Task 31はexact Task-180 source-derived `type_elaboration` `CoreIr` snapshotを1件提供した。non-Task-180 `CoreIr`、全`ControlFlowIr`、`proof_verification` snapshot runnerは未提供。 | checker Task 247後のCore Task 32 decomposition。 | bounded descendant taskが残るreal checker-derived baseline向けprepared stage consumerを提供する。 |
 | CORE-AUDIT-G003 | Artifact schema emission、proof acceptance、VC generation、kernel checking は downstream または cross-crate work。 | `mizar-artifact`、`mizar-proof`、`mizar-vc`、`mizar-kernel` phase。 | Downstream crate が core/control-flow handoff 用の accepted schema と consumer を定義する。 |
 | CORE-AUDIT-G004 | 具体的な `VcId`、`ObligationAnchor`、VC fingerprint、proof/cache reuse anchor、downstream artifact identity は `mizar-core` の所有ではない。 | `mizar-vc` incremental verification / artifact phase。 | Downstream identity と anchor contract が存在する。 |
 | CORE-AUDIT-G005 | Source-derived call/result substitution、pattern、snapshot、claim、より豊かな algorithm payload seam には checker-owned explicit payload が必要。 | Checker payload extraction と phase-10/phase-11 integration。 | それらの source form 用の explicit checker payload が存在する。 |
@@ -186,3 +186,16 @@ downstream VC/kernel/proof/artifact consumers, diagnostics, or move-only source
 maintenance. Narrow docs-only synchronization or mechanical guard maintenance
 なら reasoning を下げてもよい。semantic behavior、binder/proof boundary、VC
 identity、artifact schema、proof/kernel integration では `xhigh` を維持または上げる。
+
+## Core Task 31 post-closeout addendum
+
+上記historical closeout/scoreはoriginal crate milestoneについて有効なままである。
+後続Step-5 authorityがbounded integration taskを1件re-openした。Core Task 31は
+exact checker Task-180 singleton bundleだけを`lower_exact_task180_handoff`で
+consumeし、public structurally valid theorem 1件、`False` 1件、
+`PendingAutomaticProof` 1件、direct terminal node 1件、Active undischarged
+`TheoremProof` seed 1件を生成し、active type-elaboration runnerでfull deterministic
+debug baselineをverifyする。adapterはsyntax-free/transactionalのままで、acceptance、
+discharge、CFG、VC、kernel、artifact、broader-family behaviorを追加しない。
+CORE-AUDIT-G002はnon-Task-180全familyとCore Task 32所有のlater stageについてだけ
+openのままである。

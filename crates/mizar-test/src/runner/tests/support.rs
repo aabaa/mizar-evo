@@ -192,8 +192,10 @@
         source_chained_local_object_mode_reserved_variable_inequality_output,
         source_chained_local_object_mode_reserved_variable_membership_output,
         source_chained_local_object_mode_reserved_variable_type_assertion_output,
-        source_contradiction_formula_detail_keys, source_contradiction_formula_output,
+        source_contradiction_core_ir_snapshot, source_contradiction_formula_detail_keys,
+        source_contradiction_formula_output,
         source_contradiction_handoff_corruption_error,
+        source_contradiction_handoff_with_extra_expression,
         source_distinct_reserved_variable_equality_output,
         source_distinct_reserved_variable_inequality_output,
         source_distinct_reserved_variable_membership_output,
@@ -284,7 +286,9 @@
         TermReference, TermStatus, TypeHeadInput, TypeHeadRef,
     };
     use mizar_checker::typed_ast::{LocalTypeContextId, TypeStatus, TypedSiteRef};
-    use mizar_core::elaborator::ResolvedTypedAstSummary;
+    use mizar_core::elaborator::{
+        ExactTask180LoweringError, ResolvedTypedAstSummary, lower_exact_task180_handoff,
+    };
     use mizar_frontend::lexical_env::{
         ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
         LexicalEnvironmentRequest, LexicalSummaryProvider, UserSymbolKind,

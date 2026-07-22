@@ -1636,11 +1636,14 @@ overload/redefinition semantics, facts, `formula_statement` or
 `advanced_semantics` runner support, CoreIr, ControlFlowIr, VC, or proof
 payloads.
 
-Those gap tests do not satisfy the broader task 7-11
-semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
-`proof_verification` rows remain deferred until prepared consumer execution
-exists; the summary/context readiness read is not a CoreIr/ControlFlowIr/VC/
-proof promotion.
+Those gap tests do not satisfy the broader task 7-11 semantic pass/fail
+coverage. Core Task 31 separately promotes exactly
+`spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot`: its existing
+Task-180 sidecar is the sole backlink and the runner verify-compares the real
+exact CoreIr. The broad `CoreIr`, every `ControlFlowIr`, and
+`proof_verification` rows remain deferred until their prepared consumer
+execution exists; summary/context readiness alone is not a
+CoreIr/ControlFlowIr/VC/proof promotion.
 
 ## Reporting
 

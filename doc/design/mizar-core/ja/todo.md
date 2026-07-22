@@ -462,7 +462,7 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       consume する。参照: spec 13 §13.4.2、18 §18.10.2;
       template_encoding_audit.md F5。
 
-31. **Exact source-derived contradiction theorem lowering。** [ ]
+31. **Exact source-derived contradiction theorem lowering。** [x]
     - mizar-test Tasks 266/268完了済みとして、そのchecker-owned theorem owner、checked
       contradiction formula、proof-status/skeleton、explicit terminal-goal payloadだけを
       Task 267のexact mappingで消費する。source/provenance identityを完全に持つ
@@ -484,6 +484,13 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       adapter testはpreflight/generic lowering/exact enrichment/postvalidation
       failureをinjectし、全phaseで`Err`かつpartial `CoreIr`/source mapなしをassertする。
     - 依存: mizar-test Tasks 266-268。仕様: 14-16、architecture 06。
+    - 完了: `lower_exact_task180_handoff`はcomplete exact checker bundleだけを
+      acceptし、private draftとexisting generic lowering stageを使い、provenanceを
+      transactionalにenrich/exact-validateする。typed failureではpartial outputを
+      一切返さない。existing active contradiction caseはdeterministic rerunと
+      committed CoreIr baselineのverify-only full-byte比較を行う。`.miz`、pass/fail
+      intent、theorem acceptance/discharge、broader Core/CFG/VC family、Steps 6/7
+      statusは変更していない。
 
 32. **Remaining source-derived `CoreIr`/`ControlFlowIr` task decomposition。** [ ]
     - checker Task 247後、残る全declaration/definition、attribute/type、term/formula、

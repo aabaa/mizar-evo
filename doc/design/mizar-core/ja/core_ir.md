@@ -321,9 +321,9 @@ enum CoreProofNodeKind {
 
 ### Task 267 exact Task-180 core projection
 
-Task 267 は Core Task 31 の target-state specialization を確定する。Rust variant
-と adapter の実装は同 task まで deferred である。Task 31 が consume するのは
-explicit Task-268 checker bundle だけであり、syntax scan や omission/status/
+Task 267 は Core Task 31 が実装した target-state specialization を確定する。
+public exact adapter が consume するのは explicit Task-268 checker bundle
+だけであり、syntax scan や omission/status/
 visibility/terminal goal の推測をしない。resolver `Exported` は exact-input
 preflight condition で、`CoreItem` に export-status field がないため意図的に
 erase する。declared visibility だけを `CoreVisibility("public")` にする。
@@ -416,6 +416,23 @@ reordered/recovered/cross-source/module/corrupt/mismatched data は `Err` と no
 `CoreIr` を返し、exact adapter は generic `Error`/`Partial` row を publish しない。
 この contract は proof search/fact publication/acceptance/ControlFlowIr/VC/
 artifact/Step 6/7 semantics を追加しない。
+
+この exact adapter でいう "complete checker bundle" は minimum subset ではなく
+allowlist である。input は Task-266 の3-node source-preserved tree（formula、
+theorem、module root）、checked `Contradiction` formula 1件、statement semantic
+row 1件、Task-268 の3つの singleton proof tableを持つ borrowed
+`ResolvedTypedAst` 1件だけとする。singleton semantic/proof table idはdense zero
+id、compact Task-266 tree idはformula 0/theorem 1/root 2とする。real
+`formula_site` node idは独立にpreserve/canonical encodeし、zeroまたはcompact
+`formula_node` zeroと等しい必要はない。source id/module id/range/recovery/
+owner/origin link はすべて一致しなければならない。formula は `Checked`/normal で、term/fact/
+constraint/candidate/deferred-free、かつ `TypedSiteRef::Node` を使う。owner
+origin は local/unrecovered/range-anchored/import-edgeなしで、owner は明示的に
+`Public`/`Exported` である。expression metadata、overload/candidate/template/
+coercion/cluster/diagnostic table とその他すべての semantic payload table は
+empty とする。extra node/row/diagnostic/unrelated checker payload は silent erase
+せず reject する。この strict allowlist は意図的に general source-derived CoreIr
+entry point ではない。
 
 ### algorithm shell
 

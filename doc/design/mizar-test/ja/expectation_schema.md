@@ -229,7 +229,7 @@ Fields:
 |---|---:|---|
 | `expected_phase` | yes | Harness がこの test で実行すべき latest phase. |
 | `diagnostic_codes` | yes | Expected diagnostics。Empty は diagnostics なしを意味する。 |
-| `snapshots` | no | 現在の parse-only `SurfaceAst` baseline path。該当する場合のみ。 |
+| `snapshots` | no | transitional parse-only `SurfaceAst` baseline path、またはexact Core Task-31 `CoreIr` baseline path 1件。該当する場合のみ。 |
 
 Expectation で明示的に許可されていない error diagnostic が出た場合、pass test は fail する。
 
@@ -255,7 +255,7 @@ Fields:
 | `rejection_reason` | conditional | Certificate and kernel rejection では必須。それ以外では optional. |
 | `diagnostic_codes` | yes | Deterministic order の stable diagnostic codes. |
 | `diagnostic_payloads` | no | Deterministic order の machine-readable diagnostic payload summaries. |
-| `snapshots` | no | 現在の parse-only `SurfaceAst` baseline path。該当する場合のみ。 |
+| `snapshots` | no | transitional parse-only `SurfaceAst` baseline path。exact Core Task-31 exceptionはpass-only。 |
 | `stable_detail_key` | yes | Diagnostic wording から独立した stable detail identity. |
 
 Fail test が成功した場合は harness failure である。Expected より早い phase で fail した場合も、その earlier sound boundary に expectation を意図的に更新しない限り harness failure である。
@@ -804,6 +804,16 @@ current parser task-38 slice は active pass/fail sidecar 向けの parse-only
 `SurfaceAst` shortcut に限られ、general `kind = "snapshot"` execution や
 hash-registry update mode を完了するものではない。
 
+Core Task 31 は2件目の transitional shortcutをexactに1件だけ追加する。existing
+`pass_type_elaboration_contradiction_formula_constant_001` active pass sidecarは、
+fixed tests-root-relative path
+`snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.core_ir.snap`
+を `snapshots` に設定してよい。type-elaboration runnerはexact Task-180 adapter
+成功後、complete `CoreIr::debug_text()` byteをverify-only modeで比較する。pass
+outcome/phase/diagnostic/existing `.miz` intentは変更しない。他の
+type-elaboration caseは`snapshots`を使えず、このshortcutにimplicit update modeは
+なく、general `[[snapshots]]` registryをactivate/parseしない。
+
 ## Generated, Fuzz, And Property Metadata
 
 Generated and fuzz/property regression tests は provenance を記録する。
@@ -846,9 +856,10 @@ Harness は次を validate する。
 7. Fail expectations include failure identity fields.
 8. Certificate and kernel rejections include `rejection_reason`.
 9. Diagnostic codes are sorted in the expected deterministic order.
-10. 移行用 parse-only `snapshots` path は active parse-only pass/fail に限定され、
-    `snapshots/` 配下の clean な tests-root-relative path かつ `.snap` file でなければ
-    ならない。missing、unreadable、または mismatched baseline は harness failure である。
+10. 移行用 `snapshots` path は active parse-only pass/fail またはexact Core Task-31
+    active type-elaboration pass 1件に限定され、`snapshots/` 配下の clean な
+    tests-root-relative path かつ `.snap` file でなければならない。missing、
+    unreadable、または mismatched baseline は harness failure である。
 11. General snapshot entries use supported hash algorithms.
 12. Generated/fuzz/property tests include origin metadata.
 13. Architecture-22 matrix metadata は known sorted scenario ids、known gate values、

@@ -44,11 +44,11 @@ use mizar_resolve::env::{ExportStatus, NamespacePath, SymbolEnv, SymbolKind, Vis
 #[cfg(test)]
 use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
 use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
-use mizar_session::SourceAnchor;
 #[cfg(test)]
 use mizar_session::{
     BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
 };
+use mizar_session::{SourceAnchor, SourceId};
 use mizar_syntax::SurfaceAst;
 
 use super::source_formula::{SourceFormulaStatement, extract_source_contradiction_formula};
@@ -90,6 +90,30 @@ pub(in crate::runner) struct SourceContradictionHandoff {
     pub(in crate::runner) term_formula: TermFormulaInferenceOutput,
     pub(in crate::runner) typed_ast: TypedAst,
     pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+pub(in crate::runner) fn has_exact_source_contradiction_owner(
+    source_id: SourceId,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> bool {
+    let namespace = NamespacePath::new(module.path().as_str());
+    let owners = symbols
+        .symbols()
+        .visible_candidates(&namespace, CONTRADICTION_OWNER)
+        .into_iter()
+        .filter(|entry| entry.kind() == SymbolKind::Theorem)
+        .collect::<Vec<_>>();
+    let [owner] = owners.as_slice() else {
+        return false;
+    };
+    CheckedStatementOwner::validate_exact_local_theorem(
+        symbols,
+        owner.symbol().clone(),
+        source_id,
+        module,
+    )
+    .is_ok()
 }
 
 pub(in crate::runner) fn assemble_source_contradiction_checker_handoff(
@@ -361,6 +385,26 @@ fn assemble_source_contradiction_resolved_typed_ast(
     statement_rows: Vec<StatementSemanticInput>,
     proof_rows: Vec<StatementProofIntentInput>,
 ) -> Result<ResolvedTypedAst, String> {
+    assemble_source_contradiction_resolved_typed_ast_with_expressions(
+        typed_ast,
+        owner,
+        binding_env,
+        term_formula,
+        statement_rows,
+        proof_rows,
+        Vec::new(),
+    )
+}
+
+fn assemble_source_contradiction_resolved_typed_ast_with_expressions(
+    typed_ast: &TypedAst,
+    owner: &CheckedStatementOwner,
+    binding_env: &BindingEnv,
+    term_formula: &TermFormulaInferenceOutput,
+    statement_rows: Vec<StatementSemanticInput>,
+    proof_rows: Vec<StatementProofIntentInput>,
+    expressions: Vec<ExpressionMetadataInput>,
+) -> Result<ResolvedTypedAst, String> {
     let cluster_facts = ClusterFactTable::new();
     let overload_collection = OverloadCollectionOutput::collect(
         Vec::<OverloadSiteInput>::new(),
@@ -397,7 +441,7 @@ fn assemble_source_contradiction_resolved_typed_ast(
         viability: &viability,
         specificity: &specificity,
         overload_selection: &overload_selection,
-        expressions: Vec::new(),
+        expressions,
         node_hints,
         statement_semantics: Some(StatementSemanticInputs {
             owner,
@@ -411,6 +455,68 @@ fn assemble_source_contradiction_resolved_typed_ast(
         }),
     })
     .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_contradiction_handoff_with_extra_expression(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Result<ResolvedTypedAst, String> {
+    let handoff = assemble_source_contradiction_checker_handoff(ast, module.clone(), symbols)?;
+    let binding_env = source_module_binding_env(ast, module).map_err(|error| error.to_string())?;
+    let statement = handoff
+        .resolved
+        .statement_semantics()
+        .get(StatementSemanticId::new(0))
+        .ok_or_else(|| "missing source contradiction statement for extra payload".to_owned())?;
+    let checked_formula = handoff
+        .term_formula
+        .formulas()
+        .get(statement.formula)
+        .ok_or_else(|| "missing source contradiction formula for extra payload".to_owned())?;
+    let statement_rows = vec![StatementSemanticInput {
+        owner: statement.owner.clone(),
+        owner_node: statement.owner_node,
+        formula: statement.formula,
+        formula_node: statement.formula_node,
+    }];
+    let proof_rows = vec![StatementProofIntentInput {
+        id: StatementProofIntentId::new(0),
+        source_order: 0,
+        statement: StatementSemanticId::new(0),
+        source_id: ast.source_id,
+        module_id: handoff.resolved.module_id().clone(),
+        owner: statement.owner.clone(),
+        owner_node: statement.owner_node,
+        owner_range: statement.owner_range,
+        owner_origin: statement.owner_origin.clone(),
+        owner_visibility: handoff.owner.visibility(),
+        owner_export_status: handoff.owner.export_status(),
+        formula: statement.formula,
+        formula_site: checked_formula.site.clone(),
+        formula_node: statement.formula_node,
+        formula_range: checked_formula.source_range,
+        recovery: checked_formula.recovery,
+        policy: TheoremPolicyIntent::Unmodified,
+        justification: TheoremJustificationIntent::Omitted,
+    }];
+    let expressions = vec![ExpressionMetadataInput {
+        expr: ExprId::new("task31.unrelated.expression"),
+        typed_site: TypedSiteRef::Node(statement.formula_node),
+        local_context: None,
+        cluster_facts: Vec::new(),
+    }];
+
+    assemble_source_contradiction_resolved_typed_ast_with_expressions(
+        &handoff.typed_ast,
+        &handoff.owner,
+        &binding_env,
+        &handoff.term_formula,
+        statement_rows,
+        proof_rows,
+        expressions,
+    )
 }
 
 #[cfg(test)]

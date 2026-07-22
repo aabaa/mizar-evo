@@ -221,12 +221,13 @@ pub(super) use binary_routes::{
 pub(super) use checker_handoff::{
     SourceContradictionHandoffCorruption, assemble_source_checker_handoff,
     source_contradiction_handoff_corruption_error,
+    source_contradiction_handoff_with_extra_expression,
 };
 pub(super) use checker_handoff::{
     SourceReserveHandoff, assemble_source_contradiction_checker_handoff,
     assemble_source_reserve_checker_handoff, assert_source_contradiction_handoff,
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
-    assert_source_reserve_handoff, source_module_binding_env,
+    assert_source_reserve_handoff, has_exact_source_contradiction_owner, source_module_binding_env,
 };
 #[cfg(test)]
 pub(super) use output::{
@@ -249,9 +250,9 @@ pub(super) use output::{
 };
 pub(super) use output::{
     source_builtin_binary_term_formula_detail_keys,
-    source_builtin_type_assertion_formula_detail_keys, source_contradiction_formula_detail_keys,
-    source_formula_connective_quantifier_detail_keys, source_formula_statement_detail_keys,
-    source_imported_attribute_assertion_formula_detail_keys,
+    source_builtin_type_assertion_formula_detail_keys, source_contradiction_core_ir_snapshot,
+    source_contradiction_formula_detail_keys, source_formula_connective_quantifier_detail_keys,
+    source_formula_statement_detail_keys, source_imported_attribute_assertion_formula_detail_keys,
     source_imported_non_empty_attribute_assertion_formula_detail_keys,
     source_imported_predicate_functor_formula_detail_keys,
     source_set_enumeration_formula_detail_keys,

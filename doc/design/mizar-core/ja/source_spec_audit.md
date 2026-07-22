@@ -201,6 +201,7 @@ top-level public API group:
   `MalformedProofSkeletonSeed`, `ProofLoweringOutput`,
   `ProofStatusRecord`, `ProofTerminalObligationRecord`,
   `ProofTerminalCitationRecord`, `lower_proof_inputs`,
+  `ExactTask180LoweringError`, `lower_exact_task180_handoff`,
   `AlgorithmLoweringResult`, `AlgorithmLoweringError`,
   `AlgorithmLoweringInput`, `AlgorithmSeed`, `AlgorithmPayloadSeed`,
   `AlgorithmStmtSeed`, `AlgorithmMatchArmSeed`,
@@ -215,6 +216,7 @@ top-level public API group:
 | Step 3 は term/formula、inserted/source `qua`、stable choice、Fraenkel comprehension、failed site、generated origin、generated obligation を lower する。checker-owned reduct payload を持つ `qua` は順序付き `Apply` view term へ lower し、no-reduct view は base term を再利用する。template-parameter Fraenkel sethood evidence は accepted Step 2 sethood record を cross-reference しなければならない。 | term/formula seed/output type、`ReductViewSeed`、`ReductView`、`TemplateFraenkelSethoodEvidenceSeed`、`lower_term_and_formula_inputs`。 | surface form、generated origin reuse/delta、sethood evidence、failed error node、quantifier guard の task 10 test。task 27 は renamed-edge、composed/multi-path、exact-instance guard、空の reduct-view payload case を test する。task 30 は accepted bound/constraint sethood reference、bare-parameter missing-sethood rejection、通常の non-template Fraenkel evidence、malformed cross-reference failure を test する。 | explicit seed と checker-owned reduct-view/sethood payload について実装済み。source-derived view/sethood payload extraction は external。 |
 | Step 4 は definition expansion boundary を explicit に保ち、correctness obligation と generated dependency を記録する。 | definition seed/output type と `lower_definition_inputs`。 | boundary、correctness seed、generated dependency、skipped/error status の task 11 test。 | 実装済み。 |
 | Step 5 は proof skeleton、thesis tracking、label、citation、malformed root、terminal obligation seed を lower し、proof acceptance はしない。 | proof seed/output type と `lower_proof_inputs`。 | proof form、citation、terminal goal、label、malformed/error case、durable terminal citation の task 12 test。 | 実装済み。 |
+| Core Task 31 は authenticated public/exported metadata だけを使い、proof acceptance を行わず、exact checker Task-180 singleton handoff を1つの deterministic `CoreIr` へ atomic に project する。 | `ExactTask180LoweringError`、`lower_exact_task180_handoff`、exact preflight/draft/provenance/postvalidation helper、および `src/elaborator.rs` の `ExportStatus`/`Visibility` のみに限定した resolver-boundary lint exception。 | Task-31 exact adapter unit test、existing contradiction fixture、その committed `type_elaboration` CoreIr snapshot。 | exact Task-180 bundle のみ実装済み。broader source-to-core extraction は deferred のまま。 |
 | Step 6 は contract、ghost/runtime metadata、local `Pick` binder、source/provenance preservation、diagnostic を持つ algorithm shell を lower し、CFG construction はしない。 | algorithm seed/output type と `lower_algorithm_inputs`。 | shell form、malformed statement、source/provenance、status、diagnostic aggregation の task 13 test。 | 実装済み。 |
 | Public enum は downstream forward-compatible。 | `src/elaborator.rs` の public enum 上の `#[non_exhaustive]`。 | `public_core_enums_are_forward_compatible_and_documented`。 | task 21 で guard 済み。 |
 
@@ -273,7 +275,7 @@ literal top-level public item:
 | `src/core_ir.rs`, `src/binder_normalization.rs`, `src/elaborator.rs`, `src/control_flow.rs` の module-local unit test。 | Data validation、substitution/canonicalization、explicit-payload lowering、CFG construction、diagnostic、handoff、deterministic rendering。 | Active Rust coverage。 |
 | `crates/mizar-core/tests/determinism_suite.rs`。 | fresh public-API fixture rebuild、structural equality、byte-stable rendering、binder canonicalization、CFG と handoff ordering。 | task 20 の active Rust coverage。 |
 | `crates/mizar-core/tests/lint_policy.rs`。 | workspace/crate boundary、public module/spec pairing、frontend/downstream boundary、public enum policy、source/spec audit coverage。 | Active guard coverage。 |
-| `tests/coverage/spec_trace.toml`。 | source-derived `type_elaboration` と `proof_verification` snapshot seam の deferred 記録。 | task 19 の metadata-only deferred row。 |
+| `tests/coverage/spec_trace.toml`。 | exact Task-180 `type_elaboration` CoreIr snapshotと、broader source-derived `type_elaboration` / `proof_verification` seamのdeferred記録。 | Core Task-31 covered rowとtask-19 broad deferred row。 |
 
 ## Source-Undocumented Behavior Pass
 
@@ -291,26 +293,25 @@ source behavior ではなく、下の follow-up register で分類した unavail
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
 | CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction が full source-derived `ResolvedTypedAst` payload、`qua` の real view-path / reduct-functor payload、production source-to-core fixture をまだ block している。 | Tasks 266-268/Core Task 31はexact Task-180 slice、checker Task 247/Core Task 32は残る全checker-to-core familyのexhaustive decompositionを所有する。 | `mizar-core` が raw syntax を再 scan せずに checker-ready payload を利用できる。 | Core Task 32が作るbounded source-derived lowering taskをprepared consumer付きで実装する。 |
-| CORE-AUDIT-G002 | `external_dependency_gap` | `mizar-test` は `CoreIr` / `ControlFlowIr` 向けの active source-derived `type_elaboration` / `proof_verification` snapshot runner をまだ提供しない。 | Core Task 31は最初のexact snapshot consumer、Core Task 32は残る全familyのprepared consumerを所有する。 | Stage runner が real checker payload 由来の `CoreIr` / `ControlFlowIr` baseline を比較できる。 | Task-31/Task-32 descendantが実装されたfamilyだけsnapshotをactiveにする。 |
+| CORE-AUDIT-G002 | `external_dependency_gap` | Core Task 31はTask-180 `CoreIr`向けexact source-derived `type_elaboration` snapshotを1件提供した。non-Task-180 `CoreIr`全family、全`ControlFlowIr`、`proof_verification` snapshot runnerは未提供。 | checker Task 247後、Core Task 32が残る全familyのprepared consumerを所有する。 | stage runnerが残るreal checker payload由来`CoreIr`/`ControlFlowIr` baselineを比較できる。 | bounded Task-32 descendant実装にattachedしたsnapshotだけactive化し、Task-31 shortcutをgeneralizeしない。 |
 | CORE-AUDIT-G003 | `external_dependency_gap` | artifact schema emission、proof acceptance、VC generation、kernel checking は downstream または cross-crate work。 | `mizar-artifact`, `mizar-proof`, `mizar-vc`, `mizar-kernel` phase。 | downstream crate が core/control-flow handoff の accepted schema と consumer を定義する。 | `mizar-core` を proof acceptance / kernel checking に変えず consumer を接続する。 |
 | CORE-AUDIT-G004 | `external_dependency_gap` | concrete `VcId`、`ObligationAnchor`、VC fingerprint、proof/cache reuse anchor、downstream artifact identity は `mizar-core` の責務外。 | VC Tasks 30-31がfirst exact contract/slice、Task-30 descendantが残るsource-derived VC familyを所有する。artifact reuseはdownstream deferred。 | downstream identity と anchor contract が存在する。 | accepted core obligation seed/local pathだけをdownstream anchorへmapする。 |
 | CORE-AUDIT-G005 | `external_dependency_gap` | source-derived call/result substitution、pattern、snapshot、claim、より豊かな algorithm payload seam は checker-owned explicit payload を必要とする。 | Checker Task 247、Core Task 32、VC Task-30 decomposition。 | それらのsource form向けexplicit checker payloadとbounded core consumerが存在する。 | decomposition ownerが作るbounded producer/lowering/VC taskだけを実装する。 |
 | CORE-AUDIT-G006 | `deferred` | Public diagnostic code-space はこの crate が割り当てない。 | Diagnostics registry owner。 | shared public diagnostic registry と allocation policy が存在する。 | current local structured class を保ったまま public code を割り当てる。 |
 
 original auditでは新しい`mizar-core` implementation taskを開かなかった。Task 265は
-そのgeneric ownershipだけを後からsupersedeし、Task 31がexact Task-180 slice、Task
-32がdocs-only exhaustive remaining-family decompositionを所有する。bounded
-implementation descendantがlandするまでcoverage/statusはdeferred。diagnosticsと
-Steps 6/7 proof/kernel/artifact workは既存ownerに残る。Task 23はbilingual
-documentation synchronizationに進む。
+そのgeneric ownershipを後からsupersedeし、完了したTask 31がexact Task-180 slice、
+Task 32がdocs-only exhaustive remaining-family decompositionを所有する。
+coverage/statusはTask-32 family/later stageについてだけdeferred。diagnosticsと
+Steps 6/7 proof/kernel/artifact workは既存ownerに残る。
 
-Task 267 accepted-contract addendum: Core Task 31のexact mappingは
+Task 267 accepted-contract historyは
 `PendingAutomaticProof` -> `False` -> direct `TerminalGoal` -> `proof/0`の
 Active `TheoremProof` 1件に確定し、table cardinality/identity/source/versioned
 provenance key/source map/atomic pre-postvalidationを固定した。statusとnarrow
-`lower_exact_task180_handoff` adapterはtarget stateだけで、current sourceは不変、
-implementation/coverage creditはない。`Valid`/public item metadataはstructural/
-name visibilityだけで、pending statusはverified-premise/accepted-artifact
-publicationを禁止する。Task 268はrequired explicit checker tableを実装済みで、
-Core Task 31が次のexecutable exact consumerである。Core implementation/
-coverage、VC、acceptance、Steps 6/7はowning taskまでdeferred。
+mappingを固定した。Task-268 checker tableとTask-31 narrow
+`lower_exact_task180_handoff` adapterはこのmappingをexact source/committed
+snapshotについて実装済みである。`Valid`/public item metadataはstructural/name
+visibilityだけで、pending/Active statusはverified-premise、acceptance、discharge、
+accepted-artifact publicationを禁止する。VC、non-Task-180 Core/CFG全family、
+Steps 6/7はowning taskまでdeferred。

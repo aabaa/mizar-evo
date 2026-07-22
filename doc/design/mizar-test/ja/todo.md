@@ -237,6 +237,13 @@ regression test を追加した。
       diagnostic range が未仕様の間の public-code gate、summary reporting、
       traceable seed fixture 2 件を追加した。この task は予定されたすべての
       消費側 runner が着地するまで open のままにする。
+    - Core Task 31はこのopen task内のcompleted consumer-paced incrementであり、
+      new mizar-test task idではない。existing Task-180 active type-elaboration caseは
+      complete checker bundleをvalidateし、exact CoreIrを2回lowerしてcommitted
+      full-byte baselineをverify-compareする。covered requirement 1件追加によりplan
+      403/368、type 236/224となるが、active case 188、pass/fail 219/184、`.miz`、
+      phase、diagnosticは不変。broader CoreIr/ControlFlowIr/proof-verificationはCore
+      Task 32とprerequisiteにpacedされる。
     - historical selected task-10 ledger は、`mizar-parser` task 3
       （`parse-only`）、
       `mizar-resolve` task 23（`declaration-symbol`）、`mizar-checker` task 12
@@ -485,8 +492,10 @@ regression test を追加した。
       imported predicate/functor semantic payload、membership operand expected-type construction/checking、inequality desugaring または equality semantic checking、broader type-assertion type payload extraction、type-assertion semantic checking、imported attribute assertion attribute-chain/provenance payload extraction、imported attribute-level non-empty assertion attribute-chain/provenance payload extraction、set-enumeration result-type payload extraction beyond task 111、negated attribute admissibility/semantic checking、attribute admissibility/semantic checking、quantifier binder/context payload、term / formula / theorem / proof payload、coercion、overload payload、fact、
       CoreIr、ControlFlowIr、VC payload、proof
       evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`
-      gap のままにする。real source-derived payload がまだ downstream consumer へ
-      lower されていないため、CoreIr / ControlFlowIr / VC / proof row は昇格しない。
+      gap のままにする。separately traced exact Task-180 CoreIr snapshotはCore Task
+      31でpromote済みである。対応するreal source-derived payloadがdownstream
+      consumerへlowerされていないため、broader CoreIr / ControlFlowIr / VC / proof
+      rowはdeferredのまま。
     - 依存: 16、17、checker MC-G011/MC-G016/MC-G020。仕様:
       [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md)。

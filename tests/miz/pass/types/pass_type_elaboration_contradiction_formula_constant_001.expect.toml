@@ -8,10 +8,12 @@ expected_outcome = "pass"
 expected_phase = "type_check"
 diagnostic_codes = []
 diagnostic_payloads = []
+snapshots = "snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.core_ir.snap"
 tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.14.formulas.term_formula_payload_gap",
   "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
   "spec.en.checker.type_elaboration.contradiction_formula_constant_source_bridge",
+  "spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot",
 ]
-notes = "Active type_elaboration runner pass coverage for checker task 180: only the exact standalone `SourceDerivedContradictionConstantBoundary: contradiction` theorem passes the source-derived formula leaf site/range in module-root context to the existing FormulaKind::Contradiction consumer and records one Checked formula with no terms, asserted type, expected constraints, candidates, facts, deferred reasons, or diagnostics. Checked means formula type/well-formedness only; falsehood/fact publication, theorem acceptance, proof-goal closure, implicit closure/child graphs, formula_statement, proof, CoreIr, ControlFlowIr, and VC remain deferred."
+notes = "Active type_elaboration runner pass coverage for checker task 180 and exact Core Task 31: only the standalone `SourceDerivedContradictionConstantBoundary: contradiction` theorem passes the source-derived formula leaf site/range in module-root context to one Checked FormulaKind::Contradiction and the authenticated PendingAutomaticProof/direct-terminal bundle, then lowers transactionally to the committed exact CoreIr debug snapshot with one False formula and one Active undischarged TheoremProof seed. Checked/Valid/public/Active do not publish a verified premise or accept/discharge the theorem. General formula/proof/CoreIr/ControlFlowIr/VC families remain deferred."

@@ -14,6 +14,15 @@ pub(in crate::runner) fn type_elaboration_failure_diagnostic(
     case: &TestCase,
     result: &TypeElaborationCaseResult,
 ) -> ValidationDiagnostic {
+    if let Some(snapshot_failure) = &result.snapshot_failure {
+        return ValidationDiagnostic::error(
+            &case.expectation_path,
+            "type_elaboration",
+            "E-TYPE-ELABORATION-SNAPSHOT",
+            format!("type_elaboration.snapshot.{}", case.id.0),
+            format!("type-elaboration case `{}` {snapshot_failure}", case.id.0),
+        );
+    }
     ValidationDiagnostic::error(
         &case.expectation_path,
         "type_elaboration",

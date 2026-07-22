@@ -134,3 +134,13 @@ metadata match.
 Task 248 additionally compares the paired module-boundary headings, tables,
 task ids, preservation invariants, and backlog status before the full required
 workspace verification.
+
+## Core Task 31 / Task-10 Pair Recheck
+
+The later Core Task-31 consumer increment rechecks the paired
+`00.crate_plan.md`, `expectation_schema.md`, `harness.md`,
+`module_boundary_audit.md`, `snapshot.md`, `todo.md`, and `traceability.md`.
+Both languages describe the same singular Task-180 CoreIr baseline, public
+snapshot-failure result/reporting, 17-path/19,803-line ownership state,
+403/368 and 236/224 coverage counts, exact-only credit, and broad deferred
+boundary. No bilingual `design_drift` remains in this scope.

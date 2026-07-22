@@ -132,3 +132,12 @@ major sections、task status、recorded inventories、corrected-vocabulary metad
 Task 248 はさらに full required workspace verification の前に、paired
 module-boundary heading、table、task id、preservation invariant、backlog status を
 比較する。
+
+## Core Task 31 / Task-10 pair recheck
+
+後続Core Task-31 consumer incrementはpaired `00.crate_plan.md`、
+`expectation_schema.md`、`harness.md`、`module_boundary_audit.md`、
+`snapshot.md`、`todo.md`、`traceability.md`を再確認する。両言語はsingular Task-180
+CoreIr baseline、public snapshot-failure result/reporting、17-path/19,803-line
+ownership、403/368・236/224 coverage count、exact-only credit、broad deferred
+boundaryを同じ内容で記録する。このscopeにbilingual `design_drift`は残らない。

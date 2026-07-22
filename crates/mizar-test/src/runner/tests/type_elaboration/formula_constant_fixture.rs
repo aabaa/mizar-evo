@@ -117,6 +117,30 @@
         .expect("equivalent Task 266 handoff should assemble");
         assert_eq!(handoff.resolved, second.resolved);
         assert_eq!(handoff.resolved.debug_text(), second.resolved.debug_text());
+        let core_debug = source_contradiction_core_ir_snapshot(
+            &ast,
+            resolver.module.clone(),
+            &symbols,
+        )
+        .expect("Task 180 source should select the exact CoreIr snapshot consumer")
+        .expect("Task 31 exact CoreIr snapshot should lower deterministically");
+        assert!(core_debug.starts_with("core-ir-debug-v1\n"));
+        assert!(core_debug.contains("status: PendingAutomaticProof"));
+        assert!(core_debug.contains("kind: False"));
+        assert!(core_debug.contains("kind: TheoremProof"));
+        assert!(core_debug.contains("status: Active"));
+        let extra_expression = source_contradiction_handoff_with_extra_expression(
+            &ast,
+            resolver.module.clone(),
+            &symbols,
+        )
+        .expect("checker-valid Task 180 handoff with unrelated expression metadata should assemble");
+        assert_eq!(extra_expression.expr_metadata().len(), 1);
+        assert!(matches!(
+            lower_exact_task180_handoff(&extra_expression),
+            Err(ExactTask180LoweringError::InvalidCheckerBundle { reason })
+                if reason == "unrelated checker payload must be empty"
+        ));
         let proof_debug = handoff.resolved.debug_text();
         assert!(proof_debug.contains("checked-proofs:\n"));
         assert!(proof_debug.contains("status=PendingAutomaticProof"));

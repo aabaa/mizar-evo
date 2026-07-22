@@ -297,6 +297,17 @@ baselines through a transitional sidecar field
 `SurfaceAst::snapshot_text()` output byte-for-byte after diagnostics match. It
 does not implement the future general snapshot hash registry or update mode.
 
+Core Task 31 adds one separately allowlisted verify-only shortcut for
+`pass_type_elaboration_contradiction_formula_constant_001`. Its singular
+`snapshots` field names the committed
+`snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.core_ir.snap`
+baseline. After exact checker-bundle validation, the runner constructs the
+Task-180 `CoreIr` twice, requires structural and `debug_text()` equality, and
+compares the complete bytes with the baseline. Missing, unreadable, mismatched,
+or absent output fails the case. No automatic update path, general CoreIr
+registry, other CoreIr/ControlFlowIr family, or proof-verification snapshot is
+activated.
+
 Current general snapshot API slice: tasks 4 and 5 provide canonical in-memory
 `SnapshotRecord` construction, hashing, validation, comparison, explicit
 verify/update baseline IO, and repeat-render determinism comparison. General

@@ -12,6 +12,7 @@ use mizar_checker::type_checker::{
 use mizar_checker::typed_ast::{
     NormalizedTypeId, TypeEntryActual, TypeEntryId, TypeRole, TypeStatus, TypedNodeId, TypedSiteRef,
 };
+use mizar_core::elaborator::lower_exact_task180_handoff;
 use mizar_resolve::env::SymbolEnv;
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_session::SourceRange;
@@ -20,8 +21,9 @@ use mizar_syntax::SurfaceAst;
 use super::source_formula::{
     SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula, extract_source_builtin_binary_term_formula,
-    extract_source_builtin_type_assertion_formula, extract_source_formula_connective_quantifier,
-    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
+    extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
+    extract_source_formula_connective_quantifier, extract_source_formula_statement,
+    extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
 };
@@ -30,8 +32,9 @@ use super::{
     SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBuiltinType,
     SourceReservedVariableTypeAssertion, assemble_source_contradiction_checker_handoff,
     assemble_source_reserve_checker_handoff, assert_source_contradiction_handoff,
-    assert_source_reserve_handoff, source_binding_matches_reserved_builtin_type,
-    source_binding_use_ordinals, source_mode_terminal_builtin_input, source_module_binding_env,
+    assert_source_reserve_handoff, has_exact_source_contradiction_owner,
+    source_binding_matches_reserved_builtin_type, source_binding_use_ordinals,
+    source_mode_terminal_builtin_input, source_module_binding_env,
     source_reserved_variable_asserted_head_relation_is_exact,
     source_reserved_variable_mode_expansions_are_exact,
     source_type_expression_matches_reserved_builtin_type,
@@ -612,6 +615,31 @@ pub(in crate::runner) fn source_contradiction_formula_detail_keys(
 ) -> Option<Vec<String>> {
     let output = source_contradiction_formula_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
+}
+
+pub(in crate::runner) fn source_contradiction_core_ir_snapshot(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Result<String, String>> {
+    extract_source_contradiction_formula(ast)?;
+    if !has_exact_source_contradiction_owner(ast.source_id, &module, symbols) {
+        return None;
+    }
+    Some((|| {
+        let handoff = assemble_source_contradiction_checker_handoff(ast, module.clone(), symbols)?;
+        assert_source_contradiction_handoff(&handoff)?;
+        let first =
+            lower_exact_task180_handoff(&handoff.resolved).map_err(|error| error.to_string())?;
+        let second_handoff = assemble_source_contradiction_checker_handoff(ast, module, symbols)?;
+        assert_source_contradiction_handoff(&second_handoff)?;
+        let second = lower_exact_task180_handoff(&second_handoff.resolved)
+            .map_err(|error| error.to_string())?;
+        if first != second || first.debug_text() != second.debug_text() {
+            return Err("exact Task-180 CoreIr rerun was nondeterministic".to_owned());
+        }
+        Ok(first.debug_text())
+    })())
 }
 
 pub(in crate::runner) fn source_contradiction_formula_output(

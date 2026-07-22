@@ -124,7 +124,7 @@ helper extraction remain external or deferred rather than crate-owned blockers.
 | ID | Reason | Owner | Unblock condition |
 |---|---|---|---|
 | CORE-AUDIT-G001 | Source-to-checker extraction still blocks full source-derived `ResolvedTypedAst` payloads and production source-to-core fixtures. | Checker extraction / mizar-test integration follow-up. | Checker-ready AST-wide payload extraction exists without raw syntax rescanning in `mizar-core`. |
-| CORE-AUDIT-G002 | Active source-derived `type_elaboration` and `proof_verification` snapshot runners for `CoreIr` and `ControlFlowIr` do not exist yet. | `mizar-test` staged runner follow-up. | Stage runners can compare real checker-derived `CoreIr` and `ControlFlowIr` baselines. |
+| CORE-AUDIT-G002 | Core Task 31 now provides the one exact Task-180 source-derived `type_elaboration` `CoreIr` snapshot; all non-Task-180 `CoreIr`, all `ControlFlowIr`, and `proof_verification` snapshot runners remain unavailable. | Core Task 32 decomposition after checker Task 247. | Bounded descendant tasks provide prepared stage consumers for the remaining real checker-derived baselines. |
 | CORE-AUDIT-G003 | Artifact schema emission, proof acceptance, VC generation, and kernel checking are downstream or cross-crate work. | `mizar-artifact`, `mizar-proof`, `mizar-vc`, and `mizar-kernel` phases. | Downstream crates define accepted schemas and consumers for core/control-flow handoff. |
 | CORE-AUDIT-G004 | Concrete `VcId`, `ObligationAnchor`, VC fingerprints, proof/cache reuse anchors, and downstream artifact identities are not owned by `mizar-core`. | `mizar-vc` incremental verification / artifact phases. | Downstream identity and anchor contracts exist. |
 | CORE-AUDIT-G005 | Source-derived call/result substitution, pattern, snapshot, claim, and richer algorithm payload seams require checker-owned explicit payloads. | Checker payload extraction plus phase-10/phase-11 integration. | Explicit checker payloads exist for those source forms. |
@@ -188,3 +188,16 @@ maintenance. Lower reasoning is acceptable only for narrow docs-only
 synchronization or mechanical guard maintenance; keep or raise to `xhigh` for
 semantic behavior, binder/proof boundaries, VC identity, artifact schemas, or
 proof/kernel integration.
+
+## Core Task 31 Post-Closeout Addendum
+
+The historical closeout and score above remain valid for the original crate
+milestone. Later Step-5 authority re-opened one bounded integration task. Core
+Task 31 now consumes only the exact checker Task-180 singleton bundle through
+`lower_exact_task180_handoff`, produces one public structurally valid theorem,
+one `False`, one `PendingAutomaticProof`, one direct terminal node, and one
+Active undischarged `TheoremProof` seed, and verifies the full deterministic
+debug baseline in the active type-elaboration runner. The adapter remains
+syntax-free and transactional; it adds no acceptance, discharge, CFG, VC,
+kernel, artifact, or broader-family behavior. CORE-AUDIT-G002 therefore remains
+open only for every non-Task-180 family and later stages owned by Core Task 32.

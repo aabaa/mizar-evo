@@ -202,6 +202,7 @@ Top-level public API groups:
   `MalformedProofSkeletonSeed`, `ProofLoweringOutput`,
   `ProofStatusRecord`, `ProofTerminalObligationRecord`,
   `ProofTerminalCitationRecord`, `lower_proof_inputs`,
+  `ExactTask180LoweringError`, `lower_exact_task180_handoff`,
   `AlgorithmLoweringResult`, `AlgorithmLoweringError`,
   `AlgorithmLoweringInput`, `AlgorithmSeed`, `AlgorithmPayloadSeed`,
   `AlgorithmStmtSeed`, `AlgorithmMatchArmSeed`,
@@ -216,6 +217,7 @@ Correspondence:
 | Step 3 lowers terms/formulas, inserted/source `qua`, stable choices, Fraenkel comprehensions, failed sites, generated origins, and generated obligations. `qua` with a checker-owned reduct payload lowers to ordered `Apply` view terms while no-reduct views reuse the base term; template-parameter Fraenkel sethood evidence must cross-reference accepted Step 2 sethood records. | Term/formula seed/output types, `ReductViewSeed`, `ReductView`, `TemplateFraenkelSethoodEvidenceSeed`, and `lower_term_and_formula_inputs`. | Task 10 tests for surface forms, generated origin reuse/deltas, sethood evidence, failed error nodes, and quantifier guards; task 27 tests renamed-edge, composed/multi-path, exact-instance guard, and empty reduct-view payload cases; task 30 tests accepted bound/constraint sethood references, bare-parameter missing-sethood rejection, ordinary non-template Fraenkel evidence, and malformed cross-reference failures. | Implemented for explicit seeds and checker-owned reduct-view/sethood payloads. Source-derived view/sethood payload extraction remains external. |
 | Step 4 keeps definition expansion boundaries explicit and records correctness obligations/generated dependencies. | Definition seed/output types and `lower_definition_inputs`. | Task 11 tests for boundaries, correctness seeds, generated dependencies, and skipped/error status. | Implemented. |
 | Step 5 lowers proof skeletons, thesis tracking, labels, citations, malformed roots, and terminal obligation seeds without proof acceptance. | Proof seed/output types and `lower_proof_inputs`. | Task 12 tests for proof forms, citations, terminal goals, labels, malformed/error cases, and durable terminal citations. | Implemented. |
+| Core Task 31 atomically projects the exact checker Task-180 singleton handoff into one deterministic `CoreIr`, using only authenticated public/exported metadata and without proof acceptance. | `ExactTask180LoweringError`, `lower_exact_task180_handoff`, the exact preflight/draft/provenance/postvalidation helpers, and the resolver-boundary lint exception limited to `ExportStatus`/`Visibility` in `src/elaborator.rs`. | Task-31 exact adapter unit tests, the existing contradiction fixture, and its committed `type_elaboration` CoreIr snapshot. | Implemented only for the exact Task-180 bundle; broader source-to-core extraction remains deferred. |
 | Step 6 lowers algorithm shells with contracts, ghost/runtime metadata, local `Pick` binders, source/provenance preservation, and diagnostics without CFG construction. | Algorithm seed/output types and `lower_algorithm_inputs`. | Task 13 tests for shell forms, malformed statements, source/provenance, status, and diagnostic aggregation. | Implemented. |
 | Public enums are downstream forward-compatible. | `#[non_exhaustive]` on public enums in `src/elaborator.rs`. | `public_core_enums_are_forward_compatible_and_documented`. | Guarded by task 21. |
 
@@ -274,7 +276,7 @@ Correspondence:
 | Module-local unit tests in `src/core_ir.rs`, `src/binder_normalization.rs`, `src/elaborator.rs`, and `src/control_flow.rs`. | Data validation, substitution/canonicalization, explicit-payload lowering, CFG construction, diagnostics, handoff, and deterministic rendering. | Active Rust coverage. |
 | `crates/mizar-core/tests/determinism_suite.rs`. | Fresh public-API fixture rebuilds, structural equality, byte-stable renderings, binder canonicalization, CFG and handoff ordering. | Active Rust coverage from task 20. |
 | `crates/mizar-core/tests/lint_policy.rs`. | Workspace/crate boundaries, public module/spec pairing, frontend/downstream boundary, public enum policy, and source/spec audit coverage. | Active guard coverage. |
-| `tests/coverage/spec_trace.toml`. | Deferred source-derived `type_elaboration` and `proof_verification` snapshot seams. | Metadata-only deferred rows from task 19. |
+| `tests/coverage/spec_trace.toml`. | Exact Task-180 `type_elaboration` CoreIr snapshot plus deferred broader source-derived `type_elaboration` and `proof_verification` seams. | Core Task-31 covered row and task-19 broad deferred rows. |
 
 ## Source-Undocumented Behavior Pass
 
@@ -294,27 +296,26 @@ the follow-up register below.
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
 | CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction still blocks full source-derived `ResolvedTypedAst` payloads for elaboration, including real view-path/reduct-functor payloads for `qua`, and production source-to-core fixtures. | Tasks 266-268/Core Task 31 own the exact Task-180 slice; checker Task 247/Core Task 32 own exhaustive decomposition of every remaining checker-to-core family. | Checker-ready payloads exist without raw syntax rescanning in `mizar-core`. | Implement the bounded source-derived lowering tasks created by Core Task 32 with prepared consumers. |
-| CORE-AUDIT-G002 | `external_dependency_gap` | `mizar-test` does not yet provide active source-derived `type_elaboration` and `proof_verification` snapshot runners for `CoreIr` and `ControlFlowIr`. | Core Task 31 owns the exact first snapshot consumer; Core Task 32 owns prepared consumers for every remaining family. | Stage runners can compare `CoreIr` and `ControlFlowIr` baselines from real checker payloads. | Activate only the snapshots attached to implemented Task-31/Task-32 descendants. |
+| CORE-AUDIT-G002 | `external_dependency_gap` | Core Task 31 now provides one exact source-derived `type_elaboration` snapshot for the Task-180 `CoreIr`; every non-Task-180 `CoreIr` family, all `ControlFlowIr`, and `proof_verification` snapshot runners remain unavailable. | Core Task 32 owns prepared consumers for every remaining family after checker Task 247. | Stage runners can compare those remaining `CoreIr` and `ControlFlowIr` baselines from real checker payloads. | Activate only snapshots attached to bounded Task-32 descendant implementations; do not generalize the Task-31 shortcut. |
 | CORE-AUDIT-G003 | `external_dependency_gap` | artifact schema emission, proof acceptance, VC generation, and kernel checking are downstream or cross-crate work. | `mizar-artifact`, `mizar-proof`, `mizar-vc`, and `mizar-kernel` phases. | Downstream crates define accepted schemas and consumers for core/control-flow handoff. | Wire consumers without changing `mizar-core` into proof acceptance or kernel checking. |
 | CORE-AUDIT-G004 | `external_dependency_gap` | Concrete `VcId`, `ObligationAnchor`, VC fingerprints, proof/cache reuse anchors, and downstream artifact identities are not owned by `mizar-core`. | VC Tasks 30-31 own the first exact contract/slice and Task-30 descendants own remaining source-derived VC families; artifact reuse remains deferred downstream. | Downstream identity and anchor contracts exist. | Map only accepted core obligation seeds and local paths into downstream anchors. |
 | CORE-AUDIT-G005 | `external_dependency_gap` | Source-derived call/result substitution, pattern, snapshot, claim, and richer algorithm payload seams require checker-owned explicit payloads. | Checker Task 247, Core Task 32, and the VC Task-30 decomposition. | Explicit checker payloads and bounded core consumers exist for those source forms. | Implement only the bounded producer/lowering/VC tasks created by those decomposition owners. |
 | CORE-AUDIT-G006 | `deferred` | Public diagnostic code-space is not allocated by this crate. | Diagnostics registry owner. | Shared public diagnostic registry and allocation policy exist. | Assign public codes while preserving current local structured classes. |
 
 The original audit opened no new `mizar-core` implementation task. Task 265
-later supersedes that generic ownership only: Task 31 owns the exact Task-180
-slice and Task 32 is the docs-only exhaustive remaining-family decomposition.
-Coverage/status remains deferred until their bounded implementation descendants
-land. Diagnostics and Steps 6/7 proof/kernel/artifact work remain with their
-existing owners. Task 23 proceeds to bilingual documentation synchronization.
+later superseded that generic ownership: completed Task 31 owns the exact
+Task-180 slice, while Task 32 remains the docs-only exhaustive
+remaining-family decomposition. Coverage/status remains deferred only for the
+Task-32 families and later stages. Diagnostics and Steps 6/7
+proof/kernel/artifact work remain with their existing owners.
 
-Task 267 accepted-contract addendum: Core Task 31 now has one exact mapping,
+Task 267 accepted-contract history fixed one exact mapping,
 `PendingAutomaticProof` -> `False` -> direct `TerminalGoal` -> Active
 `TheoremProof` at `proof/0`, with fixed table cardinalities, identities, sources,
 versioned provenance keys, source maps, and atomic pre/postvalidation. The
-status and narrow `lower_exact_task180_handoff` adapter are target state only;
-current source remains unchanged and receives no implementation or coverage
-credit. `Valid`/public item metadata remains structural/name visibility only,
-and pending status forbids verified-premise or accepted-artifact publication.
-Task 268 has now landed the required explicit checker tables, so Core Task 31
-is the next executable exact consumer. Core implementation/coverage, VC,
-acceptance, and Steps 6/7 remain deferred until their owning tasks land.
+Task-268 checker tables and Task-31 narrow `lower_exact_task180_handoff` adapter
+now implement that mapping for the exact source and its committed snapshot.
+`Valid`/public item metadata remains structural/name visibility only, and
+pending/Active status forbids verified-premise, acceptance, discharge, or
+accepted-artifact publication. VC, all non-Task-180 Core/CFG families, and
+Steps 6/7 remain deferred until their owning tasks land.

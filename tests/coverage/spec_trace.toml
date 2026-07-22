@@ -3189,7 +3189,7 @@ coverage = "pass"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_contradiction_formula_constant_001.expect.toml",
 ]
-notes = "Task 180 coverage is limited to the exact standalone `SourceDerivedContradictionConstantBoundary: contradiction` formula leaf. Task 266 preserves the real module-root range and existing checked formula site/range, uses the real theorem surface site/range to validate exactly one unrecovered local resolver theorem owner, retains one normal Checked FormulaKind::Contradiction with source/module, range, state, recovery, and provenance plus a separate compact final-tree node link in ResolvedTypedAst, and fails closed on missing, duplicate, reordered, recovered, or mismatched owner/formula/tree rows. Task 267 accepts the explicit Unmodified/Omitted contract. Task 268 now implements its checker producer: one authenticated Public/Exported owner, one distinct PendingAutomaticProof, one direct singleton terminal goal with empty context/citations and local path proof/0, exact identity/range/provenance validation, and atomic corruption rejection. Core Task 31 still owns the False/Active TheoremProof projection and snapshot consumer. There are no terms, asserted type, expected constraints, candidates, facts, deferred reasons, or diagnostics. Added credit is checker pending-proof representation/direct-terminal handoff only; falsehood/fact publication, theorem acceptance, proof search/verification, implicit closure/child graphs, formula_statement, broader proof, CoreIr, ControlFlowIr, and VC remain uncredited."
+notes = "Task 180 coverage is limited to the exact standalone `SourceDerivedContradictionConstantBoundary: contradiction` formula leaf. Task 266 preserves the real module-root range and existing checked formula site/range, uses the real theorem surface site/range to validate exactly one unrecovered local resolver theorem owner, retains one normal Checked FormulaKind::Contradiction with source/module, range, state, recovery, and provenance plus a separate compact final-tree node link in ResolvedTypedAst, and fails closed on missing, duplicate, reordered, recovered, or mismatched owner/formula/tree rows. Task 267 accepts the explicit Unmodified/Omitted contract. Task 268 implements its checker producer: one authenticated Public/Exported owner, one distinct PendingAutomaticProof, one direct singleton terminal goal with empty context/citations and local path proof/0, exact identity/range/provenance validation, and atomic corruption rejection. Core Task 31 now owns the False/Active TheoremProof projection and snapshot consumer under the separately traced exact Core snapshot row. This checker row still credits only the checker pending-proof representation/direct-terminal handoff; falsehood/fact publication, theorem acceptance, proof search/verification, implicit closure/child graphs, formula_statement, broader proof, ControlFlowIr, and VC remain uncredited."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.distinct_reserved_object_variable_equality_source_bridge"
@@ -5351,6 +5351,19 @@ deferred_reason = "Task 19 records this as an external_dependency_gap rather tha
 tests = []
 
 [[requirement]]
+id = "spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot"
+source = "doc/design/mizar-core/en/00.crate_plan.md"
+section = "Task 31; exact Task-180 CoreIr type-elaboration snapshot"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Core Task 31 covers only the exact Task-180 source-derived projection: one public structurally Valid theorem item, one False formula, one PendingAutomaticProof proof with a direct terminal node, and one Active undischarged TheoremProof seed at proof/0. The active runner constructs the CoreIr twice, requires structural and debug-text equality, and compares the complete bytes with the committed exact baseline. This does not publish a verified premise, accept/discharge the theorem, activate broader CoreIr/ControlFlowIr snapshots, or add CFG/VC/proof/kernel/artifact coverage."
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_contradiction_formula_constant_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_core.core_ir.type_elaboration_snapshots"
 source = "doc/design/mizar-core/en/00.crate_plan.md"
 section = "Task 19; CoreIr corpus snapshot baselines at type_elaboration"
@@ -5358,7 +5371,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "snapshot"
-deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines. Tasks 266 and 268 now provide the exact Task-180 checker owner/formula/proof-terminal payload, and Task 267 fixes its explicit Unmodified/Omitted -> PendingAutomaticProof -> direct terminal -> False/Active TheoremProof mapping. Core Task 31 is now the next executable owner of the exact atomic adapter plus prepared type-elaboration snapshot consumer. After checker Task 247, core Task 32 owns exhaustive decomposition of every other source-derived CoreIr/ControlFlowIr family. Keep this row deferred until the corresponding core implementation task lands."
+deferred_reason = "Core Task 31 activates only the separately traced exact Task-180 CoreIr snapshot. This broad Task-19 row remains an external_dependency_gap with empty tests for every non-Task-180 source-derived CoreIr family. After checker Task 247, Core Task 32 owns exhaustive decomposition and prepared consumers for those remaining CoreIr/ControlFlowIr families; keep this broad row deferred until their bounded implementation tasks land."
 tests = []
 
 [[requirement]]

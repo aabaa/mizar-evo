@@ -9,6 +9,13 @@ use crate::path_rules::{clean_relative_path, executable_payload_stem};
 use crate::staged_model::Stage;
 use crate::toml_lite::{self, TomlTable};
 
+const EXACT_TASK31_CORE_SNAPSHOT_CASE: &str =
+    "pass_type_elaboration_contradiction_formula_constant_001";
+const EXACT_TASK31_CORE_SNAPSHOT_PATH: &str =
+    "snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.core_ir.snap";
+const EXACT_TASK31_CORE_SNAPSHOT_SPEC_REF: &str =
+    "spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot";
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TestCaseId(pub String);
 
@@ -1289,13 +1296,26 @@ pub fn validate_expectation_path(
                 .tags
                 .iter()
                 .any(|tag| tag == "active_parse_only");
-        if !active_parse_only {
+        let exact_task31_core_snapshot = expectation.id.0 == EXACT_TASK31_CORE_SNAPSHOT_CASE
+            && expectation.stage == Stage::TypeElaboration
+            && expectation.expected_phase == Some(PipelinePhase::TypeCheck)
+            && expectation.expected_outcome == ExpectedOutcome::Pass
+            && expectation
+                .tags
+                .iter()
+                .any(|tag| tag == "active_type_elaboration")
+            && snapshot_path == Path::new(EXACT_TASK31_CORE_SNAPSHOT_PATH)
+            && expectation
+                .spec_refs
+                .iter()
+                .any(|spec_ref| spec_ref.0 == EXACT_TASK31_CORE_SNAPSHOT_SPEC_REF);
+        if !active_parse_only && !exact_task31_core_snapshot {
             diagnostics.push(ValidationDiagnostic::error(
                 path,
                 "expectation",
                 "E-EXPECT-SNAPSHOT-SCOPE",
                 "expectation.snapshots",
-                "snapshots are currently supported only for active parse-only pass/fail cases",
+                "snapshots are supported only for active parse-only pass/fail cases or the exact Core Task-31 contradiction pass case/path/spec_ref",
             ));
         }
     }

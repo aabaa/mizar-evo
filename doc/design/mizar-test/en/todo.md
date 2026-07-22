@@ -239,6 +239,14 @@ Keep `cargo test -p mizar-test` green after each task (see
       gating while resolver diagnostic ranges are unspecified, summary
       reporting, and two traceable seed fixtures. This task stays open until
       all planned consumer runners land.
+    - Core Task 31 is a completed consumer-paced increment within this open
+      task, not a new mizar-test task id. The existing Task-180 active
+      type-elaboration case validates the complete checker bundle, lowers the
+      exact CoreIr twice, and verify-compares its committed full-byte baseline.
+      This adds one covered requirement (plan 403/368, type 236/224) without
+      changing 188 active cases, 219/184 pass/fail, the `.miz`, phase, or
+      diagnostics. Broader CoreIr/ControlFlowIr/proof-verification remains
+      paced by Core Task 32 and its prerequisites.
     - The historical selected task-10 ledger records `mizar-parser` task 3
       (`parse-only`),
       `mizar-resolve` task 23 (`declaration-symbol`), `mizar-checker` task 12
@@ -549,8 +557,10 @@ Keep `cargo test -p mizar-test` green after each task (see
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit
       `type_elaboration.external_dependency.ast_payload_extraction` gap. The
-      CoreIr/ControlFlowIr/VC/proof rows are not promoted because no real
-      source-derived payload is lowered into those consumers yet.
+      The separately traced exact Task-180 CoreIr snapshot is now promoted by
+      Core Task 31. Every broader CoreIr/ControlFlowIr/VC/proof row remains
+      deferred because no corresponding real source-derived payload is lowered
+      into those consumers yet.
     - Deps: 16, 17, checker MC-G011/MC-G016/MC-G020. Spec:
       [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md).

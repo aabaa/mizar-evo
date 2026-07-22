@@ -295,6 +295,16 @@ traversals, and non-`.snap` files are rejected before any IO.
 `SurfaceAst::snapshot_text()` output を byte-for-byte で比較する。これは将来の
 一般 snapshot hash registry や update mode を実装するものではない。
 
+Core Task 31は`pass_type_elaboration_contradiction_formula_constant_001`向けに
+separately allowlisted verify-only shortcutを1件追加する。singular `snapshots`
+fieldはcommit済み
+`snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.core_ir.snap`
+baselineを指す。exact checker-bundle validation後、runnerはTask-180 `CoreIr`を
+2回constructし、structural/`debug_text()` equalityを要求してfull bytesをbaselineと
+比較する。missing/unreadable/mismatched/absent outputはcaseをfailさせる。automatic
+update path、general CoreIr registry、他のCoreIr/ControlFlowIr family、
+proof-verification snapshotはactive化しない。
+
 現在の general snapshot API slice: task 4 と task 5 は canonical in-memory
 `SnapshotRecord` construction、hashing、validation、comparison、explicit
 verify/update baseline IO、repeat-render determinism comparison を提供する。

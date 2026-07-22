@@ -37,12 +37,12 @@ exposes unexpected public APIs, or blocks safe review of future work.
 | Source | Approx. lines at audit | Owning spec | Boundary result |
 |---|---:|---|---|
 | `src/lib.rs` | 9 | module table in `todo.md` | Exports exactly `binder_normalization`, `control_flow`, `core_ir`, and `elaborator`. No drift. |
-| `src/core_ir.rs` | 4015 | `core_ir.md` | Large but cohesive data-shape module. No split required before closeout. |
+| `src/core_ir.rs` | 4016 | `core_ir.md` | Large but cohesive data-shape module. Task 31 adds only the specified pending-proof status variant. No split required. |
 | `src/binder_normalization.rs` | 5828 | `binder_normalization.md` | Large but cohesive binder/substitution/canonicalization module. Future private helper extraction is optional. |
-| `src/elaborator.rs` | 16173 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Task 30's template type-parameter sethood fixtures remain inside the Step 2 type/fact and Step 3 term/formula elaboration boundaries. The audit does not classify it as a current review-bottleneck requiring a split. |
+| `src/elaborator.rs` | 17132 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Task 31 adds one localized exact-adapter section and its fail-closed test matrix after generic proof lowering; it consumes checker payloads and does not introduce a new module responsibility. No split is required. |
 | `src/control_flow.rs` | 6718 | `control_flow.md` | Large but maps to phase-10 CFG, contracts, diagnostics, and handoff sections. No mandatory split in this task. |
 | `tests/determinism_suite.rs` | 627 | `00.crate_plan.md`, task 20 | Cross-module integration test; no boundary issue. |
-| `tests/lint_policy.rs` | 1167 | task 1, task 21, task 22 policies | Policy/audit guard test; no boundary issue. |
+| `tests/lint_policy.rs` | 1215 | task 1, task 21, task 22, task 31 policies | Policy/audit guard test; the Task-31 exception strips only the exact `ExportStatus`/`Visibility` import in `elaborator.rs` and continues to reject `SymbolEnv`, resolver behavior, aliases, and all other resolver-environment APIs. |
 
 `tests/lint_policy.rs` guards the current public module list, rejects public
 nested modules/re-exports in semantic module files until policy guards are
@@ -56,6 +56,13 @@ sethood payloads, Fraenkel cross-reference validation, and Rust fixtures to
 unchanged; no move-only split is required by the new localized Step 2/Step 3
 elaboration behavior.
 
+Task 31 rechecked the boundary after adding the exact Task-180 adapter. The
+adapter remains in the owning phase-9 elaborator module, depends on the
+checker-owned `ResolvedTypedAst` bundle rather than raw syntax, and exposes
+only the specified borrowed function and typed error. The narrow resolver
+metadata exception is structurally guarded and does not admit `SymbolEnv` or
+name resolution. No source file is moved or added.
+
 ## Classification
 
 | ID | Class | Evidence | Action |
@@ -63,7 +70,7 @@ elaboration behavior.
 | CORE-BOUNDARY-G001 | `deferred` | `src/elaborator.rs` is the largest implementation file and contains step-specific lowering helpers plus dense task-local tests. | Defer any private extraction to a dedicated move-only task that can split Step 1-6 helper/test sections without changing public APIs or behavior. |
 | CORE-BOUNDARY-G002 | `deferred` | `src/control_flow.rs` contains CFG construction, contract/ghost/termination attachment, diagnostics, handoff, and tests in one phase-10 module. | Future move-only task may split private builder/diagnostic/handoff helpers if reviewability bottlenecks emerge. |
 | CORE-BOUNDARY-G003 | `deferred` | `src/binder_normalization.rs` contains raw normalization, substitution, closure expansion, canonicalization, and tests in one binder module. | Future move-only task may split private helper sections after closeout if needed. |
-| CORE-BOUNDARY-G004 | `external_dependency_gap` | Source-derived payload seams, downstream VC/kernel/proof/artifact consumers, and active semantic snapshots remain outside this crate task. | Do not create placeholder modules for unavailable downstream or upstream seams. |
+| CORE-BOUNDARY-G004 | `external_dependency_gap` | Task 31 closes only the exact Task-180 source-derived CoreIr/snapshot seam. All other source-derived payload families, ControlFlowIr snapshots, and downstream VC/kernel/proof/artifact consumers remain outside this task. | Do not generalize the exact adapter or create placeholder modules for unavailable downstream/upstream seams. Core Task 32 retains decomposition ownership after checker Task 247. |
 
 No `boundary_violation`, `source_drift`, `source_undocumented_behavior`,
 `repo_metadata_conflict`, or blocking `design_drift` is observed. The older

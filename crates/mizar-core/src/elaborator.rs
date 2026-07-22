@@ -11,20 +11,22 @@ use crate::{
         CoreBinder, CoreCitation, CoreContractSet, CoreDefinition, CoreDefinitionId,
         CoreDefinitionTable, CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticId,
         CoreDiagnosticMessageKey, CoreDiagnosticRecovery, CoreDiagnosticSeverity,
-        CoreDiagnosticTable, CoreFormula, CoreFormulaId, CoreFormulaKind, CoreFormulaTable,
-        CoreItem, CoreItemId, CoreItemKind, CoreItemStatus, CoreItemTable, CoreJustification,
-        CoreLabelRef, CoreNodeRef, CorePlace, CoreProof, CoreProofId, CoreProofNode,
-        CoreProofNodeId, CoreProofNodeKind, CoreProofNodeTable, CoreProofStatus, CoreProofTable,
-        CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor, CoreSourceMap,
-        CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind, CoreTermTable, CoreTypePredicate,
-        CoreVarId, CoreVarRole, CoreVisibility, DefinitionBody, DefinitionBranchBody,
-        ExpansionPolicy, GeneratedOrigin, GeneratedOriginId, GeneratedOriginKey,
-        GeneratedOriginKind, GeneratedOriginTable, GhostEffectKey, GuardedDefinitionBranch,
-        LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed, ObligationSeedId,
-        ObligationSeedKind, ObligationSeedStatus, ObligationSeedTable, ProofBranchKind,
+        CoreDiagnosticTable, CoreFormula, CoreFormulaId, CoreFormulaKind, CoreFormulaTable, CoreIr,
+        CoreIrParts, CoreItem, CoreItemId, CoreItemKind, CoreItemStatus, CoreItemTable,
+        CoreJustification, CoreLabelRef, CoreNodeRef, CorePlace, CoreProof, CoreProofId,
+        CoreProofNode, CoreProofNodeId, CoreProofNodeKind, CoreProofNodeTable, CoreProofStatus,
+        CoreProofTable, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor,
+        CoreSourceMap, CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind, CoreTermTable,
+        CoreTypePredicate, CoreVarId, CoreVarRole, CoreVisibility, DefinitionBody,
+        DefinitionBranchBody, ExpansionPolicy, GeneratedOrigin, GeneratedOriginId,
+        GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable, GhostEffectKey,
+        GuardedDefinitionBranch, LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed,
+        ObligationSeedId, ObligationSeedKind, ObligationSeedStatus, ObligationSeedTable,
+        ProofBranchKind,
     },
 };
 use mizar_checker::{
+    binding_env::BindingContextId,
     cluster_trace::ClusterFactId,
     overload_resolution::{QuaPathKey, TemplateInstantiationKey, TemplateParameterKey},
     registration_resolution::{
@@ -33,17 +35,21 @@ use mizar_checker::{
         RegistrationDiagnosticId,
     },
     resolved_typed_ast::{
-        CoercionInsertionId, OverloadResolutionId, ResolvedNodeRecovery, ResolvedTypedAst,
-        ResolvedTypedDiagnosticId, ResolvedTypedDiagnosticSeverity, ResolvedTypedNodeId,
-        ResolvedTypedNodeKind,
+        CheckedProofId, CheckedProofNodeId, CheckedProofNodeKind, CheckedProofStatus,
+        CheckedTerminalGoalId, CoercionInsertionId, OverloadResolutionId, ResolvedNodeRecovery,
+        ResolvedTypedAst, ResolvedTypedDiagnosticId, ResolvedTypedDiagnosticSeverity,
+        ResolvedTypedNodeId, ResolvedTypedNodeKind, StatementSemanticId,
+        TheoremJustificationIntent, TheoremPolicyIntent,
     },
+    type_checker::{CheckedFormulaId, FormulaKind, FormulaStatus},
     typed_ast::{
-        InitialObligationId, InitialObligationKind, NormalizedTypeId, Polarity, TypeDiagnosticId,
-        TypeFactId,
+        InitialObligationId, InitialObligationKind, NodeRecoveryState, NormalizedTypeId, Polarity,
+        TypeDiagnosticId, TypeFactId, TypedNodeId, TypedSiteRef,
     },
 };
-use mizar_resolve::resolved_ast::{ModuleId, SymbolId};
-use mizar_session::{SourceId, SourceRange};
+use mizar_resolve::env::{ExportStatus, Visibility};
+use mizar_resolve::resolved_ast::{ModuleId, SemanticOrigin, SymbolId};
+use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
@@ -7492,6 +7498,627 @@ fn attach_proof_backrefs(
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ExactTask180LoweringError {
+    InvalidCheckerBundle { reason: String },
+    GenericLowering { stage: &'static str, reason: String },
+    ProvenanceEnrichment { reason: String },
+    InvalidProjection { reason: String },
+}
+
+impl fmt::Display for ExactTask180LoweringError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidCheckerBundle { reason } => {
+                write!(formatter, "invalid exact Task-180 checker bundle: {reason}")
+            }
+            Self::GenericLowering { stage, reason } => {
+                write!(
+                    formatter,
+                    "exact Task-180 generic {stage} lowering failed: {reason}"
+                )
+            }
+            Self::ProvenanceEnrichment { reason } => {
+                write!(
+                    formatter,
+                    "exact Task-180 provenance enrichment failed: {reason}"
+                )
+            }
+            Self::InvalidProjection { reason } => {
+                write!(
+                    formatter,
+                    "invalid exact Task-180 CoreIr projection: {reason}"
+                )
+            }
+        }
+    }
+}
+
+impl Error for ExactTask180LoweringError {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExactTask180Draft {
+    source_id: SourceId,
+    module_id: ModuleId,
+    owner: SymbolId,
+    owner_range: SourceRange,
+    owner_origin: SemanticOrigin,
+    owner_node: TypedNodeId,
+    formula_range: SourceRange,
+    formula_site_node: TypedNodeId,
+    formula_node: TypedNodeId,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ExactTask180FailureInjection {
+    None,
+    #[cfg(test)]
+    Preflight,
+    #[cfg(test)]
+    GenericLowering,
+    #[cfg(test)]
+    ProvenanceEnrichment,
+    #[cfg(test)]
+    InvalidProjection,
+}
+
+pub fn lower_exact_task180_handoff(
+    resolved: &ResolvedTypedAst,
+) -> Result<CoreIr, ExactTask180LoweringError> {
+    let draft = extract_exact_task180_draft(resolved)?;
+    lower_exact_task180_draft(draft, ExactTask180FailureInjection::None)
+}
+
+fn extract_exact_task180_draft(
+    resolved: &ResolvedTypedAst,
+) -> Result<ExactTask180Draft, ExactTask180LoweringError> {
+    let invalid = |reason: &str| ExactTask180LoweringError::InvalidCheckerBundle {
+        reason: reason.to_owned(),
+    };
+    if resolved.nodes().len() != 3
+        || resolved.nodes().root() != Some(ResolvedTypedNodeId::new(2))
+        || resolved.checked_formulas().len() != 1
+        || resolved.statement_semantics().len() != 1
+        || resolved.checked_proofs().len() != 1
+        || resolved.checked_proof_nodes().len() != 1
+        || resolved.checked_terminal_goals().len() != 1
+    {
+        return Err(invalid("exact table or compact-tree cardinality mismatch"));
+    }
+    if !resolved.expr_metadata().is_empty()
+        || !resolved.collection_candidates().is_empty()
+        || !resolved.expanded_candidates().is_empty()
+        || !resolved.template_expansions().is_empty()
+        || !resolved.viable_candidates().is_empty()
+        || !resolved.viability_decisions().is_empty()
+        || !resolved.specificity_graphs().is_empty()
+        || !resolved.resolved_overloads().is_empty()
+        || !resolved.inserted_coercions().is_empty()
+        || !resolved.cluster_facts().is_empty()
+        || !resolved.diagnostics().is_empty()
+    {
+        return Err(invalid("unrelated checker payload must be empty"));
+    }
+
+    let formula = resolved
+        .checked_formulas()
+        .get(CheckedFormulaId::new(0))
+        .ok_or_else(|| invalid("missing checked formula zero"))?;
+    let statement = resolved
+        .statement_semantics()
+        .get(StatementSemanticId::new(0))
+        .ok_or_else(|| invalid("missing statement semantic zero"))?;
+    let proof = resolved
+        .checked_proofs()
+        .get(CheckedProofId::new(0))
+        .ok_or_else(|| invalid("missing checked proof zero"))?;
+    let proof_node = resolved
+        .checked_proof_nodes()
+        .get(CheckedProofNodeId::new(0))
+        .ok_or_else(|| invalid("missing checked proof node zero"))?;
+    let terminal = resolved
+        .checked_terminal_goals()
+        .get(CheckedTerminalGoalId::new(0))
+        .ok_or_else(|| invalid("missing checked terminal goal zero"))?;
+    let formula_site_node = exact_task180_formula_site_node(&formula.site)?;
+
+    let compact_formula = resolved
+        .nodes()
+        .node(ResolvedTypedNodeId::new(0))
+        .ok_or_else(|| invalid("missing compact formula node"))?;
+    let compact_theorem = resolved
+        .nodes()
+        .node(ResolvedTypedNodeId::new(1))
+        .ok_or_else(|| invalid("missing compact theorem node"))?;
+    let compact_root = resolved
+        .nodes()
+        .node(ResolvedTypedNodeId::new(2))
+        .ok_or_else(|| invalid("missing compact module root"))?;
+    let role_is = |node: &mizar_checker::resolved_typed_ast::ResolvedTypedNode, expected: &str| {
+        matches!(
+            &node.kind,
+            ResolvedTypedNodeKind::SourcePreserved { role } if role.as_str() == expected
+        )
+    };
+    if compact_formula.id != ResolvedTypedNodeId::new(0)
+        || compact_formula.typed_node != TypedNodeId::new(0)
+        || !compact_formula.children.is_empty()
+        || !role_is(compact_formula, "source.formula.contradiction")
+        || compact_formula.source_range != formula.source_range
+        || compact_formula.final_type.is_some()
+        || compact_formula.metadata.is_some()
+        || !compact_formula.diagnostics.is_empty()
+        || compact_formula.recovery != ResolvedNodeRecovery::Normal
+        || compact_theorem.id != ResolvedTypedNodeId::new(1)
+        || compact_theorem.typed_node != TypedNodeId::new(1)
+        || compact_theorem.children != [ResolvedTypedNodeId::new(0)]
+        || !role_is(compact_theorem, "source.statement.theorem")
+        || compact_theorem.source_range != statement.owner_range
+        || compact_theorem.final_type.is_some()
+        || compact_theorem.metadata.is_some()
+        || !compact_theorem.diagnostics.is_empty()
+        || compact_theorem.recovery != ResolvedNodeRecovery::Normal
+        || compact_root.id != ResolvedTypedNodeId::new(2)
+        || compact_root.typed_node != TypedNodeId::new(2)
+        || compact_root.children != [ResolvedTypedNodeId::new(1)]
+        || !role_is(compact_root, "source.module")
+        || compact_root.final_type.is_some()
+        || compact_root.metadata.is_some()
+        || !compact_root.diagnostics.is_empty()
+        || compact_root.recovery != ResolvedNodeRecovery::Normal
+        || compact_root.source_range.source_id != resolved.source_id()
+        || compact_root.source_range.start > statement.owner_range.start
+        || compact_root.source_range.end < statement.owner_range.end
+    {
+        return Err(invalid("compact Task-266 source tree mismatch"));
+    }
+
+    if formula.id != CheckedFormulaId::new(0)
+        || formula.context != BindingContextId::new(0)
+        || formula.source_range.source_id != resolved.source_id()
+        || formula.recovery != NodeRecoveryState::Normal
+        || formula.kind != FormulaKind::Contradiction
+        || !formula.terms.is_empty()
+        || formula.asserted_type.is_some()
+        || !formula.expected_types.is_empty()
+        || formula.candidate_set.is_some()
+        || !formula.facts.is_empty()
+        || formula.status != FormulaStatus::Checked
+        || !formula.deferred.is_empty()
+    {
+        return Err(invalid("checked contradiction formula mismatch"));
+    }
+    if statement.id != StatementSemanticId::new(0)
+        || statement.owner.module() != resolved.module_id()
+        || statement.owner_node != TypedNodeId::new(1)
+        || statement.owner_range.source_id != resolved.source_id()
+        || statement.formula != formula.id
+        || statement.formula_node != TypedNodeId::new(0)
+        || statement.owner_origin.source_id() != resolved.source_id()
+        || statement.owner_origin.module_id() != resolved.module_id()
+        || statement.owner_origin.anchor() != &SourceAnchor::Range(statement.owner_range)
+        || statement.owner_origin.import_edge().is_some()
+        || statement.owner_origin.is_recovered()
+    {
+        return Err(invalid("statement owner/formula identity mismatch"));
+    }
+    if proof.id != CheckedProofId::new(0)
+        || proof.source_order != 0
+        || proof.statement != statement.id
+        || proof.owner != statement.owner
+        || proof.owner_node != statement.owner_node
+        || proof.owner_visibility != Visibility::Public
+        || proof.owner_export_status != ExportStatus::Exported
+        || proof.proposition != statement.formula
+        || proof.policy != TheoremPolicyIntent::Unmodified
+        || proof.justification != TheoremJustificationIntent::Omitted
+        || proof.root != CheckedProofNodeId::new(0)
+        || proof.status != CheckedProofStatus::PendingAutomaticProof
+        || proof.source_range != statement.owner_range
+        || proof.owner_origin != statement.owner_origin
+    {
+        return Err(invalid("checked proof identity or policy mismatch"));
+    }
+    if proof_node.id != CheckedProofNodeId::new(0)
+        || proof_node.proof != proof.id
+        || proof_node.kind != CheckedProofNodeKind::TerminalGoal(terminal.id)
+        || proof_node.source_range != formula.source_range
+        || proof_node.recovery != NodeRecoveryState::Normal
+        || terminal.id != CheckedTerminalGoalId::new(0)
+        || terminal.proof != proof.id
+        || terminal.node != proof_node.id
+        || terminal.statement != statement.id
+        || terminal.owner != statement.owner
+        || terminal.formula != statement.formula
+        || terminal.formula_site != formula.site
+        || !matches!(terminal.formula_site, TypedSiteRef::Node(_))
+        || terminal.formula_node != statement.formula_node
+        || terminal.source_range != formula.source_range
+        || terminal.recovery != NodeRecoveryState::Normal
+        || !terminal.citations.is_empty()
+        || !terminal.active_context.is_empty()
+        || terminal.local_path != "proof/0"
+        || terminal.label.is_some()
+    {
+        return Err(invalid("direct checked terminal-goal identity mismatch"));
+    }
+
+    Ok(ExactTask180Draft {
+        source_id: resolved.source_id(),
+        module_id: resolved.module_id().clone(),
+        owner: statement.owner.clone(),
+        owner_range: statement.owner_range,
+        owner_origin: statement.owner_origin.clone(),
+        owner_node: statement.owner_node,
+        formula_range: formula.source_range,
+        formula_site_node,
+        formula_node: statement.formula_node,
+    })
+}
+
+fn exact_task180_formula_site_node(
+    site: &TypedSiteRef,
+) -> Result<TypedNodeId, ExactTask180LoweringError> {
+    match site {
+        TypedSiteRef::Node(node) => Ok(*node),
+        _ => Err(ExactTask180LoweringError::InvalidCheckerBundle {
+            reason: "checked formula site must be a real node site".to_owned(),
+        }),
+    }
+}
+
+fn lower_exact_task180_draft(
+    draft: ExactTask180Draft,
+    _injection: ExactTask180FailureInjection,
+) -> Result<CoreIr, ExactTask180LoweringError> {
+    #[cfg(test)]
+    if _injection == ExactTask180FailureInjection::Preflight {
+        return Err(ExactTask180LoweringError::InvalidCheckerBundle {
+            reason: "injected preflight failure".to_owned(),
+        });
+    }
+
+    let resolver_key = exact_task267_resolver_key(&draft.owner, &draft.owner_origin);
+    let statement_key = exact_task267_statement_key(&draft);
+    let proof_key = "task267/v1;proof=0;statement=0;policy=unmodified;justification=omitted;status=pending-automatic-proof".to_owned();
+    let terminal_key = exact_task267_terminal_key(&draft);
+    let skeleton_key = "task267/v1;local-path=7:proof/0".to_owned();
+
+    #[cfg(test)]
+    if _injection == ExactTask180FailureInjection::GenericLowering {
+        return Err(ExactTask180LoweringError::GenericLowering {
+            stage: "context",
+            reason: "injected generic lowering failure".to_owned(),
+        });
+    }
+
+    let item_provenance = CheckerOwnedProvenance::try_new(vec![
+        CoreProvenance::new(CoreProvenancePhase::Resolver, resolver_key.clone()),
+        CoreProvenance::new(CoreProvenancePhase::Checker, statement_key.clone()),
+    ])
+    .map_err(|error| exact_generic_error("context provenance", error))?;
+    let item_source = CoreSourceRef::direct(draft.owner_range).with_provenance(vec![
+        CoreProvenance::new(CoreProvenancePhase::Resolver, resolver_key.clone()),
+        CoreProvenance::new(CoreProvenancePhase::Checker, statement_key.clone()),
+    ]);
+    let mut context_input = CoreContextInput::new(ResolvedTypedAstSummary::new(
+        draft.source_id,
+        draft.module_id.clone(),
+    ));
+    context_input.item_seeds.push(CoreItemSeed::new(
+        draft.owner.clone(),
+        CoreItemKind::Theorem,
+        "public",
+        item_source,
+        item_provenance,
+    ));
+    let context = prepare_core_context(context_input)
+        .map_err(|error| exact_generic_error("context", error))?;
+
+    let owner = context
+        .item_registry()
+        .id_for_symbol(&draft.owner)
+        .ok_or_else(|| ExactTask180LoweringError::GenericLowering {
+            stage: "context",
+            reason: "exact owner item was not registered".to_owned(),
+        })?;
+    if owner != CoreItemId::new(0) {
+        return Err(ExactTask180LoweringError::GenericLowering {
+            stage: "context",
+            reason: "exact owner item did not receive dense id zero".to_owned(),
+        });
+    }
+
+    let mut term_formula_input = TermAndFormulaLoweringInput::new(owner);
+    term_formula_input.formulas.push(CoreFormulaSeed::new(
+        CoreFormulaSeedKind::False,
+        CoreSourceRef::direct(draft.formula_range),
+        CheckerOwnedProvenance::checker(statement_key.clone()),
+    ));
+    let term_formula = lower_term_and_formula_inputs(&context, term_formula_input)
+        .map_err(|error| exact_generic_error("term/formula", error))?;
+    let definitions =
+        lower_definition_inputs(&context, &term_formula, DefinitionLoweringInput::new())
+            .map_err(|error| exact_generic_error("definition", error))?;
+
+    let terminal_source =
+        CoreSourceRef::direct(draft.formula_range).with_provenance(vec![CoreProvenance::new(
+            CoreProvenancePhase::ProofSkeleton,
+            skeleton_key.clone(),
+        )]);
+    let terminal = ProofTerminalGoalSeed::active(
+        CoreFormulaId::new(0),
+        "proof/0",
+        draft.owner.fqn().as_str(),
+        terminal_source,
+        CheckerOwnedProvenance::checker(terminal_key.clone()),
+    );
+    let proof_provenance = CheckerOwnedProvenance::try_new(vec![
+        CoreProvenance::new(CoreProvenancePhase::Resolver, resolver_key.clone()),
+        CoreProvenance::new(CoreProvenancePhase::Checker, proof_key.clone()),
+    ])
+    .map_err(|error| exact_generic_error("proof provenance", error))?;
+    let proof_input = ProofLoweringInput {
+        proofs: vec![ProofSeed {
+            owner,
+            symbol: draft.owner.clone(),
+            proposition: CoreFormulaId::new(0),
+            status: CoreProofStatus::PendingAutomaticProof,
+            skeleton: ProofSkeletonSeed::Node(ProofNodeSeed::TerminalGoal(terminal)),
+            source: CoreSourceRef::direct(draft.owner_range),
+            provenance: proof_provenance,
+        }],
+    };
+    let mut proofs = lower_proof_inputs(&context, &term_formula, &definitions, proof_input)
+        .map_err(|error| exact_generic_error("proof", error))?;
+
+    #[cfg(test)]
+    if _injection == ExactTask180FailureInjection::ProvenanceEnrichment {
+        return Err(ExactTask180LoweringError::ProvenanceEnrichment {
+            reason: "injected provenance enrichment failure".to_owned(),
+        });
+    }
+    let obligation = proofs
+        .obligation_seeds
+        .get_mut(ObligationSeedId::new(0))
+        .ok_or_else(|| ExactTask180LoweringError::ProvenanceEnrichment {
+            reason: "missing sole theorem-proof obligation".to_owned(),
+        })?;
+    obligation.provenance.push(CoreProvenance::new(
+        CoreProvenancePhase::ProofSkeleton,
+        skeleton_key.clone(),
+    ));
+    obligation.provenance.sort();
+    obligation.provenance.dedup();
+
+    let parts = CoreIrParts {
+        source_id: context.source_id(),
+        module_id: context.module_id().clone(),
+        items: context.item_registry().items().clone(),
+        terms: term_formula.terms.clone(),
+        formulas: term_formula.formulas.clone(),
+        definitions: definitions.definitions.clone(),
+        proofs: proofs.proofs.clone(),
+        proof_nodes: proofs.proof_nodes.clone(),
+        algorithms: CoreAlgorithmTable::new(),
+        algorithm_statements: CoreAlgorithmStmtTable::new(),
+        generated: term_formula.generated.clone(),
+        obligation_seeds: proofs.obligation_seeds.clone(),
+        source_map: proofs.source_map.clone(),
+        diagnostics: proofs.diagnostics.clone(),
+    };
+    let core =
+        CoreIr::try_new(parts).map_err(|error| ExactTask180LoweringError::InvalidProjection {
+            reason: error.to_string(),
+        })?;
+
+    #[cfg(test)]
+    if _injection == ExactTask180FailureInjection::InvalidProjection {
+        return Err(ExactTask180LoweringError::InvalidProjection {
+            reason: "injected final projection failure".to_owned(),
+        });
+    }
+    validate_exact_task180_projection(
+        &core,
+        &draft,
+        ExactTask267Keys {
+            resolver: &resolver_key,
+            statement: &statement_key,
+            proof: &proof_key,
+            terminal: &terminal_key,
+            skeleton: &skeleton_key,
+        },
+    )?;
+    Ok(core)
+}
+
+fn exact_generic_error(stage: &'static str, error: impl fmt::Display) -> ExactTask180LoweringError {
+    ExactTask180LoweringError::GenericLowering {
+        stage,
+        reason: error.to_string(),
+    }
+}
+
+fn exact_task267_resolver_key(owner: &SymbolId, origin: &SemanticOrigin) -> String {
+    let fqn = owner.fqn().as_str();
+    let path = origin
+        .structural_path()
+        .iter()
+        .map(u32::to_string)
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "task267/v1;owner-fqn={}:{};origin-path={}:{}",
+        fqn.len(),
+        fqn,
+        origin.structural_path().len(),
+        path
+    )
+}
+
+fn exact_task267_statement_key(draft: &ExactTask180Draft) -> String {
+    format!(
+        "task267/v1;statement=0;owner-node={};formula=0;formula-site-node={};formula-node={}",
+        draft.owner_node.index(),
+        draft.formula_site_node.index(),
+        draft.formula_node.index()
+    )
+}
+
+fn exact_task267_terminal_key(draft: &ExactTask180Draft) -> String {
+    format!(
+        "task267/v1;proof-node=0;terminal-goal=0;formula=0;formula-site-node={};formula-node={}",
+        draft.formula_site_node.index(),
+        draft.formula_node.index()
+    )
+}
+
+struct ExactTask267Keys<'a> {
+    resolver: &'a str,
+    statement: &'a str,
+    proof: &'a str,
+    terminal: &'a str,
+    skeleton: &'a str,
+}
+
+fn validate_exact_task180_projection(
+    core: &CoreIr,
+    draft: &ExactTask180Draft,
+    keys: ExactTask267Keys<'_>,
+) -> Result<(), ExactTask180LoweringError> {
+    let invalid = |reason: &str| ExactTask180LoweringError::InvalidProjection {
+        reason: reason.to_owned(),
+    };
+    if core.source_id() != draft.source_id
+        || core.module_id() != &draft.module_id
+        || core.items().len() != 1
+        || !core.terms().is_empty()
+        || core.formulas().len() != 1
+        || !core.definitions().is_empty()
+        || core.proofs().len() != 1
+        || core.proof_nodes().len() != 1
+        || !core.algorithms().is_empty()
+        || !core.algorithm_statements().is_empty()
+        || !core.generated().is_empty()
+        || core.obligation_seeds().len() != 1
+        || !core.diagnostics().is_empty()
+    {
+        return Err(invalid("table cardinality mismatch"));
+    }
+
+    let item = core
+        .items()
+        .get(CoreItemId::new(0))
+        .ok_or_else(|| invalid("missing item zero"))?;
+    let formula = core
+        .formulas()
+        .get(CoreFormulaId::new(0))
+        .ok_or_else(|| invalid("missing formula zero"))?;
+    let proof = core
+        .proofs()
+        .get(CoreProofId::new(0))
+        .ok_or_else(|| invalid("missing proof zero"))?;
+    let proof_node = core
+        .proof_nodes()
+        .get(CoreProofNodeId::new(0))
+        .ok_or_else(|| invalid("missing proof node zero"))?;
+    let obligation = core
+        .obligation_seeds()
+        .get(ObligationSeedId::new(0))
+        .ok_or_else(|| invalid("missing obligation zero"))?;
+
+    let item_source = CoreSourceRef::direct(draft.owner_range).with_provenance(vec![
+        CoreProvenance::new(CoreProvenancePhase::Resolver, keys.resolver),
+        CoreProvenance::new(CoreProvenancePhase::Checker, keys.statement),
+    ]);
+    let formula_source =
+        CoreSourceRef::direct(draft.formula_range).with_provenance(vec![CoreProvenance::new(
+            CoreProvenancePhase::Checker,
+            keys.statement,
+        )]);
+    let proof_source = CoreSourceRef::direct(draft.owner_range).with_provenance(vec![
+        CoreProvenance::new(CoreProvenancePhase::Resolver, keys.resolver),
+        CoreProvenance::new(CoreProvenancePhase::Checker, keys.proof),
+    ]);
+    let terminal_source = CoreSourceRef::direct(draft.formula_range).with_provenance(vec![
+        CoreProvenance::new(CoreProvenancePhase::Checker, keys.terminal),
+        CoreProvenance::new(CoreProvenancePhase::ProofSkeleton, keys.skeleton),
+    ]);
+    if item.symbol != draft.owner
+        || item.kind != CoreItemKind::Theorem
+        || item.visibility.as_str() != "public"
+        || item.status != CoreItemStatus::Valid
+        || !item.dependencies.is_empty()
+        || item.source != item_source
+        || !item.diagnostics.is_empty()
+        || formula.kind != CoreFormulaKind::False
+        || formula.source != formula_source
+        || proof.item != CoreItemId::new(0)
+        || proof.proposition != CoreFormulaId::new(0)
+        || proof.root != CoreProofNodeId::new(0)
+        || proof.status != CoreProofStatus::PendingAutomaticProof
+        || proof.source != proof_source
+        || proof_node.source != terminal_source
+        || !proof_node.diagnostics.is_empty()
+    {
+        return Err(invalid("item/formula/proof identity or source mismatch"));
+    }
+    let CoreProofNodeKind::TerminalGoal {
+        obligation: terminal_obligation,
+        citations,
+    } = &proof_node.kind
+    else {
+        return Err(invalid("proof root is not a direct terminal goal"));
+    };
+    if *terminal_obligation != ObligationSeedId::new(0) || !citations.is_empty() {
+        return Err(invalid("terminal goal payload mismatch"));
+    }
+    let expected_refs = vec![
+        CoreNodeRef::Item(CoreItemId::new(0)),
+        CoreNodeRef::Formula(CoreFormulaId::new(0)),
+        CoreNodeRef::Proof(CoreProofId::new(0)),
+        CoreNodeRef::ProofNode(CoreProofNodeId::new(0)),
+    ];
+    let expected_provenance = vec![
+        CoreProvenance::new(CoreProvenancePhase::Checker, keys.terminal),
+        CoreProvenance::new(CoreProvenancePhase::ProofSkeleton, keys.skeleton),
+    ];
+    if obligation.owner != CoreItemId::new(0)
+        || obligation.kind != ObligationSeedKind::TheoremProof
+        || obligation.goal != Some(CoreFormulaId::new(0))
+        || !obligation.context.is_empty()
+        || obligation.local_path.as_str() != "proof/0"
+        || obligation.label.is_some()
+        || obligation.semantic_origin.as_str() != draft.owner.fqn().as_str()
+        || obligation.provenance != expected_provenance
+        || obligation.source != terminal_source
+        || obligation.core_refs != expected_refs
+        || obligation.status != ObligationSeedStatus::Active
+        || !obligation.diagnostics.is_empty()
+    {
+        return Err(invalid("theorem-proof obligation mismatch"));
+    }
+
+    let source_map = core.source_map();
+    if source_map.item_sources.len() != 1
+        || source_map.item_sources.get(&CoreItemId::new(0)) != Some(&item_source)
+        || !source_map.term_sources.is_empty()
+        || source_map.formula_sources.len() != 1
+        || source_map.formula_sources.get(&CoreFormulaId::new(0)) != Some(&formula_source)
+        || !source_map.definition_sources.is_empty()
+        || source_map.proof_sources.len() != 1
+        || source_map.proof_sources.get(&CoreProofNodeId::new(0)) != Some(&terminal_source)
+        || !source_map.algorithm_sources.is_empty()
+        || !source_map.generated_sources.is_empty()
+        || source_map.obligation_sources.len() != 1
+        || source_map.obligation_sources.get(&ObligationSeedId::new(0)) != Some(&terminal_source)
+    {
+        return Err(invalid("exact source-map mismatch"));
+    }
+    Ok(())
+}
+
 pub type AlgorithmLoweringResult<T> = Result<T, AlgorithmLoweringError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8399,6 +9026,7 @@ mod tests {
         CoreAlgorithmStmtTable, CoreAlgorithmTable, CoreDefinitionTable, CoreIr, CoreIrParts,
         CoreProofNodeTable, CoreProofTable,
     };
+    use mizar_checker::typed_ast::TypeRole;
     use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
@@ -8478,6 +9106,337 @@ mod tests {
             provenance(format!("checker:item:{name}").as_str()),
         )
         .with_definition_boundary(DefinitionBoundaryKind::Theorem)
+    }
+
+    fn exact_task180_draft() -> ExactTask180Draft {
+        let owner_range = range(10, 90);
+        ExactTask180Draft {
+            source_id: source_id(),
+            module_id: module_id(),
+            owner: symbol("SourceDerivedContradictionConstantBoundary"),
+            owner_range,
+            owner_origin: SemanticOrigin::new(
+                source_id(),
+                module_id(),
+                SourceAnchor::Range(owner_range),
+                Vec::new(),
+            ),
+            owner_node: TypedNodeId::new(1),
+            formula_range: range(50, 63),
+            formula_site_node: TypedNodeId::new(42),
+            formula_node: TypedNodeId::new(0),
+        }
+    }
+
+    #[test]
+    fn exact_task267_encoders_are_byte_canonical_and_keep_node_roles_distinct() {
+        let mut draft = exact_task180_draft();
+        draft.owner = SymbolId::new(
+            module_id(),
+            LocalSymbolId::new("unicode"),
+            FullyQualifiedName::new("pkg::main::証明"),
+        );
+        assert_eq!(
+            exact_task267_resolver_key(&draft.owner, &draft.owner_origin),
+            "task267/v1;owner-fqn=17:pkg::main::証明;origin-path=0:"
+        );
+
+        draft.owner_origin = SemanticOrigin::new(
+            source_id(),
+            module_id(),
+            SourceAnchor::Range(draft.owner_range),
+            vec![0, 12],
+        );
+        assert_eq!(
+            exact_task267_resolver_key(&draft.owner, &draft.owner_origin),
+            "task267/v1;owner-fqn=17:pkg::main::証明;origin-path=2:0,12"
+        );
+
+        draft.owner_node = TypedNodeId::new(12);
+        draft.formula_site_node = TypedNodeId::new(34);
+        draft.formula_node = TypedNodeId::new(5);
+        assert_eq!(
+            exact_task267_statement_key(&draft),
+            "task267/v1;statement=0;owner-node=12;formula=0;formula-site-node=34;formula-node=5"
+        );
+        assert_eq!(
+            exact_task267_terminal_key(&draft),
+            "task267/v1;proof-node=0;terminal-goal=0;formula=0;formula-site-node=34;formula-node=5"
+        );
+        assert_eq!(
+            exact_task180_formula_site_node(&TypedSiteRef::Node(TypedNodeId::new(34)))
+                .expect("node sites are exact inputs"),
+            TypedNodeId::new(34)
+        );
+        assert!(matches!(
+            exact_task180_formula_site_node(&TypedSiteRef::Role {
+                node: TypedNodeId::new(34),
+                role: TypeRole::new("result"),
+            }),
+            Err(ExactTask180LoweringError::InvalidCheckerBundle { .. })
+        ));
+    }
+
+    #[test]
+    fn exact_task180_draft_lowers_atomically_and_deterministically() {
+        let draft = exact_task180_draft();
+        let first = lower_exact_task180_draft(draft.clone(), ExactTask180FailureInjection::None)
+            .expect("exact draft lowers");
+        let second = lower_exact_task180_draft(draft, ExactTask180FailureInjection::None)
+            .expect("equivalent exact draft lowers");
+
+        assert_eq!(first, second);
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert!(!first.has_error_nodes());
+        assert_eq!(
+            first
+                .proofs()
+                .get(CoreProofId::new(0))
+                .expect("proof zero")
+                .status,
+            CoreProofStatus::PendingAutomaticProof
+        );
+    }
+
+    #[test]
+    fn exact_task180_failure_injections_return_only_typed_errors() {
+        let draft = exact_task180_draft();
+        assert!(matches!(
+            lower_exact_task180_draft(draft.clone(), ExactTask180FailureInjection::Preflight),
+            Err(ExactTask180LoweringError::InvalidCheckerBundle { .. })
+        ));
+        assert!(matches!(
+            lower_exact_task180_draft(draft.clone(), ExactTask180FailureInjection::GenericLowering),
+            Err(ExactTask180LoweringError::GenericLowering { .. })
+        ));
+        assert!(matches!(
+            lower_exact_task180_draft(
+                draft.clone(),
+                ExactTask180FailureInjection::ProvenanceEnrichment
+            ),
+            Err(ExactTask180LoweringError::ProvenanceEnrichment { .. })
+        ));
+        assert!(matches!(
+            lower_exact_task180_draft(draft, ExactTask180FailureInjection::InvalidProjection),
+            Err(ExactTask180LoweringError::InvalidProjection { .. })
+        ));
+    }
+
+    fn exact_task180_core_parts(core: &CoreIr) -> CoreIrParts {
+        CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        }
+    }
+
+    type ExactTask180ProjectionMutation = fn(&mut CoreIrParts);
+
+    fn assert_exact_task180_projection_rejects(
+        case: &str,
+        core: &CoreIr,
+        draft: &ExactTask180Draft,
+        mutate: ExactTask180ProjectionMutation,
+    ) {
+        let mut parts = exact_task180_core_parts(core);
+        mutate(&mut parts);
+        let mutated = CoreIr::try_new(parts).unwrap_or_else(|error| {
+            panic!("{case}: near-miss must remain generic CoreIr: {error}")
+        });
+        let resolver_key = exact_task267_resolver_key(&draft.owner, &draft.owner_origin);
+        let statement_key = exact_task267_statement_key(draft);
+        let proof_key = "task267/v1;proof=0;statement=0;policy=unmodified;justification=omitted;status=pending-automatic-proof";
+        let terminal_key = exact_task267_terminal_key(draft);
+        assert!(
+            matches!(
+                validate_exact_task180_projection(
+                    &mutated,
+                    draft,
+                    ExactTask267Keys {
+                        resolver: &resolver_key,
+                        statement: &statement_key,
+                        proof: proof_key,
+                        terminal: &terminal_key,
+                        skeleton: "task267/v1;local-path=7:proof/0",
+                    },
+                ),
+                Err(ExactTask180LoweringError::InvalidProjection { .. })
+            ),
+            "{case}: exact projection validation must fail closed",
+        );
+    }
+
+    #[test]
+    fn exact_task180_postvalidator_rejects_structurally_valid_near_misses() {
+        let draft = exact_task180_draft();
+        let core = lower_exact_task180_draft(draft.clone(), ExactTask180FailureInjection::None)
+            .expect("exact draft lowers");
+        let cases: &[(&str, ExactTask180ProjectionMutation)] = &[
+            ("item visibility", |parts| {
+                parts
+                    .items
+                    .get_mut(CoreItemId::new(0))
+                    .expect("item zero")
+                    .visibility = CoreVisibility::new("private");
+            }),
+            ("formula kind", |parts| {
+                parts
+                    .formulas
+                    .get_mut(CoreFormulaId::new(0))
+                    .expect("formula zero")
+                    .kind = CoreFormulaKind::True;
+            }),
+            ("formula source", |parts| {
+                let source = CoreSourceRef::direct(SourceRange {
+                    source_id: parts.source_id,
+                    start: 51,
+                    end: 62,
+                });
+                parts
+                    .formulas
+                    .get_mut(CoreFormulaId::new(0))
+                    .expect("formula zero")
+                    .source = source.clone();
+                parts
+                    .source_map
+                    .formula_sources
+                    .insert(CoreFormulaId::new(0), source);
+            }),
+            ("proof source", |parts| {
+                parts
+                    .proofs
+                    .get_mut(CoreProofId::new(0))
+                    .expect("proof zero")
+                    .source = CoreSourceRef::direct(SourceRange {
+                    source_id: parts.source_id,
+                    start: 11,
+                    end: 89,
+                });
+            }),
+            ("proof status", |parts| {
+                parts
+                    .proofs
+                    .get_mut(CoreProofId::new(0))
+                    .expect("proof zero")
+                    .status = CoreProofStatus::Open;
+            }),
+            ("proof-node kind", |parts| {
+                parts
+                    .proof_nodes
+                    .get_mut(CoreProofNodeId::new(0))
+                    .expect("proof node zero")
+                    .kind = CoreProofNodeKind::Sequence {
+                    children: Vec::new(),
+                };
+            }),
+            ("terminal citations", |parts| {
+                let CoreProofNodeKind::TerminalGoal { citations, .. } = &mut parts
+                    .proof_nodes
+                    .get_mut(CoreProofNodeId::new(0))
+                    .expect("proof node zero")
+                    .kind
+                else {
+                    panic!("exact proof node must be terminal");
+                };
+                citations.push(CoreCitation::Symbol(external_symbol("ExternalCitation")));
+            }),
+            ("terminal source", |parts| {
+                let source = CoreSourceRef::direct(SourceRange {
+                    source_id: parts.source_id,
+                    start: 52,
+                    end: 61,
+                });
+                parts
+                    .proof_nodes
+                    .get_mut(CoreProofNodeId::new(0))
+                    .expect("proof node zero")
+                    .source = source.clone();
+                parts
+                    .source_map
+                    .proof_sources
+                    .insert(CoreProofNodeId::new(0), source);
+            }),
+            ("obligation status", |parts| {
+                parts
+                    .obligation_seeds
+                    .get_mut(ObligationSeedId::new(0))
+                    .expect("obligation zero")
+                    .status = ObligationSeedStatus::Deferred;
+            }),
+            ("obligation path", |parts| {
+                parts
+                    .obligation_seeds
+                    .get_mut(ObligationSeedId::new(0))
+                    .expect("obligation zero")
+                    .local_path = LocalProofOrProgramPath::new("proof/1");
+            }),
+            ("obligation provenance", |parts| {
+                parts
+                    .obligation_seeds
+                    .get_mut(ObligationSeedId::new(0))
+                    .expect("obligation zero")
+                    .provenance = vec![CoreProvenance::new(
+                    CoreProvenancePhase::Checker,
+                    "task267/v1;unexpected-obligation-provenance",
+                )];
+            }),
+            ("obligation core refs", |parts| {
+                parts
+                    .obligation_seeds
+                    .get_mut(ObligationSeedId::new(0))
+                    .expect("obligation zero")
+                    .core_refs
+                    .retain(|core_ref| !matches!(core_ref, CoreNodeRef::Formula(_)));
+            }),
+            ("obligation source-map ownership", |parts| {
+                let source = CoreSourceRef::direct(SourceRange {
+                    source_id: parts.source_id,
+                    start: 53,
+                    end: 60,
+                });
+                parts
+                    .obligation_seeds
+                    .get_mut(ObligationSeedId::new(0))
+                    .expect("obligation zero")
+                    .source = source.clone();
+                parts
+                    .source_map
+                    .obligation_sources
+                    .insert(ObligationSeedId::new(0), source);
+            }),
+            ("item source-map ownership", |parts| {
+                let source = parts
+                    .formulas
+                    .get(CoreFormulaId::new(0))
+                    .expect("formula zero")
+                    .source
+                    .clone();
+                parts
+                    .items
+                    .get_mut(CoreItemId::new(0))
+                    .expect("item zero")
+                    .source = source.clone();
+                parts
+                    .source_map
+                    .item_sources
+                    .insert(CoreItemId::new(0), source);
+            }),
+        ];
+
+        for (case, mutate) in cases {
+            assert_exact_task180_projection_rejects(case, &core, &draft, *mutate);
+        }
     }
 
     fn algorithm_item_seed(name: &str, start: usize) -> CoreItemSeed {

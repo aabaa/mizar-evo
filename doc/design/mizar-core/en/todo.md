@@ -478,7 +478,7 @@ work. Every finding maps to a task or a recorded disposition:
       (SSA-013). Refs: spec 13 §13.4.2, 18 §18.10.2;
       template_encoding_audit.md F5.
 
-31. **Exact source-derived contradiction theorem lowering.** [ ]
+31. **Exact source-derived contradiction theorem lowering.** [x]
     - With mizar-test Tasks 266 and 268 complete, consume only their checker-owned
       theorem owner, checked contradiction formula, proof-status/skeleton, and
       explicit terminal-goal payload using the exact mapping selected by Task
@@ -504,6 +504,14 @@ work. Every finding maps to a task or a recorded disposition:
       lowering, exact enrichment, and postvalidation and assert `Err` with no
       partial `CoreIr` or source map at every phase.
     - Deps: mizar-test Tasks 266-268. Specs: 14-16; architecture 06.
+    - Complete: `lower_exact_task180_handoff` accepts only the complete exact
+      checker bundle, uses a private draft and the existing generic lowering
+      stages, enriches and exact-validates provenance transactionally, and
+      returns no partial output on any typed failure. The existing active
+      contradiction case now performs a deterministic rerun and verify-only
+      full-byte comparison against its committed CoreIr baseline. No `.miz`,
+      pass/fail intent, theorem acceptance/discharge, broader Core/CFG/VC
+      family, or Steps 6/7 status changed.
 
 32. **Remaining source-derived `CoreIr` and `ControlFlowIr` task
     decomposition.** [ ]

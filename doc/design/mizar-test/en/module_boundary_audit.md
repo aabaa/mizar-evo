@@ -10849,3 +10849,27 @@ The other production owners and visibility boundaries are unchanged. Existing
 `.miz`, expectations, trace status/test list, active runner/counts, and four CLI
 bytes remain unchanged. Core Task 31 is now executable; Steps 6/7 remain
 deferred.
+
+## Core Task 31 / Task-10 Consumer Current-State Addendum
+
+Core Task 31 changes behavior inside the existing top-level orchestration,
+type-elaboration output, and result-projection owners; it adds no production
+path or private leaf. `runner.rs` remains facade/top-level orchestration only,
+and the type-elaboration facade still declares eleven private leaves. The exact
+Task-180 output owner calls the borrowed core adapter twice; top-level
+orchestration performs the singular verify-only baseline comparison; the
+result leaf gives snapshot failures their stable diagnostic identity.
+
+The production manifest remains 17 paths with path hash
+`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
+It now totals 19,803 lines with content-manifest hash
+`5f9e716169964a861b71576957c05e2dc2538b5e0ff9d1025ef51a4bea6aa306`;
+`runner.rs` is 2,266 lines, `type_elaboration.rs` 578,
+`checker_handoff.rs` 1,259, `output.rs` 1,566,
+and `result.rs` 38. Active
+parse/declaration/type counts remain 96/4/188 and the 272-test name list is
+unchanged. The plan intentionally becomes 403/368 and type coverage 236/224
+because of the new exact snapshot requirement; pass/fail stays 219/184. The
+existing `.miz`, pass outcome, phase, diagnostics, and broader trace rows stay
+unchanged. All non-Task-180 CoreIr/ControlFlowIr families remain deferred;
+Steps 6/7 are not promoted.

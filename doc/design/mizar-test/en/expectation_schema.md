@@ -237,7 +237,7 @@ Fields:
 |---|---:|---|
 | `expected_phase` | yes | Latest phase the harness must execute for this test. |
 | `diagnostic_codes` | yes | Expected diagnostics. Empty means no diagnostics. |
-| `snapshots` | no | Current parse-only `SurfaceAst` baseline path, when applicable. |
+| `snapshots` | no | Transitional parse-only `SurfaceAst` baseline path or the one exact Core Task-31 `CoreIr` baseline path, when applicable. |
 
 The harness fails a pass test if an error diagnostic is emitted unless that
 diagnostic is explicitly allowed by the expectation.
@@ -264,7 +264,7 @@ Fields:
 | `rejection_reason` | conditional | Required for certificate and kernel rejection; optional otherwise. |
 | `diagnostic_codes` | yes | Stable diagnostic codes in deterministic order. |
 | `diagnostic_payloads` | no | Optional stable summaries for machine-readable diagnostic payloads in deterministic order. |
-| `snapshots` | no | Current parse-only `SurfaceAst` baseline path, when applicable. |
+| `snapshots` | no | Transitional parse-only `SurfaceAst` baseline path; the exact Core Task-31 exception is pass-only. |
 | `stable_detail_key` | yes | Stable detail identity independent of diagnostic wording. |
 
 A fail test that succeeds is a harness failure. A fail test that fails earlier
@@ -847,6 +847,17 @@ current parser task-38 slice above is only a parse-only `SurfaceAst` shortcut
 for active pass/fail sidecars and does not complete general `kind = "snapshot"`
 execution or hash-registry update mode.
 
+Core Task 31 adds exactly one second transitional shortcut. The existing
+`pass_type_elaboration_contradiction_formula_constant_001` active pass sidecar
+may set `snapshots` to the fixed tests-root-relative
+`snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.core_ir.snap`
+path. The type-elaboration runner compares the complete
+`CoreIr::debug_text()` bytes in verify-only mode after the exact Task-180
+adapter succeeds. The pass outcome, phase, diagnostics, and existing `.miz`
+intent do not change. No other type-elaboration case may use `snapshots`, the
+shortcut has no implicit update mode, and it does not activate or parse the
+general `[[snapshots]]` registry.
+
 ## Generated, Fuzz, And Property Metadata
 
 Generated and fuzz/property regression tests record provenance.
@@ -891,9 +902,10 @@ The harness validates:
 7. Fail expectations include failure identity fields.
 8. Certificate and kernel rejections include `rejection_reason`.
 9. Diagnostic codes are sorted in the expected deterministic order.
-10. Transitional parse-only `snapshots` paths are active parse-only pass/fail
-    only, clean tests-root-relative paths under `snapshots/`, and `.snap`
-    files; missing, unreadable, or mismatched baselines are harness failures.
+10. Transitional `snapshots` paths are active parse-only pass/fail cases or the
+    one exact Core Task-31 active type-elaboration pass case, clean
+    tests-root-relative paths under `snapshots/`, and `.snap` files; missing,
+    unreadable, or mismatched baselines are harness failures.
 11. General snapshot entries use supported hash algorithms.
 12. Generated/fuzz/property tests include origin metadata.
 13. Architecture-22 matrix metadata uses known sorted scenario ids, known gate

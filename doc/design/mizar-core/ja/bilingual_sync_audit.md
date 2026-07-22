@@ -51,11 +51,11 @@ update は下に記録する。
 | `binder_normalization.md` | representation、normalization、alpha-equivalence、substitution、closure、diagnostic、test、enum policy、forbidden behavior を仕様化する。 | 同じ module spec と gap classification を mirror する。 | No drift。technical term が英語多めに残るのは意図的。 |
 | `bilingual_sync_audit.md` | この paired-document inventory、言語固有の許容差分、resolved pair update、remaining classification、docs-only verification を記録する。 | 同じ audit structure と classification を mirror する。 | No drift。restart / closeout inventory のため、この row は意図的に self-referential。 |
 | `control_flow.md` | `ControlFlowIr`、block、local、context、contract、ghost effect、termination、diagnostic、handoff site、determinism、enum policy、test を仕様化する。 | 同じ phase-10 design を localized prose で mirror する。 | No drift。architecture-07 ownership drift は両 file で分類済み。 |
-| `core_ir.md` | `CoreIr` data shape、generated origin、obligation seed、source map、diagnostic、validation、enum policy、gap、forbidden behavior を仕様化する。 | 同じ data-shape と boundary policy を mirror する。 | No drift。 |
+| `core_ir.md` | `CoreIr` data shape、generated origin、obligation seed、source map、diagnostic、validation、enum policy、Task-31 pending-proof projection、gap、forbidden behaviorを仕様化する。 | 同じdata-shape、exact projection、boundary policyをmirrorする。 | No drift。Task-31 addition同期済み。 |
 | `crate_exit_report.md` | closeout status、task commit、hard gate、score、deferred item、verification、handoff を記録する。 | 同じ closeout evidence と classification を mirror する。 | No drift。closeout で追加。 |
-| `elaborator.md` | phase-9 input/output contract、6 lowering step、diagnostic、determinism、enum policy、forbidden behavior を仕様化する。 | 同じ six-step elaboration design と external/deferred classification を mirror する。 | No drift。 |
+| `elaborator.md` | phase-9 input/output contract、6 lowering step、exact Task-180 adapter、diagnostic、determinism、enum policy、forbidden behaviorを仕様化する。 | 同じsix-step design、exact adapter、external/deferred classificationをmirrorする。 | No drift。Task-31 addition同期済み。 |
 | `module_boundary_audit.md` | Task 24 source-layout gate、large review-risk file、closeout 前に必須 split がないこと、deferred move-only follow-up を記録する。 | 同じ audit-only decision と classification を mirror する。 | No drift。Task 24 で追加。 |
-| `source_spec_audit.md` | public module/API inventory、source/spec/test/deferred correspondence、`source_undocumented_behavior` pass、CORE-AUDIT follow-up register を記録する。 | 同じ audit structure と CORE-AUDIT gap ID/class を mirror する。 | No drift。Task 22 lint guard も source/spec audit pair を検査する。 |
+| `source_spec_audit.md` | Task 31を含むpublic module/API inventory、source/spec/test/deferred correspondence、`source_undocumented_behavior` pass、CORE-AUDIT follow-up registerを記録する。 | 同じaudit structure、exact Task-180 coverage、CORE-AUDIT gap ID/classをmirrorする。 | No drift。Task 22 lint guardもsource/spec audit pairを検査する。 |
 | `task_ledger.md` | current task までの restart status、review result、verification、deferred reason を記録する。 | 同じ ledger row を localized prose で mirror する。 | No drift。Closeout row と task hash backfill は stage 前にこの commit で更新する。 |
 | `todo.md` | ordered task list、status legend、verification、notes を定義する。 | ordered task list と verification policy を mirror する。 | No drift。Closeout status は stage 前にこの commit で更新する。 |
 
@@ -70,10 +70,18 @@ update は下に記録する。
 
 現在の paired file set に active bilingual-documentation gap は残っていない。
 
+Core Task 31は変更した全pair、`00.crate_plan.md`、`core_ir.md`、
+`elaborator.md`、`source_spec_audit.md`、`module_boundary_audit.md`、
+`crate_exit_report.md`、`task_ledger.md`、`todo.md`を再確認した。exact adapter、
+snapshot exception、remaining broad deferred ownership、forbidden scopeはEN/JAで一致する。
+
 この bilingual audit では `spec_gap`、`source_drift`、
 `source_undocumented_behavior`、`test_expectation_drift`、
-`repo_metadata_conflict`、`boundary_violation` は見つからない。既存 `.miz` test、
-expectation、Rust source、traceability row は変更しない。
+`repo_metadata_conflict`、`boundary_violation` は見つからない。Task 31はRust
+source、exact Task-180 expectation sidecar、新しいexact traceability row 1件を
+implementationとpaired owning documentationで変更し、それらは一致する。既存
+`.miz` sourceとsemantic pass intentは不変で、older broad CoreIr trace rowは
+deferredのままである。
 
 ## Guard Decision
 

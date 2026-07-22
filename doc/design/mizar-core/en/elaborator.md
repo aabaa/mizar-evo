@@ -529,6 +529,30 @@ calls `lower_proof_inputs` only after the exact identity/status/cardinality
 predicate passes. The terminal `ProofFormulaRef` is
 `Formula(CoreFormulaId(0))`, never `Thesis`.
 
+The production signature is public and borrowed:
+
+```rust
+pub fn lower_exact_task180_handoff(
+    resolved: &ResolvedTypedAst,
+) -> Result<CoreIr, ExactTask180LoweringError>;
+```
+
+`ExactTask180LoweringError` is a public non-exhaustive typed error whose
+variants are `InvalidCheckerBundle`, `GenericLowering`,
+`ProvenanceEnrichment`, and `InvalidProjection`, distinguishing checker-bundle
+preflight, generic lowering, exact provenance enrichment, and final projection
+validation. It owns no partially
+lowered output. The adapter extracts a private core-owned draft after checking
+the strict input allowlist in `core_ir.md`; it does not expose free-standing
+proof-table inputs or add checker table mutators. A private `cfg(test)` failure
+selector may force each of the four categories, but that selector is not part
+of the public API.
+
+The only resolver-environment metadata admitted at this boundary is typed
+comparison of the already checker-authenticated `Visibility::Public` and
+`ExportStatus::Exported` fields. This does not admit `SymbolEnv`, perform name
+resolution, or weaken the existing frontend/downstream boundary guard.
+
 The generic `CheckerOwnedProvenance` rule does not change. The terminal
 `CoreSourceRef` enters generic lowering with exactly `ProofSkeleton(K)` already
 in its source provenance, while its `CheckerOwnedProvenance` contains only
@@ -546,6 +570,16 @@ partial source map is published. Generic proof callers and their accepted
 provenance phases remain unchanged. The adapter does not prove or discharge
 the formula, make the public theorem a verified premise, build VCs, or
 generalize beyond the exact Task-180 source.
+
+Traceability adds a new exact Task-31 snapshot requirement backed by the
+existing contradiction sidecar and committed CoreIr baseline. Its id is
+`spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot`, stage is
+`type_elaboration`, status is `covered`, coverage is `snapshot`, and its sole
+test/backlink is the existing contradiction expectation path. The sidecar adds
+that id to `spec_refs`. The older broad
+CoreIr/type-elaboration snapshot requirement remains deferred with empty tests
+for every non-Task-180 family owned by Task 32; Task 31 does not promote that
+broad row. `spec_coverage_audit.md` records this exact-only split.
 
 ## Step 6: Algorithm-Shell Lowering
 
@@ -672,6 +706,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `ProofSkeletonSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `ProofNodeSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `ProofFormulaRef` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ExactTask180LoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `AlgorithmLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `AlgorithmPayloadSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `AlgorithmStmtSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |

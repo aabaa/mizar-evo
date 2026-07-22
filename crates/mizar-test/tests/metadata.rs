@@ -3303,6 +3303,45 @@ fn repository_corpus_plan_succeeds() {
                 .iter()
                 .any(|spec_ref| spec_ref.0 == "spec.en.02.lexical.identifiers.basic")
     }));
+    let task31_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == EXACT_TASK31_SNAPSHOT_SPEC_REF)
+        .expect("repository should include the exact Task-31 Core snapshot trace row");
+    assert_eq!(task31_requirement.status, RequirementStatus::Covered);
+    assert_eq!(task31_requirement.coverage, CoverageShape::Snapshot);
+    assert_eq!(
+        task31_requirement.tests,
+        [PathBuf::from(EXACT_TASK31_EXPECTATION_PATH)]
+    );
+    let task31_backlinks = plan
+        .cases
+        .iter()
+        .filter(|case| {
+            case.expectation
+                .spec_refs
+                .iter()
+                .any(|spec_ref| spec_ref.0 == EXACT_TASK31_SNAPSHOT_SPEC_REF)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(task31_backlinks.len(), 1);
+    assert_eq!(task31_backlinks[0].id.0, EXACT_TASK31_CASE_ID);
+    assert_eq!(
+        task31_backlinks[0].expectation.snapshots.as_deref(),
+        Some(Path::new(EXACT_TASK31_SNAPSHOT_PATH))
+    );
+    let task31_coverage = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|coverage| coverage.id.0 == EXACT_TASK31_SNAPSHOT_SPEC_REF)
+        .expect("repository should compute exact Task-31 Core snapshot coverage");
+    assert_eq!(task31_coverage.stored_status, RequirementStatus::Covered);
+    assert_eq!(task31_coverage.computed_status, RequirementStatus::Covered);
+    assert_eq!(task31_coverage.coverage, CoverageShape::Snapshot);
+    assert_eq!(task31_coverage.evidence.snapshot, 1);
+    assert!(task31_coverage.missing_shapes.is_empty());
     let matrix = &plan.coverage_report.architecture22_matrix;
     assert_eq!(
         matrix.scenarios.len(),
@@ -4807,6 +4846,17 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert_eq!(report.results.len(), 188);
     assert_eq!(report.passed_count(), 188);
     assert_eq!(report.failed_count(), 0);
+    let task31_result = report
+        .results
+        .iter()
+        .find(|result| result.id.0 == EXACT_TASK31_CASE_ID)
+        .expect("exact Task-31 Core snapshot fixture should execute");
+    assert_eq!(
+        task31_result.status,
+        mizar_test::TypeElaborationCaseStatus::Passed
+    );
+    assert!(task31_result.actual_detail_keys.is_empty());
+    assert!(task31_result.snapshot_failure.is_none());
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
             && result.actual_detail_keys
@@ -9736,6 +9786,176 @@ spec_refs = ["spec.en.test.basic"]
     assert_has_code(&plan, "E-EXPECT-SNAPSHOT-PATH");
     assert_has_code(&plan, "E-EXPECT-SNAPSHOT-EXTENSION");
     assert_has_code(&plan, "E-EXPECT-SNAPSHOT-SCOPE");
+    assert_exact_task31_core_snapshot_scope_discriminators();
+}
+
+fn assert_exact_task31_core_snapshot_scope_discriminators() {
+    let exact = exact_task31_snapshot_expectation();
+    let exact_plan = exact_task31_scope_plan(EXACT_TASK31_CASE_ID, &exact);
+    assert_eq!(exact_plan.error_count(), 0, "{:#?}", exact_plan.diagnostics);
+    assert_lacks_code(&exact_plan, "E-EXPECT-SNAPSHOT-SCOPE");
+
+    let near_id = "pass_type_elaboration_contradiction_formula_constant_002";
+    let outcome_near_miss = format!(
+        "{}failure_category = \"test_gap\"\nrejection_reason = \"snapshot_scope_near_miss\"\nstable_detail_key = \"test.snapshot.scope\"\n",
+        exact
+            .replace("kind = \"pass\"", "kind = \"fail\"")
+            .replace("expected_outcome = \"pass\"", "expected_outcome = \"fail\"")
+    );
+    let near_misses = [
+        (
+            "id",
+            near_id,
+            exact.replacen(
+                &format!("id = \"{EXACT_TASK31_CASE_ID}\""),
+                &format!("id = \"{near_id}\""),
+                1,
+            ),
+        ),
+        (
+            "stage",
+            EXACT_TASK31_CASE_ID,
+            exact.replace(
+                "stage = \"type_elaboration\"",
+                "stage = \"declaration_symbol\"",
+            ),
+        ),
+        (
+            "phase",
+            EXACT_TASK31_CASE_ID,
+            exact.replace("expected_phase = \"type_check\"", "expected_phase = \"resolve\""),
+        ),
+        ("outcome", EXACT_TASK31_CASE_ID, outcome_near_miss),
+        (
+            "active tag",
+            EXACT_TASK31_CASE_ID,
+            exact.replace("active_type_elaboration", "inactive_type_elaboration"),
+        ),
+        (
+            "path",
+            EXACT_TASK31_CASE_ID,
+            exact.replace(
+                EXACT_TASK31_SNAPSHOT_PATH,
+                "snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.near.core_ir.snap",
+            ),
+        ),
+        (
+            "spec_ref",
+            EXACT_TASK31_CASE_ID,
+            exact.replace(
+                EXACT_TASK31_SNAPSHOT_SPEC_REF,
+                "spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot.near",
+            ),
+        ),
+    ];
+
+    for (discriminator, sidecar_stem, expectation) in near_misses {
+        let plan = exact_task31_scope_plan(sidecar_stem, &expectation);
+        assert!(
+            plan.diagnostics.iter().any(|diagnostic| {
+                diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"
+                    && diagnostic.detail_key == "expectation.snapshots"
+            }),
+            "{discriminator} near miss should fail exact snapshot admission: {:#?}",
+            plan.diagnostics
+        );
+    }
+}
+
+fn assert_exact_task31_core_snapshot_report_covers_match_mismatch_missing_and_no_actual() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate should live below the workspace root");
+    let committed_snapshot = fs::read_to_string(
+        workspace_root
+            .join("tests")
+            .join(EXACT_TASK31_SNAPSHOT_PATH),
+    )
+    .expect("committed exact Task-31 Core snapshot should be readable");
+
+    let matching = exact_task31_snapshot_corpus(EXACT_TASK31_SOURCE, Some(&committed_snapshot));
+    let matching_snapshot_path = matching.root.join("tests").join(EXACT_TASK31_SNAPSHOT_PATH);
+    let matching_before = fs::read(&matching_snapshot_path).unwrap();
+    let matching_report = run_type_elaboration_corpus(&matching.config()).unwrap();
+    assert_eq!(
+        matching_report.error_count(),
+        0,
+        "{:#?}",
+        matching_report.diagnostics
+    );
+    assert_eq!(matching_report.passed_count(), 1);
+    let matching_result = &matching_report.results[0];
+    assert_eq!(
+        matching_result.status,
+        mizar_test::TypeElaborationCaseStatus::Passed
+    );
+    assert!(matching_result.actual_detail_keys.is_empty());
+    assert!(matching_result.snapshot_failure.is_none());
+    assert_eq!(fs::read(&matching_snapshot_path).unwrap(), matching_before);
+
+    let mismatch = exact_task31_snapshot_corpus(EXACT_TASK31_SOURCE, Some("wrong\n"));
+    let mismatch_snapshot_path = mismatch.root.join("tests").join(EXACT_TASK31_SNAPSHOT_PATH);
+    let mismatch_before = fs::read(&mismatch_snapshot_path).unwrap();
+    let mismatch_report = run_type_elaboration_corpus(&mismatch.config()).unwrap();
+    let mismatch_result = &mismatch_report.results[0];
+    assert_eq!(
+        mismatch_result.status,
+        mizar_test::TypeElaborationCaseStatus::Failed
+    );
+    assert!(mismatch_result.actual_detail_keys.is_empty());
+    assert!(
+        mismatch_result
+            .snapshot_failure
+            .as_deref()
+            .is_some_and(|failure| failure.contains("differed"))
+    );
+    assert_exact_task31_snapshot_diagnostic(&mismatch_report);
+    assert_eq!(fs::read(&mismatch_snapshot_path).unwrap(), mismatch_before);
+
+    let missing = exact_task31_snapshot_corpus(EXACT_TASK31_SOURCE, None);
+    let missing_snapshot_path = missing.root.join("tests").join(EXACT_TASK31_SNAPSHOT_PATH);
+    assert!(!missing_snapshot_path.exists());
+    let missing_report = run_type_elaboration_corpus(&missing.config()).unwrap();
+    let missing_result = &missing_report.results[0];
+    assert_eq!(
+        missing_result.status,
+        mizar_test::TypeElaborationCaseStatus::Failed
+    );
+    assert!(missing_result.actual_detail_keys.is_empty());
+    assert!(
+        missing_result
+            .snapshot_failure
+            .as_deref()
+            .is_some_and(|failure| failure.contains("could not read"))
+    );
+    assert_exact_task31_snapshot_diagnostic(&missing_report);
+    assert!(!missing_snapshot_path.exists());
+
+    let no_actual = exact_task31_snapshot_corpus("reserve x for set;\n", Some(&committed_snapshot));
+    let no_actual_snapshot_path = no_actual
+        .root
+        .join("tests")
+        .join(EXACT_TASK31_SNAPSHOT_PATH);
+    let no_actual_before = fs::read(&no_actual_snapshot_path).unwrap();
+    let no_actual_report = run_type_elaboration_corpus(&no_actual.config()).unwrap();
+    let no_actual_result = &no_actual_report.results[0];
+    assert_eq!(
+        no_actual_result.status,
+        mizar_test::TypeElaborationCaseStatus::Failed
+    );
+    assert!(no_actual_result.actual_detail_keys.is_empty());
+    assert!(
+        no_actual_result
+            .snapshot_failure
+            .as_deref()
+            .is_some_and(|failure| failure.contains("lowering produced no CoreIr"))
+    );
+    assert_exact_task31_snapshot_diagnostic(&no_actual_report);
+    assert_eq!(
+        fs::read(&no_actual_snapshot_path).unwrap(),
+        no_actual_before
+    );
 }
 
 #[test]
@@ -9768,6 +9988,7 @@ spec_refs = ["spec.en.test.basic"]
 
     assert_eq!(report.failed_count(), 1);
     assert_has_report_code(&report, "E-PARSE-ONLY-SNAPSHOT");
+    assert_exact_task31_core_snapshot_report_covers_match_mismatch_missing_and_no_actual();
 }
 
 #[test]
@@ -10154,6 +10375,95 @@ fn optional_line(line: &str) -> String {
     } else {
         format!("{line}\n")
     }
+}
+
+const EXACT_TASK31_CASE_ID: &str = "pass_type_elaboration_contradiction_formula_constant_001";
+const EXACT_TASK31_EXPECTATION_PATH: &str =
+    "tests/miz/pass/types/pass_type_elaboration_contradiction_formula_constant_001.expect.toml";
+const EXACT_TASK31_SOURCE_PATH: &str =
+    "tests/miz/pass/types/pass_type_elaboration_contradiction_formula_constant_001.miz";
+const EXACT_TASK31_SNAPSHOT_PATH: &str =
+    "snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.core_ir.snap";
+const EXACT_TASK31_SNAPSHOT_SPEC_REF: &str =
+    "spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot";
+const EXACT_TASK31_SOURCE: &str =
+    "theorem SourceDerivedContradictionConstantBoundary: contradiction;\n";
+
+fn exact_task31_snapshot_expectation() -> String {
+    format!(
+        r#"schema_version = 1
+id = "{EXACT_TASK31_CASE_ID}"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "{EXACT_TASK31_CASE_ID}.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+snapshots = "{EXACT_TASK31_SNAPSHOT_PATH}"
+tags = ["active_type_elaboration"]
+spec_refs = ["{EXACT_TASK31_SNAPSHOT_SPEC_REF}"]
+"#
+    )
+}
+
+fn exact_task31_trace(expectation_path: &str) -> String {
+    format!(
+        r#"[[requirement]]
+id = "{EXACT_TASK31_SNAPSHOT_SPEC_REF}"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "snapshot"
+tests = ["{expectation_path}"]
+"#
+    )
+}
+
+fn exact_task31_scope_plan(sidecar_stem: &str, expectation: &str) -> TestPlan {
+    let corpus = Corpus::new();
+    let expectation_path = format!("tests/miz/pass/types/{sidecar_stem}.expect.toml");
+    corpus.write(EXACT_TASK31_SOURCE_PATH, EXACT_TASK31_SOURCE);
+    corpus.write(&expectation_path, expectation);
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        exact_task31_trace(&expectation_path),
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.plan()
+}
+
+fn exact_task31_snapshot_corpus(source: &str, snapshot: Option<&str>) -> Corpus {
+    let corpus = Corpus::new();
+    corpus.write(EXACT_TASK31_SOURCE_PATH, source);
+    corpus.write(
+        EXACT_TASK31_EXPECTATION_PATH,
+        exact_task31_snapshot_expectation(),
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        exact_task31_trace(EXACT_TASK31_EXPECTATION_PATH),
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    if let Some(snapshot) = snapshot {
+        corpus.write(format!("tests/{EXACT_TASK31_SNAPSHOT_PATH}"), snapshot);
+    }
+    corpus
+}
+
+fn assert_exact_task31_snapshot_diagnostic(report: &mizar_test::TypeElaborationRunReport) {
+    let diagnostic = report
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-SNAPSHOT")
+        .expect("exact Task-31 snapshot failure should publish its diagnostic code");
+    assert_eq!(
+        diagnostic.detail_key,
+        format!("type_elaboration.snapshot.{EXACT_TASK31_CASE_ID}")
+    );
 }
 
 fn five_line_miz() -> &'static str {

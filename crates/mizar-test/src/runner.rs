@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 #[cfg(test)]
@@ -300,6 +301,7 @@ use type_elaboration::{
     source_chained_local_object_mode_reserved_variable_membership_output,
     source_chained_local_object_mode_reserved_variable_type_assertion_output,
     source_contradiction_formula_output, source_contradiction_handoff_corruption_error,
+    source_contradiction_handoff_with_extra_expression,
     source_distinct_reserved_object_variable_equality_output,
     source_distinct_reserved_object_variable_inequality_output,
     source_distinct_reserved_variable_equality_output,
@@ -439,7 +441,7 @@ use type_elaboration::{
     source_chained_local_object_mode_reserved_variable_inequality_detail_keys,
     source_chained_local_object_mode_reserved_variable_membership_detail_keys,
     source_chained_local_object_mode_reserved_variable_type_assertion_detail_keys,
-    source_contradiction_formula_detail_keys,
+    source_contradiction_core_ir_snapshot, source_contradiction_formula_detail_keys,
     source_distinct_reserved_object_variable_equality_detail_keys,
     source_distinct_reserved_object_variable_inequality_detail_keys,
     source_distinct_reserved_variable_equality_detail_keys,
@@ -972,6 +974,7 @@ pub struct TypeElaborationCaseResult {
     pub expectation_path: PathBuf,
     pub status: TypeElaborationCaseStatus,
     pub actual_detail_keys: Vec<String>,
+    pub snapshot_failure: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1134,6 +1137,7 @@ pub fn run_type_elaboration_corpus(
     config: &DiscoveryConfig,
 ) -> Result<TypeElaborationRunReport, HarnessError> {
     let workspace_root = normalized_workspace_root(config)?;
+    let tests_root = normalized_tests_root(&workspace_root, config);
     let plan = build_test_plan(config)?;
     let mut diagnostics = plan.diagnostics.clone();
     if plan.error_count() > 0 {
@@ -1146,7 +1150,7 @@ pub fn run_type_elaboration_corpus(
 
     let mut results = Vec::new();
     for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
-        let result = run_type_elaboration_case(&workspace_root, case, ordinal);
+        let result = run_type_elaboration_case(&workspace_root, &tests_root, case, ordinal);
         if result.status == TypeElaborationCaseStatus::Failed {
             diagnostics.push(type_elaboration_failure_diagnostic(case, &result));
         }
@@ -1267,21 +1271,37 @@ fn validate_active_declaration_symbol_tags(plan: &TestPlan) -> Vec<ValidationDia
 
 fn run_type_elaboration_case(
     workspace_root: &Path,
+    tests_root: &Path,
     case: &TestCase,
     ordinal: usize,
 ) -> TypeElaborationCaseResult {
     let output = run_frontend(workspace_root, case, ordinal);
+    let mut snapshot_text = None;
     let actual_detail_keys = match output {
-        Ok(output) => type_elaboration_detail_keys(workspace_root, case, output),
+        Ok(output) => {
+            type_elaboration_detail_keys(workspace_root, case, output, &mut snapshot_text)
+        }
         Err(error) => vec![format!("frontend_error:{error}")],
     };
     let expected_detail_keys = expected_type_elaboration_detail_keys(case);
-    let status = match case.expectation.expected_outcome {
+    let detail_status = match case.expectation.expected_outcome {
         ExpectedOutcome::Pass if actual_detail_keys.is_empty() => TypeElaborationCaseStatus::Passed,
         ExpectedOutcome::Fail if actual_detail_keys == expected_detail_keys => {
             TypeElaborationCaseStatus::Passed
         }
         _ => TypeElaborationCaseStatus::Failed,
+    };
+    let snapshot_failure = if detail_status == TypeElaborationCaseStatus::Passed {
+        case.expectation.snapshots.as_ref().and_then(|path| {
+            compare_exact_task180_core_snapshot(tests_root, path, snapshot_text.as_deref())
+        })
+    } else {
+        None
+    };
+    let status = if snapshot_failure.is_some() {
+        TypeElaborationCaseStatus::Failed
+    } else {
+        detail_status
     };
 
     TypeElaborationCaseResult {
@@ -1289,6 +1309,39 @@ fn run_type_elaboration_case(
         expectation_path: case.expectation_path.clone(),
         status,
         actual_detail_keys,
+        snapshot_failure,
+    }
+}
+
+fn compare_exact_task180_core_snapshot(
+    tests_root: &Path,
+    snapshot_path: &Path,
+    actual: Option<&str>,
+) -> Option<String> {
+    let Some(actual) = actual else {
+        return Some(format!(
+            "requested exact Task-180 CoreIr snapshot `{}` but lowering produced no CoreIr",
+            snapshot_path.display()
+        ));
+    };
+    let expected = match fs::read_to_string(tests_root.join(snapshot_path)) {
+        Ok(expected) => expected,
+        Err(error) => {
+            return Some(format!(
+                "could not read exact Task-180 CoreIr snapshot `{}`: {error}",
+                snapshot_path.display()
+            ));
+        }
+    };
+    if expected == actual {
+        None
+    } else {
+        Some(format!(
+            "exact Task-180 CoreIr snapshot `{}` differed (expected {} bytes, got {} bytes)",
+            snapshot_path.display(),
+            expected.len(),
+            actual.len()
+        ))
     }
 }
 
@@ -1296,6 +1349,7 @@ fn type_elaboration_detail_keys(
     workspace_root: &Path,
     case: &TestCase,
     output: FrontendRun,
+    snapshot_text: &mut Option<String>,
 ) -> Vec<String> {
     let frontend_diagnostic_keys = frontend_detail_keys(case, &output.diagnostics);
     if !frontend_diagnostic_keys.is_empty() {
@@ -1318,13 +1372,28 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-    source_type_elaboration_detail_keys(&ast, resolver.module, &symbols)
+    source_type_elaboration_detail_keys_with_snapshot(
+        &ast,
+        resolver.module,
+        &symbols,
+        snapshot_text,
+    )
 }
 
+#[cfg(test)]
 fn source_type_elaboration_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
     symbols: &SymbolEnv,
+) -> Vec<String> {
+    source_type_elaboration_detail_keys_with_snapshot(ast, module, symbols, &mut None)
+}
+
+fn source_type_elaboration_detail_keys_with_snapshot(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+    snapshot_text: &mut Option<String>,
 ) -> Vec<String> {
     if let Some(keys) = source_four_edge_local_mode_reserved_variable_inequality_detail_keys(
         ast,
@@ -2073,6 +2142,15 @@ fn source_type_elaboration_detail_keys(
     }
     if let Some(keys) = source_formula_statement_detail_keys(ast, module.clone(), symbols) {
         return keys;
+    }
+    if let Some(result) = source_contradiction_core_ir_snapshot(ast, module.clone(), symbols) {
+        return match result {
+            Ok(text) => {
+                *snapshot_text = Some(text);
+                Vec::new()
+            }
+            Err(_) => vec!["type_elaboration.core.exact_task180_invalid".to_owned()],
+        };
     }
     if let Some(keys) = source_contradiction_formula_detail_keys(ast, module.clone(), symbols) {
         return keys;
