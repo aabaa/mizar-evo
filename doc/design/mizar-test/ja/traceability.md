@@ -1929,3 +1929,14 @@ missing scheme/theorem-role slice は direct
 VC 41 の外で S1 の背後に残る。broad VC corpus/
 algorithm row は deferred のままで、Task 30 は owner/deferred-reason text だけを変更し、
 403/368 と全 count/hash oracle を維持する。
+
+## Resolver R-031 same-return declaration traceability completion
+
+R-031は`spec.en.19.overload.definition_conflict.same_return.declaration`のsole activation
+ownerである。sole backlinkは
+`tests/miz/fail/resolve/fail_resolve_same_signature_same_return_conflict_001.expect.toml`のままで、
+real declaration-symbol runnerがexact
+`declaration_symbol.signature.same_signature_definition_conflict` keyを観測するためactiveである。
+既存different-return row、sidecar、detail key、coverage creditは変更しない。Task 49のexact
+24-fixture reconciliation setに属する他memberはactive化もcreditも行わない。exact rowは
+covered、declaration-symbol admissionは5件で、plan/pass-fail countは404/369、220/184のまま。

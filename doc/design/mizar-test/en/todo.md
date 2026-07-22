@@ -1476,6 +1476,17 @@ The existing type-elaboration Task-180 source/sidecar/Core snapshot remains
 unchanged. Broad proof-verification, VC 32-55, discharge, ATP/kernel/proof
 acceptance, facts, and Steps 6/7 remain deferred or dependency-paced.
 
+## Resolver Task 31 / Declaration-Symbol Completion
+
+The exact same-return increment is complete. The unchanged
+`fail_resolve_same_signature_same_return_conflict_001.miz` source and activated
+sidecar now execute through the existing real frontend/resolver runner and
+observe `declaration_symbol.signature.same_signature_definition_conflict`.
+Declaration-symbol admission is five cases; plan 404/369, parse 96, type 188,
+proof 1, and pass/fail 220/184 remain unchanged. The different-return sidecar
+and its existing detail key remain byte-identical. No other Task-49 member,
+semantic overload behavior, public code, or Steps 6/7 status changed.
+
 For every source-moving task, require review-only checks for visibility drift,
 test-discovery drift, owner-boundary drift, source/docs inconsistency, and
 accidental behavior changes. Run focused tests, `cargo test -p mizar-test`,

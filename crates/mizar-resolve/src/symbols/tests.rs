@@ -211,7 +211,7 @@ fn same_signature_functor_conflicts_get_specific_internal_class() {
         projection(
             shells.declarations()[0].id(),
             namespace.clone(),
-            "GaugeA",
+            "gauge ( _ )",
             SymbolKind::Functor,
             DefinitionKind::Functor,
         )
@@ -226,7 +226,7 @@ fn same_signature_functor_conflicts_get_specific_internal_class() {
         projection(
             shells.declarations()[1].id(),
             namespace,
-            "GaugeB",
+            "gauge ( _ )",
             SymbolKind::Functor,
             DefinitionKind::Functor,
         )
@@ -262,9 +262,143 @@ fn same_signature_functor_conflicts_get_specific_internal_class() {
 }
 
 #[test]
+fn same_signature_same_return_functors_get_definition_conflict_class() {
+    let source_id = source_id();
+    let shells = shells_for(
+        source_id,
+        vec![
+            test_item(0, SurfaceNodeKind::FunctorDefinition),
+            test_item(10, SurfaceNodeKind::FunctorDefinition),
+        ],
+    );
+    let namespace = NamespacePath::new("main");
+    let projections = vec![
+        projection(
+            shells.declarations()[0].id(),
+            namespace.clone(),
+            "gauge ( _ )",
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+        )
+        .with_notation_spelling("gauge ( _ )")
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_arity(1)
+        .with_functor_signature_key(functor_signature_key(
+            "let x be set",
+            "gauge ( _ )",
+            "set",
+        )),
+        projection(
+            shells.declarations()[1].id(),
+            namespace,
+            "gauge ( _ )",
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+        )
+        .with_notation_spelling("gauge ( _ )")
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_arity(1)
+        .with_functor_signature_key(functor_signature_key(
+            "let x be set",
+            "gauge ( _ )",
+            "set",
+        )),
+    ];
+
+    let permuted = vec![projections[1].clone(), projections[0].clone()];
+    let result = collect(source_id, &shells, &projections);
+    let reordered = collect(source_id, &shells, &permuted);
+
+    assert_eq!(result.diagnostics(), reordered.diagnostics());
+    assert_eq!(
+        result.env().snapshot_text(),
+        reordered.env().snapshot_text()
+    );
+    assert_eq!(result.diagnostics().len(), 1);
+    let diagnostic = &result.diagnostics()[0];
+    assert_eq!(
+        diagnostic.class(),
+        SymbolDiagnosticClass::SameSignatureDefinitionConflict
+    );
+    assert_eq!(diagnostic.shell(), Some(shells.declarations()[0].id()));
+    assert_eq!(diagnostic.range(), shells.declarations()[0].range());
+    assert_eq!(
+        candidate_source_ranges(&result, diagnostic.candidates()),
+        shells
+            .declarations()
+            .iter()
+            .map(DeclarationShell::range)
+            .collect::<Vec<_>>()
+    );
+    assert!(result.env().definitions().iter().all(|definition| {
+        definition.conflict() == Some(&DeclarationConflictClass::SameSignatureDefinitionConflict)
+    }));
+    assert_eq!(
+        result
+            .env()
+            .snapshot_text()
+            .matches("conflict=same_signature_definition_conflict")
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn same_return_conflict_candidates_keep_source_order_past_lexical_ordinal_ten() {
+    let source_id = source_id();
+    let shells = shells_for(
+        source_id,
+        (0..12)
+            .map(|index| test_item(index * 10, SurfaceNodeKind::FunctorDefinition))
+            .collect(),
+    );
+    let namespace = NamespacePath::new("main");
+    let projections = shells
+        .declarations()
+        .iter()
+        .map(|shell| {
+            projection(
+                shell.id(),
+                namespace.clone(),
+                "gauge ( _ )",
+                SymbolKind::Functor,
+                DefinitionKind::Functor,
+            )
+            .with_notation_spelling("gauge ( _ )")
+            .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+            .with_arity(1)
+            .with_functor_signature_key(functor_signature_key("let x be set", "gauge ( _ )", "set"))
+        })
+        .collect::<Vec<_>>();
+    let permuted = projections.iter().rev().cloned().collect::<Vec<_>>();
+
+    let result = collect(source_id, &shells, &projections);
+    let reordered = collect(source_id, &shells, &permuted);
+
+    assert_eq!(result.diagnostics(), reordered.diagnostics());
+    assert_eq!(result.diagnostics().len(), 1);
+    let diagnostic = &result.diagnostics()[0];
+    assert_eq!(
+        diagnostic.class(),
+        SymbolDiagnosticClass::SameSignatureDefinitionConflict
+    );
+    assert_eq!(diagnostic.shell(), Some(shells.declarations()[0].id()));
+    assert_eq!(diagnostic.range(), shells.declarations()[0].range());
+    assert_eq!(diagnostic.candidates().len(), 12);
+    assert_eq!(
+        candidate_source_ranges(&result, diagnostic.candidates()),
+        shells
+            .declarations()
+            .iter()
+            .map(DeclarationShell::range)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn parser_backed_functor_signature_conflict_uses_extracted_return_types() {
     let source_id = source_id();
-    let ast = parser_backed_same_signature_return_conflict_ast(source_id);
+    let ast = parser_backed_same_signature_conflict_ast(source_id, &["set"], &["round", "set"]);
     let module = module_id();
     let shells = DeclarationShellCollector::new(&ast, &module).collect();
     let namespace = NamespacePath::new("main");
@@ -314,6 +448,380 @@ fn parser_backed_functor_signature_conflict_uses_extracted_return_types() {
         conflicts
             .iter()
             .all(|conflict| **conflict == DeclarationConflictClass::SameSignatureReturnConflict)
+    );
+}
+
+#[test]
+fn parser_backed_same_signature_same_return_functors_conflict() {
+    let source_id = source_id();
+    let ast = parser_backed_same_signature_conflict_ast(source_id, &["set"], &["set"]);
+    let module = module_id();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let projections =
+        SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("main")).extract();
+
+    let result = collect(source_id, &shells, &projections);
+
+    assert_eq!(result.diagnostics().len(), 1);
+    assert_eq!(
+        result.diagnostics()[0].class(),
+        SymbolDiagnosticClass::SameSignatureDefinitionConflict
+    );
+    assert_eq!(result.diagnostics()[0].candidates().len(), 2);
+    assert!(result.env().definitions().iter().all(|definition| {
+        definition.conflict() == Some(&DeclarationConflictClass::SameSignatureDefinitionConflict)
+    }));
+}
+
+#[test]
+fn same_return_conflict_requires_the_exact_ordinary_functor_argument_key() {
+    struct NearMiss {
+        name: &'static str,
+        left: SymbolDeclarationProjection,
+        right: SymbolDeclarationProjection,
+    }
+
+    let source_id = source_id();
+    let cases = 9;
+    let shells = shells_for(
+        source_id,
+        (0..cases * 2)
+            .map(|index| test_item(index * 10, SurfaceNodeKind::FunctorDefinition))
+            .collect(),
+    );
+    let namespace = NamespacePath::new("main");
+    let exact =
+        |shell, namespace: NamespacePath, spelling: &str, context: &str, pattern: &str, arity| {
+            projection(
+                shell,
+                namespace,
+                spelling,
+                SymbolKind::Functor,
+                DefinitionKind::Functor,
+            )
+            .with_notation_spelling(pattern)
+            .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+            .with_arity(arity)
+            .with_functor_signature_key(FunctorSignatureKey {
+                argument_context: context.to_owned(),
+                pattern: pattern.to_owned(),
+                arity: Some(arity),
+                return_type: "set".to_owned(),
+            })
+        };
+    let mut near_misses = Vec::new();
+    let mut pair = |name, left, right| near_misses.push(NearMiss { name, left, right });
+    pair(
+        "spelling",
+        exact(
+            shells.declarations()[0].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+        exact(
+            shells.declarations()[1].id(),
+            namespace.clone(),
+            "other",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+    );
+    pair(
+        "pattern",
+        exact(
+            shells.declarations()[2].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+        exact(
+            shells.declarations()[3].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge [ _ ]",
+            1,
+        ),
+    );
+    pair(
+        "argument context",
+        exact(
+            shells.declarations()[4].id(),
+            namespace.clone(),
+            "gauge",
+            "left",
+            "gauge ( _ )",
+            1,
+        ),
+        exact(
+            shells.declarations()[5].id(),
+            namespace.clone(),
+            "gauge",
+            "right",
+            "gauge ( _ )",
+            1,
+        ),
+    );
+    pair(
+        "arity",
+        exact(
+            shells.declarations()[6].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+        exact(
+            shells.declarations()[7].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            2,
+        ),
+    );
+    pair(
+        "namespace",
+        exact(
+            shells.declarations()[8].id(),
+            NamespacePath::new("left"),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+        exact(
+            shells.declarations()[9].id(),
+            NamespacePath::new("right"),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+    );
+    pair(
+        "both kinds",
+        exact(
+            shells.declarations()[10].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+        projection(
+            shells.declarations()[11].id(),
+            namespace.clone(),
+            "gauge",
+            SymbolKind::Predicate,
+            DefinitionKind::Predicate,
+        )
+        .with_notation_spelling("gauge ( _ )")
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_arity(1)
+        .with_functor_signature_key(functor_signature_key("ctx", "gauge ( _ )", "set")),
+    );
+    pair(
+        "symbol kind",
+        exact(
+            shells.declarations()[12].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+        projection(
+            shells.declarations()[13].id(),
+            namespace.clone(),
+            "gauge",
+            SymbolKind::Predicate,
+            DefinitionKind::Functor,
+        )
+        .with_notation_spelling("gauge ( _ )")
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_arity(1)
+        .with_functor_signature_key(functor_signature_key("ctx", "gauge ( _ )", "set")),
+    );
+    pair(
+        "definition kind",
+        exact(
+            shells.declarations()[14].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+        projection(
+            shells.declarations()[15].id(),
+            namespace.clone(),
+            "gauge",
+            SymbolKind::Functor,
+            DefinitionKind::Predicate,
+        )
+        .with_notation_spelling("gauge ( _ )")
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_arity(1)
+        .with_functor_signature_key(functor_signature_key("ctx", "gauge ( _ )", "set")),
+    );
+    pair(
+        "nonordinary",
+        exact(
+            shells.declarations()[16].id(),
+            namespace.clone(),
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        ),
+        exact(
+            shells.declarations()[17].id(),
+            namespace,
+            "gauge",
+            "ctx",
+            "gauge ( _ )",
+            1,
+        )
+        .with_overload_policy(SymbolOverloadPolicy::NonOverloadable),
+    );
+
+    for near_miss in near_misses {
+        let result = collect(source_id, &shells, &[near_miss.left, near_miss.right]);
+        assert!(
+            result.diagnostics().is_empty(),
+            "{} near miss unexpectedly conflicted: {:?}",
+            near_miss.name,
+            result.diagnostics()
+        );
+    }
+}
+
+#[test]
+fn mixed_return_group_keeps_one_return_conflict_in_canonical_order() {
+    let source_id = source_id();
+    let shells = shells_for(
+        source_id,
+        vec![
+            test_item(0, SurfaceNodeKind::FunctorDefinition),
+            test_item(10, SurfaceNodeKind::FunctorDefinition),
+            test_item(20, SurfaceNodeKind::FunctorDefinition),
+        ],
+    );
+    let namespace = NamespacePath::new("main");
+    let make = |index: usize, return_type: &str| {
+        projection(
+            shells.declarations()[index].id(),
+            namespace.clone(),
+            "gauge ( _ )",
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+        )
+        .with_notation_spelling("gauge ( _ )")
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_arity(1)
+        .with_functor_signature_key(functor_signature_key(
+            "let x be set",
+            "gauge ( _ )",
+            return_type,
+        ))
+    };
+    let canonical = vec![make(0, "set"), make(1, "set"), make(2, "round set")];
+    let permuted = vec![
+        canonical[2].clone(),
+        canonical[0].clone(),
+        canonical[1].clone(),
+    ];
+
+    let first = collect(source_id, &shells, &canonical);
+    let second = collect(source_id, &shells, &permuted);
+
+    assert_eq!(first.diagnostics(), second.diagnostics());
+    assert_eq!(first.env().snapshot_text(), second.env().snapshot_text());
+    assert_eq!(first.diagnostics().len(), 1);
+    let diagnostic = &first.diagnostics()[0];
+    assert_eq!(
+        diagnostic.class(),
+        SymbolDiagnosticClass::SameSignatureReturnConflict
+    );
+    assert_eq!(diagnostic.shell(), Some(shells.declarations()[0].id()));
+    assert_eq!(diagnostic.range(), shells.declarations()[0].range());
+    assert_eq!(
+        candidate_source_ranges(&first, diagnostic.candidates()),
+        shells
+            .declarations()
+            .iter()
+            .map(DeclarationShell::range)
+            .collect::<Vec<_>>()
+    );
+    assert!(first.env().definitions().iter().all(|definition| {
+        definition.conflict() == Some(&DeclarationConflictClass::SameSignatureReturnConflict)
+    }));
+}
+
+#[test]
+fn recovered_same_return_functor_does_not_cascade_a_signature_conflict() {
+    let source_id = source_id();
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let recovery = builder.add_recovery(
+        SyntaxRecoveryKind::SkippedToken,
+        range(source_id, 1, 2),
+        Vec::new(),
+    );
+    let recovered = node(
+        &mut builder,
+        SurfaceNodeKind::FunctorDefinition,
+        source_id,
+        0,
+        5,
+        vec![recovery],
+    );
+    let clean = node(
+        &mut builder,
+        SurfaceNodeKind::FunctorDefinition,
+        source_id,
+        10,
+        15,
+        Vec::new(),
+    );
+    let root = finish_module(&mut builder, source_id, vec![recovered, clean]);
+    let ast = builder.finish(Some(root), None);
+    let module = module_id();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let namespace = NamespacePath::new("main");
+    let make =
+        |index: usize| {
+            projection(
+                shells.declarations()[index].id(),
+                namespace.clone(),
+                "gauge ( _ )",
+                SymbolKind::Functor,
+                DefinitionKind::Functor,
+            )
+            .with_notation_spelling("gauge ( _ )")
+            .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+            .with_arity(1)
+            .with_functor_signature_key(functor_signature_key("let x be set", "gauge ( _ )", "set"))
+        };
+
+    let result = collect(source_id, &shells, &[make(0), make(1)]);
+
+    assert!(result.diagnostics().is_empty());
+    assert_eq!(
+        result
+            .env()
+            .definitions()
+            .iter()
+            .filter_map(|definition| definition.conflict())
+            .collect::<Vec<_>>(),
+        vec![&DeclarationConflictClass::RecoveredShell]
     );
 }
 
@@ -1343,8 +1851,10 @@ fn parser_backed_signature_ast(source_id: SourceId) -> mizar_syntax::SurfaceAst 
     builder.finish(Some(root), None)
 }
 
-fn parser_backed_same_signature_return_conflict_ast(
+fn parser_backed_same_signature_conflict_ast(
     source_id: SourceId,
+    left_return_type: &[&str],
+    right_return_type: &[&str],
 ) -> mizar_syntax::SurfaceAst {
     let mut builder = SurfaceAstBuilder::new(source_id);
     let items = vec![
@@ -1354,7 +1864,7 @@ fn parser_backed_same_signature_return_conflict_ast(
             0,
             Some("public"),
             "GaugeADef",
-            &["set"],
+            left_return_type,
         ),
         definition_block_with_functor(
             &mut builder,
@@ -1362,7 +1872,7 @@ fn parser_backed_same_signature_return_conflict_ast(
             80,
             Some("private"),
             "GaugeBDef",
-            &["round", "set"],
+            right_return_type,
         ),
     ];
     let root = finish_module(&mut builder, source_id, items);
@@ -1832,6 +2342,26 @@ fn collect(
 ) -> SymbolCollectionResult {
     let module = module_id();
     SymbolCollector::new(source_id, &module, shells, projections).collect()
+}
+
+fn candidate_source_ranges(
+    result: &SymbolCollectionResult,
+    candidates: &[SymbolId],
+) -> Vec<SourceRange> {
+    candidates
+        .iter()
+        .map(|candidate| {
+            let definition = result
+                .env()
+                .definitions()
+                .by_symbol(candidate)
+                .expect("diagnostic candidate should retain its definition");
+            match definition.origin().anchor() {
+                SourceAnchor::Range(range) => *range,
+                _ => panic!("test definition should retain a source range"),
+            }
+        })
+        .collect()
 }
 
 fn projection(

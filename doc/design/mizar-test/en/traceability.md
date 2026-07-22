@@ -2016,3 +2016,16 @@ authentication contract/tests. Missing scheme/theorem-role slices remain
 outside direct VC 41 behind S1. The
 broad VC corpus and algorithm rows stay deferred; Task 30 changes only their
 owner/deferred-reason text and preserves 403/368 plus all count/hash oracles.
+
+## Resolver R-031 Same-Return Declaration Traceability Completion
+
+R-031 is the sole activation owner for
+`spec.en.19.overload.definition_conflict.same_return.declaration`. Its only
+backlink remains
+`tests/miz/fail/resolve/fail_resolve_same_signature_same_return_conflict_001.expect.toml`,
+which is active because the real declaration-symbol runner observes the
+exact `declaration_symbol.signature.same_signature_definition_conflict` key.
+The existing different-return row, sidecar, detail key, and coverage credit are
+unchanged. No other member of Task 49's exact 24-fixture reconciliation set is
+activated or credited. The exact row is covered and declaration-symbol
+admission is five cases; plan and pass/fail counts remain 404/369 and 220/184.

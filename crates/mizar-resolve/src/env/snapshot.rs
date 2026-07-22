@@ -892,6 +892,9 @@ fn declaration_conflict_class_name(class: &DeclarationConflictClass) -> &'static
         DeclarationConflictClass::IllegalOverloadGroup => "illegal_overload_group",
         DeclarationConflictClass::SameSignatureReturnConflict => "same_signature_return_conflict",
         DeclarationConflictClass::RecoveredShell => "recovered_shell",
+        DeclarationConflictClass::SameSignatureDefinitionConflict => {
+            "same_signature_definition_conflict"
+        }
     }
 }
 
@@ -950,5 +953,20 @@ fn recovery_state_name(recovery: RecoveryState) -> &'static str {
     match recovery {
         RecoveryState::Normal => "normal",
         RecoveryState::Recovered => "recovered",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn same_signature_definition_conflict_snapshot_spelling_is_stable() {
+        assert_eq!(
+            declaration_conflict_class_name(
+                &DeclarationConflictClass::SameSignatureDefinitionConflict,
+            ),
+            "same_signature_definition_conflict"
+        );
     }
 }

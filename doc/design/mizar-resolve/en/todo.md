@@ -543,7 +543,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       without registry/spec alignment, and no rebaselining existing expectation
       sidecars merely to match current crate-local diagnostics.
 
-31. **Same-signature/same-return declaration conflict.** [ ]
+31. **Same-signature/same-return declaration conflict.** [x]
     - Extend only resolver-owned declaration/signature collection so two
       ordinary declarations with the same symbol kind, spelling, arity, and
       argument signature conflict even when their return signatures are also
@@ -555,8 +555,34 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       and sidecar tests pass. Update its trace row from deferred only in the
       implementation task; do not rebaseline the existing different-return
       expectation.
+    - Exact contract: only ordinary functor definitions represented by the
+      `Functor` symbol/definition kind pair participate. Group by namespace,
+      primary spelling, normalized notation pattern, normalized definition
+      argument context, and syntactic arity. An all-return-identical group uses
+      new appended non-exhaustive `SameSignatureDefinitionConflict` diagnostic
+      and definition-conflict variants and the exact
+      `declaration_symbol.signature.same_signature_definition_conflict` key.
+      A mixed/different-return group retains one existing
+      `SameSignatureReturnConflict` diagnostic over every candidate and the
+      existing detail key; that classification wins and no overlapping
+      diagnostic is emitted.
+    - Preserve canonical first shell/range and candidate order under input
+      permutations. Assert parser-backed and explicit projections, exact and
+      near-miss kind/spelling/pattern/context/arity/namespace cases, recovered
+      suppression, mixed-return priority, the activated same-return sidecar,
+      and the byte-identical different-return sidecar. Change only the exact
+      same-return trace row to covered and update paired component/runner docs
+      plus `spec_coverage_audit.md`.
     - Deps: R-021/R-023; independent Task-49 prerequisite. Spec: Chapter 19
       section 19.1; checker Task 37 and its deferred trace row.
+    - Completed by R-031: ordinary-functor collection now emits the appended
+      `SameSignatureDefinitionConflict` diagnostic/definition metadata for an
+      all-return-identical exact argument-key group, preserves the existing
+      different-return class for mixed groups, suppresses recovered/nonordinary
+      near misses, serializes the new conflict as
+      `same_signature_definition_conflict`, and executes the existing exact
+      same-return seed through the active declaration-symbol runner. The sole
+      trace row is covered; the different-return expectation is unchanged.
 
 ## Crate Close-Out
 

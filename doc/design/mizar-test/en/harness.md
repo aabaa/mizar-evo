@@ -182,9 +182,9 @@ code `E-TYPE-ELABORATION-SNAPSHOT` at
 `type_elaboration.snapshot.<case-id>`. The ordinary detail-key result remains
 unchanged, and no other type-elaboration case enters this path.
 
-## Runner Source Ownership (VC Task 31 Update)
+## Runner Source Ownership (VC Task 31 And Resolver R-031 Updates)
 
-The current production runner layout contains exactly 18 paths and 20,085 lines.
+The current production runner layout contains exactly 18 paths and 20,088 lines.
 Task 31 adds one bounded proof-verification leaf while preserving the
 behavior-preserving Tasks 249-263 split and keeping `runner.rs` limited to
 facade/top-level orchestration.
@@ -192,7 +192,7 @@ facade/top-level orchestration.
 | Production path | Lines | Ownership |
 |---|---:|---|
 | `src/runner.rs` | 2,372 | Public reports/statuses including snapshot failure, corpus orchestration, public active iterators, proof-verification orchestration, parse/declaration admission, type-case execution, verify-only baseline comparison, and top-level detail dispatch. |
-| `src/runner/shared.rs` | 260 | Cross-phase source/frontend/resolver staging and common diagnostic support. |
+| `src/runner/shared.rs` | 263 | Cross-phase source/frontend/resolver staging and common diagnostic support, including exact internal resolver diagnostic-key projection. |
 | `src/runner/parse_only.rs` | 119 | Parse-only case execution and failure projection. |
 | `src/runner/declaration_symbol.rs` | 231 | Declaration-symbol execution, observation, payload, and failure projection. |
 | `src/runner/import_fixtures.rs` | 349 | Fixture lexical summaries and import-summary adapters. |
@@ -2578,3 +2578,23 @@ present snapshot. The old type-elaboration Task-180 case is excluded. Missing,
 unreadable, mismatched, or absent snapshots and any source/Core/VC error fail
 the case and emit stable task-local diagnostics. This exact route is not a
 general proof verifier and publishes no accepted theorem or fact.
+
+## Resolver R-031 Declaration-Symbol Increment Completion
+
+R-031 adds exactly the existing
+`fail_resolve_same_signature_same_return_conflict_001` sidecar to the active
+`declaration_symbol` set. The unchanged `.miz` source reaches the real frontend
+and resolver collector. The appended internal resolver class
+`SameSignatureDefinitionConflict` maps only to
+`declaration_symbol.signature.same_signature_definition_conflict`; the existing
+`SameSignatureReturnConflict` mapping and different-return expectation remain
+byte-identical. The same-return sidecar gains the active tag, exact diagnostic
+payload, and active wording. No public numeric diagnostic is allocated.
+
+The resolver groups only ordinary functor definitions by its exact syntactic
+namespace/spelling/pattern/definition-context/arity key. All-identical returns
+produce one new-class diagnostic; mixed/different returns produce one existing
+return-conflict diagnostic over the complete candidate group, with no overlap.
+This increments the active declaration-symbol count from four to five and changes that CLI
+output/hash, while parse-only, type-elaboration, and proof-verification
+admission remain unchanged.

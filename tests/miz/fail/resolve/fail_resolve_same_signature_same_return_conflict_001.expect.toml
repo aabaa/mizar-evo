@@ -10,7 +10,11 @@ failure_category = "resolve_error"
 rejection_reason = "same_signature_definition_conflict"
 stable_detail_key = "declaration_symbol.signature.same_signature_definition_conflict"
 diagnostic_codes = []
+diagnostic_payloads = [
+  "declaration_symbol.signature.same_signature_definition_conflict",
+]
+tags = ["active_declaration_symbol"]
 spec_refs = [
   "spec.en.19.overload.definition_conflict.same_return.declaration",
 ]
-notes = "Inactive declaration_symbol seed: two gauge definitions share the same resolver-owned argument signature key and the same return signature. Task 37 generalizes the spec 19 declaration conflict to identical argument signatures regardless of return type, but active resolver support is deferred because the current active declaration_symbol runner only diagnoses different-return signature conflicts."
+notes = "Active declaration_symbol fail coverage for the parser-backed same-return definition conflict: two ordinary gauge functor definitions share the exact resolver-owned namespace, spelling/pattern, definition argument-context, arity, and normalized return-surface key. Resolver R-031 emits the internal same-signature definition-conflict class without semantic type equivalence or overload winner selection."

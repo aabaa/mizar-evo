@@ -242,12 +242,25 @@ overload group は、その family が overloadable で、利用可能な syntax
 - type checking なしで利用可能な syntactic arity または notation shape。
 
 illegal overload group は crate-local/internal diagnostic と `OverloadIndex` failure
-metadata として記録する。表現済み parser-backed functor signature が同じ
-resolver-owned argument-signature grouping key を共有しながら異なる return signature を
-示す場合、diagnostic はより具体的な internal
-`SameSignatureReturnConflict` class を使う。これは syntactic signature-collection check
-に留まり、semantic type equivalence、overload ranking、winner selection は checker-owned
-である。resolver は overload candidate を選択、順位付け、書き換えしない。
+metadata として記録する。exact ordinary-functor classifierはparser-backed
+`SymbolKind::Functor` / `DefinitionKind::Functor` pair、または同等のexplicit test
+projectionだけを受け入れる。namespace、primary spelling、normalized notation pattern、
+normalized definition argument context、syntactic arityでgroup化し、recovered declarationと
+別kind pairを除外する。
+
+2件以上のcandidate groupでnormalized return surfaceがすべて同じ場合、resolverはinternal
+`SameSignatureDefinitionConflict` diagnostic exactly 1件を出し、全candidate definitionへ
+`DeclarationConflictClass::SameSignatureDefinitionConflict`を保存する。distinctなnormalized
+return surfaceが複数あるgroupでは、既存`SameSignatureReturnConflict` diagnosticと
+definition-conflict metadataがgroup全体で優先し、overlapするsame-return diagnosticは出さない。
+両classは全candidateをcanonical source orderで保持し、canonical first candidateへ
+diagnosticをanchorする。diagnostic Debug spellingはRust variant名
+`SameSignatureDefinitionConflict`、new definition-conflict metadataのexplicit `SymbolEnv`
+snapshot spellingはexact `same_signature_definition_conflict`である。
+
+これはsyntactic signature-collection checkに留まる。normalized surface textはbinder
+alpha-equivalenceやsemantic type equivalenceではなく、overload rankingとwinner selectionは
+checker-ownedである。resolverはoverload candidateを選択、順位付け、書き換えしない。
 
 ## Visibility、Export、Summary、Lexical Contribution
 

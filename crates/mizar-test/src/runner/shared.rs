@@ -234,6 +234,9 @@ fn symbol_diagnostic_detail_key(diagnostic: &SymbolDiagnostic) -> String {
         SymbolDiagnosticClass::SameSignatureReturnConflict => {
             "declaration_symbol.signature.same_signature_return_conflict".to_owned()
         }
+        SymbolDiagnosticClass::SameSignatureDefinitionConflict => {
+            "declaration_symbol.signature.same_signature_definition_conflict".to_owned()
+        }
         class => format!(
             "declaration_symbol.symbol.{}",
             symbol_diagnostic_class_key(class)

@@ -9711,3 +9711,28 @@ plan/parse/declaration/type/proof CLI hash はそれぞれ
 raw/normalized 276-test-list hash は
 `967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
 `1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`。
+
+## Resolver R-031 declaration-symbol current-state addendum
+
+R-031はexisting ownership layout内のbehaviorだけを変更し、pathを追加しない。private
+cross-phase `shared.rs` ownerはappendしたresolver internal classをexact declaration-symbol
+keyへmapするためだけに260行から263行へ増える。`runner.rs`は2,372行のfacade/top-level
+orchestrator、`declaration_symbol.rs`は231行のprivate case/report ownerのままである。
+production manifestは18 pathのまま20,088行となる。sorted path hashは
+`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`を維持し、
+ordered content-manifest hashは
+`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`である。
+
+active countはparse/declaration/type/proof 96/5/188/1、plan 404/369、declaration
+coverage 10/5、pass/fail 220/184、warnings/errors 23/0、mizar-test library test 276である。
+plan/parse/declaration/type/proof CLI stdout hashは順に
+`69cf3aa717ec5c85b15b613a16faf75efeaf476737677aa5aecc98ea016f763e`、
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`である。
+raw/normalized 276-test-list hashは
+`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
+`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`を維持する。
+変わるbytesはplanとdeclaration-symbolだけで、parse/type/proof/test-list/path、
+facade/leaf ownership、Steps 6/7 statusはstableである。

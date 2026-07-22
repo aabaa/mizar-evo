@@ -179,16 +179,16 @@ public case statusを`Failed`にし、`snapshot_failure`を設定してinternal 
 code `E-TYPE-ELABORATION-SNAPSHOT`を`type_elaboration.snapshot.<case-id>`でemitする。
 ordinary detail-key resultは不変で、他のtype-elaboration caseはこのpathに入らない。
 
-## Runner Source Ownership (VC Task 31 Update)
+## Runner Source Ownership (VC Task 31 / Resolver R-031 Updates)
 
-current production runner layoutは正確に18 path、20,085行である。Task 31はbounded
+current production runner layoutは正確に18 path、20,088行である。Task 31はbounded
 proof-verification leafを1件追加し、behavior-preserving Tasks 249-263 splitと
 `runner.rs` facade/top-level orchestration-only boundaryを維持する。
 
 | Production path | Lines | Ownership |
 |---|---:|---|
 | `src/runner.rs` | 2,372 | snapshot failureを含むpublic report/status、corpus orchestration、public active iterator、proof-verification orchestration、parse/declaration admission、type-case execution、verify-only baseline comparison、top-level detail dispatch。 |
-| `src/runner/shared.rs` | 260 | cross-phase source/frontend/resolver stagingとcommon diagnostic support。 |
+| `src/runner/shared.rs` | 263 | cross-phase source/frontend/resolver stagingと、exact internal resolver diagnostic-key projectionを含むcommon diagnostic support。 |
 | `src/runner/parse_only.rs` | 119 | parse-only case executionとfailure projection。 |
 | `src/runner/declaration_symbol.rs` | 231 | declaration-symbol execution、observation、payload、failure projection。 |
 | `src/runner/import_fixtures.rs` | 349 | fixture lexical summaryとimport-summary adapter。 |
@@ -2468,3 +2468,21 @@ admission は exact id、exactly one `active_proof_verification` tag、stage
 unreadable、mismatched、absent snapshot、または source/Core/VC error は case を fail
 させ、stable task-local diagnostic を emit する。この exact route は general proof
 verifier ではなく、accepted theorem/fact を publish しない。
+
+## Resolver R-031 declaration-symbol increment completion
+
+R-031は既存`fail_resolve_same_signature_same_return_conflict_001` sidecar exactly 1件を
+active `declaration_symbol` setへ追加する。変更しない`.miz` sourceはreal frontendと
+resolver collectorへ到達する。appendしたinternal resolver class
+`SameSignatureDefinitionConflict`は
+`declaration_symbol.signature.same_signature_definition_conflict`だけへmapし、既存
+`SameSignatureReturnConflict` mappingとdifferent-return expectationはbyte-identicalに保つ。
+same-return sidecarにはactive tag、exact diagnostic payload、active wordingを追加する。public
+numeric diagnosticは割り当てない。
+
+resolverはordinary functor definitionだけをexact syntactic
+namespace/spelling/pattern/definition-context/arity keyでgroup化する。all-identical returnは
+new-class diagnostic 1件、mixed/different returnはcomplete candidate groupを含む既存
+return-conflict diagnostic 1件を生成し、overlapしない。これによりactive declaration-symbol
+countは4件から5件へ増え、そのCLI output/hashは変わるが、parse-only、type-elaboration、
+proof-verification admissionは変わらない。

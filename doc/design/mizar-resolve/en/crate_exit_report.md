@@ -185,3 +185,30 @@ change instead of repairing it automatically. Use review-only agents for spec,
 test, implementation, and source/documentation consistency reviews, run the
 relevant verification, and commit exactly this task.
 ```
+
+## R-031 Step 5 Extension Contract
+
+R-031 is a later independent Step 5 increment and does not rewrite the scored
+R-001 through R-029 close-out. It closes only R-G008 for ordinary functor
+definitions whose resolver-syntactic namespace, spelling/pattern, definition
+argument context, and arity match. All-return-identical groups use appended
+`SameSignatureDefinitionConflict` diagnostic and definition metadata plus the
+exact `declaration_symbol.signature.same_signature_definition_conflict` runner
+key. Mixed/different-return groups retain one existing
+`SameSignatureReturnConflict` over every candidate and the existing runner key.
+The different-return sidecar stays byte-identical; only the existing
+same-return seed and its one trace row may become active/covered.
+
+R-031 close-out requires exact and near-miss unit coverage, recovered-input
+suppression, mixed-group priority, permutation-stable first shell/range and
+candidate ordering, exact runner keys, paired documentation and coverage-audit
+updates, full verification, one R-031 commit, and a clean worktree. It adds no
+public numeric diagnostic, semantic type equivalence, overload selection,
+parser/checker behavior, Task-49 reconciliation, or Step 6/7 promotion.
+
+R-031 met this contract: all specified resolver and runner tests pass, the
+existing same-return source is active with its exact new internal key, the one
+trace row is covered, and the different-return sidecar remains unchanged. The
+original 94/100 milestone score is not reused as a post-extension score; the
+required independent read-only implementation/consistency reviews and full
+verification for this extension are recorded in its task handoff.

@@ -61,6 +61,17 @@ not change `doc/spec`, `.miz` sources, or expectation sidecars.
 | [module_boundary_refactor.md](./module_boundary_refactor.md) | [../ja/module_boundary_refactor.md](../ja/module_boundary_refactor.md) | R-029 source-layout audit, private helper/test split list, re-run audit notes, and verification requirements are synchronized. |
 | [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Close-out status, quality score, hard gates, deferred items, human-review surface, verification, task commits, and next-task handoff are synchronized. |
 
+## R-031 Pair Recheck
+
+R-031 rechecks the paired plan, TODO, symbols design, source correspondence,
+and close-out extension. Both languages name the same ordinary-functor-only
+syntactic key, appended `SameSignatureDefinitionConflict` diagnostic and
+definition variants, exact `same_signature_definition_conflict` SymbolEnv
+snapshot spelling, exact declaration-symbol detail key, mixed-group priority,
+candidate/range/order behavior, sidecar/trace transition, coverage impact, and
+forbidden semantic/public-code/phase boundaries. No bilingual drift remains in
+the R-031 extension.
+
 ## Handoff
 
 Post-close-out resolver updates should treat this audit as the baseline

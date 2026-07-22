@@ -258,13 +258,30 @@ available syntax provides a compatible resolver-owned grouping key:
 - syntactic arity or notation shape when available without type checking.
 
 Illegal overload groups are recorded as crate-local/internal diagnostics and
-`OverloadIndex` failure metadata. When the represented parser-backed functor
-signatures share the same resolver-owned argument-signature grouping key but
-advertise different return signatures, the diagnostic uses the more specific
-internal `SameSignatureReturnConflict` class. This remains a syntactic
-signature-collection check: semantic type equivalence, overload ranking, and
-winner selection are checker-owned. The resolver does not select, rank, or
-rewrite overload candidates.
+`OverloadIndex` failure metadata. The exact ordinary-functor classifier admits
+only parser-backed `SymbolKind::Functor` / `DefinitionKind::Functor` pairs (or
+equivalent explicit test projections). It groups by namespace, primary
+spelling, normalized notation pattern, normalized definition argument context,
+and syntactic arity. Recovered declarations and other kind pairs are excluded.
+
+For a group of at least two candidates whose normalized return surface is
+identical, the resolver emits exactly one internal
+`SameSignatureDefinitionConflict` diagnostic and stores
+`DeclarationConflictClass::SameSignatureDefinitionConflict` on every
+candidate definition. For a group containing more than one distinct normalized
+return surface, the existing `SameSignatureReturnConflict` diagnostic and
+definition-conflict metadata win for the entire group; the resolver emits no
+overlapping same-return diagnostic. Both classes retain all candidates in
+canonical source order and anchor the diagnostic at the canonical first
+candidate. The diagnostic Debug spelling is the Rust variant name
+`SameSignatureDefinitionConflict`; the explicit `SymbolEnv` snapshot spelling
+of the new definition-conflict metadata is exactly
+`same_signature_definition_conflict`.
+
+This remains a syntactic signature-collection check. Normalized surface text
+is not binder alpha-equivalence or semantic type equivalence, and overload
+ranking and winner selection remain checker-owned. The resolver does not
+select, rank, or rewrite overload candidates.
 
 ## Visibility, Exports, Summaries, And Lexical Contributions
 

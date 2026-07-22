@@ -1395,9 +1395,12 @@ proof acceptance, terminal goals, Core/VC payloads, or runner success.
 11. [ ] [mizar-parser task 48](./mizar-parser/en/todo.md) — implement the exact
     Chapter-7 `property_impl` grammar and parse-only pass/fail corpus needed by
     the Task-39 coherence seed.
-12. [ ] [mizar-resolve task 31](./mizar-resolve/en/todo.md) — expose the
+12. [x] [mizar-resolve task 31](./mizar-resolve/en/todo.md) — expose the
     same-signature/same-return declaration conflict required by the deferred
-    Task-37 seed, without performing checker overload selection.
+    Task-37 seed, without performing checker overload selection. Complete: the
+    exact internal diagnostic/definition metadata, stable snapshot/detail key,
+    mixed-group priority, unit matrix, and active declaration-symbol seed land
+    together; the different-return control remains unchanged.
 13. [ ] [mizar-checker task 49](./mizar-checker/en/todo.md) — audit-corpus
     activation and task-29 record revision: after `MT10-FS`/`MT10-AS`, checker
     Tasks 248-264 and 269-279, parser Tasks 47-48, resolver Task 31, blocked-reserved

@@ -182,3 +182,26 @@ change instead of repairing it automatically. Use review-only agents for spec,
 test, implementation, and source/documentation consistency reviews, run the
 relevant verification, and commit exactly this task.
 ```
+
+## R-031 Step 5 extension contract
+
+R-031は後続の独立Step 5 incrementであり、score済みR-001〜R-029 close-outを書き換えない。
+resolver-syntacticなnamespace、spelling/pattern、definition argument context、arityが一致する
+ordinary functor definitionについてR-G008だけを閉じる。all-return-identical groupはappendした
+`SameSignatureDefinitionConflict` diagnostic / definition metadataとexact
+`declaration_symbol.signature.same_signature_definition_conflict` runner keyを使う。mixed /
+different-return groupは全candidateを含む既存`SameSignatureReturnConflict` 1件と既存runner
+keyを維持する。different-return sidecarはbyte-identicalに保ち、既存same-return seedとその
+trace row 1件だけをactive / coveredへ変更できる。
+
+R-031 close-outにはexact / near-miss unit coverage、recovered-input suppression、mixed-group
+priority、permutation-stable first shell/rangeとcandidate order、exact runner key、paired docs /
+coverage-audit更新、full verification、R-031 commit 1件、clean worktreeを要求する。public
+numeric diagnostic、semantic type equivalence、overload selection、parser/checker behavior、
+Task-49 reconciliation、Step 6/7 promotionは追加しない。
+
+R-031はこのcontractを満たした。指定したresolver / runner testはすべてpassし、既存
+same-return sourceはexactなnew internal keyでactiveとなり、trace row 1件はcovered、
+different-return sidecarは不変である。元の94/100 milestone scoreをpost-extension scoreとして
+再利用せず、このextensionに必要な独立read-only implementation/consistency reviewとfull
+verificationはtask handoffに記録する。

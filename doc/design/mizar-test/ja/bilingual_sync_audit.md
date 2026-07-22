@@ -167,3 +167,13 @@ fail-closed snapshot/report/CLI behavior、production 18 path / 20,085 line、pl
 proof coverage 4/1、pass/fail 220/184、unchanged parse/declaration/type active count
 96/4/188、broad proof-verification/VC 32-55 の continued deferral を記録する。この
 increment に bilingual drift は残らない。
+
+## Resolver R-031 / declaration-symbol pair recheck
+
+R-031はpaired plan、TODO、harness、traceability documentを再確認する。両言語は同じexact
+internal class/detail key、ordinary-functor syntactic groupingとmixed-group priority、変更しない
+different-return control、sole same-return trace activation、declaration-symbol count 5、変更しない
+plan/pass-fail count 404/369と220/184、変更しないparse/type/proof admissionを記録する。この
+ほかcurrent production manifest 18 path / 20,088 line、unchanged path hash
+`63e4e770...`、content hash `7e5adca2...`も両方に記録する。このincrementにbilingual
+driftは残らない。

@@ -3471,8 +3471,8 @@ fn repository_declaration_symbol_runner_executes_active_resolver_seeds() {
     let report = run_declaration_symbol_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 4);
-    assert_eq!(report.passed_count(), 4);
+    assert_eq!(report.results.len(), 5);
+    assert_eq!(report.passed_count(), 5);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_resolve_declaration_symbol_smoke_001"
@@ -3492,6 +3492,11 @@ fn repository_declaration_symbol_runner_executes_active_resolver_seeds() {
         result.id.0 == "fail_resolve_same_signature_return_conflict_001"
             && result.actual_detail_keys
                 == ["declaration_symbol.signature.same_signature_return_conflict"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_resolve_same_signature_same_return_conflict_001"
+            && result.actual_detail_keys
+                == ["declaration_symbol.signature.same_signature_definition_conflict"]
     }));
 }
 
@@ -9378,8 +9383,8 @@ fn declaration_symbol_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("declaration-symbol cases: 4"));
-    assert!(stdout.contains("passed: 4"));
+    assert!(stdout.contains("declaration-symbol cases: 5"));
+    assert!(stdout.contains("passed: 5"));
     assert!(stdout.contains("failed: 0"));
 }
 

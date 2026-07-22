@@ -514,7 +514,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       public code を創作しない。現在の crate-local diagnostics に合わせるためだけに
       既存 expectation sidecar を rebaseline しない。
 
-31. **Same-signature/same-return declaration conflict。** [ ]
+31. **Same-signature/same-return declaration conflict。** [x]
     - Chapter 19とchecker Task 37が要求する、same symbol kind/spelling/arity/
       argument signatureでreturn signatureもsameのordinary declaration conflictだけを
       resolver-owned declaration/signature collectionへ追加する。source declaration
@@ -524,8 +524,28 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       deferred same-return seedをdeclaration-symbol runnerへ追加する。trace rowの
       deferred解除はimplementation taskで行い、既存different-return expectationは
       rebaselineしない。
+    - exact contract: `Functor` symbol/definition kind pairで表現されたordinary functor
+      definitionだけが参加する。namespace、primary spelling、normalized notation pattern、
+      normalized definition argument context、syntactic arityでgroup化する。全returnが同じ
+      groupは新しいappend-only non-exhaustive `SameSignatureDefinitionConflict` diagnostic /
+      definition-conflict variantとexact
+      `declaration_symbol.signature.same_signature_definition_conflict` keyを使う。mixed /
+      different-return groupは全candidateを含む既存`SameSignatureReturnConflict` diagnostic
+      exactly 1件と既存detail keyを維持し、そのclassificationが優先してoverlapを出さない。
+    - input permutationに対してcanonical first shell/rangeとcandidate orderを維持する。
+      parser-backed / explicit projection、exactとkind/spelling/pattern/context/arity/namespaceの
+      near miss、recovered suppression、mixed-return priority、active化したsame-return sidecar、
+      byte-identicalなdifferent-return sidecarをassertする。coveredへ変えるのはexact
+      same-return trace rowだけとし、paired component/runner docsと
+      `spec_coverage_audit.md`を更新する。
     - 依存: R-021/R-023。独立Task-49 prerequisite。仕様: Chapter 19 section
       19.1、checker Task 37とdeferred trace row。
+    - R-031で完了: ordinary-functor collectionはall-return-identical exact argument-key
+      groupへappendした`SameSignatureDefinitionConflict` diagnostic / definition metadataを
+      emitし、mixed groupでは既存different-return classを維持し、recovered/nonordinary near
+      missを抑止し、新conflictを`same_signature_definition_conflict`としてserializeする。
+      既存exact same-return seedはactive declaration-symbol runnerで実行され、sole trace rowは
+      coveredとなり、different-return expectationは変更していない。
 
 ## crate close-out
 

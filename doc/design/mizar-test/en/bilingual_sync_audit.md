@@ -172,3 +172,14 @@ behavior, 18 production paths / 20,085 lines, plan 404/369, proof coverage 4/1,
 pass/fail 220/184, unchanged 96/4/188 parse/declaration/type active counts, and
 continued deferral of broad proof-verification and VC 32-55. No bilingual drift
 remains in this increment.
+
+## Resolver R-031 / Declaration-Symbol Pair Recheck
+
+R-031 rechecks the paired plan, TODO, harness, and traceability documents. Both
+languages record the same exact internal class/detail key, ordinary-functor
+syntactic grouping and mixed-group priority, unchanged different-return
+control, sole same-return trace activation, declaration-symbol count five,
+unchanged 404/369 and 220/184 plan/pass-fail counts, and unchanged parse/type/
+proof admissions. Both also record the current 18-path/20,088-line production
+manifest, unchanged path hash `63e4e770...`, and content hash `7e5adca2...`.
+No bilingual drift remains in this increment.

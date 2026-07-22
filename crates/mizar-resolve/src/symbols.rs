@@ -19,7 +19,7 @@ use crate::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SemanticO
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Duplicate and overload policy for an opaque declaration projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -62,15 +62,21 @@ struct FunctorSignatureKey {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct FunctorArgumentSignatureKey {
     namespace: NamespacePath,
+    spelling: String,
     argument_context: String,
     pattern: String,
     arity: Option<u32>,
 }
 
 impl FunctorSignatureKey {
-    fn argument_key(&self, namespace: NamespacePath) -> FunctorArgumentSignatureKey {
+    fn argument_key(
+        &self,
+        namespace: NamespacePath,
+        spelling: String,
+    ) -> FunctorArgumentSignatureKey {
         FunctorArgumentSignatureKey {
             namespace,
+            spelling,
             argument_context: self.argument_context.clone(),
             pattern: self.pattern.clone(),
             arity: self.arity,
@@ -243,6 +249,9 @@ pub enum SymbolDiagnosticClass {
     /// Same argument-signature functor declarations with incompatible return
     /// signatures.
     SameSignatureReturnConflict,
+    /// Same argument-signature functor declarations with identical return
+    /// signatures.
+    SameSignatureDefinitionConflict,
 }
 
 /// Crate-local/internal symbol collection diagnostic.
@@ -1080,6 +1089,24 @@ impl DiagnosticDraft {
             overload_key: Some(first.overload_key()),
         }
     }
+
+    fn same_argument_signature_conflict(
+        candidates: &[&CollectedProjection<'_>],
+        class: SymbolDiagnosticClass,
+    ) -> Self {
+        let first = candidates[0];
+        Self {
+            class,
+            shell: Some(first.shell.id()),
+            spelling: overload_spelling(first.projection),
+            range: first.shell.range(),
+            candidates: candidates
+                .iter()
+                .map(|candidate| candidate.symbol.clone())
+                .collect(),
+            overload_key: Some(first.overload_key()),
+        }
+    }
 }
 
 fn classify_conflicts(
@@ -1087,7 +1114,7 @@ fn classify_conflicts(
     diagnostic_drafts: &mut Vec<DiagnosticDraft>,
 ) -> BTreeMap<SymbolId, DeclarationConflictClass> {
     let mut conflicts = classify_illegal_overload_groups(collected, diagnostic_drafts);
-    conflicts.extend(classify_same_signature_return_conflicts(
+    conflicts.extend(classify_same_argument_signature_conflicts(
         collected,
         diagnostic_drafts,
     ));
@@ -1125,7 +1152,7 @@ fn classify_conflicts(
     conflicts
 }
 
-fn classify_same_signature_return_conflicts(
+fn classify_same_argument_signature_conflicts(
     collected: &[CollectedProjection<'_>],
     diagnostic_drafts: &mut Vec<DiagnosticDraft>,
 ) -> BTreeMap<SymbolId, DeclarationConflictClass> {
@@ -1138,11 +1165,19 @@ fn classify_same_signature_return_conflicts(
         if item.projection.overload_policy() != SymbolOverloadPolicy::Overloadable {
             continue;
         }
+        if item.projection.symbol_kind() != SymbolKind::Functor
+            || item.projection.definition_kind() != Some(DefinitionKind::Functor)
+        {
+            continue;
+        }
         let Some(key) = &item.projection.functor_signature_key else {
             continue;
         };
         groups
-            .entry(key.argument_key(item.projection.namespace().clone()))
+            .entry(key.argument_key(
+                item.projection.namespace().clone(),
+                item.projection.primary_spelling().to_owned(),
+            ))
             .or_default()
             .push(item);
     }
@@ -1160,19 +1195,24 @@ fn classify_same_signature_return_conflicts(
             .collect::<Vec<_>>();
         return_keys.sort_unstable();
         return_keys.dedup();
-        if return_keys.len() < 2 {
-            continue;
-        }
+        let (diagnostic_class, conflict_class) = if return_keys.len() < 2 {
+            (
+                SymbolDiagnosticClass::SameSignatureDefinitionConflict,
+                DeclarationConflictClass::SameSignatureDefinitionConflict,
+            )
+        } else {
+            (
+                SymbolDiagnosticClass::SameSignatureReturnConflict,
+                DeclarationConflictClass::SameSignatureReturnConflict,
+            )
+        };
 
-        diagnostic_drafts.push(DiagnosticDraft::illegal_overload(
+        diagnostic_drafts.push(DiagnosticDraft::same_argument_signature_conflict(
             &candidates,
-            SymbolDiagnosticClass::SameSignatureReturnConflict,
+            diagnostic_class,
         ));
         for candidate in candidates {
-            conflicts.insert(
-                candidate.symbol.clone(),
-                DeclarationConflictClass::SameSignatureReturnConflict,
-            );
+            conflicts.insert(candidate.symbol.clone(), conflict_class.clone());
         }
     }
     conflicts
@@ -1258,8 +1298,10 @@ fn finalize_diagnostics(
     BTreeMap<OverloadKey, DiagnosticAnchorId>,
 ) {
     for draft in &mut drafts {
-        draft.candidates.sort();
-        draft.candidates.dedup();
+        let mut seen = BTreeSet::new();
+        draft
+            .candidates
+            .retain(|candidate| seen.insert(candidate.clone()));
     }
     drafts.sort_by(diagnostic_draft_cmp);
     let mut diagnostic_by_group = BTreeMap::new();

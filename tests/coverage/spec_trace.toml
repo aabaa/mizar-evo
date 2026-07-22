@@ -2712,10 +2712,10 @@ id = "spec.en.19.overload.definition_conflict.same_return.declaration"
 source = "doc/spec/en/19.overload_resolution.md"
 section = "19.1 Overview, key restrictions (ordinary definitions with identical argument-type signatures are definition conflicts regardless of return type)"
 stage = "declaration_symbol"
-status = "deferred"
+status = "covered"
 required = true
 coverage = "fail"
-deferred_reason = "Task 37 / SSA-010 generalizes ordinary declaration conflicts to identical argument signatures regardless of return type, but the active declaration_symbol resolver runner currently diagnoses only the different-return signature-conflict slice. Resolver Task 31 now owns the exact same-return diagnostic and declaration-symbol consumer; keep this row deferred until that implementation task lands."
+notes = "Resolver R-031 active declaration-symbol coverage for the exact parser-backed same-return slice: ordinary functor definitions with the same resolver-syntactic namespace, spelling/pattern, normalized definition argument context, arity, and normalized return surface receive one internal SameSignatureDefinitionConflict diagnostic and the exact declaration_symbol.signature.same_signature_definition_conflict detail key. Mixed/different-return groups retain the separately covered SameSignatureReturnConflict class. Semantic type equivalence and overload winner selection remain checker-owned and uncredited."
 depends_on = [
   "spec.en.10.functor_definitions.parser",
 ]

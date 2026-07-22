@@ -59,6 +59,16 @@ sidecar は変更しない。
 | [module_boundary_refactor.md](../en/module_boundary_refactor.md) | [./module_boundary_refactor.md](./module_boundary_refactor.md) | R-029 source-layout audit、private helper / test split list、re-run audit note、verification requirement が同期している。 |
 | [crate_exit_report.md](../en/crate_exit_report.md) | [./crate_exit_report.md](./crate_exit_report.md) | close-out status、quality score、hard gate、deferred item、human-review surface、verification、task commit、next-task handoff が同期している。 |
 
+## R-031 pair recheck
+
+R-031はpaired plan、TODO、symbols design、source correspondence、close-out extensionを
+再確認する。両言語は同じordinary-functor-only syntactic key、appendした
+`SameSignatureDefinitionConflict` diagnostic / definition variant、exact
+`same_signature_definition_conflict` SymbolEnv snapshot spelling、exact declaration-symbol
+detail key、mixed-group priority、candidate/range/order behavior、sidecar/trace transition、
+coverage impact、禁止するsemantic/public-code/phase boundaryを記録する。R-031 extensionに
+bilingual driftは残らない。
+
 ## handoff
 
 post-close-out の resolver update は、この監査を二言語同期状態の baseline として扱う。
