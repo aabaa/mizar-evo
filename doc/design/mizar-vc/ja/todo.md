@@ -451,6 +451,29 @@ kernel 受理境界の監査
       projection data を含む。trusted kernel validation と pass fixture は対になる
       `mizar-kernel` task 33 で実装済み。
 
+30. **Source-derived VC integration contract/exhaustive task decomposition。** [ ]
+    - mizar-core Tasks 31-32後のdocs/traceability-only task。real source-derived
+      theorem obligationからseed intake、`VcKind`、`VcStatus`、identity、context、
+      anchor、provenanceへのexact mappingを、generationとproof verification/
+      acceptanceを同一視せず定義する。
+    - source/spec audit記載の残る全family、すなわちregistration/redefinition/
+      reduction detail、call precondition、branch/match/range/collection-loop VC、
+      term-only/partial termination、Pick non-emptiness、ghost erasure、complete
+      trace、source-derived formula/definition/quantified-binder/general obligation
+      payloadをinventoryし、SCA-005を含む全familyにbounded producer/consumer taskを
+      作る。unavailable Core/CFG inputの捏造、VC generation、fixture/expectation/
+      trace status change、coverage promotionは禁止する。依存: core Tasks 31-32。
+
+31. **Exact source-derived contradiction VC integration。** [ ]
+    - core Task 31のreal theorem obligationについてTask 30 accepted mappingと
+      prepared mizar-test consumerだけを実装する。intake/kind/status/identity/source/
+      context/anchor/provenanceを保存し、stale/corrupt inputをfail closedにする。
+      runner contractがfalse creditなしで許す場合だけdeterministic unaccepted VC
+      rendering/snapshotを記録する。
+    - discharge、ATP/kernel/proof-policy、theorem acceptance、broader obligation/
+      algorithm、placeholder runner、expectation rebaselineは禁止する。依存: Task 30、
+      core Task 31。
+
 ## 推奨検証
 
 各タスクの後で実行する:

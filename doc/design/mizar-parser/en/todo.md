@@ -999,7 +999,7 @@ older numeric syntax task references appear to disagree, prefer
       context. Spec: [grammar.md](./grammar.md), [pratt.md](./pratt.md),
       [source_spec_audit.md](./source_spec_audit.md).
 
-47. **`reconsider` justification parser alignment.** [ ] deferred
+47. **`reconsider` justification parser alignment.** [ ]
     - Deferred follow-up recorded by `mizar-checker` task 44. The canonical
       spec now permits omitted `reconsider` `simple_justification` syntax in
       Chapters 4, 8, and 15 plus Appendix A, then lets the semantic
@@ -1009,16 +1009,36 @@ older numeric syntax task references appear to disagree, prefer
       current parser implementation and active
       `fail_parser_consider_reconsider_recovery_001` fixture still classify
       `reconsider x as set;` as missing mandatory justification and treat
-      reconsider as a simple-justification-only host; keep that behavior
-      recorded as `source_drift` / `test_expectation_drift` until a
-      parser-alignment task can update grammar, recovery diagnostics, and the
-      parse-only corpus without changing semantic intent.
-    - Deps: `mizar-checker` task 44 and a parser grammar-alignment slice.
+      reconsider as a simple-justification-only host. This task updates
+      grammar, recovery diagnostics, and the parse-only corpus without changing
+      semantic intent; until then, keep that behavior recorded as
+      `source_drift` / `test_expectation_drift`.
+    - Deps: completed `mizar-checker` task 44; no remaining external gate.
       Spec: [grammar.md](./grammar.md),
       [doc/spec/en/04.variables_and_constants.md](../../../spec/en/04.variables_and_constants.md),
       [doc/spec/en/08.type_inference.md](../../../spec/en/08.type_inference.md),
       [doc/spec/en/15.statements.md](../../../spec/en/15.statements.md),
       [doc/spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md).
+
+48. **Property-implementation grammar and parse-only corpus.** [ ]
+    - Implement only the canonical Chapter 7 `property_impl` grammar:
+      definition-local `let M be mode_application;`, `property M.name means`
+      formula definiens plus mandatory `existence`/`uniqueness` and optional
+      `coherence`, or `property M.name equals` term definiens plus optional
+      `coherence`, followed by `end;`. Preserve ordered source nodes, recovery,
+      and typed syntax accessors without resolving modes/properties or checking
+      overlap/coherence semantics.
+    - Add spec-derived parse-only pass/fail coverage for means/equals forms,
+      case/otherwise definiens, mandatory correctness blocks, optional
+      coherence, malformed owner/property dots, and recovery boundaries. Update
+      the deferred parser trace ownership only when implementation lands; do
+      not activate the Task-39 semantic seed.
+    - Deps: none on Task 47; both are independently authorized Step-5/Task-49
+      prerequisites. Spec: Chapter 7 sections 7.4.1 and 7.8.2; deferred trace
+      `spec.en.07.modes.property_implementation.parser`.
+    - Forbidden: checker payload extraction, property overlap/coherence
+      decisions, proof acceptance, advanced-semantics runner activation,
+      existing expectation rebaseline, or broader definition grammar cleanup.
 
 ## Recommended Verification
 

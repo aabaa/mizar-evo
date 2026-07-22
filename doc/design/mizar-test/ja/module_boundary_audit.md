@@ -9602,3 +9602,12 @@ raw/normalized test-list hashは
 source/documentation consistency reviewはfindingなし。`spec_coverage_audit.md`は
 変更しない。fresh canonical todo inventoryに次のnonempty Step 5 taskはなく、
 Steps 6/7は既存dependency gate成立までdeferredのままである。
+
+## Task 265 Authority-Only Current-State Addendum
+
+上のTask-264 statementは当時のfresh inventoryの正しいhistorical resultである。
+Task 265は後からhuman-authorizedされたdocs/traceability-only workであり、次task
+不在だけをsupersedeする。canonical roadmapはTasks 266-268とnamed owner/
+decomposition taskを開く。completed module-boundary seriesをreopenせず、17-path/
+18,952-line layout、private leaf、count、hash、source ownership、test、expectation、
+coverageを変更しない。次のexecutable taskはTask 266で、Steps 6/7はdeferred。

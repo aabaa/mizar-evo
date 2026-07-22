@@ -1174,6 +1174,49 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   hash、raw/normalized test-list hashは不変で、`spec_coverage_audit.md`も変更しない。
   fresh canonical Step 5 inventoryには次のnonempty unchecked taskがなく、Steps
   6/7はdeferredのままである。
+- [x] **Task 265: Step 5 execution authorityを明文化する。** fresh canonical
+  inventoryを行い、残る全familyをconcrete owner taskまたはnonemptyなowner-owned
+  decomposition taskへ割り当てる。top-level roadmap、paired owner plan/TODOと
+  current-state audit、traceability deferred ownership、specification coverage
+  auditを同期する。source、language semantics、`.miz` fixture、expectation、trace
+  status/test list、runner count、coverage creditは変更しない。dependency graphは
+  Task 266 -> Task 267 -> Task 268、Tasks 266 + 268 -> mizar-core Task 31、checker
+  Task 247 -> core Task 32、Core Tasks 31 + 32 -> mizar-vc Task 30 -> VC 31とする。
+  Parser Tasks 47-48とresolver Task 31は
+  Task-266 dependencyではなく、独立にauthorizedされたchecker Task-49 prerequisite
+  である。Checker Task 247、core Task 32、VC Task 30はpayloadを捏造せず残る
+  checker、CoreIr/ControlFlowIr、VC/obligation family decompositionをexhaustiveに
+  所有する。Steps 6/7はdeferredのままとする。Inventory
+  分類: executable decompositionの欠落は`design_drift`、exact Task-180 final
+  handoff、property implementation、same-return conflict、Core、VCのgapは
+  `source_drift`と`test_gap`、Task-47 recoveryは`test_expectation_drift`と
+  `source_drift`である。downstream crateが他crateのraw syntaxを再構築することは
+  `boundary_violation`であり禁止する。`spec_gap`、
+  `source_undocumented_behavior`、`repo_metadata_conflict`は検出していない。
+- [ ] **Task 266: exact Task-180 checked contradictionをfinal checker handoffへ
+  保存する。** checker-owned syntax-free `ResolvedTypedAst` dataを拡張し、
+  `SourceDerivedContradictionConstantBoundary`のresolver theorem owner 1件を、既存の
+  checked `FormulaKind::Contradiction` result 1件へlinkする。owner/formula identity、
+  source range、state、provenanceを保存する。`mizar-test`はreal AST extractionと
+  exact active-runner assertionを所有し続け、checkerはfinal semantic identityと
+  validationを所有する。missing/duplicate/reordered/recovered/mismatched rowをreject
+  する。既存`.miz`/expectationは不変で再利用し、checker/runner unit、corruption、
+  determinism testを追加して4 CLI outputをbyte-stableに保つ。falsehood/fact
+  publication、theorem acceptance、proof status/skeleton/terminal goal、Core/CFG/VC、
+  broader formula、runner stage promotionは禁止する。依存: Task 265とchecker Task
+  180。仕様: 14、16。
+- [ ] **Task 267: omitted-justification theorem handoff contractを決定する。** paired
+  checker/core design docで、written justificationのないordinary theoremに対する
+  checker-owned pending-auto-proof status、proof skeleton、explicit terminal-goal
+  payload、source/provenance link、malformed/missing behavior、core typeへのexact mapping
+  を定義する。docs-only taskであり、omitted justificationをaccepted proofと同一視、
+  core内でraw syntaxからterminal goalを推論、proof search実行、fixture/expectation/
+  trace status編集をしてはならない。依存: Task 266。仕様: 15、16、architecture 06。
+- [ ] **Task 268: accepted Task-267 checker producerを実装する。** exact Task-180
+  final handoffだけにTask-267 proof status/skeleton/terminal-goal payloadを追加する。
+  missing/duplicate/reordered/corrupt/owner-formula-proof mismatchのfail-closed checker/
+  runner testを追加する。theorem acceptance、discharge、Core/VC generation、broader
+  proof form、existing expectation change、Steps 6/7はscope外。依存: Task 267。
 
 各 source-moving task で review-only により visibility drift、test-discovery
 drift、owner-boundary drift、source/docs inconsistency、意図しない behavior

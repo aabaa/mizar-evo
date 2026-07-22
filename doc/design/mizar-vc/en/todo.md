@@ -477,6 +477,32 @@ the paired producer tasks.
       payloads include the projection data. Trusted kernel validation and the
       pass fixture are implemented by paired `mizar-kernel` task 33.
 
+30. **Source-derived VC integration contract and exhaustive task
+    decomposition.** [ ]
+    - Docs/traceability-only after mizar-core Tasks 31-32. Specify the exact mapping
+      from its real source-derived theorem obligation through seed intake,
+      `VcKind`, `VcStatus`, identity, context, anchor, and provenance without
+      equating generation with proof verification or acceptance.
+    - Inventory every remaining family named by the source/spec audit:
+      registration/redefinition/reduction details, call preconditions,
+      branch/match/range/collection-loop VCs, term-only and partial
+      termination, Pick non-emptiness, ghost erasure, complete traces, and
+      source-derived formula/definition/quantified-binder/general obligation
+      payloads. Create bounded producer/consumer tasks for every family,
+      including all SCA-005 items. Do not invent unavailable Core/CFG inputs,
+      generate VCs, change fixtures/expectations/trace status, or promote
+      coverage. Deps: core Tasks 31-32.
+
+31. **Exact source-derived contradiction VC integration.** [ ]
+    - Implement only Task 30's accepted mapping for core Task 31's real theorem
+      obligation and a prepared mizar-test consumer. Preserve intake, kind,
+      status, identity, source/context/anchor/provenance, fail closed on stale or
+      corrupt input, and record a deterministic unaccepted VC rendering or
+      snapshot only when the runner contract supports it without false credit.
+    - No discharge, ATP/kernel/proof-policy execution, theorem acceptance,
+      broader obligations/algorithms, placeholder runner, or expectation
+      rebaseline. Deps: Task 30 and core Task 31.
+
 ## Recommended Verification
 
 Run after each task:

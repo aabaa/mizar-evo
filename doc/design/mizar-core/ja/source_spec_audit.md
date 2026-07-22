@@ -290,14 +290,16 @@ source behavior ではなく、下の follow-up register で分類した unavail
 
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
-| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction が full source-derived `ResolvedTypedAst` payload、`qua` の real view-path / reduct-functor payload、production source-to-core fixture をまだ block している。 | Checker extraction / mizar-test integration follow-up。 | `mizar-core` が raw syntax を再 scan せずに checker-ready AST-wide payload extraction を利用できる。 | active source-derived core lowering fixture と snapshot を追加する。 |
-| CORE-AUDIT-G002 | `external_dependency_gap` | `mizar-test` は `CoreIr` / `ControlFlowIr` 向けの active source-derived `type_elaboration` / `proof_verification` snapshot runner をまだ提供しない。 | `mizar-test` staged runner follow-up。 | Stage runner が real checker payload 由来の `CoreIr` / `ControlFlowIr` baseline を比較できる。 | task-19 の deferred traceability row を active corpus snapshot に置き換える。 |
+| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction が full source-derived `ResolvedTypedAst` payload、`qua` の real view-path / reduct-functor payload、production source-to-core fixture をまだ block している。 | Tasks 266-268/Core Task 31はexact Task-180 slice、checker Task 247/Core Task 32は残る全checker-to-core familyのexhaustive decompositionを所有する。 | `mizar-core` が raw syntax を再 scan せずに checker-ready payload を利用できる。 | Core Task 32が作るbounded source-derived lowering taskをprepared consumer付きで実装する。 |
+| CORE-AUDIT-G002 | `external_dependency_gap` | `mizar-test` は `CoreIr` / `ControlFlowIr` 向けの active source-derived `type_elaboration` / `proof_verification` snapshot runner をまだ提供しない。 | Core Task 31は最初のexact snapshot consumer、Core Task 32は残る全familyのprepared consumerを所有する。 | Stage runner が real checker payload 由来の `CoreIr` / `ControlFlowIr` baseline を比較できる。 | Task-31/Task-32 descendantが実装されたfamilyだけsnapshotをactiveにする。 |
 | CORE-AUDIT-G003 | `external_dependency_gap` | artifact schema emission、proof acceptance、VC generation、kernel checking は downstream または cross-crate work。 | `mizar-artifact`, `mizar-proof`, `mizar-vc`, `mizar-kernel` phase。 | downstream crate が core/control-flow handoff の accepted schema と consumer を定義する。 | `mizar-core` を proof acceptance / kernel checking に変えず consumer を接続する。 |
-| CORE-AUDIT-G004 | `external_dependency_gap` | concrete `VcId`、`ObligationAnchor`、VC fingerprint、proof/cache reuse anchor、downstream artifact identity は `mizar-core` の責務外。 | `mizar-vc` incremental verification / artifact phase。 | downstream identity と anchor contract が存在する。 | current obligation seed と local path を downstream anchor に map する。 |
-| CORE-AUDIT-G005 | `external_dependency_gap` | source-derived call/result substitution、pattern、snapshot、claim、より豊かな algorithm payload seam は checker-owned explicit payload を必要とする。 | Checker payload extraction と phase-10/phase-11 integration。 | それらの source form 向け explicit checker payload が存在する。 | 新 payload の lowering / CFG / VC fixture coverage を active に追加する。 |
+| CORE-AUDIT-G004 | `external_dependency_gap` | concrete `VcId`、`ObligationAnchor`、VC fingerprint、proof/cache reuse anchor、downstream artifact identity は `mizar-core` の責務外。 | VC Tasks 30-31がfirst exact contract/slice、Task-30 descendantが残るsource-derived VC familyを所有する。artifact reuseはdownstream deferred。 | downstream identity と anchor contract が存在する。 | accepted core obligation seed/local pathだけをdownstream anchorへmapする。 |
+| CORE-AUDIT-G005 | `external_dependency_gap` | source-derived call/result substitution、pattern、snapshot、claim、より豊かな algorithm payload seam は checker-owned explicit payload を必要とする。 | Checker Task 247、Core Task 32、VC Task-30 decomposition。 | それらのsource form向けexplicit checker payloadとbounded core consumerが存在する。 | decomposition ownerが作るbounded producer/lowering/VC taskだけを実装する。 |
 | CORE-AUDIT-G006 | `deferred` | Public diagnostic code-space はこの crate が割り当てない。 | Diagnostics registry owner。 | shared public diagnostic registry と allocation policy が存在する。 | current local structured class を保ったまま public code を割り当てる。 |
 
-この audit で新しい `mizar-core` implementation task は開かない。残りの item は
-upstream extraction、mizar-test、diagnostics registry、downstream VC/proof/kernel/
-artifact phase が所有する follow-up record である。Task 23 は bilingual
-documentation synchronization に進む。
+original auditでは新しい`mizar-core` implementation taskを開かなかった。Task 265は
+そのgeneric ownershipだけを後からsupersedeし、Task 31がexact Task-180 slice、Task
+32がdocs-only exhaustive remaining-family decompositionを所有する。bounded
+implementation descendantがlandするまでcoverage/statusはdeferred。diagnosticsと
+Steps 6/7 proof/kernel/artifact workは既存ownerに残る。Task 23はbilingual
+documentation synchronizationに進む。

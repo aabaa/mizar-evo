@@ -478,6 +478,33 @@ work. Every finding maps to a task or a recorded disposition:
       (SSA-013). Refs: spec 13 §13.4.2, 18 §18.10.2;
       template_encoding_audit.md F5.
 
+31. **Exact source-derived contradiction theorem lowering.** [ ]
+    - After mizar-test Tasks 266 and 268, consume only their checker-owned
+      theorem owner, checked contradiction formula, proof-status/skeleton, and
+      explicit terminal-goal payload using the exact mapping selected by Task
+      267. Produce source-derived `CoreIr` and its theorem-obligation data with
+      complete source/provenance identity; pair it with the prepared
+      mizar-test Task-10 type-elaboration snapshot consumer.
+    - Acceptance: deterministic item/formula/proof/obligation identity and
+      fail-closed missing/duplicate/reordered/mismatched payload tests; no core
+      raw-syntax inspection, synthesized proof status/terminal goal, theorem
+      acceptance/discharge, broader formula/proof support, CFG/VC generation,
+      or expectation rebaseline.
+    - Deps: mizar-test Tasks 266-268. Specs: 14-16; architecture 06.
+
+32. **Remaining source-derived `CoreIr` and `ControlFlowIr` task
+    decomposition.** [ ]
+    - After checker Task 247, perform a docs/traceability-only inventory of
+      every remaining declaration/definition, attribute/type, term/formula,
+      non-Task-180 proof, registration/activation/trace/overload, algorithm,
+      hidden-local/contract, and `ControlFlowIr` source family. Give each one a
+      bounded checker-to-core producer/lowering task, prepared mizar-test
+      snapshot consumer, dependency, and explicit forbidden scope.
+    - Reconcile CORE-AUDIT-G001/G002/G005. Do not create synthetic `CoreIr` or
+      CFGs, infer source payloads inside core, implement behavior, change
+      fixtures/expectations/trace status, or promote coverage. Deps: checker
+      Task 247.
+
 ## Recommended Verification
 
 Run after each task:

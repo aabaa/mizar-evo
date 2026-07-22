@@ -347,6 +347,16 @@ Existing classified records remain:
   `generator`, and `dependency_slice` implementation files may be pursued as
   later move-only maintenance tasks, but they are not required for crate exit.
 
+Task 265 current-state ownership addendum: after Core Tasks 31-32, docs-only VC
+Task 30 owns the exact Task-180 theorem-obligation intake/mapping contract and
+exhaustive bounded task decomposition of every source-derived family listed in
+the preceding `external_dependency_gap` row, including all SCA-005 families.
+VC Task 31 implements only the
+accepted contradiction slice; the tasks created by Task 30 own all other
+families and prepared consumers. This changes no source, fixture, expectation,
+trace status, or coverage. Task-15 runner/downstream verifier gaps remain
+deferred until the corresponding real producers and consumers land.
+
 The final quality review and crate-exit status are recorded in
 [crate_exit_report.md](./crate_exit_report.md). No `repo_metadata_conflict` was
 observed.

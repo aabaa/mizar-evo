@@ -961,7 +961,7 @@ resolver / build-system 依存を避ける。
       仕様: [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
       [source_spec_audit.md](./source_spec_audit.md)。
 
-47. **`reconsider` justification の parser 整合。** [ ] deferred
+47. **`reconsider` justification の parser 整合。** [ ]
     - `mizar-checker` task 44 で記録した deferred follow-up。canonical spec は
       Chapter 4、8、15 と Appendix A で `reconsider` の
       `simple_justification` 省略構文を許可し、proof-free evidence で discharge
@@ -971,15 +971,33 @@ resolver / build-system 依存を避ける。
       `fail_parser_consider_reconsider_recovery_001` fixture はまだ
       `reconsider x as set;` を mandatory justification 欠落として分類し、
       reconsider を simple-justification-only host として扱っている。
-      parser-alignment task が grammar、recovery diagnostic、parse-only corpus を
-      semantic intent を変えずに更新できるまで、この挙動を `source_drift` /
+      本taskでgrammar、recovery diagnostic、parse-only corpusをsemantic intentを
+      変えずに更新する。それまでは、この挙動を `source_drift` /
       `test_expectation_drift` として記録しておく。
-    - 依存: `mizar-checker` task 44 と parser grammar-alignment slice。
+    - 依存: 完了済み`mizar-checker` task 44。残るexternal gateはない。
       仕様: [grammar.md](./grammar.md)、
       [doc/spec/ja/04.variables_and_constants.md](../../../spec/ja/04.variables_and_constants.md)、
       [doc/spec/ja/08.type_inference.md](../../../spec/ja/08.type_inference.md)、
       [doc/spec/ja/15.statements.md](../../../spec/ja/15.statements.md)、
       [doc/spec/ja/appendix_a.grammar_summary.md](../../../spec/ja/appendix_a.grammar_summary.md)。
+
+48. **Property-implementation grammar と parse-only corpus。** [ ]
+    - canonical Chapter 7 `property_impl` grammarだけを実装する。definition-local
+      `let M be mode_application;`、`property M.name means` formula definiens +
+      mandatory `existence`/`uniqueness` + optional `coherence`、または
+      `property M.name equals` term definiens + optional `coherence`、最後の`end;`
+      を扱う。mode/property resolutionやoverlap/coherence semantic checkingをせず、
+      ordered source node、recovery、typed syntax accessorを保存する。
+    - means/equals、case/otherwise definiens、mandatory correctness block、optional
+      coherence、malformed owner/property dot、recovery boundaryのspec-derived
+      parse-only pass/fail coverageを追加する。実装時だけdeferred parser trace
+      ownershipを更新し、Task-39 semantic seedはactivateしない。
+    - Task 47への依存なし。両taskは独立にauthorizedされたStep-5/Task-49
+      prerequisite。仕様: Chapter 7 sections 7.4.1/7.8.2、deferred trace
+      `spec.en.07.modes.property_implementation.parser`。
+    - 禁止: checker payload extraction、property overlap/coherence decision、proof
+      acceptance、advanced-semantics runner activation、existing expectation rebaseline、
+      broader definition grammar cleanup。
 
 ## 推奨検証
 

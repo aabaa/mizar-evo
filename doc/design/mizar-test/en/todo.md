@@ -1335,6 +1335,56 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   four CLI hashes, and raw/normalized test-list hashes remain unchanged;
   `spec_coverage_audit.md` remains unchanged. Fresh canonical Step 5 inventory
   finds no next nonempty unchecked task. Steps 6/7 remain deferred.
+- [x] **Task 265: formalize Step 5 execution authority.** Perform a fresh
+  canonical inventory and assign every remaining family either a concrete
+  owner task or a nonempty owner-owned decomposition task. Synchronize the
+  top-level roadmap, paired owner plans/TODOs and current-state audits,
+  traceability deferred ownership, and the specification coverage audit.
+  Change no source, language semantics, `.miz` fixture, expectation, trace
+  status/test list, runner count, or coverage credit. The resulting dependency
+  graph is Task 266 -> Task 267 -> Task 268; Tasks 266 + 268 -> mizar-core Task
+  31; checker Task 247 -> core Task 32; Core Tasks 31 + 32 -> mizar-vc Task 30
+  -> VC 31. Parser Tasks 47-48 and resolver Task 31
+  are independently authorized checker-Task-49 prerequisites, not Task-266
+  dependencies. Checker Task 247, core Task 32, and VC Task 30 exhaustively own
+  the remaining checker, CoreIr/ControlFlowIr, and VC/obligation family
+  decomposition without fabricating payloads. Steps 6/7 stay
+  deferred. Inventory classifications: the missing executable decomposition is
+  `design_drift`; the exact Task-180 final-handoff, property-implementation,
+  same-return conflict, Core, and VC gaps are `source_drift` and `test_gap`;
+  Task-47 recovery is `test_expectation_drift` plus `source_drift`; rebuilding
+  another crate's raw syntax downstream would be a `boundary_violation` and is
+  forbidden. No `spec_gap`, `source_undocumented_behavior`, or
+  `repo_metadata_conflict` was found.
+- [ ] **Task 266: preserve the exact Task-180 checked contradiction in the
+  final checker handoff.** Extend checker-owned, syntax-free
+  `ResolvedTypedAst` data so one resolver theorem owner is linked to the one
+  existing checked `FormulaKind::Contradiction` result for
+  `SourceDerivedContradictionConstantBoundary`, preserving owner/formula
+  identities, source ranges, state, and provenance. `mizar-test` continues to
+  own real AST extraction and exact active-runner assertions; checker owns the
+  final semantic identity and validation. Reject missing, duplicate,
+  reordered, recovered, or mismatched owner/formula rows. Reuse the existing
+  `.miz` and expectation unchanged; add checker and runner unit/corruption/
+  determinism tests and keep four CLI outputs byte-stable. Do not publish
+  falsehood/facts, accept the theorem, create proof status/skeleton/terminal
+  goals, lower Core/CFG/VC payloads, broaden formula shapes, or promote a
+  runner stage. Deps: Task 265 and checker Task 180. Specs: 14 and 16.
+- [ ] **Task 267: decide the omitted-justification theorem handoff contract.**
+  In paired checker/core design documents, specify the checker-owned
+  pending-auto-proof status, proof skeleton, explicit terminal-goal payload,
+  source/provenance links, malformed/missing behavior, and exact mapping into
+  core types for an ordinary theorem with no written justification. This is a
+  docs-only task; it must not equate omitted justification with accepted proof,
+  infer a terminal goal from raw syntax inside core, run proof search, or edit
+  fixtures/expectations/trace status. Deps: Task 266. Specs: 15 and 16;
+  architecture 06.
+- [ ] **Task 268: implement the accepted Task-267 checker producer.** Extend
+  only the exact Task-180 final handoff with the Task-267 proof status,
+  skeleton, and terminal-goal payload. Add fail-closed checker/runner tests for
+  missing, duplicate, reordered, corrupt, and owner/formula/proof mismatch;
+  keep theorem acceptance, discharge, Core/VC generation, broader proof forms,
+  existing expectation changes, and Steps 6/7 outside scope. Deps: Task 267.
 
 For every source-moving task, require review-only checks for visibility drift,
 test-discovery drift, owner-boundary drift, source/docs inconsistency, and

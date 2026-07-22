@@ -2321,3 +2321,12 @@ metadata 403/367、type 235/223、pass/fail 219/184、shared 5 + dedicated 1。
 imported/attributed/argument-bearing、他 side/nesting/depth、acceptance、truth/
 facts、child graph、proof/IR/VC は credit 外または deferred。Step 5 active、
 Steps 6/7 deferred。
+
+Task 265 follow-up ownership override: joint Task 266はexact Task-180 final
+`ResolvedTypedAst` theorem-owner-to-checked-contradiction projectionだけを所有する。
+Task 267はomitted-justification proof/terminal-goal representationを別に決定し、
+Task 268がaccepted checker producerを実装する。Checker Task 247はその他全
+AST-wide/Task-49 payload family decompositionを所有し、core Task 32のexhaustive
+remaining-family decompositionへ渡す。Core/VC、truth/fact、
+theorem acceptance、broader semantic creditはdeferredで、current coverage/status/
+testは不変。

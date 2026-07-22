@@ -3,7 +3,7 @@
 > 正本は英語です。英語版:
 > [../en/source_spec_audit.md](../en/source_spec_audit.md)。
 
-状態: task 43 の監査は完了。
+状態: task 43の監査完了。Task 265 current-state ownership addendumはactive。
 
 ## 範囲
 
@@ -20,16 +20,24 @@
 ## 結果
 
 ブロックする non-deferred の `spec_gap`、`boundary_violation`、
-`repo_metadata_conflict` は見つかっていない。task 42 までに実装済みの parser
-挙動は、source、unit test、active parse-only corpus case、traceability metadata に
-表現されている。この監査では、下記の deferred operator-declaration gap を 1 件
-記録した。
+`repo_metadata_conflict`は見つかっていない。task 42までに実装済みのparser
+挙動はsource、unit test、active parse-only corpus case、traceability metadataに
+表現されている。original task-43 auditは下記deferred operator-declaration gap 1件を
+記録し、Task 265はcanonical authorityを持つlater current-state row 2件を追加する。
 
 task 43 で残した follow-up は deferred の 1 件のみである。
 
 | ID | 分類 | フォローアップ | 状態 |
 |---|---|---|---|
 | P-043-01 | `source_drift` / `test_gap` | concrete な `operator_decl` parsing と、`infix_operator`、`prefix_operator`、`postfix_operator`、および infix associativity word の `left`、`right`、`none` に対する active parser corpus coverage。canonical な Appendix A、第 10 章、第 13 章はこれらの語に grammar position をすでに与えているが、現行 parser は declaration keyword を task-5 top-level notation start として認識するか、`ParseRequest::operator_fixity` 経由の Pratt metadata を消費するだけで、source から concrete operator declaration をまだ parse しない。 | deferred parser task 46 |
+
+Task 265はsource、fixture、expectation、trace status、coverageを変更せず、次の
+classified execution ownershipを追加する。
+
+| ID | 分類 | 証拠とexact scope | current owner |
+|---|---|---|---|
+| P-265-47 | `source_drift` / `test_expectation_drift` | Chapters 4/8/15とAppendix Aは`reconsider` justification省略とdocumented proof-block tailを許可するが、current parser/active recovery fixtureはmandatory/simple-justification-only behaviorを保持している。 | active parser Task 47。完了済みchecker Task 44がauthorityで、残るexternal gateはない。 |
+| P-265-48 | `source_drift` / `test_gap` | Chapter 7は`property_impl` means/equals formとcorrectness/coherence blockを定義するが、parserはexact property-implementation formを公開せずparse-only trace rowはdeferred。 | active parser Task 48。parse-only implementation/corpusだけを所有し、Task-39 semantic activationはgatedのまま。 |
 
 `transitivity` は parser では明示的な future-reserved として残す。task 28 はすでに、
 古い TODO 文言が canonical property production とずれていることを design drift として
@@ -53,7 +61,7 @@ task 43 で残した follow-up は deferred の 1 件のみである。
 | parsing は syntax-only: name resolution、type inference、overload selection、proof obligation、cache authority、owner-origin id を生成しない。 | `crates/mizar-parser/src/` は resolver/build/cache へ依存せず、semantic fact を生成しない。 | parser crate test と active corpus は syntax shape/diagnostics のみを検査する。 | 所見なし |
 | grammar code は parser event sink と文書化済み `mizar-syntax` builder/accessor 境界を通して出力し、raw rowan layout に依存しない。 | `src/event.rs`, `src/grammar.rs`, `src/module.rs`, `src/module/annotations.rs` | parser unit test と `mizar-syntax` builder/view test | 所見なし |
 | module skeleton、import、export、visibility wrapper、placeholder top-level dispatch は source order と recovery ownership を保つ。 | `src/module.rs`, `src/sync.rs` | `pass_parser_module_skeleton_001`, `pass_parser_import_items_001`, `pass_parser_export_visibility_001`, late import/export fail case | 所見なし |
-| type、term、formula、statement、proof、definition、structure、registration、template、algorithm、claim、verification-clause、annotation、predicate redefinition-label surface は task 36 まで実装済み。 | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | `tests/coverage/spec_trace.toml` の active parser pass/fail corpus requirement、parser unit test、parse-only snapshot | 所見なし |
+| type、term、formula、statement、proof、definition、structure、registration、template、algorithm、claim、verification-clause、annotation、predicate redefinition-label surface は task 36 まで実装済み。 | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | `tests/coverage/spec_trace.toml` の active parser pass/fail corpus requirement、parser unit test、parse-only snapshot | broad surfaceは実装済み。exact `reconsider`/`property_impl` exceptionはP-265-47/P-265-48。 |
 | term Pratt parsing は `active_from`、newest active same-spelling metadata、prefix/postfix/infix binding power、固定最下位 term operator としての `qua`、non-associative diagnostic を尊重する。 | `src/grammar.rs`, `src/module.rs`, `src/pratt.rs` | parser operator unit test、`crates/mizar-parser/tests/determinism.rs`、`pass_parser_operator_terms_001`、operator fail case | 所見なし |
 | formula Pratt parsing は固定 connective precedence と外側 quantifier parsing を使う。 | `src/module.rs` | `pass_parser_formula_connectives_001` と formula fail corpus | 所見なし |
 | recovery は semicolon、`end`、top-level item start、category-local start、EOF で同期し、recover 可能な syntax には recovery node と diagnostic を出す。 | `src/recovery.rs`, `src/sync.rs`, `src/module.rs`, `src/module/annotations.rs` | fail parser corpus、parser recovery unit test、task-37 consolidation case | 所見なし |

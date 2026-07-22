@@ -10788,3 +10788,13 @@ and source/documentation consistency reviews end with no findings.
 `spec_coverage_audit.md` remains unchanged. Fresh canonical todo inventory has
 no next nonempty Step 5 task; Steps 6 and 7 remain deferred until their existing
 dependency gates are met.
+
+## Task 265 Authority-Only Current-State Addendum
+
+The Task-264 statement above remains the correct historical result of its
+fresh inventory. Task 265 is later human-authorized, docs/traceability-only
+work and supersedes only the absence of a next task: the canonical roadmap now
+opens Tasks 266-268 and the named owner/decomposition tasks. It does not reopen
+the completed module-boundary series or change the 17-path/18,952-line layout,
+private leaves, counts, hashes, source ownership, tests, expectations, or
+coverage. The next executable task is Task 266; Steps 6/7 remain deferred.

@@ -2160,3 +2160,29 @@ backlink, the finite matrix, and 59-owner isolation protect runner 188 within
 plan 403/367, type 235/223, pass/fail 219/184 without rebaselining. Broader modes,
 parentheses, acceptance/truth/child graphs, imported provenance, and proof/IR/VC
 remain uncredited or deferred. Step 5 stays active; Steps 6/7 stay deferred.
+
+## Task 265 STEP 5 Execution-Authority Addendum
+
+Task 265 changes follow-up ownership, not specification coverage status. For
+Chapters 14 and 16, joint Task 266 owns the exact Task-180 final checker
+projection from one resolver theorem owner to one already checked
+`FormulaKind::Contradiction`. For Chapters 15 and 16, Tasks 267-268 separately
+own the omitted-justification proof/terminal-goal contract and its checker
+producer.
+This assigns the former source-to-core handoff gap without crediting truth,
+facts, theorem acceptance, proof closure, CoreIr, VC, or broader formulas.
+
+Core Task 31 is gated on Tasks 266 and 268. Checker Task 247 owns exhaustive
+bounded task decomposition for all other AST-wide declaration, attribute,
+term, formula, proof, registration/trace/overload, and Task-49 payload
+families; Core Task 32 then owns exhaustive decomposition of every remaining
+source-derived `CoreIr`/`ControlFlowIr` family. Gated on Core Tasks 31-32, VC
+Task 30 owns the exact contradiction integration contract plus exhaustive
+decomposition of every other source-derived VC/obligation family named by its
+source/spec audit; VC Task 31 remains only the accepted contradiction slice.
+Parser Tasks 47-48 and resolver Task 31 are independently authorized Task-49
+prerequisites grounded in the existing reconsider, property-implementation,
+and same-return-conflict deferred rows. All chapter statuses, trace statuses,
+test lists, fixtures, expectations, and coverage credit remain unchanged until
+the owning implementation tasks land. Step 5 remains active; Steps 6/7 remain
+deferred.

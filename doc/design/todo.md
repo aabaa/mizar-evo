@@ -91,13 +91,13 @@ is its task 1). "Next work" points into the
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | — | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] complete | parked task 21 | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] complete through task 45 | parked tasks 46-47 | [todo](./mizar-parser/en/todo.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] complete through task 45 | parked task 46; step-5 tasks 47-48 active | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
-| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete; step 4 tasks 45-47 complete; step 5 source-derived bridge tasks 48, 50-231, 233-234, and 236 complete | step 5 source-derived bridge slices; task 49 remains dependency-gated | [todo](./mizar-checker/en/todo.md) |
-| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete; step 4 tasks 27-30 complete | step 5 source-derived bridge | [todo](./mizar-core/en/todo.md) |
-| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | step 5; tasks 27-29 resolved | [todo](./mizar-vc/en/todo.md) |
+| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Task 265 authority decomposition complete | step 5 task 10 plus Tasks 266-268 | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; step-5 bridges through Task 246 complete | Tasks 266-268 final handoff; Task 247 decomposition; task 49 dependency-gated | [todo](./mizar-checker/en/todo.md) |
+| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone and tasks 27-30 complete | step-5 Tasks 31-32 | [todo](./mizar-core/en/todo.md) |
+| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete through task 29 | step-5 Tasks 30-31 | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | step 7 | [todo](./mizar-proof/en/todo.md) |
@@ -1322,23 +1322,77 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    set-enumeration result-type payload extraction beyond task 111,
    `formula_statement`, CoreIr, ControlFlowIr,
    VC, and proof payloads deferred).
-This wave has no fixed task list yet: it is promoted slice by slice, opening
-new numbered owner tasks as each payload family becomes real. Do not fabricate
-semantic payloads; promote corpus rows only with prepared consumers.
+Task 265 replaces the former open-ended promotion rule with the following
+initial execution authority and owner-owned decomposition gates. The order
+below is authoritative for the shared contradiction-to-VC vertical slice.
+Its complete downstream dependency graph is Task 266 -> Task 267 -> Task 268,
+Tasks 266 + 268 -> Core Task 31, checker Task 247 -> Core Task 32, and Core
+Tasks 31 + 32 -> VC Task 30 -> VC Task 31.
+The parser and resolver tasks are independently authorized Task-49
+prerequisites; they do not block Task 266. No row authorizes a producer to
+reconstruct raw syntax owned by another crate or to fabricate truth, facts,
+proof acceptance, terminal goals, Core/VC payloads, or runner success.
 
-1. [ ] AST-wide source-to-checker extraction in `mizar-checker`
-   (declarations beyond builtins, attributes, terms, formulas, proof
-   skeletons), each slice paired with
-   [mizar-test task 10](./mizar-test/en/todo.md) consumer-runner support.
-2. [ ] Lower confirmed checker payloads through `mizar-core` into
-   source-derived `CoreIr` / `ControlFlowIr` snapshots.
-3. [ ] Source-derived VC input families in `mizar-vc` (see
-   [source/spec audit](./mizar-vc/en/source_spec_audit.md) for the open
-   families: branch/match/range/collection loops, term-only termination,
-   Pick non-emptiness, ghost-erasure traces — SCA-005).
-4. [ ] [mizar-checker task 49](./mizar-checker/en/todo.md) — audit-corpus
-   activation and task-29 record revision (deps: steps 2 and 4, plus runner
-   support from this step).
+1. [x] [mizar-test task 265](./mizar-test/en/todo.md) — docs/traceability-only
+   STEP 5 execution-authority decomposition. It assigns the tasks and gates in
+   this list without changing source, specification semantics, fixtures,
+   expectations, trace status, or coverage credit.
+2. [ ] [mizar-test task 266](./mizar-test/en/todo.md) — extend the checker-owned
+   syntax-free `ResolvedTypedAst` final projection for only the existing Task
+   180 standalone `contradiction` theorem. Preserve one resolver theorem owner
+   linked to the existing one checked `FormulaKind::Contradiction` result,
+   including source ranges and provenance. Do not publish truth/facts, accept
+   the theorem, create a proof/terminal goal, or lower Core/VC data.
+3. [ ] [mizar-test task 267](./mizar-test/en/todo.md) — docs-only checker/core
+   contract decision for the omitted-justification theorem form. Choose the
+   checker-owned pending-auto-proof status, proof-skeleton and terminal-goal
+   payload, and exact core mapping without accepting or discharging the
+   theorem.
+4. [ ] [mizar-test task 268](./mizar-test/en/todo.md) — implement only the
+   Task-267 accepted checker-owned proof/terminal-goal producer contract for
+   the exact Task-180 source. It must fail closed on missing, duplicate,
+   reordered, or mismatched owner/formula/proof identities.
+5. [ ] [mizar-core task 31](./mizar-core/en/todo.md) — after Tasks 266 and 268,
+   lower only their real final checker payload into source-derived `CoreIr`
+   and the exact theorem obligation representation selected by Task 267,
+   paired with mizar-test Task-10 snapshot consumption. Core must not infer a
+   proof state or terminal goal from source text.
+6. [ ] [mizar-checker task 247](./mizar-checker/en/todo.md) — docs-only
+   exhaustive decomposition of the remaining AST-wide declaration,
+   attribute, term, formula, proof-skeleton, registration/trace/overload, and
+   Task-49 source payload families into bounded producer tasks with prepared
+   mizar-test Task-10 consumers.
+7. [ ] [mizar-core task 32](./mizar-core/en/todo.md) — after checker Task 247,
+   docs-only exhaustive decomposition of every remaining source-derived
+   `CoreIr`/`ControlFlowIr` family, including declaration/definition,
+   attribute/type, term/formula, non-Task-180 proof,
+   registration/trace/overload, and algorithm/CFG payloads. No synthetic IR or
+   CFG snapshot is permitted.
+8. [ ] [mizar-vc task 30](./mizar-vc/en/todo.md) — after Core Tasks 31-32,
+   specify the exact contradiction theorem-obligation-to-VC mapping and split
+   every remaining source-derived VC/obligation family in the VC source/spec
+   audit into bounded owner tasks. This includes SCA-005 plus registration,
+   redefinition/reduction, call-precondition, formula/definition/binder, and
+   general obligation families. This is docs/traceability-only.
+9. [ ] [mizar-vc task 31](./mizar-vc/en/todo.md) — implement only the exact
+   Task-30 accepted mapping for the Task-180 vertical slice and its prepared
+   mizar-test consumer. Generation may produce an unaccepted VC; it must not
+   imply proof verification, discharge, ATP/kernel execution, or acceptance.
+10. [ ] [mizar-parser task 47](./mizar-parser/en/todo.md) — align omitted and
+    proof-block `reconsider` syntax with the canonical Chapters 4/8/15 and
+    Appendix-A contract.
+11. [ ] [mizar-parser task 48](./mizar-parser/en/todo.md) — implement the exact
+    Chapter-7 `property_impl` grammar and parse-only pass/fail corpus needed by
+    the Task-39 coherence seed.
+12. [ ] [mizar-resolve task 31](./mizar-resolve/en/todo.md) — expose the
+    same-signature/same-return declaration conflict required by the deferred
+    Task-37 seed, without performing checker overload selection.
+13. [ ] [mizar-checker task 49](./mizar-checker/en/todo.md) — audit-corpus
+    activation and task-29 record revision only after its formula/advanced
+    runners, property implementation, registration/trace/overload payloads,
+    and all other stated gates are satisfied. Checker Task 247 must name any
+    still-missing producer tasks rather than treating Tasks 266-268 or the
+    parser/resolver tasks as sufficient by themselves.
 
 Exit: the source-to-semantics and core/VC completion gates hold — active
 semantic corpus coverage replaces extraction-gap sentinels for the promoted
@@ -1450,7 +1504,7 @@ follow-ups, in roadmap order:
 | SCA-002 | `todo` | Spec 24 documentation generation has only architecture/internal boundaries and `mizar-doc` TODOs; focused module specs are still unwritten. | [mizar-doc tasks 2, 4, 6, 9, 11, 13, 16, 18, 21, 23, and 29](./mizar-doc/en/todo.md) (plan step 8) |
 | SCA-003 | `todo` | `@show_*` and `@eval` have parser/syntax coverage but need end-to-end display/evaluation projection boundaries. | [mizar-lsp task 24](./mizar-lsp/en/todo.md), plus `mizar-doc` and VC producer tasks as they expose data (plan step 8) |
 | SCA-004 | `external_dependency_gap` | Resolver name/import/label diagnostics remain crate-local/internal until a real public diagnostic adoption task maps them into stable descriptors. | [mizar-resolve task 30](./mizar-resolve/en/todo.md), [mizar-diagnostics consumer adoption](./mizar-diagnostics/en/consumer_adoption_decision.md) (plan step 8) |
-| SCA-005 | `external_dependency_gap` | Algorithm VC coverage still lacks several source-derived payload families such as branch/match/range/collection loops, term-only termination, Pick non-emptiness, and ghost-erasure traces. | [mizar-vc source/spec audit](./mizar-vc/en/source_spec_audit.md) and step-5 producer integration tasks |
+| SCA-005 | `external_dependency_gap` | Algorithm VC coverage still lacks several source-derived payload families such as branch/match/range/collection loops, term-only termination, Pick non-emptiness, and ghost-erasure traces. | [mizar-vc task 30](./mizar-vc/en/todo.md) owns the exact integration contract and exhaustive bounded task split for SCA-005 and every other source-derived VC family in the VC audit; task 31 implements only the preceding contradiction vertical slice |
 | SCA-006 | `design_drift` (closed) | Phase-16 architecture/internal docs referenced the historical `mizar-extract` split instead of the current `mizar-doc` module names. | Closed by a docs-only sync of architecture 13 and internal 05 EN/JA. |
 
 ## Appendix C — July 2026 Audit Follow-Up Inventory

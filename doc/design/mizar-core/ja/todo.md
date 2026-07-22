@@ -462,6 +462,29 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       consume する。参照: spec 13 §13.4.2、18 §18.10.2;
       template_encoding_audit.md F5。
 
+31. **Exact source-derived contradiction theorem lowering。** [ ]
+    - mizar-test Tasks 266/268後、そのchecker-owned theorem owner、checked
+      contradiction formula、proof-status/skeleton、explicit terminal-goal payloadだけを
+      Task 267のexact mappingで消費する。source/provenance identityを完全に持つ
+      source-derived `CoreIr`/theorem-obligation dataを生成し、prepared mizar-test
+      Task-10 type-elaboration snapshot consumerとpairにする。
+    - deterministic item/formula/proof/obligation identityとmissing/duplicate/
+      reordered/mismatched payloadのfail-closed testを要求する。core raw-syntax
+      inspection、proof status/terminal goal合成、theorem acceptance/discharge、broader
+      formula/proof、CFG/VC generation、expectation rebaselineは禁止する。
+    - 依存: mizar-test Tasks 266-268。仕様: 14-16、architecture 06。
+
+32. **Remaining source-derived `CoreIr`/`ControlFlowIr` task decomposition。** [ ]
+    - checker Task 247後、残る全declaration/definition、attribute/type、term/formula、
+      Task-180以外のproof、registration/activation/trace/overload、algorithm、
+      hidden-local/contract、`ControlFlowIr` source familyをdocs/traceability-onlyで
+      inventoryする。各familyにbounded checker-to-core producer/lowering task、
+      prepared mizar-test snapshot consumer、dependency、explicit forbidden scopeを
+      割り当てる。
+    - CORE-AUDIT-G001/G002/G005をreconcileする。synthetic `CoreIr`/CFG、core内
+      source推論、behavior実装、fixture/expectation/trace status change、coverage
+      promotionは禁止する。依存: checker Task 247。
+
 ## 推奨検証
 
 各タスクの後で実行する:

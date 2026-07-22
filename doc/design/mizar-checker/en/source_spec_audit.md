@@ -2409,3 +2409,12 @@ type 235/223, pass/fail 219/184 are traced by five shared plus one dedicated row
 Imported/attributed/argument-bearing modes, other sides/nesting/depths,
 declaration acceptance, truth/facts, child graphs, and proof/IR/VC remain
 uncredited or deferred. Step 5 is active; Steps 6/7 are deferred.
+
+Task 265 follow-up ownership override: joint Task 266 now owns only the exact
+Task-180 final `ResolvedTypedAst` theorem-owner-to-checked-contradiction
+projection. Task 267 separately decides omitted-justification proof/terminal-
+goal representation and Task 268 implements that accepted checker producer.
+Checker Task 247 owns exhaustive decomposition of all other AST-wide and Task-
+49 payload families and feeds core Task 32's exhaustive remaining-family
+decomposition. Core/VC, truth/facts, theorem acceptance, and broader
+semantic credit remain deferred; current coverage/status/tests are unchanged.

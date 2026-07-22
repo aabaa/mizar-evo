@@ -330,6 +330,15 @@ Downstream consumer gap は分類済みのまま残る:
   private helper / test split は、将来の任意の move-only maintenance task として実施してよいが、
   crate exit には不要である。
 
+Task 265 current-state ownership addendum: Core Tasks 31-32後、docs-only VC Task
+30がexact Task-180 theorem-obligation intake/mapping contractと、直前の
+`external_dependency_gap` rowにある全source-derived family（全SCA-005 familyを
+含む）のexhaustive bounded task
+decompositionを所有する。VC Task 31はaccepted contradiction sliceだけを実装し、
+Task 30が作るtaskがその他全familyとprepared consumerを所有する。source、fixture、
+expectation、trace status、coverageは変更しない。Task-15 runner/downstream verifier
+gapは対応するreal producer/consumerがlandするまでdeferred。
+
 final quality review と crate-exit status は
 [crate_exit_report.md](./crate_exit_report.md) に記録済みである。
 `repo_metadata_conflict` は観測されなかった。

@@ -543,6 +543,21 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       without registry/spec alignment, and no rebaselining existing expectation
       sidecars merely to match current crate-local diagnostics.
 
+31. **Same-signature/same-return declaration conflict.** [ ]
+    - Extend only resolver-owned declaration/signature collection so two
+      ordinary declarations with the same symbol kind, spelling, arity, and
+      argument signature conflict even when their return signatures are also
+      the same, as required by Chapter 19 and checker Task 37. Preserve source
+      declaration identities and deterministic diagnostic ordering; do not run
+      checker semantic type equivalence or overload winner selection.
+    - Add the existing deferred same-return seed to the declaration-symbol
+      runner only after exact resolver unit/corpus, near-miss, order, recovery,
+      and sidecar tests pass. Update its trace row from deferred only in the
+      implementation task; do not rebaseline the existing different-return
+      expectation.
+    - Deps: R-021/R-023; independent Task-49 prerequisite. Spec: Chapter 19
+      section 19.1; checker Task 37 and its deferred trace row.
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records
@@ -550,7 +565,9 @@ Keep `cargo test -p mizar-resolve` green after each task (see
   follow-up implementation overlay, milestone gates, quality score 94/100,
   full verification, human-review surface, task commits, and next-task handoff.
   R-030 is a later integration follow-up opened by the spec-coverage audit; it
-  does not reopen the completed R-001 through R-029 milestone.
+  does not reopen the completed R-001 through R-029 milestone. R-031 is an
+  independently authorized Step-5 corpus increment and likewise does not
+  rewrite that completed milestone.
 
 ## Recommended Verification
 

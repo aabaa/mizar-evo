@@ -514,6 +514,19 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       public code を創作しない。現在の crate-local diagnostics に合わせるためだけに
       既存 expectation sidecar を rebaseline しない。
 
+31. **Same-signature/same-return declaration conflict。** [ ]
+    - Chapter 19とchecker Task 37が要求する、same symbol kind/spelling/arity/
+      argument signatureでreturn signatureもsameのordinary declaration conflictだけを
+      resolver-owned declaration/signature collectionへ追加する。source declaration
+      identityとdeterministic diagnostic orderを保存し、checker semantic type
+      equivalenceやoverload winner selectionは行わない。
+    - exact resolver unit/corpus、near-miss、order、recovery、sidecar test後にだけ既存
+      deferred same-return seedをdeclaration-symbol runnerへ追加する。trace rowの
+      deferred解除はimplementation taskで行い、既存different-return expectationは
+      rebaselineしない。
+    - 依存: R-021/R-023。独立Task-49 prerequisite。仕様: Chapter 19 section
+      19.1、checker Task 37とdeferred trace row。
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、
@@ -521,7 +534,8 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   quality score 94/100、full verification、human-review surface、task commit、
   next-task handoff を記録した。R-030 は spec coverage audit により開かれた
   後続 integration follow-up であり、完了済みの R-001 から R-029 milestone を
-  再オープンしない。
+  再オープンしない。R-031も独立にauthorizedされたStep-5 corpus incrementであり、
+  完了milestoneを書き換えない。
 
 ## 推奨検証
 

@@ -1152,7 +1152,7 @@ stage = "parse_only"
 status = "deferred"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 39 documents property `means`/`equals` implementation syntax plus the optional `coherence` block, but active parser fixtures do not yet cover property implementation definitions and the parser currently does not expose this definition form. Add pass/fail parse-only coverage for property implementations and overlap-coherence grammar after parser support lands."
+deferred_reason = "Task 39 documents property `means`/`equals` implementation syntax plus the optional `coherence` block, but active parser fixtures do not yet cover property implementation definitions and the parser currently does not expose this definition form. Parser Task 48 now owns the exact Chapter-7 grammar and pass/fail parse-only corpus; keep this row deferred until that implementation task lands."
 tests = []
 
 [[requirement]]
@@ -1163,7 +1163,7 @@ stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Task 44 / SSA-015 decision: omitted `reconsider` justification is syntax-admissible but semantically accepted only when proof-free widening, inheritance, cluster-closure, or already recorded local type facts discharge every target-type obligation. The omitted form must not invoke proof search; otherwise it reports `type.narrowing_requires_proof`. Seed remains inactive until an advanced_semantics runner and source-to-checker reconsider/coercion payload extraction exist. Existing active parser recovery for omitted reconsider justification is classified as test_expectation_drift/source_drift and assigned to deferred parser follow-up task 47."
+notes = "Task 44 / SSA-015 decision: omitted `reconsider` justification is syntax-admissible but semantically accepted only when proof-free widening, inheritance, cluster-closure, or already recorded local type facts discharge every target-type obligation. The omitted form must not invoke proof search; otherwise it reports `type.narrowing_requires_proof`. Seed remains inactive until an advanced_semantics runner and source-to-checker reconsider/coercion payload extraction exist. Existing active parser recovery for omitted reconsider justification is classified as test_expectation_drift/source_drift and assigned to parser Task 47, promoted as an independent Step-5 prerequisite by Task 265."
 depends_on = [
   "spec.en.15.statements.syntax",
 ]
@@ -2715,7 +2715,7 @@ stage = "declaration_symbol"
 status = "deferred"
 required = true
 coverage = "fail"
-deferred_reason = "Task 37 / SSA-010 generalizes ordinary declaration conflicts to identical argument signatures regardless of return type, but the active declaration_symbol resolver runner currently diagnoses only the different-return signature-conflict slice. Keep the same-return seed inactive until resolver support and the declaration-symbol runner expose the matching diagnostic."
+deferred_reason = "Task 37 / SSA-010 generalizes ordinary declaration conflicts to identical argument signatures regardless of return type, but the active declaration_symbol resolver runner currently diagnoses only the different-return signature-conflict slice. Resolver Task 31 now owns the exact same-return diagnostic and declaration-symbol consumer; keep this row deferred until that implementation task lands."
 depends_on = [
   "spec.en.10.functor_definitions.parser",
 ]
@@ -2968,7 +2968,7 @@ stage = "formula_statement"
 status = "deferred"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet: mizar-test has no active formula_statement runner/tag gate, and mizar-checker still lacks AST-wide source-to-checker extraction for statement assumptions, formula payloads, local proof contexts, and recorded facts. Add equality, predicate, quantifier, assumption, label, and statement-failure corpus cases only after MC-G019/MC-G020 and runner support are implemented."
+deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet: mizar-test has no active formula_statement runner/tag gate, and mizar-checker still lacks AST-wide source-to-checker extraction for statement assumptions, formula payloads, local proof contexts, and recorded facts. Joint Task 266 owns only the exact Task-180 theorem-owner/checked-contradiction final projection and grants no formula_statement credit; checker Task 247 owns exhaustive decomposition of all remaining MC-G019/MC-G020 producer and runner tasks."
 tests = []
 
 [[requirement]]
@@ -5347,7 +5347,7 @@ stage = "proof_verification"
 status = "deferred"
 required = true
 coverage = "snapshot"
-deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines: mizar-test has no proof_verification runner or snapshot comparison command, VC/proof/kernel handoff crates are not available, and source-to-checker extraction cannot yet feed proof/algorithm payloads through CoreIr into ControlFlowIr. Add ControlFlowIr proof_verification snapshots only after the runner, source-to-core extraction, and downstream verification seams exist."
+deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines. Core Task 32 now owns exhaustive decomposition of every remaining source-derived CoreIr/ControlFlowIr family after checker Task 247, including the algorithm/ControlFlow producer inventory; keep this row deferred until those real payloads, a prepared runner, and downstream verification seams exist."
 tests = []
 
 [[requirement]]
@@ -5358,7 +5358,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "snapshot"
-deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines: mizar-test currently compares committed snapshots only for parse-only SurfaceAst output, the active type_elaboration runner has only a narrow reserve-only builtin declaration source-to-checker slice, and no source-derived checker payload is lowered into CoreIr yet. Add CoreIr corpus snapshots only after mizar-test supports type_elaboration snapshot comparison and source-to-core payload seams exist."
+deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines. Joint Tasks 266-268 now own the exact Task-180 final checker/proof handoff and core Task 31 owns its first source-derived CoreIr plus prepared type-elaboration snapshot consumer; after checker Task 247, core Task 32 owns exhaustive decomposition of every other source-derived CoreIr/ControlFlowIr family. Keep this row deferred until the corresponding implementation tasks land."
 tests = []
 
 [[requirement]]
@@ -5369,7 +5369,7 @@ stage = "proof_verification"
 status = "deferred"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 15 records this as an external_dependency_gap rather than adding fake active fixtures: mizar-test has no active proof_verification runner/tag gate, source-to-core and source-to-VC extraction seams are unavailable for `.miz` corpus inputs, ATP/proof/kernel/artifact consumers are not wired to mizar-vc outputs, and current parser/type-elaboration runners cannot validate VC generation, status policy, deterministic discharge, dependency-slice fingerprints, or proof-verification outcomes. Add active corpus cases only after proof_verification runner support, source-to-core/source-to-VC extraction, and downstream verifier/artifact seams exist."
+deferred_reason = "Task 15 records this as an external_dependency_gap rather than adding fake active fixtures. After core Tasks 31-32, VC Task 30 owns the exact contradiction integration contract and exhaustive decomposition of every remaining source-derived VC/obligation family in the source/spec audit, including SCA-005; VC Task 31 owns only the accepted Task-180 contradiction mapping and prepared consumer. Keep this row deferred until the corresponding core/VC tasks, an honest runner contract, and the required downstream verifier/artifact seams exist."
 tests = []
 
 [[requirement]]

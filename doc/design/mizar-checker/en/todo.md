@@ -1046,8 +1046,11 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Acceptance: `mizar-test` plan shows the fixtures active with zero plan
       errors; deferred records no longer double-count them.
     - Verify: `cargo test -p mizar-test`.
-    - Deps: 35-44 decided; external: mizar-test runner support. Refs:
-      semantic_spec_audit.md "Adversarial Corpus".
+    - Deps: completed tasks 35-44; parser Tasks 47-48; resolver Task 31;
+      checker Task 247 and every concrete producer task it creates; mizar-test
+      Task-10 formula/advanced runners and source-payload consumers. Tasks
+      266-268 alone are insufficient. Refs: semantic_spec_audit.md
+      "Adversarial Corpus".
 
 50. **Source-derived attributed reserve evidence-gap bridge.** [x]
     - Extend the task-48 reserve source declaration seam just far enough to
@@ -4288,3 +4291,43 @@ Check the task off here once tests pass.
 - [x] Synchronize runner 188, plan 403/367, type 235/223, pass/fail 219/184,
   five shared plus one dedicated backlink. Step 5 remains active; Steps 6/7
   remain deferred; broader and downstream semantics receive no credit.
+
+## Tasks 266-268 Final Checker Handoff Queue
+
+- [ ] **Task 266: exact Task-180 statement-semantic projection.** Extend
+  checker-owned `ResolvedTypedAst` with a syntax-free final projection linking
+  exactly one resolver theorem owner to exactly one existing checked
+  `FormulaKind::Contradiction`. Preserve owner/formula identity, state, source
+  ranges, and provenance; reject missing, duplicate, reordered, recovered, or
+  mismatched rows. `mizar-test` owns AST extraction and exact active-runner
+  assertions. Reuse the existing source/expectation unchanged. Do not publish
+  truth/facts, accept the theorem, add proof/terminal-goal/Core/VC payloads,
+  broaden formula shapes, or promote a runner stage. Deps: mizar-test Task 265
+  and checker Task 180. Specs: 14/16.
+- [ ] **Task 267: omitted-justification proof-handoff contract.** Docs-only:
+  define the checker-owned pending-auto-proof status, proof skeleton, explicit
+  terminal-goal payload, source/provenance links, malformed/missing behavior,
+  and exact core mapping for an ordinary theorem without a written
+  justification. Do not implement code, infer from raw syntax in core, run
+  proof search, or equate omission with acceptance. Deps: Task 266. Specs:
+  15/16; architecture 06.
+- [ ] **Task 268: implement the accepted Task-267 producer.** Extend only the
+  exact Task-180 final handoff and fail closed on missing, duplicate, reordered,
+  corrupt, or owner/formula/proof-mismatched data. Theorem acceptance,
+  discharge, Core/VC generation, broader proof forms, expectation changes, and
+  Steps 6/7 remain forbidden. Deps: Task 267.
+
+## Task 247 STEP 5 Payload-Family Decomposition
+
+- [ ] Inventory all remaining AST-wide declaration, attribute, term, formula,
+  proof-skeleton, registration/activation/trace, overload, and Task-49 payload
+  families against canonical specs, existing `.miz`, trace, expectations, and
+  checker APIs. Create bounded producer tasks with prepared mizar-test Task-10
+  consumers and explicit forbidden scope. This is docs/traceability-only; do
+  not change source, fixtures, expectations, trace status, or coverage credit.
+  Parser Tasks 47-48 and resolver Task 31 remain independent prerequisites.
+  Task 49 stays dependency-gated until every prerequisite in its own row is
+  satisfied. Dependency: none on Task 266; its inventory may be reused, but
+  Task 247 must cover all remaining families rather than treating the
+  contradiction slice as general.
+  Its accepted producer-task graph is the input authority for core Task 32.

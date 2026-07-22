@@ -988,8 +988,10 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 受け入れ条件: `mizar-test` plan が fixture を active と表示し plan
       error が 0 件。deferred record が二重計上されない。
     - 検証: `cargo test -p mizar-test`。
-    - 依存: 35-44 の決定; 外部: mizar-test の runner 対応。参照:
-      semantic_spec_audit.md「Adversarial Corpus」。
+    - 依存: 完了済みtasks 35-44、parser Tasks 47-48、resolver Task 31、checker
+      Task 247とそこで作成する全concrete producer task、mizar-test Task-10
+      formula/advanced runnerとsource-payload consumer。Tasks 266-268だけでは
+      不十分。参照: semantic_spec_audit.md「Adversarial Corpus」。
 
 50. **Source-derived attributed reserve evidence-gap bridge.** [x]
     - task 48 の reserve source declaration seam を、resolver `SymbolEnv` に
@@ -4081,3 +4083,38 @@ cargo test -p mizar-test
 - [x] runner 188、plan 403/367、type 235/223、pass/fail 219/184、shared 5 +
   dedicated 1 を同期。Step 5 active、Steps 6/7 deferred、broader/downstream
   semantics は credit 外。
+
+## Tasks 266-268 Final Checker Handoff Queue
+
+- [ ] **Task 266: exact Task-180 statement-semantic projection。** checker-owned
+  `ResolvedTypedAst`へsyntax-free final projectionを追加し、resolver theorem owner
+  1件を既存checked `FormulaKind::Contradiction` 1件へlinkする。owner/formula
+  identity、state、source range、provenanceを保存し、missing/duplicate/reordered/
+  recovered/mismatched rowをrejectする。`mizar-test`はAST extractionとexact active-
+  runner assertionを所有する。既存source/expectationは不変で再利用する。truth/
+  fact publication、theorem acceptance、proof/terminal-goal/Core/VC payload、broader
+  formula、runner-stage promotionは禁止する。依存: mizar-test Task 265、checker
+  Task 180。仕様: 14/16。
+- [ ] **Task 267: omitted-justification proof-handoff contract。** docs-onlyで、
+  written justificationのないordinary theoremに対するchecker-owned pending-auto-
+  proof status、proof skeleton、explicit terminal-goal payload、source/provenance
+  link、malformed/missing behavior、exact core mappingを定義する。code実装、coreの
+  raw syntax推論、proof search、omissionとacceptanceの同一視は禁止する。依存:
+  Task 266。仕様: 15/16、architecture 06。
+- [ ] **Task 268: accepted Task-267 producerを実装する。** exact Task-180 final
+  handoffだけを拡張し、missing/duplicate/reordered/corrupt/owner-formula-proof mismatch
+  をfail closedにする。theorem acceptance、discharge、Core/VC generation、broader
+  proof form、expectation change、Steps 6/7は禁止する。依存: Task 267。
+
+## Task 247 STEP 5 Payload-Family Decomposition
+
+- [ ] 残るAST-wide declaration、attribute、term、formula、proof-skeleton、
+  registration/activation/trace、overload、Task-49 payload familyをcanonical spec、
+  既存`.miz`、trace、expectation、checker APIに対してinventoryする。prepared
+  mizar-test Task-10 consumerとexplicit forbidden scopeを持つbounded producer task
+  を作る。docs/traceability-onlyであり、source、fixture、expectation、trace status、
+  coverage creditを変更しない。Parser Tasks 47-48とresolver Task 31は独立
+  prerequisiteのまま。Task 49は自身の全prerequisite成立までdependency-gated。
+  Task 266へのdependencyはない。そのinventoryは再利用できるが、contradiction
+  sliceをgeneral扱いしない。
+  accepted producer-task graphはcore Task 32のinput authorityとなる。
