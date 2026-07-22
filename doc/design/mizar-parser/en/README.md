@@ -20,12 +20,14 @@ expansion, parse-only `SurfaceAst` snapshot baselines, parser determinism
 coverage, the parser-owned valid-UTF-8 fuzz target, and frontend passthrough
 follow-through audit, plus a private annotation/test module-boundary split.
 Task 43 source/spec correspondence and reserved-word coverage audit is
-complete, task 44 bilingual documentation synchronization is complete, and task
-45 public enum policy is complete. Deferred task 46 is recorded for future
-concrete operator declarations.
+complete, task 44 bilingual documentation synchronization is complete, task
+45 public enum policy is complete, and task 47 aligns all three canonical
+`reconsider` tail forms. Task 48 is the next authorized nonempty Step-5 parser
+task. Task 46 remains deferred for future concrete operator declarations.
 
 Module specs and audits:
 
+- `00.crate_plan.md`
 - `grammar.md`
 - `pratt.md`
 - `recovery.md`

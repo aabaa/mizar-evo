@@ -1321,3 +1321,12 @@ change を確認する。focused tests、`cargo test -p mizar-test`、
 workspace `cargo test`、`git diff --check` を実行し、全 command が成功するまで
 failure を修正して再実行する。test/verification failure 自体を series の停止
 理由にしない。
+
+## Parser Task 47 / parse-only completion
+
+spec-derived pass fixture 1件はomitted-justification/proof-block `reconsider` rowだけを
+activateする。existing mixed recovery `.miz`は変更せず、sidecarからobsolete omitted-tail
+parser diagnosticだけを削除した。active planは405/369、parse-onlyは97、pass/failは
+221/184である。declaration/type/proof admissionは5/188/1のまま。semantic reconsider
+acceptanceとE0102 productionはowning checker taskへdeferredのままで、Parser Task 48と
+Steps 6/7はpromoteしない。

@@ -1494,3 +1494,13 @@ accidental behavior changes. Run focused tests, `cargo test -p mizar-test`,
 workspace `cargo test`, and `git diff --check`; repair and rerun failures until
 all commands pass. A test or verification failure is not itself a reason to
 stop this series.
+
+## Parser Task 47 / Parse-Only Completion
+
+One spec-derived pass fixture activates only the omitted-justification and
+proof-block `reconsider` rows. The existing mixed recovery `.miz` remains
+unchanged; its sidecar drops only the obsolete omitted-tail parser diagnostic.
+The active plan is 405/369, parse-only is 97, and pass/fail is 221/184.
+Declaration/type/proof admissions remain 5/188/1. Semantic reconsider
+acceptance and E0102 production remain deferred to their owning checker tasks;
+Parser Task 48 and Steps 6/7 are not promoted.

@@ -999,20 +999,19 @@ older numeric syntax task references appear to disagree, prefer
       context. Spec: [grammar.md](./grammar.md), [pratt.md](./pratt.md),
       [source_spec_audit.md](./source_spec_audit.md).
 
-47. **`reconsider` justification parser alignment.** [ ]
-    - Deferred follow-up recorded by `mizar-checker` task 44. The canonical
-      spec now permits omitted `reconsider` `simple_justification` syntax in
-      Chapters 4, 8, and 15 plus Appendix A, then lets the semantic
-      `type.narrowing_requires_proof` gate reject omitted cases that cannot be
-      discharged by proof-free evidence. It also makes the long-documented
-      proof-block `reconsider` form explicit through `reconsider_tail`. The
-      current parser implementation and active
-      `fail_parser_consider_reconsider_recovery_001` fixture still classify
-      `reconsider x as set;` as missing mandatory justification and treat
-      reconsider as a simple-justification-only host. This task updates
-      grammar, recovery diagnostics, and the parse-only corpus without changing
-      semantic intent; until then, keep that behavior recorded as
-      `source_drift` / `test_expectation_drift`.
+47. **`reconsider` justification parser alignment.** [x]
+    - Complete. The parser now implements the canonical omitted, explicit
+      `by`, and proof-block `reconsider_tail` forms without changing semantic
+      intent. The omitted form has no justification child or parser diagnostic;
+      the proof form reuses `ProofBlock` and `MissingEnd` recovery while the
+      enclosing statement owns the final semicolon. `consider` remains a
+      mandatory-simple host.
+    - One new active parse-only pass fixture covers the omitted/proof forms,
+      the obsolete omitted-tail diagnostic was removed from the existing mixed
+      recovery expectation without editing its `.miz`, and exactly the two
+      Task-47 trace rows are covered. The prior `source_drift`,
+      `test_expectation_drift`, `test_gap`, and paired-doc `design_drift` are
+      closed for this slice.
     - Deps: completed `mizar-checker` task 44; no remaining external gate.
       Spec: [grammar.md](./grammar.md),
       [doc/spec/en/04.variables_and_constants.md](../../../spec/en/04.variables_and_constants.md),

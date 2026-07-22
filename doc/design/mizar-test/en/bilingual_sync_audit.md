@@ -183,3 +183,12 @@ unchanged 404/369 and 220/184 plan/pass-fail counts, and unchanged parse/type/
 proof admissions. Both also record the current 18-path/20,088-line production
 manifest, unchanged path hash `63e4e770...`, and content hash `7e5adca2...`.
 No bilingual drift remains in this increment.
+
+## Parser Task 47 / Parse-Only Pair Recheck
+
+The paired plan, TODO, harness, traceability, and module-boundary documents
+record the same new case, exactly two covered requirement rows, unchanged
+existing `.miz` source, syntax-only credit boundary, 405/369 plan, 97/97 parse,
+221/184 pass/fail, and unchanged 5/188/1 declaration/type/proof admissions.
+Both languages record the same CLI, test-list, and unchanged production
+manifest hashes. No bilingual drift remains in Task 47.

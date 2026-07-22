@@ -1,0 +1,5 @@
+reconsider x as set;
+reconsider y = x as set
+proof
+  thus thesis;
+end;

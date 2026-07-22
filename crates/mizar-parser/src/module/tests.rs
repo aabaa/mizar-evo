@@ -6068,13 +6068,6 @@ fn proof_blocks_remain_rejected_for_simple_justification_only_hosts() {
                 ("proof", ParserTokenKind::ReservedWord),
                 ("end", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
-                ("reconsider", ParserTokenKind::ReservedWord),
-                ("z", ParserTokenKind::Identifier),
-                ("as", ParserTokenKind::ReservedWord),
-                ("set", ParserTokenKind::ReservedWord),
-                ("proof", ParserTokenKind::ReservedWord),
-                ("end", ParserTokenKind::ReservedWord),
-                (";", ParserTokenKind::ReservedSymbol),
                 ("x", ParserTokenKind::Identifier),
                 ("=", ParserTokenKind::ReservedSymbol),
                 ("y", ParserTokenKind::Identifier),
@@ -14710,6 +14703,227 @@ fn parser_parses_task18_consider_and_reconsider_nodes() {
 }
 
 #[test]
+fn parser_task47_parses_all_reconsider_tail_forms_with_exact_ownership() {
+    let source_id = source_id(247);
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(
+            source_id,
+            &[
+                ("reconsider", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("as", ParserTokenKind::ReservedWord),
+                ("set", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("reconsider", ParserTokenKind::ReservedWord),
+                ("y", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("as", ParserTokenKind::ReservedWord),
+                ("set", ParserTokenKind::ReservedWord),
+                ("by", ParserTokenKind::ReservedWord),
+                ("A", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("reconsider", ParserTokenKind::ReservedWord),
+                ("z", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("w", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("as", ParserTokenKind::ReservedWord),
+                ("set", ParserTokenKind::ReservedWord),
+                ("proof", ParserTokenKind::ReservedWord),
+                ("thus", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        ),
+        Vec::new(),
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "all canonical reconsider tails should parse: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("canonical reconsider tails should retain an AST");
+    let statements = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::ReconsiderStatement))
+        .collect::<Vec<_>>();
+    assert_eq!(statements.len(), 3);
+
+    let omitted_children = structural_children(&ast, statements[0]);
+    assert!(!omitted_children.iter().any(|child| matches!(
+        child.kind,
+        SurfaceNodeKind::JustificationClause | SurfaceNodeKind::ProofBlock
+    )));
+    assert_eq!(
+        direct_token_texts(&ast, statements[0]),
+        vec!["reconsider", "as", ";"]
+    );
+
+    let explicit_children = structural_children(&ast, statements[1]);
+    assert_eq!(
+        explicit_children
+            .iter()
+            .filter(|child| matches!(child.kind, SurfaceNodeKind::JustificationClause))
+            .count(),
+        1,
+        "explicit-simple reconsider should own exactly one JustificationClause"
+    );
+    assert_eq!(
+        explicit_children
+            .iter()
+            .filter(|child| matches!(child.kind, SurfaceNodeKind::ProofBlock))
+            .count(),
+        0
+    );
+
+    let proof_children = structural_children(&ast, statements[2]);
+    assert_eq!(
+        proof_children
+            .iter()
+            .filter(|child| matches!(child.kind, SurfaceNodeKind::ProofBlock))
+            .count(),
+        1,
+        "proof-tail reconsider should own exactly one ProofBlock child"
+    );
+    assert_eq!(
+        proof_children
+            .iter()
+            .filter(|child| matches!(child.kind, SurfaceNodeKind::JustificationClause))
+            .count(),
+        0
+    );
+    let proof = proof_children
+        .iter()
+        .find(|child| matches!(child.kind, SurfaceNodeKind::ProofBlock))
+        .expect("proof-tail reconsider should own one ProofBlock child");
+    assert_eq!(direct_token_texts(&ast, proof), vec!["proof", "end"]);
+    assert_eq!(
+        direct_token_texts(&ast, statements[2]),
+        vec!["reconsider", ",", "as", ";"],
+        "the reconsider statement, not ProofBlock, should own the final semicolon"
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ReconsiderItem)),
+        4
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(_)
+        )),
+        0,
+        "canonical tails should not insert recovery nodes"
+    );
+}
+
+#[test]
+fn parser_task47_keeps_reconsider_computation_justifications_forbidden() {
+    let source_id = source_id(249);
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(
+            source_id,
+            &[
+                ("reconsider", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("as", ParserTokenKind::ReservedWord),
+                ("set", ParserTokenKind::ReservedWord),
+                ("by", ParserTokenKind::ReservedWord),
+                ("computation", ParserTokenKind::ReservedWord),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("steps", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("1", ParserTokenKind::Numeral),
+                (")", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        ),
+        Vec::new(),
+    ));
+
+    assert!(
+        output
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedJustification),
+        "reconsider computation tails should retain malformed-simple diagnostics"
+    );
+    let ast = output
+        .ast
+        .expect("forbidden reconsider computation tail should recover an AST");
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ComputationJustification
+        )),
+        0,
+        "reconsider must not admit computation justification nodes"
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ReconsiderStatement
+        )),
+        1
+    );
+}
+
+#[test]
+fn parser_task47_unterminated_reconsider_proof_reuses_missing_end_recovery() {
+    let source_id = source_id(248);
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(
+            source_id,
+            &[
+                ("reconsider", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("as", ParserTokenKind::ReservedWord),
+                ("set", ParserTokenKind::ReservedWord),
+                ("proof", ParserTokenKind::ReservedWord),
+                ("thus", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        ),
+        Vec::new(),
+    ));
+
+    let ast = output
+        .ast
+        .expect("unterminated reconsider proof should recover an AST");
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ProofBlock)),
+        1
+    );
+    assert!(
+        output
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingEnd)
+    );
+    assert!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingEnd)
+        )) >= 1,
+        "reconsider proof tails should reuse proof-block missing-end recovery"
+    );
+}
+
+#[test]
 fn parser_recovers_task18_consider_and_reconsider_gaps() {
     let source_id = source_id(94);
     let output = parse(ParseRequest::new(
@@ -14869,7 +15083,8 @@ fn parser_recovers_task18_consider_and_reconsider_gaps() {
         count_nodes(&ast, |kind| matches!(
             kind,
             SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingProofStep)
-        )) >= 3
+        )) >= 2,
+        "the omitted reconsider tail no longer contributes MissingProofStep recovery"
     );
 }
 

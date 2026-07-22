@@ -967,16 +967,14 @@ computation` remains accepted only by the explicit task-17 compact-statement
 host until a later specification explicitly admits it for more statement
 kinds.
 
-Task 18 therefore requires an explicit `by references` tail and recovers a
-missing tail as malformed justification syntax instead of silently accepting an
-empty justification. Checker task 44 later changed the canonical Chapter 4,
-8, 15, and Appendix A contract for `reconsider`: omitted `reconsider`
-justification is syntax-admissible but semantically gated by
-`type.narrowing_requires_proof`, and proof-block `reconsider` is explicit in
-`reconsider_tail`. Parser task 47 owns aligning this implemented task-18
-behavior and its active parse-only fixture with the updated canonical syntax;
-until then the mismatch is recorded as `source_drift` /
-`test_expectation_drift`.
+Task 18 originally required an explicit `by references` tail and recovered a
+missing tail as malformed justification syntax. Checker task 44 later changed
+the canonical Chapter 4, 8, 15, and Appendix A contract for `reconsider`:
+omitted `reconsider` justification is syntax-admissible but semantically gated
+by `type.narrowing_requires_proof`, and proof-block `reconsider` is explicit in
+`reconsider_tail`. Parser task 47 supersedes only that historical
+`reconsider` tail rule and closes the prior `source_drift` /
+`test_expectation_drift`; `consider` remains mandatory-simple.
 
 ```ebnf
 statement_item       ::= ... | consider_statement | reconsider_statement ;
@@ -984,8 +982,9 @@ consider_statement  ::= "consider" qualified_vars
                          "such" condition_list simple_justification ";" ;
 reconsider_statement::= "reconsider" reconsider_item
                          { "," reconsider_item }
-                         "as" type_expression simple_justification ";" ;
+                         "as" type_expression reconsider_tail ;
 reconsider_item     ::= identifier [ "=" term_expression ] ;
+reconsider_tail     ::= [ simple_justification ] ";" | proof ";" ;
 simple_justification::= "by" references ;
 ```
 
@@ -1001,12 +1000,14 @@ labels.
 
 `ReconsiderStatement` owns the `reconsider` token, source-ordered
 `ReconsiderItem` children and comma tokens, the `as` token, one
-`TypeExpression`, a simple `JustificationClause`, and the semicolon when
-present. `ReconsiderItem` owns either an identifier token for an existing name
-or an identifier, `=`, and a `TermExpression` for a newly introduced narrowed
-name. The parser does not resolve whether an identifier is already bound, check
-that all reconsidered terms have the target type, or generate proof
-obligations.
+`TypeExpression`, an optional simple `JustificationClause` or one
+`ProofBlock`, and the final semicolon. A `ProofBlock` owns its `proof`,
+reasoning body, and `end`; omission produces neither a justification child nor
+a parser diagnostic. `ReconsiderItem` owns either an identifier token for an
+existing name or an identifier, `=`, and a `TermExpression` for a newly
+introduced narrowed name. The parser does not resolve whether an identifier is
+already bound, check that all reconsidered terms have the target type, or
+generate proof obligations.
 
 Task 18 recovery reuses existing syntax diagnostics. Missing or malformed
 qualified variables and target types use `MalformedTypeExpression` plus
@@ -1014,11 +1015,13 @@ qualified variables and target types use `MalformedTypeExpression` plus
 conditions use `MalformedFormulaExpression` plus `MissingFormula` or malformed
 condition-list recovery. Missing or malformed `ReconsiderItem` identifiers or
 right-hand-side terms use `MalformedTermExpression` plus `MissingTerm`.
-Missing or malformed mandatory `by references` tails use
-`MalformedJustification` plus `MissingProofStep` or task-17 malformed
-reference-list recovery. Malformed statement tails synchronize at semicolon,
-EOF, or the next statement/item boundary and preserve skipped source under
-`SkippedToken` recovery when tokens must be skipped.
+Missing or malformed mandatory `by references` tails on `consider`, and
+malformed explicit `by` tails on `reconsider`, use `MalformedJustification`
+plus `MissingProofStep` or task-17 malformed reference-list recovery. An
+omitted `reconsider` tail is valid syntax. A `reconsider` proof block reuses
+the ordinary `MissingEnd` recovery. Malformed statement tails synchronize at
+semicolon, EOF, or the next statement/item boundary and preserve skipped
+source under `SkippedToken` recovery when tokens must be skipped.
 
 Task 18 tests must pin: concrete `consider` with the canonical shared-type
 shape `consider x, y being T ... by ...`, concrete `consider` with multiple
@@ -1276,9 +1279,9 @@ present. The following semicolon belongs to the enclosing theorem item or
 statement. Task 22 admits `ProofBlock` as a full justification tail on
 theorem/lemma items and on already-concrete statement hosts whose canonical
 grammar uses `justification`: `ConclusionStatement` and `CompactStatement`.
-Hosts whose grammar uses `simple_justification` (`let`, `consider`,
-`reconsider`, iterative equality steps, and `per cases`) continue to accept
-only task-17 `by` clauses.
+Hosts whose grammar uses `simple_justification` (`let`, `consider`, iterative
+equality steps, and `per cases`) continue to accept only task-17 `by` clauses.
+Task 47 separately admits `ProofBlock` through `reconsider_tail`.
 
 The concrete theorem path intentionally keeps short legacy fragments such as
 `theorem T;` as token-preserving placeholders, because earlier parser skeleton

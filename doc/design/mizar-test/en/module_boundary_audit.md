@@ -10934,3 +10934,27 @@ The raw/normalized 276-test-list hashes remain
 `1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`.
 Only plan and declaration-symbol bytes change; parse, type, proof, test-list,
 path, facade/leaf ownership, and Steps 6/7 status remain stable.
+
+## Parser Task 47 Parse-Only Current-State Addendum
+
+Task 47 changes no `mizar-test` production path or source line. The production
+manifest remains 18 paths / 20,088 lines, path hash
+`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`,
+and ordered content hash
+`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`.
+`runner.rs` remains the 2,372-line facade/top-level orchestrator, and the
+private-leaf ownership remains unchanged.
+
+Active counts are parse/declaration/type/proof 97/5/188/1, plan 405/369,
+parse coverage 43/42, pass/fail 221/184, warnings/errors 23/0, and mizar-test
+library tests 276. Plan/parse/declaration/type/proof stdout hashes are
+`b23ef45284bbdde020431ec1f8a2b6a92c27940b4f5c0ca5117a6b5331d653ab`,
+`b824094f5bb4b57fb0cd976d669034aa5a3b294eaa8dc40264d8fb5bf3e48959`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Raw/normalized test-list hashes remain
+`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
+`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`.
+Only plan and parse bytes change; production ownership and Steps 6/7 remain
+stable.

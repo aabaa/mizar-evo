@@ -2029,3 +2029,14 @@ The existing different-return row, sidecar, detail key, and coverage credit are
 unchanged. No other member of Task 49's exact 24-fixture reconciliation set is
 activated or credited. The exact row is covered and declaration-symbol
 admission is five cases; plan and pass/fail counts remain 404/369 and 220/184.
+
+## Parser Task 47 `reconsider` Trace Completion
+
+Exactly `spec.en.15.reconsider.omitted_justification.parser` and
+`spec.en.15.reconsider.proof_block.parser` change from deferred to covered.
+Their exact backlink is the new
+`tests/miz/pass/parser/pass_parser_reconsider_tails_001.expect.toml`; the
+general Chapter-15 statement row also lists that case without adding a third
+requirement. The sidecar explicitly limits credit to syntax and grants no
+semantic reconsider, proof-obligation, theorem-acceptance, or E0102 coverage.
+The plan becomes 405/369 with parse coverage 43/42 and pass/fail 221/184.

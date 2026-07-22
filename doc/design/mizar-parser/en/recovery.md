@@ -214,3 +214,16 @@ positions for operator declarations and annotation arguments. Downstream
 matches must keep wildcard fallback arms, while matches inside `mizar-parser`
 remain exhaustive so new contexts force local recovery and token-adaptation
 updates.
+
+## Task 47 `reconsider` Tail Recovery
+
+Omitting a `reconsider` justification before the final semicolon is valid
+syntax and emits no recovery node or parser diagnostic. An explicit `by` tail
+keeps the existing simple-justification recovery. A proof tail reuses the
+ordinary `ProofBlock` recovery: a missing `end` emits `MissingEnd` while the
+enclosing `ReconsiderStatement` continues to own the final semicolon.
+
+This exception is local to `reconsider_tail`. `consider` and the remaining
+simple-justification-only hosts retain mandatory-`by` recovery. The existing
+mixed consider/reconsider failure source is unchanged; only its obsolete
+omitted-tail `MalformedJustification` expectation was removed.

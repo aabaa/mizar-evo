@@ -947,12 +947,17 @@ impl Parser {
             recovery_nodes.push(missing);
         }
 
-        cursor = self.parse_mandatory_simple_justification(
-            cursor,
-            &mut children,
-            &mut recovery_nodes,
-            "expected `by` justification in reconsider statement",
-        );
+        if self.is_reserved_word_at(cursor, "by") {
+            let justification = self.parse_justification_clause_at(cursor, false);
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        } else if self.is_reserved_word_at(cursor, "proof") {
+            let proof = self.parse_proof_block_at(cursor);
+            cursor = proof.next_position;
+            children.push(proof.id);
+            recovery_nodes.extend(proof.recovery_nodes);
+        }
 
         self.finish_simple_statement_node(
             position,

@@ -2486,3 +2486,14 @@ new-class diagnostic 1件、mixed/different returnはcomplete candidate groupを
 return-conflict diagnostic 1件を生成し、overlapしない。これによりactive declaration-symbol
 countは4件から5件へ増え、そのCLI output/hashは変わるが、parse-only、type-elaboration、
 proof-verification admissionは変わらない。
+
+## Parser Task 47 parse-only increment
+
+parse-only runnerは`pass_parser_reconsider_tails_001`を97件目としてadmitする。real
+frontend/parser pathを実行し、omitted tailとproof-block tailの両方でdiagnosticなしを要求する。
+existing explicit-`by` controlはactiveのままで、変更しないmixed recovery sourceはobsolete
+omitted-tail diagnosticを除いたすべてのnon-Task-47 parser errorを引き続き報告する。
+
+このincrementで変わるのはparse admissionとplan bytesだけで、plan 405/369、parse-only
+97/97、pass/fail 221/184、warnings/errors 23/0となる。declaration-symbol、
+type-elaboration、proof-verification admissionは5/188/1のままである。

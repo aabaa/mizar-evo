@@ -1940,3 +1940,13 @@ real declaration-symbol runnerがexact
 既存different-return row、sidecar、detail key、coverage creditは変更しない。Task 49のexact
 24-fixture reconciliation setに属する他memberはactive化もcreditも行わない。exact rowは
 covered、declaration-symbol admissionは5件で、plan/pass-fail countは404/369、220/184のまま。
+
+## Parser Task 47 `reconsider` trace completion
+
+`spec.en.15.reconsider.omitted_justification.parser`と
+`spec.en.15.reconsider.proof_block.parser` exactly 2件だけをdeferredからcoveredへ変更する。
+exact backlinkは新しい
+`tests/miz/pass/parser/pass_parser_reconsider_tails_001.expect.toml`であり、general
+Chapter-15 statement rowにも同caseを追加するが3件目のrequirementは作らない。sidecarは
+creditをsyntaxだけに限定し、semantic reconsider、proof obligation、theorem acceptance、
+E0102 coverageを与えない。planは405/369、parse coverageは43/42、pass/failは221/184となる。

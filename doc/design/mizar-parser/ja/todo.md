@@ -961,19 +961,16 @@ resolver / build-system 依存を避ける。
       仕様: [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
       [source_spec_audit.md](./source_spec_audit.md)。
 
-47. **`reconsider` justification の parser 整合。** [ ]
-    - `mizar-checker` task 44 で記録した deferred follow-up。canonical spec は
-      Chapter 4、8、15 と Appendix A で `reconsider` の
-      `simple_justification` 省略構文を許可し、proof-free evidence で discharge
-      できない省略ケースは semantic `type.narrowing_requires_proof` gate で拒否する
-      ことにした。また、以前から記述されていた proof-block `reconsider` form を
-      `reconsider_tail` により明示した。現在の parser 実装と active
-      `fail_parser_consider_reconsider_recovery_001` fixture はまだ
-      `reconsider x as set;` を mandatory justification 欠落として分類し、
-      reconsider を simple-justification-only host として扱っている。
-      本taskでgrammar、recovery diagnostic、parse-only corpusをsemantic intentを
-      変えずに更新する。それまでは、この挙動を `source_drift` /
-      `test_expectation_drift` として記録しておく。
+47. **`reconsider` justification の parser 整合。** [x]
+    - 完了。parserはcanonicalなomitted、explicit `by`、proof-block
+      `reconsider_tail`をsemantic intentを変えずに実装した。omitted formはjustification
+      childもparser diagnosticも持たず、proof formは`ProofBlock`と`MissingEnd` recoveryを
+      再利用し、enclosing statementがfinal semicolonを所有する。`consider`は
+      mandatory-simple hostのままである。
+    - 新しいactive parse-only pass fixture 1件がomitted/proof formをcoverし、existing mixed
+      recovery expectationからobsolete omitted-tail diagnosticだけを削除した。既存`.miz`は
+      編集せず、Task-47 trace row exactly 2件をcoveredにした。このsliceの従来の
+      `source_drift`、`test_expectation_drift`、`test_gap`、paired-doc `design_drift`はcloseした。
     - 依存: 完了済み`mizar-checker` task 44。残るexternal gateはない。
       仕様: [grammar.md](./grammar.md)、
       [doc/spec/ja/04.variables_and_constants.md](../../../spec/ja/04.variables_and_constants.md)、

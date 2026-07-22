@@ -1389,9 +1389,10 @@ proof acceptance, terminal goals, Core/VC payloads, or runner success.
    Complete: the exact marker-free adapter, first real proof-verification
    runner/guard, distinct source/sidecar, full VcIr baseline, and one covered
    trace row land together; broader VC families remain unpromoted.
-10. [ ] [mizar-parser task 47](./mizar-parser/en/todo.md) — align omitted and
-    proof-block `reconsider` syntax with the canonical Chapters 4/8/15 and
-    Appendix-A contract.
+10. [x] [mizar-parser task 47](./mizar-parser/en/todo.md) — aligned omitted,
+    explicit-`by`, and proof-block `reconsider` syntax with the canonical
+    Chapters 4/8/15 and Appendix-A contract. The real parse-only runner covers
+    both formerly deferred exact rows without changing semantic intent.
 11. [ ] [mizar-parser task 48](./mizar-parser/en/todo.md) — implement the exact
     Chapter-7 `property_impl` grammar and parse-only pass/fail corpus needed by
     the Task-39 coherence seed.
@@ -1867,3 +1868,17 @@ immutable/module, 59 prior owners, and a real sidecar guard runner 188. Trace is
 shared 5 + dedicated 1; metadata is 403/367, type 235/223, pass/fail 219/184.
 Step 5 remains active; Steps 6/7 remain deferred. The next handoff must begin
 with a fresh inventory rather than assuming a fixed successor seam.
+
+## Step 5 Parser Task 47 Active Addendum
+
+Parser Task 47 closes only the canonical `reconsider_tail` parser slice. The
+private producer accepts omission with no justification child/diagnostic,
+retains explicit `by`, and reuses `ProofBlock` plus existing `MissingEnd`
+recovery. One new active pass fixture and the repaired mixed-recovery sidecar
+cover exactly the omitted/proof-block trace rows; no existing `.miz` changed.
+
+The plan is 405/369, parse-only is 97/97 with coverage 43/42, pass/fail is
+221/184, and warnings/errors are 23/0. Declaration/type/proof admissions remain
+5/188/1. The nonblocking Chapter-8 single-item versus list wording `spec_gap`
+is human-owned. Parser Task 48 remains the next authorized nonempty Step-5
+task, Task 46 remains deferred, and Steps 6/7 remain deferred.

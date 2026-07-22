@@ -2143,22 +2143,26 @@ id = "spec.en.15.reconsider.omitted_justification.parser"
 source = "doc/spec/en/15.statements.md"
 section = "15.5.1 Type Reconsideration (`reconsider`); 15.12 Complete Syntax; Appendix A.15 Reasoning Statements"
 stage = "parse_only"
-status = "deferred"
+status = "covered"
 required = true
 coverage = "pass"
-deferred_reason = "Checker task 44 makes omitted `reconsider` simple justification syntax-admissible, with rejection moved to the semantic `type.narrowing_requires_proof` gate when proof-free widening, inheritance/view, cluster-closure, or recorded local type evidence cannot discharge the target type. The current parser and active recovery fixture still reject `reconsider x as set;` as missing mandatory justification. Parser task 47 owns grammar/recovery/corpus alignment; do not add an active parser pass case until that task changes the parser."
-tests = []
+tests = [
+  "tests/miz/pass/parser/pass_parser_reconsider_tails_001.expect.toml",
+]
+notes = "Parser Task 47 active syntax-only coverage: omitted `reconsider` justification is parse-admissible without a JustificationClause or MissingProofStep. Semantic acceptance remains owned by the separate advanced-semantics requirement and its proof-free-evidence gate."
 
 [[requirement]]
 id = "spec.en.15.reconsider.proof_block.parser"
 source = "doc/spec/en/15.statements.md"
 section = "15.5.1 Type Reconsideration (`reconsider`); 15.8.2 Full Proof; 15.12 Complete Syntax; Appendix A.15 Reasoning Statements"
 stage = "parse_only"
-status = "deferred"
+status = "covered"
 required = true
 coverage = "pass"
-deferred_reason = "Chapter 8 has long described proof-block `reconsider`, and checker task 44 makes the Chapter 15/Appendix A grammar explicit through `reconsider_tail`. The current parser task-18 implementation treats reconsider as a simple-justification-only host and rejects proof blocks. Parser task 47 owns grammar/recovery/corpus alignment; do not add an active parser pass case until that task changes the parser."
-tests = []
+tests = [
+  "tests/miz/pass/parser/pass_parser_reconsider_tails_001.expect.toml",
+]
+notes = "Parser Task 47 active syntax-only coverage: a reconsider proof tail reuses the existing ProofBlock node for `proof`, reasoning, and `end`, while ReconsiderStatement owns the final semicolon. No proof acceptance or semantic evidence is credited."
 
 [[requirement]]
 id = "spec.en.15.statements.inline_definition_payload_gap"
@@ -2216,11 +2220,12 @@ stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
-notes = "Covers the implemented statement syntax surface except the task-44 omitted `reconsider` justification update and the now-explicit proof-block `reconsider` grammar, tracked separately by `spec.en.15.reconsider.omitted_justification.parser` and `spec.en.15.reconsider.proof_block.parser` until parser task 47 lands. The active reconsider recovery fixture remains a documented source/test drift for those syntax slices."
+notes = "Covers the implemented statement syntax surface, including Parser Task 47 omitted and proof-block `reconsider` tails. Semantic omitted-justification acceptance, coercion evidence, and proof acceptance remain outside this parse-only row."
 tests = [
   "tests/miz/pass/parser/pass_parser_simple_statements_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_consider_reconsider_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_reconsider_tails_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_conclusions_iterative_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_block_statements_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_inline_definitions_001.expect.toml",

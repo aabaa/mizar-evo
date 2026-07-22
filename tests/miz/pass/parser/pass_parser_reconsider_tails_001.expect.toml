@@ -1,0 +1,16 @@
+schema_version = 1
+id = "pass_parser_reconsider_tails_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.statements"
+source = "pass_parser_reconsider_tails_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.15.reconsider.omitted_justification.parser",
+  "spec.en.15.reconsider.proof_block.parser",
+  "spec.en.15.statements.syntax",
+]
+notes = "Parser Task 47 exact syntax-only coverage for an omitted `reconsider` justification and a proof-block tail. This fixture does not accept a type conversion, discharge an obligation, invoke proof search, or activate the later advanced-semantics seed."

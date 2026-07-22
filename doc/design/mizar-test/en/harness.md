@@ -2598,3 +2598,16 @@ return-conflict diagnostic over the complete candidate group, with no overlap.
 This increments the active declaration-symbol count from four to five and changes that CLI
 output/hash, while parse-only, type-elaboration, and proof-verification
 admission remain unchanged.
+
+## Parser Task 47 Parse-Only Increment
+
+The parse-only runner admits
+`pass_parser_reconsider_tails_001` as its 97th case. It executes the real
+frontend/parser path and requires no diagnostics for both the omitted tail and
+the proof-block tail. The existing explicit-`by` control remains active, and
+the unchanged mixed recovery source still reports every non-Task-47 parser
+error after its obsolete omitted-tail diagnostic is removed.
+
+This increment changes only parse admission and plan bytes: plan 405/369,
+parse-only 97/97, pass/fail 221/184, warnings/errors 23/0. Declaration-symbol,
+type-elaboration, and proof-verification admissions remain 5/188/1.

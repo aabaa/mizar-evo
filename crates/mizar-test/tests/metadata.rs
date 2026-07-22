@@ -5719,6 +5719,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_primary_terms_001",
             "pass_parser_property_clauses_001",
             "pass_parser_qua_terms_001",
+            "pass_parser_reconsider_tails_001",
             "pass_parser_redefinition_notation_001",
             "pass_parser_registrations_001",
             "pass_parser_selector_updates_001",
@@ -6148,8 +6149,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 96);
-    assert_eq!(report.passed_count(), 96);
+    assert_eq!(report.results.len(), 97);
+    assert_eq!(report.passed_count(), 97);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
@@ -6176,6 +6177,10 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_conclusions_iterative_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_reconsider_tails_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -6456,7 +6461,6 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                     "malformed_term_expression".to_owned(),
                     "malformed_type_expression".to_owned(),
                     "malformed_type_expression".to_owned(),
-                    "malformed_justification".to_owned(),
                     "malformed_term_expression".to_owned(),
                 ]
     }));
@@ -9362,8 +9366,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 96"));
-    assert!(stdout.contains("passed: 96"));
+    assert!(stdout.contains("parse-only cases: 97"));
+    assert!(stdout.contains("passed: 97"));
     assert!(stdout.contains("failed: 0"));
 }
 

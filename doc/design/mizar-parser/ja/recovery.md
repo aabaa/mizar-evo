@@ -193,3 +193,15 @@ string-required position が追加される。downstream match は wildcard fall
 持たなければならない。一方、`mizar-parser` 内部の match は exhaustive のままにし、
 新しい context が追加されたときに recovery と token adaptation の更新がローカルに
 強制されるようにする。
+
+## Task 47 `reconsider` tail recovery
+
+final semicolon前で`reconsider` justificationを省略する形はvalid syntaxであり、recovery
+nodeもparser diagnosticも生成しない。explicit `by` tailは既存simple-justification
+recoveryを維持する。proof tailは通常の`ProofBlock` recoveryを再利用し、`end`欠落時は
+`MissingEnd`をemitする一方、enclosing `ReconsiderStatement`がfinal semicolonを所有する。
+
+この例外は`reconsider_tail`だけに限定する。`consider`と他の
+simple-justification-only hostはmandatory-`by` recoveryを維持する。existing mixed
+consider/reconsider failure sourceは変更せず、obsolete omitted-tail
+`MalformedJustification` expectationだけを削除した。

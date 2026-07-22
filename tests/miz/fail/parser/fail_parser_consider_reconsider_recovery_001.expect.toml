@@ -18,11 +18,10 @@ diagnostic_codes = [
   "malformed_term_expression",
   "malformed_type_expression",
   "malformed_type_expression",
-  "malformed_justification",
   "malformed_term_expression",
 ]
 tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
 spec_refs = [
   "spec.en.15.statements.syntax",
 ]
-notes = "Active parse-only runner coverage for parser task 18 missing consider variable segments and conditions, missing or malformed simple justifications for hosts currently implemented as mandatory, disallowed computation justifications, and malformed reconsider item/as/type pieces. The `reconsider x as set;` recovery case is retained as a documented parser source_drift/test_expectation_drift after checker task 44; parser task 47 owns aligning omitted reconsider justification syntax with the semantic E0102 gate and accepting proof-block `reconsider` syntax."
+notes = "Active parse-only runner recovery control after Parser Task 47: missing consider variable segments and conditions, malformed mandatory consider justifications, disallowed computation justifications, and malformed reconsider item/as/type pieces still fail. The unchanged source line `reconsider x as set;` is now canonical valid omitted-tail syntax and contributes no parser diagnostic."
