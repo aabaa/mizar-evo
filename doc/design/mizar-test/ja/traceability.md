@@ -1881,3 +1881,19 @@ exact 24-fixture reconciliation setのsame-return memberはresolver Task 31が
 せず、capture-avoidance/witness-guard/無関係template seedをsetへ黙って追加しない。
 Task 247では`spec_trace.toml` status/test list/coverage class、cases/
 requirements、runner count、existing expectationは不変。
+
+## Core Task 32 Core/CFG ownership traceability
+
+Core Task 32はbacklink/coverage creditを追加しない。Core Tasks 33-53とprepared
+Task-10 consumer `MT10-CIR-TE`、`MT10-CIR-FS`、`MT10-CIR-AS`、
+`MT10-CIR-ALG`、`MT10-CFG-PV`を割り当てる。Exact consumer stage/tag/phase/
+artifact/corruption contractはCore
+[source_family_decomposition.md](../../mizar-core/ja/source_family_decomposition.md)
+をcanonicalとする。
+
+Broad non-Task-180 CoreIr/全ControlFlowIr rowはempty testsのdeferredを維持する。
+Existing Chapter-20 parser source/expectationはparse-onlyのままでsemantic baselineに
+流用しない。最初のgeneral Core snapshot pathと最初の
+`SnapshotKind::ControlFlowIr` pathは各owning descendantでdistinct real semantic
+source/baselineと対にする。Task 32はcase/requirement count、runner count、status、
+test list、expectation、production sourceを変更しない。

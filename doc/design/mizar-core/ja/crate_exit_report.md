@@ -122,11 +122,11 @@ helper extraction は crate-owned blocker ではなく external または deferr
 
 | ID | Reason | Owner | Unblock condition |
 |---|---|---|---|
-| CORE-AUDIT-G001 | Source-to-checker extraction が full source-derived `ResolvedTypedAst` payload と production source-to-core fixture をまだ blocking している。 | Checker extraction / mizar-test integration follow-up。 | `mizar-core` が raw syntax を再走査しなくても checker-ready AST-wide payload extraction が存在する。 |
-| CORE-AUDIT-G002 | Core Task 31はexact Task-180 source-derived `type_elaboration` `CoreIr` snapshotを1件提供した。non-Task-180 `CoreIr`、全`ControlFlowIr`、`proof_verification` snapshot runnerは未提供。 | checker Task 247後のCore Task 32 decomposition。 | bounded descendant taskが残るreal checker-derived baseline向けprepared stage consumerを提供する。 |
+| CORE-AUDIT-G001 | Source-to-checker extraction が full source-derived `ResolvedTypedAst` payload と production source-to-core fixture をまだ blocking している。 | Checker Tasks 248-264/269-279、joint Core Tasks 42-47、non-algorithm consumerのCore Tasks 33-41。 | `mizar-core` が raw syntax を再走査しなくても checker-ready AST-wide payload extraction が存在する。 |
+| CORE-AUDIT-G002 | Core Task 31はexact Task-180 source-derived `type_elaboration` `CoreIr` snapshotを1件提供した。non-Task-180 `CoreIr`、全`ControlFlowIr`、`proof_verification` snapshot runnerは未提供。 | Core Tasks 33-53とprepared consumer `MT10-CIR-TE`/`FS`/`AS`/`ALG`/`MT10-CFG-PV`。 | bounded descendantがremaining real checker-derived baselineを提供し、first general Core/CFG infrastructureはfirst real baselineと同時にlandする。 |
 | CORE-AUDIT-G003 | Artifact schema emission、proof acceptance、VC generation、kernel checking は downstream または cross-crate work。 | `mizar-artifact`、`mizar-proof`、`mizar-vc`、`mizar-kernel` phase。 | Downstream crate が core/control-flow handoff 用の accepted schema と consumer を定義する。 |
 | CORE-AUDIT-G004 | 具体的な `VcId`、`ObligationAnchor`、VC fingerprint、proof/cache reuse anchor、downstream artifact identity は `mizar-core` の所有ではない。 | `mizar-vc` incremental verification / artifact phase。 | Downstream identity と anchor contract が存在する。 |
-| CORE-AUDIT-G005 | Source-derived call/result substitution、pattern、snapshot、claim、より豊かな algorithm payload seam には checker-owned explicit payload が必要。 | Checker payload extraction と phase-10/phase-11 integration。 | それらの source form 用の explicit checker payload が存在する。 |
+| CORE-AUDIT-G005 | Source-derived call/result request metadata、pattern、snapshot、claim、rich algorithm payload seamはsyntax-free checker projectionを必要とし、concrete substitutionはVC-owned。 | Core Tasks 42-53とVC Task-30 descendant。 | Core/CFGがsubstitutionを生成せず、explicit projection/bounded consumerが存在する。 |
 | CORE-AUDIT-G006 | Public diagnostic code-space はこの crate で割り当てない。 | Diagnostics registry owner。 | 共有 public diagnostic registry と allocation policy が存在する。 |
 | CORE-BOUNDARY-G001 | `src/elaborator.rs` は大きく、future private helper/test extraction が有益になる可能性がある。 | Future move-only core maintenance task。 | reviewability bottleneck が発生し、public API と behavior を保つ専用 split task を実行できる。 |
 | CORE-BOUNDARY-G002 | `src/control_flow.rs` は大きく、private builder/diagnostic/handoff helper extraction が有益になる可能性がある。 | Future move-only core maintenance task。 | reviewability bottleneck が発生し、public API と behavior を保つ専用 split task を実行できる。 |
@@ -197,5 +197,5 @@ consumeし、public structurally valid theorem 1件、`False` 1件、
 `TheoremProof` seed 1件を生成し、active type-elaboration runnerでfull deterministic
 debug baselineをverifyする。adapterはsyntax-free/transactionalのままで、acceptance、
 discharge、CFG、VC、kernel、artifact、broader-family behaviorを追加しない。
-CORE-AUDIT-G002はnon-Task-180全familyとCore Task 32所有のlater stageについてだけ
-openのままである。
+CORE-AUDIT-G002は完了docs-only Task 32がCore Tasks 33-53とprepared consumer 5個へ
+割り当てたnon-Task-180全family/later stageについてだけopenのままである。

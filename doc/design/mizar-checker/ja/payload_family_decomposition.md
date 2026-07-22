@@ -246,3 +246,11 @@ Task 247は次を全て満たした場合だけcompleteである。
 そのcommit後、Core Task 32はTasks 248-264/269-279の実装完了を待たず、本accepted graphを
 自身のdocs/traceability-only remaining-family decompositionのinputにできる。ただし
 ここに記録した全gateとforbidden boundaryを維持しなければならない。
+
+Core Task 32は
+[source_family_decomposition.md](../../mizar-core/ja/source_family_decomposition.md)
+をacceptedした。Checker Tasks 248-279にChapter-20 algorithm rowがない点は意図的な
+scopeであり、新checker task IDのauthorityではない。Core Tasks 42-47は別々のjoint
+vertical taskで、`mizar-test`がAST extraction、checkerがsyntax-free final projection、
+Coreがloweringを所有する。Exact dependent sliceではGates A1/S1を維持する。この
+ownership noteはchecker source/task status/fixture/expectation/coverageを変更しない。

@@ -492,7 +492,7 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       intent、theorem acceptance/discharge、broader Core/CFG/VC family、Steps 6/7
       statusは変更していない。
 
-32. **Remaining source-derived `CoreIr`/`ControlFlowIr` task decomposition。** [ ]
+32. **Remaining source-derived `CoreIr`/`ControlFlowIr` task decomposition。** [x]
     - checker Task 247は完了済み。そのaccepted canonical graphである
       [checker payload_family_decomposition.md](../../mizar-checker/ja/payload_family_decomposition.md)
       をconsumeし、残る全declaration/definition、attribute/type、term/formula、
@@ -506,6 +506,61 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       promotionは禁止する。依存: checker Task 247。このtaskはdependency-
       authorizedとなった。checker Tasks 248-264/269-279のimplementation完了を待つ必要は
       ないが、accepted graphの全blocked gate/forbidden boundaryを維持する。
+
+    - 完了: [source_family_decomposition.md](./source_family_decomposition.md) は
+      Core 33-53、prepared Task-10 consumer 5個、exact gate/call-substitution
+      boundary、one-logical-task/one-commit exitを割り当てる。Deferred traceは
+      ownership wordingだけを変え、source/fixture/expectation/status/test list/
+      runner/coverage creditを変更しない。
+
+33. **Source-derived Core context/item/binder/source map。** [ ]
+    - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
+34. **Source-derived type/attribute/evidence/coercion/view lowering。** [ ]
+    - checker 249-251/Core 33を`MT10-CIR-TE`でconsumeする。Reusable conversion
+      のみで、source `reconsider`はCore 37。
+35. **Source-derived term/formula lowering。** [ ]
+    - checker 252-257/Core 33-34を`MT10-CIR-TE`でconsumeし、truth/proof closure/
+      implicit evidence-view/algorithm `Pick`は扱わない。
+36. **Source-derived definition lowering。** [ ]
+    - checker 259-264/Core 33-35を`MT10-CIR-AS`でconsumeし、correctnessは
+      obligation refのままでaccepted proofにしない。
+37. **Source-derived statement/proof-local/`reconsider`/non-Task-180 proof lowering。** [ ]
+    - checker 258/269-272、parser 47、Core 33-35/34 conversion APIを
+      `MT10-CIR-FS`でconsumeし、search/acceptance/discharge/premise factは禁止。
+38. **Source-derived direct template/overload/redefinition lowering。** [ ]
+    - checker 277-279を`MT10-CIR-AS`でconsumeし、missing scheme/theorem roleは
+      Core 41/Gate S1の外部境界に残す。
+39. **Source-derived pending registration intake。** [ ]
+    - checker 273を`MT10-CIR-AS`でconsumeし、accepted status/activation/trace/
+      artifact/`VcId`/dischargeは禁止。
+40. **Accepted registration activationとcluster/reduction trace。** [blocked]
+    - checker 274-276/`MT10-CIR-AS`向け予約。Gate A1/MC-G004がaccepted status
+      producer/schema/authentication/testを命名するまで実行しない。
+41. **Missing scheme/theorem-role-dependent Core slice。** [blocked]
+    - Gate S1がcanonical parser/syntax/resolver role ownerを命名するまで予約し、
+      checker 277/Core 38はroleを合成しない。
+42. **Algorithm header/local/assignment/`Pick` CoreIr。** [ ]
+43. **Algorithm conditional/while/jump CoreIr。** [ ]
+44. **Range/collection loop CoreIr。** [ ]
+45. **Match pattern/capture/exhaustiveness CoreIr。** [ ]
+46. **Algorithm contract/call-request/recursion/termination metadata。** [ ]
+47. **Snapshot/claim CoreIr。** [ ]
+    - Tasks 42-47はmizar-test AST extractionからsyntax-free checker projection、
+      Core loweringまでを1 taskにした別々のChapter-20 joint vertical taskで、各々
+      `MT10-CIR-ALG`と対にする。actual call/result substitution、VC、promotion、
+      MVM、extraction、guessed parser/resolver identityは禁止。
+48. **Basic source-derived ControlFlowIr。** [ ]
+49. **Range/collection-loop CFG attachment。** [ ]
+50. **Match CFG attachment。** [ ]
+51. **Snapshot/claim flow state。** [ ]
+52. **Contract/call/ghost/termination CFG attachment。** [ ]
+53. **Complete source-derived flow diagnostics。** [ ]
+    - Tasks 48-53は`MT10-CFG-PV`と対になる別々のphase-10 task。Task 48は
+      `SnapshotKind::ControlFlowIr`を最初のreal baselineと同時にだけ追加する。
+      concrete substitution/VC、public code、proof/artifact status、MVM、extraction、
+      empty infrastructure commitは禁止。
+    - Tasks 33-53のexact dependency/payload/corruption/consumer/exit boundaryは
+      [source_family_decomposition.md](./source_family_decomposition.md)をcanonicalとする。
 
 ## 推奨検証
 

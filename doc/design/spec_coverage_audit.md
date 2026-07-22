@@ -2331,3 +2331,37 @@ existing nonblocking `spec_gap`; no new payload-family `spec_gap`,
 the accepted graph for its own docs/traceability-only decomposition without
 waiting for producer implementation. Task 49 and Steps 6/7 remain gated or
 deferred.
+
+## Core Task 32 Remaining Core/CFG Ownership Update
+
+Core Task 32 changes follow-up ownership only and adds no specification or
+coverage credit. The accepted paired Core source-family decomposition assigns
+separate Core Tasks 33-41 to context/items, type/attribute/evidence/view,
+term/formula, definition, statement/non-Task-180 proof, direct
+template/overload/redefinition, pending registration, A1-blocked accepted
+activation/traces, and S1-blocked role slices. Joint vertical Core Tasks 42-47
+own bounded Chapter-20 source extraction, syntax-free checker projection, and
+algorithm CoreIr lowering for headers/locals/assignment/Pick, structured
+control, range/collection loops, match, contract/call-request/recursion/
+termination metadata, and snapshot/claim shells. Core Tasks 48-53 separately
+own basic CFGs, range/collection attachment, match attachment, snapshot/claim
+flow state, semantic attachment, and diagnostics.
+
+Prepared Task-10 consumers are `MT10-CIR-TE`, `MT10-CIR-FS`, `MT10-CIR-AS`,
+`MT10-CIR-ALG`, and `MT10-CFG-PV`. Naming them does not execute a runner or
+baseline. Existing Chapter-20 parser fixtures remain parse-only. The first
+general non-Task-180 Core snapshot integration and first
+`SnapshotKind::ControlFlowIr` change must each land with its first real semantic
+baseline, not as empty infrastructure. Broad CoreIr and all ControlFlowIr trace
+rows remain deferred with empty tests.
+
+Gate A1/MC-G004 still block accepted registration activation and traces; Gate
+S1 still blocks missing scheme/theorem roles; MC-G005/public diagnostic codes
+remain external. Core/CFG may transport call/result substitution requests but
+concrete substitution and VC formation remain VC-owned. Therefore all chapter
+ratings and existing trace statuses/test lists remain unchanged. The task
+closes umbrella `design_drift`; `source_drift` and `test_gap` move to Tasks
+33-53. No new blocking `spec_gap`, `source_undocumented_behavior`, current
+`boundary_violation`, or `repo_metadata_conflict` was found. VC Task 30 is now
+dependency-authorized for docs-only decomposition. Step 5 remains active and
+Steps 6/7 remain deferred.

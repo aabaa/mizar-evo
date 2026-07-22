@@ -68,3 +68,7 @@ inventoryを再実行した。英日graph row、blocked gate、Task-10 consumer 
 literal Task-49 24-fixture reconciliation mapping、no-credit boundaryは同期され、
 新規sync debtはない。
 既存exact-pair guardが新filename pairを発見するためsource/lint-policy変更は不要。
+
+Core Task 32はpaired payload-family decomposition noteを再確認する。両言語は
+algorithm producer/loweringをchecker task IDの捏造なしにjoint Core Tasks 42-47へ
+割り当て、Gates A1/S1を保持する。

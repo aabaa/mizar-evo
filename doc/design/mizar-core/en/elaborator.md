@@ -578,7 +578,7 @@ existing contradiction sidecar and committed CoreIr baseline. Its id is
 test/backlink is the existing contradiction expectation path. The sidecar adds
 that id to `spec_refs`. The older broad
 CoreIr/type-elaboration snapshot requirement remains deferred with empty tests
-for every non-Task-180 family owned by Task 32; Task 31 does not promote that
+for every non-Task-180 family now assigned to Core Tasks 33-47; Task 31 does not promote that
 broad row. `spec_coverage_audit.md` records this exact-only split.
 
 ## Step 6: Algorithm-Shell Lowering
@@ -714,6 +714,16 @@ payload categories can be added without breaking downstream exhaustive matches.
 No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-core` matches may remain exhaustive where they deliberately enumerate the
 current variants.
+
+## Task-32 Source-Derived Follow-ups
+
+[source_family_decomposition.md](./source_family_decomposition.md) assigns
+Core Tasks 33-47 and the `MT10-CIR-*` consumers. Algorithm Tasks 42-47 are
+bounded joint vertical tasks: `mizar-test` alone reads the AST, checker emits a
+syntax-free final projection, and this crate lowers it. Core 34 owns reusable
+conversion/evidence APIs while Core 37 owns source `reconsider`. Core 46 carries
+call/result substitution requests only; substitution results and VCs remain
+downstream.
 
 ## Forbidden Behavior
 

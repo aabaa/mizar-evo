@@ -144,3 +144,10 @@ Both languages describe the same singular Task-180 CoreIr baseline, public
 snapshot-failure result/reporting, 17-path/19,803-line ownership state,
 403/368 and 236/224 coverage counts, exact-only credit, and broad deferred
 boundary. No bilingual `design_drift` remains in this scope.
+
+## Core Task 32 / Task-10 Pair Recheck
+
+Core Task 32 rechecks the paired plan, TODO, and traceability documents. Both
+languages name the same five prepared Core/CFG consumers, stages/tags/phases,
+artifact boundaries, first-real-baseline rule, and zero current coverage
+impact. No bilingual drift remains in this ownership-only scope.

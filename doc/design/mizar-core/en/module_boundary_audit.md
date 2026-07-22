@@ -70,10 +70,12 @@ name resolution. No source file is moved or added.
 | CORE-BOUNDARY-G001 | `deferred` | `src/elaborator.rs` is the largest implementation file and contains step-specific lowering helpers plus dense task-local tests. | Defer any private extraction to a dedicated move-only task that can split Step 1-6 helper/test sections without changing public APIs or behavior. |
 | CORE-BOUNDARY-G002 | `deferred` | `src/control_flow.rs` contains CFG construction, contract/ghost/termination attachment, diagnostics, handoff, and tests in one phase-10 module. | Future move-only task may split private builder/diagnostic/handoff helpers if reviewability bottlenecks emerge. |
 | CORE-BOUNDARY-G003 | `deferred` | `src/binder_normalization.rs` contains raw normalization, substitution, closure expansion, canonicalization, and tests in one binder module. | Future move-only task may split private helper sections after closeout if needed. |
-| CORE-BOUNDARY-G004 | `external_dependency_gap` | Task 31 closes only the exact Task-180 source-derived CoreIr/snapshot seam. All other source-derived payload families, ControlFlowIr snapshots, and downstream VC/kernel/proof/artifact consumers remain outside this task. | Do not generalize the exact adapter or create placeholder modules for unavailable downstream/upstream seams. Core Task 32 retains decomposition ownership after checker Task 247. |
+| CORE-BOUNDARY-G004 | `external_dependency_gap` | Task 31 closes only the exact Task-180 source-derived CoreIr/snapshot seam. All other source-derived payload families, ControlFlowIr snapshots, and downstream VC/kernel/proof/artifact consumers remain unavailable. | Do not generalize the exact adapter or create placeholder modules. Completed docs-only Task 32 assigns source-derived work to Core Tasks 33-53 and five prepared consumers while preserving downstream gates. |
 
-No `boundary_violation`, `source_drift`, `source_undocumented_behavior`,
-`repo_metadata_conflict`, or blocking `design_drift` is observed. The older
+No `boundary_violation`, module-layout/source-boundary drift,
+`source_undocumented_behavior`, `repo_metadata_conflict`, or blocking
+`design_drift` is observed. The route-level `source_drift` recorded by Task 32
+remains assigned to Core Tasks 33-53. The older
 architecture-06 submodule names are already refined by the task-0 plan and the
 module specs; this audit does not reopen that historical design drift.
 

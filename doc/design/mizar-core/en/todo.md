@@ -514,7 +514,7 @@ work. Every finding maps to a task or a recorded disposition:
       family, or Steps 6/7 status changed.
 
 32. **Remaining source-derived `CoreIr` and `ControlFlowIr` task
-    decomposition.** [ ]
+    decomposition.** [x]
     - Checker Task 247 is complete. Consume its accepted canonical graph in
       [checker payload_family_decomposition.md](../../mizar-checker/en/payload_family_decomposition.md)
       and perform a docs/traceability-only inventory of
@@ -530,6 +530,64 @@ work. Every finding maps to a task or a recorded disposition:
       and 269-279
       do not need to be implemented first, but every blocked gate and forbidden
       boundary in the accepted graph must be preserved.
+
+    - Complete: [source_family_decomposition.md](./source_family_decomposition.md)
+      assigns Core 33-53, five prepared Task-10 consumers, exact gate and
+      call/substitution boundaries, and one-logical-task/one-commit exits.
+      Deferred trace rows change ownership wording only; no source, fixture,
+      expectation, status, test list, runner, or coverage credit changes.
+
+33. **Source-derived Core context, items, binders, and source maps.** [ ]
+    - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
+34. **Source-derived type, attribute, evidence, coercion, and view lowering.** [ ]
+    - Consume checker 249-251 and Core 33 through `MT10-CIR-TE`; reusable
+      conversion only, while source `reconsider` remains Core 37.
+35. **Source-derived term and formula lowering.** [ ]
+    - Consume checker 252-257 and Core 33-34 through `MT10-CIR-TE`; no truth,
+      proof closure, implicit evidence/view, or algorithm `Pick`.
+36. **Source-derived definition lowering.** [ ]
+    - Consume checker 259-264 and Core 33-35 through `MT10-CIR-AS`; correctness
+      remains an obligation reference, never an accepted proof.
+37. **Source-derived statement, proof-local, `reconsider`, and non-Task-180
+    proof lowering.** [ ]
+    - Consume checker 258/269-272, parser 47, and Core 33-35/34 conversion API
+      through `MT10-CIR-FS`; no search, acceptance, discharge, or premise fact.
+38. **Source-derived direct template, overload, and redefinition lowering.** [ ]
+    - Consume checker 277-279 through `MT10-CIR-AS`; missing scheme/theorem
+      roles remain outside this task under Core 41/Gate S1.
+39. **Source-derived pending registration intake.** [ ]
+    - Consume checker 273 through `MT10-CIR-AS`; no accepted status, activation,
+      trace, artifact, `VcId`, or discharge.
+40. **Accepted registration activation and cluster/reduction traces.** [blocked]
+    - Reserved for checker 274-276 and `MT10-CIR-AS`; Gate A1 and MC-G004 must
+      first name the accepted status producer/schema/authentication/tests.
+41. **Missing scheme/theorem-role-dependent Core slices.** [blocked]
+    - Reserved under Gate S1 until canonical parser/syntax/resolver ownership
+      names the roles; checker 277/Core 38 do not synthesize them.
+42. **Algorithm header, locals, assignment, and `Pick` CoreIr.** [ ]
+43. **Algorithm structured conditional, while, and jump CoreIr.** [ ]
+44. **Range and collection loop CoreIr.** [ ]
+45. **Match pattern, capture, and exhaustiveness CoreIr.** [ ]
+46. **Algorithm contract, call-request, recursion, and termination metadata.** [ ]
+47. **Snapshot and claim CoreIr.** [ ]
+    - Tasks 42-47 are separate Chapter-20 joint vertical tasks from mizar-test
+      AST extraction through syntax-free checker projection and Core lowering,
+      each paired with `MT10-CIR-ALG`. Actual call/result substitution, VCs,
+      promotion, MVM, extraction, and guessed parser/resolver identities are
+      forbidden.
+48. **Basic source-derived ControlFlowIr.** [ ]
+49. **Range and collection-loop CFG attachment.** [ ]
+50. **Match CFG attachment.** [ ]
+51. **Snapshot and claim flow state.** [ ]
+52. **Contract, call, ghost, and termination CFG attachment.** [ ]
+53. **Complete source-derived flow diagnostics.** [ ]
+    - Tasks 48-53 are separate phase-10 tasks paired with `MT10-CFG-PV`.
+      Task 48 adds `SnapshotKind::ControlFlowIr` only with its first real
+      baseline. Concrete substitution/VCs, public-code invention, proof/artifact
+      status, MVM, extraction, and empty infrastructure commits are forbidden.
+    - Exact dependencies, payloads, corruption matrices, consumers, and exit
+      boundaries for Tasks 33-53 are canonical in
+      [source_family_decomposition.md](./source_family_decomposition.md).
 
 ## Recommended Verification
 

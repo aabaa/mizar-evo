@@ -156,3 +156,9 @@ bilingual sync audit、および paired mizar-kernel F2 task record を更新す
 binding を cover し、dependency-slice / proof-reuse identity に参加し、imported fact を
 除外し、`mizar-kernel` task 31 の trusted membership verification によって検査されることを
 記録する。
+
+## Core Task 32 ownership sync
+
+Core Task 32はpaired plan/TODO/source-spec auditを再確認する。両言語はVC Task 30を
+docs-only decompositionについてdependency-authorizedと記録し、Core 33-53、
+Gates A1/S1、concrete substitution、zero VC-generation/coverage authorityを保持する。

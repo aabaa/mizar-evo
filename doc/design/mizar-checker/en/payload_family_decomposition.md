@@ -266,3 +266,12 @@ After that commit, Core Task 32 may consume this accepted graph immediately for
 its own docs/traceability-only remaining-family decomposition. Core Task 32
 does not need to wait for Tasks 248-264 and 269-279 to be implemented, but it must preserve
 every gate and forbidden boundary recorded here.
+
+Core Task 32 has now accepted
+[source_family_decomposition.md](../../mizar-core/en/source_family_decomposition.md).
+The absence of Chapter-20 algorithm rows from checker Tasks 248-279 is
+intentional scope, not authority for a new checker task id: Core Tasks 42-47
+are separate joint vertical tasks in which `mizar-test` owns AST extraction,
+checker owns the syntax-free final projection, and Core owns lowering. They
+preserve Gates A1/S1 for exact dependent slices. This ownership note changes
+no checker source, task status, fixture, expectation, or coverage.

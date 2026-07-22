@@ -67,10 +67,12 @@ phase-9 elaborator module内に残り、raw syntaxではなくchecker-owned
 | CORE-BOUNDARY-G001 | `deferred` | `src/elaborator.rs` は最大の implementation file で、step-specific lowering helper と dense task-local test を含む。 | Step 1-6 helper/test section を public API や behavior を変えずに分ける dedicated move-only task へ defer する。 |
 | CORE-BOUNDARY-G002 | `deferred` | `src/control_flow.rs` は CFG construction、contract/ghost/termination attachment、diagnostic、handoff、test を one phase-10 module に含む。 | reviewability bottleneck が発生した場合、future move-only task で private builder / diagnostic / handoff helper を分けてもよい。 |
 | CORE-BOUNDARY-G003 | `deferred` | `src/binder_normalization.rs` は raw normalization、substitution、closure expansion、canonicalization、test を one binder module に含む。 | 必要なら closeout 後の future move-only task で private helper section を分けてもよい。 |
-| CORE-BOUNDARY-G004 | `external_dependency_gap` | Task 31はexact Task-180 source-derived CoreIr/snapshot seamだけを閉じる。他のsource-derived payload family、ControlFlowIr snapshot、downstream VC/kernel/proof/artifact consumerはtask外に残る。 | exact adapterをgeneralizeせず、利用不能なdownstream/upstream seamのplaceholder moduleを作らない。checker Task 247後のdecompositionはCore Task 32が所有する。 |
+| CORE-BOUNDARY-G004 | `external_dependency_gap` | Task 31はexact Task-180 source-derived CoreIr/snapshot seamだけを閉じる。他のsource-derived payload family、ControlFlowIr snapshot、downstream VC/kernel/proof/artifact consumerは未提供。 | exact adapterをgeneralizeせずplaceholder moduleを作らない。完了docs-only Task 32はsource-derived workをCore Tasks 33-53/prepared consumer 5個へ割り当て、downstream gateを保持する。 |
 
-`boundary_violation`、`source_drift`、`source_undocumented_behavior`、
-`repo_metadata_conflict`、blocking `design_drift` は見つからない。古い architecture-06
+`boundary_violation`、module-layout/source-boundary drift、
+`source_undocumented_behavior`、`repo_metadata_conflict`、blocking
+`design_drift` は見つからない。Task 32 が記録した route-level `source_drift` は
+Core Tasks 33-53 に割り当てたままである。古い architecture-06
 submodule 名は task-0 plan と module spec がすでに精緻化しており、この audit では
 その historical design drift を再オープンしない。
 

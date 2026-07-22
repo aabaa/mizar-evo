@@ -596,6 +596,15 @@ No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-core` matches may remain exhaustive where they deliberately enumerate the
 current variants.
 
+## Task-32 Source-Derived Follow-ups
+
+[source_family_decomposition.md](./source_family_decomposition.md) assigns
+separate Core Tasks 48-53 to basic CFGs, range/collection loops, match,
+snapshot/claim state, semantic attachment, and diagnostics. The first real CFG
+task must add `SnapshotKind::ControlFlowIr` with its first real baseline in the
+same commit. Phase 10 carries substitution-request metadata but never creates
+or applies call/result substitutions or VCs.
+
 ## Validation And Tests
 
 Task 15 tests must cover:

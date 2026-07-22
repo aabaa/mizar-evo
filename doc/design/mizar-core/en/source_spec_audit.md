@@ -295,23 +295,21 @@ the follow-up register below.
 
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
-| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction still blocks full source-derived `ResolvedTypedAst` payloads for elaboration, including real view-path/reduct-functor payloads for `qua`, and production source-to-core fixtures. | Tasks 266-268/Core Task 31 own the exact Task-180 slice; checker Task 247/Core Task 32 own exhaustive decomposition of every remaining checker-to-core family. | Checker-ready payloads exist without raw syntax rescanning in `mizar-core`. | Implement the bounded source-derived lowering tasks created by Core Task 32 with prepared consumers. |
-| CORE-AUDIT-G002 | `external_dependency_gap` | Core Task 31 now provides one exact source-derived `type_elaboration` snapshot for the Task-180 `CoreIr`; every non-Task-180 `CoreIr` family, all `ControlFlowIr`, and `proof_verification` snapshot runners remain unavailable. | Core Task 32 owns prepared consumers for every remaining family after checker Task 247. | Stage runners can compare those remaining `CoreIr` and `ControlFlowIr` baselines from real checker payloads. | Activate only snapshots attached to bounded Task-32 descendant implementations; do not generalize the Task-31 shortcut. |
+| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction still blocks full source-derived `ResolvedTypedAst` payloads for elaboration, including real view-path/reduct-functor payloads for `qua`, and production source-to-core fixtures. | Tasks 266-268/Core Task 31 own the exact Task-180 slice; checker Tasks 248-264/269-279 and Core Tasks 33-47 own every remaining bounded checker-to-Core family. | Checker-ready payloads exist without raw syntax rescanning in `mizar-core`. | Implement only the dependency-ready descendants in `source_family_decomposition.md` with their prepared consumers. |
+| CORE-AUDIT-G002 | `external_dependency_gap` | Core Task 31 now provides one exact source-derived `type_elaboration` snapshot for the Task-180 `CoreIr`; every non-Task-180 `CoreIr` family, all `ControlFlowIr`, and `proof_verification` snapshot runners remain unavailable. | Core Tasks 33-53 own the remaining families; `MT10-CIR-TE`/`FS`/`AS`/`ALG` and `MT10-CFG-PV` own their prepared consumers. | Stage runners can compare those remaining `CoreIr` and `ControlFlowIr` baselines from real checker payloads. | Activate only snapshots attached to bounded descendant implementations; do not generalize the Task-31 shortcut or add empty snapshot infrastructure. |
 | CORE-AUDIT-G003 | `external_dependency_gap` | artifact schema emission, proof acceptance, VC generation, and kernel checking are downstream or cross-crate work. | `mizar-artifact`, `mizar-proof`, `mizar-vc`, and `mizar-kernel` phases. | Downstream crates define accepted schemas and consumers for core/control-flow handoff. | Wire consumers without changing `mizar-core` into proof acceptance or kernel checking. |
 | CORE-AUDIT-G004 | `external_dependency_gap` | Concrete `VcId`, `ObligationAnchor`, VC fingerprints, proof/cache reuse anchors, and downstream artifact identities are not owned by `mizar-core`. | VC Tasks 30-31 own the first exact contract/slice and Task-30 descendants own remaining source-derived VC families; artifact reuse remains deferred downstream. | Downstream identity and anchor contracts exist. | Map only accepted core obligation seeds and local paths into downstream anchors. |
-| CORE-AUDIT-G005 | `external_dependency_gap` | Source-derived call/result substitution, pattern, snapshot, claim, and richer algorithm payload seams require checker-owned explicit payloads. | Checker Task 247, Core Task 32, and the VC Task-30 decomposition. | Explicit checker payloads and bounded core consumers exist for those source forms. | Implement only the bounded producer/lowering/VC tasks created by those decomposition owners. |
+| CORE-AUDIT-G005 | `external_dependency_gap` | Source-derived call/result request metadata, pattern, snapshot, claim, and richer algorithm payload seams require syntax-free checker-owned projections; concrete call/result substitution remains VC-owned. | Core Tasks 42-47 own joint source/checker/Core payload routes, Core Tasks 48-53 own CFG routes, and the VC Task-30 decomposition owns substitution/VC descendants. | Explicit projections and bounded consumers exist for those source forms. | Implement only the named descendants; Core/CFG carry substitution requests but never generate or apply substitutions. |
 | CORE-AUDIT-G006 | `deferred` | Public diagnostic code-space is not allocated by this crate. | Diagnostics registry owner. | Shared public diagnostic registry and allocation policy exist. | Assign public codes while preserving current local structured classes. |
 
 The original audit opened no new `mizar-core` implementation task. Task 265
 later superseded that generic ownership: completed Task 31 owns the exact
-Task-180 slice, while Task 32 remains the docs-only exhaustive
-remaining-family decomposition. Checker Task 247 is now complete, and its
-accepted payload-family graph makes Task 32 dependency-authorized without
-waiting for checker producer implementation; Task 32 must preserve all blocked
-accepted-status, scheme-role, artifact-schema, and public-code gates.
-Coverage/status remains deferred only for the
-Task-32 families and later stages. Diagnostics and Steps 6/7
-proof/kernel/artifact work remain with their existing owners.
+Task-180 slice, and completed docs-only Task 32 now assigns Core Tasks 33-53
+and five prepared consumers in `source_family_decomposition.md`. Gates A1/S1,
+artifact schemas, public codes, concrete call/result substitution, and all
+coverage/status changes remain with their named owners. Diagnostics and Steps
+6/7 proof/kernel/artifact work remain deferred. VC Task 30 is now
+dependency-authorized for its docs-only decomposition, not for VC generation.
 
 Task 267 accepted-contract history fixed one exact mapping,
 `PendingAutomaticProof` -> `False` -> direct `TerminalGoal` -> Active

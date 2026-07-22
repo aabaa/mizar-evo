@@ -292,21 +292,20 @@ source behavior ではなく、下の follow-up register で分類した unavail
 
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
-| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction が full source-derived `ResolvedTypedAst` payload、`qua` の real view-path / reduct-functor payload、production source-to-core fixture をまだ block している。 | Tasks 266-268/Core Task 31はexact Task-180 slice、checker Task 247/Core Task 32は残る全checker-to-core familyのexhaustive decompositionを所有する。 | `mizar-core` が raw syntax を再 scan せずに checker-ready payload を利用できる。 | Core Task 32が作るbounded source-derived lowering taskをprepared consumer付きで実装する。 |
-| CORE-AUDIT-G002 | `external_dependency_gap` | Core Task 31はTask-180 `CoreIr`向けexact source-derived `type_elaboration` snapshotを1件提供した。non-Task-180 `CoreIr`全family、全`ControlFlowIr`、`proof_verification` snapshot runnerは未提供。 | checker Task 247後、Core Task 32が残る全familyのprepared consumerを所有する。 | stage runnerが残るreal checker payload由来`CoreIr`/`ControlFlowIr` baselineを比較できる。 | bounded Task-32 descendant実装にattachedしたsnapshotだけactive化し、Task-31 shortcutをgeneralizeしない。 |
+| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction が full source-derived `ResolvedTypedAst` payload、`qua` の real view-path / reduct-functor payload、production source-to-core fixture をまだ block している。 | Tasks 266-268/Core Task 31はexact Task-180 slice、checker Tasks 248-264/269-279とCore Tasks 33-47は残る全bounded checker-to-Core familyを所有する。 | `mizar-core` が raw syntax を再 scan せずに checker-ready payload を利用できる。 | `source_family_decomposition.md`のdependency-ready descendantだけをprepared consumer付きで実装する。 |
+| CORE-AUDIT-G002 | `external_dependency_gap` | Core Task 31はTask-180 `CoreIr`向けexact source-derived `type_elaboration` snapshotを1件提供した。non-Task-180 `CoreIr`全family、全`ControlFlowIr`、`proof_verification` snapshot runnerは未提供。 | Core Tasks 33-53と`MT10-CIR-TE`/`FS`/`AS`/`ALG`/`MT10-CFG-PV`がremaining family/consumerを所有する。 | stage runnerが残るreal checker payload由来`CoreIr`/`ControlFlowIr` baselineを比較できる。 | bounded descendant実装にattachedしたsnapshotだけactive化し、Task-31 shortcutやempty snapshot infrastructureをgeneralizeしない。 |
 | CORE-AUDIT-G003 | `external_dependency_gap` | artifact schema emission、proof acceptance、VC generation、kernel checking は downstream または cross-crate work。 | `mizar-artifact`, `mizar-proof`, `mizar-vc`, `mizar-kernel` phase。 | downstream crate が core/control-flow handoff の accepted schema と consumer を定義する。 | `mizar-core` を proof acceptance / kernel checking に変えず consumer を接続する。 |
 | CORE-AUDIT-G004 | `external_dependency_gap` | concrete `VcId`、`ObligationAnchor`、VC fingerprint、proof/cache reuse anchor、downstream artifact identity は `mizar-core` の責務外。 | VC Tasks 30-31がfirst exact contract/slice、Task-30 descendantが残るsource-derived VC familyを所有する。artifact reuseはdownstream deferred。 | downstream identity と anchor contract が存在する。 | accepted core obligation seed/local pathだけをdownstream anchorへmapする。 |
-| CORE-AUDIT-G005 | `external_dependency_gap` | source-derived call/result substitution、pattern、snapshot、claim、より豊かな algorithm payload seam は checker-owned explicit payload を必要とする。 | Checker Task 247、Core Task 32、VC Task-30 decomposition。 | それらのsource form向けexplicit checker payloadとbounded core consumerが存在する。 | decomposition ownerが作るbounded producer/lowering/VC taskだけを実装する。 |
+| CORE-AUDIT-G005 | `external_dependency_gap` | source-derived call/result request metadata、pattern、snapshot、claim、rich algorithm payload seamはsyntax-free checker projectionを必要とし、concrete call/result substitutionはVC-owned。 | Core Tasks 42-47がjoint source/checker/Core route、Core Tasks 48-53がCFG route、VC Task-30 decompositionがsubstitution/VC descendantを所有する。 | source form向けexplicit projectionとbounded consumerが存在する。 | Named descendantだけを実装し、Core/CFGはsubstitution requestを搬送するが生成/適用しない。 |
 | CORE-AUDIT-G006 | `deferred` | Public diagnostic code-space はこの crate が割り当てない。 | Diagnostics registry owner。 | shared public diagnostic registry と allocation policy が存在する。 | current local structured class を保ったまま public code を割り当てる。 |
 
 original auditでは新しい`mizar-core` implementation taskを開かなかった。Task 265は
-そのgeneric ownershipを後からsupersedeし、完了したTask 31がexact Task-180 slice、
-Task 32がdocs-only exhaustive remaining-family decompositionを所有する。Checker
-Task 247は完了し、そのaccepted payload-family graphによりchecker producer実装を
-待たずTask 32はdependency-authorizedとなった。Task 32は全blocked accepted-status/
-scheme-role/artifact-schema/public-code gateを維持する。
-coverage/statusはTask-32 family/later stageについてだけdeferred。diagnosticsと
-Steps 6/7 proof/kernel/artifact workは既存ownerに残る。
+そのgeneric ownershipを後からsupersedeし、完了Task 31がexact Task-180 slice、
+完了docs-only Task 32が`source_family_decomposition.md`でCore Tasks 33-53と
+prepared consumer 5個を割り当てた。Gates A1/S1、artifact schema、public code、
+concrete call/result substitution、coverage/status changeはnamed ownerに残る。
+diagnosticsとSteps 6/7 proof/kernel/artifact workはdeferred。VC Task 30はdocs-only
+decompositionについてdependency-authorizedだが、VC generation authorityではない。
 
 Task 267 accepted-contract historyは
 `PendingAutomaticProof` -> `False` -> direct `TerminalGoal` -> `proof/0`の

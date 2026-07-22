@@ -492,6 +492,11 @@ the paired producer tasks.
       including all SCA-005 items. Do not invent unavailable Core/CFG inputs,
       generate VCs, change fixtures/expectations/trace status, or promote
       coverage. Deps: core Tasks 31-32.
+    - Core Tasks 31-32 are now complete, so this task is dependency-authorized.
+      Core Task 32 names Core 33-53 and preserves Gates A1/S1 plus VC-owned
+      concrete call/result substitution. This task must retain those
+      unimplemented dependencies and gates while defining VC descendants; it
+      still has no authority to generate or accept a VC.
 
 31. **Exact source-derived contradiction VC integration.** [ ]
     - Implement only Task 30's accepted mapping for core Task 31's real theorem

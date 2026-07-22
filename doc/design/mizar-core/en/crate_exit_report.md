@@ -123,11 +123,11 @@ helper extraction remain external or deferred rather than crate-owned blockers.
 
 | ID | Reason | Owner | Unblock condition |
 |---|---|---|---|
-| CORE-AUDIT-G001 | Source-to-checker extraction still blocks full source-derived `ResolvedTypedAst` payloads and production source-to-core fixtures. | Checker extraction / mizar-test integration follow-up. | Checker-ready AST-wide payload extraction exists without raw syntax rescanning in `mizar-core`. |
-| CORE-AUDIT-G002 | Core Task 31 now provides the one exact Task-180 source-derived `type_elaboration` `CoreIr` snapshot; all non-Task-180 `CoreIr`, all `ControlFlowIr`, and `proof_verification` snapshot runners remain unavailable. | Core Task 32 decomposition after checker Task 247. | Bounded descendant tasks provide prepared stage consumers for the remaining real checker-derived baselines. |
+| CORE-AUDIT-G001 | Source-to-checker extraction still blocks full source-derived `ResolvedTypedAst` payloads and production source-to-core fixtures. | Checker Tasks 248-264/269-279 and joint Core Tasks 42-47; Core Tasks 33-41 consume the non-algorithm families. | Checker-ready AST-wide payload extraction exists without raw syntax rescanning in `mizar-core`. |
+| CORE-AUDIT-G002 | Core Task 31 now provides the one exact Task-180 source-derived `type_elaboration` `CoreIr` snapshot; all non-Task-180 `CoreIr`, all `ControlFlowIr`, and `proof_verification` snapshot runners remain unavailable. | Core Tasks 33-53 and prepared consumers `MT10-CIR-TE`/`FS`/`AS`/`ALG`/`MT10-CFG-PV`. | Bounded descendants provide the remaining real checker-derived baselines; the first general Core/CFG infrastructure lands with its first real baseline. |
 | CORE-AUDIT-G003 | Artifact schema emission, proof acceptance, VC generation, and kernel checking are downstream or cross-crate work. | `mizar-artifact`, `mizar-proof`, `mizar-vc`, and `mizar-kernel` phases. | Downstream crates define accepted schemas and consumers for core/control-flow handoff. |
 | CORE-AUDIT-G004 | Concrete `VcId`, `ObligationAnchor`, VC fingerprints, proof/cache reuse anchors, and downstream artifact identities are not owned by `mizar-core`. | `mizar-vc` incremental verification / artifact phases. | Downstream identity and anchor contracts exist. |
-| CORE-AUDIT-G005 | Source-derived call/result substitution, pattern, snapshot, claim, and richer algorithm payload seams require checker-owned explicit payloads. | Checker payload extraction plus phase-10/phase-11 integration. | Explicit checker payloads exist for those source forms. |
+| CORE-AUDIT-G005 | Source-derived call/result request metadata, pattern, snapshot, claim, and richer algorithm payload seams require syntax-free checker projections; concrete substitution remains VC-owned. | Core Tasks 42-53 plus VC Task-30 descendants. | Explicit projections and bounded consumers exist for those source forms without Core/CFG generating substitutions. |
 | CORE-AUDIT-G006 | Public diagnostic code-space is not allocated by this crate. | Diagnostics registry owner. | Shared public diagnostic registry and allocation policy exist. |
 | CORE-BOUNDARY-G001 | `src/elaborator.rs` is large and may benefit from future private helper/test extraction. | Future move-only core maintenance task. | Reviewability bottleneck emerges and a dedicated split task can preserve public API and behavior. |
 | CORE-BOUNDARY-G002 | `src/control_flow.rs` is large and may benefit from private builder/diagnostic/handoff helper extraction. | Future move-only core maintenance task. | Reviewability bottleneck emerges and a dedicated split task can preserve public API and behavior. |
@@ -200,4 +200,5 @@ Active undischarged `TheoremProof` seed, and verifies the full deterministic
 debug baseline in the active type-elaboration runner. The adapter remains
 syntax-free and transactional; it adds no acceptance, discharge, CFG, VC,
 kernel, artifact, or broader-family behavior. CORE-AUDIT-G002 therefore remains
-open only for every non-Task-180 family and later stages owned by Core Task 32.
+open only for every non-Task-180 family and later stage now assigned to Core
+Tasks 33-53 and the five prepared consumers by completed docs-only Task 32.

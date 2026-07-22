@@ -24,6 +24,7 @@ Current paired file set:
 - `crate_exit_report.md`
 - `elaborator.md`
 - `module_boundary_audit.md`
+- `source_family_decomposition.md`
 - `source_spec_audit.md`
 - `task_ledger.md`
 - `todo.md`
@@ -57,6 +58,7 @@ companions; resolved pair updates are recorded below.
 | `crate_exit_report.md` | Records closeout status, task commits, hard gates, score, deferred items, verification, and handoff. | Mirrors the same closeout evidence and classifications. | No drift. Added by closeout. |
 | `elaborator.md` | Specifies phase-9 input/output contracts, six lowering steps, the exact Task-180 adapter, diagnostics, determinism, enum policy, and forbidden behavior. | Mirrors the same six-step design, exact adapter, and external/deferred classifications. | No drift. Task-31 additions are synchronized. |
 | `module_boundary_audit.md` | Records the Task 24 source-layout gate, large review-risk files, no required split before closeout, and deferred move-only follow-ups. | Mirrors the same audit-only decision and classifications. | No drift. Added by Task 24. |
+| `source_family_decomposition.md` | Records Task 32's Core 33-53 graph, joint algorithm producer/lowerer contract, five prepared consumers, gates, corruption boundaries, and no-credit exit. | Mirrors the same task/dependency authority and forbidden boundaries. | No drift. Added by Task 32. |
 | `source_spec_audit.md` | Records public module/API inventory including Task 31, source/spec/test/deferred correspondence, `source_undocumented_behavior` pass, and CORE-AUDIT follow-up register. | Mirrors the same audit structure, exact Task-180 coverage, and CORE-AUDIT gap IDs/classes. | No drift. Task 22 lint guard also checks the source/spec audit pair. |
 | `task_ledger.md` | Records task restart status, review results, verification, and deferred reasons through the current task. | Mirrors the same ledger rows with localized prose. | No drift. Closeout row and task hash backfill are updated in this commit before staging. |
 | `todo.md` | Defines the ordered task list, status legend, verification, and notes. | Mirrors the ordered task list and verification policy. | No drift. Closeout status is updated in this commit before staging. |
@@ -85,6 +87,12 @@ Task-180 expectation sidecar, and one new exact traceability row in both the
 implementation and paired owning documentation; those changes agree. The
 existing `.miz` source and its semantic pass intent remain unchanged, and the
 older broad CoreIr trace row remains deferred.
+
+Core Task 32 adds and rechecks the `source_family_decomposition.md` pair and
+synchronizes the plan, TODO, source audit, module specifications, ledger, and
+cross-crate ownership notes. Both languages preserve the 33-53 task split,
+prepared consumer stages, Gates A1/S1, VC-owned substitution boundary, and
+zero coverage promotion.
 
 ## Guard Decision
 

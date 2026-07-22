@@ -824,6 +824,15 @@ task 21 は `core_ir` の public enum をすべて downstream forward-compatible
 | COREIR-G004 | `external_dependency_gap` | `mizar-vc`、`mizar-kernel`、`mizar-proof` crate は workspace member ではない。 | seed / provenance shape のみを仕様化し、downstream consumer は実装しない。 |
 | COREIR-G005 | `deferred` | published artifact schema と public diagnostic code allocation は後続 crate の責務。 | debug rendering は internal、diagnostic は local に保つ。 |
 
+## Task-32 source-derived follow-up
+
+[source_family_decomposition.md](./source_family_decomposition.md) はCore Tasks
+33-47のcanonical task/dependency authorityである。Context、type/evidence、
+term/formula、definition、proof、registration、template、algorithm familyを別々の
+logical taskに保ち、各々をcomplete source-derived `CoreIr` consumerと対にする。
+このownership-only decompositionはexisting Rust-fixture behaviorやexact Task-180
+adapterにbroader source coverageを与えない。
+
 ## forbidden behavior
 
 `core_ir` implementation は以下をしてはならない:

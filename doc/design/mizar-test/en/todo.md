@@ -266,6 +266,15 @@ Keep `cargo test -p mizar-test` green after each task (see
       reconciliation set early. Their complete dependencies and blocked gates are
       canonical in checker
       [payload_family_decomposition.md](../../mizar-checker/en/payload_family_decomposition.md).
+    - Core Task 32 now names five more non-placeholder increments in this open
+      task: `MT10-CIR-TE`, `MT10-CIR-FS`, `MT10-CIR-AS`, `MT10-CIR-ALG`, and
+      `MT10-CFG-PV`. Their exact stage/tag/phase/artifact dependencies and
+      corruption boundaries are canonical in Core
+      [source_family_decomposition.md](../../mizar-core/en/source_family_decomposition.md).
+      The first general Core snapshot integration and first
+      `SnapshotKind::ControlFlowIr` change must each land with its first real
+      baseline, never as empty infrastructure. Naming the consumers changes no
+      current runner, sidecar, trace status, or coverage.
     - The historical selected task-10 ledger records `mizar-parser` task 3
       (`parse-only`),
       `mizar-resolve` task 23 (`declaration-symbol`), `mizar-checker` task 12

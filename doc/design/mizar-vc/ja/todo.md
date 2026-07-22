@@ -463,6 +463,10 @@ kernel 受理境界の監査
       payloadをinventoryし、SCA-005を含む全familyにbounded producer/consumer taskを
       作る。unavailable Core/CFG inputの捏造、VC generation、fixture/expectation/
       trace status change、coverage promotionは禁止する。依存: core Tasks 31-32。
+    - Core Tasks 31-32は完了したため、このtaskはdependency-authorized。Core
+      Task 32はCore 33-53、Gates A1/S1、VC-owned concrete call/result
+      substitutionを命名した。本taskはVC descendant定義時もunimplemented
+      dependency/gateを保持し、VC generation/acceptance authorityを持たない。
 
 31. **Exact source-derived contradiction VC integration。** [ ]
     - core Task 31のreal theorem obligationについてTask 30 accepted mappingと

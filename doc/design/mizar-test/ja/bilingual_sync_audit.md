@@ -141,3 +141,10 @@ module-boundary heading、table、task id、preservation invariant、backlog sta
 CoreIr baseline、public snapshot-failure result/reporting、17-path/19,803-line
 ownership、403/368・236/224 coverage count、exact-only credit、broad deferred
 boundaryを同じ内容で記録する。このscopeにbilingual `design_drift`は残らない。
+
+## Core Task 32 / Task-10 pair recheck
+
+Core Task 32はpaired plan/TODO/traceabilityを再確認する。両言語は同じprepared
+Core/CFG consumer 5個、stage/tag/phase、artifact boundary、first-real-baseline
+rule、zero current coverage impactを命名する。このownership-only scopeに
+bilingual driftは残らない。

@@ -1967,3 +1967,19 @@ different-return conflict is not reactivated, while capture-avoidance,
 witness/guard, and unrelated template seeds are not silently added to that set.
 `spec_trace.toml` status, test lists, coverage classes, cases/requirements,
 runner counts, and existing expectations remain unchanged by Task 247.
+
+## Core Task 32 Core/CFG Ownership Traceability
+
+Core Task 32 adds no backlink or coverage credit. It assigns Core Tasks 33-53
+and prepared Task-10 consumers `MT10-CIR-TE`, `MT10-CIR-FS`, `MT10-CIR-AS`,
+`MT10-CIR-ALG`, and `MT10-CFG-PV`. The exact consumer stage/tag/phase/artifact
+and corruption contracts are canonical in Core
+[source_family_decomposition.md](../../mizar-core/en/source_family_decomposition.md).
+
+The broad non-Task-180 CoreIr and all ControlFlowIr rows remain deferred with
+empty tests. Existing Chapter-20 parser sources and expectations stay
+parse-only and are not reused as semantic baselines. The first general Core
+snapshot path and first `SnapshotKind::ControlFlowIr` path must each be paired
+with a distinct real semantic source and baseline in the owning descendant.
+Task 32 changes no case/requirement count, runner count, status, test list,
+expectation, or production source.

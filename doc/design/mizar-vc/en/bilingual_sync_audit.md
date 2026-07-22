@@ -168,3 +168,10 @@ local-hypothesis, cited-premise, and generated-VC-fact source bindings,
 participates in dependency-slice and proof-reuse identity, excludes imported
 facts, and is checked by trusted membership verification in `mizar-kernel` task
 31.
+
+## Core Task 32 Ownership Sync
+
+Core Task 32 rechecks the paired plan, TODO, and source/spec audit. Both
+languages record VC Task 30 as dependency-authorized for docs-only
+decomposition while preserving Core 33-53, Gates A1/S1, concrete substitution,
+and zero VC-generation/coverage authority.

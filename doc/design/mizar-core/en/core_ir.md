@@ -868,6 +868,16 @@ current variants.
 | COREIR-G004 | `external_dependency_gap` | `mizar-vc`, `mizar-kernel`, and `mizar-proof` crates are not workspace members yet. | Specify seed and provenance shape only; do not implement downstream consumers. |
 | COREIR-G005 | `deferred` | Published artifact schemas and public diagnostic code allocation belong to later crates. | Keep debug rendering internal and diagnostics local. |
 
+## Task-32 Source-Derived Follow-ups
+
+[source_family_decomposition.md](./source_family_decomposition.md) is the
+canonical task/dependency authority for Core Tasks 33-47. It keeps context,
+type/evidence, term/formula, definition, proof, registration, template, and
+algorithm families in separate logical tasks and attaches each to a complete
+source-derived `CoreIr` consumer. Existing Rust-fixture behavior and the exact
+Task-180 adapter do not gain broader source coverage from this ownership-only
+decomposition.
+
 ## Forbidden Behavior
 
 `core_ir` implementations must not:

@@ -261,6 +261,15 @@ regression test を追加した。
       dependency/blocked gateはchecker
       [payload_family_decomposition.md](../../mizar-checker/ja/payload_family_decomposition.md)
       をcanonicalとする。
+    - Core Task 32はこのopen task内にさらに5個のnon-placeholder increment、
+      `MT10-CIR-TE`、`MT10-CIR-FS`、`MT10-CIR-AS`、`MT10-CIR-ALG`、
+      `MT10-CFG-PV`を命名した。Exact stage/tag/phase/artifact dependencyと
+      corruption boundaryはCore
+      [source_family_decomposition.md](../../mizar-core/ja/source_family_decomposition.md)
+      をcanonicalとする。最初のgeneral Core snapshot integrationと最初の
+      `SnapshotKind::ControlFlowIr` changeは各々最初のreal baselineと同時にlandし、
+      empty infrastructureにしない。Consumer名の追加はcurrent runner/sidecar/
+      trace status/coverageを変更しない。
     - historical selected task-10 ledger は、`mizar-parser` task 3
       （`parse-only`）、
       `mizar-resolve` task 23（`declaration-symbol`）、`mizar-checker` task 12

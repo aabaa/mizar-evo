@@ -71,3 +71,7 @@ Task-10 consumer increments, literal 24-fixture Task-49 reconciliation mapping,
 and no-credit boundary
 are synchronized with no new sync debt. No source or lint-policy change is
 needed because the existing exact-pair guard discovers the new filename pair.
+
+Core Task 32 rechecks the paired payload-family decomposition note. Both
+languages record that algorithm producer/lowering work is owned by joint Core
+Tasks 42-47 without inventing checker task ids and with Gates A1/S1 preserved.
