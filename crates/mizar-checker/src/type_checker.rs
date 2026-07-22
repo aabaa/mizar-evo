@@ -21,6 +21,7 @@ use crate::{
         TypeTable, TypedNodeId, TypedSiteRef, TypedSubjectRef,
     },
 };
+pub(crate) use mizar_resolve::env::{ExportStatus, Visibility};
 use mizar_resolve::{
     env::{ContributionKind, DefinitionKind, SymbolEnv, SymbolKind},
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
@@ -546,6 +547,8 @@ pub struct CheckedStatementOwner {
     symbol: SymbolId,
     source_range: SourceRange,
     origin: SemanticOrigin,
+    visibility: Visibility,
+    export_status: ExportStatus,
 }
 
 impl CheckedStatementOwner {
@@ -584,7 +587,13 @@ impl CheckedStatementOwner {
         })?;
         if owner.kind() != SymbolKind::Theorem
             || owner.symbol().module() != module_id
-            || definition.kind() != DefinitionKind::Theorem
+            || owner.visibility() != Visibility::Public
+            || owner.export_status() != ExportStatus::Exported
+        {
+            return Err(StatementOwnerError::InvalidOwner { symbol });
+        }
+        if definition.kind() != DefinitionKind::Theorem
+            || definition.visibility() != owner.visibility()
             || definition.conflict().is_some()
             || definition.origin() != owner.origin()
             || definition.contribution() != owner.contribution()
@@ -618,6 +627,8 @@ impl CheckedStatementOwner {
             symbol,
             source_range,
             origin: owner.origin().clone(),
+            visibility: owner.visibility(),
+            export_status: owner.export_status(),
         })
     }
 
@@ -633,6 +644,14 @@ impl CheckedStatementOwner {
         &self.origin
     }
 
+    pub const fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+
+    pub const fn export_status(&self) -> ExportStatus {
+        self.export_status
+    }
+
     #[cfg(test)]
     pub(crate) fn from_validated_parts_for_test(
         symbol: SymbolId,
@@ -643,6 +662,25 @@ impl CheckedStatementOwner {
             symbol,
             source_range,
             origin,
+            visibility: Visibility::Public,
+            export_status: ExportStatus::Exported,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_validated_parts_and_visibility_for_test(
+        symbol: SymbolId,
+        source_range: SourceRange,
+        origin: SemanticOrigin,
+        visibility: Visibility,
+        export_status: ExportStatus,
+    ) -> Self {
+        Self {
+            symbol,
+            source_range,
+            origin,
+            visibility,
+            export_status,
         }
     }
 }
@@ -12509,10 +12547,13 @@ mod tests {
         let base = StatementOwnerEnvSpec {
             include_owner: true,
             owner_kind: SymbolKind::Theorem,
+            owner_visibility: Visibility::Public,
+            owner_export_status: ExportStatus::Exported,
             owner_origin: origin.clone(),
             contribution_module: module.clone(),
             contribution_kind: Some(ContributionKind::LocalSource { source_id: source }),
             definition_kind: Some(DefinitionKind::Theorem),
+            definition_visibility: Visibility::Public,
             definition_origin: origin.clone(),
             definition_conflict: false,
             definition_contribution_mismatch: false,
@@ -12530,6 +12571,8 @@ mod tests {
         assert_eq!(checked.symbol(), &owner);
         assert_eq!(checked.source_range(), owner_range);
         assert_eq!(checked.origin(), &origin);
+        assert_eq!(checked.visibility(), Visibility::Public);
+        assert_eq!(checked.export_status(), ExportStatus::Exported);
 
         let local_contribution = ContributionKind::LocalSource { source_id: source };
         for state in [
@@ -12591,6 +12634,12 @@ mod tests {
         let mut wrong_kind = base.clone();
         wrong_kind.owner_kind = SymbolKind::Mode;
         owner_cases.push(wrong_kind);
+        let mut private_owner = base.clone();
+        private_owner.owner_visibility = Visibility::Private;
+        owner_cases.push(private_owner);
+        let mut local_only_owner = base.clone();
+        local_only_owner.owner_export_status = ExportStatus::LocalOnly;
+        owner_cases.push(local_only_owner);
         let mut wrong_source = base.clone();
         wrong_source.owner_origin = SemanticOrigin::new(
             source_ids_pair().1,
@@ -12620,6 +12669,9 @@ mod tests {
         let mut wrong_definition = base.clone();
         wrong_definition.definition_kind = Some(DefinitionKind::Mode);
         definition_cases.push(wrong_definition);
+        let mut private_definition = base.clone();
+        private_definition.definition_visibility = Visibility::Private;
+        definition_cases.push(private_definition);
         let mut conflicted = base.clone();
         conflicted.definition_conflict = true;
         definition_cases.push(conflicted);
@@ -12723,10 +12775,13 @@ mod tests {
     struct StatementOwnerEnvSpec {
         include_owner: bool,
         owner_kind: SymbolKind,
+        owner_visibility: Visibility,
+        owner_export_status: ExportStatus,
         owner_origin: SemanticOrigin,
         contribution_module: ModuleId,
         contribution_kind: Option<ContributionKind>,
         definition_kind: Option<DefinitionKind>,
+        definition_visibility: Visibility,
         definition_origin: SemanticOrigin,
         definition_conflict: bool,
         definition_contribution_mismatch: bool,
@@ -12761,14 +12816,18 @@ mod tests {
         );
         let mut symbols = SymbolIndex::new();
         if spec.include_owner {
-            symbols.insert(SymbolEntry::new(
-                owner.clone(),
-                spec.owner_kind,
-                NamespacePath::new("main"),
-                "Task180",
-                spec.owner_origin.clone(),
-                contribution,
-            ));
+            symbols.insert(
+                SymbolEntry::new(
+                    owner.clone(),
+                    spec.owner_kind,
+                    NamespacePath::new("main"),
+                    "Task180",
+                    spec.owner_origin.clone(),
+                    contribution,
+                )
+                .with_visibility(spec.owner_visibility)
+                .with_export_status(spec.owner_export_status),
+            );
         }
         if spec.duplicate_owner {
             symbols.insert(SymbolEntry::new(
@@ -12802,7 +12861,8 @@ mod tests {
                 kind,
                 spec.definition_origin,
                 definition_contribution,
-            );
+            )
+            .with_visibility(spec.definition_visibility);
             if spec.definition_conflict {
                 definition = definition.with_conflict(DeclarationConflictClass::DuplicateSpelling);
             }

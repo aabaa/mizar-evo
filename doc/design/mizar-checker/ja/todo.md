@@ -4104,7 +4104,7 @@ cargo test -p mizar-test
   完了: explicit `Unmodified`/`Omitted` intentはdistinct
   `PendingAutomaticProof` 1件、direct terminal node 1件、`proof/0` terminal row
   1件を生成し、future exact core mappingはatomic/non-acceptingである。
-- [ ] **Task 268: accepted Task-267 producerを実装する。** exact Task-180 final
+- [x] **Task 268: accepted Task-267 producerを実装する。** exact Task-180 final
   handoffだけを拡張し、missing/duplicate/reordered/corrupt/owner-formula-proof mismatch
   をfail closedにする。3 proof tableのdeterministic nonempty debug renderingと
   empty renderingのbyte stabilityもcoverする。theorem acceptance、discharge、
@@ -4113,6 +4113,10 @@ cargo test -p mizar-test
   independently validated Public/Exported resolver factを
   `CheckedStatementOwner`に保持し、proof-intent rowとcross-checkし、authenticated
   owner/row corruptionを独立にtestする。
+  完了: exact all-or-none producer、authenticated-owner validation、private
+  output postvalidation、corruption matrix、deterministic nonempty rendering、
+  captured byte-identical empty renderingを実装した。次はCore Task 31で、
+  acceptance、Core/VC、broader proof、Steps 6/7はdeferredのままである。
 
 ## Task 247 STEP 5 Payload-Family Decomposition
 

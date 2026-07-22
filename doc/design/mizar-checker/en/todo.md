@@ -4314,7 +4314,7 @@ Check the task off here once tests pass.
   Complete: explicit `Unmodified`/`Omitted` intent produces one distinct
   `PendingAutomaticProof`, one direct terminal node, and one terminal row at
   `proof/0`; the exact future core mapping is atomic and non-accepting.
-- [ ] **Task 268: implement the accepted Task-267 producer.** Extend only the
+- [x] **Task 268: implement the accepted Task-267 producer.** Extend only the
   exact Task-180 final handoff and fail closed on missing, duplicate, reordered,
   corrupt, or owner/formula/proof-mismatched data. Cover deterministic nonempty
   debug rendering of all three proof tables and byte-stable empty rendering.
@@ -4324,6 +4324,11 @@ Check the task off here once tests pass.
   Preserve independently validated Public/Exported resolver facts on
   `CheckedStatementOwner`, cross-check them against the proof-intent row, and
   test authenticated-owner and row corruption independently.
+  Complete: the exact all-or-none producer, authenticated-owner validation,
+  private output postvalidation, corruption matrix, deterministic nonempty
+  rendering, and captured byte-identical empty rendering are implemented.
+  Core Task 31 is next; acceptance, Core/VC, broader proofs, and Steps 6/7
+  remain deferred.
 
 ## Task 247 STEP 5 Payload-Family Decomposition
 

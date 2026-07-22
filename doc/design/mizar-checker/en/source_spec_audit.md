@@ -2032,7 +2032,9 @@ Correspondence:
 Generated public newtypes:
 
 - `ResolvedTypedNodeId`, `ExpressionMetadataId`, `OverloadResolutionId`,
-  `CoercionInsertionId`, `ResolvedTypedDiagnosticId`, `StatementSemanticId`
+  `CoercionInsertionId`, `ResolvedTypedDiagnosticId`, `StatementSemanticId`,
+  `StatementProofIntentId`, `CheckedProofId`, `CheckedProofNodeId`,
+  `CheckedTerminalGoalId`
 - `ExprId`, `SourceNodeRole`
 
 Literal top-level public items:
@@ -2053,6 +2055,11 @@ Literal top-level public items:
   `ResolvedTypedDiagnosticSeverity`, `ResolvedTypedDiagnosticTable`,
   `CandidateSummaryNamespace`, `StatementSemanticInputs`,
   `StatementSemanticInput`, `StatementSemantic`, `StatementSemanticTable`,
+  `StatementProofInputs`, `StatementProofIntentInput`,
+  `TheoremPolicyIntent`, `TheoremJustificationIntent`, `CheckedProofStatus`,
+  `CheckedProofNodeKind`, `CheckedCitation`, `CheckedProofLabel`,
+  `CheckedProof`, `CheckedProofTable`, `CheckedProofNode`,
+  `CheckedProofNodeTable`, `CheckedTerminalGoal`, `CheckedTerminalGoalTable`,
   `ResolvedTypedAstError`
 
 Correspondence:
@@ -2061,6 +2068,7 @@ Correspondence:
 |---|---|---|---|
 | Final source-shaped projection preserves typed AST nodes, expression metadata, overload summaries, cluster facts, and diagnostics. | `ResolvedTypedAst::assemble`, `ResolvedTypedAstInputs`, arena/metadata/summary/table types. | `assembly_preserves_source_shape_metadata_and_successful_overload_type`, template/candidate summary tests, diagnostic remap tests. | Implemented for explicit predecessor outputs; source extraction/artifacts remain MC-G027. |
 | Failed overload sites and failed nodes remain visible rather than being rewritten into success. | `OverloadResolutionStatus`, recovery/reason enums, result and diagnostic tables. | `failed_sites_do_not_insert_views_and_candidate_namespaces_are_distinct`, `failed_selection_statuses_preserve_failed_nodes_without_insertions`, validation rejection tests. | Implemented. |
+| Exact Task-180 omitted-justification intent produces an authenticated pending proof and direct terminal goal atomically. | `StatementProofInputs`, `CheckedProofTable`, `CheckedProofNodeTable`, `CheckedTerminalGoalTable`, private postvalidation. | exact statement/proof projection, owner visibility, corruption, deterministic nonempty, and captured empty-rendering tests. | Implemented only for the Task-180 singleton; broader proofs remain Task 247 and Core lowering remains Core Task 31. |
 | Inserted coercions record source and widening/source-`qua` evidence only. | `CoercionInsertion`, `CoercionInsertionSource`, `CoercionInsertionTable`. | assembly and validation tests, overload selection invalid view tests upstream. | Implemented for explicit inputs. |
 | Deterministic debug projection canonicalizes equivalent input ordering. | deterministic table iteration and `debug_text`. | `deterministic_debug_text_canonicalizes_equivalent_input_orderings`, task-30 determinism suite. | Implemented. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
@@ -2447,4 +2455,17 @@ coverage changes in Task 267.
 Task 268's target also extends the existing validated `CheckedStatementOwner`
 with authenticated resolver Public/Exported facts so proof assembly never
 trusts duplicated row constants. This remains target state, not current API or
-implementation credit.
+implementation credit for Task 267; the following Task-268 addendum supersedes
+that historical state.
+
+Task 268 implementation addendum: the target state is now current checker API
+and unit/runner coverage for the exact Task-180 source. The checker preserves
+authenticated Public/Exported owner facts, accepts only the explicit
+`Unmodified`/`Omitted` singleton intent, and publishes all-or-none proof,
+direct-terminal-node, and terminal-goal tables with
+`PendingAutomaticProof`. Private postvalidation and corruption tests cover
+cardinality, dense identity/order, provenance/range/recovery, status/root,
+cross-references, empty citations/context, absent label, and `proof/0`.
+Broader proof families remain owned by Task 247. Acceptance, facts, Core/CFG/
+VC payloads, existing fixtures/expectations, and trace status remain unchanged;
+Core Task 31 is the next exact consumer.

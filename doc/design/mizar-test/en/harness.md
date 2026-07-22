@@ -153,7 +153,7 @@ No exhaustive public enum exceptions are owned by this module.
 
 ## Runner Source Ownership (Task 264 Closeout)
 
-The current production runner layout contains exactly 17 paths and 19,262 lines.
+The current production runner layout contains exactly 17 paths and 19,581 lines.
 This is the canonical crate-relative source-path table after the behavior-
 preserving Tasks 249-263 split.
 
@@ -167,13 +167,13 @@ preserving Tasks 249-263 split.
 | `src/runner/type_elaboration.rs` | 577 | Private type-elaboration facade over exactly eleven private leaves. |
 | `src/runner/type_elaboration/admission.rs` | 60 | Active type-case admission and tag validation. |
 | `src/runner/type_elaboration/binary_routes.rs` | 3,791 | Reserved-variable binary route configs, extraction, output, and details. |
-| `src/runner/type_elaboration/checker_handoff.rs` | 856 | Checker-owned binding/declaration and exact Task-180 final handoff assembly and validation. |
+| `src/runner/type_elaboration/checker_handoff.rs` | 1,153 | Checker-owned binding/declaration plus exact Task-180 statement/proof/terminal handoff assembly and validation. |
 | `src/runner/type_elaboration/long_chain_config.rs` | 82 | Shared exact long-chain definition tables. |
 | `src/runner/type_elaboration/output.rs` | 1,538 | Checker outputs, validation, result/detail projection, and diagnostics. |
 | `src/runner/type_elaboration/parenthesized_routes.rs` | 745 | Parenthesized reserved-variable route ownership. |
 | `src/runner/type_elaboration/result.rs` | 29 | Expected-key and stable failure projection. |
 | `src/runner/type_elaboration/source_ast.rs` | 147 | Common exact AST and import projection. |
-| `src/runner/type_elaboration/source_formula.rs` | 2,629 | Common formula/source payload extraction, including exact theorem/formula sites and ranges. |
+| `src/runner/type_elaboration/source_formula.rs` | 2,651 | Common formula/source payload extraction, including exact theorem/formula sites/ranges and explicit Task-268 theorem intent. |
 | `src/runner/type_elaboration/source_reserve.rs` | 1,474 | Reserve declaration, type, symbol, and mode-expansion extraction. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` | 4,187 | Reserved-variable type-assertion and asserted-head route ownership. |
 
@@ -184,7 +184,7 @@ repository root, the exact input is the sorted tracked path list selected from
 `b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
 Passing those same repository-relative paths in order to `sha256sum` and
 hashing the corresponding ordered output lines yields
-`e920dbaef82c7192d5b451ed1ab9d4a5766f2abc82b4f5314ae9ed7bb6a47825`.
+`888cd8a0cadc7e0f96d803f3629c8f97f3771c0e9ffd26e57639e5b8dede6d46`.
 Production `runner.rs` owns no route config, source extractor, output builder,
 or detail-wrapper definition; its route aliases remain test-only. The private
 facade's eleven `mod` declarations, the 17-path/hash pair, the unchanged public
@@ -2481,3 +2481,21 @@ existing `.miz` and expectation. It also asserts deterministic nonempty
 byte-identical Task-266 debug output when they are empty. It does not change
 trace status, runner stage,
 truth/facts, acceptance, proof search, Core/CFG/VC behavior, or Steps 6/7.
+
+## Task 268 Exact Proof-Intent Implementation
+
+The Task-180 contradiction extractor now returns a dedicated statement wrapper
+only after proving that the theorem is unannotated, has no written
+justification or proof block, and otherwise satisfies the pre-existing exact
+whole-tree allowlist. The wrapper carries explicit `Unmodified` and `Omitted`
+intent into the syntax-free checker row. The runner asserts the exact pending
+proof, direct terminal, real formula site plus separate compact node, empty
+citations/context, absent label, and `proof/0` path.
+
+The corruption matrix covers bundle omission/duplication/order, every copied
+identity/range/provenance/recovery/intent field, authenticated owner visibility
+and export status independently from row values, Role-site substitution, and
+checker output cross-references. Justification-clause and proof-block near
+misses remain extraction gaps. Existing `.miz`, expectations, admission, test
+names, counts, trace status, and four CLI outputs remain unchanged. Core Task
+31 is the next consumer; no acceptance or proof-verification credit is added.

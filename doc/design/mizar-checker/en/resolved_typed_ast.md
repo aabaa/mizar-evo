@@ -396,6 +396,12 @@ implementing the specified behavior.
 | `ResolvedTypedDiagnosticSeverity` | Forward-compatible; diagnostic severity policy may grow with IDE/artifact consumers. |
 | `CandidateSummaryNamespace` | Forward-compatible; candidate-summary namespaces may grow with additional overload tables. |
 | `ResolvedTypedAstError` | Forward-compatible; assembly validation errors may grow with new projection invariants. |
+| `TheoremPolicyIntent` | Forward-compatible; declaration-policy intent may grow with explicitly supported theorem modifiers. |
+| `TheoremJustificationIntent` | Forward-compatible; justification intent may grow with explicitly extracted written proof forms. |
+| `CheckedProofStatus` | Forward-compatible; checker-owned proof processing states may grow without implying acceptance. |
+| `CheckedProofNodeKind` | Forward-compatible; checked proof skeleton nodes may grow through checker Task 247 descendants. |
+| `CheckedCitation` | Forward-compatible empty carrier; citation variants remain deferred to checker Task 247 descendants. |
+| `CheckedProofLabel` | Forward-compatible empty carrier; proof-label variants remain deferred to checker Task 247 descendants. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -674,3 +680,25 @@ broader theorem/proof forms, truth or facts, proof search, acceptance,
 CoreIr/ControlFlowIr/VC generation, fixture or expectation changes, or Step
 6/7 behavior. Core Task 31 consumes these explicit tables; it may not recover
 their intent by scanning source.
+
+## Task 268 Implementation Completion
+
+Task 268 implements the accepted contract above for only the exact Task-180
+source. `ResolvedTypedAst::assemble` requires the statement and proof bundles
+together, validates the explicit `Unmodified`/`Omitted` row against the
+authenticated owner and checked contradiction, constructs all three singleton
+tables in local state, and privately postvalidates their cardinalities, dense
+ids, root/status, cross-references, empty carriers, and `proof/0` metadata
+before publication. Every mismatch returns an error without a partial table.
+Constructible proof/node/goal invariants are exercised through cloned-table
+corruption. The single-variant policy/justification/status and empty citation/
+label states have no safe invalid value; their private predicate is tested
+independently, and status rejection additionally uses the same validator core
+with a false status-match seam.
+
+The exact nonempty debug projection renders every field in the proof, node,
+and terminal-goal tables deterministically. A captured Task-266 empty-bundle
+string guards byte-identical legacy rendering. The implementation adds no raw
+syntax dependency to the checker, publishes no fact, accepts or discharges no
+theorem, and creates no CoreIr, ControlFlowIr, or VC payload. Core Task 31 is
+now the next dependency-authorized consumer; Steps 6/7 remain deferred.

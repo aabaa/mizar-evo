@@ -10830,3 +10830,22 @@ exact non-accepting Core Task-31 projection. Production remains 17 paths and
 19,262 lines with path hash `b36d96fe...` and content hash `e920dbae...`; all
 runner/count/CLI/test-list hashes are unchanged. Task 268 is the next
 executable task; Core Task 31 remains gated and Steps 6/7 stay deferred.
+
+## Task 268 Current-State Addendum
+
+Task 268 changes behavior inside the same source-extraction and checker-handoff
+owners; it does not split or add a production path. `source_formula.rs`
+classifies only the exact unannotated, unjustified, proof-block-free Task-180
+theorem and `checker_handoff.rs` constructs and asserts its explicit syntax-free
+proof intent and checker tables. `runner.rs` remains facade/top-level
+orchestration only, and the facade still declares eleven private leaves.
+
+The production manifest remains 17 paths with path hash
+`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
+It now totals 19,581 lines with content-manifest hash
+`888cd8a0cadc7e0f96d803f3629c8f97f3771c0e9ffd26e57639e5b8dede6d46`;
+`checker_handoff.rs` is 1,153 lines and `source_formula.rs` is 2,651 lines.
+The other production owners and visibility boundaries are unchanged. Existing
+`.miz`, expectations, trace status/test list, active runner/counts, and four CLI
+bytes remain unchanged. Core Task 31 is now executable; Steps 6/7 remain
+deferred.

@@ -315,5 +315,6 @@ status and narrow `lower_exact_task180_handoff` adapter are target state only;
 current source remains unchanged and receives no implementation or coverage
 credit. `Valid`/public item metadata remains structural/name visibility only,
 and pending status forbids verified-premise or accepted-artifact publication.
-Task 268 must land first; Core Task 31, VC, acceptance, and Steps 6/7 remain
-deferred.
+Task 268 has now landed the required explicit checker tables, so Core Task 31
+is the next executable exact consumer. Core implementation/coverage, VC,
+acceptance, and Steps 6/7 remain deferred until their owning tasks land.

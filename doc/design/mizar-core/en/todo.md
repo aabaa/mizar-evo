@@ -479,12 +479,15 @@ work. Every finding maps to a task or a recorded disposition:
       template_encoding_audit.md F5.
 
 31. **Exact source-derived contradiction theorem lowering.** [ ]
-    - After mizar-test Tasks 266 and 268, consume only their checker-owned
+    - With mizar-test Tasks 266 and 268 complete, consume only their checker-owned
       theorem owner, checked contradiction formula, proof-status/skeleton, and
       explicit terminal-goal payload using the exact mapping selected by Task
       267. Produce source-derived `CoreIr` and its theorem-obligation data with
       complete source/provenance identity; pair it with the prepared
       mizar-test Task-10 type-elaboration snapshot consumer.
+    - Task 268 provides the required explicit checker proof/status/terminal
+      tables and is no longer a dependency gap. This task is now executable;
+      it must still validate rather than reconstruct that payload.
     - The selected mapping is one public structurally `Valid` theorem item,
       one `False`, one `PendingAutomaticProof`, one direct terminal, and one
       Active `TheoremProof` seed at `proof/0`. Implement it through the narrow

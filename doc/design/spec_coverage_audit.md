@@ -2226,3 +2226,24 @@ partial coverage. No trace status, coverage class, test list, fixture,
 expectation, runner stage, or chapter status changes. Pending is not `open` or
 acceptance, Active is not discharge, Step 5 remains active, and Steps 6/7
 remain deferred.
+
+## Task 268 Exact Pending-Proof Producer Coverage Update
+
+Task 268 closes the checker-level `source_drift` and task-local `test_gap` for
+the accepted Task-267 producer, but only for the existing exact Task-180
+source. The real unannotated theorem with no justification or proof block now
+supplies explicit `Unmodified`/`Omitted` intent to checker-owned all-or-none
+tables containing one `PendingAutomaticProof`, one direct terminal node, and
+one `proof/0` terminal goal. Authenticated Public/Exported owner facts, the
+real checked formula site, the separate compact formula node, ranges,
+provenance, recovery, dense identities, empty citations/context, and absent
+label are validated by checker and active-runner corruption coverage.
+
+This adds implementation coverage for the pending-proof representation and
+direct-terminal checker handoff only. The existing `.miz`, expectation, trace
+status/test list, runner stage, and chapter status remain unchanged. It adds
+no truth/fact publication, theorem acceptance, proof search or verification,
+implicit closure, CoreIr/ControlFlowIr, VC, or discharge credit. Core Task 31
+is now the next executable exact consumer. Checker Task 247 retains all
+broader proof-family ownership, Step 5 remains active, and Steps 6/7 remain
+deferred.

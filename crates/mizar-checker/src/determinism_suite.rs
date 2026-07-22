@@ -805,6 +805,7 @@ fn overload_resolved_snapshot(reverse: bool) -> OverloadResolvedSnapshot {
         expressions,
         node_hints: Vec::new(),
         statement_semantics: None,
+        statement_proofs: None,
     })
     .expect("deterministic resolved typed AST assembly succeeds");
 

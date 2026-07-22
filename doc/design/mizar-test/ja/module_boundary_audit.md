@@ -9641,3 +9641,21 @@ context/citations、local path `proof/0`で、その後future exact non-acceptin
 Task-31 projectionへ渡す。productionは17 path/19,262 line、path hash
 `b36d96fe...`、content hash `e920dbae...`、全runner/count/CLI/test-list hashは
 不変。次のexecutable taskはTask 268、Core Task 31はgated、Steps 6/7はdeferred。
+
+## Task 268 current-state addendum
+
+Task 268は同じsource-extraction/checker-handoff owner内のbehaviorを変更し、
+production pathのsplit/addは行わない。`source_formula.rs`はexact annotationなし、
+justificationなし、proof-blockなしのTask-180 theoremだけを分類し、
+`checker_handoff.rs`はそのexplicit syntax-free proof intent/checker tableを構築・
+assertする。`runner.rs`はfacade/top-level orchestration only、facadeのprivate leafは
+11件のままである。
+
+production manifestは17 path、path hash
+`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`のまま、
+合計19,581 line、content-manifest hash
+`888cd8a0cadc7e0f96d803f3629c8f97f3771c0e9ffd26e57639e5b8dede6d46`となる。
+`checker_handoff.rs`は1,153 line、`source_formula.rs`は2,651 lineで、その他
+production owner/visibility boundaryは不変。existing `.miz`、expectation、trace
+status/test list、active runner/count、4 CLI bytesは不変。Core Task 31はexecutable、
+Steps 6/7はdeferredのままである。

@@ -3053,3 +3053,14 @@ and mutate each row field independently from the owner; every mismatch returns
 an error with no proof/proof-node/terminal table. This exact extension changes
 no formula checking, facts, acceptance, broader owner kind, or raw-syntax
 boundary.
+
+### Task 268 Authenticated Owner Visibility Completion
+
+`validate_exact_local_theorem` now independently rejects a non-public or
+non-exported resolver symbol and a theorem definition whose visibility is not
+public. `CheckedStatementOwner` stores the validated visibility/export facts
+privately and exposes read-only getters. Unit tests corrupt the symbol
+visibility, export status, and definition visibility independently; proof
+assembly separately rejects an authenticated-owner/intent-row mismatch. These
+facts remain resolver name-visibility evidence only and confer no theorem
+acceptance.

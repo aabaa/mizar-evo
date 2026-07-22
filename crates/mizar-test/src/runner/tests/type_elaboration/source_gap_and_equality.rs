@@ -2565,8 +2565,14 @@
                 source_id,
                 exact_contradiction_formula_spec(),
             ),
+            justified_contradiction_theorem_ast(source_id),
+            proof_block_contradiction_theorem_ast(source_id),
         ];
         for gap_case in contradiction_formula_gap_cases {
+            assert!(
+                extract_source_contradiction_formula(&gap_case).is_none(),
+                "annotated, justified, proof-block, or otherwise non-exact contradiction must not emit proof intent"
+            );
             assert_eq!(
                 source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]

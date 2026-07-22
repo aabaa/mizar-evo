@@ -463,11 +463,14 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       template_encoding_audit.md F5。
 
 31. **Exact source-derived contradiction theorem lowering。** [ ]
-    - mizar-test Tasks 266/268後、そのchecker-owned theorem owner、checked
+    - mizar-test Tasks 266/268完了済みとして、そのchecker-owned theorem owner、checked
       contradiction formula、proof-status/skeleton、explicit terminal-goal payloadだけを
       Task 267のexact mappingで消費する。source/provenance identityを完全に持つ
       source-derived `CoreIr`/theorem-obligation dataを生成し、prepared mizar-test
       Task-10 type-elaboration snapshot consumerとpairにする。
+    - Task 268はrequired explicit checker proof/status/terminal tableを提供済みで、
+      dependency gapではない。本taskはexecutableであるが、payloadを再構築せず
+      validationしてconsumeしなければならない。
     - selected mappingはpublic structurally `Valid` theorem item 1件、`False`
       1件、`PendingAutomaticProof` 1件、direct terminal 1件、`proof/0`のActive
       `TheoremProof` seed 1件である。generic checker-owned provenanceをrelaxせず、

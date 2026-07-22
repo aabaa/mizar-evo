@@ -1216,13 +1216,17 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   `PendingAutomaticProof` 1件、direct terminal goal 1件、future exact
   `False`/Active `TheoremProof` core seed (`proof/0`)へ写像し、corrupt inputは
   atomic fail、acceptance creditは付与しない。
-- [ ] **Task 268: accepted Task-267 checker producerを実装する。** exact Task-180
+- [x] **Task 268: accepted Task-267 checker producerを実装する。** exact Task-180
   final handoffだけにTask-267 proof status/skeleton/terminal-goal payloadを追加する。
   missing/duplicate/reordered/corrupt/owner-formula-proof mismatchのfail-closed checker/
   runner testを追加し、3 proof tableのdeterministic nonempty debug renderingと
   empty時のTask-266 debug outputのbyte-identical性をassertする。theorem
   acceptance、discharge、Core/VC generation、broader
   proof form、existing expectation change、Steps 6/7はscope外。依存: Task 267。
+  完了: exact extractorはannotation、written justification、proof blockがない
+  Task-180 theoremだけにexplicit intentをemitし、checker/runner corruptionと
+  immutable output assertionがpassする。existing fixture/expectation/runner
+  admission/count/CLI bytesは不変で、次はCore Task 31である。
 
 各 source-moving task で review-only により visibility drift、test-discovery
 drift、owner-boundary drift、source/docs inconsistency、意図しない behavior

@@ -1383,7 +1383,7 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   `PendingAutomaticProof`, one direct terminal goal, and the exact future
   `False`/Active `TheoremProof` core seed at `proof/0`; corrupt input fails
   atomically and no acceptance credit is assigned.
-- [ ] **Task 268: implement the accepted Task-267 checker producer.** Extend
+- [x] **Task 268: implement the accepted Task-267 checker producer.** Extend
   only the exact Task-180 final handoff with the Task-267 proof status,
   skeleton, and terminal-goal payload. Add fail-closed checker/runner tests for
   missing, duplicate, reordered, corrupt, and owner/formula/proof mismatch;
@@ -1391,6 +1391,10 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   byte-identical Task-266 debug output when they are empty;
   keep theorem acceptance, discharge, Core/VC generation, broader proof forms,
   existing expectation changes, and Steps 6/7 outside scope. Deps: Task 267.
+  Complete: the exact extractor emits explicit intent only for the unannotated,
+  unjustified, proof-block-free Task-180 theorem; checker/runner corruption and
+  immutable output assertions pass. Existing fixture, expectation, runner
+  admission, counts, and CLI bytes remain unchanged. Core Task 31 is next.
 
 For every source-moving task, require review-only checks for visibility drift,
 test-discovery drift, owner-boundary drift, source/docs inconsistency, and

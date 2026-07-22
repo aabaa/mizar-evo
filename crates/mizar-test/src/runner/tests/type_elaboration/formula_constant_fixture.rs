@@ -75,6 +75,19 @@
             .get(&statement.owner)
             .expect("Task 266 owner should be the real resolver symbol");
         assert_eq!(owner.kind(), SymbolKind::Theorem);
+        assert_eq!(owner.visibility(), mizar_resolve::env::Visibility::Public);
+        assert_eq!(
+            owner.export_status(),
+            mizar_resolve::env::ExportStatus::Exported
+        );
+        assert_eq!(
+            handoff.owner.visibility(),
+            mizar_resolve::env::Visibility::Public
+        );
+        assert_eq!(
+            handoff.owner.export_status(),
+            mizar_resolve::env::ExportStatus::Exported
+        );
         assert_eq!(statement.owner_origin, *owner.origin());
         assert_eq!(
             owner.origin().anchor(),
@@ -104,6 +117,12 @@
         .expect("equivalent Task 266 handoff should assemble");
         assert_eq!(handoff.resolved, second.resolved);
         assert_eq!(handoff.resolved.debug_text(), second.resolved.debug_text());
+        let proof_debug = handoff.resolved.debug_text();
+        assert!(proof_debug.contains("checked-proofs:\n"));
+        assert!(proof_debug.contains("status=PendingAutomaticProof"));
+        assert!(proof_debug.contains("checked-proof-nodes:\n"));
+        assert!(proof_debug.contains("checked-terminal-goals:\n"));
+        assert!(proof_debug.contains("local_path=\"proof/0\" label=None"));
         assert_eq!(
             source_contradiction_formula_detail_keys(&ast, resolver.module.clone(), &symbols),
             Some(Vec::new())
@@ -114,6 +133,24 @@
             SourceContradictionHandoffCorruption::DuplicateRow,
             SourceContradictionHandoffCorruption::InvalidFormula,
             SourceContradictionHandoffCorruption::WrongOwnerNode,
+            SourceContradictionHandoffCorruption::MissingProofRow,
+            SourceContradictionHandoffCorruption::DuplicateProofRow,
+            SourceContradictionHandoffCorruption::NonzeroProofIntentId,
+            SourceContradictionHandoffCorruption::NonzeroProofSourceOrder,
+            SourceContradictionHandoffCorruption::NonzeroProofStatement,
+            SourceContradictionHandoffCorruption::WrongProofSource,
+            SourceContradictionHandoffCorruption::WrongProofModule,
+            SourceContradictionHandoffCorruption::WrongProofOwner,
+            SourceContradictionHandoffCorruption::WrongProofOwnerNode,
+            SourceContradictionHandoffCorruption::WrongProofOwnerRange,
+            SourceContradictionHandoffCorruption::WrongProofOwnerOrigin,
+            SourceContradictionHandoffCorruption::PrivateProofOwner,
+            SourceContradictionHandoffCorruption::LocalOnlyProofOwner,
+            SourceContradictionHandoffCorruption::InvalidProofFormula,
+            SourceContradictionHandoffCorruption::RoleProofFormulaSite,
+            SourceContradictionHandoffCorruption::WrongProofFormulaNode,
+            SourceContradictionHandoffCorruption::WrongProofFormulaRange,
+            SourceContradictionHandoffCorruption::RecoveredProofIntent,
         ] {
             let error = source_contradiction_handoff_corruption_error(
                 &ast,

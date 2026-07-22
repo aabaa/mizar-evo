@@ -2889,3 +2889,13 @@ visibility/export statusをpreserved owner fieldと比較する。testはauthent
 ownerをrowとは独立にmutateし、各row fieldもownerとは独立にmutateする。全mismatch
 はerrorかつproof/proof-node/terminal tableなしになる。このexact extensionは
 formula checking/fact/acceptance/broader owner kind/raw-syntax boundaryを変更しない。
+
+### Task 268 authenticated owner visibility completion
+
+`validate_exact_local_theorem`はnon-public/non-exported resolver symbolと、
+visibilityがpublicでないtheorem definitionを独立にrejectする。
+`CheckedStatementOwner`はvalidated visibility/export factをprivateに保持し、
+read-only getterを公開する。unit testはsymbol visibility、export status、
+definition visibilityを独立にcorruptし、proof assemblyはauthenticated ownerと
+intent rowのmismatchを別にrejectする。これらはresolver name-visibility evidence
+だけで、theorem acceptanceを付与しない。

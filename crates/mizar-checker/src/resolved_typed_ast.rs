@@ -17,8 +17,8 @@ use crate::{
         TemplateSubstitution,
     },
     type_checker::{
-        CheckedFormulaId, CheckedFormulaTable, CheckedStatementOwner, FormulaKind, FormulaStatus,
-        TermFormulaInferenceOutput,
+        CheckedFormulaId, CheckedFormulaTable, CheckedStatementOwner, ExportStatus, FormulaKind,
+        FormulaStatus, TermFormulaInferenceOutput, Visibility,
     },
     typed_ast::{
         LocalTypeContextId, NodeRecoveryState, NormalizedTypeId, TypeDiagnosticId,
@@ -86,6 +86,10 @@ dense_id!(OverloadResolutionId);
 dense_id!(CoercionInsertionId);
 dense_id!(ResolvedTypedDiagnosticId);
 dense_id!(StatementSemanticId);
+dense_id!(StatementProofIntentId);
+dense_id!(CheckedProofId);
+dense_id!(CheckedProofNodeId);
+dense_id!(CheckedTerminalGoalId);
 
 string_key!(ExprId);
 string_key!(SourceNodeRole);
@@ -108,6 +112,9 @@ pub struct ResolvedTypedAst {
     diagnostics: ResolvedTypedDiagnosticTable,
     checked_formulas: CheckedFormulaTable,
     statement_semantics: StatementSemanticTable,
+    checked_proofs: CheckedProofTable,
+    checked_proof_nodes: CheckedProofNodeTable,
+    checked_terminal_goals: CheckedTerminalGoalTable,
 }
 
 impl ResolvedTypedAst {
@@ -179,6 +186,18 @@ impl ResolvedTypedAst {
         &self.statement_semantics
     }
 
+    pub const fn checked_proofs(&self) -> &CheckedProofTable {
+        &self.checked_proofs
+    }
+
+    pub const fn checked_proof_nodes(&self) -> &CheckedProofNodeTable {
+        &self.checked_proof_nodes
+    }
+
+    pub const fn checked_terminal_goals(&self) -> &CheckedTerminalGoalTable {
+        &self.checked_terminal_goals
+    }
+
     pub fn debug_text(&self) -> String {
         let mut output = String::from("resolved-typed-ast-debug-v1\n");
         output.push_str("module: ");
@@ -210,6 +229,11 @@ impl ResolvedTypedAst {
         if !self.statement_semantics.is_empty() {
             write_statement_semantics(&mut output, &self.statement_semantics);
         }
+        if !self.checked_proofs.is_empty() {
+            write_checked_proofs(&mut output, &self.checked_proofs);
+            write_checked_proof_nodes(&mut output, &self.checked_proof_nodes);
+            write_checked_terminal_goals(&mut output, &self.checked_terminal_goals);
+        }
         output
     }
 }
@@ -226,6 +250,7 @@ pub struct ResolvedTypedAstInputs<'a> {
     pub expressions: Vec<ExpressionMetadataInput>,
     pub node_hints: Vec<ResolvedNodeKindHint>,
     pub statement_semantics: Option<StatementSemanticInputs<'a>>,
+    pub statement_proofs: Option<StatementProofInputs<'a>>,
 }
 
 #[derive(Debug)]
@@ -242,6 +267,111 @@ pub struct StatementSemanticInput {
     pub owner_node: TypedNodeId,
     pub formula: CheckedFormulaId,
     pub formula_node: TypedNodeId,
+}
+
+#[derive(Debug)]
+pub struct StatementProofInputs<'a> {
+    pub owner: &'a CheckedStatementOwner,
+    pub rows: Vec<StatementProofIntentInput>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StatementProofIntentInput {
+    pub id: StatementProofIntentId,
+    pub source_order: usize,
+    pub statement: StatementSemanticId,
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub owner: SymbolId,
+    pub owner_node: TypedNodeId,
+    pub owner_range: SourceRange,
+    pub owner_origin: SemanticOrigin,
+    pub owner_visibility: Visibility,
+    pub owner_export_status: ExportStatus,
+    pub formula: CheckedFormulaId,
+    pub formula_site: TypedSiteRef,
+    pub formula_node: TypedNodeId,
+    pub formula_range: SourceRange,
+    pub recovery: NodeRecoveryState,
+    pub policy: TheoremPolicyIntent,
+    pub justification: TheoremJustificationIntent,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TheoremPolicyIntent {
+    Unmodified,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TheoremJustificationIntent {
+    Omitted,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CheckedProofStatus {
+    PendingAutomaticProof,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CheckedProofNodeKind {
+    TerminalGoal(CheckedTerminalGoalId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CheckedCitation {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CheckedProofLabel {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedProof {
+    pub id: CheckedProofId,
+    pub source_order: usize,
+    pub statement: StatementSemanticId,
+    pub owner: SymbolId,
+    pub owner_node: TypedNodeId,
+    pub owner_visibility: Visibility,
+    pub owner_export_status: ExportStatus,
+    pub proposition: CheckedFormulaId,
+    pub policy: TheoremPolicyIntent,
+    pub justification: TheoremJustificationIntent,
+    pub root: CheckedProofNodeId,
+    pub status: CheckedProofStatus,
+    pub source_range: SourceRange,
+    pub owner_origin: SemanticOrigin,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedProofNode {
+    pub id: CheckedProofNodeId,
+    pub proof: CheckedProofId,
+    pub kind: CheckedProofNodeKind,
+    pub source_range: SourceRange,
+    pub recovery: NodeRecoveryState,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedTerminalGoal {
+    pub id: CheckedTerminalGoalId,
+    pub proof: CheckedProofId,
+    pub node: CheckedProofNodeId,
+    pub statement: StatementSemanticId,
+    pub owner: SymbolId,
+    pub formula: CheckedFormulaId,
+    pub formula_site: TypedSiteRef,
+    pub formula_node: TypedNodeId,
+    pub source_range: SourceRange,
+    pub recovery: NodeRecoveryState,
+    pub citations: Vec<CheckedCitation>,
+    pub active_context: Vec<CheckedFormulaId>,
+    pub local_path: String,
+    pub label: Option<CheckedProofLabel>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -272,6 +402,93 @@ impl StatementSemanticTable {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (StatementSemanticId, &StatementSemantic)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CheckedProofTable {
+    entries: Vec<CheckedProof>,
+}
+
+impl CheckedProofTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: CheckedProofId) -> Option<&CheckedProof> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (CheckedProofId, &CheckedProof)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CheckedProofNodeTable {
+    entries: Vec<CheckedProofNode>,
+}
+
+impl CheckedProofNodeTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: CheckedProofNodeId) -> Option<&CheckedProofNode> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (CheckedProofNodeId, &CheckedProofNode)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CheckedTerminalGoalTable {
+    entries: Vec<CheckedTerminalGoal>,
+}
+
+impl CheckedTerminalGoalTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: CheckedTerminalGoalId) -> Option<&CheckedTerminalGoal> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (CheckedTerminalGoalId, &CheckedTerminalGoal)> {
         self.entries.iter().map(|entry| (entry.id, entry))
     }
 
@@ -934,6 +1151,7 @@ pub enum CandidateSummaryNamespace {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ResolvedTypedAstError {
+    StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
         count: usize,
@@ -956,6 +1174,15 @@ pub enum ResolvedTypedAstError {
     },
     InvalidStatementTree,
     StatementSourceOrderMismatch,
+    MissingStatementProofIntent,
+    NonSingletonStatementProofIntent {
+        count: usize,
+    },
+    DuplicateStatementProofIntent {
+        id: StatementProofIntentId,
+    },
+    InvalidStatementProofIntent,
+    InvalidStatementProofOutput,
     DuplicateExpression {
         expr: ExprId,
     },
@@ -1003,6 +1230,9 @@ pub enum ResolvedTypedAstError {
 impl fmt::Display for ResolvedTypedAstError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::StatementProofBundleMismatch => formatter.write_str(
+                "statement semantic and proof-intent bundles must be supplied together",
+            ),
             Self::MissingStatementSemantic => {
                 formatter.write_str("statement semantic contract is missing its required row")
             }
@@ -1043,6 +1273,24 @@ impl fmt::Display for ResolvedTypedAstError {
             }
             Self::StatementSourceOrderMismatch => formatter
                 .write_str("statement semantic theorem/formula source order does not match"),
+            Self::MissingStatementProofIntent => {
+                formatter.write_str("statement proof-intent contract is missing its required row")
+            }
+            Self::NonSingletonStatementProofIntent { count } => write!(
+                formatter,
+                "statement proof-intent contract requires exactly one row, got {count}"
+            ),
+            Self::DuplicateStatementProofIntent { id } => write!(
+                formatter,
+                "duplicate statement proof-intent id {}",
+                id.index()
+            ),
+            Self::InvalidStatementProofIntent => {
+                formatter.write_str("invalid exact statement proof-intent input")
+            }
+            Self::InvalidStatementProofOutput => {
+                formatter.write_str("invalid exact checked proof output")
+            }
             Self::DuplicateExpression { expr } => {
                 write!(
                     formatter,
@@ -1131,8 +1379,16 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
     fn assemble(self) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
         let source_id = self.inputs.typed_ast.source_id();
         let module_id = self.inputs.typed_ast.module_id().clone();
+        validate_statement_bundle_presence(&self.inputs)?;
         let (checked_formulas, statement_semantics) =
             build_statement_semantics(&self.inputs, source_id, &module_id)?;
+        let (checked_proofs, checked_proof_nodes, checked_terminal_goals) = build_statement_proofs(
+            &self.inputs,
+            source_id,
+            &module_id,
+            &checked_formulas,
+            &statement_semantics,
+        )?;
         let root_range = root_range(self.inputs.typed_ast);
         let diagnostics = build_diagnostics(&self.inputs, root_range);
         let collection_candidates = copy_candidate_summaries(
@@ -1189,7 +1445,19 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             diagnostics: diagnostics.table,
             checked_formulas,
             statement_semantics,
+            checked_proofs,
+            checked_proof_nodes,
+            checked_terminal_goals,
         })
+    }
+}
+
+fn validate_statement_bundle_presence(
+    inputs: &ResolvedTypedAstInputs<'_>,
+) -> Result<(), ResolvedTypedAstError> {
+    match (&inputs.statement_semantics, &inputs.statement_proofs) {
+        (None, None) | (Some(_), Some(_)) => Ok(()),
+        _ => Err(ResolvedTypedAstError::StatementProofBundleMismatch),
     }
 }
 
@@ -1403,6 +1671,259 @@ fn build_statement_semantics(
             }],
         },
     ))
+}
+
+fn build_statement_proofs(
+    inputs: &ResolvedTypedAstInputs<'_>,
+    source_id: SourceId,
+    module_id: &ModuleId,
+    checked_formulas: &CheckedFormulaTable,
+    statements: &StatementSemanticTable,
+) -> Result<
+    (
+        CheckedProofTable,
+        CheckedProofNodeTable,
+        CheckedTerminalGoalTable,
+    ),
+    ResolvedTypedAstError,
+> {
+    let Some(proof_inputs) = &inputs.statement_proofs else {
+        return Ok((
+            CheckedProofTable::new(),
+            CheckedProofNodeTable::new(),
+            CheckedTerminalGoalTable::new(),
+        ));
+    };
+    if proof_inputs.rows.is_empty() {
+        return Err(ResolvedTypedAstError::MissingStatementProofIntent);
+    }
+    let mut ids = BTreeSet::new();
+    for row in &proof_inputs.rows {
+        if !ids.insert(row.id) {
+            return Err(ResolvedTypedAstError::DuplicateStatementProofIntent { id: row.id });
+        }
+    }
+    if proof_inputs.rows.len() != 1 {
+        return Err(ResolvedTypedAstError::NonSingletonStatementProofIntent {
+            count: proof_inputs.rows.len(),
+        });
+    }
+
+    let row = &proof_inputs.rows[0];
+    let Some(statement) = statements.get(StatementSemanticId::new(0)) else {
+        return Err(ResolvedTypedAstError::InvalidStatementProofIntent);
+    };
+    let Some(formula) = checked_formulas.get(statement.formula) else {
+        return Err(ResolvedTypedAstError::InvalidStatementProofIntent);
+    };
+    let Some(statement_inputs) = &inputs.statement_semantics else {
+        return Err(ResolvedTypedAstError::StatementProofBundleMismatch);
+    };
+    let owner = proof_inputs.owner;
+    if owner != statement_inputs.owner
+        || row.id != StatementProofIntentId::new(0)
+        || row.source_order != 0
+        || row.statement != StatementSemanticId::new(0)
+        || row.source_id != source_id
+        || row.module_id != *module_id
+        || row.owner != statement.owner
+        || row.owner != *owner.symbol()
+        || row.owner_node != statement.owner_node
+        || row.owner_range != statement.owner_range
+        || row.owner_range != owner.source_range()
+        || row.owner_origin != statement.owner_origin
+        || row.owner_origin != *owner.origin()
+        || row.owner_visibility != Visibility::Public
+        || row.owner_visibility != owner.visibility()
+        || row.owner_export_status != ExportStatus::Exported
+        || row.owner_export_status != owner.export_status()
+        || row.formula != statement.formula
+        || row.formula != formula.id
+        || row.formula_site != formula.site
+        || row.formula_node != statement.formula_node
+        || row.formula_range != formula.source_range
+        || row.recovery != NodeRecoveryState::Normal
+        || row.recovery != formula.recovery
+        || row.policy != TheoremPolicyIntent::Unmodified
+        || row.justification != TheoremJustificationIntent::Omitted
+        || !matches!(row.formula_site, TypedSiteRef::Node(_))
+    {
+        return Err(ResolvedTypedAstError::InvalidStatementProofIntent);
+    }
+
+    let proofs = CheckedProofTable {
+        entries: vec![CheckedProof {
+            id: CheckedProofId::new(0),
+            source_order: 0,
+            statement: StatementSemanticId::new(0),
+            owner: row.owner.clone(),
+            owner_node: row.owner_node,
+            owner_visibility: row.owner_visibility,
+            owner_export_status: row.owner_export_status,
+            proposition: row.formula,
+            policy: row.policy,
+            justification: row.justification,
+            root: CheckedProofNodeId::new(0),
+            status: CheckedProofStatus::PendingAutomaticProof,
+            source_range: row.owner_range,
+            owner_origin: row.owner_origin.clone(),
+        }],
+    };
+    let nodes = CheckedProofNodeTable {
+        entries: vec![CheckedProofNode {
+            id: CheckedProofNodeId::new(0),
+            proof: CheckedProofId::new(0),
+            kind: CheckedProofNodeKind::TerminalGoal(CheckedTerminalGoalId::new(0)),
+            source_range: row.formula_range,
+            recovery: row.recovery,
+        }],
+    };
+    let goals = CheckedTerminalGoalTable {
+        entries: vec![CheckedTerminalGoal {
+            id: CheckedTerminalGoalId::new(0),
+            proof: CheckedProofId::new(0),
+            node: CheckedProofNodeId::new(0),
+            statement: StatementSemanticId::new(0),
+            owner: row.owner.clone(),
+            formula: row.formula,
+            formula_site: row.formula_site.clone(),
+            formula_node: row.formula_node,
+            source_range: row.formula_range,
+            recovery: row.recovery,
+            citations: Vec::new(),
+            active_context: Vec::new(),
+            local_path: "proof/0".to_owned(),
+            label: None,
+        }],
+    };
+    validate_checked_proof_tables(checked_formulas, statements, &proofs, &nodes, &goals)?;
+    Ok((proofs, nodes, goals))
+}
+
+fn validate_checked_proof_tables(
+    checked_formulas: &CheckedFormulaTable,
+    statements: &StatementSemanticTable,
+    proofs: &CheckedProofTable,
+    nodes: &CheckedProofNodeTable,
+    goals: &CheckedTerminalGoalTable,
+) -> Result<(), ResolvedTypedAstError> {
+    let status_matches = proofs
+        .get(CheckedProofId::new(0))
+        .is_some_and(|proof| proof.status == CheckedProofStatus::PendingAutomaticProof);
+    validate_checked_proof_tables_with_status_match(
+        checked_formulas,
+        statements,
+        proofs,
+        nodes,
+        goals,
+        status_matches,
+    )
+}
+
+fn validate_checked_proof_tables_with_status_match(
+    checked_formulas: &CheckedFormulaTable,
+    statements: &StatementSemanticTable,
+    proofs: &CheckedProofTable,
+    nodes: &CheckedProofNodeTable,
+    goals: &CheckedTerminalGoalTable,
+    status_matches: bool,
+) -> Result<(), ResolvedTypedAstError> {
+    let Some(statement) = statements.get(StatementSemanticId::new(0)) else {
+        return Err(ResolvedTypedAstError::InvalidStatementProofOutput);
+    };
+    let Some(formula) = checked_formulas.get(statement.formula) else {
+        return Err(ResolvedTypedAstError::InvalidStatementProofOutput);
+    };
+    let Some(proof) = proofs.get(CheckedProofId::new(0)) else {
+        return Err(ResolvedTypedAstError::InvalidStatementProofOutput);
+    };
+    let Some(node) = nodes.get(CheckedProofNodeId::new(0)) else {
+        return Err(ResolvedTypedAstError::InvalidStatementProofOutput);
+    };
+    let Some(goal) = goals.get(CheckedTerminalGoalId::new(0)) else {
+        return Err(ResolvedTypedAstError::InvalidStatementProofOutput);
+    };
+    if !exact_checked_proof_output_shape(CheckedProofOutputShape {
+        proof_count: proofs.len(),
+        node_count: nodes.len(),
+        goal_count: goals.len(),
+        proof_id_matches: proof.id == CheckedProofId::new(0),
+        proof_root_matches: proof.root == node.id,
+        proof_status_matches: status_matches,
+        node_id_matches: node.id == CheckedProofNodeId::new(0),
+        node_proof_matches: node.proof == proof.id,
+        node_kind_matches: node.kind == CheckedProofNodeKind::TerminalGoal(goal.id),
+        goal_id_matches: goal.id == CheckedTerminalGoalId::new(0),
+        goal_proof_matches: goal.proof == proof.id,
+        goal_node_matches: goal.node == node.id,
+        citations_empty: goal.citations.is_empty(),
+        active_context_empty: goal.active_context.is_empty(),
+        local_path_matches: goal.local_path == "proof/0",
+        label_is_none: goal.label.is_none(),
+    }) || proof.source_order != 0
+        || proof.statement != statement.id
+        || proof.owner != statement.owner
+        || proof.owner_node != statement.owner_node
+        || proof.owner_visibility != Visibility::Public
+        || proof.owner_export_status != ExportStatus::Exported
+        || proof.proposition != statement.formula
+        || proof.policy != TheoremPolicyIntent::Unmodified
+        || proof.justification != TheoremJustificationIntent::Omitted
+        || proof.source_range != statement.owner_range
+        || proof.owner_origin != statement.owner_origin
+        || node.source_range != formula.source_range
+        || node.recovery != NodeRecoveryState::Normal
+        || goal.statement != statement.id
+        || goal.owner != statement.owner
+        || goal.formula != statement.formula
+        || goal.formula_site != formula.site
+        || !matches!(goal.formula_site, TypedSiteRef::Node(_))
+        || goal.formula_node != statement.formula_node
+        || goal.source_range != formula.source_range
+        || goal.recovery != NodeRecoveryState::Normal
+    {
+        return Err(ResolvedTypedAstError::InvalidStatementProofOutput);
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CheckedProofOutputShape {
+    proof_count: usize,
+    node_count: usize,
+    goal_count: usize,
+    proof_id_matches: bool,
+    proof_root_matches: bool,
+    proof_status_matches: bool,
+    node_id_matches: bool,
+    node_proof_matches: bool,
+    node_kind_matches: bool,
+    goal_id_matches: bool,
+    goal_proof_matches: bool,
+    goal_node_matches: bool,
+    citations_empty: bool,
+    active_context_empty: bool,
+    local_path_matches: bool,
+    label_is_none: bool,
+}
+
+const fn exact_checked_proof_output_shape(shape: CheckedProofOutputShape) -> bool {
+    shape.proof_count == 1
+        && shape.node_count == 1
+        && shape.goal_count == 1
+        && shape.proof_id_matches
+        && shape.proof_root_matches
+        && shape.proof_status_matches
+        && shape.node_id_matches
+        && shape.node_proof_matches
+        && shape.node_kind_matches
+        && shape.goal_id_matches
+        && shape.goal_proof_matches
+        && shape.goal_node_matches
+        && shape.citations_empty
+        && shape.active_context_empty
+        && shape.local_path_matches
+        && shape.label_is_none
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2575,6 +3096,85 @@ fn write_statement_semantics(output: &mut String, table: &StatementSemanticTable
     }
 }
 
+fn write_checked_proofs(output: &mut String, table: &CheckedProofTable) {
+    output.push_str("checked-proofs:\n");
+    for (id, proof) in table.iter() {
+        let _ = write!(
+            output,
+            "  proof#{} source_order={} statement=statement#{} owner=\"{}\" owner_node=node#{} visibility={:?} export={:?} proposition=formula#{} policy={:?} justification={:?} root=proof_node#{} status={:?} range=",
+            id.index(),
+            proof.source_order,
+            proof.statement.index(),
+            escaped_display(proof.owner.fqn().as_str()),
+            proof.owner_node.index(),
+            proof.owner_visibility,
+            proof.owner_export_status,
+            proof.proposition.index(),
+            proof.policy,
+            proof.justification,
+            proof.root.index(),
+            proof.status,
+        );
+        write_range(output, proof.source_range);
+        let _ = writeln!(output, " origin={:?}", proof.owner_origin);
+    }
+}
+
+fn write_checked_proof_nodes(output: &mut String, table: &CheckedProofNodeTable) {
+    output.push_str("checked-proof-nodes:\n");
+    for (id, node) in table.iter() {
+        let _ = write!(
+            output,
+            "  proof_node#{} proof=proof#{} kind={:?} range=",
+            id.index(),
+            node.proof.index(),
+            node.kind,
+        );
+        write_range(output, node.source_range);
+        let _ = writeln!(output, " recovery={:?}", node.recovery);
+    }
+}
+
+fn write_checked_terminal_goals(output: &mut String, table: &CheckedTerminalGoalTable) {
+    output.push_str("checked-terminal-goals:\n");
+    for (id, goal) in table.iter() {
+        let _ = write!(
+            output,
+            "  terminal_goal#{} proof=proof#{} node=proof_node#{} statement=statement#{} owner=\"{}\" formula=formula#{} formula_site=",
+            id.index(),
+            goal.proof.index(),
+            goal.node.index(),
+            goal.statement.index(),
+            escaped_display(goal.owner.fqn().as_str()),
+            goal.formula.index(),
+        );
+        write_site_ref(output, &goal.formula_site);
+        let _ = write!(
+            output,
+            " formula_node=node#{} range=",
+            goal.formula_node.index()
+        );
+        write_range(output, goal.source_range);
+        let _ = write!(
+            output,
+            " recovery={:?} citations={:?} active_context=[",
+            goal.recovery, goal.citations
+        );
+        for (index, formula) in goal.active_context.iter().enumerate() {
+            if index > 0 {
+                output.push_str(", ");
+            }
+            let _ = write!(output, "formula#{}", formula.index());
+        }
+        let _ = writeln!(
+            output,
+            "] local_path=\"{}\" label={:?}",
+            escaped_display(&goal.local_path),
+            goal.label
+        );
+    }
+}
+
 fn write_node_kind(output: &mut String, kind: &ResolvedTypedNodeKind) {
     match kind {
         ResolvedTypedNodeKind::SourcePreserved { role } => {
@@ -2823,6 +3423,43 @@ mod tests {
             false,
         );
         let row = fixture.row();
+        let legacy = assemble_fixture_with_proof_rows(
+            &fixture,
+            &fixture.checked_owner,
+            Vec::new(),
+            false,
+            false,
+        )
+        .expect("legacy assembly without statement/proof bundles");
+        assert_eq!(
+            legacy.debug_text(),
+            concat!(
+                "resolved-typed-ast-debug-v1\n",
+                "module: \"pkg\"::\"main\"\n",
+                "root: resolved_node#2\n",
+                "nodes:\n",
+                "  node#0 typed=node#0 range=source=\"SourceId(OpaqueId(1))\":50..60 ",
+                "kind=source_preserved(\"source.formula.contradiction\") final_type=<none> ",
+                "metadata=<none> children=[]\n",
+                "  node#1 typed=node#1 range=source=\"SourceId(OpaqueId(1))\":10..90 ",
+                "kind=source_preserved(\"source.statement.theorem\") final_type=<none> ",
+                "metadata=<none> children=[resolved_node#0]\n",
+                "  node#2 typed=node#2 range=source=\"SourceId(OpaqueId(1))\":0..100 ",
+                "kind=source_preserved(\"source.module\") final_type=<none> ",
+                "metadata=<none> children=[resolved_node#1]\n",
+                "expression-metadata:\n",
+                "collection-candidates:\n",
+                "expanded-candidates:\n",
+                "template-expansions:\n",
+                "viable-candidates:\n",
+                "viability-decisions:\n",
+                "specificity-graphs:\n",
+                "overload-records:\n",
+                "inserted-coercions:\n",
+                "cluster-facts:\n",
+                "diagnostics:\n",
+            )
+        );
         let first = assemble_statement(&fixture, vec![row.clone()])
             .expect("exact statement semantic projection should assemble");
         let second = assemble_statement(&fixture, vec![row.clone()])
@@ -2848,6 +3485,99 @@ mod tests {
             TypedSiteRef::Node(TypedNodeId::new(27))
         );
         assert!(first.debug_text().contains("statement-semantics:"));
+
+        let proof = first
+            .checked_proofs()
+            .get(CheckedProofId::new(0))
+            .expect("checked proof row");
+        let proof_node = first
+            .checked_proof_nodes()
+            .get(CheckedProofNodeId::new(0))
+            .expect("checked proof node");
+        let terminal = first
+            .checked_terminal_goals()
+            .get(CheckedTerminalGoalId::new(0))
+            .expect("checked terminal goal");
+        assert_eq!(proof.source_order, 0);
+        assert_eq!(proof.statement, statement.id);
+        assert_eq!(proof.owner, statement.owner);
+        assert_eq!(proof.owner_node, statement.owner_node);
+        assert_eq!(proof.owner_visibility, Visibility::Public);
+        assert_eq!(proof.owner_export_status, ExportStatus::Exported);
+        assert_eq!(proof.proposition, statement.formula);
+        assert_eq!(proof.policy, TheoremPolicyIntent::Unmodified);
+        assert_eq!(proof.justification, TheoremJustificationIntent::Omitted);
+        assert_eq!(proof.status, CheckedProofStatus::PendingAutomaticProof);
+        assert_eq!(proof.root, proof_node.id);
+        assert_eq!(proof_node.proof, proof.id);
+        assert_eq!(
+            proof_node.kind,
+            CheckedProofNodeKind::TerminalGoal(terminal.id)
+        );
+        assert_eq!(terminal.proof, proof.id);
+        assert_eq!(terminal.node, proof_node.id);
+        assert_eq!(
+            terminal.formula_site,
+            TypedSiteRef::Node(TypedNodeId::new(27))
+        );
+        assert!(terminal.citations.is_empty());
+        assert!(terminal.active_context.is_empty());
+        assert_eq!(terminal.local_path, "proof/0");
+        assert!(terminal.label.is_none());
+        assert_eq!(
+            first.debug_text(),
+            concat!(
+                "resolved-typed-ast-debug-v1\n",
+                "module: \"pkg\"::\"main\"\n",
+                "root: resolved_node#2\n",
+                "nodes:\n",
+                "  node#0 typed=node#0 range=source=\"SourceId(OpaqueId(1))\":50..60 ",
+                "kind=source_preserved(\"source.formula.contradiction\") final_type=<none> ",
+                "metadata=<none> children=[]\n",
+                "  node#1 typed=node#1 range=source=\"SourceId(OpaqueId(1))\":10..90 ",
+                "kind=source_preserved(\"source.statement.theorem\") final_type=<none> ",
+                "metadata=<none> children=[resolved_node#0]\n",
+                "  node#2 typed=node#2 range=source=\"SourceId(OpaqueId(1))\":0..100 ",
+                "kind=source_preserved(\"source.module\") final_type=<none> ",
+                "metadata=<none> children=[resolved_node#1]\n",
+                "expression-metadata:\n",
+                "collection-candidates:\n",
+                "expanded-candidates:\n",
+                "template-expansions:\n",
+                "viable-candidates:\n",
+                "viability-decisions:\n",
+                "specificity-graphs:\n",
+                "overload-records:\n",
+                "inserted-coercions:\n",
+                "cluster-facts:\n",
+                "diagnostics:\n",
+                "statement-semantics:\n",
+                "  statement#0 owner=\"pkg::main::theorem::Task180\" owner_node=node#1 ",
+                "formula=formula#0 range=source=\"SourceId(OpaqueId(1))\":10..90\n",
+                "checked-proofs:\n",
+                "  proof#0 source_order=0 statement=statement#0 ",
+                "owner=\"pkg::main::theorem::Task180\" owner_node=node#1 ",
+                "visibility=Public export=Exported proposition=formula#0 ",
+                "policy=Unmodified justification=Omitted root=proof_node#0 ",
+                "status=PendingAutomaticProof ",
+                "range=source=\"SourceId(OpaqueId(1))\":10..90 ",
+                "origin=SemanticOrigin { source_id: SourceId(OpaqueId(1)), ",
+                "module_id: ModuleId { package: PackageId(\"pkg\"), ",
+                "path: ModulePath(\"main\") }, anchor: Range(SourceRange { ",
+                "source_id: SourceId(OpaqueId(1)), start: 10, end: 90 }), ",
+                "structural_path: [0], import_edge: None, recovered: false }\n",
+                "checked-proof-nodes:\n",
+                "  proof_node#0 proof=proof#0 ",
+                "kind=TerminalGoal(CheckedTerminalGoalId(0)) ",
+                "range=source=\"SourceId(OpaqueId(1))\":50..60 recovery=Normal\n",
+                "checked-terminal-goals:\n",
+                "  terminal_goal#0 proof=proof#0 node=proof_node#0 ",
+                "statement=statement#0 owner=\"pkg::main::theorem::Task180\" ",
+                "formula=formula#0 formula_site=node#27 formula_node=node#0 ",
+                "range=source=\"SourceId(OpaqueId(1))\":50..60 recovery=Normal ",
+                "citations=[] active_context=[] local_path=\"proof/0\" label=None\n",
+            )
+        );
 
         let missing = assemble_statement(&fixture, Vec::new())
             .expect_err("missing statement row should fail closed");
@@ -2924,6 +3654,457 @@ mod tests {
                 "invalid kind/recovery/status/order/provenance must fail closed"
             );
         }
+    }
+
+    #[test]
+    fn exact_statement_proof_intent_and_output_fail_closed_atomically() {
+        let fixture = statement_fixture(
+            FormulaKind::Contradiction,
+            NodeRecoveryState::Normal,
+            50,
+            60,
+            false,
+        );
+        let valid = fixture.proof_row();
+
+        for (include_statement, include_proof) in [(true, false), (false, true)] {
+            let error = assemble_fixture_with_proof_rows(
+                &fixture,
+                &fixture.checked_owner,
+                vec![valid.clone()],
+                include_statement,
+                include_proof,
+            )
+            .expect_err("asymmetric statement/proof bundles must fail closed");
+            assert!(matches!(
+                error,
+                ResolvedTypedAstError::StatementProofBundleMismatch
+            ));
+        }
+
+        let missing = assemble_fixture_with_proof_rows(
+            &fixture,
+            &fixture.checked_owner,
+            Vec::new(),
+            true,
+            true,
+        )
+        .expect_err("missing proof intent must fail closed");
+        assert!(matches!(
+            missing,
+            ResolvedTypedAstError::MissingStatementProofIntent
+        ));
+        let duplicate = assemble_fixture_with_proof_rows(
+            &fixture,
+            &fixture.checked_owner,
+            vec![valid.clone(), valid.clone()],
+            true,
+            true,
+        )
+        .expect_err("duplicate proof intent must fail closed");
+        assert!(matches!(
+            duplicate,
+            ResolvedTypedAstError::DuplicateStatementProofIntent { .. }
+        ));
+        let mut second = valid.clone();
+        second.id = StatementProofIntentId::new(1);
+        let non_singleton = assemble_fixture_with_proof_rows(
+            &fixture,
+            &fixture.checked_owner,
+            vec![valid.clone(), second],
+            true,
+            true,
+        )
+        .expect_err("multiple proof intents must fail closed");
+        assert!(matches!(
+            non_singleton,
+            ResolvedTypedAstError::NonSingletonStatementProofIntent { count: 2 }
+        ));
+
+        let other_owner = SymbolId::new(
+            fixture.module.clone(),
+            LocalSymbolId::new("OtherTask268"),
+            FullyQualifiedName::new("pkg::main::theorem::OtherTask268"),
+        );
+        let other_origin = SemanticOrigin::new(
+            fixture.source,
+            fixture.module.clone(),
+            SourceAnchor::Range(fixture.owner_range),
+            vec![1],
+        );
+        let other_module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("other"));
+        let other_source = secondary_source_id(93);
+        let invalid_rows = vec![
+            StatementProofIntentInput {
+                id: StatementProofIntentId::new(1),
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                source_order: 1,
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                statement: StatementSemanticId::new(1),
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                source_id: other_source,
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                module_id: other_module,
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                owner: other_owner,
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                owner_node: TypedNodeId::new(0),
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                owner_range: range(fixture.source, 11, 90),
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                owner_origin: other_origin,
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                owner_visibility: Visibility::Private,
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                owner_export_status: ExportStatus::LocalOnly,
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                formula: CheckedFormulaId::new(1),
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                formula_site: TypedSiteRef::Role {
+                    node: TypedNodeId::new(27),
+                    role: TypeRole::new("task268.corrupt"),
+                },
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                formula_node: TypedNodeId::new(1),
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                formula_range: range(fixture.source, 51, 60),
+                ..valid.clone()
+            },
+            StatementProofIntentInput {
+                recovery: NodeRecoveryState::Recovered,
+                ..valid.clone()
+            },
+        ];
+        for invalid in invalid_rows {
+            let error = assemble_fixture_with_proof_rows(
+                &fixture,
+                &fixture.checked_owner,
+                vec![invalid],
+                true,
+                true,
+            )
+            .expect_err("corrupt proof intent must fail closed");
+            assert!(matches!(
+                error,
+                ResolvedTypedAstError::InvalidStatementProofIntent
+            ));
+        }
+
+        for (visibility, export_status) in [
+            (Visibility::Private, ExportStatus::Exported),
+            (Visibility::Public, ExportStatus::LocalOnly),
+        ] {
+            let corrupt_owner = CheckedStatementOwner::from_validated_parts_and_visibility_for_test(
+                fixture.owner.clone(),
+                fixture.owner_range,
+                fixture.checked_owner.origin().clone(),
+                visibility,
+                export_status,
+            );
+            let error = assemble_fixture_with_proof_rows(
+                &fixture,
+                &corrupt_owner,
+                vec![valid.clone()],
+                true,
+                true,
+            )
+            .expect_err("authenticated-owner visibility corruption must fail closed");
+            assert!(matches!(
+                error,
+                ResolvedTypedAstError::InvalidStatementProofIntent
+            ));
+        }
+
+        let output_shape = CheckedProofOutputShape {
+            proof_count: 1,
+            node_count: 1,
+            goal_count: 1,
+            proof_id_matches: true,
+            proof_root_matches: true,
+            proof_status_matches: true,
+            node_id_matches: true,
+            node_proof_matches: true,
+            node_kind_matches: true,
+            goal_id_matches: true,
+            goal_proof_matches: true,
+            goal_node_matches: true,
+            citations_empty: true,
+            active_context_empty: true,
+            local_path_matches: true,
+            label_is_none: true,
+        };
+        assert!(exact_checked_proof_output_shape(output_shape));
+        for invalid in [
+            CheckedProofOutputShape {
+                proof_count: 2,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                node_count: 2,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                goal_count: 2,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                proof_id_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                proof_root_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                proof_status_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                node_id_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                node_proof_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                node_kind_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                goal_id_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                goal_proof_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                goal_node_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                citations_empty: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                active_context_empty: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                local_path_matches: false,
+                ..output_shape
+            },
+            CheckedProofOutputShape {
+                label_is_none: false,
+                ..output_shape
+            },
+        ] {
+            assert!(
+                !exact_checked_proof_output_shape(invalid),
+                "every checked-proof output-shape predicate must fail closed independently"
+            );
+        }
+
+        let resolved = assemble_statement(&fixture, vec![fixture.row()])
+            .expect("valid proof output for postvalidation corruption");
+        let reject = |proofs: CheckedProofTable,
+                      nodes: CheckedProofNodeTable,
+                      goals: CheckedTerminalGoalTable| {
+            assert!(matches!(
+                validate_checked_proof_tables(
+                    resolved.checked_formulas(),
+                    resolved.statement_semantics(),
+                    &proofs,
+                    &nodes,
+                    &goals,
+                ),
+                Err(ResolvedTypedAstError::InvalidStatementProofOutput)
+            ));
+        };
+        macro_rules! reject_proof_mutation {
+            ($mutation:expr) => {{
+                let mut proofs = resolved.checked_proofs().clone();
+                ($mutation)(&mut proofs.entries[0]);
+                reject(
+                    proofs,
+                    resolved.checked_proof_nodes().clone(),
+                    resolved.checked_terminal_goals().clone(),
+                );
+            }};
+        }
+        macro_rules! reject_node_mutation {
+            ($mutation:expr) => {{
+                let mut nodes = resolved.checked_proof_nodes().clone();
+                ($mutation)(&mut nodes.entries[0]);
+                reject(
+                    resolved.checked_proofs().clone(),
+                    nodes,
+                    resolved.checked_terminal_goals().clone(),
+                );
+            }};
+        }
+        macro_rules! reject_goal_mutation {
+            ($mutation:expr) => {{
+                let mut goals = resolved.checked_terminal_goals().clone();
+                ($mutation)(&mut goals.entries[0]);
+                reject(
+                    resolved.checked_proofs().clone(),
+                    resolved.checked_proof_nodes().clone(),
+                    goals,
+                );
+            }};
+        }
+
+        reject_proof_mutation!(|proof: &mut CheckedProof| proof.id = CheckedProofId::new(1));
+        reject_proof_mutation!(|proof: &mut CheckedProof| proof.source_order = 1);
+        reject_proof_mutation!(
+            |proof: &mut CheckedProof| proof.statement = StatementSemanticId::new(1)
+        );
+        reject_proof_mutation!(
+            |proof: &mut CheckedProof| proof.owner = symbol("task268-output-corrupt")
+        );
+        reject_proof_mutation!(|proof: &mut CheckedProof| proof.owner_node = TypedNodeId::new(0));
+        reject_proof_mutation!(
+            |proof: &mut CheckedProof| proof.owner_visibility = Visibility::Private
+        );
+        reject_proof_mutation!(
+            |proof: &mut CheckedProof| proof.owner_export_status = ExportStatus::LocalOnly
+        );
+        reject_proof_mutation!(
+            |proof: &mut CheckedProof| proof.proposition = CheckedFormulaId::new(1)
+        );
+        reject_proof_mutation!(|proof: &mut CheckedProof| proof.root = CheckedProofNodeId::new(1));
+        reject_proof_mutation!(
+            |proof: &mut CheckedProof| proof.source_range = range(fixture.source, 11, 90)
+        );
+        reject_proof_mutation!(
+            |proof: &mut CheckedProof| proof.owner_origin = proof.owner_origin.clone().recovered()
+        );
+
+        reject_node_mutation!(|node: &mut CheckedProofNode| node.id = CheckedProofNodeId::new(1));
+        reject_node_mutation!(|node: &mut CheckedProofNode| node.proof = CheckedProofId::new(1));
+        reject_node_mutation!(|node: &mut CheckedProofNode| node.kind =
+            CheckedProofNodeKind::TerminalGoal(CheckedTerminalGoalId::new(1)));
+        reject_node_mutation!(
+            |node: &mut CheckedProofNode| node.source_range = range(fixture.source, 51, 60)
+        );
+        reject_node_mutation!(
+            |node: &mut CheckedProofNode| node.recovery = NodeRecoveryState::Recovered
+        );
+
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.id = CheckedTerminalGoalId::new(1)
+        );
+        reject_goal_mutation!(|goal: &mut CheckedTerminalGoal| goal.proof = CheckedProofId::new(1));
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.node = CheckedProofNodeId::new(1)
+        );
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.statement = StatementSemanticId::new(1)
+        );
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.owner = symbol("task268-goal-corrupt")
+        );
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.formula = CheckedFormulaId::new(1)
+        );
+        reject_goal_mutation!(|goal: &mut CheckedTerminalGoal| goal.formula_site =
+            TypedSiteRef::Role {
+                node: TypedNodeId::new(27),
+                role: TypeRole::new("task268.output-corrupt"),
+            });
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.formula_node = TypedNodeId::new(1)
+        );
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.source_range = range(fixture.source, 51, 60)
+        );
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.recovery = NodeRecoveryState::Recovered
+        );
+        reject_goal_mutation!(|goal: &mut CheckedTerminalGoal| goal
+            .active_context
+            .push(CheckedFormulaId::new(0)));
+        reject_goal_mutation!(
+            |goal: &mut CheckedTerminalGoal| goal.local_path = "proof/1".to_owned()
+        );
+
+        let mut proofs = resolved.checked_proofs().clone();
+        proofs.entries.push(proofs.entries[0].clone());
+        reject(
+            proofs,
+            resolved.checked_proof_nodes().clone(),
+            resolved.checked_terminal_goals().clone(),
+        );
+        let mut nodes = resolved.checked_proof_nodes().clone();
+        nodes.entries.push(nodes.entries[0].clone());
+        reject(
+            resolved.checked_proofs().clone(),
+            nodes,
+            resolved.checked_terminal_goals().clone(),
+        );
+        let mut goals = resolved.checked_terminal_goals().clone();
+        goals.entries.push(goals.entries[0].clone());
+        reject(
+            resolved.checked_proofs().clone(),
+            resolved.checked_proof_nodes().clone(),
+            goals,
+        );
+        reject(
+            CheckedProofTable::default(),
+            resolved.checked_proof_nodes().clone(),
+            resolved.checked_terminal_goals().clone(),
+        );
+        reject(
+            resolved.checked_proofs().clone(),
+            CheckedProofNodeTable::default(),
+            resolved.checked_terminal_goals().clone(),
+        );
+        reject(
+            resolved.checked_proofs().clone(),
+            resolved.checked_proof_nodes().clone(),
+            CheckedTerminalGoalTable::default(),
+        );
+        assert!(matches!(
+            validate_checked_proof_tables_with_status_match(
+                resolved.checked_formulas(),
+                resolved.statement_semantics(),
+                resolved.checked_proofs(),
+                resolved.checked_proof_nodes(),
+                resolved.checked_terminal_goals(),
+                false,
+            ),
+            Err(ResolvedTypedAstError::InvalidStatementProofOutput)
+        ));
     }
 
     #[test]
@@ -3665,6 +4846,34 @@ mod tests {
                 formula_node: TypedNodeId::new(0),
             }
         }
+
+        fn proof_row(&self) -> StatementProofIntentInput {
+            let formula = self
+                .term_formula
+                .formulas()
+                .get(CheckedFormulaId::new(0))
+                .expect("statement fixture checked formula");
+            StatementProofIntentInput {
+                id: StatementProofIntentId::new(0),
+                source_order: 0,
+                statement: StatementSemanticId::new(0),
+                source_id: self.source,
+                module_id: self.module.clone(),
+                owner: self.owner.clone(),
+                owner_node: TypedNodeId::new(1),
+                owner_range: self.owner_range,
+                owner_origin: self.checked_owner.origin().clone(),
+                owner_visibility: self.checked_owner.visibility(),
+                owner_export_status: self.checked_owner.export_status(),
+                formula: CheckedFormulaId::new(0),
+                formula_site: formula.site.clone(),
+                formula_node: TypedNodeId::new(0),
+                formula_range: self.formula_range,
+                recovery: formula.recovery,
+                policy: TheoremPolicyIntent::Unmodified,
+                justification: TheoremJustificationIntent::Omitted,
+            }
+        }
     }
 
     fn statement_fixture(
@@ -3950,12 +5159,95 @@ mod tests {
         )
     }
 
+    fn assemble_fixture_with_proof_rows(
+        fixture: &StatementFixture,
+        proof_owner: &CheckedStatementOwner,
+        proof_rows: Vec<StatementProofIntentInput>,
+        include_statement: bool,
+        include_proof: bool,
+    ) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+        assemble_statement_with_bundles(
+            &fixture.typed_ast,
+            &fixture.binding_env,
+            &fixture.term_formula,
+            StatementAssemblyBundles {
+                statement_owner: &fixture.checked_owner,
+                proof_owner,
+                rows: vec![fixture.row()],
+                proof_rows,
+                include_statement,
+                include_proof,
+            },
+            statement_node_hints(),
+        )
+    }
+
     fn assemble_statement_with(
         typed_ast: &TypedAst,
         owner: &CheckedStatementOwner,
         binding_env: &BindingEnv,
         term_formula: &TermFormulaInferenceOutput,
         rows: Vec<StatementSemanticInput>,
+        node_hints: Vec<ResolvedNodeKindHint>,
+    ) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+        let proof_rows =
+            rows.first()
+                .and_then(|row| {
+                    term_formula.formulas().get(row.formula).map(|formula| {
+                        StatementProofIntentInput {
+                            id: StatementProofIntentId::new(0),
+                            source_order: 0,
+                            statement: StatementSemanticId::new(0),
+                            source_id: typed_ast.source_id(),
+                            module_id: typed_ast.module_id().clone(),
+                            owner: row.owner.clone(),
+                            owner_node: row.owner_node,
+                            owner_range: owner.source_range(),
+                            owner_origin: owner.origin().clone(),
+                            owner_visibility: owner.visibility(),
+                            owner_export_status: owner.export_status(),
+                            formula: row.formula,
+                            formula_site: formula.site.clone(),
+                            formula_node: row.formula_node,
+                            formula_range: formula.source_range,
+                            recovery: formula.recovery,
+                            policy: TheoremPolicyIntent::Unmodified,
+                            justification: TheoremJustificationIntent::Omitted,
+                        }
+                    })
+                })
+                .into_iter()
+                .collect();
+        assemble_statement_with_bundles(
+            typed_ast,
+            binding_env,
+            term_formula,
+            StatementAssemblyBundles {
+                statement_owner: owner,
+                proof_owner: owner,
+                rows,
+                proof_rows,
+                include_statement: true,
+                include_proof: true,
+            },
+            node_hints,
+        )
+    }
+
+    struct StatementAssemblyBundles<'a> {
+        statement_owner: &'a CheckedStatementOwner,
+        proof_owner: &'a CheckedStatementOwner,
+        rows: Vec<StatementSemanticInput>,
+        proof_rows: Vec<StatementProofIntentInput>,
+        include_statement: bool,
+        include_proof: bool,
+    }
+
+    fn assemble_statement_with_bundles(
+        typed_ast: &TypedAst,
+        binding_env: &BindingEnv,
+        term_formula: &TermFormulaInferenceOutput,
+        bundles: StatementAssemblyBundles<'_>,
         node_hints: Vec<ResolvedNodeKindHint>,
     ) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
         let cluster_facts = ClusterFactTable::new();
@@ -3980,11 +5272,17 @@ mod tests {
             overload_selection: &selection,
             expressions: Vec::new(),
             node_hints,
-            statement_semantics: Some(StatementSemanticInputs {
-                owner,
-                binding_env,
-                term_formula,
-                rows,
+            statement_semantics: bundles
+                .include_statement
+                .then_some(StatementSemanticInputs {
+                    owner: bundles.statement_owner,
+                    binding_env,
+                    term_formula,
+                    rows: bundles.rows,
+                }),
+            statement_proofs: bundles.include_proof.then_some(StatementProofInputs {
+                owner: bundles.proof_owner,
+                rows: bundles.proof_rows,
             }),
         })
     }
@@ -4914,6 +6212,7 @@ mod tests {
             expressions: Vec::new(),
             node_hints: Vec::new(),
             statement_semantics: None,
+            statement_proofs: None,
         };
         let mut insertions = CoercionInsertionTable::new();
         let mut inserted_by_view = BTreeMap::new();
@@ -5042,6 +6341,7 @@ mod tests {
             expressions,
             node_hints: Vec::new(),
             statement_semantics: None,
+            statement_proofs: None,
         })
     }
 

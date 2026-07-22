@@ -3403,8 +3403,47 @@
     fn proof_block_formula_theorem_ast(source_id: SourceId, label: &str) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
-        let theorem =
-            add_proof_block_formula_theorem_item(&mut builder, source_id, &mut offset, label);
+        let theorem = add_proof_block_formula_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            label,
+            SurfaceFormulaConstant::Thesis,
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn proof_block_contradiction_theorem_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_proof_block_formula_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            "SourceDerivedContradictionConstantBoundary",
+            SurfaceFormulaConstant::Contradiction,
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn justified_contradiction_theorem_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_justified_contradiction_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+        );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
             range(source_id, 0, offset.saturating_sub(2)),
@@ -3719,6 +3758,7 @@
             source_id,
             &mut offset,
             "FormulaConnectiveQuantifierPayloadBoundary",
+            SurfaceFormulaConstant::Thesis,
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
@@ -5487,6 +5527,7 @@
         source_id: SourceId,
         offset: &mut usize,
         label: &str,
+        constant: SurfaceFormulaConstant,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let theorem = add_token(
@@ -5511,16 +5552,15 @@
             ":",
         );
         let formula_start = *offset;
-        let thesis =
-            add_formula_constant(builder, source_id, offset, SurfaceFormulaConstant::Thesis);
+        let formula = add_formula_constant(builder, source_id, offset, constant);
         let formula_end = builder
-            .node_range(thesis)
-            .expect("just-created thesis formula should exist")
+            .node_range(formula)
+            .expect("just-created proof-block formula should exist")
             .end;
         let formula_expression = builder.add_node(
             SurfaceNodeKind::FormulaExpression,
             range(source_id, formula_start, formula_end),
-            vec![thesis],
+            vec![formula],
         );
         let proof_start = *offset;
         let proof = add_token(
@@ -5568,6 +5608,91 @@
                 proof_block,
                 semicolon,
             ],
+        )
+    }
+
+    fn add_justified_contradiction_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            "SourceDerivedContradictionConstantBoundary",
+        );
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let formula = add_formula_constant(
+            builder,
+            source_id,
+            offset,
+            SurfaceFormulaConstant::Contradiction,
+        );
+        let formula_end = builder
+            .node_range(formula)
+            .expect("just-created justified formula should exist")
+            .end;
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![formula],
+        );
+        let justification_start = *offset;
+        let by = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "by",
+        );
+        let citation = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            "Task268Citation",
+        );
+        let justification_end = builder
+            .node_range(citation)
+            .expect("just-created citation should exist")
+            .end;
+        let justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, justification_start, justification_end),
+            vec![by, citation],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            vec![theorem, label, colon, formula_expression, justification, semicolon],
         )
     }
 

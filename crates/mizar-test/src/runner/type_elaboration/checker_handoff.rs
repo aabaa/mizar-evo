@@ -14,9 +14,12 @@ use mizar_checker::overload_resolution::{
     TemplateExpansionOutput,
 };
 use mizar_checker::resolved_typed_ast::{
-    ExprId, ExpressionMetadataInput, ResolvedNodeKindHint, ResolvedNodeKindHintKind,
-    ResolvedTypedAst, ResolvedTypedAstInputs, ResolvedTypedNodeId, ResolvedTypedNodeKind,
-    SourceNodeRole, StatementSemanticInput, StatementSemanticInputs,
+    CheckedProofId, CheckedProofNodeId, CheckedProofNodeKind, CheckedProofStatus,
+    CheckedTerminalGoalId, ExprId, ExpressionMetadataInput, ResolvedNodeKindHint,
+    ResolvedNodeKindHintKind, ResolvedTypedAst, ResolvedTypedAstInputs, ResolvedTypedNodeId,
+    ResolvedTypedNodeKind, SourceNodeRole, StatementProofInputs, StatementProofIntentId,
+    StatementProofIntentInput, StatementSemanticId, StatementSemanticInput,
+    StatementSemanticInputs, TheoremJustificationIntent, TheoremPolicyIntent,
 };
 use mizar_checker::type_checker::{
     CheckedStatementOwner, DeclarationCheckingOutput, DeclarationKind, DeclarationStatus,
@@ -37,9 +40,15 @@ use mizar_core::{
         ResolvedTypedAstSummary, prepare_core_context,
     },
 };
-use mizar_resolve::env::{NamespacePath, SymbolEnv, SymbolKind};
+use mizar_resolve::env::{ExportStatus, NamespacePath, SymbolEnv, SymbolKind, Visibility};
+#[cfg(test)]
+use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
 use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
 use mizar_session::SourceAnchor;
+#[cfg(test)]
+use mizar_session::{
+    BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
+};
 use mizar_syntax::SurfaceAst;
 
 use super::source_formula::{SourceFormulaStatement, extract_source_contradiction_formula};
@@ -63,7 +72,7 @@ pub(in crate::runner) fn source_module_binding_env(
     debug_assert_eq!(context, BindingContextId::new(0));
     BindingEnv::try_new(BindingEnvParts {
         source_id: ast.source_id,
-        module_id: module,
+        module_id: module.clone(),
         contexts,
         bindings: BindingTable::new(),
         diagnostics: BindingDiagnosticTable::new(),
@@ -123,7 +132,7 @@ pub(in crate::runner) fn assemble_source_contradiction_checker_handoff(
         source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?;
     let typed_ast = assemble_source_contradiction_typed_ast(ast, &module, &payload)?;
     let formula = FormulaInput::new(
-        payload.formula_site,
+        payload.formula_site.clone(),
         BindingContextId::new(0),
         payload.formula_range,
         FormulaKind::Contradiction,
@@ -138,17 +147,43 @@ pub(in crate::runner) fn assemble_source_contradiction_checker_handoff(
         .next()
         .map(|(id, _)| id)
         .ok_or_else(|| "source contradiction checker produced no formula".to_owned())?;
+    let checked_formula = term_formula
+        .formulas()
+        .get(formula)
+        .ok_or_else(|| "source contradiction checker formula disappeared".to_owned())?;
+    let statement_rows = vec![StatementSemanticInput {
+        owner: owner.symbol().clone(),
+        owner_node: CONTRADICTION_THEOREM_NODE,
+        formula,
+        formula_node: CONTRADICTION_FORMULA_NODE,
+    }];
+    let proof_rows = vec![StatementProofIntentInput {
+        id: StatementProofIntentId::new(0),
+        source_order: 0,
+        statement: StatementSemanticId::new(0),
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        owner: owner.symbol().clone(),
+        owner_node: CONTRADICTION_THEOREM_NODE,
+        owner_range: owner.source_range(),
+        owner_origin: owner.origin().clone(),
+        owner_visibility: owner.visibility(),
+        owner_export_status: owner.export_status(),
+        formula,
+        formula_site: checked_formula.site.clone(),
+        formula_node: CONTRADICTION_FORMULA_NODE,
+        formula_range: checked_formula.source_range,
+        recovery: checked_formula.recovery,
+        policy: payload.policy,
+        justification: payload.justification,
+    }];
     let resolved = assemble_source_contradiction_resolved_typed_ast(
         &typed_ast,
         &owner,
         &binding_env,
         &term_formula,
-        vec![StatementSemanticInput {
-            owner: owner.symbol().clone(),
-            owner_node: CONTRADICTION_THEOREM_NODE,
-            formula,
-            formula_node: CONTRADICTION_FORMULA_NODE,
-        }],
+        statement_rows,
+        proof_rows,
     )?;
 
     Ok(SourceContradictionHandoff {
@@ -165,6 +200,9 @@ pub(in crate::runner) fn assert_source_contradiction_handoff(
     if handoff.typed_ast.nodes().len() != 3
         || handoff.resolved.nodes().len() != 3
         || handoff.resolved.statement_semantics().len() != 1
+        || handoff.resolved.checked_proofs().len() != 1
+        || handoff.resolved.checked_proof_nodes().len() != 1
+        || handoff.resolved.checked_terminal_goals().len() != 1
         || handoff.resolved.checked_formulas() != handoff.term_formula.formulas()
     {
         return Err("source contradiction final handoff count mismatch".to_owned());
@@ -195,6 +233,59 @@ pub(in crate::runner) fn assert_source_contradiction_handoff(
             .is_none()
     {
         return Err("source contradiction final identity mismatch".to_owned());
+    }
+    let proof = handoff
+        .resolved
+        .checked_proofs()
+        .get(CheckedProofId::new(0))
+        .ok_or_else(|| "missing source contradiction proof".to_owned())?;
+    let proof_node = handoff
+        .resolved
+        .checked_proof_nodes()
+        .get(CheckedProofNodeId::new(0))
+        .ok_or_else(|| "missing source contradiction proof node".to_owned())?;
+    let terminal = handoff
+        .resolved
+        .checked_terminal_goals()
+        .get(CheckedTerminalGoalId::new(0))
+        .ok_or_else(|| "missing source contradiction terminal goal".to_owned())?;
+    let checked_formula = handoff
+        .resolved
+        .checked_formulas()
+        .get(statement.formula)
+        .ok_or_else(|| "missing source contradiction checked formula".to_owned())?;
+    if proof.source_order != 0
+        || proof.statement != statement.id
+        || proof.owner != statement.owner
+        || proof.owner_node != statement.owner_node
+        || proof.owner_visibility != Visibility::Public
+        || proof.owner_export_status != ExportStatus::Exported
+        || proof.proposition != statement.formula
+        || proof.policy != TheoremPolicyIntent::Unmodified
+        || proof.justification != TheoremJustificationIntent::Omitted
+        || proof.root != proof_node.id
+        || proof.status != CheckedProofStatus::PendingAutomaticProof
+        || proof.source_range != statement.owner_range
+        || proof.owner_origin != statement.owner_origin
+        || proof_node.proof != proof.id
+        || proof_node.kind != CheckedProofNodeKind::TerminalGoal(terminal.id)
+        || proof_node.source_range != checked_formula.source_range
+        || proof_node.recovery != NodeRecoveryState::Normal
+        || terminal.proof != proof.id
+        || terminal.node != proof_node.id
+        || terminal.statement != statement.id
+        || terminal.owner != statement.owner
+        || terminal.formula != statement.formula
+        || terminal.formula_site != checked_formula.site
+        || terminal.formula_node != statement.formula_node
+        || terminal.source_range != checked_formula.source_range
+        || terminal.recovery != NodeRecoveryState::Normal
+        || !terminal.citations.is_empty()
+        || !terminal.active_context.is_empty()
+        || terminal.local_path != "proof/0"
+        || terminal.label.is_some()
+    {
+        return Err("source contradiction proof identity mismatch".to_owned());
     }
     Ok(())
 }
@@ -267,7 +358,8 @@ fn assemble_source_contradiction_resolved_typed_ast(
     owner: &CheckedStatementOwner,
     binding_env: &BindingEnv,
     term_formula: &TermFormulaInferenceOutput,
-    rows: Vec<StatementSemanticInput>,
+    statement_rows: Vec<StatementSemanticInput>,
+    proof_rows: Vec<StatementProofIntentInput>,
 ) -> Result<ResolvedTypedAst, String> {
     let cluster_facts = ClusterFactTable::new();
     let overload_collection = OverloadCollectionOutput::collect(
@@ -311,7 +403,11 @@ fn assemble_source_contradiction_resolved_typed_ast(
             owner,
             binding_env,
             term_formula,
-            rows,
+            rows: statement_rows,
+        }),
+        statement_proofs: Some(StatementProofInputs {
+            owner,
+            rows: proof_rows,
         }),
     })
     .map_err(|error| error.to_string())
@@ -324,6 +420,24 @@ pub(in crate::runner) enum SourceContradictionHandoffCorruption {
     DuplicateRow,
     InvalidFormula,
     WrongOwnerNode,
+    MissingProofRow,
+    DuplicateProofRow,
+    NonzeroProofIntentId,
+    NonzeroProofSourceOrder,
+    NonzeroProofStatement,
+    WrongProofSource,
+    WrongProofModule,
+    WrongProofOwner,
+    WrongProofOwnerNode,
+    WrongProofOwnerRange,
+    WrongProofOwnerOrigin,
+    PrivateProofOwner,
+    LocalOnlyProofOwner,
+    InvalidProofFormula,
+    RoleProofFormulaSite,
+    WrongProofFormulaNode,
+    WrongProofFormulaRange,
+    RecoveredProofIntent,
 }
 
 #[cfg(test)]
@@ -334,7 +448,8 @@ pub(in crate::runner) fn source_contradiction_handoff_corruption_error(
     corruption: SourceContradictionHandoffCorruption,
 ) -> Result<String, String> {
     let handoff = assemble_source_contradiction_checker_handoff(ast, module.clone(), symbols)?;
-    let binding_env = source_module_binding_env(ast, module).map_err(|error| error.to_string())?;
+    let binding_env =
+        source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?;
     let statement = handoff
         .resolved
         .statement_semantics()
@@ -348,17 +463,197 @@ pub(in crate::runner) fn source_contradiction_handoff_corruption_error(
         formula: statement.formula,
         formula_node: statement.formula_node,
     };
-    let rows = match corruption {
-        SourceContradictionHandoffCorruption::MissingRow => Vec::new(),
-        SourceContradictionHandoffCorruption::DuplicateRow => vec![valid.clone(), valid],
-        SourceContradictionHandoffCorruption::InvalidFormula => vec![StatementSemanticInput {
-            formula: mizar_checker::type_checker::CheckedFormulaId::new(1),
-            ..valid
-        }],
-        SourceContradictionHandoffCorruption::WrongOwnerNode => vec![StatementSemanticInput {
-            owner_node: CONTRADICTION_FORMULA_NODE,
-            ..valid
-        }],
+    let checked_formula = handoff
+        .term_formula
+        .formulas()
+        .get(statement.formula)
+        .ok_or_else(|| "missing source contradiction formula for corruption".to_owned())?;
+    let valid_proof = StatementProofIntentInput {
+        id: StatementProofIntentId::new(0),
+        source_order: 0,
+        statement: StatementSemanticId::new(0),
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        owner: statement.owner.clone(),
+        owner_node: statement.owner_node,
+        owner_range: statement.owner_range,
+        owner_origin: statement.owner_origin.clone(),
+        owner_visibility: handoff.owner.visibility(),
+        owner_export_status: handoff.owner.export_status(),
+        formula: statement.formula,
+        formula_site: checked_formula.site.clone(),
+        formula_node: statement.formula_node,
+        formula_range: checked_formula.source_range,
+        recovery: checked_formula.recovery,
+        policy: TheoremPolicyIntent::Unmodified,
+        justification: TheoremJustificationIntent::Omitted,
+    };
+    let other_owner = ResolverSymbolId::new(
+        module.clone(),
+        LocalSymbolId::new("Task268Corrupt"),
+        FullyQualifiedName::new("pkg::main::theorem::Task268Corrupt"),
+    );
+    let wrong_source = {
+        let allocator = InMemorySessionIdAllocator::new();
+        let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "ff".repeat(32)
+        ))
+        .expect("static Task268 corruption snapshot id");
+        let _first = allocator
+            .next_source_id(snapshot)
+            .expect("first Task268 corruption source id");
+        allocator
+            .next_source_id(snapshot)
+            .expect("distinct Task268 corruption source id")
+    };
+    let (rows, proof_rows) = match corruption {
+        SourceContradictionHandoffCorruption::MissingRow => (Vec::new(), vec![valid_proof]),
+        SourceContradictionHandoffCorruption::DuplicateRow => {
+            (vec![valid.clone(), valid], vec![valid_proof])
+        }
+        SourceContradictionHandoffCorruption::InvalidFormula => (
+            vec![StatementSemanticInput {
+                formula: mizar_checker::type_checker::CheckedFormulaId::new(1),
+                ..valid
+            }],
+            vec![valid_proof],
+        ),
+        SourceContradictionHandoffCorruption::WrongOwnerNode => (
+            vec![StatementSemanticInput {
+                owner_node: CONTRADICTION_FORMULA_NODE,
+                ..valid
+            }],
+            vec![valid_proof],
+        ),
+        SourceContradictionHandoffCorruption::MissingProofRow => (vec![valid], Vec::new()),
+        SourceContradictionHandoffCorruption::DuplicateProofRow => {
+            (vec![valid], vec![valid_proof.clone(), valid_proof])
+        }
+        SourceContradictionHandoffCorruption::NonzeroProofIntentId => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                id: StatementProofIntentId::new(1),
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::NonzeroProofSourceOrder => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                source_order: 1,
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::NonzeroProofStatement => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                statement: StatementSemanticId::new(1),
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::WrongProofSource => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                source_id: wrong_source,
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::WrongProofModule => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                module_id: ResolverModuleId::new(
+                    PackageId::new("pkg"),
+                    ModulePath::new("task268-corrupt"),
+                ),
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::WrongProofOwner => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                owner: other_owner,
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::WrongProofOwnerNode => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                owner_node: CONTRADICTION_FORMULA_NODE,
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::WrongProofOwnerRange => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                owner_range: mizar_session::SourceRange {
+                    start: valid_proof.owner_range.start + 1,
+                    ..valid_proof.owner_range
+                },
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::WrongProofOwnerOrigin => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                owner_origin: valid_proof.owner_origin.clone().recovered(),
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::PrivateProofOwner => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                owner_visibility: Visibility::Private,
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::LocalOnlyProofOwner => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                owner_export_status: ExportStatus::LocalOnly,
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::InvalidProofFormula => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                formula: mizar_checker::type_checker::CheckedFormulaId::new(1),
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::RoleProofFormulaSite => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                formula_site: TypedSiteRef::Role {
+                    node: valid_proof.formula_site.node(),
+                    role: mizar_checker::typed_ast::TypeRole::new("task268.corrupt"),
+                },
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::WrongProofFormulaNode => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                formula_node: CONTRADICTION_THEOREM_NODE,
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::WrongProofFormulaRange => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                formula_range: mizar_session::SourceRange {
+                    end: valid_proof.formula_range.end + 1,
+                    ..valid_proof.formula_range
+                },
+                ..valid_proof
+            }],
+        ),
+        SourceContradictionHandoffCorruption::RecoveredProofIntent => (
+            vec![valid],
+            vec![StatementProofIntentInput {
+                recovery: NodeRecoveryState::Recovered,
+                ..valid_proof
+            }],
+        ),
     };
     match assemble_source_contradiction_resolved_typed_ast(
         &handoff.typed_ast,
@@ -366,6 +661,7 @@ pub(in crate::runner) fn source_contradiction_handoff_corruption_error(
         &binding_env,
         &handoff.term_formula,
         rows,
+        proof_rows,
     ) {
         Ok(_) => Err("source contradiction corruption unexpectedly assembled".to_owned()),
         Err(error) => Ok(error),
@@ -463,6 +759,7 @@ fn assemble_source_reserve_resolved_typed_ast(
         expressions,
         node_hints,
         statement_semantics: None,
+        statement_proofs: None,
     })
     .map_err(|error| error.to_string())
 }

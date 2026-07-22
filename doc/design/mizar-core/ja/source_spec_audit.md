@@ -311,5 +311,6 @@ provenance key/source map/atomic pre-postvalidationを固定した。statusとna
 `lower_exact_task180_handoff` adapterはtarget stateだけで、current sourceは不変、
 implementation/coverage creditはない。`Valid`/public item metadataはstructural/
 name visibilityだけで、pending statusはverified-premise/accepted-artifact
-publicationを禁止する。Task 268が先に必要で、Core Task 31、VC、acceptance、
-Steps 6/7はdeferred。
+publicationを禁止する。Task 268はrequired explicit checker tableを実装済みで、
+Core Task 31が次のexecutable exact consumerである。Core implementation/
+coverage、VC、acceptance、Steps 6/7はowning taskまでdeferred。

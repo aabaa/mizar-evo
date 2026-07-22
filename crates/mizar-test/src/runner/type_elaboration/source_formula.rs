@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::Deref;
 
+use mizar_checker::resolved_typed_ast::{TheoremJustificationIntent, TheoremPolicyIntent};
 use mizar_checker::type_checker::{
     FormulaKind, ModeExpansion, SourceReserveBindingInput, TypeExpressionInput, TypeHeadInput,
     TypeHeadRef,
@@ -1623,6 +1625,21 @@ pub(in crate::runner) struct SourceFormulaStatement {
     pub(in crate::runner) formula_recovery: NodeRecoveryState,
 }
 
+#[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceContradictionStatement {
+    pub(in crate::runner) statement: SourceFormulaStatement,
+    pub(in crate::runner) policy: TheoremPolicyIntent,
+    pub(in crate::runner) justification: TheoremJustificationIntent,
+}
+
+impl Deref for SourceContradictionStatement {
+    type Target = SourceFormulaStatement;
+
+    fn deref(&self) -> &Self::Target {
+        &self.statement
+    }
+}
+
 pub(in crate::runner) fn extract_source_formula_statement(
     ast: &SurfaceAst,
 ) -> Option<SourceFormulaStatement> {
@@ -1635,12 +1652,17 @@ pub(in crate::runner) fn extract_source_formula_statement(
 
 pub(in crate::runner) fn extract_source_contradiction_formula(
     ast: &SurfaceAst,
-) -> Option<SourceFormulaStatement> {
-    extract_exact_source_formula_constant(
+) -> Option<SourceContradictionStatement> {
+    let statement = extract_exact_source_formula_constant(
         ast,
         "SourceDerivedContradictionConstantBoundary",
         SurfaceFormulaConstant::Contradiction,
-    )
+    )?;
+    Some(SourceContradictionStatement {
+        statement,
+        policy: TheoremPolicyIntent::Unmodified,
+        justification: TheoremJustificationIntent::Omitted,
+    })
 }
 
 pub(in crate::runner) fn extract_source_builtin_binary_term_formula(
