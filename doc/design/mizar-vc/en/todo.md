@@ -150,14 +150,16 @@ Keep `cargo test -p mizar-vc` green after each task (see
 7. **Algorithm VCs.** [x]
    - Generate VCs from explicit flow-derived `ControlFlowIr` handoff rows for
      goal-bearing contracts, assertions, and invariants. Keep unavailable
-     call-precondition, branch, match, range-loop, collection-loop, term-only
-     termination, partial-termination, Pick non-emptiness, and ghost-erasure
-     payload families visible as deferred/no-candidate records rather than
-     fabricated VCs.
+     call-precondition, branch, match, range-loop, collection-loop, term-derived
+     termination, and Pick non-emptiness payload families, plus historical
+     partial-termination/ghost-erasure data rows, visible as
+     deferred/no-candidate records rather
+     than fabricated VCs. Task 30 later classifies the latter as evidence-admission
+     or zero-VC/static boundaries.
    - Tests: candidate fixtures for goal-bearing preconditions,
      postconditions, assertions, invariant entry/preservation, and
      break/continue classifications; no-candidate/deferred fixtures for
-     missing flow sites, missing flow data, term-only termination, partial
+     missing flow sites, missing flow data, term-derived termination, partial
      termination, ghost erasure, and unavailable audit families such as
      old-state assignment, field-update alias identity, branch/match,
      `downto`/`step` range loops, and ghost-only `Pick` erasure.
@@ -478,35 +480,98 @@ the paired producer tasks.
       pass fixture are implemented by paired `mizar-kernel` task 33.
 
 30. **Source-derived VC integration contract and exhaustive task
-    decomposition.** [ ]
-    - Docs/traceability-only after mizar-core Tasks 31-32. Specify the exact mapping
-      from its real source-derived theorem obligation through seed intake,
-      `VcKind`, `VcStatus`, identity, context, anchor, and provenance without
-      equating generation with proof verification or acceptance.
-    - Inventory every remaining family named by the source/spec audit:
-      registration/redefinition/reduction details, call preconditions,
-      branch/match/range/collection-loop VCs, term-only and partial
-      termination, Pick non-emptiness, ghost erasure, complete traces, and
-      source-derived formula/definition/quantified-binder/general obligation
-      payloads. Create bounded producer/consumer tasks for every family,
-      including all SCA-005 items. Do not invent unavailable Core/CFG inputs,
-      generate VCs, change fixtures/expectations/trace status, or promote
-      coverage. Deps: core Tasks 31-32.
-    - Core Tasks 31-32 are now complete, so this task is dependency-authorized.
-      Core Task 32 names Core 33-53 and preserves Gates A1/S1 plus VC-owned
-      concrete call/result substitution. This task must retain those
-      unimplemented dependencies and gates while defining VC descendants; it
-      still has no authority to generate or accept a VC.
+    decomposition.** [x]
+    - Complete: [source_vc_decomposition.md](./source_vc_decomposition.md)
+      freezes the exact structural Task-180 mapping, `MT10-VC-T180`, shared
+      `MT10-VC-PV`, and the exhaustive VC 32-55 graph with exact available
+      canonical/Core dependencies plus the bounded missing authority that
+      blocks VC 53. It records entry-`requires`, loop-exit/range-hidden,
+      formula/context, kind, anchor, and gate boundaries without adding a
+      requirement, source, expectation, trace status/test, VC, or coverage.
 
 31. **Exact source-derived contradiction VC integration.** [ ]
-    - Implement only Task 30's accepted mapping for core Task 31's real theorem
-      obligation and a prepared mizar-test consumer. Preserve intake, kind,
-      status, identity, source/context/anchor/provenance, fail closed on stale or
-      corrupt input, and record a deterministic unaccepted VC rendering or
-      snapshot only when the runner contract supports it without false credit.
-    - No discharge, ATP/kernel/proof-policy execution, theorem acceptance,
-      broader obligations/algorithms, placeholder runner, or expectation
-      rebaseline. Deps: Task 30 and core Task 31.
+    - Implement only Task 30's structural mapping for Core Task 31's real
+      theorem obligation and `MT10-VC-T180`: validate the direct terminal
+      proof-node backlink, empty CFG, exact ExistingCore handoff/intake, and map
+      it to one `TerminalProofGoal`/`Open` VC with an honestly incomplete
+      canonical-goal anchor. Add a distinct proof-verification source/sidecar,
+      full `VcSet::debug_text()` baseline, exact trace row, and corruption
+      matrix; keep the existing type-elaboration Task-180 case unchanged.
+    - No marker injection, discharge, ATP/kernel/proof-policy execution,
+      theorem acceptance, broader obligations/algorithms, placeholder runner,
+      or expectation rebaseline. Deps: Task 30 and Core Task 31.
+
+32. **General theorem and proof VCs.** [ ] — Specs 04.5/14-16; Core
+    33-35/37; `MT10-VC-PV/VC32`.
+33. **Functor `equals`/`means` definition-correctness VCs.** [ ] — Specs
+    10.3-10.6/10.12.2-10.12.6/16.6.1/16.6.4; Core 33-36;
+    `MT10-VC-PV/VC33`. Result-type/type-correctness, guarded consistency, and
+    missing-`otherwise` coverage apply to both styles; existence/uniqueness
+    apply only to `means`.
+34. **Predicate/functor algebraic-property VCs.** [ ] — Specs 09.5/10.6/16.6;
+    Core 33-36; `MT10-VC-PV/VC34`.
+35. **Explicit mode-sethood, structure, and property-implementation correctness
+    VCs.** [ ] — Specs 05/07.8.1/16.6/19.2.2; Core 33-36; parser 48 where needed;
+    `MT10-VC-PV/VC35`.
+36. **Term-derived choice/Fraenkel/non-template `qua` VCs.** [ ] — Specs
+    13.4-13.6/13.8.6-13.8.7/14; Core 34-36; `MT10-VC-PV/VC36`.
+37. **Registration correctness VCs.** [ ] — Specs 07.8/16.6.3/17.2-17.5;
+    Core 39; `MT10-VC-PV/VC37`.
+38. **Redefinition compatibility/coherence VCs.** [ ] — Specs
+    06.7/09.6-9.7/10.7-10.8/11.1/16.6/19.5; Core 38;
+    `MT10-VC-PV/VC38`.
+39. **Reduction `reducibility` equality VCs.** [ ] — Specs 17.6/17.9.4;
+    Core 39; `MT10-VC-PV/VC39`. Simplification-order rejection is never a VC.
+40. **Authenticated registration/cluster/reduction trace-context and fingerprint
+    integration.** [blocked] — completed VC 37/39 outputs, Core 40, and Gate
+    A1/MC-G004. When all dependencies exist, attach authenticated trace data to
+    the real VC-37 registration/cluster correctness VCs and VC-39 reduction
+    equality VCs and their snapshots in `MT10-VC-PV/VC40`; never create a
+    trace-derived goal or standalone trace-only candidate.
+41. **Direct template use-site VCs.** [ ] — Specs
+    18.2/18.10.2/18.10.4-18.10.5; Core 34-38; `MT10-VC-PV/VC41`. Missing
+    scheme/theorem roles remain outside this slice behind Core 41/Gate S1.
+42. **Algorithm narrowing and field-update type VCs.** [ ] — Specs
+    05.7-05.8/08.2/13.3/19.3/20.1; Core 42/46/48/52-53;
+    `MT10-VC-PV/VC42`.
+43. **Algorithm body-contract, return, and assertion VCs.** [ ] — Specs
+    20.4-20.5/20.13; Core 42-43/46/48/52-53; `MT10-VC-PV/VC43`.
+44. **Call-precondition and concrete substitution VCs.** [ ] — Specs
+    20.4.1/20.8/20.13.1; Core 46/48/52-53; `MT10-VC-PV/VC44`.
+45. **Conditional path-context VC integration.** [ ] — Specs 20.2.1/20.13.3;
+    Core 43/48/52-53; `MT10-VC-PV/VC45`.
+46. **Match context and explicit-exhaustiveness VCs.** [ ] — Specs
+    20.2.5/20.13.3; Core 45/50/52-53; `MT10-VC-PV/VC46`.
+47. **While invariant and jump-context VCs.** [ ] — Specs
+    20.2.2/20.5/20.13.3; Core 43/46/48/52-53; `MT10-VC-PV/VC47`.
+48. **Range-loop VCs.** [ ] — Specs 20.2.3/20.5/20.13.3; Core
+    44/46/49/52-53; `MT10-VC-PV/VC48`.
+49. **Collection-loop VCs.** [ ] — Specs 20.2.4/20.5/20.13.3; Core
+    44/46/49/52-53; `MT10-VC-PV/VC49`.
+50. **Pick non-emptiness VCs.** [ ] — Specs 20.3/20.13.3; Core
+    42/46/48/52-53; `MT10-VC-PV/VC50`.
+51. **Term-derived loop-measure VCs.** [ ] — Specs 20.5/20.7/20.13.3; Core
+    46/48-49/52-53; `MT10-VC-PV/VC51`.
+52. **Recursive and mutual-recursion decrease VCs.** [ ] — Specs
+    20.7-20.8/20.13.4; Core 46/52-53; `MT10-VC-PV/VC52`.
+53. **Partial-call verified-termination evidence admission boundary.** [blocked] — Specs
+    20.7-20.8/20.13.1; Core 46/52-53; unexecuted `MT10-VC-PV/VC53`. Current
+    canonical authority names no authenticated evidence-reference payload,
+    producer, schema, or authentication contract. Future canonical authority must name the
+    producer, reference identity/schema, authentication rules, and owning tests
+    before this non-VC admission task can execute. It emits no
+    `PartialTermination` VC.
+54. **Snapshot/claim theorem VCs.** [ ] — Specs 20.6/20.13; Core 47/51-53;
+    `MT10-VC-PV/VC54`.
+55. **Ghost-isolation zero-VC integration.** [ ] — Specs
+    20.1.3/20.3/20.13.5; Core 46/52-53; `MT10-VC-PV/VC55`. It validates
+    no-VC accounting and Core-53 rejection, never a `GhostErasureSafety` VC.
+
+Tasks 32-55 use the exact contracts, forbidden boundaries, real-source and
+corruption requirements in
+[source_vc_decomposition.md](./source_vc_decomposition.md). Each is one
+nonempty logical task and one commit; no shared empty infrastructure task is
+authorized.
 
 ## Recommended Verification
 

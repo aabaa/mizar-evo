@@ -1443,6 +1443,24 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   immutable output assertions pass. Existing fixture, expectation, runner
   admission, counts, and CLI bytes remain unchanged. Core Task 31 is next.
 
+## VC Task 30 / Task-10 Consumer Ownership
+
+VC Task 30 reserves `MT10-VC-T180` solely for VC Task 31. It uses a distinct
+Task-180-shaped theorem source/sidecar at `proof_verification` /
+`active_proof_verification`, `expected_phase = "vc_generation"`, phase 11, and
+compares complete deterministic `SnapshotKind::VcIr` / `VcSet::debug_text()`
+bytes. The existing type-elaboration Task-180 source, sidecar, and Core snapshot
+must remain unchanged. The first proof-verification runner/tag/guard change
+lands with this first real baseline, never as empty infrastructure.
+
+VC Tasks 32-55 share `MT10-VC-PV`; each owns a distinct
+`MT10-VC-PV/VC<n>` source/sidecar/trace/baseline slice. VC 40 remains
+unexecuted behind completed VC 37/39 outputs plus Core 40/A1; VC 53 remains
+unexecuted because canonical authority does not name its evidence producer/
+reference schema/authentication contract/tests. Missing scheme/theorem-role slices
+remain outside direct VC 41 behind S1. Task 30 changes no runner, case, expectation, trace
+status/test, count, hash, or coverage.
+
 For every source-moving task, require review-only checks for visibility drift,
 test-discovery drift, owner-boundary drift, source/docs inconsistency, and
 accidental behavior changes. Run focused tests, `cargo test -p mizar-test`,

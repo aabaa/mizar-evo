@@ -66,20 +66,24 @@ verification が source behavior の evidence である。
 
 ## 残る分類済み gap
 
-- `external_dependency_gap`: active `proof_verification` runner support と
-  source-to-core / source-to-VC extraction seam はまだ `mizar-test` に存在しない。
-  Task 15 が concrete deferred corpus obligation を記録済み。
-- `external_dependency_gap` / `deferred`: `mizar-kernel` は現在 corrected
-  formula/substitution evidence checking を所有するが、`mizar-vc` にはまだ task-25
-  handoff builder と task-26 kernel-evidence hash integration がない。`mizar-atp`、
-  `mizar-proof`、`mizar-cache` は現在存在するが、この VC milestone の active consumer
+- `external_dependency_gap`: active source-derived `proof_verification` support は
+  `mizar-test` にまだ存在しない。VC Task 31 / `MT10-VC-T180` が最初の exact route、
+  VC 32-55 が後続 `MT10-VC-PV/VC<n>` slice を所有する。
+- `external_dependency_gap` / `deferred`: `mizar-kernel` は corrected
+  formula/substitution evidence checking、completed VC Tasks 25-29 は producer handoff /
+  identity payload を所有する。`mizar-atp`、`mizar-proof`、`mizar-cache` は存在するが、
+  この VC milestone の active consumer
   としては未配線であるため、ATP translation、proof policy、cache lookup/reuse、
   artifact persistence、proof-witness validation はこの crate の外に残る。
 - `external_dependency_gap`: registration、redefinition、reduction、call-precondition、
-  branch、match、range-loop、collection-loop、term-only termination、partial termination、
-  Pick non-emptiness、ghost-erasure、complete trace family、source-derived core formula
-  payload、definition payload、quantified binder payload、source-derived obligation payload
-  family について、upstream explicit/stable payload はまだ不完全である。
+  branch、match、range-loop、collection-loop、term-derived/recursive termination、
+  Pick non-emptiness、ghost-isolation
+  zero-VC integration、authenticated trace context、source-derived core formula payload、
+  definition payload、quantified binder payload、source-derived obligation payload family
+  について、upstream explicit/stable payload はまだ不完全である。
+- `spec_gap`: VC 53 には canonical partial-call admission semantics があるが、canonical
+  termination-evidence producer、reference identity/schema、authentication contract/rule、
+  owning test はない。blocked のままとし、transport/authentication mechanism を捏造しない。
 - `deferred`: proof-witness hash、ATP/kernel/proof/cache validation、artifact consumer、
   source-derived runner integration は、architecture-22 reuse を deterministic-discharge
   candidate key の外で受理する前に、downstream または後続 task で実装しなければならない。
@@ -87,3 +91,13 @@ verification が source behavior の evidence である。
 この audit 後の Task 20 identity contract には、`repo_metadata_conflict`、未分類の
 `source_drift`、`design_drift`、`source_undocumented_behavior`、
 `test_expectation_drift`、`boundary_violation` は観測されなかった。
+
+## VC Task 30 source-derived identity addendum
+
+Task 30 は follow-up ownership を変更するだけで architecture-22 reuse eligibility を
+変更しない。exact Task-31 anchor は source-shape/empty-context identity を available に
+保つが `CanonicalGoalHash` について incomplete のままで、reuse 不可である。Tasks 32-55
+は real source-derived payload が実装された時だけ stable formula/context/substitution/
+trace/dependency ingredient を所有する。missing payload は canonical hash を装った id、
+label、range、marker ではなく conservative unknown のままにする。この更新は cache lookup、
+proof reuse、discharge、verification、acceptance credit を与えない。

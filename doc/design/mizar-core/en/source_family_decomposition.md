@@ -196,3 +196,20 @@ After this commit, fresh inventory selects the smallest dependency-ready task.
 Checker 248 is the first upstream producer for Core 33; VC Task 30 is also
 dependency-authorized as a docs-only decomposition. Selection must follow the
 canonical top-level sequence and may not bypass a missing prerequisite.
+
+## VC Task 30 Accepted Downstream Mapping
+
+VC Task 30 is now complete and canonicalizes its downstream graph in
+[source_vc_decomposition.md](../../mizar-vc/en/source_vc_decomposition.md).
+VC 31 consumes only Core 31's exact Task-180 structure. VC 32-41 depend on the
+applicable exact Core 33-40 rows named in that document; direct VC 41 consumes
+Core 34-38 only, while missing scheme/theorem roles remain outside it behind
+Core 41/S1. VC 40 also requires completed VC 37/39 outputs before it can
+decorate their real registration/cluster/reduction VCs. VC 42-55 depend on the
+exact Core 42-53 algorithm/CFG rows. VC 53 additionally remains blocked because
+current canonical authority does not name the authenticated
+termination-evidence producer, reference schema/identity, authentication gate,
+or tests. Concrete call/result substitution remains VC-owned. Core 40/A1
+remains blocked, and no VC descendant may
+treat any unimplemented Core row, status, trace, formula, or context as
+available. This backlink adds ownership only and no Core/VC coverage.

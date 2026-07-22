@@ -148,3 +148,13 @@ Core Task 32はpaired plan/TODO/traceabilityを再確認する。両言語は同
 Core/CFG consumer 5個、stage/tag/phase、artifact boundary、first-real-baseline
 rule、zero current coverage impactを命名する。このownership-only scopeに
 bilingual driftは残らない。
+
+## VC Task 30 / Task-10 pair recheck
+
+VC Task 30 は paired plan、TODO、harness、snapshot、traceability document を
+再確認する。両言語は `MT10-VC-T180` を Task 31 だけに予約し、同じ distinct
+proof-verification source、`vc_generation` phase、full VcIr snapshot、first-real-baseline
+rule、unchanged existing Task-180 case を定義する。また VC 32-55 向け shared
+`MT10-VC-PV/VC<n>` slice を定義し、VC 40 の VC37/39-plus-Core40/A1 boundary、
+VC 53 の bounded missing-authority boundary、S1、403/368、全 hash、zero current coverage
+impact を維持する。Task-30 consumer scope に bilingual drift は残らない。

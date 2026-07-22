@@ -145,12 +145,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 7. **アルゴリズムの VC。** [x]
    - explicit flow-derived `ControlFlowIr` handoff row から、goal-bearing な契約、
      assertion、不変条件の VC を生成する。利用不能な call、branch、match、
-     range-loop、collection-loop、term-only termination、partial-termination、
-     Pick non-emptiness、ghost-erasure payload family は fabricated VC ではなく
-     deferred/no-candidate record として visible に保つ。
+     range-loop、collection-loop、term-derived termination、Pick non-emptiness
+     payload family と historical partial-termination/ghost-erasure data row は fabricated VC ではなく
+     deferred/no-candidate record として visible に保つ。後のTask 30は後二者を
+     evidence-admission/zero-VC/static boundaryと分類する。
    - テスト: goal-bearing precondition、postcondition、assertion、不変条件の
      entry/preservation、break/continue classification の candidate fixture。missing
-     flow site、missing flow data、term-only termination、partial termination、
+     flow site、missing flow data、term-derived termination、partial termination、
      ghost erasure、old-state assignment、field-update alias identity、branch/match、
      `downto`/`step` range loop、ghost-only `Pick` erasure など利用不能な audit family
      の no-candidate/deferred fixture。
@@ -451,32 +452,95 @@ kernel 受理境界の監査
       projection data を含む。trusted kernel validation と pass fixture は対になる
       `mizar-kernel` task 33 で実装済み。
 
-30. **Source-derived VC integration contract/exhaustive task decomposition。** [ ]
-    - mizar-core Tasks 31-32後のdocs/traceability-only task。real source-derived
-      theorem obligationからseed intake、`VcKind`、`VcStatus`、identity、context、
-      anchor、provenanceへのexact mappingを、generationとproof verification/
-      acceptanceを同一視せず定義する。
-    - source/spec audit記載の残る全family、すなわちregistration/redefinition/
-      reduction detail、call precondition、branch/match/range/collection-loop VC、
-      term-only/partial termination、Pick non-emptiness、ghost erasure、complete
-      trace、source-derived formula/definition/quantified-binder/general obligation
-      payloadをinventoryし、SCA-005を含む全familyにbounded producer/consumer taskを
-      作る。unavailable Core/CFG inputの捏造、VC generation、fixture/expectation/
-      trace status change、coverage promotionは禁止する。依存: core Tasks 31-32。
-    - Core Tasks 31-32は完了したため、このtaskはdependency-authorized。Core
-      Task 32はCore 33-53、Gates A1/S1、VC-owned concrete call/result
-      substitutionを命名した。本taskはVC descendant定義時もunimplemented
-      dependency/gateを保持し、VC generation/acceptance authorityを持たない。
+30. **Source-derived VC integration contract/exhaustive task decomposition。** [x]
+    - 完了: [source_vc_decomposition.md](./source_vc_decomposition.md) が exact
+      structural Task-180 mapping、`MT10-VC-T180`、shared `MT10-VC-PV`、exact
+      available canonical/Core dependency と VC 53 を block する bounded missing
+      authority 付き exhaustive VC 32-55 graph を固定した。
+      entry-`requires`、loop-exit/range-hidden、formula/context、kind、anchor、gate
+      boundary を記録し、requirement/source/expectation/trace status/test/VC/coverage
+      を追加しない。
 
 31. **Exact source-derived contradiction VC integration。** [ ]
-    - core Task 31のreal theorem obligationについてTask 30 accepted mappingと
-      prepared mizar-test consumerだけを実装する。intake/kind/status/identity/source/
-      context/anchor/provenanceを保存し、stale/corrupt inputをfail closedにする。
-      runner contractがfalse creditなしで許す場合だけdeterministic unaccepted VC
-      rendering/snapshotを記録する。
-    - discharge、ATP/kernel/proof-policy、theorem acceptance、broader obligation/
-      algorithm、placeholder runner、expectation rebaselineは禁止する。依存: Task 30、
-      core Task 31。
+    - Core Task 31 の real theorem obligation と `MT10-VC-T180` に対する Task 30
+      structural mapping だけを実装する。direct terminal proof-node backlink、empty
+      CFG、exact ExistingCore handoff/intake を検証し、honestly incomplete な
+      canonical-goal anchor を持つ `TerminalProofGoal`/`Open` VC 1件へ map する。
+      distinct proof-verification source/sidecar、full `VcSet::debug_text()` baseline、
+      exact trace row、corruption matrix を追加し、既存 type-elaboration Task-180 case
+      は変更しない。
+    - marker injection、discharge、ATP/kernel/proof-policy execution、theorem
+      acceptance、broader obligation/algorithm、placeholder runner、expectation
+      rebaseline なし。依存: Task 30 と Core Task 31。
+
+32. **General theorem/proof VC。** [ ] — Specs 04.5/14-16; Core 33-35/37;
+    `MT10-VC-PV/VC32`。
+33. **Functor `equals`/`means` definition-correctness VC。** [ ] — Specs
+    10.3-10.6/10.12.2-10.12.6/16.6.1/16.6.4; Core 33-36;
+    `MT10-VC-PV/VC33`。result-type/type-correctness、guarded consistency、
+    missing-`otherwise` coverage は両 style、existence/uniqueness は `means` だけ。
+34. **Predicate/functor algebraic-property VC。** [ ] — Specs 09.5/10.6/16.6;
+    Core 33-36; `MT10-VC-PV/VC34`。
+35. **Explicit mode-sethood/structure/property-implementation correctness VC。** [ ] —
+    Specs 05/07.8.1/16.6/19.2.2; Core 33-36; 必要なら parser 48;
+    `MT10-VC-PV/VC35`。
+36. **Term-derived choice/Fraenkel/non-template `qua` VC。** [ ] — Specs
+    13.4-13.6/13.8.6-13.8.7/14; Core 34-36; `MT10-VC-PV/VC36`。
+37. **Registration correctness VC。** [ ] — Specs 07.8/16.6.3/17.2-17.5;
+    Core 39; `MT10-VC-PV/VC37`。
+38. **Redefinition compatibility/coherence VC。** [ ] — Specs
+    06.7/09.6-9.7/10.7-10.8/11.1/16.6/19.5; Core 38;
+    `MT10-VC-PV/VC38`。
+39. **Reduction `reducibility` equality VC。** [ ] — Specs 17.6/17.9.4;
+    Core 39; `MT10-VC-PV/VC39`。simplification-order rejection は決して VC ではない。
+40. **Authenticated registration/cluster/reduction trace-context/fingerprint
+    integration。** [blocked] — complete 済み VC 37/39 output、Core 40、Gate
+    A1/MC-G004。全 dependency が揃った後、authenticated trace data を real VC-37
+    registration/cluster correctness VC、VC-39 reduction equality VC、およびそれらの
+    snapshot へ `MT10-VC-PV/VC40` で attach する。trace-derived goal や standalone
+    trace-only candidate は作らない。
+41. **Direct template use-site VC。** [ ] — Specs
+    18.2/18.10.2/18.10.4-18.10.5; Core 34-38; `MT10-VC-PV/VC41`。missing
+    scheme/theorem role はこの slice の外で Core 41/Gate S1 の背後に残す。
+42. **Algorithm narrowing/field-update type VC。** [ ] — Specs
+    05.7-05.8/08.2/13.3/19.3/20.1; Core 42/46/48/52-53;
+    `MT10-VC-PV/VC42`。
+43. **Algorithm body-contract/return/assertion VC。** [ ] — Specs
+    20.4-20.5/20.13; Core 42-43/46/48/52-53; `MT10-VC-PV/VC43`。
+44. **Call-precondition/concrete substitution VC。** [ ] — Specs
+    20.4.1/20.8/20.13.1; Core 46/48/52-53; `MT10-VC-PV/VC44`。
+45. **Conditional path-context VC integration。** [ ] — Specs 20.2.1/20.13.3;
+    Core 43/48/52-53; `MT10-VC-PV/VC45`。
+46. **Match context/explicit-exhaustiveness VC。** [ ] — Specs
+    20.2.5/20.13.3; Core 45/50/52-53; `MT10-VC-PV/VC46`。
+47. **While invariant/jump-context VC。** [ ] — Specs
+    20.2.2/20.5/20.13.3; Core 43/46/48/52-53; `MT10-VC-PV/VC47`。
+48. **Range-loop VC。** [ ] — Specs 20.2.3/20.5/20.13.3; Core
+    44/46/49/52-53; `MT10-VC-PV/VC48`。
+49. **Collection-loop VC。** [ ] — Specs 20.2.4/20.5/20.13.3; Core
+    44/46/49/52-53; `MT10-VC-PV/VC49`。
+50. **Pick non-emptiness VC。** [ ] — Specs 20.3/20.13.3; Core
+    42/46/48/52-53; `MT10-VC-PV/VC50`。
+51. **Term-derived loop-measure VC。** [ ] — Specs 20.5/20.7/20.13.3; Core
+    46/48-49/52-53; `MT10-VC-PV/VC51`。
+52. **Recursive/mutual-recursion decrease VC。** [ ] — Specs
+    20.7-20.8/20.13.4; Core 46/52-53; `MT10-VC-PV/VC52`。
+53. **Partial-call verified-termination evidence admission boundary。** [blocked] — Specs
+    20.7-20.8/20.13.1; Core 46/52-53; 未実行 `MT10-VC-PV/VC53`。current canonical
+    authority は authenticated evidence-reference payload、producer、schema、authentication contract を
+    命名していない。将来の canonical authority が producer、reference identity/schema、
+    authentication rule、owning test を命名するまで、この non-VC admission task は実行不可。
+    `PartialTermination` VC は emit しない。
+54. **Snapshot/claim theorem VC。** [ ] — Specs 20.6/20.13; Core 47/51-53;
+    `MT10-VC-PV/VC54`。
+55. **Ghost-isolation zero-VC integration。** [ ] — Specs
+    20.1.3/20.3/20.13.5; Core 46/52-53; `MT10-VC-PV/VC55`。no-VC accounting と
+    Core-53 rejection を検証し、`GhostErasureSafety` VC は作らない。
+
+Tasks 32-55 は [source_vc_decomposition.md](./source_vc_decomposition.md) の exact
+contract、禁止境界、real-source/corruption requirement を使用する。各 task は
+1 nonempty logical task / 1 commit であり、shared empty infrastructure task は
+認可しない。
 
 ## 推奨検証
 

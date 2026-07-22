@@ -44,6 +44,8 @@ commit が履歴に存在し、最終 review outcome、verification result、def
 
 | 29. Imported-statement projection producer side | complete | `83ff33edda6c308018d0d499259631c9160708d3` | Spec/doc review: initial medium imported-statement algorithm / dependency-slice findings、follow-up medium ledger-row と low public-constant/plan/stale-wording findings を修正し、final re-review は findings なし。Test sufficiency review: medium unsupported projection formula algorithm、direct canonical/debug projection visibility、mapped-fingerprint slice coverage、import-unknown proof-reuse specificity findings、および low projection-payload assertion finding を修正し、final re-review は findings なし。Full implementation review: medium same-requirement conflicting projection finding を修正し、final re-review は findings なし。Source/doc consistency review: initial high missing task row、medium acceptance/public-constant findings、low dependency-slice coverage finding を修正し、final re-review は findings なし。coverage ownership、traceability metadata、owner crate、deferred coverage classification は変わらないため `doc/design/spec_coverage_audit.md` は変更しない。 | Focused `cargo test -p mizar-vc kernel_evidence_handoff::tests::imported_premise_requires_formula_context`, `cargo test -p mizar-vc dependency_slice::tests::imported_statement_projection_participates_in_slice_and_reuse_key`, `cargo test -p mizar-vc kernel_evidence_handoff`, `cargo test -p mizar-vc dependency_slice`, `cargo test -p mizar-atp imported` passed。Crate/broad verification passed: `cargo fmt --check`; `cargo test -p mizar-vc`; `cargo test -p mizar-atp`; `cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings`; `cargo clippy -p mizar-atp --all-targets --all-features -- -D warnings`; `cargo test -p mizar-kernel`; `cargo test -p mizar-test`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check`。 | Rust source/docs task。`IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID` と `KernelImportedStatementProjection` を追加し、imported-statement fingerprint を kernel formula-tree fingerprint から分離して検証し、unsupported algorithm、stale/mismatched/empty/noncanonical/conflicting projection を拒否し、projection data を canonical evidence/debug/hash input に記録する。Dependency slice は imported-statement projection data を含み、statement/formula の変更とそれらの canonical projection payload が slice fingerprint に参加することを確認する一方、conservative imported coverage が proof-reuse key を引き続き block することも確認する。影響する mizar-atp test は imported-statement algorithm id と、duplicate source tuple 向けの shared projection を使うように更新した。Kernel-side trusted F6 validation/pass fixture は `mizar-kernel` task 33 で実装済み。SAT solving、kernel call、checker/core semantic change、source-derived bridge fabrication、`.miz` fixture activation、expectation rebaseline、`doc/spec` edit、`doc/design/spec_coverage_audit.md` edit は追加しない。 |
 
+| 30. Source-derived VC integration contract/exhaustive task decomposition | task commit時complete | pending self-hash。Task 31からverify/backfill | Spec/doc review: exact Task-180 mapping、exhaustive ownership、両 functor style correctness、concrete VC-37/39 trace-decoration target、bounded VC-53 admission-authority `spec_gap`、explicit-handoff-only `GeneratedSethood` finding を修正し、final re-review は findings なし。Test sufficiency review: per-family positive/zero/negative requirement、exact Task-31 admission/trace contract、expanded VC-33 branch、nonempty blocked VC-40 integration、VC-53 no-fabrication boundary、generated-sethood near miss を修正し、final re-review は findings なし。Full implementation-scope review: invented simplification-order/partial-termination/ghost-erasure VC、overlap definition owner、missing non-template `qua`/direct-template owner、trace naming、task-mixing risk を修正し、final re-review は findings なし。Source/doc consistency review: ledger/bilingual/top-level/Core-current-state drift、VC-53 rollup classification、admission-vs-transport wording、日本語 traceability inversion、historical deferred/no-candidate wordingを修正し、final re-review は findings なし。`spec_coverage_audit.md` は follow-up ownership/classification のため更新が必要だが coverage credit は追加しない。 | Focused VC/Core/checker/test lint-policy、mizar-test metadata、mizar-vc deferred-family documentation-contract test はpass。`cargo fmt --check`、`cargo clippy --all-targets --all-features -- -D warnings`、final workspace `cargo test` はpass。parallel mizar-test temp-directory の transient failure 2件は個別と272-test lib rerunでpassし、別のdocumentation-contract failureはfinal workspace pass前に修正。exact preservation oracle: CLI hash `0915fed1465c86f4b4d0420a35703fe93aed0cbb23b7304abff927195b4f5758` / `57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273` / `08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5` / `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`; active 96/4/188、plan 403/368、type 236/224、pass/fail 219/184、warnings/errors 23/0; raw/normalized 272-test-list hash `5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e` / `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`; production 17 paths/19,803 lines、path/content hash `b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d` / `5f9e716169964a861b71576957c05e2dc2538b5e0ff9d1025ef51a4bea6aa306`; `git diff --check` と explicit stage 後の `git diff --cached --check` はpass。 | Docs/traceability-only。paired `source_vc_decomposition.md`を追加し、exact VC Task-31/`MT10-VC-T180` authority、bounded VC/zero-VC integration Tasks 32-55、`MT10-VC-PV/VC<n>` consumerを固定し、existing trace `deferred_reason` string 2件だけを変更する。Rust、`doc/spec`、`.miz`、expectation、snapshot、runner、trace requirement/status/test、case、coverage credit、behaviorは追加しない。VC 40 は VC 37/39 と Core 40/A1 まで unavailable、VC 53 は bounded canonical-authority `spec_gap` の背後で unavailable、missing S1 role も unavailable のまま。 |
+
 ## Task 0 Handoff
 
 Recommended reasoning: `xhigh`。
@@ -380,30 +382,32 @@ Rationale: task 11 は最初の phase-12 source implementation である。deter
 discharge は ATP-bound obligation を黙って消したり unavailable trace を信頼したりしては
 ならないため `xhigh` を保つ。documentation-only typo fix だけなら lower reasoning でもよい。
 
-## Current Step-3 Handoff
+## Current STEP 5 Handoff
 
 Recommended reasoning: `xhigh`。
 
 Prompt:
 
 ```text
-Continue Step 3 with `mizar-kernel` task 34 after the completed mizar-kernel
-task 33 imported-statement projection validation. Before editing, verify a
-clean worktree, confirm the task 33 commit, and re-read
-doc/design/todo.md, doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/soundness_argument.md,
-doc/design/mizar-kernel/en/checker.md,
-doc/design/mizar-kernel/en/resolution_trace.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/18.dependency_fingerprint.md, and
-doc/design/mizar-vc/en/kernel_evidence_handoff.md. Pin down or retire the
-legacy resolution-trace tautology marker without changing corrected
-formula-evidence acceptance, activating unverified source fixtures,
-fabricating runner/source-derived payloads, or rebaselining expectations to
-match current behavior.
+completed docs-only VC Task 30 commitからmizar-vc autonomous STEP 5 developmentを
+継続する。編集前にcommit hashとclean worktreeを確認し、
+`doc/design/mizar-vc/en/source_vc_decomposition.md`、`generator.md`、`vc_ir.md`、
+`00.crate_plan.md`、`todo.md`、`task_ledger.md`、exact Core Task-31 authority、prepared
+mizar-test harness/snapshot/traceability contractを再読する。VC Task 31だけを実装する。
+exact marker-free Task-180 CoreIr/direct TerminalGoal relation、empty
+ControlFlowOutput、ExistingCore handoff/intake row 1件を検証し、owner/source/path/originを
+保持し、context/premise/hint/generated formulaが空で、`CanonicalGoalHash`だけをmissingと
+するincomplete anchorを持つ`VcId(0)` `TerminalProofGoal`/`Open` VCをちょうど1件作る。
+distinct `pass_proof_verification_contradiction_formula_constant_001`
+proof-verification source/sidecar、first runner/tag/guard、complete double-generated
+`VcSet::debug_text()` VcIr baseline、frozen exact trace row、指定された全admission/corruption
+testを同じlogical taskへ含める。terminal marker injection、existing type-elaboration
+sidecarの変更/admission、goal hash捏造、discharge、NeedsAtp transition、theorem
+verification/acceptance、fact publication、broader VC family、Steps 6/7 promotionは禁止。
+focused test、fmt、full-feature Clippy、crate/workspace test、4 CLI oracle、count/hash
+oracle、diff checkを実行し、全review-only phase後にTask-31専用1 commitを作る。
 ```
 
-Rationale: paired producer/kernel F6 projection work は完了したため、次の sequential
-Step 3 item は mizar-kernel task 34 である。Trusted legacy-audit/rejection boundary
-に触れるため、fabricated bridge payload や legacy acceptance に戻らないよう `xhigh`
-を保つ。bookkeeping-only documentation synchronization だけなら lower reasoning が適切である。
+Rationale: Task 31は最初のreal source-to-VC phase-11 vertical sliceで、structural
+identity、seed accounting、anchor honesty、runner admission、traceability boundaryを横断する。
+`xhigh`を保つ。別途認可されたdocumentation-only typo fixだけならlower reasoningでよい。

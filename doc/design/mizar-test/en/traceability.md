@@ -1983,3 +1983,29 @@ snapshot path and first `SnapshotKind::ControlFlowIr` path must each be paired
 with a distinct real semantic source and baseline in the owning descendant.
 Task 32 changes no case/requirement count, runner count, status, test list,
 expectation, or production source.
+
+## VC Task 30 VC Ownership Traceability
+
+VC Task 30 adds no backlink or coverage credit. Its exact Task-31 consumer is
+`MT10-VC-T180`: a distinct `proof_verification` /
+`active_proof_verification`, `expected_phase = "vc_generation"`, phase-11
+source/sidecar that compares the complete `SnapshotKind::VcIr` /
+`VcSet::debug_text()` bytes. The existing Task-180 type-elaboration case and
+Core snapshot remain unchanged. Task 31 owns the first real runner/guard,
+fixture, baseline, and exactly one trace row together: id
+`spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot`, canonical source
+`doc/design/mizar-vc/en/source_vc_decomposition.md`, section `VC Task 31; exact
+Task-180 open VcIr proof-verification snapshot`, stage `proof_verification`,
+status `covered`, required snapshot coverage, and sole backlink
+`tests/miz/pass/theorems/pass_proof_verification_contradiction_formula_constant_001.expect.toml`.
+
+VC Tasks 32-55 use shared `MT10-VC-PV` slices `MT10-VC-PV/VC<n>`, each with a
+distinct real source, sidecar, narrow trace row, full VcIr baseline, and
+corruption coverage plus every applicable task-local zero-VC/near-miss and
+diagnostic negative required by its owning row. VC 40 remains blocked on
+completed VC 37/39 outputs plus Core 40/A1; VC 53 remains blocked because
+canonical authority does not name its evidence producer/reference schema/
+authentication contract/tests. Missing scheme/theorem-role slices remain
+outside direct VC 41 behind S1. The
+broad VC corpus and algorithm rows stay deferred; Task 30 changes only their
+owner/deferred-reason text and preserves 403/368 plus all count/hash oracles.

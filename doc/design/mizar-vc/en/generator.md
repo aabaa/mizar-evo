@@ -27,7 +27,7 @@ registration-style correctness VCs is task 6; algorithm VC generation is task
 | GEN-G003 | `test_gap` / `source_drift` | No `src/generator.rs` or generator tests exist before tasks 6-8. | This spec names the behavior and test obligations for the implementation tasks; task 5 changes no Rust source. |
 | GEN-G004 | `external_dependency_gap` | Active source-derived `proof_verification` `.miz` runner support and extraction seams remain unavailable. | Use Rust fixtures over explicit core/control-flow payloads in tasks 6-8 and keep source-derived corpus activation deferred to task 15. |
 | GEN-G005 | `external_dependency_gap` | `ObligationSeed` does not yet expose first-class theorem status dependency metadata or dedicated registration/redefinition/reduction correctness payload fields. | Task 6 preserves only namespaced explicit `CoreProvenance` markers supplied by upstream fixtures. Absent markers produce ordinary candidates or visible no-candidate records according to the seed kind/status; the generator must not infer these semantics from labels, generic paths, or source text. |
-| GEN-G006 | `external_dependency_gap` | The current `ObligationSeedHandoff` carries flow-site metadata and goal formulas for contract, assertion, and invariant obligations, but it does not yet expose call-precondition, branch, match, range-loop, collection-loop, or generated formula schemas for term-only termination and ghost-erasure obligations. | Task 7 generates candidates only for explicit flow-derived seed rows that have `ControlFlowObligationSite` metadata and a goal formula. Missing algorithm payload families remain visible no-candidate/deferred records instead of fabricated VCs. |
+| GEN-G006 | `external_dependency_gap` | The current `ObligationSeedHandoff` carries flow-site metadata and goal formulas for contract, assertion, and invariant obligations, but it does not yet expose call-precondition, branch, match, range-loop, collection-loop, term-derived termination schemas, authenticated partial-call termination evidence, or complete ghost-isolation metadata. | Task 7 generates candidates only for explicit flow-derived seed rows that have `ControlFlowObligationSite` metadata and a goal formula. Missing proof families and zero-VC/static integration payloads remain visible no-candidate/deferred records instead of fabricated VCs. |
 | GEN-G007 | `source_drift` / `test_gap` | After task 7 the Rust source has pre-normalized task-6/task-7 candidates, but no final `VcSet` normalizer, documented `VcKind` ordering rank, dense `VcId` assignment, or normalizer tests. | Task 8 implements the normalizer, documents the stable classification order below, and adds Rust tests for dense ids, seed accounting, duplicate rejection, deferred status preservation, expanded-mapping validation, and stable rendering inputs. |
 | GEN-G008 | `deferred` | Status transitions, deterministic discharge, dependency slices, ATP translation, kernel/proof/cache/corpus integration, and source-derived corpus runner activation depend on later module specs or unavailable external seams. | Task 8 records those paths as out of scope and must preserve existing statuses instead of discharging, transitioning, slicing, translating, publishing, or fabricating external integration records. |
 
@@ -162,7 +162,9 @@ Generated core obligation candidates are generated from explicit core seed
 kinds only. The required families are:
 
 - generated non-emptiness obligations;
-- generated sethood obligations;
+- generated sethood obligations carried by an explicit upstream handoff. This
+  is compatibility for the existing task-6/task-8 payload/kind, not authority
+  for a Task-30 source-derived generator;
 - generated Fraenkel membership axioms.
 
 These candidates use the core formula named by the seed when one exists, or a
@@ -188,8 +190,9 @@ When explicit payloads exist, candidate kind and provenance must distinguish:
 - existential cluster existence;
 - conditional or functorial cluster coherence;
 - redefinition compatibility or coherence carried by the core/checker seed;
-- reduction reducibility and, when exposed by upstream data, strict
-  simplification-order side conditions;
+- reduction `reducibility` equality only. Simplification-order, size, and
+  variable-occurrence rules are structural registration-time checks that reject
+  invalid registrations and never become proof VCs;
 - checker-initial carried obligations whose provenance identifies a
   registration-style owner but whose exact future seed kind is not yet stable.
 
@@ -216,21 +219,24 @@ The complete algorithm VC model includes these candidate families:
 - call preconditions for each algorithm call;
 - postconditions for every return edge and algorithm contract exit;
 - assertion obligations;
-- branch and match obligations, including case contexts and exhaustiveness
-  evidence when present;
-- while-loop invariant entry, preservation, break, continue, exit, and
-  decreasing-measure obligations;
-- range-loop positive-step, bound, hidden-index, invariant-entry, and
-  invariant-preservation obligations for both `to` and `downto`;
+- branch and match path contexts, plus an explicit match-exhaustiveness proof
+  obligation only when the source requests `exhaustive`;
+- while-loop invariant entry, preservation, break, continue, and
+  decreasing-measure obligations; normal exit is successor context, not an
+  exit VC;
+- range-loop positive-step, invariant-entry, and invariant-preservation
+  obligations for both `to` and `downto`; bounds and hidden indices are context,
+  not standalone VCs;
 - collection-loop finiteness, processed-set, invariant-establishment,
   invariant-maintenance, and order-independence obligations;
 - recursive and mutually recursive termination obligations grouped by call
   graph component and decreasing measure;
-- partial-termination obligations when caller-side postconditions require
-  termination evidence;
+- partial-call postcondition admission only when the exact call cites or has in
+  context verified termination evidence; no `PartialTermination` VC is emitted;
 - Pick non-emptiness obligations for every set-based or type-based Pick site,
   including ghost-only Pick sites;
-- ghost-erasure safety obligations and ghost-only `Pick` erasure records.
+- ghost-isolation static checking and ghost-only `Pick` erasure records;
+  isolation produces no `GhostErasureSafety` proof VC.
 
 Algorithm contexts must preserve:
 
@@ -402,9 +408,10 @@ Task 7 records these cases as visible no-candidate records:
 - algorithm rows with no explicit goal formula, including current
   `TerminationMeasure`, `PartialTermination`, `GhostPick`, and
   `GhostAssignment` rows;
-- call-precondition, branch, match, range-loop, collection-loop, Pick
-  non-emptiness, and ghost-erasure proof families that are named by the spec
-  but not yet present as explicit handoff payloads.
+- call-precondition, branch, match, range-loop, collection-loop, and Pick
+  non-emptiness proof families not yet present as explicit handoff payloads;
+- historical ghost-erasure rows as zero-VC/static-check integration data, not
+  as a specification-backed proof family.
 
 Task 7 algorithm context entries are symbolic and conservative. They may record
 explicit site metadata such as site kind, ordinal, statement, block, loop id,
@@ -445,8 +452,10 @@ The task-8 `VcKind` classification rank is:
 14. `RangeLoop`, ordered by `PositiveStep`, `RangeBound`, `HiddenIndex`
 15. `CollectionLoop`, ordered by `Finiteness`, `OrderIndependence`
 16. `Termination`
-17. `PartialTermination`
-18. `GhostErasureSafety`
+17. `PartialTermination` (existing validation/sort shape only; not
+    source-generated by the current canonical specification)
+18. `GhostErasureSafety` (existing validation/sort shape only; ghost isolation
+    is a static check and not a source-generated VC)
 19. `PolicyDeferredTraceability`
 
 Future `VcKind` variants must be appended by an owning spec task before the
@@ -491,6 +500,35 @@ fingerprint, compatible verifier-policy fingerprint, and selected
 proof-evidence hash. Matching `VcId`, source range, or anchor alone remains
 insufficient.
 
+## Task 30 Source-Derived Integration Contract
+
+The exhaustive contract is canonical in
+[source_vc_decomposition.md](./source_vc_decomposition.md). VC Task 31 must use
+a narrow Core-aware adapter to validate the exact Task-180 direct terminal
+proof-node relationship before candidate classification. The generic generator
+currently sees only the seed handoff and would classify the real marker-free
+seed as `TheoremProofStep`; Task 31 must instead classify that authenticated
+structure as `TerminalProofGoal` without inserting or mutating provenance.
+
+Tasks 32-55 own every broader source-derived family. In particular, a declared
+entry `requires` is callee-body context and not a source-generated
+`AlgorithmPrecondition` proof VC; loop normal exit and range hidden/bound values
+are context unless an explicit canonical formula exists; simplification-order
+and ghost isolation are static checks; no source `PartialTermination` or
+`GhostErasureSafety` VC exists. A partial call exposes its successor
+postcondition only with exact cited/in-context verified termination evidence.
+Task 30 assigns no source-derived family to the existing `GeneratedSethood`
+compatibility kind: explicit mode-declaration sethood uses
+`DefinitionCorrectness`, and Fraenkel sethood is accepted prerequisite evidence
+rather than a VC. Source generation of `GeneratedSethood` requires future
+canonical authority and its first real source.
+Generated formula,
+substitution, binder, path, trace, and old-state representations are extended
+only with the first real owning family, never by an empty infrastructure task.
+Current source behavior that differs from these canonical rules is
+`source_drift` assigned to the relevant descendant, not authority to preserve
+that behavior.
+
 ## Planned Tests
 
 Task 6 must add Rust coverage for:
@@ -515,8 +553,9 @@ Task 7 must add Rust coverage for:
 - goal-bearing algorithm precondition, postcondition, assertion, and
   loop-invariant candidates from explicit flow-derived sites;
 - visible no-candidate/deferred records for unavailable call-precondition,
-  branch, match, range-loop, collection-loop, term-only termination,
-  partial-termination, Pick non-emptiness, and ghost-erasure payload families;
+  branch, match, range-loop, collection-loop, term-derived termination, Pick
+  non-emptiness, plus historical partial/ghost rows that Task 30 classifies as
+  evidence-admission or zero-VC/static boundaries rather than source-generated VCs;
 - conservative symbolic context preservation for explicit flow-site metadata,
   including loop header/backedge and break/continue exit classification, while
   not inventing old-state assignment facts, field-update alias identity,

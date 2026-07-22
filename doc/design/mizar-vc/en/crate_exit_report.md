@@ -46,7 +46,7 @@ Excluded:
   `mizar-proof`, or `mizar-cache` seams, or for artifact/proof/cache
   consumers.
 - Fabricated registration/redefinition/reduction, branch, match, loop,
-  termination, ghost-erasure, trace, source-derived core formula, definition,
+  termination, ghost-erasure VC, trace, source-derived core formula, definition,
   quantified binder, or source-derived obligation payloads.
 
 ## Post-Closeout Evidence Correction
@@ -183,9 +183,9 @@ milestone does not own those seams and no hard gate fails.
 
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
-| VC-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-test` still lacks an active `proof_verification` runner/tag gate and source-to-core/source-to-VC extraction seams for real `.miz` corpus inputs. | Add runner and extraction support in the owning staged-test and upstream extraction tasks before activating source-derived VC fixtures. |
+| VC-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-test` still lacks an active source-derived `proof_verification` runner/tag gate and VC baseline. | VC Task 31 owns the first exact route with `MT10-VC-T180`; each VC 32-55 task later owns its real `MT10-VC-PV/VC<n>` increment. No empty runner is allowed. |
 | VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | The original closeout treated `mizar-kernel` as unavailable. `mizar-kernel` tasks 23-29 now provide formula/substitution evidence parsing, deterministic instantiation/SAT encoding, trusted SAT checker wrapping, SAT-backed check service, and legacy-certificate audit gating. Tasks 25-29 add the VC producer-side handoff builder, canonical evidence identity, explicit goal polarity, context identity, and imported-statement projection payloads for explicit data, and paired `mizar-kernel` task 33 now implements kernel-side projection validation. ATP candidate production, proof/cache consumers, and artifact witness consumers remain incomplete. | Task 24 specifies the VC/kernel handoff; tasks 25-29 implement producer-side identity/projection payloads. Downstream ATP/proof/cache/artifact work must use its own specs instead of placeholders; kernel-side task 33 validation is no longer deferred. |
-| VC-CLOSEOUT-G003 | `external_dependency_gap` | Upstream explicit/stable payloads remain incomplete for registration/redefinition/reduction details, call preconditions, branch/match/range/collection loop obligations, term-only and partial termination, Pick non-emptiness, ghost erasure, complete trace families, source-derived core formula payloads, definition payloads, quantified binder payloads, and source-derived obligation payload families. | Upstream checker/core/control-flow tasks expose stable explicit payloads; `mizar-vc` can then add spec-backed generation/discharge/slice tasks. |
+| VC-CLOSEOUT-G003 | `external_dependency_gap`; bounded `spec_gap` for VC 53 | Source-derived theorem/formula/context, definition/property/term, registration/trace/direct-template, and Chapter-20 VC or zero-VC integration payloads remain incomplete. Separately, VC 53 lacks canonical evidence-transport authority. | Task 30 assigns exact VC 31-55 owners and Core 31-53 dependencies. VC 40 requires completed VC 37/39 outputs plus Core 40/A1. VC 53 remains blocked because canonical authority does not name its evidence producer/reference identity/schema, authentication contract/rules, or owning tests; do not invent them. Missing scheme/theorem roles remain outside direct VC 41 behind S1. Implement only the dependency-ready bounded row with its real consumer. |
 | VC-CLOSEOUT-G004 | `deferred` | Proof-witness hashes, ATP/kernel/proof/cache validation, artifact consumers, and source-derived runner integration must exist before architecture-22 reuse is accepted outside deterministic-discharge candidate keys. | Downstream proof/cache/artifact phases validate the untrusted reusable inputs produced here. |
 | VC-CLOSEOUT-G005 | `deferred` | Large `vc_ir`, `generator`, and `dependency_slice` files may benefit from private helper/test splits, but Task 22 found no required move-only split before crate exit. | Run future move-only maintenance tasks only if reviewability becomes a bottleneck; do not mix behavior or API changes. |
 
@@ -268,3 +268,17 @@ of the corrected kernel/vc evidence handoff. Keep `xhigh` because the artifact
 must publish stable witness projections without becoming an acceptance oracle.
 Lower reasoning is appropriate only for typo-only documentation
 synchronization.
+
+## VC Task 30 STEP 5 Ownership Addendum
+
+Post-closeout Task 30 does not reopen or weaken the original crate exit. Its
+paired [source-derived VC decomposition](./source_vc_decomposition.md) replaces
+the umbrella source-derived gap with the exact Task-31 mapping and bounded VC
+Tasks 32-55. Task 31 and `MT10-VC-T180` are now the next sequential STEP 5
+implementation. Tasks 32-55 remain dependency-paced by Core 33-53; VC 40
+remains blocked on VC 37/39 plus Core 40/A1, and VC 53 remains blocked on its
+bounded canonical-authority gap, while missing scheme/theorem roles
+remain outside direct VC 41 behind S1. Proof search, discharge, ATP/kernel/proof policy,
+acceptance, cache/artifact reuse, MVM/extraction, and Steps 6/7 remain outside
+this ownership-only update. No source, fixture, expectation, trace status/test,
+coverage, or quality score changes.

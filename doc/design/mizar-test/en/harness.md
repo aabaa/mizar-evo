@@ -2525,3 +2525,22 @@ checker output cross-references. Justification-clause and proof-block near
 misses remain extraction gaps. Existing `.miz`, expectations, admission, test
 names, counts, trace status, and four CLI outputs remain unchanged. Core Task
 31 is the next consumer; no acceptance or proof-verification credit is added.
+
+## VC Task 30 Prepared Phase-11 Runner
+
+Task 30 reserves `MT10-VC-T180` solely for VC Task 31. The first
+`proof_verification` / `active_proof_verification` route must accept only the
+distinct `pass_proof_verification_contradiction_formula_constant_001` source/
+sidecar with `expected_phase = "vc_generation"`,
+run the source-to-checker-to-Core-to-VC path twice, require whole-`VcSet`
+equality, and compare the complete phase-11 debug bytes. It must not reclassify
+or admit the existing type-elaboration sidecar. Task-31 admission tests reject
+the wrong stage, missing/duplicate/wrong active tag, and wrong
+`expected_phase`. The runner/tag guard and first real
+baseline are one logical Task-31 change; no empty route is permitted.
+
+The later shared `MT10-VC-PV` route admits only the bounded
+`MT10-VC-PV/VC<n>` slices owned by VC Tasks 32-55. Each slice must reject wrong
+stage/tag/phase, missing or duplicate producer data, diagnostic-bearing Core/CFG,
+stale handoff/intake, corrupt seed accounting, and nondeterministic output.
+Task 30 itself changes no runner source, admission, case, or report bytes.

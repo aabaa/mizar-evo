@@ -41,16 +41,17 @@ because a commit cannot embed its own hash.
 | `00.crate_plan.md` | Responsibility, out-of-scope boundaries, authority order, known gaps/drift, task decomposition, hard gates, and verification expectations. | Synchronized. |
 | `vc_ir.md` | Snapshot-local `VcId`, seed accounting, generated formula ownership, local context, premises, statuses, anchors, rendering, planned tests, and public enum policy. | Synchronized. |
 | `generator.md` | Explicit-payload generation scope, unavailable registration/algorithm payload boundaries, local context, controlled unfolding, normalization handoff, task slices, planned tests, and public enum policy. | Synchronized. |
+| `source_vc_decomposition.md` | Task-31 exact structural mapping, VC 32-55 graph, per-family canonical/Core dependencies, prepared consumers, disagreement classes, and zero-credit boundary. | Synchronized by Task 30. |
 | `discharge.md` | Deterministic pre-ATP scope, supported classes, limits, evidence/explanation model, status interaction, no-erase ATP boundary, planned tests, and public enum policy. | Synchronized. |
 | `dependency_slice.md` | Conservative slice inputs/outputs, dependency entry classes, unknown coverage, reusable fingerprint contract, task-26 kernel-evidence identity integration, task-28 context-identity hash integration, planned tests, and public enum policy. | Synchronized by Task 28 updates. |
 | `kernel_evidence_handoff.md` | Producer-side formula/substitution evidence handoff mapping, prohibited backend/legacy material, gap classification, task-25 builder public enum policy, resolved task-26 reuse-identity gap, task-27 explicit polarity contract, task-28 context-identity payload, and post-task-28 kernel handoff draft. | Synchronized by Tasks 24-28. |
-| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, explicit goal-polarity correspondence, context-identity correspondence, and classified external/deferred follow-ups. | Synchronized by task 28 updates. |
-| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22/closeout/24/25/26/27/28 sync edits. | Synchronized by this paired audit document. |
-| `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence, deterministic-discharge branch evidence, task-28 kernel-handoff context-identity reuse behavior, remaining external/deferred gaps, and no-drift classification. | Synchronized by Task 28 updates. |
+| `source_spec_audit.md` | Public module exports, public surface inventory, evidence identity, Task-30 VC 31-55 ownership, and classified external/deferred follow-ups. | Synchronized through Task 30. |
+| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22/closeout/24-30 sync edits. | Synchronized by this paired audit document. |
+| `architecture_22_audit.md` | Architecture-22 identity, kernel-handoff context identity, Task-30 incomplete exact anchor and descendant identity ownership, and remaining gaps. | Synchronized through Task 30. |
 | `module_boundary_audit.md` | Task 22 source-layout line counts, module-boundary review, no-required-split decision, and optional maintenance deferrals. | Synchronized by Task 22. |
-| `crate_exit_report.md` | Final status, quality score, hard gates, task commits through task 26, verification, review outcomes, remaining deferred/external items, and next-crate handoff draft. | Synchronized by prior closeout/task-27 bookkeeping; task 28 remains post-closeout follow-up. |
-| `task_ledger.md` | Task status, commit hashes available through task 27, complete task-28 review/verification evidence, deferred notes, and post-task-28 handoff draft. | Synchronized by task 28 updates; task 28 self-hash is backfilled after its commit exists. |
-| `todo.md` | Ordered task list, completed tasks through task 28, closeout status, recommended verification, and notes. | Synchronized by task 28 updates. |
+| `crate_exit_report.md` | Original exit evidence plus Task-30 VC 31-55 ownership, updated gap owners, and preserved quality/no-credit boundary. | Synchronized through Task 30. |
+| `task_ledger.md` | Commits through Task 29, Task-30 review/verification evidence with pending self-hash, and the current VC-31 STEP 5 handoff. | Synchronized by Task 30. |
+| `todo.md` | Completed Task 30, executable Task 31, bounded VC 32-55 descendants, gates, verification, and notes. | Synchronized by Task 30. |
 
 ## Classification
 
@@ -74,10 +75,15 @@ Existing classified records remain:
   policy, cache lookup/reuse, and artifact persistence remain downstream.
 - `external_dependency_gap`: upstream explicit/stable payloads remain
   incomplete for registration/redefinition/reduction details,
-  call-precondition, branch, match, range-loop, collection-loop, term-only
-  termination, partial termination, Pick non-emptiness, ghost-erasure, complete
-  trace families, source-derived core formula payloads, definition payloads,
+  call-precondition, branch, match, range-loop, collection-loop,
+  term-derived/recursive termination, Pick
+  non-emptiness, ghost-isolation zero-VC integration, authenticated trace
+  contexts, source-derived core formula payloads, definition payloads,
   quantified binder payloads, and source-derived obligation payload families.
+- `spec_gap`: VC 53 is separately blocked because canonical authority requires
+  exact verified termination evidence but does not name its producer, reference
+  identity/schema, authentication contract/rules, or owning tests. No payload or
+  authentication mechanism is inferred to clear this bounded gap.
 - `deferred`: proof-witness hashes, ATP/kernel/proof/cache validation,
   artifact consumers, and source-derived runner integration remain downstream
   before architecture-22 reuse can be accepted outside deterministic-discharge
@@ -171,7 +177,20 @@ facts, and is checked by trusted membership verification in `mizar-kernel` task
 
 ## Core Task 32 Ownership Sync
 
-Core Task 32 rechecks the paired plan, TODO, and source/spec audit. Both
-languages record VC Task 30 as dependency-authorized for docs-only
-decomposition while preserving Core 33-53, Gates A1/S1, concrete substitution,
-and zero VC-generation/coverage authority.
+Core Task 32 rechecked the paired plan, TODO, and source/spec audit and at that
+point recorded VC Task 30 as dependency-authorized. Task 30 is now complete;
+Core 33-53, its explicit gates, concrete substitution ownership, and zero
+pre-implementation VC-generation/coverage authority remain preserved.
+
+## VC Task 30 Ownership Sync
+
+Task 30 adds and rechecks the paired `source_vc_decomposition.md`, then syncs
+the paired plan, TODO, generator, VC IR, source/spec, architecture-22,
+closeout, ledger, Core, and mizar-test ownership records. Both languages name
+the same exact Task-31 structural mapping, `MT10-VC-T180`, shared
+`MT10-VC-PV/VC<n>` contract, VC 32-55 graph, VC 40's
+VC37/39-plus-Core40/A1 boundary, VC 53's bounded missing-authority boundary,
+S1,
+disagreement classes,
+and zero current source/fixture/expectation/trace-status/coverage impact. No
+bilingual drift remains in Task-30 scope.

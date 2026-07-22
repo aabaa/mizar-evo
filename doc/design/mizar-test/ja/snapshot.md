@@ -346,3 +346,11 @@ key scenarios:
 - snapshot format は versioned である。
 - snapshot hash は canonical content から計算する。
 - snapshot tests は regression contracts であり debug dumps ではない。
+
+## VC Task 30 VcIr snapshot contract
+
+`MT10-VC-T180` と後続の各 `MT10-VC-PV/VC<n>` slice は既存
+`SnapshotKind::VcIr` を使う。body は selected summary ではなく complete deterministic
+`VcSet::debug_text()` output である。Task 31 は verify-only baseline comparison 前に
+independent complete generation 2回を比較し、first proof-verification guard を first real
+baseline と同時に実装する。Task 30 は snapshot、registry entry、source、hash を追加しない。

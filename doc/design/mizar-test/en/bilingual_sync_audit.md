@@ -151,3 +151,14 @@ Core Task 32 rechecks the paired plan, TODO, and traceability documents. Both
 languages name the same five prepared Core/CFG consumers, stages/tags/phases,
 artifact boundaries, first-real-baseline rule, and zero current coverage
 impact. No bilingual drift remains in this ownership-only scope.
+
+## VC Task 30 / Task-10 Pair Recheck
+
+VC Task 30 rechecks the paired plan, TODO, harness, snapshot, and traceability
+documents. Both languages reserve `MT10-VC-T180` solely for Task 31, define the
+same distinct proof-verification source, `vc_generation` phase, full VcIr
+snapshot, first-real-baseline rule, and unchanged existing Task-180 case. They
+also define shared `MT10-VC-PV/VC<n>` slices for VC 32-55 and preserve VC 40's
+VC37/39-plus-Core40/A1 boundary, VC 53's bounded missing-authority boundary,
+S1, 403/368, all hashes, and zero current coverage impact. No bilingual drift
+remains in Task-30 consumer scope.

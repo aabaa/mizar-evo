@@ -177,3 +177,19 @@ Commit 後は fresh inventory で最小の dependency-ready task を選ぶ。Che
 は Core 33 の最初の upstream producer であり、VC Task 30 も docs-only
 decomposition として dependency-authorized になる。Canonical top-level sequence
 に従い、missing prerequisite を飛び越えない。
+
+## VC Task 30 accepted downstream mapping
+
+VC Task 30 は完了し、downstream graph を
+[source_vc_decomposition.md](../../mizar-vc/ja/source_vc_decomposition.md) で
+canonicalize する。VC 31 は Core 31 の exact Task-180 structure だけを消費する。
+VC 32-41 は本文書にある applicable exact Core 33-40 row に依存し、direct VC 41 は
+Core 34-38 だけを消費する。missing scheme/theorem role はその外で Core 41/S1 の背後に
+残る。VC 40 は real registration/cluster/reduction VC を decorate する前に complete 済み
+VC 37/39 output も必要とする。VC 42-55 は exact Core 42-53 algorithm/CFG row に依存する。
+VC 53 はさらに、current canonical authority が authenticated termination-evidence producer、
+reference schema/identity、authentication gate、test を命名していないため blocked のまま。
+concrete call/result substitution は VC-owned のまま。Core 40/A1 は blocked のままで、
+どの VC descendant も未実装 Core row、
+status、trace、formula、context を available と扱えない。この backlink は ownership
+だけを追加し、Core/VC coverage を追加しない。

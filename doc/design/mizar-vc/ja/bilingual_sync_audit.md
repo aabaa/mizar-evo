@@ -39,16 +39,17 @@ Closeout の自己 hash は commit 自身に埋め込めないため final user 
 | `00.crate_plan.md` | Responsibility、out-of-scope boundary、authority order、known gaps/drift、task decomposition、hard gates、verification expectations。 | 同期済み。 |
 | `vc_ir.md` | snapshot-local `VcId`、seed accounting、generated formula ownership、local context、premise、status、anchor、rendering、planned tests、public enum policy。 | 同期済み。 |
 | `generator.md` | explicit-payload generation scope、利用不能な registration / algorithm payload boundary、local context、controlled unfolding、normalization handoff、task slice、planned tests、public enum policy。 | 同期済み。 |
+| `source_vc_decomposition.md` | Task-31 exact structural mapping、VC 32-55 graph、per-family canonical/Core dependency、prepared consumer、disagreement class、zero-credit boundary。 | Task 30 により同期済み。 |
 | `discharge.md` | deterministic pre-ATP scope、supported classes、limit、evidence/explanation model、status interaction、no-erase ATP boundary、planned tests、public enum policy。 | 同期済み。 |
 | `dependency_slice.md` | conservative slice inputs/outputs、dependency entry classes、unknown coverage、reusable fingerprint contract、task-26 kernel-evidence identity integration、task-28 context-identity hash integration、planned tests、public enum policy。 | Task 28 update により同期済み。 |
 | `kernel_evidence_handoff.md` | producer-side formula/substitution evidence handoff mapping、禁止される backend/legacy material、gap classification、task-25 builder public enum policy、resolved task-26 reuse-identity gap、task-27 explicit polarity contract、task-28 context-identity payload、post-task-28 kernel handoff draft。 | Tasks 24-28 により同期済み。 |
-| `source_spec_audit.md` | public module exports、public surface inventory、cross-module evidence、explicit goal-polarity correspondence、context-identity correspondence、classified external/deferred follow-ups。 | task 28 update により同期済み。 |
-| `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、Task 19/21/22/closeout/24/25/26/27/28 sync edits。 | この paired audit document により同期済み。 |
-| `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence、deterministic-discharge branch evidence、task-28 kernel-handoff context-identity reuse behavior、remaining external/deferred gaps、no-drift classification。 | Task 28 update により同期済み。 |
+| `source_spec_audit.md` | public module exports、public surface inventory、evidence identity、Task-30 VC 31-55 ownership、classified external/deferred follow-up。 | Task 30 まで同期済み。 |
+| `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、Task 19/21/22/closeout/24-30 sync edits。 | この paired audit document により同期済み。 |
+| `architecture_22_audit.md` | architecture-22 identity、kernel-handoff context identity、Task-30 incomplete exact anchor/descendant identity ownership、remaining gap。 | Task 30 まで同期済み。 |
 | `module_boundary_audit.md` | Task 22 source-layout line count、module-boundary review、必須 split なしの判断、任意 maintenance deferral。 | Task 22 により同期済み。 |
-| `crate_exit_report.md` | final status、quality score、hard gates、task 26 までの task commit、verification、review outcome、remaining deferred/external items、next-crate handoff draft。 | prior closeout / task-27 bookkeeping により同期済み。task 28 は post-closeout follow-up のまま。 |
-| `task_ledger.md` | Task status、task 27 までに利用可能な commit hash、complete task-28 review/verification evidence、deferred notes、post-task-28 handoff draft。 | task 28 update により同期済み。task 28 self-hash は commit が存在した後に backfill する。 |
-| `todo.md` | ordered task list、task 28 までの完了 task、closeout status、recommended verification、notes。 | task 28 update により同期済み。 |
+| `crate_exit_report.md` | original exit evidence と Task-30 VC 31-55 ownership、updated gap owner、preserved quality/no-credit boundary。 | Task 30 まで同期済み。 |
+| `task_ledger.md` | Task 29 までの commit、pending self-hash 付き Task-30 review/verification evidence、current VC-31 STEP 5 handoff。 | Task 30 により同期済み。 |
+| `todo.md` | completed Task 30、executable Task 31、bounded VC 32-55 descendant、gate、verification、notes。 | Task 30 により同期済み。 |
 
 ## 分類
 
@@ -69,11 +70,15 @@ inventory に追加しつつ、この分類を維持する。closeout は paired
   production、proof/cache consumer、artifact witness consumer は incomplete のままである。
   ATP translation、proof policy、cache lookup/reuse、artifact persistence は downstream に残る。
 - `external_dependency_gap`: registration/redefinition/reduction details、
-  call-precondition、branch、match、range-loop、collection-loop、term-only
-  termination、partial termination、Pick non-emptiness、ghost-erasure、
-  complete trace family、source-derived core formula payload、definition payload、
+  call-precondition、branch、match、range-loop、collection-loop、term-derived/recursive
+  termination、Pick non-emptiness、ghost-isolation zero-VC
+  integration、authenticated trace context、source-derived core formula payload、definition payload、
   quantified binder payload、source-derived obligation payload family について、
   upstream explicit/stable payload はまだ不完全である。
+- `spec_gap`: VC 53 は separately blocked である。canonical authority は exact verified
+  termination evidence を要求するが、producer、reference identity/schema、authentication
+  contract/rule、owning test を命名しない。この bounded gap を消す payload/authentication
+  mechanism を推測しない。
 - `deferred`: proof-witness hash、ATP/kernel/proof/cache validation、artifact consumer、
   source-derived runner integration は、architecture-22 reuse を deterministic-discharge と
   current kernel-evidence handoff identity candidate key の外で受理する前に downstream に残る。
@@ -159,6 +164,17 @@ binding を cover し、dependency-slice / proof-reuse identity に参加し、i
 
 ## Core Task 32 ownership sync
 
-Core Task 32はpaired plan/TODO/source-spec auditを再確認する。両言語はVC Task 30を
-docs-only decompositionについてdependency-authorizedと記録し、Core 33-53、
-Gates A1/S1、concrete substitution、zero VC-generation/coverage authorityを保持する。
+Core Task 32はpaired plan/TODO/source-spec auditを再確認し、その時点でVC Task 30を
+dependency-authorizedと記録した。現在Task 30は完了し、Core 33-53、explicit gate、
+concrete substitution ownership、pre-implementation zero VC-generation/coverage
+authorityを保持する。
+
+## VC Task 30 ownership sync
+
+Task 30 は paired `source_vc_decomposition.md` を追加・再確認し、paired plan、TODO、
+generator、VC IR、source/spec、architecture-22、closeout、ledger、Core、mizar-test
+ownership record を同期する。両言語は同じ exact Task-31 structural mapping、
+`MT10-VC-T180`、shared `MT10-VC-PV/VC<n>` contract、VC 32-55 graph、VC 40 の
+VC37/39-plus-Core40/A1 boundary、VC 53 の bounded missing-authority boundary、S1、
+disagreement class、zero current source/fixture/expectation/trace-status/coverage impact
+を記録する。Task-30 scope に bilingual drift は残らない。

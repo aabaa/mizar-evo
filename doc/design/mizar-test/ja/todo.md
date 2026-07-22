@@ -1272,6 +1272,24 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   immutable output assertionがpassする。existing fixture/expectation/runner
   admission/count/CLI bytesは不変で、次はCore Task 31である。
 
+## VC Task 30 / Task-10 consumer ownership
+
+VC Task 30 は `MT10-VC-T180` を VC Task 31 だけに予約する。distinct な
+Task-180-shaped theorem source/sidecar を `proof_verification` /
+`active_proof_verification`、`expected_phase = "vc_generation"`、phase 11 で実行し、
+complete deterministic `SnapshotKind::VcIr` / `VcSet::debug_text()` bytes を比較する。
+既存 type-elaboration Task-180 source/sidecar/Core snapshot は変更しない。最初の
+proof-verification runner/tag/guard 変更はこの最初の real baseline と同時に実装し、empty
+infrastructure にしない。
+
+VC Tasks 32-55 は `MT10-VC-PV` を共有し、各 task は distinct
+`MT10-VC-PV/VC<n>` source/sidecar/trace/baseline slice を所有する。VC 40 は complete 済み
+VC 37/39 output と Core 40/A1、VC 53 は canonical authority が evidence producer/
+reference schema/authentication contract/test を命名していないことにより未実行のまま。
+missing scheme/theorem-role slice は
+direct VC 41 の外で S1 の背後に残る。Task 30 は runner/case/expectation/trace status/test/
+count/hash/coverage を変更しない。
+
 各 source-moving task で review-only により visibility drift、test-discovery
 drift、owner-boundary drift、source/docs inconsistency、意図しない behavior
 change を確認する。focused tests、`cargo test -p mizar-test`、

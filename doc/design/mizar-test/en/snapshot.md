@@ -350,3 +350,12 @@ Key scenarios:
 - Snapshot format is versioned.
 - Snapshot hash is computed from canonical content.
 - Snapshot tests are regression contracts, not debug dumps.
+
+## VC Task 30 VcIr Snapshot Contract
+
+`MT10-VC-T180` and every later `MT10-VC-PV/VC<n>` slice use existing
+`SnapshotKind::VcIr`. The body is the complete deterministic
+`VcSet::debug_text()` output, not a selected summary. Task 31 must compare two
+independent complete generations before verify-only baseline comparison and
+must land the first proof-verification guard with the first real baseline.
+Task 30 adds no snapshot, registry entry, source, or hash.

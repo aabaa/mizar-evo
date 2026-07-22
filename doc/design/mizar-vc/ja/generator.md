@@ -27,7 +27,7 @@ Rust source は task 6、algorithm VC generation は task 7、normalization、cl
 | GEN-G003 | `test_gap` / `source_drift` | tasks 6-8 より前に `src/generator.rs` や generator tests は存在しない。 | この仕様は implementation task の behavior と test obligation を名付ける。task 5 は Rust source を変更しない。 |
 | GEN-G004 | `external_dependency_gap` | active source-derived `proof_verification` `.miz` runner support と extraction seam はまだ利用不能である。 | tasks 6-8 では explicit core/control-flow payload 上の Rust fixture を使い、source-derived corpus activation は task 15 まで deferred に保つ。 |
 | GEN-G005 | `external_dependency_gap` | `ObligationSeed` は first-class theorem status dependency metadata や dedicated registration/redefinition/reduction correctness payload field をまだ露出していない。 | Task 6 は upstream fixture が供給する namespaced explicit `CoreProvenance` marker だけを保持する。marker がない場合は seed kind / status に従って通常 candidate または visible no-candidate record になり、label、generic path、source text からこれらの semantics を推測してはならない。 |
-| GEN-G006 | `external_dependency_gap` | 現在の `ObligationSeedHandoff` は contract、assertion、invariant obligations 用の flow-site metadata と goal formula を持つが、call-precondition、branch、match、range-loop、collection-loop、term-only termination、ghost-erasure obligations 用の generated formula schema はまだ公開していない。 | Task 7 は `ControlFlowObligationSite` metadata と goal formula を持つ explicit flow-derived seed row だけから candidate を生成する。欠けている algorithm payload family は fabricated VC ではなく visible no-candidate/deferred record に保つ。 |
+| GEN-G006 | `external_dependency_gap` | 現在の `ObligationSeedHandoff` は contract、assertion、invariant obligations 用の flow-site metadata と goal formula を持つが、call-precondition、branch、match、range-loop、collection-loop、term-derived termination schema、authenticated partial-call termination evidence、complete ghost-isolation metadata はまだ公開していない。 | Task 7 は `ControlFlowObligationSite` metadata と goal formula を持つ explicit flow-derived seed row だけから candidate を生成する。欠けている proof family/zero-VC/static integration payload は fabricated VC ではなく visible no-candidate/deferred record に保つ。 |
 | GEN-G007 | `source_drift` / `test_gap` | task 7 後の Rust source には task-6/task-7 の pre-normalized candidate はあるが、final `VcSet` normalizer、documented `VcKind` ordering rank、dense `VcId` assignment、normalizer tests はない。 | Task 8 は normalizer を実装し、下記の stable classification order を文書化し、dense id、seed accounting、duplicate rejection、deferred status preservation、expanded-mapping validation、stable rendering input の Rust test を追加する。 |
 | GEN-G008 | `deferred` | Status transition、deterministic discharge、dependency slice、ATP translation、kernel/proof/cache/corpus integration、source-derived corpus runner activation は後続 module spec または未提供 external seam に依存する。 | Task 8 はそれらを out of scope として記録し、discharge、transition、slice、translation、publish、external integration record の fabricate を行わず existing status を保持しなければならない。 |
 
@@ -147,7 +147,9 @@ table と task-8 seed mapping に表現しなければならない。
 Generated core obligation candidate は explicit core seed kind からのみ生成する。必須 family:
 
 - generated non-emptiness obligation;
-- generated sethood obligation;
+- explicit upstream handoff が運ぶ generated sethood obligation。これは existing
+  task-6/task-8 payload/kind の compatibility であり、Task-30 source-derived generator
+  の authority ではない;
 - generated Fraenkel membership axiom。
 
 これらの candidate は、seed が core formula を名付けている場合はそれを使い、generator が
@@ -172,8 +174,9 @@ explicit payload が存在する場合、candidate kind と provenance は次を
 - existential cluster existence;
 - conditional / functorial cluster coherence;
 - core/checker seed が運ぶ redefinition compatibility または coherence;
-- reduction reducibility と、upstream data が露出している場合の strict simplification-order
-  side condition;
+- reduction `reducibility` equality のみ。simplification-order、size、variable-occurrence
+  rule は invalid registration を reject する structural registration-time check で、proof VC
+  にはならない;
 - registration-style owner を provenance が識別するが正確な将来 seed kind がまだ安定していない
   checker-initial carried obligation。
 
@@ -198,18 +201,22 @@ generator は language spec の structured Hoare-style schema に従い、source
 - 各 algorithm call の call precondition;
 - すべての return edge と algorithm contract exit の postcondition;
 - assertion obligation;
-- branch / match obligation。case context と、存在する場合の exhaustiveness evidence を含む;
-- while-loop invariant entry、preservation、break、continue、exit、decreasing-measure obligation;
-- `to` と `downto` の両方に対する range-loop positive-step、bound、hidden-index、
-  invariant-entry、invariant-preservation obligation;
+- branch/match path context と、source が `exhaustive` を要求する場合だけの explicit
+  match-exhaustiveness proof obligation;
+- while-loop invariant entry、preservation、break、continue、decreasing-measure obligation。
+  normal exit は successor context で、exit VC ではない;
+- `to` と `downto` の両方に対する range-loop positive-step、invariant-entry、
+  invariant-preservation obligation。bound/hidden index は context で standalone VC ではない;
 - collection-loop finiteness、processed-set、invariant-establishment、
   invariant-maintenance、order-independence obligation;
 - call graph component と decreasing measure ごとに grouping された recursive /
   mutually recursive termination obligation;
-- caller-side postcondition が termination evidence を要求する場合の partial-termination obligation;
+- exact call が verified termination evidence を cite または context に持つ場合だけの
+  partial-call postcondition admission。`PartialTermination` VC は emit しない;
 - ghost-only Pick site を含むすべての set-based / type-based Pick site 向けの Pick
   non-emptiness obligation;
-- ghost-erasure safety obligation と ghost-only `Pick` erasure record。
+- ghost-isolation static check と ghost-only `Pick` erasure record。isolation は
+  `GhostErasureSafety` proof VC を作らない。
 
 Algorithm context が保持しなければならないもの:
 
@@ -359,9 +366,10 @@ Task 7 は次の case を visible no-candidate record として記録する。
 - 参照先 `ControlFlowIr` が入力に存在しない row。
 - explicit goal formula を持たない algorithm row。現在の `TerminationMeasure`、
   `PartialTermination`、`GhostPick`、`GhostAssignment` row を含む。
-- spec が名前を挙げているが explicit handoff payload としてまだ存在しない
-  call-precondition、branch、match、range-loop、collection-loop、Pick non-emptiness、
-  ghost-erasure proof family。
+- explicit handoff payload としてまだ存在しない call-precondition、branch、match、
+  range-loop、collection-loop、Pick non-emptiness proof family。
+- historical ghost-erasure row は spec-backed proof family ではなく、zero-VC/static-check
+  integration data とする。
 
 Task 7 の algorithm context entry は symbolic かつ conservative である。site kind、ordinal、
 statement、block、loop id、exit id、local id、assignment-effect id、対応する flow id などの
@@ -400,8 +408,10 @@ Task-8 の `VcKind` classification rank:
 14. `RangeLoop`: `PositiveStep`, `RangeBound`, `HiddenIndex` の順
 15. `CollectionLoop`: `Finiteness`, `OrderIndependence` の順
 16. `Termination`
-17. `PartialTermination`
-18. `GhostErasureSafety`
+17. `PartialTermination`（existing validation/sort shape のみ。current canonical spec から
+    source-generate しない）
+18. `GhostErasureSafety`（existing validation/sort shape のみ。ghost isolation は static
+    check で source-generated VC ではない）
 19. `PolicyDeferredTraceability`
 
 将来の `VcKind` variant は、generator が emit する前に owning spec task によって末尾に追加する。
@@ -440,6 +450,31 @@ fingerprint、compatible verifier-policy fingerprint、選択された proof-evi
 stable candidate ingredient を供給するだけである。`VcId`、source range、anchor の一致だけでは
 引き続き不十分である。
 
+## Task 30 source-derived integration contract
+
+exhaustive contract は
+[source_vc_decomposition.md](./source_vc_decomposition.md) を正本とする。VC Task 31 は
+narrow Core-aware adapter で exact Task-180 direct terminal proof-node relation を検証してから
+candidate を分類する。generic generator は現在 seed handoff しか見ず、real marker-free seed を
+`TheoremProofStep` に分類するため、Task 31 は provenance を挿入・変更せず、認証済み構造を
+`TerminalProofGoal` に分類しなければならない。
+
+Tasks 32-55 は broader source-derived family をすべて所有する。特に declared entry
+`requires` は callee-body context であり source-generated `AlgorithmPrecondition` proof VC
+ではない。loop normal exit と range hidden/bound value は explicit canonical formula がない限り
+context である。simplification-order/ghost isolation は static check で、source
+`PartialTermination` / `GhostErasureSafety` VC は存在しない。partial call の successor
+postcondition は exact cited/in-context verified termination evidence がある場合だけ利用できる。
+Task 30 は existing `GeneratedSethood` compatibility kind に source-derived family を
+割り当てない。explicit mode-declaration sethood は `DefinitionCorrectness` を使い、
+Fraenkel sethood は VC ではなく accepted prerequisite evidence である。
+`GeneratedSethood` の source generation には将来の canonical authority と最初の real
+source が必要である。
+generated formula、substitution、binder、path、trace、old-state 表現は最初の real owning family
+と共にだけ拡張し、empty infrastructure task を置かない。この canonical rule と異なる current
+source behavior は relevant descendant に割り当てた `source_drift` であり、保持する authority
+ではない。
+
 ## Planned Tests
 
 Task 6 が追加すべき Rust coverage:
@@ -458,8 +493,9 @@ Task 7 が追加すべき Rust coverage:
 
 - explicit flow-derived site からの goal-bearing algorithm precondition、postcondition、
   assertion、loop-invariant candidate;
-- unavailable call-precondition、branch、match、range-loop、collection-loop、term-only
-  termination、partial-termination、Pick non-emptiness、ghost-erasure payload family の
+- unavailable call-precondition、branch、match、range-loop、collection-loop、term-derived
+  termination、Pick non-emptiness と、Task 30 が source-generated VC ではなく
+  evidence-admission/zero-VC/static boundary と分類した historical partial/ghost row の
   visible no-candidate/deferred record;
 - explicit flow-site metadata の conservative symbolic context preservation。loop
   header/backedge と break/continue exit classification を含むが、payload に存在しない

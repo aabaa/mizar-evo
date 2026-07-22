@@ -308,8 +308,10 @@ Task-180 slice, and completed docs-only Task 32 now assigns Core Tasks 33-53
 and five prepared consumers in `source_family_decomposition.md`. Gates A1/S1,
 artifact schemas, public codes, concrete call/result substitution, and all
 coverage/status changes remain with their named owners. Diagnostics and Steps
-6/7 proof/kernel/artifact work remain deferred. VC Task 30 is now
-dependency-authorized for its docs-only decomposition, not for VC generation.
+6/7 proof/kernel/artifact work remain deferred. Completed VC Task 30 now
+provides the docs-only VC 31-55 ownership decomposition; VC Task 31 is the next
+sequential STEP 5 implementation and receives only the exact Core Task-31
+mapping. The decomposition itself grants no VC generation or acceptance credit.
 
 Task 267 accepted-contract history fixed one exact mapping,
 `PendingAutomaticProof` -> `False` -> direct `TerminalGoal` -> Active

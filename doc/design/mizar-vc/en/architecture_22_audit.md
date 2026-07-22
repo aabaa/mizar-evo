@@ -67,22 +67,27 @@ verification recorded in the ledger is the relevant source behavior evidence.
 
 ## Remaining Classified Gaps
 
-- `external_dependency_gap`: active `proof_verification` runner support and
-  source-to-core / source-to-VC extraction seams are still absent from
-  `mizar-test`; Task 15 records concrete deferred corpus obligations.
-- `external_dependency_gap` / `deferred`: `mizar-kernel` now owns corrected
-  formula/substitution evidence checking, but `mizar-vc` still lacks the task-25
-  handoff builder and task-26 kernel-evidence hash integration. `mizar-atp`,
-  `mizar-proof`, and `mizar-cache` now exist, but they are not wired as active
+- `external_dependency_gap`: active source-derived `proof_verification` support
+  is absent from `mizar-test`; VC Task 31 / `MT10-VC-T180` owns the first exact
+  route, and VC 32-55 own later `MT10-VC-PV/VC<n>` slices.
+- `external_dependency_gap` / `deferred`: `mizar-kernel` owns corrected
+  formula/substitution evidence checking, and completed VC Tasks 25-29 own the
+  producer handoff and identity payloads. `mizar-atp`, `mizar-proof`, and
+  `mizar-cache` exist, but they are not wired as active
   consumers of this VC milestone, so ATP translation, proof policy, cache
   lookup/reuse, artifact persistence, and proof-witness validation remain
   outside this crate.
 - `external_dependency_gap`: upstream explicit/stable payloads remain
   incomplete for registration, redefinition, reduction, call-precondition,
-  branch, match, range-loop, collection-loop, term-only termination, partial
-  termination, Pick non-emptiness, ghost-erasure, complete trace families,
-  source-derived core formula payloads, definition payloads, quantified binder
-  payloads, and source-derived obligation payload families.
+  branch, match, range-loop, collection-loop, term-derived/recursive
+  termination, Pick
+  non-emptiness, ghost-isolation zero-VC integration, authenticated trace
+  contexts, source-derived core formula payloads, definition payloads,
+  quantified binder payloads, and source-derived obligation payload families.
+- `spec_gap`: VC 53 has canonical partial-call admission semantics, but no
+  canonical termination-evidence producer, reference identity/schema,
+  authentication contract/rules, or owning tests. It remains blocked, and no
+  transport or authentication mechanism is invented.
 - `deferred`: proof-witness hashes, ATP/kernel/proof/cache validation, artifact
   consumers, and source-derived runner integration must be implemented by
   downstream or later tasks before architecture-22 reuse can be accepted outside
@@ -92,3 +97,14 @@ No `repo_metadata_conflict`, unclassified `source_drift`, `design_drift`,
 `source_undocumented_behavior`, `test_expectation_drift`, or
 `boundary_violation` was observed in the Task 20 identity contract after this
 audit.
+
+## VC Task 30 Source-Derived Identity Addendum
+
+Task 30 changes follow-up ownership, not architecture-22 reuse eligibility.
+The exact Task-31 anchor keeps source-shape and empty-context identity available
+but remains incomplete for `CanonicalGoalHash`; it is therefore ineligible for
+reuse. Tasks 32-55 own stable formula, context, substitution, trace, and
+dependency ingredients only when their real source-derived payloads land.
+Missing payloads remain conservative unknowns rather than ids, labels, ranges,
+or markers disguised as canonical hashes. This update grants no cache lookup,
+proof reuse, discharge, verification, or acceptance credit.

@@ -97,7 +97,7 @@ is its task 1). "Next work" points into the
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268 and Core-31 consumer increment complete | step 5 task 10, including future `MT10-FS`/`MT10-AS` and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, and Task 247 decomposition complete | Tasks 248-264/269-279; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
-| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete through task 29 | dependency-authorized step-5 Task 30, then Task 31 | [todo](./mizar-vc/en/todo.md) |
+| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] source-derived VC decomposition complete through task 30 | executable STEP 5 Task 31 | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | step 7 | [todo](./mizar-proof/en/todo.md) |
@@ -1372,17 +1372,20 @@ proof acceptance, terminal goals, Core/VC payloads, or runner success.
    consumers `MT10-CIR-TE`/`FS`/`AS`/`ALG`/`MT10-CFG-PV`. Gates A1/S1,
    artifact/public-code ownership, VC-owned concrete call/result substitution,
    and no-synthetic/no-credit boundaries remain explicit.
-8. [ ] [mizar-vc task 30](./mizar-vc/en/todo.md) — Core Tasks 31-32 are
-   complete, so this docs-only task is dependency-authorized to specify the
-   exact contradiction theorem-obligation-to-VC mapping and split
-   every remaining source-derived VC/obligation family in the VC source/spec
-   audit into bounded owner tasks. This includes SCA-005 plus registration,
-   redefinition/reduction, call-precondition, formula/definition/binder, and
-   general obligation families. This is docs/traceability-only.
+8. [x] [mizar-vc task 30](./mizar-vc/en/todo.md) — completed docs-only exact
+   contradiction mapping and exhaustive source-derived VC decomposition.
+   `source_vc_decomposition.md` assigns VC Tasks 31-55, reserves
+   `MT10-VC-T180` solely for VC 31, defines shared `MT10-VC-PV/VC<n>` slices,
+   and preserves Core 33-53, VC 40's completed-VC37/39-plus-Core40/A1
+   dependency, VC 53's bounded missing canonical evidence-transport authority,
+   and Gate S1 for missing roles outside direct VC 41 without adding source,
+   fixtures, expectations, trace status/tests, or coverage.
 9. [ ] [mizar-vc task 31](./mizar-vc/en/todo.md) — implement only the exact
-   Task-30 accepted mapping for the Task-180 vertical slice and its prepared
-   mizar-test consumer. Generation may produce an unaccepted VC; it must not
-   imply proof verification, discharge, ATP/kernel execution, or acceptance.
+   structural Task-30 mapping for the Task-180 vertical slice and
+   `MT10-VC-T180`: validate the direct terminal relation and produce one open,
+   unaccepted `TerminalProofGoal` with a full VcIr baseline. Do not inject a
+   marker, reclassify the existing type-elaboration case, or imply discharge,
+   ATP/kernel execution, proof verification, or acceptance.
 10. [ ] [mizar-parser task 47](./mizar-parser/en/todo.md) — align omitted and
     proof-block `reconsider` syntax with the canonical Chapters 4/8/15 and
     Appendix-A contract.
@@ -1511,7 +1514,7 @@ follow-ups, in roadmap order:
 | SCA-002 | `todo` | Spec 24 documentation generation has only architecture/internal boundaries and `mizar-doc` TODOs; focused module specs are still unwritten. | [mizar-doc tasks 2, 4, 6, 9, 11, 13, 16, 18, 21, 23, and 29](./mizar-doc/en/todo.md) (plan step 8) |
 | SCA-003 | `todo` | `@show_*` and `@eval` have parser/syntax coverage but need end-to-end display/evaluation projection boundaries. | [mizar-lsp task 24](./mizar-lsp/en/todo.md), plus `mizar-doc` and VC producer tasks as they expose data (plan step 8) |
 | SCA-004 | `external_dependency_gap` | Resolver name/import/label diagnostics remain crate-local/internal until a real public diagnostic adoption task maps them into stable descriptors. | [mizar-resolve task 30](./mizar-resolve/en/todo.md), [mizar-diagnostics consumer adoption](./mizar-diagnostics/en/consumer_adoption_decision.md) (plan step 8) |
-| SCA-005 | `external_dependency_gap` | Algorithm VC coverage still lacks several source-derived payload families such as branch/match/range/collection loops, term-only termination, Pick non-emptiness, and ghost-erasure traces. | [mizar-vc task 30](./mizar-vc/en/todo.md) owns the exact integration contract and exhaustive bounded task split for SCA-005 and every other source-derived VC family in the VC audit; task 31 implements only the preceding contradiction vertical slice |
+| SCA-005 | `external_dependency_gap`; bounded `spec_gap` for VC 53 | Algorithm VC/static-safety coverage still lacks source-derived branch/match/range/collection-loop, term-derived/recursive termination, Pick non-emptiness, snapshot/claim, partial-call evidence admission, and ghost-isolation zero-VC integration. | Completed [mizar-vc task 30](./mizar-vc/en/todo.md) is decomposition authority; VC Tasks 42-55 and their `MT10-VC-PV/VC<n>` slices own the bounded families subject to exact Core 42-53 dependencies. VC 53 remains blocked because canonical authority does not name the authenticated evidence producer/reference identity/schema, authentication contract/rules, or owning tests; do not invent them. Ghost isolation is a Core-53 static diagnostic/zero-VC boundary, not a proof VC. Task 31 owns only the preceding exact contradiction slice. |
 | SCA-006 | `design_drift` (closed) | Phase-16 architecture/internal docs referenced the historical `mizar-extract` split instead of the current `mizar-doc` module names. | Closed by a docs-only sync of architecture 13 and internal 05 EN/JA. |
 
 ## Appendix C — July 2026 Audit Follow-Up Inventory

@@ -111,7 +111,7 @@ Correspondence:
 |---|---|---|---|
 | Candidate generation consumes a fresh `SeedIntakeTable` and matching `ObligationSeedHandoff` and rejects stale/partial intake. | `CoreGenerationCandidateSet::try_from_seed_intake`. | `rejects_stale_intake_handoff_mismatch`, `rejects_partial_intake_when_handoff_adds_obligations`. | Implemented. |
 | Task-6 theorem, definition, generated-core, and explicit registration-style candidates preserve source, context, proof hints, statuses, and visible no-candidate records for unavailable payloads. | `build_candidate`, task-six generation helpers, no-candidate helpers. | task-six candidate tests, theorem-status, registration-style, local-context, and deferred-row tests. | Implemented for explicit upstream payloads; dedicated missing payloads remain external. |
-| Task-7 algorithm candidates are generated only from explicit flow-site metadata and goal formulas; unsupported families stay visible no-candidate/deferred rows. | flow-derived generation and no-candidate helpers. | flow-site generation tests, flow mismatch tests, unavailable algorithm family tests. | Implemented for explicit flow payloads; call-precondition, branch, match, range-loop, collection-loop, term-only termination, partial termination, Pick, and ghost-erasure payload families remain external/deferred. |
+| Task-7 algorithm candidates are generated only from explicit flow-site metadata and goal formulas; unsupported families stay visible no-candidate/deferred rows. | flow-derived generation and no-candidate helpers. | flow-site generation tests, flow mismatch tests, unavailable algorithm family tests. | Implemented for explicit flow payloads; call-precondition, branch, match, range-loop, collection-loop, term-derived/recursive termination, Pick, and ghost-isolation zero-VC integration payloads remain external/deferred. Partial-call evidence transport is also blocked by the bounded VC-53 `spec_gap`; no canonical producer, reference schema, authentication contract, or owning tests exist. |
 | Normalization assigns dense `VcId`s by documented kind rank, candidate sort key, and handoff id while preserving seed accounting and statuses. | `CoreGenerationCandidateSet::try_normalize`. | normalization id/order, duplicate, deferred status, expanded mapping, debug rendering tests. | Implemented. |
 | Generated anchors carry source-shape hashes when stable source-shaped provenance exists, but canonical goal/context hash markers fail closed when stable formula/context payloads are unavailable. | `anchor_for_seed`, source-shape and canonical marker helpers. | task-six and algorithm candidate tests assert source-shape availability and raw-core canonical-goal incompleteness. | Implemented for current candidates. |
 | Public enums are forward-compatible. | `GeneratorError` is `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 17. |
@@ -323,9 +323,10 @@ context-identity hash. Task 31 in `mizar-kernel` closes the trusted
 checker-side F2 membership check; downstream consumer gaps stay classified.
 Existing classified records remain:
 
-- `external_dependency_gap`: active `proof_verification` runner support and
-  source-to-core / source-to-VC extraction seams are absent from `mizar-test`;
-  Task 15 records concrete deferred corpus obligations.
+- `external_dependency_gap`: active source-derived `proof_verification` support
+  and the general source-to-core / source-to-VC route are absent from
+  `mizar-test`; VC Task 31 / `MT10-VC-T180` owns the first exact route and VC
+  32-55 own later `MT10-VC-PV/VC<n>` slices.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` now owns the
   checker-side formula/substitution evidence acceptance path, and `mizar-vc`
   now owns the producer-side handoff builder and reuse identity integration for
@@ -333,12 +334,18 @@ Existing classified records remain:
   `mizar-proof` / `mizar-cache` consumers, and artifact witness consumers are
   still incomplete. ATP translation, proof policy, cache lookup/reuse, and
   artifact persistence remain outside this crate.
-- `external_dependency_gap`: upstream explicit/stable payloads are still
-  incomplete for registration/redefinition/reduction details,
-  call-precondition, branch, match, range-loop, collection-loop, term-only
-  termination, partial termination, Pick non-emptiness, ghost-erasure, complete
-  trace families, source-derived core formula payloads, definition payloads,
-  quantified binder payloads, and source-derived obligation payload families.
+- `external_dependency_gap`: upstream explicit/stable payloads remain
+  incomplete, but Task 30 now assigns every theorem/formula/context,
+  definition/property, term/`qua`, registration/trace-context/direct-template,
+  algorithm, termination, snapshot/claim, and
+  ghost-isolation zero-VC family to bounded VC 32-55 owners with exact Core
+  33-53 dependencies. VC 40 remains blocked on completed VC 37/39 outputs plus
+  Core 40/A1.
+  Missing scheme/theorem roles remain outside direct VC 41 behind S1.
+- `spec_gap`: VC 53 remains separately blocked because canonical authority does
+  not name its termination-evidence producer/reference identity/schema,
+  authentication contract/rules, or owning tests. No transport payload or authentication mechanism is
+  invented.
 - `deferred`: proof-witness hashes, ATP/proof/cache validation, artifact
   consumers, and source-derived runner integration must be implemented before
   architecture-22 reuse can be accepted outside the deterministic discharge
@@ -347,8 +354,8 @@ Existing classified records remain:
   `generator`, and `dependency_slice` implementation files may be pursued as
   later move-only maintenance tasks, but they are not required for crate exit.
 
-Task 265/Core Task-32 ownership addendum: Core Tasks 31-32 are now complete,
-so docs-only VC Task 30 is dependency-authorized and owns the exact Task-180
+Task 265/Core Task-32 ownership addendum: Core Tasks 31-32 are complete, and
+completed docs-only VC Task 30 owns the exact Task-180
 theorem-obligation intake/mapping contract and
 exhaustive bounded task decomposition of every source-derived family listed in
 the preceding `external_dependency_gap` row, including all SCA-005 families.
@@ -357,9 +364,29 @@ accepted contradiction slice; the tasks created by Task 30 own all other
 families and prepared consumers. This changes no source, fixture, expectation,
 trace status, or coverage. Task-15 runner/downstream verifier gaps remain
 deferred until the corresponding real producers and consumers land.
-Core Tasks 33-53, Gates A1/S1, and VC-owned concrete call/result substitution
-from the Core decomposition remain mandatory dependencies/boundaries; Task 30
-may name their VC descendants but may not treat them as implemented.
+Core Tasks 33-53, completed VC 37/39 outputs and Gate A1 for VC 40, the
+Task-53 canonical-authority gap, Gate S1 for missing roles outside direct VC 41,
+and VC-owned concrete call/result substitution remain mandatory
+dependencies/boundaries; naming descendants does not make them implemented.
+
+Task-30 completion addendum: the accepted paired
+[source VC decomposition](./source_vc_decomposition.md) assigns VC Tasks 31-55.
+Task 31 owns only the exact structural Task-180 terminal-goal mapping and
+`MT10-VC-T180`; Tasks 32-41 own theorem/definition/property/term/registration/
+direct-template families and Tasks 42-55 own every Chapter-20/SCA-005 VC or
+zero-VC integration family through the shared `MT10-VC-PV/VC<n>` contract.
+VC 40 remains blocked on VC 37/39 plus Core 40/A1; VC 53 remains blocked until
+future canonical authority names its evidence transport and authentication
+contract. Missing scheme/theorem roles remain outside direct VC 41 behind S1.
+The addendum
+classifies the current terminal-marker mismatch, entry-`requires` mapping,
+range/exit treatment, simplification-order/partial-termination/ghost-isolation
+non-generation boundaries, missing honest kinds, and generated formula/context
+limitations as assigned `design_drift` / `source_drift`, with descendant
+`test_gap`s. No `spec_gap` blocks dependency-ready descendants, but the bounded
+missing authority described above blocks VC 53. No current
+`boundary_violation` or `repo_metadata_conflict` was found. Task 30 changes only ownership metadata;
+the first source, trace row, and VC baseline belong to Task 31.
 
 The final quality review and crate-exit status are recorded in
 [crate_exit_report.md](./crate_exit_report.md). No `repo_metadata_conflict` was

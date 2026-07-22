@@ -155,11 +155,15 @@ policy、一致する proof witness または deterministic discharge hash。
 - algorithm precondition / postcondition;
 - call precondition;
 - algorithm assertion;
-- loop invariant entry、preservation、break、continue、exit obligation;
-- range-loop positive-step、range-bound、hidden-index obligation;
+- loop invariant entry、preservation、break、continue obligation。existing exit shape は
+  normal exit が存在するだけでは source-generate しない;
+- range-loop positive-step obligation。existing range-bound/hidden-index shape は
+  explicit canonical formula なしに source-generate しない;
 - collection-loop finiteness と order-independence obligation;
-- termination と partial-termination obligation;
-- ghost-erasure safety;
+- termination obligation。existing partial-termination shape は current canonical spec
+  から source-generate しない;
+- existing ghost-erasure-safety shape は validation/sort shape のみ。ghost isolation は
+  static check で source-generated VC ではない;
 - policy / deferred traceability record。
 
 Rust enum は downstream forward-compatible である。Task 17 が最終的な public enum policy を
@@ -466,6 +470,25 @@ coverage を拡張する。
 
 Task 2 では active `.miz` fixture を追加しない。`proof_verification` runner と source-derived payload
 seam が external gap として残るためである。
+
+## Task 30 source-derived identity contract
+
+[source_vc_decomposition.md](./source_vc_decomposition.md) は exact Task-180 phase-11
+identity を固定する。Task 31 は kind `TerminalProofGoal`、status `Open`、Core formula 0、
+empty context/premise、exact theorem owner/path/source/origin、Active/ExistingCore seed mapping
+1件を持つ snapshot-local `VcId(0)` 1件を生成する。current VC payload は Core formula id だけを
+持つため canonical-goal hash は unavailable のままである。source-shape/empty-context hash は
+available にできるが、anchor は明示的 incomplete のままで proof reuse を許可しない。
+
+Tasks 32-55 は honest canonical representation を最初に必要とする nonempty real-source task
+内でだけ `VcKind`、generated-formula shape、context role を拡張できる。algorithm type
+correctness や explicit match exhaustiveness を unrelated existing kind に encode せず、dependent
+binder/path order を flatten せず、label から formula identity を合成せず、Deferred input を
+general に Open へ promote しない。各 extension は `#[non_exhaustive]` policy を維持し、validation、
+deterministic rendering、corruption test、real `MT10-VC-PV/VC<n>` baseline と同時に実装する。
+
+Existing `PartialTermination`、`GhostErasureSafety`、loop-exit、range-bound、hidden-index
+variant 自体は source generation authority を与えない。
 
 ## public enum policy
 

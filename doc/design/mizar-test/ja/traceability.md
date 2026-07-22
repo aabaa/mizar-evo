@@ -1897,3 +1897,29 @@ Existing Chapter-20 parser source/expectationはparse-onlyのままでsemantic b
 `SnapshotKind::ControlFlowIr` pathは各owning descendantでdistinct real semantic
 source/baselineと対にする。Task 32はcase/requirement count、runner count、status、
 test list、expectation、production sourceを変更しない。
+
+## VC Task 30 VC ownership traceability
+
+VC Task 30 は backlink/coverage credit を追加しない。exact Task-31 consumer は
+`MT10-VC-T180` である。distinct `proof_verification` /
+`active_proof_verification`、`expected_phase = "vc_generation"`、phase-11
+source/sidecar が complete `SnapshotKind::VcIr` / `VcSet::debug_text()` bytes を
+比較する。既存 Task-180 type-elaboration case/Core snapshot は変更しない。Task 31 が
+first real runner/guard、fixture、exact trace row、baseline を同時に所有する。
+row は id `spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot`、canonical
+source `doc/design/mizar-vc/en/source_vc_decomposition.md`、section `VC Task 31;
+exact Task-180 open VcIr proof-verification snapshot`、stage `proof_verification`、
+status `covered`、required snapshot coverage、sole backlink
+`tests/miz/pass/theorems/pass_proof_verification_contradiction_formula_constant_001.expect.toml`
+のちょうど1件とする。
+
+VC Tasks 32-55 は shared `MT10-VC-PV` slice `MT10-VC-PV/VC<n>` を使用し、各々が
+distinct real source、sidecar、narrow trace row、full VcIr baseline、corruption coverage と
+owning row が要求する
+applicable task-local zero-VC/near-miss/diagnostic negative をすべて持つ。VC 40 は
+complete 済み VC 37/39 output と Core 40/A1、VC 53 は canonical authority が evidence
+producer/reference schema/authentication contract/test を命名していないことにより blocked のまま。
+missing scheme/theorem-role slice は direct
+VC 41 の外で S1 の背後に残る。broad VC corpus/
+algorithm row は deferred のままで、Task 30 は owner/deferred-reason text だけを変更し、
+403/368 と全 count/hash oracle を維持する。
