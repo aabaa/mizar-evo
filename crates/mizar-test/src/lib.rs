@@ -20,10 +20,12 @@ pub use harness::{
 };
 pub use runner::{
     DeclarationSymbolCaseResult, DeclarationSymbolCaseStatus, DeclarationSymbolRunReport,
-    ParseOnlyCaseResult, ParseOnlyCaseStatus, ParseOnlyRunReport, TypeElaborationCaseResult,
+    ParseOnlyCaseResult, ParseOnlyCaseStatus, ParseOnlyRunReport, ProofVerificationCaseResult,
+    ProofVerificationCaseStatus, ProofVerificationRunReport, TypeElaborationCaseResult,
     TypeElaborationCaseStatus, TypeElaborationRunReport, active_declaration_symbol_cases,
-    active_parse_only_cases, active_type_elaboration_cases, run_declaration_symbol_corpus,
-    run_parse_only_corpus, run_type_elaboration_corpus,
+    active_parse_only_cases, active_proof_verification_cases, active_type_elaboration_cases,
+    run_declaration_symbol_corpus, run_parse_only_corpus, run_proof_verification_corpus,
+    run_type_elaboration_corpus,
 };
 pub use snapshot::{
     ParallelismProfile, SchemaVersion, SnapshotBaselineError, SnapshotBaselineMismatch,

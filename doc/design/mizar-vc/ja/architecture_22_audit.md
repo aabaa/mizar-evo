@@ -66,9 +66,9 @@ verification が source behavior の evidence である。
 
 ## 残る分類済み gap
 
-- `external_dependency_gap`: active source-derived `proof_verification` support は
-  `mizar-test` にまだ存在しない。VC Task 31 / `MT10-VC-T180` が最初の exact route、
-  VC 32-55 が後続 `MT10-VC-PV/VC<n>` slice を所有する。
+- `external_dependency_gap`: Task 31 は `MT10-VC-T180` により最初の exact
+  source-derived `proof_verification` route を実装済みである。general coverage はまだ
+  absent で、VC 32-55 が後続 `MT10-VC-PV/VC<n>` slice を所有する。
 - `external_dependency_gap` / `deferred`: `mizar-kernel` は corrected
   formula/substitution evidence checking、completed VC Tasks 25-29 は producer handoff /
   identity payload を所有する。`mizar-atp`、`mizar-proof`、`mizar-cache` は存在するが、
@@ -101,3 +101,11 @@ Task 30 は follow-up ownership を変更するだけで architecture-22 reuse e
 trace/dependency ingredient を所有する。missing payload は canonical hash を装った id、
 label、range、marker ではなく conservative unknown のままにする。この更新は cache lookup、
 proof reuse、discharge、verification、acceptance credit を与えない。
+
+## VC Task 31 exact identity result
+
+landed VC は source-shape/empty-context identity を available、canonical-goal hash を
+unavailable に保つ。したがって anchor は明示的に incomplete で proof-reuse-ineligible
+である。double-generation VcIr snapshot は stable current bytes を証明するだけで、
+cross-edit reuse を証明しない。cache lookup、proof reuse、discharge、verification、
+acceptance gate は開かない。

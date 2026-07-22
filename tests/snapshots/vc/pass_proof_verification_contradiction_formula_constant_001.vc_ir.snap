@@ -1,0 +1,19 @@
+vc-set-debug-v1
+schema-version: VcSchemaVersion("mizar-vc-vcset-task31-v1")
+snapshot: BuildSnapshotId(Hash([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
+source: SourceId(OpaqueId(1))
+module: VcModuleRef("package=17:mizar-test-corpus;module=82:tests.miz.pass.theorems.pass_proof_verification_contradiction_formula_constant_001")
+[generated-formulas]
+[seed-accounting]
+seed ObligationHandoffId(0): origin=ExistingCore { seed: ObligationSeedId(0) }; status=Active; mapping=One { vc: VcId(0) }
+[vcs]
+vc VcId(0): kind=TerminalProofGoal; seed=SeedVcRef { handoff: ObligationHandoffId(0) }
+  source: VcSourceRef { primary: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 52, end: 65 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("task267/v1;proof-node=0;terminal-goal=0;formula=0;formula-site-node=5;formula-node=0") }, CoreProvenance { phase: ProofSkeleton, key: CoreProvenanceKey("task267/v1;local-path=7:proof/0") }] }, related: [] }
+  anchor: owner=Theorem(CoreItemId(0)); kind=TerminalProofGoal; local-path=LocalProofOrProgramPath("proof/0"); label=None; semantic-origin=NormalizedSemanticOrigin("mizar-test-corpus::tests.miz.pass.theorems.pass_proof_verification_contradiction_formula_constant_001::contribution=0:namespace=tests.miz.pass.theorems.pass_proof_verification_contradiction_formula_constant_001:owner=theorem#0:shell=theorem:kind=theorem:name=SourceDerivedContradictionConstantBoundary:notation=_:arity=_:definition=theorem:registration=_:policy=non-overloadable:slot=non-overloadable:_:theorem:_"); source-range=Some(SourceRange { source_id: SourceId(OpaqueId(1)), start: 52, end: 65 }); source-shape=Available(Hash([224, 66, 84, 0, 10, 160, 150, 196, 68, 165, 14, 178, 214, 0, 59, 204, 94, 110, 129, 240, 135, 103, 174, 209, 37, 224, 233, 22, 30, 30, 242, 55])); goal-hash=ConservativeUnknown { reason: AnchorUnavailableReason("core formula payload is unavailable to mizar-vc") }; context-hash=Available(Hash([18, 215, 19, 132, 157, 222, 122, 237, 94, 130, 155, 131, 22, 246, 60, 216, 3, 190, 168, 226, 102, 209, 90, 238, 71, 137, 97, 86, 105, 93, 133, 73])); schema=GenerationSchemaVersion("mizar-vc-generation-task31-v1"); incomplete missing=[CanonicalGoalHash] cache-miss=true; provenance=[VcProvenance { phase: CoreHandoff, key: VcText("source-provenance"), core: Some(CoreProvenance { phase: Checker, key: CoreProvenanceKey("task267/v1;proof-node=0;terminal-goal=0;formula=0;formula-site-node=5;formula-node=0") }) }, VcProvenance { phase: CoreHandoff, key: VcText("source-provenance"), core: Some(CoreProvenance { phase: ProofSkeleton, key: CoreProvenanceKey("task267/v1;local-path=7:proof/0") }) }, VcProvenance { phase: CoreHandoff, key: VcText("source-provenance"), core: Some(CoreProvenance { phase: Checker, key: CoreProvenanceKey("task267/v1;proof-node=0;terminal-goal=0;formula=0;formula-site-node=5;formula-node=0") }) }, VcProvenance { phase: CoreHandoff, key: VcText("source-provenance"), core: Some(CoreProvenance { phase: ProofSkeleton, key: CoreProvenanceKey("task267/v1;local-path=7:proof/0") }) }]
+  context: []
+  policy-inputs: []
+  premises: []
+  goal: Core(CoreFormulaId(0))
+  proof-hint: None
+  status: Open
+  provenance: [VcProvenance { phase: CoreHandoff, key: VcText("TheoremProof"), core: Some(CoreProvenance { phase: Checker, key: CoreProvenanceKey("task267/v1;proof-node=0;terminal-goal=0;formula=0;formula-site-node=5;formula-node=0") }) }, VcProvenance { phase: CoreHandoff, key: VcText("TheoremProof"), core: Some(CoreProvenance { phase: ProofSkeleton, key: CoreProvenanceKey("task267/v1;local-path=7:proof/0") }) }, VcProvenance { phase: Generator, key: VcText("task-6-core-candidate"), core: None }, VcProvenance { phase: Normalization, key: VcText("task-8-normalized-vc"), core: None }]

@@ -67,9 +67,9 @@ verification recorded in the ledger is the relevant source behavior evidence.
 
 ## Remaining Classified Gaps
 
-- `external_dependency_gap`: active source-derived `proof_verification` support
-  is absent from `mizar-test`; VC Task 31 / `MT10-VC-T180` owns the first exact
-  route, and VC 32-55 own later `MT10-VC-PV/VC<n>` slices.
+- `external_dependency_gap`: Task 31 implements the first exact source-derived
+  `proof_verification` route through `MT10-VC-T180`; general coverage remains
+  absent, and VC 32-55 own later `MT10-VC-PV/VC<n>` slices.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` owns corrected
   formula/substitution evidence checking, and completed VC Tasks 25-29 own the
   producer handoff and identity payloads. `mizar-atp`, `mizar-proof`, and
@@ -108,3 +108,11 @@ dependency ingredients only when their real source-derived payloads land.
 Missing payloads remain conservative unknowns rather than ids, labels, ranges,
 or markers disguised as canonical hashes. This update grants no cache lookup,
 proof reuse, discharge, verification, or acceptance credit.
+
+## VC Task 31 Exact Identity Result
+
+The landed VC keeps source-shape and empty-context identity available and the
+canonical-goal hash unavailable. Its anchor is therefore explicitly incomplete
+and proof-reuse-ineligible. The double-generation VcIr snapshot proves stable
+current bytes, not cross-edit reuse. No cache lookup, proof reuse, discharge,
+verification, or acceptance gate is opened.

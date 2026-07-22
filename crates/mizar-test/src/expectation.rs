@@ -15,6 +15,12 @@ const EXACT_TASK31_CORE_SNAPSHOT_PATH: &str =
     "snapshots/core/pass_type_elaboration_contradiction_formula_constant_001.core_ir.snap";
 const EXACT_TASK31_CORE_SNAPSHOT_SPEC_REF: &str =
     "spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot";
+const EXACT_TASK31_VC_SNAPSHOT_CASE: &str =
+    "pass_proof_verification_contradiction_formula_constant_001";
+const EXACT_TASK31_VC_SNAPSHOT_PATH: &str =
+    "snapshots/vc/pass_proof_verification_contradiction_formula_constant_001.vc_ir.snap";
+const EXACT_TASK31_VC_SNAPSHOT_SPEC_REF: &str =
+    "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot";
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TestCaseId(pub String);
@@ -1309,13 +1315,26 @@ pub fn validate_expectation_path(
                 .spec_refs
                 .iter()
                 .any(|spec_ref| spec_ref.0 == EXACT_TASK31_CORE_SNAPSHOT_SPEC_REF);
-        if !active_parse_only && !exact_task31_core_snapshot {
+        let exact_task31_vc_snapshot = expectation.id.0 == EXACT_TASK31_VC_SNAPSHOT_CASE
+            && expectation.stage == Stage::ProofVerification
+            && expectation.expected_phase == Some(PipelinePhase::VcGeneration)
+            && expectation.expected_outcome == ExpectedOutcome::Pass
+            && expectation
+                .tags
+                .iter()
+                .any(|tag| tag == "active_proof_verification")
+            && snapshot_path == Path::new(EXACT_TASK31_VC_SNAPSHOT_PATH)
+            && expectation
+                .spec_refs
+                .iter()
+                .any(|spec_ref| spec_ref.0 == EXACT_TASK31_VC_SNAPSHOT_SPEC_REF);
+        if !active_parse_only && !exact_task31_core_snapshot && !exact_task31_vc_snapshot {
             diagnostics.push(ValidationDiagnostic::error(
                 path,
                 "expectation",
                 "E-EXPECT-SNAPSHOT-SCOPE",
                 "expectation.snapshots",
-                "snapshots are supported only for active parse-only pass/fail cases or the exact Core Task-31 contradiction pass case/path/spec_ref",
+                "snapshots are supported only for active parse-only pass/fail cases or the exact Core/VC Task-31 contradiction pass case/path/spec_ref",
             ));
         }
     }

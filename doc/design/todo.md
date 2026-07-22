@@ -97,7 +97,7 @@ is its task 1). "Next work" points into the
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268 and Core-31 consumer increment complete | step 5 task 10, including future `MT10-FS`/`MT10-AS` and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, and Task 247 decomposition complete | Tasks 248-264/269-279; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
-| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] source-derived VC decomposition complete through task 30 | executable STEP 5 Task 31 | [todo](./mizar-vc/en/todo.md) |
+| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | step 7 | [todo](./mizar-proof/en/todo.md) |
@@ -1380,12 +1380,15 @@ proof acceptance, terminal goals, Core/VC payloads, or runner success.
    dependency, VC 53's bounded missing canonical evidence-transport authority,
    and Gate S1 for missing roles outside direct VC 41 without adding source,
    fixtures, expectations, trace status/tests, or coverage.
-9. [ ] [mizar-vc task 31](./mizar-vc/en/todo.md) — implement only the exact
+9. [x] [mizar-vc task 31](./mizar-vc/en/todo.md) — implement only the exact
    structural Task-30 mapping for the Task-180 vertical slice and
    `MT10-VC-T180`: validate the direct terminal relation and produce one open,
    unaccepted `TerminalProofGoal` with a full VcIr baseline. Do not inject a
    marker, reclassify the existing type-elaboration case, or imply discharge,
    ATP/kernel execution, proof verification, or acceptance.
+   Complete: the exact marker-free adapter, first real proof-verification
+   runner/guard, distinct source/sidecar, full VcIr baseline, and one covered
+   trace row land together; broader VC families remain unpromoted.
 10. [ ] [mizar-parser task 47](./mizar-parser/en/todo.md) — align omitted and
     proof-block `reconsider` syntax with the canonical Chapters 4/8/15 and
     Appendix-A contract.

@@ -489,7 +489,7 @@ the paired producer tasks.
       formula/context, kind, anchor, and gate boundaries without adding a
       requirement, source, expectation, trace status/test, VC, or coverage.
 
-31. **Exact source-derived contradiction VC integration.** [ ]
+31. **Exact source-derived contradiction VC integration.** [x]
     - Implement only Task 30's structural mapping for Core Task 31's real
       theorem obligation and `MT10-VC-T180`: validate the direct terminal
       proof-node backlink, empty CFG, exact ExistingCore handoff/intake, and map
@@ -500,6 +500,13 @@ the paired producer tasks.
     - No marker injection, discharge, ATP/kernel/proof-policy execution,
       theorem acceptance, broader obligations/algorithms, placeholder runner,
       or expectation rebaseline. Deps: Task 30 and Core Task 31.
+    - Complete: the exact borrowed adapter validates Core/CFG/handoff/fresh
+      intake atomically and returns one marker-free open `TerminalProofGoal`.
+      `MT10-VC-T180` adds the distinct proof-verification source/sidecar,
+      double-generated full VcIr snapshot, exact covered trace row, public
+      runner/CLI report, and admission/corruption/failure tests. The existing
+      type-elaboration Task-180 sidecar and all broader deferred rows are
+      unchanged.
 
 32. **General theorem and proof VCs.** [ ] — Specs 04.5/14-16; Core
     33-35/37; `MT10-VC-PV/VC32`.

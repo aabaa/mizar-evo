@@ -369,6 +369,12 @@ fn public_enum_policies() -> Vec<PublicEnumPolicy> {
             ja_doc: "doc/design/mizar-test/ja/harness.md",
         },
         PublicEnumPolicy {
+            module: "runner",
+            name: "ProofVerificationCaseStatus",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
             module: "snapshot",
             name: "SnapshotKind",
             en_doc: "doc/design/mizar-test/en/snapshot.md",

@@ -162,3 +162,13 @@ also define shared `MT10-VC-PV/VC<n>` slices for VC 32-55 and preserve VC 40's
 VC37/39-plus-Core40/A1 boundary, VC 53's bounded missing-authority boundary,
 S1, 403/368, all hashes, and zero current coverage impact. No bilingual drift
 remains in Task-30 consumer scope.
+
+## VC Task 31 / Task-10 Pair Recheck
+
+Task 31 rechecks the paired plan, TODO, harness, snapshot, and traceability
+documents. Both languages record one exact active proof-verification case,
+double-generation and full VcIr comparison, fail-closed snapshot/report/CLI
+behavior, 18 production paths / 20,085 lines, plan 404/369, proof coverage 4/1,
+pass/fail 220/184, unchanged 96/4/188 parse/declaration/type active counts, and
+continued deferral of broad proof-verification and VC 32-55. No bilingual drift
+remains in this increment.

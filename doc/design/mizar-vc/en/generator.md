@@ -25,7 +25,7 @@ registration-style correctness VCs is task 6; algorithm VC generation is task
 | GEN-G001 | `spec_gap` | `generator.md` did not exist before task 5, while tasks 6-8 need a generation contract. | This task creates the English/Japanese generator spec without Rust source. |
 | GEN-G002 | `external_dependency_gap` | `mizar-core` currently carries registration, redefinition, and reduction correctness through available definition/checker seeds and provenance rather than dedicated payloads for every registration-style condition. | Generate registration-style correctness VCs only from explicit core/checker seeds and provenance that are already present. Missing dedicated payloads are `DeferredExternal` or no-VC records, not fabricated obligations. |
 | GEN-G003 | `test_gap` / `source_drift` | No `src/generator.rs` or generator tests exist before tasks 6-8. | This spec names the behavior and test obligations for the implementation tasks; task 5 changes no Rust source. |
-| GEN-G004 | `external_dependency_gap` | Active source-derived `proof_verification` `.miz` runner support and extraction seams remain unavailable. | Use Rust fixtures over explicit core/control-flow payloads in tasks 6-8 and keep source-derived corpus activation deferred to task 15. |
+| GEN-G004 | historical `external_dependency_gap`; exact exception resolved | Before Task 31, active source-derived `proof_verification` `.miz` runner support and extraction seams were unavailable. | Tasks 6-8 used Rust fixtures over explicit core/control-flow payloads; Task 31 adds the exact Task-180 source-derived exception, while broader corpus activation remains deferred under task 15 and the source-VC decomposition. |
 | GEN-G005 | `external_dependency_gap` | `ObligationSeed` does not yet expose first-class theorem status dependency metadata or dedicated registration/redefinition/reduction correctness payload fields. | Task 6 preserves only namespaced explicit `CoreProvenance` markers supplied by upstream fixtures. Absent markers produce ordinary candidates or visible no-candidate records according to the seed kind/status; the generator must not infer these semantics from labels, generic paths, or source text. |
 | GEN-G006 | `external_dependency_gap` | The current `ObligationSeedHandoff` carries flow-site metadata and goal formulas for contract, assertion, and invariant obligations, but it does not yet expose call-precondition, branch, match, range-loop, collection-loop, term-derived termination schemas, authenticated partial-call termination evidence, or complete ghost-isolation metadata. | Task 7 generates candidates only for explicit flow-derived seed rows that have `ControlFlowObligationSite` metadata and a goal formula. Missing proof families and zero-VC/static integration payloads remain visible no-candidate/deferred records instead of fabricated VCs. |
 | GEN-G007 | `source_drift` / `test_gap` | After task 7 the Rust source has pre-normalized task-6/task-7 candidates, but no final `VcSet` normalizer, documented `VcKind` ordering rank, dense `VcId` assignment, or normalizer tests. | Task 8 implements the normalizer, documents the stable classification order below, and adds Rust tests for dense ids, seed accounting, duplicate rejection, deferred status preservation, expanded-mapping validation, and stable rendering inputs. |
@@ -576,6 +576,32 @@ Task 8 must add Rust coverage for:
 No active `.miz` proof-verification fixture is added by task 5 because runner
 support and source-derived extraction seams remain external gaps.
 
+## VC Task 31 Exact Task-180 Adapter
+
+Task 31 adds one public borrowed adapter,
+`generate_exact_task180_vc(ExactTask180VcInput)`, backed by the private
+`generator/task180.rs` leaf. The input carries an immutable `CoreIr`, the
+target `BuildSnapshotId`, and explicit generation/VC schema versions. The
+adapter derives `VcModuleRef` from the Core package and module using the
+length-framed UTF-8 form
+`package=<byte-len>:<package>;module=<byte-len>:<module>`; it never derives
+module identity from a source path or debug text.
+
+The adapter atomically validates the exact Core Task-31 public/valid theorem,
+`False` formula, pending proof, direct terminal node, active theorem seed,
+source maps, references, ranges, and provenance. It constructs and validates
+the empty control-flow output, singleton `ExistingCore` handoff, and freshly
+recomputed `EligibleOneVc` intake internally. Only after those checks does it
+use the existing candidate builder and normalizer to return one open
+`TerminalProofGoal`. Failure returns `ExactTask180VcError` and exposes no
+partial candidate set.
+
+This is an exact structural exception to the generic marker-based terminal
+classification and closes that `design_drift` only for Task 180. No terminal
+marker is injected. The adapter performs no discharge, `NeedsAtp` transition,
+ATP/kernel/proof-policy execution, theorem acceptance, fact publication, or
+general theorem/definition/algorithm generation.
+
 ## Public Enum Policy
 
 Task 17 classifies every `generator` public enum as a downstream
@@ -585,6 +611,7 @@ breaking downstream exhaustive matches.
 
 | public enum | decision |
 |---|---|
+| `ExactTask180VcError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `GeneratorError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 
 No exhaustive public enum exceptions are owned by this module. Internal

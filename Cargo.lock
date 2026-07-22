@@ -609,6 +609,7 @@ dependencies = [
  "mizar-resolve",
  "mizar-session",
  "mizar-syntax",
+ "mizar-vc",
 ]
 
 [[package]]

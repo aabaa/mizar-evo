@@ -4,11 +4,11 @@
 > [../ja/source_vc_decomposition.md](../ja/source_vc_decomposition.md).
 
 This document is the accepted output of mizar-vc Task 30. It freezes the one
-exact Task-180 theorem-obligation-to-VC mapping for Task 31 and decomposes every
-other source-derived VC family into bounded follow-up tasks. It is task,
-dependency, and consumer authority only: it changes no language semantics,
-Rust behavior, `.miz` source, expectation, trace status, test list, or coverage
-credit.
+exact Task-180 theorem-obligation-to-VC mapping implemented by Task 31 and
+decomposes every other source-derived VC family into bounded follow-up tasks.
+The decomposition remains task, dependency, and consumer authority; the Task
+31 completion record below names its exact implementation and coverage without
+broadening any later family.
 
 ## Authority And Entry Baseline
 
@@ -121,6 +121,35 @@ proof-link row. `PendingAutomaticProof` to `Open` is only the phase mapping for
 an undischarged obligation. Task 31 performs no discharge, `NeedsAtp`
 transition, proof verification, theorem acceptance, or fact publication.
 
+## VC Task 31; Exact Task-180 Open VcIr Proof-Verification Snapshot
+
+Task 31 implements the preceding mapping through public borrowed adapter
+`generate_exact_task180_vc`. The adapter accepts the exact CoreIr, snapshot,
+and explicit generation/VC schema versions
+`mizar-vc-generation-task31-v1` / `mizar-vc-vcset-task31-v1`. It encodes Core
+package/module identity as a length-framed `VcModuleRef`, constructs the empty
+CFG, handoff, and intake internally, and returns only the fully validated
+`VcSet` or a typed atomic error.
+
+The distinct
+`pass_proof_verification_contradiction_formula_constant_001.miz` sidecar is the
+only `active_proof_verification` admission. The runner executes the complete
+source-to-checker-to-Core-to-VC path twice and verify-compares the complete
+`VcSet::debug_text()` bytes with the committed VcIr baseline. Admission tests
+cover wrong stage, missing/duplicate/wrong tag, wrong phase, absent snapshot,
+and exclusion of the unchanged type-elaboration Task-180 sidecar. Snapshot and
+report tests cover absent/missing/unreadable/mismatched baselines, failure
+diagnostics, deterministic report bytes, and the CLI summary.
+
+The VC corruption matrix covers the exact Core table allowlist and every
+owner/formula/proof/terminal/seed identity, kind, status, path, source,
+source-map, Core-reference, provenance, handoff, flow-site, and fresh-intake
+boundary. It also proves that classification is structural and marker-free.
+Exactly one covered trace requirement is added for this snapshot; broad
+proof-verification rows remain deferred. The existing type-elaboration source,
+sidecar, Core snapshot, and expectation bytes are unchanged. No downstream
+verification or acceptance is claimed.
+
 ## Prepared mizar-test Consumers
 
 These are increments within open mizar-test Task 10, not new top-level
@@ -221,6 +250,15 @@ Task 30 is complete only when the exact Task-31 mapping and both consumer
 contracts are frozen, every source-derived family has a bounded owner or
 explicit blocked authority gap, all available Core dependencies and canonical citations are
 present, English and Japanese documents agree, and the full preservation
-oracles pass. VC Task 31 is then the next sequential STEP 5 task. Steps 6/7
-remain deferred, and naming Tasks 31-55 grants no proof-verification or
-acceptance credit.
+oracles pass. At the Task-30 boundary, VC Task 31 was the next sequential STEP
+5 task. Steps 6/7 remained deferred, and naming Tasks 31-55 granted no proof-
+verification or acceptance credit.
+
+VC Task 31 subsequently implements and executes only that exact slice. Its
+covered snapshot row closes the Task-180 `test_gap` and `source_drift` without
+crediting the broad proof-verification row. Tasks 32-55 remain dependency-
+paced. For the Core-33-to-VC-32 dependency chain, checker Task 248 is the next
+prerequisite and recommended continuation, followed by Core 33 and its
+descendants. The top-level TODO independently authorizes parser Tasks 47-48
+and resolver Task 31, so every continuation still requires a fresh global
+inventory rather than a unique-priority claim. Steps 6/7 remain deferred.

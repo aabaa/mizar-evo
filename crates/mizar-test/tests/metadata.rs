@@ -20,8 +20,9 @@ use mizar_session::{
 use mizar_test::{
     CoverageShape, DiscoveryConfig, ExpectedOutcome, PipelinePhase, RequirementStatus, Stage,
     TestKind, TestPlan, TestProfile, ValidationMode, active_parse_only_cases,
-    active_type_elaboration_cases, architecture22_scenario_specs, build_test_plan,
-    run_declaration_symbol_corpus, run_parse_only_corpus, run_type_elaboration_corpus,
+    active_proof_verification_cases, active_type_elaboration_cases, architecture22_scenario_specs,
+    build_test_plan, run_declaration_symbol_corpus, run_parse_only_corpus,
+    run_proof_verification_corpus, run_type_elaboration_corpus,
 };
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
@@ -3164,6 +3165,9 @@ tests = []
 fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let config = repository_config();
     let root = config.workspace_root.clone();
+    let plan = build_test_plan(&config).unwrap();
+
+    assert_eq!(active_proof_verification_cases(&plan).count(), 1);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -3201,6 +3205,19 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
         type_first
             .contains("type-elaboration-result|pass_type_elaboration_builtin_type_expression_001")
     );
+
+    let proof_first = canonical_proof_verification_report(
+        &run_proof_verification_corpus(&config).unwrap(),
+        &root,
+    );
+    let proof_second = canonical_proof_verification_report(
+        &run_proof_verification_corpus(&config).unwrap(),
+        &root,
+    );
+    assert_eq!(proof_first, proof_second);
+    assert!(proof_first.contains(
+        "proof-verification-result|pass_proof_verification_contradiction_formula_constant_001"
+    ));
 }
 
 #[test]
@@ -3342,6 +3359,82 @@ fn repository_corpus_plan_succeeds() {
     assert_eq!(task31_coverage.coverage, CoverageShape::Snapshot);
     assert_eq!(task31_coverage.evidence.snapshot, 1);
     assert!(task31_coverage.missing_shapes.is_empty());
+    let vc_task31_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == EXACT_VC_TASK31_SNAPSHOT_SPEC_REF)
+        .expect("repository should include the exact VC Task-31 snapshot trace row");
+    assert_eq!(vc_task31_requirement.status, RequirementStatus::Covered);
+    assert_eq!(vc_task31_requirement.coverage, CoverageShape::Snapshot);
+    assert_eq!(
+        vc_task31_requirement.source,
+        PathBuf::from("doc/design/mizar-vc/en/source_vc_decomposition.md")
+    );
+    assert_eq!(
+        vc_task31_requirement.section,
+        "VC Task 31; exact Task-180 open VcIr proof-verification snapshot"
+    );
+    assert_eq!(vc_task31_requirement.stage, Stage::ProofVerification);
+    assert!(vc_task31_requirement.required);
+    assert_eq!(
+        vc_task31_requirement.tests,
+        [PathBuf::from(EXACT_VC_TASK31_EXPECTATION_PATH)]
+    );
+    let vc_task31_backlinks = plan
+        .cases
+        .iter()
+        .filter(|case| {
+            case.expectation
+                .spec_refs
+                .iter()
+                .any(|spec_ref| spec_ref.0 == EXACT_VC_TASK31_SNAPSHOT_SPEC_REF)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(vc_task31_backlinks.len(), 1);
+    assert_eq!(vc_task31_backlinks[0].id.0, EXACT_VC_TASK31_CASE_ID);
+    assert_eq!(
+        vc_task31_backlinks[0].expectation.snapshots.as_deref(),
+        Some(Path::new(EXACT_VC_TASK31_SNAPSHOT_PATH))
+    );
+    let vc_task31_coverage = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|coverage| coverage.id.0 == EXACT_VC_TASK31_SNAPSHOT_SPEC_REF)
+        .expect("repository should compute exact VC Task-31 snapshot coverage");
+    assert_eq!(vc_task31_coverage.stored_status, RequirementStatus::Covered);
+    assert_eq!(
+        vc_task31_coverage.computed_status,
+        RequirementStatus::Covered
+    );
+    assert_eq!(vc_task31_coverage.coverage, CoverageShape::Snapshot);
+    assert_eq!(vc_task31_coverage.evidence.snapshot, 1);
+    assert!(vc_task31_coverage.missing_shapes.is_empty());
+    let deferred_proof_rows = plan
+        .manifest
+        .requirements
+        .iter()
+        .filter(|requirement| {
+            requirement.stage == Stage::ProofVerification
+                && requirement.id.0 != EXACT_VC_TASK31_SNAPSHOT_SPEC_REF
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(deferred_proof_rows.len(), 3);
+    assert_eq!(
+        deferred_proof_rows
+            .iter()
+            .map(|requirement| requirement.id.0.as_str())
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([
+            "spec.en.algorithm.vc.assignment_loop_exits",
+            "spec.en.mizar_core.control_flow.proof_verification_snapshots",
+            "spec.en.mizar_vc.proof_verification.corpus",
+        ])
+    );
+    assert!(deferred_proof_rows.iter().all(|requirement| {
+        requirement.status == RequirementStatus::Deferred && requirement.tests.is_empty()
+    }));
     let matrix = &plan.coverage_report.architecture22_matrix;
     assert_eq!(
         matrix.scenarios.len(),
@@ -9312,6 +9405,27 @@ fn type_elaboration_cli_reports_active_runner_summary() {
 }
 
 #[test]
+fn proof_verification_cli_reports_exact_task180_summary() {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
+        .arg("proof-verification")
+        .arg("--workspace-root")
+        .arg(repository_config().workspace_root)
+        .output()
+        .expect("mizar-test proof-verification should run");
+
+    assert!(
+        output.status.success(),
+        "proof-verification CLI failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("proof-verification cases: 1"));
+    assert!(stdout.contains("passed: 1"));
+    assert!(stdout.contains("failed: 0"));
+}
+
+#[test]
 fn lexical_token_expectations_parse() {
     let corpus = Corpus::new();
     corpus.add_requirement("spec.en.test.basic", &[]);
@@ -9787,6 +9901,7 @@ spec_refs = ["spec.en.test.basic"]
     assert_has_code(&plan, "E-EXPECT-SNAPSHOT-EXTENSION");
     assert_has_code(&plan, "E-EXPECT-SNAPSHOT-SCOPE");
     assert_exact_task31_core_snapshot_scope_discriminators();
+    assert_exact_vc_task31_snapshot_scope_discriminators();
 }
 
 fn assert_exact_task31_core_snapshot_scope_discriminators() {
@@ -9857,6 +9972,76 @@ fn assert_exact_task31_core_snapshot_scope_discriminators() {
                     && diagnostic.detail_key == "expectation.snapshots"
             }),
             "{discriminator} near miss should fail exact snapshot admission: {:#?}",
+            plan.diagnostics
+        );
+    }
+}
+
+fn assert_exact_vc_task31_snapshot_scope_discriminators() {
+    let exact = exact_vc_task31_snapshot_expectation();
+    let exact_plan = exact_vc_task31_scope_plan(EXACT_VC_TASK31_CASE_ID, &exact);
+    assert_eq!(exact_plan.error_count(), 0, "{:#?}", exact_plan.diagnostics);
+    assert_lacks_code(&exact_plan, "E-EXPECT-SNAPSHOT-SCOPE");
+
+    let near_id = "pass_proof_verification_contradiction_formula_constant_002";
+    let outcome_near_miss = format!(
+        "{}failure_category = \"test_gap\"\nrejection_reason = \"snapshot_scope_near_miss\"\nstable_detail_key = \"test.snapshot.scope\"\n",
+        exact
+            .replace("kind = \"pass\"", "kind = \"fail\"")
+            .replace("expected_outcome = \"pass\"", "expected_outcome = \"fail\"")
+    );
+    let near_misses = [
+        (
+            "id",
+            near_id,
+            exact.replacen(
+                &format!("id = \"{EXACT_VC_TASK31_CASE_ID}\""),
+                &format!("id = \"{near_id}\""),
+                1,
+            ),
+        ),
+        (
+            "stage",
+            EXACT_VC_TASK31_CASE_ID,
+            exact.replace("stage = \"proof_verification\"", "stage = \"type_elaboration\""),
+        ),
+        (
+            "phase",
+            EXACT_VC_TASK31_CASE_ID,
+            exact.replace("expected_phase = \"vc_generation\"", "expected_phase = \"verification\""),
+        ),
+        ("outcome", EXACT_VC_TASK31_CASE_ID, outcome_near_miss),
+        (
+            "unrelated proof case",
+            EXACT_VC_TASK31_CASE_ID,
+            exact.replace("active_proof_verification", "unrelated_proof_verification"),
+        ),
+        (
+            "path",
+            EXACT_VC_TASK31_CASE_ID,
+            exact.replace(
+                EXACT_VC_TASK31_SNAPSHOT_PATH,
+                "snapshots/vc/pass_proof_verification_contradiction_formula_constant_001.near.vc_ir.snap",
+            ),
+        ),
+        (
+            "spec_ref",
+            EXACT_VC_TASK31_CASE_ID,
+            exact.replace(
+                EXACT_VC_TASK31_SNAPSHOT_SPEC_REF,
+                "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot.near",
+            ),
+        ),
+    ];
+
+    for (discriminator, sidecar_stem, expectation) in near_misses {
+        let plan = exact_vc_task31_scope_plan(sidecar_stem, &expectation);
+        assert!(
+            plan.diagnostics.iter().any(|diagnostic| {
+                diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"
+                    && diagnostic.detail_key == "expectation.snapshots"
+            }),
+            "{discriminator} near miss should fail exact VC snapshot admission: {:#?}",
             plan.diagnostics
         );
     }
@@ -10388,6 +10573,14 @@ const EXACT_TASK31_SNAPSHOT_SPEC_REF: &str =
     "spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot";
 const EXACT_TASK31_SOURCE: &str =
     "theorem SourceDerivedContradictionConstantBoundary: contradiction;\n";
+const EXACT_VC_TASK31_CASE_ID: &str = "pass_proof_verification_contradiction_formula_constant_001";
+const EXACT_VC_TASK31_EXPECTATION_PATH: &str = "tests/miz/pass/theorems/pass_proof_verification_contradiction_formula_constant_001.expect.toml";
+const EXACT_VC_TASK31_SOURCE_PATH: &str =
+    "tests/miz/pass/theorems/pass_proof_verification_contradiction_formula_constant_001.miz";
+const EXACT_VC_TASK31_SNAPSHOT_PATH: &str =
+    "snapshots/vc/pass_proof_verification_contradiction_formula_constant_001.vc_ir.snap";
+const EXACT_VC_TASK31_SNAPSHOT_SPEC_REF: &str =
+    "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot";
 
 fn exact_task31_snapshot_expectation() -> String {
     format!(
@@ -10404,6 +10597,25 @@ diagnostic_payloads = []
 snapshots = "{EXACT_TASK31_SNAPSHOT_PATH}"
 tags = ["active_type_elaboration"]
 spec_refs = ["{EXACT_TASK31_SNAPSHOT_SPEC_REF}"]
+"#
+    )
+}
+
+fn exact_vc_task31_snapshot_expectation() -> String {
+    format!(
+        r#"schema_version = 1
+id = "{EXACT_VC_TASK31_CASE_ID}"
+kind = "pass"
+stage = "proof_verification"
+domain = "proof.vc_generation"
+source = "{EXACT_VC_TASK31_CASE_ID}.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+diagnostic_payloads = []
+snapshots = "{EXACT_VC_TASK31_SNAPSHOT_PATH}"
+tags = ["active_proof_verification"]
+spec_refs = ["{EXACT_VC_TASK31_SNAPSHOT_SPEC_REF}"]
 "#
     )
 }
@@ -10431,6 +10643,30 @@ fn exact_task31_scope_plan(sidecar_stem: &str, expectation: &str) -> TestPlan {
     corpus.write(
         "tests/coverage/spec_trace.toml",
         exact_task31_trace(&expectation_path),
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.plan()
+}
+
+fn exact_vc_task31_scope_plan(sidecar_stem: &str, expectation: &str) -> TestPlan {
+    let corpus = Corpus::new();
+    let expectation_path = format!("tests/miz/pass/theorems/{sidecar_stem}.expect.toml");
+    corpus.write(EXACT_VC_TASK31_SOURCE_PATH, EXACT_TASK31_SOURCE);
+    corpus.write(&expectation_path, expectation);
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        format!(
+            r#"[[requirement]]
+id = "{EXACT_VC_TASK31_SNAPSHOT_SPEC_REF}"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+tests = ["{expectation_path}"]
+"#
+        ),
     );
     corpus.write("doc/spec/en/test.md", "# Test\n");
     corpus.plan()
@@ -10738,6 +10974,35 @@ fn canonical_type_elaboration_report(
     output
 }
 
+fn canonical_proof_verification_report(
+    report: &mizar_test::ProofVerificationRunReport,
+    root: &Path,
+) -> String {
+    let mut output = String::new();
+    writeln!(
+        output,
+        "proof-verification-counts|{}|{}|{}|{}",
+        report.results.len(),
+        report.passed_count(),
+        report.failed_count(),
+        report.error_count()
+    )
+    .unwrap();
+    for result in &report.results {
+        writeln!(
+            output,
+            "proof-verification-result|{}|{}|{}|failure={}",
+            result.id.0,
+            rel_string(root, &result.expectation_path),
+            proof_verification_status(result.status),
+            result.failure.as_deref().unwrap_or("<none>")
+        )
+        .unwrap();
+    }
+    push_canonical_diagnostics(&mut output, root, &report.diagnostics);
+    output
+}
+
 fn push_canonical_diagnostics(
     output: &mut String,
     root: &Path,
@@ -10787,6 +11052,14 @@ fn type_elaboration_status(status: mizar_test::TypeElaborationCaseStatus) -> &'s
     match status {
         mizar_test::TypeElaborationCaseStatus::Passed => "passed",
         mizar_test::TypeElaborationCaseStatus::Failed => "failed",
+        _ => "unknown",
+    }
+}
+
+fn proof_verification_status(status: mizar_test::ProofVerificationCaseStatus) -> &'static str {
+    match status {
+        mizar_test::ProofVerificationCaseStatus::Passed => "passed",
+        mizar_test::ProofVerificationCaseStatus::Failed => "failed",
         _ => "unknown",
     }
 }

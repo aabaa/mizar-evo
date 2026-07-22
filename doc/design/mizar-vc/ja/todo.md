@@ -461,7 +461,7 @@ kernel 受理境界の監査
       boundary を記録し、requirement/source/expectation/trace status/test/VC/coverage
       を追加しない。
 
-31. **Exact source-derived contradiction VC integration。** [ ]
+31. **Exact source-derived contradiction VC integration。** [x]
     - Core Task 31 の real theorem obligation と `MT10-VC-T180` に対する Task 30
       structural mapping だけを実装する。direct terminal proof-node backlink、empty
       CFG、exact ExistingCore handoff/intake を検証し、honestly incomplete な
@@ -472,6 +472,12 @@ kernel 受理境界の監査
     - marker injection、discharge、ATP/kernel/proof-policy execution、theorem
       acceptance、broader obligation/algorithm、placeholder runner、expectation
       rebaseline なし。依存: Task 30 と Core Task 31。
+    - Complete: exact borrowed adapter は Core/CFG/handoff/fresh intake を atomic に
+      validate し、marker-free open `TerminalProofGoal` を1件返す。`MT10-VC-T180` は
+      distinct proof-verification source/sidecar、double-generated full VcIr snapshot、
+      exact covered trace row、public runner/CLI report、admission/corruption/failure test
+      を追加する。existing type-elaboration Task-180 sidecar と broad deferred row は
+      すべて不変。
 
 32. **General theorem/proof VC。** [ ] — Specs 04.5/14-16; Core 33-35/37;
     `MT10-VC-PV/VC32`。

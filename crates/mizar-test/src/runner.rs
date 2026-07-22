@@ -18,12 +18,17 @@ use crate::staged_model::Stage;
 mod declaration_symbol;
 mod import_fixtures;
 mod parse_only;
+mod proof_verification;
 mod shared;
 mod type_elaboration;
 
 use declaration_symbol::{declaration_symbol_failure_diagnostic, run_declaration_symbol_case};
 use import_fixtures::{ParseOnlyImportProvider, augment_type_elaboration_import_summaries};
 use parse_only::{parse_only_failure_diagnostic, run_parse_only_case};
+use proof_verification::{
+    is_active_proof_verification, proof_verification_failure_diagnostic,
+    run_proof_verification_case, validate_active_proof_verification_tags,
+};
 use shared::{
     FrontendRun, frontend_detail_keys, normalized_tests_root, normalized_workspace_root,
     resolver_symbol_collection, run_frontend,
@@ -984,6 +989,27 @@ pub enum TypeElaborationCaseStatus {
     Failed,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofVerificationRunReport {
+    pub results: Vec<ProofVerificationCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofVerificationCaseResult {
+    pub id: crate::expectation::TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: ProofVerificationCaseStatus,
+    pub failure: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ProofVerificationCaseStatus {
+    Passed,
+    Failed,
+}
+
 impl ParseOnlyRunReport {
     pub fn passed_count(&self) -> usize {
         self.results
@@ -1056,6 +1082,36 @@ impl TypeElaborationRunReport {
         self.results
             .iter()
             .filter(|result| result.status == TypeElaborationCaseStatus::Failed)
+            .count()
+    }
+
+    pub fn error_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Error)
+            .count()
+    }
+
+    pub fn warning_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Warning)
+            .count()
+    }
+}
+
+impl ProofVerificationRunReport {
+    pub fn passed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == ProofVerificationCaseStatus::Passed)
+            .count()
+    }
+
+    pub fn failed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == ProofVerificationCaseStatus::Failed)
             .count()
     }
 
@@ -1164,6 +1220,50 @@ pub fn run_type_elaboration_corpus(
     })
 }
 
+pub fn run_proof_verification_corpus(
+    config: &DiscoveryConfig,
+) -> Result<ProofVerificationRunReport, HarnessError> {
+    let workspace_root = normalized_workspace_root(config)?;
+    let tests_root = normalized_tests_root(&workspace_root, config);
+    let plan = build_test_plan(config)?;
+    let diagnostics = plan.diagnostics.clone();
+    if plan.error_count() > 0 {
+        return Ok(ProofVerificationRunReport {
+            results: Vec::new(),
+            diagnostics,
+        });
+    }
+    Ok(run_proof_verification_plan(
+        &workspace_root,
+        &tests_root,
+        &plan,
+    ))
+}
+
+fn run_proof_verification_plan(
+    workspace_root: &Path,
+    tests_root: &Path,
+    plan: &TestPlan,
+) -> ProofVerificationRunReport {
+    let mut diagnostics = plan.diagnostics.clone();
+    diagnostics.extend(validate_active_proof_verification_tags(plan));
+
+    let mut results = Vec::new();
+    for (ordinal, case) in active_proof_verification_cases(plan).enumerate() {
+        let result = run_proof_verification_case(workspace_root, tests_root, case, ordinal);
+        if result.status == ProofVerificationCaseStatus::Failed {
+            diagnostics.push(proof_verification_failure_diagnostic(case, &result));
+        }
+        results.push(result);
+    }
+    diagnostics.sort();
+
+    ProofVerificationRunReport {
+        results,
+        diagnostics,
+    }
+}
+
 pub fn active_parse_only_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
     plan.cases.iter().filter(|case| is_active_parse_only(case))
 }
@@ -1178,6 +1278,12 @@ pub fn active_type_elaboration_cases(plan: &TestPlan) -> impl Iterator<Item = &T
     plan.cases
         .iter()
         .filter(|case| is_active_type_elaboration(case))
+}
+
+pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
+    plan.cases
+        .iter()
+        .filter(|case| is_active_proof_verification(case))
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {

@@ -36,6 +36,10 @@ use std::{
     fmt::{self, Write as _},
 };
 
+mod task180;
+
+pub use task180::{ExactTask180VcError, ExactTask180VcInput, generate_exact_task180_vc};
+
 #[derive(Debug, Clone, Copy)]
 pub struct CoreGenerationInput<'a> {
     pub schema_version: &'a GenerationSchemaVersion,

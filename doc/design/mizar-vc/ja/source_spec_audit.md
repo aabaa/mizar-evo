@@ -216,7 +216,7 @@ Correspondence:
 | deterministic discharge candidate 向け architecture-22 cross-edit reuse identity | `crates/mizar-vc/tests/determinism_suite.rs`; shifted `VcId`、shifted generated-formula id、stale slice、policy/context/goal change、pre-existing evidence、incomplete anchor、unresolved-payload checks。 |
 | Kernel evidence handoff が producer-side かつ prover-independent に残ること | `crates/mizar-vc/src/kernel_evidence_handoff.rs`; deterministic handoff tests、fail-closed missing-payload tests、prohibited backend/legacy material tests。 |
 | Public enum forward compatibility | source attribute、EN/JA module policy table、`vc_public_enums_are_forward_compatible_and_documented`。 |
-| Active source-derived corpus coverage | active proof-verification corpus は未実装。Task 15 は fake `.miz` fixture ではなく deferred traceability row を記録する。 |
+| Active source-derived corpus coverage | Task 31 は exact Task-180 source-to-checker-to-Core-to-VC runner と covered trace row 1件を実装した。broader proof-verification family は Task 15 と source-VC decomposition のもとで deferred のまま。 |
 
 ## Task 21 architecture-22 follow-up
 
@@ -307,10 +307,9 @@ declaration/rejection contract を閉じ、Task 28 は producer-side F2 context-
 追加する。`mizar-kernel` task 31 は trusted checker-side F2 membership check を閉じる。
 Downstream consumer gap は分類済みのまま残る:
 
-- `external_dependency_gap`: active source-derived `proof_verification` support は
-  general source-to-core / source-to-VC route と共に `mizar-test` に存在しない。
-  VC Task 31 / `MT10-VC-T180` が最初の exact route、VC 32-55 が後続
-  `MT10-VC-PV/VC<n>` slice を所有する。
+- `external_dependency_gap`: Task 31 は `MT10-VC-T180` の exact source-derived
+  `proof_verification` route を実装済みである。general source-to-core / source-to-VC
+  route は引き続き存在せず、VC 32-55 が後続 `MT10-VC-PV/VC<n>` slice を所有する。
 - `external_dependency_gap` / `deferred`: `mizar-kernel` は現在 checker-side
   formula/substitution evidence acceptance path を所有し、`mizar-vc` は explicit payload
   向け producer-side handoff builder と reuse identity integration を所有するが、
@@ -369,3 +368,18 @@ current `boundary_violation`、`repo_metadata_conflict` はない。Task 30 は 
 final quality review と crate-exit status は
 [crate_exit_report.md](./crate_exit_report.md) に記録済みである。
 `repo_metadata_conflict` は観測されなかった。
+
+## Task 31 exact source/spec correspondence
+
+public adapter は `crates/mizar-vc/src/generator.rs` から expose され、private leaf
+`crates/mizar-vc/src/generator/task180.rs` に実装される。`generator.md` と
+`source_vc_decomposition.md` は borrowed input、canonical module identity、atomic typed
+failure、exact structural validation、one open output を規定する。module-local test は
+marker-free classification と Core/CFG/handoff/intake corruption matrix を覆い、mizar-test
+runner/metadata test は admission、deterministic complete rendering、snapshot failure、
+report projection、CLI behavior を覆う。
+
+exact trace row/VcIr baseline は Task-31 `source_drift`/`test_gap` を閉じる。generic
+marker-based terminal classification は不変で、broader source-derived family は credit を
+得ない。この slice に new `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict` はない。

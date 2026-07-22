@@ -12,6 +12,7 @@ use mizar_checker::type_checker::{
 use mizar_checker::typed_ast::{
     NormalizedTypeId, TypeEntryActual, TypeEntryId, TypeRole, TypeStatus, TypedNodeId, TypedSiteRef,
 };
+use mizar_core::core_ir::CoreIr;
 use mizar_core::elaborator::lower_exact_task180_handoff;
 use mizar_resolve::env::SymbolEnv;
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
@@ -627,19 +628,23 @@ pub(in crate::runner) fn source_contradiction_core_ir_snapshot(
         return None;
     }
     Some((|| {
-        let handoff = assemble_source_contradiction_checker_handoff(ast, module.clone(), symbols)?;
-        assert_source_contradiction_handoff(&handoff)?;
-        let first =
-            lower_exact_task180_handoff(&handoff.resolved).map_err(|error| error.to_string())?;
-        let second_handoff = assemble_source_contradiction_checker_handoff(ast, module, symbols)?;
-        assert_source_contradiction_handoff(&second_handoff)?;
-        let second = lower_exact_task180_handoff(&second_handoff.resolved)
-            .map_err(|error| error.to_string())?;
+        let first = source_contradiction_core_ir(ast, module.clone(), symbols)?;
+        let second = source_contradiction_core_ir(ast, module, symbols)?;
         if first != second || first.debug_text() != second.debug_text() {
             return Err("exact Task-180 CoreIr rerun was nondeterministic".to_owned());
         }
         Ok(first.debug_text())
     })())
+}
+
+pub(in crate::runner) fn source_contradiction_core_ir(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Result<CoreIr, String> {
+    let handoff = assemble_source_contradiction_checker_handoff(ast, module, symbols)?;
+    assert_source_contradiction_handoff(&handoff)?;
+    lower_exact_task180_handoff(&handoff.resolved).map_err(|error| error.to_string())
 }
 
 pub(in crate::runner) fn source_contradiction_formula_output(

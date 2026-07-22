@@ -250,9 +250,10 @@ pub(super) use output::{
 };
 pub(super) use output::{
     source_builtin_binary_term_formula_detail_keys,
-    source_builtin_type_assertion_formula_detail_keys, source_contradiction_core_ir_snapshot,
-    source_contradiction_formula_detail_keys, source_formula_connective_quantifier_detail_keys,
-    source_formula_statement_detail_keys, source_imported_attribute_assertion_formula_detail_keys,
+    source_builtin_type_assertion_formula_detail_keys, source_contradiction_core_ir,
+    source_contradiction_core_ir_snapshot, source_contradiction_formula_detail_keys,
+    source_formula_connective_quantifier_detail_keys, source_formula_statement_detail_keys,
+    source_imported_attribute_assertion_formula_detail_keys,
     source_imported_non_empty_attribute_assertion_formula_detail_keys,
     source_imported_predicate_functor_formula_detail_keys,
     source_set_enumeration_formula_detail_keys,

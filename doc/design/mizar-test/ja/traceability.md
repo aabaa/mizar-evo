@@ -1913,6 +1913,12 @@ status `covered`、required snapshot coverage、sole backlink
 `tests/miz/pass/theorems/pass_proof_verification_contradiction_formula_constant_001.expect.toml`
 のちょうど1件とする。
 
+Task 31 はこの row を指定どおり exact に追加する。plan は404 case / 369 requirement、
+proof-verification coverage は requirement 4件、covered 1件、deferred 3件で、active
+runner は passing case 1件である。この exact snapshot だけが new credit である。
+broad proof-verification/algorithm row は deferred status と empty tests を維持し、
+existing type-elaboration Task-180 backlink は不変である。
+
 VC Tasks 32-55 は shared `MT10-VC-PV` slice `MT10-VC-PV/VC<n>` を使用し、各々が
 distinct real source、sidecar、narrow trace row、full VcIr baseline、corruption coverage と
 owning row が要求する

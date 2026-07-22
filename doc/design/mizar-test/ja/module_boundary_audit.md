@@ -9681,3 +9681,33 @@ snapshot requirementによりplanは意図的に403/368、type coverageは236/22
 pass/failは219/184のまま。existing `.miz`、pass outcome、phase、diagnostic、
 broader trace rowは不変。non-Task-180 CoreIr/ControlFlowIr全familyはdeferredのままで、
 Steps 6/7はpromoteしない。
+
+## VC Task 31 / Task-10 consumer current-state addendum
+
+VC Task 31 は completed move-only series を reopen せず、bounded production path
+`src/runner/proof_verification.rs` を1件追加する。production は18 path / 20,085 line。
+`runner.rs` は2,372 lineで facade/top-level orchestration only を維持し、new 170-line
+leaf が exact admission、source-to-VC execution、deterministic rerun、snapshot
+comparison、failure projection を所有する。type-elaboration facade はprivate leaf 11件
+のままで、reusable exact CoreIr export だけが1 line変わり、`output.rs` は1,571 line。
+
+sorted production path hash は
+`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`、ordered
+content-manifest hash は
+`a7745e222032a5b6dfeda5ec7a90888c569270134d316166914c959a1684c14c`。
+
+new runner は cohesive semantic consumer で、oversized-route split/ownership leak では
+ない。public report/iterator/orchestration は `runner.rs`、exact implementation はprivate
+に残る。active count は parse/declaration/type/proof 96/4/188/1、plan 404/369、proof
+coverage 4/1、pass/fail 220/184、mizar-test library test 276。broad proof-verification と
+VC 32-55 はこの leaf の外で、Steps 6/7 はpromoteしない。
+
+plan/parse/declaration/type/proof CLI hash はそれぞれ
+`572873f4f678d446b5b383c3a466bd657df218590b088f1d32b10a98c87ce6ae`、
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
+`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+raw/normalized 276-test-list hash は
+`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
+`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`。

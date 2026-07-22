@@ -5382,8 +5382,21 @@ stage = "proof_verification"
 status = "deferred"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 15 records this broad corpus obligation as an external_dependency_gap rather than adding fake active fixtures. Completed docs-only VC Task 30 reserves MT10-VC-T180 solely for VC Task 31's exact structural Task-180 TerminalProofGoal/Open mapping and assigns every other theorem, definition, property, registration, trace-context, direct-template, algorithm, termination, snapshot/claim, and zero-VC isolation family to bounded VC Tasks 32-55 with MT10-VC-PV/VC<n> consumers. Task 30 adds no requirement or test. Keep this broad row deferred with empty tests: Task 31 must add its distinct proof_verification/vc_generation source, exact narrow trace row, runner/guard, and full VcIr baseline together, every later task must do the same for its real slice. VC 40 remains blocked on completed VC 37/39 outputs plus Core 40/A1; VC 53 separately remains blocked by a bounded spec_gap because canonical authority does not name its evidence producer/reference identity/schema/authentication contract/rules/tests. Missing scheme/theorem roles remain behind S1 outside direct VC 41, and proof/discharge/ATP/kernel/artifact acceptance remains uncredited."
+deferred_reason = "Task 15 records this broad corpus obligation as an external_dependency_gap rather than adding fake active fixtures. Completed docs-only VC Task 30 reserves MT10-VC-T180 solely for VC Task 31's exact structural Task-180 TerminalProofGoal/Open mapping and assigns every other theorem, definition, property, registration, trace-context, direct-template, algorithm, termination, snapshot/claim, and zero-VC isolation family to bounded VC Tasks 32-55 with MT10-VC-PV/VC<n> consumers. Task 30 adds no requirement or test. Keep this broad row deferred with empty tests: Task 31 has added its distinct proof_verification/vc_generation source, exact narrow trace row, runner/guard, and full VcIr baseline together without crediting this broad row; every later task must do the same for its real slice. VC 40 remains blocked on completed VC 37/39 outputs plus Core 40/A1; VC 53 separately remains blocked by a bounded spec_gap because canonical authority does not name its evidence producer/reference identity/schema/authentication contract/rules/tests. Missing scheme/theorem roles remain behind S1 outside direct VC 41, and proof/discharge/ATP/kernel/artifact acceptance remains uncredited."
 tests = []
+
+[[requirement]]
+id = "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 31; exact Task-180 open VcIr proof-verification snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "VC Task 31 covers only the exact source-derived Task-180 structural mapping: one public Valid theorem with one False formula, PendingAutomaticProof direct terminal node, Active TheoremProof seed, empty ControlFlowOutput, singleton ExistingCore handoff, freshly recomputed EligibleOneVc intake, and one dense Open TerminalProofGoal VcId(0). The runner executes the complete source-to-checker-to-Core-to-VC path twice and compares the whole VcSet debug baseline. The canonical goal hash remains unavailable, so the anchor is incomplete and proof-reuse-ineligible. No discharge, NeedsAtp transition, proof verification, theorem acceptance, fact publication, broader proof/VC family, or broad proof-verification coverage is credited."
+tests = [
+  "tests/miz/pass/theorems/pass_proof_verification_contradiction_formula_constant_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.resolve.symbols.parameterized_attribute_suffix"

@@ -136,12 +136,13 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
         [
             "src/dependency_slice.rs",
             "src/discharge.rs",
+            "src/generator/task180.rs",
             "src/generator.rs",
             "src/kernel_evidence_handoff.rs",
             "src/lib.rs",
             "src/vc_ir.rs",
         ],
-        "task 6 owns the generator source module; later private VC modules \
+        "task 31 owns the exact Task-180 private generator leaf; later private VC modules \
          must wait for their task-scoped specs, found {source_files:?}"
     );
     for spec in [
@@ -194,16 +195,29 @@ fn vc_public_enums_are_forward_compatible_and_documented() {
 
     for module in modules {
         let source_path = crate_root().join("src").join(format!("{module}.rs"));
-        let source = read_to_string(&source_path);
+        let mut source = read_to_string(&source_path);
         for (line_number, line) in source.lines().enumerate() {
             let trimmed = line.trim();
             if trimmed.starts_with("pub mod ") || trimmed.starts_with("pub use ") {
-                violations.push(format!(
-                    "{}:{}: public nested modules or re-exports must update the public enum policy guard before exposing additional enum surfaces",
-                    source_path.display(),
-                    line_number + 1
-                ));
+                let task31_exact_reexport = module == "generator"
+                    && (trimmed.starts_with("pub use task180::{")
+                        || trimmed.starts_with("ExactTask180VcError")
+                        || trimmed.starts_with("ExactTask180VcInput")
+                        || trimmed.starts_with("generate_exact_task180_vc"));
+                if !task31_exact_reexport {
+                    violations.push(format!(
+                        "{}:{}: public nested modules or re-exports must update the public enum policy guard before exposing additional enum surfaces",
+                        source_path.display(),
+                        line_number + 1
+                    ));
+                }
             }
+        }
+        if module == "generator" {
+            source.push('\n');
+            source.push_str(&read_to_string(
+                &crate_root().join("src/generator/task180.rs"),
+            ));
         }
         let public_enums = public_enums(&source);
         if public_enums.is_empty() {

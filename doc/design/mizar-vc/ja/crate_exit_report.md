@@ -172,7 +172,7 @@ score cap はない。
 
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
-| VC-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-test` には active source-derived `proof_verification` runner/tag gate と VC baseline がまだない。 | VC Task 31 が `MT10-VC-T180` で最初の exact route を所有し、後続 VC 32-55 は各 real `MT10-VC-PV/VC<n>` increment を所有する。empty runner は禁止。 |
+| VC-CLOSEOUT-G001 | `external_dependency_gap` | Task 31 は one exact source-derived `proof_verification` runner/tag gate と VC baseline を実装済みだが、general coverage はまだない。 | VC Task 31 の最初の exact `MT10-VC-T180` route は complete で、後続 VC 32-55 は各 real `MT10-VC-PV/VC<n>` increment を所有する。empty runner は禁止。 |
 | VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | original closeout は `mizar-kernel` を unavailable と扱っていた。`mizar-kernel` task 23-29 は formula/substitution evidence parsing、deterministic instantiation / SAT encoding、trusted SAT checker wrapping、SAT-backed check service、legacy-certificate audit gating を提供済みである。Tasks 25-29 は explicit data 向け VC producer-side handoff builder、canonical evidence identity、explicit goal polarity、context identity、imported-statement projection payload を追加し、paired `mizar-kernel` task 33 は kernel-side projection validation を実装済みである。ATP candidate production、proof/cache consumer、artifact witness consumer はまだ incomplete。 | Task 24 は VC/kernel handoff を仕様化する。tasks 25-29 は producer-side identity/projection payload を実装する。downstream ATP/proof/cache/artifact work は placeholder ではなくそれぞれの spec を使う。kernel-side task 33 validation は deferred ではなくなった。 |
 | VC-CLOSEOUT-G003 | `external_dependency_gap`; VC 53 は bounded `spec_gap` | Source-derived theorem/formula/context、definition/property/term、registration/trace/direct-template、Chapter-20 VC/zero-VC integration payload は不完全。別途、VC 53 には canonical evidence-transport authority がない。 | Task 30 が exact VC 31-55 owner と Core 31-53 dependency を割り当てる。VC 40 は complete 済み VC 37/39 output と Core 40/A1。VC 53 は canonical authority が evidence producer/reference identity/schema、authentication contract/rule、owning test を命名していないことにより blocked のまま。それらを捏造しない。missing scheme/theorem role は direct VC 41 の外で S1 の背後に残る。dependency-ready な bounded row だけを real consumer と共に実装する。 |
 | VC-CLOSEOUT-G004 | `deferred` | Proof-witness hash、ATP/kernel/proof/cache validation、artifact consumer、source-derived runner integration は、architecture-22 reuse を deterministic-discharge candidate key の外で受理する前に必要。 | Downstream proof/cache/artifact phase が、ここで生成する untrusted reusable input を validate する。 |
@@ -258,10 +258,24 @@ synchronization だけなら lower reasoning が適切である。
 post-closeout Task 30 は original crate exit を reopen/weakening しない。paired
 [source-derived VC decomposition](./source_vc_decomposition.md) が umbrella
 source-derived gap を exact Task-31 mapping と bounded VC Tasks 32-55 に置き換える。
-Task 31 と `MT10-VC-T180` が次の sequential STEP 5 implementation である。Tasks
-32-55 は Core 33-53 により dependency-paced、VC 40 は VC 37/39 と Core 40/A1、
+Task 31 と `MT10-VC-T180` は complete である。Tasks 32-55 は Core 33-53 により
+dependency-paced、VC 40 は VC 37/39 と Core 40/A1、
 VC 53 は bounded canonical-authority gap により blocked、missing scheme/theorem role は
 direct VC 41 の外で S1 の背後に残る。
 proof search、discharge、ATP/kernel/proof policy、acceptance、cache/artifact reuse、
 MVM/extraction、Steps 6/7 はこの ownership-only update の外側に残る。source、fixture、
 expectation、trace status/test、coverage、quality score を変更しない。
+
+## VC Task 31 post-closeout implementation addendum
+
+Task 31 は original crate-exit score を変えず exact contradiction slice を実装する。
+new public exact adapter、private generator leaf、proof-verification runner、distinct
+source/sidecar、complete VcIr baseline、covered trace row 1件は `MT10-VC-T180` だけを
+閉じる。old type-elaboration Task-180 baseline は不変である。broad proof-verification
+row は empty tests の deferred を保ち、prospective Task-31 wording だけを completed exact
+exception に同期する。
+
+adapter は marker-free、open、undischarged、unaccepted のままで、anchor が
+`CanonicalGoalHash` を欠くため proof-reuse-ineligible である。VC 32-55、VC-40/VC-53
+gate、Steps 6/7、ATP/kernel/proof/cache/artifact execution、general source-to-VC coverage
+はこの addendum の外である。

@@ -1999,6 +1999,13 @@ Task-180 open VcIr proof-verification snapshot`, stage `proof_verification`,
 status `covered`, required snapshot coverage, and sole backlink
 `tests/miz/pass/theorems/pass_proof_verification_contradiction_formula_constant_001.expect.toml`.
 
+Task 31 now lands that row exactly as specified. The plan contains 404 cases
+and 369 requirements. Proof-verification coverage has four requirements, one
+covered and three deferred; its active runner has one passing case. The exact
+snapshot is the sole new credit. The broad proof-verification and algorithm
+rows retain deferred status and empty tests, and the existing type-elaboration
+Task-180 backlink remains unchanged.
+
 VC Tasks 32-55 use shared `MT10-VC-PV` slices `MT10-VC-PV/VC<n>`, each with a
 distinct real source, sidecar, narrow trace row, full VcIr baseline, and
 corruption coverage plus every applicable task-local zero-VC/near-miss and

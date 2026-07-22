@@ -359,3 +359,17 @@ Key scenarios:
 independent complete generations before verify-only baseline comparison and
 must land the first proof-verification guard with the first real baseline.
 Task 30 adds no snapshot, registry entry, source, or hash.
+
+## VC Task 31 VcIr Baseline
+
+Task 31 lands the first real `MT10-VC-T180` VcIr baseline at
+`snapshots/vc/pass_proof_verification_contradiction_formula_constant_001.vc_ir.snap`.
+The body is the complete `VcSet::debug_text()` output for one open
+`TerminalProofGoal`, including schema/module/source identity, seed accounting,
+provenance, and the incomplete anchor missing only `CanonicalGoalHash`.
+
+The runner independently generates the whole VcSet twice and requires both
+structural and byte equality before reading the baseline. An absent sidecar
+snapshot path or missing, unreadable, or mismatched baseline fails the case.
+There is no update mode, summary-only comparison, general VcIr registry, proof
+acceptance, or reuse eligibility.

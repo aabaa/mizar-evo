@@ -2411,3 +2411,33 @@ VC 31 next. VC 32-55 remain dependency-paced, VC 40 remains blocked by VC
 37/39 plus Core 40/A1, VC 53 remains blocked by its bounded canonical-authority
 gap, missing scheme/theorem roles remain behind S1 outside
 direct VC 41, and Steps 6/7 remain deferred.
+
+## VC Task 31 Exact Task-180 VcIr Coverage Update
+
+VC Task 31 closes only the exact Task-180 phase-11 `source_drift`,
+`design_drift`, and task-local `test_gap` accepted by Task 30. A distinct
+`proof_verification` / `active_proof_verification` source and sidecar now drive
+the real source-to-checker-to-Core-to-VC path twice and compare the complete
+`VcSet::debug_text()` baseline. The new covered snapshot requirement is
+`spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot`, with its sole
+backlink in the distinct proof-verification sidecar.
+
+Credit is limited to one public/Valid Task-180 theorem, one `False` formula,
+one pending direct terminal proof node, one Active `TheoremProof` seed, empty
+control flow, singleton `ExistingCore` handoff, freshly recomputed
+`EligibleOneVc` intake, and one dense open `TerminalProofGoal` VcId 0. Its
+source-shape and empty-context hashes are available, while the canonical-goal
+hash remains unavailable; the anchor is incomplete and proof-reuse-ineligible.
+The implementation and runner corruption/admission/snapshot tests protect the
+exact mapping without a terminal marker.
+
+The repository plan therefore contains 404 cases and 369 requirements;
+proof-verification coverage is 4/1 and pass/fail is 220/184. Parse,
+declaration, and type active counts remain 96/4/188. The existing Task-180
+type-elaboration source, sidecar, Core snapshot, and backlink are unchanged.
+All broad proof-verification and algorithm rows remain deferred with empty
+tests. No general theorem/proof VC, discharge, `NeedsAtp`, ATP/kernel/proof
+execution, acceptance, fact publication, or Steps 6/7 credit is added. VC
+32-55 and their gates retain Task-30 ownership. No new `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, current
+`boundary_violation`, or `repo_metadata_conflict` was found.

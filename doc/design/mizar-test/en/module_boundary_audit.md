@@ -10873,3 +10873,36 @@ because of the new exact snapshot requirement; pass/fail stays 219/184. The
 existing `.miz`, pass outcome, phase, diagnostics, and broader trace rows stay
 unchanged. All non-Task-180 CoreIr/ControlFlowIr families remain deferred;
 Steps 6/7 are not promoted.
+
+## VC Task 31 / Task-10 Consumer Current-State Addendum
+
+VC Task 31 adds one bounded production path,
+`src/runner/proof_verification.rs`, without reopening the completed move-only
+series. Production now has 18 paths and 20,085 lines. `runner.rs` is 2,372
+lines and remains facade/top-level orchestration only; the new 170-line leaf
+owns exact admission, source-to-VC execution, deterministic rerun, snapshot
+comparison, and failure projection. The type-elaboration facade still has
+eleven private leaves; only its reusable exact CoreIr export changes one line,
+and `output.rs` is 1,571 lines.
+
+The sorted production path hash is
+`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0` and
+the ordered content-manifest hash is
+`a7745e222032a5b6dfeda5ec7a90888c569270134d316166914c959a1684c14c`.
+
+The new runner is a cohesive semantic consumer, not an oversized-route split
+or ownership leak. Its public report/iterator/orchestration remain in
+`runner.rs`; exact implementation stays private. Active counts are now
+parse/declaration/type/proof 96/4/188/1, plan 404/369, proof coverage 4/1,
+pass/fail 220/184, and mizar-test library tests 276. Broad proof-verification
+and VC 32-55 remain outside this leaf; Steps 6/7 are not promoted.
+
+The plan/parse/declaration/type/proof CLI hashes are respectively
+`572873f4f678d446b5b383c3a466bd657df218590b088f1d32b10a98c87ce6ae`,
+`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
+`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
+`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+The raw/normalized 276-test-list hashes are
+`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
+`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`.

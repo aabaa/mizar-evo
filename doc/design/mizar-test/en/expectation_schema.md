@@ -237,7 +237,7 @@ Fields:
 |---|---:|---|
 | `expected_phase` | yes | Latest phase the harness must execute for this test. |
 | `diagnostic_codes` | yes | Expected diagnostics. Empty means no diagnostics. |
-| `snapshots` | no | Transitional parse-only `SurfaceAst` baseline path or the one exact Core Task-31 `CoreIr` baseline path, when applicable. |
+| `snapshots` | no | Transitional parse-only `SurfaceAst` baseline path, the one exact Core Task-31 `CoreIr` baseline, or the one exact VC Task-31 VcIr baseline, when applicable. |
 
 The harness fails a pass test if an error diagnostic is emitted unless that
 diagnostic is explicitly allowed by the expectation.
@@ -857,6 +857,14 @@ adapter succeeds. The pass outcome, phase, diagnostics, and existing `.miz`
 intent do not change. No other type-elaboration case may use `snapshots`, the
 shortcut has no implicit update mode, and it does not activate or parse the
 general `[[snapshots]]` registry.
+
+VC Task 31 adds exactly one third transitional shortcut. The distinct
+`pass_proof_verification_contradiction_formula_constant_001` active pass
+sidecar may set `snapshots` to the fixed tests-root-relative VcIr baseline.
+Only the exact proof-verification runner admits it, compares two independently
+generated complete `VcSet::debug_text()` values, and then performs verify-only
+baseline comparison. No other proof-verification case may use this shortcut;
+there is no implicit update mode or general registry activation.
 
 ## Generated, Fuzz, And Property Metadata
 

@@ -1,5 +1,7 @@
     include!("tests/support.rs");
 
+    include!("tests/proof_verification.rs");
+
     include!("tests/parse_only.rs");
 
     include!("tests/type_elaboration/source_extraction.rs");

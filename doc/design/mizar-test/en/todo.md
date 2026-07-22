@@ -1461,6 +1461,21 @@ reference schema/authentication contract/tests. Missing scheme/theorem-role slic
 remain outside direct VC 41 behind S1. Task 30 changes no runner, case, expectation, trace
 status/test, count, hash, or coverage.
 
+## VC Task 31 / Task-10 Consumer Completion
+
+The exact `MT10-VC-T180` increment is complete. The distinct
+`pass_proof_verification_contradiction_formula_constant_001` sidecar is the
+only active proof-verification case, uses phase `vc_generation`, and carries
+the complete VcIr snapshot. The public runner/report/CLI executes the exact
+source-to-checker-to-Core-to-VC path twice, fails closed on admission,
+generation, or baseline errors, and reports one passing result. Plan counts are
+404/369, proof-verification coverage is 4/1, and pass/fail is 220/184; the
+parse/declaration/type active counts remain 96/4/188.
+
+The existing type-elaboration Task-180 source/sidecar/Core snapshot remains
+unchanged. Broad proof-verification, VC 32-55, discharge, ATP/kernel/proof
+acceptance, facts, and Steps 6/7 remain deferred or dependency-paced.
+
 For every source-moving task, require review-only checks for visibility drift,
 test-discovery drift, owner-boundary drift, source/docs inconsistency, and
 accidental behavior changes. Run focused tests, `cargo test -p mizar-test`,

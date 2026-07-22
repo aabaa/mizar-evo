@@ -219,7 +219,7 @@ Correspondence:
 | Architecture-22 cross-edit reuse identity for deterministic discharge candidates | `crates/mizar-vc/tests/determinism_suite.rs`; shifted `VcId`, shifted generated-formula id, stale slice, policy/context/goal changes, pre-existing evidence, incomplete anchor, and unresolved-payload checks. |
 | Kernel evidence handoff stays producer-side and prover-independent | `crates/mizar-vc/src/kernel_evidence_handoff.rs`; deterministic handoff tests, fail-closed missing-payload tests, and prohibited backend/legacy material tests. |
 | Public enum forward compatibility | Source attributes, EN/JA module policy tables, and `vc_public_enums_are_forward_compatible_and_documented`. |
-| Active source-derived corpus coverage | No active proof-verification corpus is implemented; Task 15 records deferred traceability rows instead of fake `.miz` fixtures. |
+| Active source-derived corpus coverage | Task 31 implements the exact Task-180 source-to-checker-to-Core-to-VC runner and one covered trace row; broader proof-verification families remain deferred under Task 15 and the source-VC decomposition. |
 
 ## Task 21 Architecture-22 Follow-Up
 
@@ -323,10 +323,10 @@ context-identity hash. Task 31 in `mizar-kernel` closes the trusted
 checker-side F2 membership check; downstream consumer gaps stay classified.
 Existing classified records remain:
 
-- `external_dependency_gap`: active source-derived `proof_verification` support
-  and the general source-to-core / source-to-VC route are absent from
-  `mizar-test`; VC Task 31 / `MT10-VC-T180` owns the first exact route and VC
-  32-55 own later `MT10-VC-PV/VC<n>` slices.
+- `external_dependency_gap`: Task 31 now implements the exact source-derived
+  `proof_verification` route for `MT10-VC-T180`; the general source-to-core /
+  source-to-VC route remains absent. VC 32-55 own later
+  `MT10-VC-PV/VC<n>` slices.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` now owns the
   checker-side formula/substitution evidence acceptance path, and `mizar-vc`
   now owns the producer-side handoff builder and reuse identity integration for
@@ -391,3 +391,20 @@ the first source, trace row, and VC baseline belong to Task 31.
 The final quality review and crate-exit status are recorded in
 [crate_exit_report.md](./crate_exit_report.md). No `repo_metadata_conflict` was
 observed.
+
+## Task 31 Exact Source/Spec Correspondence
+
+The public adapter is exposed from `crates/mizar-vc/src/generator.rs` and
+implemented in the private `crates/mizar-vc/src/generator/task180.rs` leaf.
+`generator.md` and `source_vc_decomposition.md` specify the borrowed inputs,
+canonical module identity, atomic typed failures, exact structural validation,
+and one open output. Module-local tests cover marker-free classification and
+the Core/CFG/handoff/intake corruption matrix; mizar-test runner and metadata
+tests cover admission, deterministic complete rendering, snapshot failures,
+report projection, and CLI behavior.
+
+The exact trace row and VcIr baseline close the Task-31 `source_drift` and
+`test_gap`. Generic marker-based terminal classification remains unchanged and
+no broader source-derived family receives credit. There is no new `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` in this slice.

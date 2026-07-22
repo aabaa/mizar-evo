@@ -229,7 +229,7 @@ Fields:
 |---|---:|---|
 | `expected_phase` | yes | Harness がこの test で実行すべき latest phase. |
 | `diagnostic_codes` | yes | Expected diagnostics。Empty は diagnostics なしを意味する。 |
-| `snapshots` | no | transitional parse-only `SurfaceAst` baseline path、またはexact Core Task-31 `CoreIr` baseline path 1件。該当する場合のみ。 |
+| `snapshots` | no | transitional parse-only `SurfaceAst` baseline path、exact Core Task-31 `CoreIr` baseline 1件、またはexact VC Task-31 VcIr baseline 1件。該当する場合のみ。 |
 
 Expectation で明示的に許可されていない error diagnostic が出た場合、pass test は fail する。
 
@@ -813,6 +813,13 @@ fixed tests-root-relative path
 outcome/phase/diagnostic/existing `.miz` intentは変更しない。他の
 type-elaboration caseは`snapshots`を使えず、このshortcutにimplicit update modeは
 なく、general `[[snapshots]]` registryをactivate/parseしない。
+
+VC Task 31 は3件目の transitional shortcutをexactに1件だけ追加する。distinct
+`pass_proof_verification_contradiction_formula_constant_001` active pass sidecarはfixed
+tests-root-relative VcIr baselineを`snapshots`に設定してよい。exact proof-verification
+runnerだけがこれをadmitし、independentに生成したcomplete `VcSet::debug_text()` 2件を
+比較してからverify-only baseline comparisonを行う。他のproof-verification caseはこの
+shortcutを使えず、implicit update mode/general registry activationはない。
 
 ## Generated, Fuzz, And Property Metadata
 

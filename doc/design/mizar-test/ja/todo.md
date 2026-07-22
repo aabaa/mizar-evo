@@ -1290,6 +1290,20 @@ missing scheme/theorem-role slice は
 direct VC 41 の外で S1 の背後に残る。Task 30 は runner/case/expectation/trace status/test/
 count/hash/coverage を変更しない。
 
+## VC Task 31 / Task-10 consumer completion
+
+exact `MT10-VC-T180` increment は complete である。distinct
+`pass_proof_verification_contradiction_formula_constant_001` sidecar だけが active
+proof-verification case で、phase `vc_generation` と complete VcIr snapshot を持つ。
+public runner/report/CLI は exact source-to-checker-to-Core-to-VC path を2回実行し、
+admission、generation、baseline error を fail closed にし、passing result 1件を報告する。
+plan count は404/369、proof-verification coverage は4/1、pass/fail は220/184で、
+parse/declaration/type active count は96/4/188のままである。
+
+existing type-elaboration Task-180 source/sidecar/Core snapshot は不変である。broad
+proof-verification、VC 32-55、discharge、ATP/kernel/proof acceptance、fact、Steps 6/7
+は deferred または dependency-paced のままである。
+
 各 source-moving task で review-only により visibility drift、test-discovery
 drift、owner-boundary drift、source/docs inconsistency、意図しない behavior
 change を確認する。focused tests、`cargo test -p mizar-test`、

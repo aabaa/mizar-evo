@@ -50,8 +50,8 @@ because a commit cannot embed its own hash.
 | `architecture_22_audit.md` | Architecture-22 identity, kernel-handoff context identity, Task-30 incomplete exact anchor and descendant identity ownership, and remaining gaps. | Synchronized through Task 30. |
 | `module_boundary_audit.md` | Task 22 source-layout line counts, module-boundary review, no-required-split decision, and optional maintenance deferrals. | Synchronized by Task 22. |
 | `crate_exit_report.md` | Original exit evidence plus Task-30 VC 31-55 ownership, updated gap owners, and preserved quality/no-credit boundary. | Synchronized through Task 30. |
-| `task_ledger.md` | Commits through Task 29, Task-30 review/verification evidence with pending self-hash, and the current VC-31 STEP 5 handoff. | Synchronized by Task 30. |
-| `todo.md` | Completed Task 30, executable Task 31, bounded VC 32-55 descendants, gates, verification, and notes. | Synchronized by Task 30. |
+| `task_ledger.md` | Commits through Task 30, Task-31 review/verification evidence with pending self-hash, and the dependency-paced post-Task-31 STEP 5 handoff. | Synchronized by Task 31. |
+| `todo.md` | Completed Tasks 30-31, dependency-paced VC 32-55 descendants, gates, verification, and notes. | Synchronized by Task 31. |
 
 ## Classification
 
@@ -64,9 +64,10 @@ exit reports.
 
 Existing classified records remain:
 
-- `external_dependency_gap`: active `proof_verification` runner support and
-  source-to-core / source-to-VC extraction seams are absent from `mizar-test`;
-  Task 15 records the deferred corpus obligation.
+- `external_dependency_gap`: Task 31 closes only the exact Task-180
+  source-to-Core-to-VC runner seam. General `proof_verification` source/Core/VC
+  payload families remain absent and are dependency-paced by checker 248-279,
+  Core 33-53, and VC 32-55; the broad Task-15 corpus row remains deferred.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` now owns the
   checker-side formula/substitution evidence acceptance path, and `mizar-vc`
   now owns the explicit-payload producer-side handoff builder and reuse
@@ -194,3 +195,14 @@ S1,
 disagreement classes,
 and zero current source/fixture/expectation/trace-status/coverage impact. No
 bilingual drift remains in Task-30 scope.
+
+## VC Task 31 Implementation Sync
+
+Task 31 rechecks the paired plan, TODO, generator, source decomposition,
+source/spec audit, architecture-22 audit, closeout addendum, and ledger. Both
+languages record the same borrowed exact adapter, length-framed module
+identity, typed atomic errors, marker-free structural classification, one open
+`TerminalProofGoal`, incomplete canonical-goal anchor, first real
+proof-verification runner/baseline, exact covered trace row, and unchanged
+broad deferred boundaries. No bilingual `design_drift` remains in Task-31
+scope.

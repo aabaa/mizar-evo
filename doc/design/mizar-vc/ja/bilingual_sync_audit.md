@@ -48,8 +48,8 @@ Closeout の自己 hash は commit 自身に埋め込めないため final user 
 | `architecture_22_audit.md` | architecture-22 identity、kernel-handoff context identity、Task-30 incomplete exact anchor/descendant identity ownership、remaining gap。 | Task 30 まで同期済み。 |
 | `module_boundary_audit.md` | Task 22 source-layout line count、module-boundary review、必須 split なしの判断、任意 maintenance deferral。 | Task 22 により同期済み。 |
 | `crate_exit_report.md` | original exit evidence と Task-30 VC 31-55 ownership、updated gap owner、preserved quality/no-credit boundary。 | Task 30 まで同期済み。 |
-| `task_ledger.md` | Task 29 までの commit、pending self-hash 付き Task-30 review/verification evidence、current VC-31 STEP 5 handoff。 | Task 30 により同期済み。 |
-| `todo.md` | completed Task 30、executable Task 31、bounded VC 32-55 descendant、gate、verification、notes。 | Task 30 により同期済み。 |
+| `task_ledger.md` | Task 30 までの commit、pending self-hash 付き Task-31 review/verification evidence、post-Task-31 dependency-paced STEP 5 handoff。 | Task 31 により同期済み。 |
+| `todo.md` | completed Tasks 30-31、dependency-paced VC 32-55 descendant、gate、verification、notes。 | Task 31 により同期済み。 |
 
 ## 分類
 
@@ -61,9 +61,10 @@ inventory に追加しつつ、この分類を維持する。closeout は paired
 
 既存の分類済み record は残る:
 
-- `external_dependency_gap`: active `proof_verification` runner support と
-  source-to-core / source-to-VC extraction seam は `mizar-test` に存在しない。
-  Task 15 が deferred corpus obligation を記録済み。
+- `external_dependency_gap`: Task 31 が閉じるのは exact Task-180
+  source-to-Core-to-VC runner seam だけである。general `proof_verification`
+  source/Core/VC payload family は引き続き absent で、checker 248-279、Core 33-53、
+  VC 32-55 により dependency-paced である。broad Task-15 corpus row は deferred のまま。
 - `external_dependency_gap` / `deferred`: `mizar-kernel` は現在 checker-side
   formula/substitution evidence acceptance path を所有し、`mizar-vc` は explicit-payload
   producer-side handoff builder と reuse identity integration を所有するが、ATP candidate
@@ -178,3 +179,12 @@ ownership record を同期する。両言語は同じ exact Task-31 structural m
 VC37/39-plus-Core40/A1 boundary、VC 53 の bounded missing-authority boundary、S1、
 disagreement class、zero current source/fixture/expectation/trace-status/coverage impact
 を記録する。Task-30 scope に bilingual drift は残らない。
+
+## VC Task 31 implementation sync
+
+Task 31 は paired plan、TODO、generator、source decomposition、source/spec audit、
+architecture-22 audit、closeout addendum、ledger を再確認する。両言語は同じ borrowed
+exact adapter、length-framed module identity、typed atomic error、marker-free structural
+classification、one open `TerminalProofGoal`、incomplete canonical-goal anchor、first real
+proof-verification runner/baseline、exact covered trace row、unchanged broad deferred boundary
+を記録する。Task-31 scope に bilingual `design_drift` は残らない。

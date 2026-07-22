@@ -251,7 +251,7 @@ const fn symbol_diagnostic_class_key(class: SymbolDiagnosticClass) -> &'static s
     }
 }
 
-fn snapshot_id(ordinal: usize) -> BuildSnapshotId {
+pub(super) fn snapshot_id(ordinal: usize) -> BuildSnapshotId {
     BuildSnapshotId::from_published_schema_str(&format!(
         "mizar-session-build-snapshot-v1:{:064x}",
         ordinal + 1

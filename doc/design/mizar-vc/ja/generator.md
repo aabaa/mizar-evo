@@ -25,7 +25,7 @@ Rust source は task 6、algorithm VC generation は task 7、normalization、cl
 | GEN-G001 | `spec_gap` | task 5 より前に `generator.md` は存在せず、tasks 6-8 には generation contract が必要である。 | この task は Rust source なしで英語/日本語 generator spec を作成する。 |
 | GEN-G002 | `external_dependency_gap` | `mizar-core` は現在、registration、redefinition、reduction correctness をすべての registration-style condition 向けの dedicated payload ではなく、利用可能な definition/checker seed と provenance を通じて運ぶ。 | 既に存在する explicit core/checker seed と provenance からのみ registration-style correctness VC を生成する。dedicated payload が欠けている場合は fabricated obligation ではなく `DeferredExternal` または no-VC record とする。 |
 | GEN-G003 | `test_gap` / `source_drift` | tasks 6-8 より前に `src/generator.rs` や generator tests は存在しない。 | この仕様は implementation task の behavior と test obligation を名付ける。task 5 は Rust source を変更しない。 |
-| GEN-G004 | `external_dependency_gap` | active source-derived `proof_verification` `.miz` runner support と extraction seam はまだ利用不能である。 | tasks 6-8 では explicit core/control-flow payload 上の Rust fixture を使い、source-derived corpus activation は task 15 まで deferred に保つ。 |
+| GEN-G004 | historical `external_dependency_gap`; exact exception resolved | Task 31 より前は active source-derived `proof_verification` `.miz` runner support と extraction seam が利用不能だった。 | tasks 6-8 は explicit core/control-flow payload 上の Rust fixture を使った。Task 31 は exact Task-180 source-derived exception を追加し、broader corpus activation は task 15 と source-VC decomposition のもとで deferred に保つ。 |
 | GEN-G005 | `external_dependency_gap` | `ObligationSeed` は first-class theorem status dependency metadata や dedicated registration/redefinition/reduction correctness payload field をまだ露出していない。 | Task 6 は upstream fixture が供給する namespaced explicit `CoreProvenance` marker だけを保持する。marker がない場合は seed kind / status に従って通常 candidate または visible no-candidate record になり、label、generic path、source text からこれらの semantics を推測してはならない。 |
 | GEN-G006 | `external_dependency_gap` | 現在の `ObligationSeedHandoff` は contract、assertion、invariant obligations 用の flow-site metadata と goal formula を持つが、call-precondition、branch、match、range-loop、collection-loop、term-derived termination schema、authenticated partial-call termination evidence、complete ghost-isolation metadata はまだ公開していない。 | Task 7 は `ControlFlowObligationSite` metadata と goal formula を持つ explicit flow-derived seed row だけから candidate を生成する。欠けている proof family/zero-VC/static integration payload は fabricated VC ではなく visible no-candidate/deferred record に保つ。 |
 | GEN-G007 | `source_drift` / `test_gap` | task 7 後の Rust source には task-6/task-7 の pre-normalized candidate はあるが、final `VcSet` normalizer、documented `VcKind` ordering rank、dense `VcId` assignment、normalizer tests はない。 | Task 8 は normalizer を実装し、下記の stable classification order を文書化し、dense id、seed accounting、duplicate rejection、deferred status preservation、expanded-mapping validation、stable rendering input の Rust test を追加する。 |
@@ -514,6 +514,27 @@ Task 8 が追加すべき Rust coverage:
 Task 5 では active `.miz` proof-verification fixture を追加しない。runner support と
 source-derived extraction seam が external gap のままであるため。
 
+## VC Task 31 exact Task-180 adapter
+
+Task 31 は private leaf `generator/task180.rs` に実装された public borrowed adapter
+`generate_exact_task180_vc(ExactTask180VcInput)` を1つ追加する。input は immutable
+`CoreIr`、target `BuildSnapshotId`、explicit generation/VC schema version を運ぶ。
+adapter は Core package/module から length-framed UTF-8 form
+`package=<byte-len>:<package>;module=<byte-len>:<module>` で `VcModuleRef` を導出し、
+source path や debug text から module identity を推測しない。
+
+adapter は exact Core Task-31 public/valid theorem、`False` formula、pending proof、
+direct terminal node、active theorem seed、source map、reference、range、provenance を
+atomic に検証する。empty control-flow output、singleton `ExistingCore` handoff、fresh に
+再計算した `EligibleOneVc` intake を内部で構築・検証し、その後だけ existing candidate
+builder/normalizer で1つの open `TerminalProofGoal` を返す。failure は
+`ExactTask180VcError` であり、partial candidate set を公開しない。
+
+これは generic marker-based terminal classification の `design_drift` を Task 180
+だけで閉じる exact structural exception である。terminal marker は注入しない。
+discharge、`NeedsAtp` transition、ATP/kernel/proof-policy execution、theorem acceptance、
+fact publication、general theorem/definition/algorithm generation は行わない。
+
 ## public enum policy
 
 task 17 は `generator` の public enum をすべて downstream forward-compatible API surface
@@ -522,6 +543,7 @@ exhaustive match を壊さず追加できるよう、各 enum は `#[non_exhaust
 
 | public enum | decision |
 |---|---|
+| `ExactTask180VcError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `GeneratorError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 
 この module が所有する exhaustive public enum exception はない。現在の variant を意図的に

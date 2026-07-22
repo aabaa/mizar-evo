@@ -1,0 +1,16 @@
+schema_version = 1
+id = "pass_proof_verification_contradiction_formula_constant_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "mizar_vc.vc_generation"
+source = "pass_proof_verification_contradiction_formula_constant_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+diagnostic_payloads = []
+snapshots = "snapshots/vc/pass_proof_verification_contradiction_formula_constant_001.vc_ir.snap"
+tags = ["active_proof_verification"]
+spec_refs = [
+  "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot",
+]
+notes = "VC Task 31 exact-only proof_verification coverage: the distinct real Task-180 contradiction source is reprocessed through checker and Core validation, the direct terminal proof-node backlink and empty ControlFlowOutput are validated, and exactly one Active ExistingCore seed becomes one open TerminalProofGoal VcId(0) with a complete deterministic VcSet debug snapshot and an honestly incomplete CanonicalGoalHash anchor. This does not discharge, verify, accept, publish, or generalize the theorem or any other VC family."

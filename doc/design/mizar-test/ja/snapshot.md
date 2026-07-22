@@ -354,3 +354,16 @@ key scenarios:
 `VcSet::debug_text()` output である。Task 31 は verify-only baseline comparison 前に
 independent complete generation 2回を比較し、first proof-verification guard を first real
 baseline と同時に実装する。Task 30 は snapshot、registry entry、source、hash を追加しない。
+
+## VC Task 31 VcIr baseline
+
+Task 31 は最初の real `MT10-VC-T180` VcIr baseline を
+`snapshots/vc/pass_proof_verification_contradiction_formula_constant_001.vc_ir.snap`
+に追加する。body は one open `TerminalProofGoal` の complete `VcSet::debug_text()`
+output であり、schema/module/source identity、seed accounting、provenance、
+`CanonicalGoalHash` だけが missing の incomplete anchor を含む。
+
+runner は whole VcSet を independent に2回生成し、baseline を読む前に structural/
+byte equality の両方を要求する。sidecar snapshot path absent、missing/unreadable/
+mismatched baseline は case を fail させる。update mode、summary-only comparison、
+general VcIr registry、proof acceptance、reuse eligibility はない。

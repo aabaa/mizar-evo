@@ -16,6 +16,7 @@ mizar-frontend = { path = "../mizar-frontend" }
 mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
 mizar-syntax = { path = "../mizar-syntax" }
+mizar-vc = { path = "../mizar-vc" }
 
 [lints]
 workspace = true

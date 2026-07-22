@@ -158,3 +158,12 @@ rule、unchanged existing Task-180 case を定義する。また VC 32-55 向け
 `MT10-VC-PV/VC<n>` slice を定義し、VC 40 の VC37/39-plus-Core40/A1 boundary、
 VC 53 の bounded missing-authority boundary、S1、403/368、全 hash、zero current coverage
 impact を維持する。Task-30 consumer scope に bilingual drift は残らない。
+
+## VC Task 31 / Task-10 pair recheck
+
+Task 31 は paired plan、TODO、harness、snapshot、traceability document を再確認する。
+両言語は one exact active proof-verification case、double-generation/full VcIr comparison、
+fail-closed snapshot/report/CLI behavior、production 18 path / 20,085 line、plan 404/369、
+proof coverage 4/1、pass/fail 220/184、unchanged parse/declaration/type active count
+96/4/188、broad proof-verification/VC 32-55 の continued deferral を記録する。この
+increment に bilingual drift は残らない。
