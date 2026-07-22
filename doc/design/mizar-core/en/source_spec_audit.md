@@ -306,3 +306,14 @@ slice and Task 32 is the docs-only exhaustive remaining-family decomposition.
 Coverage/status remains deferred until their bounded implementation descendants
 land. Diagnostics and Steps 6/7 proof/kernel/artifact work remain with their
 existing owners. Task 23 proceeds to bilingual documentation synchronization.
+
+Task 267 accepted-contract addendum: Core Task 31 now has one exact mapping,
+`PendingAutomaticProof` -> `False` -> direct `TerminalGoal` -> Active
+`TheoremProof` at `proof/0`, with fixed table cardinalities, identities, sources,
+versioned provenance keys, source maps, and atomic pre/postvalidation. The
+status and narrow `lower_exact_task180_handoff` adapter are target state only;
+current source remains unchanged and receives no implementation or coverage
+credit. `Valid`/public item metadata remains structural/name visibility only,
+and pending status forbids verified-premise or accepted-artifact publication.
+Task 268 must land first; Core Task 31, VC, acceptance, and Steps 6/7 remain
+deferred.

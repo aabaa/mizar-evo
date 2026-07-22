@@ -480,3 +480,197 @@ Validation of the real resolver theorem owner remains in `type_checker`; this
 module does not scan `SymbolEnv` or raw syntax. The projection assigns no truth
 value, publishes no fact, accepts no theorem, and adds no proof, terminal-goal,
 CoreIr, ControlFlowIr, or VC semantics.
+
+## Task 267 Omitted-Justification Proof-Handoff Contract
+
+Task 267 fixes the target contract implemented by Task 268. It does not change
+the current Rust surface by itself. `mizar-test` alone classifies the exact
+source syntax: one unrecovered, unannotated ordinary theorem with one
+contradiction formula child and no justification node. It converts those
+checked syntactic facts into explicit `Unmodified` and `Omitted` intent values.
+Neither checker assembly nor core lowering may infer either intent from a
+missing row, an absent optional field, or raw syntax.
+
+Task 268 adds one syntax-free input row with this exact shape:
+
+```rust
+struct StatementProofIntentInput {
+    id: StatementProofIntentId,
+    source_order: usize,
+    statement: StatementSemanticId,
+    source_id: SourceId,
+    module_id: ModuleId,
+    owner: SymbolId,
+    owner_node: TypedNodeId,
+    owner_range: SourceRange,
+    owner_origin: SemanticOrigin,
+    owner_visibility: Visibility,
+    owner_export_status: ExportStatus,
+    formula: CheckedFormulaId,
+    formula_site: TypedSiteRef,
+    formula_node: TypedNodeId,
+    formula_range: SourceRange,
+    recovery: NodeRecoveryState,
+    policy: TheoremPolicyIntent,
+    justification: TheoremJustificationIntent,
+}
+
+enum TheoremPolicyIntent { Unmodified }
+enum TheoremJustificationIntent { Omitted }
+```
+
+All six new enums in this section (`TheoremPolicyIntent`,
+`TheoremJustificationIntent`, `CheckedProofStatus`, `CheckedProofNodeKind`, and
+the empty carriers `CheckedCitation` and `CheckedProofLabel`) are public and
+`#[non_exhaustive]` under the
+module policy above. Task 268 adds their rows to the current-source policy
+table in the same implementation commit; Task 267 does not put unimplemented
+enums into that lint-guarded table. The row is supplied through a separate
+optional top-level bundle, not inferred from `StatementSemanticInputs`:
+
+```rust
+struct StatementProofInputs<'a> {
+    pub owner: &'a CheckedStatementOwner,
+    pub rows: Vec<StatementProofIntentInput>,
+}
+
+struct ResolvedTypedAstInputs<'a> {
+    // existing fields unchanged
+    statement_semantics: Option<StatementSemanticInputs<'a>>,
+    statement_proofs: Option<StatementProofInputs<'a>>,
+}
+```
+
+Task 268 updates existing struct-literal callers to pass `None`. A supplied
+proof bundle requires the statement bundle in the same assembly call and uses
+its authenticated `CheckedStatementOwner`; a supplied exact Task-180 statement
+bundle requires the proof bundle. The two bundles are validated together in
+local state before either table family is published.
+
+`StatementProofInputs` and `StatementProofIntentInput` are public input
+structs with public fields. `StatementProofIntentId` is a public dense id with
+`new(index)` and `index()` so `mizar-test` can construct the syntax-free row.
+The Task-268 extension adds public `visibility()` and `export_status()` getters
+to `CheckedStatementOwner`; the stored fields remain private.
+
+For the exact Task-180 source, `id`, `source_order`, and `statement` are all
+dense index zero. `formula_site` is the existing Task-266
+`TypedSiteRef::Node`; `formula_node` is the distinct compact final-tree node
+and must not replace or reconstruct that real site. Visibility/export are the
+explicit resolver facts `Public`/`Exported`, recovery is `Normal`, and policy
+and justification are the two variants above. Source, module, owner, owner
+node/range/origin, formula id/site/node/range, and recovery must equal the
+Task-266 statement and checked-formula data and the authenticated owner bundle.
+Task 268 extends `CheckedStatementOwner` to preserve the resolver entry's
+visibility/export status and validates them independently before copying the
+proof-intent row. `Exported` describes resolver
+name visibility only. It is not proof acceptance.
+
+The accepted output is three all-or-none singleton dense tables:
+
+```rust
+struct CheckedProof {
+    id: CheckedProofId,
+    source_order: usize,
+    statement: StatementSemanticId,
+    owner: SymbolId,
+    owner_node: TypedNodeId,
+    owner_visibility: Visibility,
+    owner_export_status: ExportStatus,
+    proposition: CheckedFormulaId,
+    policy: TheoremPolicyIntent,
+    justification: TheoremJustificationIntent,
+    root: CheckedProofNodeId,
+    status: CheckedProofStatus,
+    source_range: SourceRange,
+    owner_origin: SemanticOrigin,
+}
+
+enum CheckedProofStatus { PendingAutomaticProof }
+
+struct CheckedProofNode {
+    id: CheckedProofNodeId,
+    proof: CheckedProofId,
+    kind: CheckedProofNodeKind,
+    source_range: SourceRange,
+    recovery: NodeRecoveryState,
+}
+
+enum CheckedProofNodeKind {
+    TerminalGoal(CheckedTerminalGoalId),
+}
+
+struct CheckedTerminalGoal {
+    id: CheckedTerminalGoalId,
+    proof: CheckedProofId,
+    node: CheckedProofNodeId,
+    statement: StatementSemanticId,
+    owner: SymbolId,
+    formula: CheckedFormulaId,
+    formula_site: TypedSiteRef,
+    formula_node: TypedNodeId,
+    source_range: SourceRange,
+    recovery: NodeRecoveryState,
+    citations: Vec<CheckedCitation>,
+    active_context: Vec<CheckedFormulaId>,
+    local_path: String,
+    label: Option<CheckedProofLabel>,
+}
+
+#[non_exhaustive]
+pub enum CheckedCitation {}
+
+#[non_exhaustive]
+pub enum CheckedProofLabel {}
+```
+
+`CheckedCitation` and `CheckedProofLabel` have no Task-267 variants, so the
+exact values can only be an empty vector and `None`. The empty public enums are
+lint-clean under the workspace `deny(warnings)` policy and cannot be
+constructed by Task 268. These named forward-compatible carriers do not
+authorize symbol, local-label, or generated-origin citation semantics. Checker
+Task 247 owns their broader variants.
+
+`ResolvedTypedAst` owns private fields of the public `CheckedProofTable`,
+`CheckedProofNodeTable`, and `CheckedTerminalGoalTable` types and exposes `checked_proofs()`,
+`checked_proof_nodes()`, and `checked_terminal_goals()` getters. Their public
+dense ids expose `new(index)` and `index()` like the existing statement id.
+Each table exposes `get`, source-order `iter`, `len`, and `is_empty`; mutation
+remains assembly-private. The three row structs have public read-only fields,
+matching `StatementSemantic`. Empty legacy assembly returns three empty tables.
+
+When the three tables are nonempty, canonical `debug_text()` renders all three
+in deterministic source/id order, including every row field and cross-reference.
+When all three are empty, it emits no new proof section and remains byte-for-byte
+identical to the Task-266 legacy projection. Task 268 owns both the exact
+nonempty rendering assertion and the empty-output byte-stability regression.
+
+All ids and `source_order` are zero. The proof source is the owner range; the
+single root node and terminal goal use the formula range. The root is directly
+`TerminalGoal(CheckedTerminalGoalId(0))`: there is no `CurrentGoal`,
+`Sequence`, implicit `Thesis`, intermediate step, or synthesized child. The
+terminal row points back to proof/node/statement zero, the same owner and
+checked contradiction, the real formula site, and the separate compact node.
+It has normal recovery, empty citations and active context, the exact nonempty
+local path `proof/0`, and no label.
+
+`Unmodified` is a declaration-policy axis. `PendingAutomaticProof` is a
+separate processing axis meaning that the automatic proof attempt has not run.
+It is not `Open`, `Assumed`, `Conditional`, `Error`, a published fact, proof
+evidence, theorem acceptance, or discharge. Missing statement/proof
+asymmetry, non-singleton input, duplicate or non-dense ids, a nonzero source
+order, a nonzero statement reference, wrong root or cross-reference, a role
+site, recovery, or any identity/range/provenance/status mismatch fails before
+publication. In this singleton contract, “reordered” means that the explicit
+source-order/id/reference chain is not exactly `0 -> 0 -> 0`. Assembly is
+transactional and emits all three tables or none; it never substitutes an
+error/partial proof row. Existing callers that supply neither the Task-266
+statement bundle nor this proof-intent bundle retain legacy empty behavior.
+After Task 268, an exact Task-180 statement bundle without the proof-intent
+bundle is an error.
+
+Task 268 owns only this producer and its corruption tests. It may not add
+broader theorem/proof forms, truth or facts, proof search, acceptance,
+CoreIr/ControlFlowIr/VC generation, fixture or expectation changes, or Step
+6/7 behavior. Core Task 31 consumes these explicit tables; it may not recover
+their intent by scanning source.

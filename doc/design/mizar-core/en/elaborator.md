@@ -520,6 +520,33 @@ must also cover invalid citations, missing or wrong-owner proof items, active
 path formulas, external dependency citations, and terminal-goal obligation
 back-references.
 
+### Task 267 Exact Task-180 Adapter Boundary
+
+Core Task 31 adds a narrow `lower_exact_task180_handoff` adapter; Task 267 only
+specifies it. The adapter preflights the complete Task-268 singleton checker
+bundle, creates every generic lowering input in local unpublished state, and
+calls `lower_proof_inputs` only after the exact identity/status/cardinality
+predicate passes. The terminal `ProofFormulaRef` is
+`Formula(CoreFormulaId(0))`, never `Thesis`.
+
+The generic `CheckerOwnedProvenance` rule does not change. The terminal
+`CoreSourceRef` enters generic lowering with exactly `ProofSkeleton(K)` already
+in its source provenance, while its `CheckerOwnedProvenance` contains only
+`Checker(T)`. Generic lowering therefore produces the required terminal-node
+and seed sources without admitting `ProofSkeleton` as checker-owned input.
+After generic lowering, the exact adapter appends `ProofSkeleton(K)` to the
+sole final `ObligationSeed.provenance`, sorts/deduplicates it into exact phase
+order `[Checker(T), ProofSkeleton(K)]`, and performs the complete Task-267
+postcondition over counts, dense ids, relations, sources, source maps,
+provenance keys, empty fields, and status.
+
+Any preflight, generic-lowering, enrichment, or postcondition failure returns
+`Err` and discards the local value. No `CoreIr`, error proof, partial item, or
+partial source map is published. Generic proof callers and their accepted
+provenance phases remain unchanged. The adapter does not prove or discharge
+the formula, make the public theorem a verified premise, build VCs, or
+generalize beyond the exact Task-180 source.
+
 ## Step 6: Algorithm-Shell Lowering
 
 Task 13 implements this section.

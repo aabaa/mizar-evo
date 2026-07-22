@@ -2434,3 +2434,17 @@ and module/source corruption fail closed. Unit, active-runner, corruption, and
 determinism coverage is present. No raw-syntax dependency, truth/fact,
 acceptance, proof, Core, CFG, VC, fixture, expectation, or trace-status change
 is introduced.
+
+Task 267 target-contract addendum: current source still has no proof tables,
+so this is an accepted `design_drift` repair rather than implementation credit.
+Task 268 owns the exact syntax-free `Unmodified`/`Omitted` input and singleton
+`PendingAutomaticProof`/direct-terminal output described by
+`resolved_typed_ast.md`. Task-266 real formula-site identity remains distinct
+from the compact formula node; `proof/0`, empty context/citations, and atomic
+failure are fixed. Core Task 31 owns the exact future non-accepting projection.
+No current public API, test, fixture, expectation, trace status, or semantic
+coverage changes in Task 267.
+Task 268's target also extends the existing validated `CheckedStatementOwner`
+with authenticated resolver Public/Exported facts so proof assembly never
+trusts duplicated row constants. This remains target state, not current API or
+implementation credit.

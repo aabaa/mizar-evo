@@ -2338,3 +2338,41 @@ real resolver theorem owner を持たない synthetic source AST は extraction 
 まま。既存 `.miz`、expectation、detail key、stage、272-test list、runner count、
 4 CLI output は不変。truth/fact、acceptance、proof、terminal-goal、Core、CFG、VC
 payload は推論しない。
+
+## Task 267 exact proof-intent authority
+
+Task 267 は documentation だけを変更する。Task 268 は existing Task-180
+extractor を拡張し、source の omitted status/justification を分類する責任を
+`mizar-test` だけに持たせる。exact extractor は current whole-tree allowlist を
+維持し、unrecovered `TheoremItem` 1件、direct token sequence
+`theorem SourceDerivedContradictionConstantBoundary : ;`、contradiction
+formula child exactly 1件、leading theorem-status annotation なし、justification
+node なし、additional structural child なしを検証する。その後 explicit
+`TheoremPolicyIntent::Unmodified` と
+`TheoremJustificationIntent::Omitted` を emit する。checker/core は absence から
+これらを推測しない。
+
+syntax-free proof-intent row は explicit dense id/source order、
+`StatementSemanticId`、source/module、owner symbol/node/range/origin、real
+checked formula id/site/range、separate compact formula node、recovery、resolver
+visibility/export、2 intent enum を持つ。この source では id/source
+order/statement は zero、real formula site は Node site、recovery は Normal、
+unrecovered top-level resolver theorem は Public/Exported である。extractor と
+handoff は全 field を Task-266 owner/formula data と cross-check する。
+`Exported` は resolver name visibility であり proof acceptance ではない。core
+は後で public visibility だけを保持する。
+
+Task 268 runner coverage は annotation/written justification、missing/duplicate/
+nonzero/non-dense/reordered intent row、Role formula site、recovery、全 owner/
+formula/source/module/range/provenance/reference mismatch、non-Public visibility、
+non-Exported export statusをrejectする。各negative caseはproof/proof-node/
+terminal-goal tableが一切publishされないことをassertする。
+authenticated ownerをduplicated rowとは独立にmutateし、各row visibility/export
+fieldもownerとは独立にmutateする。exact singleton
+pending proof、direct terminal goal、empty citations/context、no label、
+local path `proof/0` を assert する。existing `.miz`/expectation を reuseする。
+さらに3 proof tableすべてのdeterministic nonempty
+`ResolvedTypedAst::debug_text()` renderingと、tableがemptyの場合のTask-266
+debug outputのbyte-identical性をassertする。
+trace status、runner stage、truth/fact、acceptance、proof search、Core/CFG/VC、
+Steps 6/7 を変更しない。

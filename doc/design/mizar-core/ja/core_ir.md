@@ -277,6 +277,7 @@ struct CoreProof {
 }
 
 enum CoreProofStatus {
+    PendingAutomaticProof,
     Open,
     Assumed,
     Conditional,
@@ -311,9 +312,110 @@ enum CoreProofNodeKind {
   terminal proof node にも保存する。
 - `open`、`assumed`、`conditional` status は policy input として保持する。core は proof
   を accept/reject しない。
+- `pending-automatic-proof` は justification が省略された ordinary unmodified
+  theorem の automatic proof が未実行である processing state である。source
+  policy の `open` ではなく、theorem を accepted にしない。
 - `error` は recovery status に限る。malformed proof skeleton input を記録するが、
   proof を accept/reject しない。
 - terminal proof obligation はすべて `ObligationSeedId` を参照する。
+
+### Task 267 exact Task-180 core projection
+
+Task 267 は Core Task 31 の target-state specialization を確定する。Rust variant
+と adapter の実装は同 task まで deferred である。Task 31 が consume するのは
+explicit Task-268 checker bundle だけであり、syntax scan や omission/status/
+visibility/terminal goal の推測をしない。resolver `Exported` は exact-input
+preflight condition で、`CoreItem` に export-status field がないため意図的に
+erase する。declared visibility だけを `CoreVisibility("public")` にする。
+
+exact successful `CoreIr` の table count/dense id は次のとおりである。
+
+| Table | Exact result |
+|---|---|
+| items | `CoreItemId(0)` 1件 |
+| terms | empty |
+| formulas | `CoreFormulaId(0)` 1件 |
+| definitions | empty |
+| proofs | `CoreProofId(0)` 1件 |
+| proof nodes | `CoreProofNodeId(0)` 1件 |
+| algorithms / algorithm statements / generated origins | empty |
+| obligation seeds | `ObligationSeedId(0)` 1件 |
+| diagnostics | empty |
+
+item 0 は checker owner symbol を保持し、kind `Theorem`、visibility `public`、
+status `Valid`、empty dependencies/diagnostics、owner range source を持つ。
+`Valid` は structurally lowered だけを意味し、proposition の truth/proof を
+意味しない。public resolver visibility も verified premise/accepted artifact を
+publish しない。別の downstream verification authority が存在するまで
+`CoreProofStatus::PendingAutomaticProof` がその eligibility を block する。
+
+formula 0 は existing checked formula range を source とする
+`CoreFormulaKind::False` である。proof 0 は `item = 0`、`proposition = 0`、
+`root = 0`、status `PendingAutomaticProof`、owner range source を持つ。root は
+直接 `TerminalGoal { obligation: 0, citations: [] }` であり、`CurrentGoal`、
+`Sequence`、implicit `Thesis`、intermediate node、error fallback はない。proof
+node は formula range と empty diagnostics を持つ。
+
+seed 0 は exact に次の形である。
+
+```text
+owner = CoreItemId(0)
+kind = TheoremProof
+goal = Some(CoreFormulaId(0))       # direct Formula(False), never Thesis
+context = []
+local_path = "proof/0"
+label = None
+semantic_origin = NormalizedSemanticOrigin(owner_symbol.fqn())
+source = formula range
+core_refs = [Item(0), Formula(0), Proof(0), ProofNode(0)]
+status = Active
+diagnostics = []
+```
+
+`Active` は undischarged obligation が future VC handoff の対象になり得ること
+だけを意味し、acceptance/evidence/proof search/generated VC/discharge ではない。
+atomic relation は `proof.item == seed.owner == item0`、
+`proof.proposition == seed.goal == formula0 == False`、
+`proof.root == proof_node0 -> seed0` である。
+
+source-map entry は item 0=owner source、formula 0=formula source、proof-node
+0=formula source、obligation 0=formula source だけである。他の source-map table
+はすべて empty とする。`CoreProof` は owner source を直接持ち、proof-id 用
+source-map table はない。
+
+provenance key encoding は byte-canonical UTF-8/versioned である。全 integer
+は leading zero なし unsigned base-10（zero の唯一の spelling は `0`）、field
+order は記載順、FQN component は escaping 不要な
+`<UTF-8-byte-length>:<bytes>` とする。exact key は次である。
+
+```text
+R = task267/v1;owner-fqn=<L>:<fqn>;origin-path=<C>:<u0>,...,<uC-1>
+S = task267/v1;statement=0;owner-node=<owner-node>;formula=0;formula-site-node=<formula-site-node>;formula-node=<formula-node>
+P = task267/v1;proof=0;statement=0;policy=unmodified;justification=omitted;status=pending-automatic-proof
+T = task267/v1;proof-node=0;terminal-goal=0;formula=0;formula-site-node=<formula-site-node>;formula-node=<formula-node>
+K = task267/v1;local-path=7:proof/0
+```
+
+`<C>` は `SemanticOrigin.structural_path` element 数である。empty path は exact
+`origin-path=0:`、それ以外の comma-separated decimal list は `<C>` members を
+持つ。S/T は Task 266 の real `TypedSiteRef::Node` だけを受け入れ、role site
+は不可である。separate final-tree formula node も独立して保持する。
+`<owner-node>`、`<formula-site-node>`、`<formula-node>`は上記canonical unsigned
+decimal grammarでそれぞれ独立にencodeし、distinct placeholderはvalue equalityを
+意味しない。
+
+item source は `[Resolver(R), Checker(S)]`、formula source は
+`[Checker(S)]`、proof source は `[Resolver(R), Checker(P)]`、terminal-node と
+obligation source は `[Checker(T), ProofSkeleton(K)]` とする。obligation 自身の
+`provenance` vector も phase order で exact
+`[Checker(T), ProofSkeleton(K)]` である。
+
+Core Task 31 は construction 前に complete checker bundle、local construction
+後に上記 complete relation を validation する。missing/duplicate/non-dense/
+reordered/recovered/cross-source/module/corrupt/mismatched data は `Err` と no
+`CoreIr` を返し、exact adapter は generic `Error`/`Partial` row を publish しない。
+この contract は proof search/fact publication/acceptance/ControlFlowIr/VC/
+artifact/Step 6/7 semantics を追加しない。
 
 ### algorithm shell
 

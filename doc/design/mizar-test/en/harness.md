@@ -2443,3 +2443,41 @@ A synthetic source AST without a real resolver theorem owner remains an
 extraction gap. The existing `.miz`, expectation, detail keys, stage, 272-test
 list, runner counts, and four CLI outputs are unchanged. No truth/fact,
 acceptance, proof, terminal-goal, Core, CFG, or VC payload is inferred.
+
+## Task 267 Exact Proof-Intent Authority
+
+Task 267 changes documentation only. Task 268 extends the existing Task-180
+extractor so `mizar-test`, and no downstream crate, classifies the source's
+omitted status and justification. The exact extractor must retain its current
+whole-tree allowlist and verify one unrecovered `TheoremItem`, direct token
+sequence `theorem SourceDerivedContradictionConstantBoundary : ;`, exactly one
+contradiction formula child, no leading theorem-status annotation, no
+justification node, and no additional structural child. It then emits explicit
+`TheoremPolicyIntent::Unmodified` and
+`TheoremJustificationIntent::Omitted`; checker/core must not infer those facts
+from absence.
+
+The syntax-free proof-intent row has explicit dense id, source order,
+`StatementSemanticId`, source/module, owner symbol/node/range/origin, real
+checked formula id/site/range, separate compact formula node, recovery,
+resolver visibility/export, and the two intent enums. For this source,
+id/source order/statement are zero, the real formula site is a Node site,
+recovery is Normal, and the unrecovered top-level resolver theorem is
+Public/Exported. The extractor and handoff cross-check every field against the
+Task-266 owner/formula data. `Exported` means resolver name visibility, not
+proof acceptance; core later preserves only public visibility.
+
+Task 268 runner coverage must reject an annotation or written justification,
+a missing/duplicate/nonzero/non-dense/reordered intent row, Role formula site,
+recovery, non-Public visibility, non-Exported export status, and every owner/
+formula/source/module/range/provenance/reference mismatch. Each negative case
+must assert that no proof, proof-node, or terminal-goal table is published. It
+must mutate the authenticated owner independently from the duplicated row and
+then each row visibility/export field independently from the owner. It
+must assert the exact singleton pending proof, direct terminal
+goal, empty citations/context, no label, and local path `proof/0`. It reuses the
+existing `.miz` and expectation. It also asserts deterministic nonempty
+`ResolvedTypedAst::debug_text()` rendering of all three proof tables and
+byte-identical Task-266 debug output when they are empty. It does not change
+trace status, runner stage,
+truth/facts, acceptance, proof search, Core/CFG/VC behavior, or Steps 6/7.

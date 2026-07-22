@@ -3032,3 +3032,24 @@ projection. This contract publishes neither truth nor facts, does not accept
 the theorem, and creates no proof status, skeleton, terminal goal, CoreIr,
 ControlFlowIr, or VC payload. Task 267 owns the omitted-justification proof
 contract; Task 268 owns its later implementation.
+
+### Task 267 Authenticated Owner Visibility Target
+
+Task 267 requires Task 268 to extend `CheckedStatementOwner`, not to trust
+literal proof-intent values. `validate_exact_local_theorem` must independently
+validate that the exact resolver `SymbolEntry` is `Visibility::Public` with
+`ExportStatus::Exported`, that its theorem definition has matching public
+visibility and the already validated origin/contribution, and then preserve
+those two resolver facts on `CheckedStatementOwner`. Public/exported remains a
+name-visibility property, not theorem acceptance.
+Task 268 exposes public `visibility()` and `export_status()` getters while
+keeping the stored fields private.
+
+The Task-268 proof bundle receives that authenticated owner by reference.
+`ResolvedTypedAst` assembly compares the proof-intent row's owner visibility
+and export status to the preserved owner fields before publishing any proof
+table. Tests must mutate the authenticated owner independently from the row,
+and mutate each row field independently from the owner; every mismatch returns
+an error with no proof/proof-node/terminal table. This exact extension changes
+no formula checking, facts, acceptance, broader owner kind, or raw-syntax
+boundary.

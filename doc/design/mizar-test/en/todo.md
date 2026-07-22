@@ -1370,7 +1370,7 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   falsehood/facts, accept the theorem, create proof status/skeleton/terminal
   goals, lower Core/CFG/VC payloads, broaden formula shapes, or promote a
   runner stage. Deps: Task 265 and checker Task 180. Specs: 14 and 16.
-- [ ] **Task 267: decide the omitted-justification theorem handoff contract.**
+- [x] **Task 267: decide the omitted-justification theorem handoff contract.**
   In paired checker/core design documents, specify the checker-owned
   pending-auto-proof status, proof skeleton, explicit terminal-goal payload,
   source/provenance links, malformed/missing behavior, and exact mapping into
@@ -1379,10 +1379,16 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   infer a terminal goal from raw syntax inside core, run proof search, or edit
   fixtures/expectations/trace status. Deps: Task 266. Specs: 15 and 16;
   architecture 06.
+  Complete: explicit `Unmodified`/`Omitted` intent maps to one distinct
+  `PendingAutomaticProof`, one direct terminal goal, and the exact future
+  `False`/Active `TheoremProof` core seed at `proof/0`; corrupt input fails
+  atomically and no acceptance credit is assigned.
 - [ ] **Task 268: implement the accepted Task-267 checker producer.** Extend
   only the exact Task-180 final handoff with the Task-267 proof status,
   skeleton, and terminal-goal payload. Add fail-closed checker/runner tests for
   missing, duplicate, reordered, corrupt, and owner/formula/proof mismatch;
+  assert deterministic nonempty debug rendering for all three proof tables and
+  byte-identical Task-266 debug output when they are empty;
   keep theorem acceptance, discharge, Core/VC generation, broader proof forms,
   existing expectation changes, and Steps 6/7 outside scope. Deps: Task 267.
 

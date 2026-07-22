@@ -485,11 +485,21 @@ work. Every finding maps to a task or a recorded disposition:
       267. Produce source-derived `CoreIr` and its theorem-obligation data with
       complete source/provenance identity; pair it with the prepared
       mizar-test Task-10 type-elaboration snapshot consumer.
+    - The selected mapping is one public structurally `Valid` theorem item,
+      one `False`, one `PendingAutomaticProof`, one direct terminal, and one
+      Active `TheoremProof` seed at `proof/0`. Implement it through the narrow
+      transactional exact adapter and its complete pre/postcondition without
+      relaxing generic checker-owned provenance.
     - Acceptance: deterministic item/formula/proof/obligation identity and
       fail-closed missing/duplicate/reordered/mismatched payload tests; no core
       raw-syntax inspection, synthesized proof status/terminal goal, theorem
       acceptance/discharge, broader formula/proof support, CFG/VC generation,
       or expectation rebaseline.
+    - Encoder tests cover non-ASCII FQN byte length, empty and populated
+      structural paths, decimal/no-leading-zero spelling, and Node-vs-Role
+      rejection for S/T. Adapter tests inject failures at preflight, generic
+      lowering, exact enrichment, and postvalidation and assert `Err` with no
+      partial `CoreIr` or source map at every phase.
     - Deps: mizar-test Tasks 266-268. Specs: 14-16; architecture 06.
 
 32. **Remaining source-derived `CoreIr` and `ControlFlowIr` task

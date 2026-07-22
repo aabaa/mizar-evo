@@ -2204,3 +2204,25 @@ proof skeleton, terminal-goal closure, or proof verification. Task 267 remains
 the authority for the paired checker/core omitted-justification contract and
 Task 268 for its exact checker producer. Core Task 31 remains gated on Tasks
 266 and 268; Core/CFG/VC generation and Steps 6/7 remain deferred.
+
+## Task 267 Omitted-Justification Contract Coverage Update
+
+Task 267 closes only the prior `design_drift` in handoff ownership. For the
+exact Task-180 source, `mizar-test` classifies the verified absence of a theorem
+status annotation and written justification into explicit `Unmodified` and
+`Omitted` intent. The accepted checker target is one
+`PendingAutomaticProof`, one direct terminal node, and one terminal goal linked
+to the Task-266 owner/formula identities with empty citations/context and local
+path `proof/0`. The accepted future Core Task-31 mapping is one structurally
+valid public theorem item, one `False`, one pending proof, and one Active
+`TheoremProof` seed with atomic failure and exact source/provenance identity.
+
+This is a docs-only mapping decision. Task 268 still owns checker production
+and tests, and Core Task 31 still owns the core status/adapter and snapshot
+consumer. Therefore Task 267 adds zero implementation or semantic coverage
+credit for the omitted-justification proof, terminal-closure,
+proof-verification, CoreIr, and VC slice; the chapters retain their existing
+partial coverage. No trace status, coverage class, test list, fixture,
+expectation, runner stage, or chapter status changes. Pending is not `open` or
+acceptance, Active is not discharge, Step 5 remains active, and Steps 6/7
+remain deferred.

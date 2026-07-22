@@ -468,10 +468,18 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       Task 267のexact mappingで消費する。source/provenance identityを完全に持つ
       source-derived `CoreIr`/theorem-obligation dataを生成し、prepared mizar-test
       Task-10 type-elaboration snapshot consumerとpairにする。
+    - selected mappingはpublic structurally `Valid` theorem item 1件、`False`
+      1件、`PendingAutomaticProof` 1件、direct terminal 1件、`proof/0`のActive
+      `TheoremProof` seed 1件である。generic checker-owned provenanceをrelaxせず、
+      narrow transactional exact adapterとcomplete pre/postconditionで実装する。
     - deterministic item/formula/proof/obligation identityとmissing/duplicate/
       reordered/mismatched payloadのfail-closed testを要求する。core raw-syntax
       inspection、proof status/terminal goal合成、theorem acceptance/discharge、broader
       formula/proof、CFG/VC generation、expectation rebaselineは禁止する。
+    - encoder testはnon-ASCII FQN byte length、empty/populated structural path、
+      decimal/no-leading-zero spelling、S/TのNode-vs-Role rejectionをcoverする。
+      adapter testはpreflight/generic lowering/exact enrichment/postvalidation
+      failureをinjectし、全phaseで`Err`かつpartial `CoreIr`/source mapなしをassertする。
     - 依存: mizar-test Tasks 266-268。仕様: 14-16、architecture 06。
 
 32. **Remaining source-derived `CoreIr`/`ControlFlowIr` task decomposition。** [ ]

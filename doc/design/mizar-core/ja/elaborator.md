@@ -465,6 +465,32 @@ theorem/lemma proposition context に owned され、proof-skeleton lowering を
 含めなければならない。invalid citation、missing または wrong-owner proof item、active path formula、
 external dependency citation、terminal-goal obligation back-reference も test で扱う。
 
+### Task 267 exact Task-180 adapter boundary
+
+Core Task 31 は narrow `lower_exact_task180_handoff` adapter を追加し、Task 267
+はその仕様だけを定める。adapter は complete Task-268 singleton checker bundle
+を preflight し、generic lowering input をすべて local unpublished state で作り、
+exact identity/status/cardinality predicate が通った後だけ
+`lower_proof_inputs` を呼ぶ。terminal `ProofFormulaRef` は
+`Formula(CoreFormulaId(0))` であり、`Thesis` ではない。
+
+generic `CheckerOwnedProvenance` rule は変更しない。terminal
+`CoreSourceRef` は source provenance に exact `ProofSkeleton(K)` をあらかじめ
+持って generic lowering に入り、`CheckerOwnedProvenance` は `Checker(T)` だけ
+を持つ。これにより `ProofSkeleton` を checker-owned input として許可せず、
+required terminal-node/seed source を生成する。generic lowering 後、exact
+adapter は sole final `ObligationSeed.provenance` に `ProofSkeleton(K)` を追加し、
+sort/dedup して exact phase order `[Checker(T), ProofSkeleton(K)]` にし、count、
+dense id、relation、source/source map、provenance key、empty field、status の
+complete Task-267 postcondition を検証する。
+
+preflight、generic lowering、enrichment、postcondition のいずれかが fail すれば
+`Err` を返し local value を破棄する。`CoreIr`、error proof、partial item、partial
+source map は publish しない。generic proof caller と accepted provenance phase
+は不変である。この adapter は formula の proof/discharge、public theorem の
+verified premise 化、VC build、exact Task-180 source 外への generalization を
+行わない。
+
 ## Step 6: algorithm-shell lowering
 
 task 13 がこの section を実装する。

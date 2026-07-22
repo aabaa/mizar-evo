@@ -1205,17 +1205,23 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   publication、theorem acceptance、proof status/skeleton/terminal goal、Core/CFG/VC、
   broader formula、runner stage promotionは禁止する。依存: Task 265とchecker Task
   180。仕様: 14、16。
-- [ ] **Task 267: omitted-justification theorem handoff contractを決定する。** paired
+- [x] **Task 267: omitted-justification theorem handoff contractを決定する。** paired
   checker/core design docで、written justificationのないordinary theoremに対する
   checker-owned pending-auto-proof status、proof skeleton、explicit terminal-goal
   payload、source/provenance link、malformed/missing behavior、core typeへのexact mapping
   を定義する。docs-only taskであり、omitted justificationをaccepted proofと同一視、
   core内でraw syntaxからterminal goalを推論、proof search実行、fixture/expectation/
   trace status編集をしてはならない。依存: Task 266。仕様: 15、16、architecture 06。
+  完了: explicit `Unmodified`/`Omitted` intentをdistinct
+  `PendingAutomaticProof` 1件、direct terminal goal 1件、future exact
+  `False`/Active `TheoremProof` core seed (`proof/0`)へ写像し、corrupt inputは
+  atomic fail、acceptance creditは付与しない。
 - [ ] **Task 268: accepted Task-267 checker producerを実装する。** exact Task-180
   final handoffだけにTask-267 proof status/skeleton/terminal-goal payloadを追加する。
   missing/duplicate/reordered/corrupt/owner-formula-proof mismatchのfail-closed checker/
-  runner testを追加する。theorem acceptance、discharge、Core/VC generation、broader
+  runner testを追加し、3 proof tableのdeterministic nonempty debug renderingと
+  empty時のTask-266 debug outputのbyte-identical性をassertする。theorem
+  acceptance、discharge、Core/VC generation、broader
   proof form、existing expectation change、Steps 6/7はscope外。依存: Task 267。
 
 各 source-moving task で review-only により visibility drift、test-discovery

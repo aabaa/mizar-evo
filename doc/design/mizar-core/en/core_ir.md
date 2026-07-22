@@ -292,6 +292,7 @@ struct CoreProof {
 }
 
 enum CoreProofStatus {
+    PendingAutomaticProof,
     Open,
     Assumed,
     Conditional,
@@ -329,9 +330,113 @@ Rules:
   as well as referencing the generated theorem-proof obligation seed.
 - `open`, `assumed`, and `conditional` statuses are preserved as policy input.
   Core does not accept or reject the proof.
+- `pending-automatic-proof` is a processing state for an ordinary, unmodified
+  theorem whose omitted justification has not yet been attempted. It is not
+  the source-policy state `open` and does not make the theorem accepted.
 - `error` is a recovery status only; it records malformed proof skeleton input
   without accepting or rejecting the proof.
 - Every terminal proof obligation references an `ObligationSeedId`.
+
+### Task 267 Exact Task-180 Core Projection
+
+Task 267 fixes a target-state specialization for Core Task 31; the Rust variant
+and adapter remain unimplemented until that task. Task 31 consumes only the
+explicit Task-268 checker bundle. It does not scan syntax or infer omission,
+status, visibility, or a terminal goal. Resolver `Exported` is an exact-input
+preflight condition and is intentionally erased because `CoreItem` has no
+export-status field. Only declared visibility becomes
+`CoreVisibility("public")`.
+
+The exact successful `CoreIr` has these table counts and dense ids:
+
+| Table | Exact result |
+|---|---|
+| items | one `CoreItemId(0)` |
+| terms | empty |
+| formulas | one `CoreFormulaId(0)` |
+| definitions | empty |
+| proofs | one `CoreProofId(0)` |
+| proof nodes | one `CoreProofNodeId(0)` |
+| algorithms / algorithm statements / generated origins | empty |
+| obligation seeds | one `ObligationSeedId(0)` |
+| diagnostics | empty |
+
+Item zero preserves the checker owner symbol, has kind `Theorem`, visibility
+`public`, status `Valid`, empty dependencies and diagnostics, and the owner
+range as its source. `Valid` means only that the item lowered structurally. It
+does not mean that its proposition is true or proved. Public resolver
+visibility also does not publish a verified premise or accepted artifact:
+`CoreProofStatus::PendingAutomaticProof` blocks that eligibility until a
+separate downstream verification authority exists.
+
+Formula zero is `CoreFormulaKind::False` with the existing checked formula
+range as source. Proof zero has `item = 0`, `proposition = 0`, `root = 0`,
+status `PendingAutomaticProof`, and the owner range as source. Its root is
+directly `TerminalGoal { obligation: 0, citations: [] }`; there is no
+`CurrentGoal`, `Sequence`, implicit `Thesis`, intermediate node, or error
+fallback. The proof node has the formula range and no diagnostics.
+
+Seed zero is exactly:
+
+```text
+owner = CoreItemId(0)
+kind = TheoremProof
+goal = Some(CoreFormulaId(0))       # direct Formula(False), never Thesis
+context = []
+local_path = "proof/0"
+label = None
+semantic_origin = NormalizedSemanticOrigin(owner_symbol.fqn())
+source = formula range
+core_refs = [Item(0), Formula(0), Proof(0), ProofNode(0)]
+status = Active
+diagnostics = []
+```
+
+`Active` means only that this undischarged obligation is eligible for a future
+VC handoff. It is not acceptance, evidence, proof search, a generated VC, or
+discharge. The atomic relation is
+`proof.item == seed.owner == item0`,
+`proof.proposition == seed.goal == formula0 == False`, and
+`proof.root == proof_node0 -> seed0`.
+
+Source-map entries are exactly item zero at the owner source, formula zero at
+the formula source, proof-node zero at the formula source, and obligation zero
+at the formula source. Every other source-map table is empty. `CoreProof`
+carries its owner source directly; there is no proof-id source-map table.
+
+The provenance key encoding is byte-canonical UTF-8 and versioned. Every
+integer is unsigned base-10 without leading zeros (`0` is the sole zero
+spelling), fields stay in the written order, and the FQN component is
+`<UTF-8-byte-length>:<bytes>` so it needs no escaping. The exact keys are:
+
+```text
+R = task267/v1;owner-fqn=<L>:<fqn>;origin-path=<C>:<u0>,...,<uC-1>
+S = task267/v1;statement=0;owner-node=<owner-node>;formula=0;formula-site-node=<formula-site-node>;formula-node=<formula-node>
+P = task267/v1;proof=0;statement=0;policy=unmodified;justification=omitted;status=pending-automatic-proof
+T = task267/v1;proof-node=0;terminal-goal=0;formula=0;formula-site-node=<formula-site-node>;formula-node=<formula-node>
+K = task267/v1;local-path=7:proof/0
+```
+
+`<C>` is the number of `SemanticOrigin.structural_path` elements. An empty
+path is exactly `origin-path=0:`; otherwise the comma-separated decimal list
+has exactly `<C>` members. Both S and T accept only Task 266's real
+`TypedSiteRef::Node`, never a role site. The separate final-tree formula node
+is retained independently. `<owner-node>`, `<formula-site-node>`, and
+`<formula-node>` are each encoded independently using the canonical unsigned
+decimal grammar above; the distinct placeholders do not imply equal values.
+
+The item source has `[Resolver(R), Checker(S)]`; the formula source has
+`[Checker(S)]`; the proof source has `[Resolver(R), Checker(P)]`; and both the
+terminal-node and obligation sources have
+`[Checker(T), ProofSkeleton(K)]`. The obligation's own `provenance` vector is
+also exactly `[Checker(T), ProofSkeleton(K)]` in phase order.
+
+Core Task 31 must validate the complete checker bundle before construction and
+the complete relation above after local construction. Missing, duplicate,
+non-dense, reordered, recovered, cross-source/module, corrupt, or mismatched
+data returns `Err` and no `CoreIr`; the exact adapter never publishes generic
+`Error` or `Partial` rows. This contract adds no proof search, fact
+publication, acceptance, ControlFlowIr, VC, artifact, or Step 6/7 semantics.
 
 ### Algorithm Shells
 

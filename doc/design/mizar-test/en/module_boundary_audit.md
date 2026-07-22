@@ -10817,3 +10817,16 @@ resolver-owner, typed-tree, and final checker identities. Synthetic input with n
 theorem owner remains fail-closed. No `.miz`, expectation, stage, test name,
 CLI byte, trace status, or broader ownership changes. The next authorized task
 is Task 267; Steps 6/7 remain deferred.
+
+## Task 267 Current-State Addendum
+
+Task 267 is documentation-only and changes no production owner, visibility,
+path, line count, or hash. It fixes the exact Task-268 input/output authority:
+`mizar-test` classifies the absent theorem annotation and justification and
+emits explicit `Unmodified`/`Omitted` intent; checker/core never reconstruct
+that intent. The target is one atomic `PendingAutomaticProof`, direct terminal
+goal, empty context/citations, and local path `proof/0`, followed later by the
+exact non-accepting Core Task-31 projection. Production remains 17 paths and
+19,262 lines with path hash `b36d96fe...` and content hash `e920dbae...`; all
+runner/count/CLI/test-list hashes are unchanged. Task 268 is the next
+executable task; Core Task 31 remains gated and Steps 6/7 stay deferred.

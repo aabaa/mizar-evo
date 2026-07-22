@@ -2345,3 +2345,16 @@ recovery、duplicate、omission、order、range、provenance、module/source cor
 は fail closed。unit/active-runner/corruption/determinism coverage を持つ。
 raw-syntax dependency、truth/fact、acceptance、proof、Core、CFG、VC、fixture、
 expectation、trace-status の変更はない。
+
+Task 267 target-contract addendum: current sourceにはproof tableがまだないため、
+これはimplementation creditではなくaccepted `design_drift` repairである。
+Task 268は`resolved_typed_ast.md`記載のexact syntax-free
+`Unmodified`/`Omitted` inputとsingleton `PendingAutomaticProof`/direct-terminal
+outputを所有する。Task-266 real formula-site identityとcompact formula nodeは
+distinctのまま、`proof/0`、empty context/citations、atomic failureを固定した。
+Core Task 31がfuture exact non-accepting projectionを所有する。Task 267はcurrent
+public API/test/fixture/expectation/trace status/semantic coverageを変更しない。
+Task 268 targetはexisting validated `CheckedStatementOwner`もauthenticated
+resolver Public/Exported fact保持へ拡張し、proof assemblyがduplicated row constantを
+trustしないようにする。これはtarget stateでありcurrent API/implementation
+creditではない。

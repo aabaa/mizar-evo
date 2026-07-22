@@ -4304,18 +4304,26 @@ Check the task off here once tests pass.
   truth/facts, accept the theorem, add proof/terminal-goal/Core/VC payloads,
   broaden formula shapes, or promote a runner stage. Deps: mizar-test Task 265
   and checker Task 180. Specs: 14/16.
-- [ ] **Task 267: omitted-justification proof-handoff contract.** Docs-only:
+- [x] **Task 267: omitted-justification proof-handoff contract.** Docs-only:
   define the checker-owned pending-auto-proof status, proof skeleton, explicit
   terminal-goal payload, source/provenance links, malformed/missing behavior,
   and exact core mapping for an ordinary theorem without a written
   justification. Do not implement code, infer from raw syntax in core, run
   proof search, or equate omission with acceptance. Deps: Task 266. Specs:
   15/16; architecture 06.
+  Complete: explicit `Unmodified`/`Omitted` intent produces one distinct
+  `PendingAutomaticProof`, one direct terminal node, and one terminal row at
+  `proof/0`; the exact future core mapping is atomic and non-accepting.
 - [ ] **Task 268: implement the accepted Task-267 producer.** Extend only the
   exact Task-180 final handoff and fail closed on missing, duplicate, reordered,
-  corrupt, or owner/formula/proof-mismatched data. Theorem acceptance,
+  corrupt, or owner/formula/proof-mismatched data. Cover deterministic nonempty
+  debug rendering of all three proof tables and byte-stable empty rendering.
+  Theorem acceptance,
   discharge, Core/VC generation, broader proof forms, expectation changes, and
   Steps 6/7 remain forbidden. Deps: Task 267.
+  Preserve independently validated Public/Exported resolver facts on
+  `CheckedStatementOwner`, cross-check them against the proof-intent row, and
+  test authenticated-owner and row corruption independently.
 
 ## Task 247 STEP 5 Payload-Family Decomposition
 

@@ -4095,16 +4095,24 @@ cargo test -p mizar-test
   fact publication、theorem acceptance、proof/terminal-goal/Core/VC payload、broader
   formula、runner-stage promotionは禁止する。依存: mizar-test Task 265、checker
   Task 180。仕様: 14/16。
-- [ ] **Task 267: omitted-justification proof-handoff contract。** docs-onlyで、
+- [x] **Task 267: omitted-justification proof-handoff contract。** docs-onlyで、
   written justificationのないordinary theoremに対するchecker-owned pending-auto-
   proof status、proof skeleton、explicit terminal-goal payload、source/provenance
   link、malformed/missing behavior、exact core mappingを定義する。code実装、coreの
   raw syntax推論、proof search、omissionとacceptanceの同一視は禁止する。依存:
   Task 266。仕様: 15/16、architecture 06。
+  完了: explicit `Unmodified`/`Omitted` intentはdistinct
+  `PendingAutomaticProof` 1件、direct terminal node 1件、`proof/0` terminal row
+  1件を生成し、future exact core mappingはatomic/non-acceptingである。
 - [ ] **Task 268: accepted Task-267 producerを実装する。** exact Task-180 final
   handoffだけを拡張し、missing/duplicate/reordered/corrupt/owner-formula-proof mismatch
-  をfail closedにする。theorem acceptance、discharge、Core/VC generation、broader
+  をfail closedにする。3 proof tableのdeterministic nonempty debug renderingと
+  empty renderingのbyte stabilityもcoverする。theorem acceptance、discharge、
+  Core/VC generation、broader
   proof form、expectation change、Steps 6/7は禁止する。依存: Task 267。
+  independently validated Public/Exported resolver factを
+  `CheckedStatementOwner`に保持し、proof-intent rowとcross-checkし、authenticated
+  owner/row corruptionを独立にtestする。
 
 ## Task 247 STEP 5 Payload-Family Decomposition
 
