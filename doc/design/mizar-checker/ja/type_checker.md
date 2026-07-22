@@ -2382,6 +2382,8 @@ fallback arm を保持する。checker 内部の match は、仕様化済み beh
 | `CandidateStatus` | 前方互換; candidate state は evidence と recovery handling とともに増える可能性がある。 |
 | `TermStatus` | 前方互換; checked-term state は partial inference policy とともに増える可能性がある。 |
 | `FormulaStatus` | 前方互換; checked-formula state は partial inference policy とともに増える可能性がある。 |
+| `TermFormulaInferenceError` | 前方互換; final handoff validation は追加の syntax-free predecessor mismatch class を得る可能性がある。 |
+| `StatementOwnerError` | 前方互換; theorem-owner validation は追加の provenance/ownership rejection class を得る可能性がある。 |
 | `DeclarationKind` | 前方互換; declaration kind はより多くの Mizar binding form とともに増える可能性がある。 |
 | `DeclarationDeferredReason` | 前方互換; deferred declaration reason は extraction gap が閉じるにつれて増える可能性がある。 |
 | `DeclarationStatus` | 前方互換; declaration state は local recovery と handoff policy とともに増える可能性がある。 |
@@ -2846,3 +2848,25 @@ facts/candidates/diagnostics/deferred/wrapper-owned entry なしの checked equa
 1件。finite order/shape/provenance/corruption、immutable/module、Tasks 134/223、
 既存 owner 59件、real sidecar を guard。runner 188、plan 403/367、type
 235/223、pass/fail 219/184。broader/downstream は credit 外。
+
+## Task 266 exact Task-180 final statement handoff
+
+Task 266 は既に checked である Task-180 contradiction leaf を final checker
+boundary まで保持する。`TermFormulaInferenceOutput` は source/module identity
+を保持し、`try_infer` は resolver/binding module mismatch を拒否する。
+`FormulaInput` と `CheckedFormula` は formula source range と recovery state
+を保持する。`CheckedStatementOwner::validate_exact_local_theorem` が本 task
+唯一の resolver-environment seam であり、symbol、theorem definition、
+contribution、range、module、semantic origin が一致する unrecovered な
+same-source local theorem 1件だけを受理する。
+
+対象 source は引き続き
+`SourceDerivedContradictionConstantBoundary: contradiction` だけである。
+checker consumer は terms/asserted type/expected constraints/candidates/facts/
+deferred reasons/diagnostics を持たない normal `Checked`
+`FormulaKind::Contradiction` 1件を生成しなければならない。owner の欠落、
+重複、recovered、imported、conflict、cross-module、その他 mismatch は final
+projection 前に fail closed とする。この contract は truth/fact を公開せず、
+theorem を accept せず、proof status/skeleton/terminal goal/CoreIr/
+ControlFlowIr/VC payload を作らない。Task 267 が omitted-justification proof
+contract を、Task 268 が後続 implementation を所有する。

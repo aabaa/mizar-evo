@@ -4294,7 +4294,7 @@ Check the task off here once tests pass.
 
 ## Tasks 266-268 Final Checker Handoff Queue
 
-- [ ] **Task 266: exact Task-180 statement-semantic projection.** Extend
+- [x] **Task 266: exact Task-180 statement-semantic projection.** Extend
   checker-owned `ResolvedTypedAst` with a syntax-free final projection linking
   exactly one resolver theorem owner to exactly one existing checked
   `FormulaKind::Contradiction`. Preserve owner/formula identity, state, source

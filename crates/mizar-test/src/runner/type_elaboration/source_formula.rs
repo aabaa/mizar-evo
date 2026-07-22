@@ -4,7 +4,7 @@ use mizar_checker::type_checker::{
     FormulaKind, ModeExpansion, SourceReserveBindingInput, TypeExpressionInput, TypeHeadInput,
     TypeHeadRef,
 };
-use mizar_checker::typed_ast::TypedSiteRef;
+use mizar_checker::typed_ast::{NodeRecoveryState, TypedSiteRef};
 use mizar_resolve::env::{ContributionKind, NamespacePath, SymbolEnv, SymbolKind};
 use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
 use mizar_session::SourceRange;
@@ -1615,8 +1615,12 @@ pub(in crate::runner) struct SourceFormulaConnectiveQuantifier {
 
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceFormulaStatement {
+    pub(in crate::runner) root_range: SourceRange,
+    pub(in crate::runner) owner_site: SurfaceNodeId,
+    pub(in crate::runner) owner_range: SourceRange,
     pub(in crate::runner) formula_site: TypedSiteRef,
     pub(in crate::runner) formula_range: SourceRange,
+    pub(in crate::runner) formula_recovery: NodeRecoveryState,
 }
 
 pub(in crate::runner) fn extract_source_formula_statement(
@@ -2329,7 +2333,7 @@ fn extract_exact_source_formula_constant(
         return None;
     }
     let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
-    let [(_, theorem)] = theorem_items.as_slice() else {
+    let [(theorem_id, theorem)] = theorem_items.as_slice() else {
         return None;
     };
     if subtree_has_recovery(ast, theorem) {
@@ -2380,8 +2384,12 @@ fn extract_exact_source_formula_constant(
     }
 
     Some(SourceFormulaStatement {
+        root_range: ast.node(ast.root()?)?.range,
+        owner_site: *theorem_id,
+        owner_range: theorem.range,
         formula_site: surface_site(*formula_id),
         formula_range: formula.range,
+        formula_recovery: NodeRecoveryState::Normal,
     })
 }
 

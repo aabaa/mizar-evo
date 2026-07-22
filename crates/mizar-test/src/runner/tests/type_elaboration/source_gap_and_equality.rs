@@ -80,11 +80,17 @@
             formula_statement_theorem_ast(source_id, exact_contradiction_formula_spec());
         assert_eq!(
             source_type_elaboration_detail_keys(&contradiction_theorem, module.clone(), &symbols),
-            Vec::<String>::new()
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
-        let contradiction_output =
-            source_contradiction_formula_output(&contradiction_theorem, module.clone(), &symbols)
-                .expect("exact standalone contradiction bridge should produce checker output");
+        assert!(
+            source_contradiction_formula_output(
+                &contradiction_theorem,
+                module.clone(),
+                &symbols,
+            )
+            .is_none(),
+            "synthetic contradiction without a real resolver theorem owner must fail closed"
+        );
         let contradiction_payload = extract_source_contradiction_formula(&contradiction_theorem)
             .expect("exact standalone contradiction bridge should extract source payload");
         let expected_contradiction_range = range(source_id, 53, 66);
@@ -101,27 +107,6 @@
             contradiction_payload.formula_range,
             expected_contradiction_range
         );
-        assert!(contradiction_output.terms().is_empty());
-        assert_eq!(contradiction_output.formulas().len(), 1);
-        assert!(contradiction_output.diagnostics().is_empty());
-        let (_, checked_contradiction) = contradiction_output
-            .formulas()
-            .iter()
-            .next()
-            .expect("standalone contradiction should be checked");
-        assert_eq!(
-            checked_contradiction.site,
-            contradiction_payload.formula_site
-        );
-        assert_eq!(checked_contradiction.context, BindingContextId::new(0));
-        assert_eq!(checked_contradiction.kind, FormulaKind::Contradiction);
-        assert_eq!(checked_contradiction.status, FormulaStatus::Checked);
-        assert!(checked_contradiction.terms.is_empty());
-        assert!(checked_contradiction.asserted_type.is_none());
-        assert!(checked_contradiction.expected_types.is_empty());
-        assert!(checked_contradiction.candidate_set.is_none());
-        assert!(checked_contradiction.facts.is_empty());
-        assert!(checked_contradiction.deferred.is_empty());
         let expected_builtin_binary_configs = [
             (
                 "TermFormulaPayloadBoundary",

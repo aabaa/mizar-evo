@@ -118,6 +118,8 @@ struct ResolvedTypedAst {
     inserted_coercions: CoercionInsertionTable,
     cluster_facts: ClusterFactTable,
     diagnostics: ResolvedTypedDiagnosticTable,
+    checked_formulas: CheckedFormulaTable,
+    statement_semantics: StatementSemanticTable,
 }
 ```
 
@@ -431,3 +433,50 @@ The following remain deferred after task 28:
 
 These gaps do not permit fabricated success records, raw syntax scans, or
 artifact-like side outputs in task 28.
+
+## Task 266 Exact Statement-Semantic Projection
+
+Task 266 adds an optional, syntax-free predecessor bundle to
+`ResolvedTypedAstInputs`:
+
+```rust
+struct StatementSemanticInputs<'a> {
+    owner: &'a CheckedStatementOwner,
+    binding_env: &'a BindingEnv,
+    term_formula: &'a TermFormulaInferenceOutput,
+    rows: Vec<StatementSemanticInput>,
+}
+
+struct StatementSemanticInput {
+    owner: SymbolId,
+    owner_node: TypedNodeId,
+    formula: CheckedFormulaId,
+    formula_node: TypedNodeId,
+}
+```
+
+When the bundle is absent, existing assembly produces empty checked-formula and
+statement-semantic tables and retains byte-stable debug output. When present
+for Task 180, it contains exactly one row in source order. Assembly copies the
+existing checked formula table and emits one dense `StatementSemantic`
+preserving resolver theorem symbol, theorem typed-node identity, owner range
+and `SemanticOrigin`, the existing checked formula identity/site, and a
+separate formula typed-node identity for the compact final tree.
+
+The accepted typed tree is exactly module root -> theorem owner -> formula.
+Every node is normal and successfully typed; the owner range equals the
+validated theorem range, the formula range/recovery equals the checked formula,
+the root contains the owner, and the formula is strictly inside the owner.
+Source and module identities agree across `TypedAst`, `BindingEnv`, inference
+output, and checked owner. The inference output contains only one normal
+`Checked` `FormulaKind::Contradiction`; terms, type entries, normalized types,
+candidates, facts, diagnostics, asserted type, expected constraints, and
+deferred reasons are forbidden in this exact slice.
+
+Assembly fails closed on an absent row in a supplied bundle, non-singleton,
+duplicate-owner, duplicate-formula, reordered, unknown, recovered, deferred,
+cross-source/module, tree, range, provenance, owner, or formula mismatch.
+Validation of the real resolver theorem owner remains in `type_checker`; this
+module does not scan `SymbolEnv` or raw syntax. The projection assigns no truth
+value, publishes no fact, accepts no theorem, and adds no proof, terminal-goal,
+CoreIr, ControlFlowIr, or VC semantics.

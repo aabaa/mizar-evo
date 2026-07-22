@@ -218,9 +218,13 @@ pub(super) use binary_routes::{
     source_two_edge_local_object_mode_reserved_variable_membership_detail_keys,
 };
 #[cfg(test)]
-pub(super) use checker_handoff::assemble_source_checker_handoff;
 pub(super) use checker_handoff::{
-    SourceReserveHandoff, assemble_source_reserve_checker_handoff,
+    SourceContradictionHandoffCorruption, assemble_source_checker_handoff,
+    source_contradiction_handoff_corruption_error,
+};
+pub(super) use checker_handoff::{
+    SourceReserveHandoff, assemble_source_contradiction_checker_handoff,
+    assemble_source_reserve_checker_handoff, assert_source_contradiction_handoff,
     assert_source_reserve_core_context_readiness, assert_source_reserve_core_summary_readiness,
     assert_source_reserve_handoff, source_module_binding_env,
 };

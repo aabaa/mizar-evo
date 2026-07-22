@@ -110,6 +110,8 @@ struct ResolvedTypedAst {
     inserted_coercions: CoercionInsertionTable,
     cluster_facts: ClusterFactTable,
     diagnostics: ResolvedTypedDiagnosticTable,
+    checked_formulas: CheckedFormulaTable,
+    statement_semantics: StatementSemanticTable,
 }
 ```
 
@@ -406,3 +408,49 @@ task 28 後も以下は deferred のままである。
 
 これらの gap は task 28 で fabricated success record、raw syntax scan、artifact-like
 side output を許可しない。
+
+## Task 266 exact statement-semantic projection
+
+Task 266 は `ResolvedTypedAstInputs` に optional な syntax-free predecessor
+bundle を追加する。
+
+```rust
+struct StatementSemanticInputs<'a> {
+    owner: &'a CheckedStatementOwner,
+    binding_env: &'a BindingEnv,
+    term_formula: &'a TermFormulaInferenceOutput,
+    rows: Vec<StatementSemanticInput>,
+}
+
+struct StatementSemanticInput {
+    owner: SymbolId,
+    owner_node: TypedNodeId,
+    formula: CheckedFormulaId,
+    formula_node: TypedNodeId,
+}
+```
+
+bundle がない既存 assembly は checked-formula/statement-semantic table を
+empty にし、debug output を byte-stable に保つ。Task 180 の bundle は source
+order どおりの row 1件だけを持つ。assembly は既存 checked formula table を
+copy し、resolver theorem symbol、theorem typed-node identity、owner range/
+`SemanticOrigin`、existing checked formula identity/site、compact final tree用の
+separate formula typed-node identity を保持する dense `StatementSemantic` 1件を
+出力する。
+
+受理する typed tree は module root -> theorem owner -> formula の3 node
+だけで、全 node は normal/successfully typed である。owner range は validated
+theorem range と一致し、formula range/recovery は checked formula と一致し、
+root は owner を包含し formula は owner の strict interior にある。
+`TypedAst`、`BindingEnv`、inference output、checked owner の source/module は
+一致する。inference output は normal `Checked`
+`FormulaKind::Contradiction` 1件だけを持ち、term/type entry/normalized type/
+candidate/fact/diagnostic/asserted type/expected constraint/deferred reason は
+禁止する。
+
+supplied bundle の row 欠落、non-singleton、duplicate owner/formula、reorder、
+unknown、recovered、deferred、cross-source/module、tree/range/provenance/
+owner/formula mismatch は fail closed とする。real resolver theorem owner の
+validation は `type_checker` が所有し、本 module は `SymbolEnv` や raw syntax
+を scan しない。この projection は truth/fact/theorem acceptance/proof/
+terminal goal/CoreIr/ControlFlowIr/VC semantics を追加しない。

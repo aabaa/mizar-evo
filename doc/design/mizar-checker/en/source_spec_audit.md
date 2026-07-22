@@ -223,6 +223,7 @@ Literal top-level public items:
 
 - `TypeNormalizationOutput`, `TypeNormalizer`, `DeclarationCheckingOutput`,
   `DeclarationChecker`, `TermFormulaInferenceOutput`, `TermFormulaChecker`,
+  `TermFormulaInferenceError`, `CheckedStatementOwner`, `StatementOwnerError`,
   `CoercionCheckingOutput`, `CoercionObligationChecker`, `CoercionInput`,
   `CoercionRequestKind`, `CoercionJustification`, `CoercionEvidence`,
   `CoercionDeferredReason`, `InitialObligationInput`, `InitialRequirementKind`,
@@ -2031,7 +2032,7 @@ Correspondence:
 Generated public newtypes:
 
 - `ResolvedTypedNodeId`, `ExpressionMetadataId`, `OverloadResolutionId`,
-  `CoercionInsertionId`, `ResolvedTypedDiagnosticId`
+  `CoercionInsertionId`, `ResolvedTypedDiagnosticId`, `StatementSemanticId`
 - `ExprId`, `SourceNodeRole`
 
 Literal top-level public items:
@@ -2050,7 +2051,9 @@ Literal top-level public items:
   `CoercionInsertionSource`, `CoercionInsertionTable`,
   `ResolvedTypedDiagnostic`, `ResolvedTypedDiagnosticSource`,
   `ResolvedTypedDiagnosticSeverity`, `ResolvedTypedDiagnosticTable`,
-  `CandidateSummaryNamespace`, `ResolvedTypedAstError`
+  `CandidateSummaryNamespace`, `StatementSemanticInputs`,
+  `StatementSemanticInput`, `StatementSemantic`, `StatementSemanticTable`,
+  `ResolvedTypedAstError`
 
 Correspondence:
 
@@ -2418,3 +2421,16 @@ Checker Task 247 owns exhaustive decomposition of all other AST-wide and Task-
 49 payload families and feeds core Task 32's exhaustive remaining-family
 decomposition. Core/VC, truth/facts, theorem acceptance, and broader
 semantic credit remain deferred; current coverage/status/tests are unchanged.
+
+Task 266 implementation addendum: `type_checker` now exposes the documented
+`TermFormulaInferenceError`, `CheckedStatementOwner`, and
+`StatementOwnerError` surfaces, preserves formula range/recovery and
+source/module identity, and validates the exact real local theorem owner.
+`resolved_typed_ast` exposes `StatementSemanticId`, `StatementSemanticInputs`,
+`StatementSemanticInput`, `StatementSemantic`, and `StatementSemanticTable` and
+validates the exact singleton three-node owner/formula projection. Owner and
+formula mismatch, recovery, duplication, omission, order, range, provenance,
+and module/source corruption fail closed. Unit, active-runner, corruption, and
+determinism coverage is present. No raw-syntax dependency, truth/fact,
+acceptance, proof, Core, CFG, VC, fixture, expectation, or trace-status change
+is introduced.

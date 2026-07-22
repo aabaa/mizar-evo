@@ -20,16 +20,16 @@ use mizar_syntax::SurfaceAst;
 use super::source_formula::{
     SourceImportedAttributeAssertionFormula, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula, extract_source_builtin_binary_term_formula,
-    extract_source_builtin_type_assertion_formula, extract_source_contradiction_formula,
-    extract_source_formula_connective_quantifier, extract_source_formula_statement,
-    extract_source_imported_attribute_assertion_formula,
+    extract_source_builtin_type_assertion_formula, extract_source_formula_connective_quantifier,
+    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
 };
 use super::{
     SourceReserveHandoff, SourceReservedVariableBinaryFormula,
     SourceReservedVariableBinaryFormulaConfig, SourceReservedVariableBuiltinType,
-    SourceReservedVariableTypeAssertion, assemble_source_reserve_checker_handoff,
+    SourceReservedVariableTypeAssertion, assemble_source_contradiction_checker_handoff,
+    assemble_source_reserve_checker_handoff, assert_source_contradiction_handoff,
     assert_source_reserve_handoff, source_binding_matches_reserved_builtin_type,
     source_binding_use_ordinals, source_mode_terminal_builtin_input, source_module_binding_env,
     source_reserved_variable_asserted_head_relation_is_exact,
@@ -619,20 +619,9 @@ pub(in crate::runner) fn source_contradiction_formula_output(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Option<TermFormulaInferenceOutput> {
-    let payload = extract_source_contradiction_formula(ast)?;
-    let binding_env = source_module_binding_env(ast, module).ok()?;
-    let context = BindingContextId::new(0);
-    Some(TermFormulaChecker::default().infer(
-        symbols,
-        &binding_env,
-        [],
-        [FormulaInput::new(
-            payload.formula_site,
-            context,
-            payload.formula_range,
-            FormulaKind::Contradiction,
-        )],
-    ))
+    let handoff = assemble_source_contradiction_checker_handoff(ast, module, symbols).ok()?;
+    assert_source_contradiction_handoff(&handoff).ok()?;
+    Some(handoff.term_formula)
 }
 
 pub(in crate::runner) fn source_formula_statement_detail_keys(

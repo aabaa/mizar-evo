@@ -16,15 +16,17 @@ use mizar_checker::overload_resolution::{
 use mizar_checker::resolved_typed_ast::{
     ExprId, ExpressionMetadataInput, ResolvedNodeKindHint, ResolvedNodeKindHintKind,
     ResolvedTypedAst, ResolvedTypedAstInputs, ResolvedTypedNodeId, ResolvedTypedNodeKind,
-    SourceNodeRole,
+    SourceNodeRole, StatementSemanticInput, StatementSemanticInputs,
 };
 use mizar_checker::type_checker::{
-    DeclarationCheckingOutput, DeclarationKind, DeclarationStatus, ModeExpansion,
-    SourceReserveDeclarationBridge,
+    CheckedStatementOwner, DeclarationCheckingOutput, DeclarationKind, DeclarationStatus,
+    FormulaInput, FormulaKind, ModeExpansion, SourceReserveDeclarationBridge, TermFormulaChecker,
+    TermFormulaInferenceOutput,
 };
 use mizar_checker::typed_ast::{
-    CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
-    TypeStatus, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeLinks,
+    CoercionTable, InitialObligationTable, LocalTypeContextId, LocalTypeContextTable,
+    NodeRecoveryState, TypeDiagnosticTable, TypeEntryId, TypeFactTable, TypeStatus, TypeTable,
+    TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks,
     TypedSiteRef, TypingState,
 };
 use mizar_core::{
@@ -35,11 +37,12 @@ use mizar_core::{
         ResolvedTypedAstSummary, prepare_core_context,
     },
 };
-use mizar_resolve::env::SymbolEnv;
+use mizar_resolve::env::{NamespacePath, SymbolEnv, SymbolKind};
 use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
 use mizar_session::SourceAnchor;
 use mizar_syntax::SurfaceAst;
 
+use super::source_formula::{SourceFormulaStatement, extract_source_contradiction_formula};
 #[cfg(test)]
 use super::source_reserve::SourceReserveExtraction;
 
@@ -65,6 +68,308 @@ pub(in crate::runner) fn source_module_binding_env(
         bindings: BindingTable::new(),
         diagnostics: BindingDiagnosticTable::new(),
     })
+}
+
+const CONTRADICTION_FORMULA_NODE: TypedNodeId = TypedNodeId::new(0);
+const CONTRADICTION_THEOREM_NODE: TypedNodeId = TypedNodeId::new(1);
+const CONTRADICTION_ROOT_NODE: TypedNodeId = TypedNodeId::new(2);
+const CONTRADICTION_OWNER: &str = "SourceDerivedContradictionConstantBoundary";
+
+#[derive(Debug)]
+pub(in crate::runner) struct SourceContradictionHandoff {
+    pub(in crate::runner) owner: CheckedStatementOwner,
+    pub(in crate::runner) term_formula: TermFormulaInferenceOutput,
+    pub(in crate::runner) typed_ast: TypedAst,
+    pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+pub(in crate::runner) fn assemble_source_contradiction_checker_handoff(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Result<SourceContradictionHandoff, String> {
+    let payload = extract_source_contradiction_formula(ast)
+        .ok_or_else(|| "missing exact source contradiction formula".to_owned())?;
+    if ast
+        .node(payload.owner_site)
+        .is_none_or(|node| node.range != payload.owner_range)
+        || ast
+            .root()
+            .and_then(|root| ast.node(root))
+            .is_none_or(|root| root.range != payload.root_range)
+    {
+        return Err("source contradiction owner/root provenance mismatch".to_owned());
+    }
+
+    let namespace = NamespacePath::new(module.path().as_str());
+    let owners = symbols
+        .symbols()
+        .visible_candidates(&namespace, CONTRADICTION_OWNER)
+        .into_iter()
+        .filter(|entry| entry.kind() == SymbolKind::Theorem)
+        .collect::<Vec<_>>();
+    let [owner] = owners.as_slice() else {
+        return Err("source contradiction requires exactly one resolver theorem owner".to_owned());
+    };
+    let owner = CheckedStatementOwner::validate_exact_local_theorem(
+        symbols,
+        owner.symbol().clone(),
+        ast.source_id,
+        &module,
+    )
+    .map_err(|error| error.to_string())?;
+
+    let binding_env =
+        source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?;
+    let typed_ast = assemble_source_contradiction_typed_ast(ast, &module, &payload)?;
+    let formula = FormulaInput::new(
+        payload.formula_site,
+        BindingContextId::new(0),
+        payload.formula_range,
+        FormulaKind::Contradiction,
+    )
+    .with_recovery(payload.formula_recovery);
+    let term_formula = TermFormulaChecker::default()
+        .try_infer(symbols, &binding_env, [], [formula])
+        .map_err(|error| error.to_string())?;
+    let formula = term_formula
+        .formulas()
+        .iter()
+        .next()
+        .map(|(id, _)| id)
+        .ok_or_else(|| "source contradiction checker produced no formula".to_owned())?;
+    let resolved = assemble_source_contradiction_resolved_typed_ast(
+        &typed_ast,
+        &owner,
+        &binding_env,
+        &term_formula,
+        vec![StatementSemanticInput {
+            owner: owner.symbol().clone(),
+            owner_node: CONTRADICTION_THEOREM_NODE,
+            formula,
+            formula_node: CONTRADICTION_FORMULA_NODE,
+        }],
+    )?;
+
+    Ok(SourceContradictionHandoff {
+        owner,
+        term_formula,
+        typed_ast,
+        resolved,
+    })
+}
+
+pub(in crate::runner) fn assert_source_contradiction_handoff(
+    handoff: &SourceContradictionHandoff,
+) -> Result<(), String> {
+    if handoff.typed_ast.nodes().len() != 3
+        || handoff.resolved.nodes().len() != 3
+        || handoff.resolved.statement_semantics().len() != 1
+        || handoff.resolved.checked_formulas() != handoff.term_formula.formulas()
+    {
+        return Err("source contradiction final handoff count mismatch".to_owned());
+    }
+    let statement = handoff
+        .resolved
+        .statement_semantics()
+        .get(mizar_checker::resolved_typed_ast::StatementSemanticId::new(
+            0,
+        ))
+        .ok_or_else(|| "missing source contradiction final statement".to_owned())?;
+    if statement.owner != *handoff.owner.symbol()
+        || statement.owner_origin != *handoff.owner.origin()
+        || handoff
+            .typed_ast
+            .nodes()
+            .node(statement.owner_node)
+            .is_none()
+        || handoff
+            .typed_ast
+            .nodes()
+            .node(statement.formula_node)
+            .is_none()
+        || handoff
+            .resolved
+            .checked_formulas()
+            .get(statement.formula)
+            .is_none()
+    {
+        return Err("source contradiction final identity mismatch".to_owned());
+    }
+    Ok(())
+}
+
+fn assemble_source_contradiction_typed_ast(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    payload: &SourceFormulaStatement,
+) -> Result<TypedAst, String> {
+    let mut builder = TypedArenaBuilder::new();
+    let formula = builder
+        .push(
+            TypedNode::new(
+                "source.formula.contradiction",
+                SourceAnchor::Range(payload.formula_range),
+            )
+            .with_recovery(payload.formula_recovery)
+            .with_typing(TypingState::Successful),
+        )
+        .map_err(|error| error.to_string())?;
+    if formula != CONTRADICTION_FORMULA_NODE {
+        return Err("source contradiction formula node id mismatch".to_owned());
+    }
+    let theorem = builder
+        .push(
+            TypedNode::new(
+                "source.statement.theorem",
+                SourceAnchor::Range(payload.owner_range),
+            )
+            .with_children(vec![formula])
+            .with_recovery(NodeRecoveryState::Normal)
+            .with_typing(TypingState::Successful),
+        )
+        .map_err(|error| error.to_string())?;
+    if theorem != CONTRADICTION_THEOREM_NODE {
+        return Err("source contradiction theorem node id mismatch".to_owned());
+    }
+    let root = builder
+        .push(
+            TypedNode::new("source.module", SourceAnchor::Range(payload.root_range))
+                .with_children(vec![theorem])
+                .with_recovery(NodeRecoveryState::Normal)
+                .with_typing(TypingState::Successful),
+        )
+        .map_err(|error| error.to_string())?;
+    if root != CONTRADICTION_ROOT_NODE {
+        return Err("source contradiction root node id mismatch".to_owned());
+    }
+
+    let nodes = builder
+        .finish(Some(root))
+        .map_err(|error| error.to_string())?;
+    TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        resolved_root: None,
+        nodes,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())
+}
+
+fn assemble_source_contradiction_resolved_typed_ast(
+    typed_ast: &TypedAst,
+    owner: &CheckedStatementOwner,
+    binding_env: &BindingEnv,
+    term_formula: &TermFormulaInferenceOutput,
+    rows: Vec<StatementSemanticInput>,
+) -> Result<ResolvedTypedAst, String> {
+    let cluster_facts = ClusterFactTable::new();
+    let overload_collection = OverloadCollectionOutput::collect(
+        Vec::<OverloadSiteInput>::new(),
+        Vec::<OverloadCandidateInput>::new(),
+    );
+    let template_expansion = TemplateExpansionOutput::expand(&overload_collection);
+    let viability = CandidateViabilityOutput::filter(
+        &template_expansion,
+        Vec::<CandidateViabilityInput>::new(),
+    );
+    let specificity =
+        SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+    let overload_selection =
+        OverloadSelectionOutput::resolve(&specificity, Vec::<OverloadSiteResolutionInput>::new());
+    let node_hints = [
+        (CONTRADICTION_FORMULA_NODE, "source.formula.contradiction"),
+        (CONTRADICTION_THEOREM_NODE, "source.statement.theorem"),
+        (CONTRADICTION_ROOT_NODE, "source.module"),
+    ]
+    .into_iter()
+    .map(|(typed_node, role)| ResolvedNodeKindHint {
+        typed_node,
+        kind: ResolvedNodeKindHintKind::SourcePreserved {
+            role: SourceNodeRole::new(role),
+        },
+    })
+    .collect();
+
+    ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+        typed_ast,
+        cluster_facts: &cluster_facts,
+        overload_collection: &overload_collection,
+        template_expansion: &template_expansion,
+        viability: &viability,
+        specificity: &specificity,
+        overload_selection: &overload_selection,
+        expressions: Vec::new(),
+        node_hints,
+        statement_semantics: Some(StatementSemanticInputs {
+            owner,
+            binding_env,
+            term_formula,
+            rows,
+        }),
+    })
+    .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy)]
+pub(in crate::runner) enum SourceContradictionHandoffCorruption {
+    MissingRow,
+    DuplicateRow,
+    InvalidFormula,
+    WrongOwnerNode,
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_contradiction_handoff_corruption_error(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+    corruption: SourceContradictionHandoffCorruption,
+) -> Result<String, String> {
+    let handoff = assemble_source_contradiction_checker_handoff(ast, module.clone(), symbols)?;
+    let binding_env = source_module_binding_env(ast, module).map_err(|error| error.to_string())?;
+    let statement = handoff
+        .resolved
+        .statement_semantics()
+        .get(mizar_checker::resolved_typed_ast::StatementSemanticId::new(
+            0,
+        ))
+        .ok_or_else(|| "missing source contradiction statement for corruption".to_owned())?;
+    let valid = StatementSemanticInput {
+        owner: statement.owner.clone(),
+        owner_node: statement.owner_node,
+        formula: statement.formula,
+        formula_node: statement.formula_node,
+    };
+    let rows = match corruption {
+        SourceContradictionHandoffCorruption::MissingRow => Vec::new(),
+        SourceContradictionHandoffCorruption::DuplicateRow => vec![valid.clone(), valid],
+        SourceContradictionHandoffCorruption::InvalidFormula => vec![StatementSemanticInput {
+            formula: mizar_checker::type_checker::CheckedFormulaId::new(1),
+            ..valid
+        }],
+        SourceContradictionHandoffCorruption::WrongOwnerNode => vec![StatementSemanticInput {
+            owner_node: CONTRADICTION_FORMULA_NODE,
+            ..valid
+        }],
+    };
+    match assemble_source_contradiction_resolved_typed_ast(
+        &handoff.typed_ast,
+        &handoff.owner,
+        &binding_env,
+        &handoff.term_formula,
+        rows,
+    ) {
+        Ok(_) => Err("source contradiction corruption unexpectedly assembled".to_owned()),
+        Err(error) => Ok(error),
+    }
 }
 
 #[derive(Debug)]
@@ -157,6 +462,7 @@ fn assemble_source_reserve_resolved_typed_ast(
         overload_selection: &overload_selection,
         expressions,
         node_hints,
+        statement_semantics: None,
     })
     .map_err(|error| error.to_string())
 }

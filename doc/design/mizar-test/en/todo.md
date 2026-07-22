@@ -1356,7 +1356,7 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   another crate's raw syntax downstream would be a `boundary_violation` and is
   forbidden. No `spec_gap`, `source_undocumented_behavior`, or
   `repo_metadata_conflict` was found.
-- [ ] **Task 266: preserve the exact Task-180 checked contradiction in the
+- [x] **Task 266: preserve the exact Task-180 checked contradiction in the
   final checker handoff.** Extend checker-owned, syntax-free
   `ResolvedTypedAst` data so one resolver theorem owner is linked to the one
   existing checked `FormulaKind::Contradiction` result for

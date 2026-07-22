@@ -10798,3 +10798,22 @@ opens Tasks 266-268 and the named owner/decomposition tasks. It does not reopen
 the completed module-boundary series or change the 17-path/18,952-line layout,
 private leaves, counts, hashes, source ownership, tests, expectations, or
 coverage. The next executable task is Task 266; Steps 6/7 remain deferred.
+
+## Task 266 Current-State Addendum
+
+Task 266 is a semantic handoff task inside the existing ownership layout, not a
+module split. The production manifest remains the same 17 paths with path hash
+`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`;
+it now totals 19,262 lines and has content-manifest hash
+`e920dbaef82c7192d5b451ed1ab9d4a5766f2abc82b4f5314ae9ed7bb6a47825`.
+Changed production owners are `runner.rs` 2,188 lines,
+`type_elaboration.rs` 577, `checker_handoff.rs` 856, `output.rs` 1,538,
+and `source_formula.rs` 2,629. `runner.rs` remains facade/top-level
+orchestration only and the facade still declares eleven private leaves.
+
+The exact Task-180 route retains the real formula site/range/recovery, uses the
+real theorem surface site to validate the resolver-owner range, and carries
+resolver-owner, typed-tree, and final checker identities. Synthetic input with no real
+theorem owner remains fail-closed. No `.miz`, expectation, stage, test name,
+CLI byte, trace status, or broader ownership changes. The next authorized task
+is Task 267; Steps 6/7 remain deferred.

@@ -1,6 +1,7 @@
 //! Final source-shaped resolved typed AST assembly for checker phase 8.
 
 use crate::{
+    binding_env::{BindingContextLayer, BindingContextOwner, BindingContextRecovery, BindingEnv},
     cluster_trace::{ClusterFactId, ClusterFactTable},
     overload_resolution::{
         CandidateDeclarationKind, CandidateOrigin, CandidateProvenance, CandidateViabilityId,
@@ -15,13 +16,17 @@ use crate::{
         TemplateExpansionOutput, TemplateExpansionStatus, TemplateInstantiationKey,
         TemplateSubstitution,
     },
+    type_checker::{
+        CheckedFormulaId, CheckedFormulaTable, CheckedStatementOwner, FormulaKind, FormulaStatus,
+        TermFormulaInferenceOutput,
+    },
     typed_ast::{
         LocalTypeContextId, NodeRecoveryState, NormalizedTypeId, TypeDiagnosticId,
         TypeDiagnosticSeverity, TypeDiagnosticTable, TypeEntryActual, TypeFactId, TypedAst,
         TypedNodeId, TypedSiteRef, TypingState,
     },
 };
-use mizar_resolve::resolved_ast::{ModuleId, SymbolId};
+use mizar_resolve::resolved_ast::{ModuleId, SemanticOrigin, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -80,6 +85,7 @@ dense_id!(ExpressionMetadataId);
 dense_id!(OverloadResolutionId);
 dense_id!(CoercionInsertionId);
 dense_id!(ResolvedTypedDiagnosticId);
+dense_id!(StatementSemanticId);
 
 string_key!(ExprId);
 string_key!(SourceNodeRole);
@@ -100,6 +106,8 @@ pub struct ResolvedTypedAst {
     inserted_coercions: CoercionInsertionTable,
     cluster_facts: ClusterFactTable,
     diagnostics: ResolvedTypedDiagnosticTable,
+    checked_formulas: CheckedFormulaTable,
+    statement_semantics: StatementSemanticTable,
 }
 
 impl ResolvedTypedAst {
@@ -163,6 +171,14 @@ impl ResolvedTypedAst {
         &self.diagnostics
     }
 
+    pub const fn checked_formulas(&self) -> &CheckedFormulaTable {
+        &self.checked_formulas
+    }
+
+    pub const fn statement_semantics(&self) -> &StatementSemanticTable {
+        &self.statement_semantics
+    }
+
     pub fn debug_text(&self) -> String {
         let mut output = String::from("resolved-typed-ast-debug-v1\n");
         output.push_str("module: ");
@@ -191,6 +207,9 @@ impl ResolvedTypedAst {
         write_coercion_insertions(&mut output, &self.inserted_coercions);
         write_cluster_facts(&mut output, &self.cluster_facts);
         write_resolved_diagnostics(&mut output, &self.diagnostics);
+        if !self.statement_semantics.is_empty() {
+            write_statement_semantics(&mut output, &self.statement_semantics);
+        }
         output
     }
 }
@@ -206,6 +225,63 @@ pub struct ResolvedTypedAstInputs<'a> {
     pub overload_selection: &'a OverloadSelectionOutput,
     pub expressions: Vec<ExpressionMetadataInput>,
     pub node_hints: Vec<ResolvedNodeKindHint>,
+    pub statement_semantics: Option<StatementSemanticInputs<'a>>,
+}
+
+#[derive(Debug)]
+pub struct StatementSemanticInputs<'a> {
+    pub owner: &'a CheckedStatementOwner,
+    pub binding_env: &'a BindingEnv,
+    pub term_formula: &'a TermFormulaInferenceOutput,
+    pub rows: Vec<StatementSemanticInput>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StatementSemanticInput {
+    pub owner: SymbolId,
+    pub owner_node: TypedNodeId,
+    pub formula: CheckedFormulaId,
+    pub formula_node: TypedNodeId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StatementSemantic {
+    pub id: StatementSemanticId,
+    pub owner: SymbolId,
+    pub owner_node: TypedNodeId,
+    pub owner_range: SourceRange,
+    pub owner_origin: SemanticOrigin,
+    pub formula: CheckedFormulaId,
+    pub formula_node: TypedNodeId,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct StatementSemanticTable {
+    entries: Vec<StatementSemantic>,
+}
+
+impl StatementSemanticTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: StatementSemanticId) -> Option<&StatementSemantic> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (StatementSemanticId, &StatementSemantic)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -858,6 +934,28 @@ pub enum CandidateSummaryNamespace {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ResolvedTypedAstError {
+    MissingStatementSemantic,
+    NonSingletonStatementSemantic {
+        count: usize,
+    },
+    DuplicateStatementOwner {
+        owner: SymbolId,
+    },
+    DuplicateStatementFormula {
+        formula: CheckedFormulaId,
+    },
+    StatementEnvironmentMismatch,
+    InvalidStatementOwner {
+        owner: SymbolId,
+    },
+    InvalidStatementFormula {
+        formula: CheckedFormulaId,
+    },
+    InvalidStatementFormulaPayload {
+        formula: CheckedFormulaId,
+    },
+    InvalidStatementTree,
+    StatementSourceOrderMismatch,
     DuplicateExpression {
         expr: ExprId,
     },
@@ -905,6 +1003,46 @@ pub enum ResolvedTypedAstError {
 impl fmt::Display for ResolvedTypedAstError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::MissingStatementSemantic => {
+                formatter.write_str("statement semantic contract is missing its required row")
+            }
+            Self::NonSingletonStatementSemantic { count } => write!(
+                formatter,
+                "statement semantic contract requires exactly one row, got {count}"
+            ),
+            Self::DuplicateStatementOwner { owner } => write!(
+                formatter,
+                "duplicate statement semantic owner `{}`",
+                owner.fqn().as_str()
+            ),
+            Self::DuplicateStatementFormula { formula } => write!(
+                formatter,
+                "duplicate statement semantic formula {}",
+                formula.index()
+            ),
+            Self::StatementEnvironmentMismatch => formatter.write_str(
+                "statement semantic symbol, binding, formula, and typed AST environments do not match",
+            ),
+            Self::InvalidStatementOwner { owner } => write!(
+                formatter,
+                "invalid statement semantic theorem owner `{}`",
+                owner.fqn().as_str()
+            ),
+            Self::InvalidStatementFormula { formula } => write!(
+                formatter,
+                "invalid statement semantic checked formula {}",
+                formula.index()
+            ),
+            Self::InvalidStatementFormulaPayload { formula } => write!(
+                formatter,
+                "statement semantic checked formula {} has forbidden payload",
+                formula.index()
+            ),
+            Self::InvalidStatementTree => {
+                formatter.write_str("invalid exact statement semantic typed tree")
+            }
+            Self::StatementSourceOrderMismatch => formatter
+                .write_str("statement semantic theorem/formula source order does not match"),
             Self::DuplicateExpression { expr } => {
                 write!(
                     formatter,
@@ -993,6 +1131,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
     fn assemble(self) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
         let source_id = self.inputs.typed_ast.source_id();
         let module_id = self.inputs.typed_ast.module_id().clone();
+        let (checked_formulas, statement_semantics) =
+            build_statement_semantics(&self.inputs, source_id, &module_id)?;
         let root_range = root_range(self.inputs.typed_ast);
         let diagnostics = build_diagnostics(&self.inputs, root_range);
         let collection_candidates = copy_candidate_summaries(
@@ -1047,8 +1187,307 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             inserted_coercions: overload_projection.insertions,
             cluster_facts: self.inputs.cluster_facts.clone(),
             diagnostics: diagnostics.table,
+            checked_formulas,
+            statement_semantics,
         })
     }
+}
+
+fn build_statement_semantics(
+    inputs: &ResolvedTypedAstInputs<'_>,
+    source_id: SourceId,
+    module_id: &ModuleId,
+) -> Result<(CheckedFormulaTable, StatementSemanticTable), ResolvedTypedAstError> {
+    let Some(statement_inputs) = &inputs.statement_semantics else {
+        return Ok((CheckedFormulaTable::new(), StatementSemanticTable::new()));
+    };
+
+    if statement_inputs.rows.is_empty() {
+        return Err(ResolvedTypedAstError::MissingStatementSemantic);
+    }
+    let mut owners = BTreeSet::new();
+    let mut formulas = BTreeSet::new();
+    for row in &statement_inputs.rows {
+        if !owners.insert(row.owner.clone()) {
+            return Err(ResolvedTypedAstError::DuplicateStatementOwner {
+                owner: row.owner.clone(),
+            });
+        }
+        if !formulas.insert(row.formula) {
+            return Err(ResolvedTypedAstError::DuplicateStatementFormula {
+                formula: row.formula,
+            });
+        }
+    }
+    if statement_inputs.rows.len() != 1 {
+        return Err(ResolvedTypedAstError::NonSingletonStatementSemantic {
+            count: statement_inputs.rows.len(),
+        });
+    }
+
+    if statement_inputs.binding_env.module_id() != module_id
+        || statement_inputs.binding_env.source_id() != source_id
+        || statement_inputs.term_formula.module_id() != module_id
+        || statement_inputs.term_formula.source_id() != source_id
+    {
+        return Err(ResolvedTypedAstError::StatementEnvironmentMismatch);
+    }
+
+    let row = &statement_inputs.rows[0];
+    let owner = statement_inputs.owner;
+    if owner.symbol() != &row.owner
+        || owner.symbol().module() != module_id
+        || owner.origin().source_id() != source_id
+        || owner.origin().module_id() != module_id
+    {
+        return Err(ResolvedTypedAstError::InvalidStatementOwner {
+            owner: row.owner.clone(),
+        });
+    }
+    let owner_range = owner.source_range();
+
+    let term_formula = statement_inputs.term_formula;
+    if term_formula.formulas().len() != 1
+        || !term_formula.normalized_types().is_empty()
+        || !term_formula.terms().is_empty()
+        || !term_formula.candidate_sets().is_empty()
+        || !term_formula.type_entries().is_empty()
+        || !term_formula.facts().is_empty()
+        || !term_formula.diagnostics().is_empty()
+    {
+        return Err(ResolvedTypedAstError::InvalidStatementFormulaPayload {
+            formula: row.formula,
+        });
+    }
+    let formula = term_formula.formulas().get(row.formula).ok_or(
+        ResolvedTypedAstError::InvalidStatementFormula {
+            formula: row.formula,
+        },
+    )?;
+    if formula.kind != FormulaKind::Contradiction
+        || formula.status != FormulaStatus::Checked
+        || formula.recovery != NodeRecoveryState::Normal
+    {
+        return Err(ResolvedTypedAstError::InvalidStatementFormula {
+            formula: row.formula,
+        });
+    }
+    if !formula.terms.is_empty()
+        || formula.asserted_type.is_some()
+        || !formula.expected_types.is_empty()
+        || formula.candidate_set.is_some()
+        || !formula.facts.is_empty()
+        || !formula.deferred.is_empty()
+    {
+        return Err(ResolvedTypedAstError::InvalidStatementFormulaPayload {
+            formula: row.formula,
+        });
+    }
+
+    let contexts = statement_inputs.binding_env.contexts();
+    let Some(context) = contexts.get(formula.context) else {
+        return Err(ResolvedTypedAstError::InvalidStatementFormula {
+            formula: row.formula,
+        });
+    };
+    if !exact_statement_binding_shape(StatementBindingShape {
+        context_count: contexts.len(),
+        owner_is_module: context.owner == BindingContextOwner::Module,
+        parent_is_none: context.parent.is_none(),
+        layer_is_module: context.layer == BindingContextLayer::Module,
+        recovery_is_normal: context.recovery == BindingContextRecovery::Normal,
+        context_bindings_empty: context.bindings.is_empty(),
+        visible_bindings_empty: context.visible_bindings.is_empty(),
+        binding_table_empty: statement_inputs.binding_env.bindings().is_empty(),
+        diagnostics_empty: statement_inputs.binding_env.diagnostics().is_empty(),
+    }) {
+        return Err(ResolvedTypedAstError::InvalidStatementFormulaPayload {
+            formula: row.formula,
+        });
+    }
+
+    let TypedSiteRef::Node(_) = &formula.site else {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    };
+    let formula_node_id = row.formula_node;
+    let nodes = inputs.typed_ast.nodes();
+    let Some(root_id) = nodes.root() else {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    };
+    let Some(root) = nodes.node(root_id) else {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    };
+    let Some(owner_node) = nodes.node(row.owner_node) else {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    };
+    let Some(formula_node) = nodes.node(formula_node_id) else {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    };
+    if !exact_statement_tree_shape(StatementTreeShape {
+        node_count: nodes.len(),
+        root_kind_matches: root.kind.as_str() == "source.module",
+        owner_kind_matches: owner_node.kind.as_str() == "source.statement.theorem",
+        formula_kind_matches: formula_node.kind.as_str() == "source.formula.contradiction",
+        root_child_matches: root.children == [row.owner_node],
+        owner_child_matches: owner_node.children == [formula_node_id],
+        formula_children_empty: formula_node.children.is_empty(),
+        root_recovery_normal: root.recovery == NodeRecoveryState::Normal,
+        owner_recovery_normal: owner_node.recovery == NodeRecoveryState::Normal,
+        formula_recovery_normal: formula_node.recovery == NodeRecoveryState::Normal,
+        root_typing_successful: root.typing == TypingState::Successful,
+        owner_typing_successful: owner_node.typing == TypingState::Successful,
+        formula_typing_successful: formula_node.typing == TypingState::Successful,
+    }) {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    }
+    let mut statement_roles = BTreeMap::new();
+    for hint in &inputs.node_hints {
+        let ResolvedNodeKindHintKind::SourcePreserved { role } = &hint.kind else {
+            return Err(ResolvedTypedAstError::InvalidStatementTree);
+        };
+        if statement_roles
+            .insert(hint.typed_node, role.as_str())
+            .is_some()
+        {
+            return Err(ResolvedTypedAstError::InvalidStatementTree);
+        }
+    }
+    if statement_roles.len() != 3
+        || statement_roles.get(&root_id) != Some(&"source.module")
+        || statement_roles.get(&row.owner_node) != Some(&"source.statement.theorem")
+        || statement_roles.get(&formula_node_id) != Some(&"source.formula.contradiction")
+    {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    }
+    let SourceAnchor::Range(root_range) = &root.anchor else {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    };
+    let SourceAnchor::Range(typed_owner_range) = &owner_node.anchor else {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    };
+    let SourceAnchor::Range(typed_formula_range) = &formula_node.anchor else {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    };
+    if !exact_statement_range_shape(StatementRangeShape {
+        root_ordered: root_range.start <= root_range.end,
+        owner_ordered: owner_range.start <= owner_range.end,
+        formula_ordered: formula.source_range.start <= formula.source_range.end,
+        owner_range_matches: *typed_owner_range == owner_range,
+        formula_range_matches: *typed_formula_range == formula.source_range,
+        formula_recovery_matches: formula_node.recovery == formula.recovery,
+        root_source_matches: root_range.source_id == source_id,
+        owner_source_matches: typed_owner_range.source_id == source_id,
+        formula_source_matches: typed_formula_range.source_id == source_id,
+        root_contains_owner: root_range.start <= typed_owner_range.start
+            && typed_owner_range.end <= root_range.end,
+    }) {
+        return Err(ResolvedTypedAstError::InvalidStatementTree);
+    }
+    if !(owner_range.start < formula.source_range.start
+        && formula.source_range.end < owner_range.end)
+    {
+        return Err(ResolvedTypedAstError::StatementSourceOrderMismatch);
+    }
+
+    Ok((
+        term_formula.formulas().clone(),
+        StatementSemanticTable {
+            entries: vec![StatementSemantic {
+                id: StatementSemanticId::new(0),
+                owner: row.owner.clone(),
+                owner_node: row.owner_node,
+                owner_range,
+                owner_origin: owner.origin().clone(),
+                formula: row.formula,
+                formula_node: row.formula_node,
+            }],
+        },
+    ))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct StatementBindingShape {
+    context_count: usize,
+    owner_is_module: bool,
+    parent_is_none: bool,
+    layer_is_module: bool,
+    recovery_is_normal: bool,
+    context_bindings_empty: bool,
+    visible_bindings_empty: bool,
+    binding_table_empty: bool,
+    diagnostics_empty: bool,
+}
+
+const fn exact_statement_binding_shape(shape: StatementBindingShape) -> bool {
+    shape.context_count == 1
+        && shape.owner_is_module
+        && shape.parent_is_none
+        && shape.layer_is_module
+        && shape.recovery_is_normal
+        && shape.context_bindings_empty
+        && shape.visible_bindings_empty
+        && shape.binding_table_empty
+        && shape.diagnostics_empty
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct StatementTreeShape {
+    node_count: usize,
+    root_kind_matches: bool,
+    owner_kind_matches: bool,
+    formula_kind_matches: bool,
+    root_child_matches: bool,
+    owner_child_matches: bool,
+    formula_children_empty: bool,
+    root_recovery_normal: bool,
+    owner_recovery_normal: bool,
+    formula_recovery_normal: bool,
+    root_typing_successful: bool,
+    owner_typing_successful: bool,
+    formula_typing_successful: bool,
+}
+
+const fn exact_statement_tree_shape(shape: StatementTreeShape) -> bool {
+    shape.node_count == 3
+        && shape.root_kind_matches
+        && shape.owner_kind_matches
+        && shape.formula_kind_matches
+        && shape.root_child_matches
+        && shape.owner_child_matches
+        && shape.formula_children_empty
+        && shape.root_recovery_normal
+        && shape.owner_recovery_normal
+        && shape.formula_recovery_normal
+        && shape.root_typing_successful
+        && shape.owner_typing_successful
+        && shape.formula_typing_successful
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct StatementRangeShape {
+    root_ordered: bool,
+    owner_ordered: bool,
+    formula_ordered: bool,
+    owner_range_matches: bool,
+    formula_range_matches: bool,
+    formula_recovery_matches: bool,
+    root_source_matches: bool,
+    owner_source_matches: bool,
+    formula_source_matches: bool,
+    root_contains_owner: bool,
+}
+
+const fn exact_statement_range_shape(shape: StatementRangeShape) -> bool {
+    shape.root_ordered
+        && shape.owner_ordered
+        && shape.formula_ordered
+        && shape.owner_range_matches
+        && shape.formula_range_matches
+        && shape.formula_recovery_matches
+        && shape.root_source_matches
+        && shape.owner_source_matches
+        && shape.formula_source_matches
+        && shape.root_contains_owner
 }
 
 struct ResolvedDiagnosticMaps {
@@ -2120,6 +2559,22 @@ fn write_resolved_diagnostics(output: &mut String, table: &ResolvedTypedDiagnost
     }
 }
 
+fn write_statement_semantics(output: &mut String, table: &StatementSemanticTable) {
+    output.push_str("statement-semantics:\n");
+    for (id, statement) in table.iter() {
+        let _ = write!(
+            output,
+            "  statement#{} owner=\"{}\" owner_node=node#{} formula=formula#{} range=",
+            id.index(),
+            escaped_display(statement.owner.fqn().as_str()),
+            statement.owner_node.index(),
+            statement.formula.index(),
+        );
+        write_range(output, statement.owner_range);
+        output.push('\n');
+    }
+}
+
 fn write_node_kind(output: &mut String, kind: &ResolvedTypedNodeKind) {
     match kind {
         ResolvedTypedNodeKind::SourcePreserved { role } => {
@@ -2322,6 +2777,10 @@ fn write_escaped(output: &mut String, value: &str) {
 mod tests {
     use super::*;
     use crate::{
+        binding_env::{
+            BindingContextDraft, BindingContextId, BindingContextTable, BindingDiagnosticTable,
+            BindingEnvParts, BindingTable,
+        },
         cluster_trace::{
             ClusterAttributeFingerprint, ClusterFactDraft, ClusterFactFingerprint,
             ClusterFactProvenance, ClusterStepId, ClusterTypeFingerprint,
@@ -2336,6 +2795,11 @@ mod tests {
             TemplateInstantiationKey, TemplateParameterKey, TemplateQuaStatus,
             UnsupportedOverloadRole,
         },
+        type_checker::{
+            CandidateIdentity, ExpectedTypeInput, FormulaDeferredReason, FormulaFactInput,
+            FormulaInput, OpenCandidateInput, StatementPayloadTableForTest, TermFormulaChecker,
+            TermInput, TermKind, TypeExpressionInput, TypeHeadInput,
+        },
         typed_ast::{
             BuiltinRuleId, CoercionTable, ContextRecoveryState, FactProvenance, FactStatus,
             InitialObligationTable, LocalTypeContextDraft, LocalTypeContextTable,
@@ -2344,10 +2808,1209 @@ mod tests {
             TypeTable, TypedArenaBuilder, TypedAstParts, TypedNode, TypedNodeLinks,
         },
     };
-    use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
+    use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId, SemanticOrigin};
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
     };
+
+    #[test]
+    fn exact_statement_semantic_projection_is_deterministic_and_fail_closed() {
+        let fixture = statement_fixture(
+            FormulaKind::Contradiction,
+            NodeRecoveryState::Normal,
+            50,
+            60,
+            false,
+        );
+        let row = fixture.row();
+        let first = assemble_statement(&fixture, vec![row.clone()])
+            .expect("exact statement semantic projection should assemble");
+        let second = assemble_statement(&fixture, vec![row.clone()])
+            .expect("equivalent statement semantic projection should assemble");
+        assert_eq!(first, second);
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert_eq!(first.statement_semantics().len(), 1);
+        assert_eq!(first.checked_formulas(), fixture.term_formula.formulas());
+        let statement = first
+            .statement_semantics()
+            .get(StatementSemanticId::new(0))
+            .expect("statement row");
+        assert_eq!(statement.owner, fixture.owner);
+        assert_eq!(statement.owner_node, TypedNodeId::new(1));
+        assert_eq!(statement.formula, CheckedFormulaId::new(0));
+        assert_eq!(statement.formula_node, TypedNodeId::new(0));
+        assert_eq!(
+            first
+                .checked_formulas()
+                .get(statement.formula)
+                .expect("checked formula")
+                .site,
+            TypedSiteRef::Node(TypedNodeId::new(27))
+        );
+        assert!(first.debug_text().contains("statement-semantics:"));
+
+        let missing = assemble_statement(&fixture, Vec::new())
+            .expect_err("missing statement row should fail closed");
+        assert!(matches!(
+            missing,
+            ResolvedTypedAstError::MissingStatementSemantic
+        ));
+
+        let duplicate = assemble_statement(&fixture, vec![row.clone(), row.clone()])
+            .expect_err("duplicate statement row should fail closed");
+        assert!(matches!(
+            duplicate,
+            ResolvedTypedAstError::DuplicateStatementOwner { .. }
+        ));
+
+        let invalid_formula = assemble_statement(
+            &fixture,
+            vec![StatementSemanticInput {
+                formula: CheckedFormulaId::new(1),
+                ..row.clone()
+            }],
+        )
+        .expect_err("invalid checked formula id should fail closed");
+        assert!(matches!(
+            invalid_formula,
+            ResolvedTypedAstError::InvalidStatementFormula { .. }
+        ));
+
+        let wrong_owner_node = assemble_statement(
+            &fixture,
+            vec![StatementSemanticInput {
+                owner_node: TypedNodeId::new(0),
+                ..row
+            }],
+        )
+        .expect_err("wrong theorem typed node should fail closed");
+        assert!(matches!(
+            wrong_owner_node,
+            ResolvedTypedAstError::InvalidStatementTree
+        ));
+
+        for invalid in [
+            statement_fixture(
+                FormulaKind::Thesis,
+                NodeRecoveryState::Normal,
+                50,
+                60,
+                false,
+            ),
+            statement_fixture(
+                FormulaKind::Contradiction,
+                NodeRecoveryState::Recovered,
+                50,
+                60,
+                false,
+            ),
+            statement_fixture(
+                FormulaKind::Contradiction,
+                NodeRecoveryState::Normal,
+                50,
+                60,
+                true,
+            ),
+            statement_fixture(
+                FormulaKind::Contradiction,
+                NodeRecoveryState::Normal,
+                5,
+                6,
+                false,
+            ),
+        ] {
+            assert!(
+                assemble_statement(&invalid, vec![invalid.row()]).is_err(),
+                "invalid kind/recovery/status/order/provenance must fail closed"
+            );
+        }
+    }
+
+    #[test]
+    fn statement_semantic_projection_rejects_every_validation_family_and_owns_output() {
+        let fixture = statement_fixture(
+            FormulaKind::Contradiction,
+            NodeRecoveryState::Normal,
+            50,
+            60,
+            false,
+        );
+        let row = fixture.row();
+        let other_owner = SymbolId::new(
+            fixture.module.clone(),
+            LocalSymbolId::new("OtherTask180"),
+            FullyQualifiedName::new("pkg::main::theorem::OtherTask180"),
+        );
+
+        let duplicate_formula = assemble_statement(
+            &fixture,
+            vec![
+                row.clone(),
+                StatementSemanticInput {
+                    owner: other_owner.clone(),
+                    ..row.clone()
+                },
+            ],
+        )
+        .expect_err("duplicate formula identity should fail closed");
+        assert!(matches!(
+            duplicate_formula,
+            ResolvedTypedAstError::DuplicateStatementFormula { .. }
+        ));
+
+        let non_singleton = assemble_statement(
+            &fixture,
+            vec![
+                row.clone(),
+                StatementSemanticInput {
+                    owner: other_owner.clone(),
+                    formula: CheckedFormulaId::new(1),
+                    ..row.clone()
+                },
+            ],
+        )
+        .expect_err("two unique rows should fail the singleton contract");
+        assert!(matches!(
+            non_singleton,
+            ResolvedTypedAstError::NonSingletonStatementSemantic { count: 2 }
+        ));
+
+        let other_module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("other"));
+        let mismatched_bindings = statement_binding_env(
+            fixture.source,
+            other_module.clone(),
+            BindingContextRecovery::Normal,
+        );
+        let environment = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &mismatched_bindings,
+            &fixture.term_formula,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("binding module mismatch should fail closed");
+        assert!(matches!(
+            environment,
+            ResolvedTypedAstError::StatementEnvironmentMismatch
+        ));
+        let mismatched_source_bindings = statement_binding_env(
+            secondary_source_id(91),
+            fixture.module.clone(),
+            BindingContextRecovery::Normal,
+        );
+        let source_environment = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &mismatched_source_bindings,
+            &fixture.term_formula,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("binding source mismatch should fail closed");
+        assert!(matches!(
+            source_environment,
+            ResolvedTypedAstError::StatementEnvironmentMismatch
+        ));
+
+        let other_module_formula = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &statement_binding_env(
+                fixture.source,
+                other_module.clone(),
+                BindingContextRecovery::Normal,
+            ),
+            [FormulaInput::new(
+                TypedSiteRef::Node(TypedNodeId::new(27)),
+                fixture.context,
+                fixture.formula_range,
+                FormulaKind::Contradiction,
+            )],
+        );
+        let term_module_environment = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &other_module_formula,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("term/formula module mismatch should fail closed");
+        assert!(matches!(
+            term_module_environment,
+            ResolvedTypedAstError::StatementEnvironmentMismatch
+        ));
+        let other_source = secondary_source_id(92);
+        let other_source_formula = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &statement_binding_env(
+                other_source,
+                fixture.module.clone(),
+                BindingContextRecovery::Normal,
+            ),
+            [FormulaInput::new(
+                TypedSiteRef::Node(TypedNodeId::new(27)),
+                fixture.context,
+                range(other_source, 50, 60),
+                FormulaKind::Contradiction,
+            )],
+        );
+        let term_source_environment = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &other_source_formula,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("term/formula source mismatch should fail closed");
+        assert!(matches!(
+            term_source_environment,
+            ResolvedTypedAstError::StatementEnvironmentMismatch
+        ));
+
+        let wrong_owner = CheckedStatementOwner::from_validated_parts_for_test(
+            other_owner,
+            fixture.owner_range,
+            SemanticOrigin::new(
+                fixture.source,
+                fixture.module.clone(),
+                SourceAnchor::Range(fixture.owner_range),
+                vec![0],
+            ),
+        );
+        let owner_error = assemble_statement_with(
+            &fixture.typed_ast,
+            &wrong_owner,
+            &fixture.binding_env,
+            &fixture.term_formula,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("checked owner mismatch should fail closed");
+        assert!(matches!(
+            owner_error,
+            ResolvedTypedAstError::InvalidStatementOwner { .. }
+        ));
+
+        let formula_input = FormulaInput::new(
+            TypedSiteRef::Node(TypedNodeId::new(27)),
+            fixture.context,
+            fixture.formula_range,
+            FormulaKind::Contradiction,
+        );
+        let duplicate_formula_payload = fixture
+            .term_formula
+            .clone()
+            .duplicate_formula_for_statement_test();
+        let formula_count_error = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &duplicate_formula_payload,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("non-singleton formula table should fail closed");
+        assert!(matches!(
+            formula_count_error,
+            ResolvedTypedAstError::InvalidStatementFormulaPayload { .. }
+        ));
+
+        let term_payload = TermFormulaChecker::default().infer_inputs_without_symbols_for_test(
+            &fixture.binding_env,
+            [TermInput::new(
+                TypedSiteRef::Node(TypedNodeId::new(28)),
+                fixture.context,
+                range(fixture.source, 40, 41),
+                TermKind::Unsupported,
+            )],
+            [formula_input.clone()],
+        );
+        let top_level_payload = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &term_payload,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("forbidden top-level term payload should fail closed");
+        assert!(matches!(
+            top_level_payload,
+            ResolvedTypedAstError::InvalidStatementFormulaPayload { .. }
+        ));
+
+        let type_expression = TypeExpressionInput::new(
+            TypedSiteRef::Node(TypedNodeId::new(29)),
+            range(fixture.source, 61, 64),
+            "set",
+            TypeHeadInput::BuiltinSet,
+        );
+        let typed_formula = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &fixture.binding_env,
+            [formula_input
+                .clone()
+                .with_asserted_type(type_expression.clone())],
+        );
+        let candidate_formula = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &fixture.binding_env,
+            [formula_input
+                .clone()
+                .with_candidates(vec![OpenCandidateInput::new(
+                    CandidateIdentity::Builtin("statement-test-predicate".to_owned()),
+                    fixture.formula_range,
+                )])],
+        );
+        let fact_formula = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &fixture.binding_env,
+            [formula_input.clone().with_facts(vec![FormulaFactInput::new(
+                TypedSiteRef::Node(TypedNodeId::new(27)),
+                TypePredicateRef::new("statement-test-fact"),
+                Polarity::Positive,
+                fixture.formula_range,
+            )])],
+        );
+        let diagnostic_formula = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &fixture.binding_env,
+            [formula_input
+                .clone()
+                .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
+        );
+        for (table, payload) in [
+            (
+                StatementPayloadTableForTest::NormalizedTypes,
+                typed_formula.clone(),
+            ),
+            (StatementPayloadTableForTest::Terms, term_payload.clone()),
+            (
+                StatementPayloadTableForTest::CandidateSets,
+                candidate_formula.clone(),
+            ),
+            (
+                StatementPayloadTableForTest::TypeEntries,
+                typed_formula.clone(),
+            ),
+            (StatementPayloadTableForTest::Facts, fact_formula.clone()),
+            (
+                StatementPayloadTableForTest::Diagnostics,
+                diagnostic_formula.clone(),
+            ),
+        ] {
+            let isolated = payload.retain_statement_payload_table_for_test(table);
+            let error = assemble_statement_with(
+                &fixture.typed_ast,
+                &fixture.checked_owner,
+                &fixture.binding_env,
+                &isolated,
+                vec![row.clone()],
+                statement_node_hints(),
+            )
+            .expect_err("each forbidden top-level table should fail closed independently");
+            assert!(matches!(
+                error,
+                ResolvedTypedAstError::InvalidStatementFormulaPayload { .. }
+            ));
+        }
+
+        let formula_payload = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &fixture.binding_env,
+            [formula_input
+                .clone()
+                .with_terms(vec![TypedSiteRef::Node(TypedNodeId::new(28))])],
+        );
+        let formula_payload_error = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &formula_payload,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("forbidden formula child payload should fail closed");
+        assert!(matches!(
+            formula_payload_error,
+            ResolvedTypedAstError::InvalidStatementFormulaPayload { .. }
+        ));
+
+        let expected_formula = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &fixture.binding_env,
+            [formula_input
+                .clone()
+                .with_expected_types(vec![ExpectedTypeInput::new(
+                    TypedSiteRef::Node(TypedNodeId::new(28)),
+                    type_expression,
+                    fixture.formula_range,
+                )])],
+        );
+        for payload in [
+            typed_formula.clear_top_level_statement_payload_for_test(),
+            expected_formula.clear_top_level_statement_payload_for_test(),
+            candidate_formula.clear_top_level_statement_payload_for_test(),
+            fact_formula.clear_top_level_statement_payload_for_test(),
+            diagnostic_formula.clear_top_level_statement_payload_for_test(),
+        ] {
+            let error = assemble_statement_with(
+                &fixture.typed_ast,
+                &fixture.checked_owner,
+                &fixture.binding_env,
+                &payload,
+                vec![row.clone()],
+                statement_node_hints(),
+            )
+            .expect_err("each forbidden checked-formula child should fail closed independently");
+            assert!(matches!(
+                error,
+                ResolvedTypedAstError::InvalidStatementFormulaPayload { .. }
+            ));
+        }
+
+        let invalid_formula_context = fixture
+            .term_formula
+            .clone()
+            .set_formula_context_for_statement_test(BindingContextId::new(99));
+        let invalid_context_id = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &invalid_formula_context,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("missing formula binding context should fail closed");
+        assert!(matches!(
+            invalid_context_id,
+            ResolvedTypedAstError::InvalidStatementFormula { .. }
+        ));
+
+        let role_formula = TermFormulaChecker::default().infer_without_symbols_for_test(
+            &fixture.binding_env,
+            [FormulaInput::new(
+                TypedSiteRef::Role {
+                    node: TypedNodeId::new(27),
+                    role: TypeRole::new("source-formula"),
+                },
+                fixture.context,
+                fixture.formula_range,
+                FormulaKind::Contradiction,
+            )],
+        );
+        let role_site = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &role_formula,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("non-node checked formula site should fail closed");
+        assert!(matches!(
+            role_site,
+            ResolvedTypedAstError::InvalidStatementTree
+        ));
+
+        let recovered_bindings = statement_binding_env(
+            fixture.source,
+            fixture.module.clone(),
+            BindingContextRecovery::Recovered,
+        );
+        let context_error = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &recovered_bindings,
+            &fixture.term_formula,
+            vec![row.clone()],
+            statement_node_hints(),
+        )
+        .expect_err("recovered binding context should fail closed");
+        assert!(matches!(
+            context_error,
+            ResolvedTypedAstError::InvalidStatementFormulaPayload { .. }
+        ));
+
+        let binding_shape = StatementBindingShape {
+            context_count: 1,
+            owner_is_module: true,
+            parent_is_none: true,
+            layer_is_module: true,
+            recovery_is_normal: true,
+            context_bindings_empty: true,
+            visible_bindings_empty: true,
+            binding_table_empty: true,
+            diagnostics_empty: true,
+        };
+        assert!(exact_statement_binding_shape(binding_shape));
+        for invalid in [
+            StatementBindingShape {
+                context_count: 2,
+                ..binding_shape
+            },
+            StatementBindingShape {
+                owner_is_module: false,
+                ..binding_shape
+            },
+            StatementBindingShape {
+                parent_is_none: false,
+                ..binding_shape
+            },
+            StatementBindingShape {
+                layer_is_module: false,
+                ..binding_shape
+            },
+            StatementBindingShape {
+                recovery_is_normal: false,
+                ..binding_shape
+            },
+            StatementBindingShape {
+                context_bindings_empty: false,
+                ..binding_shape
+            },
+            StatementBindingShape {
+                visible_bindings_empty: false,
+                ..binding_shape
+            },
+            StatementBindingShape {
+                binding_table_empty: false,
+                ..binding_shape
+            },
+            StatementBindingShape {
+                diagnostics_empty: false,
+                ..binding_shape
+            },
+        ] {
+            assert!(
+                !exact_statement_binding_shape(invalid),
+                "every exact binding-context predicate must fail closed independently"
+            );
+        }
+
+        let tree_shape = StatementTreeShape {
+            node_count: 3,
+            root_kind_matches: true,
+            owner_kind_matches: true,
+            formula_kind_matches: true,
+            root_child_matches: true,
+            owner_child_matches: true,
+            formula_children_empty: true,
+            root_recovery_normal: true,
+            owner_recovery_normal: true,
+            formula_recovery_normal: true,
+            root_typing_successful: true,
+            owner_typing_successful: true,
+            formula_typing_successful: true,
+        };
+        assert!(exact_statement_tree_shape(tree_shape));
+        for invalid in [
+            StatementTreeShape {
+                node_count: 4,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                root_kind_matches: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                owner_kind_matches: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                formula_kind_matches: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                root_child_matches: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                owner_child_matches: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                formula_children_empty: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                root_recovery_normal: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                owner_recovery_normal: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                formula_recovery_normal: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                root_typing_successful: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                owner_typing_successful: false,
+                ..tree_shape
+            },
+            StatementTreeShape {
+                formula_typing_successful: false,
+                ..tree_shape
+            },
+        ] {
+            assert!(
+                !exact_statement_tree_shape(invalid),
+                "every exact compact-tree predicate must fail closed independently"
+            );
+        }
+
+        let range_shape = StatementRangeShape {
+            root_ordered: true,
+            owner_ordered: true,
+            formula_ordered: true,
+            owner_range_matches: true,
+            formula_range_matches: true,
+            formula_recovery_matches: true,
+            root_source_matches: true,
+            owner_source_matches: true,
+            formula_source_matches: true,
+            root_contains_owner: true,
+        };
+        assert!(exact_statement_range_shape(range_shape));
+        for invalid in [
+            StatementRangeShape {
+                root_ordered: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                owner_ordered: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                formula_ordered: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                owner_range_matches: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                formula_range_matches: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                formula_recovery_matches: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                root_source_matches: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                owner_source_matches: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                formula_source_matches: false,
+                ..range_shape
+            },
+            StatementRangeShape {
+                root_contains_owner: false,
+                ..range_shape
+            },
+        ] {
+            assert!(
+                !exact_statement_range_shape(invalid),
+                "every exact compact-tree range predicate must fail closed independently"
+            );
+        }
+
+        let wrong_formula_node = assemble_statement(
+            &fixture,
+            vec![StatementSemanticInput {
+                formula_node: TypedNodeId::new(1),
+                ..row.clone()
+            }],
+        )
+        .expect_err("wrong formula typed node should fail closed");
+        assert!(matches!(
+            wrong_formula_node,
+            ResolvedTypedAstError::InvalidStatementTree
+        ));
+
+        for corruption in [
+            StatementTreeCorruption::BrokenEdge,
+            StatementTreeCorruption::RecoveredOwner,
+            StatementTreeCorruption::PartialOwner,
+            StatementTreeCorruption::PointOwnerAnchor,
+            StatementTreeCorruption::PointFormulaAnchor,
+            StatementTreeCorruption::PointRootAnchor,
+            StatementTreeCorruption::FormulaRangeMismatch,
+            StatementTreeCorruption::RootContainment,
+            StatementTreeCorruption::SwappedKinds,
+        ] {
+            let typed_ast = corrupted_statement_typed_ast(&fixture, corruption);
+            let error = assemble_statement_with(
+                &typed_ast,
+                &fixture.checked_owner,
+                &fixture.binding_env,
+                &fixture.term_formula,
+                vec![row.clone()],
+                statement_node_hints(),
+            )
+            .expect_err("typed tree corruption should fail closed");
+            assert!(matches!(error, ResolvedTypedAstError::InvalidStatementTree));
+        }
+
+        let mut wrong_hints = statement_node_hints();
+        wrong_hints.swap(0, 2);
+        wrong_hints[0].typed_node = TypedNodeId::new(0);
+        wrong_hints[2].typed_node = TypedNodeId::new(2);
+        let hint_error = assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &fixture.term_formula,
+            vec![row.clone()],
+            wrong_hints,
+        )
+        .expect_err("swapped final-tree roles should fail closed");
+        assert!(matches!(
+            hint_error,
+            ResolvedTypedAstError::InvalidStatementTree
+        ));
+
+        let mut duplicate_hints = statement_node_hints();
+        duplicate_hints.push(duplicate_hints[0].clone());
+        let mut non_source_hints = statement_node_hints();
+        non_source_hints[0].kind = ResolvedNodeKindHintKind::Degraded {
+            reason: ResolvedNodeRecoveryReason::TypingState(TypingState::Error),
+        };
+        let hints = statement_node_hints();
+        for invalid_hints in [
+            Vec::new(),
+            hints[..2].to_vec(),
+            duplicate_hints,
+            non_source_hints,
+        ] {
+            let error = assemble_statement_with(
+                &fixture.typed_ast,
+                &fixture.checked_owner,
+                &fixture.binding_env,
+                &fixture.term_formula,
+                vec![row.clone()],
+                invalid_hints,
+            )
+            .expect_err("missing, duplicate, or non-source hints should fail closed");
+            assert!(matches!(error, ResolvedTypedAstError::InvalidStatementTree));
+        }
+
+        for invalid_range in [(60, 50), (10, 60), (50, 90)] {
+            let invalid = statement_fixture(
+                FormulaKind::Contradiction,
+                NodeRecoveryState::Normal,
+                invalid_range.0,
+                invalid_range.1,
+                false,
+            );
+            assert!(
+                assemble_statement(&invalid, vec![invalid.row()]).is_err(),
+                "inverted or boundary-equal formula range must fail closed"
+            );
+        }
+
+        let mut mutable_fixture = statement_fixture(
+            FormulaKind::Contradiction,
+            NodeRecoveryState::Normal,
+            50,
+            60,
+            false,
+        );
+        let owned = assemble_statement(&mutable_fixture, vec![mutable_fixture.row()])
+            .expect("owned statement projection");
+        mutable_fixture.term_formula = TermFormulaChecker::default()
+            .infer_without_symbols_for_test(
+                &mutable_fixture.binding_env,
+                [FormulaInput::new(
+                    TypedSiteRef::Node(TypedNodeId::new(27)),
+                    mutable_fixture.context,
+                    mutable_fixture.formula_range,
+                    FormulaKind::Thesis,
+                )],
+            );
+        assert_eq!(
+            owned
+                .checked_formulas()
+                .get(CheckedFormulaId::new(0))
+                .expect("owned checked formula")
+                .kind,
+            FormulaKind::Contradiction
+        );
+        assert_eq!(owned.statement_semantics().len(), 1);
+    }
+
+    struct StatementFixture {
+        source: SourceId,
+        module: ModuleId,
+        context: BindingContextId,
+        owner_range: SourceRange,
+        formula_range: SourceRange,
+        typed_ast: TypedAst,
+        binding_env: BindingEnv,
+        term_formula: TermFormulaInferenceOutput,
+        owner: SymbolId,
+        checked_owner: CheckedStatementOwner,
+    }
+
+    impl StatementFixture {
+        fn row(&self) -> StatementSemanticInput {
+            StatementSemanticInput {
+                owner: self.owner.clone(),
+                owner_node: TypedNodeId::new(1),
+                formula: CheckedFormulaId::new(0),
+                formula_node: TypedNodeId::new(0),
+            }
+        }
+    }
+
+    fn statement_fixture(
+        formula_kind: FormulaKind,
+        formula_recovery: NodeRecoveryState,
+        formula_start: usize,
+        formula_end: usize,
+        deferred: bool,
+    ) -> StatementFixture {
+        let source = source_id(90);
+        let module = module();
+        let owner_range = range(source, 10, 90);
+        let formula_range = range(source, formula_start, formula_end);
+        let owner = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new("Task180"),
+            FullyQualifiedName::new("pkg::main::theorem::Task180"),
+        );
+        let owner_origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(owner_range),
+            vec![0],
+        );
+        let checked_owner = CheckedStatementOwner::from_validated_parts_for_test(
+            owner.clone(),
+            owner_range,
+            owner_origin,
+        );
+
+        let mut contexts = BindingContextTable::new();
+        let context = contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let binding_env = BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module.clone(),
+            contexts,
+            bindings: BindingTable::new(),
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("statement binding environment");
+
+        let mut formula_input = FormulaInput::new(
+            TypedSiteRef::Node(TypedNodeId::new(27)),
+            context,
+            formula_range,
+            formula_kind,
+        )
+        .with_recovery(formula_recovery);
+        if deferred {
+            formula_input =
+                formula_input.with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]);
+        }
+        let term_formula = TermFormulaChecker::default()
+            .infer_without_symbols_for_test(&binding_env, [formula_input]);
+
+        let mut builder = TypedArenaBuilder::new();
+        builder
+            .push(
+                TypedNode::new(
+                    "source.formula.contradiction",
+                    SourceAnchor::Range(formula_range),
+                )
+                .with_recovery(formula_recovery)
+                .with_typing(TypingState::Successful),
+            )
+            .expect("formula node");
+        builder
+            .push(
+                TypedNode::new("source.statement.theorem", SourceAnchor::Range(owner_range))
+                    .with_children(vec![TypedNodeId::new(0)])
+                    .with_recovery(NodeRecoveryState::Normal)
+                    .with_typing(TypingState::Successful),
+            )
+            .expect("theorem node");
+        builder
+            .push(
+                TypedNode::new("source.module", SourceAnchor::Range(range(source, 0, 100)))
+                    .with_children(vec![TypedNodeId::new(1)])
+                    .with_recovery(NodeRecoveryState::Normal)
+                    .with_typing(TypingState::Successful),
+            )
+            .expect("module node");
+        let typed_ast = TypedAst::try_new(TypedAstParts {
+            source_id: source,
+            module_id: module,
+            resolved_root: None,
+            nodes: builder
+                .finish(Some(TypedNodeId::new(2)))
+                .expect("statement typed arena"),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("statement typed AST");
+
+        StatementFixture {
+            source,
+            module: typed_ast.module_id().clone(),
+            context,
+            owner_range,
+            formula_range,
+            typed_ast,
+            binding_env,
+            term_formula,
+            owner,
+            checked_owner,
+        }
+    }
+
+    #[derive(Clone, Copy)]
+    enum StatementTreeCorruption {
+        BrokenEdge,
+        RecoveredOwner,
+        PartialOwner,
+        PointOwnerAnchor,
+        PointFormulaAnchor,
+        PointRootAnchor,
+        FormulaRangeMismatch,
+        RootContainment,
+        SwappedKinds,
+    }
+
+    fn corrupted_statement_typed_ast(
+        fixture: &StatementFixture,
+        corruption: StatementTreeCorruption,
+    ) -> TypedAst {
+        let formula_kind = if matches!(corruption, StatementTreeCorruption::SwappedKinds) {
+            "source.module"
+        } else {
+            "source.formula.contradiction"
+        };
+        let formula_range = if matches!(corruption, StatementTreeCorruption::FormulaRangeMismatch) {
+            range(
+                fixture.source,
+                fixture.formula_range.start + 1,
+                fixture.formula_range.end,
+            )
+        } else {
+            fixture.formula_range
+        };
+        let formula_anchor = if matches!(corruption, StatementTreeCorruption::PointFormulaAnchor) {
+            SourceAnchor::Point {
+                source_id: fixture.source,
+                offset: formula_range.start,
+            }
+        } else {
+            SourceAnchor::Range(formula_range)
+        };
+        let mut builder = TypedArenaBuilder::new();
+        builder
+            .push(
+                TypedNode::new(formula_kind, formula_anchor)
+                    .with_recovery(NodeRecoveryState::Normal)
+                    .with_typing(TypingState::Successful),
+            )
+            .expect("corrupt formula node");
+        let owner_kind = if matches!(corruption, StatementTreeCorruption::SwappedKinds) {
+            "source.formula.contradiction"
+        } else {
+            "source.statement.theorem"
+        };
+        let owner_anchor = if matches!(corruption, StatementTreeCorruption::PointOwnerAnchor) {
+            SourceAnchor::Point {
+                source_id: fixture.source,
+                offset: fixture.owner_range.start,
+            }
+        } else {
+            SourceAnchor::Range(fixture.owner_range)
+        };
+        let mut owner = TypedNode::new(owner_kind, owner_anchor)
+            .with_recovery(
+                if matches!(corruption, StatementTreeCorruption::RecoveredOwner) {
+                    NodeRecoveryState::Recovered
+                } else {
+                    NodeRecoveryState::Normal
+                },
+            )
+            .with_typing(
+                if matches!(corruption, StatementTreeCorruption::PartialOwner) {
+                    TypingState::Error
+                } else {
+                    TypingState::Successful
+                },
+            );
+        if !matches!(corruption, StatementTreeCorruption::BrokenEdge) {
+            owner = owner.with_children(vec![TypedNodeId::new(0)]);
+        }
+        builder.push(owner).expect("corrupt owner node");
+        let root_range = if matches!(corruption, StatementTreeCorruption::RootContainment) {
+            range(
+                fixture.source,
+                fixture.owner_range.start + 1,
+                fixture.owner_range.end - 1,
+            )
+        } else {
+            range(fixture.source, 0, 100)
+        };
+        let root_kind = if matches!(corruption, StatementTreeCorruption::SwappedKinds) {
+            "source.statement.theorem"
+        } else {
+            "source.module"
+        };
+        let root_anchor = if matches!(corruption, StatementTreeCorruption::PointRootAnchor) {
+            SourceAnchor::Point {
+                source_id: fixture.source,
+                offset: root_range.start,
+            }
+        } else {
+            SourceAnchor::Range(root_range)
+        };
+        builder
+            .push(
+                TypedNode::new(root_kind, root_anchor)
+                    .with_children(vec![TypedNodeId::new(1)])
+                    .with_recovery(NodeRecoveryState::Normal)
+                    .with_typing(TypingState::Successful),
+            )
+            .expect("corrupt root node");
+        TypedAst::try_new(TypedAstParts {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            resolved_root: None,
+            nodes: builder
+                .finish(Some(TypedNodeId::new(2)))
+                .expect("corrupt statement arena"),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("structurally valid corrupt typed AST")
+    }
+
+    fn statement_binding_env(
+        source: SourceId,
+        module: ModuleId,
+        recovery: BindingContextRecovery,
+    ) -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module,
+            contexts,
+            bindings: BindingTable::new(),
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("statement binding environment variant")
+    }
+
+    fn assemble_statement(
+        fixture: &StatementFixture,
+        rows: Vec<StatementSemanticInput>,
+    ) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+        assemble_statement_with(
+            &fixture.typed_ast,
+            &fixture.checked_owner,
+            &fixture.binding_env,
+            &fixture.term_formula,
+            rows,
+            statement_node_hints(),
+        )
+    }
+
+    fn assemble_statement_with(
+        typed_ast: &TypedAst,
+        owner: &CheckedStatementOwner,
+        binding_env: &BindingEnv,
+        term_formula: &TermFormulaInferenceOutput,
+        rows: Vec<StatementSemanticInput>,
+        node_hints: Vec<ResolvedNodeKindHint>,
+    ) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+        let cluster_facts = ClusterFactTable::new();
+        let collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability =
+            CandidateViabilityOutput::filter(&expansion, Vec::<CandidateViabilityInput>::new());
+        let graphs =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let selection =
+            OverloadSelectionOutput::resolve(&graphs, Vec::<OverloadSiteResolutionInput>::new());
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast,
+            cluster_facts: &cluster_facts,
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &graphs,
+            overload_selection: &selection,
+            expressions: Vec::new(),
+            node_hints,
+            statement_semantics: Some(StatementSemanticInputs {
+                owner,
+                binding_env,
+                term_formula,
+                rows,
+            }),
+        })
+    }
+
+    fn statement_node_hints() -> Vec<ResolvedNodeKindHint> {
+        vec![
+            ResolvedNodeKindHint {
+                typed_node: TypedNodeId::new(0),
+                kind: ResolvedNodeKindHintKind::SourcePreserved {
+                    role: SourceNodeRole::new("source.formula.contradiction"),
+                },
+            },
+            ResolvedNodeKindHint {
+                typed_node: TypedNodeId::new(1),
+                kind: ResolvedNodeKindHintKind::SourcePreserved {
+                    role: SourceNodeRole::new("source.statement.theorem"),
+                },
+            },
+            ResolvedNodeKindHint {
+                typed_node: TypedNodeId::new(2),
+                kind: ResolvedNodeKindHintKind::SourcePreserved {
+                    role: SourceNodeRole::new("source.module"),
+                },
+            },
+        ]
+    }
 
     #[test]
     fn assembly_preserves_source_shape_metadata_and_successful_overload_type() {
@@ -3250,6 +4913,7 @@ mod tests {
             overload_selection: &selection,
             expressions: Vec::new(),
             node_hints: Vec::new(),
+            statement_semantics: None,
         };
         let mut insertions = CoercionInsertionTable::new();
         let mut inserted_by_view = BTreeMap::new();
@@ -3377,6 +5041,7 @@ mod tests {
             overload_selection: refs.selection,
             expressions,
             node_hints: Vec::new(),
+            statement_semantics: None,
         })
     }
 
@@ -3724,5 +5389,19 @@ mod tests {
         InMemorySessionIdAllocator::new()
             .next_source_id(snapshot)
             .expect("source id allocation succeeds")
+    }
+
+    fn secondary_source_id(seed: u8) -> SourceId {
+        let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{seed:064x}"
+        ))
+        .expect("valid build snapshot id");
+        let allocator = InMemorySessionIdAllocator::new();
+        allocator
+            .next_source_id(snapshot)
+            .expect("first source id allocation succeeds");
+        allocator
+            .next_source_id(snapshot)
+            .expect("second source id allocation succeeds")
     }
 }

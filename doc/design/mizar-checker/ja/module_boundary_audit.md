@@ -29,12 +29,12 @@ note として記録する。
 | `src/lib.rs` | 32 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | crate root として維持する。documented module と test-only determinism support だけを公開する。 |
 | `src/typed_ast.rs` | 3527 | typed AST data model | `typed_ast.md` | no | no | typed-AST table、id、validation、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
 | `src/binding_env.rs` | 3090 | binding environment and resolver shell boundary | `binding_env.md` | no | no | cohesive な binding/context data layer。behavior-neutral split は不要。 |
-| `src/type_checker.rs` | 12453 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | 最大の file だが phase-6 spec boundary 内にある。normalization、reserve source handoff production、declaration checking、inference、coercion、fact query、diagnostic、rendering、test は behavior-coupled なので、review friction が具体化した場合だけ focused private-layout task で後続 split する。 |
+| `src/type_checker.rs` | 13165 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | 最大の file だが phase-6 spec boundary 内にある。normalization、reserve/exact theorem-owner handoff validation、declaration checking、inference、coercion、fact query、diagnostic、rendering、test は behavior-coupled。 |
 | `src/registration_resolution.rs` | 5888 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesive な registration data layer と gate logic。behavior-neutral split は不要。 |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | overload collection、template expansion、viability、specificity、selection、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
-| `src/resolved_typed_ast.rs` | 3728 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | cohesive な final projection module。behavior-neutral split は不要。 |
-| `src/determinism_suite.rs` | 1096 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
+| `src/resolved_typed_ast.rs` | 5407 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | exact Task-180 singleton statement-semantic validation を含む cohesive な final projection module。behavior-neutral split は不要。 |
+| `src/determinism_suite.rs` | 1097 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
 | `tests/lint_policy.rs` | 1786 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | 大きい support test だが repository-policy guardrail を意図的に集約している。task 34 の split は不要。 |
 
 ## Task 34 Classification
@@ -57,3 +57,11 @@ source/spec audit と bilingual audit の更新、lint-policy module-boundary gu
 同じ commit に含まれた時点で完了する。task 34 単体では crate completion を主張しない。
 closeout task は crate exit report をすでに記録しており、その report が read-only
 quality review result を記録している。
+
+## Task 266 current-layout addendum
+
+Task 266 は既存 checker ownership boundary 内に留まり module split は不要。
+resolver-global owner validation は `type_checker.rs` に置き、
+`resolved_typed_ast.rs` は checker-owned owner/binding/inference/typed-AST
+payload だけを消費する。boundary lint は final projection module の
+`SymbolEnv` / `mizar_resolve::env` scan を禁止し、通過する。

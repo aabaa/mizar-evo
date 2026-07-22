@@ -2186,3 +2186,21 @@ and same-return-conflict deferred rows. All chapter statuses, trace statuses,
 test lists, fixtures, expectations, and coverage credit remain unchanged until
 the owning implementation tasks land. Step 5 remains active; Steps 6/7 remain
 deferred.
+
+## Task 266 Exact Final-Handoff Coverage Update
+
+Task 266 closes only the final-identity-preservation part of the Chapters 14
+and 16 Task-180 slice: the exact standalone contradiction is now linked from
+one real, unrecovered local theorem owner to one existing normal checked
+contradiction in checker-owned `ResolvedTypedAst`, with source/module, ranges,
+state/recovery, typed-tree identity, and semantic provenance preserved. Exact
+missing, duplicate, reordered, recovered, and mismatched rows fail closed.
+The existing `.miz`, expectation, trace status, test list, runner stage, and
+chapter status remain unchanged, so no new semantic coverage credit is claimed.
+
+Chapter 14 still does not gain truth-value or fact publication. Chapter 16
+still does not gain theorem acceptance, omitted-justification proof status,
+proof skeleton, terminal-goal closure, or proof verification. Task 267 remains
+the authority for the paired checker/core omitted-justification contract and
+Task 268 for its exact checker producer. Core Task 31 remains gated on Tasks
+266 and 268; Core/CFG/VC generation and Steps 6/7 remain deferred.

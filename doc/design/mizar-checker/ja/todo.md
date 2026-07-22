@@ -4086,7 +4086,7 @@ cargo test -p mizar-test
 
 ## Tasks 266-268 Final Checker Handoff Queue
 
-- [ ] **Task 266: exact Task-180 statement-semantic projection。** checker-owned
+- [x] **Task 266: exact Task-180 statement-semantic projection。** checker-owned
   `ResolvedTypedAst`へsyntax-free final projectionを追加し、resolver theorem owner
   1件を既存checked `FormulaKind::Contradiction` 1件へlinkする。owner/formula
   identity、state、source range、provenanceを保存し、missing/duplicate/reordered/

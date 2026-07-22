@@ -29,8 +29,17 @@
         assert!(resolver.detail_keys.is_empty());
         let symbols =
             augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-        let output = source_contradiction_formula_output(&ast, resolver.module, &symbols)
-            .expect("Task 180 real AST should reach the standalone contradiction checker seam");
+        let source_payload = extract_source_contradiction_formula(&ast)
+            .expect("Task 180 real formula identity should extract");
+        let handoff = assemble_source_contradiction_checker_handoff(
+            &ast,
+            resolver.module.clone(),
+            &symbols,
+        )
+        .expect("Task 266 real AST should reach the final contradiction handoff");
+        assert_source_contradiction_handoff(&handoff)
+            .expect("Task 266 final contradiction handoff should be internally consistent");
+        let output = &handoff.term_formula;
         assert!(output.terms().is_empty());
         assert_eq!(output.formulas().len(), 1);
         assert!(output.candidate_sets().is_empty());
@@ -44,10 +53,75 @@
         assert_eq!(formula.kind, FormulaKind::Contradiction);
         assert_eq!(formula.status, FormulaStatus::Checked);
         assert_eq!(formula.context, BindingContextId::new(0));
+        assert_eq!(formula.site, source_payload.formula_site);
         assert!(formula.terms.is_empty());
         assert!(formula.asserted_type.is_none());
         assert!(formula.expected_types.is_empty());
         assert!(formula.candidate_set.is_none());
         assert!(formula.facts.is_empty());
         assert!(formula.deferred.is_empty());
+        assert_eq!(formula.source_range.source_id, ast.source_id);
+        assert_eq!(formula.recovery, mizar_checker::typed_ast::NodeRecoveryState::Normal);
+
+        let statement = handoff
+            .resolved
+            .statement_semantics()
+            .get(mizar_checker::resolved_typed_ast::StatementSemanticId::new(0))
+            .expect("Task 266 should preserve one final statement row");
+        assert_eq!(statement.formula, formula.id);
+        assert_eq!(handoff.resolved.checked_formulas(), output.formulas());
+        let owner = symbols
+            .symbols()
+            .get(&statement.owner)
+            .expect("Task 266 owner should be the real resolver symbol");
+        assert_eq!(owner.kind(), SymbolKind::Theorem);
+        assert_eq!(statement.owner_origin, *owner.origin());
+        assert_eq!(
+            owner.origin().anchor(),
+            &SourceAnchor::Range(statement.owner_range)
+        );
+        assert!(statement.owner_range.start < formula.source_range.start);
+        assert!(formula.source_range.end < statement.owner_range.end);
+        let owner_node = handoff
+            .typed_ast
+            .nodes()
+            .node(statement.owner_node)
+            .expect("Task 266 theorem typed node should exist");
+        assert_eq!(owner_node.anchor, SourceAnchor::Range(statement.owner_range));
+        assert_eq!(owner_node.children, vec![statement.formula_node]);
+        assert_eq!(
+            ast.node(source_payload.owner_site)
+                .expect("Task 180 theorem source site")
+                .range,
+            statement.owner_range
+        );
+
+        let second = assemble_source_contradiction_checker_handoff(
+            &ast,
+            resolver.module.clone(),
+            &symbols,
+        )
+        .expect("equivalent Task 266 handoff should assemble");
+        assert_eq!(handoff.resolved, second.resolved);
+        assert_eq!(handoff.resolved.debug_text(), second.resolved.debug_text());
+        assert_eq!(
+            source_contradiction_formula_detail_keys(&ast, resolver.module.clone(), &symbols),
+            Some(Vec::new())
+        );
+
+        for corruption in [
+            SourceContradictionHandoffCorruption::MissingRow,
+            SourceContradictionHandoffCorruption::DuplicateRow,
+            SourceContradictionHandoffCorruption::InvalidFormula,
+            SourceContradictionHandoffCorruption::WrongOwnerNode,
+        ] {
+            let error = source_contradiction_handoff_corruption_error(
+                &ast,
+                resolver.module.clone(),
+                &symbols,
+                corruption,
+            )
+            .expect("Task 266 real handoff corruption should fail closed");
+            assert!(!error.is_empty());
+        }
     }

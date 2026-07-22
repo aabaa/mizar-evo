@@ -153,27 +153,27 @@ No exhaustive public enum exceptions are owned by this module.
 
 ## Runner Source Ownership (Task 264 Closeout)
 
-The final production runner layout contains exactly 17 paths and 18,952 lines.
+The current production runner layout contains exactly 17 paths and 19,262 lines.
 This is the canonical crate-relative source-path table after the behavior-
 preserving Tasks 249-263 split.
 
 | Production path | Lines | Ownership |
 |---|---:|---|
-| `src/runner.rs` | 2,185 | Public reports/statuses, corpus orchestration, public active iterators, parse/declaration admission, type-case execution, and top-level detail dispatch. |
+| `src/runner.rs` | 2,188 | Public reports/statuses, corpus orchestration, public active iterators, parse/declaration admission, type-case execution, and top-level detail dispatch. |
 | `src/runner/shared.rs` | 260 | Cross-phase source/frontend/resolver staging and common diagnostic support. |
 | `src/runner/parse_only.rs` | 119 | Parse-only case execution and failure projection. |
 | `src/runner/declaration_symbol.rs` | 231 | Declaration-symbol execution, observation, payload, and failure projection. |
 | `src/runner/import_fixtures.rs` | 349 | Fixture lexical summaries and import-summary adapters. |
-| `src/runner/type_elaboration.rs` | 573 | Private type-elaboration facade over exactly eleven private leaves. |
+| `src/runner/type_elaboration.rs` | 577 | Private type-elaboration facade over exactly eleven private leaves. |
 | `src/runner/type_elaboration/admission.rs` | 60 | Active type-case admission and tag validation. |
 | `src/runner/type_elaboration/binary_routes.rs` | 3,791 | Reserved-variable binary route configs, extraction, output, and details. |
-| `src/runner/type_elaboration/checker_handoff.rs` | 550 | Checker-owned binding/declaration handoff assembly and validation. |
+| `src/runner/type_elaboration/checker_handoff.rs` | 856 | Checker-owned binding/declaration and exact Task-180 final handoff assembly and validation. |
 | `src/runner/type_elaboration/long_chain_config.rs` | 82 | Shared exact long-chain definition tables. |
-| `src/runner/type_elaboration/output.rs` | 1,549 | Checker outputs, validation, result/detail projection, and diagnostics. |
+| `src/runner/type_elaboration/output.rs` | 1,538 | Checker outputs, validation, result/detail projection, and diagnostics. |
 | `src/runner/type_elaboration/parenthesized_routes.rs` | 745 | Parenthesized reserved-variable route ownership. |
 | `src/runner/type_elaboration/result.rs` | 29 | Expected-key and stable failure projection. |
 | `src/runner/type_elaboration/source_ast.rs` | 147 | Common exact AST and import projection. |
-| `src/runner/type_elaboration/source_formula.rs` | 2,621 | Common formula/source payload extraction. |
+| `src/runner/type_elaboration/source_formula.rs` | 2,629 | Common formula/source payload extraction, including exact theorem/formula sites and ranges. |
 | `src/runner/type_elaboration/source_reserve.rs` | 1,474 | Reserve declaration, type, symbol, and mode-expansion extraction. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` | 4,187 | Reserved-variable type-assertion and asserted-head route ownership. |
 
@@ -184,7 +184,7 @@ repository root, the exact input is the sorted tracked path list selected from
 `b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
 Passing those same repository-relative paths in order to `sha256sum` and
 hashing the corresponding ordered output lines yields
-`62d30627cddba5ec67279de0c0cea571baf6144602d52fa01896649e1d4a0ea0`.
+`e920dbaef82c7192d5b451ed1ab9d4a5766f2abc82b4f5314ae9ed7bb6a47825`.
 Production `runner.rs` owns no route config, source extractor, output builder,
 or detail-wrapper definition; its route aliases remain test-only. The private
 facade's eleven `mod` declarations, the 17-path/hash pair, the unchanged public
@@ -2424,3 +2424,22 @@ nonempty config; old empty-mode configs remain closed. Five definition orders,
 finite near misses/corruptions, cross-route, immutable/module, 59-owner
 bidirectional isolation, and a real frontend/resolver sidecar protect runner
 188. Trace counts are 403/367, type 235/223, and pass/fail 219/184.
+
+## Task 266 Exact Final Checker Handoff
+
+For the existing Task-180 source only, the runner preserves the actual module
+root range, contradiction leaf site/range, and normal recovery state. It uses
+the actual theorem surface site to validate the resolver-owner range, selects
+exactly one real local resolver theorem owner, obtains a checker-validated
+owner, and builds the exact three-node typed tree
+`module -> theorem -> formula`, performs formula inference once, and supplies
+one owner/formula row to final `ResolvedTypedAst` assembly. The final assertion
+requires identical owner symbol/origin/range, existing checked contradiction
+id/site/range/state/recovery, and the separate final typed-node identities.
+
+Missing/duplicate rows, an invalid formula, wrong owner node, recovered source,
+or any owner/formula/tree/range/provenance/source/module mismatch fails closed.
+A synthetic source AST without a real resolver theorem owner remains an
+extraction gap. The existing `.miz`, expectation, detail keys, stage, 272-test
+list, runner counts, and four CLI outputs are unchanged. No truth/fact,
+acceptance, proof, terminal-goal, Core, CFG, or VC payload is inferred.

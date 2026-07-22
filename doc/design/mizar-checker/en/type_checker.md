@@ -2519,6 +2519,8 @@ behavior.
 | `CandidateStatus` | Forward-compatible; candidate states may grow with evidence and recovery handling. |
 | `TermStatus` | Forward-compatible; checked-term states may grow with partial inference policy. |
 | `FormulaStatus` | Forward-compatible; checked-formula states may grow with partial inference policy. |
+| `TermFormulaInferenceError` | Forward-compatible; final handoff validation may add further syntax-free predecessor mismatch classes. |
+| `StatementOwnerError` | Forward-compatible; theorem-owner validation may add further provenance and ownership rejection classes. |
 | `DeclarationKind` | Forward-compatible; declaration kinds may grow with more Mizar binding forms. |
 | `DeclarationDeferredReason` | Forward-compatible; deferred declaration reasons may grow as extraction gaps close. |
 | `DeclarationStatus` | Forward-compatible; declaration states may grow with local recovery and handoff policy. |
@@ -3008,3 +3010,25 @@ wrapper-owned semantic entry. Finite order/shape/provenance/corruption,
 immutable/module, Tasks 134/223, all 59 prior owners, and the real sidecar bound
 the route. Active runner 188 is traced in plan 403/367, type 235/223, pass/fail
 219/184. Broader semantics and downstream payloads remain outside credit.
+
+## Task 266 Exact Task-180 Final Statement Handoff
+
+Task 266 preserves the already checked Task-180 contradiction leaf through the
+final checker boundary. `TermFormulaInferenceOutput` now retains its source and
+module identities; `try_infer` rejects a resolver/binding module mismatch.
+`FormulaInput` and `CheckedFormula` retain the formula source range and recovery
+state. `CheckedStatementOwner::validate_exact_local_theorem` is the only
+resolver-environment seam for this task: it accepts exactly one unrecovered,
+same-source local theorem whose symbol, theorem definition, contribution,
+range, module, and semantic origin agree.
+
+The supported source remains exactly
+`SourceDerivedContradictionConstantBoundary: contradiction`. The checker
+consumer must produce one normal `Checked` `FormulaKind::Contradiction` with no
+terms, asserted type, expected constraints, candidates, facts, deferred
+reasons, or diagnostics. Missing, duplicate, recovered, imported, conflicting,
+cross-module, or otherwise mismatched theorem owners fail before final
+projection. This contract publishes neither truth nor facts, does not accept
+the theorem, and creates no proof status, skeleton, terminal goal, CoreIr,
+ControlFlowIr, or VC payload. Task 267 owns the omitted-justification proof
+contract; Task 268 owns its later implementation.

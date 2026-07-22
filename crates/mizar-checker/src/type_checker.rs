@@ -13,7 +13,7 @@ use crate::{
         FactProvenance, FactStatus, InitialObligationDraft, InitialObligationGoal,
         InitialObligationId, InitialObligationKind, InitialObligationProvenance,
         InitialObligationStatus, InitialObligationTable, LocalTypeContextDraft, LocalTypeContextId,
-        LocalTypeContextTable, NormalizedTypeId, OpenCandidateSetId, Polarity,
+        LocalTypeContextTable, NodeRecoveryState, NormalizedTypeId, OpenCandidateSetId, Polarity,
         SourceRangeKey as TypedSourceRangeKey, TypeAssumptionId, TypeContextLayer, TypeDiagnostic,
         TypeDiagnosticClass, TypeDiagnosticDraft, TypeDiagnosticId, TypeDiagnosticSeverity,
         TypeDiagnosticTable, TypeEntryActual, TypeEntryDraft, TypeEntryId, TypeFactDraft,
@@ -22,13 +22,14 @@ use crate::{
     },
 };
 use mizar_resolve::{
-    env::{ContributionKind, SymbolEnv, SymbolKind},
-    resolved_ast::{ModuleId, SymbolId},
+    env::{ContributionKind, DefinitionKind, SymbolEnv, SymbolKind},
+    resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
-use mizar_session::{SourceId, SourceRange};
+use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt::Write as _,
+    error::Error,
+    fmt::{self, Write as _},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -262,6 +263,8 @@ impl DeclarationChecker {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TermFormulaInferenceOutput {
+    source_id: SourceId,
+    module_id: ModuleId,
     normalized_types: NormalizedTypeTable,
     terms: CheckedTermTable,
     formulas: CheckedFormulaTable,
@@ -271,7 +274,26 @@ pub struct TermFormulaInferenceOutput {
     diagnostics: TypeDiagnosticTable,
 }
 
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StatementPayloadTableForTest {
+    NormalizedTypes,
+    Terms,
+    CandidateSets,
+    TypeEntries,
+    Facts,
+    Diagnostics,
+}
+
 impl TermFormulaInferenceOutput {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
     pub const fn normalized_types(&self) -> &NormalizedTypeTable {
         &self.normalized_types
     }
@@ -310,6 +332,85 @@ impl TermFormulaInferenceOutput {
         write_type_facts(&mut output, &self.facts);
         write_diagnostics(&mut output, &self.diagnostics);
         output
+    }
+
+    #[cfg(test)]
+    pub(crate) fn duplicate_formula_for_statement_test(mut self) -> Self {
+        if let Some(formula) = self.formulas.entries.first().cloned() {
+            let mut duplicate = formula;
+            duplicate.id = CheckedFormulaId::new(self.formulas.entries.len());
+            self.formulas.entries.push(duplicate);
+        }
+        self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn clear_top_level_statement_payload_for_test(mut self) -> Self {
+        self.normalized_types = NormalizedTypeTable::new();
+        self.terms = CheckedTermTable::new();
+        self.candidate_sets = OpenCandidateSetTable::new();
+        self.type_entries = TypeTable::new();
+        self.facts = TypeFactTable::new();
+        self.diagnostics = TypeDiagnosticTable::new();
+        if let Some(formula) = self.formulas.entries.first_mut() {
+            formula.recovery = NodeRecoveryState::Normal;
+            formula.kind = FormulaKind::Contradiction;
+            formula.status = FormulaStatus::Checked;
+        }
+        self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn normalize_formula_row_for_statement_test(mut self) -> Self {
+        if let Some(formula) = self.formulas.entries.first_mut() {
+            formula.recovery = NodeRecoveryState::Normal;
+            formula.kind = FormulaKind::Contradiction;
+            formula.terms.clear();
+            formula.asserted_type = None;
+            formula.expected_types.clear();
+            formula.candidate_set = None;
+            formula.facts.clear();
+            formula.status = FormulaStatus::Checked;
+            formula.deferred.clear();
+        }
+        self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn retain_statement_payload_table_for_test(
+        mut self,
+        retained: StatementPayloadTableForTest,
+    ) -> Self {
+        if retained != StatementPayloadTableForTest::NormalizedTypes {
+            self.normalized_types = NormalizedTypeTable::new();
+        }
+        if retained != StatementPayloadTableForTest::Terms {
+            self.terms = CheckedTermTable::new();
+        }
+        if retained != StatementPayloadTableForTest::CandidateSets {
+            self.candidate_sets = OpenCandidateSetTable::new();
+        }
+        if retained != StatementPayloadTableForTest::TypeEntries {
+            self.type_entries = TypeTable::new();
+        }
+        if retained != StatementPayloadTableForTest::Facts {
+            self.facts = TypeFactTable::new();
+        }
+        if retained != StatementPayloadTableForTest::Diagnostics {
+            self.diagnostics = TypeDiagnosticTable::new();
+        }
+        self.normalize_formula_row_for_statement_test()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_formula_context_for_statement_test(
+        mut self,
+        context: BindingContextId,
+    ) -> Self {
+        if let Some(formula) = self.formulas.entries.first_mut() {
+            formula.context = context;
+        }
+        self
     }
 }
 
@@ -367,6 +468,8 @@ impl TermFormulaChecker {
         }
 
         TermFormulaInferenceOutput {
+            source_id: binding_env.source_id(),
+            module_id: binding_env.module_id().clone(),
             normalized_types: state.normalized_types,
             terms: state.terms,
             formulas: state.formulas,
@@ -376,7 +479,242 @@ impl TermFormulaChecker {
             diagnostics: state.diagnostics,
         }
     }
+
+    pub fn try_infer(
+        &self,
+        symbols: &SymbolEnv,
+        binding_env: &BindingEnv,
+        term_inputs: impl IntoIterator<Item = TermInput>,
+        formula_inputs: impl IntoIterator<Item = FormulaInput>,
+    ) -> Result<TermFormulaInferenceOutput, TermFormulaInferenceError> {
+        if symbols.module_id() != binding_env.module_id() {
+            return Err(TermFormulaInferenceError::ModuleMismatch {
+                symbols: symbols.module_id().clone(),
+                bindings: binding_env.module_id().clone(),
+            });
+        }
+        Ok(self.infer(symbols, binding_env, term_inputs, formula_inputs))
+    }
+
+    #[cfg(test)]
+    pub(crate) fn infer_without_symbols_for_test(
+        &self,
+        binding_env: &BindingEnv,
+        formula_inputs: impl IntoIterator<Item = FormulaInput>,
+    ) -> TermFormulaInferenceOutput {
+        self.infer_inputs_without_symbols_for_test(binding_env, [], formula_inputs)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn infer_inputs_without_symbols_for_test(
+        &self,
+        binding_env: &BindingEnv,
+        term_inputs: impl IntoIterator<Item = TermInput>,
+        formula_inputs: impl IntoIterator<Item = FormulaInput>,
+    ) -> TermFormulaInferenceOutput {
+        let symbols = SymbolEnv::new(
+            binding_env.module_id().clone(),
+            mizar_resolve::env::SymbolEnvIndexes::default(),
+        );
+        self.infer(&symbols, binding_env, term_inputs, formula_inputs)
+    }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TermFormulaInferenceError {
+    ModuleMismatch {
+        symbols: ModuleId,
+        bindings: ModuleId,
+    },
+}
+
+impl fmt::Display for TermFormulaInferenceError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ModuleMismatch { .. } => {
+                formatter.write_str("term/formula symbol and binding modules do not match")
+            }
+        }
+    }
+}
+
+impl Error for TermFormulaInferenceError {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedStatementOwner {
+    symbol: SymbolId,
+    source_range: SourceRange,
+    origin: SemanticOrigin,
+}
+
+impl CheckedStatementOwner {
+    pub fn validate_exact_local_theorem(
+        symbols: &SymbolEnv,
+        symbol: SymbolId,
+        source_id: SourceId,
+        module_id: &ModuleId,
+    ) -> Result<Self, StatementOwnerError> {
+        if symbols.module_id() != module_id {
+            return Err(StatementOwnerError::EnvironmentMismatch);
+        }
+        let local_theorems = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| {
+                entry.kind() == SymbolKind::Theorem
+                    && entry.symbol().module() == module_id
+                    && entry.origin().source_id() == source_id
+            })
+            .collect::<Vec<_>>();
+        if local_theorems.len() != 1 || local_theorems[0].symbol() != &symbol {
+            return Err(StatementOwnerError::InvalidOwner { symbol });
+        }
+        let owner =
+            symbols
+                .symbols()
+                .get(&symbol)
+                .ok_or_else(|| StatementOwnerError::InvalidOwner {
+                    symbol: symbol.clone(),
+                })?;
+        let definition = symbols.definitions().by_symbol(&symbol).ok_or_else(|| {
+            StatementOwnerError::InvalidDefinition {
+                symbol: symbol.clone(),
+            }
+        })?;
+        if owner.kind() != SymbolKind::Theorem
+            || owner.symbol().module() != module_id
+            || definition.kind() != DefinitionKind::Theorem
+            || definition.conflict().is_some()
+            || definition.origin() != owner.origin()
+            || definition.contribution() != owner.contribution()
+        {
+            return Err(StatementOwnerError::InvalidDefinition { symbol });
+        }
+        let contribution = symbols
+            .contributions()
+            .get(owner.contribution())
+            .ok_or_else(|| StatementOwnerError::InvalidProvenance {
+                symbol: symbol.clone(),
+            })?;
+        let source_range = exact_statement_owner_source_range(
+            StatementOwnerProvenanceState {
+                anchor: owner.origin().anchor(),
+                owner_source: owner.origin().source_id(),
+                owner_module: owner.origin().module_id(),
+                has_import_edge: owner.origin().import_edge().is_some(),
+                owner_recovered: owner.origin().is_recovered(),
+                definition_recovered: definition.origin().is_recovered(),
+                contribution_module: contribution.module(),
+                contribution_kind: contribution.kind(),
+            },
+            source_id,
+            module_id,
+        )
+        .ok_or_else(|| StatementOwnerError::InvalidProvenance {
+            symbol: symbol.clone(),
+        })?;
+        Ok(Self {
+            symbol,
+            source_range,
+            origin: owner.origin().clone(),
+        })
+    }
+
+    pub const fn symbol(&self) -> &SymbolId {
+        &self.symbol
+    }
+
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+
+    pub const fn origin(&self) -> &SemanticOrigin {
+        &self.origin
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_validated_parts_for_test(
+        symbol: SymbolId,
+        source_range: SourceRange,
+        origin: SemanticOrigin,
+    ) -> Self {
+        Self {
+            symbol,
+            source_range,
+            origin,
+        }
+    }
+}
+
+struct StatementOwnerProvenanceState<'a> {
+    anchor: &'a SourceAnchor,
+    owner_source: SourceId,
+    owner_module: &'a ModuleId,
+    has_import_edge: bool,
+    owner_recovered: bool,
+    definition_recovered: bool,
+    contribution_module: &'a ModuleId,
+    contribution_kind: &'a ContributionKind,
+}
+
+fn exact_statement_owner_source_range(
+    state: StatementOwnerProvenanceState<'_>,
+    source_id: SourceId,
+    module_id: &ModuleId,
+) -> Option<SourceRange> {
+    let SourceAnchor::Range(source_range) = state.anchor else {
+        return None;
+    };
+    (state.owner_source == source_id
+        && state.owner_module == module_id
+        && !state.has_import_edge
+        && !state.owner_recovered
+        && !state.definition_recovered
+        && state.contribution_module == module_id
+        && matches!(
+            state.contribution_kind,
+            ContributionKind::LocalSource { source_id: contribution_source }
+                if *contribution_source == source_id
+        ))
+    .then_some(*source_range)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum StatementOwnerError {
+    EnvironmentMismatch,
+    InvalidOwner { symbol: SymbolId },
+    InvalidDefinition { symbol: SymbolId },
+    InvalidProvenance { symbol: SymbolId },
+}
+
+impl fmt::Display for StatementOwnerError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("statement owner symbol environment does not match")
+            }
+            Self::InvalidOwner { symbol } => write!(
+                formatter,
+                "invalid local theorem owner `{}`",
+                symbol.fqn().as_str()
+            ),
+            Self::InvalidDefinition { symbol } => write!(
+                formatter,
+                "invalid local theorem definition `{}`",
+                symbol.fqn().as_str()
+            ),
+            Self::InvalidProvenance { symbol } => write!(
+                formatter,
+                "invalid local theorem provenance `{}`",
+                symbol.fqn().as_str()
+            ),
+        }
+    }
+}
+
+impl Error for StatementOwnerError {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CoercionCheckingOutput {
@@ -1444,6 +1782,7 @@ pub struct FormulaInput {
     pub site: TypedSiteRef,
     pub context: BindingContextId,
     pub source_range: SourceRange,
+    pub recovery: NodeRecoveryState,
     pub kind: FormulaKind,
     pub terms: Vec<TypedSiteRef>,
     pub asserted_type: Option<TypeExpressionInput>,
@@ -1464,6 +1803,7 @@ impl FormulaInput {
             site,
             context,
             source_range,
+            recovery: NodeRecoveryState::Normal,
             kind,
             terms: Vec::new(),
             asserted_type: None,
@@ -1472,6 +1812,11 @@ impl FormulaInput {
             facts: Vec::new(),
             deferred: Vec::new(),
         }
+    }
+
+    pub const fn with_recovery(mut self, recovery: NodeRecoveryState) -> Self {
+        self.recovery = recovery;
+        self
     }
 
     pub fn with_terms(mut self, terms: Vec<TypedSiteRef>) -> Self {
@@ -1868,6 +2213,8 @@ impl CheckedFormulaTable {
             id,
             site: draft.site,
             context: draft.context,
+            source_range: draft.source_range,
+            recovery: draft.recovery,
             kind: draft.kind,
             terms: draft.terms,
             asserted_type: draft.asserted_type,
@@ -1915,6 +2262,8 @@ pub struct CheckedFormula {
     pub id: CheckedFormulaId,
     pub site: TypedSiteRef,
     pub context: BindingContextId,
+    pub source_range: SourceRange,
+    pub recovery: NodeRecoveryState,
     pub kind: FormulaKind,
     pub terms: Vec<TypedSiteRef>,
     pub asserted_type: Option<NormalizedTypeId>,
@@ -1929,6 +2278,8 @@ pub struct CheckedFormula {
 struct CheckedFormulaDraft {
     site: TypedSiteRef,
     context: BindingContextId,
+    source_range: SourceRange,
+    recovery: NodeRecoveryState,
     kind: FormulaKind,
     terms: Vec<TypedSiteRef>,
     asserted_type: Option<NormalizedTypeId>,
@@ -2275,6 +2626,8 @@ impl TermFormulaCheckingState<'_> {
         self.formulas.insert(CheckedFormulaDraft {
             site: input.site,
             context: input.context,
+            source_range: input.source_range,
+            recovery: input.recovery,
             kind: input.kind,
             terms: input.terms,
             asserted_type,
@@ -6455,17 +6808,18 @@ mod tests {
     use crate::typed_ast::{TypeRole, TypedNodeId};
     use mizar_resolve::{
         env::{
-            ContributionKind, DefinitionIndex, ExportStatus, LabelIndex, ModuleLexicalSummaryIndex,
-            ModuleSummaryIndex, NamespaceGraph, NamespacePath, OverloadIndex, RegistrationIndex,
-            ResolvedExportIndex, ResolvedImportIndex, SourceContributionIndex, SymbolEntry,
-            SymbolEnvIndexes, SymbolIndex, Visibility,
+            ContributionKind, DeclarationConflictClass, DefinitionIndex, DefinitionShell,
+            ExportStatus, LabelIndex, ModuleLexicalSummaryIndex, ModuleSummaryIndex,
+            NamespaceGraph, NamespacePath, OverloadIndex, RegistrationIndex, ResolvedExportIndex,
+            ResolvedImportIndex, SourceContributionIndex, SymbolEntry, SymbolEnvIndexes,
+            SymbolIndex, Visibility,
         },
         names::LocalTermScope,
         resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SemanticOrigin},
     };
     use mizar_session::{
-        BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
-        SourceAnchor, SourceId,
+        BuildSnapshotId, GeneratedSpanAnchor, GeneratedSpanOrigin, InMemorySessionIdAllocator,
+        ModulePath, PackageId, SessionIdAllocator, SourceAnchor, SourceId,
     };
 
     #[test]
@@ -12105,6 +12459,364 @@ mod tests {
         ))
         .with_justification(CoercionJustification::Omitted)
         .with_evidence(evidence)
+    }
+
+    #[test]
+    fn statement_owner_and_formula_handoff_are_exact_and_fail_closed() {
+        let source = source_id();
+        let bindings = binding_env_for_declarations(source, Vec::new());
+        let formula_range = range(source, 20, 30);
+        let formula_input = FormulaInput::new(
+            TypedSiteRef::Node(TypedNodeId::new(17)),
+            BindingContextId::new(0),
+            formula_range,
+            FormulaKind::Contradiction,
+        );
+        assert_eq!(formula_input.recovery, NodeRecoveryState::Normal);
+        let formula_output = TermFormulaChecker::default()
+            .infer_without_symbols_for_test(&bindings, [formula_input]);
+        let checked_formula = formula_output
+            .formulas()
+            .get(CheckedFormulaId::new(0))
+            .expect("default-normal formula");
+        assert_eq!(checked_formula.source_range, formula_range);
+        assert_eq!(checked_formula.recovery, NodeRecoveryState::Normal);
+
+        let other_module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("other"));
+        let mismatched_symbols = SymbolEnv::new(other_module.clone(), SymbolEnvIndexes::default());
+        let mismatch = TermFormulaChecker::default()
+            .try_infer(
+                &mismatched_symbols,
+                &bindings,
+                Vec::<TermInput>::new(),
+                Vec::<FormulaInput>::new(),
+            )
+            .expect_err("term/formula inference must reject mismatched modules");
+        assert!(matches!(
+            mismatch,
+            TermFormulaInferenceError::ModuleMismatch { .. }
+        ));
+
+        let module = module_id();
+        let owner = symbol_id("Task180", "pkg::main::theorem::Task180");
+        let owner_range = range(source, 10, 90);
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(owner_range),
+            vec![0],
+        );
+        let base = StatementOwnerEnvSpec {
+            include_owner: true,
+            owner_kind: SymbolKind::Theorem,
+            owner_origin: origin.clone(),
+            contribution_module: module.clone(),
+            contribution_kind: Some(ContributionKind::LocalSource { source_id: source }),
+            definition_kind: Some(DefinitionKind::Theorem),
+            definition_origin: origin.clone(),
+            definition_conflict: false,
+            definition_contribution_mismatch: false,
+            duplicate_owner: false,
+        };
+
+        let valid_env = statement_owner_env(&module, &owner, owner_range, base.clone());
+        let checked = CheckedStatementOwner::validate_exact_local_theorem(
+            &valid_env,
+            owner.clone(),
+            source,
+            &module,
+        )
+        .expect("exact local theorem owner");
+        assert_eq!(checked.symbol(), &owner);
+        assert_eq!(checked.source_range(), owner_range);
+        assert_eq!(checked.origin(), &origin);
+
+        let local_contribution = ContributionKind::LocalSource { source_id: source };
+        for state in [
+            StatementOwnerProvenanceState {
+                anchor: origin.anchor(),
+                owner_source: source,
+                owner_module: &module,
+                has_import_edge: true,
+                owner_recovered: false,
+                definition_recovered: false,
+                contribution_module: &module,
+                contribution_kind: &local_contribution,
+            },
+            StatementOwnerProvenanceState {
+                anchor: origin.anchor(),
+                owner_source: source,
+                owner_module: &module,
+                has_import_edge: false,
+                owner_recovered: false,
+                definition_recovered: true,
+                contribution_module: &module,
+                contribution_kind: &local_contribution,
+            },
+        ] {
+            assert_eq!(
+                exact_statement_owner_source_range(state, source, &module),
+                None,
+                "imported or recovered-definition provenance must fail closed"
+            );
+        }
+
+        assert!(matches!(
+            CheckedStatementOwner::validate_exact_local_theorem(
+                &valid_env,
+                owner.clone(),
+                source,
+                &other_module,
+            ),
+            Err(StatementOwnerError::EnvironmentMismatch)
+        ));
+        let requested_other = symbol_id("Other", "pkg::main::theorem::Other");
+        assert!(matches!(
+            CheckedStatementOwner::validate_exact_local_theorem(
+                &valid_env,
+                requested_other,
+                source,
+                &module,
+            ),
+            Err(StatementOwnerError::InvalidOwner { .. })
+        ));
+
+        let mut owner_cases = Vec::new();
+        let mut missing = base.clone();
+        missing.include_owner = false;
+        owner_cases.push(missing);
+        let mut duplicate = base.clone();
+        duplicate.duplicate_owner = true;
+        owner_cases.push(duplicate);
+        let mut wrong_kind = base.clone();
+        wrong_kind.owner_kind = SymbolKind::Mode;
+        owner_cases.push(wrong_kind);
+        let mut wrong_source = base.clone();
+        wrong_source.owner_origin = SemanticOrigin::new(
+            source_ids_pair().1,
+            module.clone(),
+            SourceAnchor::Range(owner_range),
+            vec![0],
+        );
+        wrong_source.definition_origin = wrong_source.owner_origin.clone();
+        owner_cases.push(wrong_source);
+        for spec in owner_cases {
+            let env = statement_owner_env(&module, &owner, owner_range, spec);
+            assert!(matches!(
+                CheckedStatementOwner::validate_exact_local_theorem(
+                    &env,
+                    owner.clone(),
+                    source,
+                    &module,
+                ),
+                Err(StatementOwnerError::InvalidOwner { .. })
+            ));
+        }
+
+        let mut definition_cases = Vec::new();
+        let mut missing_definition = base.clone();
+        missing_definition.definition_kind = None;
+        definition_cases.push(missing_definition);
+        let mut wrong_definition = base.clone();
+        wrong_definition.definition_kind = Some(DefinitionKind::Mode);
+        definition_cases.push(wrong_definition);
+        let mut conflicted = base.clone();
+        conflicted.definition_conflict = true;
+        definition_cases.push(conflicted);
+        let mut origin_mismatch = base.clone();
+        origin_mismatch.definition_origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 11, 90)),
+            vec![0],
+        );
+        definition_cases.push(origin_mismatch);
+        let mut definition_only_recovery = base.clone();
+        definition_only_recovery.definition_origin = origin.clone().recovered();
+        definition_cases.push(definition_only_recovery);
+        let mut contribution_mismatch = base.clone();
+        contribution_mismatch.definition_contribution_mismatch = true;
+        definition_cases.push(contribution_mismatch);
+        for spec in definition_cases {
+            let env = statement_owner_env(&module, &owner, owner_range, spec);
+            assert!(matches!(
+                CheckedStatementOwner::validate_exact_local_theorem(
+                    &env,
+                    owner.clone(),
+                    source,
+                    &module,
+                ),
+                Err(StatementOwnerError::InvalidDefinition { .. })
+            ));
+        }
+
+        let mut provenance_cases = Vec::new();
+        let mut missing_contribution = base.clone();
+        missing_contribution.contribution_kind = None;
+        provenance_cases.push(missing_contribution);
+        let mut point_anchor = base.clone();
+        point_anchor.owner_origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Point {
+                source_id: source,
+                offset: owner_range.start,
+            },
+            vec![0],
+        );
+        point_anchor.definition_origin = point_anchor.owner_origin.clone();
+        provenance_cases.push(point_anchor);
+        let generated_anchor = GeneratedSpanOrigin::new(
+            GeneratedSpanAnchor::Range(owner_range),
+            "statement-owner-generated-anchor-test",
+        )
+        .expect("generated statement-owner test anchor");
+        let mut generated = base.clone();
+        generated.owner_origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Generated(generated_anchor),
+            vec![0],
+        );
+        generated.definition_origin = generated.owner_origin.clone();
+        provenance_cases.push(generated);
+        let mut owner_module_mismatch = base.clone();
+        owner_module_mismatch.owner_origin = SemanticOrigin::new(
+            source,
+            other_module.clone(),
+            SourceAnchor::Range(owner_range),
+            vec![0],
+        );
+        owner_module_mismatch.definition_origin = owner_module_mismatch.owner_origin.clone();
+        provenance_cases.push(owner_module_mismatch);
+        let mut recovered = base.clone();
+        recovered.owner_origin = origin.clone().recovered();
+        recovered.definition_origin = recovered.owner_origin.clone();
+        provenance_cases.push(recovered);
+        let mut imported_contribution = base.clone();
+        imported_contribution.contribution_kind =
+            Some(ContributionKind::ImportedSource { source_id: source });
+        provenance_cases.push(imported_contribution);
+        let mut contribution_source_mismatch = base.clone();
+        contribution_source_mismatch.contribution_kind = Some(ContributionKind::LocalSource {
+            source_id: source_ids_pair().1,
+        });
+        provenance_cases.push(contribution_source_mismatch);
+        let mut contribution_module_mismatch = base;
+        contribution_module_mismatch.contribution_module = other_module;
+        provenance_cases.push(contribution_module_mismatch);
+        for spec in provenance_cases {
+            let env = statement_owner_env(&module, &owner, owner_range, spec);
+            assert!(matches!(
+                CheckedStatementOwner::validate_exact_local_theorem(
+                    &env,
+                    owner.clone(),
+                    source,
+                    &module,
+                ),
+                Err(StatementOwnerError::InvalidProvenance { .. })
+            ));
+        }
+    }
+
+    #[derive(Clone)]
+    struct StatementOwnerEnvSpec {
+        include_owner: bool,
+        owner_kind: SymbolKind,
+        owner_origin: SemanticOrigin,
+        contribution_module: ModuleId,
+        contribution_kind: Option<ContributionKind>,
+        definition_kind: Option<DefinitionKind>,
+        definition_origin: SemanticOrigin,
+        definition_conflict: bool,
+        definition_contribution_mismatch: bool,
+        duplicate_owner: bool,
+    }
+
+    fn statement_owner_env(
+        module: &ModuleId,
+        owner: &SymbolId,
+        owner_range: SourceRange,
+        spec: StatementOwnerEnvSpec,
+    ) -> SymbolEnv {
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = spec.contribution_kind.map_or_else(
+            || {
+                let mut detached = SourceContributionIndex::new();
+                detached.insert(
+                    module.clone(),
+                    ContributionKind::LocalSource {
+                        source_id: spec.owner_origin.source_id(),
+                    },
+                    SourceAnchor::Range(owner_range),
+                )
+            },
+            |kind| {
+                contributions.insert(
+                    spec.contribution_module,
+                    kind,
+                    SourceAnchor::Range(owner_range),
+                )
+            },
+        );
+        let mut symbols = SymbolIndex::new();
+        if spec.include_owner {
+            symbols.insert(SymbolEntry::new(
+                owner.clone(),
+                spec.owner_kind,
+                NamespacePath::new("main"),
+                "Task180",
+                spec.owner_origin.clone(),
+                contribution,
+            ));
+        }
+        if spec.duplicate_owner {
+            symbols.insert(SymbolEntry::new(
+                SymbolId::new(
+                    module.clone(),
+                    LocalSymbolId::new("Task180Duplicate"),
+                    FullyQualifiedName::new("pkg::main::theorem::Task180Duplicate"),
+                ),
+                SymbolKind::Theorem,
+                NamespacePath::new("main"),
+                "Task180Duplicate",
+                spec.owner_origin.clone(),
+                contribution,
+            ));
+        }
+        let mut definitions = DefinitionIndex::new();
+        if let Some(kind) = spec.definition_kind {
+            let definition_contribution = if spec.definition_contribution_mismatch {
+                contributions.insert(
+                    module.clone(),
+                    ContributionKind::LocalSource {
+                        source_id: spec.definition_origin.source_id(),
+                    },
+                    SourceAnchor::Range(owner_range),
+                )
+            } else {
+                contribution
+            };
+            let mut definition = DefinitionShell::new(
+                owner.clone(),
+                kind,
+                spec.definition_origin,
+                definition_contribution,
+            );
+            if spec.definition_conflict {
+                definition = definition.with_conflict(DeclarationConflictClass::DuplicateSpelling);
+            }
+            definitions.insert(definition);
+        }
+        SymbolEnv::new(
+            module.clone(),
+            SymbolEnvIndexes {
+                symbols,
+                definitions,
+                contributions,
+                ..SymbolEnvIndexes::default()
+            },
+        )
     }
 
     fn symbol_env(entries: Vec<SymbolEntry>) -> SymbolEnv {

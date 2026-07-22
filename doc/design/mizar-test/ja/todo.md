@@ -1193,7 +1193,7 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   `source_drift`である。downstream crateが他crateのraw syntaxを再構築することは
   `boundary_violation`であり禁止する。`spec_gap`、
   `source_undocumented_behavior`、`repo_metadata_conflict`は検出していない。
-- [ ] **Task 266: exact Task-180 checked contradictionをfinal checker handoffへ
+- [x] **Task 266: exact Task-180 checked contradictionをfinal checker handoffへ
   保存する。** checker-owned syntax-free `ResolvedTypedAst` dataを拡張し、
   `SourceDerivedContradictionConstantBoundary`のresolver theorem owner 1件を、既存の
   checked `FormulaKind::Contradiction` result 1件へlinkする。owner/formula identity、

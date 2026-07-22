@@ -201,6 +201,7 @@ literal top-level public item:
 
 - `TypeNormalizationOutput`, `TypeNormalizer`, `DeclarationCheckingOutput`,
   `DeclarationChecker`, `TermFormulaInferenceOutput`, `TermFormulaChecker`,
+  `TermFormulaInferenceError`, `CheckedStatementOwner`, `StatementOwnerError`,
   `CoercionCheckingOutput`, `CoercionObligationChecker`, `CoercionInput`,
   `CoercionRequestKind`, `CoercionJustification`, `CoercionEvidence`,
   `CoercionDeferredReason`, `InitialObligationInput`, `InitialRequirementKind`,
@@ -1954,7 +1955,7 @@ literal top-level public item:
 生成 public newtype:
 
 - `ResolvedTypedNodeId`, `ExpressionMetadataId`, `OverloadResolutionId`,
-  `CoercionInsertionId`, `ResolvedTypedDiagnosticId`
+  `CoercionInsertionId`, `ResolvedTypedDiagnosticId`, `StatementSemanticId`
 - `ExprId`, `SourceNodeRole`
 
 literal top-level public item:
@@ -1973,7 +1974,9 @@ literal top-level public item:
   `CoercionInsertionSource`, `CoercionInsertionTable`,
   `ResolvedTypedDiagnostic`, `ResolvedTypedDiagnosticSource`,
   `ResolvedTypedDiagnosticSeverity`, `ResolvedTypedDiagnosticTable`,
-  `CandidateSummaryNamespace`, `ResolvedTypedAstError`
+  `CandidateSummaryNamespace`, `StatementSemanticInputs`,
+  `StatementSemanticInput`, `StatementSemantic`, `StatementSemanticTable`,
+  `ResolvedTypedAstError`
 
 対応:
 
@@ -2330,3 +2333,15 @@ AST-wide/Task-49 payload family decompositionを所有し、core Task 32のexhau
 remaining-family decompositionへ渡す。Core/VC、truth/fact、
 theorem acceptance、broader semantic creditはdeferredで、current coverage/status/
 testは不変。
+
+Task 266 implementation addendum: `type_checker` は documented
+`TermFormulaInferenceError`、`CheckedStatementOwner`、`StatementOwnerError`
+surface を公開し、formula range/recovery と source/module identity を保持して
+exact real local theorem owner を validate する。`resolved_typed_ast` は
+`StatementSemanticId`、`StatementSemanticInputs`、`StatementSemanticInput`、
+`StatementSemantic`、`StatementSemanticTable` を公開し、exact singleton
+three-node owner/formula projection を validate する。owner/formula mismatch、
+recovery、duplicate、omission、order、range、provenance、module/source corruption
+は fail closed。unit/active-runner/corruption/determinism coverage を持つ。
+raw-syntax dependency、truth/fact、acceptance、proof、Core、CFG、VC、fixture、
+expectation、trace-status の変更はない。
