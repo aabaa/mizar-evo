@@ -36,6 +36,7 @@ after this task.
 | `crate_exit_report.md` | `../ja/crate_exit_report.md` | `../en/crate_exit_report.md` | result, scope, task commits, hard gates, score breakdown, deferred items, verification, handoff | none |
 | `module_boundary_audit.md` | `../ja/module_boundary_audit.md` | `../en/module_boundary_audit.md` | split gate, source layout inventory, task classification, completion decision | none |
 | `overload_resolution.md` | `../ja/overload_resolution.md` | `../en/overload_resolution.md` | phase-8 boundary, site/candidate collection, template expansion, viability, specificity, selection/views, diagnostics, public enum policy, deferred gaps | none |
+| `payload_family_decomposition.md` | `../ja/payload_family_decomposition.md` | `../en/payload_family_decomposition.md` | Task-247 authority/baseline, Tasks 248-264/269-279 scopes/dependencies/gates/consumers, Task-10 runner increments, literal Task-49 24-fixture reconciliation mapping, disagreement classes, exit criteria | none |
 | `registration_resolution.md` | `../ja/registration_resolution.md` | `../en/registration_resolution.md` | registration model, pending/activated database, validation, existential gates, cluster/reduction handoff, diagnostics, public enum policy, gap table | none |
 | `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility, inputs, data shape, metadata/summaries, overload/coercion/cluster tables, failure/recovery, public enum policy, deferred gaps | none |
 | `semantic_spec_audit.md` | `../ja/semantic_spec_audit.md` | `../en/semantic_spec_audit.md` | audit scope, severity legend, findings index/details, adversarial corpus table, traceability requirement ids, TODO impact | none |
@@ -63,3 +64,10 @@ crate plan and todo updates, and the lint-policy bilingual sync guard are
 committed together. Task 33 does not claim crate completion by itself; task 34
 and the closeout task have since recorded the module-boundary refactor gate and
 crate exit report.
+
+Task 247 re-ran the paired-file inventory for the new source-payload
+decomposition authority. The English and Japanese graph rows, blocked gates,
+Task-10 consumer increments, literal 24-fixture Task-49 reconciliation mapping,
+and no-credit boundary
+are synchronized with no new sync debt. No source or lint-policy change is
+needed because the existing exact-pair guard discovers the new filename pair.

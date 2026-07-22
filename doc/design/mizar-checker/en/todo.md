@@ -645,7 +645,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | no task: the greedy `of`/`over` parse is deterministic and documented (spec 19.6.4); a scope-sensitivity lint belongs to the future diagnostics-adoption wave and is recorded in that wave, not here |
-| corpus seeds | task 49 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root and same-return signature-conflict seeds, task-38 functorial-`for` guard seed, task-39 property-overlap coherence seed, and task-44 omitted-`reconsider`/ambiguous-redefinition-target seeds when the required runners, parser support, declaration-symbol support, and source-to-checker payload extraction land |
+| corpus seeds | task 49 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root seed, task-38 functorial-`for` guard seed, task-39 property-overlap coherence seed, and task-44 omitted-`reconsider`/ambiguous-redefinition-target seeds when the required runners, parser support, declaration-symbol support, and source-to-checker payload extraction land; Resolver Task 31 solely activates the task-37 same-return signature-conflict seed through `declaration_symbol`, and task 49 only reconciles/deduplicates that member with the exact 24-fixture set |
 
 35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [x]
     - Resolve the critical §5.5.1/§5.8.4/§5.8.5 inconsistency. Recommended
@@ -1038,18 +1038,26 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       duplicate-coverage seed, task-37 ordinary/template-derived
       equivalent-root ambiguity seeds, task-38 functorial-`for` guard seed,
       task-39 property-overlap coherence seed, and task-44 omitted-`reconsider`
-      / ambiguous-redefinition-target seeds.
-      Activate the task-37 same-return signature-conflict seed when the
-      declaration-symbol runner supports that resolver diagnostic. Revise the
+      / ambiguous-redefinition-target seeds. The exact scope is the
+      24-fixture reconciliation set in
+      [payload_family_decomposition.md](./payload_family_decomposition.md):
+      resolver Task 31 solely activates its same-return member through
+      `declaration_symbol`; Task 49 activates the remaining 23 and then
+      reconciles/deduplicates all 24. The same-signature/different-return
+      fixture is already active outside the set and must remain an unmodified
+      control rather than being reactivated. Revise the
       task-29 deferred corpus records to point at (or be superseded by) the
       audit requirement ids.
     - Acceptance: `mizar-test` plan shows the fixtures active with zero plan
       errors; deferred records no longer double-count them.
     - Verify: `cargo test -p mizar-test`.
     - Deps: completed tasks 35-44; parser Tasks 47-48; resolver Task 31;
-      checker Task 247 and every concrete producer task it creates; mizar-test
-      Task-10 formula/advanced runners and source-payload consumers. Tasks
-      266-268 alone are insufficient. Refs: semantic_spec_audit.md
+      completed checker Task 247; checker Tasks 248-264 and 269-279, including
+      the external accepted-status gate of blocked-reserved Task 274 and
+      external scheme/theorem-role Gate S1; mizar-test Task-10 increments
+      `MT10-FS` and `MT10-AS`. Tasks 266-268 alone are insufficient. Refs:
+      [payload_family_decomposition.md](./payload_family_decomposition.md),
+      semantic_spec_audit.md
       "Adversarial Corpus".
 
 50. **Source-derived attributed reserve evidence-gap bridge.** [x]
@@ -4332,7 +4340,7 @@ Check the task off here once tests pass.
 
 ## Task 247 STEP 5 Payload-Family Decomposition
 
-- [ ] Inventory all remaining AST-wide declaration, attribute, term, formula,
+- [x] Inventory all remaining AST-wide declaration, attribute, term, formula,
   proof-skeleton, registration/activation/trace, overload, and Task-49 payload
   families against canonical specs, existing `.miz`, trace, expectations, and
   checker APIs. Create bounded producer tasks with prepared mizar-test Task-10
@@ -4344,3 +4352,64 @@ Check the task off here once tests pass.
   Task 247 must cover all remaining families rather than treating the
   contradiction slice as general.
   Its accepted producer-task graph is the input authority for core Task 32.
+  Complete: [payload_family_decomposition.md](./payload_family_decomposition.md)
+  assigns all remaining families to checker Tasks 248-264 and 269-279,
+  mizar-test Task-10 increments `MT10-FS`/`MT10-AS`, existing Task 49, or an
+  explicit external gate. It freezes the exact 24-fixture reconciliation set:
+  resolver Task 31 solely activates the same-return member via
+  `declaration_symbol`, and Task 49 activates the other 23 before reconciling/
+  deduplicating all 24. It also preserves the already active different-return
+  control. Task 274 and external
+  Gate S1 remain blocked because canonical upstream owners are unnamed. Trace
+  status, tests, coverage credit, source,
+  fixtures, expectations, and Steps 6/7 are unchanged. Core Task 32 may now
+  consume the accepted graph for its own docs-only decomposition.
+
+## Tasks 248-264 And 269-279 STEP 5 Source-Payload Producer Queue
+
+The full authority slice, dependencies, consumers, gates, negative scope, and
+exit criteria are canonical in
+[payload_family_decomposition.md](./payload_family_decomposition.md). Each
+unchecked row below is one future nonempty logical task and one commit.
+
+- [ ] **Task 248:** source item/declaration site and binding-context producer.
+- [ ] **Task 249:** type head/application/argument producer.
+- [ ] **Task 250:** attribute-chain/qualification/provenance producer.
+- [ ] **Task 251:** evidence-query request and dependency-fact-reference producer;
+  never fabricate evidence results.
+- [ ] **Task 252:** primary term producer.
+- [ ] **Task 253:** functor and inline-functor application producer.
+- [ ] **Task 254:** structure constructor/selector/update term producer.
+- [ ] **Task 255:** set/comprehension/choice/`qua` term producer.
+- [ ] **Task 256:** atomic formula producer.
+- [ ] **Task 257:** composite/quantified formula and binder producer.
+- [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
+  visibility-scoped input-fact producer; never publish accepted theorem facts.
+- [ ] **Task 259:** predicate-definition and initial-obligation intake producer.
+- [ ] **Task 260:** functor-definition and initial-obligation intake producer.
+- [ ] **Task 261:** attribute-definition producer.
+- [ ] **Task 262:** mode-definition producer.
+- [ ] **Task 263:** structure/inheritance/constructor-definition producer.
+- [ ] **Task 264:** property-implementation producer; depends on parser Task 48.
+- [ ] **Task 269:** proof-local declaration/binding producer.
+- [ ] **Task 270:** inline-definition closure/capture/substitution-request producer.
+- [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer;
+  depends on parser Task 47.
+- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer.
+- [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
+- [ ] **Task 274 (blocked-reserved):** accepted verifier/artifact-status import
+  and activation adapter. Not executable until canonical authority names the
+  upstream owner, schema, authentication rules, and tests.
+- [ ] **Task 275:** source-derived cluster-closure trace producer.
+- [ ] **Task 276:** source-derived reduction/normalization trace producer.
+- [ ] **Task 277:** direct template role/actual/guard producer. Missing
+  scheme/theorem roles remain outside this executable task under external Gate
+  S1, and Task 49 remains gated on S1.
+- [ ] **Task 278:** ordinary/template overload input-to-selection producer.
+- [ ] **Task 279:** redefinition/notation target/coherence/refinement producer;
+  consumes Task 278 ordinary-root results without a dependency cycle.
+
+Every task projects its family transactionally through applicable `TypedAst`
+and `ResolvedTypedAst` tables and is consumed by a real `mizar-test` Task-10
+case. An unconsumed DTO, placeholder runner, or documentation-only
+implementation commit does not satisfy a producer task.

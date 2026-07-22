@@ -35,6 +35,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `crate_exit_report.md` | `../ja/crate_exit_report.md` | `../en/crate_exit_report.md` | result、scope、task commit、hard gate、score breakdown、deferred item、verification、handoff | none |
 | `module_boundary_audit.md` | `../ja/module_boundary_audit.md` | `../en/module_boundary_audit.md` | split gate、source layout inventory、task classification、completion decision | none |
 | `overload_resolution.md` | `../ja/overload_resolution.md` | `../en/overload_resolution.md` | phase-8 boundary、site/candidate collection、template expansion、viability、specificity、selection/views、diagnostics、public enum policy、deferred gaps | none |
+| `payload_family_decomposition.md` | `../ja/payload_family_decomposition.md` | `../en/payload_family_decomposition.md` | Task-247 authority/baseline、Tasks 248-264/269-279 scope/dependency/gate/consumer、Task-10 runner increment、literal Task-49 24-fixture reconciliation mapping、disagreement class、exit criteria | none |
 | `registration_resolution.md` | `../ja/registration_resolution.md` | `../en/registration_resolution.md` | registration model、pending/activated database、validation、existential gates、cluster/reduction handoff、diagnostics、public enum policy、gap table | none |
 | `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility、inputs、data shape、metadata/summaries、overload/coercion/cluster tables、failure/recovery、public enum policy、deferred gaps | none |
 | `semantic_spec_audit.md` | `../ja/semantic_spec_audit.md` | `../en/semantic_spec_audit.md` | audit scope、severity legend、findings index/details、adversarial corpus table、traceability requirement ids、TODO impact | none |
@@ -61,3 +62,9 @@ task 33 は、この English audit と Japanese companion、crate plan / todo up
 lint-policy bilingual sync guard が同じ commit に含まれた時点で完了する。task 33
 単体では crate completion を主張しない。task 34 と closeout task はすでに
 module-boundary refactor gate と crate exit report を記録している。
+
+Task 247は新しいsource-payload decomposition authorityについてpaired-file
+inventoryを再実行した。英日graph row、blocked gate、Task-10 consumer increment、
+literal Task-49 24-fixture reconciliation mapping、no-credit boundaryは同期され、
+新規sync debtはない。
+既存exact-pair guardが新filename pairを発見するためsource/lint-policy変更は不要。

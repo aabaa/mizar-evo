@@ -515,7 +515,9 @@ work. Every finding maps to a task or a recorded disposition:
 
 32. **Remaining source-derived `CoreIr` and `ControlFlowIr` task
     decomposition.** [ ]
-    - After checker Task 247, perform a docs/traceability-only inventory of
+    - Checker Task 247 is complete. Consume its accepted canonical graph in
+      [checker payload_family_decomposition.md](../../mizar-checker/en/payload_family_decomposition.md)
+      and perform a docs/traceability-only inventory of
       every remaining declaration/definition, attribute/type, term/formula,
       non-Task-180 proof, registration/activation/trace/overload, algorithm,
       hidden-local/contract, and `ControlFlowIr` source family. Give each one a
@@ -524,7 +526,10 @@ work. Every finding maps to a task or a recorded disposition:
     - Reconcile CORE-AUDIT-G001/G002/G005. Do not create synthetic `CoreIr` or
       CFGs, infer source payloads inside core, implement behavior, change
       fixtures/expectations/trace status, or promote coverage. Deps: checker
-      Task 247.
+      Task 247. This task is now dependency-authorized; checker Tasks 248-264
+      and 269-279
+      do not need to be implemented first, but every blocked gate and forbidden
+      boundary in the accepted graph must be preserved.
 
 ## Recommended Verification
 

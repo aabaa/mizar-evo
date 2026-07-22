@@ -305,7 +305,11 @@ the follow-up register below.
 The original audit opened no new `mizar-core` implementation task. Task 265
 later superseded that generic ownership: completed Task 31 owns the exact
 Task-180 slice, while Task 32 remains the docs-only exhaustive
-remaining-family decomposition. Coverage/status remains deferred only for the
+remaining-family decomposition. Checker Task 247 is now complete, and its
+accepted payload-family graph makes Task 32 dependency-authorized without
+waiting for checker producer implementation; Task 32 must preserve all blocked
+accepted-status, scheme-role, artifact-schema, and public-code gates.
+Coverage/status remains deferred only for the
 Task-32 families and later stages. Diagnostics and Steps 6/7
 proof/kernel/artifact work remain with their existing owners.
 

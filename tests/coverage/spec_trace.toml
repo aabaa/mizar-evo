@@ -2935,7 +2935,7 @@ stage = "advanced_semantics"
 status = "deferred"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Substitution replay and proof-local abbreviation expansion are not implemented yet. Add regression coverage for the `defpred P(n be Nat) means n < m` shadowing example and malformed capture-producing substitutions."
+deferred_reason = "Task 247 assigns definition-time closure/substitution-request and capture provenance to checker Task 270 and its real advanced-semantics consumer to mizar-test Task-10 increment MT10-AS. Add the distinct `pass_advanced_semantics_definition_time_capture_avoidance_001` smoke with an outer resolved `m`, `defpred P(n be Nat) means n < m`, later display-name shadowing, and capture/formal/substitution-request corruption when that producer and runner execute. Substitution results still require explicit replay evidence. This smoke is outside the 24-fixture Task-49 reconciliation set."
 tests = []
 
 [[requirement]]
@@ -2946,7 +2946,7 @@ stage = "advanced_semantics"
 status = "deferred"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 29 cannot add active overload `.miz` semantic cases yet: mizar-test has no active advanced_semantics runner/tag gate, and source-to-checker extraction for overload sites, candidate groups, template payloads, source qua evidence, viability evidence, specificity comparisons, selection/refinement payloads, inserted views, and expression metadata remains unavailable. Add ambiguity, no-match, refinement-join, invalid narrowing, and successful overload corpus cases after MC-G020/MC-G027 prerequisites exist."
+deferred_reason = "Task 247 assigns executable direct template roles to checker Task 277, ordinary/template overload payloads through selection to Task 278, redefinition/notation target/coherence/refinement payloads to Task 279, and the real runner/tag/report consumer to mizar-test Task-10 increment MT10-AS. Missing scheme/theorem roles remain outside Task 277 under external Gate S1 until a named canonical parser/syntax/resolver owner exists. Keep this row deferred until those producers, the gate, and the runner execute; Task 49 then activates only its mapped members of the 24-fixture reconciliation set without double-counting unrelated template seeds."
 tests = []
 
 [[requirement]]
@@ -2957,7 +2957,7 @@ stage = "advanced_semantics"
 status = "deferred"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 29 cannot add active cluster/reduction `.miz` semantic cases yet: mizar-test has no active advanced_semantics runner/tag gate, checker-ready registration payload extraction is missing, accepted verifier/artifact status is not wired, source-derived cluster/reduction trace extraction is unavailable, and artifact emission/reuse remains deferred. Add cluster activation, loop/bound/contradiction, reduction trace, and registration guard corpus cases after MC-G020/MC-G021/MC-G023 prerequisites exist."
+deferred_reason = "Task 247 assigns registration item/correctness/initial-obligation intake to checker Task 273, accepted-status import/activation to blocked-reserved Task 274, source-derived cluster traces to Task 275, reduction traces to Task 276, and the real runner/tag/report consumer to mizar-test Task-10 increment MT10-AS. Task 274 remains blocked because the canonical accepted verifier/artifact-status owner and schema are unnamed. Keep this row deferred until every producer, gate, and runner executes; Task 49 then activates only its mapped members of the 24-fixture reconciliation set."
 tests = []
 
 [[requirement]]
@@ -2968,7 +2968,7 @@ stage = "formula_statement"
 status = "deferred"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet: mizar-test has no active formula_statement runner/tag gate, and mizar-checker still lacks AST-wide source-to-checker extraction for statement assumptions, formula payloads, local proof contexts, and recorded facts. Joint Task 266 owns only the exact Task-180 theorem-owner/checked-contradiction final projection and grants no formula_statement credit; checker Task 247 owns exhaustive decomposition of all remaining MC-G019/MC-G020 producer and runner tasks."
+deferred_reason = "Task 247 assigns atomic/composite formulas to checker Tasks 256-257, theorem-owner/statement semantics and visibility-scoped input facts to Task 258, proof-local declarations/closures/reconsider/proof skeletons to Tasks 269-272, and the real runner/tag/report consumer to mizar-test Task-10 increment MT10-FS. MT10-FS must add the distinct `pass_formula_statement_reserved_variable_equality_smoke_001` source and singular formula-statement sidecar; it must not reclassify or add a sidecar to the existing active type-elaboration case. Keep this row deferred until those producers and runner execute; Tasks 266-268 and the Task-180 Core snapshot grant no formula-statement coverage credit."
 tests = []
 
 [[requirement]]
@@ -4578,7 +4578,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attribute heads and source shapes outside those exact fixtures still lack real imported AttributeInput payload extraction."
+deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Task 247 assigns broader imported attribute chain/qualification/provenance extraction to checker Task 250 and evidence requests/references to Task 251. Keep the broader row deferred until those exact producers and real Task-10 consumers execute."
 tests = []
 
 [[requirement]]
@@ -4614,7 +4614,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Tasks 83 and 97 supersede the documented parser.type_fixtures `R` and `TypeCaseStruct` fixtures by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside those fixtures, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+deferred_reason = "Tasks 83 and 97 supersede the documented parser.type_fixtures `R` and `TypeCaseStruct` fixtures by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Task 247 assigns broader imported structure head/application/argument extraction to checker Task 249 and evidence requests/references to Task 251. Keep the broader row deferred until those exact producers and real Task-10 consumers execute."
 tests = []
 
 [[requirement]]
@@ -5507,5 +5507,5 @@ stage = "advanced_semantics"
 status = "deferred"
 required = true
 coverage = "fail"
-deferred_reason = "Task 29 records this review-audit negative suite as deferred rather than adding fake active fixtures: mizar-test has no active advanced_semantics runner/tag gate, statement/proof assumption payload extraction and proof-owned acceptance inputs are missing, source-derived sethood evidence is unavailable, and overload source qua evidence is not extracted. Add fail coverage for witness leakage from now/proof blocks, unmet deffunc/defpred guards, missing sethood for comprehension, and invalid qua narrowing after MC-G019/MC-G020/MC-G021/MC-G027 and runner support exist."
+deferred_reason = "Task 247 assigns witness visibility and proof-skeleton inputs to checker Tasks 258/272, deffunc/defpred closure and guard inputs to Task 270, sethood/evidence requests and comprehension/qua payloads to Tasks 251/255/271, and real execution to the applicable MT10-FS or MT10-AS increment. Keep this row deferred until those producers and runners execute. These escape/guard cases are outside the 24-fixture Task-49 reconciliation set and receive no implicit credit from that task."
 tests = []

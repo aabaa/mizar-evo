@@ -1945,3 +1945,25 @@ ordered constraints, one checked equality, and no wrapper semantic reference.
 The finite matrix, Tasks 134/223 cross-rejection, and all 59 prior owners guard
 runner 188. Metadata is 403/367, type 235/223, pass/fail 219/184. Broader and
 downstream behavior remains uncredited or deferred.
+
+## Task 247 Source-Payload Ownership Traceability
+
+Checker Task 247 adds no test or coverage backlink. It assigns the deferred
+formula-statement row to checker Tasks 256-258/269-272 plus Task-10 increment
+`MT10-FS`, and the deferred registration/cluster/reduction and overload rows to
+Tasks 273-279 plus `MT10-AS` and their explicit accepted-status/scheme-role
+gates. The capture-avoidance row is owned by Task 270 and `MT10-AS`. The
+type-soundness escape/guard row is split among Tasks 258/272
+(witness visibility), Task 270 (local definition guards), and Tasks
+251/255/271 (sethood and `qua`).
+The existing omitted-`reconsider` advanced-semantics fixture is assigned to
+parser Task 47, checker Tasks 251/271-272, and `MT10-AS`; it is not moved to the
+formula-statement stage.
+
+Resolver Task 31 is the sole activation owner for the same-return member of the
+exact 24-fixture reconciliation set and uses `declaration_symbol`. Task 49 later
+activates the other 23 and reconciles/deduplicates all 24. The active
+different-return conflict is not reactivated, while capture-avoidance,
+witness/guard, and unrelated template seeds are not silently added to that set.
+`spec_trace.toml` status, test lists, coverage classes, cases/requirements,
+runner counts, and existing expectations remain unchanged by Task 247.

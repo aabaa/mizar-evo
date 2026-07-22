@@ -493,7 +493,9 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       statusは変更していない。
 
 32. **Remaining source-derived `CoreIr`/`ControlFlowIr` task decomposition。** [ ]
-    - checker Task 247後、残る全declaration/definition、attribute/type、term/formula、
+    - checker Task 247は完了済み。そのaccepted canonical graphである
+      [checker payload_family_decomposition.md](../../mizar-checker/ja/payload_family_decomposition.md)
+      をconsumeし、残る全declaration/definition、attribute/type、term/formula、
       Task-180以外のproof、registration/activation/trace/overload、algorithm、
       hidden-local/contract、`ControlFlowIr` source familyをdocs/traceability-onlyで
       inventoryする。各familyにbounded checker-to-core producer/lowering task、
@@ -501,7 +503,9 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       割り当てる。
     - CORE-AUDIT-G001/G002/G005をreconcileする。synthetic `CoreIr`/CFG、core内
       source推論、behavior実装、fixture/expectation/trace status change、coverage
-      promotionは禁止する。依存: checker Task 247。
+      promotionは禁止する。依存: checker Task 247。このtaskはdependency-
+      authorizedとなった。checker Tasks 248-264/269-279のimplementation完了を待つ必要は
+      ないが、accepted graphの全blocked gate/forbidden boundaryを維持する。
 
 ## 推奨検証
 

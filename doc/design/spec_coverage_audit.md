@@ -2278,3 +2278,56 @@ verified premise. The broad non-Task-180 CoreIr row, every ControlFlowIr row,
 CFG/VC/proof/kernel/artifact behavior, and all other proof/formula families
 remain deferred to checker Task 247, Core Task 32 and its descendants, and the
 named downstream owners. Step 5 remains active; Steps 6/7 remain deferred.
+
+## Checker Task 247 Remaining-Family Ownership Update
+
+Checker Task 247 changes follow-up ownership, so this audit is updated, but it
+changes no chapter status or coverage credit. The accepted `mizar-checker`
+source-payload graph assigns Tasks 248-264 and 269-279 to bounded
+binding/declaration, type/attribute/evidence-request, term, formula, statement,
+definition, proof, registration, cluster/reduction trace, template/overload,
+and redefinition/notation families. Each producer must reach the applicable
+`TypedAst`/`ResolvedTypedAst` handoff and a real `mizar-test` Task-10 consumer.
+
+Task-10 increment `MT10-FS` owns the future formula-statement runner with the
+distinct `pass_formula_statement_reserved_variable_equality_smoke_001` source
+and singular formula-statement sidecar; the existing type-elaboration case and
+its sidecar remain unchanged. `MT10-AS` owns the future advanced-semantics
+runner with canonical non-Task-49 ordinary-root and Task-270 definition-time
+capture smokes, plus the existing omitted-`reconsider` negative after parser
+Task 47 and Tasks 251/271-272 with explicit non-accepting intent and no proof
+search. Resolver Task 31 solely activates the same-return member of the
+exact 24-fixture reconciliation set through `declaration_symbol`; Task 49
+activates the other 23 and reconciles/deduplicates all 24. The active
+different-return conflict is outside the set and is not reactivated.
+
+Two ownership gaps remain explicit. Blocked-reserved Task 274 cannot import or
+activate accepted registration status until canonical authority names the
+verifier/artifact producer, schema, authentication rules, and tests. Task
+277 is executable for direct template roles only. Missing scheme/theorem roles
+remain outside Task 277 under external Gate S1 until canonical parser/syntax/
+resolver ownership is named. MC-G004 artifact/schema integration remains an
+unnamed external gate. MC-G005 public diagnostic-code allocation retains its
+existing nonblocking `spec_gap` and unnamed external registry/consumer-adoption
+gate. No payload, status, schema, or public code may be fabricated to clear
+them.
+
+The deferred trace rows retain their status, tests, and coverage classes while
+their owners are refined: formula/statement to Tasks 256-258/269-272 plus
+`MT10-FS`; registration/cluster/reduction to Tasks 273-276 plus Task 274 and
+`MT10-AS`; overload to Tasks 277-279 plus `MT10-AS`; definition-time capture
+avoidance to Task 270 plus `MT10-AS`; and witness/guard/sethood/`qua` soundness
+to Tasks 258/272, 270, 251/255/271 and the applicable runner. The broad
+imported-attribute and imported-structure rows remain deferred under Tasks
+249-251 beyond their already covered exact slices.
+
+Therefore all coverage-matrix rows and existing chapter ratings remain
+unchanged. This task closes only the `design_drift` in executable ownership;
+the assigned `source_drift`, `test_gap`, parser Task-47
+`test_expectation_drift`, and explicit gates remain open. MC-G005 retains its
+existing nonblocking `spec_gap`; no new payload-family `spec_gap`,
+`source_undocumented_behavior`, current `boundary_violation`, or
+`repo_metadata_conflict` was found. Core Task 32 is now authorized to consume
+the accepted graph for its own docs/traceability-only decomposition without
+waiting for producer implementation. Task 49 and Steps 6/7 remain gated or
+deferred.

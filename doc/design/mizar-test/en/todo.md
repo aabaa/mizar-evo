@@ -247,6 +247,25 @@ Keep `cargo test -p mizar-test` green after each task (see
       changing 188 active cases, 219/184 pass/fail, the `.miz`, phase, or
       diagnostics. Broader CoreIr/ControlFlowIr/proof-verification remains
       paced by Core Task 32 and its prerequisites.
+    - Checker Task 247 now names two future non-placeholder consumer increments
+      inside this same open task. `MT10-FS` owns the `formula-statement`
+      stage/tag/report path and adds the distinct
+      `pass_formula_statement_reserved_variable_equality_smoke_001` source and
+      singular formula-statement sidecar, with corruption of the same checker
+      bundle as negative runner coverage. The existing type-elaboration fixture
+      and its sole sidecar stay unchanged. `MT10-AS` owns the
+      `advanced-semantics` path and must run a new spec-derived, non-Task-49,
+      single-ordinary-functor/single-candidate reflexive-equality smoke through
+      real definition, application, candidate, and ordinary-root producers,
+      plus a distinct Task-270 definition-time capture smoke that preserves the
+      outer resolved identity across display-name shadowing. It also owns the
+      existing advanced-semantics omitted-`reconsider` case after parser Task
+      47 and checker Tasks 251/271-272, including explicit non-accepting pending/
+      blocked intent and no proof search. Neither increment
+      may be an empty/placeholder runner or activate the 24-fixture Task-49
+      reconciliation set early. Their complete dependencies and blocked gates are
+      canonical in checker
+      [payload_family_decomposition.md](../../mizar-checker/en/payload_family_decomposition.md).
     - The historical selected task-10 ledger records `mizar-parser` task 3
       (`parse-only`),
       `mizar-resolve` task 23 (`declaration-symbol`), `mizar-checker` task 12
@@ -1364,8 +1383,17 @@ approximately 94,120-line test module containing 272 `#[test]` attributes.
   same-return conflict, Core, and VC gaps are `source_drift` and `test_gap`;
   Task-47 recovery is `test_expectation_drift` plus `source_drift`; rebuilding
   another crate's raw syntax downstream would be a `boundary_violation` and is
-  forbidden. No `spec_gap`, `source_undocumented_behavior`, or
+  forbidden. Task 265 found no new or blocking `spec_gap` in its selected
+  execution-authority slice; the pre-existing MC-G005 public-code allocation
+  `spec_gap` remained explicit. No `source_undocumented_behavior` or
   `repo_metadata_conflict` was found.
+  Checker Task 247 has now completed the authorized docs/traceability split:
+  Tasks 248-264/269-279, Task-10 increments `MT10-FS`/`MT10-AS`, and existing
+  Task 49 own the remaining families. Resolver Task 31 solely activates the
+  same-return member through `declaration_symbol`; Task 49 activates the other
+  23 and reconciles/deduplicates the exact 24-fixture set. Task 274 and external scheme/theorem-role
+  Gate S1 are explicit blocked gates, so Task 49 is not yet executable. Core
+  Task 32 is now docs-decomposition-authorized.
 - [x] **Task 266: preserve the exact Task-180 checked contradiction in the
   final checker handoff.** Extend checker-owned, syntax-free
   `ResolvedTypedAst` data so one resolver theorem owner is linked to the one

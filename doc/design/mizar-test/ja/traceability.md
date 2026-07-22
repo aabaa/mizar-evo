@@ -1862,3 +1862,22 @@ checked equality 1件、wrapper semantic reference なしを保持。finite matr
 Tasks 134/223 cross-rejection、既存 owner 59件が runner 188 を guard。
 metadata 403/367、type 235/223、pass/fail 219/184。broader/downstream は
 credit 外または deferred。
+
+## Task 247 source-payload ownership traceability
+
+Checker Task 247はtest/coverage backlinkを追加しない。deferred formula-statement
+rowをchecker Tasks 256-258/269-272とTask-10 increment `MT10-FS`へ、deferred
+registration/cluster/reduction/overload rowをTasks 273-279、`MT10-AS`、explicit
+accepted-status/scheme-role gateへ割り当てる。capture-avoidance rowはTask 270と
+`MT10-AS`が所有する。type-soundness escape/guard rowはTasks 258/272
+（witness visibility）、Task 270（local-definition guard）、Tasks 251/255/271
+（sethood/`qua`）に分割する。
+existing omitted-`reconsider` advanced-semantics fixtureはparser Task 47、checker
+Tasks 251/271-272、`MT10-AS`へ割り当て、formula-statement stageへ移さない。
+
+exact 24-fixture reconciliation setのsame-return memberはresolver Task 31が
+`declaration_symbol`でsole activationし、Task 49は後で他23件をactivateして
+24件全体をreconcile/deduplicateする。active different-return conflictを再activation
+せず、capture-avoidance/witness-guard/無関係template seedをsetへ黙って追加しない。
+Task 247では`spec_trace.toml` status/test list/coverage class、cases/
+requirements、runner count、existing expectationは不変。

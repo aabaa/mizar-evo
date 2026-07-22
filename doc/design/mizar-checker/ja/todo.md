@@ -609,7 +609,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | タスク化しない: greedy `of`/`over` parse は決定的かつ文書化済み(spec 19.6.4)。scope 感度 lint は将来の diagnostics 採用 wave に属し、そこで記録する |
-| corpus seeds | task 49 が必要な runner、parser support、declaration-symbol support、source-to-checker payload extraction 到着時に、監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed、task-37 ordinary/template-derived equivalent-root seed と same-return signature-conflict seed、task-38 functorial-`for` guard seed、task-39 property-overlap coherence seed、task-44 omitted-`reconsider` / ambiguous-redefinition-target seed を活性化する |
+| corpus seeds | task 49 が必要な runner、parser support、declaration-symbol support、source-to-checker payload extraction 到着時に、監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed、task-37 ordinary/template-derived equivalent-root seed、task-38 functorial-`for` guard seed、task-39 property-overlap coherence seed、task-44 omitted-`reconsider` / ambiguous-redefinition-target seed を活性化する。task-37 same-return signature-conflict seed は Resolver Task 31 が `declaration_symbol` で単独活性化し、task 49 はその member を exact 24-fixture set と reconciliation/deduplication するだけである |
 
 35. **Spec 決定: constructor property 引数と extensionality(SSA-001)。** [x]
     - critical な §5.5.1/§5.8.4/§5.8.5 の不整合を解決する。推奨は解決策 1:
@@ -981,17 +981,24 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       seed、task-37 ordinary/template-derived equivalent-root ambiguity seed、
       task-38 functorial-`for` guard seed、task-39 property-overlap coherence
       seed、task-44 omitted-`reconsider` / ambiguous-redefinition-target seed を活性化する。
-      declaration-symbol runner が該当 resolver diagnostic を support した時点で
-      task-37 same-return signature-conflict seed も活性化する。task-29 の
+      exact scopeは
+      [payload_family_decomposition.md](./payload_family_decomposition.md)の
+      24-fixture reconciliation setである。same-return memberはresolver Task 31が
+      `declaration_symbol`でsole activationし、Task 49は残り23件をactivateした後に
+      24件全体をreconcile/deduplicateする。same-signature/different-return fixtureは
+      set外で既にactiveであり、再activationせずunchanged controlとして保つ。task-29 の
       deferred corpus record を監査由来の requirement id を指す(または
       置き換えられる)よう改訂する。
     - 受け入れ条件: `mizar-test` plan が fixture を active と表示し plan
       error が 0 件。deferred record が二重計上されない。
     - 検証: `cargo test -p mizar-test`。
-    - 依存: 完了済みtasks 35-44、parser Tasks 47-48、resolver Task 31、checker
-      Task 247とそこで作成する全concrete producer task、mizar-test Task-10
-      formula/advanced runnerとsource-payload consumer。Tasks 266-268だけでは
-      不十分。参照: semantic_spec_audit.md「Adversarial Corpus」。
+    - 依存: 完了済みtasks 35-44、parser Tasks 47-48、resolver Task 31、完了済み
+      checker Task 247、checker Tasks 248-264/269-279（blocked-reserved Task
+      274のexternal accepted-status gateとexternal scheme/theorem-role Gate S1を
+      含む）、mizar-test Task-10 increments `MT10-FS`/`MT10-AS`。Tasks 266-268
+      だけでは不十分。参照:
+      [payload_family_decomposition.md](./payload_family_decomposition.md)、
+      semantic_spec_audit.md「Adversarial Corpus」。
 
 50. **Source-derived attributed reserve evidence-gap bridge.** [x]
     - task 48 の reserve source declaration seam を、resolver `SymbolEnv` に
@@ -4120,7 +4127,7 @@ cargo test -p mizar-test
 
 ## Task 247 STEP 5 Payload-Family Decomposition
 
-- [ ] 残るAST-wide declaration、attribute、term、formula、proof-skeleton、
+- [x] 残るAST-wide declaration、attribute、term、formula、proof-skeleton、
   registration/activation/trace、overload、Task-49 payload familyをcanonical spec、
   既存`.miz`、trace、expectation、checker APIに対してinventoryする。prepared
   mizar-test Task-10 consumerとexplicit forbidden scopeを持つbounded producer task
@@ -4130,3 +4137,61 @@ cargo test -p mizar-test
   Task 266へのdependencyはない。そのinventoryは再利用できるが、contradiction
   sliceをgeneral扱いしない。
   accepted producer-task graphはcore Task 32のinput authorityとなる。
+  完了: [payload_family_decomposition.md](./payload_family_decomposition.md)は
+  全remaining familyをchecker Tasks 248-264/269-279、mizar-test Task-10
+  increments `MT10-FS`/`MT10-AS`、既存Task 49、またはexplicit external gateへ
+  割り当てた。exact 24-fixture reconciliation setを固定し、resolver Task 31が
+  same-return memberを`declaration_symbol`でsole activation、Task 49が他23件を
+  activateして24件全体をreconcile/deduplicateする。既にactiveなdifferent-return
+  controlも維持する。Task 274とexternal Gate S1はcanonical
+  upstream owner未命名のためblocked。trace status/tests/
+  coverage credit/source/fixture/expectation/Steps 6/7は不変。Core Task 32は
+  accepted graphを自身のdocs-only decompositionへ利用できる。
+
+## Tasks 248-264/269-279 STEP 5 ソースペイロードproducer queue
+
+完全なauthority slice、dependency、consumer、gate、negative scope、exit
+criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
+をcanonicalとする。以下の各unchecked rowは将来の1 nonempty logical taskかつ
+1 commitである。
+
+- [ ] **Task 248:** source item/declaration site/binding-context producer。
+- [ ] **Task 249:** type head/application/argument producer。
+- [ ] **Task 250:** attribute-chain/qualification/provenance producer。
+- [ ] **Task 251:** evidence-query request/dependency-fact-reference producer。
+  evidence resultを捏造しない。
+- [ ] **Task 252:** primary term producer。
+- [ ] **Task 253:** functor/inline-functor application producer。
+- [ ] **Task 254:** structure constructor/selector/update term producer。
+- [ ] **Task 255:** set/comprehension/choice/`qua` term producer。
+- [ ] **Task 256:** atomic formula producer。
+- [ ] **Task 257:** composite/quantified formula/binder producer。
+- [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
+  visibility-scoped input-fact producer。accepted theorem factをpublishしない。
+- [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
+- [ ] **Task 260:** functor-definition/initial-obligation intake producer。
+- [ ] **Task 261:** attribute-definition producer。
+- [ ] **Task 262:** mode-definition producer。
+- [ ] **Task 263:** structure/inheritance/constructor-definition producer。
+- [ ] **Task 264:** property-implementation producer。parser Task 48に依存。
+- [ ] **Task 269:** proof-local declaration/binding producer。
+- [ ] **Task 270:** inline-definition closure/capture/substitution-request producer。
+- [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer。
+  parser Task 47に依存。
+- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer。
+- [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer。
+- [ ] **Task 274 (blocked-reserved):** accepted verifier/artifact-status import/
+  activation adapter。canonical authorityがupstream owner/schema/authentication
+  rule/testsを命名するまで実行不能。
+- [ ] **Task 275:** source-derived cluster-closure trace producer。
+- [ ] **Task 276:** source-derived reduction/normalization trace producer。
+- [ ] **Task 277:** direct template role/actual/guard producer。missing
+  scheme/theorem roleはexecutable task外のexternal Gate S1で、Task 49はS1にも
+  gateされる。
+- [ ] **Task 278:** ordinary/template overload input-to-selection producer。
+- [ ] **Task 279:** redefinition/notation target/coherence/refinement producer。
+  dependency cycleなしにTask 278 ordinary-root resultをconsumeする。
+
+各taskはfamilyを適用可能な`TypedAst`/`ResolvedTypedAst` tableまでtransactionally
+projectし、実`mizar-test` Task-10 caseがconsumeする。未消費DTO、placeholder
+runner、docs-only implementation commitはproducer taskを満たさない。

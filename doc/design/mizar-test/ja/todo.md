@@ -244,6 +244,23 @@ regression test を追加した。
       403/368、type 236/224となるが、active case 188、pass/fail 219/184、`.miz`、
       phase、diagnosticは不変。broader CoreIr/ControlFlowIr/proof-verificationはCore
       Task 32とprerequisiteにpacedされる。
+    - Checker Task 247は同じopen task内の将来のnon-placeholder consumer
+      increment 2件を命名した。`MT10-FS`は`formula-statement` stage/tag/reportを
+      所有し、distinct `pass_formula_statement_reserved_variable_equality_smoke_001`
+      sourceとsingular formula-statement sidecarを追加し、同checker bundleの
+      corruptionをnegative runner coverageにする。existing type-elaboration
+      fixtureと唯一のsidecarは不変。`MT10-AS`は`advanced-semantics`を所有し、新しいspec-derived
+      non-Task-49 single-ordinary-functor/single-candidate reflexive-equality
+      smokeをreal definition/application/candidate/ordinary-root producerへ通し、
+      display-name shadowing越しにouter resolved identityを保持するdistinct Task-270
+      definition-time capture smokeも実行する。さらにparser Task 47とchecker Tasks
+      251/271-272後のexisting advanced-semantics omitted-`reconsider` caseを所有し、
+      explicit non-accepting pending/blocked intentとproof searchなしをassertする。
+      空/placeholder runnerや24-fixture
+      Task-49 reconciliation setの早期activationは禁止。完全な
+      dependency/blocked gateはchecker
+      [payload_family_decomposition.md](../../mizar-checker/ja/payload_family_decomposition.md)
+      をcanonicalとする。
     - historical selected task-10 ledger は、`mizar-parser` task 3
       （`parse-only`）、
       `mizar-resolve` task 23（`declaration-symbol`）、`mizar-checker` task 12
@@ -1200,8 +1217,17 @@ closeout 時点の `src/runner.rs` は 111,262 行で、`#[cfg(test)]` helper 13
   handoff、property implementation、same-return conflict、Core、VCのgapは
   `source_drift`と`test_gap`、Task-47 recoveryは`test_expectation_drift`と
   `source_drift`である。downstream crateが他crateのraw syntaxを再構築することは
-  `boundary_violation`であり禁止する。`spec_gap`、
-  `source_undocumented_behavior`、`repo_metadata_conflict`は検出していない。
+  `boundary_violation`であり禁止する。Task 265のselected execution-authority sliceに
+  新規またはblocking `spec_gap`はなかったが、既存MC-G005 public-code allocation
+  `spec_gap`はexplicitに残った。`source_undocumented_behavior`、
+  `repo_metadata_conflict`は検出していない。
+  Checker Task 247はauthorized docs/traceability splitを完了し、Tasks
+  248-264/269-279、Task-10 increments `MT10-FS`/`MT10-AS`、既存Task 49が
+  remaining familyを所有する。same-return memberはresolver Task 31が
+  `declaration_symbol`でsole activationし、Task 49が他23件をactivateしてexact
+  24-fixture setをreconcile/deduplicateする。Task 274とexternal scheme/theorem-role Gate S1は
+  explicit blocked gateのためTask 49はまだ実行不能。Core Task 32はdocs-decomposition-
+  authorizedとなった。
 - [x] **Task 266: exact Task-180 checked contradictionをfinal checker handoffへ
   保存する。** checker-owned syntax-free `ResolvedTypedAst` dataを拡張し、
   `SourceDerivedContradictionConstantBoundary`のresolver theorem owner 1件を、既存の

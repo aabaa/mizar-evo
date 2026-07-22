@@ -594,3 +594,29 @@ spec-decision tasks close.
   applicable audit requirement ids above, including the functorial-`for`
   guard row added by task 38, the overload ambiguity row, and the deferred
   same-return declaration-conflict row added by task 37.
+
+## Task 247 Producer And Activation Mapping
+
+Task 247 accepts
+[payload_family_decomposition.md](./payload_family_decomposition.md) as the
+source-payload owner graph. Of the 25 fixtures in the Adversarial Corpus table,
+the same-signature/different-return fixture is already active. Task 49 is
+therefore the activation owner for 23 members and the reconciliation/
+deduplication owner for the exact other-24 fixture set. Resolver Task 31 alone
+activates the same-return member through `declaration_symbol`. The literal IDs,
+per-fixture consumers, and gates are canonical in the decomposition document.
+
+The accepted mapping is checker Tasks 248-264 and 269-279, mizar-test Task-10
+increments `MT10-FS`/`MT10-AS`, parser Tasks 47-48, resolver Task 31, the
+blocked-reserved Gate A1 in Task 274, and external Gate S1 outside executable
+Task 277. Task 274 cannot execute until canonical authority names an accepted
+verifier/artifact-status producer and schema. Missing scheme/theorem roles
+remain outside executable Task 277 under Gate S1, blocked on a named parser/
+syntax/resolver owner. Neither gate may be filled by inferred payloads.
+
+The deferred capture-avoidance row, witness-leakage/local-definition-guard
+parts of the type-soundness row, and unrelated template-encoding seeds are not
+members of the 24-fixture Task-49 reconciliation set. Their Task-247 owners may add later
+spec-derived test-first coverage, but Task 49 must not grant them implicit or
+duplicate credit. Task 247 changes ownership notes only; all fixtures,
+expectations, trace status, and coverage credit remain unchanged.

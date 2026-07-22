@@ -94,9 +94,9 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] complete through task 45 | parked task 46; step-5 tasks 47-48 active | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Task 265 authority decomposition complete | step 5 task 10 plus Tasks 266-268 | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; step-5 bridges through Task 246 complete | Tasks 266-268 final handoff; Task 247 decomposition; task 49 dependency-gated | [todo](./mizar-checker/en/todo.md) |
-| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone and tasks 27-30 complete | step-5 Tasks 31-32 | [todo](./mizar-core/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268 and Core-31 consumer increment complete | step 5 task 10, including future `MT10-FS`/`MT10-AS` increments | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, and Task 247 decomposition complete | Tasks 248-264/269-279; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
+| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-30, and exact Task 31 complete | step-5 Task 32 dependency-authorized | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete through task 29 | step-5 Tasks 30-31 | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
@@ -1337,32 +1337,37 @@ proof acceptance, terminal goals, Core/VC payloads, or runner success.
    STEP 5 execution-authority decomposition. It assigns the tasks and gates in
    this list without changing source, specification semantics, fixtures,
    expectations, trace status, or coverage credit.
-2. [ ] [mizar-test task 266](./mizar-test/en/todo.md) — extend the checker-owned
+2. [x] [mizar-test task 266](./mizar-test/en/todo.md) — extend the checker-owned
    syntax-free `ResolvedTypedAst` final projection for only the existing Task
    180 standalone `contradiction` theorem. Preserve one resolver theorem owner
    linked to the existing one checked `FormulaKind::Contradiction` result,
    including source ranges and provenance. Do not publish truth/facts, accept
    the theorem, create a proof/terminal goal, or lower Core/VC data.
-3. [ ] [mizar-test task 267](./mizar-test/en/todo.md) — docs-only checker/core
+3. [x] [mizar-test task 267](./mizar-test/en/todo.md) — docs-only checker/core
    contract decision for the omitted-justification theorem form. Choose the
    checker-owned pending-auto-proof status, proof-skeleton and terminal-goal
    payload, and exact core mapping without accepting or discharging the
    theorem.
-4. [ ] [mizar-test task 268](./mizar-test/en/todo.md) — implement only the
+4. [x] [mizar-test task 268](./mizar-test/en/todo.md) — implement only the
    Task-267 accepted checker-owned proof/terminal-goal producer contract for
    the exact Task-180 source. It must fail closed on missing, duplicate,
    reordered, or mismatched owner/formula/proof identities.
-5. [ ] [mizar-core task 31](./mizar-core/en/todo.md) — after Tasks 266 and 268,
+5. [x] [mizar-core task 31](./mizar-core/en/todo.md) — after Tasks 266 and 268,
    lower only their real final checker payload into source-derived `CoreIr`
    and the exact theorem obligation representation selected by Task 267,
    paired with mizar-test Task-10 snapshot consumption. Core must not infer a
    proof state or terminal goal from source text.
-6. [ ] [mizar-checker task 247](./mizar-checker/en/todo.md) — docs-only
+6. [x] [mizar-checker task 247](./mizar-checker/en/todo.md) — docs-only
    exhaustive decomposition of the remaining AST-wide declaration,
    attribute, term, formula, proof-skeleton, registration/trace/overload, and
    Task-49 source payload families into bounded producer tasks with prepared
-   mizar-test Task-10 consumers.
-7. [ ] [mizar-core task 32](./mizar-core/en/todo.md) — after checker Task 247,
+   mizar-test Task-10 consumers. Complete: checker Tasks 248-264/269-279,
+   `MT10-FS`/`MT10-AS`, the exact 24-fixture reconciliation mapping (resolver
+   Task 31 activates one, Task 49 activates 23 and deduplicates all 24), and
+   explicit blocked accepted-status and external scheme/theorem-role Gate S1
+   are canonical in the paired payload-family decomposition.
+7. [ ] [mizar-core task 32](./mizar-core/en/todo.md) — checker Task 247 is now
+   complete, so this task is dependency-authorized for
    docs-only exhaustive decomposition of every remaining source-derived
    `CoreIr`/`ControlFlowIr` family, including declaration/definition,
    attribute/type, term/formula, non-Task-180 proof,
@@ -1388,11 +1393,13 @@ proof acceptance, terminal goals, Core/VC payloads, or runner success.
     same-signature/same-return declaration conflict required by the deferred
     Task-37 seed, without performing checker overload selection.
 13. [ ] [mizar-checker task 49](./mizar-checker/en/todo.md) — audit-corpus
-    activation and task-29 record revision only after its formula/advanced
-    runners, property implementation, registration/trace/overload payloads,
-    and all other stated gates are satisfied. Checker Task 247 must name any
-    still-missing producer tasks rather than treating Tasks 266-268 or the
-    parser/resolver tasks as sufficient by themselves.
+    activation and task-29 record revision: after `MT10-FS`/`MT10-AS`, checker
+    Tasks 248-264 and 269-279, parser Tasks 47-48, resolver Task 31, blocked-reserved
+    accepted-status Task 274, and external scheme/theorem-role Gate S1 are
+    satisfied, activate 23 members and reconcile/deduplicate the exact
+    24-fixture set. Resolver Task 31 solely activates its same-return member
+    through `declaration_symbol`. The already active different-return conflict
+    is outside the set and is not reactivated or double-counted.
 
 Exit: the source-to-semantics and core/VC completion gates hold — active
 semantic corpus coverage replaces extraction-gap sentinels for the promoted

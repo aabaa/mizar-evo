@@ -551,3 +551,27 @@ support が存在するまで inactive のままにし、task 44 は justificati
   の該当する監査由来 requirement id を指すよう(または置き換えるよう)改訂
   すべきである。task 38 が追加した functorial-`for` guard row、task 37 が追加した
   overload ambiguity row と deferred same-return declaration-conflict row も含める。
+
+## Task 247 producer/activation mapping
+
+Task 247は[payload_family_decomposition.md](./payload_family_decomposition.md)を
+source-payload owner graphとして受理する。Adversarial Corpus表25件のうち
+same-signature/different-return fixtureは既にactive。Task 49がactivate/
+するのはexact other-24 fixture setのうち23件で、24件全体のreconciliation/
+deduplicationも所有する。same-return memberはresolver Task 31だけが
+`declaration_symbol`でactivateする。literal ID、fixtureごとのconsumer/gateは
+decomposition文書をcanonicalとする。
+
+accepted mappingはchecker Tasks 248-264/269-279、mizar-test Task-10 increments
+`MT10-FS`/`MT10-AS`、parser Tasks 47-48、resolver Task 31、Task 274内のblocked-
+reserved Gate A1、executable Task 277外のexternal Gate S1。Task 274はcanonical
+authorityがaccepted verifier/artifact-status producer/schemaを命名するまで実行不能。
+missing scheme/theorem roleはGate S1でnamed parser/syntax/resolver owner待ち。
+推測payloadでgateを埋めない。
+
+deferred capture-avoidance row、type-soundness rowのwitness-leakage/local-
+definition-guard部分、無関係template-encoding seedは24-fixture Task-49
+reconciliation set外。
+Task-247 ownerは後続spec-derived test-first coverageを追加できるが、Task 49は
+implicit/duplicate creditを与えない。Task 247はownership noteだけを変更し、
+全fixture/expectation/trace status/coverage creditは不変。

@@ -2469,3 +2469,47 @@ cross-references, empty citations/context, absent label, and `proof/0`.
 Broader proof families remain owned by Task 247. Acceptance, facts, Core/CFG/
 VC payloads, existing fixtures/expectations, and trace status remain unchanged;
 Core Task 31 is the next exact consumer.
+
+## Task 247 Remaining-Family Ownership Reconciliation
+
+Task 247 replaces the broad future-owner wording with the accepted graph in
+[payload_family_decomposition.md](./payload_family_decomposition.md). It does
+not change the current public-surface correspondence or implementation credit.
+
+| Gap | Accepted owner or gate |
+|---|---|
+| MC-G002 | `MT10-FS`, `MT10-AS`, and existing Task 49. |
+| MC-G004 | Unnamed external artifact/schema owner gate; no schema invention. |
+| MC-G005 | Existing nonblocking `spec_gap`: unnamed public diagnostic registry/consumer-adoption gate; stable internal detail keys only. |
+| MC-G006 | Task 277 direct-role slice plus a blocked unnamed parser/syntax/resolver scheme-role gate. |
+| MC-G011 | Tasks 248, 257-258, 269-270, and 272. |
+| MC-G014 | Tasks 249-251 and 262-264. |
+| MC-G016 | Tasks 248-251, 258-264, and 269-273. |
+| MC-G017 | Tasks 252-264. |
+| MC-G018 | Tasks 251, 254-255, 263, 271, and 278; evidence results remain external inputs. |
+| MC-G019 | Tasks 258 and 272 plus `MT10-FS`; no accepted theorem facts. |
+| MC-G020 | Source extraction in the Task-10 consumers paired with every Task 248-264 and 269-279 producer. |
+| MC-G021 | Task 273 plus blocked-reserved accepted-status Task 274. |
+| MC-G023 | Tasks 275-276 and `MT10-AS`. |
+| MC-G025 | Blocked-reserved Task 274; canonical accepted verifier/artifact producer and schema are unnamed. |
+| MC-G026 | Task 251 requests/references plus Task 274 accepted-status gate. |
+| MC-G027 | Tasks 277-279 and `MT10-AS`. |
+| MC-G030 | `MT10-FS`, `MT10-AS`, and Task 49. |
+
+Each producer owns a transactional projection through its applicable
+`TypedAst`/`ResolvedTypedAst` tables and a real Task-10 assertion; an
+unconsumed DTO cannot close a task. Correctness producers retain
+correctness-condition identity, `InitialObligationId`, and source anchor input
+but never allocate `VcId` or claim discharge. Task 49 activates 23 members and
+reconciles/deduplicates the exact 24-fixture set; resolver Task 31 solely
+activates the same-return member through `declaration_symbol`. The active
+different-return conflict, capture-
+avoidance row, escape/guard row, and unrelated template seeds are not silently
+double-counted into that bundle.
+
+The disagreement classes are `design_drift`, `source_drift`, `test_gap`, and
+the parser-Task-47 `test_expectation_drift`. MC-G005 retains its existing
+nonblocking `spec_gap`; no new payload-family `spec_gap`,
+`source_undocumented_behavior`, current `boundary_violation`, or
+`repo_metadata_conflict` was found. Existing trace status, tests, source,
+fixtures, expectations, and coverage credit remain unchanged.

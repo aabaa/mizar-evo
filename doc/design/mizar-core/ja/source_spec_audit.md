@@ -301,7 +301,10 @@ source behavior ではなく、下の follow-up register で分類した unavail
 
 original auditでは新しい`mizar-core` implementation taskを開かなかった。Task 265は
 そのgeneric ownershipを後からsupersedeし、完了したTask 31がexact Task-180 slice、
-Task 32がdocs-only exhaustive remaining-family decompositionを所有する。
+Task 32がdocs-only exhaustive remaining-family decompositionを所有する。Checker
+Task 247は完了し、そのaccepted payload-family graphによりchecker producer実装を
+待たずTask 32はdependency-authorizedとなった。Task 32は全blocked accepted-status/
+scheme-role/artifact-schema/public-code gateを維持する。
 coverage/statusはTask-32 family/later stageについてだけdeferred。diagnosticsと
 Steps 6/7 proof/kernel/artifact workは既存ownerに残る。
 
