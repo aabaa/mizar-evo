@@ -1741,8 +1741,10 @@ accepts only the property keywords listed in the canonical grammar: predicate
 properties from Chapter 9, functor properties from Chapter 10, and standalone
 mode `sethood` from Chapter 7 / Appendix A. It does not invent `transitivity`
 as a property clause because the current `doc/spec/en` property productions do
-not list it, and it does not implement the ambiguous `property_impl` block
-surface.
+not list it. Task 28 did not implement the then-ambiguous `property_impl`
+block surface. `SPEC-07-PI-PLACEMENT` later resolved that placement gap by
+making the complete Chapter-7 block a top-level declaration; parser Task 48
+retains the implementation and active-corpus work.
 
 ```ebnf
 definition_content     ::= ... | property_item ;

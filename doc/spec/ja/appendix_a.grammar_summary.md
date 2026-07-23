@@ -428,6 +428,7 @@ annotated_declaration ::= { annotation } declaration
                         | standalone_diagnostic_annotation ;
 
 declaration        ::= definition_block
+                     | property_impl
                      | reserve_decl
                      | registration_block
                      | claim_block
@@ -469,7 +470,6 @@ definitional_item  ::= struct_def
                      | attr_def
                      | redefine_attr
                      | mode_def
-                     | property_impl
                      | pred_def
                      | redefine_pred
                      | func_def

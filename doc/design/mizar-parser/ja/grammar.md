@@ -1629,8 +1629,10 @@ Task 28 は syntax-only の definition-content property 句を追加する。par
 grammar に列挙される property keyword だけを受理する。Chapter 9 の predicate property、
 Chapter 10 の functor property、Chapter 7 / Appendix A の standalone mode `sethood` である。
 現在の `doc/spec/en` の property production には `transitivity` がないため、これを property
-句として創作しない。また、形が曖昧な `property_impl` block surface もこの task では
-実装しない。
+句として創作しない。Task 28 は当時配置が曖昧だった `property_impl` block surface を
+実装しなかった。`SPEC-07-PI-PLACEMENT` は後に complete な Chapter-7 block を top-level
+declaration とすることで placement gap を解消した。実装と active corpus は引き続き
+parser Task 48 が所有する。
 
 ```ebnf
 definition_content     ::= ... | property_item ;
