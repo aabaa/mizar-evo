@@ -2755,3 +2755,34 @@ not evidence acceptance. Corrupt input fails atomically rather than publishing
 `Rejected`. Implementation adds four tests, moving the documented library
 total from 283 to 287. Exact selection, four-state injection, final ownership,
 corruption, and deterministic replay pass on the production path.
+
+## Checker Task 252 Frozen Runner Boundary
+
+The future private `type_elaboration::source_term` leaf has exactly three real
+selectors: builtin numeral equality, bare reserved-variable equality, and
+single-left-parenthesized reserved-variable equality. Their aggregate public
+handoff oracle is seven primary terms, four binding references, and two
+numeric-type requests. No source case is added and no current outcome,
+diagnostic, or detail changes.
+
+The leaf owns only raw primary-term occurrence, binding-role, parent edge, and
+numeric-request extraction. It must preserve the legacy semantic producers
+and formula routes, use their exact helpers where applicable, and publish the
+new handoff through `TypedAst` and clone-only `ResolvedTypedAst`.
+Parenthesized rows are source wrappers only; they add no independent semantic
+term/type/FOL row.
+
+Synthetic runner probes cover a `LocalAbbreviation` identifier, an `it`
+surface with only its current-result source role, and eligible nested
+parentheses through the same extractor/producer. References must authenticate
+the exact lexical `BindingEnv::lookup` winner with scope derived from the
+term context and use ordinal derived from the merged binding/reference source
+events. Parentheses containing a
+later-family term are excluded until Tasks 253-255 freeze cross-family edges.
+Real constant declaration ownership and real `it` owner/type are deferred to
+Tasks 269 and 260/264. The probes create no
+fixture, runner admission, semantic result, formula, fact, or coverage credit.
+Implementation tests must also prove exact selection, corruption isolation,
+deterministic replay, and final ownership. The exact post-implementation test
+count is measured and recorded then; this prerequisite leaves the current
+287-test list and all hashes unchanged.

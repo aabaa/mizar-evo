@@ -2740,3 +2740,38 @@ facts/declarations/proofs, downstream IR, Tasks 269+, Steps 6/7, and global
 Step-5 completion receive no credit. No blocking `spec_gap`,
 `source_undocumented_behavior`, current `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` was found.
+
+## Step 5 Checker Task 252 Frozen-Contract Addendum
+
+Fresh inventory freezes the next primary-term producer under Chapters 04 and
+13 plus MC-G017/MC-G020. The exact real consumer set is the existing numeral
+equality, reserved-variable equality, and parenthesized reserved-variable
+equality routes. The future aggregate handoff oracle is seven term rows, four
+binding-reference rows, and two numeric-type request rows. Parentheses retain
+only a source child relation; numeric requests retain only a missing input
+request. Neither creates a semantic result, type, fact, axiom, or FOL node.
+
+The contract deliberately uses synthetic producer/extractor validation for
+constant references and `it`. Task 269 owns real local-constant binding
+production, and Tasks 260/264 own real `func ... means`/`property ... means`
+current-result ownership and type. References authenticate the exact lexical
+`BindingEnv::lookup` winner, and only parenthesis closures wholly inside the
+Task-252 kind set are eligible until Tasks 253-255 freeze cross-family edges.
+This is a dependency boundary, not executable coverage credit.
+
+This documentation-only prerequisite changes no requirement row/status/test
+list, source, fixture, expectation, count, or hash. It closes the selected
+Task-252 `design_drift`; the executable absence remains `test_gap`, and the
+producer/final-handoff absence remains `source_drift`. The current baseline
+therefore remains plan 411/374, type 240/228, pass/fail 224/187, active
+parse/declaration/type/proof 101/5/190/1, and warnings/errors 23/0. Only the
+later implementation may add
+`spec.en.checker.type_elaboration.source_primary_term_payload`, raising the
+no-new-case oracle to 411/375 and 241/229.
+
+MC-G017/MC-G020 remain partial. Tasks 253-260/264/269, semantic numeric input,
+formula/definition/local-binding results, accepted facts/declarations/proofs,
+downstream IR, Steps 6/7, and global Step-5 completion receive no credit. No
+blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or
+`repo_metadata_conflict` was found.

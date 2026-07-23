@@ -4404,7 +4404,13 @@ unchecked row below is one future nonempty logical task and one commit.
   without treating supplied input as accepted evidence; checker tests cover
   exact association, corruption, cardinality, and atomicity. No evidence
   result is fabricated.
-- [ ] **Task 252:** primary term producer.
+- [ ] **Task 252:** primary term producer. The paired crate plan freezes the
+  public three-table syntax-free contract, exact three-route 7/4/2 real
+  consumer oracle, transparent-parenthesis rule, numeric-request-only
+  boundary, synthetic constant/`it` dependency coverage, final ownership,
+  tests, trace impact, and exit criteria. Implement it as one separate
+  logical task; Tasks 260/264/269 retain real `it` owners and local-constant
+  binding production.
 - [ ] **Task 253:** functor and inline-functor application producer.
 - [ ] **Task 254:** structure constructor/selector/update term producer.
 - [ ] **Task 255:** set/comprehension/choice/`qua` term producer.

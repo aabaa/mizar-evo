@@ -2661,3 +2661,32 @@ credit、plan 411/373、type 239/227、pass/fail 224/187、active
 parse/declaration/type/proof 101/5/190/1、warnings/errors 23/0、全hashは不変。
 blocking `spec_gap`、`source_undocumented_behavior`、current
 `test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`はない。
+
+## Task 252 frozen-contract audit addendum
+
+fresh inventoryはmissing exact primary-term contractを`design_drift`、
+syntax-free producer/final handoff欠落を`source_drift`、producer/corruption
+coverageとreal constant/`it` composition欠落を`test_gap`と分類する。Chapter 04/
+13はbinding category、`it` role、numeral、transparent parenthesisを既に定義し、
+blocking `spec_gap`はない。current `source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`もない。
+
+paired crate planはpublic 3-table source-only modelとexisting numeral equality、
+reserved-variable equality、parenthesized reserved-variable equality consumerを
+freezeする。future aggregate oracleはterm 7/reference 4/numeric request 2である。
+parenthesisはsource child edgeだけを保持し、semantic term/type entry/fact/axiom/
+FOL nodeを追加しない。numeric requestはresult/factをpublishしない。
+
+constant/`it` schema validationはTask 252で意図的にsyntheticとする。real
+`LocalAbbreviation` productionはTask 269、real `func ... means`/`property ...
+means` current-result owner/typeはTasks 260/264がretainし、Task 252はdependencyを
+guessしない。このprerequisiteはsource/fixture/expectation/trace row/status/
+count/hash/executable coverageを変更しない。current baselineはplan 411/374、
+type 240/228、pass/fail 224/187、active parse/declaration/type/proof
+101/5/190/1、warnings/errors 23/0。implementationだけがbounded covered
+requirementを追加し、no-new-case oracle 411/375、241/229へ進める。
+
+MC-G017/MC-G020はpartialのままである。Tasks 253-260/264/269がapplication、
+other term、formula、definition、real local binding、semantic resultをretainする。
+numeric type selection、theorem fact、accepted fact/declaration/proof、downstream
+IR、Steps 6/7はTask-252 prerequisite creditを得ない。

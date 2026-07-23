@@ -1413,3 +1413,20 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
 - [x] Checker Task 251をseparate logical taskとしてimplementする。plan
   411/374、type 240/228、unchanged pass/fail/admission/warning、exact isolation、
   full hash/review、dedicated commit 1件を達成する。
+
+## Checker Task 252 frozen consumer prerequisite
+
+- [x] existing builtin numeral equality、bare reserved-variable equality、
+  single-left-parenthesized reserved-variable equalityだけをfreezeし、new
+  `.miz`/outcome/detail changeを禁止する。
+- [x] aggregate term/reference/numeric-request 7/4/2とsource-only parent edgeを
+  freezeし、parenthesisがsemantic type/term/fact/axiom/FOL rowを追加しない。
+- [x] `LocalAbbreviation` constant、`it` current-result role、nested
+  parenthesisのsame-producer synthetic coverageをfreezeし、Task-269 local
+  binding/Tasks-260/264 definition ownershipを取らない。
+- [x] transactional final ownership、full corruption/determinism/isolation、
+  bounded 3-sidecar trace reference、no-new-case implementation oracle
+  plan 411/375/type 241/229を要求する。
+- [ ] Checker Task 252をseparate logical taskとして実装する。pass/fail
+  224/187、admission 101/5/190/1、warnings/errors 23/0を維持し、test/layout/
+  CLI hashを全てfresh計算する。Tasks 253+/260/264/269とSteps 6/7はpromoteしない。

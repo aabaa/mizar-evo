@@ -1957,3 +1957,22 @@ source, test, expectation, traceability row, coverage mapping, owner, or
 deferred rationale; `doc/design/spec_coverage_audit.md` therefore remains
 unchanged. Current counts and hashes are recorded in the paired parser
 [exit report](./mizar-parser/en/crate_exit_report.md).
+
+## Step 5 Checker Task 252 Frozen-Contract Addendum
+
+Fresh canonical inventory after Checker Task 251 selects one nonempty
+documentation prerequisite before Task 252 implementation. The paired
+checker/mizar-test authority now freezes the source-only primary-term schema,
+the exact three existing Task-10 consumers, aggregate 7/4/2
+term/reference/numeric-request oracle, transparent-parenthesis boundary,
+synthetic constant/`it` dependency tests, final ownership, corruption and
+determinism coverage, trace/count impact, forbidden scope, and exit criteria.
+
+This prerequisite changes no executable artifact or coverage. The classified
+disagreements are the repaired `design_drift`, continuing `source_drift`, and
+continuing `test_gap`; no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` was found. Task 252 remains
+open for one separate implementation commit. Tasks 260/264/269 retain real
+`it`/local-constant owner production, Tasks 253+ are not inferred, and
+Steps 6/7 remain deferred.

@@ -1594,3 +1594,23 @@ promoted by this increment.
 - [x] Implement Checker Task 251 as one separate logical task. Reach plan
   411/374 and type 240/228 with unchanged pass/fail/admissions/warnings,
   exact isolation, full hashes, reviews, and one dedicated commit.
+
+## Checker Task 252 Frozen Consumer Prerequisite
+
+- [x] Freeze exactly the existing builtin numeral equality, bare
+  reserved-variable equality, and single-left-parenthesized reserved-variable
+  equality routes, with no new `.miz` or outcome/detail change.
+- [x] Freeze aggregate term/reference/numeric-request cardinalities 7/4/2 and
+  the source-only parent edge; parentheses add no semantic type, term, fact,
+  axiom, or FOL row.
+- [x] Freeze synthetic same-producer coverage for a
+  `LocalAbbreviation` constant, `it` current-result role, and nested
+  parentheses without taking Task-269 local-binding or Tasks-260/264
+  definition ownership.
+- [x] Require transactional final ownership, full corruption/determinism and
+  isolation checks, one bounded three-sidecar trace reference, and the
+  no-new-case implementation oracle plan 411/375 and type 241/229.
+- [ ] Implement Checker Task 252 as one separate logical task. Preserve
+  pass/fail 224/187, admissions 101/5/190/1, warnings/errors 23/0, and
+  recompute all test/layout/CLI hashes. Tasks 253+/260/264/269 and Steps 6/7
+  remain unpromoted.

@@ -2766,3 +2766,39 @@ trace rows/status, coverage credit, plan 411/373, type 239/227, pass/fail
 and all hashes remain unchanged. No blocking `spec_gap`,
 `source_undocumented_behavior`, current `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` was found.
+
+## Task 252 Frozen-Contract Audit Addendum
+
+Fresh inventory classifies the missing exact primary-term contract as
+`design_drift`, the absent syntax-free producer/final handoff as
+`source_drift`, and the missing producer/corruption coverage plus real
+constant/`it` composition as `test_gap`. Chapters 04 and 13 already define
+the required binding categories, `it` role, numerals, and transparent
+parentheses; no blocking `spec_gap` was found. There is no current
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`.
+
+The paired crate plan freezes the public three-table source-only model and the
+exact existing numeral-equality, reserved-variable-equality, and
+parenthesized-reserved-variable-equality consumers. Their aggregate future
+oracle is seven term rows, four binding-reference rows, and two numeric-type
+requests. Parentheses preserve a source child edge but add no semantic term,
+type entry, fact, axiom, or FOL node. Numeric requests publish no result or
+fact.
+
+Constant and `it` schema validation is synthetic in Task 252 by design.
+Task 269 retains real `LocalAbbreviation` production, and Tasks 260/264 retain
+real `func ... means`/`property ... means` current-result ownership/type. This prevents Task 252
+from guessing either dependency while still fixing the source payload
+vocabulary. The prerequisite changes no source, fixture, expectation, trace
+row/status, count, hash, or executable coverage; the current baseline remains
+plan 411/374, type 240/228, pass/fail 224/187, active
+parse/declaration/type/proof 101/5/190/1, and warnings/errors 23/0.
+Implementation alone may add the bounded covered requirement and reach the
+frozen no-new-case oracle 411/375 and 241/229.
+
+MC-G017 and MC-G020 remain partial. Tasks 253-260/264/269 and their explicit
+consumers retain applications, other term families, formulas, definitions,
+real local bindings, and semantic results. Numeric type selection, theorem
+facts, accepted facts/declarations/proofs, downstream IR, and Steps 6/7
+receive no Task-252 prerequisite credit.
