@@ -3,7 +3,8 @@
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md).
 
-Status: completed for parser task 44 and refreshed through parser task 48.
+Status: completed for parser task 44 and refreshed through
+`PARSER-CRATE-CLOSEOUT`.
 
 ## Scope
 
@@ -75,6 +76,7 @@ commitments to English and Japanese readers.
 | [source_spec_audit.md](./source_spec_audit.md) | [../ja/source_spec_audit.md](../ja/source_spec_audit.md) | Task-43 audit, closed Task-47/48 classifications, reserved-word guard, syntax-only credit, and Task-46 deferral are synchronized. |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This task-44 audit records the bilingual synchronization result in both languages. |
 | [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Tasks 47-48 are complete and Task 46 remains deferred in both languages. |
+| [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Current parser milestone scope, nine hard gates, 94/100 score, deferred items, verification oracles, and no-successor handoff are synchronized. |
 
 ## Link Policy
 
@@ -120,3 +122,13 @@ mode parameter shape, nested-depth recovery, append-only syntax kind 192, the
 two active pass/fail sidecars, 99/99 parse-only admission, syntax-only credit,
 and the unchanged Task-39 semantic gate. Task 46 and Steps 6/7 remain deferred.
 No bilingual drift remains in Task 48.
+
+## Parser Crate Closeout Pair Recheck
+
+The paired plan, README, TODO, this audit, and crate exit report agree that the
+current parser milestone comprises Tasks 1-45 and 47-48, while P-043-01/P-046
+is one trigger-deferred operator-declaration gap and P-265-47D is a separate
+nonblocking human-owned wording gap. Both languages record the same nine hard
+gates, 94/100 score, verification counts and hashes, global-Step-5 exclusion,
+and absence of an authorized successor parser task. No bilingual drift remains
+after `PARSER-CRATE-CLOSEOUT`.

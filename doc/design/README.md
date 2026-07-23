@@ -82,8 +82,9 @@ are companions when both are present.
   remaining.
 - [mizar-parser](./mizar-parser/README.md) - grammar implementation, Pratt
   parsing, syntax recovery, and parse-only corpus execution; grammar coverage
-  and parser-owned hardening are complete through task 45, with only a
-  deferred operator-declaration follow-up recorded.
+  and parser-owned hardening are complete for the current milestone through
+  tasks 47-48, with a 94/100 crate closeout, the trigger-deferred
+  operator-declaration follow-up, and one nonblocking human-owned wording gap.
 - [mizar-frontend](./mizar-frontend/README.md) - source loading and phase 1-3
   orchestration across session, lexer, syntax, and parser services; current
   milestone complete.

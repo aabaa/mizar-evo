@@ -24,8 +24,11 @@ complete, task 44 bilingual documentation synchronization is complete, task
 45 public enum policy is complete, task 47 aligns all three canonical
 `reconsider` tail forms, and task 48 implements the top-level Chapter-7
 property-implementation grammar with active parse-only pass/fail coverage.
-Task 48 adds syntax-only coverage; semantic Task 39 remains deferred. Task 46
-remains deferred for future concrete operator declarations.
+Task 48 adds syntax-only coverage; semantic Task 39 remains deferred. The
+current parser crate milestone is closed with an independently reviewed score
+of 94/100. Task 46 remains trigger-deferred for future concrete operator
+declarations, and P-265-47D remains a nonblocking human-owned wording gap.
+Global Step 5 is not closed and no successor parser task is authorized.
 
 Module specs and audits:
 
@@ -35,5 +38,6 @@ Module specs and audits:
 - `recovery.md`
 - `source_spec_audit.md`
 - `bilingual_documentation_synchronization.md`
+- `crate_exit_report.md`
 
 Implementation roadmap: [todo.md](./todo.md).

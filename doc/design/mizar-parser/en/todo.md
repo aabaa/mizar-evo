@@ -12,10 +12,10 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 30 registrations use private cursor/event infrastructure; grammar coverage remains incremental |
-| module grammar | [grammar.md](./grammar.md), [recovery.md](./recovery.md) | `src/module.rs`, `src/module/annotations.rs`, `src/module/tests.rs` | [~] task 42 split annotation parsing and module tests into private submodules; the main grammar implementation remains behavior-preserving and parser-owned |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; task-14 fixed formula Pratt is implemented separately from term fixity |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 30 registration recovery plus nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [x] current milestone complete through tasks 1-45 and 47-48; future grammar growth requires fresh authority and Task 46 remains trigger-deferred |
+| module grammar | [grammar.md](./grammar.md), [recovery.md](./recovery.md) | `src/module.rs`, `src/module/annotations.rs`, `src/module/tests.rs` | [x] current milestone complete; task 42 owns the private split and Task 48 the final authorized top-level producer |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [x] current milestone complete for active metadata-driven term fixity and fixed formula precedence; concrete source operator declarations remain deferred under Task 46 |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] current milestone complete for all authorized producers through Task 48; future producers must bring their own recovery contract |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -1045,6 +1045,19 @@ older numeric syntax task references appear to disagree, prefer
       are 221, parse-only is 99/99, and the prior `source_drift`, `test_gap`,
       paired `design_drift`, and two internal `test_expectation_drift` cases
       are closed without changing existing `.miz` files or semantic intent.
+
+## Current Parser Crate Closeout
+
+`PARSER-CRATE-CLOSEOUT` is complete. Parser Tasks 1-45 and 47-48 form the
+closed current milestone; [crate_exit_report.md](./crate_exit_report.md)
+records all nine protocol hard gates, the independently reviewed 94/100 score,
+verification oracles, deferred items, and handoff. P-043-01/P-046 is one
+aliased trigger-deferred operator-declaration gap. P-265-47D is a separate
+nonblocking, human-owned specification wording gap.
+
+This status does not claim completion of all future canonical grammar, global
+Step 5, Task 49, or Steps 6/7. No nonempty successor parser task is authorized
+by the current canonical inventory.
 
 ## Recommended Verification
 

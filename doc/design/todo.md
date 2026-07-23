@@ -91,7 +91,7 @@ is its task 1). "Next work" points into the
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | — | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] complete | parked task 21 | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] complete through task 45 | parked task 46; step-5 tasks 47-48 active | [todo](./mizar-parser/en/todo.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] current milestone closed through tasks 47-48; 94/100 | parked Task 46; human-owned P-265-47D; no authorized successor | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268 and Core-31 consumer increment complete | step 5 task 10, including future `MT10-FS`/`MT10-AS` and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
@@ -1902,3 +1902,17 @@ The plan is 407/369, parse-only is 99/99 with coverage 43/43, pass/fail is
 granting mode/property resolution, coherence/overlap, proof, checker/Core/CFG/
 VC, Step 6, or Step 7 credit. Task 46 remains deferred; successor authority
 must be established by fresh inventory rather than inferred from Task 48.
+
+## Parser Crate Closeout Addendum
+
+`PARSER-CRATE-CLOSEOUT` closes only the current `mizar-parser` crate milestone.
+Tasks 1-45 and 47-48 are complete; the paired crate exit report records all
+nine hard gates passing and an independent 94/100 score. P-043-01/P-046 remains
+one trigger-deferred concrete operator-declaration gap, and P-265-47D remains a
+separate nonblocking human-owned wording `spec_gap`.
+
+No nonempty successor parser task is authorized. Global Step 5 remains active
+for its other crate-owned work, and Task 49 plus Steps 6/7 are not promoted.
+This docs-only closeout changes no specification coverage mapping, trace status,
+owner, follow-up ownership, or deferred rationale; therefore
+`doc/design/spec_coverage_audit.md` remains unchanged.
