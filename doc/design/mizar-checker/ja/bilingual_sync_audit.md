@@ -42,6 +42,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_spec_audit.md` | `../ja/source_spec_audit.md` | `../en/source_spec_audit.md` | public surface inventory、behavior/test correspondence、MC-G reconciliation、task classification | none |
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary、projection model、validation/recovery/atomicity、determinism、coverage、public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary、flat chain/attribute/qualifier/group/actual model、environment/parent/arena/provenance validation、ownership、exact consumer、exclusion、public enum policy | none |
+| `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary、flat application/expression/argument model、environment/arena/graph/provenance validation、ownership、consumer、exclusion、public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table、prerequisites、resolved decisions、ordered task list、task statuses、verification、notes | none |
 | `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary、top-level shape、arena/context/type/fact/coercion/obligation/diagnostic tables、public enum policy、task classification | none |
@@ -84,3 +85,13 @@ bilingual inventoryは同じfive-table syntax-free handoff、exact real/syntheti
 consumer、validation/atomicity boundary、coverage count、exclusion、Tasks
 251+/269+とSteps 6/7のcontinued deferralを記録する。Task 250のbilingual sync
 debtは残らない。
+
+## Task 251 source-evidence pair recheck
+
+paired plan/TODO/source-evidence module spec/source-spec audit/payload
+decomposition/typed-final ownership/registration boundary/module audit/
+mizar-test consumer docsは、同じdense request/response transport、exact
+Task-249/250 association、non-semantic four states、dependency-catalog
+validation、real consumer 3件、5/3/2 request histogram、bounded outcome
+progression、deferred semantic ownerを記録する。Task 251にbilingual sync debtは
+残らない。

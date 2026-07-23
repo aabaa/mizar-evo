@@ -2,7 +2,7 @@
 
 use crate::{
     source_attribute::SourceAttributeHandoff, source_context::SourceBindingContextHandoff,
-    source_type::SourceTypeApplicationHandoff,
+    source_evidence::SourceEvidenceHandoff, source_type::SourceTypeApplicationHandoff,
 };
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
@@ -86,6 +86,7 @@ pub struct TypedAst {
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
     source_attribute: Option<SourceAttributeHandoff>,
+    source_evidence: Option<SourceEvidenceHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -105,6 +106,7 @@ impl TypedAst {
             source_context: parts.source_context,
             source_type: parts.source_type,
             source_attribute: parts.source_attribute,
+            source_evidence: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -137,6 +139,34 @@ impl TypedAst {
 
     pub const fn source_attribute(&self) -> Option<&SourceAttributeHandoff> {
         self.source_attribute.as_ref()
+    }
+
+    pub const fn source_evidence(&self) -> Option<&SourceEvidenceHandoff> {
+        self.source_evidence.as_ref()
+    }
+
+    pub fn with_source_evidence(
+        mut self,
+        handoff: SourceEvidenceHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_evidence.is_some() {
+            return Err(TypedAstError::InvalidSourceEvidence);
+        }
+        let source_type = self
+            .source_type
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceEvidence)?;
+        handoff
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_type,
+                self.source_attribute.as_ref(),
+                &self.facts,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceEvidence)?;
+        self.source_evidence = Some(handoff);
+        Ok(self)
     }
 
     pub const fn nodes(&self) -> &TypedArena {
@@ -186,6 +216,9 @@ impl TypedAst {
         }
         if let Some(source_attribute) = &self.source_attribute {
             output.push_str(&source_attribute.debug_text());
+        }
+        if let Some(source_evidence) = &self.source_evidence {
+            output.push_str(&source_evidence.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1064,6 +1097,7 @@ pub enum TypedAstError {
     InvalidSourceContext,
     InvalidSourceType,
     InvalidSourceAttribute,
+    InvalidSourceEvidence,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1179,6 +1213,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceAttribute => {
                 formatter.write_str("typed AST source attribute handoff is inconsistent")
+            }
+            Self::InvalidSourceEvidence => {
+                formatter.write_str("typed AST source evidence handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,

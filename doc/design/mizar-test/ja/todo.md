@@ -1410,6 +1410,6 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   `TypedAst`/`ResolvedTypedAst`までrequested/missing/rejected/supplied injectionを
   requireする。supplied inputはaccepted evidenceではなく、corruptionはatomic
   failure。
-- [ ] Checker Task 251をseparate logical taskとしてimplementする。plan
+- [x] Checker Task 251をseparate logical taskとしてimplementする。plan
   411/374、type 240/228、unchanged pass/fail/admission/warning、exact isolation、
   full hash/review、dedicated commit 1件を達成する。

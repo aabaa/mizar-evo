@@ -2732,7 +2732,7 @@ production path. The mizar-test library has 283 tests.
 
 ## Checker Task 251 Frozen Runner Boundary
 
-The future private `type_elaboration::source_evidence` leaf owns exact
+The private `type_elaboration::source_evidence` leaf owns exact
 Task-249-broad plus Task-84/85 dispatch. It publishes ten checker-owned
 transport requests: five mode-expansion, three structure-inhabitation, and two attributed, all
 missing and with no dependency reference. The three-route dependency oracles
@@ -2753,4 +2753,5 @@ the exact counts, sibling isolation, and requested/missing/rejected/supplied
 injection through final `TypedAst`/`ResolvedTypedAst`. A supplied reference is
 not evidence acceptance. Corrupt input fails atomically rather than publishing
 `Rejected`. Implementation adds four tests, moving the documented library
-total from 283 to 287.
+total from 283 to 287. Exact selection, four-state injection, final ownership,
+corruption, and deterministic replay pass on the production path.

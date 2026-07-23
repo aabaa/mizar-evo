@@ -2442,6 +2442,37 @@ execution, acceptance, fact publication, or Steps 6/7 credit is added. VC
 `source_undocumented_behavior`, `test_expectation_drift`, current
 `boundary_violation`, or `repo_metadata_conflict` was found.
 
+## Step 5 Checker Task 251 Implementation Addendum
+
+Task 251 implements the frozen source-evidence request/reference transport
+under the same Chapters 03, 05-08, 13, 17, and 19 authority. The public
+syntax-free checker handoff and private Task-10 consumer publish exactly ten
+missing requests across the three existing real cases: five mode-expansion,
+three structure-inhabitation, and two attributed-type-inhabitation requests.
+The broad Task-249 sidecar alone advances to the source-evidence missing-input
+detail; Task 84/85 retain their evidence-query outcomes. Production-path
+four-state coverage and checker association/cardinality/catalog/payload/fact/
+gate corruption coverage close the bounded executable `test_gap` and
+`source_drift`.
+
+The new covered requirement
+`spec.en.checker.type_elaboration.source_evidence_request_payload` maps only to
+the three existing sidecars. Plan coverage becomes 411/374 and
+type-elaboration coverage 240/228; case count, pass/fail 224/187, active
+parse/declaration/type/proof 101/5/190/1, warnings/errors 23/0, and public
+diagnostics remain unchanged. No `.miz` source or `doc/spec` chapter changes.
+This is the required audit update because the task changes executable test and
+traceability coverage.
+
+MC-G016, MC-G018, and MC-G026 remain partial: Task 251 transports input state
+and authenticated references but grants no semantic acceptance. Later source
+sites, sethood/non-emptiness proof, inheritance/coercion decisions, evidence
+interpretation, fact creation, gate activation, verifier/artifact status,
+accepted declarations/proofs, downstream IR, Tasks 252+, Tasks 269+, Steps
+6/7, and global Step-5 completion remain with their explicit owners. No
+blocking `spec_gap`, `test_expectation_drift`, `boundary_violation`, or
+`repo_metadata_conflict` was found.
+
 ## Resolver R-031 Exact Same-Return Declaration Coverage Update
 
 Resolver R-031 closes Chapter 19 R-G008's exact `source_drift`, `design_drift`,
@@ -2680,10 +2711,10 @@ Step-5 completion remain deferred. No unresolved blocking `spec_gap`,
 
 ## Step 5 Checker Task 251 Frozen-Contract Addendum
 
-Fresh inventory freezes the next request/reference transport task under
+At the prerequisite commit, fresh inventory froze the next request/reference transport task under
 Chapters 03, 05-08, 13, 17, and 19 and MC-G016/MC-G018/MC-G026. The exact
 representative consumer set is the Task-249 broad source-type fixture plus
-Task-84/85. The future syntax-free handoff publishes ten transport requests
+Task-84/85. The then-future syntax-free handoff was required to publish ten transport requests
 (five mode-expansion, three structure-inhabitation, two attributed), all
 missing and with no
 dependency reference. Requested/rejected/supplied states are exercised only
@@ -2696,9 +2727,11 @@ Task-251 `design_drift`; it does not change executable specification coverage.
 The current Task-250 baseline remains plan 411/373, type 239/227, active
 parse/declaration/type/proof 101/5/190/1, pass/fail 224/187, warnings/errors
 23/0, and all source/test/expectation/trace/count/hash artifacts unchanged.
-The future no-new-case implementation oracle is plan 411/374 and type 240/228.
-The executable absence remains `test_gap`, and request/reference/final-handoff
-transport remains `source_drift`.
+The no-new-case implementation oracle was plan 411/374 and type 240/228.
+At that prerequisite commit, executable absence remained `test_gap`, and
+request/reference/final-handoff transport remained `source_drift`; the
+`Step 5 Checker Task 251 Implementation Addendum` above supersedes those two
+status statements.
 
 MC-G016, MC-G018, and MC-G026 remain partial. Tasks 252-255/263/271/278 own later
 source-site additions; accepted evidence, sethood/non-emptiness proof,

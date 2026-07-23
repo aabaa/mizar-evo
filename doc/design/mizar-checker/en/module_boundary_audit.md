@@ -27,19 +27,20 @@ remain aligned with their owning specifications.
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
-| `src/lib.rs` | 35 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it only exposes documented modules and test-only determinism support. |
-| `src/typed_ast.rs` | 3740 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, ids, validation, rendering, and tests; monitor ergonomics after downstream use. |
+| `src/lib.rs` | 36 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it only exposes documented modules and test-only determinism support. |
+| `src/typed_ast.rs` | 3777 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, ids, validation, rendering, and tests; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3095 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer; no behavior-neutral split required. |
 | `src/source_context.rs` | 1063 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
+| `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | Cohesive Task-251 request/response tables, upstream association, catalog/payload validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_type.rs` | 3294 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables, environment/arena/form/graph/provenance validation, deterministic rendering, and exhaustive corruption tests; no split required. |
 | `src/type_checker.rs` | 13235 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | Largest file but still within the phase-6 spec boundary; normalization, reserve and authenticated exact theorem-owner handoff validation, declaration checking, inference, coercions, fact queries, diagnostics, rendering, and tests remain behavior-coupled. |
 | `src/registration_resolution.rs` | 5888 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer and gate logic; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
-| `src/resolved_typed_ast.rs` | 6746 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including exact Task-180 singleton statement/proof/direct-terminal validation; no behavior-neutral split required. |
+| `src/resolved_typed_ast.rs` | 6756 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including exact Task-180 singleton statement/proof/direct-terminal validation and Task-251 clone-only handoff; no behavior-neutral split required. |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
-| `tests/lint_policy.rs` | 1809 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Large support test but intentionally centralizes repository-policy guardrails; no split required for task 34. |
+| `tests/lint_policy.rs` | 1812 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Large support test but intentionally centralizes repository-policy guardrails; no split required for task 34. |
 
 ## Task 34 Classification
 
@@ -78,3 +79,13 @@ syntax-free Task-249, binding, symbol, and typed-arena dependencies. The
 five-table data model, validation, construction, rendering, and corruption
 tests remain behavior-coupled, so no private split is required. `TypedAst`
 owns the immutable handoff and `ResolvedTypedAst` remains clone-only.
+
+## Task 251 Current-Layout Addendum
+
+Task 251 adds one cohesive public `source_evidence.rs` owner. It accepts only
+syntax-free Task-249/250 handoffs, resolver identities, checker facts/gates,
+and dependency records; raw syntax remains in `mizar-test`. Request/response
+association, state/cardinality validation, catalog and payload authentication,
+deterministic rendering, and the corruption matrix are behavior-coupled, so
+no private split is required. `TypedAst` owns the immutable handoff and
+`ResolvedTypedAst` remains clone-only.

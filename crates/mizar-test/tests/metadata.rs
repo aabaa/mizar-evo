@@ -4953,9 +4953,7 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_source_type_application_payload_001"
             && result.actual_detail_keys
-                == [
-                    "type_elaboration.checker.source_type_application.semantic_dependencies_pending"
-                ]
+                == ["type_elaboration.checker.source_evidence.dependency_input_missing"]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"

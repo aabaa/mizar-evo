@@ -96,3 +96,14 @@ No exhaustive public enum exceptions are owned by this module.
 | `spec_gap` | None for this bounded raw input-handoff slice. |
 | `test_expectation_drift` | None; only the authorized Task-67/81 pending progression changes, while Task-84/85 preserve their outcomes. |
 | `repo_metadata_conflict` | None observed. |
+
+## Task 251 Evidence-Association Addendum
+
+An attributed Task-251 request consumes the exact Task-250 chain that names
+the Task-249 root expression. The request owner remains the expression site;
+the request site, range, and recovery come from the chain. The chain's dense
+source ordinal is authenticated independently and is not copied into the
+request's application-ordinal field. The resulting kind is always
+`AttributedTypeInhabitation`. Task 251 reuses this immutable handoff and does
+not widen the selector, repeat syntax traversal, interpret attribute
+admissibility, or publish attribute truth.

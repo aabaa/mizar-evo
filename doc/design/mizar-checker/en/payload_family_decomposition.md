@@ -341,3 +341,16 @@ row reaches plan 411/373 and type 239/227 with no new case or changed
 admission. Semantic attribute instances and all evidence, truth, acceptance,
 downstream IR, Tasks 251+/269+, and Steps 6/7 remain assigned to their
 existing later owners.
+
+## Task 251 Current-State Addendum
+
+Task 251 implements the graph's request/reference transport node without
+advancing any semantic evidence owner. The public checker handoff
+authenticates exact Task-249 applications, optional Task-250 chains,
+resolver symbol kinds, dependency keys, payload references, facts, and gate
+associations before atomic publication. The private Task-10 consumer activates
+only the broad Task-249 fixture and Task-84/85, producing ten missing requests
+with histogram 5/3/2 and no response rows. Production four-state tests and the
+checker corruption matrix close the bounded `source_drift` and `test_gap`.
+Tasks 252-264/269-279 retain their existing dependency edges and exit
+boundaries; Steps 6/7 are not promoted.

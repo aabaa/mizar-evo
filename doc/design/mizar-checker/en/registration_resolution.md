@@ -683,3 +683,13 @@ The implementation tasks must not begin by changing `doc/spec` or existing
 `.miz` expectation files to match current source behavior. If a required input
 is absent, classify it as an external dependency gap or deferral and keep the
 behavior inactive.
+
+## Task 251 Existential-Gate Transport Addendum
+
+Task 251 may carry an authenticated `ExistentialGateInput` only as a supplied
+dependency payload. The source-evidence producer verifies the request owner,
+range, recovery, and existing guard-fact references, then transports the
+snapshot without calling the gate evaluator or changing registration status.
+Supplied transport is not an activated registration, satisfied gate, accepted
+fact, or artifact result. Task 274 and its external accepted-status authority
+remain blocked-reserved.

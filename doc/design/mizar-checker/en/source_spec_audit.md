@@ -24,6 +24,7 @@ Module specifications audited:
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
 - [source_attribute.md](./source_attribute.md)
+- [source_evidence.md](./source_evidence.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
 - [registration_resolution.md](./registration_resolution.md)
@@ -146,6 +147,7 @@ rejection.
 - `resolved_typed_ast`
 - `source_context`
 - `source_attribute`
+- `source_evidence`
 - `source_type`
 - `type_checker`
 - `typed_ast`
@@ -325,6 +327,42 @@ Correspondence:
 Bounded gaps: Task 249 publishes source-type inputs only. Expansion,
 normalization, evidence, term/`qua` selection, accepted facts/declarations/
 proofs, and downstream IR remain with their explicit later owners.
+
+### `source_evidence`
+
+Generated public newtypes:
+
+- `SourceEvidenceRequestId`, `SourceEvidenceResponseId`
+
+Literal top-level public items:
+
+- `SourceEvidenceResponseKey`, `SourceEvidenceHandoffInput`,
+  `SourceEvidenceRequestInput`, `SourceEvidenceResponseInput`,
+  `SourceEvidenceRequestKind`, `SourceEvidenceInputState`,
+  `SourceEvidenceRequestOrigin`, `SourceEvidenceResponseDisposition`,
+  `SourceEvidenceResponsePayload`, `SourceEvidenceResponseProvenance`,
+  `SourceEvidenceRecovery`, `SourceEvidenceDependencyRecord`,
+  `SourceEvidenceDependencyCatalog`, `SourceEvidenceHandoff`,
+  `SourceEvidenceRequestTable`, `SourceEvidenceRequest`,
+  `SourceEvidenceResponseTable`, `SourceEvidenceResponse`,
+  `SourceEvidenceError`, `SourceEvidenceProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| A syntax-free dense transaction retains source-derived requests and authenticated dependency references without claiming semantic acceptance. | `SourceEvidenceHandoffInput`, request/response tables, transport-state and dependency DTOs in `src/source_evidence.rs`. | Exact three-route 10-request runner oracle and checker four-state/table tests. | Implemented for Task 251. |
+| Task-249 application/expression identity, optional Task-250 chain identity, symbol kind, source/module, owner/site/range/application ordinal, and recovery are authenticated before publication. | `SourceEvidenceProducer::build` consumes both upstream handoffs, `SymbolEnv`, `TypeFactTable`, and the dependency catalog. | Association, distinct application/chain ordinal, symbol/source/module, missing/duplicate, and field-corruption tests. | Implemented transactionally. |
+| Response cardinality, catalog association, disposition/payload compatibility, fact existence, and existential-gate owner/range/recovery/guard facts fail closed. | `SourceEvidenceError` and request/response/catalog/payload validators. | State/cardinality, key reuse/cross/stale, fact, gate, and atomic-failure tests. | Implemented without fallback or repair. |
+| `TypedAst` owns the immutable handoff and `ResolvedTypedAst` only clone-preserves it. | Optional `SourceEvidenceHandoff` field, validated installer, and borrowed getters. | Production-runner ownership, replacement rejection, clone equality, and deterministic debug assertions. | Implemented; legacy empty output remains unchanged. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on the public Task-251 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: Task 251 transports only the exact mode, structure, and
+attributed evidence requests and authenticated dependency inputs. It does not
+interpret evidence, create or accept facts, evaluate gates, select
+inheritance/coercion, publish accepted registrations/artifacts, or create
+downstream IR. Those behaviors remain with Tasks 252+ and their explicit
+owners.
 
 ### `type_checker`
 

@@ -90,3 +90,15 @@ No exhaustive public enum exceptions are owned by this module.
 | `boundary_violation` | Recursive public-input graph traversal found in implementation review was replaced by iterative worklists; syntax remains runner-owned and semantic result fabrication is forbidden. |
 | `spec_gap` | None for this bounded input-handoff slice. |
 | `repo_metadata_conflict` | None observed. |
+
+## Task 251 Evidence-Association Addendum
+
+`SourceTypeApplicationHandoff` is the authenticated parent input for every
+Task-251 request. Unattributed requests retain the root expression, owner/head
+sites, expression range/recovery, and application source ordinal. Attributed
+requests retain the same application/expression identity while the independent
+Task-250 chain supplies the request site/range/recovery; the request ordinal
+remains the Task-249 application ordinal. Resolver-authenticated mode and
+structure heads select the two unattributed request kinds, while builtin heads
+emit none. Task 251 does not alter source-type tables or infer expansion,
+inhabitation, normalization, or acceptance.

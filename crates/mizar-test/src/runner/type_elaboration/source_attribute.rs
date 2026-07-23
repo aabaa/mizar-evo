@@ -298,6 +298,17 @@ pub(in crate::runner) fn source_attribute_output(
     Some(build_output(ast, module, symbols, route))
 }
 
+pub(in crate::runner) fn source_attribute_evidence_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Result<SourceAttributeRouteOutput, String>> {
+    let route = select_real_route(ast)?;
+    route
+        .preserves_evidence_query()
+        .then(|| build_output(ast, module, symbols, route))
+}
+
 #[cfg(test)]
 pub(in crate::runner) fn synthetic_source_attribute_output(
     ast: &SurfaceAst,

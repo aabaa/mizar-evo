@@ -150,7 +150,7 @@ use type_elaboration::{
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_TWO_HOP_ASSERTED_HEAD_CONFIG,
-    SourceContradictionHandoffCorruption, SourceParenthesizedOperandSide,
+    SourceContradictionHandoffCorruption, SourceEvidenceRouteKind, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula,
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
@@ -312,9 +312,9 @@ use type_elaboration::{
     source_distinct_reserved_object_variable_inequality_output,
     source_distinct_reserved_variable_equality_output,
     source_distinct_reserved_variable_inequality_output,
-    source_distinct_reserved_variable_membership_output,
-    source_formula_connective_quantifier_output, source_formula_statement_output,
-    source_four_edge_local_mode_asserted_head_output,
+    source_distinct_reserved_variable_membership_output, source_evidence_output,
+    source_evidence_output_with_mutation, source_formula_connective_quantifier_output,
+    source_formula_statement_output, source_four_edge_local_mode_asserted_head_output,
     source_four_edge_local_mode_four_hop_asserted_head_output,
     source_four_edge_local_mode_radix_asserted_head_output,
     source_four_edge_local_mode_reserved_variable_equality_output,
@@ -453,7 +453,7 @@ use type_elaboration::{
     source_distinct_reserved_object_variable_inequality_detail_keys,
     source_distinct_reserved_variable_equality_detail_keys,
     source_distinct_reserved_variable_inequality_detail_keys,
-    source_distinct_reserved_variable_membership_detail_keys,
+    source_distinct_reserved_variable_membership_detail_keys, source_evidence_detail_keys,
     source_formula_connective_quantifier_detail_keys, source_formula_statement_detail_keys,
     source_four_edge_local_mode_asserted_head_detail_keys,
     source_four_edge_local_mode_four_hop_asserted_head_detail_keys,
@@ -1487,6 +1487,9 @@ fn type_elaboration_detail_keys(
         &resolver.shells,
         &symbols,
     ) {
+        return keys;
+    }
+    if let Some(keys) = source_evidence_detail_keys(&ast, resolver.module.clone(), &symbols) {
         return keys;
     }
     if let Some(keys) = source_type_application_detail_keys(&ast, resolver.module.clone(), &symbols)

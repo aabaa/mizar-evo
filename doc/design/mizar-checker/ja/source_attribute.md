@@ -90,3 +90,13 @@ legacy normalized `AttributeInput`は別bridgeのままである。
 | `spec_gap` | bounded raw input-handoff sliceにはなし。 |
 | `test_expectation_drift` | なし。authorized Task-67/81 pending progressionだけを変更し、Task-84/85 outcomeを維持。 |
 | `repo_metadata_conflict` | 観測なし。 |
+
+## Task 251 evidence-association addendum
+
+attributed Task-251 requestはTask-249 root expressionをnameするexact Task-250
+chainをconsumeする。request ownerはexpression siteのまま、request
+site/range/recoveryはchain由来である。chainのdense source ordinalは独立に
+authenticateされ、requestのapplication-ordinal fieldへcopyされない。result
+kindは常に`AttributedTypeInhabitation`である。Task 251はこのimmutable handoffを
+reuseし、selectorをwidenせず、syntax traversalをrepeatせず、attribute
+admissibilityやtruthをpublishしない。

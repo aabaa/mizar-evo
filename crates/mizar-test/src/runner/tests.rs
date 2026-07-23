@@ -38,5 +38,6 @@
     include!("tests/type_elaboration/source_context.rs");
     include!("tests/type_elaboration/source_type.rs");
     include!("tests/type_elaboration/source_attribute.rs");
+    include!("tests/type_elaboration/source_evidence.rs");
     include!("tests/type_elaboration/long_chain.rs");
     include!("tests/type_elaboration/remaining_bridges_and_nested_isolation.rs");

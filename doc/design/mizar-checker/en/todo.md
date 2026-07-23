@@ -4394,15 +4394,16 @@ unchecked row below is one future nonempty logical task and one commit.
   complete. It publishes no semantic attribute instance, arity/admissibility,
   term result, evidence request/result, accepted fact/declaration/proof, or
   downstream IR.
-- [ ] **Task 251:** evidence-query request and dependency-fact-reference
-  producer. The frozen contract is the paired crate-plan section: exactly the
+- [x] **Task 251:** evidence-query request and dependency-fact-reference
+  producer. The paired crate-plan contract is implemented: exactly the
   Task-249 broad route plus Task-84/85 emit 10 missing requests
   (5 mode-expansion / 3 structure-inhabitation / 2 attributed) through dense
   syntax-free request/response-reference
   tables owned by `TypedAst` and clone-preserved by `ResolvedTypedAst`.
-  Production-path tests must distinguish requested/missing/rejected/supplied
-  without treating supplied input as accepted evidence. Never fabricate
-  evidence results.
+  Production-path tests distinguish requested/missing/rejected/supplied
+  without treating supplied input as accepted evidence; checker tests cover
+  exact association, corruption, cardinality, and atomicity. No evidence
+  result is fabricated.
 - [ ] **Task 252:** primary term producer.
 - [ ] **Task 253:** functor and inline-functor application producer.
 - [ ] **Task 254:** structure constructor/selector/update term producer.

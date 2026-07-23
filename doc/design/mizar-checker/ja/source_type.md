@@ -85,3 +85,15 @@ Core/CFG/VCはTask 249外である。
 | `boundary_violation` | implementation reviewで検出したrecursive public-input graph traversalをiterative worklistへ置換。syntaxはrunner-owned、semantic result fabricationは禁止。 |
 | `spec_gap` | bounded input-handoff sliceにはなし。 |
 | `repo_metadata_conflict` | 観測なし。 |
+
+## Task 251 evidence-association addendum
+
+`SourceTypeApplicationHandoff`は全Task-251 requestのauthenticated parent
+inputである。unattributed requestはroot expression、owner/head site、
+expression range/recovery、application source ordinalを保持する。attributed
+requestは同じapplication/expression identityを保持し、independent Task-250
+chainがrequest site/range/recoveryを供給するが、request ordinalはTask-249
+application ordinalのままである。resolver-authenticated mode/structure headが
+unattributed request kind 2件をselectし、builtin headはrequestをemitしない。
+Task 251はsource-type tableを変更せず、expansion/inhabitation/normalization/
+acceptanceをinferしない。

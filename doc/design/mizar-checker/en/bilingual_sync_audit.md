@@ -43,6 +43,7 @@ after this task.
 | `source_spec_audit.md` | `../ja/source_spec_audit.md` | `../en/source_spec_audit.md` | public surface inventory, behavior/test correspondence, MC-G reconciliation, task classification | none |
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, determinism, coverage, public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
+| `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary, flat application/expression/argument model, environment/arena/graph/provenance validation, ownership, consumers, exclusions, public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table, prerequisites, resolved decisions, ordered task list, task statuses, verification, notes | none |
 | `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary, top-level shape, arena/context/type/fact/coercion/obligation/diagnostic tables, public enum policy, task classification | none |
@@ -87,3 +88,13 @@ module-boundary audit, and bilingual inventory record the same five-table
 syntax-free handoff, exact real and synthetic consumers, validation/atomicity
 boundary, coverage counts, exclusions, and continued Tasks 251+/269+ and
 Steps 6/7 deferral. No bilingual sync debt remains in Task 250.
+
+## Task 251 Source-Evidence Pair Recheck
+
+The paired plan, TODO, source-evidence module specification, source/spec audit,
+payload decomposition, typed/final ownership documents, registration boundary,
+module audit, and mizar-test consumer documents record the same dense
+request/response transport, exact Task-249/250 association, four non-semantic
+states, dependency-catalog validation, three real consumers, 5/3/2 request
+histogram, bounded outcome progression, and deferred semantic owners. No
+bilingual sync debt remains in Task 251.

@@ -724,3 +724,11 @@ string guards byte-identical legacy rendering. The implementation adds no raw
 syntax dependency to the checker, publishes no fact, accepts or discharges no
 theorem, and creates no CoreIr, ControlFlowIr, or VC payload. Core Task 31 is
 now the next dependency-authorized consumer; Steps 6/7 remain deferred.
+
+## Task 251 Final-Handoff Addendum
+
+`ResolvedTypedAst` clone-preserves the optional checker-owned
+`SourceEvidenceHandoff` installed on `TypedAst` and exposes a borrowed
+`source_evidence()` getter. Final assembly does not rebuild, reinterpret, or
+accept evidence, and the legacy projection remains unchanged when the handoff
+is absent.

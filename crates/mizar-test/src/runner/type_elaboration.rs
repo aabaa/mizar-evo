@@ -8,6 +8,7 @@ mod result;
 mod source_ast;
 mod source_attribute;
 mod source_context;
+mod source_evidence;
 mod source_formula;
 mod source_reserve;
 mod source_type;
@@ -328,6 +329,11 @@ pub(super) use source_context::source_binding_context_detail_keys;
 #[cfg(test)]
 pub(super) use source_context::{
     source_binding_context_output, source_binding_context_token_shape_is_exact,
+};
+pub(super) use source_evidence::source_evidence_detail_keys;
+#[cfg(test)]
+pub(super) use source_evidence::{
+    SourceEvidenceRouteKind, source_evidence_output, source_evidence_output_with_mutation,
 };
 #[cfg(test)]
 pub(super) use source_formula::{

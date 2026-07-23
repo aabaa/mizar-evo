@@ -690,3 +690,10 @@ deterministicにrenderする。captured Task-266 empty-bundle stringがbyte-iden
 legacy renderingをguardする。checkerへのraw syntax dependency、fact publication、
 theorem acceptance/discharge、CoreIr/ControlFlowIr/VC payloadは追加しない。次の
 dependency-authorized consumerはCore Task 31で、Steps 6/7はdeferredのままである。
+
+## Task 251 final-handoff addendum
+
+`ResolvedTypedAst`は`TypedAst`へinstall済みのoptional checker-owned
+`SourceEvidenceHandoff`をclone-preserveし、borrowed `source_evidence()` getterを
+exposeする。final assemblyはevidenceをrebuild/reinterpret/acceptせず、handoff
+absent時のlegacy projectionは不変である。

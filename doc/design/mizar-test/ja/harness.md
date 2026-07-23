@@ -2605,7 +2605,7 @@ library testは283件。
 
 ## Checker Task 251 frozen runner boundary
 
-future private `type_elaboration::source_evidence` leafはexact Task-249-broad +
+private `type_elaboration::source_evidence` leafはexact Task-249-broad +
 Task-84/85 dispatchをownする。checker-owned transport request 10件
 （mode-expansion 5、structure-inhabitation 3、attributed 2）を全てmissing、
 dependency reference 0件としてpublish
@@ -2627,3 +2627,5 @@ sibling isolation、requested/missing/rejected/supplied injectionをfinal
 `TypedAst`/`ResolvedTypedAst`までproveする。supplied referenceはevidence
 acceptanceではない。corrupt inputは`Rejected`をpublishせずatomic failする。
 implementationはtest 4件を追加し、documented library totalを283から287へ進める。
+exact selection、four-state injection、final ownership、corruption、
+deterministic replayはproduction pathでpassする。

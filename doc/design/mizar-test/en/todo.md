@@ -1591,6 +1591,6 @@ promoted by this increment.
 - [x] Require requested/missing/rejected/supplied injection through the real
   AST and production Task-10 consumer to final `TypedAst`/`ResolvedTypedAst`;
   supplied input is not accepted evidence and corruption is atomic failure.
-- [ ] Implement Checker Task 251 as one separate logical task. Reach plan
+- [x] Implement Checker Task 251 as one separate logical task. Reach plan
   411/374 and type 240/228 with unchanged pass/fail/admissions/warnings,
   exact isolation, full hashes, reviews, and one dedicated commit.

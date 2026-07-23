@@ -626,3 +626,12 @@ task 20:
 implementation task は、current source behavior に合わせるために `doc/spec` や既存 `.miz`
 expectation file を変更することから始めてはならない。必要な input が欠けている場合は
 external dependency gap または deferral として分類し、behavior は inactive のままにする。
+
+## Task 251 existential-gate transport addendum
+
+Task 251はauthenticated `ExistentialGateInput`をsupplied dependency payload
+としてのみcarryできる。source-evidence producerはrequest owner/range/recoveryと
+existing guard-fact referenceをverifyしてsnapshotをtransportするが、gate
+evaluatorをcallせずregistration statusを変更しない。supplied transportは
+activated registration、satisfied gate、accepted fact、artifact resultではない。
+Task 274とexternal accepted-status authorityはblocked-reservedのままである。

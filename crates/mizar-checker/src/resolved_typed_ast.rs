@@ -18,6 +18,7 @@ use crate::{
     },
     source_attribute::SourceAttributeHandoff,
     source_context::SourceBindingContextHandoff,
+    source_evidence::SourceEvidenceHandoff,
     source_type::SourceTypeApplicationHandoff,
     type_checker::{
         CheckedFormulaId, CheckedFormulaTable, CheckedStatementOwner, ExportStatus, FormulaKind,
@@ -104,6 +105,7 @@ pub struct ResolvedTypedAst {
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
     source_attribute: Option<SourceAttributeHandoff>,
+    source_evidence: Option<SourceEvidenceHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -146,6 +148,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_attribute(&self) -> Option<&SourceAttributeHandoff> {
         self.source_attribute.as_ref()
+    }
+
+    pub const fn source_evidence(&self) -> Option<&SourceEvidenceHandoff> {
+        self.source_evidence.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -232,6 +238,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_attribute) = &self.source_attribute {
             output.push_str(&source_attribute.debug_text());
+        }
+        if let Some(source_evidence) = &self.source_evidence {
+            output.push_str(&source_evidence.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1461,6 +1470,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_context: self.inputs.typed_ast.source_context().cloned(),
             source_type: self.inputs.typed_ast.source_type().cloned(),
             source_attribute: self.inputs.typed_ast.source_attribute().cloned(),
+            source_evidence: self.inputs.typed_ast.source_evidence().cloned(),
             nodes,
             expr_metadata,
             collection_candidates,

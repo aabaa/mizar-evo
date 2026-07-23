@@ -1,5 +1,15 @@
 # mizar-test Bilingual Documentation Sync Audit
 
+## Checker Task 251 / source-evidence pair recheck
+
+paired plan、TODO、harness、module-boundary、checker consumer documentは同じ
+exact route 3件、Task-249 dependency 12/15/6、Task-250 dependency
+2/2/0/0/0、5/3/2 missing request 10件、four transport states、outcome
+preservation、plan 411/374、type 240/228、unchanged admission、library test
+287件、path/content hash `e51258a0...` / `17bc79a4...`の
+22-path/23,487-line production manifestを記録する。Task 252+とSteps 6/7は
+両言語でdeferredのまま。Task 251にbilingual driftは残らない。
+
 ## Checker Task 250 / source-attribute pair recheck
 
 paired plan、TODO、harness、module-boundary、checker consumer documentは同じ

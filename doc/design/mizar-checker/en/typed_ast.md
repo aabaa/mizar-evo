@@ -609,3 +609,11 @@ extraction, CoreIr, ControlFlowIr, VC payloads, or proof evidence in
 | `source_drift` | Before task 3, source had no `typed_ast` module while task 2 specified it. | Resolved by task 3: `src/typed_ast.rs` is added and only this documented module is exposed from `lib.rs`. |
 | `external_dependency_gap` | Public checker diagnostic code ownership remains absent; resolver may later expose a richer source-kind projection. Neither blocks task 3. | Keep diagnostics crate-internal with stable `message_key`s. Do not add a direct `mizar-syntax` dependency for node-kind storage. |
 | `deferred` | No physical typed-arena deferral remains after the task-3 decision. Type inference, binding construction, registration firing, overload resolution, public diagnostics, artifacts, and proof acceptance remain owned by later tasks. | Keep task 3 data-only. |
+
+## Task 251 Ownership Addendum
+
+`TypedAst` now owns an optional immutable `SourceEvidenceHandoff`.
+`with_source_evidence` rejects replacement and authenticates the handoff
+source/module plus referenced facts against the existing typed payload before
+installation. The addition is syntax-free and does not add evidence truth,
+accepted facts, proof status, or downstream IR to the typed arena.

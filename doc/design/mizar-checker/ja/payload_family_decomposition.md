@@ -313,3 +313,15 @@ transport `source_drift`をcloseする。bounded trace rowはnew case/admission 
 なしでplan 411/373・type 239/227へ到達する。semantic attribute instanceと全
 evidence/truth/acceptance/downstream IR、Tasks 251+/269+、Steps 6/7はexisting
 later ownerに残る。
+
+## Task 251 current-state addendum
+
+Task 251はsemantic evidence ownerをadvanceせずgraphのrequest/reference
+transport nodeを実装する。public checker handoffはexact Task-249 application、
+optional Task-250 chain、resolver symbol kind、dependency key、payload
+reference、fact、gate associationをatomic publication前にauthenticateする。
+private Task-10 consumerはbroad Task-249 fixtureとTask-84/85だけをactivateし、
+response row 0件のmissing request 10件を5/3/2 histogramでproduceする。
+production four-state testとchecker corruption matrixがbounded
+`source_drift`/`test_gap`をcloseする。Tasks 252-264/269-279のdependency edge/
+exit boundaryは不変で、Steps 6/7はpromoteしない。
