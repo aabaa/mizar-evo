@@ -1427,6 +1427,9 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
 - [x] transactional final ownership、full corruption/determinism/isolation、
   bounded 3-sidecar trace reference、no-new-case implementation oracle
   plan 411/375/type 241/229を要求する。
+- [x] post-freeze ordinal contractを、先行して完了したbinding rowを数えるruleへ
+  correctし、reachable `Ambiguous` rejection用duplicate-priority groupを保持し、
+  `Resolver`をstructurally unreachableと記録する。
 - [ ] Checker Task 252をseparate logical taskとして実装する。pass/fail
   224/187、admission 101/5/190/1、warnings/errors 23/0を維持し、test/layout/
   CLI hashを全てfresh計算する。Tasks 253+/260/264/269とSteps 6/7はpromoteしない。

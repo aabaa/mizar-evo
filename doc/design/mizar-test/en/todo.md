@@ -1610,6 +1610,9 @@ promoted by this increment.
 - [x] Require transactional final ownership, full corruption/determinism and
   isolation checks, one bounded three-sidecar trace reference, and the
   no-new-case implementation oracle plan 411/375 and type 241/229.
+- [x] Correct the post-freeze ordinal contract to count preceding completed
+  binding rows, retain duplicate-priority groups for reachable `Ambiguous`
+  rejection, and record `Resolver` as structurally unreachable.
 - [ ] Implement Checker Task 252 as one separate logical task. Preserve
   pass/fail 224/187, admissions 101/5/190/1, warnings/errors 23/0, and
   recompute all test/layout/CLI hashes. Tasks 253+/260/264/269 and Steps 6/7

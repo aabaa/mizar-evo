@@ -2690,3 +2690,30 @@ MC-G017/MC-G020はpartialのままである。Tasks 253-260/264/269がapplicatio
 other term、formula、definition、real local binding、semantic resultをretainする。
 numeric type selection、theorem fact、accepted fact/declaration/proof、downstream
 IR、Steps 6/7はTask-252 prerequisite creditを得ない。
+
+## Task 252 contract-correction audit addendum
+
+implementation inventoryでpost-freeze `design_drift` 1件が見つかった。reference
+useをbinding declarationと同じordinal streamへ数えるruleは、useがlater
+declarationより前にあるときTask 248のbinding-table
+`visible_after_ordinal` semanticsと両立しない。同ruleはsame-priority duplicate
+binding groupも不可能にし、要求済みのreachable `Ambiguous` rejectionをtest
+できなかった。
+
+corrected contractはdeclaration range endがreference start以前であるbinding
+rowだけを数える。previous referenceはordinalを進めない。normal declaration
+groupはsource orderを保ち、dense binding id/index位置のrow 1件を持つ。exact
+consecutive duplicate-priority groupはspelling/kind/owner context/
+`BinderIdentity`/declaration rangeを共有し、group final dense row indexを
+visibility ordinalとして使う。`BindingEnv::lookup`が`Ambiguous`としてreject
+するまでこのgroupを保持する。
+`BindingLookupSite::new`はresolver payloadを持たないため、このproducer pathで
+`Resolver`はstructurally unreachableであり、reachableな全non-local resultは
+引き続きrejectする。
+
+このcorrectionはspecification、`.miz`、expectation、trace row/status、owner、
+deferred boundary、source、test、count、hash、coverage creditを変更しない。
+remaining executable absenceは`source_drift`/`test_gap`のままで、`spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`は発生していない。Task-251
+baselineとTask-252 implementation oracleは不変である。

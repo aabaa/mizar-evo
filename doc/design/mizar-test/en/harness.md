@@ -2776,8 +2776,11 @@ Synthetic runner probes cover a `LocalAbbreviation` identifier, an `it`
 surface with only its current-result source role, and eligible nested
 parentheses through the same extractor/producer. References must authenticate
 the exact lexical `BindingEnv::lookup` winner with scope derived from the
-term context and use ordinal derived from the merged binding/reference source
-events. Parentheses containing a
+term context and use ordinal derived as the count of preceding completed
+binding rows; prior references do not advance it. Exact consecutive
+duplicate-priority binding groups share all lookup-priority inputs and use
+their final dense row index as the shared visibility ordinal, so an ambiguous
+winner is rejected by lookup. Parentheses containing a
 later-family term are excluded until Tasks 253-255 freeze cross-family edges.
 Real constant declaration ownership and real `it` owner/type are deferred to
 Tasks 269 and 260/264. The probes create no

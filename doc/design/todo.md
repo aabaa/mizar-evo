@@ -1976,3 +1976,13 @@ continuing `test_gap`; no blocking `spec_gap`,
 open for one separate implementation commit. Tasks 260/264/269 retain real
 `it`/local-constant owner production, Tasks 253+ are not inferred, and
 Steps 6/7 remain deferred.
+
+A post-freeze review then found and corrected one further `design_drift` in
+that documentation prerequisite. Task-252 reference ordinals count preceding
+completed binding rows rather than merged binding/reference events; exact
+duplicate-priority groups share the final dense row's visibility ordinal and
+all lookup-priority inputs for `Ambiguous` rejection, and `Resolver` is
+structurally unreachable on the payload-free lookup-site path.
+This correction changes no executable artifact, coverage mapping, owner,
+deferred rationale, count, or hash, so
+`doc/design/spec_coverage_audit.md` remains unchanged.

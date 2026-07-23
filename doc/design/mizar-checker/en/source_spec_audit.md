@@ -2802,3 +2802,31 @@ consumers retain applications, other term families, formulas, definitions,
 real local bindings, and semantic results. Numeric type selection, theorem
 facts, accepted facts/declarations/proofs, downstream IR, and Steps 6/7
 receive no Task-252 prerequisite credit.
+
+## Task 252 Contract-Correction Audit Addendum
+
+Implementation inventory found one post-freeze `design_drift`: counting
+reference uses in the same ordinal stream as binding declarations conflicts
+with Task 248's binding-table `visible_after_ordinal` semantics when a use
+precedes a later declaration. The same rule also made a same-priority
+duplicate binding group impossible, so the required reachable `Ambiguous`
+rejection could not be tested.
+
+The corrected contract counts only binding rows whose declaration ranges end
+no later than the reference start. Previous references do not advance that
+ordinal. Normal declaration groups remain source ordered and have one row at
+their dense binding id/index; an exact consecutive duplicate-priority group
+shares spelling, kind, owner context, `BinderIdentity`, and declaration range,
+and uses its final dense row index as the group's visibility ordinal. It is
+retained until `BindingEnv::lookup` rejects it as `Ambiguous`. Because
+`BindingLookupSite::new` carries no resolver payload, `Resolver` is
+structurally unreachable on this producer path; all reachable non-local
+results remain rejected.
+
+This correction changes no specification, `.miz`, expectation, trace
+row/status, owner, deferred boundary, source, test, count, hash, or coverage
+credit. The remaining executable absence is still `source_drift` and
+`test_gap`; no `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
+was introduced. The Task-251 baseline and Task-252 implementation oracle
+remain unchanged.

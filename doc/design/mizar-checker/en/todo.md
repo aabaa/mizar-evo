@@ -4410,7 +4410,10 @@ unchecked row below is one future nonempty logical task and one commit.
   boundary, synthetic constant/`it` dependency coverage, final ownership,
   tests, trace impact, and exit criteria. Implement it as one separate
   logical task; Tasks 260/264/269 retain real `it` owners and local-constant
-  binding production.
+  binding production. The post-freeze contract correction derives each
+  reference ordinal from preceding completed binding rows, preserves
+  duplicate-priority binding groups for reachable `Ambiguous` rejection, and
+  records `Resolver` as structurally unreachable for this producer.
 - [ ] **Task 253:** functor and inline-functor application producer.
 - [ ] **Task 254:** structure constructor/selector/update term producer.
 - [ ] **Task 255:** set/comprehension/choice/`qua` term producer.

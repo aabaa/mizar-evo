@@ -2647,8 +2647,11 @@ clone-only `ResolvedTypedAst`へpublishする。parenthesized rowはsource wrapp
 synthetic runner probeはsame extractor/producerで`LocalAbbreviation` identifier、
 current-result source roleだけの`it` surface、eligible nested parenthesisを
 coverする。referenceはexact lexical `BindingEnv::lookup` winnerをauthenticateし、
-scopeはterm context、use ordinalはmerged binding/reference source eventから
-deriveする。later-family termを含むparenthesisはTasks 253-255がcross-family edgeをfreezeする
+scopeはterm context、use ordinalは先行して完了したbinding row数からderiveし、
+prior referenceはordinalを進めない。exact consecutive duplicate-priority
+binding groupは全lookup-priority inputを共有し、final dense row indexをshared
+visibility ordinalとして使うため、lookupはambiguous winnerをrejectできる。
+later-family termを含むparenthesisはTasks 253-255がcross-family edgeをfreezeする
 まで除外する。real constant declaration ownerとreal `it` owner/typeはTasks
 269/260/264へdeferする。
 probeはfixture/admission/semantic result/formula/fact/coverage creditを作らない。

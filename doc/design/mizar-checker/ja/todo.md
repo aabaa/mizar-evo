@@ -4189,7 +4189,10 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   transparent-parenthesis rule、numeric-request-only boundary、synthetic
   constant/`it` dependency coverage、final ownership、test/trace impact、exit
   criteriaをfreezeした。別logical task 1件として実装し、real `it` ownerと
-  local-constant binding productionはTasks 260/264/269に残す。
+  local-constant binding productionはTasks 260/264/269に残す。post-freeze
+  contract correctionは各reference ordinalを先行して完了したbinding rowから
+  deriveし、reachableな`Ambiguous` rejectionのためduplicate-priority binding
+  groupを保持し、このproducerで`Resolver`がstructurally unreachableと記録する。
 - [ ] **Task 253:** functor/inline-functor application producer。
 - [ ] **Task 254:** structure constructor/selector/update term producer。
 - [ ] **Task 255:** set/comprehension/choice/`qua` term producer。
