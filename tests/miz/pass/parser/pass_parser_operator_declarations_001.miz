@@ -1,0 +1,15 @@
+@[module_note("operator")]
+infix_operator("+", left, 80);
+public infix_operator("^", right, 95);
+private infix_operator("<", none, 50);
+prefix_operator("-", 85);
+postfix_operator("!", 95);
+
+definition
+  @[module_note("definition")]
+  infix_operator("*", left, 90);
+  public prefix_operator("~", 85);
+  private postfix_operator("!", 95);
+end;
+
+theorem AfterOperators: thesis;

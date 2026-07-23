@@ -90,8 +90,8 @@ is its task 1). "Next work" points into the
 |---|---|---|---|---|
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | — | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] complete | parked task 21 | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] current milestone closed through tasks 47-48; 94/100 | parked Task 46; human-owned P-265-47D; no authorized successor | [todo](./mizar-parser/en/todo.md) |
+| mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] complete plus parser Tasks 48/46 post-exit vocabulary increments | parked task 21 | [todo](./mizar-syntax/en/todo.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [~] Tasks 1-48 implemented; pre-Task-46 closeout superseded | separate post-Task-46 closeout; human-owned P-265-47D | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268 and Core-31 consumer increment complete | step 5 task 10, including future `MT10-FS`/`MT10-AS` and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
@@ -1483,7 +1483,7 @@ Not part of the sequential flow; each row records its re-entry trigger.
 | Item | Trigger |
 |---|---|
 | [mizar-kernel task 32](./mizar-kernel/en/todo.md) — solver step-budget deferral (audit F3) | any pinned `batsat` version change (task-24 audit procedure) |
-| [mizar-parser task 46](./mizar-parser/en/todo.md) — concrete operator declarations | future grammar growth |
+| [mizar-parser task 46](./mizar-parser/en/todo.md) — concrete operator declarations | [x] completed after fresh audit confirmed frontend Task 20 had already met the trigger |
 | [mizar-syntax task 21](./mizar-syntax/en/todo.md) — rustdoc summaries | deferred documentation pass |
 | MVM / code-extraction / backend runtime work (spec 20) | promote to owner tasks before claiming algorithm *execution* support (see [Completion Gates](#completion-gates)) |
 
@@ -1916,3 +1916,27 @@ for its other crate-owned work, and Task 49 plus Steps 6/7 are not promoted.
 This docs-only closeout changes no specification coverage mapping, trace status,
 owner, follow-up ownership, or deferred rationale; therefore
 `doc/design/spec_coverage_audit.md` remains unchanged.
+
+## Step 5 Parser Task 46 Active Addendum
+
+Fresh inventory superseded the prior parser-closeout conclusion: completed
+frontend Task 20 had already satisfied Task 46's named string-required and
+local operator-metadata trigger. Task 46 closes aliased P-043-01/P-046 as one
+bounded `source_drift` / `test_gap` plus paired `design_drift` slice. The parser
+and syntax crates add exact infix/prefix/postfix declaration parsing,
+annotated/visible top-level and definition-local placement, append-only
+`OperatorDeclaration` raw kind 193, local recovery, one active pass/fail pair,
+and an exact covered trace row.
+
+The implementation is syntax-only and does not mutate Pratt metadata or claim
+activation, active-functor validation, resolution, overload meaning, or
+semantic precedence validation. Existing `.miz` sources and expectations stay
+unchanged. The earlier 94/100 closeout is historical until a separate fresh
+closeout reruns all hard gates. Task 46 does not promote Task 49 or Steps 6/7
+and does not close global Step 5.
+
+Measured current oracles are plan 409/370, parse coverage 44/44,
+parse/declaration/type/proof admission 101/5/188/1, pass/fail 223/186, and
+warnings/errors 23/0. Parser production is 12 paths / 38,940 lines and parser
+unit tests are 225; `mizar-test` production remains 18 paths / 20,088 lines and
+its 276-test raw/normalized list remains unchanged.

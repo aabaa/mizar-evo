@@ -1,5 +1,16 @@
 # mizar-parser: Recovery
 
+## Task 46 Operator-Declaration Recovery
+
+Each operator declaration consumes its exact punctuation and slot sequence and
+reuses the existing syntax-diagnostic vocabulary. A missing first string slot
+emits `missing_string_literal` and an error node; malformed associativity,
+natural-number, delimiter, or terminator slots use existing malformed-term or
+missing-semicolon recovery. No new public diagnostic code or semantic
+diagnostic is introduced. Synchronization is declaration-local and preserves a
+following top-level or definition-local item, including the enclosing
+definition's real `end;`.
+
 Status: recovery is implemented and task-37 consolidated for the parser grammar
 surface through task 36: module/import/export, type/term/formula,
 statement/proof, S-015 definition and registration content, templates,

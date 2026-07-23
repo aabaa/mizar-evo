@@ -1,5 +1,14 @@
 # Module: harness
 
+## Parser Task 46 Operator-Declaration Parse-Only Increment
+
+The exact pass/fail pair is admitted by the ordinary parse-only runner. The
+pass sidecar requires zero diagnostics; the fail sidecar pins six existing
+syntax diagnostic codes. Parser unit tests, rather than the code-only fail
+sidecar, pin every slot/delimiter diagnostic message/range and preserve the
+definition's outer `end;` plus the following theorem. No new runner phase,
+diagnostic vocabulary, or production harness path is introduced.
+
 > Canonical language: English. Japanese companion: [../ja/harness.md](../ja/harness.md).
 
 ## Purpose

@@ -1,5 +1,13 @@
 # mizar-test TODO
 
+## Parser Task 46 / operator-declaration parse-only completion
+
+- [x] exact active pass/fail pairをadmitし、sidecarをpinする。
+- [x] `spec.en.10.operator_declarations.parser`をexact backlink付きcoveredとし、
+  parse-only deferred-reserved-word setから今回exerciseしたoperator word 6個だけを除く。
+- [x] existing corpus/expectation、production runner layout、semantic operator behavior、
+  Task 49、Steps 6/7をunchangedに保つ。
+
 > 正本は英語です。英語版: [../en/todo.md](../en/todo.md)。
 
 ## 状態の凡例

@@ -3,6 +3,13 @@
 > Canonical language: English. Japanese companion:
 > [../ja/crate_exit_report.md](../ja/crate_exit_report.md).
 
+> Historical notice: this report records the pre-Task-46 milestone and its
+> then-valid 94/100 score. Completed frontend Task 20 was later confirmed to
+> have already satisfied Task 46's trigger, and Task 46 is now implemented.
+> The result, counts, hashes, residual table, and handoff below are superseded
+> until a separate post-Task-46 closeout reruns all hard gates and obtains a
+> fresh independent score.
+
 ## Result
 
 Status: complete for the current `mizar-parser` crate milestone.

@@ -78,13 +78,14 @@ are companions when both are present.
   current milestone complete.
 - [mizar-syntax](./mizar-syntax/README.md) - rowan-backed `SurfaceAst`, syntax
   trivia, recovery vocabulary, typed views, and current parser-facing syntax
-  vocabulary; current milestone complete with only deferred rustdoc summaries
-  remaining.
+  vocabulary; current milestone complete with parser Tasks 48/46 post-exit
+  vocabulary increments and only deferred rustdoc summaries remaining.
 - [mizar-parser](./mizar-parser/README.md) - grammar implementation, Pratt
   parsing, syntax recovery, and parse-only corpus execution; grammar coverage
-  and parser-owned hardening are complete for the current milestone through
-  tasks 47-48, with a 94/100 crate closeout, the trigger-deferred
-  operator-declaration follow-up, and one nonblocking human-owned wording gap.
+  and parser-owned hardening are implemented through Tasks 1-48. Task 46 closes
+  concrete operator-declaration syntax after its frontend trigger was found
+  already satisfied; the earlier 94/100 closeout is historical pending a
+  separate fresh closeout. One nonblocking human-owned wording gap remains.
 - [mizar-frontend](./mizar-frontend/README.md) - source loading and phase 1-3
   orchestration across session, lexer, syntax, and parser services; current
   milestone complete.

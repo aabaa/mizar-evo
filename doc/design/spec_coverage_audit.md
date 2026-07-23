@@ -52,8 +52,8 @@ or Rust source. It is a synchronization ledger for design and TODO work.
 | `23.package_management_and_build_system.md` | Build, artifact, cache, driver, diagnostics, LSP, and architecture docs cover manifest/build/artifact/cache/LSP/explanation slices. Chapter 23's functional-cluster registration-node discussion is synchronized with the Chapter 17 `for` result-guard contract. | partial | `mizar refine`, `mizar minimize`, and production `mizar semver-check` CLI ownership remain future driver/tooling tasks; LSP module specs are still planned. |
 | `24.documentation_generation.md` | Architecture 13 and internal 05 define phase-16 boundaries; `mizar-doc` TODO schedules module specs. | todo | `mizar-doc` must write module specs for artifact reading, comments, links, math, render, extraction, backend, publisher, and a source/spec coverage closure audit. |
 | `sample_codes.md` | Examples exercise intended language surfaces but are not direct implementation authority. | reference | Keep examples aligned through future source/spec audits. |
-| `appendix_a.grammar_summary.md` | Parser/syntax grammar audits and parser TODO tasks cover most current grammar surfaces. Task 39 changes the A.7 `property_impl` grammar and records deferred parser coverage for that block surface. `SPEC-07-PI-PLACEMENT` synchronizes A.12 with A.7 by making the complete block a top-level declaration and removing it from `definitional_item`; Parser Task 48 closes the corresponding `source_drift` / `test_gap` with dedicated parser/syntax support, active pass/fail fixtures, and exact trace activation. Checker task 44 updates type-changing statement grammar to allow omitted `reconsider` simple justification and proof-block `reconsider`, matching Chapters 4/8/15; parser task 47 implements and actively covers those two exact tail forms. | partial | Concrete operator declarations remain deferred to parser task 46; future grammar additions should update parser/syntax audits. |
-| `appendix_b.operator_precedence.md` | Parser Pratt design and parser TODO cover precedence/associativity. | covered | Deferred operator-declaration follow-up remains parser task 46. |
+| `appendix_a.grammar_summary.md` | Parser/syntax grammar audits and parser TODO tasks cover most current grammar surfaces. Task 39 changes the A.7 `property_impl` grammar and records deferred parser coverage for that block surface. `SPEC-07-PI-PLACEMENT` synchronizes A.12 with A.7 by making the complete block a top-level declaration and removing it from `definitional_item`; Parser Task 48 closes the corresponding `source_drift` / `test_gap` with dedicated parser/syntax support, active pass/fail fixtures, and exact trace activation. Checker task 44 updates type-changing statement grammar to allow omitted `reconsider` simple justification and proof-block `reconsider`, matching Chapters 4/8/15; parser task 47 implements and actively covers those two exact tail forms. Parser Task 46 implements all three exact operator declarations, their top-level/definition-local placement, append-only syntax node, bounded recovery, and active pass/fail trace coverage. | partial | Future grammar additions should update parser/syntax audits; operator activation, resolution, and semantic precedence validation remain downstream. |
+| `appendix_b.operator_precedence.md` | Parser Pratt design covers metadata-driven precedence/associativity, and Parser Task 46 adds concrete source declaration syntax and active parser coverage without mutating Pratt metadata. | covered | Operator activation, active-functor validation, resolution, and semantic precedence-range checks remain downstream, not parser coverage gaps. |
 | `appendix_c.glossary.md` | Terminology reference. | reference | Use during bilingual sync and user-facing docs. |
 | `appendix_d.recommended_coding_rules.md` | Style/reference guidance, not an implementation phase. | reference | No crate task unless a formatter/linter is later specified. |
 | `appendix_e.annotation_quick_reference.md` | Annotation reference mirrors chapter 21. | partial | Close together with chapter 21 annotation display/evaluation follow-ups. |
@@ -2510,3 +2510,29 @@ checker/Core/CFG/VC, Task-39 semantic-seed activation, Step 6, or Step 7 credit
 is added. Existing `.miz` and expectation files are unchanged, and no
 `spec_gap`, `source_undocumented_behavior`, `boundary_violation`, or
 `repo_metadata_conflict` was introduced.
+
+## Step 5 Parser Task 46 Coverage Addendum
+
+Fresh inventory found that completed frontend Task 20 already satisfied the
+named position-sensitive string and local operator-metadata trigger. Task 46
+therefore closes aliased P-043-01/P-046 as one parser `source_drift` /
+`test_gap` plus paired `design_drift`, without a `spec_gap`.
+
+The parser emits one append-only `OperatorDeclaration` kind for the exact
+infix/prefix/postfix forms at annotated/visible top-level and definition-local
+notation positions. One new active pass and one active fail sidecar move
+exactly `spec.en.10.operator_declarations.parser` to covered
+`pass_and_fail`. Local recovery uses existing diagnostic codes and preserves
+the enclosing definition terminator and following declaration. Existing
+`.miz` sources and expectations are unchanged.
+
+Coverage credit is syntax-only. Operator activation, active-functor
+validation, overload meaning, resolution, semantic 0-255 validation,
+Pratt-metadata mutation, Task 49, Steps 6/7, and global Step-5 completion are
+not claimed. No selected-slice `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
+was found.
+
+The measured coverage state is 409 cases / 370 requirements, parse coverage
+44/44, parse-only admission 101/101, pass/fail 223/186, and warnings/errors
+23/0. Declaration/type/proof admissions remain 5/188/1.

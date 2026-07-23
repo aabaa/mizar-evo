@@ -217,6 +217,7 @@ pub enum SyntaxKind {
     AnnotatedDefinitionContent = 190,
     AnnotatedRegistrationContent = 191,
     PropertyImplementation = 192,
+    OperatorDeclaration = 193,
     TokenAnnotationMarker = 99,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
@@ -414,6 +415,7 @@ impl SyntaxKind {
             190 => Self::AnnotatedDefinitionContent,
             191 => Self::AnnotatedRegistrationContent,
             192 => Self::PropertyImplementation,
+            193 => Self::OperatorDeclaration,
             99 => Self::TokenAnnotationMarker,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
@@ -531,6 +533,7 @@ impl SyntaxKind {
                 | Self::ProofBlock
                 | Self::DefinitionBlockItem
                 | Self::PropertyImplementation
+                | Self::OperatorDeclaration
                 | Self::DefinitionParameter
                 | Self::AttributeDefinition
                 | Self::AttributePattern
@@ -1700,6 +1703,13 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_operator_declaration(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::OperatorDeclaration => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_definition_parameter(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::DefinitionParameter => Some(self),
@@ -2564,6 +2574,7 @@ pub enum SurfaceNodeKind {
     ProofBlock,
     DefinitionBlockItem,
     PropertyImplementation,
+    OperatorDeclaration,
     DefinitionParameter,
     TemplateParameter,
     AttributeDefinition,
@@ -2751,6 +2762,7 @@ impl SurfaceNodeKind {
             Self::ProofBlock => SyntaxKind::ProofBlock,
             Self::DefinitionBlockItem => SyntaxKind::DefinitionBlockItem,
             Self::PropertyImplementation => SyntaxKind::PropertyImplementation,
+            Self::OperatorDeclaration => SyntaxKind::OperatorDeclaration,
             Self::DefinitionParameter => SyntaxKind::DefinitionParameter,
             Self::TemplateParameter => SyntaxKind::TemplateParameter,
             Self::AttributeDefinition => SyntaxKind::AttributeDefinition,

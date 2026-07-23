@@ -241,6 +241,13 @@ impl Parser {
                         position = item.next_position;
                         continue;
                     }
+                    if self.is_operator_declaration_start_at(item_head) {
+                        let item = self.parse_operator_declaration_item(position);
+                        item_children.push(item.id);
+                        recovery_nodes.extend(item.recovery_nodes);
+                        position = item.next_position;
+                        continue;
+                    }
                     if self.is_notation_alias_start_at(item_head) {
                         let item = self.parse_notation_alias_item(position);
                         item_children.push(item.id);
@@ -2677,7 +2684,14 @@ impl Parser {
 
         let target_position = marker_position + 1;
         let cursor = if self.is_visibility_target_start_at(target_position) {
-            let target = if self.is_notation_alias_start_at(target_position) {
+            let target = if self.is_operator_declaration_start_at(target_position) {
+                let declaration = self.parse_operator_declaration_at(target_position);
+                ParsedItem {
+                    id: declaration.id,
+                    next_position: declaration.next_position,
+                    recovery_nodes: declaration.recovery_nodes,
+                }
+            } else if self.is_notation_alias_start_at(target_position) {
                 let alias = self.parse_notation_alias_at(target_position);
                 ParsedItem {
                     id: alias.id,
@@ -4083,6 +4097,9 @@ impl Parser {
         if self.is_supported_redefinition_start_at(position) {
             return Some(self.parse_redefinition_at(position));
         }
+        if self.is_operator_declaration_start_at(position) {
+            return Some(self.parse_operator_declaration_at(position));
+        }
         if self.is_notation_alias_start_at(position) {
             return Some(self.parse_notation_alias_at(position));
         }
@@ -4125,6 +4142,11 @@ impl Parser {
             && self.is_supported_redefinition_start_at(position + 1)
         {
             return Some(self.parse_visible_redefinition_at(position));
+        }
+        if self.is_visibility_marker_at(position)
+            && self.is_operator_declaration_start_at(position + 1)
+        {
+            return Some(self.parse_visible_operator_declaration_at(position));
         }
         if self.is_visibility_marker_at(position) && self.is_notation_alias_start_at(position + 1) {
             return Some(self.parse_visible_notation_alias_at(position));
@@ -4766,6 +4788,11 @@ impl Parser {
     fn parse_visible_notation_alias_at(&mut self, position: usize) -> ParsedTypeNode {
         let alias = self.parse_notation_alias_at(position + 1);
         self.wrap_visible_definition_content(position, alias)
+    }
+
+    fn parse_visible_operator_declaration_at(&mut self, position: usize) -> ParsedTypeNode {
+        let declaration = self.parse_operator_declaration_at(position + 1);
+        self.wrap_visible_definition_content(position, declaration)
     }
 
     fn wrap_visible_definition_content(
@@ -7986,6 +8013,145 @@ impl Parser {
         ParsedTypeNode {
             id,
             next_position: cursor,
+            recovery_nodes,
+        }
+    }
+
+    fn parse_operator_declaration_item(&mut self, position: usize) -> ParsedItem {
+        let declaration = self.parse_operator_declaration_at(position);
+        ParsedItem {
+            id: declaration.id,
+            next_position: declaration.next_position,
+            recovery_nodes: declaration.recovery_nodes,
+        }
+    }
+
+    fn parse_operator_declaration_at(&mut self, position: usize) -> ParsedTypeNode {
+        let head = self.item_head_position(position).unwrap_or(position);
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=head]
+                .iter()
+                .copied(),
+        );
+        let infix = self.is_reserved_word_at(head, "infix_operator");
+        let mut cursor = head + 1;
+
+        if self.is_reserved_symbol_at(cursor, "(") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected `(` after operator declaration keyword",
+            );
+        }
+
+        if self.is_string_literal_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.push_missing_operator_string_literal(cursor, &mut children, &mut recovery_nodes);
+            if self.operator_declaration_slot_token_can_be_consumed_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+        }
+
+        if self.is_reserved_symbol_at(cursor, ",") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected `,` after operator spelling");
+        }
+
+        if infix {
+            if self.is_infix_associativity_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected `left`, `right`, or `none` in infix operator declaration",
+                );
+                if self.operator_declaration_slot_token_can_be_consumed_at(cursor) {
+                    children.push(self.token_node_ids[cursor]);
+                    cursor += 1;
+                }
+            }
+
+            if self.is_reserved_symbol_at(cursor, ",") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected `,` after infix associativity",
+                );
+            }
+        }
+
+        if self.is_numeral_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected natural-number precedence in operator declaration",
+            );
+            if self.operator_declaration_slot_token_can_be_consumed_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+        }
+
+        if self.is_reserved_symbol_at(cursor, ")") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected `)` to close operator declaration",
+            );
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else if cursor < self.request.tokens.len()
+            && !self.is_end_keyword_at(cursor)
+            && !self.is_item_start_at(cursor)
+            && !self.is_definition_content_start_at(cursor)
+        {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "unexpected token after operator declaration",
+            );
+            if let Some(recovery) = self.recover_malformed_operator_declaration_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_missing_semicolon(cursor);
+            }
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::OperatorDeclaration,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
             recovery_nodes,
         }
     }
@@ -12018,6 +12184,33 @@ impl Parser {
         );
     }
 
+    fn push_missing_operator_string_literal(
+        &mut self,
+        position: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        self.diagnostics.push(
+            expected_token_diagnostic(
+                SyntaxDiagnosticCode::MissingStringLiteral,
+                ExpectedToken::new("operator spelling string literal"),
+                cursor.current(),
+                cursor.eof_range(),
+                "expected string literal for operator spelling",
+            )
+            .with_recovery_note("insert an operator spelling string literal before continuing"),
+        );
+        let recovery = self.add_recovery_node(
+            SyntaxRecoveryKind::MissingStringLiteral,
+            self.zero_range_at(position),
+            Vec::new(),
+        );
+        children.push(recovery);
+        recovery_nodes.push(recovery);
+    }
+
     fn diagnose_missing_end(&mut self, opener: usize, position: usize) {
         let tokens = &self.request.tokens;
         let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
@@ -12637,6 +12830,22 @@ impl Parser {
             cursor += 1;
         }
 
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
+    fn recover_malformed_operator_declaration_tail(
+        &mut self,
+        position: usize,
+    ) -> Option<ParsedItem> {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len()
+            && !self.is_semicolon_at(cursor)
+            && !self.is_end_keyword_at(cursor)
+            && !self.is_item_start_at(cursor)
+            && !self.is_definition_content_start_at(cursor)
+        {
+            cursor += 1;
+        }
         self.emit_malformed_tail_recovery(position, cursor)
     }
 
@@ -13728,6 +13937,33 @@ impl Parser {
             || self.is_reserved_word_at(position, "antonym")
     }
 
+    fn is_operator_declaration_start_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            token.kind == ParserTokenKind::ReservedWord
+                && matches!(
+                    token.text.as_ref(),
+                    "infix_operator" | "prefix_operator" | "postfix_operator"
+                )
+        })
+    }
+
+    fn is_infix_associativity_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            token.kind == ParserTokenKind::ReservedWord
+                && matches!(token.text.as_ref(), "left" | "right" | "none")
+        })
+    }
+
+    fn operator_declaration_slot_token_can_be_consumed_at(&self, position: usize) -> bool {
+        position < self.request.tokens.len()
+            && !self.is_reserved_symbol_at(position, ",")
+            && !self.is_reserved_symbol_at(position, ")")
+            && !self.is_semicolon_at(position)
+            && !self.is_end_keyword_at(position)
+            && !self.is_item_start_at(position)
+            && !self.is_definition_content_start_at(position)
+    }
+
     fn is_property_clause_keyword_at(&self, position: usize) -> bool {
         self.request.tokens.get(position).is_some_and(|token| {
             token.kind == ParserTokenKind::ReservedWord
@@ -14610,6 +14846,7 @@ impl Parser {
             || self.is_reserved_word_at(position, "struct")
             || self.is_reserved_word_at(position, "inherit")
             || self.is_reserved_word_at(position, "algorithm")
+            || self.is_operator_declaration_start_at(position)
             || self.theorem_role_position_at(position).is_some()
             || self.is_property_clause_keyword_at(position)
             || (self.is_visibility_marker_at(position)
@@ -14624,6 +14861,8 @@ impl Parser {
                 && self.is_reserved_word_at(position + 1, "inherit"))
             || (self.is_visibility_marker_at(position)
                 && self.is_reserved_word_at(position + 1, "algorithm"))
+            || (self.is_visibility_marker_at(position)
+                && self.is_operator_declaration_start_at(position + 1))
             || (self.is_visibility_marker_at(position)
                 && self.is_visible_theorem_target_start_at(position + 1))
         {

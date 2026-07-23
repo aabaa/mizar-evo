@@ -10,11 +10,11 @@ Status: the crate owns the rowan-backed `SurfaceAst`, typed compatibility
 views, deterministic snapshot rendering, syntax diagnostics, syntax-owned
 trivia side tables, task-35 surface vocabulary, parser task-36 predicate
 redefinition label follow-through, task-24 private AST source split, and the
-post-exit parser Task 48 `PropertyImplementation` vocabulary increment. The
-Task 48 increment adds append-only raw kind 192 and syntax-only typed/snapshot/
-rowan support under the placement fixed by `SPEC-07-PI-PLACEMENT`; semantic
-property behavior remains deferred. S-021 rustdoc summaries remain explicitly
-deferred.
+post-exit parser Task 48 `PropertyImplementation` vocabulary increment and
+parser Task 46 `OperatorDeclaration` vocabulary increment. Task 46 adds
+append-only raw kind 193 plus syntax-only typed/snapshot/rowan support; it does
+not own operator activation, resolution, or precedence semantics. S-021
+rustdoc summaries remain explicitly deferred.
 
 ## Crate Plan
 
@@ -34,7 +34,7 @@ deferred.
 
 ## Cross-Cutting Audits
 
-- [en/source_spec_correspondence.md](./en/source_spec_correspondence.md) - S-025 plus parser Task 48 source/spec/test correspondence
-- [en/bilingual_documentation_synchronization.md](./en/bilingual_documentation_synchronization.md) - S-025 plus parser Task 48 bilingual synchronization
-- [en/crate_exit_report.md](./en/crate_exit_report.md) - historical close-out evidence plus the parser Task 48 post-exit addendum
+- [en/source_spec_correspondence.md](./en/source_spec_correspondence.md) - S-025 plus parser Tasks 48/46 source/spec/test correspondence
+- [en/bilingual_documentation_synchronization.md](./en/bilingual_documentation_synchronization.md) - S-025 plus parser Tasks 48/46 bilingual synchronization
+- [en/crate_exit_report.md](./en/crate_exit_report.md) - historical close-out evidence plus parser Tasks 48/46 post-exit addenda
 - [en/todo.md](./en/todo.md) - implementation roadmap and deferred S-021 trigger

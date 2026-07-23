@@ -31,6 +31,7 @@ const ALGORITHMS_CLAIMS_REQUIREMENT_ID: &str = "spec.en.20.algorithms_claims.par
 const ALGORITHM_CONTROL_FLOW_REQUIREMENT_ID: &str = "spec.en.20.algorithm_control_flow.parser";
 const ALGORITHM_VERIFICATION_REQUIREMENT_ID: &str = "spec.en.20.algorithm_verification.parser";
 const ANNOTATIONS_REQUIREMENT_ID: &str = "spec.en.21.annotations.parser";
+const OPERATOR_DECLARATIONS_REQUIREMENT_ID: &str = "spec.en.10.operator_declarations.parser";
 const OPERATOR_PRECEDENCE_REQUIREMENT_ID: &str = "spec.en.13.operator_precedence.parser";
 const SET_EXPRESSION_REQUIREMENT_ID: &str = "spec.en.13.set_expressions.parser";
 const ATOMIC_FORMULA_REQUIREMENT_ID: &str = "spec.en.14.atomic_formula.parser";
@@ -47,15 +48,7 @@ const PROPERTY_IMPLEMENTATIONS_REQUIREMENT_ID: &str =
 const STRUCTURES_REQUIREMENT_ID: &str = "spec.en.05.structures.parser";
 const CORRECTNESS_CONDITIONS_REQUIREMENT_ID: &str = "spec.en.16.correctness_conditions.parser";
 const REGISTRATIONS_REQUIREMENT_ID: &str = "spec.en.17.clusters_and_registrations.parser";
-const PARSER_DEFERRED_RESERVED_WORDS: &[&str] = &[
-    "infix_operator",
-    "left",
-    "none",
-    "postfix_operator",
-    "prefix_operator",
-    "right",
-    "transitivity",
-];
+const PARSER_DEFERRED_RESERVED_WORDS: &[&str] = &["transitivity"];
 
 #[test]
 fn empty_corpus_succeeds() {
@@ -5669,6 +5662,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_missing_semicolon_001",
             "fail_parser_mode_definitions_recovery_001",
             "fail_parser_operator_dangling_001",
+            "fail_parser_operator_declarations_recovery_001",
             "fail_parser_operator_nonassoc_001",
             "fail_parser_predicate_definitions_recovery_001",
             "fail_parser_primary_terms_missing_delimiter_001",
@@ -5717,6 +5711,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_minimal_token_stream_001",
             "pass_parser_mode_definitions_001",
             "pass_parser_module_skeleton_001",
+            "pass_parser_operator_declarations_001",
             "pass_parser_operator_terms_001",
             "pass_parser_predicate_definitions_001",
             "pass_parser_primary_terms_001",
@@ -5768,6 +5763,25 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from("tests/miz/pass/parser/pass_parser_operator_terms_001.expect.toml"),
             PathBuf::from("tests/miz/fail/parser/fail_parser_operator_dangling_001.expect.toml"),
             PathBuf::from("tests/miz/fail/parser/fail_parser_operator_nonassoc_001.expect.toml"),
+        ]
+    );
+
+    let operator_declarations_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == OPERATOR_DECLARATIONS_REQUIREMENT_ID)
+        .expect("operator-declaration parse-only requirement should exist");
+    assert_eq!(operator_declarations_requirement.stage, Stage::ParseOnly);
+    assert_eq!(
+        operator_declarations_requirement.tests,
+        vec![
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_operator_declarations_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_operator_declarations_recovery_001.expect.toml"
+            ),
         ]
     );
 
@@ -6172,8 +6186,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 99);
-    assert_eq!(report.passed_count(), 99);
+    assert_eq!(report.results.len(), 101);
+    assert_eq!(report.passed_count(), 101);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
@@ -6244,6 +6258,22 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_property_implementations_001"
             && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_operator_declarations_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_operator_declarations_recovery_001"
+            && result.actual_diagnostic_codes
+                == vec![
+                    "missing_string_literal".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "missing_semicolon".to_owned(),
+                ]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_structures_001" && result.actual_diagnostic_codes.is_empty()
@@ -9412,8 +9442,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 99"));
-    assert!(stdout.contains("passed: 99"));
+    assert!(stdout.contains("parse-only cases: 101"));
+    assert!(stdout.contains("passed: 101"));
     assert!(stdout.contains("failed: 0"));
 }
 

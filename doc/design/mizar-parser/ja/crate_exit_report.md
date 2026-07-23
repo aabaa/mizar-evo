@@ -3,6 +3,12 @@
 > 正本は英語です。英語版:
 > [../en/crate_exit_report.md](../en/crate_exit_report.md)。
 
+> Historical notice: 本reportはpre-Task-46 milestoneと当時validだった94/100 scoreを
+> 記録する。後のfresh auditにより、完了済みfrontend Task 20がTask 46のtriggerをすでに
+> 満たしていたと確認され、Task 46は現在実装済みである。以下のresult、count、hash、
+> residual table、handoffは、別のpost-Task-46 closeoutが全hard gateを再実行してfreshな
+> independent scoreを得るまでsupersededである。
+
 ## 結果
 
 状態: 現在の `mizar-parser` crate milestone は complete。

@@ -1,5 +1,13 @@
 # mizar-syntax Task 6: Grammar Consistency Audit
 
+## Parser Task 46 Follow-Through
+
+Task 46 closes the syntax representation part of P-043-01/P-046 by adding one
+dedicated `OperatorDeclaration` node for the Appendix-A operator grammar.
+Placement and recovery remain parser-owned; the syntax crate only guarantees
+append-only kind identity and source-order preservation. The increment creates
+no semantic grammar claim and does not reopen the historical syntax closeout.
+
 > Canonical language: English. Japanese companion: [../ja/grammar_audit.md](../ja/grammar_audit.md).
 
 Status: completed for the Task 6 grammar consistency gate on 2026-06-12.

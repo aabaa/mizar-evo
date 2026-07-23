@@ -12,7 +12,14 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage 境界、task-35 vocabulary、task 22 の predicate-label follow-through、task 24 の挙動維持 source split、S-025 refactor audit、Parser Task 48 の post-exit `PropertyImplementation` vocabulary increment は完了済み。S-021 rustdoc summary と semantic Task 39 は deferred のまま残る |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage 境界、task-35 vocabulary、task 22 の predicate-label follow-through、task 24 の挙動維持 source split、S-025 refactor audit、Parser Tasks 48/46 の post-exit `PropertyImplementation` / `OperatorDeclaration` vocabulary increment は完了済み。S-021 rustdoc summary と semantic Task 39 は deferred のまま残る |
+
+## Parser Task 46 post-exit vocabulary addendum
+
+- [x] `OperatorDeclaration`をraw kind 193としてappendし、対応するsurface kind、typed
+  accessor、snapshot/raw/node/rowan support、exact syntax testを追加する。
+- [x] 既存discriminantをすべて保存し、semantic activation、resolution、precedence
+  meaningをsyntax crate外に保つ。
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task 4 のモデルは実装済み、task 5 の item attachment fixture は着地済み |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task 5 の recovery 語彙は実装済み、parser producer は段階的に追加 |
 

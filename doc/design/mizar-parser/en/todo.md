@@ -12,10 +12,10 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [x] current milestone complete through tasks 1-45 and 47-48; future grammar growth requires fresh authority and Task 46 remains trigger-deferred |
-| module grammar | [grammar.md](./grammar.md), [recovery.md](./recovery.md) | `src/module.rs`, `src/module/annotations.rs`, `src/module/tests.rs` | [x] current milestone complete; task 42 owns the private split and Task 48 the final authorized top-level producer |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [x] current milestone complete for active metadata-driven term fixity and fixed formula precedence; concrete source operator declarations remain deferred under Task 46 |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] current milestone complete for all authorized producers through Task 48; future producers must bring their own recovery contract |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [x] Tasks 1-48 complete; Task 46 adds the final currently authorized concrete operator-declaration grammar |
+| module grammar | [grammar.md](./grammar.md), [recovery.md](./recovery.md) | `src/module.rs`, `src/module/annotations.rs`, `src/module/tests.rs` | [x] current implementation complete through Task 46, including annotated/visible top-level and definition-local operator declarations |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [x] active metadata-driven term fixity and fixed formula precedence remain unchanged; Task 46 is syntax-only and does not mutate Pratt metadata |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] all currently authorized producers have local recovery contracts through Task 46 |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -986,16 +986,22 @@ older numeric syntax task references appear to disagree, prefer
       and 47.
     - Deps: 35, 42. Spec: all module specs.
 
-46. **Concrete operator declarations and operator reserved-word corpus.** [ ] deferred
-    - Deferred follow-up recorded by task 43. Add concrete source-level parsing
+46. **Concrete operator declarations and operator reserved-word corpus.** [x]
+    - Complete. The task-43 follow-up adds concrete source-level parsing
       for `operator_decl` (`infix_operator`, `prefix_operator`,
       `postfix_operator`) plus active parser corpus coverage for those reserved
       words and the infix associativity words `left`, `right`, and `none`.
-      This follow-up should run only when parser/frontend string-required
-      positions for operator declarations are in scope; until then,
-      `ParseRequest::operator_fixity` remains the implemented Pratt metadata
-      transfer path.
-    - Deps: 43 and the future frontend string-required operator-declaration
+      The completed frontend Task 20 position-sensitive lexing plan and local
+      operator metadata handoff satisfy the named trigger. The parser now emits
+      append-only `OperatorDeclaration` syntax nodes for the three exact
+      canonical forms, including annotation, visibility, definition-local
+      placement, and local recovery, without mutating Pratt metadata.
+    - One new active pass/fail pair and exact trace row cover all declaration
+      keywords, `left`/`right`/`none`, malformed slots/delimiters, and
+      following-item preservation. Existing `.miz` and expectation files are
+      unchanged. Active-functor validation, overload meaning, activation, and
+      precedence semantics remain outside parser credit.
+    - Deps: 43 and completed frontend Task 20 string-required operator-declaration
       context. Spec: [grammar.md](./grammar.md), [pratt.md](./pratt.md),
       [source_spec_audit.md](./source_spec_audit.md).
 
@@ -1046,18 +1052,20 @@ older numeric syntax task references appear to disagree, prefer
       paired `design_drift`, and two internal `test_expectation_drift` cases
       are closed without changing existing `.miz` files or semantic intent.
 
-## Current Parser Crate Closeout
+## Superseded Parser Crate Closeout
 
-`PARSER-CRATE-CLOSEOUT` is complete. Parser Tasks 1-45 and 47-48 form the
-closed current milestone; [crate_exit_report.md](./crate_exit_report.md)
-records all nine protocol hard gates, the independently reviewed 94/100 score,
-verification oracles, deferred items, and handoff. P-043-01/P-046 is one
-aliased trigger-deferred operator-declaration gap. P-265-47D is a separate
-nonblocking, human-owned specification wording gap.
+`PARSER-CRATE-CLOSEOUT` was a completed documentation task, but its milestone
+conclusion is superseded by the fresh Task-46 trigger audit: completed frontend
+Task 20 had already satisfied the named trigger. Parser Tasks 1-48 are now
+implemented, P-043-01/P-046 is closed, and
+[crate_exit_report.md](./crate_exit_report.md) is historical until a separate
+post-Task-46 closeout reruns every hard gate and obtains a fresh score.
+P-265-47D remains a separate nonblocking, human-owned specification wording
+gap.
 
-This status does not claim completion of all future canonical grammar, global
-Step 5, Task 49, or Steps 6/7. No nonempty successor parser task is authorized
-by the current canonical inventory.
+Task 46 does not claim completion of global Step 5, Task 49, or Steps 6/7. No
+new parser task is inferred; only the separately authorized closeout review may
+follow fresh inventory.
 
 ## Recommended Verification
 

@@ -1,6 +1,35 @@
 # mizar-parser: Grammar
 
-Status: module skeleton, top-level placeholder dispatch, concrete import
+## Task 46: Concrete Operator Declarations
+
+Task 46 implements the canonical notation branch at annotated, optionally
+visible top-level positions and at definition-local notation positions:
+
+```ebnf
+operator_decl          ::= infix_operator_decl
+                         | prefix_operator_decl
+                         | postfix_operator_decl ;
+infix_operator_decl    ::= "infix_operator" "(" string_literal ","
+                           ( "left" | "right" | "none" ) ","
+                           nat_literal ")" ";" ;
+prefix_operator_decl   ::= "prefix_operator" "(" string_literal ","
+                           nat_literal ")" ";" ;
+postfix_operator_decl  ::= "postfix_operator" "(" string_literal ","
+                           nat_literal ")" ";" ;
+```
+
+`OperatorDeclaration` owns the declaration keyword, slots, punctuation, and
+terminator. Contextual ownership follows the existing wrapper policy: an
+unwrapped annotated top-level declaration retains its annotation prefix on the
+declaration node; visible top-level declarations use `VisibleItem` for the
+annotation/visibility wrapper; definition-local annotations use
+`AnnotatedDefinitionContent`, and definition-local visibility uses
+`VisibleItem`. Parsing is syntax-only: it neither resolves the spelling nor
+validates activation, overload meaning, or the semantic 0-255 precedence
+range, and it does not update Pratt metadata. Raw syntax kind 193 is
+append-only; prior raw discriminants remain unchanged.
+
+Status: module skeleton, top-level dispatch, concrete import
 items, export items, visibility wrappers, reserve-hosted type expressions,
 task-15 term surfaces including set comprehensions, task-14 formula surfaces,
 S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
@@ -8,8 +37,9 @@ task-30 definition-block / attribute / predicate / functor / mode /
 redefinition / notation-alias / property / structure / registration increments,
 task-31 template surfaces, task-32 basic algorithm/claim surfaces, task-33
 algorithm control-flow surfaces, task-34 algorithm verification clauses, and
-task-35 annotation surfaces are implemented; package-oriented item grammars
-remain planned.
+task-35 annotation surfaces, Task-48 property implementations, and Task-46
+operator declarations are implemented; package-oriented item grammars remain
+outside current authority.
 
 ## Purpose
 

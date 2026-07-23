@@ -1,0 +1,12 @@
+infix_operator(missing_string, left, 80);
+infix_operator("+", middle, 80);
+infix_operator("+", left 80);
+prefix_operator("-", high);
+postfix_operator("!", 95;
+
+definition
+  infix_operator("*", none, 90);
+  prefix_operator("~", 85)
+end;
+
+theorem AfterRecovery: thesis;

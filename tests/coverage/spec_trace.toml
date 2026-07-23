@@ -1225,6 +1225,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.10.operator_declarations.parser"
+source = "doc/spec/en/10.functors.md"
+section = "10.9 Operator Precedence and Associativity; 10.13 Grammar; Appendix A.10 Functors and Operator Declarations; Appendix A.12 Modules and Namespaces"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+notes = "Parser Task 46 implements syntax-only concrete infix/prefix/postfix operator declarations, all three infix associativity words, annotation/visibility ownership, definition-local notation placement, and local recovery. Frontend-owned lexical activation, active-functor validation, overload semantics, and precedence semantics remain uncredited."
+tests = [
+  "tests/miz/pass/parser/pass_parser_operator_declarations_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_operator_declarations_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.11.symbol_management.active_lexicon.fingerprint"
 source = "doc/design/mizar-lexer/en/lexical_environment.md"
 section = "Algorithm"

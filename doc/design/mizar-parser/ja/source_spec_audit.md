@@ -3,8 +3,23 @@
 > 正本は英語です。英語版:
 > [../en/source_spec_audit.md](../en/source_spec_audit.md)。
 
-状態: task 43の監査完了。Task 265 ownershipはcompleted Tasks 47-48までrefresh済みで、
-Task 46はdeferredである。
+状態: task 43の監査完了。Task 265 ownershipはcompleted Tasks 46-48までrefresh済み。
+P-043-01/P-046はTask 46によりclosedである。
+
+## Task 46 source/specification recheck
+
+Appendix Aをcanonical parser-normalization authority、Chapter 10をexact 3 formと
+semantic boundary、Chapter 12をvisible top-level notation placementのauthorityとする。
+完了済みfrontend Task 20がnamed position-sensitive string contextとlocal operator
+metadata handoffをすでに提供していたため、従来のtrigger deferralはauthority欠落ではなく
+`design_drift`だった。
+
+`src/module.rs`はexact infix/prefix/postfix formをannotation/visibility付きtop-levelと
+definition-local notation positionで`OperatorDeclaration`としてemitする。active
+pass/fail pairとexact trace rowによりselected `source_drift`と`test_gap`をcloseする。
+selected sliceに`spec_gap`、`source_undocumented_behavior`、`boundary_violation`、
+`test_expectation_drift`、`repo_metadata_conflict`はなく、existing `.miz`とexpectationは
+unchangedである。
 
 ## 範囲
 
@@ -26,13 +41,13 @@ rebaselineではない。
 挙動はsource、unit test、active parse-only corpus case、traceability metadataに
 表現されている。original task-43 auditは下記deferred operator-declaration gap 1件を
 記録し、Task 265はcanonical authorityを持つlater current-state row 2件を追加した。
-両方ともTasks 47-48でclose済みである。
+Tasks 46-48は3つのbounded parser sliceをすべてclose済みである。
 
-task 43 で残した follow-up は deferred の 1 件のみである。
+task 43で残したfollow-upは現在closedである。
 
 | ID | 分類 | フォローアップ | 状態 |
 |---|---|---|---|
-| P-043-01 | `source_drift` / `test_gap` | concrete な `operator_decl` parsing と、`infix_operator`、`prefix_operator`、`postfix_operator`、および infix associativity word の `left`、`right`、`none` に対する active parser corpus coverage。canonical な Appendix A、第 10 章、第 13 章はこれらの語に grammar position をすでに与えているが、現行 parser は declaration keyword を task-5 top-level notation start として認識するか、`ParseRequest::operator_fixity` 経由の Pratt metadata を消費するだけで、source から concrete operator declaration をまだ parse しない。 | deferred parser task 46 |
+| P-043-01 / P-046 | `source_drift` / `test_gap`（closed） | concreteな`operator_decl` parsingと`infix_operator`、`prefix_operator`、`postfix_operator`、`left`/`right`/`none`のactive parser corpus coverage。parserはexact syntax nodeをemitし、Pratt metadataをunchangedに保つ。 | completed parser Task 46。semantic activation、resolution、precedence validationはdownstreamに残る。 |
 
 Task 265は次のclassified execution ownershipを識別した。Tasks 47-48はbounded
 parser/test/trace sliceをclose済みである。
@@ -64,7 +79,7 @@ parser/test/trace sliceをclose済みである。
 | parsing は syntax-only: name resolution、type inference、overload selection、proof obligation、cache authority、owner-origin id を生成しない。 | `crates/mizar-parser/src/` は resolver/build/cache へ依存せず、semantic fact を生成しない。 | parser crate test と active corpus は syntax shape/diagnostics のみを検査する。 | 所見なし |
 | grammar code は parser event sink と文書化済み `mizar-syntax` builder/accessor 境界を通して出力し、raw rowan layout に依存しない。 | `src/event.rs`, `src/grammar.rs`, `src/module.rs`, `src/module/annotations.rs` | parser unit test と `mizar-syntax` builder/view test | 所見なし |
 | module skeleton、import、export、visibility wrapper、placeholder top-level dispatch は source order と recovery ownership を保つ。 | `src/module.rs`, `src/sync.rs` | `pass_parser_module_skeleton_001`, `pass_parser_import_items_001`, `pass_parser_export_visibility_001`, late import/export fail case | 所見なし |
-| type、term、formula、statement、proof、definition、property implementation、structure、registration、template、algorithm、claim、verification-clause、annotation、predicate redefinition-label surfaceはtask 36までとTasks 47-48を実装済み。 | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | `tests/coverage/spec_trace.toml`のactive parser pass/fail corpus requirement、parser unit test、parse-only snapshot | 所見なし。P-265-47/P-265-48はclosed。 |
+| type、term、formula、statement、proof、definition、operator declaration、property implementation、structure、registration、template、algorithm、claim、verification-clause、annotation、predicate redefinition-label surfaceはtask 36までとTasks 46-48を実装済み。 | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | `tests/coverage/spec_trace.toml`のactive parser pass/fail corpus requirement、parser unit test、parse-only snapshot | 所見なし。P-043-01/P-046、P-265-47/P-265-48はclosed。 |
 | term Pratt parsing は `active_from`、newest active same-spelling metadata、prefix/postfix/infix binding power、固定最下位 term operator としての `qua`、non-associative diagnostic を尊重する。 | `src/grammar.rs`, `src/module.rs`, `src/pratt.rs` | parser operator unit test、`crates/mizar-parser/tests/determinism.rs`、`pass_parser_operator_terms_001`、operator fail case | 所見なし |
 | formula Pratt parsing は固定 connective precedence と外側 quantifier parsing を使う。 | `src/module.rs` | `pass_parser_formula_connectives_001` と formula fail corpus | 所見なし |
 | recovery は semicolon、`end`、top-level item start、category-local start、EOF で同期し、recover 可能な syntax には recovery node と diagnostic を出す。 | `src/recovery.rs`, `src/sync.rs`, `src/module.rs`, `src/module/annotations.rs` | fail parser corpus、parser recovery unit test、task-37 consolidation case | 所見なし |
@@ -87,12 +102,6 @@ active parser corpus source に `ReservedWord` token として出現し始めた
 
 | 予約語 | 理由 |
 |---|---|
-| `infix_operator` | concrete な source-level operator declaration は P-043-01 / parser task 46 に deferred。 |
-| `prefix_operator` | concrete な source-level operator declaration は P-043-01 / parser task 46 に deferred。 |
-| `postfix_operator` | concrete な source-level operator declaration は P-043-01 / parser task 46 に deferred。 |
-| `left` | deferred された concrete `infix_operator` declaration 内でのみ使う infix associativity value。 |
-| `right` | deferred された concrete `infix_operator` declaration 内でのみ使う infix associativity value。 |
-| `none` | deferred された concrete `infix_operator` declaration 内でのみ使う infix associativity value。 |
 | `transitivity` | provisional な Appendix A word list では予約済みだが、canonical な実装済み property production には含まれない。task 28 が design drift を記録済みであり、現時点の parser grammar position はない。 |
 
 その他すべての Appendix A 予約語は、少なくとも 1 つの active parser corpus `.miz`
@@ -108,8 +117,8 @@ expectation driftを除去した。
 
 P-265-47Dはnonblockingでhuman-ownedの`spec_gap`として残る。Chapter 8のcompact EBNFは
 `reconsider_item` 1件と書く一方、Chapters 4/15とAppendix Aはlistを使う。Task 47は既存の
-source-order listを維持し、`doc/spec`を編集しない。P-265-48はTask 48でcloseし、
-P-046はdeferredのままである。
+source-order listを維持し、`doc/spec`を編集しない。P-265-48はTask 48、P-046は
+Task 46でcloseする。
 `source_undocumented_behavior`、`boundary_violation`、`repo_metadata_conflict`はない。
 
 ## Task 48 source/specification recheck

@@ -1,5 +1,11 @@
 # ソース／仕様対応監査
 
+## Parser Task 46 post-exit 対応
+
+| Contract | Sourceとtest | Boundary |
+|---|---|---|
+| `OperatorDeclaration`、append-only `SyntaxKind::OperatorDeclaration = 193`、対応するsurface kind、typed accessor、snapshot/raw/node/rowan support | `crates/mizar-syntax/src/ast.rs`、`ast/snapshot.rs`、syntax Task-46 unit test、parser unit test、active operator-declaration pass/fail pair | syntax-only source representation。activation、resolution、precedence semanticsを含まない |
+
 > 正本は英語です。英語版:
 > [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md)。
 

@@ -2,6 +2,33 @@
 
 > 正本は英語です。英語版: [../en/grammar.md](../en/grammar.md)。
 
+## Task 46: concrete operator declaration
+
+Task 46はannotation付き、optionally visibleなtop-level positionとdefinition-local
+notation positionでcanonical notation branchを実装する。
+
+```ebnf
+operator_decl          ::= infix_operator_decl
+                         | prefix_operator_decl
+                         | postfix_operator_decl ;
+infix_operator_decl    ::= "infix_operator" "(" string_literal ","
+                           ( "left" | "right" | "none" ) ","
+                           nat_literal ")" ";" ;
+prefix_operator_decl   ::= "prefix_operator" "(" string_literal ","
+                           nat_literal ")" ";" ;
+postfix_operator_decl  ::= "postfix_operator" "(" string_literal ","
+                           nat_literal ")" ";" ;
+```
+
+`OperatorDeclaration`はdeclaration keyword、slot、punctuation、terminatorを所有する。
+contextual ownershipは既存wrapper policyに従う。unwrapped annotated top-level
+declarationはannotation prefixをdeclaration node上に保持し、visible top-levelは
+annotation/visibility wrapperに`VisibleItem`、definition-local annotationは
+`AnnotatedDefinitionContent`、definition-local visibilityは`VisibleItem`を使う。
+parseはsyntax-onlyであり、spellingのresolve、activation、overload meaning、semanticな
+0-255 precedence rangeをvalidateせず、Pratt metadataも更新しない。raw syntax kind 193は
+append-onlyであり、以前のraw discriminantは変更しない。
+
 状態: module skeleton、top-level placeholder dispatch、concrete import item、
 export item、visibility wrapper、reserve-hosted type expression、set comprehension
 を含む task 15 term surface、task 14 formula surface、S-013 statement node、

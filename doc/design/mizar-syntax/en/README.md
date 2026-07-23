@@ -11,11 +11,12 @@ deterministic snapshot rendering, syntax diagnostics, syntax-owned trivia side
 tables, the task-35 surface vocabulary, the task-22 predicate redefinition
 label follow-through paired with parser task 36, and the task-24 private AST
 source split. Parser Task 48 later adds the post-exit
-`PropertyImplementation` vocabulary increment: append-only `SyntaxKind` 192,
-the matching surface node/accessor/snapshot/raw-kind/rowan contract, and active
-parse-only pass/fail evidence. This is syntax-only coverage under
-`SPEC-07-PI-PLACEMENT`; Task-39 property semantics and S-021 rustdoc summaries
-remain deferred.
+`PropertyImplementation` vocabulary increment at append-only `SyntaxKind` 192.
+Parser Task 46 now adds `OperatorDeclaration` at append-only `SyntaxKind` 193,
+with matching surface node/accessor/snapshot/raw-kind/rowan contracts and
+active pass/fail evidence. Both increments are syntax-only; property semantics,
+operator activation/resolution/precedence semantics, and S-021 rustdoc
+summaries remain deferred.
 
 Autonomous crate-development kickoff plan:
 

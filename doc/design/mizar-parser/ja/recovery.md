@@ -2,6 +2,16 @@
 
 > 正本は英語です。英語版: [../en/recovery.md](../en/recovery.md)。
 
+## Task 46 operator-declaration recovery
+
+各operator declarationはexact punctuation/slot sequenceを消費し、既存のsyntax
+diagnostic vocabularyを再利用する。最初のstring slot欠落は
+`missing_string_literal`とerror nodeをemitし、malformed associativity、natural-number、
+delimiter、terminator slotは既存malformed-termまたはmissing-semicolon recoveryを使う。
+new public diagnostic codeやsemantic diagnosticは追加しない。synchronizationは
+declaration-localであり、enclosing definitionのreal `end;`を含むfollowing top-level
+またはdefinition-local itemを保存する。
+
 状態: parser task 36 までの grammar surface について、recovery は実装済みで
 task 37 により統合監査済みである。対象は module/import/export、type/term/formula、
 statement/proof、S-015 definition と registration content、template、

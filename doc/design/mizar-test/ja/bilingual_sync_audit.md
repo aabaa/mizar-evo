@@ -1,5 +1,11 @@
 # mizar-test Bilingual Documentation Sync Audit
 
+## Parser Task 46 pair addendum
+
+English canonicalとJapanese companionはactive pass/fail pair 1組、exact
+`pass_and_fail` trace row、syntax-only coverage、existing diagnostic reuse、unchanged
+production layout、operator semantics/Task 49/Steps 6/7の除外で一致する。
+
 > Canonical language: English. English canonical version:
 > [../en/bilingual_sync_audit.md](../en/bilingual_sync_audit.md).
 

@@ -4,7 +4,23 @@
 > [../ja/source_spec_audit.md](../ja/source_spec_audit.md).
 
 Status: task 43 audit complete; Task 265 ownership refreshed through completed
-Tasks 47-48, with Task 46 deferred.
+Tasks 46-48. P-043-01/P-046 is closed by Task 46.
+
+## Task 46 Source/Specification Recheck
+
+Appendix A is the canonical parser-normalization authority; Chapter 10 supplies
+the exact three forms and semantic boundary, and Chapter 12 supplies visible
+top-level notation placement. Completed frontend Task 20 already provides the
+named position-sensitive string context and local operator metadata handoff,
+so the former trigger deferral was `design_drift`, not missing authority.
+
+`src/module.rs` now emits `OperatorDeclaration` for the exact infix/prefix/
+postfix forms at annotated/visible top-level and definition-local notation
+positions. The active pass/fail pair and exact trace row close the selected
+`source_drift` and `test_gap`. There is no selected-slice `spec_gap`,
+`source_undocumented_behavior`, `boundary_violation`,
+`test_expectation_drift`, or `repo_metadata_conflict`; existing `.miz` and
+expectation files remain unchanged.
 
 ## Scope
 
@@ -26,13 +42,13 @@ No blocking non-deferred `spec_gap`, `boundary_violation`, or
 is represented by source, unit tests, active parse-only corpus cases, and
 traceability metadata. The original task-43 audit found one deferred operator-
 declaration gap, recorded below; Task 265 adds two later, canonically grounded
-current-state rows, now closed by Tasks 47 and 48.
+current-state rows. Tasks 46-48 now close all three bounded parser slices.
 
-The only task-43 follow-up is deferred:
+The only task-43 follow-up is now closed:
 
 | ID | Classification | Follow-up | Status |
 |---|---|---|---|
-| P-043-01 | `source_drift` / `test_gap` | Concrete `operator_decl` parsing and active parser corpus coverage for `infix_operator`, `prefix_operator`, `postfix_operator`, and infix associativity words `left`, `right`, `none`. Canonical Appendix A, Chapter 10, and Chapter 13 already give these words grammar positions, but current parser behavior recognizes the declaration keywords only as task-5 top-level notation starts or consumes Pratt metadata supplied through `ParseRequest::operator_fixity`; it does not parse concrete operator declarations from source yet. | Deferred parser task 46 |
+| P-043-01 / P-046 | `source_drift` / `test_gap` (closed) | Concrete `operator_decl` parsing and active parser corpus coverage for `infix_operator`, `prefix_operator`, `postfix_operator`, and `left`/`right`/`none`. The parser emits exact syntax nodes and preserves Pratt metadata unchanged. | Completed parser Task 46. Semantic activation, resolution, and precedence validation remain downstream. |
 
 Task 265 identified the following classified execution ownership. Tasks 47 and
 48 have now closed their bounded parser/test/trace slices:
@@ -65,7 +81,7 @@ property productions; there is no current parser grammar position for a
 | Parsing is syntax-only: no name resolution, type inference, overload selection, proof obligations, cache authority, or owner-origin ids. | `crates/mizar-parser/src/` has no resolver/build/cache dependencies; semantic facts are not produced by parser nodes. | parser crate tests and active corpus assert syntax shapes/diagnostics only. | No finding |
 | Grammar code emits through the parser event sink and documented `mizar-syntax` builder/accessor boundary, not raw rowan layout. | `src/event.rs`, `src/grammar.rs`, `src/module.rs`, `src/module/annotations.rs` | parser unit tests plus `mizar-syntax` builder/view tests | No finding |
 | Module skeleton, imports, exports, visibility wrappers, and placeholder top-level dispatch keep source order and recovery ownership. | `src/module.rs`, `src/sync.rs` | `pass_parser_module_skeleton_001`, `pass_parser_import_items_001`, `pass_parser_export_visibility_001`, late import/export fail cases | No finding |
-| Type, term, formula, statement, proof, definition, property implementation, structure, registration, template, algorithm, claim, verification-clause, annotation, and predicate redefinition-label surfaces are implemented through task 36 plus Tasks 47-48. | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | active parser pass/fail corpus requirements in `tests/coverage/spec_trace.toml`, parser unit tests, parse-only snapshots | No finding; P-265-47 and P-265-48 are closed. |
+| Type, term, formula, statement, proof, definition, operator declaration, property implementation, structure, registration, template, algorithm, claim, verification-clause, annotation, and predicate redefinition-label surfaces are implemented through task 36 plus Tasks 46-48. | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | active parser pass/fail corpus requirements in `tests/coverage/spec_trace.toml`, parser unit tests, parse-only snapshots | No finding; P-043-01/P-046, P-265-47, and P-265-48 are closed. |
 | Term Pratt parsing respects `active_from`, newest active same-spelling metadata, prefix/postfix/infix binding powers, `qua` as the fixed lowest term operator, and non-associative diagnostics. | `src/grammar.rs`, `src/module.rs`, `src/pratt.rs` | parser operator unit tests, `crates/mizar-parser/tests/determinism.rs`, `pass_parser_operator_terms_001`, operator fail cases | No finding |
 | Formula Pratt parsing uses fixed connective precedence and outer quantifier parsing. | `src/module.rs` | `pass_parser_formula_connectives_001` and formula fail corpus | No finding |
 | Recovery synchronizes at semicolons, `end`, top-level item starts, category-local starts, and EOF; recoverable syntax emits recovery nodes and diagnostics. | `src/recovery.rs`, `src/sync.rs`, `src/module.rs`, `src/module/annotations.rs` | fail parser corpus, parser recovery unit tests, task-37 consolidation cases | No finding |
@@ -90,12 +106,6 @@ Current parser-deferred reserved words:
 
 | Word | Reason |
 |---|---|
-| `infix_operator` | Concrete source-level operator declarations are deferred to P-043-01 / parser task 46. |
-| `prefix_operator` | Concrete source-level operator declarations are deferred to P-043-01 / parser task 46. |
-| `postfix_operator` | Concrete source-level operator declarations are deferred to P-043-01 / parser task 46. |
-| `left` | Infix associativity value used only inside deferred concrete `infix_operator` declarations. |
-| `right` | Infix associativity value used only inside deferred concrete `infix_operator` declarations. |
-| `none` | Infix associativity value used only inside deferred concrete `infix_operator` declarations. |
 | `transitivity` | Reserved by the provisional Appendix A word list, but not part of the canonical implemented property productions; task 28 records the design drift and there is no current parser grammar position. |
 
 All other Appendix A reserved words appear in at least one active parser corpus
@@ -113,7 +123,7 @@ an existing `.miz` source.
 P-265-47D remains a nonblocking, human-owned `spec_gap`: Chapter 8's compact
 EBNF writes one `reconsider_item`, whereas Chapters 4/15 and Appendix A use a
 list. Task 47 preserves the already implemented source-ordered list and does
-not edit `doc/spec`. P-265-48 is closed by Task 48; P-046 remains deferred. No
+not edit `doc/spec`. P-265-48 is closed by Task 48 and P-046 by Task 46. No
 `source_undocumented_behavior`, `boundary_violation`, or
 `repo_metadata_conflict` was found.
 

@@ -1,5 +1,14 @@
 # mizar-test TODO
 
+## Parser Task 46 / Operator-Declaration Parse-Only Completion
+
+- [x] Admit the exact active pass/fail pair and pin its sidecars.
+- [x] Mark `spec.en.10.operator_declarations.parser` covered with exact
+  backlinks and remove only the six now-exercised operator words from the
+  parse-only deferred-reserved-word set.
+- [x] Keep existing corpus/expectations, production runner layout, semantic
+  operator behavior, Task 49, and Steps 6/7 unchanged.
+
 > Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
 
 ## Status Legend

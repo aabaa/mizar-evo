@@ -12,10 +12,10 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [x] tasks 1-45/47-48 の current milestone は complete。future grammar growth は fresh authority を要し、Task 46 は trigger-deferred |
-| module grammar | [grammar.md](./grammar.md)、[recovery.md](./recovery.md) | `src/module.rs`、`src/module/annotations.rs`、`src/module/tests.rs` | [x] current milestone complete。task 42 が private split、Task 48 が最後の authorized top-level producer を所有 |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [x] active metadata-driven term fixity と fixed formula precedence の current milestone complete。concrete source operator declaration は Task 46 で deferred |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] Task 48 までの authorized producer の current milestone complete。future producer は独自 recovery contract を持ち込む |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [x] Tasks 1-48 complete。Task 46 が現在 authorized な最後の concrete operator-declaration grammar を追加 |
+| module grammar | [grammar.md](./grammar.md)、[recovery.md](./recovery.md) | `src/module.rs`、`src/module/annotations.rs`、`src/module/tests.rs` | [x] annotation/visibility 付き top-level および definition-local operator declaration を含め、Task 46 まで current implementation complete |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [x] active metadata-driven term fixity と fixed formula precedence は unchanged。Task 46 は syntax-only であり Pratt metadata を変更しない |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] 現在 authorized な全 producer が Task 46 まで local recovery contract を持つ |
 
 `mizar-parser` は構文文法を実装する: frontend 適合済みトークンを入力とし、
 `mizar_syntax::SurfaceAst` と構文診断を出力する。薄い基盤層（cursor、同期、
@@ -949,15 +949,21 @@ resolver / build-system 依存を避ける。
       task 46 と 47 である。
     - 依存: 35、42。仕様: すべてのモジュール仕様。
 
-46. **concrete operator declaration と operator 予約語 corpus。** [ ] deferred
-    - task 43 で記録した deferred follow-up。`operator_decl`
+46. **concrete operator declaration と operator 予約語 corpus。** [x]
+    - 完了。task 43 の follow-up として `operator_decl`
       （`infix_operator`、`prefix_operator`、`postfix_operator`）の concrete な
       source-level parsing と、それらの予約語および infix associativity word
       `left`、`right`、`none` に対する active parser corpus coverage を追加する。
-      この follow-up は、operator declaration 用の parser/frontend
-      string-required position が作業範囲に入ったときだけ実行する。それまでは
-      `ParseRequest::operator_fixity` が実装済み Pratt metadata transfer path である。
-    - 依存: 43、および将来の frontend string-required operator-declaration context。
+      完了済み frontend Task 20 の position-sensitive lexing plan と local operator
+      metadata handoff が named trigger を満たしていた。parser は exact canonical
+      3 form に append-only `OperatorDeclaration` syntax node を生成し、annotation、
+      visibility、definition-local placement、local recovery を扱うが、Pratt metadata
+      は変更しない。
+    - 新しい active pass/fail pair 1組と exact trace row が全 declaration keyword、
+      `left`/`right`/`none`、malformed slot/delimiter、following-item preservation を
+      coverする。既存 `.miz` と expectation は unchanged。active-functor validation、
+      overload meaning、activation、precedence semantics は parser credit 外である。
+    - 依存: 43、および完了済み frontend Task 20 string-required operator-declaration context。
       仕様: [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
       [source_spec_audit.md](./source_spec_audit.md)。
 
@@ -1002,17 +1008,19 @@ resolver / build-system 依存を避ける。
       変更せず、従来の`source_drift`、`test_gap`、paired `design_drift`、internal
       `test_expectation_drift` 2件をcloseした。
 
-## Current Parser Crate Closeout
+## Superseded Parser Crate Closeout
 
-`PARSER-CRATE-CLOSEOUT` は complete。[crate_exit_report.md](./crate_exit_report.md)
-は Parser Tasks 1-45/47-48 を closed current milestone とし、protocol 9 hard
-gates、独立監査 94/100 score、verification oracles、deferred items、handoff を
-記録する。P-043-01/P-046 は同一の trigger-deferred operator-declaration gap。
-P-265-47D は別の nonblocking human-owned specification wording gap である。
+`PARSER-CRATE-CLOSEOUT` は完了済みの documentation task だったが、その milestone
+conclusion は fresh Task-46 trigger audit により superseded された。完了済み frontend
+Task 20 は named trigger をすでに満たしていた。Parser Tasks 1-48 は現在実装済み、
+P-043-01/P-046 は closed であり、[crate_exit_report.md](./crate_exit_report.md) は
+別の post-Task-46 closeout が全 hard gate を再実行して fresh score を得るまで
+historical である。P-265-47D は別の nonblocking human-owned specification wording
+gap のままである。
 
-この status は future canonical grammar 全体、global Step 5、Task 49、Steps
-6/7 の完了を意味しない。current canonical inventory は nonempty successor
-parser task を許可しない。
+Task 46 は global Step 5、Task 49、Steps 6/7 の完了を主張しない。新しい parser
+task は推定せず、fresh inventory の後は別途 authorized された closeout review
+だけを続行できる。
 
 ## 推奨検証
 

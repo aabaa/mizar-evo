@@ -1,5 +1,13 @@
 # Bilingual documentation synchronization audit
 
+## Parser Task 46 Post-Exit Synchronization
+
+The English canonical and Japanese companion documents agree on
+`OperatorDeclaration`, append-only raw kind 193, the matching surface/accessor/
+snapshot/raw/node/rowan contracts, source-order preservation, and the
+syntax-only semantic boundary. This is a parser-owned post-exit vocabulary
+increment and does not rescore the historical syntax milestone.
+
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md).
 

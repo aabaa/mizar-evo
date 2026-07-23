@@ -3,7 +3,16 @@
 > 正本は英語です。英語版:
 > [../en/bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md)。
 
-状態: parser task 44で完了し、`PARSER-CRATE-CLOSEOUT`までrefresh済み。
+状態: parser task 44で完了し、Task 46までrefresh済み。pre-Task-46
+`PARSER-CRATE-CLOSEOUT` entryは、別のfresh closeoutまでhistoricalである。
+
+## Task 46 pair recheck
+
+paired plan、README、grammar、recovery、source/spec audit、TODO、本auditはexact 3
+declaration form、annotation/visibility付きtop-levelとdefinition-local placement、
+append-only syntax kind 193、local recovery、active pass/fail pair 1組、syntax-only
+credit、unchanged Pratt/semantic behaviorで一致する。両言語はP-043-01/P-046をclosed、
+従来closeoutをsupersededとし、Task 49やSteps 6/7をpromoteしない。
 
 ## 範囲
 

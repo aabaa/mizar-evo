@@ -1,5 +1,13 @@
 # mizar-syntax Task 6: 正本文法の整合性監査
 
+## Parser Task 46 follow-through
+
+Task 46はAppendix-A operator grammar用dedicated `OperatorDeclaration` node 1種を
+追加し、P-043-01/P-046のsyntax representation部分をcloseする。placementとrecoveryは
+parser-ownedのままで、syntax crateはappend-only kind identityとsource-order
+preservationだけを保証する。このincrementはsemantic grammar claimを作らず、historical
+syntax closeoutをreopenしない。
+
 > 正本は英語です。英語版: [../en/grammar_audit.md](../en/grammar_audit.md)。
 
 状態: 2026-06-12 の Task 6 文法整合性ゲートとして完了。

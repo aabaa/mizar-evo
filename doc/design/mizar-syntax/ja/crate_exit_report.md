@@ -1,5 +1,12 @@
 # Crate Exit Report: mizar-syntax
 
+## Parser Task 46 post-exit addendum
+
+Parser Task 46はexit済みsyntax vocabularyを`OperatorDeclaration`とappend-only
+`SyntaxKind::OperatorDeclaration = 193`で拡張する。対応するsurface kind、typed
+accessor、snapshot/raw/node/rowan contract、testは以前のdiscriminantを保存する。
+このsyntax-only incrementはhistorical crate exitを再採点せず、reopenしない。
+
 > 正本は英語です。英語版:
 > [../en/crate_exit_report.md](../en/crate_exit_report.md)。
 

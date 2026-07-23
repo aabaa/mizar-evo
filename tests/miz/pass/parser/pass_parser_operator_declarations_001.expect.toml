@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_operator_declarations_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.operator_declarations"
+source = "pass_parser_operator_declarations_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.10.operator_declarations.parser"]
+notes = "Active parse-only coverage for parser Task 46 exact infix/prefix/postfix declarations, left/right/none associativity, annotations, top-level and definition-local placement, optional visibility, and following-item preservation."

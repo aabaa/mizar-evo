@@ -3,8 +3,18 @@
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md).
 
-Status: completed for parser task 44 and refreshed through
-`PARSER-CRATE-CLOSEOUT`.
+Status: completed for parser task 44 and refreshed through Task 46. The
+pre-Task-46 `PARSER-CRATE-CLOSEOUT` entries are historical pending a separate
+fresh closeout.
+
+## Task 46 Pair Recheck
+
+The paired plan, README, grammar, recovery, source/spec audit, TODO, and this
+audit agree on the three exact declaration forms, annotated/visible top-level
+and definition-local placement, append-only syntax kind 193, local recovery,
+one active pass/fail pair, syntax-only credit, and unchanged Pratt/semantic
+behavior. Both languages mark P-043-01/P-046 closed and the former closeout
+superseded without promoting Task 49 or Steps 6/7.
 
 ## Scope
 

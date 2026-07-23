@@ -924,6 +924,12 @@ fn surface_node_raw_kinds_round_trip_through_rowan_boundary() {
             .descendants_with_tokens()
             .map(|element| element.kind()),
     );
+    rowan_kinds.extend(
+        task46_operator_declaration_ast(source_id(59))
+            .rowan_root()
+            .descendants_with_tokens()
+            .map(|element| element.kind()),
+    );
 
     for kind in [
         SyntaxKind::CompilationUnit,
@@ -997,6 +1003,7 @@ fn surface_node_raw_kinds_round_trip_through_rowan_boundary() {
         SyntaxKind::ProofBlock,
         SyntaxKind::DefinitionBlockItem,
         SyntaxKind::PropertyImplementation,
+        SyntaxKind::OperatorDeclaration,
         SyntaxKind::DefinitionParameter,
         SyntaxKind::AttributeDefinition,
         SyntaxKind::AttributePattern,
@@ -2669,6 +2676,27 @@ fn task48_typed_accessor_covers_property_implementation_node() {
         ast.rowan_root()
             .descendants()
             .any(|node| node.kind() == SyntaxKind::PropertyImplementation)
+    );
+}
+
+#[test]
+fn task46_typed_accessor_covers_operator_declaration_node() {
+    let ast = task46_operator_declaration_ast(source_id(60));
+    let root = ast.root_view().unwrap();
+    let view = first_view(root, |kind| {
+        matches!(kind, SurfaceNodeKind::OperatorDeclaration)
+    })
+    .unwrap();
+    assert_eq!(view.syntax_kind(), SyntaxKind::OperatorDeclaration);
+    assert!(view.as_operator_declaration().is_some());
+    assert_eq!(SyntaxKind::from_raw(193), SyntaxKind::OperatorDeclaration);
+    assert!(SyntaxKind::OperatorDeclaration.is_node_kind());
+    assert!(!SyntaxKind::OperatorDeclaration.is_token_kind());
+    assert!(ast.snapshot_text().contains("OperatorDeclaration"));
+    assert!(
+        ast.rowan_root()
+            .descendants()
+            .any(|node| node.kind() == SyntaxKind::OperatorDeclaration)
     );
 }
 
@@ -6755,6 +6783,71 @@ fn task48_property_implementation_ast(source_id: SourceId) -> crate::SurfaceAst 
         SurfaceNodeKind::Root,
         range(source_id, 0, 15),
         vec![definition, end, semicolon, compilation_unit],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task46_operator_declaration_ast(source_id: SourceId) -> crate::SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "prefix_operator",
+        range(source_id, 0, 15),
+    );
+    let open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "(",
+        range(source_id, 15, 16),
+    );
+    let spelling = builder.add_token(
+        SurfaceTokenKind::StringLiteral,
+        "\"-\"",
+        range(source_id, 16, 19),
+    );
+    let comma = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ",",
+        range(source_id, 19, 20),
+    );
+    let precedence = builder.add_token(SurfaceTokenKind::Numeral, "85", range(source_id, 21, 23));
+    let close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ")",
+        range(source_id, 23, 24),
+    );
+    let semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 24, 25),
+    );
+    let declaration = builder.add_node(
+        SurfaceNodeKind::OperatorDeclaration,
+        range(source_id, 0, 25),
+        vec![keyword, open, spelling, comma, precedence, close, semicolon],
+    );
+    let item_list = builder.add_node(
+        SurfaceNodeKind::ItemList,
+        range(source_id, 0, 25),
+        vec![declaration],
+    );
+    let compilation_unit = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 25),
+        vec![item_list],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 25),
+        vec![
+            keyword,
+            open,
+            spelling,
+            comma,
+            precedence,
+            close,
+            semicolon,
+            compilation_unit,
+        ],
     );
     builder.finish(Some(root), None)
 }

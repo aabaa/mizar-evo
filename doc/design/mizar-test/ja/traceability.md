@@ -1,5 +1,13 @@
 # Module: traceability
 
+## Parser Task 46 operator-declaration trace completion
+
+`spec.en.10.operator_declarations.parser`はexactly new pass/fail sidecarにより
+`pass_and_fail` modeでcoveredとなる。creditはlexical/parser-facing declaration shape、
+placement、source preservation、recoveryに限定する。operator activation、
+active-functor validation、overload meaning、resolution、precedence-range semantics、
+Pratt-metadata mutationはrow外である。
+
 > Canonical language: English. English canonical version: [../en/traceability.md](../en/traceability.md).
 
 ## Purpose

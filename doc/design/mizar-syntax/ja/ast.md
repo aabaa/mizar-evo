@@ -1,5 +1,17 @@
 # mizar-syntax: Surface AST
 
+## Parser Task 46: operator declaration node
+
+Parser Task 46は`SyntaxKind::OperatorDeclaration = 193`をappendし、以前のraw kindを
+renumberしない。`SurfaceNodeKind::OperatorDeclaration`はそのraw node kindへmapし、
+`OperatorDeclaration`としてrenderされ、rowan green-tree projectionへ入り、
+`SurfaceNodeView::as_operator_declaration`で公開される。nodeはdeclaration keyword、
+punctuation、string/natural literal token、infix associativity tokenをsource orderで
+保存する。contextual annotation/visibility ownershipは既存`VisibleItem`と
+`AnnotatedDefinitionContent` wrapperを使い、unwrapped annotated top-level declaration
+だけがannotationを`OperatorDeclaration`上に直接保持する。このnodeはsemantic
+activationやresolved-operator identityを持たない。
+
 > 正本は英語です。英語版: [../en/ast.md](../en/ast.md)。
 
 状態: rowan-backed storage 境界、task 35 surface 語彙、typed 互換 view、

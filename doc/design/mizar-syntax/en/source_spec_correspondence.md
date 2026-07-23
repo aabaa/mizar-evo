@@ -1,5 +1,11 @@
 # Source/spec correspondence audit
 
+## Parser Task 46 Post-Exit Correspondence
+
+| Contract | Source and tests | Boundary |
+|---|---|---|
+| `OperatorDeclaration`; append-only `SyntaxKind::OperatorDeclaration = 193`; matching surface kind, typed accessor, snapshot/raw/node/rowan support | `crates/mizar-syntax/src/ast.rs`, `ast/snapshot.rs`, syntax Task-46 unit tests, parser unit tests, and the active operator-declaration pass/fail pair | Syntax-only source representation; no activation, resolution, or precedence semantics |
+
 > Canonical language: English. Japanese companion:
 > [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 

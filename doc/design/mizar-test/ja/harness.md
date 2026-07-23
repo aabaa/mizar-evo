@@ -1,5 +1,13 @@
 # Module: harness
 
+## Parser Task 46 operator-declaration parse-only increment
+
+exact pass/fail pairはordinary parse-only runnerへadmitする。pass sidecarはdiagnostic 0、
+fail sidecarは既存syntax diagnostic code 6件をpinする。code-only fail sidecarではなく
+parser unit testが各slot/delimiter diagnosticのmessage/range、definitionのouter `end;`、
+following theoremをpinする。new runner phase、diagnostic vocabulary、production harness
+pathは追加しない。
+
 > Canonical language: English. English canonical version: [../en/harness.md](../en/harness.md).
 
 ## 目的

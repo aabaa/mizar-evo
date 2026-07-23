@@ -12,7 +12,14 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage boundary, task-35 vocabulary, task-22 predicate-label follow-through, task-24 behavior-preserving source split, S-025 refactor audit, and the Parser Task 48 post-exit `PropertyImplementation` vocabulary increment are complete; S-021 rustdoc summaries and semantic Task 39 remain deferred |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage boundary, task-35 vocabulary, task-22 predicate-label follow-through, task-24 behavior-preserving source split, S-025 refactor audit, and Parser Tasks 48/46 post-exit `PropertyImplementation` / `OperatorDeclaration` vocabulary increments are complete; S-021 rustdoc summaries and semantic Task 39 remain deferred |
+
+## Parser Task 46 Post-Exit Vocabulary Addendum
+
+- [x] Append `OperatorDeclaration` as raw kind 193 with matching surface kind,
+  typed accessor, snapshot/raw/node/rowan support, and exact syntax tests.
+- [x] Preserve all existing discriminants and keep semantic activation,
+  resolution, and precedence meaning outside the syntax crate.
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; task-5 item attachment fixture landed |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 

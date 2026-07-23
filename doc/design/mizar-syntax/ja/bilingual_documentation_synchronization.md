@@ -1,5 +1,12 @@
 # 二言語ドキュメント同期監査
 
+## Parser Task 46 post-exit 同期
+
+英語canonicalと日本語companionは`OperatorDeclaration`、append-only raw kind 193、
+対応するsurface/accessor/snapshot/raw/node/rowan contract、source-order preservation、
+syntax-only semantic boundaryで一致する。これはparser-owned post-exit vocabulary
+incrementであり、historical syntax milestoneを再採点しない。
+
 > 正本は英語です。英語版:
 > [../en/bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md)。
 

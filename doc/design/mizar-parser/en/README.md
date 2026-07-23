@@ -2,6 +2,14 @@
 
 `mizar-parser` implements the syntax grammar for Mizar Evo.
 
+Current Task-46 status: concrete infix, prefix, and postfix operator
+declarations are parsed as dedicated `OperatorDeclaration` nodes at annotated,
+visible top-level and definition-local notation positions. Completed frontend
+Task 20 already supplied the named position-sensitive string context and local
+operator metadata handoff. Task 46 is syntax-only: it does not activate an
+operator or mutate `ParseRequest::operator_fixity`. The earlier 94/100 closeout
+is historical until a separate post-Task-46 closeout reruns all hard gates.
+
 It should keep a narrow dependency on parser-facing token transfer objects and
 syntax structures: frontend-adapted tokens in, `SurfaceAst` plus syntax
 diagnostics out. Parser-assisted lexing is allowed only through explicit context
@@ -19,16 +27,11 @@ predicate redefinition label repair, plus recovery consolidation and fail-corpus
 expansion, parse-only `SurfaceAst` snapshot baselines, parser determinism
 coverage, the parser-owned valid-UTF-8 fuzz target, and frontend passthrough
 follow-through audit, plus a private annotation/test module-boundary split.
-Task 43 source/spec correspondence and reserved-word coverage audit is
-complete, task 44 bilingual documentation synchronization is complete, task
-45 public enum policy is complete, task 47 aligns all three canonical
-`reconsider` tail forms, and task 48 implements the top-level Chapter-7
-property-implementation grammar with active parse-only pass/fail coverage.
-Task 48 adds syntax-only coverage; semantic Task 39 remains deferred. The
-current parser crate milestone is closed with an independently reviewed score
-of 94/100. Task 46 remains trigger-deferred for future concrete operator
-declarations, and P-265-47D remains a nonblocking human-owned wording gap.
-Global Step 5 is not closed and no successor parser task is authorized.
+Tasks 43-45 and 47-48 are complete, and Task 46 now closes the concrete
+operator-declaration syntax gap. All parser Tasks 1-48 are implemented.
+P-265-47D remains a nonblocking human-owned wording gap. Global Step 5 is not
+closed, Task 49 and Steps 6/7 are not authorized, and only a separate fresh
+parser closeout may follow this implementation.
 
 Module specs and audits:
 
