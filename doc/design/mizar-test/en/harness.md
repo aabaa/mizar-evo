@@ -2729,3 +2729,28 @@ The current production layout is 21 paths / 23,184 lines, with sorted
 path/content hashes `bd42d60f...` / `d1421834...`; `runner.rs` remains
 facade/top-level orchestration only and the new private leaf is the sole added
 production path. The mizar-test library has 283 tests.
+
+## Checker Task 251 Frozen Runner Boundary
+
+The future private `type_elaboration::source_evidence` leaf owns exact
+Task-249-broad plus Task-84/85 dispatch. It publishes ten checker-owned
+transport requests: five mode-expansion, three structure-inhabitation, and two attributed, all
+missing and with no dependency reference. The three-route dependency oracles
+are Task-249 12/15/6 and Task-250 2/2/0/0/0; broad alone remains 10/13/6.
+
+This leaf owns request/response association and exact dispatch, not another
+raw extractor. Existing `source_type`/`source_attribute` leaves retain their
+selectors and AST traversal. Only the narrow crate-private Task-250 output
+visibility/factor needed for production reuse may change; duplication,
+movement, selector widening, and extraction behavior changes are forbidden.
+
+The broad sidecar alone advances to the runner-owned missing-dependency detail.
+Task 84/85 retain their checker evidence-query details. No sibling, `.miz`,
+public diagnostic, semantic evidence result, or later payload is changed.
+
+Library tests must use real source extraction and the production consumer for
+the exact counts, sibling isolation, and requested/missing/rejected/supplied
+injection through final `TypedAst`/`ResolvedTypedAst`. A supplied reference is
+not evidence acceptance. Corrupt input fails atomically rather than publishing
+`Rejected`. Implementation adds four tests, moving the documented library
+total from 283 to 287.

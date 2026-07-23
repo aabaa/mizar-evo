@@ -2677,3 +2677,33 @@ declarations/proofs, downstream IR, Tasks 251+/269+, Steps 6/7, and global
 Step-5 completion remain deferred. No unresolved blocking `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` remains.
+
+## Step 5 Checker Task 251 Frozen-Contract Addendum
+
+Fresh inventory freezes the next request/reference transport task under
+Chapters 03, 05-08, 13, 17, and 19 and MC-G016/MC-G018/MC-G026. The exact
+representative consumer set is the Task-249 broad source-type fixture plus
+Task-84/85. The future syntax-free handoff publishes ten transport requests
+(five mode-expansion, three structure-inhabitation, two attributed), all
+missing and with no
+dependency reference. Requested/rejected/supplied states are exercised only
+by explicit test input after real `.miz` extraction through the same
+production Task-10 path and final `TypedAst`/`ResolvedTypedAst`; supplied
+reference arrival grants no evidence acceptance.
+
+This documentation-only task changes follow-up ownership and closes the exact
+Task-251 `design_drift`; it does not change executable specification coverage.
+The current Task-250 baseline remains plan 411/373, type 239/227, active
+parse/declaration/type/proof 101/5/190/1, pass/fail 224/187, warnings/errors
+23/0, and all source/test/expectation/trace/count/hash artifacts unchanged.
+The future no-new-case implementation oracle is plan 411/374 and type 240/228.
+The executable absence remains `test_gap`, and request/reference/final-handoff
+transport remains `source_drift`.
+
+MC-G016, MC-G018, and MC-G026 remain partial. Tasks 252-255/263/271/278 own later
+source-site additions; accepted evidence, sethood/non-emptiness proof,
+inheritance/coercion results, verifier/artifact status, accepted
+facts/declarations/proofs, downstream IR, Tasks 269+, Steps 6/7, and global
+Step-5 completion receive no credit. No blocking `spec_gap`,
+`source_undocumented_behavior`, current `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` was found.

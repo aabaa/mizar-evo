@@ -4176,6 +4176,12 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   attribute instance、arity/admissibility、term result、evidence request/result、
   accepted fact/declaration/proof、downstream IRはpublishしない。
 - [ ] **Task 251:** evidence-query request/dependency-fact-reference producer。
+  frozen contractはpaired crate-plan sectionとし、exact Task-249 broad route +
+  Task-84/85がdense syntax-free request/response-reference tableを通してmissing request
+  10件（mode-expansion 5 / structure-inhabitation 3 / attributed 2）をemitする。
+  `TypedAst`がownし、
+  `ResolvedTypedAst`がclone-preserveする。production-path testはsupplied inputを
+  accepted evidenceと扱わずrequested/missing/rejected/suppliedを区別する。
   evidence resultを捏造しない。
 - [ ] **Task 252:** primary term producer。
 - [ ] **Task 253:** functor/inline-functor application producer。

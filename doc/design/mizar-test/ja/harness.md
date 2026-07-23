@@ -2602,3 +2602,28 @@ current production layoutは21 path / 23,184行、sorted path/content hashは
 `bd42d60f...` / `d1421834...`。`runner.rs`はfacade/top-level orchestration
 onlyのままで、new private leafがsole added production pathである。mizar-test
 library testは283件。
+
+## Checker Task 251 frozen runner boundary
+
+future private `type_elaboration::source_evidence` leafはexact Task-249-broad +
+Task-84/85 dispatchをownする。checker-owned transport request 10件
+（mode-expansion 5、structure-inhabitation 3、attributed 2）を全てmissing、
+dependency reference 0件としてpublish
+する。3-route dependency oracleはTask-249 12/15/6とTask-250 2/2/0/0/0で、
+broad単体は10/13/6を維持する。
+
+このleafがownするのはrequest/response associationとexact dispatchであり、new
+raw extractorではない。existing `source_type`/`source_attribute` leafがselector/
+AST traversalを維持する。production reuseに必要なnarrow crate-private Task-250
+output visibility/factorだけを変更でき、duplicate/move/selector widening/
+extraction behavior changeは禁止する。
+
+broad sidecarだけをrunner-owned missing-dependency detailへadvanceし、Task
+84/85はchecker evidence-query detailを維持する。sibling、`.miz`、public
+diagnostic、semantic evidence result、later payloadは変更しない。
+
+library testはreal source extractionとproduction consumerを使い、exact count、
+sibling isolation、requested/missing/rejected/supplied injectionをfinal
+`TypedAst`/`ResolvedTypedAst`までproveする。supplied referenceはevidence
+acceptanceではない。corrupt inputは`Rejected`をpublishせずatomic failする。
+implementationはtest 4件を追加し、documented library totalを283から287へ進める。

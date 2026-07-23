@@ -1576,3 +1576,21 @@ promoted by this increment.
   synthetic prefix probe through the public checker handoff; plan 411/373 and
   type 239/227 are reached with unchanged pass/fail and admissions. Tasks
   251+/269+ and Steps 6/7 remain unpromoted.
+
+## Checker Task 251 Frozen Consumer Prerequisite
+
+- [x] Freeze exactly the Task-249 broad fixture plus Task-84/85 as the
+  representative real selector; add no `.miz` and keep all siblings
+  byte-identical.
+- [x] Freeze ten missing requests with histogram 5 mode-expansion /
+  3 structure-inhabitation /
+  2 attributed, combined Task-249 12/15/6, Task-250 2/2/0/0/0, and zero
+  dependency references.
+- [x] Freeze broad-only progression to the missing-dependency detail while
+  preserving Task-84/85 evidence-query details and every outcome/public code.
+- [x] Require requested/missing/rejected/supplied injection through the real
+  AST and production Task-10 consumer to final `TypedAst`/`ResolvedTypedAst`;
+  supplied input is not accepted evidence and corruption is atomic failure.
+- [ ] Implement Checker Task 251 as one separate logical task. Reach plan
+  411/374 and type 240/228 with unchanged pass/fail/admissions/warnings,
+  exact isolation, full hashes, reviews, and one dedicated commit.

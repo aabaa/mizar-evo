@@ -1396,3 +1396,20 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   `source_attribute` leafはexact real consumer 4件とsynthetic prefix probeを
   public checker handoffまで実行し、plan 411/373・type 239/227をunchanged
   pass/fail/admissionで達成する。Tasks 251+/269+とSteps 6/7はpromoteしない。
+
+## Checker Task 251 frozen consumer prerequisite
+
+- [x] Task-249 broad fixture + Task-84/85だけをrepresentative real selectorとして
+  freezeし、`.miz`を追加せず全siblingをbyte-identicalに保つ。
+- [x] missing request 10件（mode-expansion 5 / structure-inhabitation 3 /
+  attributed 2）、combined
+  Task-249 12/15/6、Task-250 2/2/0/0/0、dependency reference 0件をfreezeする。
+- [x] broadだけをmissing-dependency detailへ進め、Task-84/85 evidence-query
+  detailと全outcome/public codeを維持する。
+- [x] real ASTとproduction Task-10 consumerからfinal
+  `TypedAst`/`ResolvedTypedAst`までrequested/missing/rejected/supplied injectionを
+  requireする。supplied inputはaccepted evidenceではなく、corruptionはatomic
+  failure。
+- [ ] Checker Task 251をseparate logical taskとしてimplementする。plan
+  411/374、type 240/228、unchanged pass/fail/admission/warning、exact isolation、
+  full hash/review、dedicated commit 1件を達成する。

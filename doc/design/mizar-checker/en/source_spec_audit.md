@@ -2700,3 +2700,31 @@ chain/qualification/argument/provenance `source_drift`. The new exact covered
 trace row changes plan/type coverage only to 411/373 and 239/227. No semantic
 attribute instance, evidence, accepted fact/declaration/proof, or downstream
 IR is credited; those gaps remain with Tasks 251+ and their existing owners.
+
+## Task 251 Frozen-Contract Audit Addendum
+
+Fresh inventory assigns the next executable evidence-request transport slice
+to Task 251 under Chapters 03, 05-08, 13, 17, and 19 plus
+MC-G016/MC-G018/MC-G026. The paired crate plan freezes two dense syntax-free
+request/response-reference tables, four transport-only states, an opaque attributed
+request identity for later `ExistentialGateInput` association, immutable
+`TypedAst`/`ResolvedTypedAst` ownership, exact corruption boundaries, and the
+representative Task-249-broad plus Task-84/85 selector.
+
+The exact current oracle is ten requests: five mode-expansion, three
+structure-inhabitation, and two
+attributed. Every real response is missing and no dependency reference is
+published. Requested/rejected/supplied states must be injected only after real
+`.miz` extraction into the same production Task-10 path and asserted through
+the final handoffs. Supplied means only reference arrival; later semantic
+owners independently validate the referent and status. Imported symbol shells
+are not evidence.
+
+This documentation prerequisite closes only `design_drift`. The executable
+absence remains `test_gap` and the request/reference/final-handoff seams remain
+`source_drift` until implementation. Current source, fixtures, expectations,
+trace rows/status, coverage credit, plan 411/373, type 239/227, pass/fail
+224/187, active parse/declaration/type/proof 101/5/190/1, warnings/errors 23/0,
+and all hashes remain unchanged. No blocking `spec_gap`,
+`source_undocumented_behavior`, current `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` was found.
