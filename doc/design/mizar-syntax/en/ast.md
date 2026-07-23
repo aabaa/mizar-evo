@@ -1716,3 +1716,28 @@ Matches inside this crate should remain exhaustive so new variants cause local
 compile-time updates; downstream crates must include wildcard fallback arms
 where `#[non_exhaustive]` requires them. Any future public enum in this module
 must be added to exactly one lint-policy classification before it lands.
+
+## Parser Task 48: Property Implementation Node
+
+Parser Task 48 appends `SyntaxKind::PropertyImplementation = 192`; no prior raw
+kind is renumbered. `SurfaceNodeKind::PropertyImplementation` maps to that raw
+node kind, renders as `PropertyImplementation`, participates in rowan green-tree
+projection, and is available through
+`SurfaceNodeView::as_property_implementation`.
+
+The node is the complete top-level Chapter-7 declaration fixed by
+`SPEC-07-PI-PLACEMENT`. In source order it owns any leading declaration
+annotations, `definition`, one `DefinitionParameter`, `property`, the owner
+identifier, `.`, the property identifier, `means` plus `FormulaDefiniens` or
+`equals` plus `TermDefiniens`, the definiens semicolon, correctness-condition
+children, and the outer `end;` or recovery. The specialized parameter remains
+the existing `DefinitionParameter` kind and owns exact `let identifier be
+mode_application;`; its mode application is a `TypeHead` containing a
+`QualifiedSymbol` and optional `TypeArguments`.
+
+Means-form conditions are ordered mandatory `existence`, mandatory
+`uniqueness`, and optional `coherence`; equals permits only optional
+`coherence`. Their existing `CorrectnessCondition`, justification, and
+`ProofBlock` shapes remain syntax-only. Neither the new node nor its typed view
+contains resolved property identities, mode facts, proof acceptance, payload
+extraction, or coherence decisions.

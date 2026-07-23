@@ -6,11 +6,11 @@ This directory contains implementation-facing design notes for the `mizar-parser
 
 `mizar-parser` consumes the frontend-adapted parser token transfer object, applies the Mizar Evo grammar, and produces `mizar-syntax::SurfaceAst`. It owns grammar logic and syntax recovery, but it must not perform semantic name resolution, type inference, overload selection, cluster registration, elaboration, or proof-obligation generation.
 
-Status: parser task 47 is complete. The parser accepts omitted, explicit
-simple-justification, and proof-block `reconsider` tails under the canonical
-Chapters 4/8/15 and Appendix-A grammar. Task 48 remains the next authorized
-nonempty Step-5 parser task; task 46 remains deferred for future concrete
-operator declarations.
+Status: parser task 48 is complete. The parser now emits a dedicated top-level
+`PropertyImplementation` for the canonical Chapter-7 means/equals forms and
+runs their pass/fail corpus through the active parse-only path. This is
+syntax-only coverage; semantic Task 39 remains deferred. Task 46 remains
+deferred for future concrete operator declarations.
 
 ## Expected Module Specs And Audits
 

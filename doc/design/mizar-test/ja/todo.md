@@ -1330,3 +1330,15 @@ parser diagnosticだけを削除した。active planは405/369、parse-onlyは97
 221/184である。declaration/type/proof admissionは5/188/1のまま。semantic reconsider
 acceptanceとE0102 productionはowning checker taskへdeferredのままで、Parser Task 48と
 Steps 6/7はpromoteしない。
+
+## Parser Task 48 / property-implementation parse-only completion
+
+authorized nonempty Task-48 sliceはcompleteである。新しいpass/fail corpus pairは
+dedicated top-level property-implementation grammarをreal parse-only runnerで実行し、exact
+`spec.en.07.modes.property_implementation.parser` rowは`pass_and_fail`付き
+`covered`となる。active totalはplan 407/369、parse-only 99/99、pass/fail 222/185、
+warnings/errors 23/0で、declaration/type/proof admissionは5/188/1のままである。
+
+このcompletionが与えるのはparser/syntax-only creditだけである。property payload
+extraction、semantic overlap/coherence handling、proof acceptance/discharge、inactive
+semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 authorityもpromoteしない。

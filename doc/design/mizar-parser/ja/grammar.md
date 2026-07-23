@@ -2068,3 +2068,27 @@ lexing context が追加の token class を得るにつれて、parser token tra
 は成長し得るため、downstream consumer は wildcard fallback arm を持つ必要がある。
 `mizar-parser` 内部の match は exhaustive のままにし、新しい token kind が追加された
 ときに parser 側の更新がローカルに強制されるようにする。
+
+## Task 48: top-level property implementation
+
+Task 48はcompleteなChapter-7 blockを、Chapter 12と修正済みAppendix A.12のplacementに
+従うtop-level declarationとして実装する。
+
+```ebnf
+property_impl ::= "definition"
+                  "let" identifier "be" mode_application ";"
+                  "property" identifier "." identifier
+                  ( "means" formula_definiens ";"
+                    existence_condition uniqueness_condition
+                    [ coherence_condition ]
+                  | "equals" term_definiens ";" [ coherence_condition ] )
+                  "end" ";" ;
+```
+
+`PropertyImplementation`はoptional annotation prefix、`definition`、specialized
+`DefinitionParameter`、property owner/dot/name、exact `means`/`equals` keyword、
+definiens、ordered correctness condition、outer `end;`を直接所有する。parameterは
+exactly one identifier、`be`、`TypeHead -> QualifiedSymbol`とoptional
+`TypeArguments`で表すmode applicationだけを受理し、generic definition constraintと
+attribute-bearing typeはrejectする。parserはsyntaxだけを保存し、mode/property
+resolution、proof acceptance、overlap/coherence semantic checkを行わない。

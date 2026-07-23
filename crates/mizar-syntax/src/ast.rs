@@ -216,6 +216,7 @@ pub enum SyntaxKind {
     AnnotatedAlgorithmStatement = 189,
     AnnotatedDefinitionContent = 190,
     AnnotatedRegistrationContent = 191,
+    PropertyImplementation = 192,
     TokenAnnotationMarker = 99,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
@@ -412,6 +413,7 @@ impl SyntaxKind {
             189 => Self::AnnotatedAlgorithmStatement,
             190 => Self::AnnotatedDefinitionContent,
             191 => Self::AnnotatedRegistrationContent,
+            192 => Self::PropertyImplementation,
             99 => Self::TokenAnnotationMarker,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
@@ -528,6 +530,7 @@ impl SyntaxKind {
                 | Self::LemmaItem
                 | Self::ProofBlock
                 | Self::DefinitionBlockItem
+                | Self::PropertyImplementation
                 | Self::DefinitionParameter
                 | Self::AttributeDefinition
                 | Self::AttributePattern
@@ -1690,6 +1693,13 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_property_implementation(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PropertyImplementation => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_definition_parameter(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::DefinitionParameter => Some(self),
@@ -2553,6 +2563,7 @@ pub enum SurfaceNodeKind {
     LemmaItem,
     ProofBlock,
     DefinitionBlockItem,
+    PropertyImplementation,
     DefinitionParameter,
     TemplateParameter,
     AttributeDefinition,
@@ -2739,6 +2750,7 @@ impl SurfaceNodeKind {
             Self::LemmaItem => SyntaxKind::LemmaItem,
             Self::ProofBlock => SyntaxKind::ProofBlock,
             Self::DefinitionBlockItem => SyntaxKind::DefinitionBlockItem,
+            Self::PropertyImplementation => SyntaxKind::PropertyImplementation,
             Self::DefinitionParameter => SyntaxKind::DefinitionParameter,
             Self::TemplateParameter => SyntaxKind::TemplateParameter,
             Self::AttributeDefinition => SyntaxKind::AttributeDefinition,

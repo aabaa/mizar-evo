@@ -1504,3 +1504,18 @@ The active plan is 405/369, parse-only is 97, and pass/fail is 221/184.
 Declaration/type/proof admissions remain 5/188/1. Semantic reconsider
 acceptance and E0102 production remain deferred to their owning checker tasks;
 Parser Task 48 and Steps 6/7 are not promoted.
+
+## Parser Task 48 / Property-Implementation Parse-Only Completion
+
+The authorized nonempty Task-48 slice is complete. The new pass/fail corpus
+pair runs the dedicated top-level property-implementation grammar through the
+real parse-only runner, and the exact
+`spec.en.07.modes.property_implementation.parser` row is `covered` with
+`pass_and_fail`. Active totals are plan 407/369, parse-only 99/99, pass/fail
+222/185, and warnings/errors 23/0; declaration/type/proof admissions remain
+5/188/1.
+
+This completion grants parser/syntax-only credit. Property payload extraction,
+semantic overlap/coherence handling, proof acceptance/discharge, and inactive
+semantic Task 39 remain unchanged. No checker task or Steps 6/7 authority is
+promoted by this increment.

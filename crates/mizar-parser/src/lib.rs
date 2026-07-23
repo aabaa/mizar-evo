@@ -534,7 +534,16 @@ mod tests {
             Vec::new(),
         ));
 
-        assert!(output.diagnostics.is_empty());
+        assert!(
+            !output.diagnostics.is_empty(),
+            "incomplete direct property syntax should use Task-48 recovery"
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .all(|diagnostic| diagnostic.code != SyntaxDiagnosticCode::MissingEnd)
+        );
         assert!(
             output.ast.is_some(),
             "matching end should keep the minimal surface AST recoverable"

@@ -9,10 +9,12 @@
 状態: この crate は、rowan-backed `SurfaceAst`、typed 互換 view、決定的な
 snapshot rendering、構文診断、syntax-owned trivia side table、task-35 surface
 vocabulary、parser task 36 と pair した task 22 の predicate redefinition label
-follow-through、task 24 の private AST source split を所有している。S-025
-follow-up audit では、source/spec、source/test、re-export path、snapshot
-stability、parser/syntax boundary、二言語 documentation の gap は残っていない。
-S-021 rustdoc summary は明示的に deferred のままである。
+follow-through、task 24 の private AST source split を所有している。Parser Task 48 は
+post-exit `PropertyImplementation` vocabulary increment として、append-only
+`SyntaxKind` 192、対応する surface node/accessor/snapshot/raw-kind/rowan contract、
+active parse-only pass/fail evidence を追加する。これは `SPEC-07-PI-PLACEMENT` に基づく
+syntax-only coverage であり、Task-39 property semantics と S-021 rustdoc summary は
+deferred のままである。
 
 自律 crate 開発の kickoff plan:
 

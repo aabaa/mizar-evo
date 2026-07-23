@@ -918,6 +918,12 @@ fn surface_node_raw_kinds_round_trip_through_rowan_boundary() {
             .descendants_with_tokens()
             .map(|element| element.kind()),
     );
+    rowan_kinds.extend(
+        task48_property_implementation_ast(source_id(57))
+            .rowan_root()
+            .descendants_with_tokens()
+            .map(|element| element.kind()),
+    );
 
     for kind in [
         SyntaxKind::CompilationUnit,
@@ -990,6 +996,7 @@ fn surface_node_raw_kinds_round_trip_through_rowan_boundary() {
         SyntaxKind::LemmaItem,
         SyntaxKind::ProofBlock,
         SyntaxKind::DefinitionBlockItem,
+        SyntaxKind::PropertyImplementation,
         SyntaxKind::DefinitionParameter,
         SyntaxKind::AttributeDefinition,
         SyntaxKind::AttributePattern,
@@ -2639,6 +2646,30 @@ fn task23_typed_accessors_cover_definition_nodes() {
             "snapshot should render task-23 line {expected}"
         );
     }
+}
+
+#[test]
+fn task48_typed_accessor_covers_property_implementation_node() {
+    let ast = task48_property_implementation_ast(source_id(58));
+    let root = ast.root_view().unwrap();
+    let view = first_view(root, |kind| {
+        matches!(kind, SurfaceNodeKind::PropertyImplementation)
+    })
+    .unwrap();
+    assert_eq!(view.syntax_kind(), SyntaxKind::PropertyImplementation);
+    assert!(view.as_property_implementation().is_some());
+    assert_eq!(
+        SyntaxKind::from_raw(192),
+        SyntaxKind::PropertyImplementation
+    );
+    assert!(SyntaxKind::PropertyImplementation.is_node_kind());
+    assert!(!SyntaxKind::PropertyImplementation.is_token_kind());
+    assert!(ast.snapshot_text().contains("PropertyImplementation"));
+    assert!(
+        ast.rowan_root()
+            .descendants()
+            .any(|node| node.kind() == SyntaxKind::PropertyImplementation)
+    );
 }
 
 #[test]
@@ -6684,6 +6715,46 @@ fn task23_definition_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
             block_semicolon,
             compilation_unit,
         ],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task48_property_implementation_ast(source_id: SourceId) -> crate::SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "definition",
+        range(source_id, 0, 10),
+    );
+    let end = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "end",
+        range(source_id, 11, 14),
+    );
+    let semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 14, 15),
+    );
+    let property = builder.add_node(
+        SurfaceNodeKind::PropertyImplementation,
+        range(source_id, 0, 15),
+        vec![definition, end, semicolon],
+    );
+    let item_list = builder.add_node(
+        SurfaceNodeKind::ItemList,
+        range(source_id, 0, 15),
+        vec![property],
+    );
+    let compilation_unit = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 15),
+        vec![item_list],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 15),
+        vec![definition, end, semicolon, compilation_unit],
     );
     builder.finish(Some(root), None)
 }

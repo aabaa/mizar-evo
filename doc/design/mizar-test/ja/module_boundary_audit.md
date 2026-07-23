@@ -9757,3 +9757,26 @@ raw/normalized test-list hashは
 `967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
 `1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`のままである。
 変わるbytesはplan/parseだけで、production ownershipとSteps 6/7はstableである。
+
+## Parser Task 48 parse-only current-state addendum
+
+Task 48は`mizar-test` production path/source lineを変更しない。production manifestは
+18 path / 20,088 line、path hash
+`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`、ordered content hash
+`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`のままである。
+`runner.rs`はfacade/top-level orchestratorのままで、private-leaf ownershipも不変である。
+
+active countはparse/declaration/type/proof 99/5/188/1、plan 407/369、pass/fail
+222/185、warnings/errors 23/0、mizar-test library test 276である。raw/normalized
+276-test-list hashは
+`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
+`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`のままである。
+plan/parse/declaration/type/proofの5 CLI hashは
+`2957a40b91a4cf64206301b4bf91d1c42ecdac2a564b70af370d2e52333ab57b`、
+`c9dcbcef79e727f31720d46532febe5a20e02a7710cf691e49d89fcfb69bccfa`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`である。
+変更するのはplan/parse corpus bytesだけである。declaration/type/proof ownership、
+production layout、inactive semantic Task-39 seed、Steps 6/7はstableで、新しいcreditは
+parser/syntax-onlyである。

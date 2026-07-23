@@ -1,0 +1,28 @@
+definition
+  mode DomainLabel: Domain is set;
+end;
+
+definition
+  let M be Domain;
+  property M.simple means thesis;
+  existence; uniqueness by Unique;
+end;
+
+definition
+  let M be Domain;
+  property M.cased means thesis if thesis, contradiction if thesis otherwise thesis;
+  existence by Exists; uniqueness; coherence proof
+    thus thesis;
+  end;
+end;
+
+definition
+  let M be Domain;
+  property M.direct equals M;
+  coherence by computation(steps: 1);
+end;
+
+definition
+  let M be Domain;
+  property M.selected equals M if thesis, M if contradiction otherwise M;
+end;

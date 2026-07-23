@@ -978,8 +978,8 @@ resolver / build-system 依存を避ける。
       [doc/spec/ja/15.statements.md](../../../spec/ja/15.statements.md)、
       [doc/spec/ja/appendix_a.grammar_summary.md](../../../spec/ja/appendix_a.grammar_summary.md)。
 
-48. **Property-implementation grammar と parse-only corpus。** [ ]
-    - canonical Chapter 7 `property_impl` grammarだけを実装する。definition-local
+48. **Property-implementation grammar と parse-only corpus。** [x]
+    - canonical Chapter 7のtop-level `property_impl` declarationだけを実装する。
       `let M be mode_application;`、`property M.name means` formula definiens +
       mandatory `existence`/`uniqueness` + optional `coherence`、または
       `property M.name equals` term definiens + optional `coherence`、最後の`end;`
@@ -987,14 +987,20 @@ resolver / build-system 依存を避ける。
       ordered source node、recovery、typed syntax accessorを保存する。
     - means/equals、case/otherwise definiens、mandatory correctness block、optional
       coherence、malformed owner/property dot、recovery boundaryのspec-derived
-      parse-only pass/fail coverageを追加する。実装時だけdeferred parser trace
-      ownershipを更新し、Task-39 semantic seedはactivateしない。
+      parse-only pass/fail coverageを追加した。exact parser trace rowはTask-48
+      sidecar 2件でcoveredとなり、Task-39 semantic seedはinactiveのままである。
     - Task 47への依存なし。両taskは独立にauthorizedされたStep-5/Task-49
       prerequisite。仕様: Chapter 7 sections 7.4.1/7.8.2、deferred trace
       `spec.en.07.modes.property_implementation.parser`。
     - 禁止: checker payload extraction、property overlap/coherence decision、proof
       acceptance、advanced-semantics runner activation、existing expectation rebaseline、
       broader definition grammar cleanup。
+    - 結果: `PropertyImplementation` はdedicated top-level syntax nodeであり、parameterは
+      `DefinitionParameter -> TypeHead -> QualifiedSymbol + TypeArguments`を再利用する。
+      malformed/nested tailでも実際のouter `end;`とfollowing declarationを保存する。
+      parser unit testは221、parse-onlyは99/99である。既存`.miz`やsemantic intentを
+      変更せず、従来の`source_drift`、`test_gap`、paired `design_drift`、internal
+      `test_expectation_drift` 2件をcloseした。
 
 ## 推奨検証
 

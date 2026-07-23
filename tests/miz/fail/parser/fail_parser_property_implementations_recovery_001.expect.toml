@@ -1,0 +1,29 @@
+schema_version = 1
+id = "fail_parser_property_implementations_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.property_implementations"
+source = "fail_parser_property_implementations_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_property_implementation"
+stable_detail_key = "parser.property_implementations.recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_type_expression",
+  "malformed_type_expression",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "missing_semicolon",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_justification",
+]
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.07.modes.property_implementation.parser"]
+notes = "Active parse-only recovery coverage for parser Task 48: exact parameter restrictions, malformed owner/property dots, missing/reordered means conditions, forbidden equals conditions, a missing parameter semicolon, malformed coherence, and preservation of the following theorem declaration."

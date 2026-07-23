@@ -2202,3 +2202,28 @@ transfer vocabulary can grow as parser-facing lexing contexts gain additional
 token classes, and downstream consumers should keep wildcard fallback arms.
 Matches inside `mizar-parser` remain exhaustive so newly added token kinds force
 local parser updates.
+
+## Task 48: Top-Level Property Implementations
+
+Task 48 implements the complete Chapter-7 block as a top-level declaration,
+following Chapter 12 and corrected Appendix A.12 placement:
+
+```ebnf
+property_impl ::= "definition"
+                  "let" identifier "be" mode_application ";"
+                  "property" identifier "." identifier
+                  ( "means" formula_definiens ";"
+                    existence_condition uniqueness_condition
+                    [ coherence_condition ]
+                  | "equals" term_definiens ";" [ coherence_condition ] )
+                  "end" ";" ;
+```
+
+`PropertyImplementation` directly owns the optional annotation prefix,
+`definition`, the specialized `DefinitionParameter`, property owner/dot/name,
+the exact `means` or `equals` keyword, its definiens, ordered correctness
+conditions, and outer `end;`. The parameter is exactly one identifier with
+`be` and a mode application represented by `TypeHead -> QualifiedSymbol` plus
+optional `TypeArguments`; generic definition constraints and attribute-bearing
+types are rejected. The parser preserves syntax only and does not resolve the
+mode/property, accept proofs, or check overlap/coherence semantics.

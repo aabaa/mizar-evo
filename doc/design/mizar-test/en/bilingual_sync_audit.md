@@ -192,3 +192,14 @@ existing `.miz` source, syntax-only credit boundary, 405/369 plan, 97/97 parse,
 221/184 pass/fail, and unchanged 5/188/1 declaration/type/proof admissions.
 Both languages record the same CLI, test-list, and unchanged production
 manifest hashes. No bilingual drift remains in Task 47.
+
+## Parser Task 48 / Property-Implementation Pair Recheck
+
+The paired plan, TODO, harness, traceability, and module-boundary documents
+record the same exact requirement, two pass/fail sidecars, top-level
+property-implementation grammar, and parser/syntax-only credit boundary. Both
+languages record plan 407/369, parse 99/99, pass/fail 222/185,
+warnings/errors 23/0, unchanged declaration/type/proof admissions 5/188/1,
+and the unchanged inactive semantic Task-39 seed. They also preserve the same
+276-test-list hashes and the same 18-path/20,088-line production manifest and
+path/content hashes. No bilingual drift remains in Task 48.

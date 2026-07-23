@@ -1950,3 +1950,18 @@ exact backlinkは新しい
 Chapter-15 statement rowにも同caseを追加するが3件目のrequirementは作らない。sidecarは
 creditをsyntaxだけに限定し、semantic reconsider、proof obligation、theorem acceptance、
 E0102 coverageを与えない。planは405/369、parse coverageは43/42、pass/failは221/184となる。
+
+## Parser Task 48 property-implementation trace completion
+
+`spec.en.07.modes.property_implementation.parser` exactly 1件だけをdeferredから
+`coverage = "pass_and_fail"`付き`covered`へ変更する。complete backlink setは次の2件である。
+
+- `tests/miz/pass/parser/pass_parser_property_implementations_001.expect.toml`
+- `tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.expect.toml`
+
+active 2 caseはdedicated top-level declaration、means/equalsのsimple/case/otherwise
+definiens、exact parameter restriction、correctness condition、recoveryを実行する。creditは
+parser/syntax ownershipだけに限定する。property payload extraction、overlap/coherence
+semantics、proof acceptance/discharge、inactive semantic Task-39 seedはdeferredかつ不変である。
+planは407/369、parse-onlyは99/99、pass/failは222/185で、declaration/type/proof
+admissionは5/188/1のままである。

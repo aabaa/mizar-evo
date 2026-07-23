@@ -9,10 +9,12 @@ This directory contains implementation-facing design notes for the `mizar-syntax
 Status: the crate owns the rowan-backed `SurfaceAst`, typed compatibility
 views, deterministic snapshot rendering, syntax diagnostics, syntax-owned
 trivia side tables, task-35 surface vocabulary, parser task-36 predicate
-redefinition label follow-through, and task-24 private AST source split. The
-S-025 follow-up audit found no remaining source/spec, source/test,
-re-export-path, snapshot-stability, parser/syntax-boundary, or bilingual
-documentation gap. S-021 rustdoc summaries remain explicitly deferred.
+redefinition label follow-through, task-24 private AST source split, and the
+post-exit parser Task 48 `PropertyImplementation` vocabulary increment. The
+Task 48 increment adds append-only raw kind 192 and syntax-only typed/snapshot/
+rowan support under the placement fixed by `SPEC-07-PI-PLACEMENT`; semantic
+property behavior remains deferred. S-021 rustdoc summaries remain explicitly
+deferred.
 
 ## Crate Plan
 
@@ -32,7 +34,7 @@ documentation gap. S-021 rustdoc summaries remain explicitly deferred.
 
 ## Cross-Cutting Audits
 
-- [en/source_spec_correspondence.md](./en/source_spec_correspondence.md) - S-025 source/spec/test correspondence
-- [en/bilingual_documentation_synchronization.md](./en/bilingual_documentation_synchronization.md) - S-025 bilingual synchronization
-- [en/crate_exit_report.md](./en/crate_exit_report.md) - refreshed close-out evidence
+- [en/source_spec_correspondence.md](./en/source_spec_correspondence.md) - S-025 plus parser Task 48 source/spec/test correspondence
+- [en/bilingual_documentation_synchronization.md](./en/bilingual_documentation_synchronization.md) - S-025 plus parser Task 48 bilingual synchronization
+- [en/crate_exit_report.md](./en/crate_exit_report.md) - historical close-out evidence plus the parser Task 48 post-exit addendum
 - [en/todo.md](./en/todo.md) - implementation roadmap and deferred S-021 trigger

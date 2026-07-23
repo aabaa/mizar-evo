@@ -2611,3 +2611,25 @@ error after its obsolete omitted-tail diagnostic is removed.
 This increment changes only parse admission and plan bytes: plan 405/369,
 parse-only 97/97, pass/fail 221/184, warnings/errors 23/0. Declaration-symbol,
 type-elaboration, and proof-verification admissions remain 5/188/1.
+
+## Parser Task 48 Property-Implementation Parse-Only Increment
+
+The parse-only runner adds the pass/fail pair
+`pass_parser_property_implementations_001` and
+`fail_parser_property_implementations_recovery_001`. Both execute the real
+frontend/parser path. The pass case covers top-level means/equals property
+implementations, simple and case/otherwise definientia, the exact single
+`let identifier be mode_application;` parameter, ordered mandatory
+existence/uniqueness conditions for means, optional coherence, and the
+supported justification shapes. The fail case pins bounded recovery and
+preservation of the following declaration for malformed parameters, dots,
+correctness ordering, and forbidden equals conditions.
+
+The exact requirement
+`spec.en.07.modes.property_implementation.parser` is now `covered` with
+`pass_and_fail`. This is parser/syntax-only credit: the harness extracts no
+property payload, makes no overlap or coherence decision, and grants no proof
+acceptance or discharge. The inactive semantic Task-39 case remains unchanged.
+The active totals are plan 407/369, parse-only 99/99, pass/fail 222/185, and
+warnings/errors 23/0; declaration-symbol, type-elaboration, and
+proof-verification admissions remain 5/188/1.

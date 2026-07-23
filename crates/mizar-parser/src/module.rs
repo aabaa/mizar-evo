@@ -211,6 +211,12 @@ impl Parser {
                         position = item.next_position;
                         continue;
                     }
+                    if let Some(item) = self.parse_property_implementation_item(position) {
+                        item_children.push(item.id);
+                        recovery_nodes.extend(item.recovery_nodes);
+                        position = item.next_position;
+                        continue;
+                    }
                     if let Some(item) = self.parse_definition_block_item(position) {
                         item_children.push(item.id);
                         recovery_nodes.extend(item.recovery_nodes);
@@ -2860,6 +2866,381 @@ impl Parser {
             next_position: cursor.max(position + 1),
             recovery_nodes,
         })
+    }
+
+    fn parse_property_implementation_item(&mut self, position: usize) -> Option<ParsedItem> {
+        let head = self.item_head_position(position)?;
+        if !self.is_reserved_word_at(head, "definition")
+            || !self.property_implementation_shaped_at(head + 1)
+        {
+            return None;
+        }
+
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=head]
+                .iter()
+                .copied(),
+        );
+        let mut cursor = head + 1;
+
+        let parameter = self.parse_property_implementation_parameter_at(cursor);
+        cursor = parameter.next_position;
+        children.push(parameter.id);
+        recovery_nodes.extend(parameter.recovery_nodes);
+
+        if self.is_reserved_word_at(cursor, "property") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `property` in property implementation",
+            );
+        }
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected property owner identifier");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ".") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `.` between property owner and property name",
+            );
+        }
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected property name identifier");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_word_at(cursor, "means") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            let definiens = self.parse_formula_definiens_at(cursor);
+            cursor = definiens.next_position;
+            children.push(definiens.id);
+            recovery_nodes.extend(definiens.recovery_nodes);
+            cursor = self.parse_required_statement_semicolon(cursor, &mut children);
+            cursor = self.parse_property_means_correctness_at(
+                cursor,
+                &mut children,
+                &mut recovery_nodes,
+            );
+        } else if self.is_reserved_word_at(cursor, "equals") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            let definiens = self.parse_term_definiens_at(cursor);
+            cursor = definiens.next_position;
+            children.push(definiens.id);
+            recovery_nodes.extend(definiens.recovery_nodes);
+            cursor = self.parse_required_statement_semicolon(cursor, &mut children);
+            cursor = self.parse_property_equals_correctness_at(
+                cursor,
+                &mut children,
+                &mut recovery_nodes,
+            );
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `means` or `equals` in property implementation",
+            );
+            self.push_missing_formula(cursor, &mut children, &mut recovery_nodes);
+            if let Some(recovery) = self.recover_property_implementation_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            cursor = self.parse_required_statement_semicolon(cursor, &mut children);
+            cursor = self.parse_remaining_property_correctness_at(
+                cursor,
+                &mut children,
+                &mut recovery_nodes,
+            );
+        }
+
+        cursor = self.finish_property_implementation_at(
+            head,
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+        );
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::PropertyImplementation,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedItem {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_property_implementation_parameter_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+
+        if self.is_reserved_word_at(cursor, "let") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected `let` before property implementation parameter",
+            );
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected one identifier after property implementation `let`",
+            );
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if !self.is_reserved_word_at(cursor, "be")
+            && !self.is_reserved_word_at(cursor, "being")
+            && !self.is_semicolon_at(cursor)
+            && !self.is_reserved_word_at(cursor, "property")
+        {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "property implementation permits exactly one parameter identifier",
+            );
+            let tail = self.property_parameter_qualification_position(cursor);
+            if let Some(recovery) = self.emit_malformed_tail_recovery(cursor, tail) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        if self.is_reserved_word_at(cursor, "be") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else if self.is_reserved_word_at(cursor, "being") {
+            self.diagnose_malformed_type_expression(
+                cursor,
+                "property implementation parameter requires exact `be`",
+            );
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_type_expression(
+                cursor,
+                "expected `be` in property implementation parameter",
+            );
+        }
+
+        if let Some(mode_application) = self.parse_property_mode_application_at(cursor) {
+            cursor = mode_application.next_position;
+            children.push(mode_application.id);
+            recovery_nodes.extend(mode_application.recovery_nodes);
+        } else {
+            self.diagnose_malformed_type_expression(
+                cursor,
+                "expected mode application in property implementation parameter",
+            );
+            let missing = self.add_missing_type_expression(cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        if !self.is_semicolon_at(cursor) && !self.is_reserved_word_at(cursor, "property") {
+            self.diagnose_malformed_type_expression(
+                cursor,
+                "unexpected property implementation parameter material",
+            );
+            let tail = self.property_parameter_end_at(cursor);
+            if let Some(recovery) = self.emit_malformed_tail_recovery(cursor, tail) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::DefinitionParameter,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_property_mode_application_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        let symbol = self.parse_qualified_symbol_at(position)?;
+        let mut children = vec![symbol.id];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = symbol.next_position;
+        if self.is_type_arguments_start_at(cursor) {
+            let arguments = self.parse_type_arguments_at(cursor);
+            cursor = arguments.next_position;
+            children.push(arguments.id);
+            recovery_nodes.extend(arguments.recovery_nodes);
+        }
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::TypeHead,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor,
+            recovery_nodes,
+        })
+    }
+
+    fn parse_property_means_correctness_at(
+        &mut self,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        if self.is_reserved_word_at(cursor, "existence") {
+            cursor = self.push_property_correctness_condition(cursor, children, recovery_nodes);
+        } else {
+            self.push_missing_property_correctness_condition(
+                cursor,
+                "existence",
+                children,
+                recovery_nodes,
+            );
+        }
+        if self.is_reserved_word_at(cursor, "uniqueness") {
+            cursor = self.push_property_correctness_condition(cursor, children, recovery_nodes);
+        } else {
+            self.push_missing_property_correctness_condition(
+                cursor,
+                "uniqueness",
+                children,
+                recovery_nodes,
+            );
+        }
+        self.parse_remaining_property_correctness_at(cursor, children, recovery_nodes)
+    }
+
+    fn parse_property_equals_correctness_at(
+        &mut self,
+        cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        self.parse_remaining_property_correctness_at(cursor, children, recovery_nodes)
+    }
+
+    fn parse_remaining_property_correctness_at(
+        &mut self,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        let mut saw_coherence = false;
+        while self.is_correctness_condition_keyword_at(cursor) {
+            if self.is_reserved_word_at(cursor, "coherence") && !saw_coherence {
+                saw_coherence = true;
+            } else {
+                self.diagnose_malformed_formula_expression(
+                    cursor,
+                    "property implementation permits only one optional trailing `coherence` condition",
+                );
+            }
+            cursor = self.push_property_correctness_condition(cursor, children, recovery_nodes);
+        }
+        cursor
+    }
+
+    fn push_property_correctness_condition(
+        &mut self,
+        cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        let condition = self.parse_correctness_condition_at(cursor);
+        children.push(condition.id);
+        recovery_nodes.extend(condition.recovery_nodes);
+        condition.next_position
+    }
+
+    fn push_missing_property_correctness_condition(
+        &mut self,
+        position: usize,
+        keyword: &'static str,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) {
+        self.diagnose_malformed_formula_expression(
+            position,
+            format!("expected mandatory `{keyword}` property correctness condition"),
+        );
+        let missing = self.add_missing_proof_step(position);
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::CorrectnessCondition,
+            range: self.zero_range_at(position),
+            children: vec![missing],
+        });
+        children.push(id);
+        recovery_nodes.push(missing);
+    }
+
+    fn finish_property_implementation_at(
+        &mut self,
+        opener: usize,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        if !self.is_end_keyword_at(cursor)
+            && cursor < self.request.tokens.len()
+            && !self.is_item_start_at(cursor)
+        {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "unexpected material after property implementation body",
+            );
+            let boundary = self.property_implementation_outer_end_boundary_at(cursor);
+            if let Some(recovery) = self.emit_malformed_tail_recovery(cursor, boundary) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        self.parse_required_end_semicolon(opener, cursor, children, recovery_nodes)
     }
 
     fn parse_registration_block_item(&mut self, position: usize) -> Option<ParsedItem> {
@@ -13623,6 +14004,181 @@ impl Parser {
         }
 
         saw_leading_parameter && self.definition_content_is_template_only_at(cursor)
+    }
+
+    fn property_implementation_shaped_at(&self, position: usize) -> bool {
+        if self.is_reserved_word_at(position, "property") {
+            return true;
+        }
+        if !self.is_reserved_word_at(position, "let") {
+            return false;
+        }
+
+        let mut cursor = position + 1;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+        let mut block_depth = 1_usize;
+        while cursor < self.request.tokens.len() {
+            let delimiters_clear = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if delimiters_clear && block_depth == 1 && self.is_reserved_word_at(cursor, "property")
+            {
+                return true;
+            }
+
+            if delimiters_clear && block_depth == 1 && self.is_item_start_at(cursor) {
+                return false;
+            }
+
+            if delimiters_clear && self.is_end_keyword_at(cursor) {
+                if block_depth == 1 {
+                    return false;
+                }
+                block_depth -= 1;
+                cursor += 1;
+                continue;
+            }
+            if delimiters_clear && sync::opens_recovery_block_at(&self.request.tokens, cursor) {
+                block_depth += 1;
+                cursor += 1;
+                continue;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                paren_depth = paren_depth.saturating_sub(1);
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                bracket_depth = bracket_depth.saturating_sub(1);
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                brace_depth = brace_depth.saturating_sub(1);
+            }
+            cursor += 1;
+        }
+        false
+    }
+
+    fn property_parameter_qualification_position(&self, position: usize) -> usize {
+        self.property_parameter_boundary_at(position, true)
+    }
+
+    fn property_parameter_end_at(&self, position: usize) -> usize {
+        self.property_parameter_boundary_at(position, false)
+    }
+
+    fn property_parameter_boundary_at(
+        &self,
+        position: usize,
+        stop_at_qualification: bool,
+    ) -> usize {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+        let mut block_depth = 0_usize;
+        while cursor < self.request.tokens.len() {
+            let delimiters_clear = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if delimiters_clear {
+                if block_depth == 0
+                    && (self.is_semicolon_at(cursor)
+                        || self.is_reserved_word_at(cursor, "property")
+                        || self.is_end_keyword_at(cursor)
+                        || self.is_item_start_at(cursor)
+                        || (stop_at_qualification
+                            && (self.is_reserved_word_at(cursor, "be")
+                                || self.is_reserved_word_at(cursor, "being"))))
+                {
+                    break;
+                }
+                if self.is_end_keyword_at(cursor) && block_depth > 0 {
+                    block_depth -= 1;
+                    cursor += 1;
+                    continue;
+                }
+                if sync::opens_recovery_block_at(&self.request.tokens, cursor) {
+                    block_depth += 1;
+                    cursor += 1;
+                    continue;
+                }
+            }
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                paren_depth = paren_depth.saturating_sub(1);
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                bracket_depth = bracket_depth.saturating_sub(1);
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                brace_depth = brace_depth.saturating_sub(1);
+            }
+            cursor += 1;
+        }
+        cursor
+    }
+
+    fn recover_property_implementation_tail(&mut self, position: usize) -> Option<ParsedItem> {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len()
+            && !self.is_semicolon_at(cursor)
+            && !self.is_end_keyword_at(cursor)
+            && !self.is_correctness_condition_keyword_at(cursor)
+            && !self.is_item_start_at(cursor)
+        {
+            cursor += 1;
+        }
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
+    fn property_implementation_outer_end_boundary_at(&self, position: usize) -> usize {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+        let mut block_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let delimiters_clear = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if delimiters_clear {
+                if block_depth == 0
+                    && (self.is_end_keyword_at(cursor) || self.is_item_start_at(cursor))
+                {
+                    break;
+                }
+                if self.is_end_keyword_at(cursor) && block_depth > 0 {
+                    block_depth -= 1;
+                    cursor += 1;
+                    continue;
+                }
+                if sync::opens_recovery_block_at(&self.request.tokens, cursor) {
+                    block_depth += 1;
+                    cursor += 1;
+                    continue;
+                }
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                paren_depth = paren_depth.saturating_sub(1);
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                bracket_depth = bracket_depth.saturating_sub(1);
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                brace_depth = brace_depth.saturating_sub(1);
+            }
+            cursor += 1;
+        }
+        cursor
     }
 
     fn definition_parameter_end_at(&self, position: usize) -> usize {

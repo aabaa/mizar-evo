@@ -174,6 +174,7 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::LemmaItem => output.push_str("LemmaItem"),
         SurfaceNodeKind::ProofBlock => output.push_str("ProofBlock"),
         SurfaceNodeKind::DefinitionBlockItem => output.push_str("DefinitionBlockItem"),
+        SurfaceNodeKind::PropertyImplementation => output.push_str("PropertyImplementation"),
         SurfaceNodeKind::DefinitionParameter => output.push_str("DefinitionParameter"),
         SurfaceNodeKind::TemplateParameter => output.push_str("TemplateParameter"),
         SurfaceNodeKind::AttributeDefinition => output.push_str("AttributeDefinition"),

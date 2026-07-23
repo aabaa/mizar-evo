@@ -4,7 +4,8 @@
 > [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md)。
 
 状態: task 24 の AST private module split と task 25 follow-up audit の後、
-S-025 まで完了。
+S-025 まで完了。新しい syntax task ID は作らず、Parser Task 48 の post-exit
+correspondence を下記に追記する。
 
 ## 範囲
 
@@ -143,3 +144,15 @@ parser/syntax boundary promise を確認する。
   deferred のまま残る。
 - S-022 から S-025 は完了済みである。predicate-label audit と AST-refactor audit
   は新しい follow-up task を作らなかった。
+
+## Parser Task 48 post-exit 対応
+
+| Surface contract | Source / test evidence | 境界 |
+|---|---|---|
+| Top-level `PropertyImplementation`、append-only な `SyntaxKind::PropertyImplementation = 192`、対応する `SurfaceNodeKind`、`SurfaceNodeView::as_property_implementation`、snapshot / raw-kind / node-kind / rowan support | `crates/mizar-syntax/src/ast.rs`、`crates/mizar-syntax/src/ast/snapshot.rs`、Task 48 の syntax accessor / snapshot / raw-kind tests、parser Task 48 unit test と active pass / fail corpus coverage | syntax-only representation と parser construction。semantic property validation は含まない |
+| `DefinitionParameter -> TypeHead -> QualifiedSymbol + optional TypeArguments` | 既存 syntax node vocabulary を nested type head に使う Parser Task 48 source と unit / pass / fail tests | qualified-name と type-argument の source shape だけを保持し、name / type resolution は `mizar-syntax` の外に残す |
+
+この addendum は `SPEC-07-PI-PLACEMENT` の syntax 側を記録する。semantic completion
+の credit は与えず、semantic Task 39 は deferred のまま残す。また、新しい syntax
+milestone を作るのではなく、S-025 source/spec audit を historical crate-exit record
+として保持する。

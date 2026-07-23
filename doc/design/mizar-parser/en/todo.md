@@ -1019,25 +1019,32 @@ older numeric syntax task references appear to disagree, prefer
       [doc/spec/en/15.statements.md](../../../spec/en/15.statements.md),
       [doc/spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md).
 
-48. **Property-implementation grammar and parse-only corpus.** [ ]
-    - Implement only the canonical Chapter 7 `property_impl` grammar:
-      definition-local `let M be mode_application;`, `property M.name means`
+48. **Property-implementation grammar and parse-only corpus.** [x]
+    - Implements only the canonical top-level Chapter 7 `property_impl`
+      declaration: `let M be mode_application;`, `property M.name means`
       formula definiens plus mandatory `existence`/`uniqueness` and optional
       `coherence`, or `property M.name equals` term definiens plus optional
       `coherence`, followed by `end;`. Preserve ordered source nodes, recovery,
       and typed syntax accessors without resolving modes/properties or checking
       overlap/coherence semantics.
-    - Add spec-derived parse-only pass/fail coverage for means/equals forms,
+    - Adds spec-derived parse-only pass/fail coverage for means/equals forms,
       case/otherwise definiens, mandatory correctness blocks, optional
       coherence, malformed owner/property dots, and recovery boundaries. Update
-      the deferred parser trace ownership only when implementation lands; do
-      not activate the Task-39 semantic seed.
+      the exact parser trace row is covered by the two Task-48 sidecars. The
+      Task-39 semantic seed remains inactive.
     - Deps: none on Task 47; both are independently authorized Step-5/Task-49
       prerequisites. Spec: Chapter 7 sections 7.4.1 and 7.8.2; deferred trace
       `spec.en.07.modes.property_implementation.parser`.
     - Forbidden: checker payload extraction, property overlap/coherence
       decisions, proof acceptance, advanced-semantics runner activation,
       existing expectation rebaseline, or broader definition grammar cleanup.
+    - Result: `PropertyImplementation` is a dedicated top-level syntax node;
+      its parameter reuses `DefinitionParameter -> TypeHead -> QualifiedSymbol
+      + TypeArguments`, and recovery preserves the real outer `end;` and a
+      following declaration across malformed/nested tails. Parser unit tests
+      are 221, parse-only is 99/99, and the prior `source_drift`, `test_gap`,
+      paired `design_drift`, and two internal `test_expectation_drift` cases
+      are closed without changing existing `.miz` files or semantic intent.
 
 ## Recommended Verification
 

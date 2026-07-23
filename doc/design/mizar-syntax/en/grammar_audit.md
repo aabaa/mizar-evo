@@ -189,3 +189,19 @@ was added. Chapter 19 intentionally restates `qua_expression` and
 wording unless they are listed above. Appendix A is the parser-facing normalized
 form; future chapter edits should avoid renormalizing parser behavior away from
 Appendix A.
+
+## Parser Task 48 Follow-Through
+
+Parser Task 48 closes the parser/syntax placement gap identified by
+`SPEC-07-PI-PLACEMENT`. A property implementation is represented as a
+top-level `PropertyImplementation` node, and its specialized parameter keeps
+the source-shaped path
+`DefinitionParameter -> TypeHead -> QualifiedSymbol + optional TypeArguments`.
+The active pass/fail corpus covers a valid property implementation and bounded
+recovery for a malformed one.
+
+This is syntax-only credit: the parser and syntax tree preserve placement,
+ownership, and source shape without deciding whether the referenced type,
+property, proof, or correctness conditions are semantically valid. That work
+remains deferred to semantic Task 39. This post-exit follow-through does not
+create a new `mizar-syntax` task ID or reopen the historical grammar gate.

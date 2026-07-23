@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage boundary, task-35 vocabulary, task-22 predicate-label follow-through, task-24 behavior-preserving source split, and S-025 refactor audit complete; only S-021 rustdoc summaries remain deferred |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage boundary, task-35 vocabulary, task-22 predicate-label follow-through, task-24 behavior-preserving source split, S-025 refactor audit, and the Parser Task 48 post-exit `PropertyImplementation` vocabulary increment are complete; S-021 rustdoc summaries and semantic Task 39 remain deferred |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; task-5 item attachment fixture landed |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 
@@ -709,3 +709,20 @@ Check the task off here once tests pass.
   kinds speculatively ahead of a parser task that constructs them.
 - `SurfaceAst` is internal compiler data, not a stable external schema; the
   snapshot rendering (task 3) is the stability surface for corpus baselines.
+
+## Parser Task 48 Post-Exit Vocabulary Addendum
+
+- [x] The parser-owned Task 48 increment adds top-level
+  `PropertyImplementation`, append-only
+  `SyntaxKind::PropertyImplementation = 192`, the matching `SurfaceNodeKind`
+  and typed accessor, and snapshot/raw-kind/node-kind/rowan coverage.
+- [x] Its specialized parameter preserves
+  `DefinitionParameter -> TypeHead -> QualifiedSymbol + optional TypeArguments`,
+  and the active Task 48 pass/fail corpus exercises successful construction and
+  bounded malformed-input recovery.
+- [x] The increment receives syntax-only credit under
+  `SPEC-07-PI-PLACEMENT`. Semantic property validation is not part of this
+  syntax addendum and remains deferred to semantic Task 39.
+
+No new `mizar-syntax` task ID is introduced. The historical S-025 exit status
+and the S-021 policy-triggered rustdoc deferral remain intact.

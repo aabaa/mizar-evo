@@ -1393,9 +1393,10 @@ proof acceptance, terminal goals, Core/VC payloads, or runner success.
     explicit-`by`, and proof-block `reconsider` syntax with the canonical
     Chapters 4/8/15 and Appendix-A contract. The real parse-only runner covers
     both formerly deferred exact rows without changing semantic intent.
-11. [ ] [mizar-parser task 48](./mizar-parser/en/todo.md) — implement the exact
-    Chapter-7 `property_impl` grammar and parse-only pass/fail corpus needed by
-    the Task-39 coherence seed.
+11. [x] [mizar-parser task 48](./mizar-parser/en/todo.md) — implemented the
+    exact top-level Chapter-7 `property_impl` grammar, append-only typed syntax,
+    bounded recovery, and active parse-only pass/fail corpus needed by the
+    still-inactive Task-39 coherence seed. This grants syntax-only credit.
 12. [x] [mizar-resolve task 31](./mizar-resolve/en/todo.md) — expose the
     same-signature/same-return declaration conflict required by the deferred
     Task-37 seed, without performing checker overload selection. Complete: the
@@ -1880,5 +1881,24 @@ cover exactly the omitted/proof-block trace rows; no existing `.miz` changed.
 The plan is 405/369, parse-only is 97/97 with coverage 43/42, pass/fail is
 221/184, and warnings/errors are 23/0. Declaration/type/proof admissions remain
 5/188/1. The nonblocking Chapter-8 single-item versus list wording `spec_gap`
-is human-owned. Parser Task 48 remains the next authorized nonempty Step-5
-task, Task 46 remains deferred, and Steps 6/7 remain deferred.
+is human-owned. At this Task-47 checkpoint, Parser Task 48 was the next
+authorized nonempty Step-5 task; Task 46 and Steps 6/7 remained deferred.
+
+## Step 5 Parser Task 48 Active Addendum
+
+Parser Task 48 closes P-265-48 with one dedicated top-level
+`PropertyImplementation`, append-only syntax kind 192, exact specialized mode
+parameter ownership, means/equals definientia and correctness ordering, and
+nested-depth recovery that preserves the real outer terminator and following
+declaration. The exact requirement
+`spec.en.07.modes.property_implementation.parser` is covered by one new pass
+and one new fail sidecar; existing `.miz`/expectations and the inactive
+Task-39 semantic seed are unchanged.
+
+The plan is 407/369, parse-only is 99/99 with coverage 43/43, pass/fail is
+222/185, and warnings/errors are 23/0. Declaration/type/proof admissions remain
+5/188/1. This closes the selected `source_drift`, `test_gap`, paired
+`design_drift`, and two internal unit `test_expectation_drift` cases without
+granting mode/property resolution, coherence/overlap, proof, checker/Core/CFG/
+VC, Step 6, or Step 7 credit. Task 46 remains deferred; successor authority
+must be established by fresh inventory rather than inferred from Task 48.

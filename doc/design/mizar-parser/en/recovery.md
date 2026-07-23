@@ -227,3 +227,20 @@ This exception is local to `reconsider_tail`. `consider` and the remaining
 simple-justification-only hosts retain mandatory-`by` recovery. The existing
 mixed consider/reconsider failure source is unchanged; only its obsolete
 omitted-tail `MalformedJustification` expectation was removed.
+
+## Task 48 Property-Implementation Recovery
+
+Once the bounded discriminator sees the declaration's top-level `property`,
+Task 48 keeps the dedicated producer through malformed parameter, owner/name,
+definiens, correctness, and terminator input. The discriminator and parameter
+recovery both track delimiter and arbitrary nested-block depth, stop at an
+immediate or later top-level item boundary, and ignore `property` tokens inside
+nested proofs/blocks.
+
+Missing means-correctness conditions use the existing formula diagnostic and
+missing-proof-step recovery vocabulary. `equals` existence/uniqueness,
+reordered/duplicate correctness conditions, malformed justifications, and
+unexpected trailing material are diagnosed without adding public codes.
+Malformed body/tail material synchronizes through nested blocks to the real
+outer `end`, next top-level item, or EOF. A missing outer `end` or final
+semicolon does not consume the following declaration.

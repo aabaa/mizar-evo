@@ -1,0 +1,24 @@
+definition
+  mode DomainLabel: Domain is set;
+end;
+
+definition
+  let X, Y be Domain;
+  property X value means thesis;
+  uniqueness;
+  existence;
+end;
+
+definition
+  let Z being set;
+  property .value equals Z;
+  existence;
+end;
+
+definition
+  let W be Domain
+  property W. equals ;
+  coherence junk;
+end;
+
+theorem AfterRecovery: thesis;

@@ -1147,13 +1147,16 @@ tests = [
 [[requirement]]
 id = "spec.en.07.modes.property_implementation.parser"
 source = "doc/spec/en/07.modes.md"
-section = "7.4.1 Property Implementation; 7.8.2 Property Implementation Correctness; 7.10 Complete Syntax; Appendix A.7 Modes"
+section = "7.4.1 Property Implementation; 7.8.2 Property Implementation Correctness; 7.10 Complete Syntax; 12.7 Module Structure; Appendix A.7 Modes; Appendix A.12 Modules and Namespaces"
 stage = "parse_only"
-status = "deferred"
+status = "covered"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 39 documents property `means`/`equals` implementation syntax plus the optional `coherence` block, but active parser fixtures do not yet cover property implementation definitions and the parser currently does not expose this definition form. Parser Task 48 now owns the exact Chapter-7 grammar and pass/fail parse-only corpus; keep this row deferred until that implementation task lands."
-tests = []
+notes = "Parser Task 48 implements the complete property implementation as the top-level declaration fixed by SPEC-07-PI-PLACEMENT, with exact `let identifier be mode_application;`, means/equals definientia, ordered correctness conditions, typed syntax ownership, and recovery. This is parse-only credit; property payload extraction, overlap/coherence decisions, proof acceptance, and the inactive Task-39 advanced-semantic seed remain deferred."
+tests = [
+  "tests/miz/pass/parser/pass_parser_property_implementations_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.08.reconsider.omitted_justification.semantic"

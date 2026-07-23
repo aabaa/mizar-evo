@@ -2497,3 +2497,22 @@ omitted-tail diagnosticを除いたすべてのnon-Task-47 parser errorを引き
 このincrementで変わるのはparse admissionとplan bytesだけで、plan 405/369、parse-only
 97/97、pass/fail 221/184、warnings/errors 23/0となる。declaration-symbol、
 type-elaboration、proof-verification admissionは5/188/1のままである。
+
+## Parser Task 48 property-implementation parse-only increment
+
+parse-only runnerはpass/fail pair
+`pass_parser_property_implementations_001`と
+`fail_parser_property_implementations_recovery_001`を追加し、両方ともreal
+frontend/parser pathを実行する。pass caseはtop-level means/equals property
+implementation、simple/case/otherwise definiens、exact single
+`let identifier be mode_application;` parameter、meansのordered mandatory
+existence/uniqueness condition、optional coherence、supported justification shapeをcoverする。
+fail caseはmalformed parameter/dot/correctness ordering/forbidden equals conditionに対する
+bounded recoveryとfollowing declaration preservationをpinする。
+
+exact requirement `spec.en.07.modes.property_implementation.parser`は
+`pass_and_fail`付き`covered`となる。これはparser/syntax-only creditであり、harnessは
+property payloadをextractせず、overlap/coherence decisionを行わず、proof
+acceptance/dischargeもcreditしない。inactive semantic Task-39 caseは変更しない。
+active totalはplan 407/369、parse-only 99/99、pass/fail 222/185、warnings/errors
+23/0であり、declaration-symbol/type-elaboration/proof-verification admissionは5/188/1のままである。

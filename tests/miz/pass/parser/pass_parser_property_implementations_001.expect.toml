@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_property_implementations_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.property_implementations"
+source = "pass_parser_property_implementations_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.07.modes.property_implementation.parser"]
+notes = "Active parse-only coverage for parser Task 48 top-level property implementations: simple and case/otherwise means/equals definientia, mandatory existence/uniqueness, optional coherence, and omitted/reference/computation/proof justification shapes."

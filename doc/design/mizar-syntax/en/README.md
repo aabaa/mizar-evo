@@ -10,10 +10,12 @@ Status: the crate owns a rowan-backed `SurfaceAst`, typed compatibility views,
 deterministic snapshot rendering, syntax diagnostics, syntax-owned trivia side
 tables, the task-35 surface vocabulary, the task-22 predicate redefinition
 label follow-through paired with parser task 36, and the task-24 private AST
-source split. The S-025 follow-up audit found no remaining source/spec,
-source/test, re-export-path, snapshot-stability, parser/syntax-boundary, or
-bilingual documentation gap. S-021 rustdoc summaries remain explicitly
-deferred.
+source split. Parser Task 48 later adds the post-exit
+`PropertyImplementation` vocabulary increment: append-only `SyntaxKind` 192,
+the matching surface node/accessor/snapshot/raw-kind/rowan contract, and active
+parse-only pass/fail evidence. This is syntax-only coverage under
+`SPEC-07-PI-PLACEMENT`; Task-39 property semantics and S-021 rustdoc summaries
+remain deferred.
 
 Autonomous crate-development kickoff plan:
 

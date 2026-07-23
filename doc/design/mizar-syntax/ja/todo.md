@@ -12,7 +12,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage 境界、task-35 vocabulary、task 22 の predicate-label follow-through、task 24 の挙動維持 source split、S-025 refactor audit は完了済み。S-021 rustdoc summary だけが deferred のまま残る |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage 境界、task-35 vocabulary、task 22 の predicate-label follow-through、task 24 の挙動維持 source split、S-025 refactor audit、Parser Task 48 の post-exit `PropertyImplementation` vocabulary increment は完了済み。S-021 rustdoc summary と semantic Task 39 は deferred のまま残る |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task 4 のモデルは実装済み、task 5 の item attachment fixture は着地済み |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task 5 の recovery 語彙は実装済み、parser producer は段階的に追加 |
 
@@ -674,3 +674,20 @@ cargo test -p mizar-frontend
 - `SurfaceAst` は内部コンパイラデータであり、安定した外部スキーマではない。
   スナップショットレンダリング（task 3）がコーパスベースラインに対する
   安定性の表面である。
+
+## Parser Task 48 post-exit vocabulary addendum
+
+- [x] parser-owned な Task 48 increment は top-level
+  `PropertyImplementation`、append-only な
+  `SyntaxKind::PropertyImplementation = 192`、対応する `SurfaceNodeKind` と typed
+  accessor、snapshot / raw-kind / node-kind / rowan coverage を追加する。
+- [x] その特殊化された parameter は
+  `DefinitionParameter -> TypeHead -> QualifiedSymbol + optional TypeArguments`
+  を保持し、active な Task 48 pass / fail corpus は正常な construction と不正入力の
+  bounded recovery を実行する。
+- [x] この increment は `SPEC-07-PI-PLACEMENT` に基づく syntax-only credit である。
+  semantic property validation はこの syntax addendum の範囲外であり、semantic
+  Task 39 に deferred のまま残る。
+
+新しい `mizar-syntax` task ID は導入しない。historical な S-025 exit status と
+S-021 の policy-triggered rustdoc deferral はそのまま保持する。

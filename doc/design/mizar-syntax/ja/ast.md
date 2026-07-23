@@ -1635,3 +1635,25 @@ exhaustive のままとする。task 14 の formula payload enum
 促されるようにする。下流 crate は `#[non_exhaustive]` により必要になる箇所で wildcard
 fallback arm を含めなければならない。今後この module に public enum を追加する場合は、
 着地前に lint-policy classification のどちらか一方へ追加しなければならない。
+
+## Parser Task 48: Property implementation node
+
+Parser Task 48 は `SyntaxKind::PropertyImplementation = 192` を append し、既存 raw kind を
+renumber しない。`SurfaceNodeKind::PropertyImplementation` はその raw node kind に map し、
+`PropertyImplementation` として render され、rowan green-tree projection へ入り、
+`SurfaceNodeView::as_property_implementation` から利用できる。
+
+この node は `SPEC-07-PI-PLACEMENT` が固定した complete top-level Chapter-7 declaration
+である。source order で leading declaration annotation、`definition`、一つの
+`DefinitionParameter`、`property`、owner identifier、`.`、property identifier、
+`means` + `FormulaDefiniens` または `equals` + `TermDefiniens`、definiens semicolon、
+correctness-condition child、outer `end;` または recovery を所有する。specialized
+parameter は既存 `DefinitionParameter` kind のままで exact
+`let identifier be mode_application;` を所有し、その mode application は
+`QualifiedSymbol` と optional `TypeArguments` を持つ `TypeHead` である。
+
+means-form condition は ordered mandatory `existence`、mandatory `uniqueness`、optional
+`coherence` であり、equals は optional `coherence` だけを許す。既存
+`CorrectnessCondition`、justification、`ProofBlock` shape は syntax-only のままである。
+new node / typed view は resolved property identity、mode fact、proof acceptance、payload
+extraction、coherence decision を持たない。

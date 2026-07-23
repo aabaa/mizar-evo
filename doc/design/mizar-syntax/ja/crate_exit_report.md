@@ -8,7 +8,9 @@
 状態: task 25 の AST refactor follow-up audit 後に refresh した close-out。
 task-35 autonomous `mizar-syntax` milestone は下記 score の historical basis として
 残す。post-exit task 22 から task 25 は完了済みであり、S-021 rustdoc summary は
-policy trigger により明示的に deferred のまま残る。
+policy trigger により明示的に deferred のまま残る。下記の Parser Task 48
+vocabulary addendum は post-exit の syntax increment であり、その historical
+milestone を再採点せず、再開もしない。
 
 品質スコア: reviewed 94/100。
 
@@ -243,3 +245,20 @@ Open questions:
   traceability metadata、recovery または dot-role diagnostics を横断するため。
   documentation-only follow-up なら `medium` へ下げてよく、canonical grammar または
   semantic language behavior を変更する場合は `high` より上げる。
+
+## Parser Task 48 post-exit addendum
+
+Parser Task 48 は、すでに exit 済みの syntax vocabulary を top-level
+`PropertyImplementation` node と append-only な
+`SyntaxKind::PropertyImplementation = 192` で拡張する。対応する
+`SurfaceNodeKind`、typed accessor、snapshot rendering、raw-kind / node-kind round
+trip、rowan boundary は Task 48 の syntax changes と tests で覆う。nested parameter
+は source-shaped な
+`DefinitionParameter -> TypeHead -> QualifiedSymbol + optional TypeArguments`
+として残り、parser の active Task 48 pass / fail corpus は正しい path と bounded
+recovery path を覆う。
+
+この addendum は `SPEC-07-PI-PLACEMENT` について syntax-only の完了を記録する。
+semantic property validation は主張せず、semantic Task 39 に deferred のまま残す。
+また、新しい `mizar-syntax` task ID を導入しない。したがって、上記の historical
+94/100 score と S-025 exit determination は変更しない。

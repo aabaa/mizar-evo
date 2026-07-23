@@ -4,7 +4,8 @@
 > [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 
 Status: completed through S-025, after the task-24 AST private module split and
-task-25 follow-up audit.
+task-25 follow-up audit; Parser Task 48 post-exit correspondence is appended
+below without creating a new syntax task ID.
 
 ## Scope
 
@@ -147,3 +148,15 @@ This audit did not add a new follow-up task. Existing classified records remain:
   trigger is met.
 - S-022 through S-025 are now closed. No new follow-up task was created by the
   predicate-label or AST-refactor audits.
+
+## Parser Task 48 Post-Exit Correspondence
+
+| Surface contract | Source/test evidence | Boundary |
+|---|---|---|
+| Top-level `PropertyImplementation`; append-only `SyntaxKind::PropertyImplementation = 192`; matching `SurfaceNodeKind`, `SurfaceNodeView::as_property_implementation`, snapshot/raw-kind/node-kind/rowan support | `crates/mizar-syntax/src/ast.rs`, `crates/mizar-syntax/src/ast/snapshot.rs`, and the Task 48 syntax accessor, snapshot, and raw-kind tests; parser Task 48 unit and active pass/fail corpus coverage | Syntax-only representation and parser construction; no semantic property validation |
+| `DefinitionParameter -> TypeHead -> QualifiedSymbol + optional TypeArguments` | Parser Task 48 source and unit/pass/fail tests, using existing syntax node vocabulary for the nested type head | Qualified-name and type-argument source shape only; name/type resolution remains outside `mizar-syntax` |
+
+This addendum records the syntax side of `SPEC-07-PI-PLACEMENT`. It gives no
+semantic completion credit: semantic Task 39 remains deferred. It also
+preserves the S-025 source/spec audit as the historical crate-exit record
+rather than inventing a new syntax milestone.

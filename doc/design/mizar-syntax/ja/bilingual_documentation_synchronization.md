@@ -83,18 +83,18 @@ S-019 は source、spec、test traceability を確認した。この task は、
 
 | 英語正本 | 日本語 companion | 同期状態 |
 |---|---|---|
-| [README.md](../en/README.md) | [README.md](./README.md) | module index、crate boundary、S-025 までの status label、cross-cutting audit link を同期済み。 |
-| [00.crate_plan.md](../en/00.crate_plan.md) | [00.crate_plan.md](./00.crate_plan.md) | crate responsibility、specification/test reference、parser task pairing、gap classification、task decomposition、S-020 result、exit criteria を同期済み。 |
-| [ast.md](../en/ast.md) | [ast.md](./ast.md) | public API、private source layout、rowan storage boundary、task 35 までの syntax vocabulary と task 22 の predicate redefinition label follow-through、compatibility view policy、raw-kind policy、identity/reuse rule、task status を同期済み。 |
+| [README.md](../en/README.md) | [README.md](./README.md) | module index、crate boundary、S-025 までの status と Parser Task 48 post-exit addendum、cross-cutting audit link を同期済み。 |
+| [00.crate_plan.md](../en/00.crate_plan.md) | [00.crate_plan.md](./00.crate_plan.md) | crate responsibility、specification/test reference、parser task pairing、gap classification、task decomposition、S-020 result、exit criteria、Parser Task 48 post-exit addendum を同期済み。 |
+| [ast.md](../en/ast.md) | [ast.md](./ast.md) | public API、private source layout、rowan storage boundary、task 35 までの syntax vocabulary、task 22 の predicate redefinition label follow-through、Parser Task 48 `PropertyImplementation`、192 までの append-only raw-kind policy、compatibility view policy、identity/reuse rule、task status を同期済み。 |
 | [trivia.md](../en/trivia.md) | [trivia.md](./trivia.md) | public API、trivia side-table ownership、sorting、attachment、snapshot behavior、parser/frontend responsibility boundary を同期済み。 |
 | [recovery.md](../en/recovery.md) | [recovery.md](./recovery.md) | public API、recovery kind、diagnostic code、active / vocabulary-only producer status、malformed annotation recovery、source/test evidence を同期済み。 |
-| [grammar_audit.md](../en/grammar_audit.md) | [grammar_audit.md](./grammar_audit.md) | grammar gate finding、parser task map、gap classification、close-out status を同期済み。 |
+| [grammar_audit.md](../en/grammar_audit.md) | [grammar_audit.md](./grammar_audit.md) | grammar gate finding、parser task map、gap classification、close-out status、syntax-only な Task 48 placement follow-through を同期済み。 |
 | [parse_only_acceptance_matrix.md](../en/parse_only_acceptance_matrix.md) | [parse_only_acceptance_matrix.md](./parse_only_acceptance_matrix.md) | acceptance category、active/deferred status、grammar-position reference、parser-facing ownership note を同期済み。 |
 | [parse_only_fixture_seed.md](../en/parse_only_fixture_seed.md) | [parse_only_fixture_seed.md](./parse_only_fixture_seed.md) | seed fixture intent、activation rule、deferred row、parser ownership reference を同期済み。 |
-| [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [source_spec_correspondence.md](./source_spec_correspondence.md) | S-019、S-023、S-025 の source/spec/test correspondence、public API と method traceability、follow-up record、この bilingual audit への handoff を同期済み。 |
-| [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この S-020 / S-023 / S-025 監査が二言語同期の結果を両言語で記録する。 |
-| [crate_exit_report.md](../en/crate_exit_report.md) | [crate_exit_report.md](./crate_exit_report.md) | historical task-35 exit status と S-025 で refresh した close-out status、quality score、deferred item、verification result、source-layout evidence を同期済み。 |
-| [todo.md](../en/todo.md) | [todo.md](./todo.md) | task status と follow-up record は S-025 まで同期済み。S-021 は両言語で deferred のままであり、tasks 24-25 は完了済み。 |
+| [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [source_spec_correspondence.md](./source_spec_correspondence.md) | S-019、S-023、S-025 の source/spec/test correspondence、public API と method traceability、follow-up record、Parser Task 48 post-exit correspondence を同期済み。 |
+| [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この S-020 / S-023 / S-025 監査と Parser Task 48 post-exit synchronization record を両言語で対応させる。 |
+| [crate_exit_report.md](../en/crate_exit_report.md) | [crate_exit_report.md](./crate_exit_report.md) | historical task-35 exit status、S-025 で refresh した close-out status、再採点しない Parser Task 48 syntax-only addendum を同期済み。 |
+| [todo.md](../en/todo.md) | [todo.md](./todo.md) | task status と follow-up record は S-025 と parser-owned Task 48 vocabulary increment まで同期済み。S-021 と semantic Task 39 は両言語で deferred のまま残る。 |
 
 ## リンク方針
 
@@ -124,3 +124,13 @@ task 22 の predicate-label repair 後に status text が遅れていた documen
 S-025 は新しい implementation、test、specification follow-up を作らなかった。
 task 24 の private AST module split 後に status / source-layout text が遅れていた
 documentation `design_drift` のみを閉じた。
+
+## Parser Task 48 post-exit 同期
+
+上記の英語正本と日本語 companion は、parser-owned な Task 48 increment について
+同じ public name と boundary を記録する。すなわち top-level
+`PropertyImplementation`、append-only raw kind 192、対応する surface kind と
+accessor、snapshot / raw-kind / node-kind / rowan support、`TypeHead` を経由する
+source-shaped な `DefinitionParameter` path である。両言語とも credit は
+syntax-only であり、semantic Task 39 は deferred のまま、historical な S-025 exit
+record は新たに番号付けした syntax milestone ではないことも明記する。

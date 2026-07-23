@@ -2040,3 +2040,20 @@ general Chapter-15 statement row also lists that case without adding a third
 requirement. The sidecar explicitly limits credit to syntax and grants no
 semantic reconsider, proof-obligation, theorem-acceptance, or E0102 coverage.
 The plan becomes 405/369 with parse coverage 43/42 and pass/fail 221/184.
+
+## Parser Task 48 Property-Implementation Trace Completion
+
+Exactly `spec.en.07.modes.property_implementation.parser` changes from
+deferred to `covered` with `coverage = "pass_and_fail"`. Its complete backlink
+set is:
+
+- `tests/miz/pass/parser/pass_parser_property_implementations_001.expect.toml`
+- `tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.expect.toml`
+
+The two active cases exercise the dedicated top-level declaration, means and
+equals simple/case/otherwise definientia, exact parameter restrictions,
+correctness conditions, and recovery. Credit is limited to parser/syntax
+ownership. Property payload extraction, overlap/coherence semantics, proof
+acceptance/discharge, and the inactive semantic Task-39 seed remain deferred
+and unchanged. The plan is 407/369, parse-only is 99/99, and pass/fail is
+222/185; declaration/type/proof admissions remain 5/188/1.

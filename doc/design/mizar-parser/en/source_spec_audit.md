@@ -4,7 +4,7 @@
 > [../ja/source_spec_audit.md](../ja/source_spec_audit.md).
 
 Status: task 43 audit complete; Task 265 ownership refreshed through completed
-Task 47, with Task 48 active and Task 46 deferred.
+Tasks 47-48, with Task 46 deferred.
 
 ## Scope
 
@@ -26,7 +26,7 @@ No blocking non-deferred `spec_gap`, `boundary_violation`, or
 is represented by source, unit tests, active parse-only corpus cases, and
 traceability metadata. The original task-43 audit found one deferred operator-
 declaration gap, recorded below; Task 265 adds two later, canonically grounded
-current-state rows, one now closed by Task 47 and one still active.
+current-state rows, now closed by Tasks 47 and 48.
 
 The only task-43 follow-up is deferred:
 
@@ -34,14 +34,13 @@ The only task-43 follow-up is deferred:
 |---|---|---|---|
 | P-043-01 | `source_drift` / `test_gap` | Concrete `operator_decl` parsing and active parser corpus coverage for `infix_operator`, `prefix_operator`, `postfix_operator`, and infix associativity words `left`, `right`, `none`. Canonical Appendix A, Chapter 10, and Chapter 13 already give these words grammar positions, but current parser behavior recognizes the declaration keywords only as task-5 top-level notation starts or consumes Pratt metadata supplied through `ParseRequest::operator_fixity`; it does not parse concrete operator declarations from source yet. | Deferred parser task 46 |
 
-Task 265 identified the following classified execution ownership. Task 47 has
-since changed its bounded source/expectation/trace slice; Task 48 remains
-unimplemented:
+Task 265 identified the following classified execution ownership. Tasks 47 and
+48 have now closed their bounded parser/test/trace slices:
 
 | ID | Classification | Evidence and exact scope | Current owner |
 |---|---|---|---|
 | P-265-47 | `source_drift` / `test_expectation_drift` / `test_gap` (closed) | The parser now accepts omitted, explicit-`by`, and proof-block `reconsider_tail`; the active corpus covers the two exact rows and the unchanged mixed recovery `.miz` no longer expects an error for the omitted form. | Completed parser Task 47. Semantic reconsider remains owned by checker authority and receives no parser credit. |
-| P-265-48 | `source_drift` / `test_gap` | Chapter 7 defines `property_impl` means/equals forms and correctness/coherence blocks, while the parser exposes no exact property-implementation form and the parse-only trace row remains deferred. | Active parser Task 48; parse-only implementation/corpus only, with Task-39 semantic activation still gated. |
+| P-265-48 | `source_drift` / `test_gap` (closed) | The parser now exposes the exact top-level Chapter-7 means/equals property-implementation form, append-only typed syntax, bounded recovery, and active pass/fail parse-only evidence. | Completed parser Task 48. Task-39 semantic activation remains gated and receives no parser credit. |
 
 `transitivity` remains explicitly future-reserved for parser purposes. Task 28
 already records the old TODO wording as design drift against the canonical
@@ -66,7 +65,7 @@ property productions; there is no current parser grammar position for a
 | Parsing is syntax-only: no name resolution, type inference, overload selection, proof obligations, cache authority, or owner-origin ids. | `crates/mizar-parser/src/` has no resolver/build/cache dependencies; semantic facts are not produced by parser nodes. | parser crate tests and active corpus assert syntax shapes/diagnostics only. | No finding |
 | Grammar code emits through the parser event sink and documented `mizar-syntax` builder/accessor boundary, not raw rowan layout. | `src/event.rs`, `src/grammar.rs`, `src/module.rs`, `src/module/annotations.rs` | parser unit tests plus `mizar-syntax` builder/view tests | No finding |
 | Module skeleton, imports, exports, visibility wrappers, and placeholder top-level dispatch keep source order and recovery ownership. | `src/module.rs`, `src/sync.rs` | `pass_parser_module_skeleton_001`, `pass_parser_import_items_001`, `pass_parser_export_visibility_001`, late import/export fail cases | No finding |
-| Type, term, formula, statement, proof, definition, structure, registration, template, algorithm, claim, verification-clause, annotation, and predicate redefinition-label surfaces are implemented through task 36, with Task-47 `reconsider_tail` alignment. | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | active parser pass/fail corpus requirements in `tests/coverage/spec_trace.toml`, parser unit tests, parse-only snapshots | Broad surface implemented; the exact remaining `property_impl` exception is P-265-48. |
+| Type, term, formula, statement, proof, definition, property implementation, structure, registration, template, algorithm, claim, verification-clause, annotation, and predicate redefinition-label surfaces are implemented through task 36 plus Tasks 47-48. | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | active parser pass/fail corpus requirements in `tests/coverage/spec_trace.toml`, parser unit tests, parse-only snapshots | No finding; P-265-47 and P-265-48 are closed. |
 | Term Pratt parsing respects `active_from`, newest active same-spelling metadata, prefix/postfix/infix binding powers, `qua` as the fixed lowest term operator, and non-associative diagnostics. | `src/grammar.rs`, `src/module.rs`, `src/pratt.rs` | parser operator unit tests, `crates/mizar-parser/tests/determinism.rs`, `pass_parser_operator_terms_001`, operator fail cases | No finding |
 | Formula Pratt parsing uses fixed connective precedence and outer quantifier parsing. | `src/module.rs` | `pass_parser_formula_connectives_001` and formula fail corpus | No finding |
 | Recovery synchronizes at semicolons, `end`, top-level item starts, category-local starts, and EOF; recoverable syntax emits recovery nodes and diagnostics. | `src/recovery.rs`, `src/sync.rs`, `src/module.rs`, `src/module/annotations.rs` | fail parser corpus, parser recovery unit tests, task-37 consolidation cases | No finding |
@@ -114,7 +113,25 @@ an existing `.miz` source.
 P-265-47D remains a nonblocking, human-owned `spec_gap`: Chapter 8's compact
 EBNF writes one `reconsider_item`, whereas Chapters 4/15 and Appendix A use a
 list. Task 47 preserves the already implemented source-ordered list and does
-not edit `doc/spec`. P-265-48 remains the authorized property-implementation
-`source_drift` / `test_gap`; P-046 remains deferred. No
+not edit `doc/spec`. P-265-48 is closed by Task 48; P-046 remains deferred. No
 `source_undocumented_behavior`, `boundary_violation`, or
 `repo_metadata_conflict` was found.
+
+## Task 48 Source/Specification Recheck
+
+Task 48 closes P-265-48 against Chapters 7 §§7.4.1/7.8.2/7.10, Chapter 12
+§12.7, and Appendix A §§A.7/A.12. `src/module.rs` dispatches the top-level
+shape before the generic definition producer, emits one
+`PropertyImplementation`, reuses the existing parameter/type/definiens/
+correctness/justification nodes, and keeps recovery bounded across nested
+blocks and following declarations. `mizar-syntax` adds append-only raw kind
+192, stable snapshot/raw/rowan mappings, and the typed accessor.
+
+The exact trace row is covered by the new pass/fail sidecars and the active
+runner reports 99/99. Existing `.miz` and expectation files, the inactive
+Task-39 semantic seed, semantic payload extraction, proof acceptance, and
+checker/Core/CFG/VC behavior are unchanged. The closed classifications are
+`source_drift`, `test_gap`, paired-document `design_drift`, and two internal
+unit `test_expectation_drift` cases. No selected-slice `spec_gap`,
+`source_undocumented_behavior`, `boundary_violation`, or
+`repo_metadata_conflict` remains.

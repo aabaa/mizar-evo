@@ -8,7 +8,9 @@
 Status: refreshed close-out after the task-25 AST refactor follow-up audit. The
 task-35 autonomous `mizar-syntax` milestone remains the historical basis for
 the score below; post-exit tasks 22 through 25 are now complete, and S-021
-rustdoc summaries remain explicitly deferred by policy trigger.
+rustdoc summaries remain explicitly deferred by policy trigger. The Parser
+Task 48 vocabulary addendum below is a post-exit syntax increment and does not
+rescore or reopen that historical milestone.
 
 Quality score: reviewed 94/100.
 
@@ -248,3 +250,20 @@ Recommended reasoning setting for the next task:
   dot-role diagnostics. Lower to `medium` for documentation-only follow-up, and
   raise above `high` if the task changes canonical grammar or semantic language
   behavior.
+
+## Parser Task 48 Post-Exit Addendum
+
+Parser Task 48 extends the already-exited syntax vocabulary with the top-level
+`PropertyImplementation` node and append-only
+`SyntaxKind::PropertyImplementation = 192`. The matching `SurfaceNodeKind`,
+typed accessor, snapshot rendering, raw-kind and node-kind round trips, and
+rowan boundary are covered by the Task 48 syntax changes and tests. The nested
+parameter remains source-shaped as
+`DefinitionParameter -> TypeHead -> QualifiedSymbol + optional TypeArguments`,
+and the parser's active Task 48 pass/fail corpus covers the valid and bounded
+recovery paths.
+
+This addendum records syntax-only completion for `SPEC-07-PI-PLACEMENT`. It does
+not claim semantic property validation, which remains deferred to semantic
+Task 39, and it does not introduce a new `mizar-syntax` task ID. The historical
+94/100 score and S-025 exit determination above therefore remain unchanged.
