@@ -109,6 +109,7 @@ struct ResolvedTypedAst {
     source_id: SourceId,
     module_id: ModuleId,
     source_context: Option<SourceBindingContextHandoff>,
+    source_type: Option<SourceTypeApplicationHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -131,6 +132,11 @@ Assembly clones `source_context` only from the supplied `TypedAst`, so the
 final layer cannot diverge from the checker-owned source-item, declaration,
 binding, or local-context links. Absence preserves legacy debug bytes; presence
 adds deterministic nonempty handoff rendering.
+
+Task 249 applies the same rule to `source_type`: assembly clones the immutable
+handoff only from `TypedAst`, accepts no independent source-type input, and
+therefore cannot diverge from the already authenticated flat application/
+expression/argument tables. Absence preserves legacy debug bytes.
 
 ### Resolved Nodes
 

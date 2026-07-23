@@ -4936,8 +4936,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 189);
-    assert_eq!(report.passed_count(), 189);
+    assert_eq!(report.results.len(), 190);
+    assert_eq!(report.passed_count(), 190);
     assert_eq!(report.failed_count(), 0);
     let task31_result = report
         .results
@@ -4950,6 +4950,13 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     );
     assert!(task31_result.actual_detail_keys.is_empty());
     assert!(task31_result.snapshot_failure.is_none());
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_source_type_application_payload_001"
+            && result.actual_detail_keys
+                == [
+                    "type_elaboration.checker.source_type_application.semantic_dependencies_pending"
+                ]
+    }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
             && result.actual_detail_keys
@@ -9484,8 +9491,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 189"));
-    assert!(stdout.contains("passed: 189"));
+    assert!(stdout.contains("type-elaboration cases: 190"));
+    assert!(stdout.contains("passed: 190"));
     assert!(stdout.contains("failed: 0"));
 }
 

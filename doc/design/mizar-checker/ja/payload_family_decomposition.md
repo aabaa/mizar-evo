@@ -274,3 +274,18 @@ corruption/determinism matrix、future trace row 1件、expected count delta、
 forbidden scopeをfreezeした。これはcompleteした独立documentation prerequisiteであり、
 Task 249 implementationではない。source、test、expectation、trace row/status、
 count、hash、coverage credit、Tasks 269+、Steps 6/7は不変である。
+
+## Task 249 implementation completion
+
+frozen producerはpublic syntax-free checker `source_type` boundaryとprivate exact
+mizar-test consumerとして実装済みである。broad routeはexact 10/13/6 tableを
+publishしてrunner-owned pending detailで停止し、unchanged Task-248 routeはexact
+2/2/0 dependency regressionをco-installする。validated immutable handoffは
+`TypedAst`が所有し、`ResolvedTypedAst`はcloneだけする。
+
+real resolverはderived frozen scaffolding内のrowをemitしないformal/field
+spelling重複を検出した。このtask-local `design_drift`とparse-only preflightの
+`test_gap`はdistinct nameだけでrepairし、source-type oracleと言語intentは変更
+していない。new bounded diagnostic trace rowはselected Task-249 `test_gap`/
+`source_drift`だけをcloseする。Tasks 250+/269+、normalization、term/`qua`
+binding selection、later semantic payload、Steps 6/7はdeferredのままである。

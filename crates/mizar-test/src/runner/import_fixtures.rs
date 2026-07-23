@@ -8,12 +8,13 @@ use mizar_frontend::lexical_env::{
     UserSymbolKind,
 };
 use mizar_resolve::env::{
-    ContributionKind, ExportStatus, NamespacePath, SymbolEntry, SymbolEnv, SymbolEnvIndexes,
-    SymbolKind, Visibility,
+    ContributionKind, ExportStatus, ImportIndexEntry, NamespacePath, SymbolEntry, SymbolEnv,
+    SymbolEnvIndexes, SymbolKind, Visibility,
 };
 use mizar_resolve::resolved_ast::{
-    FullyQualifiedName, LocalSymbolId, ModuleId as ResolverModuleId, SemanticOrigin,
-    SymbolId as ResolverSymbolId,
+    FullyQualifiedName, ImportResolution, LocalSymbolId, ModuleId as ResolverModuleId,
+    ResolvedArenaBuilder, ResolvedImport as ResolverImport, ResolvedImports as ResolverImports,
+    ResolvedNode, SemanticOrigin, SymbolId as ResolverSymbolId,
 };
 use mizar_session::{ModulePath, SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind};
@@ -28,7 +29,62 @@ pub(super) fn augment_type_elaboration_import_summaries(
         return symbols;
     }
     let mut indexes = clone_symbol_env_indexes(&symbols);
+    let may_synthesize_imports = indexes.imports.is_empty();
+    let mut import_nodes = ResolvedArenaBuilder::new();
+    let mut resolved_imports = ResolverImports::new();
     for (imported_module, anchor) in imported_modules {
+        let existing_import = indexes
+            .imports
+            .iter()
+            .find(|entry| entry.module() == Some(&imported_module))
+            .map(|entry| entry.import());
+        let import = if let Some(import) = existing_import {
+            import
+        } else if may_synthesize_imports {
+            let Ok(import_ordinal) = u32::try_from(resolved_imports.imports().count()) else {
+                continue;
+            };
+            let origin = SemanticOrigin::new(
+                ast.source_id,
+                module.clone(),
+                SourceAnchor::Range(anchor),
+                vec![import_ordinal],
+            );
+            let Ok(owner) = import_nodes.push(ResolvedNode::new(
+                SurfaceNodeKind::ImportAliasDecl,
+                Vec::new(),
+                origin.clone(),
+            )) else {
+                continue;
+            };
+            let import = resolved_imports.push_import(ResolverImport::new(
+                owner,
+                anchor,
+                module_path_text(imported_module.path().as_str()),
+                None,
+                ImportResolution::Resolved(imported_module.clone()),
+                origin,
+            ));
+            let import_contribution = indexes.contributions.insert(
+                module.clone(),
+                ContributionKind::LocalSource {
+                    source_id: ast.source_id,
+                },
+                SourceAnchor::Range(anchor),
+            );
+            indexes
+                .contributions
+                .add_import(import_contribution, import);
+            indexes.imports.insert(ImportIndexEntry::new(
+                import,
+                Some(imported_module.clone()),
+                None,
+                import_contribution,
+            ));
+            import
+        } else {
+            continue;
+        };
         let frontend_module = ModuleId::new(imported_module.path().as_str());
         let exported_symbols = parse_only_fixture_symbols(&frontend_module);
         if exported_symbols.is_empty() {
@@ -41,6 +97,7 @@ pub(super) fn augment_type_elaboration_import_summaries(
             },
             SourceAnchor::Range(anchor),
         );
+        indexes.contributions.add_import(contribution, import);
         for (ordinal, exported) in exported_symbols.iter().enumerate() {
             if !matches!(
                 (exported.kind, exported.spelling.as_str()),
@@ -90,7 +147,11 @@ pub(super) fn augment_type_elaboration_import_summaries(
     SymbolEnv::new(module.clone(), indexes)
 }
 
-fn clone_symbol_env_indexes(symbols: &SymbolEnv) -> SymbolEnvIndexes {
+fn module_path_text(path: &str) -> String {
+    format!("import {path};")
+}
+
+pub(super) fn clone_symbol_env_indexes(symbols: &SymbolEnv) -> SymbolEnvIndexes {
     SymbolEnvIndexes {
         imports: symbols.imports().clone(),
         exports: symbols.exports().clone(),

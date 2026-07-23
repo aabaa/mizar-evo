@@ -101,6 +101,7 @@ struct ResolvedTypedAst {
     source_id: SourceId,
     module_id: ModuleId,
     source_context: Option<SourceBindingContextHandoff>,
+    source_type: Option<SourceTypeApplicationHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -123,6 +124,11 @@ Task 248 は差し替え可能な別 source-context assembler input を許さな
 checker-owned source-item、declaration、binding、local-context link から乖離できない。
 absent 時は legacy debug byte を維持し、present 時は deterministic nonempty
 handoff を render する。
+
+Task 249は`source_type`にも同じruleを適用する。assemblyはimmutable handoffを
+`TypedAst`からだけcloneし、independent source-type inputを受け取らないため、
+authenticated済みflat application/expression/argument tableから乖離できない。
+absent時はlegacy debug byteを維持する。
 
 ### Resolved Node
 

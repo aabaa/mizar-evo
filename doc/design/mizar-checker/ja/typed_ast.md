@@ -62,6 +62,7 @@ struct TypedAst {
     module_id: ModuleId,
     resolved_root: Option<ResolvedNodeId>,
     source_context: Option<SourceBindingContextHandoff>,
+    source_type: Option<SourceTypeApplicationHandoff>,
     nodes: TypedNodeArena,
     root: Option<TypedNodeId>,
     contexts: LocalTypeContextTable,
@@ -91,6 +92,13 @@ Task 248 は complete source-item/binding-context handoff の唯一の owner と
 し、source/module、typed-site、binding、context link を transactional に validate
 する。recovered-empty producer result は incomplete で install できない。この field
 がない場合、deterministic debug output は Task-248 以前と byte-identical である。
+
+Task 249はvalidated flat type-head/application/argument handoffのsole ownerとして
+`source_type`を追加する。install時に全expression/head/term/`qua` typed siteを
+attached arenaへ再照合し、same-source range containmentとexact recoveryを要求する。
+producerがbinding/symbol environmentを既にauthenticateしており、`TypedAst`は
+それらをreplace/reconstructできない。このfield absent時はconditional renderingが
+existing debug byteを維持する。
 
 ## Node Arena
 

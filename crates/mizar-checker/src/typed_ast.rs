@@ -1,6 +1,7 @@
 //! Source-shaped typed AST data tables for checker phase 6.
 
 use crate::source_context::SourceBindingContextHandoff;
+use crate::source_type::SourceTypeApplicationHandoff;
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
 use std::{
@@ -81,6 +82,7 @@ pub struct TypedAst {
     module_id: ModuleId,
     resolved_root: Option<ResolvedNodeId>,
     source_context: Option<SourceBindingContextHandoff>,
+    source_type: Option<SourceTypeApplicationHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -98,6 +100,7 @@ impl TypedAst {
             module_id: parts.module_id,
             resolved_root: parts.resolved_root,
             source_context: parts.source_context,
+            source_type: parts.source_type,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -122,6 +125,10 @@ impl TypedAst {
 
     pub const fn source_context(&self) -> Option<&SourceBindingContextHandoff> {
         self.source_context.as_ref()
+    }
+
+    pub const fn source_type(&self) -> Option<&SourceTypeApplicationHandoff> {
+        self.source_type.as_ref()
     }
 
     pub const fn nodes(&self) -> &TypedArena {
@@ -166,6 +173,9 @@ impl TypedAst {
         if let Some(source_context) = &self.source_context {
             output.push_str(&source_context.debug_text());
         }
+        if let Some(source_type) = &self.source_type {
+            output.push_str(&source_type.debug_text());
+        }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
         write_type_entries(&mut output, &self.types);
@@ -183,6 +193,7 @@ pub struct TypedAstParts {
     pub module_id: ModuleId,
     pub resolved_root: Option<ResolvedNodeId>,
     pub source_context: Option<SourceBindingContextHandoff>,
+    pub source_type: Option<SourceTypeApplicationHandoff>,
     pub nodes: TypedArena,
     pub contexts: LocalTypeContextTable,
     pub types: TypeTable,
@@ -1039,6 +1050,7 @@ pub enum TypedAstError {
     Arena(TypedArenaError),
     PayloadSourceMismatch,
     InvalidSourceContext,
+    InvalidSourceType,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1148,6 +1160,9 @@ impl fmt::Display for TypedAstError {
             Self::PayloadSourceMismatch => write!(formatter, "typed AST payload source mismatch"),
             Self::InvalidSourceContext => {
                 formatter.write_str("typed AST source context is inconsistent")
+            }
+            Self::InvalidSourceType => {
+                formatter.write_str("typed AST source type handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
@@ -1346,12 +1361,22 @@ fn validate_typed_ast(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     validate_node_links(parts)?;
     validate_contexts(parts)?;
     validate_source_context(parts)?;
+    validate_source_type(parts)?;
     validate_types(parts)?;
     validate_facts(parts)?;
     validate_coercions(parts)?;
     validate_initial_obligations(parts)?;
     validate_diagnostics(parts)?;
     Ok(())
+}
+
+fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
+    let Some(handoff) = &parts.source_type else {
+        return Ok(());
+    };
+    handoff
+        .validate_installation(parts.source_id, &parts.module_id, &parts.nodes)
+        .map_err(|_| TypedAstError::InvalidSourceType)
 }
 
 fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
@@ -3559,6 +3584,7 @@ diagnostics:
             module_id: module_id(),
             resolved_root: None,
             source_context: None,
+            source_type: None,
             nodes,
             contexts,
             types,
@@ -3599,6 +3625,7 @@ diagnostics:
             module_id: module_id(),
             resolved_root: None,
             source_context: None,
+            source_type: None,
             nodes,
             contexts,
             types: TypeTable::new(),

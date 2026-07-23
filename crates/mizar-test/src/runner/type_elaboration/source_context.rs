@@ -8,11 +8,15 @@ use mizar_checker::{
         SourceBindingSiteRole, SourceItemInput, SourceItemRecovery, SourceItemRole,
         SourceItemVisibility,
     },
+    source_type::{
+        SourceTypeApplicationForm, SourceTypeApplicationInput, SourceTypeExpressionId,
+        SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead, SourceTypeProducer,
+    },
     type_checker::TypeHeadInput,
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState,
-        TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts,
-        TypedNode, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
+        TypeDiagnosticTable, TypeFactTable, TypeRole, TypeTable, TypedArenaBuilder, TypedAst,
+        TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
     },
 };
 use mizar_resolve::{
@@ -307,10 +311,13 @@ fn build_output(
             root: root_range,
             reserve_item: reserve_item.range,
             reserve_binding: reserve_binding.binding_range,
+            reserve_type: reserve_binding.type_range,
             definition_item: definition_item.range,
             definition_binding: declaration_range,
+            definition_type: written_type.range,
         },
         projection,
+        symbols,
     )
 }
 
@@ -388,8 +395,10 @@ struct SourceNodeRanges {
     root: SourceRange,
     reserve_item: SourceRange,
     reserve_binding: SourceRange,
+    reserve_type: SourceRange,
     definition_item: SourceRange,
     definition_binding: SourceRange,
+    definition_type: SourceRange,
 }
 
 fn assemble_output(
@@ -397,6 +406,7 @@ fn assemble_output(
     module: ModuleId,
     ranges: SourceNodeRanges,
     projection: SourceBindingContextProjection,
+    symbols: &SymbolEnv,
 ) -> Result<SourceBindingContextRouteOutput, String> {
     let expected_handoff = projection.handoff().clone();
     let source_context = projection.into_handoff();
@@ -437,14 +447,79 @@ fn assemble_output(
         0,
         vec![TypedNodeId::new(1), TypedNodeId::new(3)],
     )?;
+    let nodes = builder
+        .finish(Some(TypedNodeId::new(4)))
+        .map_err(|error| error.to_string())?;
+    let source_type = SourceTypeProducer::build(
+        SourceTypeHandoffInput {
+            source_id,
+            module_id: module.clone(),
+            applications: vec![
+                SourceTypeApplicationInput {
+                    binding: mizar_checker::binding_env::BindingId::new(0),
+                    source_ordinal: 0,
+                    root: SourceTypeExpressionId::new(0),
+                },
+                SourceTypeApplicationInput {
+                    binding: mizar_checker::binding_env::BindingId::new(1),
+                    source_ordinal: 1,
+                    root: SourceTypeExpressionId::new(1),
+                },
+            ],
+            expressions: vec![
+                SourceTypeExpressionInput {
+                    source_id,
+                    module_id: module.clone(),
+                    site: TypedSiteRef::Role {
+                        node: TypedNodeId::new(1),
+                        role: TypeRole::new("source.type.expression"),
+                    },
+                    source_range: ranges.reserve_type,
+                    spelling: "set".to_owned(),
+                    head_site: TypedSiteRef::Role {
+                        node: TypedNodeId::new(1),
+                        role: TypeRole::new("source.type.head"),
+                    },
+                    head_range: ranges.reserve_type,
+                    head_spelling: "set".to_owned(),
+                    form: SourceTypeApplicationForm::Bare,
+                    head: SourceTypeHead::BuiltinSet,
+                    recovery: NodeRecoveryState::Normal,
+                },
+                SourceTypeExpressionInput {
+                    source_id,
+                    module_id: module.clone(),
+                    site: TypedSiteRef::Role {
+                        node: TypedNodeId::new(3),
+                        role: TypeRole::new("source.type.expression"),
+                    },
+                    source_range: ranges.definition_type,
+                    spelling: "set".to_owned(),
+                    head_site: TypedSiteRef::Role {
+                        node: TypedNodeId::new(3),
+                        role: TypeRole::new("source.type.head"),
+                    },
+                    head_range: ranges.definition_type,
+                    head_spelling: "set".to_owned(),
+                    form: SourceTypeApplicationForm::Bare,
+                    head: SourceTypeHead::BuiltinSet,
+                    recovery: NodeRecoveryState::Normal,
+                },
+            ],
+            arguments: Vec::new(),
+        },
+        source_context.binding_env(),
+        symbols,
+        &nodes,
+    )
+    .map_err(|error| error.to_string())?;
     let typed_ast = TypedAst::try_new(TypedAstParts {
         source_id,
         module_id: module,
         resolved_root: None,
         source_context: Some(source_context),
-        nodes: builder
-            .finish(Some(TypedNodeId::new(4)))
-            .map_err(|error| error.to_string())?,
+        source_type: Some(source_type),
+        nodes,
         contexts,
         types: TypeTable::new(),
         facts: TypeFactTable::new(),
@@ -471,6 +546,13 @@ fn assemble_output(
     let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
     if typed_ast.source_context() != Some(&expected_handoff)
         || resolved.source_context() != typed_ast.source_context()
+        || typed_ast.source_type().is_none()
+        || resolved.source_type() != typed_ast.source_type()
+        || typed_ast.source_type().is_none_or(|handoff| {
+            handoff.applications().len() != 2
+                || handoff.expressions().len() != 2
+                || !handoff.arguments().is_empty()
+        })
         || !typed_ast.types().is_empty()
         || !typed_ast.facts().is_empty()
         || !typed_ast.coercions().is_empty()

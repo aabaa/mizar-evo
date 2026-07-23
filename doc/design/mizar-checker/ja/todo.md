@@ -4160,12 +4160,13 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   reserve/definition-parameter shadowing consumer、recovery boundary、corruption
   matrix、bounded trace rowは完了した。term-use selection、type result、RHS/
   formula/proof semantics、accepted factへのcreditは与えない。
-- [ ] **Task 249:** type head/application/argument producer。独立したpaired EN/JA
-  frozen-contract prerequisiteはcomplete。implementationは
-  [00.crate_plan.md](./00.crate_plan.md)のexact ten-reserve-root broad consumer、
-  Task-248 two-row co-consumer、flat syntax-free table、corruption/determinism、
-  runner-only readiness、trace/count、forbidden-scope contractに従う。real
-  producer/consumerを実装してcommitするまで、このrowはuncheckedのままとする。
+- [x] **Task 249:** type head/application/argument producer。public
+  syntax-free flat producer、input-only legacy binding-environment seam、
+  immutable `TypedAst`/clone-only `ResolvedTypedAst` handoff、exact broad
+  10/13/6 consumer、Task-248 2/2/0 co-consumer、corruption/determinism matrix、
+  runner-only readiness detail、bounded trace row、paired docs、count/hash
+  verificationはcomplete。normalization、evidence、term/`qua` selection、
+  accepted fact/declaration/proof、downstream IRはpublishしない。
 - [ ] **Task 250:** attribute-chain/qualification/provenance producer。
 - [ ] **Task 251:** evidence-query request/dependency-fact-reference producer。
   evidence resultを捏造しない。

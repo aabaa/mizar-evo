@@ -1551,6 +1551,8 @@ promoted by this increment.
   to its two existing bindings, and zero arguments.
 - [x] Keep the sole pending key runner-owned and every checker semantic result
   table empty; preserve Tasks 68-71 byte-for-byte.
-- [ ] Implement Checker Task 249 in one later logical task, then verify the
-  expected plan 411/372, type 238/226, pass/fail 224/187, active type 190, and
-  fresh hashes. Do not promote Tasks 250+, 269+, or Steps 6/7.
+- [x] Implement Checker Task 249 as one logical task. The exact broad 10/13/6
+  route and unchanged Task-248 2/2/0 co-consumer execute through the immutable
+  checker handoff; plan 411/372, type 238/226, pass/fail 224/187, active type
+  190, and fresh hashes are mandatory completion oracles. Tasks 250+, 269+,
+  and Steps 6/7 remain unpromoted.

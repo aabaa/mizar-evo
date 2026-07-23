@@ -64,6 +64,7 @@ struct TypedAst {
     module_id: ModuleId,
     resolved_root: Option<ResolvedNodeId>,
     source_context: Option<SourceBindingContextHandoff>,
+    source_type: Option<SourceTypeApplicationHandoff>,
     nodes: TypedNodeArena,
     root: Option<TypedNodeId>,
     contexts: LocalTypeContextTable,
@@ -93,6 +94,14 @@ binding-context handoff. It is installed only together with its matching
 are validated transactionally. A recovered-empty producer result is incomplete
 and cannot be installed. When the field is absent, deterministic debug output
 remains byte-identical to the pre-Task-248 format.
+
+Task 249 adds `source_type` as the sole owner of the validated flat
+type-head/application/argument handoff. Installation revalidates every
+expression, head, term, and `qua` typed site against the attached arena,
+including same-source range containment and exact recovery. The producer has
+already authenticated binding and symbol environments; `TypedAst` cannot
+replace or reconstruct them. When this field is absent, conditional rendering
+preserves the existing debug bytes.
 
 ## Node Arena
 

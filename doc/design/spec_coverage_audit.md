@@ -2585,3 +2585,33 @@ a `test_gap`, and the incomplete argument/`qua`/final-handoff seams remain
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` was found. Tasks 269+ and
 Steps 6/7 remain deferred.
+
+## Step 5 Checker Task 249 Implementation Addendum
+
+Task 249 adds the syntax-free checker-owned source-type application handoff,
+its exact ten-reserve broad fail consumer, the unchanged Task-248 2/2/0
+dependency co-consumer, and exactly one bounded diagnostic trace row:
+`spec.en.checker.type_elaboration.source_type_application_payload`. The new
+route validates the complete 10 application / 13 expression-head / 6 argument
+projection through `TypedAst` and `ResolvedTypedAst`, then stops at the
+runner-owned semantic-dependency detail without claiming normalization,
+term/`qua` selection, facts, acceptance, proof, or downstream IR.
+
+The plan becomes 411 cases / 372 requirements, type-elaboration coverage
+238/226, active type-elaboration admission 190, pass/fail 224/187, and
+warnings/errors 23/0; parse/declaration/proof admissions remain 101/5/1. The
+selected exact `test_gap`, complete-input `source_drift`, and associated
+`design_drift` are closed only for this bounded row. Resolver rejection of the
+original repeated non-emitting scaffolding names was classified as task-local
+`design_drift`, with the parse-only preflight omission classified as
+`test_gap`, and repaired with distinct formal/field spellings; the repair
+changes no source-type cardinality or semantic intent. MC-G014, MC-G016, and
+MC-G020 remain partial globally. Tasks 250+, 269+, normalization, binding
+selection, later semantic payloads, Steps 6/7, and global Step-5 completion
+remain deferred. Implementation review additionally classified unauthenticated
+import closure and generated declaration ownership as `source_drift` and
+recursive public-input graph traversal as `boundary_violation`; Task 249
+repairs them with import-target authentication, real `DeclarationShell`
+ownership, and iterative worklists. No unresolved blocking `spec_gap`,
+`source_undocumented_behavior`, `boundary_violation`, or
+`repo_metadata_conflict` remains.

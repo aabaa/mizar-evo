@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_type_elaboration_source_type_application_payload_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_source_type_application_payload_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "source_type_application_semantics_pending"
+stable_detail_key = "type_elaboration.checker.source_type_application.semantic_dependencies_pending"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.source_type_application.semantic_dependencies_pending",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.source_type_application_payload",
+]
+notes = "Task 249 bounded source-type application handoff coverage. The exact broad source publishes syntax-free checker-owned outer application, recursive expression/head, and ordered TermSite/TypeSite/QuaSite rows through TypedAst and ResolvedTypedAst. It intentionally stops at a runner-owned readiness detail and grants no normalization, term or qua binding selection, facts, declaration acceptance, proof semantics, or downstream IR credit."

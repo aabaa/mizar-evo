@@ -9,6 +9,7 @@ mod source_ast;
 mod source_context;
 mod source_formula;
 mod source_reserve;
+mod source_type;
 mod type_assertion_routes;
 
 pub(super) use admission::{is_active_type_elaboration, validate_active_type_elaboration_tags};
@@ -349,6 +350,9 @@ pub(super) use source_reserve::extract_builtin_source_reserve_declarations_after
 pub(super) use source_reserve::{
     resolve_visible_attribute, resolve_visible_type_head, source_mode_symbol_spelling,
 };
+pub(super) use source_type::source_type_application_detail_keys;
+#[cfg(test)]
+pub(super) use source_type::source_type_application_output;
 #[cfg(test)]
 pub(super) use type_assertion_routes::{
     SOURCE_CHAINED_LOCAL_MODE_ASSERTED_HEAD_CONFIG,

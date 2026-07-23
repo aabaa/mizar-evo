@@ -4972,6 +4972,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_type_application_payload"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 249 Frozen Type-Head/Application/Argument Producer Contract"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+notes = "Task 249 bounded producer coverage for syntax-free source-type application, recursive expression/head, and ordered TermSite/TypeSite/QuaSite handoff tables. The exact real frontend/resolver consumer authenticates BindingEnv, local/imported Mode/Structure provenance, typed sites, ranges, forms, recovery, and graph ownership before immutable TypedAst-to-ResolvedTypedAst publication. The runner-owned readiness detail marks later semantic dependencies pending; this row does not credit normalization, expansion, inhabitation, subtype/evidence decisions, term or qua binding selection, accepted facts/declarations/proofs, or downstream IR."
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_source_type_application_payload_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.three_edge_local_mode_asserted_head_source_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 195 exact three-edge formula-side local-mode asserted-head checker bridge"

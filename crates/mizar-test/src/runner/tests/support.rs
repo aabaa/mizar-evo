@@ -181,6 +181,7 @@
         extract_source_two_edge_local_object_mode_two_hop_asserted_head, resolve_visible_attribute,
         resolve_visible_type_head, resolver_symbol_collection, run_frontend,
         source_binding_context_output, source_builtin_type_assertion_formula_output,
+        source_type_application_output,
         source_chained_local_mode_asserted_head_output,
         source_chained_local_mode_radix_asserted_head_output,
         source_chained_local_mode_reserved_variable_equality_output,

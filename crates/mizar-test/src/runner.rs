@@ -426,8 +426,8 @@ use type_elaboration::{
     source_two_edge_local_object_mode_reserved_variable_inequality_output,
     source_two_edge_local_object_mode_reserved_variable_membership_output,
     source_two_edge_local_object_mode_reserved_variable_type_assertion_output,
-    source_two_edge_local_object_mode_two_hop_asserted_head_output, structural_child_ids,
-    surface_nodes_with_kind, surface_site,
+    source_two_edge_local_object_mode_two_hop_asserted_head_output, source_type_application_output,
+    structural_child_ids, surface_nodes_with_kind, surface_site,
 };
 use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
@@ -559,7 +559,8 @@ use type_elaboration::{
     source_two_edge_local_object_mode_reserved_variable_membership_detail_keys,
     source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys,
     source_two_edge_local_object_mode_two_hop_asserted_head_detail_keys,
-    type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
+    source_type_application_detail_keys, type_elaboration_failure_diagnostic,
+    validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -1486,6 +1487,10 @@ fn type_elaboration_detail_keys(
         &resolver.shells,
         &symbols,
     ) {
+        return keys;
+    }
+    if let Some(keys) = source_type_application_detail_keys(&ast, resolver.module.clone(), &symbols)
+    {
         return keys;
     }
     source_type_elaboration_detail_keys_with_snapshot(

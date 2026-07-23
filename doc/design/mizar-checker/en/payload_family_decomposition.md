@@ -297,3 +297,20 @@ deltas, and forbidden scope. This is a completed independent documentation
 prerequisite, not Task 249 implementation. Source, tests, expectations, trace
 rows/status, counts, hashes, coverage credit, Tasks 269+, and Steps 6/7 remain
 unchanged.
+
+## Task 249 Implementation Completion
+
+The frozen producer is now implemented as the public syntax-free checker
+`source_type` boundary plus the private exact mizar-test consumer. The broad
+route publishes the exact 10/13/6 tables and stops at its runner-owned pending
+detail; the unchanged Task-248 route co-installs its exact 2/2/0 dependency
+regression. `TypedAst` owns the validated immutable handoff and
+`ResolvedTypedAst` only clones it.
+
+The real resolver exposed repeated non-emitting formal/field spellings in the
+derived frozen scaffolding. This task-local `design_drift` and parse-only
+preflight `test_gap` were repaired with distinct names only; no source-type
+oracle or language intent changed. The new bounded diagnostic trace row closes
+only the selected Task-249 `test_gap` and `source_drift`. Tasks 250+, 269+,
+normalization, term/`qua` binding selection, later semantic payloads, and Steps
+6/7 remain deferred.

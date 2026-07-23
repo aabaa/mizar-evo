@@ -201,3 +201,15 @@ pass/fail 222/185、warnings/errors 23/0、unchanged declaration/type/proof admi
 5/188/1、unchanged inactive semantic Task-39 seedを記録する。さらに同じ276-test-list
 hashと、同じ18-path/20,088-line production manifestおよびpath/content hashを維持する。
 Task 48にbilingual driftは残らない。
+
+## Checker Task 249 / source-type pair recheck
+
+paired plan、TODO、harness、module-boundary、checker consumer documentは、同じ
+exact broad 10/13/6 handoff、unchanged Task-248 2/2/0 co-consumer、
+runner-owned pending boundary、resolverが要求したtask-local `design_drift` /
+parse-only preflight `test_gap` repair、forbidden later semanticsを記録する。
+両言語はplan 411/372、type coverage
+238/226、pass/fail 224/187、active type 190、warnings/errors 23/0、library test
+279、および同じ5 CLI/test-list/20-path・21,598-line production manifest hashを
+記録する。Tasks 250+/269+、Steps 6/7は両文書でdeferredのままである。Task 249に
+bilingual driftは残らない。

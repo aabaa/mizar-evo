@@ -1373,6 +1373,8 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   `Bare`/builtin-`set` row exact 2件、argument 0件とする。
 - [x] sole pending keyをrunner-ownedに保ち、checker semantic result tableを全て
   emptyにする。Tasks 68-71はbyte-for-byteで維持する。
-- [ ] Checker Task 249をlater logical task 1件でimplementし、expected plan
-  411/372、type 238/226、pass/fail 224/187、active type 190とfresh hashをverify
-  する。Tasks 250+、269+、Steps 6/7はpromoteしない。
+- [x] Checker Task 249をlogical task 1件としてimplementした。exact broad
+  10/13/6 routeとunchanged Task-248 2/2/0 co-consumerはimmutable checker
+  handoffを通ってexecuteする。plan 411/372、type 238/226、pass/fail
+  224/187、active type 190、fresh hashをmandatory completion oracleとする。
+  Tasks 250+、269+、Steps 6/7はpromoteしない。

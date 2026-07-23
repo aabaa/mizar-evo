@@ -1,5 +1,36 @@
 # Module-Boundary Audit: mizar-test Runner
 
+## Checker Task 249 Source-Type Current-State Addendum
+
+Checker Task 249 adds one cohesive private `source_type` consumer leaf. Raw
+`SurfaceAst` traversal remains in `mizar-test`; the new leaf passes only dense,
+syntax-free application/expression/head/argument tables into
+`mizar-checker`. `runner.rs` remains facade/top-level orchestration only at
+2,387 lines. The 589-line type-elaboration facade now dispatches to thirteen
+private leaves, including the new 793-line owner. The existing
+`source_context.rs` leaf grows to 591 lines only to install the Task-248 2/2/0
+dependency co-consumer, and `checker_handoff.rs` grows to 1,297 lines only to
+keep legacy empty handoff construction explicit.
+
+The production manifest is 20 paths / 21,598 lines. Its sorted path hash is
+`be25d20f70bf838897d4cc7ba84cd52b32b98b925eb2a1ff7a30a79942600746`,
+and its ordered content-manifest hash is
+`31757cf5e206b324c8ae625b9328e5e8759d9778bc397ff6deda0726fa89dad3`.
+The only new production path is the private source-type leaf.
+
+The exact increment produces plan 411/372, type-elaboration coverage 238/226,
+pass/fail 224/187, and parse/declaration/type/proof admissions 101/5/190/1
+with warnings/errors 23/0. The five CLI hashes are
+`89261c4ba01276dbb8d262952e99aa91017e138aa8a22c644494274d7524b355`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Library tests become 279; the raw/normalized sorted-list hashes are
+`6644c709efb5e728388b3f35ede61e4bc9866f2582d899803545084ab86c800f` /
+`30fbeb816c9e9ab98b0f5ef36779e9f99332766fcfd7b43d76199e32edf0e2a3`.
+Tasks 250+, 269+, and Steps 6/7 remain deferred.
+
 ## Checker Task 248 Source/Binding-Context Current-State Addendum
 
 Checker Task 248 adds one cohesive private semantic consumer rather than

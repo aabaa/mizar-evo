@@ -297,6 +297,52 @@ fn active_source_binding_context_fixture_preserves_the_final_checker_handoff() {
         Ok(mizar_checker::binding_env::BindingLookupResult::Local(id)) if id == parameter.binding
     ));
     assert_eq!(first.resolved.source_context(), Some(handoff));
+    let source_type = first
+        .typed_ast
+        .source_type()
+        .expect("Task 248 route should co-install the Task 249 source-type handoff");
+    assert_eq!(source_type.applications().len(), 2);
+    assert_eq!(source_type.expressions().len(), 2);
+    assert!(source_type.arguments().is_empty());
+    for (index, (_, application)) in source_type.applications().iter().enumerate() {
+        assert_eq!(application.binding().index(), index);
+        assert_eq!(application.source_ordinal(), index);
+        let expression = source_type
+            .expressions()
+            .get(application.root())
+            .expect("Task 248 source-type root");
+        assert_eq!(
+            expression.form(),
+            mizar_checker::source_type::SourceTypeApplicationForm::Bare
+        );
+        assert_eq!(
+            expression.head(),
+            &mizar_checker::source_type::SourceTypeHead::BuiltinSet
+        );
+    }
+    assert_eq!(first.resolved.source_type(), Some(source_type));
+    let source_type_input = source_type_input_from_handoff(source_type);
+    for mutation in [
+        Task249DefinitionBindingMutation::Kind,
+        Task249DefinitionBindingMutation::Status,
+        Task249DefinitionBindingMutation::Layer,
+        Task249DefinitionBindingMutation::LexicalScope,
+    ] {
+        let corrupted =
+            task249_definition_env_with_mutation(handoff.binding_env(), mutation);
+        assert!(
+            matches!(
+                mizar_checker::source_type::SourceTypeProducer::build(
+                    source_type_input.clone(),
+                    &corrupted,
+                    &symbols,
+                    first.typed_ast.nodes(),
+                ),
+                Err(mizar_checker::source_type::SourceTypeError::InvalidBinding { .. })
+            ),
+            "Task 249 accepted definition binding mutation {mutation:?}"
+        );
+    }
     assert!(first.typed_ast.types().is_empty());
     assert!(first.typed_ast.facts().is_empty());
     assert!(first.typed_ast.coercions().is_empty());
@@ -938,6 +984,7 @@ fn typed_ast_with_source_context(
         module_id: template.module_id().clone(),
         resolved_root: template.resolved_root(),
         source_context: Some(source_context),
+        source_type: None,
         nodes: template.nodes().clone(),
         contexts,
         types: mizar_checker::typed_ast::TypeTable::new(),
@@ -962,4 +1009,93 @@ fn task248_other_source_id() -> mizar_session::SourceId {
     allocator
         .next_source_id(snapshot)
         .expect("distinct Task 248 corruption source id")
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Task249DefinitionBindingMutation {
+    Kind,
+    Status,
+    Layer,
+    LexicalScope,
+}
+
+fn task249_definition_env_with_mutation(
+    original: &mizar_checker::binding_env::BindingEnv,
+    mutation: Task249DefinitionBindingMutation,
+) -> mizar_checker::binding_env::BindingEnv {
+    let mut contexts = mizar_checker::binding_env::BindingContextTable::new();
+    for (_, context) in original.contexts().iter() {
+        let is_declaration = matches!(
+            context.owner,
+            mizar_checker::binding_env::BindingContextOwner::DeclarationShell(_)
+        );
+        let mut draft = mizar_checker::binding_env::BindingContextDraft {
+            owner: context.owner.clone(),
+            parent: context.parent,
+            layer: context.layer,
+            lexical_scope: context.lexical_scope.clone(),
+            bindings: context.bindings.clone(),
+            visible_bindings: context.visible_bindings.clone(),
+            recovery: context.recovery,
+        };
+        if is_declaration {
+            match mutation {
+                Task249DefinitionBindingMutation::Layer => {
+                    draft.layer = mizar_checker::binding_env::BindingContextLayer::Proof;
+                }
+                Task249DefinitionBindingMutation::LexicalScope => {
+                    draft.lexical_scope =
+                        Some(mizar_resolve::names::LocalTermScope::new(vec![99]));
+                }
+                _ => {}
+            }
+        }
+        contexts.insert(draft);
+    }
+
+    let mut bindings = mizar_checker::binding_env::BindingTable::new();
+    for (_, binding) in original.bindings().iter() {
+        let is_definition =
+            binding.kind == mizar_checker::binding_env::BindingKind::DefinitionParameter;
+        let mut draft = mizar_checker::binding_env::BindingDraft {
+            spelling: binding.spelling.clone(),
+            kind: binding.kind,
+            identity: binding.identity.clone(),
+            owner_context: binding.owner_context,
+            declaration_range: binding.declaration_range,
+            visible_after_ordinal: binding.visible_after_ordinal,
+            type_site: binding.type_site.clone(),
+            status: binding.status,
+            captured: binding.captured.clone(),
+            diagnostics: binding.diagnostics.clone(),
+            recovery: binding.recovery,
+        };
+        if is_definition {
+            match mutation {
+                Task249DefinitionBindingMutation::Kind => {
+                    draft.kind = mizar_checker::binding_env::BindingKind::QuantifierBinder;
+                }
+                Task249DefinitionBindingMutation::Status => {
+                    draft.status = mizar_checker::binding_env::BindingStatus::Reserved;
+                }
+                _ => {}
+            }
+        }
+        bindings.insert(draft);
+    }
+
+    mizar_checker::binding_env::BindingEnv::try_new(
+        mizar_checker::binding_env::BindingEnvParts {
+            source_id: original.source_id(),
+            module_id: original.module_id().clone(),
+            contexts,
+            bindings,
+            diagnostics: original.diagnostics().clone(),
+        },
+    )
+    .unwrap_or_else(|error| {
+        panic!(
+            "Task 249 definition corruption {mutation:?} should remain valid at the generic env boundary: {error:?}"
+        )
+    })
 }

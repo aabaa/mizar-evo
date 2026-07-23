@@ -210,3 +210,15 @@ warnings/errors 23/0, unchanged declaration/type/proof admissions 5/188/1,
 and the unchanged inactive semantic Task-39 seed. They also preserve the same
 276-test-list hashes and the same 18-path/20,088-line production manifest and
 path/content hashes. No bilingual drift remains in Task 48.
+
+## Checker Task 249 / Source-Type Pair Recheck
+
+The paired plan, TODO, harness, module-boundary, and checker consumer documents
+record the same exact broad 10/13/6 handoff, unchanged Task-248 2/2/0
+co-consumer, runner-owned pending boundary, resolver-required
+task-local `design_drift` / parse-only preflight `test_gap` repair, and
+forbidden later semantics. Both languages
+record plan 411/372, type coverage 238/226, pass/fail 224/187, active type 190,
+warnings/errors 23/0, 279 library tests, and the same five CLI, test-list, and
+20-path/21,598-line production manifest hashes. Tasks 250+, 269+, and Steps 6/7
+remain deferred in both documents. No bilingual drift remains in Task 249.

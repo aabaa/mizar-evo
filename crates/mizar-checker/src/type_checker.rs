@@ -3322,6 +3322,16 @@ impl SourceReserveDeclarationBridge {
         self.check_with_type_normalizer(symbols, TypeNormalizer::new(mode_expansions))
     }
 
+    /// Builds the real legacy reserve binding environment without invoking type
+    /// normalization or declaration checking.
+    pub fn prepare_binding_env(&self, symbols: &SymbolEnv) -> Result<BindingEnv, String> {
+        if symbols.module_id() != &self.module_id {
+            return Err("source reserve bridge symbol environment module mismatch".to_owned());
+        }
+        self.validate_symbol_heads(symbols)?;
+        self.binding_env()
+    }
+
     fn check_with_type_normalizer(
         &self,
         symbols: &SymbolEnv,

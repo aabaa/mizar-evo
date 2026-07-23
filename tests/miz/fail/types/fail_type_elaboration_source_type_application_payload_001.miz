@@ -1,0 +1,22 @@
+import parser.type_fixtures;
+definition
+  mode ElementDef: Element of p1 is set;
+  struct PositionalStruct of p2 where
+    field carrier1 -> set;
+  end;
+  mode MatrixDef: Matrix over p3 is set;
+  mode FamilyDef: Family [p4] is set;
+  struct BracketStruct[p5] where
+    field carrier2 -> set;
+  end;
+end;
+reserve a for set;
+reserve o for object;
+reserve e for Element of a;
+reserve s for PositionalStruct of a;
+reserve v for Matrix over a;
+reserve f for Family[set];
+reserve q for Family[a qua set];
+reserve b for BracketStruct[set];
+reserve m for TypeCaseMode;
+reserve t for TypeCaseStruct;

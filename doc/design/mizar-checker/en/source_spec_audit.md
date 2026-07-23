@@ -23,6 +23,7 @@ Module specifications audited:
 - [typed_ast.md](./typed_ast.md)
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
+- [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
 - [registration_resolution.md](./registration_resolution.md)
 - [cluster_trace.md](./cluster_trace.md)
@@ -142,6 +143,7 @@ rejection.
 - `registration_resolution`
 - `resolved_typed_ast`
 - `source_context`
+- `source_type`
 - `type_checker`
 - `typed_ast`
 
@@ -250,6 +252,37 @@ Bounded gaps: broader canonical item/binder families remain deferred
 only same-identifier re-reservation replacement/duplicate semantics remain a
 nonblocking `spec_gap`. Source term use-site lookup and all Tasks 249+/269+
 payloads also remain outside this module's Task 248 authority.
+
+### `source_type`
+
+Generated public newtypes:
+
+- `SourceTypeApplicationId`, `SourceTypeExpressionId`,
+  `SourceTypeArgumentId`
+
+Literal top-level public items:
+
+- `SourceTypeHandoffInput`, `SourceTypeApplicationInput`,
+  `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
+  `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
+  `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
+  `SourceTypeApplication`, `SourceTypeExpressionTable`,
+  `SourceTypeExpression`, `SourceTypeArgumentTable`,
+  `SourceTypeArgumentRow`, `SourceTypeProducer`, `SourceTypeError`
+
+Correspondence:
+
+| Spec promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Syntax-free flat tables retain outer binding links, recursive written type expressions/heads, and ordered term/type/`qua` arguments. | `SourceTypeHandoffInput`, dense ids and three immutable tables in `src/source_type.rs`. | Exact broad 10/13/6 real runner oracle and Task-248 2/2/0 co-consumer. | Implemented for Task 249. |
+| Binding and real `DeclarationShell` ownership, symbol/contribution import closure/visibility, and arena site/range/recovery are authenticated before publication. | `SourceTypeProducer::build` and installation validation. | Producer corruption matrix plus real local/imported heads and import-target mismatch. | Implemented transactionally. |
+| Graph order, ownership, containment, non-overlap, and deterministic provenance are fail-closed. | `SourceTypeError`, iterative graph/range/provenance validation and deterministic debug rendering. | Dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance and deep-chain tests. | Implemented without sorting, recursion, or repair. |
+| `TypedAst` owns the result and `ResolvedTypedAst` only clones it. | Optional `SourceTypeApplicationHandoff` field and borrowed getters. | Immutable final-preservation and repeated-run assertions. | Implemented; empty legacy debug bytes remain conditional. |
+| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: Task 249 publishes source-type inputs only. Expansion,
+normalization, evidence, term/`qua` selection, accepted facts/declarations/
+proofs, and downstream IR remain with their explicit later owners.
 
 ### `type_checker`
 
@@ -2570,11 +2603,24 @@ ten-reserve-root consumer, Task-248 two-row dependency regression,
 syntax-free table and validation contract, future single trace row, and
 post-implementation count oracles.
 
-This prerequisite repairs only `design_drift`. Until implementation, the
-absent executable handoff remains a `test_gap` and the incomplete
-argument/`qua`/final-handoff seams remain `source_drift`. Existing Task-68
-through Task-71 and Task-248 sources, expectations, and trace rows remain
-byte-identical. No current coverage status, test, count, hash, or chapter
-rating changes, and no blocking `spec_gap`,
+## Task 249 Implementation Audit Addendum
+
+The frozen producer is now implemented as the public syntax-free
+`source_type` module and one private runner leaf. The broad real consumer
+publishes the exact 10/13/6 tables and stops at the runner-owned dependency
+detail; the unchanged Task-248 fixture co-installs its exact 2/2/0 table from
+the actual checker-owned binding environment. `TypedAst` owns both handoffs
+and `ResolvedTypedAst` only clones them.
+
+The implementation closes the selected `test_gap`, `source_drift`, and
+`design_drift` only for this bounded input-handoff slice. Existing Tasks 68-71
+and Task-248 source/sidecar/trace artifacts remain byte-identical. The new
+bounded diagnostic trace row accounts for plan 411/372, type 238/226,
+pass/fail 224/187, and active type 190 with warnings unchanged. MC-G014,
+MC-G016, and MC-G020 remain partial globally: normalization, evidence,
+term/`qua` selection, definition semantics, accepted facts/proofs, and
+downstream IR receive no credit. Implementation review found and repaired
+import-closure and generated-declaration `source_drift` plus recursive
+public-input graph `boundary_violation`. No unresolved `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict` was found.
+`boundary_violation`, or `repo_metadata_conflict` remains.
