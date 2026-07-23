@@ -3,125 +3,131 @@
 > 正本は英語です。英語版:
 > [../en/crate_exit_report.md](../en/crate_exit_report.md)。
 
-> Historical notice: 本reportはpre-Task-46 milestoneと当時validだった94/100 scoreを
-> 記録する。後のfresh auditにより、完了済みfrontend Task 20がTask 46のtriggerをすでに
-> 満たしていたと確認され、Task 46は現在実装済みである。以下のresult、count、hash、
-> residual table、handoffは、別のpost-Task-46 closeoutが全hard gateを再実行してfreshな
-> independent scoreを得るまでsupersededである。
-
 ## 結果
 
-状態: 現在の `mizar-parser` crate milestone は complete。
+状態: post-Task-46 `mizar-parser` milestone は complete。
 
-品質スコア: closeout 文書同期後の独立監査で 94/100。
+品質スコア: independent reviewで99/100。
 
-適用された score cap: なし。この report が存在する前は、paired exit report の
-欠落と stale な status index が `design_drift` であり、hard gate 5 は fail、score
-は無効で最大 89 だった。`PARSER-CRATE-CLOSEOUT` はその drift を閉じる。
+score cap: report preparation時点でなし。下記hard gateはすべてpassする。
+P-265-47Dはnonblocking/human-owned。別途classifiedされたfrontend string-position
+heuristicはparser target外であり、parser creditやclosureを主張しない。
 
-この結果は parser crate milestone だけを閉じる。global Step 5 を閉じず、parser
-Task 46 を昇格せず、Task 49 を作成・昇格せず、Steps 6/7 を許可しない。
+`PARSER-CRATE-POST-TASK46-CLOSEOUT`はparser crate milestoneだけを閉じる。global
+Step 5を閉じず、parser Task 49を推定・promoteせず、Steps 6/7をauthorizeしない。
 
 ## 範囲
 
-Milestone scope:
+milestone scope:
 
-- parser Tasks 1-45 と 47-48。
-- frontend 適合済み token input、source-shaped `SurfaceAst` output、grammar / Pratt
-  parsing、syntax recovery、deterministic parser behavior、active parse-only corpus。
-- source/spec correspondence、reserved-word coverage、bilingual synchronization、
-  public-enum policy、Task-47/48 increment。
-- 下記に記録する現在の parser/syntax/corpus/trace/count/hash evidence。
+- parser Tasks 1-48。
+- frontend-adapted token input、source-shaped `SurfaceAst` output、concrete
+  grammar/Pratt parsing、syntax recovery、deterministic behavior、active
+  parse-only corpus。
+- source/spec correspondence、reserved-word coverage、bilingual
+  synchronization、public-enum policy、parser module-boundary policy。
+- current parser/syntax/corpus/traceability/count/hash evidence。
 
-Included:
+含むもの:
 
-- public parser transfer objects と syntax-only parser entry point。
-- completed parser tasks が表す grammar surface。canonical な3つの
-  `reconsider_tail` form と top-level `PropertyImplementation` を含む。
+- canonical `reconsider_tail` 3形、top-level `PropertyImplementation`、exact
+  infix/prefix/postfix `OperatorDeclaration`を含むcompleted parser grammar surface。
+- annotation/visibility付きtop-levelとdefinition-local operator-declaration
+  placement、append-only syntax kind 193、local recovery。
 - parser unit/determinism/lint-policy、syntax、frontend、real parse-only runner evidence。
-- paired EN/JA parser design documents と本 exit report。
+- paired English/Japanese parser design documentと本report。
 
-Excluded:
+含まないもの:
 
-- aliased P-043-01 / P-046 concrete operator-declaration gap。named frontend
-  string-required context が存在するまで deferred。
-- Chapter 8 と Chapters 4/15 + Appendix A の `reconsider` list form の間に残る
-  nonblocking human-owned P-265-47D wording `spec_gap`。
-- resolver/checker、semantic property/coherence decision、proof acceptance、
-  Core/CFG/VC、artifact、global Step-5 completion。
-- authority-approved task がない future grammar growth と Steps 6/7。
+- Chapter 8とChapters 4/15 + Appendix Aの`reconsider` item list wordingに関する
+  nonblocking human-owned P-265-47D `spec_gap`。
+- independently classified frontend overbroad string-position heuristic。external
+  frontend `source_drift` / `source_undocumented_behavior` + unit
+  `test_expectation_drift`のまま。
+- operator activation、active-functor validation、overload meaning、resolution、
+  semantic precedence-range validation、source declarationによるPratt metadata mutation。
+- checker/proof/Core/CFG/VC/artifact behavior、global Step-5 completion、unapproved
+  future grammar growth、Task 49、Steps 6/7。
 
-current-milestone complete は、考え得るすべての、または future canonical grammar
-production の実装完了を意味しない。新しい grammar work は fresh canonical
-authority から開始しなければならない。
+## Disagreement classification
+
+- `design_drift`: staleなpre-Task-46 live-status textとobsoleteなreview-derived
+  coverage backlogは本paired documentation synchronizationでclosed。
+- `source_drift` / `test_gap`: aliased parser P-043-01/P-046 operator-declaration
+  gapは本closeout前のTask 46でclosed。
+- `spec_gap`: parser inventoryに残るのはP-265-47Dだけで、nonblocking/human-owned。
+- `source_drift` / `source_undocumented_behavior` /
+  `test_expectation_drift`: overbroad string-position heuristicはexternal frontend
+  findingのままで、parser creditではない。
+- parser-scope `test_gap`、`boundary_violation`、`repo_metadata_conflict`は残らない。
+  metadata repairは実行しない。
 
 ## Hard Gates
 
-| Protocol gate | 状態 | 根拠 |
+| Protocol gate | 状態 | 証拠 |
 |---|---|---|
-| 1. Blocking/high specification inconsistency なし | Pass | Canonical EN spec、active `.miz` corpus、exact trace rows、parser plan は completed Tasks 1-45/47-48 で一致する。P-265-47D は nonblocking human-owned。 |
-| 2. Undocumented source behavior なし | Pass | [source_spec_audit.md](./source_spec_audit.md) は public surface と promised behavior を source/tests へ trace する。未解決 `source_undocumented_behavior` はない。 |
-| 3. Milestone-owned coverage または明示 deferral | Pass | 43 parse-only requirements はすべて covered。P-043-01/P-046 は external trigger、owner、rationale を明示する。 |
-| 4. Expectation integrity | Pass | Task 48 は既存 `.miz`/expectation を変更していない。Task 47 の1 sidecar diagnostic は canonical grammar へ向けた stale expectation 修正で、implementation-derived rebaseline ではない。 |
-| 5. Design/source synchronization | Pass | Paired parser docs、crate/top indexes、Task-48 completion record、本 paired report は source/current oracle と一致する。 |
-| 6. Responsibility boundaries | Pass | Parsing は syntax-only。resolver/checker/proof/Core/CFG/VC/artifact/cache/build responsibility を `mizar-parser` へ移していない。 |
-| 7. Coverage-audit synchronization | Pass | Task 48 は実 coverage change を audit に反映済み。本 docs-only closeout は coverage mapping、trace status、owner、follow-up ownership、deferred rationale を変えないため追加 edit 不要。 |
-| 8. Verification | Pass | Focused crate tests、format、denied-warning workspace Clippy、full workspace tests、5 CLI、count/hash manifests、diff checks が pass。 |
-| 9. Residual-risk classification | Pass | 残る parser item は deferred P-043-01/P-046 と human-owned P-265-47D。`boundary_violation` / `repo_metadata_conflict` はない。 |
+| 1. blocking/high specification inconsistencyなし | Pass | English canonical spec、Appendix-A parser normalization、active corpus、exact trace row、parser designはTasks 1-48で一致する。P-265-47Dはnonblocking/human-owned。 |
+| 2. undocumented parser source behaviorなし | Pass | [source_spec_audit.md](./source_spec_audit.md)がparser public surface/implementationをspec/testsへtraceする。parser-scope `source_undocumented_behavior`はなく、known frontend heuristicはexternal/uncredited。 |
+| 3. milestone-owned coverageまたはexplicit deferral | Pass | parse coverageは44/44。implemented parser grammar sliceはactive coverageまたはdocumented owner boundaryを持ち、parser-owned deferred grammar taskはない。 |
+| 4. expectation integrity | Pass | Task 46はnew pass/fail source/sidecarだけを追加し、existing `.miz`/expectationはunchanged。以前のTask-47 sidecar repairはcurrent implementationではなくcanonical grammarへ合わせた。 |
+| 5. design/source synchronization | Pass | paired parser/syntax/mizar-test docs、crate/global index、source、wrapper ownership、recovery、current oracleはTask 46まで一致する。 |
+| 6. responsibility boundary | Pass | parsingはsyntax-only。resolver/checker/proof/Core/CFG/VC/artifact/cache/build responsibilityを`mizar-parser`へ移していない。 |
+| 7. coverage-audit synchronization | Pass | Task 46がcoverage changeを`doc/design/spec_coverage_audit.md`へ更新済み。本closeoutはcoverage/trace status/owner/deferred rationaleを変えないためauditはunchanged。 |
+| 8. verification | Pass | focused/relevant crate test、format、denied-warning workspace Clippy、full workspace test、5 CLI、count/hash manifest、diff checkがpass。 |
+| 9. residual-risk classification | Pass | P-265-47Dはhuman-owned/nonblocking、frontend heuristicはexternal/uncredited。parser `boundary_violation`や`repo_metadata_conflict`なし。 |
 
 ## Score Breakdown
 
+independent read-only reviewerは全hard gateを確認した。1 pointの減点はnonblockingで
+human-ownedのP-265-47D wording gapによる。
+
 | Category | Points |
 |---|---:|
-| Specification completeness | 18/20 |
-| Test contract and coverage | 18/20 |
-| Traceability | 14/15 |
+| Specification completeness | 19/20 |
+| Test contract and coverage | 20/20 |
+| Traceability | 15/15 |
 | Implementation correctness | 15/15 |
 | Design/source synchronization | 10/10 |
 | Boundary discipline | 10/10 |
 | Verification health | 5/5 |
-| Handoff quality | 4/5 |
-| Total | 94/100 |
+| Handoff quality | 5/5 |
+| Total | 99/100 |
 
-減点は明示 deferred operator-declaration surface、human-owned `reconsider` wording
-gap、次 parser task authority がないことによる。hard-gate failure ではない。
+## 残存項目
 
-## Deferred Items
+| Item | 分類と理由 | Owner / action |
+|---|---|---|
+| P-265-47D | nonblocking human-owned `spec_gap`: Chapter 8は`reconsider_item` 1件、Chapters 4/15とAppendix Aはlistを指定する。 | human specification ownerがEnglish canonical wordingをexplicitにreconcileする。parser behaviorからspec editを推定しない。 |
+| Frontend string-position heuristic | external frontend `source_drift` / `source_undocumented_behavior` + unit `test_expectation_drift`: canonicalなoperator-declaration/string-annotation positionより広いpunctuation後でquoted textを受理する。 | fresh frontend authorityでseparate taskを定義する。parser closeoutへ混在させずIDを発明しない。 |
 
-| ID | Classification と理由 | Owner | Unblock condition |
-|---|---|---|---|
-| P-043-01 / P-046 | `source_drift` / `test_gap`: concrete operator declaration と reserved-word corpus は current milestone 外。2つの ID は同一 gap を指す。 | Deferred `mizar-parser` Task 46 | Future `mizar-frontend` string-required operator-declaration context が canonical に authorized となり Task 46 を scope に入れる。 |
-| P-265-47D | Nonblocking human-owned `spec_gap`: Chapter 8 は単一 `reconsider_item`、Chapters 4/15 と Appendix A は list を記す。 | Human specification owner | English canonical wording を明示的に調停する。current parser behavior から spec edit を推測しない。 |
+current inventoryはnonempty successor `mizar-parser` implementation taskをauthorizeしない。
 
 ## Human Review Surface
 
-主要 review surface:
-
-- [00.crate_plan.md](./00.crate_plan.md)、[todo.md](./todo.md)、本 report。
+- [00.crate_plan.md](./00.crate_plan.md)、[todo.md](./todo.md)、本report。
 - [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
   [recovery.md](./recovery.md)、[source_spec_audit.md](./source_spec_audit.md)。
-- paired English/Japanese documents。
-- `doc/spec/en/`、`tests/coverage/spec_trace.toml` が参照する active parser
-  `.miz`/sidecars、exact Task-47/48 corpus files。
-- `crates/mizar-parser/src/`、paired `mizar-syntax` vocabulary、parser
-  determinism/lint tests、`crates/mizar-test/tests/metadata.rs`。
+- paired English/Japanese parser/syntax/mizar-test Task-46 addenda。
+- `doc/spec/en/10.functors.md`、`12.modules_and_namespaces.md`、Appendix A、
+  exact Task-46 trace row/pass/fail sidecar。
+- `crates/mizar-parser/src/`、paired `mizar-syntax` kind/accessor support、
+  `crates/mizar-test/tests/metadata.rs`。
 
-`PARSER-CRATE-CLOSEOUT` は source、specification、`.miz`、expectation、snapshot、
-traceability file を変更しない。
+本docs-only closeoutはspecification/source/test/`.miz`/expectation/snapshot/traceability
+row/coverage mapping/oracleを変更しない。
 
 ## Test Expectation Summary
 
-| Evidence group | Intent | Expected phase/outcome | Specification surface |
-|---|---|---|---|
-| Parser unit/determinism/lint-policy tests | AST ownership、recovery boundary、deterministic output、public policy を守る。 | Rust tests pass。expectation file change なし。 | Completed parser task contract と paired design docs。 |
-| `tests/miz/pass/parser/pass_parser_reconsider_tails_001.miz` と `tests/miz/pass/parser/pass_parser_reconsider_tails_001.expect.toml` | Task 47 additive coverage。omitted / proof-block tail を semantic acceptance なしで覆う。 | `parse_only` pass、`diagnostic_codes = []`。 | Chapters 4/8/15、Appendix A。 |
-| `tests/miz/fail/parser/fail_parser_consider_reconsider_recovery_001.miz` と `tests/miz/fail/parser/fail_parser_consider_reconsider_recovery_001.expect.toml` | Task 47 は `.miz` を byte-identical に保ち、canonical `reconsider x as set;` 用の obsolete `malformed_justification` だけを削除し、他の recovery diagnostics/intent を維持した。 | Existing fail sidecar は parse-only recovery contract として pass。 | Chapter 15 parser syntax と P-265-47B。 |
-| `tests/miz/pass/parser/pass_parser_property_implementations_001.miz` と `tests/miz/pass/parser/pass_parser_property_implementations_001.expect.toml` | Task 48 additive means/equals property coverage。 | `parse_only` pass、`diagnostic_codes = []`。 | Chapters 7/12、Appendix A。 |
-| `tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.miz` と `tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.expect.toml` | Task 48 additive malformed parameter/body/correctness と following-item recovery。既存 expectation rebaseline なし。 | exact 13 diagnostics を持つ `parse_only` fail contract。 | Chapters 7/12、Appendix A。 |
+| Evidence group | Intent | Expected phase/outcome |
+|---|---|---|
+| Parser unit/determinism/lint-policy + syntax test | AST ownership、exact slot、recovery boundary、append-only kind identity、deterministic output、public policyをguard。 | Rust test pass。closeout-time expectation changeなし。 |
+| Task-47 `reconsider` corpus | canonical grammar下でomitted/explicit-`by`/proof-block tailをcover。 | active parse-only contract pass。 |
+| Task-48 property-implementation pass/fail pair | exact top-level placement、means/equals body、correctness ordering、bounded recoveryをcover。 | active parse-only contract pass。 |
+| Task-46 operator-declaration pass/fail pair | exact infix/prefix/postfix form、associativity word、annotation/visibility/local placement、malformed slot/delimiter、following-item preservationをcover。 | pass sidecarはdiagnostic 0、fail sidecarはexisting syntax code 6件に一致。 |
 
-## Verification
+## 検証
 
-コマンド:
+commands:
 
 ```text
 cargo test -p mizar-parser
@@ -139,43 +145,39 @@ cargo run -p mizar-test -- proof-verification --tests-root tests --manifest test
 git diff --check
 ```
 
-結果:
+results:
 
-- parser 221 unit / 3 determinism / 14 lint-policy、syntax 54 unit / 8 lint-policy
-  tests が pass。
-- plan 407 cases / 369 requirements、pass/fail 222/185、warnings/errors 23/0、
-  parse/declaration/type/proof coverage 43/43、10/5、236/224、4/1。
-- active parse/declaration/type/proof admission 99/5/188/1 はすべて pass。
-- plan/parse/declaration/type/proof stdout hash は順に
-  `2957a40b91a4cf64206301b4bf91d1c42ecdac2a564b70af370d2e52333ab57b`、
-  `c9dcbcef79e727f31720d46532febe5a20e02a7710cf691e49d89fcfb69bccfa`、
+- parser unit 225 / determinism 3 / lint-policy 14、syntax unit 55 /
+  lint-policy 8。frontend/mizar-test relevant suiteもpass。
+- plan 409 cases / 370 requirements、pass/fail 223/186、warnings/errors 23/0。
+  parse/declaration/type/proof coverageは44/44、10/5、236/224、4/1。
+- active parse/declaration/type/proof admission 101/5/188/1はすべてpass。
+- plan/parse/declaration/type/proof stdout hashは
+  `9b1e3058bde355163b1153339250647633beef9920456615cf6661c4140a93cf`、
+  `a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
   `210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
   `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
   `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
-- raw/normalized 276-test-list hash は
-  `967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` と
+- raw/normalized 276-test-list hashは
+  `967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590`、
   `1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`。
-- `mizar-test` production は 18 paths / 20,088 lines、path/content hash は
-  `63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0` と
+- `mizar-test` productionは18 paths / 20,088 lines、path/content hashは
+  `63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`、
   `7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`。
-- parser production は 12 paths / 38,256 lines、path/content hash は
-  `192f9d0b5e6534c4daab010ec51a9356e9e0fd6fb86876bd2600a75844e7566a` と
-  `3728e0ac374c11b3ef0553379d2e9affcd861513e004dfee80589b47bcf2130a`。
-- format、Clippy、crate/workspace tests、diff checks は pass。
+- parser productionは12 paths / 38,940 lines、path/content hashは
+  `192f9d0b5e6534c4daab010ec51a9356e9e0fd6fb86876bd2600a75844e7566a`、
+  `6f27be7c5689cc12b6cf684736bc44b1f92acebf6ce313ce581b22a46451cb5b`。
+- format、denied-warning Clippy、full workspace test、diff checkはpass。
 
-23 plan warnings は既存 cross-workspace soundness/corpus-size warning であり、
-parser-closeout error ではない。plan errors は 0。
+23 warningsはexisting cross-workspace soundness/corpus-size warningであり、parser
+closeout errorではない。plan errorsは0。
 
 ## Handoff
 
-Next recommended work: current authority 下の `mizar-parser` にはない。future
-parser task の前に fresh inventory が必要。P-043-01/P-046 は named frontend
-context が authorized になった場合のみ再開できる。
+current authority下の次の`mizar-parser` workはない。次turnはfresh canonical Step-5
+inventoryから開始する。Task 49を推定せず、Steps 6/7をpromoteしない。external frontend
+string-position findingは独自authorityを要し、暗黙にparser follow-upと扱わない。
 
-Known constraints: global Step 5 は本 parser milestone 外で active のまま。
-Task 49 を推測せず、Steps 6/7 を昇格しない。parser work は syntax-only とし、
-authority order と bilingual synchronization を維持する。
-
-推奨 reasoning setting: 次の cross-crate authority inventory または canonical
-grammar/semantic decision は `xhigh`。bounded かつ authorized 済み parser-only
-implementation は `high`、pure docs refresh は `medium`。
+推奨reasoning setting: 次のcross-crate authority inventoryまたはcanonical
+grammar/semantic decisionは`xhigh`、bounded/authorized implementationは`high`、pure
+documentationは`medium`。

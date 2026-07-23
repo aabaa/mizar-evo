@@ -7,8 +7,9 @@ declarations are parsed as dedicated `OperatorDeclaration` nodes at annotated,
 visible top-level and definition-local notation positions. Completed frontend
 Task 20 already supplied the named position-sensitive string context and local
 operator metadata handoff. Task 46 is syntax-only: it does not activate an
-operator or mutate `ParseRequest::operator_fixity`. The earlier 94/100 closeout
-is historical until a separate post-Task-46 closeout reruns all hard gates.
+operator or mutate `ParseRequest::operator_fixity`. The post-Task-46 parser
+milestone meets all nine closeout hard gates; its fresh independent read-only
+score is 99/100.
 
 It should keep a narrow dependency on parser-facing token transfer objects and
 syntax structures: frontend-adapted tokens in, `SurfaceAst` plus syntax
@@ -29,9 +30,10 @@ coverage, the parser-owned valid-UTF-8 fuzz target, and frontend passthrough
 follow-through audit, plus a private annotation/test module-boundary split.
 Tasks 43-45 and 47-48 are complete, and Task 46 now closes the concrete
 operator-declaration syntax gap. All parser Tasks 1-48 are implemented.
-P-265-47D remains a nonblocking human-owned wording gap. Global Step 5 is not
-closed, Task 49 and Steps 6/7 are not authorized, and only a separate fresh
-parser closeout may follow this implementation.
+P-265-47D remains a nonblocking human-owned wording gap. The independently
+classified overbroad frontend string-position heuristic remains external to
+parser scope. Global Step 5 is not closed, and Task 49 and Steps 6/7 are not
+authorized.
 
 Module specs and audits:
 

@@ -75,12 +75,12 @@ malformed counterpart that must be rejected or recovered with diagnostics, and
 recovery cases assert both the diagnostic and the recovered `SurfaceAst`
 shape, not just "did not crash".
 
-## Review-Audit Parser Coverage Backlog
+## Review-Audit Parser Coverage Closure
 
-The grammar/VC review follow-up in `tests/coverage/spec_trace.toml` records
-parser-facing cases that should become executable as their owning grammar tasks
-land. Do not treat these as immediate coverage obligations before the
-parse-only runner and the relevant productions exist.
+The grammar/VC review follow-up in `tests/coverage/spec_trace.toml` originally
+recorded parser-facing cases to make executable as their owning grammar tasks
+landed. The parse-only runner and relevant productions now exist, and every
+listed parser case is active:
 
 - Template arguments: completed by task 31. `pass_parser_template_arguments_001`,
   `pass_parser_template_references_001`, and
@@ -88,11 +88,20 @@ parse-only runner and the relevant productions exist.
 - Algorithm and claim basics: completed by task 32.
   `pass_parser_algorithms_claims_001` and
   `fail_parser_algorithms_claims_recovery_001` are active parse-only cases.
-- Accepted syntax cases still needed: `let` constraints with `by` references,
-  take-with-witness examples, conditional definiens, Fraenkel generators,
-  `qua` chains, and predicate chains.
-- Rejection cases still needed: non-associative operator chains,
-  builtin/user predicate-chain mixing, and incomplete term-headed formulas.
+- Accepted syntax cases are complete: `pass_parser_registrations_001` covers
+  `let` constraints with `by`; `pass_parser_simple_statements_001` covers named
+  and unnamed take witnesses; `pass_parser_functor_definitions_001` covers
+  conditional definientia; `pass_parser_set_comprehensions_001` covers
+  Fraenkel generators; `pass_parser_operator_terms_001` and
+  `pass_parser_qua_terms_001` cover `qua` chains; and
+  `pass_parser_atomic_formulas_001` covers predicate chains.
+- Rejection cases are complete: `fail_parser_operator_nonassoc_001` covers
+  non-associative term-operator chains;
+  `fail_parser_atomic_formula_mixed_chain_001` covers builtin/user
+  predicate-chain mixing; and `fail_parser_atomic_formula_missing_rhs_001`
+  covers an incomplete term-headed atomic formula (`x = ;`).
+
+No parser-owned item remains in this review-derived backlog.
 
 ## Resolved And Open Decisions
 
@@ -1052,20 +1061,21 @@ older numeric syntax task references appear to disagree, prefer
       paired `design_drift`, and two internal `test_expectation_drift` cases
       are closed without changing existing `.miz` files or semantic intent.
 
-## Superseded Parser Crate Closeout
+## Post-Task-46 Parser Crate Closeout
 
-`PARSER-CRATE-CLOSEOUT` was a completed documentation task, but its milestone
-conclusion is superseded by the fresh Task-46 trigger audit: completed frontend
-Task 20 had already satisfied the named trigger. Parser Tasks 1-48 are now
-implemented, P-043-01/P-046 is closed, and
-[crate_exit_report.md](./crate_exit_report.md) is historical until a separate
-post-Task-46 closeout reruns every hard gate and obtains a fresh score.
-P-265-47D remains a separate nonblocking, human-owned specification wording
-gap.
+`PARSER-CRATE-POST-TASK46-CLOSEOUT` is the documentation-only closeout for the
+implemented Tasks 1-48 milestone. P-043-01/P-046 is closed, every protocol hard
+gate passes, and [crate_exit_report.md](./crate_exit_report.md) is the canonical
+current report; its fresh independent read-only score is 99/100. P-265-47D
+remains a separate nonblocking human-owned `spec_gap`. The independently
+classified overbroad frontend string-position heuristic remains an external
+frontend `source_drift` / `source_undocumented_behavior` with unit
+`test_expectation_drift` and receives no parser credit.
 
-Task 46 does not claim completion of global Step 5, Task 49, or Steps 6/7. No
-new parser task is inferred; only the separately authorized closeout review may
-follow fresh inventory.
+No nonempty successor parser task is authorized. This closeout does not close
+global Step 5, infer Task 49, or promote Steps 6/7. It changes no specification,
+source, test, expectation, trace row, coverage mapping, owner, or deferred
+rationale, so `doc/design/spec_coverage_audit.md` remains unchanged.
 
 ## Recommended Verification
 

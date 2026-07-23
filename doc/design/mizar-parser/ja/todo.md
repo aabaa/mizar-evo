@@ -74,12 +74,11 @@ resolver / build-system 依存を避ける。
 不正な対応物を少なくとも 1 つ用意する。recovery ケースは「クラッシュしない」
 だけでなく、診断と回復後の `SurfaceAst` の形の両方をアサートする。
 
-## レビュー監査由来の parser coverage backlog
+## レビュー監査由来の parser coverage closure
 
-`tests/coverage/spec_trace.toml` に記録された文法/VC レビューのフォローアップ
-には、所有する文法タスクが着地した時点で実行可能にすべき parser-facing ケース
-が含まれている。parse-only ランナーと該当生成規則が存在する前に、これらを
-即時の coverage 義務として扱わない。
+`tests/coverage/spec_trace.toml`のgrammar/VC review follow-upは、owning grammar taskの
+着地時にexecutableとするparser-facing caseを当初記録した。現在はparse-only runnerと
+relevant productionが存在し、listed parser caseはすべてactiveである。
 
 - template 引数: task 31 で完了。`pass_parser_template_arguments_001`、
   `pass_parser_template_references_001`、
@@ -87,10 +86,18 @@ resolver / build-system 依存を避ける。
 - algorithm / claim basics: task 32 で完了。
   `pass_parser_algorithms_claims_001` と
   `fail_parser_algorithms_claims_recovery_001` は active parse-only case である。
-- まだ必要な受理ケース: `by` 参照付き `let` 制約、witness 付き `take`、
-  条件付き definiens、Fraenkel generator、`qua` 連鎖、述語連鎖。
-- まだ必要な拒否ケース: 非結合演算子の連鎖、builtin/user 述語連鎖の混在、
-  不完全な項始まり論理式。
+- accepted syntax caseはcomplete: `pass_parser_registrations_001`が`by`付き`let`
+  constraint、`pass_parser_simple_statements_001`がnamed/unnamed take witness、
+  `pass_parser_functor_definitions_001`がconditional definientia、
+  `pass_parser_set_comprehensions_001`がFraenkel generator、
+  `pass_parser_operator_terms_001`と`pass_parser_qua_terms_001`が`qua` chain、
+  `pass_parser_atomic_formulas_001`がpredicate chainをcoverする。
+- rejection caseはcomplete: `fail_parser_operator_nonassoc_001`がnon-associative
+  term-operator chain、`fail_parser_atomic_formula_mixed_chain_001`がbuiltin/user
+  predicate-chain mixing、`fail_parser_atomic_formula_missing_rhs_001`がincomplete
+  term-headed atomic formula（`x = ;`）をcoverする。
+
+本review-derived backlogにparser-owned itemは残らない。
 
 ## 解決済みおよび保留中の決定
 
@@ -1008,19 +1015,20 @@ resolver / build-system 依存を避ける。
       変更せず、従来の`source_drift`、`test_gap`、paired `design_drift`、internal
       `test_expectation_drift` 2件をcloseした。
 
-## Superseded Parser Crate Closeout
+## Post-Task-46 Parser Crate Closeout
 
-`PARSER-CRATE-CLOSEOUT` は完了済みの documentation task だったが、その milestone
-conclusion は fresh Task-46 trigger audit により superseded された。完了済み frontend
-Task 20 は named trigger をすでに満たしていた。Parser Tasks 1-48 は現在実装済み、
-P-043-01/P-046 は closed であり、[crate_exit_report.md](./crate_exit_report.md) は
-別の post-Task-46 closeout が全 hard gate を再実行して fresh score を得るまで
-historical である。P-265-47D は別の nonblocking human-owned specification wording
-gap のままである。
+`PARSER-CRATE-POST-TASK46-CLOSEOUT`はimplemented Tasks 1-48 milestoneのdocs-only
+closeoutである。P-043-01/P-046はclosed、全protocol hard gateはpassし、
+[crate_exit_report.md](./crate_exit_report.md)がcanonical current reportである。fresh
+independent read-only scoreは99/100。P-265-47Dは別のnonblocking human-owned `spec_gap`の
+ままである。独立にclassifiedされたoverbroad frontend string-position heuristicは
+external frontend `source_drift` / `source_undocumented_behavior` + unit
+`test_expectation_drift`として残り、parser creditを受けない。
 
-Task 46 は global Step 5、Task 49、Steps 6/7 の完了を主張しない。新しい parser
-task は推定せず、fresh inventory の後は別途 authorized された closeout review
-だけを続行できる。
+nonempty successor parser taskはauthorizeされていない。本closeoutはglobal Step 5を
+閉じず、Task 49を推定せず、Steps 6/7をpromoteしない。specification/source/test/
+expectation/trace row/coverage mapping/owner/deferred rationaleを変更しないため、
+`doc/design/spec_coverage_audit.md`はunchanged。
 
 ## 推奨検証
 

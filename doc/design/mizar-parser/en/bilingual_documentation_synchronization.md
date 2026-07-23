@@ -3,9 +3,9 @@
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md).
 
-Status: completed for parser task 44 and refreshed through Task 46. The
-pre-Task-46 `PARSER-CRATE-CLOSEOUT` entries are historical pending a separate
-fresh closeout.
+Status: completed for parser task 44 and refreshed through the post-Task-46
+parser closeout. The pre-Task-46 `PARSER-CRATE-CLOSEOUT` entries are retained
+only as historical checkpoints.
 
 ## Task 46 Pair Recheck
 
@@ -13,8 +13,9 @@ The paired plan, README, grammar, recovery, source/spec audit, TODO, and this
 audit agree on the three exact declaration forms, annotated/visible top-level
 and definition-local placement, append-only syntax kind 193, local recovery,
 one active pass/fail pair, syntax-only credit, and unchanged Pratt/semantic
-behavior. Both languages mark P-043-01/P-046 closed and the former closeout
-superseded without promoting Task 49 or Steps 6/7.
+behavior. Both languages mark P-043-01/P-046 closed, the former closeout
+superseded, and the post-Task-46 closeout current without promoting Task 49 or
+Steps 6/7.
 
 ## Scope
 
@@ -48,9 +49,9 @@ commitments to English and Japanese readers.
 - No remaining public API, parser transfer type, enum-policy, or
   behavior-promise drift was found between the English canonical parser docs and
   the Japanese companions.
-- Module and task statuses are synchronized: parser tasks 1-45 and 47-48 are
-  complete, while task 46 remains explicitly deferred for concrete operator
-  declarations and operator reserved-word corpus coverage.
+- Module and task statuses are synchronized: parser Tasks 1-48 and the
+  post-Task-46 closeout are complete, with a fresh independent read-only score
+  of 99/100. No successor parser task is authorized.
 - Terminology is synchronized for `ParseRequest`, `ParserToken`,
   `ParseOutput`, `OperatorFixityEntry`, `StringRequiredContext`,
   `SurfaceAst`, syntax-event output, Pratt metadata, recovery nodes,
@@ -78,15 +79,15 @@ commitments to English and Japanese readers.
 
 | English canonical | Japanese companion | Synchronization status |
 |---|---|---|
-| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Task-48 authority, frozen scope, completion oracles, Task-46 deferral, and parser closeout gates are synchronized. |
-| [README.md](./README.md) | [../ja/README.md](../ja/README.md) | Crate boundary, parser status through task 48, syntax-only credit, audit list, and Task-46 deferred state are synchronized. |
-| [grammar.md](./grammar.md) | [../ja/grammar.md](../ja/grammar.md) | Grammar inventory, Task-47 `reconsider_tail`, Task-48 top-level property implementation, syntax-only responsibilities, and enum policy are synchronized. |
+| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Task-46 completion, current oracles, historical checkpoint labeling, and post-Task-46 closeout gates are synchronized. |
+| [README.md](./README.md) | [../ja/README.md](../ja/README.md) | Crate boundary, Tasks 1-48 completion, syntax-only credit, residual ownership, and no-successor status are synchronized. |
+| [grammar.md](./grammar.md) | [../ja/grammar.md](../ja/grammar.md) | Grammar inventory through Task 46, `reconsider_tail`, property and operator declarations, syntax-only responsibilities, and enum policy are synchronized. |
 | [pratt.md](./pratt.md) | [../ja/pratt.md](../ja/pratt.md) | Term Pratt, formula Pratt, active metadata, associativity, cache-key boundary, and public enum compatibility promises are synchronized. |
-| [recovery.md](./recovery.md) | [../ja/recovery.md](../ja/recovery.md) | Task-47 and Task-48 recovery ownership, nested-depth synchronization, diagnostic ownership, and public enum compatibility promises are synchronized. |
-| [source_spec_audit.md](./source_spec_audit.md) | [../ja/source_spec_audit.md](../ja/source_spec_audit.md) | Task-43 audit, closed Task-47/48 classifications, reserved-word guard, syntax-only credit, and Task-46 deferral are synchronized. |
+| [recovery.md](./recovery.md) | [../ja/recovery.md](../ja/recovery.md) | Task-46/47/48 recovery ownership, nested-depth synchronization, diagnostic ownership, and public enum compatibility promises are synchronized. |
+| [source_spec_audit.md](./source_spec_audit.md) | [../ja/source_spec_audit.md](../ja/source_spec_audit.md) | Task-43 audit, closed Task-46/47/48 classifications, reserved-word guard, syntax-only credit, and residual ownership are synchronized. |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This task-44 audit records the bilingual synchronization result in both languages. |
-| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Tasks 47-48 are complete and Task 46 remains deferred in both languages. |
-| [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Current parser milestone scope, nine hard gates, 94/100 score, deferred items, verification oracles, and no-successor handoff are synchronized. |
+| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Tasks 1-48, the current closeout, residual ownership, and no-successor status are synchronized. |
+| [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Post-Task-46 scope, nine hard gates, fresh 99/100 score, current oracles, external frontend finding, and no-successor handoff are synchronized. |
 
 ## Link Policy
 
@@ -111,8 +112,7 @@ It closed only the documentation `design_drift` recorded above.
 Task 45 later completed the public enum forward-compatibility policy follow-up
 without creating a new implementation, test, or specification follow-up. It
 confirmed that the existing parser lint-policy guard classifies every public
-parser enum. Task 46 remains deferred for concrete operator declarations and
-operator reserved-word corpus coverage.
+parser enum. Task 46 remained deferred at that checkpoint and is now complete.
 
 ## Task 47 Pair Recheck
 
@@ -133,12 +133,12 @@ two active pass/fail sidecars, 99/99 parse-only admission, syntax-only credit,
 and the unchanged Task-39 semantic gate. Task 46 and Steps 6/7 remain deferred.
 No bilingual drift remains in Task 48.
 
-## Parser Crate Closeout Pair Recheck
+## Post-Task-46 Parser Crate Closeout Pair Recheck
 
-The paired plan, README, TODO, this audit, and crate exit report agree that the
-current parser milestone comprises Tasks 1-45 and 47-48, while P-043-01/P-046
-is one trigger-deferred operator-declaration gap and P-265-47D is a separate
-nonblocking human-owned wording gap. Both languages record the same nine hard
-gates, 94/100 score, verification counts and hashes, global-Step-5 exclusion,
-and absence of an authorized successor parser task. No bilingual drift remains
-after `PARSER-CRATE-CLOSEOUT`.
+The paired plan, READMEs, TODOs, this audit, global indexes, and crate exit
+report agree that Tasks 1-48 are complete and P-043-01/P-046 is closed. They
+record the same nine passing hard gates, fresh independent 99/100 score,
+verification counts/hashes, P-265-47D human ownership, external/uncredited
+frontend heuristic, global-Step-5 exclusion, and absence of an authorized
+successor parser task. Neither language infers Task 49 or promotes Steps 6/7.
+No bilingual drift remains after `PARSER-CRATE-POST-TASK46-CLOSEOUT`.

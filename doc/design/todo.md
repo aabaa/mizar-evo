@@ -91,7 +91,7 @@ is its task 1). "Next work" points into the
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | — | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] complete plus parser Tasks 48/46 post-exit vocabulary increments | parked task 21 | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [~] Tasks 1-48 implemented; pre-Task-46 closeout superseded | separate post-Task-46 closeout; human-owned P-265-47D | [todo](./mizar-parser/en/todo.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] post-Task-46 milestone complete through Tasks 1-48; fresh independent score 99/100 | no authorized parser successor; human-owned P-265-47D | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268 and Core-31 consumer increment complete | step 5 task 10, including future `MT10-FS`/`MT10-AS` and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
@@ -1931,12 +1931,29 @@ and an exact covered trace row.
 The implementation is syntax-only and does not mutate Pratt metadata or claim
 activation, active-functor validation, resolution, overload meaning, or
 semantic precedence validation. Existing `.miz` sources and expectations stay
-unchanged. The earlier 94/100 closeout is historical until a separate fresh
-closeout reruns all hard gates. Task 46 does not promote Task 49 or Steps 6/7
-and does not close global Step 5.
+unchanged. The earlier 94/100 closeout is historical and superseded by the
+separate post-Task-46 closeout below. Task 46 does not promote Task 49 or Steps
+6/7 and does not close global Step 5.
 
 Measured current oracles are plan 409/370, parse coverage 44/44,
 parse/declaration/type/proof admission 101/5/188/1, pass/fail 223/186, and
 warnings/errors 23/0. Parser production is 12 paths / 38,940 lines and parser
 unit tests are 225; `mizar-test` production remains 18 paths / 20,088 lines and
 its 276-test raw/normalized list remains unchanged.
+
+## Step 5 Parser Post-Task-46 Closeout Addendum
+
+`PARSER-CRATE-POST-TASK46-CLOSEOUT` closes only the parser milestone through
+Tasks 1-48. All nine protocol hard gates pass and the fresh independent
+read-only score is 99/100. P-265-47D remains a nonblocking human-owned
+`spec_gap`. The independently classified overbroad frontend string-position
+heuristic remains an external frontend `source_drift` /
+`source_undocumented_behavior` with unit `test_expectation_drift` and receives
+no parser credit.
+
+No nonempty successor parser task is authorized. This closeout does not close
+global Step 5, infer Task 49, or promote Steps 6/7. It changes no specification,
+source, test, expectation, traceability row, coverage mapping, owner, or
+deferred rationale; `doc/design/spec_coverage_audit.md` therefore remains
+unchanged. Current counts and hashes are recorded in the paired parser
+[exit report](./mizar-parser/en/crate_exit_report.md).
