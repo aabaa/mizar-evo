@@ -4385,7 +4385,15 @@ unchecked row below is one future nonempty logical task and one commit.
   runner-only readiness detail, bounded trace row, paired docs, and count/hash
   verification are complete. It publishes no normalization, evidence,
   term/`qua` selection, accepted fact/declaration/proof, or downstream IR.
-- [ ] **Task 250:** attribute-chain/qualification/provenance producer.
+- [ ] **Task 250:** attribute-chain/qualification/provenance producer. Its
+  independent paired EN/JA frozen-contract prerequisite is complete:
+  implementation must follow the exact four existing consumers, 4/4/0
+  Task-249 co-handoff, 4-chain/4-attribute/1-qualifier/1-group/1-actual oracle,
+  written prefix/list preservation, polarity and qualifier provenance,
+  outcome/trace progression, synthetic extractor and corruption matrices, and
+  forbidden scope in [00.crate_plan.md](./00.crate_plan.md). This row remains
+  unchecked until the real producer and consumers are implemented and
+  committed.
 - [ ] **Task 251:** evidence-query request and dependency-fact-reference producer;
   never fabricate evidence results.
 - [ ] **Task 252:** primary term producer.

@@ -2526,3 +2526,23 @@ declarationの`source_drift`、recursive public-input graphの
 `boundary_violation`を検出しrepairした。未解消の`spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`はない。
+
+## Task 250 frozen-contract audit addendum
+
+fresh inventoryはnext executable raw source-attribute sliceをChapters
+03/06/11/12、Chapter-17 restricted-adjective boundary、MC-G014/MC-G020配下の
+Task 250へassignした。paired crate planはflat chain/polarity/qualifier/group/
+actual handoff、exact Task-67/81/84/85 consumer/cardinality、immutable final
+ownership、legacy `AttributeInput` coexistence、runner outcome、trace
+progression、synthetic prefix/order extractor coverage、corruption/determinism
+testを固定した。
+
+このprerequisiteがrepairするのは`design_drift`だけである。implementationまで、
+executable handoff不在は`test_gap`、incomplete chain/qualifier/argument/
+provenance/final-handoff seamは`source_drift`のまま。Task 250はwritten prefix/
+argument-list formを保持し、そのcanonical semantic equivalence、arity/type
+checking、admissibility、evidence、truthをlater ownerへpositiveにdeferする。
+current source、fixture、expectation、trace row/status、plan 411/372、type
+238/226、pass/fail 224/187、active type 190、warnings/errors 23/0、全hashは不変。
+blocking `spec_gap`、`source_undocumented_behavior`、current
+`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`はない。

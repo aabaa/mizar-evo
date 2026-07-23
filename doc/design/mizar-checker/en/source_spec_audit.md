@@ -2624,3 +2624,25 @@ import-closure and generated-declaration `source_drift` plus recursive
 public-input graph `boundary_violation`. No unresolved `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` remains.
+
+## Task 250 Frozen-Contract Audit Addendum
+
+Fresh inventory assigns the next executable raw source-attribute slice to
+Task 250 under Chapters 03, 06, 11, 12, and the Chapter-17
+restricted-adjective boundary plus MC-G014/MC-G020. The paired crate plan now
+fixes the flat chain/polarity/qualifier/group/actual handoff, exact Task-67/81/
+84/85 consumers and cardinalities, immutable final ownership, legacy
+`AttributeInput` coexistence, runner outcomes, trace progression, synthetic
+prefix/order extractor coverage, and corruption/determinism tests.
+
+This prerequisite repairs only `design_drift`. Until implementation, the
+absent executable handoff remains a `test_gap` and the incomplete
+chain/qualifier/argument/provenance/final-handoff seams remain `source_drift`.
+Task 250 preserves written prefix and argument-list forms while positively
+deferring their canonical semantic equivalence, arity/type checking,
+admissibility, evidence, and truth to later owners. Current source, fixtures,
+expectations, trace rows/status, plan 411/372, type 238/226, pass/fail 224/187,
+active type 190, warnings/errors 23/0, and all hashes remain unchanged. No
+blocking `spec_gap`, `source_undocumented_behavior`, current
+`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
+was found.

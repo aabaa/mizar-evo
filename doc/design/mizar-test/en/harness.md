@@ -2681,3 +2681,30 @@ no public diagnostic is allocated, and no existing expectation or trace row
 is rebaselined. The resolver-required distinct scaffolding formal/field names
 repair only task-local `design_drift` and the parse-only preflight `test_gap`;
 they emit no handoff rows and change no semantic intent.
+
+## Checker Task 250 Frozen Runner Boundary
+
+The future private `source_attribute` leaf owns raw-AST extraction for exactly
+the existing Task-81 argument-bearing, Task-67 structure-qualified, Task-84
+imported, and Task-85 negative-nonempty fixtures. Each route co-installs the
+real 1/1/0 Task-249 dependency handoff. Their aggregate immutable Task-250
+handoff oracle is four nonempty chains, four attributes, one qualifier, one
+parenthesized argument group, and one actual, with three positive/one negative
+polarity and two local/two imported attribute identities.
+
+The Task-81/67 sidecars advance only to the runner-owned source-attribute
+semantic-dependency detail. Task-84/85 preserve their checker evidence-query
+details and legacy `AttributeInput` routes. Exact sibling selectors prevent
+Task-116, Task-171, Task-77, or any broader case from receiving credit.
+Synthetic private-extractor tests additionally cover multi-attribute order
+and single/parenthesized prefix punctuation and actuals from `SurfaceAst`
+through the public checker handoff; checker-input-only tests are insufficient.
+The exact probe is `p-ranked (q,2)-graded set`, with Task-249 1/1/0 and
+Task-250 1/2/0/2/3 tables, one single identifier prefix, and one
+parenthesized identifier/numeral prefix with exact comma/delimiter/hyphen
+provenance.
+
+No raw syntax crosses into checker, no new `.miz` or public diagnostic is
+planned, and no semantic arity, prefix/list equivalence, admissibility,
+evidence, or truth is inferred. This frozen boundary is documentation-only
+until Checker Task 250 implementation.

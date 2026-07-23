@@ -2557,3 +2557,27 @@ co-installする。raw syntaxはcheckerへ渡さず、public diagnosticはalloca
 existing expectation/trace rowはrebaselineしない。resolverが要求するdistinctな
 scaffolding formal/field nameはtask-local `design_drift`とparse-only preflightの
 `test_gap`だけをrepairし、handoff rowをemitせずsemantic intentも変えない。
+
+## Checker Task 250 frozen runner boundary
+
+future private `source_attribute` leafはexisting Task-81 argument-bearing、
+Task-67 structure-qualified、Task-84 imported、Task-85 negative-nonempty
+fixtureだけのraw-AST extractionをownする。各routeはreal 1/1/0 Task-249
+dependency handoffをco-installする。aggregate immutable Task-250 handoff oracleは
+nonempty chain 4件、attribute 4件、qualifier 1件、parenthesized argument group
+1件、actual 1件、polarity positive 3/negative 1、attribute identity local 2/
+imported 2である。
+
+Task-81/67 sidecarはrunner-owned source-attribute semantic-dependency detailへだけ
+進む。Task-84/85はchecker evidence-query detailとlegacy `AttributeInput` routeを
+維持する。exact sibling selectorによりTask-116、Task-171、Task-77、broader caseへ
+creditしない。synthetic private-extractor testはさらに`SurfaceAst`からpublic
+checker handoffまでmulti-attribute order、single/parenthesized prefix
+punctuation/actualをcoverし、checker-input-only testでは不十分である。exact probeは
+`p-ranked (q,2)-graded set`で、Task-249 1/1/0、Task-250 1/2/0/2/3 table、
+single identifier prefix 1件、exact comma/delimiter/hyphen provenance付き
+parenthesized identifier/numeral prefix 1件を要求する。
+
+raw syntaxはcheckerへ渡さず、new `.miz`/public diagnosticはplannedせず、
+semantic arity、prefix/list equivalence、admissibility、evidence、truthをinferしない。
+このfrozen boundaryはChecker Task 250 implementationまでdocumentation-only。

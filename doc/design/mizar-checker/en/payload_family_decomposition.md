@@ -91,7 +91,7 @@ not reused.
 |---|---|---|---|
 | 248 | Source item, declaration-site, local-scope, ordinal, reserve/default, and `BindingEnv` context payloads. Specs 04, 11, 12, and 15; MC-G011/MC-G016. | Existing resolver identities and `mizar-test` Task 10. The consumer proves source order, shadowing, recovery, and declaration-to-binding identity. | No type result, RHS evaluation, proof context, or global name-resolution reconstruction. |
 | 249 | Type head/application payloads: builtin, local/imported mode and structure radix, positional/bracket type arguments, term arguments, and written type-site identity. Specs 03, 05, 07, 08, 12, and 18 plus Appendix A; MC-G014/MC-G016/MC-G020. | Task 248; resolver symbol/provenance data; exact Task-248 two-row co-consumer and ten-reserve-root Task-10 type-elaboration consumer frozen in the crate plan. | Produces type inputs only; no expansion, inhabitation, subtyping, term/`qua` selection, or evidence result is fabricated. |
-| 250 | Attribute-chain payloads: polarity, arguments, qualification/owner identity, local/imported provenance, order, and attributed type-site association. Specs 03, 06, and 17; MC-G014/MC-G020. | Tasks 248-249; Task-10 consumer reuses exact argument-bearing, qualified, imported, and non-empty boundaries. | No admissibility, existential evidence, closure fact, or attribute truth is synthesized. |
+| 250 | Attribute-chain payloads: polarity, arguments, qualification/owner identity, local/imported provenance, order, and attributed type-site association. Specs 03, 06, 11, 12, and the 17 restricted-adjective boundary; MC-G014/MC-G020. | Tasks 248-249; the crate plan freezes exact Task-67/81/84/85 consumers, a 4/4/0 Task-249 co-handoff, a 4-chain/4-attribute/1-qualifier/1-group/1-actual Task-250 handoff, and synthetic prefix/order extraction coverage. | Preserves written prefix/list forms for later canonical equivalence, but synthesizes no arity/admissibility, owner compatibility, normalized instance, evidence, closure fact, or attribute truth. |
 | 251 | Evidence-query requests and upstream dependency-fact inputs for mode expansion, structure base shape/constructor witness, attributed-type inhabitation, sethood/non-emptiness, inheritance, and coercion viability, including `ExistentialGateInput` request identity and dependency-fact references. Specs 03, 05-08, 13, 17, and 19; MC-G016/MC-G018/MC-G026. | Tasks 248-250 and canonical imported summaries when available; Task-10 consumer distinguishes request, missing, rejected, and supplied input. | It owns request/site/provenance/reference transport only. Accepted evidence, theorem results, and artifact status remain external inputs. |
 | 252 | Primary terms: variable/constant references, `it`, numerals, and transparent parentheses with binding, role, and numeric-type request payloads. Spec 13.1; MC-G017/MC-G020. | Tasks 248-251; exact Task-10 term consumers. | No arbitrary application, structure/set term, formula, or numeric theorem fact. |
 | 253 | Functor and inline-functor applications, including ordered arguments, signature/result requests, imported provenance, and definition-local actuals. Specs 10 and 13.2; MC-G017/MC-G020. | Tasks 249-252 and resolver signature candidates; Task-10 imported and local application consumers. | No overload winner, implicit definition proof, or result type without supplied evidence. |
@@ -314,3 +314,17 @@ oracle or language intent changed. The new bounded diagnostic trace row closes
 only the selected Task-249 `test_gap` and `source_drift`. Tasks 250+, 269+,
 normalization, term/`qua` binding selection, later semantic payloads, and Steps
 6/7 remain deferred.
+
+## Task 250 Frozen-Contract Prerequisite Completion
+
+The paired crate plan now freezes Task 250's exact syntax-free chain,
+attribute, polarity, qualifier, argument-group, and actual tables; four
+existing real consumers and their 4/4/0 plus 4/4/1/1/1 cardinality oracles;
+Task-67/81 runner-only outcome progression; Task-84/85 evidence-query
+preservation; legacy `AttributeInput` coexistence; synthetic `SurfaceAst`
+prefix/order extractor coverage; one future trace row and required existing
+trace-note updates; expected plan 411/373 and type 239/227; the corruption
+matrix; and forbidden scope. This is a completed independent documentation
+prerequisite, not Task 250 implementation. Source, tests, expectations, trace,
+counts, hashes, coverage credit, Tasks 251+/269+, and Steps 6/7 remain
+unchanged.

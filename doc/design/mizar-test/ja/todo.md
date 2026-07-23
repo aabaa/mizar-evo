@@ -1378,3 +1378,20 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   handoffを通ってexecuteする。plan 411/372、type 238/226、pass/fail
   224/187、active type 190、fresh hashをmandatory completion oracleとする。
   Tasks 250+、269+、Steps 6/7はpromoteしない。
+
+## Checker Task 250 frozen consumer prerequisite
+
+- [x] existing Task-81/67/84/85 active fail fixtureだけをexact real consumerに
+  freezeし、routeごとにTask-249 application/root 1件、type argument 0件とした。
+- [x] aggregate Task-250 oracleをnonempty chain 4件、attribute 4件、qualifier
+  1件、parenthesized argument group 1件、actual 1件にfreezeし、exact polarityと
+  local/imported provenanceを保持する。
+- [x] Task-81/67 runner-only pending progressionとTask-84/85 existing
+  evidence-query preservationをfreezeし、new `.miz`、broad expectation
+  rebaseline、semantic result、public diagnosticを追加しない。
+- [x] multi-attribute orderとsingle/parenthesized prefix projectionについてprivate
+  synthetic-`SurfaceAst` extractor coverageを要求し、checker corruption/
+  determinism matrixも要求する。
+- [ ] Checker Task 250をlater logical task 1件でimplementし、plan 411/373、
+  type 239/227、unchanged pass/fail/admission、fresh hashをverifyする。
+  Tasks 251+/269+、Steps 6/7をpromoteしない。

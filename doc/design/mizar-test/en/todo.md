@@ -1556,3 +1556,21 @@ promoted by this increment.
   checker handoff; plan 411/372, type 238/226, pass/fail 224/187, active type
   190, and fresh hashes are mandatory completion oracles. Tasks 250+, 269+,
   and Steps 6/7 remain unpromoted.
+
+## Checker Task 250 Frozen Consumer Prerequisite
+
+- [x] Freeze exactly the existing Task-81/67/84/85 active fail fixtures as the
+  only real consumers, with one Task-249 application/root and no type argument
+  per route.
+- [x] Freeze the aggregate Task-250 oracle at four nonempty chains, four
+  attributes, one qualifier, one parenthesized argument group, and one actual;
+  preserve exact polarity and local/imported provenance.
+- [x] Freeze Task-81/67 runner-only pending progression and Task-84/85 existing
+  evidence-query preservation, with no new `.miz`, broad expectation
+  rebaseline, semantic result, or public diagnostic.
+- [x] Require private synthetic-`SurfaceAst` extractor coverage for
+  multi-attribute order and single/parenthesized prefix projection, plus the
+  checker corruption/determinism matrix.
+- [ ] Implement Checker Task 250 in one later logical task, then verify plan
+  411/373, type 239/227, unchanged pass/fail and admissions, and fresh hashes.
+  Do not promote Tasks 251+/269+ or Steps 6/7.

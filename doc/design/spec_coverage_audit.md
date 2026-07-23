@@ -2615,3 +2615,29 @@ repairs them with import-target authentication, real `DeclarationShell`
 ownership, and iterative worklists. No unresolved blocking `spec_gap`,
 `source_undocumented_behavior`, `boundary_violation`, or
 `repo_metadata_conflict` remains.
+
+## Step 5 Checker Task 250 Frozen-Contract Prerequisite Addendum
+
+The independent paired EN/JA prerequisite fixes exact future ownership for
+the Task-250 raw source-attribute handoff. It records the syntax-free
+chain/polarity/qualifier/argument-group/actual schema, exact Task-67/81/84/85
+real consumers, Task-249 4/4/0 dependency and Task-250 4-chain/4-attribute/
+1-qualifier/1-group/1-actual oracles, written prefix/list preservation, immutable
+final ownership, legacy `AttributeInput` coexistence, exact outcome and trace
+progression, synthetic `SurfaceAst` extractor coverage, corruption tests, and
+forbidden downstream credit.
+
+This documentation-only task changes follow-up ownership and closes the
+selected `design_drift`; it does not change executable specification
+coverage. The current Task-249 baseline remains plan 411/372, type 238/226,
+active parse/declaration/type/proof 101/5/190/1, pass/fail 224/187, and
+warnings/errors 23/0. Source, `.miz` tests, expectations, trace rows/status,
+owner crates, chapter ratings, counts, and hashes remain unchanged. The
+executable absence remains a `test_gap`, and incomplete chain/qualification/
+argument/provenance/final-handoff transport remains `source_drift` until Task
+250 implementation. The future no-new-case trace oracle is plan 411/373 and
+type 239/227. Canonical prefix/list semantic equivalence, arity and term
+checking, admissibility, evidence, truth, Tasks 251+/269+, and Steps 6/7 remain
+deferred. No blocking `spec_gap`, `source_undocumented_behavior`, current
+`test_expectation_drift`, `boundary_violation`, or
+`repo_metadata_conflict` was found.

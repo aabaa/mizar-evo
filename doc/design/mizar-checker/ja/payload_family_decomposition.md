@@ -83,7 +83,7 @@ expectation rebaseline、Steps 6/7昇格を禁止する。
 |---|---|---|---|
 | 248 | source item、declaration site、local scope、ordinal、reserve/default、`BindingEnv` context payload。Specs 04/11/12/15、MC-G011/016。 | 既存resolver identityと`mizar-test` Task 10。consumerはsource order、shadowing、recovery、declaration/binding identityを証明する。 | type result、RHS評価、proof context、global name resolution再構築なし。 |
 | 249 | builtin/local/imported mode/structure radix、positional/bracket type argument、term argument、written type-site identityを含むtype head/application payload。Specs 03/05/07/08/12/18とAppendix A、MC-G014/016/020。 | Task 248、resolver symbol/provenance、crate planでfrozen済みexact Task-248 two-row co-consumerとten-reserve-root Task-10 type-elaboration consumer。 | type inputのみ。expansion、inhabitation、subtyping、term/`qua` selection、evidence resultを捏造しない。 |
-| 250 | polarity、argument、qualification/owner identity、local/imported provenance、order、attributed type-site linkを含むattribute-chain payload。Specs 03/06/17、MC-G014/020。 | Tasks 248-249。argument-bearing/qualified/imported/non-emptyの正確なboundaryをTask-10 consumerが再利用する。 | admissibility、existential evidence、closure fact、attribute truthなし。 |
+| 250 | polarity、argument、qualification/owner identity、local/imported provenance、order、attributed type-site linkを含むattribute-chain payload。Specs 03/06/11/12と17 restricted-adjective boundary、MC-G014/020。 | Tasks 248-249。crate planはexact Task-67/81/84/85 consumer、Task-249 4/4/0 co-handoff、Task-250 4-chain/4-attribute/1-qualifier/1-group/1-actual handoff、synthetic prefix/order extraction coverageをfreezeする。 | later canonical equivalence向けにwritten prefix/list formを保持するが、arity/admissibility、owner compatibility、normalized instance、evidence、closure fact、attribute truthをsynthesizeしない。 |
 | 251 | mode expansion、structure base shape/constructor witness、attributed-type inhabitation、sethood/non-emptiness、inheritance、coercion viabilityのevidence-query requestとupstream dependency-fact input。`ExistentialGateInput` request identityとdependency-fact referenceを含む。Specs 03/05-08/13/17/19、MC-G016/018/026。 | Tasks 248-250と利用可能なcanonical imported summary。Task-10 consumerはrequest/missing/rejected/supplied inputを区別する。 | request/site/provenance/reference transportだけを所有する。accepted evidence、theorem result、artifact statusは外部input。 |
 | 252 | variable/constant reference、`it`、numeral、transparent parenthesisとbinding/role/numeric-type request。Spec 13.1、MC-G017/020。 | Tasks 248-251、正確なTask-10 term consumer。 | arbitrary application、structure/set term、formula、numeric theorem factなし。 |
 | 253 | ordered argument、signature/result request、imported provenance、definition-local actualを含むfunctor/inline-functor application。Specs 10/13.2、MC-G017/020。 | Tasks 249-252、resolver signature candidate、Task-10 imported/local application consumer。 | overload winner、implicit-definition proof、evidenceなしのresult typeなし。 |
@@ -289,3 +289,15 @@ spelling重複を検出した。このtask-local `design_drift`とparse-only pre
 していない。new bounded diagnostic trace rowはselected Task-249 `test_gap`/
 `source_drift`だけをcloseする。Tasks 250+/269+、normalization、term/`qua`
 binding selection、later semantic payload、Steps 6/7はdeferredのままである。
+
+## Task 250 frozen-contract prerequisite completion
+
+paired crate planはTask 250のexact syntax-free chain/attribute/polarity/qualifier/
+argument-group/actual table、existing real consumer 4件と4/4/0および4/4/1/1/1
+cardinality oracle、Task-67/81 runner-only outcome progression、Task-84/85
+evidence-query preservation、legacy `AttributeInput` coexistence、synthetic
+`SurfaceAst` prefix/order extractor coverage、future trace row 1件と必要なexisting
+trace-note update、expected plan 411/373・type 239/227、corruption matrix、
+forbidden scopeをfreezeした。これはcompleteした独立documentation prerequisiteで
+あり、Task 250 implementationではない。source、test、expectation、trace、count、
+hash、coverage credit、Tasks 251+/269+、Steps 6/7は不変である。
