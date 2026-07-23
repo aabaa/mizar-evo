@@ -1363,3 +1363,16 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   249+/269+はこのincrement外に保つ。
 - [x] exact executable coverage変更のためchapter-level coverageを更新する。broad
   payload-extraction rowとSteps 6/7は変更しない。
+
+## Checker Task 249 frozen consumer prerequisite
+
+- [x] future exact ten-reserve-root broad fail consumerと10/13/6 handoff oracleを
+  freezeする。fixture/sidecar/trace rowはまだ追加しない。
+- [x] existing Task-248 pass routeをdependency regressionとしてfreezeする。
+  source/sidecar/traceはunchanged、existing binding 2件へlinkした
+  `Bare`/builtin-`set` row exact 2件、argument 0件とする。
+- [x] sole pending keyをrunner-ownedに保ち、checker semantic result tableを全て
+  emptyにする。Tasks 68-71はbyte-for-byteで維持する。
+- [ ] Checker Task 249をlater logical task 1件でimplementし、expected plan
+  411/372、type 238/226、pass/fail 224/187、active type 190とfresh hashをverify
+  する。Tasks 250+、269+、Steps 6/7はpromoteしない。

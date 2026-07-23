@@ -1541,3 +1541,16 @@ promoted by this increment.
   selection and Tasks 249+/269+ outside this increment.
 - [x] Update chapter-level coverage because this task changes exact executable
   coverage; keep the broad payload-extraction row and Steps 6/7 unchanged.
+
+## Checker Task 249 Frozen Consumer Prerequisite
+
+- [x] Freeze the future exact ten-reserve-root broad fail consumer and its
+  10/13/6 handoff oracle without adding the fixture, sidecar, or trace row yet.
+- [x] Freeze the existing Task-248 pass route as the dependency regression:
+  unchanged source/sidecar/trace, exactly two `Bare`/builtin-`set` rows linked
+  to its two existing bindings, and zero arguments.
+- [x] Keep the sole pending key runner-owned and every checker semantic result
+  table empty; preserve Tasks 68-71 byte-for-byte.
+- [ ] Implement Checker Task 249 in one later logical task, then verify the
+  expected plan 411/372, type 238/226, pass/fail 224/187, active type 190, and
+  fresh hashes. Do not promote Tasks 250+, 269+, or Steps 6/7.

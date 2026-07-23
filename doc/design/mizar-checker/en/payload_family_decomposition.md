@@ -90,7 +90,7 @@ not reused.
 | Task | Bounded producer and canonical authority | Dependencies and prepared consumer | Exit boundary |
 |---|---|---|---|
 | 248 | Source item, declaration-site, local-scope, ordinal, reserve/default, and `BindingEnv` context payloads. Specs 04, 11, 12, and 15; MC-G011/MC-G016. | Existing resolver identities and `mizar-test` Task 10. The consumer proves source order, shadowing, recovery, and declaration-to-binding identity. | No type result, RHS evaluation, proof context, or global name-resolution reconstruction. |
-| 249 | Type head/application payloads: builtin, local/imported mode and structure radix, positional/bracket type arguments, term arguments, and written type-site identity. Specs 03, 05, 07, and 08; MC-G014/MC-G016. | Task 248; resolver symbol/provenance data; Task-10 type-elaboration consumer. | Produces type inputs only; no expansion, inhabitation, subtyping, or evidence result is fabricated. |
+| 249 | Type head/application payloads: builtin, local/imported mode and structure radix, positional/bracket type arguments, term arguments, and written type-site identity. Specs 03, 05, 07, 08, 12, and 18 plus Appendix A; MC-G014/MC-G016/MC-G020. | Task 248; resolver symbol/provenance data; exact Task-248 two-row co-consumer and ten-reserve-root Task-10 type-elaboration consumer frozen in the crate plan. | Produces type inputs only; no expansion, inhabitation, subtyping, term/`qua` selection, or evidence result is fabricated. |
 | 250 | Attribute-chain payloads: polarity, arguments, qualification/owner identity, local/imported provenance, order, and attributed type-site association. Specs 03, 06, and 17; MC-G014/MC-G020. | Tasks 248-249; Task-10 consumer reuses exact argument-bearing, qualified, imported, and non-empty boundaries. | No admissibility, existential evidence, closure fact, or attribute truth is synthesized. |
 | 251 | Evidence-query requests and upstream dependency-fact inputs for mode expansion, structure base shape/constructor witness, attributed-type inhabitation, sethood/non-emptiness, inheritance, and coercion viability, including `ExistentialGateInput` request identity and dependency-fact references. Specs 03, 05-08, 13, 17, and 19; MC-G016/MC-G018/MC-G026. | Tasks 248-250 and canonical imported summaries when available; Task-10 consumer distinguishes request, missing, rejected, and supplied input. | It owns request/site/provenance/reference transport only. Accepted evidence, theorem results, and artifact status remain external inputs. |
 | 252 | Primary terms: variable/constant references, `it`, numerals, and transparent parentheses with binding, role, and numeric-type request payloads. Spec 13.1; MC-G017/MC-G020. | Tasks 248-251; exact Task-10 term consumers. | No arbitrary application, structure/set term, formula, or numeric theorem fact. |
@@ -286,3 +286,14 @@ structural local-to-reserve shadow relation through `TypedAst` and
 site and produces no type result, RHS/formula/proof payload, fact, or
 obligation. Task 249 is the next dependency-authorized producer; Tasks 269+
 and Steps 6/7 are not promoted.
+
+## Task 249 Frozen-Contract Prerequisite Completion
+
+The paired crate plan now freezes Task 249's exact syntax-free tables,
+ten-reserve-root broad fail consumer, 10/13/6 raw cardinalities and dual form
+histograms, Task-248 two-Bare-builtin-row co-consumer, runner-only dependency
+status, corruption/determinism matrix, one future trace row, expected count
+deltas, and forbidden scope. This is a completed independent documentation
+prerequisite, not Task 249 implementation. Source, tests, expectations, trace
+rows/status, counts, hashes, coverage credit, Tasks 269+, and Steps 6/7 remain
+unchanged.

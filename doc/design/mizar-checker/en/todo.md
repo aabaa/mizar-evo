@@ -4378,7 +4378,13 @@ unchecked row below is one future nonempty logical task and one commit.
   corruption matrix, and bounded trace row are complete. No term-use
   selection, type result, RHS/formula/proof semantics, or accepted fact is
   credited.
-- [ ] **Task 249:** type head/application/argument producer.
+- [ ] **Task 249:** type head/application/argument producer. Its independent
+  paired EN/JA frozen-contract prerequisite is complete: implementation must
+  follow the exact ten-reserve-root broad consumer, Task-248 two-row
+  co-consumer, flat syntax-free table, corruption/determinism, runner-only
+  readiness, trace/count, and forbidden-scope contract in
+  [00.crate_plan.md](./00.crate_plan.md). This row remains unchecked until the
+  real producer and consumers are implemented and committed.
 - [ ] **Task 250:** attribute-chain/qualification/provenance producer.
 - [ ] **Task 251:** evidence-query request and dependency-fact-reference producer;
   never fabricate evidence results.

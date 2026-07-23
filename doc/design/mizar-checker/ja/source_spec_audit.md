@@ -2465,3 +2465,19 @@ identity、structural shadowingを証明する。Task-248 `test_gap`と2つの
 `source_drift`はこのsliceだけrepair済みである。term-use selection、composite binder、
 statement/proof context、closure capture、proof-local declarationはTasks
 252/257/258/269/270/272に残るため、MC-G011/MC-G016全体はpartialのままである。
+
+## Task 249 frozen-contract audit addendum
+
+fresh inventoryはnext executable source-type sliceをChapters 03/05/07/08/12/18、
+Appendix A、MC-G014/MC-G016/MC-G020配下のTask 249へassignした。paired crate
+planはexact ten-reserve-root consumer、Task-248 two-row dependency regression、
+syntax-free table/validation contract、future single trace row、
+post-implementation count oracleを固定した。
+
+このprerequisiteがrepairするのは`design_drift`だけである。implementationまでは
+executable handoff欠落が`test_gap`、incomplete argument/`qua`/final-handoff
+seamが`source_drift`のままである。既存Task-68〜Task-71とTask-248のsource、
+expectation、trace rowはbyte-identicalを維持する。current coverage status、
+test、count、hash、chapter ratingは変わらず、blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`は見つからなかった。

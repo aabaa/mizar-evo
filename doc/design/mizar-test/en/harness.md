@@ -2660,3 +2660,21 @@ statement, proof, Core, CFG, or VC payload. Invalid matched payloads fail with
 one task-local internal detail key; they do not allocate a public diagnostic.
 The exact requirement is a new bounded covered pass row, while the broad
 payload-extraction row remains unchanged.
+
+## Checker Task 249 Frozen Runner Boundary
+
+The future `type_elaboration` increment is owned by one private `source_type`
+leaf. It extracts only syntax-free type-head/application/argument projections
+from ten reserve written-type roots in the named broad fail fixture and
+asserts the checker-owned 10/13/6 handoff. Definition/import scaffolding is
+excluded. The runner stops after that handoff with the single internal
+readiness detail
+`type_elaboration.checker.source_type_application.semantic_dependencies_pending`;
+it does not request or credit normalization or later semantics.
+
+The unchanged Task-248 pass route is the dependency regression and must
+co-install exactly two `Bare`/builtin-`set` rows with zero arguments beside
+the actual Task-248 source-context handoff. No raw syntax crosses into checker,
+no public diagnostic is allocated, and no existing expectation or trace row
+is rebaselined. This frozen boundary is documentation-only until Checker Task
+249 implementation.

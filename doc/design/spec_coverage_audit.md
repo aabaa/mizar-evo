@@ -2564,3 +2564,24 @@ declarations, type/RHS/formula semantics, accepted facts/evidence, Core/CFG/VC,
 Tasks 249+/269+, Steps 6/7, and global Step-5 completion. No new blocking
 `spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` was found.
+
+## Step 5 Checker Task 249 Frozen-Contract Prerequisite Addendum
+
+The independent paired EN/JA prerequisite fixes the exact future ownership for
+the Task-249 source type-head/application/argument handoff. It records the
+ten-reserve-root broad consumer, exact 10/13/6 raw oracle, Task-248 two-row
+dependency regression, syntax-free checker boundary, runner-only pending
+status, future single diagnostic trace row, expected count deltas, and
+forbidden downstream credit.
+
+This documentation-only task changes follow-up ownership and closes the
+selected `design_drift`; it does not change executable specification
+coverage. The current Task-248 baseline remains plan 410/371, type coverage
+237/225, active type 189, pass/fail 224/186, and warnings/errors 23/0.
+Source, `.miz` tests, expectations, trace rows/status, owner crates, chapter
+ratings, counts, and hashes remain unchanged. The executable absence remains
+a `test_gap`, and the incomplete argument/`qua`/final-handoff seams remain
+`source_drift` until Task 249 implementation. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` was found. Tasks 269+ and
+Steps 6/7 remain deferred.

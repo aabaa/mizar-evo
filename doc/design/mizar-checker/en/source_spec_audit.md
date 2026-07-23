@@ -2560,3 +2560,21 @@ shadowing. This repairs the Task-248 `test_gap` and two `source_drift` seams
 only for that slice. Term-use selection, composite binders, statement/proof
 contexts, closure capture, and proof-local declarations remain with Tasks
 252/257/258/269/270/272, so MC-G011 and MC-G016 remain partial globally.
+
+## Task 249 Frozen-Contract Audit Addendum
+
+Fresh inventory assigns the next executable source-type slice to Task 249
+under Chapters 03, 05, 07, 08, 12, and 18 plus Appendix A and
+MC-G014/MC-G016/MC-G020. The paired crate plan now fixes the exact
+ten-reserve-root consumer, Task-248 two-row dependency regression,
+syntax-free table and validation contract, future single trace row, and
+post-implementation count oracles.
+
+This prerequisite repairs only `design_drift`. Until implementation, the
+absent executable handoff remains a `test_gap` and the incomplete
+argument/`qua`/final-handoff seams remain `source_drift`. Existing Task-68
+through Task-71 and Task-248 sources, expectations, and trace rows remain
+byte-identical. No current coverage status, test, count, hash, or chapter
+rating changes, and no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` was found.
