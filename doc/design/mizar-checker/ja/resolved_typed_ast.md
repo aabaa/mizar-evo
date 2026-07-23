@@ -102,6 +102,7 @@ struct ResolvedTypedAst {
     module_id: ModuleId,
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
+    source_attribute: Option<SourceAttributeHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -129,6 +130,12 @@ Task 249は`source_type`にも同じruleを適用する。assemblyはimmutable h
 `TypedAst`からだけcloneし、independent source-type inputを受け取らないため、
 authenticated済みflat application/expression/argument tableから乖離できない。
 absent時はlegacy debug byteを維持する。
+
+Task 250は`source_attribute`にも同じclone-only ruleを適用する。assemblyは
+independent attribute-chain inputを受け取らず、immutable handoffを`TypedAst`から
+だけcopyするため、final layerはauthenticated chain、polarity、qualifier、group、
+actual、provenance、Task-249 association tableから乖離できない。absent時はlegacy
+debug byteを維持する。
 
 ### Resolved Node
 

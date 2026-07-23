@@ -519,6 +519,7 @@ fn assemble_output(
         resolved_root: None,
         source_context: Some(source_context),
         source_type: Some(source_type),
+        source_attribute: None,
         nodes,
         contexts,
         types: TypeTable::new(),

@@ -23,6 +23,7 @@ Module specifications audited:
 - [typed_ast.md](./typed_ast.md)
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
+- [source_attribute.md](./source_attribute.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
 - [registration_resolution.md](./registration_resolution.md)
@@ -87,9 +88,10 @@ local-mode reserve head whose one-edge dependency chain ends in an attributed
 builtin RHS to the missing full attributed-type evidence-query diagnostic
 after extracting both real mode-expansion payloads, reserve-head attributes,
 and terminal RHS attributes from the same `SurfaceAst`.
-Task 67 carries a structure-qualified attribute reference to the external
-extraction-gap diagnostic because the checker payload still lacks real
-qualifier and owner provenance.
+Task 250 supersedes the exact Task-67 structure-qualified extraction gap by
+preserving the written qualifier and authenticated structure/attribute
+provenance in the raw source-attribute handoff. Owner compatibility,
+admissibility, evidence, and truth remain deferred.
 Task 68 carries an argument-bearing same-module local mode reserve head to the
 external extraction-gap diagnostic because the checker payload still lacks
 real type-argument and term-argument provenance.
@@ -143,6 +145,7 @@ rejection.
 - `registration_resolution`
 - `resolved_typed_ast`
 - `source_context`
+- `source_attribute`
 - `source_type`
 - `type_checker`
 - `typed_ast`
@@ -252,6 +255,45 @@ Bounded gaps: broader canonical item/binder families remain deferred
 only same-identifier re-reservation replacement/duplicate semantics remain a
 nonblocking `spec_gap`. Source term use-site lookup and all Tasks 249+/269+
 payloads also remain outside this module's Task 248 authority.
+
+### `source_attribute`
+
+Generated public newtypes:
+
+- `SourceAttributeChainId`, `SourceAttributeId`,
+  `SourceAttributeQualifierId`, `SourceAttributeArgumentGroupId`,
+  `SourceAttributeArgumentId`
+
+Literal top-level public items:
+
+- `SourceAttributeHandoffInput`, `SourceAttributeChainInput`,
+  `SourceAttributeInput`, `SourceAttributePolarityInput`,
+  `SourceAttributeQualifierInput`, `SourceAttributeArgumentGroupKind`,
+  `SourceAttributePrefixForm`, `SourceAttributeArgumentGroupInput`,
+  `SourceAttributeActualKind`, `SourceAttributeArgumentInput`,
+  `SourceAttributeHandoff`, `SourceAttributeChainTable`,
+  `SourceAttributeTable`, `SourceAttributeQualifierTable`,
+  `SourceAttributeArgumentGroupTable`, `SourceAttributeArgumentTable`,
+  `SourceAttributeChain`, `SourceAttribute`, `SourceAttributeQualifier`,
+  `SourceAttributeArgumentGroup`, `SourceAttributeArgument`,
+  `SourceAttributeProducer`, `SourceAttributeError`
+
+Correspondence:
+
+| Spec promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Syntax-free flat tables retain nonempty source attribute chains, written polarity and `non`, qualifiers, argument-group punctuation, actual order, and semantic provenance. | `SourceAttributeHandoffInput`, five dense ids, five immutable tables, and row accessors in `src/source_attribute.rs`. | Exact Task-81/67/84/85 real-route cardinality and field assertions plus the synthetic multi-attribute/prefix extractor probe. | Implemented for the frozen Task 250 transaction. |
+| Task-249 source-type expression ownership and resolver binding/symbol/contribution identity are authenticated before publication. | `SourceAttributeProducer::build` consumes `SourceTypeApplicationHandoff`, `BindingEnv`, `SymbolEnv`, and `TypedArena`. | Producer environment, ownership, symbol-kind, visibility, contribution, and site/range corruption assertions. | Implemented transactionally. |
+| Parent links, dense order, punctuation independence, and source containment are fail-closed and no partial handoff is published. | `SourceAttributeError` and the producer's chain/attribute/qualifier/group/actual validators. | Dangling/forward/order/punctuation/range/recovery corruption and atomic-failure assertions. | Implemented without sorting or repair. |
+| `TypedAst` owns the result and `ResolvedTypedAst` only clone-preserves it. | Optional `SourceAttributeHandoff` field and borrowed getters. | Immutable final-preservation and deterministic debug assertions. | Implemented; legacy empty debug bytes remain conditional. |
+| Public enums are forward-compatible. | `#[non_exhaustive]` on all five public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: this handoff publishes raw source-written payload only. Attribute
+arity/admissibility/owner compatibility, term binding/type/result, normalized
+instances, evidence requests/results, cluster facts/truth/closure, accepted
+declarations/facts/proofs, and downstream IR remain with Tasks 251+ or their
+existing explicit owners. The legacy `type_checker::AttributeInput` is
+unchanged and separate.
 
 ### `source_type`
 
@@ -2646,3 +2688,15 @@ active type 190, warnings/errors 23/0, and all hashes remain unchanged. No
 blocking `spec_gap`, `source_undocumented_behavior`, current
 `test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
 was found.
+
+## Task 250 Implementation Audit Addendum
+
+The public `source_attribute` module now implements the frozen five-table
+syntax-free handoff, and `TypedAst`/`ResolvedTypedAst` preserve it without
+adding a syntax dependency. The exact four real routes, synthetic prefix
+extractor, producer corruption matrix, deterministic rendering, and immutable
+final-handoff assertions close the bounded `test_gap` and raw
+chain/qualification/argument/provenance `source_drift`. The new exact covered
+trace row changes plan/type coverage only to 411/373 and 239/227. No semantic
+attribute instance, evidence, accepted fact/declaration/proof, or downstream
+IR is credited; those gaps remain with Tasks 251+ and their existing owners.

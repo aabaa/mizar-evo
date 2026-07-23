@@ -888,6 +888,7 @@ fn typed_ast_fixture(source: SourceId) -> TypedAst {
         resolved_root: None,
         source_context: None,
         source_type: None,
+        source_attribute: None,
         nodes,
         contexts,
         types,

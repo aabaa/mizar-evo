@@ -1392,6 +1392,7 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
 - [x] multi-attribute orderとsingle/parenthesized prefix projectionについてprivate
   synthetic-`SurfaceAst` extractor coverageを要求し、checker corruption/
   determinism matrixも要求する。
-- [ ] Checker Task 250をlater logical task 1件でimplementし、plan 411/373、
-  type 239/227、unchanged pass/fail/admission、fresh hashをverifyする。
-  Tasks 251+/269+、Steps 6/7をpromoteしない。
+- [x] Checker Task 250をlogical task 1件でimplementした。private
+  `source_attribute` leafはexact real consumer 4件とsynthetic prefix probeを
+  public checker handoffまで実行し、plan 411/373・type 239/227をunchanged
+  pass/fail/admissionで達成する。Tasks 251+/269+とSteps 6/7はpromoteしない。

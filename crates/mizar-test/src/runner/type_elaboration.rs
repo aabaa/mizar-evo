@@ -6,6 +6,7 @@ mod output;
 mod parenthesized_routes;
 mod result;
 mod source_ast;
+mod source_attribute;
 mod source_context;
 mod source_formula;
 mod source_reserve;
@@ -320,6 +321,9 @@ pub(super) use result::{
 pub(super) use source_ast::{
     direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site,
 };
+pub(super) use source_attribute::source_attribute_detail_keys;
+#[cfg(test)]
+pub(super) use source_attribute::{source_attribute_output, synthetic_source_attribute_output};
 pub(super) use source_context::source_binding_context_detail_keys;
 #[cfg(test)]
 pub(super) use source_context::{

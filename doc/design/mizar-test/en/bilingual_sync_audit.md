@@ -1,5 +1,15 @@
 # mizar-test Bilingual Documentation Sync Audit
 
+## Checker Task 250 / Source-Attribute Pair Recheck
+
+The paired plan, TODO, harness, module-boundary, and checker consumer documents
+record the same exact four real routes, 4/4/0 and 4/4/1/1/1 aggregate handoffs,
+synthetic 1/1/0 and 1/2/0/2/3 prefix extractor, outcome preservation, plan
+411/373, type 239/227, unchanged admissions, 283 library tests, and
+21-path/23,184-line production manifest with path/content hashes
+`bd42d60f...` / `d1421834...`. Tasks 251+/269+ and Steps 6/7 remain deferred
+in both languages. No bilingual drift remains in Task 250.
+
 ## Parser Task 46 Pair Addendum
 
 The English canonical and Japanese companion documents agree on one active

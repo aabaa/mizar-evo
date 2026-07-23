@@ -191,47 +191,48 @@ code `E-TYPE-ELABORATION-SNAPSHOT` at
 `type_elaboration.snapshot.<case-id>`. The ordinary detail-key result remains
 unchanged, and no other type-elaboration case enters this path.
 
-## Runner Source Ownership (Checker Task 249 Update)
+## Runner Source Ownership (Checker Task 250 Update)
 
-The current production runner layout contains exactly 20 paths and 21,598
-lines. Checker Task 249 adds one bounded source-type leaf beside the existing
-Task-248 source-context leaf while keeping `runner.rs` limited to
-facade/top-level orchestration.
+The current production runner layout contains exactly 21 paths and 23,184
+lines. Checker Task 250 adds one bounded source-attribute leaf beside the
+existing Task-248 source-context and Task-249 source-type leaves while keeping
+`runner.rs` limited to facade/top-level orchestration.
 
 | Production path | Lines | Ownership |
 |---|---:|---|
-| `src/runner.rs` | 2,387 | Public reports/statuses including snapshot failure, corpus orchestration, public active iterators, proof-verification orchestration, parse/declaration admission, type-case execution, verify-only baseline comparison, and top-level detail dispatch. |
+| `src/runner.rs` | 2,390 | Public reports/statuses including snapshot failure, corpus orchestration, public active iterators, proof-verification orchestration, parse/declaration admission, type-case execution, verify-only baseline comparison, and top-level detail dispatch. |
 | `src/runner/shared.rs` | 265 | Cross-phase source/frontend/resolver staging and common diagnostic support, including exact internal resolver diagnostic-key projection and resolver shell retention. |
 | `src/runner/parse_only.rs` | 119 | Parse-only case execution and failure projection. |
 | `src/runner/declaration_symbol.rs` | 231 | Declaration-symbol execution, observation, payload, and failure projection. |
 | `src/runner/import_fixtures.rs` | 410 | Fixture lexical summaries and import-summary adapters, including coherent resolver import projection for source-type authentication. |
 | `src/runner/proof_verification.rs` | 170 | Exact Task-180 admission, source-to-VC execution, deterministic rerun, VcIr snapshot comparison, and failure diagnostics. |
-| `src/runner/type_elaboration.rs` | 589 | Private type-elaboration facade over exactly thirteen private leaves. |
+| `src/runner/type_elaboration.rs` | 593 | Private type-elaboration facade over exactly fourteen private leaves. |
 | `src/runner/type_elaboration/admission.rs` | 60 | Active type-case admission and tag validation. |
 | `src/runner/type_elaboration/binary_routes.rs` | 3,791 | Reserved-variable binary route configs, extraction, output, and details. |
-| `src/runner/type_elaboration/checker_handoff.rs` | 1,297 | Checker-owned binding/declaration plus exact Task-180 statement/proof/terminal handoff assembly, validation, legacy empty-later-payload assembly, and test-only real-bundle near-miss construction. |
+| `src/runner/type_elaboration/checker_handoff.rs` | 1,299 | Checker-owned binding/declaration plus exact Task-180 statement/proof/terminal handoff assembly, validation, legacy empty-later-payload assembly, and test-only real-bundle near-miss construction. |
 | `src/runner/type_elaboration/long_chain_config.rs` | 82 | Shared exact long-chain definition tables. |
 | `src/runner/type_elaboration/output.rs` | 1,571 | Checker outputs, validation, result/detail projection, diagnostics, and reusable exact Task-180 CoreIr construction plus deterministic Core rerun. |
 | `src/runner/type_elaboration/parenthesized_routes.rs` | 745 | Parenthesized reserved-variable route ownership. |
 | `src/runner/type_elaboration/result.rs` | 38 | Expected-key plus stable detail/snapshot failure projection. |
 | `src/runner/type_elaboration/source_ast.rs` | 147 | Common exact AST and import projection. |
-| `src/runner/type_elaboration/source_context.rs` | 591 | Exact Task-248 resolver-shell/source-context projection, route isolation, checker producer invocation, immutable handoff assembly, and exact 2/2/0 source-type dependency co-installation. |
+| `src/runner/type_elaboration/source_attribute.rs` | 1,575 | Exact Task-250 attribute-chain AST traversal, syntax-free chain/attribute/qualifier/group/actual projection, checker producer invocation, and pending-detail isolation. |
+| `src/runner/type_elaboration/source_context.rs` | 592 | Exact Task-248 resolver-shell/source-context projection, route isolation, checker producer invocation, immutable handoff assembly, exact 2/2/0 source-type dependency co-installation, and explicit absence of a Task-250 source-attribute payload. |
 | `src/runner/type_elaboration/source_formula.rs` | 2,651 | Common formula/source payload extraction, including exact theorem/formula sites/ranges and explicit Task-268 theorem intent. |
 | `src/runner/type_elaboration/source_reserve.rs` | 1,474 | Reserve declaration, type, symbol, and mode-expansion extraction. |
-| `src/runner/type_elaboration/source_type.rs` | 793 | Exact Task-249 source-type AST traversal, syntax-free 10/13/6 checker input projection, handoff assembly, and pending-detail isolation. |
+| `src/runner/type_elaboration/source_type.rs` | 794 | Exact Task-249 source-type AST traversal, syntax-free 10/13/6 checker input projection, handoff assembly, and pending-detail isolation. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` | 4,187 | Reserved-variable type-assertion and asserted-head route ownership. |
 
 For hashing, prefix every displayed path with `crates/mizar-test/`. From the
 repository root, the exact input is the sorted tracked path list selected from
 `crates/mizar-test/src/runner.rs` and `crates/mizar-test/src/runner`, excluding
 `tests.rs` and every path below `tests/`. Its newline-delimited path-list hash is
-`be25d20f70bf838897d4cc7ba84cd52b32b98b925eb2a1ff7a30a79942600746`.
+`bd42d60f45e40526a785a6ebcc0df910b99f33a8a8b19371f678070b51bac1d6`.
 Passing those same repository-relative paths in order to `sha256sum` and
 hashing the corresponding ordered output lines yields
-`31757cf5e206b324c8ae625b9328e5e8759d9778bc397ff6deda0726fa89dad3`.
+`d1421834a7c7613150634735c47aa2700ddf17a7ca2ffebd94f596664ee3a8eb`.
 Production `runner.rs` owns no route config, source extractor, output builder,
 or detail-wrapper definition; its route aliases remain test-only. The private
-type-elaboration facade's thirteen `mod` declarations, the 20-path/hash pair,
+type-elaboration facade's fourteen `mod` declarations, the 21-path/hash pair,
 the documented public API, and the exact discovered-test/CLI oracles are the
 ownership guards. Test
 sources remain under `src/runner/tests.rs`, `src/runner/tests/`, and existing
@@ -2708,3 +2709,23 @@ No raw syntax crosses into checker, no new `.miz` or public diagnostic is
 planned, and no semantic arity, prefix/list equivalence, admissibility,
 evidence, or truth is inferred. This frozen boundary is documentation-only
 until Checker Task 250 implementation.
+
+## Checker Task 250 Source-Attribute Consumer
+
+The private `type_elaboration::source_attribute` leaf now owns the frozen raw
+attribute extraction and checker handoff. Only the existing Task-81/67/84/85
+fixtures select it. The four routes publish aggregate Task-249 4/4/0 and
+Task-250 4/4/1/1/1 tables with exact polarity, qualifier, punctuation, actual,
+and local/imported provenance. A private synthetic `SurfaceAst` test runs
+`p-ranked (q,2)-graded set` through the same extractor and public checker
+producer to prove multi-attribute order and single/parenthesized prefix
+projection.
+
+Task 81/67 progress only to the runner-owned semantic-dependency detail;
+Task 84/85 keep their evidence-query outcomes. No other route, `.miz` source,
+semantic acceptance, public diagnostic, or later checker payload is changed.
+
+The current production layout is 21 paths / 23,184 lines, with sorted
+path/content hashes `bd42d60f...` / `d1421834...`; `runner.rs` remains
+facade/top-level orchestration only and the new private leaf is the sole added
+production path. The mizar-test library has 283 tests.

@@ -16,6 +16,7 @@ use crate::{
         TemplateExpansionOutput, TemplateExpansionStatus, TemplateInstantiationKey,
         TemplateSubstitution,
     },
+    source_attribute::SourceAttributeHandoff,
     source_context::SourceBindingContextHandoff,
     source_type::SourceTypeApplicationHandoff,
     type_checker::{
@@ -102,6 +103,7 @@ pub struct ResolvedTypedAst {
     module_id: ModuleId,
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
+    source_attribute: Option<SourceAttributeHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -140,6 +142,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_type(&self) -> Option<&SourceTypeApplicationHandoff> {
         self.source_type.as_ref()
+    }
+
+    pub const fn source_attribute(&self) -> Option<&SourceAttributeHandoff> {
+        self.source_attribute.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -223,6 +229,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_type) = &self.source_type {
             output.push_str(&source_type.debug_text());
+        }
+        if let Some(source_attribute) = &self.source_attribute {
+            output.push_str(&source_attribute.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1451,6 +1460,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             module_id,
             source_context: self.inputs.typed_ast.source_context().cloned(),
             source_type: self.inputs.typed_ast.source_type().cloned(),
+            source_attribute: self.inputs.typed_ast.source_attribute().cloned(),
             nodes,
             expr_metadata,
             collection_candidates,
@@ -4990,6 +5000,7 @@ mod tests {
             resolved_root: None,
             source_context: None,
             source_type: None,
+            source_attribute: None,
             nodes: builder
                 .finish(Some(TypedNodeId::new(2)))
                 .expect("statement typed arena"),
@@ -5131,6 +5142,7 @@ mod tests {
             resolved_root: None,
             source_context: None,
             source_type: None,
+            source_attribute: None,
             nodes: builder
                 .finish(Some(TypedNodeId::new(2)))
                 .expect("corrupt statement arena"),
@@ -6611,6 +6623,7 @@ mod tests {
             resolved_root: None,
             source_context: None,
             source_type: None,
+            source_attribute: None,
             nodes: arena,
             contexts,
             types,

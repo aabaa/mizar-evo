@@ -2641,3 +2641,39 @@ checking, admissibility, evidence, truth, Tasks 251+/269+, and Steps 6/7 remain
 deferred. No blocking `spec_gap`, `source_undocumented_behavior`, current
 `test_expectation_drift`, `boundary_violation`, or
 `repo_metadata_conflict` was found.
+
+## Step 5 Checker Task 250 Implementation Addendum
+
+Task 250 adds the syntax-free checker-owned source-attribute handoff and one
+private raw-AST extractor for exactly the existing Task-81/67/84/85 routes.
+The four real routes validate a Task-249 aggregate of 4 applications /
+4 expressions / 0 arguments and a Task-250 aggregate of 4 nonempty chains /
+4 attributes / 1 qualifier / 1 parenthesized argument group / 1 actual. They
+retain three positive and one negative polarity, two local and two imported
+attribute provenances, exact written qualifier and punctuation sites, and
+immutable `TypedAst` to `ResolvedTypedAst` ownership.
+
+Exactly
+`spec.en.checker.type_elaboration.source_attribute_payload` is added as a
+bounded covered diagnostic row with those four existing sidecars and no new
+`.miz` case. Task 81 and Task 67 progress only to the runner-owned
+source-attribute semantic-dependency boundary; Task 84 and Task 85 preserve
+their evidence-query outcomes. The plan becomes 411 cases / 373 requirements,
+type-elaboration coverage 239/227, while active parse/declaration/type/proof
+admissions remain 101/5/190/1, pass/fail remains 224/187, and warnings/errors
+remain 23/0.
+
+This closes the selected exact `test_gap` and raw chain/qualification/
+argument/provenance/final-handoff `source_drift`. The producer authenticates
+the Task-249 association, resolver symbol/contribution provenance, local
+active-before-use or imported visibility/closure, typed sites/ranges/recovery,
+parentage, dense order, group punctuation, and actual origin before atomic
+publication. A synthetic extractor probe covers multi-attribute source order
+and single/parenthesized prefix forms without bypassing the real lexer with a
+new fixture. Attribute arity/admissibility/owner compatibility, term
+binding/type/result, normalized instances, prefix/list semantic equivalence,
+evidence requests/results, cluster truth/closure, accepted facts/
+declarations/proofs, downstream IR, Tasks 251+/269+, Steps 6/7, and global
+Step-5 completion remain deferred. No unresolved blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` remains.

@@ -4975,7 +4975,7 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_structure_qualified_attribute_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == ["type_elaboration.checker.source_attribute.semantic_dependencies_pending"]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_argument_bearing_mode_gap_001"
@@ -4985,7 +4985,7 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_argument_bearing_attribute_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == ["type_elaboration.checker.source_attribute.semantic_dependencies_pending"]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_attribute_definition_gap_001"
@@ -8142,7 +8142,7 @@ tests = ["tests/miz/fail/types/fail_attributed_mode_attributed_rhs_expansion.exp
 }
 
 #[test]
-fn type_elaboration_runner_keeps_structure_qualified_attributes_on_external_gap() {
+fn type_elaboration_runner_advances_structure_qualified_attributes_to_source_attribute_pending() {
     let corpus = Corpus::new();
     corpus.write(
         "tests/miz/fail/types/fail_structure_qualified_attribute_gap.miz",
@@ -8159,11 +8159,11 @@ source = "fail_structure_qualified_attribute_gap.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "structure_qualified_attribute_payload_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "source_attribute_semantics_pending"
+stable_detail_key = "type_elaboration.checker.source_attribute.semantic_dependencies_pending"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.source_attribute.semantic_dependencies_pending",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = ["spec.en.test.type_elaboration.structure_qualified_attribute_gap"]
@@ -8192,12 +8192,12 @@ tests = ["tests/miz/fail/types/fail_structure_qualified_attribute_gap.expect.tom
     assert_eq!(report.passed_count(), 1);
     assert_eq!(
         report.results[0].actual_detail_keys,
-        ["type_elaboration.external_dependency.ast_payload_extraction"]
+        ["type_elaboration.checker.source_attribute.semantic_dependencies_pending"]
     );
 }
 
 #[test]
-fn type_elaboration_runner_keeps_argument_bearing_attributes_on_external_gap() {
+fn type_elaboration_runner_advances_argument_bearing_attributes_to_source_attribute_pending() {
     let corpus = Corpus::new();
     corpus.write(
         "tests/miz/fail/types/fail_argument_bearing_attribute_gap.miz",
@@ -8214,11 +8214,11 @@ source = "fail_argument_bearing_attribute_gap.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "argument_bearing_attribute_payload_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "source_attribute_semantics_pending"
+stable_detail_key = "type_elaboration.checker.source_attribute.semantic_dependencies_pending"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.source_attribute.semantic_dependencies_pending",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = ["spec.en.test.type_elaboration.argument_bearing_attribute_gap"]
@@ -8247,7 +8247,7 @@ tests = ["tests/miz/fail/types/fail_argument_bearing_attribute_gap.expect.toml"]
     assert_eq!(report.passed_count(), 1);
     assert_eq!(
         report.results[0].actual_detail_keys,
-        ["type_elaboration.external_dependency.ast_payload_extraction"]
+        ["type_elaboration.checker.source_attribute.semantic_dependencies_pending"]
     );
 }
 

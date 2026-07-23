@@ -20,5 +20,6 @@ spec_refs = [
   "spec.en.11.symbol_management.imported_attribute_provenance_bridge",
   "spec.en.12.modules.imported_attribute_provenance_bridge",
   "spec.en.checker.type_elaboration.imported_attribute_provenance_bridge",
+  "spec.en.checker.type_elaboration.source_attribute_payload",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 84: source containing imported attribute symbol `TypeCaseAttr` from the documented parser.type_fixtures import summary and a reserve type such as `TypeCaseAttr set` is parser/resolver executable, and the checker-owned source bridge carries the real imported attribute provenance/AttributeInput payload to declaration checking. It still lacks imported module AST extraction and attributed-type existential/evidence payloads, so it must fail closed on the checker evidence-query diagnostic instead of accepting the attributed type or promoting CoreIr/ControlFlowIr/VC/proof payloads."
+notes = "Active type_elaboration runner boundary coverage for checker tasks 84 and 250: source containing imported attribute symbol `TypeCaseAttr` from the documented parser.type_fixtures import summary and the reserve type `TypeCaseAttr set` co-installs the authenticated raw Task-249/250 source handoffs with the existing imported AttributeInput declaration route. The existing checker evidence-query rejection remains authoritative because attributed-type existential/evidence semantics, acceptance, attribute truth, imported module AST extraction, and CoreIr/ControlFlowIr/VC/proof payloads remain unavailable."

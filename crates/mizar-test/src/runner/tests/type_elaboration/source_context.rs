@@ -985,6 +985,7 @@ fn typed_ast_with_source_context(
         resolved_root: template.resolved_root(),
         source_context: Some(source_context),
         source_type: None,
+        source_attribute: None,
         nodes: template.nodes().clone(),
         contexts,
         types: mizar_checker::typed_ast::TypeTable::new(),

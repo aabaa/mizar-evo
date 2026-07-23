@@ -110,6 +110,7 @@ struct ResolvedTypedAst {
     module_id: ModuleId,
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
+    source_attribute: Option<SourceAttributeHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -137,6 +138,12 @@ Task 249 applies the same rule to `source_type`: assembly clones the immutable
 handoff only from `TypedAst`, accepts no independent source-type input, and
 therefore cannot diverge from the already authenticated flat application/
 expression/argument tables. Absence preserves legacy debug bytes.
+
+Task 250 applies the same clone-only rule to `source_attribute`. Assembly
+accepts no independent attribute-chain input and copies the immutable handoff
+only from `TypedAst`, so the final layer cannot diverge from the authenticated
+chain, polarity, qualifier, group, actual, provenance, or Task-249 association
+tables. Absence preserves legacy debug bytes.
 
 ### Resolved Nodes
 

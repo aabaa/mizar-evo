@@ -198,6 +198,7 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
         ("src/binding_env.rs", "binding_env.md"),
         ("src/source_context.rs", "source_context.md"),
         ("src/source_type.rs", "source_type.md"),
+        ("src/source_attribute.rs", "source_attribute.md"),
         ("src/type_checker.rs", "type_checker.md"),
         (
             "src/registration_resolution.rs",
@@ -323,6 +324,7 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
         ("src/binding_env.rs", "binding_env"),
         ("src/source_context.rs", "source_context"),
         ("src/source_type.rs", "source_type"),
+        ("src/source_attribute.rs", "source_attribute"),
         ("src/type_checker.rs", "type_checker"),
         ("src/registration_resolution.rs", "registration_resolution"),
         ("src/cluster_trace.rs", "cluster_trace"),
@@ -818,6 +820,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/binding_env.rs")
             || path == Path::new("src/source_context.rs")
             || path == Path::new("src/source_type.rs")
+            || path == Path::new("src/source_attribute.rs")
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
             || path == Path::new("src/cluster_trace.rs")
@@ -833,6 +836,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod binding_env;"
                 | "pub mod source_context;"
                 | "pub mod source_type;"
+                | "pub mod source_attribute;"
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"
                 | "pub mod cluster_trace;"
@@ -924,6 +928,17 @@ fn public_surface_names(source: &str) -> Vec<String> {
             .split(['<', '(', '{', ':', '=', ';'])
             .find(|part| !part.is_empty());
         if let Some(name) = name {
+            names.insert(name.to_owned());
+        }
+    }
+
+    for invocation in source.split("table!(").skip(1) {
+        if let Some(name) = invocation
+            .trim_start()
+            .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+            .next()
+            .filter(|name| !name.is_empty())
+        {
             names.insert(name.to_owned());
         }
     }

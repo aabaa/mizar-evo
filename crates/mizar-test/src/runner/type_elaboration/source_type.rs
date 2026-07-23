@@ -317,6 +317,7 @@ fn build_output(
         resolved_root: None,
         source_context: None,
         source_type: Some(handoff),
+        source_attribute: None,
         nodes: arena,
         contexts: LocalTypeContextTable::new(),
         types: TypeTable::new(),

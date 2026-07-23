@@ -7,11 +7,11 @@ source = "fail_type_elaboration_argument_bearing_attribute_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "argument_bearing_attribute_payload_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "source_attribute_semantics_pending"
+stable_detail_key = "type_elaboration.checker.source_attribute.semantic_dependencies_pending"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.source_attribute.semantic_dependencies_pending",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
@@ -19,5 +19,6 @@ spec_refs = [
   "spec.en.06.attributes.argument_bearing_attribute_payload_gap",
   "spec.en.checker.type_elaboration.payload_extraction",
   "spec.en.checker.type_elaboration.payload_extraction.argument_bearing_attribute_gap",
+  "spec.en.checker.type_elaboration.source_attribute_payload",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 81: a same-module parameterized attribute declared with numeral-prefix syntax and used as `ranked(2) set` in a reserve type is parser/resolver executable, but the checker-owned source bridge lacks real term-argument provenance and AttributeInput argument payload extraction, so it must stay on the source-to-checker payload extraction gap instead of accepting the attributed type, querying attributed-type evidence, or promoting CoreIr/ControlFlowIr/VC/proof payloads."
+notes = "Active type_elaboration runner boundary coverage for checker tasks 81 and 250: a same-module parameterized attribute declared with numeral-prefix syntax and used as `ranked(2) set` in a reserve type now produces one authenticated raw source-attribute chain, one parenthesized argument-list group, and one term-site actual beside the exact Task-249 source-type handoff. Semantic arity, term binding/type, prefix/list equivalence, admissibility, evidence, attribute truth, acceptance, and CoreIr/ControlFlowIr/VC/proof payloads remain unavailable, so the route fails closed at the runner-owned source-attribute semantic-dependency boundary."

@@ -7,15 +7,16 @@ source = "fail_type_elaboration_structure_qualified_attribute_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "structure_qualified_attribute_payload_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "source_attribute_semantics_pending"
+stable_detail_key = "type_elaboration.checker.source_attribute.semantic_dependencies_pending"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.source_attribute.semantic_dependencies_pending",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
   "spec.en.checker.type_elaboration.payload_extraction.structure_qualified_attribute_gap",
+  "spec.en.checker.type_elaboration.source_attribute_payload",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 67: a same-module structure-qualified attribute reference in a reserve type expression is parser/resolver executable, but the checker-owned source bridge lacks real qualifier/attribute-owner provenance and must stay on the source-to-checker payload extraction gap instead of rewriting it to an unqualified attribute payload."
+notes = "Active type_elaboration runner boundary coverage for checker tasks 67 and 250: a same-module structure-qualified attribute reference in a reserve type expression now produces one authenticated raw source-attribute chain and a separate written structure-qualifier row beside the exact Task-249 source-type handoff. The qualifier is preserved without rewriting and without claiming owner compatibility, admissibility, evidence, attribute truth, acceptance, or downstream IR, so the route fails closed at the runner-owned source-attribute semantic-dependency boundary."

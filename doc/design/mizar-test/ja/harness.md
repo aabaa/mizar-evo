@@ -187,45 +187,47 @@ public case statusを`Failed`にし、`snapshot_failure`を設定してinternal 
 code `E-TYPE-ELABORATION-SNAPSHOT`を`type_elaboration.snapshot.<case-id>`でemitする。
 ordinary detail-key resultは不変で、他のtype-elaboration caseはこのpathに入らない。
 
-## Runner Source Ownership (Checker Task 249 update)
+## Runner Source Ownership (Checker Task 250 update)
 
-current production runner layoutは正確に20 path、21,598行である。Checker Task 249は
-existing Task-248 source-context leafと並べてbounded source-type leafを1件追加し、
-`runner.rs` facade/top-level orchestration-only boundaryを維持する。
+current production runner layoutは正確に21 path、23,184行である。Checker Task 250は
+existing Task-248 source-context leafとTask-249 source-type leafに並べてbounded
+source-attribute leafを1件追加し、`runner.rs` facade/top-level
+orchestration-only boundaryを維持する。
 
 | Production path | Lines | Ownership |
 |---|---:|---|
-| `src/runner.rs` | 2,387 | snapshot failureを含むpublic report/status、corpus orchestration、public active iterator、proof-verification orchestration、parse/declaration admission、type-case execution、verify-only baseline comparison、top-level detail dispatch。 |
+| `src/runner.rs` | 2,390 | snapshot failureを含むpublic report/status、corpus orchestration、public active iterator、proof-verification orchestration、parse/declaration admission、type-case execution、verify-only baseline comparison、top-level detail dispatch。 |
 | `src/runner/shared.rs` | 265 | cross-phase source/frontend/resolver staging、exact internal resolver diagnostic-key projection、resolver shell retentionを含むcommon diagnostic support。 |
 | `src/runner/parse_only.rs` | 119 | parse-only case executionとfailure projection。 |
 | `src/runner/declaration_symbol.rs` | 231 | declaration-symbol execution、observation、payload、failure projection。 |
 | `src/runner/import_fixtures.rs` | 410 | fixture lexical summary、import-summary adapter、source-type authentication用coherent resolver import projection。 |
 | `src/runner/proof_verification.rs` | 170 | exact Task-180 admission、source-to-VC execution、deterministic rerun、VcIr snapshot comparison、failure diagnostic。 |
-| `src/runner/type_elaboration.rs` | 589 | 正確に13個のprivate leafを持つprivate type-elaboration facade。 |
+| `src/runner/type_elaboration.rs` | 593 | 正確に14個のprivate leafを持つprivate type-elaboration facade。 |
 | `src/runner/type_elaboration/admission.rs` | 60 | active type-case admissionとtag validation。 |
 | `src/runner/type_elaboration/binary_routes.rs` | 3,791 | reserved-variable binary route config、extraction、output、detail。 |
-| `src/runner/type_elaboration/checker_handoff.rs` | 1,297 | checker-owned binding/declaration、exact Task-180 statement/proof/terminal handoff assembly/validation、legacy empty-later-payload assembly、test-only real-bundle near-miss construction。 |
+| `src/runner/type_elaboration/checker_handoff.rs` | 1,299 | checker-owned binding/declaration、exact Task-180 statement/proof/terminal handoff assembly/validation、legacy empty-later-payload assembly、test-only real-bundle near-miss construction。 |
 | `src/runner/type_elaboration/long_chain_config.rs` | 82 | shared exact long-chain definition table。 |
 | `src/runner/type_elaboration/output.rs` | 1,571 | checker output、validation、result/detail projection、diagnostic、reusable exact Task-180 CoreIr constructionとdeterministic Core rerun。 |
 | `src/runner/type_elaboration/parenthesized_routes.rs` | 745 | parenthesized reserved-variable route ownership。 |
 | `src/runner/type_elaboration/result.rs` | 38 | expected-keyとstable detail/snapshot failure projection。 |
 | `src/runner/type_elaboration/source_ast.rs` | 147 | common exact AST/import projection。 |
-| `src/runner/type_elaboration/source_context.rs` | 591 | exact Task-248 resolver-shell/source-context projection、route isolation、checker producer invocation、immutable handoff assembly、exact 2/2/0 source-type dependency co-installation。 |
+| `src/runner/type_elaboration/source_attribute.rs` | 1,575 | exact Task-250 attribute-chain AST traversal、syntax-free chain/attribute/qualifier/group/actual projection、checker producer invocation、pending-detail isolation。 |
+| `src/runner/type_elaboration/source_context.rs` | 592 | exact Task-248 resolver-shell/source-context projection、route isolation、checker producer invocation、immutable handoff assembly、exact 2/2/0 source-type dependency co-installation、Task-250 source-attribute payloadの明示的absence。 |
 | `src/runner/type_elaboration/source_formula.rs` | 2,651 | common formula/source payload extraction、exact theorem/formula site/range、explicit Task-268 theorem intent。 |
 | `src/runner/type_elaboration/source_reserve.rs` | 1,474 | reserve declaration/type/symbol/mode-expansion extraction。 |
-| `src/runner/type_elaboration/source_type.rs` | 793 | exact Task-249 source-type AST traversal、syntax-free 10/13/6 checker input projection、handoff assembly、pending-detail isolation。 |
+| `src/runner/type_elaboration/source_type.rs` | 794 | exact Task-249 source-type AST traversal、syntax-free 10/13/6 checker input projection、handoff assembly、pending-detail isolation。 |
 | `src/runner/type_elaboration/type_assertion_routes.rs` | 4,187 | reserved-variable type-assertion/asserted-head route ownership。 |
 
 hash時は各表示pathに`crates/mizar-test/`をprefixする。repository rootから
 `crates/mizar-test/src/runner.rs`と`crates/mizar-test/src/runner`のtracked pathを
 選び、`tests.rs`と`tests/`配下を除外してsortした正確なnewline-delimited path-
 list hashは
-`be25d20f70bf838897d4cc7ba84cd52b32b98b925eb2a1ff7a30a79942600746`、
+`bd42d60f45e40526a785a6ebcc0df910b99f33a8a8b19371f678070b51bac1d6`、
 同じrepository-relative pathを順に`sha256sum`したordered output lineのhashは
-`31757cf5e206b324c8ae625b9328e5e8759d9778bc397ff6deda0726fa89dad3`。
+`d1421834a7c7613150634735c47aa2700ddf17a7ca2ffebd94f596664ee3a8eb`。
 production `runner.rs`はroute config、source extractor、output builder、detail-
 wrapper definitionを所有せず、route aliasはtest-onlyである。private facadeの
-13 `mod` declaration、20-path/hash pair、documented public API、exact discovered-
+14 `mod` declaration、21-path/hash pair、documented public API、exact discovered-
 test/CLI oracleをownership guardとする。fully qualified name/nestingを変えない
 ため、test sourceは`src/runner/tests.rs`、`src/runner/tests/`、既存integration-
 test fileに維持する。
@@ -2581,3 +2583,22 @@ parenthesized identifier/numeral prefix 1件を要求する。
 raw syntaxはcheckerへ渡さず、new `.miz`/public diagnosticはplannedせず、
 semantic arity、prefix/list equivalence、admissibility、evidence、truthをinferしない。
 このfrozen boundaryはChecker Task 250 implementationまでdocumentation-only。
+
+## Checker Task 250 source-attribute consumer
+
+private `type_elaboration::source_attribute` leafはfrozen raw attribute
+extractionとchecker handoffをownする。existing Task-81/67/84/85 fixtureだけが
+selectする。4 routeはaggregate Task-249 4/4/0とTask-250 4/4/1/1/1 tableを、
+exact polarity、qualifier、punctuation、actual、local/imported provenance付きで
+publishする。private synthetic `SurfaceAst` testは
+`p-ranked (q,2)-graded set`を同じextractor/public checker producerまで実行し、
+multi-attribute orderとsingle/parenthesized prefix projectionを証明する。
+
+Task 81/67はrunner-owned semantic-dependency detailへだけprogressし、Task
+84/85はevidence-query outcomeを維持する。他route、`.miz` source、semantic
+acceptance、public diagnostic、later checker payloadは変更しない。
+
+current production layoutは21 path / 23,184行、sorted path/content hashは
+`bd42d60f...` / `d1421834...`。`runner.rs`はfacade/top-level orchestration
+onlyのままで、new private leafがsole added production pathである。mizar-test
+library testは283件。

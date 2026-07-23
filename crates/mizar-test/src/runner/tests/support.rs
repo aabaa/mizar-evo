@@ -276,9 +276,10 @@
         source_two_edge_local_object_mode_reserved_variable_membership_output,
         source_two_edge_local_object_mode_reserved_variable_type_assertion_output,
         source_two_edge_local_object_mode_two_hop_asserted_head_output,
+        source_attribute_detail_keys, source_attribute_output,
         source_binding_context_token_shape_is_exact, source_type_elaboration_detail_keys,
-        structural_child_ids, surface_nodes_with_kind,
-        surface_site,
+        structural_child_ids,
+        surface_nodes_with_kind, surface_site, synthetic_source_attribute_output,
     };
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
     use mizar_checker::binding_env::{BindingContextId, BindingId};

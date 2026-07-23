@@ -4167,13 +4167,14 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   runner-only readiness detail、bounded trace row、paired docs、count/hash
   verificationはcomplete。normalization、evidence、term/`qua` selection、
   accepted fact/declaration/proof、downstream IRはpublishしない。
-- [ ] **Task 250:** attribute-chain/qualification/provenance producer。独立paired
-  EN/JA frozen-contract prerequisiteはcompleteした。implementationは
-  [00.crate_plan.md](./00.crate_plan.md)のexact existing consumer 4件、Task-249
-  4/4/0 co-handoff、4-chain/4-attribute/1-qualifier/1-group/1-actual oracle、written
-  prefix/list preservation、polarity/qualifier provenance、outcome/trace
-  progression、synthetic extractor/corruption matrix、forbidden scopeに従う。
-  real producer/consumerをimplementしてcommitするまでこのrowはuncheckedのまま。
+- [x] **Task 250:** attribute-chain/qualification/provenance producer。public
+  syntax-free five-table producer、immutable `TypedAst`/clone-only
+  `ResolvedTypedAst` handoff、exact real consumer 4件とaggregate
+  4/4/0・4/4/1/1/1 oracle、written polarity/qualifier/group/actual preservation、
+  synthetic prefix extractor、corruption/determinism matrix、bounded
+  trace/expectation progression、paired documentationはcomplete。semantic
+  attribute instance、arity/admissibility、term result、evidence request/result、
+  accepted fact/declaration/proof、downstream IRはpublishしない。
 - [ ] **Task 251:** evidence-query request/dependency-fact-reference producer。
   evidence resultを捏造しない。
 - [ ] **Task 252:** primary term producer。

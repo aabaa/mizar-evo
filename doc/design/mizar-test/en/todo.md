@@ -1571,6 +1571,8 @@ promoted by this increment.
 - [x] Require private synthetic-`SurfaceAst` extractor coverage for
   multi-attribute order and single/parenthesized prefix projection, plus the
   checker corruption/determinism matrix.
-- [ ] Implement Checker Task 250 in one later logical task, then verify plan
-  411/373, type 239/227, unchanged pass/fail and admissions, and fresh hashes.
-  Do not promote Tasks 251+/269+ or Steps 6/7.
+- [x] Implement Checker Task 250 as one logical task: the private
+  `source_attribute` leaf executes the exact four real consumers and the
+  synthetic prefix probe through the public checker handoff; plan 411/373 and
+  type 239/227 are reached with unchanged pass/fail and admissions. Tasks
+  251+/269+ and Steps 6/7 remain unpromoted.

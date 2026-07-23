@@ -1,7 +1,9 @@
 //! Source-shaped typed AST data tables for checker phase 6.
 
-use crate::source_context::SourceBindingContextHandoff;
-use crate::source_type::SourceTypeApplicationHandoff;
+use crate::{
+    source_attribute::SourceAttributeHandoff, source_context::SourceBindingContextHandoff,
+    source_type::SourceTypeApplicationHandoff,
+};
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
 use std::{
@@ -83,6 +85,7 @@ pub struct TypedAst {
     resolved_root: Option<ResolvedNodeId>,
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
+    source_attribute: Option<SourceAttributeHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -101,6 +104,7 @@ impl TypedAst {
             resolved_root: parts.resolved_root,
             source_context: parts.source_context,
             source_type: parts.source_type,
+            source_attribute: parts.source_attribute,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -129,6 +133,10 @@ impl TypedAst {
 
     pub const fn source_type(&self) -> Option<&SourceTypeApplicationHandoff> {
         self.source_type.as_ref()
+    }
+
+    pub const fn source_attribute(&self) -> Option<&SourceAttributeHandoff> {
+        self.source_attribute.as_ref()
     }
 
     pub const fn nodes(&self) -> &TypedArena {
@@ -176,6 +184,9 @@ impl TypedAst {
         if let Some(source_type) = &self.source_type {
             output.push_str(&source_type.debug_text());
         }
+        if let Some(source_attribute) = &self.source_attribute {
+            output.push_str(&source_attribute.debug_text());
+        }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
         write_type_entries(&mut output, &self.types);
@@ -194,6 +205,7 @@ pub struct TypedAstParts {
     pub resolved_root: Option<ResolvedNodeId>,
     pub source_context: Option<SourceBindingContextHandoff>,
     pub source_type: Option<SourceTypeApplicationHandoff>,
+    pub source_attribute: Option<SourceAttributeHandoff>,
     pub nodes: TypedArena,
     pub contexts: LocalTypeContextTable,
     pub types: TypeTable,
@@ -1051,6 +1063,7 @@ pub enum TypedAstError {
     PayloadSourceMismatch,
     InvalidSourceContext,
     InvalidSourceType,
+    InvalidSourceAttribute,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1163,6 +1176,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceType => {
                 formatter.write_str("typed AST source type handoff is inconsistent")
+            }
+            Self::InvalidSourceAttribute => {
+                formatter.write_str("typed AST source attribute handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
@@ -1362,6 +1378,7 @@ fn validate_typed_ast(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     validate_contexts(parts)?;
     validate_source_context(parts)?;
     validate_source_type(parts)?;
+    validate_source_attribute(parts)?;
     validate_types(parts)?;
     validate_facts(parts)?;
     validate_coercions(parts)?;
@@ -1377,6 +1394,19 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     handoff
         .validate_installation(parts.source_id, &parts.module_id, &parts.nodes)
         .map_err(|_| TypedAstError::InvalidSourceType)
+}
+
+fn validate_source_attribute(parts: &TypedAstParts) -> Result<(), TypedAstError> {
+    let Some(handoff) = &parts.source_attribute else {
+        return Ok(());
+    };
+    let source_type = parts
+        .source_type
+        .as_ref()
+        .ok_or(TypedAstError::InvalidSourceAttribute)?;
+    handoff
+        .validate_installation(parts.source_id, &parts.module_id, source_type, &parts.nodes)
+        .map_err(|_| TypedAstError::InvalidSourceAttribute)
 }
 
 fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
@@ -3585,6 +3615,7 @@ diagnostics:
             resolved_root: None,
             source_context: None,
             source_type: None,
+            source_attribute: None,
             nodes,
             contexts,
             types,
@@ -3626,6 +3657,7 @@ diagnostics:
             resolved_root: None,
             source_context: None,
             source_type: None,
+            source_attribute: None,
             nodes,
             contexts,
             types: TypeTable::new(),

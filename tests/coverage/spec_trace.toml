@@ -559,6 +559,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
+notes = "Task 250 now transports the exact Task-81 `ranked(2) set` raw attribute chain, parenthesized argument-list punctuation, one TermSite actual, authenticated local attribute provenance, and Task-249 parent association. Semantic arity, term binding/type, prefix/list equivalence, admissibility, evidence, truth, and acceptance remain deferred."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
 ]
@@ -598,7 +599,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attribute heads and source shapes outside those exact fixtures still lack real imported AttributeInput payload extraction."
+deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Task 250 additionally carries the exact Task-84/85 raw imported chain, polarity, contribution, and source/type association through immutable checker handoffs. Task 251 evidence requests and broader imported attribute heads/source shapes remain deferred."
 tests = []
 
 [[requirement]]
@@ -974,6 +975,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
+notes = "Task 250 now transports the exact Task-81 `ranked(2) set` raw attribute chain, parenthesized argument-list punctuation, one TermSite actual, authenticated local attribute provenance, and Task-249 parent association. Semantic arity, term binding/type, prefix/list equivalence, admissibility, evidence, truth, and acceptance remain deferred."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
 ]
@@ -1011,7 +1013,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attributes and source shapes outside those exact fixtures still lack real AttributeInput payload extraction; attributed-type acceptance and existential/evidence payloads remain deferred."
+deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported AttributeInput payloads to the checker evidence-query diagnostic. Task 250 additionally preserves the exact Task-84/85 raw imported chain, polarity, contribution, and source/type association. Task 251 evidence requests, semantic admissibility/instance checking, broader source shapes, and attributed-type acceptance remain deferred."
 tests = []
 
 [[requirement]]
@@ -1308,7 +1310,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attribute heads and source shapes outside those exact fixtures still lack real imported AttributeInput payload extraction."
+deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Task 250 additionally authenticates the exact Task-84/85 imported attribute symbols and contributions in raw immutable handoffs. Task 251 evidence references and broader imported attribute heads/source shapes remain deferred."
 tests = []
 
 [[requirement]]
@@ -1577,7 +1579,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attribute heads and source shapes outside those exact fixtures still lack real imported AttributeInput payload extraction."
+deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Task 250 additionally authenticates exact Task-84/85 import-closure visibility and contribution provenance in raw immutable handoffs. Task 251 evidence references and broader imported attribute heads/source shapes remain deferred."
 tests = []
 
 [[requirement]]
@@ -4305,6 +4307,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
+notes = "Task 250 supersedes only the exact Task-67 structure-qualified and Task-81 argument-bearing source-attribute gaps with a raw syntax-free handoff and co-installs the exact Task-84/85 imported attribute handoffs. Every other listed payload shape and all semantic arity/admissibility/evidence/truth work remain unchanged."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_mode_gap_001.expect.toml",
@@ -4343,6 +4346,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
+notes = "Task 250 supersedes this exact Task-81 extraction gap with one authenticated raw source-attribute chain, one parenthesized argument-list group, one term-site actual, and its Task-249 parent expression. The fail outcome advances only to the runner-owned source-attribute semantic-dependency boundary; arity, term typing, admissibility, evidence, truth, and acceptance remain deferred."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
 ]
@@ -4600,7 +4604,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Tasks 84, 85, 116, and 171 supersede the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` fixtures by carrying real imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Task 247 assigns broader imported attribute chain/qualification/provenance extraction to checker Task 250 and evidence requests/references to Task 251. Keep the broader row deferred until those exact producers and real Task-10 consumers execute."
+deferred_reason = "Tasks 84, 85, 116, and 171 carry the documented parser.type_fixtures `TypeCaseAttr`, negative/positive `empty` over builtin `set`, and negative `empty` over builtin `object` AttributeInput payloads to the checker evidence-query diagnostic. Task 250 now co-installs exact raw imported attribute handoffs for Task 84/85 only. Keep this broader row deferred for Task 251 evidence requests/references and source shapes outside the exact Task-250 selector."
 tests = []
 
 [[requirement]]
@@ -4842,6 +4846,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
+notes = "Task 250 supersedes this exact Task-67 extraction gap with one authenticated raw source-attribute chain, a separately authenticated written LocalStruct qualifier, and its Task-249 parent expression. The fail outcome advances only to the runner-owned source-attribute semantic-dependency boundary; owner compatibility, admissibility, evidence, truth, and acceptance remain deferred."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
 ]
@@ -4957,6 +4962,22 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_right_parenthesized_reserved_variable_membership_001.expect.toml",
 ]
 notes = "Task 245 coverage is limited to the exact single-right-parenthesized reserved-variable membership type/well-formedness slice. The real ParenthesizedTerm producer composes with Task 120's real direct membership consumer: direct-left x and right-inner x resolve at source-order ordinals 1 and 2 with both lookups resolving to BindingId(0), transparent lowering preserves one written-range-anchored BuiltinSet identity, and the right-inner semantic site owns the sole expected-set input. A dedicated config, stable invalid-payload key, distinct left-result/right-result/right-expected roles, explicit Right wrapper-side metadata, finite exact/near-miss/provenance/corruption matrix, matched Task243-vs-Task245 cross-route rejection, immutable output, all 58 prior binary-formula owners bidirectionally, focused Task 120 and six left-parenthesized regressions, and a real frontend/resolver sidecar protect active runner 187. Left/both/nested parenthesization, arbitrary parenthesization or operands, precedence, formula grouping, closure/order materialization, membership truth/facts, theorem acceptance, child graphs, broader semantics, and imported-positive provenance receive no Task 245 credit. Missing imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred."
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.source_attribute_payload"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 250 Frozen Attribute-Chain/Qualification/Provenance Producer Contract"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+notes = "Task 250 bounded producer coverage for exact raw attribute-chain, polarity, qualifier, argument-group/actual, symbol/contribution provenance, and Task-249 parent association handoffs. The four exact real consumers preserve syntax-free immutable TypedAst-to-ResolvedTypedAst transport. This row does not credit arity, term binding/type, prefix/list equivalence, attribute admissibility or owner compatibility, evidence requests/results, truth/facts/closure, accepted declarations/proofs, or downstream IR."
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_attribute_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.source_binding_context_shadowing"

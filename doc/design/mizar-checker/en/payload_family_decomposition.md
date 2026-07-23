@@ -328,3 +328,16 @@ matrix; and forbidden scope. This is a completed independent documentation
 prerequisite, not Task 250 implementation. Source, tests, expectations, trace,
 counts, hashes, coverage credit, Tasks 251+/269+, and Steps 6/7 remain
 unchanged.
+
+## Task 250 Source-Attribute Producer Completion
+
+The frozen family is now implemented by the public syntax-free
+`source_attribute` producer and one private runner extractor. Exactly the
+Task-81/67/84/85 real routes publish the 4/4/0 Task-249 dependency and the
+4-chain/4-attribute/1-qualifier/1-group/1-actual Task-250 handoff. The
+synthetic prefix probe and checker corruption/determinism matrix close the
+selected exact `test_gap` and raw transport `source_drift`. The bounded trace
+row reaches plan 411/373 and type 239/227 with no new case or changed
+admission. Semantic attribute instances and all evidence, truth, acceptance,
+downstream IR, Tasks 251+/269+, and Steps 6/7 remain assigned to their
+existing later owners.

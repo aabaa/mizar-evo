@@ -301,3 +301,15 @@ trace-note update、expected plan 411/373・type 239/227、corruption matrix、
 forbidden scopeをfreezeした。これはcompleteした独立documentation prerequisiteで
 あり、Task 250 implementationではない。source、test、expectation、trace、count、
 hash、coverage credit、Tasks 251+/269+、Steps 6/7は不変である。
+
+## Task 250 source-attribute producer completion
+
+frozen familyはpublic syntax-free `source_attribute` producerとprivate runner
+extractor 1件で実装済み。exact Task-81/67/84/85 real routeだけがTask-249
+dependency 4/4/0とTask-250 handoff
+4-chain/4-attribute/1-qualifier/1-group/1-actualをpublishする。synthetic prefix
+probeとchecker corruption/determinism matrixはselected exact `test_gap`とraw
+transport `source_drift`をcloseする。bounded trace rowはnew case/admission change
+なしでplan 411/373・type 239/227へ到達する。semantic attribute instanceと全
+evidence/truth/acceptance/downstream IR、Tasks 251+/269+、Steps 6/7はexisting
+later ownerに残る。

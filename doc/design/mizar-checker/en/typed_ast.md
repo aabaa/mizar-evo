@@ -65,6 +65,7 @@ struct TypedAst {
     resolved_root: Option<ResolvedNodeId>,
     source_context: Option<SourceBindingContextHandoff>,
     source_type: Option<SourceTypeApplicationHandoff>,
+    source_attribute: Option<SourceAttributeHandoff>,
     nodes: TypedNodeArena,
     root: Option<TypedNodeId>,
     contexts: LocalTypeContextTable,
@@ -102,6 +103,17 @@ including same-source range containment and exact recovery. The producer has
 already authenticated binding and symbol environments; `TypedAst` cannot
 replace or reconstruct them. When this field is absent, conditional rendering
 preserves the existing debug bytes.
+
+Task 250 adds `source_attribute` as the sole owner of the validated raw
+chain/attribute/qualifier/argument-group/actual handoff. Installation
+revalidates source/module identity, its exact Task-249 expression association,
+and every attached arena site's range and recovery state. Dense parent/order
+links, polarity, qualifier and symbol provenance, punctuation, actual
+kinds/origins, and compositional spelling consistency are producer-time
+invariants preserved by the immutable handoff; installation does not
+reconstruct or re-authenticate them. No partial or recovered bundle is
+installed. When this field is absent, conditional rendering preserves the
+existing debug bytes.
 
 ## Node Arena
 
