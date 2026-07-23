@@ -4155,7 +4155,11 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
 をcanonicalとする。以下の各unchecked rowは将来の1 nonempty logical taskかつ
 1 commitである。
 
-- [ ] **Task 248:** source item/declaration site/binding-context producer。
+- [x] **Task 248:** source item/declaration site/binding-context producer。
+  syntax-free producer、immutable `TypedAst`/`ResolvedTypedAst` handoff、exact
+  reserve/definition-parameter shadowing consumer、recovery boundary、corruption
+  matrix、bounded trace rowは完了した。term-use selection、type result、RHS/
+  formula/proof semantics、accepted factへのcreditは与えない。
 - [ ] **Task 249:** type head/application/argument producer。
 - [ ] **Task 250:** attribute-chain/qualification/provenance producer。
 - [ ] **Task 251:** evidence-query request/dependency-fact-reference producer。

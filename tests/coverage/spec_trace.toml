@@ -4959,6 +4959,19 @@ tests = [
 notes = "Task 245 coverage is limited to the exact single-right-parenthesized reserved-variable membership type/well-formedness slice. The real ParenthesizedTerm producer composes with Task 120's real direct membership consumer: direct-left x and right-inner x resolve at source-order ordinals 1 and 2 with both lookups resolving to BindingId(0), transparent lowering preserves one written-range-anchored BuiltinSet identity, and the right-inner semantic site owns the sole expected-set input. A dedicated config, stable invalid-payload key, distinct left-result/right-result/right-expected roles, explicit Right wrapper-side metadata, finite exact/near-miss/provenance/corruption matrix, matched Task243-vs-Task245 cross-route rejection, immutable output, all 58 prior binary-formula owners bidirectionally, focused Task 120 and six left-parenthesized regressions, and a real frontend/resolver sidecar protect active runner 187. Left/both/nested parenthesization, arbitrary parenthesization or operands, precedence, formula grouping, closure/order materialization, membership truth/facts, theorem acceptance, child graphs, broader semantics, and imported-positive provenance receive no Task 245 credit. Missing imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_binding_context_shadowing"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 248 Frozen Source/Binding-Context Producer Contract"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+notes = "Task 248 bounded producer coverage for one exact reserve followed by one definition-block parameter of the same spelling. The runner proves source item order, distinct checker-owned reserve/local binding identities backed by real resolver shell provenance and resolver-shaped local provenance, module/declaration context links, and structural shadow linkage through an immutable TypedAst-to-ResolvedTypedAst handoff. The fixture has no term-use site and does not credit type results, definition RHS semantics, formula/proof contexts, accepted facts, obligations, or global name resolution."
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_source_binding_context_shadowing_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.three_edge_local_mode_asserted_head_source_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 195 exact three-edge formula-side local-mode asserted-head checker bridge"

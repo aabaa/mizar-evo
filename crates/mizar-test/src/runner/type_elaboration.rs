@@ -6,6 +6,7 @@ mod output;
 mod parenthesized_routes;
 mod result;
 mod source_ast;
+mod source_context;
 mod source_formula;
 mod source_reserve;
 mod type_assertion_routes;
@@ -317,6 +318,11 @@ pub(super) use result::{
 #[cfg(test)]
 pub(super) use source_ast::{
     direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site,
+};
+pub(super) use source_context::source_binding_context_detail_keys;
+#[cfg(test)]
+pub(super) use source_context::{
+    source_binding_context_output, source_binding_context_token_shape_is_exact,
 };
 #[cfg(test)]
 pub(super) use source_formula::{

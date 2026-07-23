@@ -1,5 +1,34 @@
 # Module-Boundary Audit: mizar-test Runner
 
+## Checker Task 248 source/binding-context current-state addendum
+
+Checker Task 248はMT-AUDIT-022をreopenせず、cohesiveなprivate semantic consumer
+1件を追加する。raw `SurfaceAst` inspectionとresolver-shell matchingは`mizar-test`に
+保持し、新しい`src/runner/type_elaboration/source_context.rs` leafは
+`mizar-checker`が受理するsyntax-free inputだけをprojectする。`runner.rs`は2,382行の
+facade/top-level orchestratorのままである。585行のtype-elaboration facadeは、新しい
+509行ownerを含むprivate leaf 12件へdispatchする。`shared.rs`はresolver shell setを
+保持し、`checker_handoff.rs`はlater-payload-emptyなgeneric assembly seamを提供する。
+
+このためproduction manifestは19 paths / 20,651 linesとなる。sorted path hashは
+`e723ef5a2a0648afec15052b7733265aadd93ffbb45d83e7af5c2fb9e3178b61`、
+ordered content-manifest hashは
+`24b7d3963a0a7e0e7085dec24a08c9618cfe5ad1d8d26cd2da981b905017c182`である。
+新しいproduction pathはprivate source-context leaf 1件だけである。
+
+exact active increment後はplan 410/371、type-elaboration coverage 237/225、
+pass/fail 224/186、parse/declaration/type/proof admission 101/5/189/1、
+warnings/errors 23/0となる。5 CLI hashは
+`ce8cc33b2c14c1790a66281c889f448487d0da9c8109a92775ea61c4344b9213`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`f3f27bc5e0d45c3d34c120a1d6985e4f3ddf9e528eec49fb8a9d2a2848b937f9`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`である。
+library testは277、raw/normalized sorted-list hashは
+`15656abf9fc369b9849727ee03bca8c3f9cbc0da066a894fd5e81dcb6159ac88` /
+`3094579dfa683c362ce2846c2329cee25ca039de30e7e3109e52a75bf733099a`となる。
+Task 249以降のproducer routeはadmitせず、Steps 6/7はdeferredのままである。
+
 ## Parser Task 46 parse-only current-state addendum
 
 Task 46は`mizar-test` production pathやproduction source lineを変更しない。runner

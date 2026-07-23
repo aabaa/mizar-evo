@@ -452,3 +452,23 @@ Rust tests cover its executable scope. Task 12 still owns the first active
 | `source_drift` | `src/binding_env.rs` now exists and is exposed through the documented `binding_env` module. | Resolved for task 5. |
 | `external_dependency_gap` | The resolver still does not expose a complete AST-wide local binding table, use-site scope/ordinal table, reserve payload, captured-free-variable payload, or syntax-free empty `ResolvedAst` fixture for checker-owned tests. | Task 5 records module-shell external-gap diagnostics, accepts explicit binding payloads when available, and type-checks the public module-shell signature without adding a direct `mizar-syntax` dependency. Later resolver/source-walk integration must provide the missing payload and fixture before full source extraction and closure replay. |
 | `deferred` | Type normalization, local type facts, registration activation, overload resolution, abbreviation expansion, substitution replay, VC generation, proof acceptance, and kernel replay remain outside task 5. | Covered by later checker tasks and downstream crates. |
+
+## Task 248 Source-Context Producer Integration
+
+Task 248 supplies the first bounded real source walk without moving syntax
+ownership into the checker. `mizar-test` matches one reserve shell and one
+definition-block shell against the resolver's `DeclarationShellSet`, then
+passes only opaque shell ids, ordered item/binding records, ranges, typed sites,
+`LocalTermScope`, and `LocalTermBinding` to `SourceBindingContextProducer`.
+The producer constructs one module context plus one declaration context,
+retains distinct same-spelling reserve/parameter identities, and records the
+parameter's structural shadow link to the visible reserve.
+
+The complete transaction is retained in `SourceBindingContextHandoff` and
+paired with `LocalTypeContextTable`. Unsupported visibility, stale or reordered
+identity/provenance, duplicate or partial rows, and recovered shells that claim
+bindings fail before publication. A supported recovered shell with no binding
+produces an explicit empty recovered context and one internal diagnostic, but
+remains incomplete and cannot enter `TypedAst`. This closes only the exact
+Task-248 MC-G011/MC-G016 slice; term-use lookup and later proof/closure contexts
+remain owned by Tasks 252/257/258/269/270/272.

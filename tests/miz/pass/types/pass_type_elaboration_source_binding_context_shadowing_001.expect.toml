@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_source_binding_context_shadowing_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_source_binding_context_shadowing_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.source_binding_context_shadowing",
+]
+notes = "Task 248 bounded source/binding-context producer coverage. The exact reserve item and definition-block parameter retain distinct checker-owned binding identities for the same spelling, real resolver shell provenance, resolver-shaped local provenance, source order, declaration and written-type ranges, module and declaration context ownership, and a structural local-to-reserve shadow link through one immutable TypedAst-to-ResolvedTypedAst handoff. This fixture contains no term-use lookup site and therefore does not credit source term selection, type normalization/results, definition RHS semantics, formula/proof contexts, accepted facts, obligations, or global name resolution."

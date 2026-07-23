@@ -79,6 +79,40 @@ pub(in crate::runner) fn source_module_binding_env(
     })
 }
 
+pub(in crate::runner) fn assemble_empty_resolved_typed_ast(
+    typed_ast: &TypedAst,
+    node_hints: Vec<ResolvedNodeKindHint>,
+) -> Result<ResolvedTypedAst, String> {
+    let cluster_facts = ClusterFactTable::new();
+    let overload_collection = OverloadCollectionOutput::collect(
+        Vec::<OverloadSiteInput>::new(),
+        Vec::<OverloadCandidateInput>::new(),
+    );
+    let template_expansion = TemplateExpansionOutput::expand(&overload_collection);
+    let viability = CandidateViabilityOutput::filter(
+        &template_expansion,
+        Vec::<CandidateViabilityInput>::new(),
+    );
+    let specificity =
+        SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+    let overload_selection =
+        OverloadSelectionOutput::resolve(&specificity, Vec::<OverloadSiteResolutionInput>::new());
+    ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+        typed_ast,
+        cluster_facts: &cluster_facts,
+        overload_collection: &overload_collection,
+        template_expansion: &template_expansion,
+        viability: &viability,
+        specificity: &specificity,
+        overload_selection: &overload_selection,
+        expressions: Vec::new(),
+        node_hints,
+        statement_semantics: None,
+        statement_proofs: None,
+    })
+    .map_err(|error| error.to_string())
+}
+
 const CONTRADICTION_FORMULA_NODE: TypedNodeId = TypedNodeId::new(0);
 const CONTRADICTION_THEOREM_NODE: TypedNodeId = TypedNodeId::new(1);
 const CONTRADICTION_ROOT_NODE: TypedNodeId = TypedNodeId::new(2);
@@ -366,6 +400,7 @@ fn assemble_source_contradiction_typed_ast(
         source_id: ast.source_id,
         module_id: module.clone(),
         resolved_root: None,
+        source_context: None,
         nodes,
         contexts: LocalTypeContextTable::new(),
         types: TypeTable::new(),
@@ -1228,6 +1263,7 @@ fn assemble_source_reserve_typed_ast(
         source_id: source_reserve.source_id(),
         module_id: source_reserve.module_id().clone(),
         resolved_root: None,
+        source_context: None,
         nodes,
         contexts: output.contexts().clone(),
         types: output.type_entries().clone(),

@@ -1,5 +1,38 @@
 # Module-Boundary Audit: mizar-test Runner
 
+## Checker Task 248 Source/Binding-Context Current-State Addendum
+
+Checker Task 248 adds one cohesive private semantic consumer rather than
+reopening MT-AUDIT-022. Raw `SurfaceAst` inspection and resolver-shell matching
+remain in `mizar-test`; the new
+`src/runner/type_elaboration/source_context.rs` leaf projects only the
+syntax-free input accepted by `mizar-checker`. `runner.rs` remains the
+facade/top-level orchestrator at 2,382 lines. The 585-line type-elaboration
+facade now dispatches to twelve private leaves, including the new 509-line
+owner. `shared.rs` retains the resolver shell set, and `checker_handoff.rs`
+provides the generic empty-later-payload assembly seam.
+
+The production manifest is therefore 19 paths / 20,651 lines. Its sorted path
+hash is
+`e723ef5a2a0648afec15052b7733265aadd93ffbb45d83e7af5c2fb9e3178b61`,
+and its ordered content-manifest hash is
+`24b7d3963a0a7e0e7085dec24a08c9618cfe5ad1d8d26cd2da981b905017c182`.
+The only new production path is the private source-context leaf.
+
+The exact active increment produces plan 410/371, type-elaboration coverage
+237/225, pass/fail 224/186, and parse/declaration/type/proof admissions
+101/5/189/1 with warnings/errors 23/0. The five CLI hashes are
+`ce8cc33b2c14c1790a66281c889f448487d0da9c8109a92775ea61c4344b9213`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`f3f27bc5e0d45c3d34c120a1d6985e4f3ddf9e528eec49fb8a9d2a2848b937f9`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Library tests become 277; the raw/normalized sorted-list hashes are
+`15656abf9fc369b9849727ee03bca8c3f9cbc0da066a894fd5e81dcb6159ac88` /
+`3094579dfa683c362ce2846c2329cee25ca039de30e7e3109e52a75bf733099a`.
+No route for Task 249 or any later producer is admitted, and Steps 6/7 remain
+deferred.
+
 ## Parser Task 46 Parse-Only Current-State Addendum
 
 Task 46 changes no `mizar-test` production path or production source line. Its

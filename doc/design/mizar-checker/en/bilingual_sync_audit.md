@@ -41,6 +41,7 @@ after this task.
 | `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility, inputs, data shape, metadata/summaries, overload/coercion/cluster tables, failure/recovery, public enum policy, deferred gaps | none |
 | `semantic_spec_audit.md` | `../ja/semantic_spec_audit.md` | `../en/semantic_spec_audit.md` | audit scope, severity legend, findings index/details, adversarial corpus table, traceability requirement ids, TODO impact | none |
 | `source_spec_audit.md` | `../ja/source_spec_audit.md` | `../en/source_spec_audit.md` | public surface inventory, behavior/test correspondence, MC-G reconciliation, task classification | none |
+| `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, determinism, coverage, public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table, prerequisites, resolved decisions, ordered task list, task statuses, verification, notes | none |
 | `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary, top-level shape, arena/context/type/fact/coercion/obligation/diagnostic tables, public enum policy, task classification | none |
 | `type_checker.md` | `../ja/type_checker.md` | `../en/type_checker.md` | phase-6 boundary, normalization, declaration checking, inference, coercions/obligations, fact queries, diagnostics, determinism, public enum policy, task classification | none |

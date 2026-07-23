@@ -2536,3 +2536,31 @@ was found.
 The measured coverage state is 409 cases / 370 requirements, parse coverage
 44/44, parse-only admission 101/101, pass/fail 223/186, and warnings/errors
 23/0. Declaration/type/proof admissions remain 5/188/1.
+
+## Step 5 Checker Task 248 Coverage Addendum
+
+Task 248 changes this audit because it adds one exact executable
+source/binding-context slice for Chapters 04, 11, 12, and 15. The syntax-free
+checker producer retains ordered reserve and definition-block item identities,
+declaration and written-type sites, module/declaration contexts, distinct
+same-spelling reserve/local bindings, and the structural local-to-reserve
+shadow link through `TypedAst` and `ResolvedTypedAst`. The real active fixture
+has no term-use lookup site and keeps every type-result, expression, fact,
+obligation, formula, statement, and proof payload empty.
+
+Exactly
+`spec.en.checker.type_elaboration.source_binding_context_shadowing` is added as
+a bounded covered pass row. The plan becomes 410 cases / 371 requirements,
+type-elaboration coverage 237/225, active type-elaboration admission 189/189,
+pass/fail 224/186, and warnings/errors 23/0. Parse/declaration/proof admissions
+remain 101/5/1. This repairs the selected `test_gap` and two `source_drift`
+seams, but does not close MC-G011 or MC-G016 globally. Additional canonical
+item/binder shapes, including distinct-name multiple-reserve input, remain
+uncredited `test_gap`/`source_drift`; only the same-identifier re-reservation
+replacement/duplicate rule remains a nonblocking `spec_gap`, and Task 248
+infers no behavior for it. Other uncredited families are term-use selection,
+composite binders, statement/proof contexts, closure capture, proof-local
+declarations, type/RHS/formula semantics, accepted facts/evidence, Core/CFG/VC,
+Tasks 249+/269+, Steps 6/7, and global Step-5 completion. No new blocking
+`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` was found.

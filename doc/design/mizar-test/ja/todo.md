@@ -1350,3 +1350,16 @@ warnings/errors 23/0で、declaration/type/proof admissionは5/188/1のままで
 このcompletionが与えるのはparser/syntax-only creditだけである。property payload
 extraction、semantic overlap/coherence handling、proof acceptance/discharge、inactive
 semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 authorityもpromoteしない。
+
+## Checker Task 248 / Task-10 consumer completion
+
+- [x] exact active reserve-plus-definition-parameter shadowing fixture、single-reference
+  sidecar、bounded covered trace rowを追加する。
+- [x] real resolver shell/source walkをmatchし、syntax-free item/declaration/context
+  payloadだけを`mizar-checker`へ渡し、complete handoffを`TypedAst`から
+  `ResolvedTypedAst`まで保持する。
+- [x] same-spelling distinct binding identity、structural shadowing、deterministic debug
+  output、後続semantic payload 0件をassertする。term-use selectionとTasks
+  249+/269+はこのincrement外に保つ。
+- [x] exact executable coverage変更のためchapter-level coverageを更新する。broad
+  payload-extraction rowとSteps 6/7は変更しない。

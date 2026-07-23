@@ -57,6 +57,8 @@ artifact emission, proof acceptance, or source-to-checker extraction.
 Task 28 assembly consumes explicit checker-owned outputs:
 
 - `TypedAst` nodes, statuses, local contexts, and typed-site references;
+- the optional complete source/binding-context handoff already owned and
+  validated by `TypedAst`;
 - final `TypeFactTable` / type-fact query output from phase 6;
 - accepted cluster closure fact rows with their existing provenance ids;
 - overload collection, template expansion, viability, and specificity graph
@@ -106,6 +108,7 @@ The public data layer should keep dense ids local to the assembled output:
 struct ResolvedTypedAst {
     source_id: SourceId,
     module_id: ModuleId,
+    source_context: Option<SourceBindingContextHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -122,6 +125,12 @@ struct ResolvedTypedAst {
     statement_semantics: StatementSemanticTable,
 }
 ```
+
+Task 248 permits no separately replaceable source-context assembler input.
+Assembly clones `source_context` only from the supplied `TypedAst`, so the
+final layer cannot diverge from the checker-owned source-item, declaration,
+binding, or local-context links. Absence preserves legacy debug bytes; presence
+adds deterministic nonempty handoff rendering.
 
 ### Resolved Nodes
 

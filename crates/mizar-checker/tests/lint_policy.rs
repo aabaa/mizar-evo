@@ -196,6 +196,7 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
     let modules = [
         ("src/typed_ast.rs", "typed_ast.md"),
         ("src/binding_env.rs", "binding_env.md"),
+        ("src/source_context.rs", "source_context.md"),
         ("src/type_checker.rs", "type_checker.md"),
         (
             "src/registration_resolution.rs",
@@ -319,6 +320,7 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
     let modules = [
         ("src/typed_ast.rs", "typed_ast"),
         ("src/binding_env.rs", "binding_env"),
+        ("src/source_context.rs", "source_context"),
         ("src/type_checker.rs", "type_checker"),
         ("src/registration_resolution.rs", "registration_resolution"),
         ("src/cluster_trace.rs", "cluster_trace"),
@@ -812,6 +814,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
         relative,
         path if path == Path::new("src/typed_ast.rs")
             || path == Path::new("src/binding_env.rs")
+            || path == Path::new("src/source_context.rs")
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
             || path == Path::new("src/cluster_trace.rs")
@@ -825,6 +828,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             line.trim(),
             "pub mod typed_ast;"
                 | "pub mod binding_env;"
+                | "pub mod source_context;"
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"
                 | "pub mod cluster_trace;"

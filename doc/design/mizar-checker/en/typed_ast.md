@@ -26,6 +26,8 @@ selection, language semantics, or proof behavior.
 
 - the typed node arena for one resolved source module;
 - source-shaped links back to resolver nodes and checker recovery state;
+- an optional immutable source-item/declaration/`BindingEnv` handoff produced
+  from syntax-free resolver-shell projections;
 - immutable local type context snapshots needed to interpret typed sites;
 - `TypeTable` entries for expressions, formulas, declarations, and binding
   sites that receive checker type information;
@@ -61,6 +63,7 @@ struct TypedAst {
     source_id: SourceId,
     module_id: ModuleId,
     resolved_root: Option<ResolvedNodeId>,
+    source_context: Option<SourceBindingContextHandoff>,
     nodes: TypedNodeArena,
     root: Option<TypedNodeId>,
     contexts: LocalTypeContextTable,
@@ -83,6 +86,13 @@ All ids inside `TypedAst` are local to the typed snapshot. They must be
 deterministic for equivalent `ResolvedAst`, `SymbolEnv`, dependency summaries,
 and checker configuration, but they are not stable public artifact identities
 and are not proof-reuse identities.
+
+Task 248 adds `source_context` as the sole owner of the complete source-item and
+binding-context handoff. It is installed only together with its matching
+`LocalTypeContextTable`; source/module, typed-site, binding, and context links
+are validated transactionally. A recovered-empty producer result is incomplete
+and cannot be installed. When the field is absent, deterministic debug output
+remains byte-identical to the pre-Task-248 format.
 
 ## Node Arena
 

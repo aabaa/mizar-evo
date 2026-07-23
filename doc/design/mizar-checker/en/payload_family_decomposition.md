@@ -275,3 +275,14 @@ are separate joint vertical tasks in which `mizar-test` owns AST extraction,
 checker owns the syntax-free final projection, and Core owns lowering. They
 preserve Gates A1/S1 for exact dependent slices. This ownership note changes
 no checker source, task status, fixture, expectation, or coverage.
+
+## Task 248 Completion
+
+Task 248 is complete for exactly its bounded row. The implemented
+`SourceBindingContextHandoff` preserves source-item/declaration order, resolver
+shell and local-binding provenance, module/declaration context links, and the
+structural local-to-reserve shadow relation through `TypedAst` and
+`ResolvedTypedAst`. Its single active Task-10 fixture has no term-use lookup
+site and produces no type result, RHS/formula/proof payload, fact, or
+obligation. Task 249 is the next dependency-authorized producer; Tasks 269+
+and Steps 6/7 are not promoted.

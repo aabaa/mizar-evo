@@ -438,3 +438,21 @@ checker-stage fixture は不要である。最初の active `type_elaboration` c
 | `source_drift` | `src/binding_env.rs` が存在し、文書化済み `binding_env` module として公開されている。 | task 5 で解決済み。 |
 | `external_dependency_gap` | resolver は引き続き AST 全体の local binding table、use-site scope/ordinal table、reserve payload、captured-free-variable payload、checker-owned test 用 syntax-free empty `ResolvedAst` fixture を公開していない。 | task 5 は module-shell external-gap diagnostic を記録し、利用可能な explicit binding payload を受け取り、direct `mizar-syntax` dependency を追加せず public module-shell signature を type-check する。完全な source extraction と closure replay には、後続 resolver/source-walk integration が不足 payload と fixture を提供する必要がある。 |
 | `deferred` | type normalization、local type fact、registration activation、overload resolution、abbreviation expansion、substitution replay、VC generation、proof acceptance、kernel replay は task 5 の外に残る。 | 後続 checker task と downstream crate が扱う。 |
+
+## Task 248 source-context producer integration
+
+Task 248 は syntax ownership を checker へ移さず、最初の bounded real source walk
+を供給する。`mizar-test` は reserve shell 1件と definition-block shell 1件を
+resolver `DeclarationShellSet` に照合し、opaque shell id、ordered item/binding
+record、range、typed site、`LocalTermScope`、`LocalTermBinding` だけを
+`SourceBindingContextProducer` へ渡す。producer は module context 1件と declaration
+context 1件を構築し、same-spelling reserve/parameter の distinct identity と、visible
+reserve への parameter の structural shadow link を保持する。
+
+complete transaction は `SourceBindingContextHandoff` に保持し、
+`LocalTypeContextTable` とpairにする。unsupported visibility、stale/reordered
+identity/provenance、duplicate/partial row、bindingをclaimするrecovered shellはpublication
+前にfailする。bindingを持たないsupported recovered shellはexplicit empty recovered
+contextとinternal diagnostic 1件を生成するがincompleteのままで、`TypedAst`へ入れない。
+これはexact Task-248 MC-G011/MC-G016 sliceだけをcloseする。term-use lookupと後続
+proof/closure contextはTasks 252/257/258/269/270/272が所有し続ける。

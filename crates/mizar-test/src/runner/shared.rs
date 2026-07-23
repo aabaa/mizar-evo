@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use mizar_frontend::orchestration::{DiagnosticCode, Frontend, FrontendDiagnostic};
 use mizar_frontend::parsing::MizarParserSeam;
 use mizar_frontend::source::{FrontendSourceLoader, SourceUnitRequest};
-use mizar_resolve::declarations::DeclarationShellCollector;
+use mizar_resolve::declarations::{DeclarationShellCollector, DeclarationShellSet};
 use mizar_resolve::env::{NamespacePath, SymbolEnv};
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_resolve::symbols::{
@@ -113,6 +113,7 @@ pub(super) struct FrontendRun {
 #[derive(Debug)]
 pub(super) struct ResolverSymbolCollection {
     pub(super) module: ResolverModuleId,
+    pub(super) shells: DeclarationShellSet,
     pub(super) env: SymbolEnv,
     pub(super) detail_keys: Vec<String>,
 }
@@ -135,6 +136,7 @@ pub(super) fn resolver_symbol_collection(
         .collect();
     ResolverSymbolCollection {
         module,
+        shells,
         env: result.into_env(),
         detail_keys,
     }

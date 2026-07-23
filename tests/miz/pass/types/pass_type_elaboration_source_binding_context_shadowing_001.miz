@@ -1,0 +1,4 @@
+reserve x for set;
+definition
+  let x be set;
+end;

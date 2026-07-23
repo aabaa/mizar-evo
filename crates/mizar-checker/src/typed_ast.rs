@@ -1,5 +1,6 @@
 //! Source-shaped typed AST data tables for checker phase 6.
 
+use crate::source_context::SourceBindingContextHandoff;
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
 use std::{
@@ -79,6 +80,7 @@ pub struct TypedAst {
     source_id: SourceId,
     module_id: ModuleId,
     resolved_root: Option<ResolvedNodeId>,
+    source_context: Option<SourceBindingContextHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -95,6 +97,7 @@ impl TypedAst {
             source_id: parts.source_id,
             module_id: parts.module_id,
             resolved_root: parts.resolved_root,
+            source_context: parts.source_context,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -115,6 +118,10 @@ impl TypedAst {
 
     pub const fn resolved_root(&self) -> Option<ResolvedNodeId> {
         self.resolved_root
+    }
+
+    pub const fn source_context(&self) -> Option<&SourceBindingContextHandoff> {
+        self.source_context.as_ref()
     }
 
     pub const fn nodes(&self) -> &TypedArena {
@@ -156,6 +163,9 @@ impl TypedAst {
         output.push_str("resolved_root: ");
         write_optional_resolved_node_id(&mut output, self.resolved_root);
         output.push('\n');
+        if let Some(source_context) = &self.source_context {
+            output.push_str(&source_context.debug_text());
+        }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
         write_type_entries(&mut output, &self.types);
@@ -172,6 +182,7 @@ pub struct TypedAstParts {
     pub source_id: SourceId,
     pub module_id: ModuleId,
     pub resolved_root: Option<ResolvedNodeId>,
+    pub source_context: Option<SourceBindingContextHandoff>,
     pub nodes: TypedArena,
     pub contexts: LocalTypeContextTable,
     pub types: TypeTable,
@@ -1027,6 +1038,7 @@ type TypeEntryKey = (SiteOrderKey, TypeEntryId);
 pub enum TypedAstError {
     Arena(TypedArenaError),
     PayloadSourceMismatch,
+    InvalidSourceContext,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1134,6 +1146,9 @@ impl fmt::Display for TypedAstError {
         match self {
             Self::Arena(error) => write!(formatter, "{error}"),
             Self::PayloadSourceMismatch => write!(formatter, "typed AST payload source mismatch"),
+            Self::InvalidSourceContext => {
+                formatter.write_str("typed AST source context is inconsistent")
+            }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
                 "typed node {} references missing context {}",
@@ -1330,11 +1345,125 @@ fn validate_typed_ast(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     validate_arena_payloads(parts.source_id, &parts.nodes)?;
     validate_node_links(parts)?;
     validate_contexts(parts)?;
+    validate_source_context(parts)?;
     validate_types(parts)?;
     validate_facts(parts)?;
     validate_coercions(parts)?;
     validate_initial_obligations(parts)?;
     validate_diagnostics(parts)?;
+    Ok(())
+}
+
+fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
+    let Some(handoff) = &parts.source_context else {
+        return Ok(());
+    };
+    if handoff.source_id() != parts.source_id
+        || handoff.module_id() != &parts.module_id
+        || handoff.binding_env().source_id() != parts.source_id
+        || handoff.binding_env().module_id() != &parts.module_id
+        || handoff.local_contexts() != &parts.contexts
+        || handoff.context_links().len() != parts.contexts.len()
+    {
+        return Err(TypedAstError::InvalidSourceContext);
+    }
+    let module_context = parts
+        .contexts
+        .get(LocalTypeContextId::new(0))
+        .ok_or(TypedAstError::InvalidSourceContext)?;
+    let root = parts
+        .nodes
+        .root()
+        .ok_or(TypedAstError::InvalidSourceContext)?;
+    let root_node = parts
+        .nodes
+        .node(root)
+        .ok_or(TypedAstError::InvalidSourceContext)?;
+    if module_context.owner != TypedSiteRef::Node(root)
+        || root_node.links.context != Some(LocalTypeContextId::new(0))
+    {
+        return Err(TypedAstError::InvalidSourceContext);
+    }
+    for (_, link) in handoff.context_links().iter() {
+        if handoff
+            .binding_env()
+            .contexts()
+            .get(link.binding_context)
+            .is_none()
+            || parts.contexts.get(link.local_context).is_none()
+        {
+            return Err(TypedAstError::InvalidSourceContext);
+        }
+        match link.item {
+            Some(item_id) => {
+                let Some(item) = handoff.items().get(item_id) else {
+                    return Err(TypedAstError::InvalidSourceContext);
+                };
+                if item.binding_context != link.binding_context
+                    || item.local_context != link.local_context
+                {
+                    return Err(TypedAstError::InvalidSourceContext);
+                }
+            }
+            None => {
+                if link.binding_context.index() != 0 || link.local_context.index() != 0 {
+                    return Err(TypedAstError::InvalidSourceContext);
+                }
+            }
+        }
+    }
+    for (_, item) in handoff.items().iter() {
+        validate_source_context_site(parts, &item.site, item.source_range, item.local_context)?;
+        if handoff
+            .binding_env()
+            .contexts()
+            .get(item.binding_context)
+            .is_none()
+            || parts.contexts.get(item.local_context).is_none()
+        {
+            return Err(TypedAstError::InvalidSourceContext);
+        }
+    }
+    for (_, declaration) in handoff.declarations().iter() {
+        validate_source_context_site(
+            parts,
+            &declaration.site,
+            declaration.declaration_range,
+            declaration.local_context,
+        )?;
+        if handoff.items().get(declaration.item).is_none()
+            || handoff
+                .binding_env()
+                .bindings()
+                .get(declaration.binding)
+                .is_none()
+            || handoff
+                .binding_env()
+                .contexts()
+                .get(declaration.binding_context)
+                .is_none()
+            || parts.contexts.get(declaration.local_context).is_none()
+        {
+            return Err(TypedAstError::InvalidSourceContext);
+        }
+    }
+    Ok(())
+}
+
+fn validate_source_context_site(
+    parts: &TypedAstParts,
+    site: &TypedSiteRef,
+    source_range: SourceRange,
+    context: LocalTypeContextId,
+) -> Result<(), TypedAstError> {
+    validate_site(parts, site).map_err(|()| TypedAstError::InvalidSourceContext)?;
+    let node = parts
+        .nodes
+        .node(site.node())
+        .ok_or(TypedAstError::InvalidSourceContext)?;
+    if node.anchor != SourceAnchor::Range(source_range) || node.links.context != Some(context) {
+        return Err(TypedAstError::InvalidSourceContext);
+    }
     Ok(())
 }
 
@@ -2374,6 +2503,29 @@ mod tests {
         let second = typed_ast_fixture();
 
         assert_eq!(first.debug_text(), second.debug_text());
+        assert_eq!(
+            first.debug_text(),
+            r#"typed-ast-debug-v1
+module: pkg::main
+root: node#1
+resolved_root: <none>
+nodes:
+  node#0 kind="TermReference" children=[] resolved=<none> anchor=0..1 typing=successful recovery=normal links={context=<none> type=<none> facts=[] coercions=[] obligations=[] diagnostics=[]}
+  node#1 kind="CompilationUnit" children=[node#0] resolved=<none> anchor=0..1 typing=successful recovery=normal links={context=<none> type=<none> facts=[] coercions=[] obligations=[] diagnostics=[]}
+contexts:
+  context#0 owner=node#0 parent=<none> layer=module recovery=normal bindings=[symbol={fqn="pkg::main::x/0" module=pkg::main local="x/0"}] introduced=[] visible=[fact#0]
+types:
+  type#0 owner=node#0 status=known actual=normalized_type#0 expected=<none> provenance=inferred("term-reference")
+facts:
+  fact#0 subject=node#0 predicate="set" polarity=positive status=known provenance=inferred("fixture")
+coercions:
+  coercion#0 site=node#0 kind=widening status=candidate from=normalized_type#0 to=normalized_type#1 facts=[fact#0] obligation=<none> provenance=widening_rule("widen")
+initial_obligations:
+  obligation#0 kind=sethood owner=node#0 range=0..1 assumptions=[fact#0] goal="term is set" provenance="sethood" status=pending
+diagnostics:
+  diagnostic#0 owner=node#0 range=0..1 class=recovery severity=note message_key="checker.recovery.note" recovery=normal
+"#
+        );
         assert!(first.debug_text().starts_with("typed-ast-debug-v1\n"));
         assert!(first.debug_text().contains("root: node#1\n"));
         assert!(first.debug_text().contains("kind=\"CompilationUnit\""));
@@ -3406,6 +3558,7 @@ mod tests {
             source_id: source,
             module_id: module_id(),
             resolved_root: None,
+            source_context: None,
             nodes,
             contexts,
             types,
@@ -3445,6 +3598,7 @@ mod tests {
             source_id: source,
             module_id: module_id(),
             resolved_root: None,
+            source_context: None,
             nodes,
             contexts,
             types: TypeTable::new(),

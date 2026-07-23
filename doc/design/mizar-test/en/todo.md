@@ -1528,3 +1528,16 @@ This completion grants parser/syntax-only credit. Property payload extraction,
 semantic overlap/coherence handling, proof acceptance/discharge, and inactive
 semantic Task 39 remain unchanged. No checker task or Steps 6/7 authority is
 promoted by this increment.
+
+## Checker Task 248 / Task-10 Consumer Completion
+
+- [x] Add the exact active reserve-plus-definition-parameter shadowing fixture,
+  its single-reference sidecar, and the bounded covered trace row.
+- [x] Match the real resolver shells and source walk, pass only syntax-free
+  item/declaration/context payloads into `mizar-checker`, and preserve the
+  complete handoff from `TypedAst` to `ResolvedTypedAst`.
+- [x] Assert distinct same-spelling binding identities, structural shadowing,
+  deterministic debug output, and zero later semantic payloads; keep term-use
+  selection and Tasks 249+/269+ outside this increment.
+- [x] Update chapter-level coverage because this task changes exact executable
+  coverage; keep the broad payload-extraction row and Steps 6/7 unchanged.

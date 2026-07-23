@@ -292,7 +292,8 @@ use type_elaboration::{
     extract_source_two_edge_local_object_mode_reserved_variable_membership,
     extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
     extract_source_two_edge_local_object_mode_two_hop_asserted_head, resolve_visible_attribute,
-    resolve_visible_type_head, source_builtin_type_assertion_formula_output,
+    resolve_visible_type_head, source_binding_context_output,
+    source_binding_context_token_shape_is_exact, source_builtin_type_assertion_formula_output,
     source_chained_local_mode_asserted_head_output,
     source_chained_local_mode_radix_asserted_head_output,
     source_chained_local_mode_reserved_variable_equality_output,
@@ -432,7 +433,8 @@ use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
-    is_active_type_elaboration, source_builtin_binary_term_formula_detail_keys,
+    is_active_type_elaboration, source_binding_context_detail_keys,
+    source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
@@ -1478,6 +1480,14 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    if let Some(keys) = source_binding_context_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &symbols,
+    ) {
+        return keys;
+    }
     source_type_elaboration_detail_keys_with_snapshot(
         &ast,
         resolver.module,

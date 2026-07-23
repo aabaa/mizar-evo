@@ -1,6 +1,7 @@
 //! Binding environment data tables for checker phase 6 context construction.
 
 use mizar_resolve::{
+    declarations::DeclarationShellId,
     env::{ResolverShellId, SymbolEnv},
     names::{LocalTermBinding, LocalTermScope},
     resolved_ast::{ModuleId, NameResolution, ResolvedAst, SymbolId},
@@ -313,6 +314,7 @@ pub struct BindingContextDraft {
 #[non_exhaustive]
 pub enum BindingContextOwner {
     Module,
+    DeclarationShell(DeclarationShellId),
     Generated(String),
 }
 
@@ -1402,6 +1404,9 @@ fn write_module_id(output: &mut impl fmt::Write, module: &ModuleId) {
 fn write_context_owner(output: &mut String, owner: &BindingContextOwner) {
     match owner {
         BindingContextOwner::Module => output.push_str("module"),
+        BindingContextOwner::DeclarationShell(shell) => {
+            let _ = write!(output, "declaration-shell({})", shell.index());
+        }
         BindingContextOwner::Generated(key) => {
             output.push_str("generated(");
             write_quoted(output, key);

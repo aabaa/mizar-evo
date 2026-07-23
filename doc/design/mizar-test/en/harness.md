@@ -191,30 +191,31 @@ code `E-TYPE-ELABORATION-SNAPSHOT` at
 `type_elaboration.snapshot.<case-id>`. The ordinary detail-key result remains
 unchanged, and no other type-elaboration case enters this path.
 
-## Runner Source Ownership (VC Task 31 And Resolver R-031 Updates)
+## Runner Source Ownership (Checker Task 248 Update)
 
-The current production runner layout contains exactly 18 paths and 20,088 lines.
-Task 31 adds one bounded proof-verification leaf while preserving the
+The current production runner layout contains exactly 19 paths and 20,651 lines.
+Checker Task 248 adds one bounded source-context leaf while preserving the
 behavior-preserving Tasks 249-263 split and keeping `runner.rs` limited to
 facade/top-level orchestration.
 
 | Production path | Lines | Ownership |
 |---|---:|---|
-| `src/runner.rs` | 2,372 | Public reports/statuses including snapshot failure, corpus orchestration, public active iterators, proof-verification orchestration, parse/declaration admission, type-case execution, verify-only baseline comparison, and top-level detail dispatch. |
-| `src/runner/shared.rs` | 263 | Cross-phase source/frontend/resolver staging and common diagnostic support, including exact internal resolver diagnostic-key projection. |
+| `src/runner.rs` | 2,382 | Public reports/statuses including snapshot failure, corpus orchestration, public active iterators, proof-verification orchestration, parse/declaration admission, type-case execution, verify-only baseline comparison, and top-level detail dispatch. |
+| `src/runner/shared.rs` | 265 | Cross-phase source/frontend/resolver staging and common diagnostic support, including exact internal resolver diagnostic-key projection and resolver shell retention. |
 | `src/runner/parse_only.rs` | 119 | Parse-only case execution and failure projection. |
 | `src/runner/declaration_symbol.rs` | 231 | Declaration-symbol execution, observation, payload, and failure projection. |
 | `src/runner/import_fixtures.rs` | 349 | Fixture lexical summaries and import-summary adapters. |
 | `src/runner/proof_verification.rs` | 170 | Exact Task-180 admission, source-to-VC execution, deterministic rerun, VcIr snapshot comparison, and failure diagnostics. |
-| `src/runner/type_elaboration.rs` | 579 | Private type-elaboration facade over exactly eleven private leaves. |
+| `src/runner/type_elaboration.rs` | 585 | Private type-elaboration facade over exactly twelve private leaves. |
 | `src/runner/type_elaboration/admission.rs` | 60 | Active type-case admission and tag validation. |
 | `src/runner/type_elaboration/binary_routes.rs` | 3,791 | Reserved-variable binary route configs, extraction, output, and details. |
-| `src/runner/type_elaboration/checker_handoff.rs` | 1,259 | Checker-owned binding/declaration plus exact Task-180 statement/proof/terminal handoff assembly, validation, and test-only real-bundle near-miss construction. |
+| `src/runner/type_elaboration/checker_handoff.rs` | 1,295 | Checker-owned binding/declaration plus exact Task-180 statement/proof/terminal handoff assembly, validation, Task-248 empty-later-payload assembly, and test-only real-bundle near-miss construction. |
 | `src/runner/type_elaboration/long_chain_config.rs` | 82 | Shared exact long-chain definition tables. |
 | `src/runner/type_elaboration/output.rs` | 1,571 | Checker outputs, validation, result/detail projection, diagnostics, and reusable exact Task-180 CoreIr construction plus deterministic Core rerun. |
 | `src/runner/type_elaboration/parenthesized_routes.rs` | 745 | Parenthesized reserved-variable route ownership. |
 | `src/runner/type_elaboration/result.rs` | 38 | Expected-key plus stable detail/snapshot failure projection. |
 | `src/runner/type_elaboration/source_ast.rs` | 147 | Common exact AST and import projection. |
+| `src/runner/type_elaboration/source_context.rs` | 509 | Exact Task-248 resolver-shell/source-context projection, route isolation, checker producer invocation, and immutable handoff assembly. |
 | `src/runner/type_elaboration/source_formula.rs` | 2,651 | Common formula/source payload extraction, including exact theorem/formula sites/ranges and explicit Task-268 theorem intent. |
 | `src/runner/type_elaboration/source_reserve.rs` | 1,474 | Reserve declaration, type, symbol, and mode-expansion extraction. |
 | `src/runner/type_elaboration/type_assertion_routes.rs` | 4,187 | Reserved-variable type-assertion and asserted-head route ownership. |
@@ -223,13 +224,13 @@ For hashing, prefix every displayed path with `crates/mizar-test/`. From the
 repository root, the exact input is the sorted tracked path list selected from
 `crates/mizar-test/src/runner.rs` and `crates/mizar-test/src/runner`, excluding
 `tests.rs` and every path below `tests/`. Its newline-delimited path-list hash is
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`.
+`e723ef5a2a0648afec15052b7733265aadd93ffbb45d83e7af5c2fb9e3178b61`.
 Passing those same repository-relative paths in order to `sha256sum` and
 hashing the corresponding ordered output lines yields
-`a7745e222032a5b6dfeda5ec7a90888c569270134d316166914c959a1684c14c`.
+`24b7d3963a0a7e0e7085dec24a08c9618cfe5ad1d8d26cd2da981b905017c182`.
 Production `runner.rs` owns no route config, source extractor, output builder,
 or detail-wrapper definition; its route aliases remain test-only. The private
-type-elaboration facade's eleven `mod` declarations, the 18-path/hash pair, the documented public
+type-elaboration facade's twelve `mod` declarations, the 19-path/hash pair, the documented public
 API, and the exact discovered-test/CLI oracles are the ownership guards. Test
 sources remain under `src/runner/tests.rs`, `src/runner/tests/`, and existing
 integration-test files so fully qualified names and nesting do not change.
@@ -2642,3 +2643,20 @@ acceptance or discharge. The inactive semantic Task-39 case remains unchanged.
 The active totals are plan 407/369, parse-only 99/99, pass/fail 222/185, and
 warnings/errors 23/0; declaration-symbol, type-elaboration, and
 proof-verification admissions remain 5/188/1.
+
+## Checker Task 248 Source/Binding-Context Increment
+
+The type-elaboration runner admits one exact reserve-plus-definition-parameter
+pass as case 189. It keeps raw `SurfaceAst` inspection in `mizar-test`, matches
+both items against the real resolver `DeclarationShellSet`, and passes only
+syntax-free shell, order, range, local-scope, declaration-site, and
+written-type-site projections to `mizar-checker`. The runner then verifies the
+same immutable `SourceBindingContextHandoff` in `TypedAst` and
+`ResolvedTypedAst`, including distinct same-spelling reserve/local identities
+and the structural shadow link.
+
+This route emits no type result, expression, fact, obligation, formula,
+statement, proof, Core, CFG, or VC payload. Invalid matched payloads fail with
+one task-local internal detail key; they do not allocate a public diagnostic.
+The exact requirement is a new bounded covered pass row, while the broad
+payload-extraction row remains unchanged.

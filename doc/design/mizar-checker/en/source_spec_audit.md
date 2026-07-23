@@ -22,6 +22,7 @@ Module specifications audited:
 
 - [typed_ast.md](./typed_ast.md)
 - [binding_env.md](./binding_env.md)
+- [source_context.md](./source_context.md)
 - [type_checker.md](./type_checker.md)
 - [registration_resolution.md](./registration_resolution.md)
 - [cluster_trace.md](./cluster_trace.md)
@@ -140,6 +141,7 @@ rejection.
 - `overload_resolution`
 - `registration_resolution`
 - `resolved_typed_ast`
+- `source_context`
 - `type_checker`
 - `typed_ast`
 
@@ -216,6 +218,38 @@ Correspondence:
 | Lookup is deterministic, visibility-scoped, and forward-reference aware. | `BindingLookupSite`, `BindingLookupResult`, binding lookup methods. | `lookup_uses_deepest_scope_shadowing_and_blocks_forward_reference`, `lookup_handles_ambiguity_missing_payload_and_visible_boundaries`, `lookup_tie_breaks_same_scope_by_later_declaration_range`, `lookup_falls_back_to_resolver_resolution_without_global_lookup`. | Implemented for explicit payloads. |
 | Reserved variables, binder identity, closure metadata, diagnostics, and rendering are stable. | `BindingKind`, `BinderIdentity`, `CapturedFreeVariables`, diagnostic table/classes. | `reserved_variables_are_visible_and_local_binders_shadow_them`, `binder_identity_and_closure_metadata_are_stable`, `diagnostics_cover_duplicate_unsupported_and_external_gap_states`, `canonical_iteration_and_name_resolution_rendering_are_deterministic`. | Implemented; full closure replay remains deferred. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
+
+### `source_context`
+
+Generated public newtypes:
+
+- `SourceItemId`, `SourceDeclarationId`
+
+Literal top-level public items:
+
+- `SourceBindingContextInput`, `SourceItemInput`, `SourceItemRole`,
+  `SourceItemVisibility`, `SourceItemRecovery`, `SourceBindingContextOwner`,
+  `SourceBindingSiteInput`, `SourceBindingSiteRole`,
+  `SourceBindingContextBuild`, `SourceBindingContextProjection`,
+  `SourceBindingContextIncomplete`, `SourceBindingContextHandoff`,
+  `SourceItemTable`, `SourceItem`, `SourceDeclarationTable`,
+  `SourceDeclaration`, `SourceContextLinkTable`, `SourceContextLink`,
+  `SourceBindingContextProducer`, `SourceContextError`
+
+Correspondence:
+
+| Spec promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Syntax-free source-item and binding-site projections retain real opaque resolver shells and source order. | `SourceBindingContextInput`, `SourceItemInput`, `SourceBindingSiteInput`. | Real Task 248 fixture plus route-isolation and corruption matrix assertions. | Implemented for the exact Task 248 transaction. |
+| Complete construction publishes one immutable checker-owned binding/context handoff. | `SourceBindingContextProducer`, `SourceBindingContextHandoff`, source/declaration/context-link tables. | Projection equality, lookup, shadow-link, and `TypedAst`/`ResolvedTypedAst` preservation assertions. | Implemented atomically. |
+| Recovered-empty input is incomplete; corrupt, partial, and cross-linked input is rejected without publication. | `SourceBindingContextBuild`, `SourceBindingContextIncomplete`, `SourceContextError`; `TypedAst` exact handoff validation. | Real-shell corruption/recovery/atomicity matrix. | Implemented for the frozen branch. |
+| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: broader canonical item/binder families remain deferred
+`test_gap`/`source_drift` under the existing MC-G011/MC-G016 follow-up owners;
+only same-identifier re-reservation replacement/duplicate semantics remain a
+nonblocking `spec_gap`. Source term use-site lookup and all Tasks 249+/269+
+payloads also remain outside this module's Task 248 authority.
 
 ### `type_checker`
 
@@ -2513,3 +2547,16 @@ nonblocking `spec_gap`; no new payload-family `spec_gap`,
 `source_undocumented_behavior`, current `boundary_violation`, or
 `repo_metadata_conflict` was found. Existing trace status, tests, source,
 fixtures, expectations, and coverage credit remain unchanged.
+
+## Task 248 Current-State Addendum
+
+The first bounded MC-G011/MC-G016 producer/consumer slice is now executable.
+`SourceBindingContextProducer` consumes only syntax-free resolver-shell and
+binding projections and transactionally publishes source-item, declaration,
+`BindingEnv`, and local-context links through `TypedAst` and
+`ResolvedTypedAst`. The exact active reserve-plus-definition-parameter fixture
+proves source order, distinct same-spelling identities, and structural
+shadowing. This repairs the Task-248 `test_gap` and two `source_drift` seams
+only for that slice. Term-use selection, composite binders, statement/proof
+contexts, closure capture, and proof-local declarations remain with Tasks
+252/257/258/269/270/272, so MC-G011 and MC-G016 remain partial globally.

@@ -4372,7 +4372,12 @@ exit criteria are canonical in
 [payload_family_decomposition.md](./payload_family_decomposition.md). Each
 unchecked row below is one future nonempty logical task and one commit.
 
-- [ ] **Task 248:** source item/declaration site and binding-context producer.
+- [x] **Task 248:** source item/declaration site and binding-context producer.
+  The syntax-free producer, immutable `TypedAst`/`ResolvedTypedAst` handoff,
+  exact reserve/definition-parameter shadowing consumer, recovery boundary,
+  corruption matrix, and bounded trace row are complete. No term-use
+  selection, type result, RHS/formula/proof semantics, or accepted fact is
+  credited.
 - [ ] **Task 249:** type head/application/argument producer.
 - [ ] **Task 250:** attribute-chain/qualification/provenance producer.
 - [ ] **Task 251:** evidence-query request and dependency-fact-reference producer;

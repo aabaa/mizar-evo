@@ -16,6 +16,7 @@ use crate::{
         TemplateExpansionOutput, TemplateExpansionStatus, TemplateInstantiationKey,
         TemplateSubstitution,
     },
+    source_context::SourceBindingContextHandoff,
     type_checker::{
         CheckedFormulaId, CheckedFormulaTable, CheckedStatementOwner, ExportStatus, FormulaKind,
         FormulaStatus, TermFormulaInferenceOutput, Visibility,
@@ -98,6 +99,7 @@ string_key!(SourceNodeRole);
 pub struct ResolvedTypedAst {
     source_id: SourceId,
     module_id: ModuleId,
+    source_context: Option<SourceBindingContextHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -128,6 +130,10 @@ impl ResolvedTypedAst {
 
     pub const fn module_id(&self) -> &ModuleId {
         &self.module_id
+    }
+
+    pub const fn source_context(&self) -> Option<&SourceBindingContextHandoff> {
+        self.source_context.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -206,6 +212,9 @@ impl ResolvedTypedAst {
         output.push_str("root: ");
         write_optional_resolved_node_id(&mut output, self.nodes.root());
         output.push('\n');
+        if let Some(source_context) = &self.source_context {
+            output.push_str(&source_context.debug_text());
+        }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
         write_candidate_summaries(
@@ -1431,6 +1440,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         Ok(ResolvedTypedAst {
             source_id,
             module_id,
+            source_context: self.inputs.typed_ast.source_context().cloned(),
             nodes,
             expr_metadata,
             collection_candidates,
@@ -4968,6 +4978,7 @@ mod tests {
             source_id: source,
             module_id: module,
             resolved_root: None,
+            source_context: None,
             nodes: builder
                 .finish(Some(TypedNodeId::new(2)))
                 .expect("statement typed arena"),
@@ -5107,6 +5118,7 @@ mod tests {
             source_id: fixture.source,
             module_id: fixture.module.clone(),
             resolved_root: None,
+            source_context: None,
             nodes: builder
                 .finish(Some(TypedNodeId::new(2)))
                 .expect("corrupt statement arena"),
@@ -6585,6 +6597,7 @@ mod tests {
             source_id: source,
             module_id: module(),
             resolved_root: None,
+            source_context: None,
             nodes: arena,
             contexts,
             types,

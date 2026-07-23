@@ -54,6 +54,8 @@ acceptance、source-to-checker extraction は実装しない。
 task 28 assembly は explicit checker-owned output を消費する。
 
 - `TypedAst` node、status、local context、typed-site reference;
+- `TypedAst` が既に所有・validate した optional complete
+  source/binding-context handoff;
 - phase 6 の final `TypeFactTable` / type-fact query output;
 - existing provenance id を持つ accepted cluster closure fact row;
 - site owner、source range、filter 前と viable の candidate table、rejection / blocking reason、
@@ -98,6 +100,7 @@ public data layer は assembled output 内で local な dense id を保つべき
 struct ResolvedTypedAst {
     source_id: SourceId,
     module_id: ModuleId,
+    source_context: Option<SourceBindingContextHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -114,6 +117,12 @@ struct ResolvedTypedAst {
     statement_semantics: StatementSemanticTable,
 }
 ```
+
+Task 248 は差し替え可能な別 source-context assembler input を許さない。assembly
+は supplied `TypedAst` からだけ `source_context` を clone するため、final layer は
+checker-owned source-item、declaration、binding、local-context link から乖離できない。
+absent 時は legacy debug byte を維持し、present 時は deterministic nonempty
+handoff を render する。
 
 ### Resolved Node
 
