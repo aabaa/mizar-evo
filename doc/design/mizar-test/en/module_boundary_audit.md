@@ -1,5 +1,34 @@
 # Module-Boundary Audit: mizar-test Runner
 
+## Checker Task 252 Source-Term Current-State Addendum
+
+Checker Task 252 adds one cohesive private `source_term` consumer/extractor
+leaf. Raw `SurfaceAst` traversal remains private; the checker receives only
+syntax-free term/reference/request input. `runner.rs` remains facade/top-level
+orchestration only at 2,400 lines. The 605-line type-elaboration facade
+dispatches to sixteen private leaves, and the new owner is 620 lines.
+
+The production manifest is 23 paths / 24,120 lines. Its sorted path hash is
+`562224fc62e93a256f5d3891e3a466a45ec23c24055e3a9f3f83848a0672a16b`,
+and its ordered content-manifest hash is
+`8a4b76e37a8a6921ed89e98372ccb037cd64ed583ac0bbe26466924ef0c4b028`.
+The only new production path is the private source-term leaf.
+
+The exact increment produces plan 411/375, type-elaboration coverage 241/229,
+pass/fail 224/187, and parse/declaration/type/proof admissions 101/5/190/1
+with warnings/errors 23/0. The five plan/parse/declaration/type/proof CLI
+stdout hashes are
+`abb786efba14d64f1e64086be3b2092691ed12555fcfac8a5875dd6f41b84924`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Library tests become 291; the raw/normalized sorted-list hashes are
+`d46edefebc54a2f2f170cbfce8143ed036fa7ce339ebb3a746d89b55293931e5` /
+`f7b5babbf33e1e3e3afe4c49018744a4a0fe42968fd2e5edc411eb7bc49fc0a6`.
+Task 253 and later dependency-paced producers remain open; Tasks 260/264/269
+and Steps 6/7 remain unpromoted.
+
 ## Checker Task 251 Source-Evidence Current-State Addendum
 
 Checker Task 251 adds one cohesive private `source_evidence` consumer leaf.

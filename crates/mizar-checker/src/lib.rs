@@ -28,6 +28,7 @@ pub mod resolved_typed_ast;
 pub mod source_attribute;
 pub mod source_context;
 pub mod source_evidence;
+pub mod source_term;
 pub mod source_type;
 pub mod type_checker;
 pub mod typed_ast;

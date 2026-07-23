@@ -4184,11 +4184,11 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   accepted evidenceと扱わずrequested/missing/rejected/suppliedを区別する。
   checker testはexact association/corruption/cardinality/atomicityをcoverし、
   evidence resultを捏造しない。
-- [ ] **Task 252:** primary term producer。paired crate planはpublic 3-table
-  syntax-free contract、exact 3-route 7/4/2 real consumer oracle、
+- [x] **Task 252:** primary term producer。paired crate-plan contractをpublic
+  3-table syntax-free contract、exact 3-route 7/4/2 real consumer oracle、
   transparent-parenthesis rule、numeric-request-only boundary、synthetic
-  constant/`it` dependency coverage、final ownership、test/trace impact、exit
-  criteriaをfreezeした。別logical task 1件として実装し、real `it` ownerと
+  constant/`it` dependency coverage、final ownership、test、bounded covered
+  trace rowまで実装した。real `it` ownerと
   local-constant binding productionはTasks 260/264/269に残す。post-freeze
   contract correctionは各reference ordinalを先行して完了したbinding rowから
   deriveし、reachableな`Ambiguous` rejectionのためduplicate-priority binding

@@ -732,3 +732,11 @@ now the next dependency-authorized consumer; Steps 6/7 remain deferred.
 `source_evidence()` getter. Final assembly does not rebuild, reinterpret, or
 accept evidence, and the legacy projection remains unchanged when the handoff
 is absent.
+
+## Task 252 Final-Handoff Addendum
+
+`ResolvedTypedAst` clone-preserves the optional checker-owned
+`SourcePrimaryTermHandoff` installed on `TypedAst` and exposes a borrowed
+`source_term()` getter. Final assembly does not rebuild or reinterpret source
+terms, choose numeric types, or create semantic results, and the legacy
+projection remains unchanged when the handoff is absent.

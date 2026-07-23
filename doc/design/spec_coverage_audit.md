@@ -2759,15 +2759,17 @@ current-result ownership and type. References authenticate the exact lexical
 Task-252 kind set are eligible until Tasks 253-255 freeze cross-family edges.
 This is a dependency boundary, not executable coverage credit.
 
-This documentation-only prerequisite changes no requirement row/status/test
-list, source, fixture, expectation, count, or hash. It closes the selected
-Task-252 `design_drift`; the executable absence remains `test_gap`, and the
-producer/final-handoff absence remains `source_drift`. The current baseline
-therefore remains plan 411/374, type 240/228, pass/fail 224/187, active
+At the prerequisite commit, this documentation-only task changed no
+requirement row/status/test list, source, fixture, expectation, count, or hash.
+It closed the selected Task-252 `design_drift`; executable absence then
+remained `test_gap`, and producer/final-handoff absence remained
+`source_drift`. The baseline therefore remained plan 411/374, type 240/228,
+pass/fail 224/187, active
 parse/declaration/type/proof 101/5/190/1, and warnings/errors 23/0. Only the
-later implementation may add
+later implementation could add
 `spec.en.checker.type_elaboration.source_primary_term_payload`, raising the
-no-new-case oracle to 411/375 and 241/229.
+no-new-case oracle to 411/375 and 241/229. The implementation addendum below
+supersedes those two absence statuses.
 
 MC-G017/MC-G020 remain partial. Tasks 253-260/264/269, semantic numeric input,
 formula/definition/local-binding results, accepted facts/declarations/proofs,
@@ -2775,3 +2777,34 @@ downstream IR, Steps 6/7, and global Step-5 completion receive no credit. No
 blocking `spec_gap`, `source_undocumented_behavior`,
 `test_expectation_drift`, `boundary_violation`, or
 `repo_metadata_conflict` was found.
+
+## Step 5 Checker Task 252 Implementation Addendum
+
+Task 252 implements the corrected frozen primary-term source transport under
+the same Chapters 04 and 13 authority. The public syntax-free checker handoff
+and private Task-10 consumer publish exactly seven term rows, four
+binding-reference rows, and two unresolved numeric-type requests across the
+three existing numeral-equality, reserved-variable-equality, and
+parenthesized-reserved-variable-equality cases. Synthetic constant, `it`,
+nested-parenthesis, and mixed-family probes plus checker corruption coverage
+close the bounded executable `test_gap` and producer/final-handoff
+`source_drift`.
+
+The new covered requirement
+`spec.en.checker.type_elaboration.source_primary_term_payload` maps only to
+those three existing sidecars with `pass_and_fail` coverage. Plan coverage
+becomes 411/375 and type-elaboration coverage 241/229; case count, pass/fail
+224/187, active parse/declaration/type/proof 101/5/190/1, warnings/errors 23/0,
+public diagnostics, and existing expectation outcomes/details remain
+unchanged. No `.miz` source or `doc/spec` chapter changes. This audit update is
+required because the task changes executable test and traceability coverage.
+
+MC-G017 and MC-G020 remain partial: Task 252 transports source shape,
+authenticated binding references, and missing numeric-type requests but
+grants no semantic term, numeric result, formula, definition-result type,
+fact, or acceptance. Applications and other term families, real
+current-result/local-constant owners, accepted facts/declarations/proofs,
+downstream IR, Tasks 253+, 260/264/269, Steps 6/7, and global Step-5 completion
+remain with their explicit owners. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` was found.

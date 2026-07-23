@@ -1,5 +1,15 @@
 # mizar-test Bilingual Documentation Sync Audit
 
+## Checker Task 252 / Source-Term Pair Recheck
+
+The paired plan, TODO, harness, module-boundary, and checker consumer documents
+record the same exact three routes, 7/4/2 aggregate, synthetic constant/`it`/
+nested/mixed-family probes, corrected binding-event ordinal rule, outcome
+preservation, plan 411/375, type 241/229, unchanged admissions, 291 library
+tests, and 23-path/24,120-line production manifest with path/content hashes
+`562224fc...` / `8a4b76e3...`. Tasks 253+/260/264/269 and Steps 6/7 remain
+unpromoted in both languages. No bilingual drift remains in Task 252.
+
 ## Checker Task 251 / Source-Evidence Pair Recheck
 
 The paired plan, TODO, harness, module-boundary, and checker consumer documents

@@ -25,6 +25,7 @@ Module specifications audited:
 - [source_context.md](./source_context.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
+- [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
 - [registration_resolution.md](./registration_resolution.md)
@@ -148,6 +149,7 @@ rejection.
 - `source_context`
 - `source_attribute`
 - `source_evidence`
+- `source_term`
 - `source_type`
 - `type_checker`
 - `typed_ast`
@@ -363,6 +365,41 @@ interpret evidence, create or accept facts, evaluate gates, select
 inheritance/coercion, publish accepted registrations/artifacts, or create
 downstream IR. Those behaviors remain with Tasks 252+ and their explicit
 owners.
+
+### `source_term`
+
+Generated public newtypes:
+
+- `SourcePrimaryTermId`, `SourcePrimaryTermReferenceId`,
+  `SourceNumericTypeRequestId`
+
+Literal top-level public items:
+
+- `SourcePrimaryTermHandoffInput`, `SourcePrimaryTermInput`,
+  `SourcePrimaryTermReferenceInput`, `SourceNumericTypeRequestInput`,
+  `SourcePrimaryTermKind`, `SourcePrimaryTermRole`,
+  `SourcePrimaryTermReferenceRole`, `SourcePrimaryTermRecovery`,
+  `SourcePrimaryTermHandoff`, `SourcePrimaryTermTable`, `SourcePrimaryTerm`,
+  `SourcePrimaryTermReferenceTable`, `SourcePrimaryTermReference`,
+  `SourceNumericTypeRequestTable`, `SourceNumericTypeRequest`,
+  `SourcePrimaryTermError`, `SourcePrimaryTermProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| A syntax-free three-table transaction retains primary-term occurrences, authenticated binding references, and unresolved numeric-type requests without creating semantic results. | `SourcePrimaryTermHandoffInput` and the immutable term/reference/request tables in `src/source_term.rs`. | Exact three-route 7/4/2 runner oracle plus every-kind checker tests. | Implemented for Task 252. |
+| Typed site/range/kind/recovery, canonical lexer-identifier vocabulary and spelling, context, dense pre-order, parent closure, reference/request cardinality, and numeric association fail closed. | `SourcePrimaryTermProducer::build` validates the complete transaction against `TypedArena` and `BindingEnv` and reuses `mizar_lexer::is_identifier` without importing raw syntax. | Site/range/kind/recovery/context, identifier shape/reserved-word rejection, graph, cardinality, request, and corruption tests. | Implemented transactionally without sorting or repair. |
+| Scope and binding-event ordinal are producer-derived, and the exact `BindingEnv::lookup` local winner is required. | Reference construction clones context scope, counts preceding completed binding rows, preserves exact duplicate-priority groups, and rejects every non-local result. | Shadow-winner, forward, ambiguous, missing-scope, unresolved, wrong-winner, and ordinal tests. | Implemented with `Resolver` structurally unreachable. |
+| `TypedAst` owns the immutable handoff and `ResolvedTypedAst` only clone-preserves it. | Optional `SourcePrimaryTermHandoff` field, validated installer, and borrowed getters. | Production-runner ownership, replacement rejection, clone equality, and deterministic replay assertions. | Implemented; semantic typed/fact/downstream tables remain unchanged. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-252 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: Task 252 transports only the five frozen primary-term source
+kinds and numeric requests. Applications and other term families, cross-family
+parent edges, numeric results, real current-definition-result ownership, real
+local-constant binding production, formula graphs, accepted facts/
+declarations/proofs, and downstream IR remain with Tasks 253+, 260, 264, 269,
+and their explicit owners.
 
 ### `type_checker`
 
@@ -2823,10 +2860,31 @@ retained until `BindingEnv::lookup` rejects it as `Ambiguous`. Because
 structurally unreachable on this producer path; all reachable non-local
 results remain rejected.
 
-This correction changes no specification, `.miz`, expectation, trace
+At the correction commit, this change affected no specification, `.miz`, expectation, trace
 row/status, owner, deferred boundary, source, test, count, hash, or coverage
-credit. The remaining executable absence is still `source_drift` and
-`test_gap`; no `spec_gap`, `source_undocumented_behavior`,
+credit. The remaining executable absence was still `source_drift` and
+`test_gap`; the implementation addendum below supersedes those statuses. No
+`spec_gap`, `source_undocumented_behavior`,
 `test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
 was introduced. The Task-251 baseline and Task-252 implementation oracle
 remain unchanged.
+
+## Task 252 Implementation Audit Addendum
+
+The public syntax-free producer, exact private three-route consumer, immutable
+`TypedAst` ownership, and clone-only `ResolvedTypedAst` preservation now
+implement the corrected Task-252 contract. The real aggregate is seven term
+rows, four authenticated binding references, and two unresolved numeric-type
+requests. Synthetic constant, `it`, nested-parenthesis, and mixed-family
+probes exercise the frozen dependency boundaries without adding corpus credit
+or semantic acceptance.
+
+The implementation closes the bounded primary-term producer/final-handoff
+`source_drift` and producer/corruption `test_gap`; the earlier
+`design_drift` remains resolved. MC-G017 and MC-G020 remain partial because
+applications and other term families, numeric results, formula and definition
+semantics, real local bindings/current-result owners, accepted facts/
+declarations/proofs, downstream IR, and Steps 6/7 remain with their explicit
+owners. No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
+was found.

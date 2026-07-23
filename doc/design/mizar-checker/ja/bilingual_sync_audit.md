@@ -43,6 +43,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary、projection model、validation/recovery/atomicity、determinism、coverage、public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary、flat chain/attribute/qualifier/group/actual model、environment/parent/arena/provenance validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
+| `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary、three-table primary-term transport、binding lookup/parent/request validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary、flat application/expression/argument model、environment/arena/graph/provenance validation、ownership、consumer、exclusion、public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table、prerequisites、resolved decisions、ordered task list、task statuses、verification、notes | none |
 | `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary、top-level shape、arena/context/type/fact/coercion/obligation/diagnostic tables、public enum policy、task classification | none |
@@ -95,3 +96,12 @@ Task-249/250 association、non-semantic four states、dependency-catalog
 validation、real consumer 3件、5/3/2 request histogram、bounded outcome
 progression、deferred semantic ownerを記録する。Task 251にbilingual sync debtは
 残らない。
+
+## Task 252 source-term pair recheck
+
+paired plan/TODO/source-term module spec/source-spec audit/payload
+decomposition/typed-final ownership/module audit/mizar-test consumer docsは、
+同じthree-table syntax-free transport、corrected binding-event ordinal rule、
+exact three-route 7/4/2 oracle、synthetic dependency-boundary probe、unchanged
+semantic outcome、deferred semantic ownerを記録する。Task 252にbilingual sync
+debtは残らない。

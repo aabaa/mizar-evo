@@ -397,7 +397,8 @@ use type_elaboration::{
     source_reserved_variable_type_assertion_result_detail_keys,
     source_right_parenthesized_reserved_variable_membership_output,
     source_right_parenthesized_reserved_variable_membership_output_detail_keys,
-    source_set_enumeration_formula_output, source_three_edge_local_mode_asserted_head_output,
+    source_set_enumeration_formula_output, source_term_output, source_term_output_with_mutation,
+    source_three_edge_local_mode_asserted_head_output,
     source_three_edge_local_mode_radix_asserted_head_output,
     source_three_edge_local_mode_reserved_variable_equality_output,
     source_three_edge_local_mode_reserved_variable_inequality_output,
@@ -428,6 +429,7 @@ use type_elaboration::{
     source_two_edge_local_object_mode_reserved_variable_type_assertion_output,
     source_two_edge_local_object_mode_two_hop_asserted_head_output, source_type_application_output,
     structural_child_ids, surface_nodes_with_kind, surface_site, synthetic_source_attribute_output,
+    synthetic_source_term_output,
 };
 use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
@@ -528,7 +530,7 @@ use type_elaboration::{
     source_reserved_variable_membership_detail_keys,
     source_reserved_variable_type_assertion_detail_keys,
     source_right_parenthesized_reserved_variable_membership_detail_keys,
-    source_set_enumeration_formula_detail_keys,
+    source_set_enumeration_formula_detail_keys, source_term_transport_error_detail_keys,
     source_three_edge_local_mode_asserted_head_detail_keys,
     source_three_edge_local_mode_radix_asserted_head_detail_keys,
     source_three_edge_local_mode_reserved_variable_equality_detail_keys,
@@ -1481,6 +1483,11 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    if let Some(keys) =
+        source_term_transport_error_detail_keys(&ast, resolver.module.clone(), &symbols)
+    {
+        return keys;
+    }
     if let Some(keys) = source_binding_context_detail_keys(
         &ast,
         resolver.module.clone(),

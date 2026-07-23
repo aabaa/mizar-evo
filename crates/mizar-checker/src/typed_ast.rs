@@ -2,7 +2,8 @@
 
 use crate::{
     source_attribute::SourceAttributeHandoff, source_context::SourceBindingContextHandoff,
-    source_evidence::SourceEvidenceHandoff, source_type::SourceTypeApplicationHandoff,
+    source_evidence::SourceEvidenceHandoff, source_term::SourcePrimaryTermHandoff,
+    source_type::SourceTypeApplicationHandoff,
 };
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
@@ -87,6 +88,7 @@ pub struct TypedAst {
     source_type: Option<SourceTypeApplicationHandoff>,
     source_attribute: Option<SourceAttributeHandoff>,
     source_evidence: Option<SourceEvidenceHandoff>,
+    source_term: Option<SourcePrimaryTermHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -107,6 +109,7 @@ impl TypedAst {
             source_type: parts.source_type,
             source_attribute: parts.source_attribute,
             source_evidence: None,
+            source_term: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -145,6 +148,10 @@ impl TypedAst {
         self.source_evidence.as_ref()
     }
 
+    pub const fn source_term(&self) -> Option<&SourcePrimaryTermHandoff> {
+        self.source_term.as_ref()
+    }
+
     pub fn with_source_evidence(
         mut self,
         handoff: SourceEvidenceHandoff,
@@ -166,6 +173,20 @@ impl TypedAst {
             )
             .map_err(|_| TypedAstError::InvalidSourceEvidence)?;
         self.source_evidence = Some(handoff);
+        Ok(self)
+    }
+
+    pub fn with_source_term(
+        mut self,
+        handoff: SourcePrimaryTermHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_term.is_some() {
+            return Err(TypedAstError::InvalidSourceTerm);
+        }
+        handoff
+            .validate_installation(self.source_id, &self.module_id, &self.nodes)
+            .map_err(|_| TypedAstError::InvalidSourceTerm)?;
+        self.source_term = Some(handoff);
         Ok(self)
     }
 
@@ -219,6 +240,9 @@ impl TypedAst {
         }
         if let Some(source_evidence) = &self.source_evidence {
             output.push_str(&source_evidence.debug_text());
+        }
+        if let Some(source_term) = &self.source_term {
+            output.push_str(&source_term.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1098,6 +1122,7 @@ pub enum TypedAstError {
     InvalidSourceType,
     InvalidSourceAttribute,
     InvalidSourceEvidence,
+    InvalidSourceTerm,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1216,6 +1241,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceEvidence => {
                 formatter.write_str("typed AST source evidence handoff is inconsistent")
+            }
+            Self::InvalidSourceTerm => {
+                formatter.write_str("typed AST source primary-term handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,

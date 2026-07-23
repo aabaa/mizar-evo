@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] post-Task-46 milestone complete through Tasks 1-48; fresh independent score 99/100 | no authorized parser successor; human-owned P-265-47D | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker Tasks 248-251 consumer increments complete | step 5 task 10, dependency-paced later consumers beginning with Checker Task 252, future `MT10-FS`/`MT10-AS`, and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, and Tasks 248-251 source-payload producers complete | Tasks 252-264/269-279 in dependency order; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker Tasks 248-252 consumer increments complete | step 5 task 10, dependency-paced later consumers beginning with Checker Task 253, future `MT10-FS`/`MT10-AS`, and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, and Tasks 248-252 source-payload producers complete | Tasks 253-264/269-279 in dependency order; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -1968,12 +1968,12 @@ term/reference/numeric-request oracle, transparent-parenthesis boundary,
 synthetic constant/`it` dependency tests, final ownership, corruption and
 determinism coverage, trace/count impact, forbidden scope, and exit criteria.
 
-This prerequisite changes no executable artifact or coverage. The classified
-disagreements are the repaired `design_drift`, continuing `source_drift`, and
-continuing `test_gap`; no blocking `spec_gap`,
+At the prerequisite commit, this task changed no executable artifact or
+coverage. The classified disagreements were the repaired `design_drift`,
+continuing `source_drift`, and continuing `test_gap`; no blocking `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict` was found. Task 252 remains
-open for one separate implementation commit. Tasks 260/264/269 retain real
+`boundary_violation`, or `repo_metadata_conflict` was found. Task 252 then
+remained open for one separate implementation commit. Tasks 260/264/269 retain real
 `it`/local-constant owner production, Tasks 253+ are not inferred, and
 Steps 6/7 remain deferred.
 
@@ -1983,6 +1983,27 @@ completed binding rows rather than merged binding/reference events; exact
 duplicate-priority groups share the final dense row's visibility ordinal and
 all lookup-priority inputs for `Ambiguous` rejection, and `Resolver` is
 structurally unreachable on the payload-free lookup-site path.
-This correction changes no executable artifact, coverage mapping, owner,
+At the correction commit, this change affected no executable artifact, coverage mapping, owner,
 deferred rationale, count, or hash, so
 `doc/design/spec_coverage_audit.md` remains unchanged.
+
+## Step 5 Checker Task 252 Implementation Addendum
+
+The corrected frozen contract is implemented in one logical task by a public
+syntax-free checker producer and one private Task-10 source extractor. The
+exact three existing routes publish aggregate term/reference/numeric-request
+tables 7/4/2 through immutable `TypedAst` and clone-only `ResolvedTypedAst`
+ownership. Synthetic constant, `it`, nested-parenthesis, and mixed-family
+probes close the bounded producer/corruption coverage without changing a
+semantic outcome or adding a fixture.
+
+The new covered `pass_and_fail` trace requirement reaches plan 411/375 and
+type 241/229. Case count, pass/fail 224/187, active
+parse/declaration/type/proof 101/5/190/1, warnings/errors 23/0, existing
+expectation outcomes/details, public diagnostics, and `.miz` bytes remain
+unchanged.
+The exact Task-252 `source_drift` and `test_gap` are closed; the corrected
+`design_drift` remains resolved. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` was found. Tasks 253+ and
+260/264/269 remain with their explicit owners; Steps 6/7 remain deferred.

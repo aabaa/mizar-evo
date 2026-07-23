@@ -11,6 +11,7 @@ mod source_context;
 mod source_evidence;
 mod source_formula;
 mod source_reserve;
+mod source_term;
 mod source_type;
 mod type_assertion_routes;
 
@@ -359,6 +360,11 @@ pub(super) use source_reserve::extract_builtin_source_reserve_declarations_after
 #[cfg(test)]
 pub(super) use source_reserve::{
     resolve_visible_attribute, resolve_visible_type_head, source_mode_symbol_spelling,
+};
+pub(super) use source_term::source_term_transport_error_detail_keys;
+#[cfg(test)]
+pub(super) use source_term::{
+    source_term_output, source_term_output_with_mutation, synthetic_source_term_output,
 };
 pub(super) use source_type::source_type_application_detail_keys;
 #[cfg(test)]

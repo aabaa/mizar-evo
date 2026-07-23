@@ -5008,6 +5008,21 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_primary_term_payload"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 252 Frozen Primary-Term Producer Contract"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+notes = "Task 252 bounded source-transport coverage for the exact numeral-equality, reserved-variable-equality, and parenthesized-reserved-variable-equality routes. Their immutable TypedAst-to-ResolvedTypedAst aggregate is seven primary-term rows, four authenticated binding references, and two unresolved numeric-type requests. Synthetic Rust probes cover constant, it, nested-parenthesis, and mixed-family boundaries without corpus credit. This row does not credit numeric results, semantic terms or formulas, definition-result ownership, real local-constant production, facts, acceptance, other term families, or downstream IR."
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_type_application_payload"
 source = "doc/design/mizar-checker/en/00.crate_plan.md"
 section = "Task 249 Frozen Type-Head/Application/Argument Producer Contract"

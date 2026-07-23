@@ -697,3 +697,11 @@ dependency-authorized consumerはCore Task 31で、Steps 6/7はdeferredのまま
 `SourceEvidenceHandoff`をclone-preserveし、borrowed `source_evidence()` getterを
 exposeする。final assemblyはevidenceをrebuild/reinterpret/acceptせず、handoff
 absent時のlegacy projectionは不変である。
+
+## Task 252 final-handoff addendum
+
+`ResolvedTypedAst`は`TypedAst`にinstallされたoptional checker-owned
+`SourcePrimaryTermHandoff`をclone-preserveし、borrowed `source_term()` getterを
+exposeする。final assemblyはsource termをrebuild/reinterpretせず、numeric typeを
+選択せず、semantic resultを作らない。handoff absent時のlegacy projectionは
+不変である。

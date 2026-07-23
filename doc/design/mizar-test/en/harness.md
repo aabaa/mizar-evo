@@ -2758,7 +2758,7 @@ corruption, and deterministic replay pass on the production path.
 
 ## Checker Task 252 Frozen Runner Boundary
 
-The future private `type_elaboration::source_term` leaf has exactly three real
+The private `type_elaboration::source_term` leaf has exactly three real
 selectors: builtin numeral equality, bare reserved-variable equality, and
 single-left-parenthesized reserved-variable equality. Their aggregate public
 handoff oracle is seven primary terms, four binding references, and two
@@ -2785,7 +2785,12 @@ later-family term are excluded until Tasks 253-255 freeze cross-family edges.
 Real constant declaration ownership and real `it` owner/type are deferred to
 Tasks 269 and 260/264. The probes create no
 fixture, runner admission, semantic result, formula, fact, or coverage credit.
-Implementation tests must also prove exact selection, corruption isolation,
-deterministic replay, and final ownership. The exact post-implementation test
-count is measured and recorded then; this prerequisite leaves the current
-287-test list and all hashes unchanged.
+Implementation tests prove exact selection, corruption isolation,
+deterministic replay, and final ownership. Four tests move the library total
+from 287 to 291. The raw/normalized sorted-list hashes are
+`d46edefebc54a2f2f170cbfce8143ed036fa7ce339ebb3a746d89b55293931e5` /
+`f7b5babbf33e1e3e3afe4c49018744a4a0fe42968fd2e5edc411eb7bc49fc0a6`.
+The private leaf is the sole new production path, producing 23 paths / 24,120
+lines with path/content hashes
+`562224fc62e93a256f5d3891e3a466a45ec23c24055e3a9f3f83848a0672a16b` /
+`8a4b76e37a8a6921ed89e98372ccb037cd64ed583ac0bbe26466924ef0c4b028`.

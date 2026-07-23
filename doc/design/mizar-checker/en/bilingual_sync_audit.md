@@ -44,6 +44,7 @@ after this task.
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, determinism, coverage, public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
+| `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary, three-table primary-term transport, binding lookup and parent/request validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary, flat application/expression/argument model, environment/arena/graph/provenance validation, ownership, consumers, exclusions, public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table, prerequisites, resolved decisions, ordered task list, task statuses, verification, notes | none |
 | `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary, top-level shape, arena/context/type/fact/coercion/obligation/diagnostic tables, public enum policy, task classification | none |
@@ -98,3 +99,12 @@ request/response transport, exact Task-249/250 association, four non-semantic
 states, dependency-catalog validation, three real consumers, 5/3/2 request
 histogram, bounded outcome progression, and deferred semantic owners. No
 bilingual sync debt remains in Task 251.
+
+## Task 252 Source-Term Pair Recheck
+
+The paired plan, TODO, source-term module specification, source/spec audit,
+payload decomposition, typed/final ownership documents, module audit, and
+mizar-test consumer documents record the same three-table syntax-free
+transport, corrected binding-event ordinal rule, exact three-route 7/4/2
+oracle, synthetic dependency-boundary probes, unchanged semantic outcomes,
+and deferred semantic owners. No bilingual sync debt remains in Task 252.

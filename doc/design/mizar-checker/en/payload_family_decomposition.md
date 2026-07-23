@@ -354,3 +354,16 @@ with histogram 5/3/2 and no response rows. Production four-state tests and the
 checker corruption matrix close the bounded `source_drift` and `test_gap`.
 Tasks 252-264/269-279 retain their existing dependency edges and exit
 boundaries; Steps 6/7 are not promoted.
+
+## Task 252 Current-State Addendum
+
+Task 252 implements the graph's primary-term transport node without advancing
+semantic term or formula ownership. The public checker handoff authenticates
+five frozen source kinds, exact binding winners and producer-derived
+binding-event ordinals, transparent parent closure, and unresolved numeric
+requests before atomic publication. The private Task-10 consumer activates
+only the three frozen real routes, producing the exact 7/4/2 aggregate;
+synthetic probes cover constant, `it`, nested-parenthesis, and mixed-family
+boundaries. The bounded `source_drift` and `test_gap` are closed. Tasks 253+
+and 260/264/269 retain their existing dependency edges and semantic owners;
+Steps 6/7 are not promoted.

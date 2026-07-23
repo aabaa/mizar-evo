@@ -1430,6 +1430,7 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
 - [x] post-freeze ordinal contractを、先行して完了したbinding rowを数えるruleへ
   correctし、reachable `Ambiguous` rejection用duplicate-priority groupを保持し、
   `Resolver`をstructurally unreachableと記録する。
-- [ ] Checker Task 252をseparate logical taskとして実装する。pass/fail
-  224/187、admission 101/5/190/1、warnings/errors 23/0を維持し、test/layout/
-  CLI hashを全てfresh計算する。Tasks 253+/260/264/269とSteps 6/7はpromoteしない。
+- [x] Checker Task 252をseparate logical taskとして実装する。pass/fail
+  224/187、admission 101/5/190/1、warnings/errors 23/0を維持し、library test
+  291件とverified 23-path/24,120-line layoutへ進みfresh hashを記録する。
+  Tasks 253+/260/264/269とSteps 6/7はpromoteしない。

@@ -1613,7 +1613,7 @@ promoted by this increment.
 - [x] Correct the post-freeze ordinal contract to count preceding completed
   binding rows, retain duplicate-priority groups for reachable `Ambiguous`
   rejection, and record `Resolver` as structurally unreachable.
-- [ ] Implement Checker Task 252 as one separate logical task. Preserve
-  pass/fail 224/187, admissions 101/5/190/1, warnings/errors 23/0, and
-  recompute all test/layout/CLI hashes. Tasks 253+/260/264/269 and Steps 6/7
-  remain unpromoted.
+- [x] Implement Checker Task 252 as one separate logical task. Preserve
+  pass/fail 224/187, admissions 101/5/190/1, warnings/errors 23/0; reach 291
+  library tests and the verified 23-path/24,120-line layout with fresh hashes.
+  Tasks 253+/260/264/269 and Steps 6/7 remain unpromoted.

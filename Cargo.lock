@@ -476,6 +476,7 @@ dependencies = [
 name = "mizar-checker"
 version = "0.1.0"
 dependencies = [
+ "mizar-lexer",
  "mizar-resolve",
  "mizar-session",
 ]

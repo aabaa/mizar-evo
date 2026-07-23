@@ -61,7 +61,7 @@ fn checker_manifest_keeps_task_one_package_metadata() {
 }
 
 #[test]
-fn checker_manifest_dependency_boundary_is_task_one_minimal() {
+fn checker_manifest_dependency_boundary_is_task252_scoped() {
     let manifest_path = crate_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
     let dependency_sections = dependency_sections(&manifest);
@@ -71,12 +71,14 @@ fn checker_manifest_dependency_boundary_is_task_one_minimal() {
         [(
             "dependencies".to_owned(),
             vec![
+                "mizar-lexer = { path = \"../mizar-lexer\" }",
                 "mizar-resolve = { path = \"../mizar-resolve\" }",
                 "mizar-session = { path = \"../mizar-session\" }",
             ],
         )],
-        "{} must depend only on mizar-resolve and mizar-session until a \
-         task-scoped checker spec expands the crate boundary",
+        "{} must keep only the Task-252 lexical predicate plus the established \
+         resolver/session dependencies until another task-scoped checker spec \
+         expands the crate boundary",
         manifest_path.display()
     );
 }
@@ -200,6 +202,7 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
         ("src/source_type.rs", "source_type.md"),
         ("src/source_attribute.rs", "source_attribute.md"),
         ("src/source_evidence.rs", "source_evidence.md"),
+        ("src/source_term.rs", "source_term.md"),
         ("src/type_checker.rs", "type_checker.md"),
         (
             "src/registration_resolution.rs",
@@ -326,6 +329,7 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
         ("src/source_context.rs", "source_context"),
         ("src/source_type.rs", "source_type"),
         ("src/source_attribute.rs", "source_attribute"),
+        ("src/source_term.rs", "source_term"),
         ("src/type_checker.rs", "type_checker"),
         ("src/registration_resolution.rs", "registration_resolution"),
         ("src/cluster_trace.rs", "cluster_trace"),
@@ -823,6 +827,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_type.rs")
             || path == Path::new("src/source_attribute.rs")
             || path == Path::new("src/source_evidence.rs")
+            || path == Path::new("src/source_term.rs")
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
             || path == Path::new("src/cluster_trace.rs")
@@ -840,6 +845,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_type;"
                 | "pub mod source_attribute;"
                 | "pub mod source_evidence;"
+                | "pub mod source_term;"
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"
                 | "pub mod cluster_trace;"

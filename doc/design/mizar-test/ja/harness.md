@@ -2632,7 +2632,7 @@ deterministic replayはproduction pathでpassする。
 
 ## Checker Task 252 frozen runner boundary
 
-future private `type_elaboration::source_term` leafのreal selectorはbuiltin
+private `type_elaboration::source_term` leafのreal selectorはbuiltin
 numeral equality、bare reserved-variable equality、single-left-parenthesized
 reserved-variable equalityの3件だけである。aggregate public handoff oracleは
 primary term 7、binding reference 4、numeric-type request 2である。source case、
@@ -2655,6 +2655,12 @@ later-family termを含むparenthesisはTasks 253-255がcross-family edgeをfree
 まで除外する。real constant declaration ownerとreal `it` owner/typeはTasks
 269/260/264へdeferする。
 probeはfixture/admission/semantic result/formula/fact/coverage creditを作らない。
-implementation testはexact selection、corruption isolation、deterministic replay、
-final ownershipもproveする。exact post-implementation test countはその時点で
-measure/recordし、このprerequisiteはcurrent 287-test listと全hashを維持する。
+implementation testはexact selection、corruption isolation、deterministic
+replay、final ownershipもproveする。4 testsによりlibrary totalは287から291へ
+進み、raw/normalized sorted-list hashは
+`d46edefebc54a2f2f170cbfce8143ed036fa7ce339ebb3a746d89b55293931e5` /
+`f7b5babbf33e1e3e3afe4c49018744a4a0fe42968fd2e5edc411eb7bc49fc0a6`である。
+private leafだけがnew production pathで、23 paths / 24,120 lines、
+path/content hashは
+`562224fc62e93a256f5d3891e3a466a45ec23c24055e3a9f3f83848a0672a16b` /
+`8a4b76e37a8a6921ed89e98372ccb037cd64ed583ac0bbe26466924ef0c4b028`である。

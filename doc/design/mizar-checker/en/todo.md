@@ -4404,13 +4404,14 @@ unchecked row below is one future nonempty logical task and one commit.
   without treating supplied input as accepted evidence; checker tests cover
   exact association, corruption, cardinality, and atomicity. No evidence
   result is fabricated.
-- [ ] **Task 252:** primary term producer. The paired crate plan freezes the
+- [x] **Task 252:** primary term producer. The paired crate-plan contract is
+  implemented through the
   public three-table syntax-free contract, exact three-route 7/4/2 real
   consumer oracle, transparent-parenthesis rule, numeric-request-only
   boundary, synthetic constant/`it` dependency coverage, final ownership,
-  tests, trace impact, and exit criteria. Implement it as one separate
-  logical task; Tasks 260/264/269 retain real `it` owners and local-constant
-  binding production. The post-freeze contract correction derives each
+  tests, and bounded covered trace row. Tasks 260/264/269 retain real `it`
+  owners and local-constant binding production. The post-freeze contract
+  correction derives each
   reference ordinal from preceding completed binding rows, preserves
   duplicate-priority binding groups for reachable `Ambiguous` rejection, and
   records `Resolver` as structurally unreachable for this producer.

@@ -617,3 +617,11 @@ extraction, CoreIr, ControlFlowIr, VC payloads, or proof evidence in
 source/module plus referenced facts against the existing typed payload before
 installation. The addition is syntax-free and does not add evidence truth,
 accepted facts, proof status, or downstream IR to the typed arena.
+
+## Task 252 Ownership Addendum
+
+`TypedAst` now owns an optional immutable `SourcePrimaryTermHandoff`.
+`with_source_term` rejects replacement and authenticates the handoff
+source/module plus every referenced arena node before installation. The
+addition is syntax-free and does not add a normalized type, semantic term or
+formula, accepted fact, proof status, or downstream IR to the typed arena.

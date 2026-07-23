@@ -325,3 +325,15 @@ response row 0件のmissing request 10件を5/3/2 histogramでproduceする。
 production four-state testとchecker corruption matrixがbounded
 `source_drift`/`test_gap`をcloseする。Tasks 252-264/269-279のdependency edge/
 exit boundaryは不変で、Steps 6/7はpromoteしない。
+
+## Task 252 current-state addendum
+
+Task 252はsemantic term/formula ownershipを進めずgraphのprimary-term transport
+nodeを実装する。public checker handoffはfive frozen source kind、exact binding
+winnerとproducer-derived binding-event ordinal、transparent parent closure、
+unresolved numeric requestをatomic publication前にauthenticateする。private
+Task-10 consumerはfrozen real route 3件だけをactivateしexact 7/4/2 aggregateを
+produceする。synthetic probeはconstant、`it`、nested-parenthesis、mixed-family
+boundaryをcoverする。bounded `source_drift`/`test_gap`はclosedである。Tasks
+253+と260/264/269はexisting dependency edge/semantic ownerをretainし、Steps
+6/7をpromoteしない。
