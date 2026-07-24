@@ -4193,7 +4193,18 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   contract correctionは各reference ordinalを先行して完了したbinding rowから
   deriveし、reachableな`Ambiguous` rejectionのためduplicate-priority binding
   groupを保持し、このproducerで`Resolver`がstructurally unreachableと記録する。
-- [ ] **Task 253:** functor/inline-functor application producer。
+- [ ] **Task 253:** functor/inline-functor application producer。paired crate
+  planはpublic 5-table `source_application` contract、exact imported caseと
+  同じdefinition blockの後続definiensから先行functorを適用する新規real
+  consumer、aggregate application/wrapper/candidate/argument/request
+  2/1/2/3/4 oracle、Task-252 term/reference/numeric-request 3/1/2 slice、
+  Task-248 `DefinitionParameter` shadow-handoff再利用、transparent cross-family
+  origin ownership、individual candidate-reference boundary、synthetic inline
+  schema、corruption matrix、trace/count impact、forbidden scopeをfreezeした。
+  implementationは別の1 logical taskとしてopenで、inline
+  identity/formal/capture/substitutionはTask 270、direct template transportは
+  Task 277、ordinary/template candidate collection/viability/winnerはTask 278が
+  所有し、Task 253はTask-252 primary termを複製しない。
 - [ ] **Task 254:** structure constructor/selector/update term producer。
 - [ ] **Task 255:** set/comprehension/choice/`qua` term producer。
 - [ ] **Task 256:** atomic formula producer。

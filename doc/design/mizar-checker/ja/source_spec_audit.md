@@ -2773,3 +2773,47 @@ owner、accepted fact/declaration/proof、downstream IR、Steps 6/7はexplicit o
 に残る。blocking `spec_gap`、`source_undocumented_behavior`、
 `test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`は
 foundされなかった。
+
+## Task 253 frozen-contract audit addendum
+
+fresh inventoryはabsent exact functor-application contractを`design_drift`、
+absent syntax-free producer/final handoffを`source_drift`、module-local real
+consumerとproducer/corruption/final-handoff coverageの欠落を`test_gap`に分類する。
+Chapters 10、13 §13.2、15 §15.2.3、19と明示的な人間判断で十分であり、blocking
+`spec_gap`はない。current `source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`もない。
+
+paired crate planはapplication、transparent wrapper、個別認証resolver functor reference、
+ordered argument edge、unresolved type requestの5 tableをfreezeする。candidate rowは
+form/arity associationやexhaustive/viable overload setの認証ではなく、
+applicability/collection/ranking/winnerはTask 278に残す。argument edgeはTask-252
+root primary IDまたはTask-253 nested-application
+IDを参照し重複所有しない。Task 252はmixed-family parenthesisを除外するため、
+`(1 ++ 2)`のcross-family transparent originはTask 253が所有し、第2のTask-252
+primary rowは作らない。
+
+exact future real selectorは既存imported
+`fail_type_elaboration_imported_predicate_functor_gap_001`と新規spec-derived
+`fail_type_elaboration_local_functor_application_gap_001`である。future aggregate
+Task-253 oracleはapplication/wrapper/candidate/argument/request = 2/1/2/3/4、
+Task-252 sliceはprimary term/binding reference/numeric request = 3/1/2である。
+新routeは同じdefinition blockで完了した最初のfunctorを後続functorのdefiniensから
+使い、actualは外側のreserveではなくTask-248が認証するinner
+`DefinitionParameter`である。
+inline applicationはsynthetic source-shape/schema coverageだけで、callee identity、
+formal、capture、body、guard、result、substitutionはTask 270に残す。template
+applicationはwhole-subtreeで除外し、direct role/actual/guard/request transportは
+Task 277、ordinary/template candidate collection/selectionはTask 278に残す。
+
+本prerequisiteはfollow-up ownership/deferred rationaleを変えるためcoverage auditを
+更新するが、executable coverage/source/fixture/expectation/trace row/status/count/hashは
+変更しない。current baselineはplan 411/375、type 241/229、pass/fail 224/187、
+active parse/declaration/type/proof 101/5/190/1、warnings/errors 23/0、
+library test 291、production 23 paths / 24,120 linesのままである。implementation
+だけがbounded diagnostic requirement 1件とfail case 1件を追加でき、予測oracleは
+412/376、242/230、224/188、active type 191で、fresh計測を要求する。
+
+MC-G017/MC-G020はpartialのままである。semantic signature/result/type、overload
+selection、definition/formula semantics、inline closure/substitution、template、
+other term family、accepted fact/declaration/proof、downstream IR、Tasks 254+、
+Steps 6/7はTask-253 prerequisite creditを受けない。

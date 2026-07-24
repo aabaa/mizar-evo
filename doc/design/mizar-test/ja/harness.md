@@ -2664,3 +2664,50 @@ private leafだけがnew production pathで、23 paths / 24,120 lines、
 path/content hashは
 `562224fc62e93a256f5d3891e3a466a45ec23c24055e3a9f3f83848a0672a16b` /
 `8a4b76e37a8a6921ed89e98372ccb037cd64ed583ac0bbe26466924ef0c4b028`である。
+
+## Checker Task 253 frozen runner boundary
+
+これはChecker Task 253であり、既に完了した`mizar-test` runner-refactor
+Tasks 253A/253Bではない。future private
+`type_elaboration::source_application` leafは、paired checker planでfreezeした
+既存imported `1 divides (1 ++ 2)` caseと、新sourceのsecond definiensにあるexact
+module-local `task253_local_source(x)` closureだけをselectする。actual
+occurrenceにTask-252 primary-term producerをcomposeし、aggregate Task-253
+tableをapplication 2 / wrapper 1 / candidate-reference 2 / argument 3 /
+request 4、Task-252 sliceを3/1/2でpublishする。
+
+leafはraw application/head/form/wrapper extraction、ordered edge projection、
+individual resolver-reference provenanceを所有する。primary rowを複製せず、
+complete/viable candidate setをclaimせず、winnerを選択せず、signature/resultを
+publishしない。imported outer parenthesesはTask-253 cross-family
+wrapper/originである。local sourceではTask-248
+reserve-then-definition two-item/two-binding shadow handoffをreuseし、actualが
+`BindingId(0)`ではなく`BindingId(1)` / `BindingContextId(1)` /
+`use_ordinal == 2`へresolveすることをrequireする。既存imported outcome/detailは
+不変である。new local routeはapplication transportをvalidateしてからgeneric
+`definition_declaration_payload_extraction_gap` /
+`type_elaboration.external_dependency.ast_payload_extraction` boundaryを維持し、
+public diagnosticを追加しない。
+
+synthetic `SurfaceAst` transactionは同じextractor/producerでremaining ordinary
+form、nested application、primary/application parenthesis、definition-parameter
+actual、multiple authenticated candidate referenceをcoverする。inline
+zero/one/two-actual caseはtestを分け、raw-AST probeはgeneric
+`ApplicationTerm`とmandatory parenthesesだけをassertし、caller-supplied producer
+DTOがcandidate/requestなしのschemaをassertする。production extractorは`Inline`を
+inferせず、identity/formal/capture/substitutionはTask 270が所有する。template application
+subtreeはTask-253 rowをemitせず、direct role/actual/guard/request transportは
+Task 277、ordinary/template candidate/selectionはTask 278が所有する。testは
+frozen corruption matrix、sibling isolation、deterministic replay、
+non-equivalent same-source/module Task-252 handoffのfingerprint substitution
+rejection、equivalent clone acceptance、final ownershipも証明する。private-selector matrixは
+imported missing/wrong/duplicate provenance、wrong `++` head/form/arity、wrong
+numeral order、recovery、local functor order reversal、forward use、wrong/extra
+head/actual/application/item、recovery、outer `BindingId(0)` selectionをrejectし、
+両Task-253 routeと全existing Task-252 selector間のbidirectional exclusionを証明する。
+
+本documentation prerequisiteはrunner route/test-list/layout/hashを変更しない。
+current 291-test、23-path/24,120-line Task-252 baselineはexactに不変で、
+implementationのprojected countはplan 412/376、type 242/230、pass/fail
+224/188、admission 101/5/191/1、warnings/errors 23/0でありfresh measurementを
+必要とする。

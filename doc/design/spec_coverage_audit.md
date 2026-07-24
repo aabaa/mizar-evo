@@ -2808,3 +2808,48 @@ downstream IR, Tasks 253+, 260/264/269, Steps 6/7, and global Step-5 completion
 remain with their explicit owners. No blocking `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` was found.
+
+## Step 5 Checker Task 253 Frozen-Contract Addendum
+
+Under canonical Chapters 10, 13 §13.2, 15 §15.2.3, and 19 plus the explicit
+human boundary decision, Task 253 now has an exact documentation prerequisite for ordinary
+functor-application source transport. The future public checker handoff owns
+application shape, one cross-family transparent-wrapper/origin table, individually
+authenticated ordinary candidate references, ordered Task-252-primary or
+Task-253-nested application edges, and unresolved candidate-signature and
+application-result requests. Task 252 retains every primary occurrence,
+binding reference, and numeric request; Task 253 references those IDs and
+does not duplicate them.
+
+The future exact real selector is the existing imported `(1 ++ 2)` route plus
+one new same-module use of a completed first functor from a later functor's
+definiens. The local actual is authenticated by the reused Task-248
+reserve/definition shadow handoff as the inner `DefinitionParameter`.
+The future aggregate Task-253
+applications/wrappers/candidates/arguments/requests oracle is 2/1/2/3/4, with
+Task-252 terms/references/numeric-requests 3/1/2. Inline application shapes
+remain synthetic-only and grant no corpus or trace credit; Task 270 retains
+callee identity, formals, closure/capture, body/guard/result, and
+substitution. Template-capable subtrees are excluded: Task 277 retains direct
+template roles/actuals/guards/requests, and Task 278 retains ordinary/template
+candidate collection, viability, ranking, and selection.
+
+This addendum is required because it changes the MC-G017/MC-G020 design
+mapping, follow-up ownership, and deferred rationale. It adds no requirement
+row, test mapping, status change, executable coverage, source, fixture,
+expectation, or trace edit in this prerequisite. Plan 411/375, type 241/229,
+pass/fail 224/187, active parse/declaration/type/proof 101/5/190/1,
+warnings/errors 23/0, and all hashes therefore remain unchanged. The separate
+implementation task may add exactly one fail case and one bounded diagnostic
+row, with projected plan 412/376, type 242/230, pass/fail 224/188, and active
+type 191, subject to fresh verification.
+
+The prerequisite closes only `design_drift`; the public producer/final
+handoff remains `source_drift`, and the real local consumer plus
+producer/corruption/final-handoff coverage remain `test_gap`. There is no
+blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, current `boundary_violation`, or
+`repo_metadata_conflict`. MC-G017/MC-G020 remain partial, and semantic
+signature/result/type, definition/formula semantics, overload selection,
+Tasks 254+/260/270/277-278, Steps 6/7, and global Step-5 completion receive no
+credit.

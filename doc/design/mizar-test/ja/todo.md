@@ -1434,3 +1434,34 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   224/187、admission 101/5/190/1、warnings/errors 23/0を維持し、library test
   291件とverified 23-path/24,120-line layoutへ進みfresh hashを記録する。
   Tasks 253+/260/264/269とSteps 6/7はpromoteしない。
+
+## Checker Task 253 frozen consumer prerequisite
+
+- [x] Checker Task 253を、既に完了した`mizar-test` runner-refactor Tasks
+  253A/253Bと区別する。
+- [x] 既存imported `1 ++ 2` routeとexact new spec-derived module-local
+  second-definiens `task253_local_source(x)` fail routeだけをreal consumerと
+  してfreezeする。
+- [x] new sourceをreserve `x`と、inner parameter `x`を共有するfunctor
+  declaration 2件のdefinitionへfreezeする。Task-248 two-item/two-binding
+  shadow handoffをreuseし、actualは`BindingId(1)` / `BindingContextId(1)` /
+  `use_ordinal == 2`をreferenceする。
+- [x] aggregate Task-253 application/wrapper/candidate/argument/request table
+  2/1/2/3/4、参照するTask-252 primary/reference/numeric slice 3/1/2を、
+  primary重複所有なしでfreezeする。
+- [x] `(1 ++ 2)`のTask-253 transparent-wrapper originと個別認証candidate
+  referenceを、completeness/viability/ranking/winner claimなしでfreezeする。
+- [x] synthetic ordinary/nested/parenthesized/candidate coverage、inline
+  zero/one/two-actual source-schema coverageだけ、template whole-subtree
+  exclusionをfreezeする。
+- [x] inline identity/formal/capture/substitutionをTask 270、template direct
+  role/actual/guard/requestをTask 277、ordinary/template candidate
+  collection/selectionをTask 278へ割り当てる。
+- [x] imported outcome/detailを維持し、new local sidecarをpublic diagnostic
+  なしの`definition_declaration_payload_extraction_gap` /
+  `type_elaboration.external_dependency.ast_payload_extraction`へfreezeする。
+- [ ] Checker Task 253を別の1 logical taskで実装し、exact new fixture/sidecarと
+  bounded diagnostic trace rowを追加し、imported outcome/detailを維持し、fresh
+  計測を条件にprojected 412/376、242/230、224/188、101/5/191/1 oracleへ
+  到達し、fresh test/layout/hashを記録する。Tasks 254+とSteps 6/7は
+  unpromotedのままである。

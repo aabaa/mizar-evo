@@ -2888,3 +2888,55 @@ declarations/proofs, downstream IR, and Steps 6/7 remain with their explicit
 owners. No blocking `spec_gap`, `source_undocumented_behavior`,
 `test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
 was found.
+
+## Task 253 Frozen-Contract Audit Addendum
+
+Fresh inventory classifies the absent exact functor-application contract as
+`design_drift`, the absent syntax-free producer/final handoff as
+`source_drift`, and the missing module-local real consumer plus producer,
+corruption, and final-handoff coverage as `test_gap`. Chapters 10, 13 §13.2,
+15 §15.2.3, and 19 plus the user's explicit boundary decision are sufficient;
+no blocking `spec_gap` was found. There is no current
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`.
+
+The paired crate plan freezes five tables for applications, transparent
+wrappers/origins, individually authenticated resolver functor references,
+ordered argument
+edges, and unresolved type requests. Candidate rows are deliberately not an
+authenticated form/arity association or exhaustive/viable overload set; Task
+278 retains applicability, collection, ranking, and winner selection.
+Argument edges reference Task-252 root primary-term IDs or
+Task-253 nested-application IDs without duplicate ownership. Task 253 owns the
+cross-family transparent origin around `(1 ++ 2)` because Task 252 excludes
+mixed-family parentheses; it does not create a second Task-252 primary row.
+
+The exact future real selector is the existing imported
+`fail_type_elaboration_imported_predicate_functor_gap_001` plus the new
+spec-derived
+`fail_type_elaboration_local_functor_application_gap_001`. Their aggregate
+future Task-253 oracle is 2 applications / 1 wrapper / 2 candidates /
+3 arguments / 4 requests, with Task-252 slice 3 primary terms / 1 binding
+reference / 2 numeric requests. The new route uses a completed first functor
+from a later functor's definiens in the same definition block; its actual is
+the Task-248-authenticated inner `DefinitionParameter`, not the outer reserve.
+Inline applications receive synthetic source-shape/schema coverage only;
+Task 270 retains callee identity, formals, capture, body, guard, result, and
+substitution. Template applications remain excluded whole-subtree: Task 277
+retains direct role/actual/guard/request transport and Task 278 retains
+ordinary/template candidate collection and selection.
+
+This prerequisite changes follow-up ownership/deferred rationale and therefore
+updates the coverage audit, but changes no executable coverage, source,
+fixture, expectation, trace row/status, count, or hash. The current baseline
+remains plan 411/375, type 241/229, pass/fail 224/187, active
+parse/declaration/type/proof 101/5/190/1, warnings/errors 23/0, 291 library
+tests, and 23 production paths / 24,120 lines. Implementation alone may add
+one bounded diagnostic requirement and one fail case, with projected oracle
+412/376, 242/230, 224/188, and active type 191, subject to fresh measurement.
+
+MC-G017 and MC-G020 remain partial. Semantic signature/result/type, overload
+selection, definition/formula semantics, inline closure/substitution,
+templates, other term families, accepted facts/declarations/proofs,
+downstream IR, Tasks 254+, and Steps 6/7 receive no Task-253 prerequisite
+credit.

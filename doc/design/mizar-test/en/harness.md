@@ -2794,3 +2794,56 @@ The private leaf is the sole new production path, producing 23 paths / 24,120
 lines with path/content hashes
 `562224fc62e93a256f5d3891e3a466a45ec23c24055e3a9f3f83848a0672a16b` /
 `8a4b76e37a8a6921ed89e98372ccb037cd64ed583ac0bbe26466924ef0c4b028`.
+
+## Checker Task 253 Frozen Runner Boundary
+
+This is Checker Task 253, not the already-completed `mizar-test`
+runner-refactor Tasks 253A/253B. The future private
+`type_elaboration::source_application` leaf selects only the existing
+imported `1 divides (1 ++ 2)` case and the exact module-local
+`task253_local_source(x)` closure in the second definiens of the new source
+frozen in the paired checker plan. It composes the Task-252 primary-term
+producer for actual occurrences and publishes exact aggregate Task-253 tables
+2 applications / 1 wrapper / 2 candidate references / 3 arguments /
+4 requests, with Task-252 slice 3/1/2.
+
+The leaf owns raw application/head/form/wrapper extraction, ordered edge
+projection, and individual resolver-reference provenance. It does not
+duplicate primary rows, claim a complete/viable candidate set, select a
+winner, or publish a signature/result. The imported outer parentheses are a
+Task-253 cross-family wrapper/origin. For the local source, it reuses the
+Task-248 reserve-then-definition two-item/two-binding shadow handoff and
+requires the actual to resolve to `BindingId(1)` /
+`BindingContextId(1)` / `use_ordinal == 2`, never `BindingId(0)`. Existing
+imported outcome/detail fields remain unchanged. The new local route validates
+the application transport and then preserves the generic
+`definition_declaration_payload_extraction_gap` /
+`type_elaboration.external_dependency.ast_payload_extraction` boundary, with
+no public diagnostic.
+
+Synthetic `SurfaceAst` transactions use the same extractor/producer for
+remaining ordinary forms, nested applications, primary/application
+parentheses, definition-parameter actuals, and multiple authenticated
+candidate references. Inline zero/one/two-actual cases split the test:
+raw-AST probes assert only generic `ApplicationTerm` plus mandatory
+parentheses, and caller-supplied producer DTOs assert schema with no candidate
+or request. The production extractor never infers `Inline`; Task 270 owns
+identity/formals/capture/substitution. Template application subtrees emit no
+Task-253 row: Task 277
+owns their direct role/actual/guard/request transport, while Task 278 owns
+ordinary/template candidates and selection. Tests must also prove the frozen
+corruption matrix, sibling isolation, deterministic replay, dependency
+fingerprint substitution rejection for any non-equivalent same-source/module
+Task-252 handoff, acceptance of an equivalent clone, and final
+`TypedAst`/`ResolvedTypedAst` ownership. The
+private-selector matrix rejects imported missing/wrong/duplicate provenance,
+wrong `++` head/form/arity, wrong numeral order, and recovery; local functor
+order reversal, forward use, wrong or extra head/actual/application/item,
+recovery, and selection of outer `BindingId(0)`; and proves bidirectional
+exclusion between both Task-253 routes and every existing Task-252 selector.
+
+This documentation prerequisite changes no runner route, test list, layout,
+or hash. The current 291-test and 23-path/24,120-line Task-252 baselines remain
+exact; projected implementation counts are plan 412/376, type 242/230,
+pass/fail 224/188, admissions 101/5/191/1, and warnings/errors 23/0, subject
+to fresh measurement.

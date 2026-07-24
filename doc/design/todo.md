@@ -2007,3 +2007,34 @@ The exact Task-252 `source_drift` and `test_gap` are closed; the corrected
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` was found. Tasks 253+ and
 260/264/269 remain with their explicit owners; Steps 6/7 remain deferred.
+
+## Step 5 Checker Task 253 Frozen-Contract Addendum
+
+The approved docs-only prerequisite freezes Checker Task 253 as one future
+nonempty implementation task. Its public syntax-free `source_application`
+transaction has five immutable tables for applications, cross-family
+transparent wrappers/origins, individually authenticated ordinary candidate
+references, ordered arguments, and unresolved candidate-signature/
+application-result requests. Primary actuals reuse Task-252 IDs; nested
+actuals may reference Task-253 application IDs. No primary row is duplicated.
+
+The implementation selector is exactly the existing imported `(1 ++ 2)` case
+plus one new same-definition-block later-definiens application whose actual
+is the Task-248-authenticated inner `DefinitionParameter`, not its outer
+reserve. The future aggregate Task-253 oracle is 2/1/2/3/4 and the Task-252
+terms/references/numeric-requests slice is 3/1/2. Inline applications receive
+synthetic source-shape coverage only; Task 270 retains callee/formal/capture/
+substitution authentication. Template subtrees are excluded, with direct
+template transport in Task 277 and ordinary/template candidate/selection
+transport in Task 278.
+
+This prerequisite closes the exact Task-253 `design_drift` only. The
+implementation `source_drift` and `test_gap` remain open. It changes no
+source, fixture, expectation, trace row/status, executable coverage, count,
+or hash; the baseline remains plan 411/375, type 241/229, pass/fail 224/187,
+active parse/declaration/type/proof 101/5/190/1, and warnings/errors 23/0.
+The separate implementation task's projected oracle is plan 412/376, type
+242/230, pass/fail 224/188, active type 191, subject to fresh measurement.
+No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, current `boundary_violation`, or
+`repo_metadata_conflict` was found. Tasks 254+ and Steps 6/7 remain deferred.

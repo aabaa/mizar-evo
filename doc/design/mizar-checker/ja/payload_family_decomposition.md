@@ -86,7 +86,7 @@ expectation rebaseline、Steps 6/7昇格を禁止する。
 | 250 | polarity、argument、qualification/owner identity、local/imported provenance、order、attributed type-site linkを含むattribute-chain payload。Specs 03/06/11/12と17 restricted-adjective boundary、MC-G014/020。 | Tasks 248-249。crate planはexact Task-67/81/84/85 consumer、Task-249 4/4/0 co-handoff、Task-250 4-chain/4-attribute/1-qualifier/1-group/1-actual handoff、synthetic prefix/order extraction coverageをfreezeする。 | later canonical equivalence向けにwritten prefix/list formを保持するが、arity/admissibility、owner compatibility、normalized instance、evidence、closure fact、attribute truthをsynthesizeしない。 |
 | 251 | mode expansion、structure base shape/constructor witness、attributed-type inhabitation、sethood/non-emptiness、inheritance、coercion viabilityのevidence-query requestとupstream dependency-fact input。opaque `ExistentialGateInput` request identityとdependency-fact referenceを含む。Specs 03/05-08/13/17/19、MC-G016/018/026。 | Tasks 248-250。exact representative selectorはTask-249 broad fixtureとTask-84/85で、mode-expansion 5 + structure-inhabitation 3 + attributed 2 requestを全てmissingとしてemitする。同じproduction Task-10 pathがfinal `TypedAst`/`ResolvedTypedAst`までrequested/missing/rejected/supplied transport stateをinject/区別し、semantic imported summaryを仮定しない。 | request/site/provenance/reference transportだけを所有する。`Supplied`はreference arrivalであり、それだけではaccepted/consumable evidenceではない。later Tasks 252-255/263/271/278がnew source siteをownし、accepted evidence、theorem result、artifact statusは外部input。 |
 | 252 | variable/constant reference、`it`、numeral、transparent parenthesisとbinding/role/parent/numeric-type request。Specs 04.1-04.3/04.4.1/04.6、13.1/13.8.1-13.8.2/13.8.8、MC-G017/020。 | Tasks 248-251。exact real Task-10 selectorはnumeral equality、reserved-variable equality、parenthesized reserved-variable equalityでaggregate term/reference/numeric-request oracleは7/4/2。Tasks 260/264/269がreal owner payloadを供給するまでconstant/`it`とeligible nested parenthesis schemaはsynthetic producer/extractor testがownする。referenceはvisibilityだけでなくexact `BindingEnv::lookup` winnerでauthenticateする。 | transport only。parenthesisはsemantic term/type/FOL nodeを追加せず、numeric requestはresult/factを追加しない。arbitrary application、structure/set term、formula、definition/current-result acceptance、local binding productionをownしない。cross-family parent edgeはTasks 253-255を待つ。 |
-| 253 | ordered argument、signature/result request、imported provenance、definition-local actualを含むfunctor/inline-functor application。Specs 10/13.2、MC-G017/020。 | Tasks 249-252、resolver signature candidate、Task-10 imported/local application consumer。 | overload winner、implicit-definition proof、evidenceなしのresult typeなし。 |
+| 253 | frozen/open: ordinary functor application source shape、Task-253-owned cross-family transparent wrapper/origin、個別認証ordinary candidate reference、Task-252 primary-term / nested-application argument edge、unresolved candidate-signature/application-result request。Inline shapeはsyntheticのみ。Specs 10/13.2/15.2.3/19、MC-G017/020。 | Tasks 248-252、exact Task-10 imported `(1 ++ 2)` caseと、同じdefinition blockで先に完了したfunctorを後続functorのdefiniensから適用する新規spec-derived case。Task 270がinline identity/formal/capture/substitution、Task 277がdirect template transport、Task 278がordinary/template candidate collection/viability/winnerを所有する。 | contract frozen、producer absent。primary重複所有、exhaustive candidate claim、overload winner、semantic signature/result、definition proof、template payload、inline semantic identityなし。 |
 | 254 | root/member/view identity、ordered field、inheritance-path request、result-type requestを含むstructure constructor/selector/update term。Specs 05/13.3、MC-G017/018。 | Tasks 249-253、後続Task 263のsource definition payload、Task-10 structure-term consumer。 | constructor property argument、field coverage、upcast winner、structure evidenceを捏造しない。 |
 | 255 | generator scope、predicate/body link、sethood request、written target type、explicit conversion intentを含むset enumeration/comprehension、choice、`qua` term。Specs 07.8.1/08.2/13.4-13.6、MC-G017/018。 | Tasks 248-254、Task-10 set/choice/`qua` consumer。 | missing sethood/narrowing proof、implicit widening path、comprehension factを捏造しない。 |
 | 256 | completeなterm/type/attribute linkとexpected-input requestを持つpredicate application、equality/inequality、membership、type/attribute assertion。Specs 09/14.2/14.5、MC-G017/020。 | Tasks 249-255、Task-10 exact atomic-formula consumer。 | checker evidenceなしのtruth/theorem acceptance/inequality proof/assertion factなし。 |
@@ -337,3 +337,23 @@ produceする。synthetic probeはconstant、`it`、nested-parenthesis、mixed-f
 boundaryをcoverする。bounded `source_drift`/`test_gap`はclosedである。Tasks
 253+と260/264/269はexisting dependency edge/semantic ownerをretainし、Steps
 6/7をpromoteしない。
+
+## Task 253 frozen-contract prerequisite
+
+paired crate planはpublic 5-table `source_application` contract、Task-252 primary/
+nested-application argument edge、Task-253-owned transparent application-wrapper
+relation、complete set/winnerを主張しない個別認証resolver candidate referenceを
+freezeした。future real selectorは既存imported `1 ++ 2` routeと、同じdefinition
+blockで完了した最初のfunctorを後続functorのdefiniensから適用する新規caseである。
+local actualは外側のreserveではなく、再利用するTask-248 source-context handoffが
+認証するinner `DefinitionParameter`である。aggregate Task-253
+application/wrapper/candidate/argument/request oracleは2/1/2/3/4、参照する
+Task-252 term/reference/numeric-request sliceは3/1/2である。
+
+inline zero/one/two-actual shapeはsynthetic source-schema coverageだけで、identity、
+formal、capture、substitutionはTask 270に残す。template applicationはwhole-subtree
+で除外し、direct role/actual/guard/request transportはTask 277、ordinary/template
+candidate collection/viability/winnerはTask 278に残す。この独立documentation
+prerequisiteはselected `design_drift`を解消するがTask 253を実装しない。
+`source_drift`/`test_gap`はopenで、source/fixture/expectation/trace status/
+count/hash/executable credit、Tasks 254+、Steps 6/7は不変である。

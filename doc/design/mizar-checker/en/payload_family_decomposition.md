@@ -94,7 +94,7 @@ not reused.
 | 250 | Attribute-chain payloads: polarity, arguments, qualification/owner identity, local/imported provenance, order, and attributed type-site association. Specs 03, 06, 11, 12, and the 17 restricted-adjective boundary; MC-G014/MC-G020. | Tasks 248-249; the crate plan freezes exact Task-67/81/84/85 consumers, a 4/4/0 Task-249 co-handoff, a 4-chain/4-attribute/1-qualifier/1-group/1-actual Task-250 handoff, and synthetic prefix/order extraction coverage. | Preserves written prefix/list forms for later canonical equivalence, but synthesizes no arity/admissibility, owner compatibility, normalized instance, evidence, closure fact, or attribute truth. |
 | 251 | Evidence-query requests and upstream dependency-fact inputs for mode expansion, structure base shape/constructor witness, attributed-type inhabitation, sethood/non-emptiness, inheritance, and coercion viability, including an opaque `ExistentialGateInput` request identity and dependency-fact references. Specs 03, 05-08, 13, 17, and 19; MC-G016/MC-G018/MC-G026. | Tasks 248-250; the exact representative selector is the Task-249 broad fixture plus Task-84/85. It emits 5 mode-expansion + 3 structure-inhabitation + 2 attributed requests, all missing. The same production Task-10 path injects and distinguishes requested/missing/rejected/supplied transport states through final `TypedAst`/`ResolvedTypedAst`; no semantic imported summary is assumed. | It owns request/site/provenance/reference transport only. `Supplied` is reference arrival, not accepted or consumable evidence by itself. Later Tasks 252-255/263/271/278 own new source sites; accepted evidence, theorem results, and artifact status remain external inputs. |
 | 252 | Primary terms: variable/constant references, `it`, numerals, and transparent parentheses with binding, role, parent, and numeric-type request payloads. Specs 04.1-04.3/04.4.1/04.6 and 13.1/13.8.1-13.8.2/13.8.8; MC-G017/MC-G020. | Tasks 248-251; the exact real Task-10 selector is numeral equality, reserved-variable equality, and parenthesized reserved-variable equality with aggregate term/reference/numeric-request oracle 7/4/2. Synthetic producer/extractor tests own constant/`it` and eligible nested-parenthesis schema coverage until Tasks 260/264/269 provide their real owner payloads. References are authenticated by exact `BindingEnv::lookup` winner, not visibility alone. | Transport only: parentheses add no semantic term/type/FOL node, numeric requests add no result/fact, and no arbitrary application, structure/set term, formula, definition/current-result acceptance, or local-binding production is owned. Cross-family parent edges await Tasks 253-255. |
-| 253 | Functor and inline-functor applications, including ordered arguments, signature/result requests, imported provenance, and definition-local actuals. Specs 10 and 13.2; MC-G017/MC-G020. | Tasks 249-252 and resolver signature candidates; Task-10 imported and local application consumers. | No overload winner, implicit definition proof, or result type without supplied evidence. |
+| 253 | Frozen/open: ordinary functor application source shape, Task-253-owned cross-family transparent wrappers/origins, individually authenticated ordinary candidate references, Task-252 primary-term / nested-application argument edges, and unresolved candidate-signature/application-result requests. Inline shape is synthetic only. Specs 10, 13.2, 15.2.3, and 19; MC-G017/MC-G020. | Tasks 248-252; exact Task-10 imported `(1 ++ 2)` case plus one new spec-derived same-module later-definiens application with a `DefinitionParameter` actual. Task 270 owns inline identity/formals/capture/substitution, Task 277 direct template transport, and Task 278 ordinary/template candidate collection/viability/winner. | Contract frozen; producer absent. No duplicate primary ownership, exhaustive candidate claim, overload winner, semantic signature/result, definition proof, template payload, or inline semantic identity. |
 | 254 | Structure constructor, selector, and update terms with root/member/view identity, ordered fields, inheritance-path requests, and result-type requests. Specs 05 and 13.3; MC-G017/MC-G018. | Tasks 249-253; later Task 263 supplies source definition payloads; Task-10 structure-term consumer. | No constructor property arguments, invented field coverage, upcast winner, or structure evidence. |
 | 255 | Set enumeration/comprehension, choice, and `qua` terms with generator scope, predicate/body links, sethood requests, written target type, and explicit conversion intent. Specs 07.8.1, 08.2, and 13.4-13.6; MC-G017/MC-G018. | Tasks 248-254; Task-10 set/choice/`qua` consumers. | No missing sethood proof, narrowing proof, implicit widening path, or comprehension fact is fabricated. |
 | 256 | Atomic formulas: predicate applications, equality/inequality, membership, type assertions, and attribute assertions with complete term/type/attribute links and expected-input requests. Specs 09 and 14.2/14.5; MC-G017/MC-G020. | Tasks 249-255; Task-10 exact atomic-formula consumers. | No truth, theorem acceptance, inequality proof, or assertion fact without checker evidence. |
@@ -367,3 +367,27 @@ synthetic probes cover constant, `it`, nested-parenthesis, and mixed-family
 boundaries. The bounded `source_drift` and `test_gap` are closed. Tasks 253+
 and 260/264/269 retain their existing dependency edges and semantic owners;
 Steps 6/7 are not promoted.
+
+## Task 253 Frozen-Contract Prerequisite
+
+The paired crate plan now freezes the public five-table `source_application`
+contract, Task-252 primary and nested-application argument edges, the
+Task-253-owned transparent application-wrapper relation, and individually
+authenticated resolver candidate references without claiming completeness or
+a winner. Its exact future real selector is the existing imported
+`1 ++ 2` route plus one new same-definition-block application of a completed
+first functor from a later functor's definiens. That local actual is the inner
+`DefinitionParameter`, authenticated by a reused Task-248 source-context
+handoff, not the outer reserve. The aggregate Task-253
+applications/wrappers/candidates/arguments/requests oracle is 2/1/2/3/4 and
+the referenced Task-252 terms/references/numeric-requests slice is 3/1/2.
+
+Inline zero/one/two-actual shapes are synthetic source-schema coverage only;
+identity, formals, capture, and substitution remain Task 270. Template
+applications are excluded whole-subtree: direct role/actual/guard/request
+transport remains Task 277, while ordinary/template candidate
+collection/viability/winner remains Task 278. This independent documentation
+prerequisite resolves the selected
+`design_drift` but does not implement Task 253. Its `source_drift` and
+`test_gap` remain open; source, fixtures, expectations, trace status, counts,
+hashes, executable credit, Tasks 254+, and Steps 6/7 are unchanged.

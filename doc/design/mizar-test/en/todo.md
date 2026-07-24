@@ -1617,3 +1617,36 @@ promoted by this increment.
   pass/fail 224/187, admissions 101/5/190/1, warnings/errors 23/0; reach 291
   library tests and the verified 23-path/24,120-line layout with fresh hashes.
   Tasks 253+/260/264/269 and Steps 6/7 remain unpromoted.
+
+## Checker Task 253 Frozen Consumer Prerequisite
+
+- [x] Distinguish Checker Task 253 from the already-completed `mizar-test`
+  runner-refactor Tasks 253A/253B.
+- [x] Freeze the existing imported `1 ++ 2` route plus one exact new
+  spec-derived module-local `task253_local_source(x)` second-definiens fail
+  route as the only real consumers.
+- [x] Freeze the new source as reserve `x`, then one definition with two
+  functor declarations sharing inner parameter `x`; reuse the Task-248
+  two-item/two-binding shadow handoff and require the actual to reference
+  `BindingId(1)` / `BindingContextId(1)` / `use_ordinal == 2`.
+- [x] Freeze aggregate Task-253 application/wrapper/candidate/argument/request
+  tables 2/1/2/3/4 and referenced Task-252 primary/reference/numeric slice
+  3/1/2, without duplicate primary ownership.
+- [x] Freeze the Task-253 transparent-wrapper origin for `(1 ++ 2)` and
+  individually authenticated candidate references without claiming
+  completeness, viability, ranking, or a winner.
+- [x] Freeze synthetic ordinary/nested/parenthesized/candidate coverage;
+  inline zero/one/two-actual source-schema coverage only; and template
+  whole-subtree exclusion.
+- [x] Assign inline identity/formals/capture/substitution to Task 270,
+  template direct roles/actuals/guards/requests to Task 277, and
+  ordinary/template candidate collection and selection to Task 278.
+- [x] Preserve the imported outcome/detail and freeze the new local sidecar at
+  `definition_declaration_payload_extraction_gap` /
+  `type_elaboration.external_dependency.ast_payload_extraction`, with no
+  public diagnostic.
+- [ ] Implement Checker Task 253 as one separate logical task, add exactly the
+  new fixture/sidecar and bounded diagnostic trace row, preserve the imported
+  outcome/detail, reach the projected 412/376, 242/230, 224/188, and
+  101/5/191/1 oracles subject to fresh measurement, and record fresh tests,
+  layout, and hashes. Tasks 254+ and Steps 6/7 remain unpromoted.
