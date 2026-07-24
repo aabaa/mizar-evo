@@ -1,5 +1,35 @@
 # Module-Boundary Audit: mizar-test Runner
 
+## Checker Task 253 source-application current-state addendum
+
+Checker Task 253はcohesiveなprivate `source_application` consumer/extractor
+leafを1件追加する。raw `SurfaceAst` traversalはprivateのままで、checkerへは
+syntax-freeなapplication、wrapper、candidate、argument、request tableだけを
+渡す。`runner.rs`は2,412行でfacade/top-level orchestration onlyを維持する。
+614行のtype-elaboration facadeはprivate leaf 17件へdispatchし、sibling leafに
+必要なbounded raw-term partsだけを公開した`source_term.rs`は777行、new ownerは
+1,309行である。
+
+production manifestは24 paths / 25,607 linesである。sorted path hashは
+`5cc36b8a2ee72572003893d975a81ffa356d0790674b05d85d6f99f7e45ffca0`、
+ordered content-manifest hashは
+`b9b6c678e129e543e3e5047d6c053db2a45616f286927ce9a1fe0433dc0b62a8`
+である。new production pathはprivate source-application leafだけである。
+
+exact incrementはplan 412/376、type-elaboration coverage 242/230、pass/fail
+224/188、parse/declaration/type/proof admission 101/5/191/1、
+warnings/errors 23/0となる。plan/parse/declaration/type/proofの5 CLI stdout
+hashは
+`3a7f500e120a799dd7fbd9e639920096d71e2087a4aaac0ff99e1a3775eed9c5`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`c17f55bc5e85429f1d4abb5913d255a31c7747b1559090c427769eb13cb05b59`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
+である。library testsは303件で、raw/normalized sorted-list hashは
+`a81f44fb92196ce486e10e6cfc0901cd611159968dea43d13191df19a3c253b8` /
+`1a621c560a525cac18fac4a1ec4efa0f27986a60e0da40eb5701fe4325ac4cdd`
+である。Tasks 254+、260、270、277-278、Steps 6/7はunpromotedのままである。
+
 ## Checker Task 252 source-term current-state addendum
 
 Checker Task 252はcohesiveなprivate `source_term` consumer/extractor leafを1件

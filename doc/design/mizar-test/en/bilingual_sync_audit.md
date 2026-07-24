@@ -1,5 +1,17 @@
 # mizar-test Bilingual Documentation Sync Audit
 
+## Checker Task 253 / Source-Application Pair Recheck
+
+The paired plan, TODO, harness, module-boundary, and checker producer/consumer
+documents record the same exact two real routes, Task-253 2/1/2/3/4 and
+Task-252 3/1/2 aggregates, inner-definition-parameter coordinates, imported
+wrapper, synthetic ordinary/inline-schema coverage, whole-subtree exclusions,
+and outcome preservation. Both languages record plan 412/376, type 242/230,
+admissions 101/5/191/1, 303 library tests, and the 24-path/25,607-line
+production manifest with path/content hashes `5cc36b8a...` / `b9b6c678...`.
+Tasks 254+/260/270/277-278 and Steps 6/7 remain unpromoted in both languages.
+No bilingual drift remains in Task 253.
+
 ## Checker Task 252 / Source-Term Pair Recheck
 
 The paired plan, TODO, harness, module-boundary, and checker consumer documents

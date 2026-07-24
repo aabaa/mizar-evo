@@ -1,0 +1,10 @@
+reserve x for set;
+
+definition
+  let x be set;
+  func Task253LocalSourceDef:
+    task253_local_source(x) -> set equals x;
+  func Task253LocalConsumerDef:
+    task253_local_consumer(x) -> set
+    equals task253_local_source(x);
+end;

@@ -1,0 +1,126 @@
+# ソース functor-application transport
+
+> Canonical language: English. 正本:
+> [../en/source_application.md](../en/source_application.md).
+
+## スコープ
+
+Checker Task 253 は、ソース functor application occurrence の syntax-free
+かつ immutable な記述を所有する。運ぶのは source shape と未解決 dependency
+だけである。candidate の applicability / completeness / viability /
+ranking / winner、semantic signature / result type、functor definition や
+inline substitution、fact、proof、CoreIr、ControlFlowIr、VC は所有しない。
+
+正本となる言語要件は Chapters 10、13 §13.2、15 §15.2.3、19 である。
+Task 252 は primary-term occurrence、binding reference、numeric request を
+所有し、Task 253 は行を複製せず dense ID を参照する。inline semantics は
+Task 270、template direct transport は Task 277、candidate collection /
+selection は Task 278 に残る。
+
+## Public transaction
+
+`SourceFunctorApplicationProducer::build` は
+`SourceFunctorApplicationHandoffInput`、`SymbolEnv`、`BindingEnv`、
+`SourcePrimaryTermHandoff`、`TypedArena` を受け取る。入力と出力は次の
+5 個の source-ordered dense table である。
+
+- application
+- transparent application wrapper
+- 個別に認証した resolver functor reference
+- Task-252 primary または後続 Task-253 application への ordered argument edge
+- 未解決 candidate-signature / application-result type request
+
+各 public ID は `new` / `index` を持つ zero-based row index であり、table
+は `get`、source-ordered `iter`、`len`、`is_empty` だけを公開する。
+transaction 全体が検証されるまで一行も公開しない。
+
+kind は `Symbolic` / `Inline`、form は `Bare` / `Prefix` / `Infix` /
+`Postfix` / `Bracket` / `Functional` である。Inline は Functional のみで
+candidate/request を持たない。Symbolic は 1 個以上の個別 candidate、
+各 candidate の signature request、最後の application-result request を
+持つ。
+
+## Public Enum Policy
+
+| Public enum | compatibility policy |
+|---|---|
+| `SourceFunctorApplicationKind` | `#[non_exhaustive]`。callerはlater application-shape classを許容する。 |
+| `SourceFunctorApplicationRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |
+| `SourceFunctorApplicationForm` | `#[non_exhaustive]`。callerはlater written source formを許容する。 |
+| `SourceFunctorHeadSite` | `#[non_exhaustive]`。callerはlater head-site shapeを許容する。 |
+| `SourceFunctorArgumentTarget` | `#[non_exhaustive]`。callerはlater frozen cross-family targetを許容する。 |
+| `SourceFunctorTypeRequestKind` | `#[non_exhaustive]`。callerはlater unresolved request kindを許容する。 |
+| `SourceFunctorApplicationError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+
+この module が所有する exhaustive public enum exception はない。
+
+## 検証と ownership
+
+producer は source/module identity、dense preorder、group と ordinal、
+context、非空 range、typed-arena anchor/recovery、canonical token spelling、
+head position、delimiter、form/cardinality、wrapper nesting、argument order /
+non-overlap、nested application の single incoming ownership を認証する。
+
+Primary argument は同じ context にある Task-252 root row で application
+内になければならない。inner descendant、duplicate ownership、partial
+argument list、owner 未凍結の cross-family target は transaction 全体を
+reject する。application を囲む括弧は outer-to-inner の Task-253 wrapper
+であり、Task-252 `Parenthesized` row を捏造しない。
+
+candidate input は application、ordinal、symbol、source contribution のみを
+持つ。producer が origin、visibility、export status、optional signature
+shell を clone する。同一 module candidate は normal / conflict-free /
+source-preceding functor definition、imported candidate は public exported
+または re-exported provenance を必要とする。missing / pending / opaque
+signature は未解決 provenance として許可し、malformed は reject する。
+
+## Derived dependency fingerprint
+
+output の `primary_term_fingerprint` は build 時の Task-252 exact
+`debug_text()` から導出する。`TypedAst::with_source_application` は
+Task-252 handoff の先行 install を要求し、fingerprint と全 Primary target
+を再検証する。replacement と non-equivalent な同一 source/module
+substitution は atomic に失敗し、equivalent clone は許可する。
+
+`ResolvedTypedAst` は同じ association を再検証して clone-preserve
+するだけで、dense ID を再構築・retarget しない。
+
+## Private source consumer
+
+raw `SurfaceAst`、source node ID、syntax kind は
+`mizar-test::runner::type_elaboration::source_application` だけに置く。
+production selector は次の exactly 2 cases である。
+
+1. `1 divides (1 ++ 2)` 内の imported `1 ++ 2`
+2. frozen local two-functor definition block の second definiens 内
+   `task253_local_source(x)`
+
+aggregate application/wrapper/candidate/argument/request は 2/1/2/3/4、
+co-installed Task-252 primary/reference/numeric-request は 3/1/2 である。
+local actual は Task-248 definition parameter の `BindingId(1)` /
+`BindingContextId(1)` / use ordinal 2 である。imported parentheses は
+Task-253 wrapper 1 行で、Task-252 parenthesized row はない。
+
+imported case の outcome/detail/public diagnostics は不変である。local
+case は Task 253 を検証後、Task-260
+definition-declaration payload gap
+`type_elaboration.external_dependency.ast_payload_extraction` に public
+diagnostic なしで留まる。
+
+## Verification boundary
+
+checker tests は dense table、全 form/cardinality、inline schema、degraded
+recovery、wrapper、root-only primary、dependency fingerprint substitution、
+nested application、candidate provenance/signature、request、corruption、
+determinism、atomic failure を覆う。runner tests は exact 2 selectors、
+aggregate oracle、local binding coordinates、wrapper ownership、corruption
+isolation、deterministic replay、final clone preservation、他の全 active
+type-elaboration case の exclusion に加え、private extractor と public
+producer を通る ordinary/inline/nested/parenthesized/wrapped/degraded/
+candidate-subset/template-and-mixed synthetic matrix 全体を覆う。
+
+bounded trace row は
+`spec.en.checker.type_elaboration.source_functor_application_payload` である。
+MC-G017/MC-G020 は executable coverage が増えるが partial のままであり、
+semantic term/formula/definition、overload selection、later cross-family
+terms、accepted facts/proofs、Steps 6/7 は未実装である。

@@ -1,9 +1,9 @@
 //! Source-shaped typed AST data tables for checker phase 6.
 
 use crate::{
-    source_attribute::SourceAttributeHandoff, source_context::SourceBindingContextHandoff,
-    source_evidence::SourceEvidenceHandoff, source_term::SourcePrimaryTermHandoff,
-    source_type::SourceTypeApplicationHandoff,
+    source_application::SourceFunctorApplicationHandoff, source_attribute::SourceAttributeHandoff,
+    source_context::SourceBindingContextHandoff, source_evidence::SourceEvidenceHandoff,
+    source_term::SourcePrimaryTermHandoff, source_type::SourceTypeApplicationHandoff,
 };
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
@@ -89,6 +89,7 @@ pub struct TypedAst {
     source_attribute: Option<SourceAttributeHandoff>,
     source_evidence: Option<SourceEvidenceHandoff>,
     source_term: Option<SourcePrimaryTermHandoff>,
+    source_application: Option<SourceFunctorApplicationHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -110,6 +111,7 @@ impl TypedAst {
             source_attribute: parts.source_attribute,
             source_evidence: None,
             source_term: None,
+            source_application: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -152,6 +154,10 @@ impl TypedAst {
         self.source_term.as_ref()
     }
 
+    pub const fn source_application(&self) -> Option<&SourceFunctorApplicationHandoff> {
+        self.source_application.as_ref()
+    }
+
     pub fn with_source_evidence(
         mut self,
         handoff: SourceEvidenceHandoff,
@@ -187,6 +193,24 @@ impl TypedAst {
             .validate_installation(self.source_id, &self.module_id, &self.nodes)
             .map_err(|_| TypedAstError::InvalidSourceTerm)?;
         self.source_term = Some(handoff);
+        Ok(self)
+    }
+
+    pub fn with_source_application(
+        mut self,
+        handoff: SourceFunctorApplicationHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_application.is_some() {
+            return Err(TypedAstError::InvalidSourceApplication);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceApplication)?;
+        handoff
+            .validate_installation(self.source_id, &self.module_id, source_term)
+            .map_err(|_| TypedAstError::InvalidSourceApplication)?;
+        self.source_application = Some(handoff);
         Ok(self)
     }
 
@@ -243,6 +267,9 @@ impl TypedAst {
         }
         if let Some(source_term) = &self.source_term {
             output.push_str(&source_term.debug_text());
+        }
+        if let Some(source_application) = &self.source_application {
+            output.push_str(&source_application.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1123,6 +1150,7 @@ pub enum TypedAstError {
     InvalidSourceAttribute,
     InvalidSourceEvidence,
     InvalidSourceTerm,
+    InvalidSourceApplication,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1244,6 +1272,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceTerm => {
                 formatter.write_str("typed AST source primary-term handoff is inconsistent")
+            }
+            Self::InvalidSourceApplication => {
+                formatter.write_str("typed AST source functor-application handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,

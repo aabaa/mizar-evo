@@ -1,5 +1,17 @@
 # mizar-test Bilingual Documentation Sync Audit
 
+## Checker Task 253 / source-application pair recheck
+
+paired plan、TODO、harness、module-boundary、checker producer/consumer文書は、
+exact real route 2件、Task-253 2/1/2/3/4とTask-252 3/1/2 aggregate、inner
+definition-parameter coordinates、imported wrapper、synthetic ordinary/inline-
+schema coverage、whole-subtree exclusion、outcome preservationを同じ内容で記録
+する。両言語はplan 412/376、type 242/230、admission 101/5/191/1、library
+test 303件、path/content hash `5cc36b8a...` / `b9b6c678...`の
+24-path/25,607-line production manifestを記録する。Tasks
+254+/260/270/277-278とSteps 6/7は両言語でunpromotedのままである。Task 253に
+bilingual driftは残らない。
+
 ## Checker Task 252 / source-term pair recheck
 
 paired plan、TODO、harness、module-boundary、checker consumer documentは同じ

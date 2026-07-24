@@ -155,8 +155,9 @@ use type_elaboration::{
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
     SourceReservedVariableBuiltinType, SourceReservedVariableTypeAssertion,
-    assemble_source_checker_handoff, assemble_source_contradiction_checker_handoff,
-    assert_source_contradiction_handoff,
+    SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
+    SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead, assemble_source_checker_handoff,
+    assemble_source_contradiction_checker_handoff, assert_source_contradiction_handoff,
     assert_source_parenthesized_heterogeneous_reserve_membership_output,
     assert_source_parenthesized_reserved_object_variable_equality_output,
     assert_source_parenthesized_reserved_object_variable_inequality_output,
@@ -292,7 +293,8 @@ use type_elaboration::{
     extract_source_two_edge_local_object_mode_reserved_variable_membership,
     extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
     extract_source_two_edge_local_object_mode_two_hop_asserted_head, resolve_visible_attribute,
-    resolve_visible_type_head, source_attribute_output, source_binding_context_output,
+    resolve_visible_type_head, source_application_output, source_application_output_with_mutation,
+    source_attribute_output, source_binding_context_output,
     source_binding_context_token_shape_is_exact, source_builtin_type_assertion_formula_output,
     source_chained_local_mode_asserted_head_output,
     source_chained_local_mode_radix_asserted_head_output,
@@ -428,14 +430,16 @@ use type_elaboration::{
     source_two_edge_local_object_mode_reserved_variable_membership_output,
     source_two_edge_local_object_mode_reserved_variable_type_assertion_output,
     source_two_edge_local_object_mode_two_hop_asserted_head_output, source_type_application_output,
-    structural_child_ids, surface_nodes_with_kind, surface_site, synthetic_source_attribute_output,
+    structural_child_ids, surface_nodes_with_kind, surface_site, synthetic_functional_actual_count,
+    synthetic_source_application_output, synthetic_source_attribute_output,
     synthetic_source_term_output,
 };
 use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
-    is_active_type_elaboration, source_attribute_detail_keys, source_binding_context_detail_keys,
+    is_active_type_elaboration, source_application_transport_detail_keys,
+    source_attribute_detail_keys, source_binding_context_detail_keys,
     source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
@@ -1483,6 +1487,14 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    if let Some(keys) = source_application_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) =
         source_term_transport_error_detail_keys(&ast, resolver.module.clone(), &symbols)
     {

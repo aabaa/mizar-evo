@@ -611,3 +611,13 @@ IRをtyped arenaへ追加しない。
 source/moduleとreferenced arena nodeすべてをauthenticateする。この追加は
 syntax-freeで、normalized type、semantic term/formula、accepted fact、proof
 status、downstream IRをtyped arenaへ追加しない。
+
+## Task 253 ownership addendum
+
+`TypedAst`はoptional immutable `SourceFunctorApplicationHandoff`をownする。
+`with_source_application`はone-shotで、Task-252 handoffが先にinstall済みである
+ことを要求し、そのexact deterministic debug fingerprintを比較して全referenced
+primary rootをinstallation前にrevalidateする。equivalent Task-252 cloneはacceptし、
+replacementとnon-equivalent same-source/module substitutionはatomicにfailする。
+signature、result type、candidate selection、definition behavior、semantic
+term/formula、fact、proof、downstream IRは追加しない。

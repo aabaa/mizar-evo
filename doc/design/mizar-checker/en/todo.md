@@ -4415,19 +4415,17 @@ unchecked row below is one future nonempty logical task and one commit.
   reference ordinal from preceding completed binding rows, preserves
   duplicate-priority binding groups for reachable `Ambiguous` rejection, and
   records `Resolver` as structurally unreachable for this producer.
-- [ ] **Task 253:** functor and inline-functor application producer. The
-  paired crate plan now freezes the public five-table `source_application`
-  contract, exact imported plus new same-definition-block later-definiens
-  consumers, aggregate applications/wrappers/candidates/arguments/requests
-  2/1/2/3/4 oracle, Task-252 terms/references/numeric-requests 3/1/2 slice,
-  Task-248 `DefinitionParameter` shadow-handoff reuse, transparent
-  cross-family origin ownership, individual candidate-reference boundary,
-  synthetic inline schema, corruption matrix, trace/count impact, and
-  forbidden scope. Implementation remains open as one separate logical task:
-  Task 270 owns inline identity/formals/capture/substitution, Task 277 owns
-  direct template transport, Task 278 owns ordinary/template candidate
-  collection/viability/winner, and Task 253 never duplicates Task-252 primary
-  terms.
+- [x] **Task 253:** functor and inline-functor application producer. The
+  public five-table `source_application` contract is implemented for the exact
+  imported and same-definition-block later-definiens consumers, aggregate
+  applications/wrappers/candidates/arguments/requests 2/1/2/3/4 oracle,
+  Task-252 terms/references/numeric-requests 3/1/2 slice, Task-248
+  `DefinitionParameter` shadow-handoff reuse, transparent cross-family origin
+  ownership, individual candidate-reference boundary, synthetic schema,
+  corruption matrix, and final ownership. Task 270 retains inline identity/
+  formals/capture/substitution, Task 277 direct template transport, and Task
+  278 ordinary/template candidate collection/viability/winner; Task 253 does
+  not duplicate Task-252 primary terms.
 - [ ] **Task 254:** structure constructor/selector/update term producer.
 - [ ] **Task 255:** set/comprehension/choice/`qua` term producer.
 - [ ] **Task 256:** atomic formula producer.

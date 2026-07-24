@@ -1,0 +1,24 @@
+schema_version = 1
+id = "fail_type_elaboration_local_functor_application_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_local_functor_application_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "definition_declaration_payload_extraction_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.10.functor_definitions.type_elaboration_payload_gap",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.predicate_functor_definition_gap",
+  "spec.en.checker.type_elaboration.source_functor_application_payload",
+]
+notes = "Active type_elaboration runner boundary coverage for checker Task 253: the runner validates the exact module-local `task253_local_source(x)` application in the second definiens, its local resolver functor-reference provenance, and its Task-252 definition-parameter actual before preserving the Task-260 functor-definition intake boundary. It does not claim functor-definition acceptance, application typing, candidate completeness or selection, inline semantics, template transport, facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, or a public diagnostic."

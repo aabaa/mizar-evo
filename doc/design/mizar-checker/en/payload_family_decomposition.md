@@ -391,3 +391,18 @@ prerequisite resolves the selected
 `design_drift` but does not implement Task 253. Its `source_drift` and
 `test_gap` remain open; source, fixtures, expectations, trace status, counts,
 hashes, executable credit, Tasks 254+, and Steps 6/7 are unchanged.
+
+## Task 253 Current-State Addendum
+
+Task 253 now implements the graph's functor-application transport node without
+advancing semantic term, definition, formula, or overload-selection
+ownership. The public checker handoff authenticates the five dense tables,
+exact Task-252 debug fingerprint, root-only and nested argument edges,
+transparent application wrappers, and individual resolver functor references
+before atomic publication. The private Task-10 consumer activates exactly the
+two frozen real routes and produces 2/1/2/3/4 with co-installed Task-252
+3/1/2. Synthetic private-extractor probes cover all remaining source forms,
+inline schema only, nesting, wrappers, degraded transport, candidate subsets,
+and whole-template/mixed-family exclusion. The bounded `source_drift` and
+`test_gap` are closed. Tasks 254+, 260, 270, 277, and 278 retain their
+existing dependency edges and semantic owners; Steps 6/7 are not promoted.

@@ -740,3 +740,13 @@ is absent.
 `source_term()` getter. Final assembly does not rebuild or reinterpret source
 terms, choose numeric types, or create semantic results, and the legacy
 projection remains unchanged when the handoff is absent.
+
+## Task 253 Final-Handoff Addendum
+
+`ResolvedTypedAst` revalidates the exact Task-252 fingerprint/primary-edge
+association and clone-preserves the optional checker-owned
+`SourceFunctorApplicationHandoff` installed on `TypedAst`. Its borrowed
+`source_application()` getter exposes the immutable handoff. Final assembly
+does not rebuild or retarget dense IDs, collect/select candidates, resolve a
+signature/result type, or create semantic results; the legacy projection is
+unchanged when the handoff is absent.

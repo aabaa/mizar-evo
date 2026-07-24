@@ -1460,8 +1460,9 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
 - [x] imported outcome/detailを維持し、new local sidecarをpublic diagnostic
   なしの`definition_declaration_payload_extraction_gap` /
   `type_elaboration.external_dependency.ast_payload_extraction`へfreezeする。
-- [ ] Checker Task 253を別の1 logical taskで実装し、exact new fixture/sidecarと
+- [x] Checker Task 253を別の1 logical taskで実装し、exact new fixture/sidecarと
   bounded diagnostic trace rowを追加し、imported outcome/detailを維持し、fresh
-  計測を条件にprojected 412/376、242/230、224/188、101/5/191/1 oracleへ
-  到達し、fresh test/layout/hashを記録する。Tasks 254+とSteps 6/7は
+  計測で412/376、242/230、224/188、101/5/191/1 oracleとlibrary test
+  303件へ到達した。paired completion documentは24-path/25,607-line manifestと
+  exact 5 CLI/test-list/production hashを記録する。Tasks 254+とSteps 6/7は
   unpromotedのままである。

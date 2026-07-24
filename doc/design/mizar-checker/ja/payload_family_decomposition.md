@@ -357,3 +357,17 @@ candidate collection/viability/winnerはTask 278に残す。この独立document
 prerequisiteはselected `design_drift`を解消するがTask 253を実装しない。
 `source_drift`/`test_gap`はopenで、source/fixture/expectation/trace status/
 count/hash/executable credit、Tasks 254+、Steps 6/7は不変である。
+
+## Task 253 current-state addendum
+
+Task 253はsemantic term/definition/formula/overload-selection ownershipを進めず、
+graphのfunctor-application transport nodeを実装する。public checker handoffは
+five dense table、exact Task-252 debug fingerprint、root-only/nested argument
+edge、transparent application wrapper、individual resolver functor referenceを
+atomic publication前にauthenticateする。private Task-10 consumerはfrozen real
+route exactly 2件だけをactivateし、Task-253 2/1/2/3/4とco-installed Task-252
+3/1/2をproduceする。synthetic private-extractor probeはremaining source form
+すべて、inline schemaだけ、nesting、wrapper、degraded transport、candidate
+subset、whole-template/mixed-family exclusionをcoverする。bounded
+`source_drift`/`test_gap`はclosedである。Tasks 254+、260、270、277、278は
+existing dependency edge/semantic ownerをretainし、Steps 6/7をpromoteしない。

@@ -2847,3 +2847,18 @@ or hash. The current 291-test and 23-path/24,120-line Task-252 baselines remain
 exact; projected implementation counts are plan 412/376, type 242/230,
 pass/fail 224/188, admissions 101/5/191/1, and warnings/errors 23/0, subject
 to fresh measurement.
+
+## Checker Task 253 Runner Completion
+
+The private leaf is active for exactly the two frozen consumers. It composes
+Task 252 rather than duplicating primary rows, installs the Task-253 handoff
+after the exact dependency fingerprint validates, and verifies clone-only
+final preservation. Real tests measure 2/1/2/3/4 and 3/1/2, the local inner
+binding coordinates, the imported wrapper, corruption isolation,
+deterministic replay, and exclusion of every other active type-elaboration
+case. The measured corpus is plan 412/376, type 242/230, pass/fail 224/188,
+admissions 101/5/191/1, and warnings/errors 23/0.
+The 303-test raw/normalized list hashes are `a81f44fb...` / `1a621c56...`;
+the 24-path/25,607-line production path/content hashes are `5cc36b8a...` /
+`b9b6c678...`. Exact values and all five CLI hashes are recorded in the paired
+module-boundary audit.

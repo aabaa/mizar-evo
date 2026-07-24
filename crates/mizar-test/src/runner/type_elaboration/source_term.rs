@@ -1,15 +1,18 @@
 use std::collections::BTreeMap;
 
 use mizar_checker::{
-    binding_env::{BindingContextId, BindingEnv, BindingId, BindingKind},
+    binding_env::{
+        BindingContextId, BindingEnv, BindingId, BindingKind, BindingLookupResult,
+        BindingLookupSite,
+    },
     resolved_typed_ast::{
         ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
     },
     source_term::{
-        SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermId,
-        SourcePrimaryTermInput, SourcePrimaryTermKind, SourcePrimaryTermProducer,
-        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput, SourcePrimaryTermReferenceRole,
-        SourcePrimaryTermRole,
+        SourceNumericTypeRequestInput, SourcePrimaryTermHandoff, SourcePrimaryTermHandoffInput,
+        SourcePrimaryTermId, SourcePrimaryTermInput, SourcePrimaryTermKind,
+        SourcePrimaryTermProducer, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput,
+        SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
     },
     type_checker::FormulaKind,
     typed_ast::{
@@ -36,6 +39,11 @@ const INVALID_PAYLOAD_KEY: &str = "type_elaboration.checker.typed_ast_invalid";
 pub(in crate::runner) struct SourceTermRouteOutput {
     pub(in crate::runner) typed_ast: TypedAst,
     pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+pub(super) struct SourceTermParts {
+    pub(super) arena: TypedArena,
+    pub(super) handoff: SourcePrimaryTermHandoff,
 }
 
 /// Runs the bounded Task-252 transport on its exact real selectors without
@@ -114,7 +122,13 @@ fn source_term_output_with_mutation_impl(
             payload.left_site.node().index(),
             payload.right_site.node().index(),
         ];
-        match extract_roots(ast, roots, &binding_env, ReferenceClassification::Variable) {
+        match extract_roots(
+            ast,
+            roots,
+            &binding_env,
+            BindingContextId::new(0),
+            ReferenceClassification::Variable,
+        ) {
             Ok(terms) => Some((binding_env, terms)),
             Err(error) => return Some(Err(error)),
         }
@@ -132,7 +146,13 @@ fn source_term_output_with_mutation_impl(
             payload.wrapper_site.node().index(),
             payload.formula.right_site.node().index(),
         ];
-        match extract_roots(ast, roots, &binding_env, ReferenceClassification::Variable) {
+        match extract_roots(
+            ast,
+            roots,
+            &binding_env,
+            BindingContextId::new(0),
+            ReferenceClassification::Variable,
+        ) {
             Ok(terms) => Some((binding_env, terms)),
             Err(error) => return Some(Err(error)),
         }
@@ -147,7 +167,13 @@ fn source_term_output_with_mutation_impl(
             payload.left_site.node().index(),
             payload.right_site.node().index(),
         ];
-        match extract_roots(ast, roots, &binding_env, ReferenceClassification::Variable) {
+        match extract_roots(
+            ast,
+            roots,
+            &binding_env,
+            BindingContextId::new(0),
+            ReferenceClassification::Variable,
+        ) {
             Ok(terms) => Some((binding_env, terms)),
             Err(error) => return Some(Err(error)),
         }
@@ -172,6 +198,7 @@ pub(in crate::runner) fn synthetic_source_term_output(
         ast,
         roots,
         &binding_env,
+        BindingContextId::new(0),
         ReferenceClassification::FromBindingKind,
     )?;
     build_output(ast, module, binding_env, terms, |_| {})
@@ -184,9 +211,15 @@ fn build_output(
     terms: Vec<ExtractedTerm>,
     mutate: impl FnOnce(&mut SourcePrimaryTermHandoffInput),
 ) -> Result<SourceTermRouteOutput, String> {
-    let arena = surface_indexed_arena(ast, &terms)?;
-    let mut input = handoff_input(ast, module.clone(), &binding_env, &terms)?;
+    let mut input = handoff_input(
+        ast,
+        module.clone(),
+        &binding_env,
+        &terms,
+        BindingContextId::new(0),
+    )?;
     mutate(&mut input);
+    let arena = surface_indexed_arena(ast, &terms, &BTreeMap::new(), &BTreeMap::new())?;
     let handoff = SourcePrimaryTermProducer::build(input, &binding_env, &arena)
         .map_err(|error| error.to_string())?;
     let typed_ast = TypedAst::try_new(TypedAstParts {
@@ -240,8 +273,73 @@ fn build_output(
 #[derive(Debug, Clone, Copy)]
 enum ReferenceClassification {
     Variable,
-    #[cfg(test)]
     FromBindingKind,
+}
+
+pub(super) fn source_term_parts_for_roots(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    binding_env: &BindingEnv,
+    roots: impl IntoIterator<Item = usize>,
+    context: BindingContextId,
+    owned_node_kinds: &BTreeMap<usize, &'static str>,
+) -> Result<SourceTermParts, String> {
+    source_term_parts_for_roots_with_recovery(
+        ast,
+        module,
+        binding_env,
+        roots,
+        context,
+        owned_node_kinds,
+        &BTreeMap::new(),
+    )
+}
+
+fn source_term_parts_for_roots_with_recovery(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    binding_env: &BindingEnv,
+    roots: impl IntoIterator<Item = usize>,
+    context: BindingContextId,
+    owned_node_kinds: &BTreeMap<usize, &'static str>,
+    owned_node_recoveries: &BTreeMap<usize, NodeRecoveryState>,
+) -> Result<SourceTermParts, String> {
+    if binding_env.source_id() != ast.source_id || binding_env.module_id() != &module {
+        return Err("source primary-term binding environment identity mismatch".to_owned());
+    }
+    let terms = extract_roots(
+        ast,
+        roots,
+        binding_env,
+        context,
+        ReferenceClassification::FromBindingKind,
+    )?;
+    let arena = surface_indexed_arena(ast, &terms, owned_node_kinds, owned_node_recoveries)?;
+    let input = handoff_input(ast, module, binding_env, &terms, context)?;
+    let handoff = SourcePrimaryTermProducer::build(input, binding_env, &arena)
+        .map_err(|error| error.to_string())?;
+    Ok(SourceTermParts { arena, handoff })
+}
+
+#[cfg(test)]
+pub(super) fn synthetic_source_term_parts_for_roots(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    binding_env: &BindingEnv,
+    roots: impl IntoIterator<Item = usize>,
+    context: BindingContextId,
+    owned_node_kinds: &BTreeMap<usize, &'static str>,
+    owned_node_recoveries: &BTreeMap<usize, NodeRecoveryState>,
+) -> Result<SourceTermParts, String> {
+    source_term_parts_for_roots_with_recovery(
+        ast,
+        module,
+        binding_env,
+        roots,
+        context,
+        owned_node_kinds,
+        owned_node_recoveries,
+    )
 }
 
 #[derive(Debug, Clone)]
@@ -258,6 +356,7 @@ fn extract_roots(
     ast: &SurfaceAst,
     roots: impl IntoIterator<Item = usize>,
     binding_env: &BindingEnv,
+    context: BindingContextId,
     classification: ReferenceClassification,
 ) -> Result<Vec<ExtractedTerm>, String> {
     let mut roots = roots.into_iter().collect::<Vec<_>>();
@@ -272,7 +371,15 @@ fn extract_roots(
     let mut terms = Vec::new();
     for root in roots {
         let checkpoint = terms.len();
-        if !collect_eligible_term(ast, root, None, binding_env, classification, &mut terms)? {
+        if !collect_eligible_term(
+            ast,
+            root,
+            None,
+            binding_env,
+            context,
+            classification,
+            &mut terms,
+        )? {
             terms.truncate(checkpoint);
         }
     }
@@ -284,6 +391,7 @@ fn collect_eligible_term(
     id: usize,
     parent: Option<SourcePrimaryTermId>,
     binding_env: &BindingEnv,
+    context: BindingContextId,
     classification: ReferenceClassification,
     terms: &mut Vec<ExtractedTerm>,
 ) -> Result<bool, String> {
@@ -308,6 +416,7 @@ fn collect_eligible_term(
                 child.index(),
                 parent,
                 binding_env,
+                context,
                 classification,
                 terms,
             )
@@ -323,7 +432,7 @@ fn collect_eligible_term(
             if spelling.is_empty() {
                 return Ok(false);
             }
-            let kind = reference_kind(binding_env, spelling, classification)?;
+            let kind = reference_kind(binding_env, spelling, context, node.range, classification)?;
             terms.push(ExtractedTerm {
                 node: TypedNodeId::new(id),
                 source_range: node.range,
@@ -394,6 +503,7 @@ fn collect_eligible_term(
                 child.index(),
                 Some(wrapper),
                 binding_env,
+                context,
                 classification,
                 terms,
             )? || terms.len() < checkpoint + 2
@@ -409,42 +519,42 @@ fn collect_eligible_term(
 }
 
 fn reference_kind(
-    _binding_env: &BindingEnv,
-    _spelling: &str,
+    binding_env: &BindingEnv,
+    spelling: &str,
+    context: BindingContextId,
+    source_range: mizar_session::SourceRange,
     classification: ReferenceClassification,
 ) -> Result<SourcePrimaryTermKind, String> {
     match classification {
         ReferenceClassification::Variable => Ok(SourcePrimaryTermKind::VariableReference),
-        #[cfg(test)]
         ReferenceClassification::FromBindingKind => {
-            reference_kind_from_binding(_binding_env, _spelling)
+            reference_kind_from_binding(binding_env, spelling, context, source_range)
         }
     }
 }
 
-#[cfg(test)]
 fn reference_kind_from_binding(
     binding_env: &BindingEnv,
     spelling: &str,
+    context: BindingContextId,
+    source_range: mizar_session::SourceRange,
 ) -> Result<SourcePrimaryTermKind, String> {
-    let mut kinds = binding_env
+    let binding = visible_binding(binding_env, spelling, context, source_range)?;
+    let kind = binding_env
         .bindings()
-        .iter()
-        .filter_map(|(_, binding)| (binding.spelling == spelling).then_some(binding.kind))
-        .collect::<Vec<_>>();
-    kinds.sort();
-    kinds.dedup();
-    match kinds.as_slice() {
-        [BindingKind::LocalAbbreviation] => Ok(SourcePrimaryTermKind::ConstantReference),
-        [BindingKind::ReservedVariable]
-        | [BindingKind::LetBinding]
-        | [BindingKind::QuantifierBinder]
-        | [BindingKind::DefinitionParameter] => Ok(SourcePrimaryTermKind::VariableReference),
-        [] => Err(format!(
-            "source primary-term reference `{spelling}` has no authenticated binding"
-        )),
+        .get(binding)
+        .ok_or_else(|| {
+            format!("source primary-term reference `{spelling}` lost its authenticated binding")
+        })?
+        .kind;
+    match kind {
+        BindingKind::LocalAbbreviation => Ok(SourcePrimaryTermKind::ConstantReference),
+        BindingKind::ReservedVariable
+        | BindingKind::LetBinding
+        | BindingKind::QuantifierBinder
+        | BindingKind::DefinitionParameter => Ok(SourcePrimaryTermKind::VariableReference),
         _ => Err(format!(
-            "source primary-term reference `{spelling}` has no unique Task-252 role"
+            "source primary-term reference `{spelling}` has no Task-252 role"
         )),
     }
 }
@@ -454,6 +564,7 @@ fn handoff_input(
     module: ModuleId,
     binding_env: &BindingEnv,
     extracted: &[ExtractedTerm],
+    context: BindingContextId,
 ) -> Result<SourcePrimaryTermHandoffInput, String> {
     let terms = extracted
         .iter()
@@ -462,7 +573,7 @@ fn handoff_input(
             site: TypedSiteRef::Node(term.node),
             source_range: term.source_range,
             source_ordinal,
-            context: BindingContextId::new(0),
+            context,
             recovery: SourcePrimaryTermRecovery::Normal,
             spelling: term.spelling.clone(),
             kind: term.kind,
@@ -482,7 +593,13 @@ fn handoff_input(
                 };
                 references.push(SourcePrimaryTermReferenceInput {
                     term: SourcePrimaryTermId::new(index),
-                    binding: unique_binding(binding_env, &term.spelling, role)?,
+                    binding: unique_binding(
+                        binding_env,
+                        &term.spelling,
+                        role,
+                        context,
+                        term.source_range,
+                    )?,
                     role,
                 });
             }
@@ -512,6 +629,8 @@ fn unique_binding(
     binding_env: &BindingEnv,
     spelling: &str,
     role: SourcePrimaryTermReferenceRole,
+    context: BindingContextId,
+    source_range: mizar_session::SourceRange,
 ) -> Result<BindingId, String> {
     let matches_role = |kind| match role {
         SourcePrimaryTermReferenceRole::Variable => matches!(
@@ -524,26 +643,62 @@ fn unique_binding(
         SourcePrimaryTermReferenceRole::LocalConstant => kind == BindingKind::LocalAbbreviation,
         _ => false,
     };
-    let bindings = binding_env
+    let binding = visible_binding(binding_env, spelling, context, source_range)?;
+    let binding_row = binding_env.bindings().get(binding).ok_or_else(|| {
+        format!("source primary-term reference `{spelling}` lost its authenticated binding")
+    })?;
+    if matches_role(binding_row.kind) {
+        Ok(binding)
+    } else {
+        Err(format!(
+            "source primary-term reference `{spelling}` requires one authenticated binding"
+        ))
+    }
+}
+
+fn visible_binding(
+    binding_env: &BindingEnv,
+    spelling: &str,
+    context: BindingContextId,
+    source_range: mizar_session::SourceRange,
+) -> Result<BindingId, String> {
+    let context_row = binding_env.contexts().get(context).ok_or_else(|| {
+        format!("source primary-term reference `{spelling}` has no authenticated binding context")
+    })?;
+    let use_ordinal = binding_env
         .bindings()
         .iter()
-        .filter_map(|(id, binding)| {
-            (binding.spelling == spelling && matches_role(binding.kind)).then_some(id)
-        })
-        .collect::<Vec<_>>();
-    match bindings.as_slice() {
-        [binding] => Ok(*binding),
+        .filter(|(_, binding)| binding.declaration_range.end <= source_range.start)
+        .count();
+    let lookup = BindingLookupSite::new(
+        spelling,
+        context,
+        context_row.lexical_scope.clone(),
+        use_ordinal,
+    );
+    match binding_env.lookup(&lookup) {
+        Ok(BindingLookupResult::Local(binding)) => Ok(binding),
         _ => Err(format!(
-            "source primary-term reference `{spelling}` requires one authenticated binding"
+            "source primary-term reference `{spelling}` has no unique visible binding"
         )),
     }
 }
 
-fn surface_indexed_arena(ast: &SurfaceAst, terms: &[ExtractedTerm]) -> Result<TypedArena, String> {
-    let kinds = terms
+fn surface_indexed_arena(
+    ast: &SurfaceAst,
+    terms: &[ExtractedTerm],
+    owned_node_kinds: &BTreeMap<usize, &'static str>,
+    owned_node_recoveries: &BTreeMap<usize, NodeRecoveryState>,
+) -> Result<TypedArena, String> {
+    let mut kinds = terms
         .iter()
         .map(|term| (term.node.index(), typed_kind_key(term.kind)))
         .collect::<BTreeMap<_, _>>();
+    for (node, kind) in owned_node_kinds {
+        if kinds.insert(*node, kind).is_some() {
+            return Err("source term and application arena ownership overlap".to_owned());
+        }
+    }
     let mut builder = TypedArenaBuilder::new();
     for (index, node) in ast.nodes().iter().enumerate() {
         let kind = kinds
@@ -560,11 +715,13 @@ fn surface_indexed_arena(ast: &SurfaceAst, terms: &[ExtractedTerm]) -> Result<Ty
                 TypedNode::new(kind, SourceAnchor::Range(node.range))
                     .with_children(children)
                     .with_typing(TypingState::Unknown)
-                    .with_recovery(if node.recovered {
-                        NodeRecoveryState::Recovered
-                    } else {
-                        NodeRecoveryState::Normal
-                    }),
+                    .with_recovery(owned_node_recoveries.get(&index).copied().unwrap_or(
+                        if node.recovered {
+                            NodeRecoveryState::Recovered
+                        } else {
+                            NodeRecoveryState::Normal
+                        },
+                    )),
             )
             .map_err(|error| error.to_string())?;
         if typed.index() != index {

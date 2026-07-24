@@ -1645,8 +1645,9 @@ promoted by this increment.
   `definition_declaration_payload_extraction_gap` /
   `type_elaboration.external_dependency.ast_payload_extraction`, with no
   public diagnostic.
-- [ ] Implement Checker Task 253 as one separate logical task, add exactly the
+- [x] Implement Checker Task 253 as one separate logical task, add exactly the
   new fixture/sidecar and bounded diagnostic trace row, preserve the imported
-  outcome/detail, reach the projected 412/376, 242/230, 224/188, and
-  101/5/191/1 oracles subject to fresh measurement, and record fresh tests,
-  layout, and hashes. Tasks 254+ and Steps 6/7 remain unpromoted.
+  outcome/detail, and reach measured 412/376, 242/230, 224/188, and
+  101/5/191/1 oracles with 303 library tests. The paired completion documents
+  record the 24-path/25,607-line manifest and exact five-CLI, test-list, and
+  production hashes. Tasks 254+ and Steps 6/7 remain unpromoted.

@@ -5,6 +5,7 @@ mod long_chain_config;
 mod output;
 mod parenthesized_routes;
 mod result;
+mod source_application;
 mod source_ast;
 mod source_attribute;
 mod source_context;
@@ -318,6 +319,14 @@ pub(super) use parenthesized_routes::{
 };
 pub(super) use result::{
     expected_type_elaboration_detail_keys, type_elaboration_failure_diagnostic,
+};
+pub(super) use source_application::source_application_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_application::{
+    SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
+    SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead, source_application_output,
+    source_application_output_with_mutation, synthetic_functional_actual_count,
+    synthetic_source_application_output,
 };
 #[cfg(test)]
 pub(super) use source_ast::{

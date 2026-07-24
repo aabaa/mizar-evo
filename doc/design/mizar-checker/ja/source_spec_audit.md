@@ -23,6 +23,7 @@ public method は、module spec が table、builder、output API として記述
 - [source_context.md](./source_context.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
+- [source_application.md](./source_application.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -127,6 +128,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_context`
 - `source_attribute`
 - `source_evidence`
+- `source_application`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -374,6 +376,45 @@ numeric requestだけである。application/other term family、cross-family pa
 edge、numeric result、real current-definition-result ownership、real
 local-constant binding production、formula graph、accepted fact/declaration/
 proof、downstream IRはTasks 253+、260、264、269とexplicit ownerに残る。
+
+### `source_application`
+
+生成 public newtype:
+
+- `SourceFunctorApplicationId`, `SourceFunctorWrapperId`,
+  `SourceFunctorCandidateId`, `SourceFunctorArgumentId`,
+  `SourceFunctorTypeRequestId`
+
+literal top-level public item:
+
+- `SourceFunctorApplicationHandoffInput`, `SourceFunctorApplicationInput`,
+  `SourceFunctorWrapperInput`, `SourceFunctorCandidateInput`,
+  `SourceFunctorArgumentInput`, `SourceFunctorTypeRequestInput`,
+  `SourceFunctorApplicationKind`, `SourceFunctorApplicationRecovery`,
+  `SourceFunctorApplicationForm`, `SourceFunctorHeadSite`,
+  `SourceFunctorArgumentTarget`, `SourceFunctorTypeRequestKind`,
+  `SourceFunctorApplicationHandoff`, `SourceFunctorApplicationTable`,
+  `SourceFunctorWrapperTable`, `SourceFunctorCandidateTable`,
+  `SourceFunctorArgumentTable`, `SourceFunctorTypeRequestTable`,
+  `SourceFunctorApplication`, `SourceFunctorWrapper`,
+  `SourceFunctorCandidate`, `SourceFunctorArgument`,
+  `SourceFunctorTypeRequest`, `SourceFunctorApplicationProducer`,
+  `SourceFunctorApplicationError`
+
+対応:
+
+| 仕様上の約束 | source根拠 | test根拠 | 状態 |
+|---|---|---|---|
+| syntax-free five-table transactionがwinner選択やsemantic result作成なしにsymbolic/inline application shape、transparent wrapper、individual functor reference、ordered Task-252/253 argument edge、unresolved requestをtransportする。 | `src/source_application.rs`の`SourceFunctorApplicationHandoffInput`とimmutable table。 | exact real 2/1/2/3/4 aggregate、all-form、inline-schema test。 | Task 253について実装済み。 |
+| dense pre-order、arena/context/range/recovery、form/spelling、wrapper nesting、root-only primary ownership、nested single ownership、candidate provenance、request associationをfail closedにする。 | `SourceFunctorApplicationProducer::build`がcomplete transactionを`SymbolEnv`、`BindingEnv`、Task-252、`TypedArena`に対してvalidateする。 | full corruption matrix、nested/wrapped/degraded/candidate-subset test、template/mixed whole-subtree isolation。 | sort/inference/repair/partial publicationなしでtransactionalに実装済み。 |
+| Task-252 dependency identityはproducer-derived exact `debug_text()` fingerprintを使う。 | handoffは`primary_term_fingerprint`だけを保持し、`TypedAst`/`ResolvedTypedAst`がfingerprintと全primary edgeをrevalidateする。 | install-order、replacement、equivalent clone、non-equivalent substitution、final-preservation test。 | primary ownership重複なしで実装済み。 |
+| public enumはforward-compatible。 | public Task-253 enumすべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+
+bounded gap: Task 253はinline identity/formal/body/capture/substitution/result、
+direct template transport、candidate collection/applicability/viability/ranking/
+winner、functor-definition semantics、later term/formula family、accepted
+fact/declaration/proof、downstream IRを所有しない。これらはTasks 254+、260、
+270、277、278とexplicit ownerに残る。
 
 ### `type_checker`
 

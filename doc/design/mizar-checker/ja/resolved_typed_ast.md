@@ -705,3 +705,13 @@ absent時のlegacy projectionは不変である。
 exposeする。final assemblyはsource termをrebuild/reinterpretせず、numeric typeを
 選択せず、semantic resultを作らない。handoff absent時のlegacy projectionは
 不変である。
+
+## Task 253 final-handoff addendum
+
+`ResolvedTypedAst`はexact Task-252 fingerprint/primary-edge associationを
+revalidateし、`TypedAst`にinstallされたoptional checker-owned
+`SourceFunctorApplicationHandoff`をclone-preserveする。borrowed
+`source_application()` getterがimmutable handoffをexposeする。final assemblyは
+dense IDのrebuild/retarget、candidate collect/select、signature/result type
+resolve、semantic result作成を行わず、handoff absent時のlegacy projectionは不変で
+ある。

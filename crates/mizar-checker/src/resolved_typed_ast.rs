@@ -16,6 +16,7 @@ use crate::{
         TemplateExpansionOutput, TemplateExpansionStatus, TemplateInstantiationKey,
         TemplateSubstitution,
     },
+    source_application::SourceFunctorApplicationHandoff,
     source_attribute::SourceAttributeHandoff,
     source_context::SourceBindingContextHandoff,
     source_evidence::SourceEvidenceHandoff,
@@ -108,6 +109,7 @@ pub struct ResolvedTypedAst {
     source_attribute: Option<SourceAttributeHandoff>,
     source_evidence: Option<SourceEvidenceHandoff>,
     source_term: Option<SourcePrimaryTermHandoff>,
+    source_application: Option<SourceFunctorApplicationHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -158,6 +160,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_term(&self) -> Option<&SourcePrimaryTermHandoff> {
         self.source_term.as_ref()
+    }
+
+    pub const fn source_application(&self) -> Option<&SourceFunctorApplicationHandoff> {
+        self.source_application.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -250,6 +256,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_term) = &self.source_term {
             output.push_str(&source_term.debug_text());
+        }
+        if let Some(source_application) = &self.source_application {
+            output.push_str(&source_application.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1196,6 +1205,7 @@ pub enum CandidateSummaryNamespace {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ResolvedTypedAstError {
+    InvalidSourceApplication,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1275,6 +1285,8 @@ pub enum ResolvedTypedAstError {
 impl fmt::Display for ResolvedTypedAstError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidSourceApplication => formatter
+                .write_str("resolved typed AST source functor-application handoff is inconsistent"),
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
             ),
@@ -1472,6 +1484,17 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             &viable_candidates,
             &diagnostics.type_diagnostics,
         )?;
+        let source_application = self.inputs.typed_ast.source_application().cloned();
+        if let Some(source_application) = &source_application {
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourceApplication)?;
+            source_application
+                .validate_installation(source_id, &module_id, source_term)
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceApplication)?;
+        }
 
         Ok(ResolvedTypedAst {
             source_id,
@@ -1481,6 +1504,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_attribute: self.inputs.typed_ast.source_attribute().cloned(),
             source_evidence: self.inputs.typed_ast.source_evidence().cloned(),
             source_term: self.inputs.typed_ast.source_term().cloned(),
+            source_application,
             nodes,
             expr_metadata,
             collection_candidates,

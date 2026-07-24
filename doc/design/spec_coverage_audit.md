@@ -2853,3 +2853,21 @@ blocking `spec_gap`, `source_undocumented_behavior`,
 signature/result/type, definition/formula semantics, overload selection,
 Tasks 254+/260/270/277-278, Steps 6/7, and global Step-5 completion receive no
 credit.
+
+## Step 5 Checker Task 253 Implementation Addendum
+
+Task 253 now implements the bounded MC-G017/MC-G020 source-application
+transport. The covered diagnostic row
+`spec.en.checker.type_elaboration.source_functor_application_payload` maps
+exactly the imported infix and local later-definiens sidecars. The public
+checker handoff transports five dense tables; the private runner measures
+2/1/2/3/4 and co-installed Task-252 3/1/2 without duplicate primary
+ownership. The local actual is the authenticated inner definition parameter,
+and the imported parentheses are a Task-253 wrapper.
+
+This executable increment reaches plan 412/376, type 242/230, pass/fail
+224/188, active parse/declaration/type/proof 101/5/191/1, and warnings/errors
+23/0. The exact Task-253 `source_drift` and `test_gap` are closed. MC-G017 and
+MC-G020 remain partial because semantic signatures/results, definition and
+formula behavior, overload selection, later term families, accepted
+facts/proofs, downstream IR, and Steps 6/7 remain with their named owners.

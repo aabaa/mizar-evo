@@ -25,6 +25,7 @@ Module specifications audited:
 - [source_context.md](./source_context.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
+- [source_application.md](./source_application.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -149,6 +150,7 @@ rejection.
 - `source_context`
 - `source_attribute`
 - `source_evidence`
+- `source_application`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -400,6 +402,45 @@ parent edges, numeric results, real current-definition-result ownership, real
 local-constant binding production, formula graphs, accepted facts/
 declarations/proofs, and downstream IR remain with Tasks 253+, 260, 264, 269,
 and their explicit owners.
+
+### `source_application`
+
+Generated public newtypes:
+
+- `SourceFunctorApplicationId`, `SourceFunctorWrapperId`,
+  `SourceFunctorCandidateId`, `SourceFunctorArgumentId`,
+  `SourceFunctorTypeRequestId`
+
+Literal top-level public items:
+
+- `SourceFunctorApplicationHandoffInput`, `SourceFunctorApplicationInput`,
+  `SourceFunctorWrapperInput`, `SourceFunctorCandidateInput`,
+  `SourceFunctorArgumentInput`, `SourceFunctorTypeRequestInput`,
+  `SourceFunctorApplicationKind`, `SourceFunctorApplicationRecovery`,
+  `SourceFunctorApplicationForm`, `SourceFunctorHeadSite`,
+  `SourceFunctorArgumentTarget`, `SourceFunctorTypeRequestKind`,
+  `SourceFunctorApplicationHandoff`, `SourceFunctorApplicationTable`,
+  `SourceFunctorWrapperTable`, `SourceFunctorCandidateTable`,
+  `SourceFunctorArgumentTable`, `SourceFunctorTypeRequestTable`,
+  `SourceFunctorApplication`, `SourceFunctorWrapper`,
+  `SourceFunctorCandidate`, `SourceFunctorArgument`,
+  `SourceFunctorTypeRequest`, `SourceFunctorApplicationProducer`,
+  `SourceFunctorApplicationError`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| A syntax-free five-table transaction transports symbolic/inline application shape, transparent wrappers, individual functor references, ordered Task-252/253 argument edges, and unresolved requests without selecting a winner or creating semantic results. | `SourceFunctorApplicationHandoffInput` and immutable tables in `src/source_application.rs`. | Exact real 2/1/2/3/4 aggregate plus all-form and inline-schema tests. | Implemented for Task 253. |
+| Dense pre-order, arena/context/range/recovery, form/spelling, wrapper nesting, root-only primary ownership, nested single ownership, candidate provenance, and request association fail closed. | `SourceFunctorApplicationProducer::build` validates the complete transaction against `SymbolEnv`, `BindingEnv`, Task-252, and `TypedArena`. | Full corruption matrix, nested/wrapped/degraded/candidate-subset tests, and template/mixed whole-subtree isolation. | Implemented transactionally without sorting, inference, repair, or partial publication. |
+| Task-252 dependency identity uses the exact producer-derived `debug_text()` fingerprint. | The handoff stores only `primary_term_fingerprint`; `TypedAst` and `ResolvedTypedAst` revalidate it and every primary edge. | Install-order, replacement, equivalent-clone, non-equivalent substitution, and final-preservation tests. | Implemented without duplicate primary ownership. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-253 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: Task 253 does not own inline identity/formals/body/capture/
+substitution/result, direct template transport, candidate collection/
+applicability/viability/ranking/winner, functor-definition semantics, later
+term/formula families, accepted facts/declarations/proofs, or downstream IR.
+Those remain with Tasks 254+, 260, 270, 277, 278, and their explicit owners.
 
 ### `type_checker`
 

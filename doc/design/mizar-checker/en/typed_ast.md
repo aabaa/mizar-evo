@@ -625,3 +625,14 @@ accepted facts, proof status, or downstream IR to the typed arena.
 source/module plus every referenced arena node before installation. The
 addition is syntax-free and does not add a normalized type, semantic term or
 formula, accepted fact, proof status, or downstream IR to the typed arena.
+
+## Task 253 Ownership Addendum
+
+`TypedAst` now owns an optional immutable `SourceFunctorApplicationHandoff`.
+`with_source_application` is one-shot, requires the Task-252 handoff already
+installed, compares its exact deterministic debug fingerprint, and
+revalidates every referenced primary root before installation. An equivalent
+Task-252 clone is accepted; replacement and non-equivalent same-source/module
+substitution fail atomically. This adds no signature, result type, candidate
+selection, definition behavior, semantic term/formula, fact, proof, or
+downstream IR.

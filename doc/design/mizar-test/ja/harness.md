@@ -2711,3 +2711,17 @@ current 291-test、23-path/24,120-line Task-252 baselineはexactに不変で、
 implementationのprojected countはplan 412/376、type 242/230、pass/fail
 224/188、admission 101/5/191/1、warnings/errors 23/0でありfresh measurementを
 必要とする。
+
+## Checker Task 253 runner completion
+
+private leafはfrozen consumerのexactly 2件でactiveになった。primary rowを
+複製せずTask 252をcomposeし、exact dependency fingerprint検証後にTask-253
+handoffをinstallしてclone-only final preservationを確認する。real testsは
+2/1/2/3/4と3/1/2、local inner binding coordinates、imported wrapper、
+corruption isolation、deterministic replay、他の全active type-elaboration
+case exclusionを実測する。measured corpusはplan 412/376、type 242/230、
+pass/fail 224/188、admission 101/5/191/1、warnings/errors 23/0である。
+303-test raw/normalized list hashは`a81f44fb...` / `1a621c56...`、
+24-path/25,607-line production path/content hashは`5cc36b8a...` /
+`b9b6c678...`である。exact値と5 CLI hashはpaired module-boundary auditに
+記録する。

@@ -40,5 +40,6 @@
     include!("tests/type_elaboration/source_attribute.rs");
     include!("tests/type_elaboration/source_evidence.rs");
     include!("tests/type_elaboration/source_term.rs");
+    include!("tests/type_elaboration/source_application.rs");
     include!("tests/type_elaboration/long_chain.rs");
     include!("tests/type_elaboration/remaining_bridges_and_nested_isolation.rs");
