@@ -149,3 +149,9 @@ reserved `r`へのshadowを保持する。exact local scope/rangeはpreflightで
 measureする。missing/substituted reserve provenance、flattened context、wrong
 shadow target、A/B1/B2/B3 hybrid、otherwise-coherent fifth profileをrejectする。
 B3はcombined formula-composition installerだけからpublishできる。
+
+## Task 257B3 implementation status
+
+`Existential`、`ExistentialBody`、exact fourth profile、cumulative
+multi-binder extensionを実装した。exact reserve baseはdiagnostic 0の
+4 contexts/4 bindingsへ拡張され、inner-`r` shadowingとempty captureを保持する。

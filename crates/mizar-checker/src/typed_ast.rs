@@ -428,7 +428,9 @@ impl TypedAst {
         if self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
             || self.source_context.is_some()
-            || !(composite.is_task_257b1_profile() || composite.is_task_257b2_profile())
+            || !(composite.is_task_257b1_profile()
+                || composite.is_task_257b2_profile()
+                || composite.is_task_257b3_profile())
         {
             return Err(TypedAstError::InvalidSourceFormulaComposition);
         }

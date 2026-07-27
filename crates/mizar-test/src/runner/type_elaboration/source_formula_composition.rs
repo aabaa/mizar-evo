@@ -52,8 +52,10 @@ use mizar_syntax::SurfaceAst;
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
     source_formula::{
-        SourceFormulaConnectiveGrouping, SourceFormulaQuantifierBoundUse,
-        extract_source_formula_connective_grouping, extract_source_formula_quantifier_bound_use,
+        SourceFormulaConnectiveGrouping, SourceFormulaNestedQuantifierPayload,
+        SourceFormulaQuantifierBoundUse, extract_source_formula_connective_grouping,
+        extract_source_formula_nested_quantifier_payload,
+        extract_source_formula_quantifier_bound_use,
     },
 };
 
@@ -77,8 +79,9 @@ pub(in crate::runner) fn source_formula_composition_transport_detail_keys(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
+    source_text: &str,
 ) -> Option<Vec<String>> {
-    match source_formula_composition_output(ast, module, symbols) {
+    match source_formula_composition_output_with_source(ast, module, symbols, source_text) {
         None => None,
         Some(Ok(output))
             if output.typed_ast.source_context().is_none()
@@ -104,13 +107,36 @@ pub(in crate::runner) fn source_formula_composition_output(
     source_formula_composition_output_with_mutation(ast, module, symbols, |_| {})
 }
 
-#[cfg(not(test))]
-fn source_formula_composition_output(
+#[cfg(test)]
+pub(in crate::runner) fn source_formula_composition_output_with_source(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
+    source_text: &str,
 ) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
-    source_formula_composition_output_with_mutation(ast, module, symbols, |_| {})
+    source_formula_composition_output_with_mutation_impl(
+        ast,
+        module,
+        symbols,
+        Some(source_text),
+        |_| {},
+    )
+}
+
+#[cfg(not(test))]
+fn source_formula_composition_output_with_source(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    source_formula_composition_output_with_mutation_impl(
+        ast,
+        module,
+        symbols,
+        Some(source_text),
+        |_| {},
+    )
 }
 
 #[cfg(test)]
@@ -120,25 +146,40 @@ pub(in crate::runner) fn source_formula_composition_output_with_mutation(
     symbols: &SymbolEnv,
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
-    source_formula_composition_output_with_mutation_impl(ast, module, symbols, mutate)
+    source_formula_composition_output_with_mutation_impl(ast, module, symbols, None, mutate)
 }
 
-#[cfg(not(test))]
-fn source_formula_composition_output_with_mutation(
+#[cfg(test)]
+pub(in crate::runner) fn source_formula_composition_output_with_source_and_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
+    source_text: &str,
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
-    source_formula_composition_output_with_mutation_impl(ast, module, symbols, mutate)
+    source_formula_composition_output_with_mutation_impl(
+        ast,
+        module,
+        symbols,
+        Some(source_text),
+        mutate,
+    )
 }
 
 fn source_formula_composition_output_with_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
+    source_text: Option<&str>,
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    if let Some(payload) = source_text.and_then(|source_text| {
+        extract_source_formula_nested_quantifier_payload(ast, &module, symbols, source_text)
+    }) {
+        return Some(build_task_257b3_output(
+            ast, module, symbols, payload, mutate,
+        ));
+    }
     if let Some(payload) = extract_source_formula_quantifier_bound_use(ast, &module, symbols) {
         return Some(build_task_257b1_output(
             ast, module, symbols, payload, mutate,
@@ -159,7 +200,8 @@ fn build_task_257b1_output(
 ) -> Result<SourceFormulaCompositionRouteOutput, String> {
     let arena = typed_arena(ast, &payload)?;
     let inputs = route_inputs(ast, module.clone(), &payload);
-    build_output(ast, module, symbols, arena, inputs, mutate)
+    let base = module_shell(ast, module.clone())?;
+    build_output(ast, module, symbols, arena, base, inputs, mutate)
 }
 
 fn build_task_257b2_output(
@@ -171,7 +213,25 @@ fn build_task_257b2_output(
 ) -> Result<SourceFormulaCompositionRouteOutput, String> {
     let arena = task_257b2_typed_arena(ast, &payload)?;
     let inputs = task_257b2_route_inputs(ast, module.clone(), &payload)?;
-    build_output(ast, module, symbols, arena, inputs, mutate)
+    let base = module_shell(ast, module.clone())?;
+    build_output(ast, module, symbols, arena, base, inputs, mutate)
+}
+
+fn build_task_257b3_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    payload: SourceFormulaNestedQuantifierPayload,
+    mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
+) -> Result<SourceFormulaCompositionRouteOutput, String> {
+    let arena = task_257b3_typed_arena(ast, &payload)?;
+    let base = payload
+        .reserve
+        .bridge
+        .prepare_binding_env(symbols)
+        .map_err(|error| format!("Task257B3 reserve base: {error}"))?;
+    let inputs = task_257b3_route_inputs(ast, module.clone(), &payload)?;
+    build_output(ast, module, symbols, arena, base, inputs, mutate)
 }
 
 fn build_output(
@@ -179,6 +239,7 @@ fn build_output(
     module: ModuleId,
     symbols: &SymbolEnv,
     arena: TypedArena,
+    base: BindingEnv,
     mut inputs: SourceFormulaCompositionRouteInputs,
     mutate: impl FnOnce(&mut SourceFormulaCompositionRouteInputs),
 ) -> Result<SourceFormulaCompositionRouteOutput, String> {
@@ -187,7 +248,6 @@ fn build_output(
     }
     mutate(&mut inputs);
 
-    let base = module_shell(ast, module.clone())?;
     let bindings =
         SourceCompositeFormulaProducer::extend_bindings(&inputs.composite, &base, &arena)
             .map_err(|error| error.to_string())?;
@@ -727,6 +787,286 @@ fn task_257b2_route_inputs(
     })
 }
 
+fn task_257b3_route_inputs(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    payload: &SourceFormulaNestedQuantifierPayload,
+) -> Result<SourceFormulaCompositionRouteInputs, String> {
+    if payload.formula_sites.len() != 3
+        || payload.formula_ranges.len() != 3
+        || payload.binder_segment_sites.len() != 3
+        || payload.binder_segment_ranges.len() != 3
+        || payload.binder_identifier_sites.len() != 3
+        || payload.binder_identifier_ranges.len() != 3
+        || payload.binder_type_sites.len() != 3
+        || payload.binder_type_ranges.len() != 3
+        || payload.binder_type_head_sites.len() != 3
+        || payload.binder_type_head_ranges.len() != 3
+        || payload.equality_sites.len() != 3
+        || payload.equality_ranges.len() != 3
+        || payload.term_sites.len() != 6
+        || payload.term_ranges.len() != 6
+        || payload.term_spellings.as_slice() != ["x", "x", "r", "y", "x", "r"]
+    {
+        return Err("Task257B3 extracted aggregate changed".to_owned());
+    }
+    let contexts = [
+        BindingContextId::new(0),
+        BindingContextId::new(1),
+        BindingContextId::new(2),
+        BindingContextId::new(3),
+    ];
+    let formulas = [
+        (SourceCompositeFormulaKind::Universal, "for st"),
+        (SourceCompositeFormulaKind::Existential, "ex st"),
+        (SourceCompositeFormulaKind::Universal, "for st holds"),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(index, (kind, spelling))| SourceCompositeFormulaInput {
+        site: payload.formula_sites[index].clone(),
+        source_range: payload.formula_ranges[index],
+        source_ordinal: index,
+        context: contexts[index],
+        recovery: SourceCompositeFormulaRecovery::Normal,
+        spelling: spelling.to_owned(),
+        kind,
+    })
+    .collect();
+    let binder_spellings = [("x being", "x"), ("y being", "y"), ("r", "r")];
+    let binder_scopes = [vec![0], vec![0, 0], vec![0, 0, 0]];
+    let binders = binder_spellings
+        .into_iter()
+        .zip(binder_scopes)
+        .enumerate()
+        .map(
+            |(index, ((segment_spelling, identifier_spelling), scope))| {
+                SourceQuantifierBinderInput {
+                    formula: SourceCompositeFormulaId::new(index),
+                    ordinal: 0,
+                    segment_site: payload.binder_segment_sites[index].clone(),
+                    segment_range: payload.binder_segment_ranges[index],
+                    segment_spelling: segment_spelling.to_owned(),
+                    identifier_site: payload.binder_identifier_sites[index].clone(),
+                    identifier_range: payload.binder_identifier_ranges[index],
+                    identifier_spelling: identifier_spelling.to_owned(),
+                    local: LocalTermBinding::new(
+                        identifier_spelling,
+                        LocalTermScope::new(scope),
+                        payload.binder_identifier_ranges[index],
+                        index + 1,
+                    ),
+                    binding: BindingId::new(index + 1),
+                    body_context: contexts[index + 1],
+                    type_site: SourceBinderTypeSiteId::new(index),
+                    recovery: SourceCompositeFormulaRecovery::Normal,
+                }
+            },
+        )
+        .collect();
+    let type_sites = (0..3)
+        .map(|index| SourceBinderTypeSiteInput {
+            binder: SourceQuantifierBinderId::new(index),
+            site: payload.binder_type_sites[index].clone(),
+            source_range: payload.binder_type_ranges[index],
+            spelling: "set".to_owned(),
+            head_site: payload.binder_type_head_sites[index].clone(),
+            head_range: payload.binder_type_head_ranges[index],
+            head_spelling: "set".to_owned(),
+            context: if index == 1 { contexts[1] } else { contexts[0] },
+            recovery: SourceCompositeFormulaRecovery::Normal,
+            head: SourceBinderTypeHead::BuiltinSet,
+        })
+        .collect();
+    let requests = (0..3)
+        .flat_map(|formula| {
+            [
+                SourceFormulaRequestInput {
+                    formula: SourceCompositeFormulaId::new(formula),
+                    ordinal: 0,
+                    kind: SourceFormulaRequestKind::QuantifierSemantics,
+                    binder: None,
+                    type_site: None,
+                },
+                SourceFormulaRequestInput {
+                    formula: SourceCompositeFormulaId::new(formula),
+                    ordinal: 1,
+                    kind: SourceFormulaRequestKind::BinderType,
+                    binder: Some(SourceQuantifierBinderId::new(formula)),
+                    type_site: Some(SourceBinderTypeSiteId::new(formula)),
+                },
+            ]
+        })
+        .collect();
+    let composite = SourceCompositeFormulaHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        formulas,
+        wrappers: Vec::new(),
+        roots: vec![SourceFormulaRootInput {
+            formula: SourceCompositeFormulaId::new(0),
+            ordinal: 0,
+            ownership: SourceFormulaRootOwnership::UnassignedStatement,
+        }],
+        binders,
+        type_sites,
+        edges: vec![
+            SourceFormulaEdgeInput {
+                parent: SourceCompositeFormulaId::new(0),
+                ordinal: 0,
+                role: SourceFormulaEdgeRole::UniversalBody,
+                child: SourceCompositeFormulaId::new(1),
+            },
+            SourceFormulaEdgeInput {
+                parent: SourceCompositeFormulaId::new(1),
+                ordinal: 0,
+                role: SourceFormulaEdgeRole::ExistentialBody,
+                child: SourceCompositeFormulaId::new(2),
+            },
+        ],
+        requests,
+    };
+
+    let term_contexts = [
+        contexts[1],
+        contexts[1],
+        contexts[3],
+        contexts[3],
+        contexts[3],
+        contexts[3],
+    ];
+    let terms = (0..6)
+        .map(|index| SourcePrimaryTermInput {
+            site: payload.term_sites[index].clone(),
+            source_range: payload.term_ranges[index],
+            source_ordinal: index,
+            context: term_contexts[index],
+            recovery: SourcePrimaryTermRecovery::Normal,
+            spelling: payload.term_spellings[index].clone(),
+            kind: SourcePrimaryTermKind::VariableReference,
+            role: SourcePrimaryTermRole::Value,
+            parent: None,
+        })
+        .collect();
+    let reference_bindings = [1, 1, 3, 2, 1, 3];
+    let references = reference_bindings
+        .into_iter()
+        .enumerate()
+        .map(|(index, binding)| SourcePrimaryTermReferenceInput {
+            term: SourcePrimaryTermId::new(index),
+            binding: BindingId::new(binding),
+            role: SourcePrimaryTermReferenceRole::Variable,
+        })
+        .collect();
+    let primary = SourcePrimaryTermHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        terms,
+        references,
+        numeric_type_requests: Vec::new(),
+    };
+
+    let equality_spellings = ["x = x", "r = y", "x = r"];
+    let equality_contexts = [contexts[1], contexts[3], contexts[3]];
+    let atomic_formulas = equality_spellings
+        .into_iter()
+        .enumerate()
+        .map(|(index, spelling)| SourceAtomicFormulaInput {
+            site: payload.equality_sites[index].clone(),
+            source_range: payload.equality_ranges[index],
+            source_ordinal: index,
+            context: equality_contexts[index],
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: spelling.to_owned(),
+            kind: SourceAtomicFormulaKind::Equality,
+        })
+        .collect();
+    let atomic_edges = (0..3)
+        .flat_map(|formula| {
+            [
+                SourceAtomicEdgeInput {
+                    formula: SourceAtomicFormulaId::new(formula),
+                    ordinal: 0,
+                    role: SourceAtomicEdgeRole::BuiltinLeftOperand,
+                    target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(formula * 2)),
+                },
+                SourceAtomicEdgeInput {
+                    formula: SourceAtomicFormulaId::new(formula),
+                    ordinal: 1,
+                    role: SourceAtomicEdgeRole::BuiltinRightOperand,
+                    target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(
+                        formula * 2 + 1,
+                    )),
+                },
+            ]
+        })
+        .collect::<Vec<_>>();
+    let atomic_requests = atomic_edges
+        .iter()
+        .enumerate()
+        .map(|(index, edge)| SourceAtomicRequestInput {
+            formula: edge.formula,
+            ordinal: edge.ordinal,
+            kind: SourceAtomicRequestKind::OperandExpectedType,
+            edge: Some(SourceAtomicEdgeId::new(index)),
+            candidate: None,
+            type_site: None,
+            attribute: None,
+        })
+        .collect();
+    let atomic = SourceAtomicFormulaHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        formulas: atomic_formulas,
+        wrappers: Vec::new(),
+        predicate_heads: Vec::new(),
+        candidates: Vec::new(),
+        type_sites: Vec::new(),
+        attributes: Vec::new(),
+        edges: atomic_edges,
+        requests: atomic_requests,
+    };
+    let atomic_edges = [
+        (0, 0, SourceFormulaAtomicEdgeRole::UniversalRestriction, 0),
+        (2, 0, SourceFormulaAtomicEdgeRole::UniversalRestriction, 1),
+        (2, 1, SourceFormulaAtomicEdgeRole::UniversalBody, 2),
+    ]
+    .into_iter()
+    .map(
+        |(formula, ordinal, role, child)| SourceFormulaAtomicEdgeInput {
+            formula: SourceCompositeFormulaId::new(formula),
+            ordinal,
+            role,
+            child: SourceAtomicFormulaId::new(child),
+        },
+    )
+    .collect();
+    let binder_ids = [0, 0, 2, 1, 0, 2];
+    let binder_ordinals = [0, 1, 0, 0, 2, 1];
+    let owning_edges = [0, 0, 1, 1, 2, 2];
+    let bound_uses = (0..6)
+        .map(|index| SourceQuantifierBoundUseInput {
+            binder: SourceQuantifierBinderId::new(binder_ids[index]),
+            ordinal: binder_ordinals[index],
+            body_edge: SourceFormulaAtomicEdgeId::new(owning_edges[index]),
+            term: SourcePrimaryTermId::new(index),
+            reference: SourcePrimaryTermReferenceId::new(index),
+        })
+        .collect();
+    let composition = SourceFormulaCompositionHandoffInput {
+        source_id: ast.source_id,
+        module_id: module,
+        atomic_edges,
+        bound_uses,
+    };
+    Ok(SourceFormulaCompositionRouteInputs {
+        primary,
+        atomic,
+        composite,
+        composition,
+    })
+}
+
 fn variable_term(
     site: TypedSiteRef,
     source_range: mizar_session::SourceRange,
@@ -872,6 +1212,61 @@ fn task_257b2_typed_arena(
     }
     if !kinds.is_empty() {
         return Err("Task257B2 source site disappeared".to_owned());
+    }
+    builder.finish(None).map_err(|error| error.to_string())
+}
+
+fn task_257b3_typed_arena(
+    ast: &SurfaceAst,
+    payload: &SourceFormulaNestedQuantifierPayload,
+) -> Result<TypedArena, String> {
+    let mut kinds = BTreeMap::new();
+    for (site, kind) in payload.formula_sites.iter().zip([
+        "source.formula.composite.universal",
+        "source.formula.composite.existential",
+        "source.formula.composite.universal",
+    ]) {
+        kinds.insert(site.node().index(), kind);
+    }
+    for site in payload
+        .binder_segment_sites
+        .iter()
+        .chain(&payload.binder_identifier_sites)
+    {
+        kinds.insert(site.node().index(), "source.formula.quantifier-binder");
+    }
+    for site in &payload.binder_type_sites {
+        kinds.insert(site.node().index(), "source.formula.binder-type");
+    }
+    for site in &payload.binder_type_head_sites {
+        kinds.insert(site.node().index(), "source.formula.binder-type-head");
+    }
+    for site in &payload.equality_sites {
+        kinds.insert(site.node().index(), "source.formula.atomic.equality");
+    }
+    for site in &payload.term_sites {
+        kinds.insert(site.node().index(), "source.term.variable-reference");
+    }
+    if kinds.len() != 24 {
+        return Err("Task257B3 source roles alias typed sites".to_owned());
+    }
+    let mut builder = TypedArenaBuilder::new();
+    for (index, node) in ast.nodes().iter().enumerate() {
+        let key = kinds
+            .remove(&index)
+            .unwrap_or("source.formula.composition.unowned");
+        let pushed = builder
+            .push(
+                TypedNode::new(key, SourceAnchor::Range(node.range))
+                    .with_recovery(NodeRecoveryState::Normal),
+            )
+            .map_err(|error| error.to_string())?;
+        if pushed != TypedNodeId::new(index) {
+            return Err("Task257B3 typed-arena identity changed".to_owned());
+        }
+    }
+    if !kinds.is_empty() {
+        return Err("Task257B3 source site disappeared".to_owned());
     }
     builder.finish(None).map_err(|error| error.to_string())
 }

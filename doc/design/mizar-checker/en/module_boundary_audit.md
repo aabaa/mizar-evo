@@ -28,12 +28,12 @@ remain aligned with their owning specifications.
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
 | `src/lib.rs` | 43 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; Task 257B1 exports the documented syntax-free formula-composition module. |
-| `src/typed_ast.rs` | 4115 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, ids, validation, rendering, tests, bidirectional Task-253/254/255/256 installation checks, Task-257A one-shot installation, and Task-257B1/B2 combined installation; monitor ergonomics after downstream use. |
+| `src/typed_ast.rs` | 4117 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, ids, validation, rendering, tests, bidirectional Task-253/254/255/256 installation checks, Task-257A one-shot installation, and Task-257B1/B2/B3 combined installation; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3143 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula context identity; no behavior-neutral split required. |
 | `src/source_context.rs` | 1150 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 6414 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256 eight-table association, resolver provenance, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
-| `src/source_composite_formula.rs` | 3749 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
-| `src/source_formula_composition.rs` | 2177 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2 atomic-edge/bound-use associations, dependency fingerprints, deterministic rendering, installation, and corruption tests; no split required. |
+| `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
+| `src/source_formula_composition.rs` | 3114 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, dependency fingerprints, deterministic rendering, installation, and corruption tests; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | Cohesive Task-251 request/response tables, upstream association, catalog/payload validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_term.rs` | 2207 | syntax-free source primary-term producer | `source_term.md` | no | no | Cohesive Task-252 term/reference/request tables, binding and parent validation, deterministic rendering, and corruption tests; no split required. |
@@ -45,7 +45,7 @@ remain aligned with their owning specifications.
 | `src/registration_resolution.rs` | 5888 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer and gate logic; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
-| `src/resolved_typed_ast.rs` | 6948 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including Task-251/252/253/254/255/256/257A/257B1/B2 clone-preserving handoffs; no behavior-neutral split required. |
+| `src/resolved_typed_ast.rs` | 6950 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including Task-251/252/253/254/255/256/257A/257B1/B2/B3 clone-preserving handoffs; no behavior-neutral split required. |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
 | `tests/lint_policy.rs` | 1846 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Large support test but intentionally centralizes repository-policy guardrails; no split required for task 34. |
 
@@ -129,6 +129,13 @@ member/`FieldUpdate` geometry, cross-family root ownership, conditional
 fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
+
+## Checker Task 257B3 Boundary Recheck
+
+No checker production path was added. The fourth profile remains inside the
+cohesive composite/composition owners; exact parser/resolver extraction stays
+private to `mizar-test`. Two debug-oracle text assets are test-only. The
+bounded extension does not justify a new module split.
 
 ## Task 257B2 Boundary Delta
 

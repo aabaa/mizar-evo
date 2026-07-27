@@ -157,3 +157,7 @@ Scope paths and local identities are source-derived resolver-shaped preflight
 facts, while use ordinals are authenticated Task-252 producer output. Formula
 composition records owning-edge associations only; Task 252 keeps occurrence,
 reference, spelling, lexical-scope, and lookup-winner ownership.
+
+Task 257B3 now executes this six-row reciprocal consumer and verifies binding
+ids `1,1,3,2,1,3` with use ordinals `2,2,4,4,4,4`; Task 252 retains
+every occurrence and reference.

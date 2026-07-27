@@ -3385,3 +3385,7 @@ inputを表せない。Task 48がlower-stage changeなしでone-reserve baseを�
 truth、witness、restriction discharge、implicit closure、capture result、
 theorem acceptance、proof、IRはdeferred。origin差はreport-only
 `repo_metadata_conflict`のまま。
+
+implementationはexact source consumerとimmutable handoffによりbounded B3
+`source_drift`/`test_gap`をcloseした。source behaviorに合わせたcanonical
+spec、existing `.miz`、expectationの変更はない。

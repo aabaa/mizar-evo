@@ -158,3 +158,10 @@ are preflight-measured. Validation rejects missing or substituted reserve
 provenance, flattened contexts, wrong shadow targets, A/B1/B2/B3 hybrids, and
 any otherwise coherent fifth profile. B3 remains publishable only through the
 combined formula-composition installer.
+
+## Task 257B3 Implementation Status
+
+`Existential`, `ExistentialBody`, the exact fourth profile, and cumulative
+multi-binder extension are implemented. The exact reserve base extends to
+four contexts/four bindings with zero diagnostics, preserving inner-`r`
+shadowing and empty capture.

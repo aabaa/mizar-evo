@@ -182,3 +182,11 @@ projection, and semantic deferrals. This documentation prerequisite changes
 no module boundary, production path, executable count, or hash, so the paired
 module-boundary audit is intentionally unchanged. No Task-257B3 bilingual
 sync debt is accepted.
+
+## Task 257B3 Implementation Pair Recheck
+
+The paired EN/JA implementation updates now record the executable fourth
+profile, nested reserve shadowing, six Task-252 lookups, three Task-256
+associations, `3/6` composition, full fail-closed matrices, final ownership,
+one sidecar/trace row, and unchanged semantic deferrals. No bilingual drift is
+accepted.

@@ -812,9 +812,12 @@ accepted theorem, proof, or IR output.
 
 ## Task 257B3 Frozen Final-Handoff Addendum
 
-Final assembly will revalidate the Task-48 reserve provenance, Task-252/256
+Final assembly now revalidates the Task-48 reserve provenance, Task-252/256
 fingerprints, fourth composite profile, nested binding environment, and
 `3/6` owning-edge/use associations before clone-preserving the handoffs.
 Absence of a Task-248 source-context handoff is part of the exact profile.
 No checked formula, witness, restriction result, closure, fact, theorem
 acceptance, proof, or IR output is assembled.
+
+The B3 orphan rejection, exact revalidation, and deterministic clone are now
+covered by executable checker and runner tests.

@@ -1641,5 +1641,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] prerequisiteをdocumentation-onlyで`416/382`、`248/236`、
   `226/190`、active `101/5/195/1`、343 tests、29 paths /
   32,064 linesに保つ。
-- [ ] documentation commit/fresh preflight後にexact route、sidecar、covered
+- [x] documentation commit/fresh preflight後にexact route、sidecar、covered
   trace row、testsを実装する。
+- [x] corpus `417/383`、type `249/237`、active type `196`、library 349
+  tests、exact selector isolation、semantic output不在をverifyする。

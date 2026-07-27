@@ -195,8 +195,8 @@ use type_elaboration::{
     extract_source_distinct_reserved_variable_inequality,
     extract_source_distinct_reserved_variable_membership,
     extract_source_formula_connective_grouping, extract_source_formula_connective_quantifier,
-    extract_source_formula_quantifier_bound_use, extract_source_formula_statement,
-    extract_source_four_edge_local_mode_asserted_head,
+    extract_source_formula_nested_quantifier_payload, extract_source_formula_quantifier_bound_use,
+    extract_source_formula_statement, extract_source_four_edge_local_mode_asserted_head,
     extract_source_four_edge_local_mode_four_hop_asserted_head,
     extract_source_four_edge_local_mode_radix_asserted_head,
     extract_source_four_edge_local_mode_reserved_variable_equality,
@@ -322,8 +322,10 @@ use type_elaboration::{
     source_distinct_reserved_variable_inequality_output,
     source_distinct_reserved_variable_membership_output, source_evidence_output,
     source_evidence_output_with_mutation, source_formula_composition_output,
-    source_formula_composition_output_with_mutation, source_formula_connective_quantifier_output,
-    source_formula_statement_output, source_four_edge_local_mode_asserted_head_output,
+    source_formula_composition_output_with_mutation, source_formula_composition_output_with_source,
+    source_formula_composition_output_with_source_and_mutation,
+    source_formula_connective_quantifier_output, source_formula_statement_output,
+    source_four_edge_local_mode_asserted_head_output,
     source_four_edge_local_mode_four_hop_asserted_head_output,
     source_four_edge_local_mode_radix_asserted_head_output,
     source_four_edge_local_mode_reserved_variable_equality_output,
@@ -1487,6 +1489,7 @@ fn type_elaboration_detail_keys(
             .collect();
     }
 
+    let source_text = output.source_text;
     let Some(ast) = output.ast else {
         return vec!["type_elaboration.lower_stage.declaration_symbol.no_ast".to_owned()];
     };
@@ -1500,9 +1503,12 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-    if let Some(keys) =
-        source_formula_composition_transport_detail_keys(&ast, resolver.module.clone(), &symbols)
-    {
+    if let Some(keys) = source_formula_composition_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &symbols,
+        &source_text,
+    ) {
         return keys;
     }
     if let Some(keys) =

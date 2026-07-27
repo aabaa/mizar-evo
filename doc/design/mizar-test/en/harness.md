@@ -3171,3 +3171,13 @@ sidecar status/justification, an extra theorem/definition/non-reserve item,
 formula wrappers, attributed or argument-bearing reserve/binder types, and
 B2/C shapes. Passing asserts only immutable source transport: no truth,
 witness, closure, fact, theorem, proof, or IR output.
+
+## Checker Task 257B3 Implemented Route
+
+The exact selector and same-arena transaction are active. Tests now cover the
+real ranges/scopes/provenance, cumulative visibility and shadowing, all six
+lookups and owning edges, active-corpus exclusivity, recovered and structural
+near misses, aggregate corruption/replay, transport-only sidecar, and final
+typed/resolved ownership. The selector receives the loaded source text and
+requires the frozen 138 bytes including the final LF; missing-final-LF and
+whitespace-only variants are independently rejected.

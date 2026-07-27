@@ -78,6 +78,7 @@ pub struct SourceQuantifierBoundUseInput {
 #[non_exhaustive]
 pub enum SourceFormulaAtomicEdgeRole {
     UniversalBody,
+    UniversalRestriction,
     ConjunctionLeft,
     ConjunctionRight,
     DisjunctionLeft,
@@ -358,7 +359,7 @@ impl From<&SourceQuantifierBoundUse> for SourceQuantifierBoundUseInput {
     }
 }
 
-/// Validates and publishes the exact Task 257B1/B2 cross-family associations.
+/// Validates and publishes the exact Task 257B1/B2/B3 cross-family associations.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SourceFormulaCompositionProducer;
 
@@ -485,6 +486,13 @@ fn validate_dependency_profiles(
     atomic_formulas: &SourceAtomicFormulaHandoff,
     composite_formulas: &SourceCompositeFormulaHandoff,
 ) -> Result<(), SourceFormulaCompositionError> {
+    if composite_formulas.is_task_257b3_profile() {
+        return validate_task_257b3_dependency_profiles(
+            primary_terms,
+            atomic_formulas,
+            composite_formulas,
+        );
+    }
     if composite_formulas.is_task_257b2_profile() {
         return validate_task_257b2_dependency_profiles(
             primary_terms,
@@ -567,6 +575,138 @@ fn validate_dependency_profiles(
         {
             return Err(SourceFormulaCompositionError::InvalidAggregate);
         }
+    }
+    Ok(())
+}
+
+fn validate_task_257b3_dependency_profiles(
+    primary_terms: &SourcePrimaryTermHandoff,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+    composite_formulas: &SourceCompositeFormulaHandoff,
+) -> Result<(), SourceFormulaCompositionError> {
+    if primary_terms.terms().len() != 6
+        || primary_terms.references().len() != 6
+        || !primary_terms.numeric_type_requests().is_empty()
+        || atomic_formulas.formulas().len() != 3
+        || !atomic_formulas.wrappers().is_empty()
+        || !atomic_formulas.predicate_heads().is_empty()
+        || !atomic_formulas.candidates().is_empty()
+        || !atomic_formulas.type_sites().is_empty()
+        || !atomic_formulas.attributes().is_empty()
+        || atomic_formulas.edges().len() != 6
+        || atomic_formulas.requests().len() != 6
+    {
+        return Err(SourceFormulaCompositionError::InvalidAggregate);
+    }
+    let binders = (0..3)
+        .map(|index| {
+            composite_formulas
+                .binders()
+                .get(SourceQuantifierBinderId::new(index))
+                .ok_or(SourceFormulaCompositionError::InvalidAggregate)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if composite_formulas
+        .binding_env()
+        .bindings()
+        .iter()
+        .any(|(_, binding)| !binding.captured.identities().is_empty())
+    {
+        return Err(SourceFormulaCompositionError::InvalidAggregate);
+    }
+
+    let term_spellings = ["x", "x", "r", "y", "x", "r"];
+    let term_contexts = [1, 1, 3, 3, 3, 3];
+    let term_bindings = [1, 1, 3, 2, 1, 3];
+    let use_ordinals = [2, 2, 4, 4, 4, 4];
+    let use_scopes = [
+        &[0_u32][..],
+        &[0_u32][..],
+        &[0_u32, 0, 0][..],
+        &[0_u32, 0, 0][..],
+        &[0_u32, 0, 0][..],
+        &[0_u32, 0, 0][..],
+    ];
+    for index in 0..6 {
+        let term = primary_terms
+            .terms()
+            .get(SourcePrimaryTermId::new(index))
+            .ok_or(SourceFormulaCompositionError::InvalidAggregate)?;
+        let reference = primary_terms
+            .references()
+            .get(SourcePrimaryTermReferenceId::new(index))
+            .ok_or(SourceFormulaCompositionError::InvalidAggregate)?;
+        if term.kind() != SourcePrimaryTermKind::VariableReference
+            || term.role() != SourcePrimaryTermRole::Value
+            || term.recovery() != SourcePrimaryTermRecovery::Normal
+            || term.spelling() != term_spellings[index]
+            || term.context().index() != term_contexts[index]
+            || term.parent().is_some()
+            || reference.term() != SourcePrimaryTermId::new(index)
+            || reference.binding().index() != term_bindings[index]
+            || reference.role() != SourcePrimaryTermReferenceRole::Variable
+            || reference
+                .lexical_scope()
+                .is_none_or(|scope| scope.path() != use_scopes[index])
+            || reference.use_ordinal() != use_ordinals[index]
+        {
+            return Err(SourceFormulaCompositionError::InvalidAggregate);
+        }
+    }
+
+    let equality_spellings = ["x = x", "r = y", "x = r"];
+    let equality_contexts = [1, 3, 3];
+    for formula_index in 0..3 {
+        let formula = atomic_formulas
+            .formulas()
+            .get(SourceAtomicFormulaId::new(formula_index))
+            .ok_or(SourceFormulaCompositionError::InvalidAggregate)?;
+        if formula.kind() != SourceAtomicFormulaKind::Equality
+            || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+            || formula.context().index() != equality_contexts[formula_index]
+            || formula.spelling() != equality_spellings[formula_index]
+        {
+            return Err(SourceFormulaCompositionError::InvalidAggregate);
+        }
+        for (ordinal, role) in [
+            SourceAtomicEdgeRole::BuiltinLeftOperand,
+            SourceAtomicEdgeRole::BuiltinRightOperand,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let index = formula_index * 2 + ordinal;
+            let edge = atomic_formulas
+                .edges()
+                .get(SourceAtomicEdgeId::new(index))
+                .ok_or(SourceFormulaCompositionError::InvalidAggregate)?;
+            let request = atomic_formulas
+                .requests()
+                .get(crate::source_atomic_formula::SourceAtomicRequestId::new(
+                    index,
+                ))
+                .ok_or(SourceFormulaCompositionError::InvalidAggregate)?;
+            if edge.formula() != SourceAtomicFormulaId::new(formula_index)
+                || edge.ordinal() != ordinal
+                || edge.role() != role
+                || edge.target() != SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(index))
+                || request.formula() != SourceAtomicFormulaId::new(formula_index)
+                || request.ordinal() != ordinal
+                || request.kind() != SourceAtomicRequestKind::OperandExpectedType
+                || request.edge() != Some(SourceAtomicEdgeId::new(index))
+                || request.candidate().is_some()
+                || request.type_site().is_some()
+                || request.attribute().is_some()
+            {
+                return Err(SourceFormulaCompositionError::InvalidAggregate);
+            }
+        }
+    }
+    if binders[0].binding().index() != 1
+        || binders[1].binding().index() != 2
+        || binders[2].binding().index() != 3
+    {
+        return Err(SourceFormulaCompositionError::InvalidAggregate);
     }
     Ok(())
 }
@@ -688,6 +828,9 @@ fn validate_atomic_edge(
     atomic_formulas: &SourceAtomicFormulaHandoff,
     composite_formulas: &SourceCompositeFormulaHandoff,
 ) -> Result<(), SourceFormulaCompositionError> {
+    if composite_formulas.is_task_257b3_profile() {
+        return validate_task_257b3_atomic_edges(input, atomic_formulas, composite_formulas);
+    }
     if composite_formulas.is_task_257b2_profile() {
         return validate_task_257b2_atomic_edges(input, atomic_formulas, composite_formulas);
     }
@@ -713,6 +856,59 @@ fn validate_atomic_edge(
         return Err(SourceFormulaCompositionError::InvalidAtomicEdge {
             edge: SourceFormulaAtomicEdgeId::new(0),
         });
+    }
+    Ok(())
+}
+
+fn validate_task_257b3_atomic_edges(
+    input: &SourceFormulaCompositionHandoffInput,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+    composite_formulas: &SourceCompositeFormulaHandoff,
+) -> Result<(), SourceFormulaCompositionError> {
+    let expected = [
+        (0, 0, SourceFormulaAtomicEdgeRole::UniversalRestriction, 0),
+        (2, 0, SourceFormulaAtomicEdgeRole::UniversalRestriction, 1),
+        (2, 1, SourceFormulaAtomicEdgeRole::UniversalBody, 2),
+    ];
+    if input.atomic_edges.len() != expected.len() {
+        return Err(SourceFormulaCompositionError::InvalidAggregate);
+    }
+    for (index, (row, (formula, ordinal, role, child))) in
+        input.atomic_edges.iter().zip(expected).enumerate()
+    {
+        let parent = composite_formulas
+            .formulas()
+            .get(SourceCompositeFormulaId::new(formula))
+            .ok_or(SourceFormulaCompositionError::InvalidAtomicEdge {
+                edge: SourceFormulaAtomicEdgeId::new(index),
+            })?;
+        let atomic = atomic_formulas
+            .formulas()
+            .get(SourceAtomicFormulaId::new(child))
+            .ok_or(SourceFormulaCompositionError::InvalidAtomicEdge {
+                edge: SourceFormulaAtomicEdgeId::new(index),
+            })?;
+        let parent_id = SourceCompositeFormulaId::new(formula);
+        let has_deeper_composite_owner =
+            composite_formulas
+                .formulas()
+                .iter()
+                .any(|(candidate_id, candidate)| {
+                    candidate_id != parent_id
+                        && properly_contains(parent.source_range(), candidate.source_range())
+                        && properly_contains(candidate.source_range(), atomic.source_range())
+                });
+        if row.formula != SourceCompositeFormulaId::new(formula)
+            || row.ordinal != ordinal
+            || row.role != role
+            || row.child != SourceAtomicFormulaId::new(child)
+            || !properly_contains(parent.source_range(), atomic.source_range())
+            || has_deeper_composite_owner
+        {
+            return Err(SourceFormulaCompositionError::InvalidAtomicEdge {
+                edge: SourceFormulaAtomicEdgeId::new(index),
+            });
+        }
     }
     Ok(())
 }
@@ -770,6 +966,14 @@ fn validate_bound_uses(
     atomic_formulas: &SourceAtomicFormulaHandoff,
     composite_formulas: &SourceCompositeFormulaHandoff,
 ) -> Result<(), SourceFormulaCompositionError> {
+    if composite_formulas.is_task_257b3_profile() {
+        return validate_task_257b3_bound_uses(
+            input,
+            primary_terms,
+            atomic_formulas,
+            composite_formulas,
+        );
+    }
     if composite_formulas.is_task_257b2_profile() {
         let binder = composite_formulas
             .binders()
@@ -849,6 +1053,85 @@ fn validate_bound_uses(
     Ok(())
 }
 
+fn validate_task_257b3_bound_uses(
+    input: &SourceFormulaCompositionHandoffInput,
+    primary_terms: &SourcePrimaryTermHandoff,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+    composite_formulas: &SourceCompositeFormulaHandoff,
+) -> Result<(), SourceFormulaCompositionError> {
+    let binder_ids = [0, 0, 2, 1, 0, 2];
+    let ordinals = [0, 1, 0, 0, 2, 1];
+    let owning_edges = [0, 0, 1, 1, 2, 2];
+    let use_ordinals = [2, 2, 4, 4, 4, 4];
+    if input.bound_uses.len() != 6 {
+        return Err(SourceFormulaCompositionError::InvalidAggregate);
+    }
+    let mut previous_range: Option<SourceRange> = None;
+    for (index, row) in input.bound_uses.iter().enumerate() {
+        let id = SourceQuantifierBoundUseId::new(index);
+        let binder = composite_formulas
+            .binders()
+            .get(SourceQuantifierBinderId::new(binder_ids[index]))
+            .ok_or(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id })?;
+        let owner_edge = input
+            .atomic_edges
+            .get(owning_edges[index])
+            .ok_or(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id })?;
+        let owner = atomic_formulas
+            .formulas()
+            .get(owner_edge.child)
+            .ok_or(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id })?;
+        let term = primary_terms
+            .terms()
+            .get(row.term)
+            .ok_or(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id })?;
+        let reference = primary_terms
+            .references()
+            .get(row.reference)
+            .ok_or(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id })?;
+        let context = composite_formulas
+            .binding_env()
+            .contexts()
+            .get(term.context())
+            .ok_or(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id })?;
+        if row.binder != SourceQuantifierBinderId::new(binder_ids[index])
+            || row.ordinal != ordinals[index]
+            || row.body_edge != SourceFormulaAtomicEdgeId::new(owning_edges[index])
+            || row.term != SourcePrimaryTermId::new(index)
+            || row.reference != SourcePrimaryTermReferenceId::new(index)
+            || term.kind() != SourcePrimaryTermKind::VariableReference
+            || term.role() != SourcePrimaryTermRole::Value
+            || term.recovery() != SourcePrimaryTermRecovery::Normal
+            || term.spelling() != binder.identifier_spelling()
+            || term.parent().is_some()
+            || !properly_contains(owner.source_range(), term.source_range())
+            || reference.term() != row.term
+            || reference.binding() != binder.binding()
+            || reference.role() != SourcePrimaryTermReferenceRole::Variable
+            || reference.lexical_scope() != context.lexical_scope.as_ref()
+            || reference.use_ordinal() != use_ordinals[index]
+        {
+            return Err(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id });
+        }
+        let lookup = BindingLookupSite::new(
+            term.spelling(),
+            term.context(),
+            reference.lexical_scope().cloned(),
+            reference.use_ordinal(),
+        );
+        if composite_formulas.binding_env().lookup(&lookup)
+            != Ok(BindingLookupResult::Local(binder.binding()))
+        {
+            return Err(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id });
+        }
+        if previous_range.is_some_and(|previous| previous.end > term.source_range().start) {
+            return Err(SourceFormulaCompositionError::InvalidBoundUse { bound_use: id });
+        }
+        previous_range = Some(term.source_range());
+    }
+    Ok(())
+}
+
 fn properly_contains(parent: SourceRange, child: SourceRange) -> bool {
     parent.source_id == child.source_id
         && parent != child
@@ -859,6 +1142,7 @@ fn properly_contains(parent: SourceRange, child: SourceRange) -> bool {
 fn atomic_edge_role_key(role: SourceFormulaAtomicEdgeRole) -> &'static str {
     match role {
         SourceFormulaAtomicEdgeRole::UniversalBody => "universal-body",
+        SourceFormulaAtomicEdgeRole::UniversalRestriction => "universal-restriction",
         SourceFormulaAtomicEdgeRole::ConjunctionLeft => "conjunction-left",
         SourceFormulaAtomicEdgeRole::ConjunctionRight => "conjunction-right",
         SourceFormulaAtomicEdgeRole::DisjunctionLeft => "disjunction-left",
@@ -926,6 +1210,19 @@ mod tests {
     }
 
     struct Task257B2Fixture {
+        source: SourceId,
+        module: ModuleId,
+        arena: TypedArena,
+        bindings: BindingEnv,
+        primary_input: SourcePrimaryTermHandoffInput,
+        atomic_input: SourceAtomicFormulaHandoffInput,
+        primary: SourcePrimaryTermHandoff,
+        atomic: SourceAtomicFormulaHandoff,
+        composite: SourceCompositeFormulaHandoff,
+        input: SourceFormulaCompositionHandoffInput,
+    }
+
+    struct Task257B3Fixture {
         source: SourceId,
         module: ModuleId,
         arena: TypedArena,
@@ -1427,6 +1724,216 @@ mod tests {
         }
     }
 
+    fn task_257b3_fixture() -> Task257B3Fixture {
+        let composite_fixture =
+            crate::source_composite_formula::tests::task_257b3_composite_fixture();
+        let source = composite_fixture.source;
+        let module = composite_fixture.module.clone();
+        let mut nodes = composite_fixture
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for (key, start, end) in [
+            ("source.formula.atomic.equality", 86, 91),
+            ("source.formula.atomic.equality", 119, 124),
+            ("source.formula.atomic.equality", 131, 136),
+            ("source.term.variable-reference", 86, 87),
+            ("source.term.variable-reference", 90, 91),
+            ("source.term.variable-reference", 119, 120),
+            ("source.term.variable-reference", 123, 124),
+            ("source.term.variable-reference", 131, 132),
+            ("source.term.variable-reference", 135, 136),
+        ] {
+            nodes.push(TypedNode::new(
+                key,
+                SourceAnchor::Range(range(source, start, end)),
+            ));
+        }
+        let arena = TypedArena::try_new(None, nodes).expect("Task 257B3 complete arena");
+        let bindings = SourceCompositeFormulaProducer::extend_bindings(
+            &composite_fixture.input,
+            &composite_fixture.base,
+            &arena,
+        )
+        .expect("Task 257B3 bindings");
+        let composite =
+            SourceCompositeFormulaProducer::build(composite_fixture.input, &bindings, &arena)
+                .expect("Task 257B3 composite");
+        let term_ranges = [
+            (86, 87),
+            (90, 91),
+            (119, 120),
+            (123, 124),
+            (131, 132),
+            (135, 136),
+        ];
+        let term_spellings = ["x", "x", "r", "y", "x", "r"];
+        let term_contexts = [1, 1, 3, 3, 3, 3];
+        let term_bindings = [1, 1, 3, 2, 1, 3];
+        let terms = term_ranges
+            .into_iter()
+            .zip(term_spellings)
+            .zip(term_contexts)
+            .enumerate()
+            .map(
+                |(index, (((start, end), spelling), context))| SourcePrimaryTermInput {
+                    site: node(18 + index),
+                    source_range: range(source, start, end),
+                    source_ordinal: index,
+                    context: BindingContextId::new(context),
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: spelling.to_owned(),
+                    kind: SourcePrimaryTermKind::VariableReference,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                },
+            )
+            .collect();
+        let references = term_bindings
+            .into_iter()
+            .enumerate()
+            .map(|(index, binding)| SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(index),
+                binding: BindingId::new(binding),
+                role: SourcePrimaryTermReferenceRole::Variable,
+            })
+            .collect();
+        let primary_input = SourcePrimaryTermHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            terms,
+            references,
+            numeric_type_requests: Vec::new(),
+        };
+        let primary = SourcePrimaryTermProducer::build(primary_input.clone(), &bindings, &arena)
+            .expect("Task 257B3 primary terms");
+        let equality_ranges = [(86, 91), (119, 124), (131, 136)];
+        let equality_spellings = ["x = x", "r = y", "x = r"];
+        let equality_contexts = [1, 3, 3];
+        let formulas = equality_ranges
+            .into_iter()
+            .zip(equality_spellings)
+            .zip(equality_contexts)
+            .enumerate()
+            .map(
+                |(index, (((start, end), spelling), context))| SourceAtomicFormulaInput {
+                    site: node(15 + index),
+                    source_range: range(source, start, end),
+                    source_ordinal: index,
+                    context: BindingContextId::new(context),
+                    recovery: SourceAtomicFormulaRecovery::Normal,
+                    spelling: spelling.to_owned(),
+                    kind: SourceAtomicFormulaKind::Equality,
+                },
+            )
+            .collect();
+        let edges = (0..3)
+            .flat_map(|formula| {
+                [
+                    SourceAtomicEdgeInput {
+                        formula: SourceAtomicFormulaId::new(formula),
+                        ordinal: 0,
+                        role: SourceAtomicEdgeRole::BuiltinLeftOperand,
+                        target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(
+                            formula * 2,
+                        )),
+                    },
+                    SourceAtomicEdgeInput {
+                        formula: SourceAtomicFormulaId::new(formula),
+                        ordinal: 1,
+                        role: SourceAtomicEdgeRole::BuiltinRightOperand,
+                        target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(
+                            formula * 2 + 1,
+                        )),
+                    },
+                ]
+            })
+            .collect::<Vec<_>>();
+        let requests = edges
+            .iter()
+            .enumerate()
+            .map(|(index, edge)| SourceAtomicRequestInput {
+                formula: edge.formula,
+                ordinal: edge.ordinal,
+                kind: SourceAtomicRequestKind::OperandExpectedType,
+                edge: Some(SourceAtomicEdgeId::new(index)),
+                candidate: None,
+                type_site: None,
+                attribute: None,
+            })
+            .collect();
+        let atomic_input = SourceAtomicFormulaHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            formulas,
+            wrappers: Vec::new(),
+            predicate_heads: Vec::new(),
+            candidates: Vec::new(),
+            type_sites: Vec::new(),
+            attributes: Vec::new(),
+            edges,
+            requests,
+        };
+        let atomic = SourceAtomicFormulaProducer::build(
+            atomic_input.clone(),
+            &bindings,
+            &SymbolEnv::new(module.clone(), SymbolEnvIndexes::default()),
+            &primary,
+            None,
+            None,
+            None,
+            &arena,
+        )
+        .expect("Task 257B3 atomic formulas");
+        let input = SourceFormulaCompositionHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            atomic_edges: [
+                (0, 0, SourceFormulaAtomicEdgeRole::UniversalRestriction, 0),
+                (2, 0, SourceFormulaAtomicEdgeRole::UniversalRestriction, 1),
+                (2, 1, SourceFormulaAtomicEdgeRole::UniversalBody, 2),
+            ]
+            .into_iter()
+            .map(
+                |(formula, ordinal, role, child)| SourceFormulaAtomicEdgeInput {
+                    formula: SourceCompositeFormulaId::new(formula),
+                    ordinal,
+                    role,
+                    child: SourceAtomicFormulaId::new(child),
+                },
+            )
+            .collect(),
+            bound_uses: [0, 0, 2, 1, 0, 2]
+                .into_iter()
+                .zip([0, 1, 0, 0, 2, 1])
+                .zip([0, 0, 1, 1, 2, 2])
+                .enumerate()
+                .map(
+                    |(index, ((binder, ordinal), body_edge))| SourceQuantifierBoundUseInput {
+                        binder: SourceQuantifierBinderId::new(binder),
+                        ordinal,
+                        body_edge: SourceFormulaAtomicEdgeId::new(body_edge),
+                        term: SourcePrimaryTermId::new(index),
+                        reference: SourcePrimaryTermReferenceId::new(index),
+                    },
+                )
+                .collect(),
+        };
+        Task257B3Fixture {
+            source,
+            module,
+            arena,
+            bindings,
+            primary_input,
+            atomic_input,
+            primary,
+            atomic,
+            composite,
+            input,
+        }
+    }
+
     fn build(
         fixture: &Fixture,
         input: SourceFormulaCompositionHandoffInput,
@@ -1451,6 +1958,32 @@ mod tests {
             &fixture.composite,
             &fixture.arena,
         )
+    }
+
+    fn build_task_257b3(
+        fixture: &Task257B3Fixture,
+        input: SourceFormulaCompositionHandoffInput,
+    ) -> Result<SourceFormulaCompositionHandoff, SourceFormulaCompositionError> {
+        SourceFormulaCompositionProducer::build(
+            input,
+            &fixture.primary,
+            &fixture.atomic,
+            &fixture.composite,
+            &fixture.arena,
+        )
+    }
+
+    fn debug_oracle(value: &str) -> (usize, u64, u64) {
+        value
+            .bytes()
+            .enumerate()
+            .fold((0, 0_u64, 0_u64), |(_, sum, weighted), (index, byte)| {
+                (
+                    index + 1,
+                    sum.wrapping_add(u64::from(byte)),
+                    weighted.wrapping_add((index as u64 + 1) * u64::from(byte)),
+                )
+            })
     }
 
     #[test]
@@ -1724,6 +2257,401 @@ mod tests {
             statement_proofs: None,
         })
         .expect("Task 257B2 resolved assembly");
+        assert_eq!(resolved.source_formula_composition(), Some(&composition));
+        assert_eq!(
+            resolved.source_composite_formula(),
+            Some(&fixture.composite)
+        );
+        assert_eq!(resolved.clone().debug_text(), resolved.debug_text());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+    }
+
+    #[test]
+    fn task_257b3_exact_nested_composition_dependencies_edges_uses_and_debug_publish() {
+        let fixture = task_257b3_fixture();
+        let first =
+            build_task_257b3(&fixture, fixture.input.clone()).expect("Task 257B3 composition");
+        let second = build_task_257b3(&fixture, fixture.input.clone()).expect("Task 257B3 replay");
+        assert_eq!(first, second);
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert_eq!(
+            first.debug_text(),
+            include_str!("testdata/task257b3_composition.debug")
+        );
+        assert_eq!(
+            debug_oracle(&first.debug_text()),
+            (8752, 792413, 3442669489),
+            "Task 257B3 composition debug bytes changed"
+        );
+        assert_eq!(
+            (
+                fixture.bindings.contexts().len(),
+                fixture.bindings.bindings().len(),
+                fixture.primary.terms().len(),
+                fixture.primary.references().len(),
+                fixture.atomic.formulas().len(),
+                fixture.atomic.edges().len(),
+                fixture.composite.formulas().len(),
+                fixture.composite.edges().len(),
+                first.atomic_edges().len(),
+                first.bound_uses().len(),
+            ),
+            (4, 4, 6, 6, 3, 6, 3, 2, 3, 6)
+        );
+        assert_eq!(
+            first
+                .atomic_edges()
+                .iter()
+                .map(|(_, row)| {
+                    (
+                        row.formula().index(),
+                        row.ordinal(),
+                        row.role(),
+                        row.child().index(),
+                    )
+                })
+                .collect::<Vec<_>>(),
+            [
+                (0, 0, SourceFormulaAtomicEdgeRole::UniversalRestriction, 0),
+                (2, 0, SourceFormulaAtomicEdgeRole::UniversalRestriction, 1),
+                (2, 1, SourceFormulaAtomicEdgeRole::UniversalBody, 2),
+            ]
+        );
+        assert_eq!(
+            first
+                .bound_uses()
+                .iter()
+                .map(|(_, row)| {
+                    (
+                        row.binder().index(),
+                        row.ordinal(),
+                        row.body_edge().index(),
+                        row.term().index(),
+                        row.reference().index(),
+                    )
+                })
+                .collect::<Vec<_>>(),
+            [
+                (0, 0, 0, 0, 0),
+                (0, 1, 0, 1, 1),
+                (2, 0, 1, 2, 2),
+                (1, 0, 1, 3, 3),
+                (0, 2, 2, 4, 4),
+                (2, 1, 2, 5, 5),
+            ]
+        );
+        assert!(first.debug_text().contains("role=universal-restriction"));
+        assert!(first.debug_text().contains("body-edge=2"));
+    }
+
+    #[test]
+    fn task_257b3_composition_and_dependency_corruptions_fail_closed_then_recover() {
+        let fixture = task_257b3_fixture();
+        for index in 0..3 {
+            let mut input = fixture.input.clone();
+            input.atomic_edges[index].formula = SourceCompositeFormulaId::new(1);
+            assert!(build_task_257b3(&fixture, input).is_err());
+
+            let mut input = fixture.input.clone();
+            input.atomic_edges[index].ordinal += 1;
+            assert!(build_task_257b3(&fixture, input).is_err());
+
+            let mut input = fixture.input.clone();
+            input.atomic_edges[index].role = SourceFormulaAtomicEdgeRole::ConjunctionLeft;
+            assert!(build_task_257b3(&fixture, input).is_err());
+
+            let mut input = fixture.input.clone();
+            input.atomic_edges[index].child = SourceAtomicFormulaId::new((index + 1) % 3);
+            assert!(build_task_257b3(&fixture, input).is_err());
+        }
+        for index in 0..6 {
+            let mut input = fixture.input.clone();
+            input.bound_uses[index].binder =
+                SourceQuantifierBinderId::new((input.bound_uses[index].binder.index() + 1) % 3);
+            assert!(build_task_257b3(&fixture, input).is_err());
+
+            let mut input = fixture.input.clone();
+            input.bound_uses[index].ordinal += 1;
+            assert!(build_task_257b3(&fixture, input).is_err());
+
+            let mut input = fixture.input.clone();
+            input.bound_uses[index].body_edge = SourceFormulaAtomicEdgeId::new((index / 2 + 1) % 3);
+            assert!(build_task_257b3(&fixture, input).is_err());
+
+            let mut input = fixture.input.clone();
+            input.bound_uses[index].term = SourcePrimaryTermId::new((index + 1) % 6);
+            assert!(build_task_257b3(&fixture, input).is_err());
+
+            let mut input = fixture.input.clone();
+            input.bound_uses[index].reference = SourcePrimaryTermReferenceId::new((index + 1) % 6);
+            assert!(build_task_257b3(&fixture, input).is_err());
+        }
+        let mut reordered = fixture.input.clone();
+        reordered.atomic_edges.swap(0, 1);
+        assert!(build_task_257b3(&fixture, reordered).is_err());
+        let mut missing = fixture.input.clone();
+        missing.bound_uses.pop();
+        assert!(build_task_257b3(&fixture, missing).is_err());
+        let mut extra = fixture.input.clone();
+        extra.bound_uses.push(extra.bound_uses[0].clone());
+        assert!(build_task_257b3(&fixture, extra).is_err());
+
+        let mut primary_input = fixture.primary_input.clone();
+        primary_input.terms[0].context = BindingContextId::new(3);
+        let substituted_primary =
+            SourcePrimaryTermProducer::build(primary_input, &fixture.bindings, &fixture.arena)
+                .expect("structurally valid use-context substitution");
+        assert!(
+            SourceFormulaCompositionProducer::build(
+                fixture.input.clone(),
+                &substituted_primary,
+                &fixture.atomic,
+                &fixture.composite,
+                &fixture.arena,
+            )
+            .is_err()
+        );
+
+        let mut shifted_nodes = fixture
+            .arena
+            .iter()
+            .map(|(id, node)| {
+                let mut node = node.clone();
+                node.anchor = match id.index() {
+                    15 => SourceAnchor::Range(range(fixture.source, 112, 117)),
+                    18 => SourceAnchor::Range(range(fixture.source, 112, 113)),
+                    19 => SourceAnchor::Range(range(fixture.source, 116, 117)),
+                    _ => node.anchor,
+                };
+                node
+            })
+            .collect::<Vec<_>>();
+        let shifted_arena =
+            TypedArena::try_new(None, std::mem::take(&mut shifted_nodes)).expect("shifted arena");
+        let mut shifted_primary_input = fixture.primary_input.clone();
+        shifted_primary_input.terms[0].source_range = range(fixture.source, 112, 113);
+        shifted_primary_input.terms[1].source_range = range(fixture.source, 116, 117);
+        let shifted_primary = SourcePrimaryTermProducer::build(
+            shifted_primary_input,
+            &fixture.bindings,
+            &shifted_arena,
+        )
+        .expect("coherent shifted primary terms");
+        let mut shifted_atomic_input = fixture.atomic_input.clone();
+        shifted_atomic_input.formulas[0].source_range = range(fixture.source, 112, 117);
+        let shifted_atomic = SourceAtomicFormulaProducer::build(
+            shifted_atomic_input,
+            &fixture.bindings,
+            &SymbolEnv::new(fixture.module.clone(), SymbolEnvIndexes::default()),
+            &shifted_primary,
+            None,
+            None,
+            None,
+            &shifted_arena,
+        )
+        .expect("coherent shifted atomic formula");
+        assert!(
+            SourceFormulaCompositionProducer::build(
+                fixture.input.clone(),
+                &shifted_primary,
+                &shifted_atomic,
+                &fixture.composite,
+                &shifted_arena,
+            )
+            .is_err(),
+            "atom moved beneath a deeper composite owner must not remain assigned to the outer formula"
+        );
+
+        let task_257b1 = self::fixture();
+        assert!(
+            SourceFormulaCompositionProducer::build(
+                fixture.input.clone(),
+                &fixture.primary,
+                &task_257b1.atomic,
+                &fixture.composite,
+                &fixture.arena,
+            )
+            .is_err()
+        );
+        assert!(
+            build_task_257b3(&fixture, fixture.input.clone()).is_ok(),
+            "valid replay recovers after every rejected corruption"
+        );
+    }
+
+    #[test]
+    fn task_257b3_combined_installation_ownership_and_resolved_clone_are_atomic() {
+        let fixture = task_257b3_fixture();
+        let composition =
+            build_task_257b3(&fixture, fixture.input.clone()).expect("Task 257B3 composition");
+        let base = empty_typed_ast(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.arena.clone(),
+        );
+        assert_eq!(
+            base.clone()
+                .with_source_composite_formula(fixture.composite.clone())
+                .expect_err("legacy installer rejects B3"),
+            TypedAstError::InvalidSourceCompositeFormula
+        );
+        assert_combined_install_rejected_without_publication(
+            &base,
+            fixture.composite.clone(),
+            composition.clone(),
+        );
+        let with_primary = base
+            .with_source_term(fixture.primary.clone())
+            .expect("Task 252 install");
+        assert_combined_install_rejected_without_publication(
+            &with_primary,
+            fixture.composite.clone(),
+            composition.clone(),
+        );
+        let with_atomic = with_primary
+            .with_source_atomic_formula(fixture.atomic.clone())
+            .expect("Task 256 install");
+        let installed = with_atomic
+            .clone()
+            .with_source_formula_composition(fixture.composite.clone(), composition.clone())
+            .expect("Task 257B3 atomic combined install");
+        assert_eq!(
+            installed.source_composite_formula(),
+            Some(&fixture.composite)
+        );
+        assert_eq!(installed.source_formula_composition(), Some(&composition));
+        assert_combined_install_rejected_preserving_state(
+            &installed,
+            fixture.composite.clone(),
+            composition.clone(),
+        );
+        for mutate in [
+            |candidate: &mut SourceFormulaCompositionHandoff| {
+                candidate.primary_term_fingerprint.push_str("stale")
+            },
+            |candidate: &mut SourceFormulaCompositionHandoff| {
+                candidate.atomic_formula_fingerprint.push_str("stale")
+            },
+            |candidate: &mut SourceFormulaCompositionHandoff| {
+                candidate.composite_formula_fingerprint.push_str("stale")
+            },
+            |candidate: &mut SourceFormulaCompositionHandoff| {
+                candidate.atomic_edges.rows.swap(0, 1)
+            },
+            |candidate: &mut SourceFormulaCompositionHandoff| candidate.bound_uses.rows.swap(0, 1),
+        ] {
+            let mut candidate = composition.clone();
+            mutate(&mut candidate);
+            assert_combined_install_rejected_without_publication(
+                &with_atomic,
+                fixture.composite.clone(),
+                candidate,
+            );
+        }
+
+        let task_248 = crate::source_context::tests::task_248_occupied_typed_ast(
+            fixture.source,
+            fixture.module.clone(),
+        );
+        assert!(task_248.source_context().is_some());
+        assert_combined_install_rejected_without_publication(
+            &task_248,
+            fixture.composite.clone(),
+            composition.clone(),
+        );
+        let task_257a = crate::source_composite_formula::tests::task_257a_installed_typed_ast();
+        assert_combined_install_rejected_preserving_state(
+            &task_257a,
+            fixture.composite.clone(),
+            composition.clone(),
+        );
+        let task_257b1 = self::fixture();
+        let task_257b1_composition =
+            build(&task_257b1, task_257b1.input.clone()).expect("Task 257B1 composition");
+        let task_257b1_installed = empty_typed_ast(
+            task_257b1.source,
+            task_257b1.module.clone(),
+            task_257b1.arena.clone(),
+        )
+        .with_source_term(task_257b1.primary.clone())
+        .expect("Task 257B1 term")
+        .with_source_atomic_formula(task_257b1.atomic.clone())
+        .expect("Task 257B1 atomic")
+        .with_source_formula_composition(task_257b1.composite.clone(), task_257b1_composition)
+        .expect("Task 257B1 install");
+        assert_combined_install_rejected_preserving_state(
+            &task_257b1_installed,
+            fixture.composite.clone(),
+            composition.clone(),
+        );
+        let task_257b2 = task_257b2_fixture();
+        let task_257b2_composition = build_task_257b2(&task_257b2, task_257b2.input.clone())
+            .expect("Task 257B2 composition");
+        let task_257b2_installed = empty_typed_ast(
+            task_257b2.source,
+            task_257b2.module.clone(),
+            task_257b2.arena.clone(),
+        )
+        .with_source_term(task_257b2.primary.clone())
+        .expect("Task 257B2 term")
+        .with_source_atomic_formula(task_257b2.atomic.clone())
+        .expect("Task 257B2 atomic")
+        .with_source_formula_composition(task_257b2.composite.clone(), task_257b2_composition)
+        .expect("Task 257B2 install");
+        assert_combined_install_rejected_preserving_state(
+            &task_257b2_installed,
+            fixture.composite.clone(),
+            composition.clone(),
+        );
+
+        let cluster_facts = ClusterFactTable::new();
+        let collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability =
+            CandidateViabilityOutput::filter(&expansion, Vec::<CandidateViabilityInput>::new());
+        let specificity =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let selection = OverloadSelectionOutput::resolve(
+            &specificity,
+            Vec::<OverloadSiteResolutionInput>::new(),
+        );
+        let mut orphaned = installed.clone();
+        orphaned.remove_source_formula_composition_for_test();
+        assert_eq!(
+            ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+                typed_ast: &orphaned,
+                cluster_facts: &cluster_facts,
+                overload_collection: &collection,
+                template_expansion: &expansion,
+                viability: &viability,
+                specificity: &specificity,
+                overload_selection: &selection,
+                expressions: Vec::new(),
+                node_hints: Vec::new(),
+                statement_semantics: None,
+                statement_proofs: None,
+            })
+            .expect_err("orphaned Task 257B3 composite must fail final assembly"),
+            crate::resolved_typed_ast::ResolvedTypedAstError::InvalidSourceFormulaComposition
+        );
+        let resolved = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast: &installed,
+            cluster_facts: &cluster_facts,
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &selection,
+            expressions: Vec::new(),
+            node_hints: Vec::new(),
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+        .expect("Task 257B3 resolved assembly");
         assert_eq!(resolved.source_formula_composition(), Some(&composition));
         assert_eq!(
             resolved.source_composite_formula(),
@@ -2150,6 +3078,17 @@ mod tests {
         composite: SourceCompositeFormulaHandoff,
         composition: SourceFormulaCompositionHandoff,
     ) {
+        assert_combined_install_rejected_preserving_state(typed, composite, composition);
+        assert!(typed.source_composite_formula().is_none());
+        assert!(typed.source_formula_composition().is_none());
+    }
+
+    #[track_caller]
+    fn assert_combined_install_rejected_preserving_state(
+        typed: &TypedAst,
+        composite: SourceCompositeFormulaHandoff,
+        composition: SourceFormulaCompositionHandoff,
+    ) {
         let before = typed.debug_text();
         assert_eq!(
             typed
@@ -2159,8 +3098,6 @@ mod tests {
             TypedAstError::InvalidSourceFormulaComposition
         );
         assert_eq!(typed.debug_text(), before);
-        assert!(typed.source_composite_formula().is_none());
-        assert!(typed.source_formula_composition().is_none());
     }
 
     const EXPECTED_DEBUG: &str = r###"source-formula-composition-debug-v1

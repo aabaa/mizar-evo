@@ -1,0 +1,40 @@
+source-composite-formula-debug-v1
+module: pkg::composite.fixture
+binding-env-debug-v1
+module: pkg::composite.fixture
+contexts:
+  context#0 owner=module parent=none layer=module scope=none bindings=[binding#0] visible=[binding#0] recovery=normal
+  context#1 owner=source-formula(67..136) parent=context#0 layer=expression scope=[0] bindings=[binding#1] visible=[binding#0, binding#1] recovery=normal
+  context#2 owner=source-formula(92..136) parent=context#1 layer=expression scope=[0.0] bindings=[binding#2] visible=[binding#0, binding#1, binding#2] recovery=normal
+  context#3 owner=source-formula(110..136) parent=context#2 layer=expression scope=[0.0.0] bindings=[binding#3] visible=[binding#0, binding#1, binding#2, binding#3] recovery=normal
+bindings:
+  binding#0 spelling="r" kind=reserved_variable owner=context#0 identity=reserved_variable(spelling="r", range=8..9) range=8..9 visible_after=0 type=source(14..17) status=reserved captured=[] diagnostics=[] recovery=normal
+  binding#3 spelling="r" kind=quantifier_binder owner=context#3 identity=resolver_local(scope=[0.0.0], ordinal=3, range=114..115) range=114..115 visible_after=3 type=source(14..17) status=active captured=[] diagnostics=[] recovery=normal
+  binding#1 spelling="x" kind=quantifier_binder owner=context#1 identity=resolver_local(scope=[0], ordinal=1, range=71..72) range=71..72 visible_after=1 type=source(79..82) status=active captured=[] diagnostics=[] recovery=normal
+  binding#2 spelling="y" kind=quantifier_binder owner=context#2 identity=resolver_local(scope=[0.0], ordinal=2, range=95..96) range=95..96 visible_after=2 type=source(103..106) status=active captured=[] diagnostics=[] recovery=normal
+diagnostics:
+formulas: 3
+  formula#0 site=0 range=67..136 ordinal=0 context=0 recovery=normal spelling="for st" kind=universal
+  formula#1 site=1 range=92..136 ordinal=1 context=1 recovery=normal spelling="ex st" kind=existential
+  formula#2 site=2 range=110..136 ordinal=2 context=2 recovery=normal spelling="for st holds" kind=universal
+wrappers: 0
+roots: 1
+  root#0 formula=0 ordinal=0 ownership=unassigned-statement
+binders: 3
+  binder#0 formula=0 ordinal=0 segment-site=3 segment-range=71..82 segment-spelling="x being" identifier-site=4 identifier-range=71..72 identifier-spelling="x" local-scope=[0] local-ordinal=1 binding=1 body-context=1 type-site=0 recovery=normal
+  binder#1 formula=1 ordinal=0 segment-site=5 segment-range=95..106 segment-spelling="y being" identifier-site=6 identifier-range=95..96 identifier-spelling="y" local-scope=[0, 0] local-ordinal=2 binding=2 body-context=2 type-site=1 recovery=normal
+  binder#2 formula=2 ordinal=0 segment-site=7 segment-range=114..115 segment-spelling="r" identifier-site=8 identifier-range=114..115 identifier-spelling="r" local-scope=[0, 0, 0] local-ordinal=3 binding=3 body-context=3 type-site=2 recovery=normal
+type-sites: 3
+  type-site#0 binder=0 site=9 range=79..82 spelling="set" head-site=10 head-range=79..82 head-spelling="set" context=0 recovery=normal head=builtin-set
+  type-site#1 binder=1 site=11 range=103..106 spelling="set" head-site=12 head-range=103..106 head-spelling="set" context=1 recovery=normal head=builtin-set
+  type-site#2 binder=2 site=13 range=14..17 spelling="set" head-site=14 head-range=14..17 head-spelling="set" context=0 recovery=normal head=builtin-set
+edges: 2
+  edge#0 parent=0 ordinal=0 role=universal-body child=1
+  edge#1 parent=1 ordinal=0 role=existential-body child=2
+requests: 6
+  request#0 formula=0 ordinal=0 kind=quantifier-semantics binder=- type-site=-
+  request#1 formula=0 ordinal=1 kind=binder-type binder=0 type-site=0
+  request#2 formula=1 ordinal=0 kind=quantifier-semantics binder=- type-site=-
+  request#3 formula=1 ordinal=1 kind=binder-type binder=1 type-site=1
+  request#4 formula=2 ordinal=0 kind=quantifier-semantics binder=- type-site=-
+  request#5 formula=2 ordinal=1 kind=binder-type binder=2 type-site=2

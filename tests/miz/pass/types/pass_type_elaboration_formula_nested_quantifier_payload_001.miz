@@ -1,0 +1,1 @@
+reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;

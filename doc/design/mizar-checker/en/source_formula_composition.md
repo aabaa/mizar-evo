@@ -352,3 +352,14 @@ nearest-parent roles, fingerprints, and final ownership. Direct nested
 quantified uses do not become `CapturedFreeVariables`. No quantified truth,
 restriction discharge, witness, theorem closure, fact, acceptance, proof, or
 IR is produced.
+
+## Task 257B3 Implementation Status
+
+The fourth profile and `3/6` association transaction are now executable from
+the exact source consumer. Checker and real-runner tests authenticate all
+three parent roles, six lookup-selected uses, dependency fingerprints,
+deterministic rendering, atomic installation, rollback, and resolved cloning.
+Atomic-edge validation rejects an outer assignment whenever a deeper
+descendant composite formula also contains the atom, preserving the frozen
+nearest-parent/subtree exclusion. The frozen semantic deferrals remain
+unchanged.

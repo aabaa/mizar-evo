@@ -2279,5 +2279,16 @@ completion remain deferred. The origin discrepancy remains report-only
   as report-only `repo_metadata_conflict`; no blocking `spec_gap` exists.
 - [x] Preserve production, fixtures, sidecars, trace status/count, executable
   coverage, counts, and hashes at the Task-257B2 completion baseline.
-- [ ] Implement Task 257B3 as the next separate logical task after mandatory
+- [x] Implement Task 257B3 as the next separate logical task after mandatory
   parser/resolver/API and count/hash preflight.
+
+## Checker Task 257B3 Implementation Ledger
+
+- [x] Implement the exact fourth composite and `3/6` composition profiles,
+  Task-48-derived nested binding environment, Task-252/256 dependencies,
+  atomic combined installation, and resolved clone ownership.
+- [x] Add exactly one pass fixture/sidecar and covered trace row while
+  preserving all frozen semantic deferrals and prior A/B1/B2 routes.
+- [x] Close independent test, implementation, source/documentation, and final
+  quality reviews; verify corpus `417/383`, type `249/237`, active type
+  `196`, and checker/mizar-test libraries `319/349`.

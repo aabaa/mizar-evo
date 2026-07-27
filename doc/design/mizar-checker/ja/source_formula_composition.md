@@ -320,3 +320,13 @@ nearest-parent role、fingerprint、final ownershipをauthenticateする。direc
 nested quantified useは`CapturedFreeVariables`にならない。quantified truth、
 restriction discharge、witness、theorem closure、fact、acceptance、proof、IRを
 produceしない。
+
+## Task 257B3 implementation status
+
+fourth profileと`3/6` association transactionはexact source consumerから
+executableになった。checker/real-runner testsはparent role 3件、lookupで
+選択したuse 6件、dependency fingerprint、deterministic rendering、atomic
+installation/rollback、resolved cloneを認証する。atomic-edge validationは
+deeper descendant composite formulaもatomをcontainする場合のouter assignmentを
+rejectし、frozen nearest-parent/subtree exclusionを保持する。frozen semantic
+deferralは不変。

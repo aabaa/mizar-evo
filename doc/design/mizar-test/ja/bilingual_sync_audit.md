@@ -301,3 +301,10 @@ exclusion、4-context/4-binding nested environment、`6/6/0`、
 lookup/edge association、test boundary、baseline/projection、semantic
 deferralをfreezeする。このprerequisiteはproduction moduleを変更しないため
 module-boundary auditは意図的に不変。Task-257B3 bilingual driftは残らない。
+
+## Checker Task 257B3 implementation pair recheck
+
+paired plan/harness/TODO/boundary auditはexecutable exact selector、
+reserve-derived environment、same-arena route、拡張near-miss/corruption/
+isolation tests、sidecar/trace ownership、不変semantic outputを記録する。
+implementation-era bilingual driftは残らない。

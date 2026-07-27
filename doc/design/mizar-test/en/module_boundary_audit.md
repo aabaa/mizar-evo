@@ -11336,3 +11336,16 @@ No production path was added. The new selector/payload stays in
 sequencing stay in the existing `source_formula_composition.rs` leaf. Tests
 remain in its paired test leaf. The resulting manifest is 29 paths / 32,064
 lines; no further split is warranted for this bounded second consumer.
+
+## Checker Task 257B3 Boundary Recheck
+
+No production path was added. The B3 payload/extractor remains in
+`source_formula.rs`, producer sequencing remains in
+`source_formula_composition.rs`, and tests remain in the paired test leaf.
+`runner.rs` remains the 2,462-line public facade, `type_elaboration.rs` the
+657-line private facade, `source_formula.rs` is 3,500 lines, and
+`source_formula_composition.rs` is 1,311 lines; the paired test leaf is 1,452
+test-only lines. The existing 29-path layout remains cohesive at 32,809
+production lines. Its path/content hashes are
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`2e0b08093af337b154a278646cd61218b0bedbc5e9505f07744e81eccd9692f8`.

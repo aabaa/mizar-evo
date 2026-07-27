@@ -150,3 +150,6 @@ atom 0/term 0・1はnested context 1、atom 1・2/term 2..5はcontext 3を使う
 3 atomすべて`Equality`/`Normal`、source ordinal `0..2`。source order、
 spelling、range containment、request/edge ordinalはexact profile
 discriminatorのまま。
+
+Task 257B3はこのexact 3 atoms/6 operand rowsのexecutable reciprocal
+consumerになった。atomic ownershipと全semantic deferralは不変。

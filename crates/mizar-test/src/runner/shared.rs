@@ -97,6 +97,7 @@ pub(super) fn run_frontend(
         .map_err(|error| error.to_string())?;
     let ast_snapshot = output.ast.as_ref().map(|ast| ast.snapshot_text());
     Ok(FrontendRun {
+        source_text: output.source.source_text,
         ast: output.ast,
         ast_snapshot,
         diagnostics: output.diagnostics,
@@ -105,6 +106,7 @@ pub(super) fn run_frontend(
 
 #[derive(Debug)]
 pub(super) struct FrontendRun {
+    pub(super) source_text: std::sync::Arc<str>,
     pub(super) ast: Option<SurfaceAst>,
     pub(super) ast_snapshot: Option<String>,
     pub(super) diagnostics: Vec<FrontendDiagnostic>,

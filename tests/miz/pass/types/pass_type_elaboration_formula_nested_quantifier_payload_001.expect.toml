@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_formula_nested_quantifier_payload_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_formula_nested_quantifier_payload_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.source_nested_quantifier_payload",
+]
+notes = "Checker Task 257B3 bounded source-transport coverage for the exact restricted-universal/existential/nested implicit-reserve consumer. The private runner starts from the Task-48 one-reserve binding environment, extends three nested quantifier bindings, then composes Task-252 `6/6/0`, Task-256 `3/0/0/0/0/0/6/6`, Task-257B3 `3/0/1/3/3/2/6`, and composition `3/6` in one typed arena. The inner `r` binder shadows reserved `r` without mutating it; six lookup-selected references remain Task-252-owned and restriction/body ownership remains formula-composition-only. Passing asserts immutable source transport only; equality or quantified truth, witness construction, restriction discharge, implicit theorem closure, capture results, facts, theorem ownership or acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred."

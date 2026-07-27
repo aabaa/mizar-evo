@@ -155,3 +155,7 @@ Atom 0 and terms 0/1 use nested context 1; atoms 1/2 and terms 2..5 use
 context 3. All three atoms are `Equality`/`Normal` with source ordinals
 `0..2`. Source order, spelling, range containment, and request/edge ordinals
 remain exact profile discriminators.
+
+Task 257B3 is now an executable reciprocal consumer of these exact three
+atoms and six operand rows. Atomic ownership and all semantic deferrals remain
+unchanged.

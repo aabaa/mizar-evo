@@ -4245,9 +4245,10 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
     - [x] **Task 257B2:** Task 257B1後のexact conjunction/disjunction/`iff`/
       repetition/executable formula grouping transport。connective
       truth/theorem acceptanceは含めない。
-    - [ ] **Task 257B3:** Tasks 257B1/B2後のexistential/restricted/nested
-      quantification、implicit reserved binder、追加scoped use。EN/JA frozen
-      contractはcompleteで、production implementationは別logical task。
+    - [x] **Task 257B3:** Tasks 257B1/B2後のexact existential/restricted/
+      nested quantification、implicit reserved-binder shadowing、scoped use
+      6件。semantic truth/closure/capture result/theorem creditなしでfrozen
+      source-to-final-handoff transportを実装済み。
   - [ ] **Task 257C:** separately frozen Task-256/255 extension後の
     predicate-chain/conditioned-comprehension composition。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
@@ -4315,5 +4316,8 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] prerequisiteをdocumentation-onlyでcorpus `416/382`、type `248/236`、
   pass/fail `226/190`、active `101/5/195/1`、library `312/343`、
   29 paths / 32,064 linesに保つ。
-- [ ] fresh preflight後、別logical task/commitでこのfrozen B3 sliceだけを
+- [x] fresh preflight後、別logical task/commitでこのfrozen B3 sliceだけを
   実装する。
+- [x] exact `4/4/0`、`6/6/0`、`3/0/0/0/0/0/6/6`、
+  `3/0/1/3/3/2/6`、`3/6` profile、fail-closed install/final ownership、
+  corpus `417/383`、全semantic deferralをverifyする。

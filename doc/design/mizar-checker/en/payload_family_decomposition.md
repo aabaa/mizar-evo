@@ -639,3 +639,7 @@ copy or reinterpret those predecessor rows. Quantified truth, witness
 construction, restriction discharge, implicit theorem closure, capture
 results, Task 257C, theorem ownership, and later semantic stages remain
 downstream.
+
+Task 257B3 implementation closes only the frozen composition-transport
+`source_drift` and exact-consumer `test_gap`; predecessor row ownership and
+downstream semantic responsibility do not move.

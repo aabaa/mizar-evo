@@ -312,3 +312,10 @@ environment, `6/6/0`, `3/0/0/0/0/0/6/6`, `3/0/1/3/3/2/6`, and
 projection, and semantic deferrals. No production module changes in this
 prerequisite, so the module-boundary audit remains intentionally unchanged.
 No Task-257B3 bilingual drift remains.
+
+## Checker Task 257B3 Implementation Pair Recheck
+
+The paired plan, harness, TODO, and boundary audit now describe the executable
+exact selector, reserve-derived environment, same-arena route, expanded
+near-miss/corruption/isolation tests, sidecar/trace ownership, and unchanged
+semantic output. No implementation-era bilingual drift remains.

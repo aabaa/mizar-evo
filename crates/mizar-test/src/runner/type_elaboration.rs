@@ -369,8 +369,9 @@ pub(super) use source_formula::{
     SourceParenthesizedReservedVariableBinaryFormula, SourceReservedVariableAssertedHeadRelation,
     extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
     extract_source_contradiction_formula, extract_source_formula_connective_grouping,
-    extract_source_formula_connective_quantifier, extract_source_formula_quantifier_bound_use,
-    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
+    extract_source_formula_connective_quantifier, extract_source_formula_nested_quantifier_payload,
+    extract_source_formula_quantifier_bound_use, extract_source_formula_statement,
+    extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
 };
@@ -387,6 +388,8 @@ pub(super) use source_formula_composition::source_formula_composition_transport_
 pub(super) use source_formula_composition::{
     SourceFormulaCompositionRouteInputs, SourceFormulaCompositionRouteOutput,
     source_formula_composition_output, source_formula_composition_output_with_mutation,
+    source_formula_composition_output_with_source,
+    source_formula_composition_output_with_source_and_mutation,
 };
 pub(super) use source_reserve::extract_builtin_source_reserve_declarations;
 #[cfg(test)]

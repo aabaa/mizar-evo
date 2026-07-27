@@ -3542,3 +3542,7 @@ without a lower-stage change. Truth, witnesses, restriction discharge,
 implicit closure, capture results, theorem acceptance, proof, and IR remain
 deferred. The origin difference remains report-only
 `repo_metadata_conflict`.
+
+Implementation closes the bounded B3 `source_drift` and `test_gap` with the
+exact source consumer and immutable handoffs. No canonical specification,
+existing `.miz`, or expectation was changed to match source behavior.

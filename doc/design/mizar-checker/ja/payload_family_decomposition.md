@@ -584,3 +584,7 @@ shadow relationを保持できるが、predecessor rowをcopy/reinterpretしな�
 quantified truth、witness construction、restriction discharge、implicit
 theorem closure、capture result、Task 257C、theorem ownership、later semantic
 stageはdownstreamのままである。
+
+Task 257B3 implementationがcloseするのはfrozen composition transportの
+`source_drift`とexact-consumerの`test_gap`だけで、predecessor row
+ownership/downstream semantic responsibilityは移動しない。

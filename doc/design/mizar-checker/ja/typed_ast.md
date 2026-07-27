@@ -699,3 +699,6 @@ Task-248 reserve-plus-definition profileはこのconsumerでないため
 shadow、owning atomic edge、lookup replayを認証し、existing A/B1/B2/B3
 ownershipまたはpartial publicationをrejectする。legacy composite-only
 installerはA-onlyのまま。
+
+B3 combined installationとduplicate/collision rollback pathはexecutableに
+なった。Task-248 exclusionとlegacy installerは不変。

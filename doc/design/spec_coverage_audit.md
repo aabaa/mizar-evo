@@ -3173,6 +3173,28 @@ implicit theorem closure, capture results, facts, theorem ownership/
 acceptance, proof, Core/CFG/VC, Task 257C, Steps 6/7, and global Step-5
 completion receive no credit.
 
+## Step 5 Checker Task 257B3 Implementation Addendum
+
+Task 257B3 now supplies executable syntax/resolver transport coverage for the
+exact nested restricted-universal, existential, implicit-reserve universal
+consumer. The new covered row
+`spec.en.checker.type_elaboration.source_nested_quantifier_payload` maps only
+to
+`pass_type_elaboration_formula_nested_quantifier_payload_001.expect.toml`.
+Its Chapter-4/14, Task-48, Task-252, Task-256, and Task-257A/B1/B2
+dependencies remain credited by their existing rows; reciprocal notes record
+transport reuse without changing status.
+
+Coverage is now plan `417/383`, type-elaboration `249/237`, pass/fail
+`227/190`, and active parse/declaration/type/proof `101/5/196/1`, with
+warnings/errors `23/0`. This closes the classified B3 `source_drift` and
+`test_gap`: reserve-default provenance, nested scope/shadowing, exact
+composite/composition ownership, and final checker handoff are executable.
+It does not add equality or quantified truth, witness/restriction discharge,
+implicit theorem closure, capture results, facts, theorem ownership or
+acceptance, proof, Core/CFG/VC, Task 257C, Steps 6/7, or global Step-5
+completion credit.
+
 ## Step 5 Checker Task 257B1 Frozen-Contract Addendum
 
 Task 257B is decomposed before further implementation. Task 257B1 freezes the

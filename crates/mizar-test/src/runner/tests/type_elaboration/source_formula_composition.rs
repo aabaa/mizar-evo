@@ -1,11 +1,16 @@
 use super::{
     SourceFormulaCompositionRouteInputs, SourceFormulaCompositionRouteOutput,
     extract_source_formula_connective_grouping, extract_source_formula_quantifier_bound_use,
-    source_formula_composition_output, source_formula_composition_output_with_mutation,
+    extract_source_formula_nested_quantifier_payload, source_formula_composition_output,
+    source_formula_composition_output_with_mutation,
+    source_formula_composition_output_with_source,
+    source_formula_composition_output_with_source_and_mutation,
 };
 
 const TASK257B1_CASE: &str = "pass_type_elaboration_formula_quantifier_bound_use_payload_001";
 const TASK257B2_CASE: &str = "pass_type_elaboration_formula_connective_grouping_payload_001";
+const TASK257B3_CASE: &str = "pass_type_elaboration_formula_nested_quantifier_payload_001";
+const TASK257B3_SOURCE: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n";
 
 #[test]
 fn task257b1_real_route_publishes_the_exact_cross_family_transaction() {
@@ -272,23 +277,55 @@ fn task257b_selectors_are_exclusive_and_do_not_capture_task257a() {
         }
         let symbols =
             augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-        if source_formula_composition_output(&ast, resolver.module, &symbols).is_some() {
+        if source_formula_composition_output_with_source(
+            &ast,
+            resolver.module,
+            &symbols,
+            &frontend.source_text,
+        )
+        .is_some()
+        {
             selected.push(case.id.0.clone());
         }
     }
     assert_eq!(
         selected,
-        [TASK257B2_CASE.to_owned(), TASK257B1_CASE.to_owned()]
+        [
+            TASK257B2_CASE.to_owned(),
+            TASK257B3_CASE.to_owned(),
+            TASK257B1_CASE.to_owned(),
+        ]
     );
 
     let (task257a_ast, task257a_module, task257a_symbols) =
         task252_real_ast("fail_type_elaboration_formula_connective_quantifier_gap_001");
     assert!(
+        extract_source_formula_nested_quantifier_payload(
+            &task257a_ast,
+            &task257a_module,
+            &task257a_symbols,
+            "",
+        )
+        .is_none()
+    );
+    assert!(
         source_formula_composition_output(&task257a_ast, task257a_module, &task257a_symbols)
             .is_none()
     );
     let (ast, module, symbols) = task252_real_ast(TASK257B1_CASE);
+    assert!(
+        extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, "").is_none()
+    );
     assert!(source_composite_formula_output(&ast, module, &symbols).is_none());
+    let (ast, module, symbols) = task252_real_ast(TASK257B2_CASE);
+    assert!(
+        extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, "").is_none()
+    );
+    assert!(
+        source_formula_composition_output(&ast, module, &symbols)
+            .expect("Task 257B2 remains selected")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -795,6 +832,556 @@ fn task257b2_source_selector_near_miss_matrix_remains_unselected() {
             "near miss {ordinal} unexpectedly reached the producer"
         );
     }
+}
+
+#[test]
+fn task257b3_real_route_publishes_exact_nested_ranges_profiles_and_final_ownership() {
+    let (ast, module, symbols) = task252_real_ast(TASK257B3_CASE);
+    let payload =
+        extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, TASK257B3_SOURCE)
+            .expect("Task 257B3 selector payload");
+    assert_eq!(
+        payload
+            .formula_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [(67, 136), (92, 136), (110, 136)]
+    );
+    assert_eq!(
+        payload
+            .binder_segment_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [(71, 82), (95, 106), (114, 115)]
+    );
+    assert_eq!(
+        payload
+            .binder_identifier_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [(71, 72), (95, 96), (114, 115)]
+    );
+    assert_eq!(
+        payload
+            .binder_type_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [(79, 82), (103, 106), (14, 17)]
+    );
+    assert_eq!(
+        payload
+            .binder_type_head_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [(79, 82), (103, 106), (14, 17)]
+    );
+    assert_eq!(
+        payload
+            .equality_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [(86, 91), (119, 124), (131, 136)]
+    );
+    assert_eq!(
+        payload
+            .term_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [
+            (86, 87),
+            (90, 91),
+            (119, 120),
+            (123, 124),
+            (131, 132),
+            (135, 136),
+        ]
+    );
+    assert_eq!(payload.term_spellings, ["x", "x", "r", "y", "x", "r"]);
+    assert_eq!(payload.reserve.bindings().len(), 1);
+    assert_eq!(payload.reserve.bindings()[0].spelling, "r");
+    assert_eq!(payload.reserve.module_context().index(), 0);
+
+    let first =
+        source_formula_composition_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            TASK257B3_SOURCE,
+        )
+        .expect("Task 257B3 selects")
+        .expect("Task 257B3 transaction");
+    let second =
+        source_formula_composition_output_with_source(&ast, module, &symbols, TASK257B3_SOURCE)
+            .expect("Task 257B3 remains selected")
+            .expect("Task 257B3 replay");
+    let primary = first.typed_ast.source_term().expect("Task 252 handoff");
+    let atomic = first
+        .typed_ast
+        .source_atomic_formula()
+        .expect("Task 256 handoff");
+    let composite = first
+        .typed_ast
+        .source_composite_formula()
+        .expect("Task 257 handoff");
+    let composition = task257b1_handoff(&first);
+    assert_eq!(
+        (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ),
+        (6, 6, 0)
+    );
+    assert_eq!(
+        (
+            atomic.formulas().len(),
+            atomic.wrappers().len(),
+            atomic.predicate_heads().len(),
+            atomic.candidates().len(),
+            atomic.type_sites().len(),
+            atomic.attributes().len(),
+            atomic.edges().len(),
+            atomic.requests().len(),
+        ),
+        (3, 0, 0, 0, 0, 0, 6, 6)
+    );
+    assert_eq!(
+        (
+            composite.formulas().len(),
+            composite.wrappers().len(),
+            composite.roots().len(),
+            composite.binders().len(),
+            composite.type_sites().len(),
+            composite.edges().len(),
+            composite.requests().len(),
+        ),
+        (3, 0, 1, 3, 3, 2, 6)
+    );
+    assert_eq!(
+        (
+            composite.binding_env().contexts().len(),
+            composite.binding_env().bindings().len(),
+            composite.binding_env().diagnostics().len(),
+            composition.atomic_edges().len(),
+            composition.bound_uses().len(),
+        ),
+        (4, 4, 0, 3, 6)
+    );
+    assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+    assert_eq!(
+        composition.atomic_formula_fingerprint(),
+        atomic.debug_text()
+    );
+    assert_eq!(
+        composition.composite_formula_fingerprint(),
+        composite.debug_text()
+    );
+    assert!(first.typed_ast.source_context().is_none());
+    assert_eq!(
+        first.typed_ast.source_formula_composition(),
+        first.resolved.source_formula_composition()
+    );
+    assert_eq!(first.typed_ast.debug_text(), second.typed_ast.debug_text());
+    assert_eq!(first.resolved.debug_text(), second.resolved.debug_text());
+    assert!(first.typed_ast.types().is_empty());
+    assert!(first.typed_ast.facts().is_empty());
+    assert!(first.resolved.checked_formulas().is_empty());
+    assert!(first.resolved.statement_semantics().is_empty());
+}
+
+#[test]
+fn task257b3_nested_visibility_shadowing_atomic_edges_and_bound_uses_are_exact() {
+    let (ast, module, symbols) = task252_real_ast(TASK257B3_CASE);
+    let output =
+        source_formula_composition_output_with_source(&ast, module, &symbols, TASK257B3_SOURCE)
+            .expect("Task 257B3 selects")
+            .expect("Task 257B3 transaction");
+    let primary = output.typed_ast.source_term().expect("Task 252 handoff");
+    let atomic = output
+        .typed_ast
+        .source_atomic_formula()
+        .expect("Task 256 handoff");
+    let composite = output
+        .typed_ast
+        .source_composite_formula()
+        .expect("Task 257 composite");
+    let composition = task257b1_handoff(&output);
+
+    assert_eq!(
+        composite
+            .binding_env()
+            .contexts()
+            .iter()
+            .map(|(_, row)| {
+                (
+                    row.lexical_scope
+                        .as_ref()
+                        .map(|scope| scope.path().to_vec()),
+                    row.visible_bindings
+                        .iter()
+                        .map(|binding| binding.index())
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (None, vec![0]),
+            (Some(vec![0]), vec![0, 1]),
+            (Some(vec![0, 0]), vec![0, 1, 2]),
+            (Some(vec![0, 0, 0]), vec![0, 1, 2, 3]),
+        ]
+    );
+    assert_eq!(
+        composite
+            .binding_env()
+            .bindings()
+            .iter()
+            .map(|(id, row)| {
+                (
+                    id.index(),
+                    row.spelling.as_str(),
+                    row.owner_context.index(),
+                    row.visible_after_ordinal,
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (0, "r", 0, 0),
+            (1, "x", 1, 1),
+            (2, "y", 2, 2),
+            (3, "r", 3, 3),
+        ]
+    );
+    assert_eq!(
+        primary
+            .references()
+            .iter()
+            .map(|(_, row)| {
+                (
+                    row.term().index(),
+                    row.binding().index(),
+                    row.use_ordinal(),
+                    row.lexical_scope().map(|scope| scope.path().to_vec()),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (0, 1, 2, Some(vec![0])),
+            (1, 1, 2, Some(vec![0])),
+            (2, 3, 4, Some(vec![0, 0, 0])),
+            (3, 2, 4, Some(vec![0, 0, 0])),
+            (4, 1, 4, Some(vec![0, 0, 0])),
+            (5, 3, 4, Some(vec![0, 0, 0])),
+        ]
+    );
+    assert_eq!(
+        atomic
+            .formulas()
+            .iter()
+            .map(|(_, row)| (row.context().index(), row.spelling()))
+            .collect::<Vec<_>>(),
+        [(1, "x = x"), (3, "r = y"), (3, "x = r")]
+    );
+    assert_eq!(
+        composite
+            .edges()
+            .iter()
+            .map(|(_, row)| {
+                (
+                    row.parent().index(),
+                    row.ordinal(),
+                    row.role(),
+                    row.child().index(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                mizar_checker::source_composite_formula::SourceFormulaEdgeRole::UniversalBody,
+                1,
+            ),
+            (
+                1,
+                0,
+                mizar_checker::source_composite_formula::SourceFormulaEdgeRole::ExistentialBody,
+                2,
+            ),
+        ]
+    );
+    assert_eq!(
+        composition
+            .atomic_edges()
+            .iter()
+            .map(|(_, row)| {
+                (
+                    row.formula().index(),
+                    row.ordinal(),
+                    row.role(),
+                    row.child().index(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                mizar_checker::source_formula_composition::SourceFormulaAtomicEdgeRole::UniversalRestriction,
+                0,
+            ),
+            (
+                2,
+                0,
+                mizar_checker::source_formula_composition::SourceFormulaAtomicEdgeRole::UniversalRestriction,
+                1,
+            ),
+            (
+                2,
+                1,
+                mizar_checker::source_formula_composition::SourceFormulaAtomicEdgeRole::UniversalBody,
+                2,
+            ),
+        ]
+    );
+    assert_eq!(
+        composition
+            .bound_uses()
+            .iter()
+            .map(|(_, row)| {
+                (
+                    row.binder().index(),
+                    row.ordinal(),
+                    row.body_edge().index(),
+                    row.term().index(),
+                    row.reference().index(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (0, 0, 0, 0, 0),
+            (0, 1, 0, 1, 1),
+            (2, 0, 1, 2, 2),
+            (1, 0, 1, 3, 3),
+            (0, 2, 2, 4, 4),
+            (2, 1, 2, 5, 5),
+        ]
+    );
+}
+
+#[test]
+fn task257b3_corruption_matrix_fails_closed_and_valid_replay_recovers() {
+    let (ast, module, symbols) = task252_real_ast(TASK257B3_CASE);
+    let corruptions: [fn(&mut SourceFormulaCompositionRouteInputs); 18] = [
+        |input| {
+            input.primary.terms[0].context =
+                mizar_checker::binding_env::BindingContextId::new(3)
+        },
+        |input| {
+            input.primary.references[2].binding =
+                mizar_checker::binding_env::BindingId::new(0)
+        },
+        |input| input.primary.references.swap(0, 1),
+        |input| input.atomic.formulas.swap(0, 1),
+        |input| input.atomic.edges.swap(0, 1),
+        |input| {
+            input.atomic.requests[0].edge =
+                Some(mizar_checker::source_atomic_formula::SourceAtomicEdgeId::new(1))
+        },
+        |input| {
+            input.composite.formulas[1].kind =
+                mizar_checker::source_composite_formula::SourceCompositeFormulaKind::Universal
+        },
+        |input| {
+            input.composite.binders[2].binding =
+                mizar_checker::binding_env::BindingId::new(0)
+        },
+        |input| {
+            input.composite.type_sites[2].context =
+                mizar_checker::binding_env::BindingContextId::new(2)
+        },
+        |input| {
+            input.composite.edges[1].role =
+                mizar_checker::source_composite_formula::SourceFormulaEdgeRole::UniversalBody
+        },
+        |input| input.composite.requests.swap(2, 3),
+        |input| input.composition.atomic_edges.swap(0, 1),
+        |input| {
+            input.composition.atomic_edges[0].role =
+                mizar_checker::source_formula_composition::SourceFormulaAtomicEdgeRole::UniversalBody
+        },
+        |input| {
+            input.composition.bound_uses[2].binder =
+                mizar_checker::source_composite_formula::SourceQuantifierBinderId::new(0)
+        },
+        |input| {
+            input.composition.bound_uses[2].body_edge =
+                mizar_checker::source_formula_composition::SourceFormulaAtomicEdgeId::new(0)
+        },
+        |input| {
+            input.composition.bound_uses[2].term =
+                mizar_checker::source_term::SourcePrimaryTermId::new(3)
+        },
+        |input| input.composition.bound_uses.swap(0, 1),
+        |input| input.composition.bound_uses.pop().map_or((), drop),
+    ];
+    for corrupt in corruptions {
+        assert!(
+            source_formula_composition_output_with_source_and_mutation(
+                &ast,
+                module.clone(),
+                &symbols,
+                TASK257B3_SOURCE,
+                corrupt,
+            )
+            .expect("corruption preserves Task 257B3 selector")
+            .is_err()
+        );
+    }
+    assert!(
+        source_formula_composition_output_with_source(&ast, module, &symbols, TASK257B3_SOURCE)
+            .expect("valid Task 257B3 route remains selected")
+            .is_ok()
+    );
+}
+
+#[test]
+fn task257b3_source_selector_near_miss_matrix_remains_unselected() {
+    let near_misses = [
+        TASK257B3_SOURCE.trim_end_matches('\n').to_owned(),
+        TASK257B3_SOURCE.replacen("reserve r for set; ", "reserve r for set;\n", 1),
+        TASK257B3_SOURCE.replacen("reserve r for set; ", "reserve r for set;  ", 1),
+        TASK257B3_SOURCE.replacen("reserve r for set; ", "", 1),
+        TASK257B3_SOURCE.replacen("reserve r", "reserve s", 1),
+        TASK257B3_SOURCE.replacen("reserve r for set", "reserve r for object", 1),
+        TASK257B3_SOURCE.replacen(
+            "FormulaNestedQuantifierPayloadBoundary",
+            "AnotherNestedQuantifierPayloadBoundary",
+            1,
+        ),
+        TASK257B3_SOURCE.replacen("for x being set", "for z being set", 1),
+        TASK257B3_SOURCE.replacen("x being set", "x being object", 1),
+        TASK257B3_SOURCE.replacen("for x being set st", "ex x being set st", 1),
+        TASK257B3_SOURCE.replacen(" st x = x ex ", " holds x = x ex ", 1),
+        TASK257B3_SOURCE.replacen("ex y being set", "ex z being set", 1),
+        TASK257B3_SOURCE.replacen("y being set", "y being object", 1),
+        TASK257B3_SOURCE.replacen("ex y being set st", "for y being set st", 1),
+        TASK257B3_SOURCE.replacen("for r st", "ex r st", 1),
+        TASK257B3_SOURCE.replacen("for r st r = y holds", "for r holds r = y", 1),
+        TASK257B3_SOURCE.replacen("r = y", "y = r", 1),
+        TASK257B3_SOURCE.replacen("x = r;", "r = x;", 1),
+        TASK257B3_SOURCE.replacen("x = x ex", "(x = x) ex", 1),
+        TASK257B3_SOURCE.replacen(";", " by;", 2),
+        format!("{TASK257B3_SOURCE}theorem ExtraItem: 0 = 0;\n"),
+        format!(
+            "{}{}",
+            "theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r; ",
+            "reserve r for set;\n"
+        ),
+        TASK257B3_SOURCE.replacen("reserve r for set;", "reserve r, s for set;", 1),
+        TASK257B3_SOURCE.replacen("theorem ", "canceled theorem ", 1),
+        TASK257B3_SOURCE.replacen("x = r;", "x = r by;", 1),
+        TASK257B3_SOURCE.replacen("for x being set", "for x", 1),
+        TASK257B3_SOURCE.replacen("for r st", "for r being set st", 1),
+        TASK257B3_SOURCE.replacen("reserve r for set", "reserve r for non empty set", 1),
+        TASK257B3_SOURCE.replacen("x being set", "x being non empty set", 1),
+        TASK257B3_SOURCE.replacen("reserve r for set", "reserve r for Element of {{}}", 1),
+        TASK257B3_SOURCE.replacen("x being set", "x being Element of {{}}", 1),
+        format!(
+            "{}{}",
+            TASK257B3_SOURCE,
+            "definition let z be set; func task257b3_extra(z) -> set equals z; end;\n"
+        ),
+        format!(
+            "{}{}",
+            TASK257B3_SOURCE,
+            "registration cluster set -> empty; end;\n"
+        ),
+        "reserve r for set; definition let r be set; end;\n".to_owned(),
+        "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: x divides y does not divides z;\n".to_owned(),
+        "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: { x where x is set : thesis } = y;\n".to_owned(),
+    ];
+    for (ordinal, source) in near_misses.into_iter().enumerate() {
+        let (ast, module, _, symbols) = task253_ast_from_source_text(&source, 21_000 + ordinal);
+        assert!(
+            extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, &source)
+                .is_none(),
+            "near miss {ordinal} unexpectedly selected"
+        );
+        assert!(
+            source_formula_composition_output_with_source(&ast, module, &symbols, &source)
+                .is_none(),
+            "near miss {ordinal} unexpectedly reached the producer"
+        );
+    }
+}
+
+#[test]
+fn task257b3_recovered_source_tree_is_rejected_before_production() {
+    let recovered_source = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y x = r;\n";
+    let (ast, module, _, symbols) =
+        task253_ast_from_source_text(recovered_source, 21_999);
+    assert!(
+        ast.nodes().iter().any(|node| matches!(
+            node.kind,
+            mizar_syntax::SurfaceNodeKind::ErrorRecovery(_)
+        )),
+        "the malformed recovery probe must contain a recovery node"
+    );
+    assert!(
+        extract_source_formula_nested_quantifier_payload(
+            &ast,
+            &module,
+            &symbols,
+            recovered_source,
+        )
+        .is_none()
+    );
+    assert!(
+        source_formula_composition_output_with_source(
+            &ast,
+            module,
+            &symbols,
+            recovered_source,
+        )
+        .is_none()
+    );
+}
+
+#[test]
+fn task257b3_pass_sidecar_observes_transport_only() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate below workspace")
+        .to_path_buf();
+    let tests_root = workspace_root.join("tests");
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: tests_root.clone(),
+        manifest_path: tests_root.join("coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task 257B3 plan");
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257B3_CASE)
+        .expect("Task 257B3 case active");
+    let result = run_type_elaboration_case(&workspace_root, &tests_root, case, ordinal);
+    assert_eq!(result.status, TypeElaborationCaseStatus::Passed);
+    assert!(result.actual_detail_keys.is_empty());
+    assert_eq!(
+        result.actual_detail_keys,
+        expected_type_elaboration_detail_keys(case)
+    );
 }
 
 #[test]

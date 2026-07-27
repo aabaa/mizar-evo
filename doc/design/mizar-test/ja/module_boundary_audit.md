@@ -10121,3 +10121,15 @@ production pathは追加しない。selector/payloadは
 既存`source_formula_composition.rs` leaf、testsはpaired test leafに留める。
 manifestは29 paths / 32,064 linesであり、このbounded second consumerのための
 追加splitは不要。
+
+## Checker Task 257B3 boundary recheck
+
+production pathは追加しない。B3 payload/extractorは`source_formula.rs`、
+producer sequencingは`source_formula_composition.rs`、testsはpaired test
+leafに残す。`runner.rs`は2,462-line public facade、
+`type_elaboration.rs`は657-line private facade、`source_formula.rs`は
+3,500 lines、`source_formula_composition.rs`は1,311 lines、paired test
+leafはtest-only 1,452 linesである。existing 29-path layoutはproduction
+32,809 linesでcohesiveなまま。path/content hashは
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`2e0b08093af337b154a278646cd61218b0bedbc5e9505f07744e81eccd9692f8`。

@@ -717,10 +717,13 @@ installer remains Task-257A-only.
 
 ## Task 257B3 Frozen Ownership Addendum
 
-The combined installer will admit only the exact fourth composite profile and
+The combined installer now admits only the exact fourth composite profile and
 `3/6` composition over the Task-48-derived one-reserve base plus exact
 Task-252/256 dependencies. `source_context()` remains absent because the
 Task-248 reserve-plus-definition profile is not this consumer. Installation
 authenticates reserve-default provenance, nested contexts, shadowing, owning
 atomic edges, and lookup replay, and rejects existing A/B1/B2/B3 ownership or
 partial publication. The legacy composite-only installer remains A-only.
+
+The B3 combined installation and duplicate/collision rollback paths are now
+executable; the Task-248 exclusion and legacy installer remain unchanged.

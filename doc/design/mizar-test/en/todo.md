@@ -1831,5 +1831,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Keep this prerequisite documentation-only at `416/382`, `248/236`,
   `226/190`, active `101/5/195/1`, 343 tests, and 29 paths /
   32,064 lines.
-- [ ] Implement the exact route, sidecar, covered trace row, and tests after
+- [x] Implement the exact route, sidecar, covered trace row, and tests after
   the documentation commit and fresh preflight.
+- [x] Verify corpus `417/383`, type `249/237`, active type `196`, 349
+  library tests, exact selector isolation, and absence of semantic output.

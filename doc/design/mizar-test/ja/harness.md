@@ -3006,3 +3006,13 @@ definition/non-reserve item、formula wrapper、attributed/argument-bearing
 reserve/binder type、B2/C shapeを独立にmutateする。passはimmutable source
 transportだけをassertし、truth、witness、closure、fact、theorem、proof、IR
 outputを持たない。
+
+## Checker Task 257B3 implemented route
+
+exact selector/same-arena transactionはactive。testsはreal range/scope/
+provenance、cumulative visibility/shadowing、lookup/owning edge 6件、
+active-corpus exclusivity、recovered/structural near miss、aggregate
+corruption/replay、transport-only sidecar、final typed/resolved ownershipを
+coverする。selectorはloaded source textを受け取り、final LF込みfrozen
+138 bytesを要求する。missing-final-LFとwhitespace-only variantを独立に
+rejectする。

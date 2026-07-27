@@ -4468,10 +4468,10 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] **Task 257B2:** exact conjunction/disjunction/`iff`/repetition and
       executable formula grouping transport after Task 257B1, with no
       connective truth or theorem acceptance.
-    - [ ] **Task 257B3:** existential, restricted/nested quantification,
-      implicit reserved binders, and additional scoped uses after Tasks
-      257B1/B2. The EN/JA frozen contract is complete; production
-      implementation remains a separate logical task.
+    - [x] **Task 257B3:** exact existential, restricted/nested quantification,
+      implicit reserved-binder shadowing, and six scoped uses after Tasks
+      257B1/B2. The frozen source-to-final-handoff transport is implemented
+      without semantic truth, closure, capture-result, or theorem credit.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
@@ -4542,5 +4542,8 @@ implementation commit does not satisfy a producer task.
 - [x] Keep this prerequisite documentation-only at corpus `416/382`, type
   `248/236`, pass/fail `226/190`, active `101/5/195/1`, libraries
   `312/343`, and 29 paths / 32,064 lines.
-- [ ] Implement only this frozen B3 slice after fresh preflight, in a separate
+- [x] Implement only this frozen B3 slice after fresh preflight, in a separate
   logical task and commit.
+- [x] Verify exact `4/4/0`, `6/6/0`, `3/0/0/0/0/0/6/6`,
+  `3/0/1/3/3/2/6`, and `3/6` profiles, fail-closed installation/final
+  ownership, corpus `417/383`, and all semantic deferrals.

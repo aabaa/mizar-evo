@@ -145,3 +145,7 @@ source-derived resolver-shaped preflight fact、use ordinalはauthenticated
 Task-252 producer outputである。formula compositionはowning-edge association
 だけを記録し、occurrence/reference/spelling/lexical-scope/lookup-winner
 ownershipはTask 252に残す。
+
+Task 257B3はこのsix-row reciprocal consumerを実行し、binding ids
+`1,1,3,2,1,3`とuse ordinals `2,2,4,4,4,4`を検証する。全occurrence/
+referenceのownershipはTask 252に残る。

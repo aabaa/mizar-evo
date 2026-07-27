@@ -777,3 +777,6 @@ associationを再検証してからhandoffをclone-preserveする。Task-248
 source-context handoffのabsenceはexact profileの一部。checked formula、
 witness、restriction result、closure、fact、theorem acceptance、proof、IR
 outputをassembleしない。
+
+B3 orphan rejection、exact revalidation、deterministic cloneはchecker/
+runner executable testsでcover済み。

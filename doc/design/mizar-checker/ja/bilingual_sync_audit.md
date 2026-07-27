@@ -172,3 +172,10 @@ tests、baseline/projection、semantic deferralをfreezeする。このdocumenta
 prerequisiteはmodule boundary、production path、executable count/hashを変えない
 ためpaired module-boundary auditは意図的に不変。Task-257B3 bilingual sync
 debtは認めない。
+
+## Task 257B3 implementation pair recheck
+
+paired EN/JA implementation updateはexecutable fourth profile、nested reserve
+shadowing、Task-252 lookup 6件、Task-256 association 3件、`3/6`
+composition、full fail-closed matrix、final ownership、sidecar/trace row 1件、
+不変semantic deferralを記録する。bilingual driftは認めない。
