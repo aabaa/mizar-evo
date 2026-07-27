@@ -4262,7 +4262,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       後続の別Task-257C sliceだけで追加する。
       - [x] **Task 257C2 prerequisite:** exact independent
         condition-to-atomic-formula associationをsemanticsなしでfreeze。
-      - [ ] **Task 257C2 implementation:** separate Task-256C1とfresh
+      - [x] **Task 257C2 implementation:** separate Task-256C1とfresh
         preflight後、frozen condition-formula associationだけをimplement。
       - [ ] Task 257C2後、predicate-chain conjunction/segment-negation
         compositionをseparately freeze。
@@ -4434,7 +4434,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   production/test-list/CLI hash不変に保つ。
 - [x] 本documentation commit/fresh preflight後にTask 256C1だけをimplementし、
   review/verify後にseparate commit。
-- [ ] Task 256C1の両installation order/fresh inventory後だけTask 257C2
+- [x] Task 256C1の両installation order/fresh inventory後だけTask 257C2
   implementationへ戻る。
 
 ## Checker Task 256C1 implementation ledger
@@ -4454,6 +4454,24 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `251/239`、pass/fail `228/191`、active `101/5/198/1`、
   warnings/errors `23/0`、runner production、trace、fixture、sidecar、
   expectation、CLI outputを不変に保つ。
-- [x] 全semantic deferral/coverage creditを保持する。Task 257C2は本
-  implementation commitとfresh inventory後だけ次のdependency-ready
-  logical taskとなる。
+- [x] 全semantic deferral/coverage creditを保持する。Task-256C1 exit時点で
+  Task 257C2は本implementation commitとfresh inventory後に次の
+  dependency-ready logical taskとなった。
+
+## Checker Task 257C2 implementation ledger
+
+- [x] dedicated condition-to-atomic handoff/dense table/ID、exact dependency
+  fingerprint 4件、deterministic debug、dedicated typed/resolved
+  error/ownershipをTask-257B API不変でpublish。
+- [x] exact Task-255C1 selector、imported Task-253 seam、same-arena Task-256
+  equality builderをreuseし、全lower ID/site/existing definition-intake detailを
+  保持。
+- [x] exact publication、corruption、両lower install order、reciprocal
+  A/B/C2 exclusion、near miss、isolation、rollback/replay、final cloneを
+  checker tests 3件/runner tests 4件でpass。
+- [x] reciprocal sidecar reference/noteとcovered trace row 1件だけを追加し、
+  191-byte `.miz`、outcome、phase、detail、diagnostic payloadを不変に保持。
+- [x] plan `419/386`、type `252/240`、pass/fail `228/191`、active
+  `101/5/198/1`、warnings/errors `23/0`、libraries `332/361`、runner
+  manifest 29 paths / 34,064 linesを測定。
+- [x] 全frozen semantic deferralを保持。

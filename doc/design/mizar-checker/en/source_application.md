@@ -170,4 +170,5 @@ no application target, candidate, argument, request, resolver selection, or
 public Task-253 API. At the frozen pre-Task-256C1 baseline, the route could
 start only after that separate lower task made the condition-container graph
 executable. Task 256C1 now passes both installation orders; Task 253 itself
-does not change, and the route awaits fresh Task-257C2 preflight.
+does not change, and the completed Task-257C2 route now reuses the exact
+handoff and fingerprint.

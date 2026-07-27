@@ -239,6 +239,15 @@ closure、bidirectional A/B/C2 installer exclusion、semantic deferralをfreeze
 する。本prerequisiteにexecutable artifact変更はなく、bilingual debtは
 残らない。
 
+## Task 257C2 implementation pair recheck
+
+paired implementation-result、formula-composition、typed/resolved、
+lower-family、runner、TODO、source/spec、coverage、module-boundary文書は、
+同じdedicated transaction、exact consumer/exclusion、checker tests 3件/
+runner tests 4件、single sidecar/trace increment、plan/type `419/386` /
+`252/240`、libraries `332/361`、unchanged semantic deferralを記録する。
+Task-257C2 bilingual driftは残らない。
+
 ## Task 256C1 implementation pair recheck
 
 paired plan、TODO/ledger、atomic/set lower-owner note、installation、

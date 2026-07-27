@@ -274,13 +274,24 @@ plan/pass-fail count 404/369と220/184、変更しないparse/type/proof admissi
 `63e4e770...`、content hash `7e5adca2...`も両方に記録する。このincrementにbilingual
 driftは残らない。
 
+## Checker Task 257C2 implementation pair
+
+paired plan、harness、TODO、module-boundary文書は同じcomplete route、exact
+five profiles、same-arena ownership、imported/built-in provenance boundary、
+runner tests 4件、unchanged existing sidecar diagnostic、covered trace row
+1件、plan/type `419/386` / `252/240`、361-test list、production manifest
+29 paths / 34,064 lines、semantic deferralを記録する。bilingual driftは
+残らない。
+
 ## Checker Task 256C1 frozen runner pair
 
 paired plan、harness、TODO、boundary auditは同じrunner non-ownership、
 unchanged 191-byte authority consumer、runner/fixture/trace impactゼロ、
 same-context lower relation、unchanged count/hash、checker-only validationが
 両install orderで成功したこと、Task-257C2 routeをfresh post-commit preflight
-までdeferすることを記録する。bilingual driftは残らない。
+までdeferしたhistorical boundaryを記録する。later paired implementation
+updateはcompleted route/tests/trace row/measured baselineを同期し、bilingual
+driftは残らない。
 
 ## Parser Task 47 / parse-only pair recheck
 

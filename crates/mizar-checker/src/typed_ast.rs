@@ -2,12 +2,18 @@
 
 use crate::{
     source_application::SourceFunctorApplicationHandoff,
-    source_atomic_formula::SourceAtomicFormulaHandoff, source_attribute::SourceAttributeHandoff,
+    source_atomic_formula::SourceAtomicFormulaHandoff,
+    source_attribute::SourceAttributeHandoff,
     source_composite_formula::SourceCompositeFormulaHandoff,
-    source_context::SourceBindingContextHandoff, source_evidence::SourceEvidenceHandoff,
-    source_formula_composition::SourceFormulaCompositionHandoff,
-    source_set_term::SourceSetTermHandoff, source_structure::SourceStructureHandoff,
-    source_term::SourcePrimaryTermHandoff, source_type::SourceTypeApplicationHandoff,
+    source_context::SourceBindingContextHandoff,
+    source_evidence::SourceEvidenceHandoff,
+    source_formula_composition::{
+        SourceConditionFormulaCompositionHandoff, SourceFormulaCompositionHandoff,
+    },
+    source_set_term::SourceSetTermHandoff,
+    source_structure::SourceStructureHandoff,
+    source_term::SourcePrimaryTermHandoff,
+    source_type::SourceTypeApplicationHandoff,
 };
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
@@ -99,6 +105,7 @@ pub struct TypedAst {
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
+    source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -126,6 +133,7 @@ impl TypedAst {
             source_atomic_formula: None,
             source_composite_formula: None,
             source_formula_composition: None,
+            source_condition_formula_composition: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -192,9 +200,20 @@ impl TypedAst {
         self.source_formula_composition.as_ref()
     }
 
+    pub const fn source_condition_formula_composition(
+        &self,
+    ) -> Option<&SourceConditionFormulaCompositionHandoff> {
+        self.source_condition_formula_composition.as_ref()
+    }
+
     #[cfg(test)]
     pub(crate) fn remove_source_formula_composition_for_test(&mut self) {
         self.source_formula_composition = None;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn remove_source_condition_formula_composition_for_test(&mut self) {
+        self.source_condition_formula_composition = None;
     }
 
     pub fn with_source_evidence(
@@ -408,6 +427,7 @@ impl TypedAst {
     ) -> Result<Self, TypedAstError> {
         if self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
             || self.source_context.is_some()
             || !handoff.is_task_257a_profile()
         {
@@ -427,6 +447,7 @@ impl TypedAst {
     ) -> Result<Self, TypedAstError> {
         if self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
             || self.source_context.is_some()
             || !(composite.is_task_257b1_profile()
                 || composite.is_task_257b2_profile()
@@ -457,6 +478,47 @@ impl TypedAst {
             .map_err(|_| TypedAstError::InvalidSourceFormulaComposition)?;
         self.source_composite_formula = Some(composite);
         self.source_formula_composition = Some(composition);
+        Ok(self)
+    }
+
+    pub fn with_source_condition_formula_composition(
+        mut self,
+        composition: SourceConditionFormulaCompositionHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_condition_formula_composition.is_some()
+            || self.source_composite_formula.is_some()
+            || self.source_formula_composition.is_some()
+        {
+            return Err(TypedAstError::InvalidSourceConditionFormulaComposition);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceConditionFormulaComposition)?;
+        let source_application = self
+            .source_application
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceConditionFormulaComposition)?;
+        let source_set_term = self
+            .source_set_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceConditionFormulaComposition)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceConditionFormulaComposition)?;
+        composition
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_application,
+                source_set_term,
+                source_atomic_formula,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceConditionFormulaComposition)?;
+        self.source_condition_formula_composition = Some(composition);
         Ok(self)
     }
 
@@ -531,6 +593,11 @@ impl TypedAst {
         }
         if let Some(source_formula_composition) = &self.source_formula_composition {
             output.push_str(&source_formula_composition.debug_text());
+        }
+        if let Some(source_condition_formula_composition) =
+            &self.source_condition_formula_composition
+        {
+            output.push_str(&source_condition_formula_composition.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1417,6 +1484,7 @@ pub enum TypedAstError {
     InvalidSourceAtomicFormula,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
+    InvalidSourceConditionFormulaComposition,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1557,6 +1625,9 @@ impl fmt::Display for TypedAstError {
             Self::InvalidSourceFormulaComposition => {
                 formatter.write_str("typed AST source formula-composition handoff is inconsistent")
             }
+            Self::InvalidSourceConditionFormulaComposition => formatter.write_str(
+                "typed AST source condition/formula-composition handoff is inconsistent",
+            ),
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
                 "typed node {} references missing context {}",

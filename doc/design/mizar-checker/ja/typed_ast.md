@@ -764,8 +764,9 @@ A/B-before-C2とC2-before-A/Bをrollback込みでcoverする。frozen
 pre-Task-256C1 baselineでは、C2 installerはseparate lower prerequisiteが
 unrelated overlap guardをweakenせず、authenticated Task-255 condition
 containmentをset/atomic両installation orderでpassさせるまでimplementでき
-なかった。Task 256C1は両orderをpassし、C2 installerはfresh post-commit
-preflight/implementation待ちである。absent-handoff debug byteは不変で、
+なかった。Task 256C1は両orderをpassし、C2 installerは現在実装済みで、
+両lower installation orderとreciprocal A/B/C2 exclusion 4 orderを
+byte-identical rollback付きでpassする。absent-handoff debug byteは不変で、
 semantic tableをpopulateしない。
 
 ## Task 256C1 frozen installation revalidation

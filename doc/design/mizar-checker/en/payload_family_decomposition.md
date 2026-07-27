@@ -699,7 +699,8 @@ At the frozen pre-Task-256C1 baseline, this target edge was gated on the
 separate lower task making only the authenticated Task-255 condition
 containment executable in both set/atomic installation orders while
 preserving unrelated overlap rejection. Task 256C1 now passes both orders;
-the target edge awaits fresh Task-257C2 preflight and implementation.
+the completed Task-257C2 implementation now publishes the target edge after
+fresh preflight.
 
 The edge is a dedicated cross-family handoff in
 `source_formula_composition`, not a composite-formula placeholder. Generator

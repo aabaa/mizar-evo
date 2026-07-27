@@ -388,7 +388,9 @@ pub(super) use source_formula::{
 pub(super) use source_formula_composition::source_formula_composition_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_formula_composition::{
-    SourceFormulaCompositionRouteInputs, SourceFormulaCompositionRouteOutput,
+    SourceConditionFormulaCompositionRouteInputs, SourceFormulaCompositionRouteInputs,
+    SourceFormulaCompositionRouteOutput, source_condition_formula_composition_output_with_source,
+    source_condition_formula_composition_output_with_source_and_mutation,
     source_formula_composition_output, source_formula_composition_output_with_mutation,
     source_formula_composition_output_with_source,
     source_formula_composition_output_with_source_and_mutation,

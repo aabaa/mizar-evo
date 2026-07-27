@@ -364,11 +364,21 @@ Task-256C1 closure with unrelated overlap rejection preserved, bidirectional
 installer tests, and semantic deferrals. No executable runner artifact
 changes and no bilingual drift remains.
 
+## Checker Task 257C2 Implementation Pair
+
+The paired plan, harness, TODO, and module-boundary documents now record the
+same complete route, exact five profiles, same-arena ownership, imported and
+built-in provenance boundary, four runner tests, unchanged existing sidecar
+diagnostic, single covered trace row, plan/type `419/386` and `252/240`,
+361-test list, 29-path/34,064-line production manifest, and semantic
+deferrals. No bilingual drift remains.
+
 ## Checker Task 256C1 Frozen Runner Pair
 
 The paired plan, harness, TODO, and boundary audit now record identical runner
 non-ownership, unchanged 191-byte authority consumer, zero runner/fixture/
 trace impact, same-context lower relation, unchanged counts and hashes,
 successful checker-only validation in both install orders, and deferral of
-the Task-257C2 route only until fresh post-commit preflight. No bilingual
-drift remains.
+the Task-257C2 route only until fresh post-commit preflight. The later paired
+implementation updates now record its completed route, tests, trace row, and
+measured baselines. No bilingual drift remains.

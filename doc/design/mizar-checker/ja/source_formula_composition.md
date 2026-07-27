@@ -97,6 +97,7 @@ tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 
 | public enum | compatibility policy |
 |---|---|
+| `SourceConditionFormulaCompositionError` | `#[non_exhaustive]`。callerはcondition/formula validation failureをexhaustive matchしない。 |
 | `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`。callerはlater frozen cross-family body roleを許容する。 |
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
 
@@ -456,5 +457,11 @@ equality truth、generator binding/reference/capture、predicate-chain
 conjunction/segment negation、formula fact/result、sethood/result typing、
 definition/theorem acceptance、proof/IR/VC、broader comprehension coverageは
 deferred。本documentation prerequisiteはproduction/fixture/sidecar/trace/
-count/test list/hashを変更せず、implementationはfresh post-Task-256C1
-preflight後のseparate commitで開始する。
+count/test list/hashを変更しなかった。その後のseparate Task-257C2
+implementation commitはfresh post-Task-256C1 preflight後にfrozen
+transactionを完成した。dedicated public handoff/producer/table/dense ID/error
+surface、typed/resolved ownership、exact private runner consumer、checker test
+3件、runner test 4件、covered trace row 1件、reciprocal sidecar referenceを
+追加し、fixture/semantic diagnosticは変更していない。measured exitはplan
+`419/386`、type `252/240`、libraries `332/361`、active
+parse/declaration/type/proof `101/5/198/1`である。

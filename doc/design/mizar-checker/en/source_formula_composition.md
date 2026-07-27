@@ -103,6 +103,7 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 
 | Public enum | Compatibility policy |
 |---|---|
+| `SourceConditionFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match condition/formula validation failures. |
 | `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`; callers must tolerate later frozen cross-family body roles. |
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
 
@@ -497,5 +498,12 @@ Equality truth, generator binding/reference/capture, predicate-chain
 conjunction or segment negation, formula facts/results, sethood/result typing,
 definition/theorem acceptance, proof/IR/VC, and broader comprehension
 coverage remain deferred. This documentation prerequisite changed no
-production, fixture, sidecar, trace, count, test list, or hash; implementation
-must begin in a separate commit after fresh post-Task-256C1 preflight.
+production, fixture, sidecar, trace, count, test list, or hash. The separate
+Task-257C2 implementation commit has since completed the frozen transaction
+after fresh post-Task-256C1 preflight. It adds the dedicated public handoff,
+producer, table, dense ID, error surface, typed/resolved ownership, exact
+private runner consumer, three checker tests, four runner tests, the single
+covered trace row, and the reciprocal sidecar reference without changing any
+fixture or semantic diagnostic. Measured exit is plan `419/386`, type
+`252/240`, libraries `332/361`, and active
+parse/declaration/type/proof `101/5/198/1`.

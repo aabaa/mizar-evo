@@ -232,7 +232,9 @@ request, or validation meaning changes. At the frozen pre-Task-256C1
 baseline, the separate lower task had to authenticate this exact condition
 containment in the Task-256 validator for both installation orders without
 weakening arbitrary overlap rejection. Task 256C1 now does so; only fresh
-Task-257C2 preflight and implementation remain.
+Task-257C2 preflight and implementation remained at prerequisite exit. The
+completed C2 route now consumes the condition row unchanged and owns only
+the separate association.
 
 ## Task 256C1 Frozen Lower-Owner Boundary
 

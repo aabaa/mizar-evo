@@ -2376,7 +2376,7 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Freeze and commit the separate Task-256C1 condition-container
   compatibility documentation prerequisite.
 - [x] Implement Task-256C1 in its own verified commit.
-- [ ] Implement Task 257C2 only after Task-256C1 and fresh
+- [x] Implement Task 257C2 only after Task-256C1 and fresh
   parser/resolver/API, both-install-order, count, test-list,
   production-manifest, and CLI-hash preflight, in a separate logical task and
   commit.
@@ -2396,4 +2396,13 @@ completion remain deferred. The origin discrepancy remains report-only
   executable baselines.
 - [x] Implement, review, verify, and separately commit Task 256C1 after fresh
   preflight.
-- [ ] Resume Task 257C2 only after Task 256C1 and another fresh inventory.
+- [x] Resume Task 257C2 only after Task 256C1 and another fresh inventory.
+
+## Checker Task 257C2 Implementation Ledger
+
+- [x] Complete the dedicated condition/formula transaction and exact runner
+  consumer with no fixture or semantic expectation change.
+- [x] Add three checker tests, four runner tests, one covered trace row, and
+  only the reciprocal existing-sidecar reference/note.
+- [x] Measure plan/type `419/386` and `252/240`, libraries `332/361`, active
+  `101/5/198/1`, and preserve every frozen semantic deferral.

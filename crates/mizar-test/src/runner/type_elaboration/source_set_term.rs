@@ -225,6 +225,22 @@ fn source_set_term_output_with_optional_source(
     source_set_term_output_with_mutation_impl(ast, module, shells, symbols, source_text, |_| {})
 }
 
+pub(super) fn conditioned_source_set_term_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceSetTermRouteOutput, String>> {
+    let route = exact_conditioned_route(ast, source_text)?;
+    Some(build_conditioned_output(
+        ast,
+        module,
+        symbols,
+        route,
+        |_| {},
+    ))
+}
+
 #[cfg(test)]
 pub(in crate::runner) fn source_set_term_output_with_mutation(
     ast: &SurfaceAst,
@@ -263,8 +279,8 @@ fn source_set_term_output_with_mutation_impl(
     source_text: Option<&str>,
     mutate: impl FnOnce(&mut SourceSetTermHandoffInput),
 ) -> Option<Result<SourceSetTermRouteOutput, String>> {
-    if let Some(route) =
-        source_text.and_then(|source_text| exact_conditioned_route(ast, source_text))
+    if let Some(source_text) = source_text
+        && let Some(route) = exact_conditioned_route(ast, source_text)
     {
         return Some(build_conditioned_output(
             ast, module, symbols, route, mutate,

@@ -159,4 +159,5 @@ application target/candidate/argument/request/resolver selection/public
 Task-253 APIを追加しない。frozen pre-Task-256C1 baselineでは、routeは
 separate lower taskがcondition-container graphをexecutableにした後だけ開始
 できた。Task 256C1は両installation orderをpassし、Task 253自体は変更
-しないまま、routeはfresh Task-257C2 preflight待ちである。
+しないまま、completed Task-257C2 routeはexact handoff/fingerprintをreuse
+する。

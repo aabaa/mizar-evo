@@ -4486,7 +4486,7 @@ unchecked row below is one future nonempty logical task and one commit.
       composition only in later separately frozen Task-257C slices.
       - [x] **Task 257C2 prerequisite:** freeze the exact independent
         condition-to-atomic-formula association without semantics.
-      - [ ] **Task 257C2 implementation:** implement only the frozen
+      - [x] **Task 257C2 implementation:** implement only the frozen
         condition-formula association after separate Task-256C1 and fresh
         preflight.
       - [ ] Freeze predicate-chain conjunction/segment-negation composition
@@ -4633,7 +4633,7 @@ implementation commit does not satisfy a producer task.
   condition-container compatibility documentation prerequisite.
 - [x] Implement and verify Task-256C1 in its own commit with both install
   orders and strict arbitrary-overlap rejection.
-- [ ] Implement only Task 257C2 after Task-256C1 and fresh
+- [x] Implement only Task 257C2 after Task-256C1 and fresh
   parser/resolver/API, both-install-order, count/test-list/production/CLI-hash
   preflight, in a separate logical task and commit.
 
@@ -4664,7 +4664,7 @@ implementation commit does not satisfy a producer task.
   and unchanged production/test-list/CLI hashes.
 - [x] Implement only Task 256C1 after this documentation commit and fresh
   preflight, then review, verify, and commit it separately.
-- [ ] Return to Task 257C2 implementation only after Task 256C1 passes both
+- [x] Return to Task 257C2 implementation only after Task 256C1 passes both
   installation orders and fresh inventory.
 
 ## Checker Task 256C1 Implementation Ledger
@@ -4686,6 +4686,25 @@ implementation commit does not satisfy a producer task.
   type `251/239`, pass/fail `228/191`, active `101/5/198/1`,
   warnings/errors `23/0`, runner production, trace, fixture, sidecar,
   expectation, and CLI outputs unchanged.
-- [x] Retain all semantic deferrals and coverage credit. Task 257C2 remains
-  the next dependency-ready logical task only after this implementation
-  commit and fresh inventory.
+- [x] Retain all semantic deferrals and coverage credit. At the Task-256C1
+  exit, Task 257C2 became the next dependency-ready logical task only after
+  this implementation commit and fresh inventory.
+
+## Checker Task 257C2 Implementation Ledger
+
+- [x] Publish the dedicated condition-to-atomic handoff, dense table/ID,
+  four exact dependency fingerprints, deterministic debug, and dedicated
+  typed/resolved error and ownership without changing Task-257B APIs.
+- [x] Reuse the exact Task-255C1 selector, imported Task-253 seam, and
+  same-arena Task-256 equality builder while preserving all lower IDs/sites
+  and the existing definition-intake detail.
+- [x] Pass three checker and four runner tests for exact publication,
+  corruption, both lower install orders, reciprocal A/B/C2 exclusion, near
+  misses, isolation, rollback/replay, and final clone.
+- [x] Add only the reciprocal sidecar reference/note and one covered trace
+  row; keep the 191-byte `.miz`, outcome, phase, detail, and diagnostic
+  payload unchanged.
+- [x] Measure plan `419/386`, type `252/240`, pass/fail `228/191`, active
+  `101/5/198/1`, warnings/errors `23/0`, libraries `332/361`, and the
+  29-path / 34,064-line runner manifest.
+- [x] Preserve all frozen semantic deferrals.

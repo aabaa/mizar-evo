@@ -3409,8 +3409,8 @@ The separately documented, reviewed, and implemented Task 256C1
 condition-container compatibility now admits only the authenticated Task-255
 condition containment in both orders and preserves arbitrary/copied/stale/
 wrong-range overlap rejection. It changed no trace status by itself. Task
-257C2 implementation now awaits only fresh post-commit preflight; any later
-audit impact belongs to that logical task.
+257C2 was dependency-ready after fresh post-commit preflight; its completed
+audit impact is recorded below.
 
 Implementation may add one covered row,
 `spec.en.checker.type_elaboration.source_condition_formula_composition`,
@@ -3423,7 +3423,7 @@ phase, rejection reason, stable detail key, or diagnostic payload. Existing
 Chapter-10/13/14 and Task-252/253/255/256 notes may gain reciprocal
 unchanged-status references.
 
-Because no fixture is added, the 419 cases remain fixed while the future new
+Because no fixture is added, the 419 cases remain fixed while the new
 requirement projects plan `419/386` and type requirements/covered `252/240`;
 pass/fail remains `228/191` and active remains `101/5/198/1`. This
 documentation commit changes no trace row/status/count,
@@ -3458,7 +3458,8 @@ optional validation context, absent set fingerprint, rollback, and replay.
 Accordingly,
 `spec.en.checker.type_elaboration.source_conditioned_comprehension_payload`
 retains its current Task-255C1 transport credit and sidecar unchanged.
-The future Task-257C2 row remains unimplemented. Plan `419/385`, type
+At this historical prerequisite boundary the Task-257C2 row was
+unimplemented. Plan `419/385`, type
 `251/239`, pass/fail `228/191`, active `101/5/198/1`, and all trace status
 and coverage counts remain unchanged. Task 256C1 is recorded only as the
 lower-stage follow-up owner that makes the existing Chapter-13/14 transport
@@ -3477,7 +3478,33 @@ orders and the complete corruption/preservation matrix are executable.
 This compatibility result adds no requirement, trace row, status, sidecar,
 fixture, expectation, coverage credit, or semantic owner. The existing
 `spec.en.checker.type_elaboration.source_conditioned_comprehension_payload`
-row remains credited only to Task-255C1 transport. Plan `419/385`, type
+row remained credited only to Task-255C1 transport at this C1 exit. Plan `419/385`, type
 `251/239`, pass/fail `228/191`, active `101/5/198/1`, and all coverage counts
-remain unchanged. Task 257C2 remains unimplemented and becomes
-dependency-ready only after the dedicated C1 commit and fresh inventory.
+remained unchanged. Task 257C2 was then unimplemented and became
+dependency-ready only after the dedicated C1 commit and fresh inventory; that
+fresh inventory and the separate implementation have since completed.
+
+## Step 5 Checker Task 257C2 Implementation Result
+
+Task 257C2 closes the frozen bounded `source_drift` and `test_gap`. The
+dedicated condition-to-atomic transaction, four lower fingerprints, typed and
+resolved ownership, exact runner consumer, reciprocal A/B/C2 exclusion,
+corruption/near-miss/isolation/clone matrices, and unchanged diagnostic
+projection are executable. No lower-family row or semantic result is copied
+or fabricated.
+
+The new covered requirement
+`spec.en.checker.type_elaboration.source_condition_formula_composition`
+is sourced from the canonical checker formula-composition design and maps
+only to the existing conditioned-comprehension sidecar. That sidecar changes
+only its reciprocal reference and transport note; the 191-byte `.miz`,
+outcome, phase, rejection reason, stable detail key, and diagnostic payload
+remain unchanged. No existing requirement status is rebaselined.
+
+Measured coverage is plan `419/386`, type `252/240`, pass/fail `228/191`,
+active parse/declaration/type/proof `101/5/198/1`, and warnings/errors
+`23/0`. This increment credits only the exact syntax-free condition/formula
+association. Equality truth, generator binding/reference/capture,
+predicate-chain conjunction/negation, formula facts/results, sethood/result
+typing, definition/theorem acceptance, proof, CoreIr/ControlFlowIr/VC,
+Steps 6/7, and global Step-5 completion remain deferred.

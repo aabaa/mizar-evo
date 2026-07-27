@@ -239,10 +239,10 @@ set term, rather than the formula, is the containing occurrence. The
 separately completed Task-256C1 implementation now narrowly authenticates
 that Task-255 condition relation while retaining arbitrary/copied/stale/
 wrong-range overlap rejection. Task 257C2 is no longer lower-stage blocked,
-but still awaits fresh post-commit preflight and adds no field, row, enum,
-request kind, debug byte, or semantic behavior to this public lower-family
-transaction. Predicate-chain conjunction/negation remains a later Task-257C
-slice.
+and the completed C2 route now reuses this handoff after fresh preflight. It
+adds no field, row, enum, request kind, debug byte, or semantic behavior to
+this public lower-family transaction. Predicate-chain
+conjunction/negation remains a later Task-257C slice.
 
 ## Task 256C1 Frozen Condition-Container Compatibility
 

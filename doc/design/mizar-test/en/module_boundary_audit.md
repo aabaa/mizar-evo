@@ -26,6 +26,29 @@ The plan/parse/declaration/type/proof CLI hashes are
 `142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`,
 and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 
+## Checker Task 257C2 Implementation Boundary Recheck
+
+Task 257C2 adds no production path. The complete exact route remains in the
+existing `source_formula_composition.rs` leaf, now 1,632 lines; the public
+dispatcher is 2,472 lines and the type-elaboration facade is 662 lines. The
+paired formula-composition test leaf is 2,011 test-only lines. Loaded-source
+selection, resolver provenance, same-arena lower composition, atomic
+equality construction, condition association, and diagnostic preservation
+remain behavior-coupled, so no split is warranted.
+
+The production manifest is 29 paths / 34,064 lines with path/content hashes
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`.
+The 361-test raw/normalized list hashes are
+`ca64354eba9a6b54f7a7d83f505e8116379069d61bfb58021642e1864bc14d8b` /
+`0a3d92a16403d01e7642e2a2dfeee60cbae096ec373f85dafddd61ac4ef28c57`.
+Plan/parse/declaration/type/proof CLI hashes are
+`403c09c44638d8d309f41288076c8ee84ddf74b6452fd38d9587b8c876824614`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+
 ## Checker Task 256C1 Frozen Boundary Recheck
 
 No mizar-test production or test owner changes. The manifest remains 29
@@ -33,8 +56,9 @@ paths / 33,725 lines, the library remains 357 tests, and the production,
 test-list, and five CLI hashes in the latest Task-255C1 boundary recheck
 remain authoritative. The implemented compatibility predicate and its three
 tests belong solely to `mizar-checker/src/source_atomic_formula.rs`; both
-checker installation orders pass, while the frozen Task-257C2 runner route
-remains deferred. This task changed no runner-owned artifact.
+checker installation orders pass. At this historical C1 exit the frozen
+Task-257C2 runner route remained deferred; the later C2 implementation is
+recorded above. This task changed no runner-owned artifact.
 
 ## Checker Task 257C2 Frozen Boundary
 
@@ -45,7 +69,8 @@ leaves. Raw traversal and resolver work remain in `mizar-test`; the checker
 receives only syntax-free handoffs. The current 29-path/33,725-line manifest,
 357-test list, and all recorded hashes remain the documentation baseline.
 Separate Task 256C1 completed in the checker atomic-formula owner without
-changing this runner leaf; fresh Task-257C2 preflight is the remaining gate.
+changing this runner leaf. The later Task-257C2 implementation passed fresh
+preflight and extended the existing cohesive leaf without adding a path.
 
 ## Checker Task 257A Source-Composite-Formula Current-State Addendum
 

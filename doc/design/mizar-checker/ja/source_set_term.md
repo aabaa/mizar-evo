@@ -211,7 +211,8 @@ meaningは変更しない。frozen pre-Task-256C1 baselineでは、separate lowe
 taskがarbitrary overlap rejectionをweakenせず、このexact condition
 containmentをTask-256 validatorの両installation orderでauthenticateする必要が
 あった。Task 256C1は現在これを満たし、fresh Task-257C2 preflight/
-implementationだけが残る。
+implementationだけがprerequisite exit時点で残った。completed C2 routeは
+condition rowを変更せずconsumeし、separate associationだけをownする。
 
 ## Task 256C1 frozen lower-owner boundary
 

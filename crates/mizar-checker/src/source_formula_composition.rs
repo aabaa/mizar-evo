@@ -2,6 +2,12 @@
 
 use crate::{
     binding_env::{BindingLookupResult, BindingLookupSite},
+    source_application::{
+        SourceFunctorApplicationForm, SourceFunctorApplicationHandoff, SourceFunctorApplicationId,
+        SourceFunctorApplicationKind, SourceFunctorApplicationRecovery, SourceFunctorArgumentId,
+        SourceFunctorArgumentTarget, SourceFunctorCandidateId, SourceFunctorHeadSite,
+        SourceFunctorTypeRequestKind,
+    },
     source_atomic_formula::{
         SourceAtomicEdgeId, SourceAtomicEdgeRole, SourceAtomicFormulaHandoff,
         SourceAtomicFormulaId, SourceAtomicFormulaKind, SourceAtomicFormulaRecovery,
@@ -11,10 +17,16 @@ use crate::{
         SourceCompositeFormulaHandoff, SourceCompositeFormulaId, SourceCompositeFormulaKind,
         SourceCompositeFormulaRecovery, SourceQuantifierBinderId,
     },
+    source_set_term::{
+        SourceSetConditionId, SourceSetEdgeId, SourceSetEdgeRole, SourceSetGeneratorId,
+        SourceSetRequestKind, SourceSetTarget, SourceSetTermHandoff, SourceSetTermId,
+        SourceSetTermKind, SourceSetTermRecovery, SourceSetTypeHead, SourceSetTypeOwner,
+        SourceSetTypeSiteId,
+    },
     source_term::{
-        SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermKind,
-        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceId, SourcePrimaryTermReferenceRole,
-        SourcePrimaryTermRole,
+        SourceNumericTypeRequestId, SourcePrimaryTermHandoff, SourcePrimaryTermId,
+        SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceId,
+        SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
     },
     typed_ast::TypedArena,
 };
@@ -44,6 +56,7 @@ macro_rules! dense_id {
 
 dense_id!(SourceFormulaAtomicEdgeId);
 dense_id!(SourceQuantifierBoundUseId);
+dense_id!(SourceConditionFormulaEdgeId);
 
 /// Complete input for one cross-family source formula composition transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,6 +86,22 @@ pub struct SourceQuantifierBoundUseInput {
     pub reference: SourcePrimaryTermReferenceId,
 }
 
+/// Complete input for one condition-to-atomic-formula association transaction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceConditionFormulaCompositionHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub edges: Vec<SourceConditionFormulaEdgeInput>,
+}
+
+/// One source-set condition to atomic-formula association.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceConditionFormulaEdgeInput {
+    pub condition: SourceSetConditionId,
+    pub ordinal: usize,
+    pub formula: SourceAtomicFormulaId,
+}
+
 /// Cross-family role of an atomic formula under a composite formula.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
@@ -95,6 +124,128 @@ pub struct SourceFormulaCompositionHandoff {
     composite_formula_fingerprint: String,
     atomic_edges: SourceFormulaAtomicEdgeTable,
     bound_uses: SourceQuantifierBoundUseTable,
+}
+
+/// Immutable validated condition-to-atomic-formula composition handoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceConditionFormulaCompositionHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    primary_term_fingerprint: String,
+    application_fingerprint: String,
+    set_term_fingerprint: String,
+    atomic_formula_fingerprint: String,
+    edges: SourceConditionFormulaEdgeTable,
+}
+
+impl SourceConditionFormulaCompositionHandoff {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub fn primary_term_fingerprint(&self) -> &str {
+        &self.primary_term_fingerprint
+    }
+
+    pub fn application_fingerprint(&self) -> &str {
+        &self.application_fingerprint
+    }
+
+    pub fn set_term_fingerprint(&self) -> &str {
+        &self.set_term_fingerprint
+    }
+
+    pub fn atomic_formula_fingerprint(&self) -> &str {
+        &self.atomic_formula_fingerprint
+    }
+
+    pub const fn edges(&self) -> &SourceConditionFormulaEdgeTable {
+        &self.edges
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("source-condition-formula-composition-debug-v1\n");
+        let _ = writeln!(
+            output,
+            "module: {}::{}",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str()
+        );
+        let _ = writeln!(
+            output,
+            "primary-term-fingerprint: {:?}",
+            self.primary_term_fingerprint
+        );
+        let _ = writeln!(
+            output,
+            "application-fingerprint: {:?}",
+            self.application_fingerprint
+        );
+        let _ = writeln!(
+            output,
+            "set-term-fingerprint: {:?}",
+            self.set_term_fingerprint
+        );
+        let _ = writeln!(
+            output,
+            "atomic-formula-fingerprint: {:?}",
+            self.atomic_formula_fingerprint
+        );
+        let _ = writeln!(output, "edges: {}", self.edges.len());
+        for (id, edge) in self.edges.iter() {
+            let _ = writeln!(
+                output,
+                "  edge#{} condition={} ordinal={} formula={}",
+                id.index(),
+                edge.condition.index(),
+                edge.ordinal,
+                edge.formula.index(),
+            );
+        }
+        output
+    }
+
+    #[allow(clippy::too_many_arguments)] // Rationale: installation must reauthenticate every frozen lower-family dependency explicitly.
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        primary_terms: &SourcePrimaryTermHandoff,
+        applications: &SourceFunctorApplicationHandoff,
+        set_terms: &SourceSetTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        arena: &TypedArena,
+    ) -> Result<(), SourceConditionFormulaCompositionError> {
+        if self.source_id != source_id
+            || &self.module_id != module_id
+            || self.primary_term_fingerprint.is_empty()
+            || self.application_fingerprint.is_empty()
+            || self.set_term_fingerprint.is_empty()
+            || self.atomic_formula_fingerprint.is_empty()
+            || self.primary_term_fingerprint != primary_terms.debug_text()
+            || self.application_fingerprint != applications.debug_text()
+            || self.set_term_fingerprint != set_terms.debug_text()
+            || self.atomic_formula_fingerprint != atomic_formulas.debug_text()
+        {
+            return Err(SourceConditionFormulaCompositionError::DependencyMismatch);
+        }
+        validate_condition_transaction(
+            &SourceConditionFormulaCompositionHandoffInput {
+                source_id: self.source_id,
+                module_id: self.module_id.clone(),
+                edges: self.edges.rows.iter().map(Into::into).collect(),
+            },
+            primary_terms,
+            applications,
+            set_terms,
+            atomic_formulas,
+            arena,
+        )
+    }
 }
 
 impl SourceFormulaCompositionHandoff {
@@ -253,6 +404,11 @@ table!(
     SourceQuantifierBoundUse,
     SourceQuantifierBoundUseId
 );
+table!(
+    SourceConditionFormulaEdgeTable,
+    SourceConditionFormulaEdge,
+    SourceConditionFormulaEdgeId
+);
 
 /// One validated composite-formula-to-atomic-formula association.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -289,6 +445,28 @@ pub struct SourceQuantifierBoundUse {
     body_edge: SourceFormulaAtomicEdgeId,
     term: SourcePrimaryTermId,
     reference: SourcePrimaryTermReferenceId,
+}
+
+/// One validated source-set condition to atomic-formula association.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceConditionFormulaEdge {
+    condition: SourceSetConditionId,
+    ordinal: usize,
+    formula: SourceAtomicFormulaId,
+}
+
+impl SourceConditionFormulaEdge {
+    pub const fn condition(&self) -> SourceSetConditionId {
+        self.condition
+    }
+
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+
+    pub const fn formula(&self) -> SourceAtomicFormulaId {
+        self.formula
+    }
 }
 
 impl SourceQuantifierBoundUse {
@@ -359,6 +537,26 @@ impl From<&SourceQuantifierBoundUse> for SourceQuantifierBoundUseInput {
     }
 }
 
+impl From<SourceConditionFormulaEdgeInput> for SourceConditionFormulaEdge {
+    fn from(input: SourceConditionFormulaEdgeInput) -> Self {
+        Self {
+            condition: input.condition,
+            ordinal: input.ordinal,
+            formula: input.formula,
+        }
+    }
+}
+
+impl From<&SourceConditionFormulaEdge> for SourceConditionFormulaEdgeInput {
+    fn from(row: &SourceConditionFormulaEdge) -> Self {
+        Self {
+            condition: row.condition,
+            ordinal: row.ordinal,
+            formula: row.formula,
+        }
+    }
+}
+
 /// Validates and publishes the exact Task 257B1/B2/B3 cross-family associations.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SourceFormulaCompositionProducer;
@@ -403,6 +601,53 @@ impl SourceFormulaCompositionProducer {
     }
 }
 
+/// Validates and publishes the exact Task 257C2 condition/formula association.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceConditionFormulaCompositionProducer;
+
+impl SourceConditionFormulaCompositionProducer {
+    pub fn build(
+        input: SourceConditionFormulaCompositionHandoffInput,
+        primary_terms: &SourcePrimaryTermHandoff,
+        applications: &SourceFunctorApplicationHandoff,
+        set_terms: &SourceSetTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        arena: &TypedArena,
+    ) -> Result<SourceConditionFormulaCompositionHandoff, SourceConditionFormulaCompositionError>
+    {
+        validate_condition_transaction(
+            &input,
+            primary_terms,
+            applications,
+            set_terms,
+            atomic_formulas,
+            arena,
+        )?;
+        let primary_term_fingerprint = primary_terms.debug_text();
+        let application_fingerprint = applications.debug_text();
+        let set_term_fingerprint = set_terms.debug_text();
+        let atomic_formula_fingerprint = atomic_formulas.debug_text();
+        if primary_term_fingerprint.is_empty()
+            || application_fingerprint.is_empty()
+            || set_term_fingerprint.is_empty()
+            || atomic_formula_fingerprint.is_empty()
+        {
+            return Err(SourceConditionFormulaCompositionError::DependencyMismatch);
+        }
+        Ok(SourceConditionFormulaCompositionHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            primary_term_fingerprint,
+            application_fingerprint,
+            set_term_fingerprint,
+            atomic_formula_fingerprint,
+            edges: SourceConditionFormulaEdgeTable {
+                rows: input.edges.into_iter().map(Into::into).collect(),
+            },
+        })
+    }
+}
+
 /// Formula composition transaction validation failure.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -441,6 +686,383 @@ impl fmt::Display for SourceFormulaCompositionError {
 }
 
 impl Error for SourceFormulaCompositionError {}
+
+/// Condition/formula composition transaction validation failure.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceConditionFormulaCompositionError {
+    DependencyMismatch,
+    InvalidEdge { edge: SourceConditionFormulaEdgeId },
+    InvalidAggregate,
+}
+
+impl fmt::Display for SourceConditionFormulaCompositionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DependencyMismatch => {
+                formatter.write_str("source condition/formula composition dependency mismatch")
+            }
+            Self::InvalidEdge { edge } => write!(
+                formatter,
+                "source condition/formula edge {} is invalid",
+                edge.index()
+            ),
+            Self::InvalidAggregate => {
+                formatter.write_str("source condition/formula composition aggregate is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceConditionFormulaCompositionError {}
+
+fn validate_condition_transaction(
+    input: &SourceConditionFormulaCompositionHandoffInput,
+    primary_terms: &SourcePrimaryTermHandoff,
+    applications: &SourceFunctorApplicationHandoff,
+    set_terms: &SourceSetTermHandoff,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceConditionFormulaCompositionError> {
+    if input.source_id != primary_terms.source_id()
+        || input.source_id != applications.source_id()
+        || input.source_id != set_terms.source_id()
+        || input.source_id != atomic_formulas.source_id()
+        || &input.module_id != primary_terms.module_id()
+        || &input.module_id != applications.module_id()
+        || &input.module_id != set_terms.module_id()
+        || &input.module_id != atomic_formulas.module_id()
+    {
+        return Err(SourceConditionFormulaCompositionError::DependencyMismatch);
+    }
+    primary_terms
+        .validate_installation(input.source_id, &input.module_id, arena)
+        .map_err(|_| SourceConditionFormulaCompositionError::DependencyMismatch)?;
+    applications
+        .validate_installation(input.source_id, &input.module_id, primary_terms)
+        .map_err(|_| SourceConditionFormulaCompositionError::DependencyMismatch)?;
+    set_terms
+        .validate_installation(
+            input.source_id,
+            &input.module_id,
+            primary_terms,
+            Some(applications),
+            None,
+            arena,
+        )
+        .map_err(|_| SourceConditionFormulaCompositionError::DependencyMismatch)?;
+    atomic_formulas
+        .validate_installation(
+            input.source_id,
+            &input.module_id,
+            primary_terms,
+            Some(applications),
+            None,
+            Some(set_terms),
+            arena,
+        )
+        .map_err(|_| SourceConditionFormulaCompositionError::DependencyMismatch)?;
+
+    validate_condition_dependency_profiles(
+        primary_terms,
+        applications,
+        set_terms,
+        atomic_formulas,
+        arena,
+    )?;
+
+    let [edge] = input.edges.as_slice() else {
+        return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+    };
+    let condition = set_terms.conditions().get(edge.condition).ok_or(
+        SourceConditionFormulaCompositionError::InvalidEdge {
+            edge: SourceConditionFormulaEdgeId::new(0),
+        },
+    )?;
+    let formula = atomic_formulas.formulas().get(edge.formula).ok_or(
+        SourceConditionFormulaCompositionError::InvalidEdge {
+            edge: SourceConditionFormulaEdgeId::new(0),
+        },
+    )?;
+    if edge.condition != SourceSetConditionId::new(0)
+        || edge.ordinal != 0
+        || edge.formula != SourceAtomicFormulaId::new(0)
+        || condition.ordinal() != edge.ordinal
+        || condition.source_range() != formula.source_range()
+        || condition.spelling() != formula.spelling()
+        || condition.recovery() != SourceSetTermRecovery::Normal
+        || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+        || condition.condition_site() == formula.site()
+        || !arena
+            .node(condition.condition_site().node())
+            .is_some_and(|node| node.children.contains(&formula.site().node()))
+    {
+        return Err(SourceConditionFormulaCompositionError::InvalidEdge {
+            edge: SourceConditionFormulaEdgeId::new(0),
+        });
+    }
+    Ok(())
+}
+
+fn validate_condition_dependency_profiles(
+    primary_terms: &SourcePrimaryTermHandoff,
+    applications: &SourceFunctorApplicationHandoff,
+    set_terms: &SourceSetTermHandoff,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceConditionFormulaCompositionError> {
+    if primary_terms.terms().len() != 4
+        || !primary_terms.references().is_empty()
+        || primary_terms.numeric_type_requests().len() != 4
+        || applications.applications().len() != 1
+        || !applications.wrappers().is_empty()
+        || applications.candidates().len() != 1
+        || applications.arguments().len() != 2
+        || applications.type_requests().len() != 2
+        || set_terms.terms().len() != 1
+        || !set_terms.wrappers().is_empty()
+        || set_terms.generators().len() != 1
+        || set_terms.type_sites().len() != 1
+        || set_terms.conditions().len() != 1
+        || set_terms.edges().len() != 1
+        || set_terms.requests().len() != 2
+        || atomic_formulas.formulas().len() != 1
+        || !atomic_formulas.wrappers().is_empty()
+        || !atomic_formulas.predicate_segments().is_empty()
+        || !atomic_formulas.predicate_heads().is_empty()
+        || !atomic_formulas.candidates().is_empty()
+        || !atomic_formulas.type_sites().is_empty()
+        || !atomic_formulas.attributes().is_empty()
+        || atomic_formulas.edges().len() != 2
+        || atomic_formulas.requests().len() != 2
+    {
+        return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+    }
+
+    for (index, (start, end, spelling)) in [
+        (141, 142, "1"),
+        (146, 147, "2"),
+        (177, 178, "3"),
+        (181, 182, "4"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let term = primary_terms
+            .terms()
+            .get(SourcePrimaryTermId::new(index))
+            .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+        let request = primary_terms
+            .numeric_type_requests()
+            .get(SourceNumericTypeRequestId::new(index))
+            .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+        if term.source_ordinal() != index
+            || term.source_range().start != start
+            || term.source_range().end != end
+            || term.context() != crate::binding_env::BindingContextId::new(0)
+            || term.recovery() != SourcePrimaryTermRecovery::Normal
+            || term.spelling() != spelling
+            || term.kind() != SourcePrimaryTermKind::Numeral
+            || term.role() != SourcePrimaryTermRole::Value
+            || term.parent().is_some()
+            || request.term() != SourcePrimaryTermId::new(index)
+            || request.owner() != term.site()
+            || request.source_range() != term.source_range()
+            || request.spelling() != term.spelling()
+            || request.request_ordinal() != index
+        {
+            return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+        }
+    }
+
+    let application = applications
+        .applications()
+        .get(SourceFunctorApplicationId::new(0))
+        .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+    if application.source_range().start != 141
+        || application.source_range().end != 147
+        || application.source_ordinal() != 0
+        || application.context() != crate::binding_env::BindingContextId::new(0)
+        || application.recovery() != SourceFunctorApplicationRecovery::Normal
+        || application.spelling() != "1 ++ 2"
+        || application.kind() != SourceFunctorApplicationKind::Symbolic
+        || application.form() != SourceFunctorApplicationForm::Infix
+        || application.head_ordinal() != 1
+    {
+        return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+    }
+    match application.head() {
+        SourceFunctorHeadSite::Single {
+            source_range,
+            spelling,
+            ..
+        } if source_range.start == 143 && source_range.end == 145 && spelling == "++" => {}
+        _ => return Err(SourceConditionFormulaCompositionError::InvalidAggregate),
+    }
+    let candidate = applications
+        .candidates()
+        .get(SourceFunctorCandidateId::new(0))
+        .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+    if candidate.application() != SourceFunctorApplicationId::new(0) || candidate.ordinal() != 0 {
+        return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+    }
+    for (index, primary) in [0, 1].into_iter().enumerate() {
+        let argument = applications
+            .arguments()
+            .get(SourceFunctorArgumentId::new(index))
+            .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+        if argument.application() != SourceFunctorApplicationId::new(0)
+            || argument.ordinal() != index
+            || argument.target()
+                != SourceFunctorArgumentTarget::Primary(SourcePrimaryTermId::new(primary))
+        {
+            return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+        }
+    }
+    for (index, request) in applications.type_requests().iter() {
+        let (candidate, kind) = match index.index() {
+            0 => (
+                Some(SourceFunctorCandidateId::new(0)),
+                SourceFunctorTypeRequestKind::CandidateSignature,
+            ),
+            1 => (None, SourceFunctorTypeRequestKind::ApplicationResultType),
+            _ => return Err(SourceConditionFormulaCompositionError::InvalidAggregate),
+        };
+        if request.application() != SourceFunctorApplicationId::new(0)
+            || request.candidate() != candidate
+            || request.request_ordinal() != index.index()
+            || request.kind() != kind
+        {
+            return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+        }
+    }
+
+    let set_term = set_terms
+        .terms()
+        .get(SourceSetTermId::new(0))
+        .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+    let condition = set_terms
+        .conditions()
+        .get(SourceSetConditionId::new(0))
+        .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+    let generator = set_terms
+        .generators()
+        .get(SourceSetGeneratorId::new(0))
+        .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+    let type_site = set_terms
+        .type_sites()
+        .get(SourceSetTypeSiteId::new(0))
+        .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+    let set_edge = set_terms
+        .edges()
+        .get(SourceSetEdgeId::new(0))
+        .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+    let formula = atomic_formulas
+        .formulas()
+        .get(SourceAtomicFormulaId::new(0))
+        .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+    if set_term.source_ordinal() != 0
+        || set_term.context() != crate::binding_env::BindingContextId::new(0)
+        || set_term.kind() != SourceSetTermKind::Comprehension
+        || set_term.recovery() != SourceSetTermRecovery::Normal
+        || set_term.source_range().start != 139
+        || set_term.source_range().end != 184
+        || set_term.spelling() != "{ 1 ++ 2 where candidate255c is set : 3 = 4 }"
+        || generator.term() != SourceSetTermId::new(0)
+        || generator.ordinal() != 0
+        || generator.source_range().start != 154
+        || generator.source_range().end != 167
+        || generator.spelling() != "candidate255c"
+        || generator.context() != set_term.context()
+        || generator.recovery() != SourceSetTermRecovery::Normal
+        || generator.type_site() != SourceSetTypeSiteId::new(0)
+        || type_site.owner() != SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(0))
+        || type_site.source_range().start != 171
+        || type_site.source_range().end != 174
+        || type_site.spelling() != "set"
+        || type_site.head_range().start != 171
+        || type_site.head_range().end != 174
+        || type_site.head_spelling() != "set"
+        || type_site.context() != set_term.context()
+        || type_site.recovery() != SourceSetTermRecovery::Normal
+        || type_site.head() != SourceSetTypeHead::BuiltinSet
+        || condition.term() != SourceSetTermId::new(0)
+        || condition.ordinal() != 0
+        || condition.colon_range().start != 175
+        || condition.colon_range().end != 176
+        || condition.colon_spelling() != ":"
+        || condition.source_range().start != 177
+        || condition.source_range().end != 182
+        || condition.spelling() != "3 = 4"
+        || set_edge.term() != SourceSetTermId::new(0)
+        || set_edge.ordinal() != 0
+        || set_edge.role() != SourceSetEdgeRole::ComprehensionMapper
+        || set_edge.target() != SourceSetTarget::Application(SourceFunctorApplicationId::new(0))
+        || formula.source_ordinal() != 0
+        || formula.kind() != SourceAtomicFormulaKind::Equality
+        || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+        || formula.source_range() != condition.source_range()
+        || formula.spelling() != condition.spelling()
+        || formula.context() != set_term.context()
+        || !properly_contains(set_term.source_range(), formula.source_range())
+        || condition.condition_site() == formula.site()
+        || !arena
+            .node(condition.condition_site().node())
+            .is_some_and(|node| node.children.contains(&formula.site().node()))
+    {
+        return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+    }
+    for (index, request) in set_terms.requests().iter() {
+        let (kind, generator, type_site) = match index.index() {
+            0 => (
+                SourceSetRequestKind::GeneratorSethood,
+                Some(SourceSetGeneratorId::new(0)),
+                Some(SourceSetTypeSiteId::new(0)),
+            ),
+            1 => (SourceSetRequestKind::ResultType, None, None),
+            _ => return Err(SourceConditionFormulaCompositionError::InvalidAggregate),
+        };
+        if request.term() != SourceSetTermId::new(0)
+            || request.ordinal() != index.index()
+            || request.kind() != kind
+            || request.generator() != generator
+            || request.type_site() != type_site
+        {
+            return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+        }
+    }
+
+    for (index, role, term) in [
+        (0, SourceAtomicEdgeRole::BuiltinLeftOperand, 2),
+        (1, SourceAtomicEdgeRole::BuiltinRightOperand, 3),
+    ] {
+        let edge = atomic_formulas
+            .edges()
+            .get(SourceAtomicEdgeId::new(index))
+            .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+        let request = atomic_formulas
+            .requests()
+            .get(crate::source_atomic_formula::SourceAtomicRequestId::new(
+                index,
+            ))
+            .ok_or(SourceConditionFormulaCompositionError::InvalidAggregate)?;
+        if edge.formula() != SourceAtomicFormulaId::new(0)
+            || edge.ordinal() != index
+            || edge.role() != role
+            || edge.target() != SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(term))
+            || request.formula() != SourceAtomicFormulaId::new(0)
+            || request.ordinal() != index
+            || request.kind() != SourceAtomicRequestKind::OperandExpectedType
+            || request.edge() != Some(SourceAtomicEdgeId::new(index))
+            || request.candidate().is_some()
+            || request.type_site().is_some()
+            || request.attribute().is_some()
+        {
+            return Err(SourceConditionFormulaCompositionError::InvalidAggregate);
+        }
+    }
+    Ok(())
+}
 
 fn validate_transaction(
     input: &SourceFormulaCompositionHandoffInput,
@@ -3054,6 +3676,387 @@ mod tests {
             .find("source-formula-composition-debug-v1")
             .expect("composition debug");
         assert!(atomic < composite && composite < composition_debug);
+    }
+
+    struct Task257C2Fixture {
+        lower: crate::source_atomic_formula::tests::ConditionContainerFixture,
+        set: SourceSetTermHandoff,
+        atomic: SourceAtomicFormulaHandoff,
+        input: SourceConditionFormulaCompositionHandoffInput,
+    }
+
+    fn task_257c2_fixture() -> Task257C2Fixture {
+        let lower = crate::source_atomic_formula::tests::exact_condition_container_fixture();
+        let set = lower
+            .build_set(lower.set_input.clone())
+            .expect("Task 257C2 set handoff");
+        let atomic = lower
+            .build_atomic(lower.atomic_input.clone(), Some(&set))
+            .expect("Task 257C2 atomic handoff");
+        let input = SourceConditionFormulaCompositionHandoffInput {
+            source_id: lower.source,
+            module_id: lower.module.clone(),
+            edges: vec![SourceConditionFormulaEdgeInput {
+                condition: SourceSetConditionId::new(0),
+                ordinal: 0,
+                formula: SourceAtomicFormulaId::new(0),
+            }],
+        };
+        Task257C2Fixture {
+            lower,
+            set,
+            atomic,
+            input,
+        }
+    }
+
+    fn build_task_257c2(
+        fixture: &Task257C2Fixture,
+        input: SourceConditionFormulaCompositionHandoffInput,
+    ) -> Result<SourceConditionFormulaCompositionHandoff, SourceConditionFormulaCompositionError>
+    {
+        SourceConditionFormulaCompositionProducer::build(
+            input,
+            &fixture.lower.primary,
+            &fixture.lower.application,
+            &fixture.set,
+            &fixture.atomic,
+            &fixture.lower.arena,
+        )
+    }
+
+    #[test]
+    fn task_257c2_exact_association_dependencies_accessors_and_debug_publish() {
+        let fixture = task_257c2_fixture();
+        let handoff =
+            build_task_257c2(&fixture, fixture.input.clone()).expect("Task 257C2 handoff");
+        let replay = build_task_257c2(&fixture, fixture.input.clone()).expect("Task 257C2 replay");
+        assert_eq!(handoff.source_id(), fixture.lower.source);
+        assert_eq!(handoff.module_id(), &fixture.lower.module);
+        assert_eq!(
+            handoff.primary_term_fingerprint(),
+            fixture.lower.primary.debug_text()
+        );
+        assert_eq!(
+            handoff.application_fingerprint(),
+            fixture.lower.application.debug_text()
+        );
+        assert_eq!(handoff.set_term_fingerprint(), fixture.set.debug_text());
+        assert_eq!(
+            handoff.atomic_formula_fingerprint(),
+            fixture.atomic.debug_text()
+        );
+        assert_eq!(handoff.edges().len(), 1);
+        assert!(!handoff.edges().is_empty());
+        let edge = handoff
+            .edges()
+            .get(SourceConditionFormulaEdgeId::new(0))
+            .expect("Task 257C2 edge");
+        assert_eq!(edge.condition(), SourceSetConditionId::new(0));
+        assert_eq!(edge.ordinal(), 0);
+        assert_eq!(edge.formula(), SourceAtomicFormulaId::new(0));
+        assert_eq!(
+            handoff.edges().iter().collect::<Vec<_>>(),
+            [(SourceConditionFormulaEdgeId::new(0), edge)]
+        );
+        let debug = handoff.debug_text();
+        assert_eq!(debug, replay.debug_text());
+        assert_eq!(
+            debug,
+            format!(
+                concat!(
+                    "source-condition-formula-composition-debug-v1\n",
+                    "module: {}::{}\n",
+                    "primary-term-fingerprint: {:?}\n",
+                    "application-fingerprint: {:?}\n",
+                    "set-term-fingerprint: {:?}\n",
+                    "atomic-formula-fingerprint: {:?}\n",
+                    "edges: 1\n",
+                    "  edge#0 condition=0 ordinal=0 formula=0\n",
+                ),
+                fixture.lower.module.package().as_str(),
+                fixture.lower.module.path().as_str(),
+                fixture.lower.primary.debug_text(),
+                fixture.lower.application.debug_text(),
+                fixture.set.debug_text(),
+                fixture.atomic.debug_text(),
+            )
+        );
+    }
+
+    #[test]
+    fn task_257c2_edge_dependency_and_profile_corruptions_fail_closed() {
+        let fixture = task_257c2_fixture();
+        for mutate in [
+            |input: &mut SourceConditionFormulaCompositionHandoffInput| input.edges.clear(),
+            |input: &mut SourceConditionFormulaCompositionHandoffInput| {
+                input.edges.push(input.edges[0].clone())
+            },
+            |input: &mut SourceConditionFormulaCompositionHandoffInput| {
+                input.edges[0].condition = SourceSetConditionId::new(1)
+            },
+            |input: &mut SourceConditionFormulaCompositionHandoffInput| input.edges[0].ordinal = 1,
+            |input: &mut SourceConditionFormulaCompositionHandoffInput| {
+                input.edges[0].formula = SourceAtomicFormulaId::new(1)
+            },
+        ] {
+            let mut input = fixture.input.clone();
+            mutate(&mut input);
+            assert!(build_task_257c2(&fixture, input).is_err());
+            assert!(build_task_257c2(&fixture, fixture.input.clone()).is_ok());
+        }
+
+        let condition_site = fixture
+            .set
+            .conditions()
+            .get(SourceSetConditionId::new(0))
+            .expect("Task 257C2 condition")
+            .condition_site()
+            .node();
+        let formula_site = fixture
+            .atomic
+            .formulas()
+            .get(SourceAtomicFormulaId::new(0))
+            .expect("Task 257C2 formula")
+            .site()
+            .node();
+        let mut nodes = fixture
+            .lower
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        nodes[condition_site.index()]
+            .children
+            .retain(|child| *child != formula_site);
+        let stale_arena =
+            TypedArena::try_new(fixture.lower.arena.root(), nodes).expect("stale arena");
+        assert_eq!(
+            SourceConditionFormulaCompositionProducer::build(
+                fixture.input.clone(),
+                &fixture.lower.primary,
+                &fixture.lower.application,
+                &fixture.set,
+                &fixture.atomic,
+                &stale_arena,
+            ),
+            Err(SourceConditionFormulaCompositionError::DependencyMismatch)
+        );
+        assert!(build_task_257c2(&fixture, fixture.input.clone()).is_ok());
+
+        let legacy = self::fixture();
+        assert!(
+            SourceConditionFormulaCompositionProducer::build(
+                fixture.input.clone(),
+                &legacy.primary,
+                &fixture.lower.application,
+                &fixture.set,
+                &fixture.atomic,
+                &fixture.lower.arena,
+            )
+            .is_err()
+        );
+        let mut stale = build_task_257c2(&fixture, fixture.input.clone()).expect("stale candidate");
+        stale.atomic_formula_fingerprint.push_str("stale");
+        let base = fixture
+            .lower
+            .typed_ast()
+            .with_source_set_term(fixture.set.clone())
+            .expect("Task 255 install")
+            .with_source_atomic_formula(fixture.atomic.clone())
+            .expect("Task 256 install");
+        let before = base.debug_text();
+        assert_eq!(
+            base.clone()
+                .with_source_condition_formula_composition(stale)
+                .expect_err("stale C2 handoff"),
+            TypedAstError::InvalidSourceConditionFormulaComposition
+        );
+        assert_eq!(base.debug_text(), before);
+    }
+
+    #[test]
+    fn task_257c2_installation_exclusion_and_resolved_clone_are_atomic() {
+        let fixture = task_257c2_fixture();
+        let composition =
+            build_task_257c2(&fixture, fixture.input.clone()).expect("Task 257C2 composition");
+        let base = fixture.lower.typed_ast();
+        assert_eq!(
+            base.clone()
+                .with_source_condition_formula_composition(composition.clone())
+                .expect_err("missing Task 255/256 dependencies"),
+            TypedAstError::InvalidSourceConditionFormulaComposition
+        );
+        let with_set = base
+            .with_source_set_term(fixture.set.clone())
+            .expect("Task 255 install");
+        assert_eq!(
+            with_set
+                .clone()
+                .with_source_condition_formula_composition(composition.clone())
+                .expect_err("missing Task 256 dependency"),
+            TypedAstError::InvalidSourceConditionFormulaComposition
+        );
+        let with_atomic = with_set
+            .with_source_atomic_formula(fixture.atomic.clone())
+            .expect("Task 256 install");
+        let installed = with_atomic
+            .clone()
+            .with_source_condition_formula_composition(composition.clone())
+            .expect("Task 257C2 install");
+        assert_eq!(
+            installed.source_condition_formula_composition(),
+            Some(&composition)
+        );
+        let before = installed.debug_text();
+        assert_eq!(
+            installed
+                .clone()
+                .with_source_condition_formula_composition(composition.clone())
+                .expect_err("duplicate Task 257C2"),
+            TypedAstError::InvalidSourceConditionFormulaComposition
+        );
+        assert_eq!(installed.debug_text(), before);
+
+        let reverse_installed = fixture
+            .lower
+            .typed_ast()
+            .with_source_atomic_formula(fixture.atomic.clone())
+            .expect("Task 256 reverse-order install")
+            .with_source_set_term(fixture.set.clone())
+            .expect("Task 255 reverse-order install")
+            .with_source_condition_formula_composition(composition.clone())
+            .expect("Task 257C2 reverse lower-order install");
+        assert_eq!(
+            reverse_installed.source_condition_formula_composition(),
+            Some(&composition)
+        );
+
+        let b1 = self::fixture();
+        let b1_composition = build(&b1, b1.input.clone()).expect("Task 257B1 composition");
+        let installed_before_b1 = installed.debug_text();
+        assert_eq!(
+            installed
+                .clone()
+                .with_source_formula_composition(b1.composite.clone(), b1_composition.clone())
+                .expect_err("Task 257B after C2"),
+            TypedAstError::InvalidSourceFormulaComposition
+        );
+        assert_eq!(installed.debug_text(), installed_before_b1);
+        let b1_installed = empty_typed_ast(b1.source, b1.module.clone(), b1.arena.clone())
+            .with_source_term(b1.primary.clone())
+            .expect("Task 257B1 primary")
+            .with_source_atomic_formula(b1.atomic.clone())
+            .expect("Task 257B1 atomic")
+            .with_source_formula_composition(b1.composite.clone(), b1_composition)
+            .expect("Task 257B1 install");
+        let b1_before_c2 = b1_installed.debug_text();
+        assert_eq!(
+            b1_installed
+                .clone()
+                .with_source_condition_formula_composition(composition.clone())
+                .expect_err("C2 after Task 257B"),
+            TypedAstError::InvalidSourceConditionFormulaComposition
+        );
+        assert_eq!(b1_installed.debug_text(), b1_before_c2);
+        let task_257a = crate::source_composite_formula::tests::task_257a_installed_typed_ast();
+        let task_257a_handoff = task_257a
+            .source_composite_formula()
+            .expect("Task 257A handoff")
+            .clone();
+        let task_257a_before_c2 = task_257a.debug_text();
+        assert_eq!(
+            task_257a
+                .clone()
+                .with_source_condition_formula_composition(composition.clone())
+                .expect_err("C2 after Task 257A"),
+            TypedAstError::InvalidSourceConditionFormulaComposition
+        );
+        assert_eq!(task_257a.debug_text(), task_257a_before_c2);
+        let installed_before_a = installed.debug_text();
+        assert_eq!(
+            installed
+                .clone()
+                .with_source_composite_formula(task_257a_handoff)
+                .expect_err("Task 257A after C2"),
+            TypedAstError::InvalidSourceCompositeFormula
+        );
+        assert_eq!(installed.debug_text(), installed_before_a);
+
+        let cluster_facts = ClusterFactTable::new();
+        let collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability =
+            CandidateViabilityOutput::filter(&expansion, Vec::<CandidateViabilityInput>::new());
+        let specificity =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let selection = OverloadSelectionOutput::resolve(
+            &specificity,
+            Vec::<OverloadSiteResolutionInput>::new(),
+        );
+        let resolved = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast: &installed,
+            cluster_facts: &cluster_facts,
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &selection,
+            expressions: Vec::new(),
+            node_hints: Vec::new(),
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+        .expect("Task 257C2 resolved assembly");
+        assert_eq!(
+            resolved.source_condition_formula_composition(),
+            Some(&composition)
+        );
+        assert!(resolved.source_composite_formula().is_none());
+        assert!(resolved.source_formula_composition().is_none());
+        let debug = resolved.debug_text();
+        let installed_clone = installed.clone();
+        assert_eq!(
+            installed_clone.source_condition_formula_composition(),
+            Some(&composition)
+        );
+        assert_eq!(installed_clone.debug_text(), installed.debug_text());
+        let resolved_clone = resolved.clone();
+        assert_eq!(
+            resolved_clone.source_condition_formula_composition(),
+            Some(&composition)
+        );
+        assert_eq!(resolved_clone, resolved);
+        assert_eq!(resolved_clone.debug_text(), debug);
+        let atomic = debug
+            .find("source-atomic-formula-debug-v1")
+            .expect("atomic debug");
+        let condition = debug
+            .find("source-condition-formula-composition-debug-v1")
+            .expect("condition/formula debug");
+        assert!(atomic < condition);
+
+        let mut orphaned = installed;
+        orphaned.remove_source_condition_formula_composition_for_test();
+        assert!(
+            ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+                typed_ast: &orphaned,
+                cluster_facts: &cluster_facts,
+                overload_collection: &collection,
+                template_expansion: &expansion,
+                viability: &viability,
+                specificity: &specificity,
+                overload_selection: &selection,
+                expressions: Vec::new(),
+                node_hints: Vec::new(),
+                statement_semantics: None,
+                statement_proofs: None,
+            })
+            .is_ok()
+        );
     }
 
     fn empty_typed_ast(source: SourceId, module: ModuleId, nodes: TypedArena) -> TypedAst {

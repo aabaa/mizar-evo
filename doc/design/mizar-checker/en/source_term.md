@@ -199,4 +199,5 @@ the condition and formula IDs. No Task-252 row, request, parent, context,
 fingerprint, debug byte, or numeric semantic meaning changes. At the frozen
 pre-Task-256C1 baseline, the route was gated on that separate lower task.
 Task 256C1 now passes both installation orders; Task 252 still requires no
-compatibility edit, and the route awaits fresh Task-257C2 preflight.
+compatibility edit, and the completed Task-257C2 route now reuses these exact
+rows without modifying their fingerprints or debug bytes.

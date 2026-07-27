@@ -3248,8 +3248,10 @@ At the frozen pre-Task-256C1 baseline, this target route was gated because the
 lower validator rejected the enclosing condition set term in both set/atomic
 install orders. The separately completed checker prerequisite now passes
 those orders only for the authenticated condition relation and keeps
-arbitrary overlap fail-closed. The route still awaits fresh Task-257C2
-preflight and implementation.
+arbitrary overlap fail-closed. The route awaited fresh Task-257C2 preflight
+and implementation at prerequisite exit. It is now complete:
+production publishes the exact Task-256 equality and sole Task-257C2
+association before the lower diagnostic-only routes.
 
 The existing fail case retains its definition-intake detail and semantic
 tables remain empty. Exact profiles, direct wrapper/equality ownership,
@@ -3257,10 +3259,17 @@ provenance, near misses, mutation rollback, bidirectional A/B/C2 installer
 exclusion, isolation, and final cloning are the complete test boundary. This
 prerequisite changes no executable runner artifact.
 
+The separate implementation now passes four runner tests, retains the
+unchanged extraction-gap sidecar detail and empty semantic tables, and
+measures plan/type `419/386` / `252/240`, 361 runner tests, and the
+29-path / 34,064-line production manifest.
+
 ## Checker Task 256C1 Frozen Harness Non-Ownership
 
 No harness edit or test was part of Task 256C1. The checker-local syntax-free
 fixture now authenticates the exact lower relation and both install orders;
 the private runner continues to stop at the committed Task-255C1 route. The
 already frozen Task-257C2 route remains the first runner consumer after fresh
-post-commit preflight of the completed checker prerequisite.
+post-commit preflight of the completed checker prerequisite; that consumer
+has since been implemented and verified without changing the fixture or
+semantic detail.

@@ -825,8 +825,9 @@ pub const fn source_condition_formula_composition(
 
 frozen pre-Task-256C1 baselineでは、このprojectionはseparate lower taskが
 authenticated condition containmentを両installation orderでvalidにするまで
-gateされていた。Task 256C1は両orderをpassし、projectionはfresh Task-257C2
-preflight/implementation待ちである。final assemblyはそのlower validationを
+gateされていた。Task 256C1は両orderをpassし、projectionは現在実装済みで、
+dependency fingerprint 4件とsole associationをrevalidateしてimmutable
+handoffをclone-preserveする。final assemblyはそのlower validationを
 compensate/weakenしない。
 
 checked formula、equality truth、fact、diagnostic、definition acceptance、

@@ -5043,6 +5043,19 @@ tests = [
 notes = "Checker Task 257A covers only the exact syntax-free five-node implication/universal/negation/contradiction source tree, one unassigned root, four source-role edges, one explicit universal binder and bare-set type site, six unresolved input requests, and the source-derived 2/1/4 binding environment for the unchanged connective/quantifier fail route. Checker Task 257B1 adds a reciprocal transport backlink for the second exact one-universal profile and its cross-family body/use associations. Task 257B2 adds a reciprocal backlink for the third exact eight-formula/six-wrapper connective-grouping profile and its eight cross-family atomic associations. Task 257B3 adds a reciprocal backlink for the fourth exact restricted-universal/existential/nested-universal profile, reserve-backed implicit binder type, three cross-family atomic associations, and six bound uses. None changes Task-257A ownership, fixture outcome, or this diagnostic status. They preserve the existing MissingFormulaPayload and MissingQuantifierPayload failures and grant no connective or constant truth, quantifier semantics, formula fact/result, theorem ownership or acceptance, proof, downstream IR, broader connective/quantifier, predicate-chain, or conditioned-comprehension credit."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_condition_formula_composition"
+source = "doc/design/mizar-checker/en/source_formula_composition.md"
+section = "Task 257C2 Frozen Condition-Formula Composition"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_conditioned_comprehension_source_payload_001.expect.toml",
+]
+notes = "Checker Task 257C2 covers only immutable syntax-free association of the exact Task-255C1 condition row with the exact direct Task-256 built-in equality row. The runner preserves Task-252 `4/0/4`, imported Task-253 `1/0/1/2/2`, Task-255 `1/0/1/1/1/1/2`, and Task-256 `1/0/0/0/0/0/0/2/2` profiles in one typed arena, publishes the sole condition-0/ordinal-0/formula-0 edge, and preserves the unchanged definition-declaration payload extraction diagnostic. This row grants no equality truth, generator binding/reference/capture, predicate-chain conjunction or negation, formula facts/results, sethood/result typing, definition/theorem acceptance, proof, CoreIr, ControlFlowIr, VC, or broader conditioned/multiple/nested-comprehension credit."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_conditioned_comprehension_payload"
 source = "doc/design/mizar-checker/en/source_set_term.md"
 section = "Task 255C1 Frozen Condition-Bearing-Comprehension Extension"

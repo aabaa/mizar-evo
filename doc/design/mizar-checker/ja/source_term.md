@@ -187,4 +187,5 @@ condition/formula IDだけ。Task-252 row/request/parent/context/fingerprint/
 debug byte/numeric semantic meaningは変更しない。frozen pre-Task-256C1
 baselineではrouteはseparate lower taskをgateとしていた。Task 256C1は両
 installation orderをpassし、Task 252自体にcompatibility editは不要なまま、
-routeはfresh Task-257C2 preflight待ちである。
+completed Task-257C2 routeはfingerprint/debug byteを変更せずexact rowを
+reuseする。

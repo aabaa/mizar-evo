@@ -25,6 +25,30 @@ plan/parse/declaration/type/proof CLI hashは
 `142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`、
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
 
+## Checker Task 257C2 implementation boundary recheck
+
+Task 257C2はproduction pathを追加しない。complete exact routeはexisting
+`source_formula_composition.rs` leaf（現在1,632 lines）に留まり、public
+dispatcherは2,472 lines、type-elaboration facadeは662 linesである。paired
+formula-composition test leafはtest-only 2,011 lines。loaded-source selection、
+resolver provenance、same-arena lower composition、atomic equality
+construction、condition association、diagnostic preservationはbehavior-coupled
+であり、splitは不要。
+
+production manifestは29 paths / 34,064 lines、path/content hashは
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`。
+361-test raw/normalized list hashは
+`ca64354eba9a6b54f7a7d83f505e8116379069d61bfb58021642e1864bc14d8b` /
+`0a3d92a16403d01e7642e2a2dfeee60cbae096ec373f85dafddd61ac4ef28c57`。
+plan/parse/declaration/type/proof CLI hashは
+`403c09c44638d8d309f41288076c8ee84ddf74b6452fd38d9587b8c876824614`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
+である。
+
 ## Checker Task 256C1 frozen boundary recheck
 
 mizar-test production/test ownerは変更しない。manifest 29 paths / 33,725
@@ -32,7 +56,8 @@ lines、library 357 tests、latest Task-255C1 boundary recheckの
 production/test-list/5 CLI hashをauthorityとして保持する。implemented
 compatibility predicate/tests 3件は
 `mizar-checker/src/source_atomic_formula.rs`だけがownし、checker両installation
-orderはpassする一方、frozen Task-257C2 runner routeはdeferredのまま。本taskは
+orderはpassする。このhistorical C1 exitではfrozen Task-257C2 runner routeが
+deferredだったが、later C2 implementationを上記に記録する。本taskは
 runner-owned artifactを変更しない。
 
 ## Checker Task 257C2 frozen boundary
@@ -43,8 +68,9 @@ source-application、atomic-formula leafのbounded seamをreuseする。raw
 traversal/resolver workは`mizar-test`に残し、checkerはsyntax-free handoffだけを
 受ける。current 29-path/33,725-line manifest、357-test list、全recorded hashを
 documentation baselineとして保持する。separate Task 256C1はchecker
-atomic-formula owner内で本runner leafを変更せずcompleteした。残るgateは
-fresh Task-257C2 preflightである。
+atomic-formula owner内で本runner leafを変更せずcompleteした。later
+Task-257C2 implementationはfresh preflightをpassし、pathを追加せずexisting
+cohesive leafをextendした。
 
 ## Checker Task 257A source-composite-formula current-state addendum
 

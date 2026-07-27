@@ -226,10 +226,10 @@ baselineでは、`validate_cross_family_ranges`はset term側がformulaをcontai
 した。separate Task-256C1 implementationは完了し、このTask-255 condition
 relationだけをnarrowにauthenticateしつつ、arbitrary/copied/stale/wrong-range
 overlap rejectionを保持する。Task 257C2のlower-stage blockは解消したが、
-fresh post-commit preflightは未実施であり、このpublic lower-family
-transactionへfield/row/enum/request kind/debug byte/semantic behaviorを
-追加しない。predicate-chain conjunction/negationはlater Task-257C sliceに
-残る。
+completed C2 routeはfresh preflight後にこのhandoffをreuseする。このpublic
+lower-family transactionへfield/row/enum/request kind/debug byte/semantic
+behaviorは追加しない。predicate-chain conjunction/negationはlater
+Task-257C sliceに残る。
 
 ## Task 256C1 frozen condition-container compatibility
 

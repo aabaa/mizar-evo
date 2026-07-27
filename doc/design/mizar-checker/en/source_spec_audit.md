@@ -3650,11 +3650,11 @@ validator as a separate authority-backed `source_drift`: it rejected the
 Chapter-13-authorized condition-container relation in both installation
 orders. The separately documented and implemented Task 256C1 now admits only
 that authenticated containment while preserving unrelated overlap rejection.
-Task 257C2 implementation remains pending fresh post-commit preflight, not a
-lower-stage repair.
+Task 257C2 then passed fresh preflight and closed its bounded `source_drift`
+and `test_gap`; it was not a lower-stage repair.
 
 No existing `doc/spec`, `.miz`, outcome, phase, diagnostic detail, or semantic
-owner changes. Reusing the existing sidecar for one future reciprocal covered
+owner changes. Reusing the existing sidecar for the single reciprocal covered
 row is bounded transport traceability, not an implementation-derived
 expectation rebaseline. No blocking `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`, or

@@ -1695,7 +1695,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 本runner slice edit前にseparate Task-256C1 frozen-contract/
   checker-only implementationを完了。runner editなしで両lower install
   orderがpassする。
-- [ ] Task-256C1とfresh preflight後、separate Task-257C2 implementation
+- [x] Task-256C1とfresh preflight後、separate Task-257C2 implementation
   commitでこのfrozen runner sliceだけをimplement。
 
 ## Checker Task 256C1 frozen runner checklist
@@ -1707,4 +1707,17 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] `419/385`、`251/239`、`228/191`、active `101/5/198/1`、357 tests、
   29 paths / 33,725 lines、全runner hashを保持。
 - [x] Task 256C1 implementation中runnerを不変に保ちchecker-only lower gateを
-  verify。frozen Task-257C2 routeのfresh preflightは次logical taskに残る。
+  verify。C1 exit時点ではfrozen Task-257C2 routeのfresh preflightが次logical
+  taskだった。
+
+## Checker Task 257C2 implementation checklist
+
+- [x] exact five-profile same-arena routeをlower diagnostic-only routeより
+  先にpublishし、existing extraction-gap detailを保持。
+- [x] exact profile/provenance/ownership、dependency/arena mutation、
+  loaded-source/named near miss、active isolation、sidecar stability、
+  replay/final cloneをrunner tests 4件で固定。
+- [x] fixtureを追加せず、existing sidecar reference/noteとcovered trace row
+  1件だけを更新。
+- [x] `419/386`、`252/240`、`228/191`、active `101/5/198/1`、
+  361 tests、production 29 paths / 34,064 linesを測定。

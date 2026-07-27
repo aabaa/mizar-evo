@@ -3080,7 +3080,10 @@ frozen pre-Task-256C1 baselineでは、lower validatorがenclosing condition
 set termをset/atomic両install orderでrejectしたため、このtarget routeは
 gateされていた。separate checker prerequisiteは完了し、authenticated
 condition relationだけで両orderをpassさせ、arbitrary overlapをfail-closedに
-保つ。routeはfresh Task-257C2 preflight/implementation待ちである。
+保つ。routeはprerequisite exit時点でfresh Task-257C2
+preflight/implementation待ちだったが、現在はcompleteし、lower
+diagnostic-only routeより先にexact Task-256 equalityとsole Task-257C2
+associationをpublishする。
 
 existing fail caseはdefinition-intake detailを保持し、semantic tableはempty。
 exact profile、direct wrapper/equality ownership、provenance、near miss、
@@ -3088,10 +3091,16 @@ mutation rollback、bidirectional A/B/C2 installer exclusion、isolation、
 final cloneがcomplete test boundary。本prerequisiteはexecutable runner
 artifactを変更しない。
 
+separate implementationはrunner tests 4件をpassし、unchanged
+extraction-gap sidecar detail/empty semantic tableを保持する。measured
+plan/typeは`419/386` / `252/240`、runner tests 361件、production manifestは
+29 paths / 34,064 linesである。
+
 ## Checker Task 256C1 frozen harness non-ownership
 
 Task 256C1にharness edit/testは含まれなかった。checker-local syntax-free
 fixtureはexact lower relation/両install orderをauthenticateし、private runner
 はcommitted Task-255C1 routeまでを保持する。already frozen Task-257C2 route
 がcompleted checker prerequisiteのfresh post-commit preflight後の最初の
-runner consumerである。
+runner consumerであり、そのconsumerはfixture/semantic detailを変更せず
+現在実装・検証済みである。

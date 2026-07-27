@@ -25,10 +25,12 @@ use mizar_checker::{
         SourceFormulaWrapperInput, SourceQuantifierBinderId, SourceQuantifierBinderInput,
     },
     source_formula_composition::{
-        SourceFormulaAtomicEdgeId, SourceFormulaAtomicEdgeInput, SourceFormulaAtomicEdgeRole,
-        SourceFormulaCompositionHandoffInput, SourceFormulaCompositionProducer,
-        SourceQuantifierBoundUseInput,
+        SourceConditionFormulaCompositionHandoffInput, SourceConditionFormulaCompositionProducer,
+        SourceConditionFormulaEdgeInput, SourceFormulaAtomicEdgeId, SourceFormulaAtomicEdgeInput,
+        SourceFormulaAtomicEdgeRole, SourceFormulaCompositionHandoffInput,
+        SourceFormulaCompositionProducer, SourceQuantifierBoundUseInput,
     },
+    source_set_term::SourceSetConditionId,
     source_term::{
         SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermId,
         SourcePrimaryTermInput, SourcePrimaryTermKind, SourcePrimaryTermProducer,
@@ -47,7 +49,7 @@ use mizar_resolve::{
     resolved_ast::ModuleId,
 };
 use mizar_session::SourceAnchor;
-use mizar_syntax::SurfaceAst;
+use mizar_syntax::{SurfaceAst, SurfaceNodeKind};
 
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
@@ -57,9 +59,12 @@ use super::{
         extract_source_formula_nested_quantifier_payload,
         extract_source_formula_quantifier_bound_use,
     },
+    source_set_term::conditioned_source_set_term_output,
 };
 
 const INVALID_PAYLOAD_KEY: &str = "type_elaboration.checker.typed_ast_invalid";
+const PAYLOAD_EXTRACTION_GAP_KEY: &str =
+    "type_elaboration.external_dependency.ast_payload_extraction";
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceFormulaCompositionRouteOutput {
@@ -75,12 +80,45 @@ pub(in crate::runner) struct SourceFormulaCompositionRouteInputs {
     pub(in crate::runner) composition: SourceFormulaCompositionHandoffInput,
 }
 
+#[derive(Debug)]
+pub(in crate::runner) struct SourceConditionFormulaCompositionRouteInputs {
+    pub(in crate::runner) arena: TypedArena,
+    pub(in crate::runner) atomic: SourceAtomicFormulaHandoffInput,
+    pub(in crate::runner) composition: SourceConditionFormulaCompositionHandoffInput,
+}
+
 pub(in crate::runner) fn source_formula_composition_transport_detail_keys(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
 ) -> Option<Vec<String>> {
+    if let Some(result) = source_condition_formula_composition_output_with_mutation_impl(
+        ast,
+        module.clone(),
+        symbols,
+        source_text,
+        |_| {},
+    ) {
+        return match result {
+            Ok(output)
+                if output.typed_ast.source_context().is_none()
+                    && output.typed_ast.source_term().is_some()
+                    && output.typed_ast.source_application().is_some()
+                    && output.typed_ast.source_set_term().is_some()
+                    && output.typed_ast.source_atomic_formula().is_some()
+                    && output
+                        .typed_ast
+                        .source_condition_formula_composition()
+                        .is_some()
+                    && output.typed_ast.source_condition_formula_composition()
+                        == output.resolved.source_condition_formula_composition() =>
+            {
+                Some(vec![PAYLOAD_EXTRACTION_GAP_KEY.to_owned()])
+            }
+            Ok(_) | Err(_) => Some(vec![INVALID_PAYLOAD_KEY.to_owned()]),
+        };
+    }
     match source_formula_composition_output_with_source(ast, module, symbols, source_text) {
         None => None,
         Some(Ok(output))
@@ -164,6 +202,286 @@ pub(in crate::runner) fn source_formula_composition_output_with_source_and_mutat
         Some(source_text),
         mutate,
     )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_condition_formula_composition_output_with_source(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    source_condition_formula_composition_output_with_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        |_| {},
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_condition_formula_composition_output_with_source_and_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceConditionFormulaCompositionRouteInputs),
+) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    source_condition_formula_composition_output_with_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        mutate,
+    )
+}
+
+fn source_condition_formula_composition_output_with_mutation_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceConditionFormulaCompositionRouteInputs),
+) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    let lower = conditioned_source_set_term_output(ast, module.clone(), symbols, source_text)?;
+    Some(
+        lower.and_then(|lower| {
+            build_task_257c2_output(ast, module, symbols, lower.typed_ast, mutate)
+        }),
+    )
+}
+
+fn build_task_257c2_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    lower: TypedAst,
+    mutate: impl FnOnce(&mut SourceConditionFormulaCompositionRouteInputs),
+) -> Result<SourceFormulaCompositionRouteOutput, String> {
+    if symbols.module_id() != &module {
+        return Err("Task257C2 symbol module mismatch".to_owned());
+    }
+    let equality_nodes = ast
+        .nodes()
+        .iter()
+        .enumerate()
+        .filter(|(_, node)| {
+            matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+                && node.range.start == 177
+                && node.range.end == 182
+        })
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    let [equality_node] = equality_nodes.as_slice() else {
+        return Err("Task257C2 requires one exact inner equality".to_owned());
+    };
+    let mut nodes = lower
+        .nodes()
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    let equality = nodes
+        .get_mut(*equality_node)
+        .ok_or_else(|| "Task257C2 equality arena node disappeared".to_owned())?;
+    equality.kind = "source.formula.atomic.equality".into();
+    equality.recovery = NodeRecoveryState::Normal;
+    let arena =
+        TypedArena::try_new(lower.nodes().root(), nodes).map_err(|error| error.to_string())?;
+
+    let primary = lower
+        .source_term()
+        .cloned()
+        .ok_or_else(|| "Task257C2 lost Task252 handoff".to_owned())?;
+    let application = lower
+        .source_application()
+        .cloned()
+        .ok_or_else(|| "Task257C2 lost Task253 handoff".to_owned())?;
+    let set = lower
+        .source_set_term()
+        .cloned()
+        .ok_or_else(|| "Task257C2 lost Task255 handoff".to_owned())?;
+    let binding_env = super::checker_handoff::source_module_binding_env(ast, module.clone())
+        .map_err(|error| error.to_string())?;
+    let mut inputs = SourceConditionFormulaCompositionRouteInputs {
+        arena,
+        atomic: conditioned_equality_input(ast, module.clone(), *equality_node)?,
+        composition: SourceConditionFormulaCompositionHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            edges: vec![SourceConditionFormulaEdgeInput {
+                condition: SourceSetConditionId::new(0),
+                ordinal: 0,
+                formula: SourceAtomicFormulaId::new(0),
+            }],
+        },
+    };
+    mutate(&mut inputs);
+    let atomic = SourceAtomicFormulaProducer::build(
+        inputs.atomic,
+        &binding_env,
+        symbols,
+        &primary,
+        Some(&application),
+        None,
+        Some(&set),
+        &inputs.arena,
+    )
+    .map_err(|error| error.to_string())?;
+    let composition = SourceConditionFormulaCompositionProducer::build(
+        inputs.composition,
+        &primary,
+        &application,
+        &set,
+        &atomic,
+        &inputs.arena,
+    )
+    .map_err(|error| error.to_string())?;
+
+    let typed_ast = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: inputs.arena,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())?
+    .with_source_term(primary)
+    .map_err(|error| error.to_string())?
+    .with_source_application(application)
+    .map_err(|error| error.to_string())?
+    .with_source_set_term(set)
+    .map_err(|error| error.to_string())?
+    .with_source_atomic_formula(atomic)
+    .map_err(|error| error.to_string())?
+    .with_source_condition_formula_composition(composition)
+    .map_err(|error| error.to_string())?;
+    let node_hints = typed_ast
+        .nodes()
+        .iter()
+        .map(|(typed_node, _)| ResolvedNodeKindHint {
+            typed_node,
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.formula.condition-composition"),
+            },
+        })
+        .collect();
+    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
+    if typed_ast.source_context().is_some()
+        || typed_ast.source_condition_formula_composition().is_none()
+        || typed_ast.source_condition_formula_composition()
+            != resolved.source_condition_formula_composition()
+        || typed_ast.source_term() != resolved.source_term()
+        || typed_ast.source_application() != resolved.source_application()
+        || typed_ast.source_set_term() != resolved.source_set_term()
+        || typed_ast.source_atomic_formula() != resolved.source_atomic_formula()
+        || typed_ast.source_composite_formula().is_some()
+        || typed_ast.source_formula_composition().is_some()
+        || !typed_ast.types().is_empty()
+        || !typed_ast.facts().is_empty()
+        || !typed_ast.coercions().is_empty()
+        || !typed_ast.initial_obligations().is_empty()
+        || !typed_ast.diagnostics().is_empty()
+        || !resolved.expr_metadata().is_empty()
+        || !resolved.cluster_facts().is_empty()
+        || !resolved.diagnostics().is_empty()
+    {
+        return Err("Task257C2 immutable final handoff mismatch".to_owned());
+    }
+    Ok(SourceFormulaCompositionRouteOutput {
+        typed_ast,
+        resolved,
+    })
+}
+
+fn conditioned_equality_input(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    equality_node: usize,
+) -> Result<SourceAtomicFormulaHandoffInput, String> {
+    let equality = ast
+        .nodes()
+        .get(equality_node)
+        .ok_or_else(|| "Task257C2 equality node disappeared".to_owned())?;
+    let operand_ranges = equality
+        .children
+        .iter()
+        .filter_map(|child| {
+            ast.node(*child).and_then(|node| {
+                matches!(node.kind, SurfaceNodeKind::TermExpression).then_some(node.range)
+            })
+        })
+        .collect::<Vec<_>>();
+    let [left_range, right_range] = operand_ranges.as_slice() else {
+        let children = equality
+            .children
+            .iter()
+            .filter_map(|child| {
+                ast.node(*child)
+                    .map(|node| (child.index(), &node.kind, node.range))
+            })
+            .collect::<Vec<_>>();
+        return Err(format!("Task257C2 equality operands changed: {children:?}"));
+    };
+    if (left_range.start, left_range.end) != (177, 178)
+        || (right_range.start, right_range.end) != (181, 182)
+    {
+        return Err("Task257C2 equality operand ranges changed".to_owned());
+    }
+    let left = SourcePrimaryTermId::new(2);
+    let right = SourcePrimaryTermId::new(3);
+    Ok(SourceAtomicFormulaHandoffInput {
+        source_id: ast.source_id,
+        module_id: module,
+        formulas: vec![SourceAtomicFormulaInput {
+            site: TypedSiteRef::Node(TypedNodeId::new(equality_node)),
+            source_range: equality.range,
+            source_ordinal: 0,
+            context: BindingContextId::new(0),
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: "3 = 4".to_owned(),
+            kind: SourceAtomicFormulaKind::Equality,
+        }],
+        wrappers: Vec::new(),
+        predicate_segments: Vec::new(),
+        predicate_heads: Vec::new(),
+        candidates: Vec::new(),
+        type_sites: Vec::new(),
+        attributes: Vec::new(),
+        edges: vec![
+            SourceAtomicEdgeInput {
+                formula: SourceAtomicFormulaId::new(0),
+                ordinal: 0,
+                role: SourceAtomicEdgeRole::BuiltinLeftOperand,
+                target: SourceAtomicTermTarget::Primary(left),
+            },
+            SourceAtomicEdgeInput {
+                formula: SourceAtomicFormulaId::new(0),
+                ordinal: 1,
+                role: SourceAtomicEdgeRole::BuiltinRightOperand,
+                target: SourceAtomicTermTarget::Primary(right),
+            },
+        ],
+        requests: (0..2)
+            .map(|index| SourceAtomicRequestInput {
+                formula: SourceAtomicFormulaId::new(0),
+                ordinal: index,
+                kind: SourceAtomicRequestKind::OperandExpectedType,
+                edge: Some(SourceAtomicEdgeId::new(index)),
+                candidate: None,
+                type_site: None,
+                attribute: None,
+            })
+            .collect(),
+    })
 }
 
 fn source_formula_composition_output_with_mutation_impl(

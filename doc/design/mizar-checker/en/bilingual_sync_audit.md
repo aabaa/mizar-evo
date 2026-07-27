@@ -251,6 +251,15 @@ recorded closure with unrelated-overlap rejection preserved, bidirectional
 A/B/C2 installer exclusion, and semantic deferrals. No executable artifact
 changes in this prerequisite and no bilingual debt remains.
 
+## Task 257C2 Implementation Pair Recheck
+
+The paired implementation-result, formula-composition, typed/resolved,
+lower-family, runner, TODO, source/spec, coverage, and module-boundary
+documents record the same dedicated transaction, exact consumer and
+exclusions, three checker/four runner tests, single sidecar/trace increment,
+plan/type `419/386` and `252/240`, libraries `332/361`, and unchanged
+semantic deferrals. No Task-257C2 bilingual drift remains.
+
 ## Task 256C1 Implementation Pair Recheck
 
 The paired plan, TODO/ledger, atomic/set lower-owner notes, installation,

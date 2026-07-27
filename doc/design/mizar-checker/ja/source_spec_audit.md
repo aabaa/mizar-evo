@@ -3455,10 +3455,11 @@ Chapter-13-authorized condition-container relationを両installation orderで
 rejectしたためである。separate documentation/implementationのTask 256C1は
 完了し、このauthenticated containmentだけをadmitしunrelated overlap
 rejectionを保持する。Task 257C2 implementationはlower-stage repairではなく、
-fresh post-commit preflight待ちである。
+fresh post-commit preflightをpassしてbounded `source_drift`/`test_gap`を
+closeした。
 
 existing `doc/spec`、`.miz`、outcome、phase、diagnostic detail、semantic
-ownerは変更しない。future reciprocal covered row 1件にexisting sidecarを
+ownerは変更しない。reciprocal covered row 1件にexisting sidecarを
 reuseすることはbounded transport traceabilityで、implementation-derived
 expectation rebaselineではない。blocking `spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、

@@ -3568,7 +3568,7 @@ fn write_optional_id(output: &mut String, id: Option<usize>) {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::{
         binding_env::{
@@ -4061,20 +4061,20 @@ mod tests {
         .expect("primary install")
     }
 
-    struct ConditionContainerFixture {
-        source: SourceId,
-        module: ModuleId,
-        bindings: BindingEnv,
-        symbols: SymbolEnv,
-        primary: SourcePrimaryTermHandoff,
-        application: SourceFunctorApplicationHandoff,
-        arena: TypedArena,
-        set_input: SourceSetTermHandoffInput,
-        atomic_input: SourceAtomicFormulaHandoffInput,
+    pub(crate) struct ConditionContainerFixture {
+        pub(crate) source: SourceId,
+        pub(crate) module: ModuleId,
+        pub(crate) bindings: BindingEnv,
+        pub(crate) symbols: SymbolEnv,
+        pub(crate) primary: SourcePrimaryTermHandoff,
+        pub(crate) application: SourceFunctorApplicationHandoff,
+        pub(crate) arena: TypedArena,
+        pub(crate) set_input: SourceSetTermHandoffInput,
+        pub(crate) atomic_input: SourceAtomicFormulaHandoffInput,
     }
 
     impl ConditionContainerFixture {
-        fn build_set(
+        pub(crate) fn build_set(
             &self,
             input: SourceSetTermHandoffInput,
         ) -> Result<SourceSetTermHandoff, SourceSetTermError> {
@@ -4088,7 +4088,7 @@ mod tests {
             )
         }
 
-        fn build_atomic(
+        pub(crate) fn build_atomic(
             &self,
             input: SourceAtomicFormulaHandoffInput,
             set_terms: Option<&SourceSetTermHandoff>,
@@ -4105,7 +4105,7 @@ mod tests {
             )
         }
 
-        fn typed_ast(&self) -> TypedAst {
+        pub(crate) fn typed_ast(&self) -> TypedAst {
             typed_ast_with_primary(self.source, &self.module, &self.arena, self.primary.clone())
                 .with_source_application(self.application.clone())
                 .expect("condition mapper application install")
@@ -4550,7 +4550,7 @@ mod tests {
         }
     }
 
-    fn exact_condition_container_fixture() -> ConditionContainerFixture {
+    pub(crate) fn exact_condition_container_fixture() -> ConditionContainerFixture {
         condition_container_fixture(ConditionContainerOptions::exact())
     }
 

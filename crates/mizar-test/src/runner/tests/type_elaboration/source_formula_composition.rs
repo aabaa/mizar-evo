@@ -1,16 +1,575 @@
 use super::{
-    SourceFormulaCompositionRouteInputs, SourceFormulaCompositionRouteOutput,
+    SourceConditionFormulaCompositionRouteInputs, SourceFormulaCompositionRouteInputs,
+    SourceFormulaCompositionRouteOutput,
     extract_source_formula_connective_grouping, extract_source_formula_quantifier_bound_use,
     extract_source_formula_nested_quantifier_payload, source_formula_composition_output,
     source_formula_composition_output_with_mutation,
     source_formula_composition_output_with_source,
     source_formula_composition_output_with_source_and_mutation,
+    source_condition_formula_composition_output_with_source,
+    source_condition_formula_composition_output_with_source_and_mutation,
 };
 
 const TASK257B1_CASE: &str = "pass_type_elaboration_formula_quantifier_bound_use_payload_001";
 const TASK257B2_CASE: &str = "pass_type_elaboration_formula_connective_grouping_payload_001";
 const TASK257B3_CASE: &str = "pass_type_elaboration_formula_nested_quantifier_payload_001";
 const TASK257B3_SOURCE: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n";
+const TASK257C2_CASE: &str =
+    "fail_type_elaboration_conditioned_comprehension_source_payload_001";
+
+#[test]
+fn task257c2_real_route_publishes_the_exact_condition_formula_transaction() {
+    let (ast, module, _shells, symbols, source) = task255c1_real_ast();
+    assert_eq!(&*source, TASK255C1_SET_SOURCE);
+    assert_eq!(source.len(), 191);
+    assert!(source.ends_with('\n'));
+    let output = source_condition_formula_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        &source,
+    )
+    .expect("Task257C2 exact selector")
+    .unwrap_or_else(|error| panic!("Task257C2 real route failed: {error}"));
+    let replay = source_condition_formula_composition_output_with_source_and_mutation(
+        &ast,
+        module,
+        &symbols,
+        &source,
+        |_: &mut SourceConditionFormulaCompositionRouteInputs| {},
+    )
+    .expect("Task257C2 repeated selector")
+    .unwrap_or_else(|error| panic!("Task257C2 repeated route failed: {error}"));
+
+    let primary = output.typed_ast.source_term().expect("Task252 handoff");
+    let application = output
+        .typed_ast
+        .source_application()
+        .expect("Task253 handoff");
+    let set = output
+        .typed_ast
+        .source_set_term()
+        .expect("Task255 handoff");
+    let atomic = output
+        .typed_ast
+        .source_atomic_formula()
+        .expect("Task256 handoff");
+    let composition = output
+        .typed_ast
+        .source_condition_formula_composition()
+        .expect("Task257C2 handoff");
+    assert_eq!(
+        (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ),
+        (4, 0, 4)
+    );
+    assert_eq!(
+        (
+            application.applications().len(),
+            application.wrappers().len(),
+            application.candidates().len(),
+            application.arguments().len(),
+            application.type_requests().len(),
+        ),
+        (1, 0, 1, 2, 2)
+    );
+    assert_eq!(
+        (
+            set.terms().len(),
+            set.wrappers().len(),
+            set.generators().len(),
+            set.type_sites().len(),
+            set.conditions().len(),
+            set.edges().len(),
+            set.requests().len(),
+        ),
+        (1, 0, 1, 1, 1, 1, 2)
+    );
+    assert_eq!(
+        (
+            atomic.formulas().len(),
+            atomic.wrappers().len(),
+            atomic.predicate_segments().len(),
+            atomic.predicate_heads().len(),
+            atomic.candidates().len(),
+            atomic.type_sites().len(),
+            atomic.attributes().len(),
+            atomic.edges().len(),
+            atomic.requests().len(),
+        ),
+        (1, 0, 0, 0, 0, 0, 0, 2, 2)
+    );
+
+    let candidate = application
+        .candidates()
+        .get(mizar_checker::source_application::SourceFunctorCandidateId::new(0))
+        .expect("Task253 imported mapper candidate");
+    let symbol = symbols
+        .symbols()
+        .get(candidate.symbol())
+        .expect("Task253 candidate symbol");
+    let contribution = symbols
+        .contributions()
+        .get(candidate.contribution())
+        .expect("Task253 candidate contribution");
+    assert_eq!(symbol.primary_spelling(), "++");
+    assert_eq!(
+        candidate.symbol().module().path().as_str(),
+        "parser.type_fixtures"
+    );
+    assert!(matches!(
+        contribution.kind(),
+        mizar_resolve::env::ContributionKind::ImportedSource { .. }
+    ));
+
+    let condition = set
+        .conditions()
+        .get(mizar_checker::source_set_term::SourceSetConditionId::new(0))
+        .expect("Task255 condition");
+    let formula = atomic
+        .formulas()
+        .get(mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(0))
+        .expect("Task256 equality");
+    assert_eq!(
+        (
+            condition.source_range().start,
+            condition.source_range().end,
+            condition.spelling(),
+        ),
+        (177, 182, "3 = 4")
+    );
+    assert_eq!(formula.source_range(), condition.source_range());
+    assert_eq!(formula.spelling(), condition.spelling());
+    assert_eq!(
+        condition.recovery(),
+        mizar_checker::source_set_term::SourceSetTermRecovery::Normal
+    );
+    assert_eq!(
+        formula.recovery(),
+        mizar_checker::source_atomic_formula::SourceAtomicFormulaRecovery::Normal
+    );
+    assert_eq!(
+        formula.kind(),
+        mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality
+    );
+    let owner_term = set
+        .terms()
+        .get(condition.term())
+        .expect("Task255 condition owner term");
+    assert_eq!(formula.context(), owner_term.context());
+    assert_ne!(condition.condition_site(), formula.site());
+    assert!(
+        output
+            .typed_ast
+            .nodes()
+            .node(condition.condition_site().node())
+            .expect("Task255 wrapper arena site")
+            .children
+            .contains(&formula.site().node())
+    );
+    assert_eq!(
+        output
+            .typed_ast
+            .nodes()
+            .node(condition.condition_site().node())
+            .expect("Task255 wrapper arena site")
+            .kind
+            .as_str(),
+        "source.term.set.comprehension-condition"
+    );
+    assert_eq!(
+        output
+            .typed_ast
+            .nodes()
+            .node(formula.site().node())
+            .expect("Task256 equality arena site")
+            .kind
+            .as_str(),
+        "source.formula.atomic.equality"
+    );
+    assert_eq!(
+        atomic
+            .edges()
+            .iter()
+            .map(|(_, edge)| (edge.role(), edge.target()))
+            .collect::<Vec<_>>(),
+        [
+            (
+                mizar_checker::source_atomic_formula::SourceAtomicEdgeRole::BuiltinLeftOperand,
+                mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(2),
+                ),
+            ),
+            (
+                mizar_checker::source_atomic_formula::SourceAtomicEdgeRole::BuiltinRightOperand,
+                mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(3),
+                ),
+            ),
+        ]
+    );
+    assert!(atomic.requests().iter().all(|(id, request)| {
+        request.formula()
+            == mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(0)
+            && request.ordinal() == id.index()
+            && request.kind()
+                == mizar_checker::source_atomic_formula::SourceAtomicRequestKind::OperandExpectedType
+            && request.edge()
+                == Some(mizar_checker::source_atomic_formula::SourceAtomicEdgeId::new(
+                    id.index(),
+                ))
+            && request.candidate().is_none()
+            && request.type_site().is_none()
+            && request.attribute().is_none()
+    }));
+
+    assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+    assert_eq!(
+        composition.application_fingerprint(),
+        application.debug_text()
+    );
+    assert_eq!(composition.set_term_fingerprint(), set.debug_text());
+    assert_eq!(
+        composition.atomic_formula_fingerprint(),
+        atomic.debug_text()
+    );
+    assert_eq!(composition.edges().len(), 1);
+    let edge = composition
+        .edges()
+        .get(
+            mizar_checker::source_formula_composition::SourceConditionFormulaEdgeId::new(0),
+        )
+        .expect("Task257C2 edge");
+    assert_eq!(
+        (
+            edge.condition(),
+            edge.ordinal(),
+            edge.formula(),
+        ),
+        (
+            mizar_checker::source_set_term::SourceSetConditionId::new(0),
+            0,
+            mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(0),
+        )
+    );
+    assert_eq!(composition.edges().iter().count(), 1);
+    assert!(composition
+        .debug_text()
+        .starts_with("source-condition-formula-composition-debug-v1\n"));
+    assert!(composition
+        .debug_text()
+        .contains("edges: 1\n  edge#0 condition=0 ordinal=0 formula=0\n"));
+
+    assert_eq!(
+        output.typed_ast.source_condition_formula_composition(),
+        replay.typed_ast.source_condition_formula_composition()
+    );
+    assert_eq!(
+        output.typed_ast.source_condition_formula_composition(),
+        output.resolved.source_condition_formula_composition()
+    );
+    assert_eq!(output.typed_ast.debug_text(), replay.typed_ast.debug_text());
+    assert_eq!(output.resolved.debug_text(), replay.resolved.debug_text());
+    let typed_clone = output.typed_ast.clone();
+    let resolved_clone = output.resolved.clone();
+    assert_eq!(typed_clone, output.typed_ast);
+    assert_eq!(resolved_clone, output.resolved);
+    assert_eq!(typed_clone.debug_text(), output.typed_ast.debug_text());
+    assert_eq!(resolved_clone.debug_text(), output.resolved.debug_text());
+    assert!(output.typed_ast.source_composite_formula().is_none());
+    assert!(output.typed_ast.source_formula_composition().is_none());
+    assert!(output.typed_ast.types().is_empty());
+    assert!(output.typed_ast.facts().is_empty());
+    assert!(output.typed_ast.coercions().is_empty());
+    assert!(output.typed_ast.initial_obligations().is_empty());
+    assert!(output.typed_ast.diagnostics().is_empty());
+    assert!(output.resolved.expr_metadata().is_empty());
+    assert!(output.resolved.cluster_facts().is_empty());
+    assert!(output.resolved.diagnostics().is_empty());
+}
+
+#[test]
+fn task257c2_dependency_edge_and_arena_mutations_fail_atomically() {
+    let (ast, module, _shells, symbols, source) = task255c1_real_ast();
+    let baseline = source_condition_formula_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        &source,
+    )
+    .expect("Task257C2 exact selector")
+    .expect("Task257C2 baseline");
+    let mutations: [fn(&mut SourceConditionFormulaCompositionRouteInputs); 9] = [
+        |input| input.composition.edges.clear(),
+        |input| input.composition.edges.push(input.composition.edges[0].clone()),
+        |input| {
+            input.composition.edges[0].condition =
+                mizar_checker::source_set_term::SourceSetConditionId::new(1)
+        },
+        |input| input.composition.edges[0].ordinal = 1,
+        |input| {
+            input.composition.edges[0].formula =
+                mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(1)
+        },
+        |input| input.atomic.formulas[0].spelling = "4 = 3".to_owned(),
+        |input| {
+            input.atomic.formulas[0].kind =
+                mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Inequality
+        },
+        |input| {
+            input.atomic.edges[0].target =
+                mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(3),
+                )
+        },
+        |input| {
+            input.atomic.requests.swap(0, 1);
+        },
+    ];
+    for mutate in mutations {
+        let result = source_condition_formula_composition_output_with_source_and_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            &source,
+            mutate,
+        )
+        .expect("Task257C2 mutation retains the exact selector");
+        assert!(result.is_err(), "Task257C2 corruption must fail closed");
+        let replay = source_condition_formula_composition_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            &source,
+        )
+        .expect("Task257C2 selector after corruption")
+        .expect("Task257C2 replay after corruption");
+        assert_eq!(replay.typed_ast.debug_text(), baseline.typed_ast.debug_text());
+        assert_eq!(replay.resolved.debug_text(), baseline.resolved.debug_text());
+    }
+
+    let wrapper = task255_node_with_kind_and_spelling(
+        &ast,
+        &SurfaceNodeKind::FormulaExpression,
+        "3 = 4",
+    );
+    assert!(
+        source_condition_formula_composition_output_with_source_and_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            &source,
+            |input| {
+                input.atomic.formulas[0].site =
+                    mizar_checker::typed_ast::TypedSiteRef::Node(
+                        mizar_checker::typed_ast::TypedNodeId::new(wrapper),
+                    );
+            },
+        )
+        .expect("Task257C2 copied-site mutation retains the exact selector")
+        .is_err()
+    );
+
+    let condition_site = baseline
+        .typed_ast
+        .source_set_term()
+        .expect("Task255 baseline")
+        .conditions()
+        .get(mizar_checker::source_set_term::SourceSetConditionId::new(0))
+        .expect("Task255 condition")
+        .condition_site()
+        .node();
+    let formula_site = baseline
+        .typed_ast
+        .source_atomic_formula()
+        .expect("Task256 baseline")
+        .formulas()
+        .get(mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(0))
+        .expect("Task256 formula")
+        .site()
+        .node();
+    let arena_error = source_condition_formula_composition_output_with_source_and_mutation(
+        &ast,
+        module.clone(),
+        &symbols,
+        &source,
+        |input| {
+            let mut nodes = input
+                .arena
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            nodes[condition_site.index()]
+                .children
+                .retain(|child| *child != formula_site);
+            input.arena =
+                mizar_checker::typed_ast::TypedArena::try_new(input.arena.root(), nodes)
+                    .expect("structurally valid stale Task257C2 arena");
+        },
+    )
+    .expect("Task257C2 arena mutation retains the exact selector")
+    .expect_err("Task257C2 arena mutation must fail closed");
+    assert_eq!(
+        arena_error,
+        "source atomic-formula set-term dependency mismatch"
+    );
+    let replay = source_condition_formula_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        &source,
+    )
+    .expect("Task257C2 replay selector after arena mutation")
+    .expect("Task257C2 replay after arena mutation");
+    assert_eq!(replay.typed_ast.debug_text(), baseline.typed_ast.debug_text());
+    assert_eq!(replay.resolved.debug_text(), baseline.resolved.debug_text());
+    assert!(
+        source_condition_formula_composition_output_with_source(
+            &ast,
+            module,
+            &symbols,
+            &source,
+        )
+        .expect("Task257C2 final replay selector")
+        .is_ok()
+    );
+}
+
+#[test]
+fn task257c2_loaded_source_named_near_misses_and_active_isolation_reject() {
+    let (ast, module, _shells, symbols, source) = task255c1_real_ast();
+    assert!(
+        source_condition_formula_composition_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            source.trim_end_matches('\n'),
+        )
+        .is_none()
+    );
+    assert!(
+        source_condition_formula_composition_output_with_source(
+            &ast,
+            module,
+            &symbols,
+            &source.replacen("equals {", "equals  {", 1),
+        )
+        .is_none()
+    );
+
+    let near_misses = [
+        TASK255C1_SET_SOURCE.replacen(
+            "Task255ConditionedComprehensionDef",
+            "Task257C2NamedNearMiss",
+            1,
+        ),
+        TASK255C1_SET_SOURCE.replacen("1 ++ 2", "2 ++ 1", 1),
+        TASK255C1_SET_SOURCE.replacen(": 3 = 4", ": 3 <> 4", 1),
+        format!("{TASK255C1_SET_SOURCE}theorem Task257C2Extra: thesis;\n"),
+    ];
+    for (ordinal, near_source) in near_misses.iter().enumerate() {
+        let (near_ast, near_module, near_symbols) =
+            task255_ast_from_source_text(near_source, 257_200 + ordinal);
+        let near_symbols =
+            augment_type_elaboration_import_summaries(&near_ast, &near_module, near_symbols);
+        assert!(
+            source_condition_formula_composition_output_with_source(
+                &near_ast,
+                near_module.clone(),
+                &near_symbols,
+                TASK255C1_SET_SOURCE,
+            )
+            .is_none(),
+            "Task257C2 AST near miss {ordinal} must reject under exact loaded bytes"
+        );
+        assert!(
+            source_condition_formula_composition_output_with_source(
+                &near_ast,
+                near_module,
+                &near_symbols,
+                near_source,
+            )
+            .is_none(),
+            "Task257C2 raw near miss {ordinal} must reject"
+        );
+    }
+
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate below workspace")
+        .to_path_buf();
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: workspace_root.join("tests"),
+        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task257C2 isolation plan");
+    let mut selected = Vec::new();
+    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
+        let source = frontend.source_text;
+        let Some(ast) = frontend.ast else {
+            continue;
+        };
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        if !resolver.detail_keys.is_empty() {
+            continue;
+        }
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        if matches!(
+            source_condition_formula_composition_output_with_source(
+                &ast,
+                resolver.module,
+                &symbols,
+                &source,
+            ),
+            Some(Ok(_))
+        ) {
+            selected.push(case.id.0.clone());
+        }
+    }
+    assert_eq!(selected, [TASK257C2_CASE]);
+}
+
+#[test]
+fn task257c2_fail_sidecar_preserves_the_definition_intake_boundary() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate below workspace")
+        .to_path_buf();
+    let tests_root = workspace_root.join("tests");
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: tests_root.clone(),
+        manifest_path: tests_root.join("coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task257C2 plan");
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257C2_CASE)
+        .expect("Task257C2 case active");
+    let result = run_type_elaboration_case(&workspace_root, &tests_root, case, ordinal);
+    assert_eq!(result.status, TypeElaborationCaseStatus::Passed);
+    assert_eq!(
+        result.actual_detail_keys,
+        ["type_elaboration.external_dependency.ast_payload_extraction"]
+    );
+    assert_eq!(
+        result.actual_detail_keys,
+        expected_type_elaboration_detail_keys(case)
+    );
+}
 
 #[test]
 fn task257b1_real_route_publishes_the_exact_cross_family_transaction() {

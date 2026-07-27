@@ -794,7 +794,8 @@ At the frozen pre-Task-256C1 baseline, the C2 installer was not implementable
 until the separate lower prerequisite made the authenticated Task-255
 condition containment pass both set/atomic installation orders without
 weakening unrelated overlap guards. Task 256C1 now passes both orders; the C2
-installer awaits fresh post-commit preflight and implementation.
+installer is now implemented and passes both lower installation orders plus
+all four reciprocal A/B/C2 exclusion orders with byte-identical rollback.
 Absent-handoff debug bytes remain unchanged; no semantic table is populated.
 
 ## Task 256C1 Frozen Installation Revalidation

@@ -22,7 +22,9 @@ use crate::{
     source_composite_formula::SourceCompositeFormulaHandoff,
     source_context::SourceBindingContextHandoff,
     source_evidence::SourceEvidenceHandoff,
-    source_formula_composition::SourceFormulaCompositionHandoff,
+    source_formula_composition::{
+        SourceConditionFormulaCompositionHandoff, SourceFormulaCompositionHandoff,
+    },
     source_set_term::SourceSetTermHandoff,
     source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff,
@@ -120,6 +122,7 @@ pub struct ResolvedTypedAst {
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
+    source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -194,6 +197,12 @@ impl ResolvedTypedAst {
 
     pub const fn source_formula_composition(&self) -> Option<&SourceFormulaCompositionHandoff> {
         self.source_formula_composition.as_ref()
+    }
+
+    pub const fn source_condition_formula_composition(
+        &self,
+    ) -> Option<&SourceConditionFormulaCompositionHandoff> {
+        self.source_condition_formula_composition.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -304,6 +313,11 @@ impl ResolvedTypedAst {
         }
         if let Some(source_formula_composition) = &self.source_formula_composition {
             output.push_str(&source_formula_composition.debug_text());
+        }
+        if let Some(source_condition_formula_composition) =
+            &self.source_condition_formula_composition
+        {
+            output.push_str(&source_condition_formula_composition.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1256,6 +1270,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceAtomicFormula,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
+    InvalidSourceConditionFormulaComposition,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1347,6 +1362,9 @@ impl fmt::Display for ResolvedTypedAstError {
                 .write_str("resolved typed AST source composite-formula handoff is inconsistent"),
             Self::InvalidSourceFormulaComposition => formatter.write_str(
                 "resolved typed AST source formula-composition handoff is inconsistent",
+            ),
+            Self::InvalidSourceConditionFormulaComposition => formatter.write_str(
+                "resolved typed AST source condition/formula-composition handoff is inconsistent",
             ),
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
@@ -1650,6 +1668,41 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         }) {
             return Err(ResolvedTypedAstError::InvalidSourceFormulaComposition);
         }
+        let source_condition_formula_composition = self
+            .inputs
+            .typed_ast
+            .source_condition_formula_composition()
+            .cloned();
+        if let Some(source_condition_formula_composition) = &source_condition_formula_composition {
+            if source_composite_formula.is_some() || source_formula_composition.is_some() {
+                return Err(ResolvedTypedAstError::InvalidSourceConditionFormulaComposition);
+            }
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourceConditionFormulaComposition)?;
+            let source_application = source_application
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourceConditionFormulaComposition)?;
+            let source_set_term = source_set_term
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourceConditionFormulaComposition)?;
+            let source_atomic_formula = source_atomic_formula
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourceConditionFormulaComposition)?;
+            source_condition_formula_composition
+                .validate_installation(
+                    source_id,
+                    &module_id,
+                    source_term,
+                    source_application,
+                    source_set_term,
+                    source_atomic_formula,
+                    self.inputs.typed_ast.nodes(),
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceConditionFormulaComposition)?;
+        }
 
         Ok(ResolvedTypedAst {
             source_id,
@@ -1665,6 +1718,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_atomic_formula,
             source_composite_formula,
             source_formula_composition,
+            source_condition_formula_composition,
             nodes,
             expr_metadata,
             collection_candidates,

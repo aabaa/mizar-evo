@@ -642,8 +642,8 @@ wrapper ownershipと全existing dense IDは不変。frozen pre-Task-256C1
 baselineでは、このtarget edgeはseparate lower taskがunrelated overlap
 rejectionを保持しながらauthenticated Task-255 condition containmentだけを
 set/atomic両installation orderでexecutableにするまでgateされていた。Task
-256C1は両orderをpassし、target edgeはfresh Task-257C2 preflight/
-implementation待ちである。
+256C1は両orderをpassし、completed Task-257C2 implementationはfresh
+preflight後にtarget edgeを現在publishする。
 
 edgeは`source_formula_composition`のdedicated cross-family handoffで、
 composite-formula placeholderではない。generator binding/capture、
