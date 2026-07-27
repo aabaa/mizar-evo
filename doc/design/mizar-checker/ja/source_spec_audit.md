@@ -3171,3 +3171,36 @@ blocking `spec_gap`、`source_undocumented_behavior`、
 `test_expectation_drift`、surviving `boundary_violation`はない。origin差は
 report-only `repo_metadata_conflict`のままである。MC-G017/MC-G020はpartial、
 frozen later semantic/formula ownerとSteps 6/7へnew creditを与えない。
+
+## Step 5 Checker Task 257A frozen-contract audit
+
+fresh inventoryは最初のTask-257 incrementをunchanged
+`fail_type_elaboration_formula_connective_quantifier_gap_001` sourceへboundする。
+Chapter 14はexact implication/universal/negation/contradiction source tree、
+Chapter 4はexplicit scoped binding identity 1件、Chapters 3.3-3.4はbare `set`
+type siteをauthorizeする。Chapter 16.2はenclosing theorem syntaxだけを供給し、
+theorem ownership、formula semantics、proof/fact/acceptanceを推測しない。
+
+frozen public transactionはdense table 7個とexact real aggregate
+`5/0/1/1/1/4/6`を持つ。unassigned formula root 1件、source-role child edge
+4件、source-derived quantifier binder/body context 1件、binder-owned type site
+1件、unresolved input request 6件を保持する。extended binding environmentは
+exact `2/1/4`で、universal-body edgeだけがcontext 1へ遷移する。private
+raw-syntax ownerは`mizar-test`のままで、final checker handoffはsyntax-freeで
+ある。
+
+missing contractはrepaired `design_drift`である。absent public producer、
+source-derived environment extension、final handoffはbounded `source_drift`、
+producer/binder/context/corruption/install/exclusion/final-ownership coverageは
+`test_gap`のままである。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、current
+`boundary_violation`はない。origin差はreport-only `repo_metadata_conflict`の
+ままである。
+
+本prerequisiteはproduction source、fixture、`.miz`、sidecar/expectation、
+trace row/status/count、executable coverage、count/hashを変更しない。baselineは
+plan/type 414/379、245/233、pass/fail 224/190、active 101/5/193/1、
+checker/mizar-test 287/328 tests、private production 27 paths / 30,154 linesで
+ある。separate implementationはcovered row
+`spec.en.checker.type_elaboration.source_composite_formula_payload` 1件を追加でき、
+case countとexisting outcome/detailを変えず414/380、246/234をprojectする。

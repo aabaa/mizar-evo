@@ -493,3 +493,36 @@ exclusion matrixがbounded `source_drift`と`test_gap`をcloseする。既存8 s
 routeはoutcome/detail ownershipを維持する。predicate chain、formula
 operator/binder、conditioned-comprehension compositionはTask 257、inline
 closure、template role、overload selectionはTasks 270/277/278のままである。
+
+## Task 257A frozen composite-formula/binder core
+
+fresh inventoryはimplementation前にTask-257 umbrellaを分割する。Task 257Aは
+dependency-readyなexact implication/universal/negation/contradiction treeと、
+unused explicit universal binder 1件である。broader connective/quantifier、
+implicit binder、bound use/captureはTask 257B、predicate-chainとconditioned-
+comprehension compositionは必要なTask-256/255 contract extensionを別途freeze
+した後のTask 257Cに残す。
+
+public source familyはformula occurrence、transparent wrapper、unassigned root、
+quantified binder、binder-owned type site、child edge、unresolved requestのdense
+table 7個を持つ。唯一のunchanged real connective/quantifier fail sourceのexact
+aggregateは`5/0/1/1/1/4/6`である。extended Task-248-era `BindingEnv`
+schemaは`2/1/4`、すなわちnormal module-shell prefix、expression body context
+1件、source-derived quantifier binding `x`、不変module-shell diagnostic 4件で
+ある。Task-248 source-context handoffは作らない。
+
+formula rowはparent-before-child preorderである。source-role edge 4件は
+implication left/right、universal body、negated-formulaを形成し、
+universal-body edgeだけがmodule context 0からexpression context 1へ遷移する。
+request 6件はconnective、constant、quantifier、binder-type、negationのinput
+intentだけを保持し、semantic answer/fact/truth/theorem owner/proof/acceptanceを
+publishしない。
+
+bounded binder typeはoccurrence-specific bare builtin `set` siteで、Task-249
+declaration applicationではない。resolver-shaped local binder identityはwritten
+declaration rangeとstable local scopeを使い、symbol/contribution/declaration
+shell/opaque id/generated counterを捏造しない。本prerequisiteは
+`design_drift`だけをcloseする。public transport、binding extension、final
+ownership、corruption/context/install/exclusion matrixはbounded
+`source_drift`/`test_gap`のままで、source、fixture、sidecar、trace
+row/status/count、count/hashを変更しない。

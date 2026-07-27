@@ -539,3 +539,38 @@ real/synthetic/corruption/install/exclusion matrix close the bounded
 outcome and detail ownership. Task 257 still owns predicate chains, formula
 operators/binders, and conditioned-comprehension composition; Tasks 270,
 277, and 278 retain inline closure, template roles, and overload selection.
+
+## Task 257A Frozen Composite-Formula/Binder Core
+
+Fresh inventory decomposes the Task-257 umbrella before implementation.
+Task 257A is the dependency-ready exact implication/universal/negation/
+contradiction tree plus one explicit unused universal binder. Task 257B
+retains broader connectives and quantifiers, implicit binders, bound use, and
+capture. Task 257C retains predicate-chain and conditioned-comprehension
+composition after any Task-256/255 contract extensions are separately
+frozen.
+
+The public source family has seven dense tables for formula occurrences,
+transparent wrappers, unassigned roots, quantified binders, binder-owned type
+sites, child edges, and unresolved requests. The one unchanged real
+connective/quantifier fail source has the exact aggregate
+`5/0/1/1/1/4/6`. Its extended Task-248-era `BindingEnv` schema is `2/1/4`:
+the normal module-shell prefix, one expression body context, the
+source-derived quantifier binding `x`, and the four unchanged module-shell
+diagnostics. It does not create a Task-248 source-context handoff.
+
+Formula rows are parent-before-child preorder. Four source-role edges form
+implication left/right, universal body, and negated-formula relationships;
+only the universal-body edge crosses from module context 0 to expression
+context 1. Six requests preserve connective, constant, quantifier,
+binder-type, and negation input intent without publishing any semantic
+answer, fact, truth, theorem owner, proof, or acceptance.
+
+The bounded binder type is an occurrence-specific bare builtin `set` site,
+not a Task-249 declaration application. The resolver-shaped local binder
+identity uses its written declaration range and stable local scope; no symbol,
+contribution, declaration shell, opaque id, or generated counter is
+fabricated. This prerequisite closes only `design_drift`. Public transport,
+binding extension, final ownership, and the corruption/context/install/
+exclusion matrix remain bounded `source_drift` and `test_gap`; it changes no
+source, fixture, sidecar, trace row/status/count, count, or hash.

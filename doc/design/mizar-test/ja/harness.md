@@ -2858,3 +2858,48 @@ assertする。
 payload、tagは変更しない。predicate chain/operator/binder、general type/
 attribute graph、semantic fact/truth、conditioned comprehension、inline/template、
 overload selectionはfrozen ownerへdeferしたままである。
+
+## Checker Task 257A frozen runner boundary
+
+ここでのChecker Tasks 257A-Cはchecker producer sliceで、本文中の完了済み
+mizar-test Tasks 257A-H test-layout系列とは別である。
+
+唯一のexact routeは
+`fail_type_elaboration_formula_connective_quantifier_gap_001`である。raw
+`SurfaceAst` traversalはprivateに留める。`source_formula.rs`はformula site
+5件、explicit binder segment/identifier、bare `set` type-expression/head、
+frozen rangeをselect/retainし、private `source_composite_formula` leafはそのdataを
+public syntax-free transactionへtranslateできる。
+
+runnerはauthenticated source/resolver/symbol-module identityとpublic
+`BindingEnvParts`/table APIからexact normal `1/0/4` module-shell environmentを
+構築し、older private `1/0/0` semantic helperを変更しない。同じimmutable
+Checker Task 257A inputからdedicated source-formula expression contextとresolver-shaped local
+quantifier binding 1件を持つexact `2/1/4`へextendする。Checker Task 248
+source-context handoffを捏造しない。
+`x`はunusedなのでChecker Task 252/253/254/255/256 term-family dependencyをbuildしない。
+その後7-table `5/0/1/1/1/4/6` handoffをbuild/installしてから、不変のolder
+semantic routeを呼ぶ。
+
+positive testはformula/root/binder/type-site/edge/request rowをすべて順序どおり
+assertし、exact site/range、context 0-to-1 transition、declaration/type
+provenance、不変two-key detail vectorを含む。negative testはselector
+isolation、recovery/spelling変更、tree/parent/role/cardinality corruption、
+stale binding/context/type identity、wrapper、deterministic replay、one-shot
+install、dependency revalidation、sole standalone Checker Task 257A install
+sequence、synthetic preinstalled Checker Task 248 source-context rejection、immutable final
+ownershipをcoverする。実行可能なrejectionは
+`TypedAstParts { source_context: Some(task_248_handoff), .. }`から始める。
+public source-context installerがないためreverse-order testを要求しない。
+`source_context()`は`None`のままで、extended environmentはChecker Task 257A handoff
+だけがownする。lower-family selector/allowlistを拡張しない。
+
+positive oracleはcomplete embedded environmentと7 table全rowを含むsingle full
+literal handoff `debug_text()` snapshot、およびChecker Task 257Aなしのexact legacy
+`TypedAst::debug_text()` bytesを使う。2 rerun間のequality/substring presenceは
+補助であり代替ではない。
+
+broader formula shape、bound use/capture、predicate chain、conditioned
+comprehension、theorem ownership、全semantic answerはdeferredのままである。
+本documentation prerequisiteはrunner、fixture、sidecar、trace、count、test
+list、production manifest、hashを変更しない。

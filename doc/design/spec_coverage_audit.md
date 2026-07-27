@@ -3063,3 +3063,38 @@ MC-G017/MC-G020 remain partial. This increment grants no semantic
 formula/type/attribute truth, theorem acceptance, overload selection,
 conditioned-comprehension, Core/CFG/VC, Steps 6/7, or global Step-5
 completion credit. Those owners and deferred statuses remain unchanged.
+
+## Step 5 Checker Task 257A Frozen-Contract Addendum
+
+Task 257A now has a documentation-only frozen contract for the first
+Chapter-14 composite-formula/binder transport slice. It maps one unchanged
+connective/quantifier fail consumer to an exact seven-table
+`5/0/1/1/1/4/6` transaction and an exact `2/1/4` source-derived binding
+environment. The contract freezes formula preorder, one unassigned root,
+four source-role edges, one explicit universal binder and bare `set` type
+site, one module-to-body context transition, and six unresolved input
+requests.
+
+This decomposition grants no executable coverage. It closes only Task-257A
+`design_drift`; the producer/environment/final handoff remains bounded
+`source_drift`, and real/synthetic/binder-context/corruption/install/
+exclusion coverage remains `test_gap`. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or current
+`boundary_violation` was found. The origin discrepancy remains report-only
+`repo_metadata_conflict`.
+
+No trace row, mapping, status, fixture, expectation, source, count, hash, or
+executable coverage changes in this prerequisite. Baseline plan/type counts
+remain 414/379 and 245/233, with unchanged 414 cases, pass/fail 224/190,
+active 101/5/193/1, and warnings/errors 23/0. The separate implementation
+may add the one covered row
+`spec.en.checker.type_elaboration.source_composite_formula_payload` over the
+existing sidecar, projecting only requirement/covered counts to 414/380 and
+246/234.
+
+Task 257B retains broader connectives and quantifiers, implicit binders,
+bound-use/capture, and executable wrapper occurrences. Task 257C retains
+predicate-chain and conditioned-comprehension composition after separately
+frozen Task-256/255 extensions. Theorem ownership and acceptance, semantic
+formula truth/facts, Core/CFG/VC, Steps 6/7, and global Step-5 completion
+receive no credit.

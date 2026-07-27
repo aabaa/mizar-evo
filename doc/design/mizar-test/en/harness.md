@@ -3010,3 +3010,52 @@ diagnostic payload, or tag changes. Predicate chains/operators/binders,
 general type and attribute graphs, semantic facts/truth, conditioned
 comprehensions, inline/templates, and overload selection remain deferred to
 their frozen owners.
+
+## Checker Task 257A Frozen Runner Boundary
+
+Checker Tasks 257A-C here are checker producer slices, not the completed
+mizar-test Tasks 257A-H test-layout series recorded elsewhere in this
+document.
+
+The one exact route is
+`fail_type_elaboration_formula_connective_quantifier_gap_001`. Raw
+`SurfaceAst` traversal stays private. `source_formula.rs` selects and retains
+the five formula sites, explicit binder segment and identifier, bare `set`
+type-expression/head, and frozen ranges; a private
+`source_composite_formula` leaf may translate that data into the public
+syntax-free transaction.
+
+The runner first constructs the exact normal `1/0/4` module-shell
+environment through public `BindingEnvParts` and table APIs, from the
+authenticated source/resolver/symbol-module identities. It leaves the older
+private `1/0/0` semantic helper unchanged. It then derives the exact `2/1/4`
+environment from the same immutable Checker Task 257A input, with a dedicated source-formula
+expression context and one resolver-shaped local quantifier binding. It does
+not fabricate a Checker Task 248 source-context handoff. Because `x` is unused, it
+builds no Checker Task 252/253/254/255/256 term-family dependency. It then builds and
+installs the seven-table `5/0/1/1/1/4/6` handoff before invoking the
+unchanged older semantic route.
+
+Positive tests assert all formula, root, binder, type-site, edge, and request
+rows in order, including exact sites/ranges, context 0-to-1 transition,
+declaration/type provenance, and the unchanged two-key detail vector.
+Negative tests cover selector isolation, recovery and spelling changes,
+tree/parent/role/cardinality corruption, stale binding/context/type identity,
+wrappers, deterministic replay, one-shot installation, dependency
+revalidation, the sole standalone Checker Task 257A installation sequence,
+synthetic preinstalled Checker Task 248 source-context rejection, and immutable final
+ownership. The executable rejection starts with
+`TypedAstParts { source_context: Some(task_248_handoff), .. }`; no
+reverse-order test is claimed because no public source-context installer
+exists. `source_context()` remains `None`; only the Checker Task 257A handoff owns the
+extended environment. No lower-family selector or allowlist is widened.
+
+The positive oracle uses one full literal handoff `debug_text()` snapshot
+containing the complete embedded environment and every seven-table row, plus
+the exact legacy `TypedAst::debug_text()` bytes without Checker Task 257A. Equality between
+two reruns and substring presence are supplemental, not substitutes.
+
+Broader formula shapes, bound use/capture, predicate chains, conditioned
+comprehensions, theorem ownership, and all semantic answers remain deferred.
+This documentation prerequisite changes no runner, fixture, sidecar, trace,
+count, test list, production manifest, or hash.

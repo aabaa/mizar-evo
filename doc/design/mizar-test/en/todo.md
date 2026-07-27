@@ -1739,3 +1739,32 @@ promoted by this increment.
   real/synthetic/exclusion/corruption/install-order matrix. The exact eight
   existing sources now exercise the syntax-free checker transaction while
   retaining every pre-existing semantic detail owner.
+
+## Checker Task 257A Frozen Consumer Prerequisite
+
+Checker Tasks 257A-C in this section are checker producer slices and are
+unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
+
+- [x] Freeze the one unchanged connective/quantifier fail source, its exact
+  five formula sites, binder segment/identifier/type site, and source ranges.
+- [x] Freeze private ownership: extend the existing `source_formula.rs` raw
+  extraction shape and use a dedicated private `source_composite_formula`
+  assembler without widening lower-family selectors or allowlists.
+- [x] Freeze the public seven-table `5/0/1/1/1/4/6` transaction and exact
+  `2/1/4` binding environment, including the single context transition and
+  resolver-shaped local binder identity.
+- [x] Freeze the ordered formula/root/binder/type-site/edge/request oracle,
+  unchanged two-key semantic detail vector, all-active isolation, and
+  environment/table corruption/install/final-ownership coverage, including
+  one full literal handoff debug snapshot, exact legacy debug bytes, and the
+  executable preinstalled-source-context rejection.
+- [x] Keep broader connectives/quantifiers, bound use/capture, predicate
+  chains, conditioned comprehensions, theorem ownership, and all semantic
+  answers outside Checker Task 257A.
+- [x] Keep this prerequisite documentation-only, preserving 414/379,
+  245/233, 224/190, 101/5/193/1, 287/328 checker/mizar-test tests,
+  27 paths / 30,154 lines, and all hashes. The separate implementation
+  projects 414/380 and 246/234 with unchanged case count.
+- [ ] Implement the separate Checker Task 257A selector extension, private assembler,
+  public producer/binding prepass/final handoff, bounded reciprocal trace
+  increment, and reviewed real/synthetic/exclusion/corruption/install matrix.

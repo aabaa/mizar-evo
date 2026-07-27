@@ -4227,7 +4227,15 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   handoff、reciprocal trace increment、review済みreal/synthetic/exclusion/
   corruption/install matrixは完了した。既存semantic routeと全outcome/detail
   fieldは不変である。
-- [ ] **Task 257:** composite/quantified formula/binder producer。
+- [ ] **Task 257:** composite/quantified formula、binder、predicate-chain、
+  conditioned-comprehension umbrella。
+  - [ ] **Task 257A:** exact implication/universal/negation/contradiction treeと
+    explicit unused binder 1件。EN/JA frozen-contract prerequisiteは完了し、
+    separate producer/consumer/trace implementationが残る。
+  - [ ] **Task 257B:** broader connective/quantifier shape、implicit binder、
+    bound use/capture。
+  - [ ] **Task 257C:** separately frozen Task-256/255 extension後の
+    predicate-chain/conditioned-comprehension composition。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
 - [ ] **Task 259:** predicate-definition/initial-obligation intake producer。

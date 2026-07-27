@@ -3317,3 +3317,39 @@ No blocking `spec_gap`, `source_undocumented_behavior`,
 origin discrepancy stays report-only `repo_metadata_conflict`. MC-G017/
 MC-G020 remain partial, and the frozen later semantic/formula owners plus
 Steps 6/7 receive no new credit.
+
+## Step 5 Checker Task 257A Frozen-Contract Audit
+
+Fresh inventory bounds the first Task-257 increment to the unchanged
+`fail_type_elaboration_formula_connective_quantifier_gap_001` source. Chapter
+14 authorizes its exact implication/universal/negation/contradiction source
+tree, Chapter 4 authorizes one explicit scoped binding identity, Chapters
+3.3-3.4 own its bare `set` type site, and Chapter 16.2 supplies only the
+enclosing theorem syntax. Theorem ownership, formula semantics, proof, fact,
+and acceptance are not inferred.
+
+The frozen public transaction contains seven dense tables and the exact real
+aggregate `5/0/1/1/1/4/6`. It preserves one unassigned formula root, four
+source-role child edges, one source-derived quantifier binder and body
+context, one binder-owned type site, and six unresolved input requests. The
+extended binding environment is exactly `2/1/4`; only the universal-body edge
+crosses into context 1. The private raw-syntax owner remains `mizar-test`, and
+the final checker handoff is syntax-free.
+
+The missing contract is repaired `design_drift`. The absent public producer,
+source-derived environment extension, and final handoff remain bounded
+`source_drift`; producer, binder/context, corruption, installation,
+exclusion, and final-ownership coverage remain `test_gap`. No blocking
+`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`, or
+current `boundary_violation` was found. The origin discrepancy remains
+report-only `repo_metadata_conflict`.
+
+This prerequisite changes no production source, fixture, `.miz`, sidecar,
+expectation, trace row/status/count, executable coverage, count, or hash.
+Baseline plan/type/pass-fail/active counts remain 414/379, 245/233, 224/190,
+and 101/5/193/1, with checker/mizar-test 287/328 tests and 27 private
+production paths / 30,154 lines. A separate implementation may add the one
+covered row
+`spec.en.checker.type_elaboration.source_composite_formula_payload`,
+projecting 414/380 and 246/234 without changing case count or any existing
+outcome/detail field.

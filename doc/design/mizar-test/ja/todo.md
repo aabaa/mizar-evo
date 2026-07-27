@@ -1549,3 +1549,32 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   trace increment、review済みreal/synthetic/exclusion/corruption/install-order
   matrixを実装した。exact 8 existing sourceは既存semantic detail ownerを維持した
   ままsyntax-free checker transactionをexerciseする。
+
+## Checker Task 257A frozen consumer prerequisite
+
+本節のChecker Tasks 257A-Cはchecker producer sliceで、上記の完了済み
+mizar-test Tasks 257A-H test-layout系列とは別である。
+
+- [x] unchanged connective/quantifier fail source 1件、exact formula site
+  5件、binder segment/identifier/type site、source rangeをfreezeする。
+- [x] private ownershipをfreezeする。既存`source_formula.rs` raw extraction
+  shapeをextendし、lower-family selector/allowlistを拡張せず専用private
+  `source_composite_formula` assemblerを使う。
+- [x] public 7-table `5/0/1/1/1/4/6` transactionとexact `2/1/4` binding
+  environmentをsingle context transition、resolver-shaped local binder
+  identityを含めfreezeする。
+- [x] ordered formula/root/binder/type-site/edge/request oracle、不変two-key
+  semantic detail vector、all-active isolation、environment/table
+  corruption/install/final-ownership coverageをfull literal handoff debug
+  snapshot、exact legacy debug bytes、実行可能なpreinstalled-source-context
+  rejectionを含めfreezeする。
+- [x] broader connective/quantifier、bound use/capture、predicate chain、
+  conditioned comprehension、theorem ownership、全semantic answerをChecker Task 257A
+  外に保つ。
+- [x] 本prerequisiteをdocumentation-onlyとし、414/379、245/233、
+  224/190、101/5/193/1、checker/mizar-test 287/328 tests、27 paths /
+  30,154 lines、全hashを保持する。separate implementationはcase count不変で
+  414/380、246/234をprojectする。
+- [ ] separate Checker Task 257A selector extension、private assembler、public
+  producer/binding prepass/final handoff、bounded reciprocal trace increment、
+  review済みreal/synthetic/exclusion/corruption/install matrixを実装する。

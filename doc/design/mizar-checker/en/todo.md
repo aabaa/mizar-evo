@@ -4450,7 +4450,15 @@ unchecked row below is one future nonempty logical task and one commit.
   immutable handoff, reciprocal trace increment, and reviewed real/synthetic/
   exclusion/corruption/install matrix are complete. Existing semantic routes
   and all outcome/detail fields remain unchanged.
-- [ ] **Task 257:** composite/quantified formula and binder producer.
+- [ ] **Task 257:** composite/quantified formula, binder, predicate-chain, and
+  conditioned-comprehension umbrella.
+  - [ ] **Task 257A:** exact implication/universal/negation/contradiction tree
+    and one explicit unused binder. The EN/JA frozen-contract prerequisite is
+    complete; the separate producer/consumer/trace implementation remains.
+  - [ ] **Task 257B:** broader connective/quantifier shapes, implicit binders,
+    bound use, and capture.
+  - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
+    composition after separately frozen Task-256/255 extensions.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
 - [ ] **Task 259:** predicate-definition and initial-obligation intake producer.

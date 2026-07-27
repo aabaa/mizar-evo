@@ -2173,3 +2173,28 @@ type 193. Task 257 is next in the dependency-ready checker queue. Predicate
 chains/operators/binders, conditioned comprehensions, inline/templates,
 overload selection, accepted facts/proofs, Steps 6/7, and global Step-5
 completion remain deferred.
+
+## Step 5 Checker Task 257A Frozen-Contract Addendum
+
+The Task-257 umbrella is decomposed before implementation. Task 257A freezes
+the dependency-ready exact implication/universal/negation/contradiction tree,
+one explicit unused binder, seven-table `5/0/1/1/1/4/6` transport, and
+`2/1/4` binding environment over the one unchanged real
+connective/quantifier fail consumer.
+
+This documentation prerequisite closes only `design_drift`. Public producer,
+binding prepass, final handoff, and the real/synthetic/context/corruption/
+install/exclusion matrix remain bounded `source_drift` and `test_gap`. It
+changes no production source, fixture, `.miz`, sidecar, expectation, trace
+row/status/count, executable coverage, count, or hash. Baseline remains
+414/379, 245/233, 224/190, 101/5/193/1, checker/mizar-test 287/328 tests,
+and 27 private production paths / 30,154 lines. The separate implementation
+projects 414/380 and 246/234 with unchanged case count and outcome/detail.
+
+Task 257B retains broader connective/quantifier shapes, implicit binders,
+bound-use/capture, and executable wrapper occurrences. Task 257C retains
+predicate chains and conditioned comprehensions after separately frozen
+Task-256/255 extensions. The parent Task 257 remains incomplete. Formula
+semantics, theorem ownership/acceptance, accepted facts/proofs, Steps 6/7,
+and global Step-5 completion remain deferred; the origin discrepancy remains
+report-only `repo_metadata_conflict`.
