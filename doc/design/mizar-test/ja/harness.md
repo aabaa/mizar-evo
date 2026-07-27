@@ -2773,3 +2773,19 @@ admission 101/5/192/1、warnings/errors 23/0である。312-test raw/normalized
 list hashは`b7f56668...` / `09acdf12...`、25-path/27,317-line production
 path/content hashは`e81c3b08...` / `3046ae27...`である。exact値と5 CLI
 hashはpaired crate plan/module-boundary auditに記録する。
+
+## Checker Task 255 frozen runner boundary
+
+future private `source_set_term` runner leafはfrozen four-definiens local case
+だけをvalidateする。exact oracleはTask-255 terms/wrappers/generators/
+type-sites/edges/requests 4/0/1/3/4/7 + Task-252
+terms/references/numeric requests 4/0/4で、real Task-253/254 dependencyはない。
+raw syntaxはprivateに留め、checkerにはsyntax-free table 6個だけを渡す。
+
+routeはwritten generatorを使わないmapperを持つcondition-free comprehensionだけを
+admitする。generator binding/capture、condition formula、non-bare target type、
+semantic sethood、choice nonemptiness/stability、`qua` wideningを捏造しない。
+implementationはexact-source selection、all-active isolation、syntax/recovery/
+subtree exclusion、corruption、deterministic replay、dependency fingerprint、
+immutable final preservationを証明する。本prerequisiteはrunner/fixture/sidecar/
+trace/count/hashを変更しない。

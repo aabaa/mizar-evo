@@ -1499,3 +1499,19 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   backlink 4件、Task-248 context reuse、complete real/synthetic/exclusion/
   corruption/final-ownership matrix、measured 413/377、243/231、224/189、
   101/5/192/1 oracleはcompleteである。
+
+## Checker Task 255 frozen consumer prerequisite
+
+- [x] enumeration、conditionなしcomprehension、choice、`qua` definiensを持つ
+  future local-definition fail source 1件をfreezeする。
+- [x] private raw-syntax ownerとpublic 6-table syntax-free boundaryを
+  4/0/1/3/4/7 + Task-252 4/0/4、real Task-253/254 target/fingerprintなしで
+  freezeする。
+- [x] written generator declarationを保持するが`BindingId`/captureを捏造せず、
+  binding/captureはTask 257、condition formulaはTasks 256-257に割り当てる。
+- [x] bare builtin `set`/`object` target siteだけをadmitし、Task-249
+  declaration-application ownershipを不変にする。
+- [x] 本prerequisiteをdocumentation-onlyとし、413/377、243/231、224/189、
+  101/5/192/1、312 tests、25 paths / 27,317 lines、全hashを不変にする。
+  separate implementationはfresh preflight条件で414/378、244/232、224/190、
+  active type 193をprojectする。

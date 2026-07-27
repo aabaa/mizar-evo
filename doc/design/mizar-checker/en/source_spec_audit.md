@@ -3097,3 +3097,46 @@ exact spelling, and bidirectional installation validation. The prerequisite
 `test_expectation_drift` was found. MC-G017/MC-G018 remain partial because
 Task 263 retains member/view/coverage and structure semantics, Tasks 255+
 retain later term families, and Steps 6/7 remain unpromoted.
+
+## Step 5 Checker Task 255 Frozen-Contract Audit
+
+Canonical Chapters 4, 7, 8, 13, 17, and 21 are sufficient for a bounded
+source-only Task-255 transaction. The exact real source has four local
+functor definientia: `{1, 2}`, `{3 where candidate255 is set}`, `the set`,
+and `4 qua set`. The comprehension has no condition and its mapper does not
+reference the generator, so the transaction requires neither a fabricated
+binder identity nor a premature formula graph.
+
+The frozen public contract has six syntax-free tables and exact
+term/wrapper/generator/type-site/edge/request counts 4/0/1/3/4/7, composed
+with Task-252 4/0/4. Bare target sites are owned by Task 255 and are not
+misrepresented as Task-249 declaration applications. Task-253/254
+dependencies are optional, root-only, one-way fingerprints; the real route
+uses neither. Requests preserve only result/sethood/nonemptiness/widening
+intent and publish no response, type, fact, coercion, or acceptance. They do
+not extend Task 251's type-application-only evidence origin; that term-origin
+conversion remains separately frozen work.
+
+The canonical plan fixes all row fields and per-kind cardinalities, wrapper
+nesting/spelling, exact request-to-generator/type-site associations, and a
+maximal-effective-range ownership partition. That partition prevents a
+Task-252 primary already owned by Task 253/254 or a Task-253 application
+already owned by Task 254 from becoming a second Task-255 target. Later
+Task-253/254 installation revalidates any installed Task-255 handoff.
+
+The missing frozen contract is `design_drift`; the absent producer and
+later generator binding/capture are bounded `source_drift`; exact
+producer/corruption/final-handoff coverage is `test_gap`. No blocking
+`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`, or
+current `boundary_violation` was found. The measured initial origin
+difference remains report-only `repo_metadata_conflict`.
+
+Task 257 retains comprehension binding identity/capture, Tasks 256-257 retain
+condition formula edges, and semantic sethood, choice, and `qua` behavior
+remain with their Chapter-7/8/17/21 owners. The prerequisite changes no
+production source, fixture, expectation, trace row/status/count, executable
+coverage, count, or hash. Baseline 413/377, 243/231, 224/189,
+101/5/192/1, 312 tests, and 25 paths / 27,317 lines remain unchanged.
+The future sidecar maps reciprocally to the Chapter-10 functor-definition
+payload gap, Chapter-13 term-expression gap, broad checker extraction gap,
+exact predicate/functor-definition gap, and new bounded Task-255 row.

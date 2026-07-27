@@ -2081,3 +2081,35 @@ measured 0/0 origin difference from the supplied one-commit-ahead note is a
 report-only `repo_metadata_conflict`; it does not prevent the unique safe
 commit. Tasks 255+/263-264, Steps 6/7, and global Step-5 completion remain
 deferred.
+
+## Step 5 Checker Task 255 Frozen-Contract Addendum
+
+Checker Task 255 now has a reviewed documentation-only target contract for
+set enumeration, condition-free comprehension, choice, and `qua` source
+transport. It fixes six syntax-free tables; exact real
+terms/wrappers/generators/type-sites/edges/requests 4/0/1/3/4/7 plus
+Task-252 4/0/4; one-way Task-252/253/254/255 child composition; bare target
+site ownership; binder/formula exclusions; semantic deferrals; and one
+future bounded fixture/trace increment.
+
+This prerequisite closes only Task-255 `design_drift`. The implementation
+`source_drift` and `test_gap` remain open. It changes no production source,
+fixture, expectation, sidecar, trace row/status/count, executable coverage,
+count, or hash. The baseline remains 413/377, 243/231, 224/189,
+101/5/192/1, 312 tests, and 25 paths / 27,317 lines. The separate
+implementation projects 414/378, 244/232, 224/190, and active type 193.
+
+The frozen schema includes exact row fields/cardinalities, wrapper
+spelling/nesting, request-to-type-site associations, nearest-owner
+maximal-range child partition, optional Task-253/254 overlap/fingerprint
+rules, and later-installer revalidation. The future sidecar maps to four
+existing rows including Chapter 10 plus the new bounded row; Task-255 request
+intents do not silently extend Task 251's evidence origin.
+
+Task 257 retains comprehension binder identity/capture, Tasks 256-257 retain
+condition formula edges, and semantic sethood/nonemptiness/widening remains
+with the Chapter-7/8/17/21 owners. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or current
+`boundary_violation` was found; the initial origin difference remains a
+report-only `repo_metadata_conflict`. Steps 6/7 and global Step-5 completion
+remain deferred.

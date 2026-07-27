@@ -2937,3 +2937,44 @@ warnings/errors 23/0. MC-G017/MC-G018 remain partial because Task 263 retains
 member/view/coverage and structure semantics, Tasks 255+ retain later source
 families, accepted facts/proofs and downstream IR remain uncredited, and
 Steps 6/7 are not promoted.
+
+## Step 5 Checker Task 255 Frozen-Contract Addendum
+
+The Task-255 documentation prerequisite changes the design-to-spec ownership
+and deferred rationale for Chapter 13 §§13.4-13.6, so this audit records the
+new future owner without changing executable coverage. The paired plans now
+freeze one public six-table `source_set_term` handoff and one exact future
+local consumer with enumeration, condition-free comprehension, choice, and
+`qua` definientia. The future real oracle is 4/0/1/3/4/7 with Task-252
+4/0/4 and no Task-253/254 target or fingerprint.
+
+The transport owns source occurrences, written generator declarations, bare
+builtin target sites, ordered child associations, and unresolved
+result/sethood/nonemptiness/widening requests only. Task 257 retains
+comprehension binder identity/capture; Tasks 256-257 retain condition formula
+edges. Chapter-7/8/17/21 semantic sethood, choice, and `qua` coverage remains
+unchanged, as do the inactive adversarial seeds. The future sidecar has five
+reciprocal references: the existing Chapter-10 functor-definition,
+Chapter-13 term-expression, broad checker extraction, and exact
+predicate/functor-definition gaps plus the new bounded Task-255 row.
+
+The paired canonical plan now freezes exact row schemas, kind cardinalities,
+wrapper spelling/nesting, request-to-type-site associations, maximal-range
+nearest-family child ownership, optional fingerprint overlap rules, and
+later-installer revalidation. Task-255 source intents do not extend the
+Task-251 evidence handoff's type-application-only origin.
+
+This prerequisite closes `design_drift`. The public producer/final handoff
+and later binder capture remain `source_drift`; exact real,
+corruption/exclusion, and final-ownership coverage remain `test_gap`. No
+blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or current `boundary_violation` was found. The
+initial origin discrepancy remains a report-only `repo_metadata_conflict`.
+
+No trace row, test mapping, status, source, fixture, expectation, count, hash,
+or executable coverage changes in this prerequisite. Baseline plan 413/377,
+type 243/231, pass/fail 224/189, active parse/declaration/type/proof
+101/5/192/1, warnings/errors 23/0, 312 tests, and 25 paths / 27,317 lines
+remain exact. The separate implementation may add exactly one fail case and
+one bounded covered diagnostic row, with projected 414/378, 244/232,
+224/190, and active type 193, subject to fresh verification.

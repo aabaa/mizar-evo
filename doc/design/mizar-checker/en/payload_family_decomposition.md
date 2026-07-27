@@ -452,3 +452,34 @@ Task-252 8/0/8. The bounded `source_drift`, `test_gap`, and implementation-time
 context and cross-family installation-order `boundary_violation` are closed.
 Tasks 255+ and 263-264 retain later
 families and all structure semantics; Steps 6/7 are not promoted.
+
+## Task 255 Frozen Source-Set-Term Family
+
+Task 255 is frozen as a source-transport graph node after Tasks 248 and
+252-254. Its future `source_set_term` handoff contains six dense tables for
+set/choice/`qua` terms, transparent wrappers, written comprehension
+generators, bare builtin target-type sites, ordered child edges, and unresolved
+requests. Its exact real transaction is 4/0/1/3/4/7 with co-installed
+Task-252 4/0/4 and no Task-253/254 target or fingerprint.
+
+Edges may point one-way to Task-252 primary roots, Task-253 root
+applications, Task-254 root structure terms, or nested Task-255 rows. Reverse
+Task-253/254 parents containing Task-255 children remain whole-subtree
+excluded. Task-249 declaration-linked type applications are not reused for
+either term-owned or generator-owned Task-255 targets; the bounded slice
+admits only authenticated bare `set`/`object` target sites.
+
+The canonical row schemas use a maximal-effective-range partition: a primary
+already owned by Task 253/254 and an application already owned by Task 254
+cannot become a second Task-255 target. Unrelated optional handoffs are
+range-disjoint, and later Task-253/254 installation revalidates any installed
+Task-255 handoff. Task-255 request intents do not extend Task 251's frozen
+type-application evidence origin.
+
+Generator rows preserve written declarations but create no `BindingId` or
+capture. Task 257 retains comprehension binder/context identity and
+conditioned-comprehension formula ownership composes only after Tasks
+256-257. Semantic result typing, sethood, choice nonemptiness/stability,
+`qua` widening/reducts, facts, and acceptance remain outside Task 255. This
+documentation-only prerequisite closes `design_drift`; the implementation
+`source_drift` and `test_gap` remain open.

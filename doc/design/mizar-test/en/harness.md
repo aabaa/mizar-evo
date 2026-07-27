@@ -2915,3 +2915,21 @@ The 312-test raw/normalized list hashes are `b7f56668...` / `09acdf12...`;
 the 25-path/27,317-line production path/content hashes are `e81c3b08...` /
 `3046ae27...`. Exact values and all five CLI hashes are recorded in the
 paired crate plan and module-boundary audit.
+
+## Checker Task 255 Frozen Runner Boundary
+
+The future private `source_set_term` runner leaf validates only the frozen
+four-definiens local case. Its exact oracle is Task-255
+terms/wrappers/generators/type-sites/edges/requests 4/0/1/3/4/7 plus
+Task-252 terms/references/numeric requests 4/0/4, with no real Task-253/254
+dependency. Raw syntax remains private; the checker receives only the six
+syntax-free tables.
+
+The route admits a condition-free comprehension whose mapper does not use its
+written generator. Generator binding/capture, condition formulas, non-bare
+target types, semantic sethood, choice nonemptiness/stability, and `qua`
+widening are not fabricated. The implementation must prove exact-source
+selection, all-active-case isolation, syntax/recovery/subtree exclusions,
+corruption, deterministic replay, dependency fingerprints, and immutable
+final preservation. This prerequisite changes no runner, fixture, sidecar,
+trace, count, or hash.

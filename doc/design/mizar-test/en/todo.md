@@ -1686,3 +1686,20 @@ promoted by this increment.
   four reciprocal backlinks, Task-248 context reuse, complete
   real/synthetic/exclusion/corruption/final-ownership matrix, and measured
   413/377, 243/231, 224/189, and 101/5/192/1 oracles are complete.
+
+## Checker Task 255 Frozen Consumer Prerequisite
+
+- [x] Freeze exactly one future local-definition fail source with enumeration,
+  condition-free comprehension, choice, and `qua` definientia.
+- [x] Freeze the private raw-syntax owner and public six-table syntax-free
+  boundary at 4/0/1/3/4/7 plus Task-252 4/0/4, with no real Task-253/254
+  target or fingerprint.
+- [x] Preserve a written generator declaration without fabricating
+  `BindingId`/capture; assign binding/capture to Task 257 and condition formulas
+  to Tasks 256-257.
+- [x] Admit only bare builtin `set`/`object` target sites and keep Task-249
+  declaration-application ownership unchanged.
+- [x] Keep this prerequisite documentation-only, preserving 413/377,
+  243/231, 224/189, 101/5/192/1, 312 tests, 25 paths / 27,317 lines, and all
+  hashes. The separate implementation projects 414/378, 244/232, 224/190,
+  and active type 193 subject to fresh preflight.

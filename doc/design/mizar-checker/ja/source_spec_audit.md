@@ -2964,3 +2964,42 @@ exact spelling、bidirectional install validationでclosedした。prerequisite
 `source_undocumented_behavior`、`test_expectation_drift`はない。
 MC-G017/MC-G018はpartialであり、member/view/coverageとstructure semanticsは
 Task 263、later term familyはTasks 255+、Steps 6/7はunpromotedのままである。
+
+## Step 5 Checker Task 255 frozen-contract audit
+
+canonical Chapters 4/7/8/13/17/21はbounded source-only Task-255 transactionに
+十分である。exact real sourceは`{1, 2}`、
+`{3 where candidate255 is set}`、`the set`、`4 qua set`のlocal functor
+definiens 4個を持つ。comprehensionはconditionなしでmapperがgeneratorを参照
+しないため、binder identityやformula graphを捏造しない。
+
+frozen public contractはsyntax-free table 6個、exact
+term/wrapper/generator/type-site/edge/request 4/0/1/3/4/7、composed Task-252
+4/0/4である。bare target siteはTask 255がownし、Task-249 declaration
+applicationとして偽装しない。Task-253/254 dependencyはoptional/root-only/
+one-way fingerprintで、real routeは両方使わない。requestはresult/sethood/
+nonemptiness/widening intentだけを保持し、response/type/fact/coercion/acceptanceを
+publishしない。Task 251のtype-application-only evidence originをextendせず、
+term-origin conversionは別frozen workに残す。
+
+canonical planは全row field/kind別cardinality、wrapper nesting/spelling、
+request-to-generator/type-site association、maximal-effective-range ownership
+partitionを固定する。Task-253/254が既ownするTask-252 primary、Task-254が既ownする
+Task-253 applicationをTask-255が再targetしない。later Task-253/254 installは
+installed Task-255 handoffをrevalidateする。
+
+missing contractは`design_drift`、absent producerとlater generator
+binding/captureはbounded `source_drift`、producer/corruption/final-handoff
+coverageは`test_gap`である。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、current
+`boundary_violation`はない。initial origin差はreport-only
+`repo_metadata_conflict`のままである。
+
+comprehension binding identity/captureはTask 257、condition formula edgeは
+Tasks 256-257、semantic sethood/choice/`qua`はChapter-7/8/17/21 ownerに残す。
+本prerequisiteはproduction source、fixture、expectation、trace row/status/count、
+coverage、count/hashを変更しない。baseline 413/377、243/231、224/189、
+101/5/192/1、312 tests、25 paths / 27,317 linesは不変である。
+future sidecarはChapter-10 functor-definition payload gap、Chapter-13
+term-expression gap、broad checker extraction gap、exact predicate/functor
+definition gap、新規bounded Task-255 rowの5件へreciprocalにmapする。

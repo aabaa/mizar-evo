@@ -414,3 +414,32 @@ contextを再利用し、frozen definiens 3件だけをactivateしてTask-254
 `boundary_violation`はclosedである。
 Tasks 255+/263-264がlater familyと全structure semanticsをretainし、Steps 6/7を
 promoteしない。
+
+## Task 255 frozen source-set-term family
+
+Task 255はTasks 248/252-254直後のsource-transport graph nodeとしてfreezeする。
+future `source_set_term` handoffはset/choice/`qua` term、transparent wrapper、
+written comprehension generator、bare builtin target-type site、ordered child
+edge、unresolved requestのdense table 6個を持つ。exact real transactionは
+4/0/1/3/4/7、co-installed Task-252 4/0/4で、Task-253/254 target/fingerprintは
+ない。
+
+edgeはone-wayにTask-252 primary root、Task-253 root application、Task-254 root
+structure term、nested Task-255 rowを参照できる。Task-255 childを含むreverse
+Task-253/254 parentはwhole-subtree excludedである。Task-249 declaration-linked
+type applicationをTask-255のterm-owned targetにもgenerator-owned targetにも
+流用せず、bounded sliceはauthenticated bare `set`/`object` target siteだけを
+admitする。
+
+canonical row schemaはmaximal-effective-range partitionを使い、Task-253/254が
+既ownするprimaryとTask-254が既ownするapplicationをTask-255が再targetしない。
+unrelated optional handoffはrange-disjointで、later Task-253/254 installはinstalled
+Task-255をrevalidateする。Task-255 request intentはTask 251のfrozen
+type-application evidence originをextendしない。
+
+generator rowはwritten declarationを保持するだけで`BindingId`/captureを作らない。
+comprehension binder/context identityはTask 257、condition付きformula ownershipは
+Tasks 256-257とのcompositionに残す。semantic result type、sethood、choice
+nonemptiness/stability、`qua` widening/reduct、fact/acceptanceはTask 255の外である。
+本docs-only prerequisiteは`design_drift`だけをcloseし、implementation
+`source_drift`/`test_gap`はopenのままとする。
