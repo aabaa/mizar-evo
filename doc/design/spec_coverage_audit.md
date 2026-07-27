@@ -3396,21 +3396,21 @@ condition-to-atomic association.
 
 This prerequisite closes the association-contract `design_drift`. The absent
 dedicated handoff/final projection remains bounded `source_drift`; the absent
-complete consumer and corruption matrix remain `test_gap`. Fresh lower-stage
-preflight also found a separate authority-backed `source_drift`: the committed
-Task-256 overlap validator rejects the Chapter-13-authorized enclosing
-condition set term in both set/atomic installation orders. Chapters 10, 13,
-and 14 authorize the exact source shape and ownership boundary but no truth,
-binding, capture, or definition acceptance. No blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`, or
-`boundary_violation` remains.
+complete consumer and corruption matrix remain `test_gap`. The frozen
+pre-Task-256C1 lower-stage preflight also found a separate authority-backed
+`source_drift`: the then-committed Task-256 overlap validator rejected the
+Chapter-13-authorized enclosing condition set term in both set/atomic
+installation orders. Chapters 10, 13, and 14 authorize the exact source shape
+and ownership boundary but no truth, binding, capture, or definition
+acceptance. No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `boundary_violation` remains.
 
-Task 257C2 implementation is gated on separately documented, reviewed,
-implemented, and committed Task 256C1 condition-container compatibility.
-That prerequisite must admit only the authenticated Task-255 condition
-containment and preserve arbitrary/copied/stale/wrong-range overlap rejection.
-It changes no trace status by itself; any later audit impact belongs to its
-own logical task.
+The separately documented, reviewed, and implemented Task 256C1
+condition-container compatibility now admits only the authenticated Task-255
+condition containment in both orders and preserves arbitrary/copied/stale/
+wrong-range overlap rejection. It changed no trace status by itself. Task
+257C2 implementation now awaits only fresh post-commit preflight; any later
+audit impact belongs to that logical task.
 
 Implementation may add one covered row,
 `spec.en.checker.type_elaboration.source_condition_formula_composition`,
@@ -3439,7 +3439,8 @@ Task 256C1 is the lower-stage compatibility prerequisite for the already
 frozen Task-257C2 condition-formula association. Chapter 13 §§13.4/13.4.2
 places the optional formula inside a comprehension, and Chapter 14
 §§14.2/14.5.2/14.8 authorizes the exact contained built-in equality.
-The current two-order rejection is authority-backed `source_drift`; the
+The frozen pre-implementation two-order rejection was authority-backed
+`source_drift`; the
 missing narrow contract is `design_drift`, closed by this prerequisite, and
 the missing order/corruption matrix is `test_gap`.
 
@@ -3463,3 +3464,20 @@ and coverage counts remain unchanged. Task 256C1 is recorded only as the
 lower-stage follow-up owner that makes the existing Chapter-13/14 transport
 shape composable; this documentation prerequisite changes no executable
 artifact.
+
+## Step 5 Checker Task 256C1 Implementation Result
+
+Task 256C1 closes the recorded lower-stage `source_drift` and `test_gap`.
+The private Task-256 validator now composes the existing Task-255 condition
+container with only its exact normal, equal-range/equal-spelling, direct-child
+Task-256 equality, while preserving disjoint and formula-contains-set
+behavior and rejecting every other relation fail-closed. Both installation
+orders and the complete corruption/preservation matrix are executable.
+
+This compatibility result adds no requirement, trace row, status, sidecar,
+fixture, expectation, coverage credit, or semantic owner. The existing
+`spec.en.checker.type_elaboration.source_conditioned_comprehension_payload`
+row remains credited only to Task-255C1 transport. Plan `419/385`, type
+`251/239`, pass/fail `228/191`, active `101/5/198/1`, and all coverage counts
+remain unchanged. Task 257C2 remains unimplemented and becomes
+dependency-ready only after the dedicated C1 commit and fresh inventory.

@@ -695,9 +695,11 @@ The next graph node is
 Task 256 takes only the inner equality and its two Task-252 operand edges;
 Task 257C2 adds only the immutable condition-0-to-formula-0 association.
 Task-255 wrapper ownership and every existing dense ID remain unchanged.
-This target edge is gated on separate Task 256C1, which must make only the
-authenticated Task-255 condition containment executable in both set/atomic
-installation orders while preserving unrelated overlap rejection.
+At the frozen pre-Task-256C1 baseline, this target edge was gated on the
+separate lower task making only the authenticated Task-255 condition
+containment executable in both set/atomic installation orders while
+preserving unrelated overlap rejection. Task 256C1 now passes both orders;
+the target edge awaits fresh Task-257C2 preflight and implementation.
 
 The edge is a dedicated cross-family handoff in
 `source_formula_composition`, not a composite-formula placeholder. Generator

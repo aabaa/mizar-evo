@@ -760,10 +760,12 @@ second condition-composition handoffをdedicated error variantでatomicに
 rejectする。existing Task-257A/combined Task-257B installerのsignatureと
 successful legacy behaviorは不変だが、C2 install済みをexisting error
 variantでrejectするreciprocal fail-closed checkを両方へ追加する。testsは
-A/B-before-C2とC2-before-A/Bをrollback込みでcoverする。C2 installerは
-separate Task 256C1がunrelated overlap guardをweakenせず、
-authenticated Task-255 condition containmentをset/atomic両installation orderで
-passさせるまでimplementできない。absent-handoff debug byteは不変で、
+A/B-before-C2とC2-before-A/Bをrollback込みでcoverする。frozen
+pre-Task-256C1 baselineでは、C2 installerはseparate lower prerequisiteが
+unrelated overlap guardをweakenせず、authenticated Task-255 condition
+containmentをset/atomic両installation orderでpassさせるまでimplementでき
+なかった。Task 256C1は両orderをpassし、C2 installerはfresh post-commit
+preflight/implementation待ちである。absent-handoff debug byteは不変で、
 semantic tableをpopulateしない。
 
 ## Task 256C1 frozen installation revalidation
@@ -779,3 +781,11 @@ invalid overlapはexisting `InvalidSourceAtomicFormula`/
 `InvalidSourceSetTerm` variantでatomicにfailし、fieldをpublishせず、
 unchanged baseからvalid replayできる。final resolved revalidation/clone
 ownershipは不変。
+
+## Task 256C1 implementation result
+
+existing symmetric installerはexact authenticated condition/equality relationを
+両orderでpassする。substituted validation contextはexisting order-specific
+errorでfailし、fieldをpublishせず、unchanged baseからreplayできる。equal full
+debug outputによりinstallation orderがstateを追加しないことを確認した。
+`TypedAst` source/APIは変更していない。

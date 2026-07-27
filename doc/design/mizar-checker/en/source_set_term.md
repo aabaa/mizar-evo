@@ -228,9 +228,11 @@ wrapper only. Its `177..182` range and `3 = 4` spelling must match the distinct
 direct Task-256 equality row; the future Task-257C2 association owns no site.
 Task-252 primaries 2 and 3 remain excluded from Task-255 edges and become only
 Task-256 equality operands. No Task-255 table, debug byte, fingerprint,
-request, or validation meaning changes. Separate Task 256C1 must authenticate
-this exact condition containment in the Task-256 validator for both
-installation orders without weakening arbitrary overlap rejection.
+request, or validation meaning changes. At the frozen pre-Task-256C1
+baseline, the separate lower task had to authenticate this exact condition
+containment in the Task-256 validator for both installation orders without
+weakening arbitrary overlap rejection. Task 256C1 now does so; only fresh
+Task-257C2 preflight and implementation remain.
 
 ## Task 256C1 Frozen Lower-Owner Boundary
 
@@ -248,3 +250,13 @@ continues to own only the colon and wrapper boundary, while Task 256 owns the
 inner equality and Task 257C2 later owns their explicit association.
 Task 256C1 grants no Task-255 edge, fingerprint, debug, request, semantic, or
 validation-schema change.
+
+## Task 256C1 Implementation Result
+
+The lower-owner boundary remains unchanged. Task 256C1 now consumes the
+already validated immutable condition row only while Task 256 checks the
+overlapping equality; it does not add or rewrite any Task-255 row. The exact
+conditioned profile remains `1/0/1/1/1/1/2`, its debug and fingerprints are
+unchanged, and stale, wrong-owner, wrapped, or non-direct relations fail
+closed in Task 256. Both installation orders now accept only the exact
+authenticated relation.

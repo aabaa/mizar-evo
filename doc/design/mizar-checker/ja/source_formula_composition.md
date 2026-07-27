@@ -431,12 +431,12 @@ composite/Task-257B compositionをexcludeする。final assemblyはrevalidate/
 clone-preserveする。`TypedAstError`と`ResolvedTypedAstError`はそれぞれ
 dedicated `InvalidSourceConditionFormulaComposition` variantを追加する。
 
-このtransactionはseparate Task-256C1 condition-container compatibility
-prerequisiteがauthenticated Task-255-encloses-Task-256 relationを両lower-
-handoff installation orderでvalidにした後だけexecutableとなる。Task 256C1は
-arbitrary overlap rejectionをweakenできない。そのdedicated documentation/
-implementation commitとfresh preflightがpassするまでC2 production editを
-開始しない。
+frozen pre-Task-256C1 baselineでは、このtransactionはseparate
+condition-container compatibility prerequisiteがarbitrary overlap rejectionを
+weakenせず、authenticated Task-255-encloses-Task-256 relationを両lower-
+handoff installation orderでvalidにした後だけexecutableだった。Task 256C1は
+両orderをpassした。completed prerequisiteのfresh post-commit preflight前に
+C2 production editを開始しない。
 
 既存Task-257B input literal、producer call、table、installer signature、
 successful legacy fingerprint/debug byteはすべて不変。legacy Task-257A/
@@ -456,5 +456,5 @@ equality truth、generator binding/reference/capture、predicate-chain
 conjunction/segment negation、formula fact/result、sethood/result typing、
 definition/theorem acceptance、proof/IR/VC、broader comprehension coverageは
 deferred。本documentation prerequisiteはproduction/fixture/sidecar/trace/
-count/test list/hashを変更せず、implementationはTask 256C1/fresh preflight後の
-separate commitで開始する。
+count/test list/hashを変更せず、implementationはfresh post-Task-256C1
+preflight後のseparate commitで開始する。

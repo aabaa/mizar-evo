@@ -207,9 +207,11 @@ rowはcolon/direct `FormulaExpression` wrapperだけを引き続きownする。
 しなければならず、future Task-257C2 associationはsiteをownしない。
 Task-252 primaries 2/3はTask-255 edgeからexcludedのままで、Task-256 equality
 operandだけになる。Task-255 table/debug byte/fingerprint/request/validation
-meaningは変更しない。separate Task 256C1はarbitrary overlap rejectionを
-weakenせず、このexact condition containmentをTask-256 validatorの両
-installation orderでauthenticateする。
+meaningは変更しない。frozen pre-Task-256C1 baselineでは、separate lower
+taskがarbitrary overlap rejectionをweakenせず、このexact condition
+containmentをTask-256 validatorの両installation orderでauthenticateする必要が
+あった。Task 256C1は現在これを満たし、fresh Task-257C2 preflight/
+implementationだけが残る。
 
 ## Task 256C1 frozen lower-owner boundary
 
@@ -226,3 +228,12 @@ termからcontextをderiveする。Task 255はcolon/wrapper
 boundaryだけをownし、Task 256はinner equality、Task 257C2はlater explicit
 associationをownする。Task 256C1はTask-255 edge、fingerprint、debug、
 request、semantic、validation schemaを変更しない。
+
+## Task 256C1 implementation result
+
+lower-owner boundaryは不変。Task 256C1はTask 256がoverlapping equalityを
+checkするとき、既にvalidatedなimmutable condition rowだけをconsumeし、
+Task-255 rowを追加・rewriteしない。exact conditioned profileは
+`1/0/1/1/1/1/2`、debug/fingerprintは不変で、stale、wrong-owner、wrapped、
+non-direct relationはTask 256でfail closedする。両installation orderはexact
+authenticated relationだけをacceptする。

@@ -823,9 +823,11 @@ pub const fn source_condition_formula_composition(
 ) -> Option<&SourceConditionFormulaCompositionHandoff>;
 ```
 
-このprojectionはseparate Task 256C1完了をgateとし、まずauthenticated condition
-containmentを両lower installation orderでvalidにしなければならない。final
-assemblyはそのlower validationをcompensate/weakenしない。
+frozen pre-Task-256C1 baselineでは、このprojectionはseparate lower taskが
+authenticated condition containmentを両installation orderでvalidにするまで
+gateされていた。Task 256C1は両orderをpassし、projectionはfresh Task-257C2
+preflight/implementation待ちである。final assemblyはそのlower validationを
+compensate/weakenしない。
 
 checked formula、equality truth、fact、diagnostic、definition acceptance、
 proof、IR outputはderiveしない。

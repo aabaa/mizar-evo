@@ -30,7 +30,7 @@ note として記録する。
 | `src/typed_ast.rs` | 4117 | typed AST data model | `typed_ast.md` | no | no | Task-253/254/255/256 bidirectional install、Task-257A one-shot install、Task-257B1/B2/B3 combined installを含むcohesive owner。 |
 | `src/binding_env.rs` | 3143 | binding environment and resolver shell boundary | `binding_env.md` | no | no | source-formula context identityを含むcohesiveなbinding/context data layer。behavior-neutral splitは不要。 |
 | `src/source_context.rs` | 1150 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
-| `src/source_atomic_formula.rs` | 7428 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal。split不要。 |
+| `src/source_atomic_formula.rs` | 8460 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal。split不要。 |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2/B3 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
 | `src/source_formula_composition.rs` | 3117 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3 atomic-edge/bound-use associationとTask-257C1 empty-segment compatibility、dependency fingerprint、rendering/install/corruption testsを持つcohesive owner。 |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | cohesiveなTask-250 flat table、environment/parent/arena/provenance validation、deterministic rendering、corruption test。split不要。 |
@@ -144,11 +144,12 @@ handoffと`TypedArena`だけに限定し、raw AST selection、loaded-source gua
 parser/resolver inspectionはprivate `mizar-test` leafに残す。new associationは
 site/semantic resultをownしない。本prerequisiteはproduction不変なので、
 measured 3,117-line moduleとcurrent boundary-table countはすべて不変。
-implementationはediting前に再測定し、その後本auditを再実行する。fresh
-preflightで`source_atomic_formula.rs`内にseparate Task-256
+implementationはediting前に再測定し、その後本auditを再実行する。frozen
+pre-Task-256C1 preflightで`source_atomic_formula.rs`内にseparate
 condition-container compatibility `source_drift`を確認した。そのdedicated
-Task-256C1 documentation/implementation commitはlower module ownershipを保持し、
-両lower-handoff installation orderをpassさせた後に本moduleをeditする。
+documentation/implementation commitはlower module ownershipを保持し、現在は
+両lower-handoff installation orderがpassする。本module edit前に残るのはfresh
+Task-257C2 preflightだけである。
 
 ## Task 255C1 current-layout addendum
 
@@ -208,6 +209,14 @@ install revalidation、deterministic rendering、real/synthetic/corruption/
 exclusion matrixはbehavior-coupledでありprivate checker splitは不要である。
 `TypedAst`がone-shot immutable handoffをownし、`ResolvedTypedAst`はrevalidate後に
 clone-preserveする。
+
+## Task 256C1 implementation boundary recheck
+
+Task 256C1は`source_atomic_formula.rs`内のcohesive private validation pathだけを
+変更し、exact 3-test matrix込みで8,460 linesとなる。`source_set_term.rs`は
+6,806 lines、`typed_ast.rs`は4,117、`resolved_typed_ast.rs`は6,950のまま。
+module、public schema、runner owner、dependency directionは変更していないため、
+split/boundary moveは不要。
 
 ## Task 255 current-layout addendum
 

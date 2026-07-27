@@ -233,7 +233,16 @@ typed/resolved ownership、decomposition、source/spec、module-boundary文書�
 同じunchanged 191-byte source/hash、direct wrapper/equality relation、
 dependency profile 5件、dedicated one-edge transaction、fingerprint 4件、
 validation/tests、existing-sidecar trace projection、unchanged baseline、
-separate Task-256C1 lower compatibility gate、current two-order lower
-rejectionとunrelated-overlap rejection保持、bidirectional A/B/C2 installer
-exclusion、semantic deferralをfreezeする。本prerequisiteにexecutable
-artifact変更はなく、bilingual debtは残らない。
+separate Task-256C1 lower compatibility gate、frozen pre-implementation
+two-order lower rejectionと、unrelated-overlap rejectionを保持したseparate
+closure、bidirectional A/B/C2 installer exclusion、semantic deferralをfreeze
+する。本prerequisiteにexecutable artifact変更はなく、bilingual debtは
+残らない。
+
+## Task 256C1 implementation pair recheck
+
+paired plan、TODO/ledger、atomic/set lower-owner note、installation、
+source/spec、module-boundary auditは同じprivate exact condition-container
+predicate、effective wrapper exclusion、3-test matrix、library `329/357`、
+checker test-list hash、unchanged runner/coverage artifact、semantic deferralを
+記録する。Task-256C1 bilingual debtは残らない。

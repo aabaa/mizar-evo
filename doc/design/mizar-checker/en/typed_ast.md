@@ -790,9 +790,11 @@ The existing Task-257A and combined Task-257B installer signatures and
 successful legacy behavior remain unchanged, but both add a reciprocal
 fail-closed check for an already installed C2 handoff through their existing
 error variants. Tests cover A/B-before-C2 and C2-before-A/B with rollback.
-The C2 installer is not implementable until separate Task 256C1 makes the
-authenticated Task-255 condition containment pass both set/atomic
-installation orders without weakening unrelated overlap guards.
+At the frozen pre-Task-256C1 baseline, the C2 installer was not implementable
+until the separate lower prerequisite made the authenticated Task-255
+condition containment pass both set/atomic installation orders without
+weakening unrelated overlap guards. Task 256C1 now passes both orders; the C2
+installer awaits fresh post-commit preflight and implementation.
 Absent-handoff debug bytes remain unchanged; no semantic table is populated.
 
 ## Task 256C1 Frozen Installation Revalidation
@@ -809,3 +811,11 @@ Every invalid overlap still fails atomically through the existing
 `InvalidSourceAtomicFormula` or `InvalidSourceSetTerm` variant. No field is
 published, and valid replay from the unchanged base succeeds. Final resolved
 revalidation and clone ownership are unchanged.
+
+## Task 256C1 Implementation Result
+
+The existing symmetric installers now pass the exact authenticated
+condition/equality relation in both orders. Substituted validation contexts
+still fail through the existing order-specific error, publish no field, and
+allow replay from the unchanged base. Equal full debug output confirms that
+installation order adds no state. No `TypedAst` source or API changed.

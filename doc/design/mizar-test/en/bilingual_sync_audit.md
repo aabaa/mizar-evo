@@ -358,17 +358,17 @@ The paired plan, harness, TODO, and module-boundary audit freeze the same
 unchanged 191-byte consumer, five lower/association profiles, reusable seams,
 direct wrapper/equality ownership, existing-sidecar trace projection,
 unchanged diagnostic intent and 419-case/pass-fail/active counts, projected
-plan `419/386` and type `252/240`, unchanged hashes, the current two-order
-lower rejection, separate Task-256C1 compatibility gate with unrelated
-overlap rejection preserved, bidirectional installer tests, and semantic
-deferrals. No executable runner artifact changes and no bilingual drift
-remains.
+plan `419/386` and type `252/240`, unchanged hashes, the frozen
+pre-implementation two-order lower rejection and its separately recorded
+Task-256C1 closure with unrelated overlap rejection preserved, bidirectional
+installer tests, and semantic deferrals. No executable runner artifact
+changes and no bilingual drift remains.
 
 ## Checker Task 256C1 Frozen Runner Pair
 
-The paired plan, harness, TODO, and boundary audit freeze identical runner
+The paired plan, harness, TODO, and boundary audit now record identical runner
 non-ownership, unchanged 191-byte authority consumer, zero runner/fixture/
-trace impact, same-context lower relation, unchanged counts and hashes, and
-deferral of the Task-257C2
-route until the checker-only prerequisite passes both install orders.
-No bilingual drift remains.
+trace impact, same-context lower relation, unchanged counts and hashes,
+successful checker-only validation in both install orders, and deferral of
+the Task-257C2 route only until fresh post-commit preflight. No bilingual
+drift remains.

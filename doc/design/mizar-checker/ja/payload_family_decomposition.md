@@ -638,10 +638,12 @@ familyはpromoteしていない。
 1/0/1/1/1/1/2 -> Task256 1/0/0/0/0/0/0/2/2 -> Task257C2 1`。
 Task 256はinner equalityとTask-252 operand edge 2件だけを取り、Task 257C2は
 immutable condition-0-to-formula-0 associationだけを追加する。Task-255
-wrapper ownershipと全existing dense IDは不変。
-このtarget edgeはseparate Task 256C1をgateとする。Task 256C1はunrelated
-overlap rejectionを保持しながらauthenticated Task-255 condition containment
-だけをset/atomic両installation orderでexecutableにしなければならない。
+wrapper ownershipと全existing dense IDは不変。frozen pre-Task-256C1
+baselineでは、このtarget edgeはseparate lower taskがunrelated overlap
+rejectionを保持しながらauthenticated Task-255 condition containmentだけを
+set/atomic両installation orderでexecutableにするまでgateされていた。Task
+256C1は両orderをpassし、target edgeはfresh Task-257C2 preflight/
+implementation待ちである。
 
 edgeは`source_formula_composition`のdedicated cross-family handoffで、
 composite-formula placeholderではない。generator binding/capture、

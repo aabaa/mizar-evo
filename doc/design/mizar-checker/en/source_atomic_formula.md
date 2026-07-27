@@ -232,16 +232,17 @@ point to Task-252 primaries 2 and 3 and carry two unresolved
 `FormulaExpression` wrapper nor a semantic result.
 
 The runner must extract this row through a reusable built-in-equality builder
-and validate it against the Task-252/253/255 handoffs in the same arena.
-Current `validate_cross_family_ranges` rejects the legitimate enclosing
-Task-255 set term in both install orders because the set term, rather than the
-formula, is the containing occurrence. Task 257C2 is therefore gated on the
-separate Task-256C1 condition-container compatibility prerequisite. That
-prerequisite must narrowly authenticate the Task-255 condition relation while
-retaining arbitrary/copied/stale/wrong-range overlap rejection. Task 257C2
-still adds no field, row, enum, request kind, debug byte, or semantic behavior
-to this public lower-family transaction. Predicate-chain
-conjunction/negation remains a later Task-257C slice.
+and validate it against the Task-252/253/255 handoffs in the same arena. At
+the frozen pre-Task-256C1 baseline, `validate_cross_family_ranges` rejected
+the legitimate enclosing Task-255 set term in both install orders because the
+set term, rather than the formula, is the containing occurrence. The
+separately completed Task-256C1 implementation now narrowly authenticates
+that Task-255 condition relation while retaining arbitrary/copied/stale/
+wrong-range overlap rejection. Task 257C2 is no longer lower-stage blocked,
+but still awaits fresh post-commit preflight and adds no field, row, enum,
+request kind, debug byte, or semantic behavior to this public lower-family
+transaction. Predicate-chain conjunction/negation remains a later Task-257C
+slice.
 
 ## Task 256C1 Frozen Condition-Container Compatibility
 
@@ -270,3 +271,22 @@ plus preservation matrix. Each applicable relation near miss must validate
 in both lower families independently before pairing fails with exact
 `SetTermDependencyMismatch`; optional-set substitution also proves no
 publication and valid replay.
+
+## Task 256C1 Implementation Result
+
+The frozen private compatibility path is implemented. It compares each
+overlapping iterated Task-255 term with the normal raw equality and its
+effective occurrence, requires no wrapper enlargement, authenticates the
+owner-term context and matching normal condition row, and requires the
+condition site's direct edge to the distinct equality site. IDs and ordinals
+remain data rather than hard-coded fixture constants.
+
+The optional set handoff remains validation-only: the exact atomic handoff and
+debug bytes are identical with or without it and
+`set_term_fingerprint() == None`. Existing disjoint and
+formula-contains-set cases still pass; copied, substituted, stale,
+wrong-owner/range/spelling/recovery/kind/context, wrapped, non-direct,
+arbitrary, partial, and crossing relations fail closed. Exactly three tests
+cover those results, both `TypedAst` orders, and rollback/replay. No public
+schema, error, fingerprint, debug, semantic result, runner, or trace change
+was made.

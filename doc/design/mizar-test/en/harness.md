@@ -3244,10 +3244,12 @@ before the lower Task-256/255 diagnostic routes. It extends the same arena
 with one atomic equality and one immutable condition-formula association.
 Every Task-252/253/255 row and site remains unchanged.
 
-This target route is gated on separate Task 256C1 because the current lower
-validator rejects the enclosing condition set term in both set/atomic install
-orders. The lower prerequisite must pass those orders only for the
-authenticated condition relation and keep arbitrary overlap fail-closed.
+At the frozen pre-Task-256C1 baseline, this target route was gated because the
+lower validator rejected the enclosing condition set term in both set/atomic
+install orders. The separately completed checker prerequisite now passes
+those orders only for the authenticated condition relation and keeps
+arbitrary overlap fail-closed. The route still awaits fresh Task-257C2
+preflight and implementation.
 
 The existing fail case retains its definition-intake detail and semantic
 tables remain empty. Exact profiles, direct wrapper/equality ownership,
@@ -3257,8 +3259,8 @@ prerequisite changes no executable runner artifact.
 
 ## Checker Task 256C1 Frozen Harness Non-Ownership
 
-No harness edit or test is part of Task 256C1. The checker-local syntax-free
-fixture authenticates the exact lower relation and both install orders; the
-private runner continues to stop at the committed Task-255C1 route. The
-already frozen Task-257C2 route remains the first runner consumer after the
-separate checker prerequisite is committed and freshly verified.
+No harness edit or test was part of Task 256C1. The checker-local syntax-free
+fixture now authenticates the exact lower relation and both install orders;
+the private runner continues to stop at the committed Task-255C1 route. The
+already frozen Task-257C2 route remains the first runner consumer after fresh
+post-commit preflight of the completed checker prerequisite.

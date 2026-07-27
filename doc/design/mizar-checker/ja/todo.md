@@ -4402,7 +4402,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `repo_metadata_conflict`にclassify。
 - [x] separate Task-256C1 condition-container compatibility prerequisiteを
   freeze/reviewし、documentation-only commitを作る。
-- [ ] Task-256C1を両install order/strict arbitrary-overlap rejection込みで
+- [x] Task-256C1を両install order/strict arbitrary-overlap rejection込みで
   own commitにimplement/verify。
 - [ ] Task-256C1後、fresh parser/resolver/API、both-install-order、
   count/test-list/production/CLI-hash preflightを行い、Task 257C2だけを
@@ -4425,13 +4425,35 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   exact 3件、pair前は個別validでpair時だけexact
   `SetTermDependencyMismatch`となるnear miss、projected libraries
   `329/357`、runner/trace変更ゼロ、全semantic deferralをfreeze。
-- [x] current two-order rejectionをauthority-backed `source_drift`、missing
-  contractをresolved `design_drift`、testsを`test_gap`、origin divergenceを
+- [x] frozen pre-implementation two-order rejectionをauthority-backed
+  `source_drift`、missing contractをresolved `design_drift`、testsを
+  `test_gap`、origin divergenceを
   report-only `repo_metadata_conflict`と分類。blocking `spec_gap`なし。
 - [x] prerequisiteをdocumentation-only plan `419/385`、type `251/239`、
   pass/fail `228/191`、active `101/5/198/1`、libraries `326/357`、
   production/test-list/CLI hash不変に保つ。
-- [ ] 本documentation commit/fresh preflight後にTask 256C1だけをimplementし、
+- [x] 本documentation commit/fresh preflight後にTask 256C1だけをimplementし、
   review/verify後にseparate commit。
 - [ ] Task 256C1の両installation order/fresh inventory後だけTask 257C2
   implementationへ戻る。
+
+## Checker Task 256C1 implementation ledger
+
+- [x] `source_atomic_formula.rs`のID-independent authenticated
+  condition-container private predicateだけでbounded `source_drift`をcloseし、
+  public row/edge/fingerprint/error/debug fieldや`TypedAst` production editを
+  追加しない。
+- [x] overlapping `Comprehension`がownするequal-range/equal-spellingのnormal
+  Task-255 conditionについて、owner contextと一致し、condition siteのdistinct
+  direct arena childであるnormal `Equality`だけをauthenticateする。
+- [x] exact `4/0/4`、`1/0/1/2/2`、`1/0/1/1/1/1/2`、
+  `1/0/0/0/0/0/0/2/2` profile、validation-only optional set context、
+  `set_term_fingerprint() == None`、両install order、rollback/replay、
+  corruption/preservationをexactly 3 checker testsで固定する。
+- [x] checker/mizar-test library `329/357`を測定し、plan `419/385`、type
+  `251/239`、pass/fail `228/191`、active `101/5/198/1`、
+  warnings/errors `23/0`、runner production、trace、fixture、sidecar、
+  expectation、CLI outputを不変に保つ。
+- [x] 全semantic deferral/coverage creditを保持する。Task 257C2は本
+  implementation commitとfresh inventory後だけ次のdependency-ready
+  logical taskとなる。

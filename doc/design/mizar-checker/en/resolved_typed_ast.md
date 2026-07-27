@@ -866,10 +866,11 @@ pub const fn source_condition_formula_composition(
 ) -> Option<&SourceConditionFormulaCompositionHandoff>;
 ```
 
-This projection remains gated on separately completed Task 256C1, which must
-first make the authenticated condition containment valid in both lower
-installation orders. Final assembly does not compensate for or weaken that
-lower validation.
+At the frozen pre-Task-256C1 baseline, this projection was gated until the
+separate lower task made the authenticated condition containment valid in
+both installation orders. Task 256C1 now passes both orders; the projection
+awaits fresh Task-257C2 preflight and implementation. Final assembly does not
+compensate for or weaken that lower validation.
 
 No checked formula, equality truth, fact, diagnostic, definition acceptance,
 proof, or IR output is derived.

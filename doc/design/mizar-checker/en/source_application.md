@@ -167,5 +167,7 @@ The complete Task-257C2 runner reuses the same private unwrapped imported-`++`
 seam and immutable `1/0/1/2/2` handoff. The new association stores its exact
 debug fingerprint only to authenticate the Task-255 dependency chain; it adds
 no application target, candidate, argument, request, resolver selection, or
-public Task-253 API. The route starts only after separate Task 256C1 makes the
-condition-container lower graph executable; Task 253 itself does not change.
+public Task-253 API. At the frozen pre-Task-256C1 baseline, the route could
+start only after that separate lower task made the condition-container graph
+executable. Task 256C1 now passes both installation orders; Task 253 itself
+does not change, and the route awaits fresh Task-257C2 preflight.

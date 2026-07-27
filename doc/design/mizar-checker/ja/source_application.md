@@ -156,5 +156,7 @@ complete Task-257C2 runnerは同じprivate unwrapped imported-`++` seamと
 immutable `1/0/1/2/2` handoffをreuseする。new associationはTask-255
 dependency chainをauthenticateするためにexact debug fingerprintだけを保持し、
 application target/candidate/argument/request/resolver selection/public
-Task-253 APIを追加しない。routeはseparate Task 256C1がcondition-container
-lower graphをexecutableにした後だけ開始し、Task 253自体は変更しない。
+Task-253 APIを追加しない。frozen pre-Task-256C1 baselineでは、routeは
+separate lower taskがcondition-container graphをexecutableにした後だけ開始
+できた。Task 256C1は両installation orderをpassし、Task 253自体は変更
+しないまま、routeはfresh Task-257C2 preflight待ちである。

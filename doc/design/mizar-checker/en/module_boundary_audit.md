@@ -31,7 +31,7 @@ remain aligned with their owning specifications.
 | `src/typed_ast.rs` | 4117 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, ids, validation, rendering, tests, bidirectional Task-253/254/255/256 installation checks, Task-257A one-shot installation, and Task-257B1/B2/B3 combined installation; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3143 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula context identity; no behavior-neutral split required. |
 | `src/source_context.rs` | 1150 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
-| `src/source_atomic_formula.rs` | 7428 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and compatibility literals; no split required. |
+| `src/source_atomic_formula.rs` | 8460 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and compatibility literals; no split required. |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
 | `src/source_formula_composition.rs` | 3117 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations plus Task-257C1 empty-segment compatibility, dependency fingerprints, deterministic rendering, installation, and corruption tests; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
@@ -151,11 +151,12 @@ loaded-source guards, and parser/resolver inspection stay in the private
 `mizar-test` leaves. The new association owns no site or semantic result.
 Production is unchanged in this prerequisite, so the measured 3,117-line
 module and all current boundary-table counts remain unchanged. Implementation
-must remeasure before editing and repeat this audit afterward. Fresh preflight
-found a separate Task-256 condition-container compatibility `source_drift` in
-`source_atomic_formula.rs`; its dedicated Task-256C1 documentation and
-implementation commits must preserve that lower module's ownership and pass
-both lower-handoff installation orders before this module is edited.
+must remeasure before editing and repeat this audit afterward. The frozen
+pre-Task-256C1 preflight found a separate condition-container compatibility
+`source_drift` in `source_atomic_formula.rs`. Its dedicated documentation and
+implementation commits preserved that lower module's ownership and now pass
+both lower-handoff installation orders. Only fresh Task-257C2 preflight
+remains before this module is edited.
 
 ## Task 255C1 Current-Layout Addendum
 
@@ -229,6 +230,15 @@ fingerprints, installation revalidation, rendering, and the corruption
 matrix remain behavior-coupled, so no private checker split is required.
 `TypedAst` owns the one-shot immutable handoff and `ResolvedTypedAst`
 revalidates then clone-preserves it.
+
+## Task 256C1 Implementation Boundary Recheck
+
+Task 256C1 changes only the cohesive private validation path inside
+`source_atomic_formula.rs`, now 8,460 lines including its exact three-test
+matrix. `source_set_term.rs` remains 6,806 lines, `typed_ast.rs` remains
+4,117, and `resolved_typed_ast.rs` remains 6,950. No module, public schema,
+runner owner, or dependency direction changed, so no split or boundary move
+is warranted.
 
 ## Task 256 Current-Layout Addendum
 

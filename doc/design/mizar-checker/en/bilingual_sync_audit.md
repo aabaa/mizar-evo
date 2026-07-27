@@ -245,8 +245,17 @@ typed/resolved ownership, decomposition, source/spec, and module-boundary
 documents freeze the same unchanged 191-byte source/hash, direct wrapper/
 equality relation, five dependency profiles, dedicated one-edge transaction,
 four fingerprints, validation/tests, existing-sidecar trace projection,
-unchanged baselines, the separate Task-256C1 lower compatibility gate,
-current two-order lower rejection with unrelated-overlap rejection preserved,
-bidirectional A/B/C2 installer exclusion, and semantic deferrals. No
-executable artifact changes in this prerequisite and no bilingual debt
+unchanged baselines, the separate Task-256C1 lower compatibility gate, the
+frozen pre-implementation two-order lower rejection and its separately
+recorded closure with unrelated-overlap rejection preserved, bidirectional
+A/B/C2 installer exclusion, and semantic deferrals. No executable artifact
+changes in this prerequisite and no bilingual debt remains.
+
+## Task 256C1 Implementation Pair Recheck
+
+The paired plan, TODO/ledger, atomic/set lower-owner notes, installation,
+source/spec, and module-boundary audits record the same private exact
+condition-container predicate, effective wrapper exclusion, three-test
+matrix, `329/357` library counts, checker test-list hashes, unchanged runner
+and coverage artifacts, and semantic deferrals. No Task-256C1 bilingual debt
 remains.

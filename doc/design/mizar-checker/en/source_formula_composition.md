@@ -472,12 +472,12 @@ in this bounded profile. `TypedAstError` and `ResolvedTypedAstError` each add
 the dedicated `InvalidSourceConditionFormulaComposition` variant. Final
 assembly revalidates and clone-preserves it.
 
-This transaction is executable only after the separate Task-256C1
-condition-container compatibility prerequisite makes the authenticated
-Task-255-encloses-Task-256 relation valid in both lower-handoff installation
-orders. Task 256C1 may not weaken arbitrary overlap rejection. No C2
-production edit starts before that prerequisite's dedicated documentation and
-implementation commits pass fresh preflight.
+At the frozen pre-Task-256C1 baseline, this transaction was executable only
+after the separate condition-container compatibility prerequisite made the
+authenticated Task-255-encloses-Task-256 relation valid in both lower-handoff
+installation orders without weakening arbitrary overlap rejection. Task
+256C1 now passes both orders. No C2 production edit starts before fresh
+post-commit preflight of that completed prerequisite.
 
 All existing Task-257B input literals, producer calls, tables, installer
 signature, successful legacy fingerprints, and debug bytes remain unchanged.
@@ -496,6 +496,6 @@ may map only to that sidecar.
 Equality truth, generator binding/reference/capture, predicate-chain
 conjunction or segment negation, formula facts/results, sethood/result typing,
 definition/theorem acceptance, proof/IR/VC, and broader comprehension
-coverage remain deferred. This documentation prerequisite changes no
+coverage remain deferred. This documentation prerequisite changed no
 production, fixture, sidecar, trace, count, test list, or hash; implementation
-must begin in a separate commit only after Task 256C1 and fresh preflight.
+must begin in a separate commit after fresh post-Task-256C1 preflight.

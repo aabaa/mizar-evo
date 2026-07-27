@@ -4631,7 +4631,7 @@ implementation commit does not satisfy a producer task.
   `design_drift`, and origin drift as report-only `repo_metadata_conflict`.
 - [x] Freeze, review, and commit the separate Task-256C1
   condition-container compatibility documentation prerequisite.
-- [ ] Implement and verify Task-256C1 in its own commit with both install
+- [x] Implement and verify Task-256C1 in its own commit with both install
   orders and strict arbitrary-overlap rejection.
 - [ ] Implement only Task 257C2 after Task-256C1 and fresh
   parser/resolver/API, both-install-order, count/test-list/production/CLI-hash
@@ -4654,14 +4654,38 @@ implementation commit does not satisfy a producer task.
   independently valid near misses that fail only when paired with exact
   `SetTermDependencyMismatch`, exactly three checker tests, projected
   libraries `329/357`, no runner or trace change, and all semantic deferrals.
-- [x] Classify current two-order rejection as authority-backed
-  `source_drift`, the missing contract as resolved `design_drift`, tests as
+- [x] Classify the frozen pre-implementation two-order rejection as
+  authority-backed `source_drift`, the missing contract as resolved
+  `design_drift`, tests as
   `test_gap`, and origin divergence as report-only
   `repo_metadata_conflict`; no blocking `spec_gap` remains.
 - [x] Keep this prerequisite documentation-only at plan `419/385`, type
   `251/239`, pass/fail `228/191`, active `101/5/198/1`, libraries `326/357`,
   and unchanged production/test-list/CLI hashes.
-- [ ] Implement only Task 256C1 after this documentation commit and fresh
+- [x] Implement only Task 256C1 after this documentation commit and fresh
   preflight, then review, verify, and commit it separately.
 - [ ] Return to Task 257C2 implementation only after Task 256C1 passes both
   installation orders and fresh inventory.
+
+## Checker Task 256C1 Implementation Ledger
+
+- [x] Close the bounded private `source_drift` with an ID-independent
+  authenticated condition-container predicate in
+  `source_atomic_formula.rs`; add no public row, edge, fingerprint, error,
+  debug field, or `TypedAst` production edit.
+- [x] Authenticate only a normal `Equality` whose equal-range/equal-spelling
+  Task-255 condition is owned by the overlapping `Comprehension`, whose
+  context matches that owner, and whose distinct site is the condition
+  site's direct arena child.
+- [x] Add exactly three checker tests for the exact `4/0/4`,
+  `1/0/1/2/2`, `1/0/1/1/1/1/2`, and
+  `1/0/0/0/0/0/0/2/2` profiles, validation-only optional set context,
+  `set_term_fingerprint() == None`, both install orders, rollback/replay,
+  corruption, and preservation.
+- [x] Measure checker/mizar-test libraries `329/357`; keep plan `419/385`,
+  type `251/239`, pass/fail `228/191`, active `101/5/198/1`,
+  warnings/errors `23/0`, runner production, trace, fixture, sidecar,
+  expectation, and CLI outputs unchanged.
+- [x] Retain all semantic deferrals and coverage credit. Task 257C2 remains
+  the next dependency-ready logical task only after this implementation
+  commit and fresh inventory.

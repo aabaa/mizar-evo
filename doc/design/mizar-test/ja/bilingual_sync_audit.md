@@ -18,10 +18,10 @@ paired plan、harness、TODO、module-boundary auditは同じunchanged 191-byte
 consumer、lower/association profile 5件、reusable seam、direct wrapper/equality
 ownership、existing-sidecar trace projection、unchanged diagnostic intent/
 419-case/pass-fail/active count、projected plan `419/386`/type `252/240`、
-unchanged hash、current two-order lower rejection、unrelated overlap rejectionを
-保持するseparate Task-256C1 compatibility gate、bidirectional installer
-tests、semantic deferralをfreezeする。executable runner artifact変更も
-bilingual driftもない。
+unchanged hash、frozen pre-implementation two-order lower rejectionと、
+unrelated overlap rejectionを保持したseparate Task-256C1 closure、
+bidirectional installer tests、semantic deferralをfreezeする。executable
+runner artifact変更もbilingual driftもない。
 
 ## Checker Task 257B2 Implementation Pair Recheck
 
@@ -278,9 +278,9 @@ driftは残らない。
 
 paired plan、harness、TODO、boundary auditは同じrunner non-ownership、
 unchanged 191-byte authority consumer、runner/fixture/trace impactゼロ、
-same-context lower relation、unchanged count/hash、checker-only prerequisiteが
-両install orderをpassするまで
-Task-257C2 routeをdeferすることをfreezeする。bilingual driftは残らない。
+same-context lower relation、unchanged count/hash、checker-only validationが
+両install orderで成功したこと、Task-257C2 routeをfresh post-commit preflight
+までdeferすることを記録する。bilingual driftは残らない。
 
 ## Parser Task 47 / parse-only pair recheck
 

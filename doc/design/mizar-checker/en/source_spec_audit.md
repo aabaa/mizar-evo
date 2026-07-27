@@ -3560,6 +3560,16 @@ and Task 256, then fail only when paired with
 validation context, no publication/replay, and the explicit absent set
 fingerprint.
 
+### Task 256C1 implementation classification
+
+The bounded authority-backed `source_drift` and `test_gap` are closed by the
+private exact relation predicate, effective no-wrapper guard, both
+installation orders, and complete three-test corruption/preservation matrix.
+The prerequisite already closed `design_drift`. No specification, existing
+`.miz`, expectation, trace status, coverage credit, semantic owner, or public
+schema changed. All semantic deferrals and the report-only
+`repo_metadata_conflict` remain unchanged.
+
 ### Task 257B3 frozen-contract classification
 
 Chapters 4 and 14 plus the parser quantifier fixture fully authorize the exact
@@ -3634,13 +3644,14 @@ application, comprehension, condition wrapper, and provenance occurrence;
 Task 256 already has the syntax-free equality/operand schema. The missing
 association contract is `design_drift`, closed by this prerequisite. The
 absent dedicated handoff/final projection is bounded `source_drift`, and the
-absent exact consumer/corruption matrix is `test_gap`. Fresh preflight also
-classifies the committed Task-256 range validator as a separate
-authority-backed `source_drift`: it rejects the Chapter-13-authorized
-condition-container relation in both installation orders. Task 257C2
-implementation is blocked until separately documented and implemented Task
-256C1 admits only that authenticated containment while preserving unrelated
-overlap rejection.
+absent exact consumer/corruption matrix is `test_gap`. The frozen
+pre-Task-256C1 preflight also classified the then-committed Task-256 range
+validator as a separate authority-backed `source_drift`: it rejected the
+Chapter-13-authorized condition-container relation in both installation
+orders. The separately documented and implemented Task 256C1 now admits only
+that authenticated containment while preserving unrelated overlap rejection.
+Task 257C2 implementation remains pending fresh post-commit preflight, not a
+lower-stage repair.
 
 No existing `doc/spec`, `.miz`, outcome, phase, diagnostic detail, or semantic
 owner changes. Reusing the existing sidecar for one future reciprocal covered

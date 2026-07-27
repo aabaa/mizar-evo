@@ -5,7 +5,10 @@ use crate::{
     source_application::{
         SourceFunctorApplicationHandoff, SourceFunctorApplicationId, SourceFunctorArgumentTarget,
     },
-    source_set_term::{SourceSetTarget, SourceSetTermHandoff, SourceSetTermId},
+    source_set_term::{
+        SourceSetTarget, SourceSetTermHandoff, SourceSetTermId, SourceSetTermKind,
+        SourceSetTermRecovery,
+    },
     source_structure::{SourceStructureHandoff, SourceStructureTarget, SourceStructureTermId},
     source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId},
     typed_ast::{NodeRecoveryState, TypedArena, TypedSiteRef},
@@ -1716,6 +1719,7 @@ fn validate_payload(
         applications,
         structures,
         set_terms,
+        arena,
     )?;
     let segment_groups = validate_predicate_segments(input, arena, &mut sites)?;
     let head_groups = validate_predicate_heads(input, arena, &mut sites, &segment_groups)?;
@@ -1763,6 +1767,7 @@ fn validate_cross_family_ranges(
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     set_terms: Option<&SourceSetTermHandoff>,
+    arena: &TypedArena,
 ) -> Result<(), SourceAtomicFormulaError> {
     for (formula_index, formula) in input.formulas.iter().enumerate() {
         let outer = effective[formula_index].range;
@@ -1801,6 +1806,14 @@ fn validate_cross_family_ranges(
                     .ok_or(SourceAtomicFormulaError::SetTermDependencyMismatch)?;
                 if ranges_overlap(outer, occurrence.range)
                     && !properly_contains(formula.source_range, occurrence.range)
+                    && !is_authenticated_condition_container(
+                        formula,
+                        outer,
+                        set_terms,
+                        id,
+                        occurrence.range,
+                        arena,
+                    )
                 {
                     return Err(SourceAtomicFormulaError::SetTermDependencyMismatch);
                 }
@@ -1808,6 +1821,38 @@ fn validate_cross_family_ranges(
         }
     }
     Ok(())
+}
+
+fn is_authenticated_condition_container(
+    formula: &SourceAtomicFormulaInput,
+    effective_formula_range: SourceRange,
+    set_terms: &SourceSetTermHandoff,
+    set_term_id: SourceSetTermId,
+    set_term_range: SourceRange,
+    arena: &TypedArena,
+) -> bool {
+    let Some(set_term) = set_terms.terms().get(set_term_id) else {
+        return false;
+    };
+    if set_term.kind() != SourceSetTermKind::Comprehension
+        || formula.kind != SourceAtomicFormulaKind::Equality
+        || formula.recovery != SourceAtomicFormulaRecovery::Normal
+        || formula.context != set_term.context()
+        || formula.source_range != effective_formula_range
+        || !properly_contains(set_term_range, formula.source_range)
+    {
+        return false;
+    }
+    set_terms.conditions().iter().any(|(_, condition)| {
+        condition.term() == set_term_id
+            && condition.recovery() == SourceSetTermRecovery::Normal
+            && condition.source_range() == formula.source_range
+            && condition.spelling() == formula.spelling
+            && condition.condition_site() != &formula.site
+            && arena
+                .node(condition.condition_site().node())
+                .is_some_and(|node| node.children.contains(&formula.site.node()))
+    })
 }
 
 fn validate_formulas(
@@ -3535,12 +3580,15 @@ mod tests {
             SourceFunctorApplicationId, SourceFunctorApplicationInput,
             SourceFunctorApplicationKind, SourceFunctorApplicationProducer,
             SourceFunctorApplicationRecovery, SourceFunctorArgumentInput,
-            SourceFunctorArgumentTarget, SourceFunctorHeadSite,
+            SourceFunctorArgumentTarget, SourceFunctorCandidateId, SourceFunctorCandidateInput,
+            SourceFunctorHeadSite, SourceFunctorTypeRequestInput, SourceFunctorTypeRequestKind,
         },
         source_set_term::{
-            SourceSetEdgeInput, SourceSetEdgeRole, SourceSetRequestInput, SourceSetRequestKind,
-            SourceSetTarget, SourceSetTermHandoffInput, SourceSetTermId, SourceSetTermInput,
-            SourceSetTermKind, SourceSetTermProducer, SourceSetTermRecovery,
+            SourceSetConditionInput, SourceSetEdgeInput, SourceSetEdgeRole, SourceSetGeneratorId,
+            SourceSetGeneratorInput, SourceSetRequestInput, SourceSetRequestKind, SourceSetTarget,
+            SourceSetTermError, SourceSetTermHandoffInput, SourceSetTermId, SourceSetTermInput,
+            SourceSetTermKind, SourceSetTermProducer, SourceSetTermRecovery, SourceSetTypeHead,
+            SourceSetTypeOwner, SourceSetTypeSiteId, SourceSetTypeSiteInput,
         },
         source_structure::{
             SourceStructureEdgeInput, SourceStructureEdgeRole, SourceStructureHandoffInput,
@@ -3579,14 +3627,20 @@ mod tests {
     }
 
     fn source_id() -> SourceId {
+        source_id_with_snapshot_byte("d6", 1)
+    }
+
+    fn source_id_with_snapshot_byte(snapshot_byte: &str, source_ordinal: usize) -> SourceId {
         let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
             "mizar-session-build-snapshot-v1:{}",
-            "d6".repeat(32)
+            snapshot_byte.repeat(32)
         ))
         .expect("snapshot");
-        InMemorySessionIdAllocator::new()
-            .next_source_id(snapshot)
-            .expect("source")
+        let allocator = InMemorySessionIdAllocator::new();
+        (0..source_ordinal)
+            .map(|_| allocator.next_source_id(snapshot).expect("source"))
+            .last()
+            .expect("positive source ordinal")
     }
 
     fn module() -> ModuleId {
@@ -4005,6 +4059,499 @@ mod tests {
         .expect("typed AST")
         .with_source_term(primary)
         .expect("primary install")
+    }
+
+    struct ConditionContainerFixture {
+        source: SourceId,
+        module: ModuleId,
+        bindings: BindingEnv,
+        symbols: SymbolEnv,
+        primary: SourcePrimaryTermHandoff,
+        application: SourceFunctorApplicationHandoff,
+        arena: TypedArena,
+        set_input: SourceSetTermHandoffInput,
+        atomic_input: SourceAtomicFormulaHandoffInput,
+    }
+
+    impl ConditionContainerFixture {
+        fn build_set(
+            &self,
+            input: SourceSetTermHandoffInput,
+        ) -> Result<SourceSetTermHandoff, SourceSetTermError> {
+            SourceSetTermProducer::build(
+                input,
+                &self.bindings,
+                &self.primary,
+                Some(&self.application),
+                None,
+                &self.arena,
+            )
+        }
+
+        fn build_atomic(
+            &self,
+            input: SourceAtomicFormulaHandoffInput,
+            set_terms: Option<&SourceSetTermHandoff>,
+        ) -> Result<SourceAtomicFormulaHandoff, SourceAtomicFormulaError> {
+            SourceAtomicFormulaProducer::build(
+                input,
+                &self.bindings,
+                &self.symbols,
+                &self.primary,
+                Some(&self.application),
+                None,
+                set_terms,
+                &self.arena,
+            )
+        }
+
+        fn typed_ast(&self) -> TypedAst {
+            typed_ast_with_primary(self.source, &self.module, &self.arena, self.primary.clone())
+                .with_source_application(self.application.clone())
+                .expect("condition mapper application install")
+        }
+    }
+
+    #[derive(Clone, Copy)]
+    struct ConditionContainerOptions {
+        formula_kind: SourceAtomicFormulaKind,
+        formula_range: (usize, usize),
+        formula_spelling: &'static str,
+        formula_context: BindingContextId,
+        formula_recovery: SourceAtomicFormulaRecovery,
+        operand_ranges: [(usize, usize); 2],
+        direct_condition_child: bool,
+        snapshot_byte: &'static str,
+        source_ordinal: usize,
+    }
+
+    impl ConditionContainerOptions {
+        const fn exact() -> Self {
+            Self {
+                formula_kind: SourceAtomicFormulaKind::Equality,
+                formula_range: (177, 182),
+                formula_spelling: "3 = 4",
+                formula_context: BindingContextId::new(0),
+                formula_recovery: SourceAtomicFormulaRecovery::Normal,
+                operand_ranges: [(177, 178), (181, 182)],
+                direct_condition_child: true,
+                snapshot_byte: "d6",
+                source_ordinal: 1,
+            }
+        }
+    }
+
+    fn condition_container_fixture(
+        options: ConditionContainerOptions,
+    ) -> ConditionContainerFixture {
+        let source = source_id_with_snapshot_byte(options.snapshot_byte, options.source_ordinal);
+        let module = module();
+        let bindings = bindings_with_two_contexts(source, &module);
+        let formula_recovery = match options.formula_recovery {
+            SourceAtomicFormulaRecovery::Normal => NodeRecoveryState::Normal,
+            SourceAtomicFormulaRecovery::Degraded => NodeRecoveryState::Degraded,
+        };
+        let condition_children = options
+            .direct_condition_child
+            .then(|| node(10).node())
+            .into_iter()
+            .collect();
+        let arena = TypedArena::try_new(
+            None,
+            vec![
+                TypedNode::new(
+                    "source.term.numeral",
+                    SourceAnchor::Range(range(source, 141, 142)),
+                ),
+                TypedNode::new(
+                    "source.term.numeral",
+                    SourceAnchor::Range(range(source, 146, 147)),
+                ),
+                TypedNode::new(
+                    "source.term.numeral",
+                    SourceAnchor::Range(range(
+                        source,
+                        options.operand_ranges[0].0,
+                        options.operand_ranges[0].1,
+                    )),
+                ),
+                TypedNode::new(
+                    "source.term.numeral",
+                    SourceAnchor::Range(range(
+                        source,
+                        options.operand_ranges[1].0,
+                        options.operand_ranges[1].1,
+                    )),
+                ),
+                TypedNode::new(
+                    "source.term.functor-head.single",
+                    SourceAnchor::Range(range(source, 143, 145)),
+                ),
+                TypedNode::new(
+                    "source.term.functor-application.symbolic",
+                    SourceAnchor::Range(range(source, 141, 147)),
+                )
+                .with_children(vec![
+                    node(0).node(),
+                    node(4).node(),
+                    node(1).node(),
+                ]),
+                TypedNode::new(
+                    "source.term.set.comprehension-generator",
+                    SourceAnchor::Range(range(source, 154, 167)),
+                ),
+                TypedNode::new(
+                    "source.term.set.target-type",
+                    SourceAnchor::Range(range(source, 171, 174)),
+                ),
+                TypedNode::new(
+                    "source.term.set.target-type-head",
+                    SourceAnchor::Range(range(source, 171, 174)),
+                ),
+                TypedNode::new(
+                    "source.term.set.comprehension-condition-colon",
+                    SourceAnchor::Range(range(source, 175, 176)),
+                ),
+                TypedNode::new(
+                    formula_node_key(options.formula_kind),
+                    SourceAnchor::Range(range(
+                        source,
+                        options.formula_range.0,
+                        options.formula_range.1,
+                    )),
+                )
+                .with_children(vec![node(2).node(), node(3).node()])
+                .with_recovery(formula_recovery),
+                TypedNode::new(
+                    "source.term.set.comprehension-condition",
+                    SourceAnchor::Range(range(source, 177, 182)),
+                )
+                .with_children(condition_children),
+                TypedNode::new(
+                    "source.term.set.comprehension",
+                    SourceAnchor::Range(range(source, 139, 184)),
+                )
+                .with_children(vec![
+                    node(5).node(),
+                    node(6).node(),
+                    node(9).node(),
+                    node(11).node(),
+                ]),
+            ],
+        )
+        .expect("condition-container arena");
+        let primary_occurrences = [
+            (0, 141, 142, "1", BindingContextId::new(0)),
+            (1, 146, 147, "2", BindingContextId::new(0)),
+            (
+                2,
+                options.operand_ranges[0].0,
+                options.operand_ranges[0].1,
+                "3",
+                options.formula_context,
+            ),
+            (
+                3,
+                options.operand_ranges[1].0,
+                options.operand_ranges[1].1,
+                "4",
+                options.formula_context,
+            ),
+        ];
+        let primary = SourcePrimaryTermProducer::build(
+            SourcePrimaryTermHandoffInput {
+                source_id: source,
+                module_id: module.clone(),
+                terms: primary_occurrences
+                    .iter()
+                    .enumerate()
+                    .map(|(ordinal, (site, start, end, spelling, context))| {
+                        SourcePrimaryTermInput {
+                            site: node(*site),
+                            source_range: range(source, *start, *end),
+                            source_ordinal: ordinal,
+                            context: *context,
+                            recovery: SourcePrimaryTermRecovery::Normal,
+                            spelling: (*spelling).to_owned(),
+                            kind: SourcePrimaryTermKind::Numeral,
+                            role: SourcePrimaryTermRole::Value,
+                            parent: None,
+                        }
+                    })
+                    .collect(),
+                references: Vec::new(),
+                numeric_type_requests: primary_occurrences
+                    .iter()
+                    .enumerate()
+                    .map(|(ordinal, (site, start, end, spelling, _))| {
+                        SourceNumericTypeRequestInput {
+                            term: SourcePrimaryTermId::new(ordinal),
+                            owner: node(*site),
+                            source_range: range(source, *start, *end),
+                            spelling: (*spelling).to_owned(),
+                            request_ordinal: ordinal,
+                        }
+                    })
+                    .collect(),
+            },
+            &bindings,
+            &arena,
+        )
+        .expect("condition-container primary handoff");
+
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 100, 110)),
+        );
+        let symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new("condition-plus"),
+            FullyQualifiedName::new(format!(
+                "{}::functor/condition-plus",
+                module.path().as_str()
+            )),
+        );
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 101, 103)),
+            vec![0],
+        );
+        indexes.symbols.insert(SymbolEntry::new(
+            symbol.clone(),
+            SymbolKind::Functor,
+            NamespacePath::new(module.path().as_str()),
+            "++",
+            origin.clone(),
+            contribution,
+        ));
+        indexes
+            .contributions
+            .add_symbol(contribution, symbol.clone());
+        let definition = indexes.definitions.insert(DefinitionShell::new(
+            symbol.clone(),
+            DefinitionKind::Functor,
+            origin,
+            contribution,
+        ));
+        indexes
+            .contributions
+            .add_definition(contribution, definition);
+        let symbols = SymbolEnv::new(module.clone(), indexes);
+
+        let application = SourceFunctorApplicationProducer::build(
+            SourceFunctorApplicationHandoffInput {
+                source_id: source,
+                module_id: module.clone(),
+                applications: vec![SourceFunctorApplicationInput {
+                    site: node(5),
+                    source_range: range(source, 141, 147),
+                    source_ordinal: 0,
+                    context: BindingContextId::new(0),
+                    recovery: SourceFunctorApplicationRecovery::Normal,
+                    spelling: "1 ++ 2".to_owned(),
+                    kind: SourceFunctorApplicationKind::Symbolic,
+                    form: SourceFunctorApplicationForm::Infix,
+                    head_ordinal: 1,
+                    head: SourceFunctorHeadSite::Single {
+                        site: node(4),
+                        source_range: range(source, 143, 145),
+                        spelling: "++".to_owned(),
+                    },
+                }],
+                wrappers: Vec::new(),
+                candidates: vec![SourceFunctorCandidateInput {
+                    application: SourceFunctorApplicationId::new(0),
+                    ordinal: 0,
+                    symbol,
+                    contribution,
+                }],
+                arguments: vec![
+                    SourceFunctorArgumentInput {
+                        application: SourceFunctorApplicationId::new(0),
+                        ordinal: 0,
+                        target: SourceFunctorArgumentTarget::Primary(SourcePrimaryTermId::new(0)),
+                    },
+                    SourceFunctorArgumentInput {
+                        application: SourceFunctorApplicationId::new(0),
+                        ordinal: 1,
+                        target: SourceFunctorArgumentTarget::Primary(SourcePrimaryTermId::new(1)),
+                    },
+                ],
+                type_requests: vec![
+                    SourceFunctorTypeRequestInput {
+                        application: SourceFunctorApplicationId::new(0),
+                        candidate: Some(SourceFunctorCandidateId::new(0)),
+                        request_ordinal: 0,
+                        kind: SourceFunctorTypeRequestKind::CandidateSignature,
+                    },
+                    SourceFunctorTypeRequestInput {
+                        application: SourceFunctorApplicationId::new(0),
+                        candidate: None,
+                        request_ordinal: 1,
+                        kind: SourceFunctorTypeRequestKind::ApplicationResultType,
+                    },
+                ],
+            },
+            &symbols,
+            &bindings,
+            &primary,
+            &arena,
+        )
+        .expect("condition mapper application");
+
+        let set_input = SourceSetTermHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            terms: vec![SourceSetTermInput {
+                site: node(12),
+                source_range: range(source, 139, 184),
+                source_ordinal: 0,
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                spelling: "{ 1 ++ 2 where candidate255c is set : 3 = 4 }".to_owned(),
+                kind: SourceSetTermKind::Comprehension,
+            }],
+            wrappers: Vec::new(),
+            generators: vec![SourceSetGeneratorInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                site: node(6),
+                source_range: range(source, 154, 167),
+                spelling: "candidate255c".to_owned(),
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                type_site: SourceSetTypeSiteId::new(0),
+            }],
+            type_sites: vec![SourceSetTypeSiteInput {
+                owner: SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(0)),
+                site: node(7),
+                source_range: range(source, 171, 174),
+                spelling: "set".to_owned(),
+                head_site: node(8),
+                head_range: range(source, 171, 174),
+                head_spelling: "set".to_owned(),
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                head: SourceSetTypeHead::BuiltinSet,
+            }],
+            conditions: vec![SourceSetConditionInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                colon_site: node(9),
+                colon_range: range(source, 175, 176),
+                colon_spelling: ":".to_owned(),
+                condition_site: node(11),
+                source_range: range(source, 177, 182),
+                spelling: "3 = 4".to_owned(),
+                recovery: SourceSetTermRecovery::Normal,
+            }],
+            edges: vec![SourceSetEdgeInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                role: SourceSetEdgeRole::ComprehensionMapper,
+                target: SourceSetTarget::Application(SourceFunctorApplicationId::new(0)),
+            }],
+            requests: vec![
+                SourceSetRequestInput {
+                    term: SourceSetTermId::new(0),
+                    ordinal: 0,
+                    kind: SourceSetRequestKind::GeneratorSethood,
+                    generator: Some(SourceSetGeneratorId::new(0)),
+                    type_site: Some(SourceSetTypeSiteId::new(0)),
+                },
+                SourceSetRequestInput {
+                    term: SourceSetTermId::new(0),
+                    ordinal: 1,
+                    kind: SourceSetRequestKind::ResultType,
+                    generator: None,
+                    type_site: None,
+                },
+            ],
+        };
+        let atomic_input = SourceAtomicFormulaHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            formulas: vec![SourceAtomicFormulaInput {
+                site: node(10),
+                source_range: range(source, options.formula_range.0, options.formula_range.1),
+                source_ordinal: 0,
+                context: options.formula_context,
+                recovery: options.formula_recovery,
+                spelling: options.formula_spelling.to_owned(),
+                kind: options.formula_kind,
+            }],
+            wrappers: Vec::new(),
+            predicate_segments: Vec::new(),
+            predicate_heads: Vec::new(),
+            candidates: Vec::new(),
+            type_sites: Vec::new(),
+            attributes: Vec::new(),
+            edges: vec![
+                SourceAtomicEdgeInput {
+                    formula: SourceAtomicFormulaId::new(0),
+                    ordinal: 0,
+                    role: SourceAtomicEdgeRole::BuiltinLeftOperand,
+                    target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(2)),
+                },
+                SourceAtomicEdgeInput {
+                    formula: SourceAtomicFormulaId::new(0),
+                    ordinal: 1,
+                    role: SourceAtomicEdgeRole::BuiltinRightOperand,
+                    target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(3)),
+                },
+            ],
+            requests: vec![
+                SourceAtomicRequestInput {
+                    formula: SourceAtomicFormulaId::new(0),
+                    ordinal: 0,
+                    kind: SourceAtomicRequestKind::OperandExpectedType,
+                    edge: Some(SourceAtomicEdgeId::new(0)),
+                    candidate: None,
+                    type_site: None,
+                    attribute: None,
+                },
+                SourceAtomicRequestInput {
+                    formula: SourceAtomicFormulaId::new(0),
+                    ordinal: 1,
+                    kind: SourceAtomicRequestKind::OperandExpectedType,
+                    edge: Some(SourceAtomicEdgeId::new(1)),
+                    candidate: None,
+                    type_site: None,
+                    attribute: None,
+                },
+            ]
+            .into_iter()
+            .enumerate()
+            .filter_map(|(index, mut request)| {
+                if options.formula_kind == SourceAtomicFormulaKind::Membership && index == 0 {
+                    None
+                } else {
+                    if options.formula_kind == SourceAtomicFormulaKind::Membership {
+                        request.ordinal = 0;
+                    }
+                    Some(request)
+                }
+            })
+            .collect(),
+        };
+        ConditionContainerFixture {
+            source,
+            module,
+            bindings,
+            symbols,
+            primary,
+            application,
+            arena,
+            set_input,
+            atomic_input,
+        }
+    }
+
+    fn exact_condition_container_fixture() -> ConditionContainerFixture {
+        condition_container_fixture(ConditionContainerOptions::exact())
     }
 
     fn predicate_fixture(
@@ -7424,5 +7971,490 @@ request#1 formula=0 ordinal=1 kind=operand-expected-type edge=1 candidate=- type
             ),
             Err(SourceAtomicFormulaError::InvalidAttribute { .. })
         ));
+    }
+
+    #[test]
+    fn authenticated_condition_container_is_validation_only_and_debug_stable() {
+        let fixture = exact_condition_container_fixture();
+        let set_terms = fixture
+            .build_set(fixture.set_input.clone())
+            .expect("exact conditioned comprehension");
+        let without_set = fixture
+            .build_atomic(fixture.atomic_input.clone(), None)
+            .expect("family-local exact equality");
+        let with_set = fixture
+            .build_atomic(fixture.atomic_input.clone(), Some(&set_terms))
+            .expect("authenticated condition container");
+
+        assert_eq!(without_set, with_set);
+        assert_eq!(without_set.debug_text(), with_set.debug_text());
+        assert_eq!(with_set.set_term_fingerprint(), None);
+        assert_eq!(
+            (
+                fixture.primary.terms().len(),
+                fixture.primary.references().len(),
+                fixture.primary.numeric_type_requests().len(),
+            ),
+            (4, 0, 4)
+        );
+        assert_eq!(
+            (
+                fixture.application.applications().len(),
+                fixture.application.wrappers().len(),
+                fixture.application.candidates().len(),
+                fixture.application.arguments().len(),
+                fixture.application.type_requests().len(),
+            ),
+            (1, 0, 1, 2, 2)
+        );
+        assert_eq!(
+            (
+                set_terms.terms().len(),
+                set_terms.wrappers().len(),
+                set_terms.generators().len(),
+                set_terms.type_sites().len(),
+                set_terms.conditions().len(),
+                set_terms.edges().len(),
+                set_terms.requests().len(),
+            ),
+            (1, 0, 1, 1, 1, 1, 2)
+        );
+        assert_eq!(
+            (
+                with_set.formulas().len(),
+                with_set.wrappers().len(),
+                with_set.predicate_segments().len(),
+                with_set.predicate_heads().len(),
+                with_set.candidates().len(),
+                with_set.type_sites().len(),
+                with_set.attributes().len(),
+                with_set.edges().len(),
+                with_set.requests().len(),
+            ),
+            (1, 0, 0, 0, 0, 0, 0, 2, 2)
+        );
+    }
+
+    #[test]
+    fn authenticated_condition_container_installs_in_both_orders_atomically() {
+        let fixture = exact_condition_container_fixture();
+        let set_terms = fixture
+            .build_set(fixture.set_input.clone())
+            .expect("exact conditioned comprehension");
+        let atomic = fixture
+            .build_atomic(fixture.atomic_input.clone(), None)
+            .expect("family-local exact equality");
+
+        let set_then_atomic = fixture
+            .typed_ast()
+            .with_source_set_term(set_terms.clone())
+            .expect("set-first install")
+            .with_source_atomic_formula(atomic.clone())
+            .expect("atomic-after-set install");
+        let atomic_then_set = fixture
+            .typed_ast()
+            .with_source_atomic_formula(atomic.clone())
+            .expect("atomic-first install")
+            .with_source_set_term(set_terms.clone())
+            .expect("set-after-atomic install");
+        assert_eq!(set_then_atomic, atomic_then_set);
+        assert_eq!(
+            set_then_atomic.debug_text(),
+            atomic_then_set.debug_text(),
+            "installation order must not affect immutable output"
+        );
+        assert_eq!(set_then_atomic.source_atomic_formula(), Some(&atomic));
+        assert_eq!(set_then_atomic.source_set_term(), Some(&set_terms));
+
+        let mut substituted_input = fixture.set_input.clone();
+        substituted_input.terms[0].spelling =
+            "{ 1 ++ 2 where candidate255c is set : 4 = 3 }".to_owned();
+        substituted_input.conditions[0].spelling = "4 = 3".to_owned();
+        let substituted = fixture
+            .build_set(substituted_input)
+            .expect("family-local substituted validation context");
+        assert_eq!(
+            fixture
+                .build_atomic(fixture.atomic_input.clone(), Some(&substituted))
+                .expect_err("substituted optional validation context"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+        let substituted_first = fixture
+            .typed_ast()
+            .with_source_set_term(substituted.clone())
+            .expect("substituted set installs independently");
+        assert_eq!(
+            substituted_first
+                .clone()
+                .with_source_atomic_formula(atomic.clone())
+                .expect_err("substituted optional set context must reject"),
+            TypedAstError::InvalidSourceAtomicFormula
+        );
+        assert_eq!(substituted_first.source_atomic_formula(), None);
+        let valid_after_atomic_failure = fixture
+            .typed_ast()
+            .with_source_set_term(set_terms.clone())
+            .expect("valid set replay")
+            .with_source_atomic_formula(atomic.clone())
+            .expect("valid atomic replay");
+
+        let atomic_first = fixture
+            .typed_ast()
+            .with_source_atomic_formula(atomic.clone())
+            .expect("family-local atomic install");
+        assert_eq!(atomic_first.source_set_term(), None);
+        assert_eq!(
+            atomic_first
+                .clone()
+                .with_source_set_term(substituted)
+                .expect_err("substituted set must fail revalidation"),
+            TypedAstError::InvalidSourceSetTerm
+        );
+        assert_eq!(atomic_first.source_set_term(), None);
+        let valid_after_set_failure = atomic_first
+            .with_source_set_term(set_terms)
+            .expect("valid set replay after rollback");
+        assert_eq!(valid_after_atomic_failure, valid_after_set_failure);
+        assert_eq!(atomic.set_term_fingerprint(), None);
+    }
+
+    #[test]
+    fn condition_container_corruption_and_preservation_matrix_is_fail_closed() {
+        let mut wrong_kind = ConditionContainerOptions::exact();
+        wrong_kind.formula_kind = SourceAtomicFormulaKind::Inequality;
+        wrong_kind.formula_spelling = "3 <> 4";
+        let mut wrong_range = ConditionContainerOptions::exact();
+        wrong_range.formula_range = (178, 182);
+        wrong_range.operand_ranges[0] = (178, 179);
+        let mut wrong_recovery = ConditionContainerOptions::exact();
+        wrong_recovery.formula_recovery = SourceAtomicFormulaRecovery::Degraded;
+        let mut non_direct = ConditionContainerOptions::exact();
+        non_direct.direct_condition_child = false;
+        let mut partial_crossing = ConditionContainerOptions::exact();
+        partial_crossing.formula_range = (183, 187);
+        partial_crossing.operand_ranges = [(184, 185), (186, 187)];
+        partial_crossing.direct_condition_child = false;
+
+        for (label, options) in [
+            ("wrong kind", wrong_kind),
+            ("wrong range", wrong_range),
+            ("wrong recovery", wrong_recovery),
+            ("non-direct relation", non_direct),
+            ("partial crossing overlap", partial_crossing),
+        ] {
+            let fixture = condition_container_fixture(options);
+            let set_terms = fixture
+                .build_set(fixture.set_input.clone())
+                .unwrap_or_else(|error| {
+                    panic!("{label}: Task-255 family-local failure: {error:?}")
+                });
+            fixture
+                .build_atomic(fixture.atomic_input.clone(), None)
+                .unwrap_or_else(|error| {
+                    panic!("{label}: Task-256 family-local failure: {error:?}")
+                });
+            assert_eq!(
+                fixture
+                    .build_atomic(fixture.atomic_input.clone(), Some(&set_terms))
+                    .expect_err(label),
+                SourceAtomicFormulaError::SetTermDependencyMismatch,
+                "{label}: the independently valid pair must fail only at C1"
+            );
+        }
+
+        let fixture = exact_condition_container_fixture();
+        let exact_set = fixture
+            .build_set(fixture.set_input.clone())
+            .expect("exact set family");
+        let exact_atomic = fixture
+            .build_atomic(fixture.atomic_input.clone(), None)
+            .expect("exact atomic family");
+        let mut wrong_context_options = ConditionContainerOptions::exact();
+        wrong_context_options.formula_context = BindingContextId::new(1);
+        let wrong_context = condition_container_fixture(wrong_context_options);
+        wrong_context
+            .build_atomic(wrong_context.atomic_input.clone(), None)
+            .expect("wrong-context Task-256 row is independently valid");
+        assert_eq!(
+            wrong_context
+                .build_set(wrong_context.set_input.clone())
+                .expect_err("Task-255 rejects condition children outside its owner context"),
+            SourceSetTermError::PrimaryDependencyMismatch,
+            "wrong context is not an applicable two-family-local near miss"
+        );
+        let mut wrong_context_input = fixture.atomic_input.clone();
+        wrong_context_input.formulas[0].context = BindingContextId::new(1);
+        assert_eq!(
+            fixture
+                .build_atomic(wrong_context_input, Some(&exact_set))
+                .expect_err("wrong owner/formula context"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+
+        let mut wrong_spelling_input = fixture.set_input.clone();
+        wrong_spelling_input.terms[0].spelling =
+            "{ 1 ++ 2 where candidate255c is set : 4 = 3 }".to_owned();
+        wrong_spelling_input.conditions[0].spelling = "4 = 3".to_owned();
+        let wrong_spelling = fixture
+            .build_set(wrong_spelling_input)
+            .expect("wrong-spelling set remains family-local valid");
+        assert_eq!(
+            fixture
+                .build_atomic(fixture.atomic_input.clone(), Some(&wrong_spelling))
+                .expect_err("wrong spelling"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+
+        let mut copied_options = ConditionContainerOptions::exact();
+        copied_options.source_ordinal = 2;
+        let copied_fixture = condition_container_fixture(copied_options);
+        let copied_set = copied_fixture
+            .build_set(copied_fixture.set_input.clone())
+            .expect("cross-source copied set is locally valid");
+        assert_eq!(
+            fixture
+                .build_atomic(fixture.atomic_input.clone(), Some(&copied_set))
+                .expect_err("cross-source copied set"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+
+        let mut stale = exact_condition_container_fixture();
+        let stale_set = stale
+            .build_set(stale.set_input.clone())
+            .expect("pre-mutation set handoff");
+        let mut stale_nodes = stale
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        stale_nodes[11].children.clear();
+        stale.arena = TypedArena::try_new(None, stale_nodes).expect("stale direct-edge arena");
+        stale_set
+            .validate_installation(
+                stale.source,
+                &stale.module,
+                &stale.primary,
+                Some(&stale.application),
+                None,
+                &stale.arena,
+            )
+            .expect("Task-255 handoff remains family-local valid in the stale arena");
+        stale
+            .build_atomic(stale.atomic_input.clone(), None)
+            .expect("Task-256 handoff remains family-local valid in the stale arena");
+        assert_eq!(
+            stale
+                .build_atomic(stale.atomic_input.clone(), Some(&stale_set))
+                .expect_err("stale direct-child relationship"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+
+        let mut wrapped = exact_condition_container_fixture();
+        let mut wrapped_nodes = wrapped
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        wrapped_nodes.push(TypedNode::new(
+            "source.formula.atomic.parenthesized",
+            SourceAnchor::Range(range(wrapped.source, 176, 183)),
+        ));
+        wrapped.arena = TypedArena::try_new(None, wrapped_nodes).expect("wrapped condition arena");
+        wrapped.atomic_input.wrappers = vec![SourceAtomicWrapperInput {
+            formula: SourceAtomicFormulaId::new(0),
+            ordinal: 0,
+            site: node(13),
+            source_range: range(wrapped.source, 176, 183),
+            context: BindingContextId::new(0),
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: "( 3 = 4 )".to_owned(),
+        }];
+        let wrapped_set = wrapped
+            .build_set(wrapped.set_input.clone())
+            .expect("wrapped near-miss set family");
+        wrapped
+            .build_atomic(wrapped.atomic_input.clone(), None)
+            .expect("wrapped near-miss atomic family");
+        assert_eq!(
+            wrapped
+                .build_atomic(wrapped.atomic_input.clone(), Some(&wrapped_set))
+                .expect_err("effective wrapper must not widen the exact relation"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+
+        let mut wrong_owner = exact_condition_container_fixture();
+        let mut wrong_owner_nodes = wrong_owner
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        wrong_owner_nodes.push(
+            TypedNode::new(
+                "source.term.set.comprehension",
+                SourceAnchor::Range(range(wrong_owner.source, 130, 220)),
+            )
+            .with_children(vec![node(12).node(), node(14).node()]),
+        );
+        wrong_owner_nodes.push(TypedNode::new(
+            "source.term.set.comprehension-generator",
+            SourceAnchor::Range(range(wrong_owner.source, 190, 204)),
+        ));
+        wrong_owner_nodes.push(TypedNode::new(
+            "source.term.set.target-type",
+            SourceAnchor::Range(range(wrong_owner.source, 208, 211)),
+        ));
+        wrong_owner_nodes.push(TypedNode::new(
+            "source.term.set.target-type-head",
+            SourceAnchor::Range(range(wrong_owner.source, 208, 211)),
+        ));
+        wrong_owner.arena =
+            TypedArena::try_new(None, wrong_owner_nodes).expect("wrong-owner nested arena");
+        wrong_owner.set_input.terms[0].source_ordinal = 1;
+        wrong_owner.set_input.terms.insert(
+            0,
+            SourceSetTermInput {
+                site: node(13),
+                source_range: range(wrong_owner.source, 130, 220),
+                source_ordinal: 0,
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                spelling:
+                    "{ { 1 ++ 2 where candidate255c is set : 3 = 4 } where outercandidate is set }"
+                        .to_owned(),
+                kind: SourceSetTermKind::Comprehension,
+            },
+        );
+        wrong_owner.set_input.generators[0].term = SourceSetTermId::new(1);
+        wrong_owner.set_input.generators.insert(
+            0,
+            SourceSetGeneratorInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                site: node(14),
+                source_range: range(wrong_owner.source, 190, 204),
+                spelling: "outercandidate".to_owned(),
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                type_site: SourceSetTypeSiteId::new(1),
+            },
+        );
+        wrong_owner.set_input.type_sites[0].owner =
+            SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(1));
+        wrong_owner
+            .set_input
+            .type_sites
+            .push(SourceSetTypeSiteInput {
+                owner: SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(0)),
+                site: node(15),
+                source_range: range(wrong_owner.source, 208, 211),
+                spelling: "set".to_owned(),
+                head_site: node(16),
+                head_range: range(wrong_owner.source, 208, 211),
+                head_spelling: "set".to_owned(),
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                head: SourceSetTypeHead::BuiltinSet,
+            });
+        wrong_owner.set_input.conditions[0].term = SourceSetTermId::new(1);
+        wrong_owner.set_input.edges[0].term = SourceSetTermId::new(1);
+        wrong_owner.set_input.edges.insert(
+            0,
+            SourceSetEdgeInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                role: SourceSetEdgeRole::ComprehensionMapper,
+                target: SourceSetTarget::SetTerm(SourceSetTermId::new(1)),
+            },
+        );
+        wrong_owner.set_input.requests[0].generator = Some(SourceSetGeneratorId::new(1));
+        for request in &mut wrong_owner.set_input.requests {
+            request.term = SourceSetTermId::new(1);
+        }
+        wrong_owner.set_input.requests.splice(
+            0..0,
+            [
+                SourceSetRequestInput {
+                    term: SourceSetTermId::new(0),
+                    ordinal: 0,
+                    kind: SourceSetRequestKind::GeneratorSethood,
+                    generator: Some(SourceSetGeneratorId::new(0)),
+                    type_site: Some(SourceSetTypeSiteId::new(1)),
+                },
+                SourceSetRequestInput {
+                    term: SourceSetTermId::new(0),
+                    ordinal: 1,
+                    kind: SourceSetRequestKind::ResultType,
+                    generator: None,
+                    type_site: None,
+                },
+            ],
+        );
+        wrong_owner.set_input.requests[2].type_site = Some(SourceSetTypeSiteId::new(0));
+        let wrong_owner_set = wrong_owner
+            .build_set(wrong_owner.set_input.clone())
+            .expect("nested wrong-owner set family");
+        wrong_owner
+            .build_atomic(wrong_owner.atomic_input.clone(), None)
+            .expect("nested wrong-owner atomic family");
+        assert_eq!(
+            wrong_owner
+                .build_atomic(wrong_owner.atomic_input.clone(), Some(&wrong_owner_set),)
+                .expect_err("overlapping outer term does not own the matching condition"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+
+        let mut disjoint_options = ConditionContainerOptions::exact();
+        disjoint_options.formula_range = (190, 195);
+        disjoint_options.operand_ranges = [(190, 191), (194, 195)];
+        disjoint_options.direct_condition_child = false;
+        let disjoint = condition_container_fixture(disjoint_options);
+        let disjoint_set = disjoint
+            .build_set(disjoint.set_input.clone())
+            .expect("disjoint set family");
+        disjoint
+            .build_atomic(disjoint.atomic_input.clone(), None)
+            .expect("disjoint atomic family");
+        disjoint
+            .build_atomic(disjoint.atomic_input.clone(), Some(&disjoint_set))
+            .expect("disjoint optional set remains dependency-neutral");
+
+        let mut containing_input = fixture.atomic_input.clone();
+        containing_input.formulas[0].source_range = range(fixture.source, 130, 190);
+        containing_input.formulas[0].spelling =
+            "{ 1 ++ 2 where candidate255c is set : 3 = 4 } = 4".to_owned();
+        let containing_effective = vec![EffectiveOccurrence {
+            range: containing_input.formulas[0].source_range,
+        }];
+        validate_cross_family_ranges(
+            &containing_input,
+            &containing_effective,
+            &fixture.primary,
+            Some(&fixture.application),
+            None,
+            Some(&exact_set),
+            &fixture.arena,
+        )
+        .expect("the pre-existing formula-contains-set range rule is preserved");
+
+        let mut arbitrary_options = ConditionContainerOptions::exact();
+        arbitrary_options.formula_range = (139, 184);
+        arbitrary_options.direct_condition_child = false;
+        let arbitrary = condition_container_fixture(arbitrary_options);
+        let arbitrary_set = arbitrary
+            .build_set(arbitrary.set_input.clone())
+            .expect("arbitrary equal-range set family");
+        assert_eq!(
+            arbitrary
+                .build_atomic(arbitrary.atomic_input.clone(), Some(&arbitrary_set))
+                .expect_err("arbitrary equal-range overlap"),
+            SourceAtomicFormulaError::SetTermDependencyMismatch
+        );
+        assert!(
+            arbitrary
+                .build_atomic(arbitrary.atomic_input.clone(), None)
+                .is_err(),
+            "equal-range formula is not an applicable family-local near miss"
+        );
+        assert_eq!(exact_atomic.set_term_fingerprint(), None);
     }
 }

@@ -3076,10 +3076,11 @@ reusable Task-256 equality builderをreuseする。同じarenaをatomic equality
 1件/immutable condition-formula association 1件でextendし、全Task-252/253/255
 row/siteを不変に保つ。
 
-このtarget routeはcurrent lower validatorがenclosing condition set termを
-set/atomic両install orderでrejectするためseparate Task 256C1をgateとする。
-lower prerequisiteはauthenticated condition relationだけで両orderをpassさせ、
-arbitrary overlapをfail-closedに保つ。
+frozen pre-Task-256C1 baselineでは、lower validatorがenclosing condition
+set termをset/atomic両install orderでrejectしたため、このtarget routeは
+gateされていた。separate checker prerequisiteは完了し、authenticated
+condition relationだけで両orderをpassさせ、arbitrary overlapをfail-closedに
+保つ。routeはfresh Task-257C2 preflight/implementation待ちである。
 
 existing fail caseはdefinition-intake detailを保持し、semantic tableはempty。
 exact profile、direct wrapper/equality ownership、provenance、near miss、
@@ -3089,8 +3090,8 @@ artifactを変更しない。
 
 ## Checker Task 256C1 frozen harness non-ownership
 
-Task 256C1にharness edit/testは含めない。checker-local syntax-free fixtureが
-exact lower relation/両install orderをauthenticateし、private runnerは
-committed Task-255C1 routeまでを保持する。already frozen Task-257C2 routeが
-separate checker prerequisite commit/fresh verification後の最初のrunner
-consumerである。
+Task 256C1にharness edit/testは含まれなかった。checker-local syntax-free
+fixtureはexact lower relation/両install orderをauthenticateし、private runner
+はcommitted Task-255C1 routeまでを保持する。already frozen Task-257C2 route
+がcompleted checker prerequisiteのfresh post-commit preflight後の最初の
+runner consumerである。

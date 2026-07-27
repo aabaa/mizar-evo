@@ -2375,7 +2375,7 @@ completion remain deferred. The origin discrepancy remains report-only
   `repo_metadata_conflict`.
 - [x] Freeze and commit the separate Task-256C1 condition-container
   compatibility documentation prerequisite.
-- [ ] Implement Task-256C1 in its own verified commit.
+- [x] Implement Task-256C1 in its own verified commit.
 - [ ] Implement Task 257C2 only after Task-256C1 and fresh
   parser/resolver/API, both-install-order, count, test-list,
   production-manifest, and CLI-hash preflight, in a separate logical task and
@@ -2394,6 +2394,6 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Record `source_drift`, resolved `design_drift`, `test_gap`, report-only
   `repo_metadata_conflict`, zero trace/coverage impact, and unchanged
   executable baselines.
-- [ ] Implement, review, verify, and separately commit Task 256C1 after fresh
+- [x] Implement, review, verify, and separately commit Task 256C1 after fresh
   preflight.
 - [ ] Resume Task 257C2 only after Task 256C1 and another fresh inventory.

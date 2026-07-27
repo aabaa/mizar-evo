@@ -29,10 +29,11 @@ plan/parse/declaration/type/proof CLI hashは
 
 mizar-test production/test ownerは変更しない。manifest 29 paths / 33,725
 lines、library 357 tests、latest Task-255C1 boundary recheckの
-production/test-list/5 CLI hashをauthorityとして保持する。compatibility
-predicate/projected tests 3件は
-`mizar-checker/src/source_atomic_formula.rs`だけがownし、frozen Task-257C2
-runner routeはdeferredのまま。
+production/test-list/5 CLI hashをauthorityとして保持する。implemented
+compatibility predicate/tests 3件は
+`mizar-checker/src/source_atomic_formula.rs`だけがownし、checker両installation
+orderはpassする一方、frozen Task-257C2 runner routeはdeferredのまま。本taskは
+runner-owned artifactを変更しない。
 
 ## Checker Task 257C2 frozen boundary
 
@@ -42,7 +43,8 @@ source-application、atomic-formula leafのbounded seamをreuseする。raw
 traversal/resolver workは`mizar-test`に残し、checkerはsyntax-free handoffだけを
 受ける。current 29-path/33,725-line manifest、357-test list、全recorded hashを
 documentation baselineとして保持する。separate Task 256C1はchecker
-atomic-formula owner内に留まり、本runner leaf変更前にcompleteする。
+atomic-formula owner内で本runner leafを変更せずcompleteした。残るgateは
+fresh Task-257C2 preflightである。
 
 ## Checker Task 257A source-composite-formula current-state addendum
 

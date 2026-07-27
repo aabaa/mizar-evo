@@ -31,10 +31,10 @@ and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 No mizar-test production or test owner changes. The manifest remains 29
 paths / 33,725 lines, the library remains 357 tests, and the production,
 test-list, and five CLI hashes in the latest Task-255C1 boundary recheck
-remain authoritative. The compatibility predicate and its three projected
-tests belong solely to
-`mizar-checker/src/source_atomic_formula.rs`; the frozen Task-257C2 runner
-route remains deferred.
+remain authoritative. The implemented compatibility predicate and its three
+tests belong solely to `mizar-checker/src/source_atomic_formula.rs`; both
+checker installation orders pass, while the frozen Task-257C2 runner route
+remains deferred. This task changed no runner-owned artifact.
 
 ## Checker Task 257C2 Frozen Boundary
 
@@ -44,8 +44,8 @@ bounded seams from the source-set, source-application, and atomic-formula
 leaves. Raw traversal and resolver work remain in `mizar-test`; the checker
 receives only syntax-free handoffs. The current 29-path/33,725-line manifest,
 357-test list, and all recorded hashes remain the documentation baseline.
-Separate Task 256C1 stays in the checker atomic-formula owner and must complete
-before this runner leaf changes.
+Separate Task 256C1 completed in the checker atomic-formula owner without
+changing this runner leaf; fresh Task-257C2 preflight is the remaining gate.
 
 ## Checker Task 257A Source-Composite-Formula Current-State Addendum
 

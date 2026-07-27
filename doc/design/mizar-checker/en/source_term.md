@@ -196,5 +196,7 @@ later Task-256 installation without a Task-255 edge.
 Task 257C2 reuses the same immutable `4/0/4` handoff. Task-256 equality edges
 target primaries 2 and 3 directly; the Task-257C2 association targets only
 the condition and formula IDs. No Task-252 row, request, parent, context,
-fingerprint, debug byte, or numeric semantic meaning changes. The route is
-gated on separate Task 256C1; Task 252 itself requires no compatibility edit.
+fingerprint, debug byte, or numeric semantic meaning changes. At the frozen
+pre-Task-256C1 baseline, the route was gated on that separate lower task.
+Task 256C1 now passes both installation orders; Task 252 still requires no
+compatibility edit, and the route awaits fresh Task-257C2 preflight.

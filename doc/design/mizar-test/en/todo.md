@@ -1882,9 +1882,9 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   419-case/pass-fail/active counts, projected plan `419/386` and type
   `252/240`, unchanged diagnostic intent, and zero executable artifact
   changes in this prerequisite.
-- [x] Complete the separately documented Task-256C1 frozen-contract
-  prerequisite; its checker-only implementation must still pass both lower
-  install orders before editing this runner slice.
+- [x] Complete the separately documented Task-256C1 frozen-contract and
+  checker-only implementation; both lower install orders now pass without a
+  runner edit.
 - [ ] Implement only this frozen runner slice after Task-256C1 and fresh
   preflight, in the separate Task-257C2 implementation commit.
 
@@ -1897,5 +1897,6 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   corruption coverage.
 - [x] Preserve `419/385`, `251/239`, `228/191`, active `101/5/198/1`,
   357 tests, 29 paths / 33,725 lines, and all runner hashes.
-- [ ] Keep this runner unchanged during Task 256C1 implementation, then
-  fresh-preflight the frozen Task-257C2 route.
+- [x] Keep this runner unchanged during Task 256C1 implementation and verify
+  the checker-only lower gate; fresh-preflight of the frozen Task-257C2 route
+  remains the next logical task.

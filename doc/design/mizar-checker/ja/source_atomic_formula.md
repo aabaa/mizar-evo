@@ -220,15 +220,16 @@ Task-252 primaries 2/3へ向き、unresolved `OperandExpectedType` request 2件�
 ownしない。
 
 runnerはreusable built-in-equality builderでこのrowをextractし、same arenaの
-Task-252/253/255 handoffに対してvalidateする。current
-`validate_cross_family_ranges`はset term側がformulaをcontainするため、両
-install orderでlegitimate enclosing Task-255 set termをrejectする。よって
-Task 257C2はseparate Task-256C1 condition-container compatibility
-prerequisiteをgateとする。そのprerequisiteはTask-255 condition relationだけを
-narrowにauthenticateし、arbitrary/copied/stale/wrong-range overlap rejectionを
-保持する。Task 257C2はこのpublic lower-family transactionへfield/row/enum/
-request kind/debug byte/semantic behaviorを追加しない。predicate-chain
-conjunction/negationはlater Task-257C sliceに残る。
+Task-252/253/255 handoffに対してvalidateする。frozen pre-Task-256C1
+baselineでは、`validate_cross_family_ranges`はset term側がformulaをcontain
+するため、両install orderでlegitimate enclosing Task-255 set termをreject
+した。separate Task-256C1 implementationは完了し、このTask-255 condition
+relationだけをnarrowにauthenticateしつつ、arbitrary/copied/stale/wrong-range
+overlap rejectionを保持する。Task 257C2のlower-stage blockは解消したが、
+fresh post-commit preflightは未実施であり、このpublic lower-family
+transactionへfield/row/enum/request kind/debug byte/semantic behaviorを
+追加しない。predicate-chain conjunction/negationはlater Task-257C sliceに
+残る。
 
 ## Task 256C1 frozen condition-container compatibility
 
@@ -256,3 +257,19 @@ debugはbyte-identical。checker tests exact 3件がvalid relation、
 applicableなrelation near missはpair前に両lower familyで個別validateし、
 pair時だけexact `SetTermDependencyMismatch`でfailする。optional-set
 substitutionもno publication/valid replayをproveする。
+
+## Task 256C1 implementation result
+
+frozen private compatibility pathを実装した。各overlapping iterated Task-255
+termをnormal raw equality/effective occurrenceと比較し、wrapper enlargementが
+ないこと、owner-term context、matching normal condition row、condition site
+からdistinct equality siteへのdirect edgeをauthenticateする。ID/ordinalは
+hard-coded fixture constantではなくdataのままである。
+
+optional set handoffはvalidation-onlyを保持する。exact atomic handoff/debug
+byteは有無でidentical、`set_term_fingerprint() == None`である。既存
+disjoint/formula-contains-set caseはpassを保持し、copied/substituted/stale/
+wrong-owner/range/spelling/recovery/kind/context、wrapped、non-direct、
+arbitrary、partial/crossing relationはfail closedする。exactly 3 testsが
+これらと`TypedAst`両order/rollback/replayをcoverする。public schema、error、
+fingerprint、debug、semantic result、runner、traceは変更していない。

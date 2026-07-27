@@ -3449,12 +3449,13 @@ comprehension/condition wrapper/provenance occurrenceを既にownし、Task 256�
 syntax-free equality/operand schemaを持つ。missing association contractは
 `design_drift`で、本prerequisiteがcloseする。dedicated handoff/final
 projectionの欠落はbounded `source_drift`、exact consumer/corruption matrixの
-欠落は`test_gap`。fresh preflightはcommitted Task-256 range validatorも別の
-authority-backed `source_drift`にclassifyする。Chapter-13-authorized
-condition-container relationを両installation orderでrejectするため、Task 257C2
-implementationはseparate documentation/implementationのTask 256C1がこの
-authenticated containmentだけをadmitしunrelated overlap rejectionを保持する
-までblocked。
+欠落は`test_gap`。frozen pre-Task-256C1 preflightは当時のcommitted Task-256
+range validatorも別のauthority-backed `source_drift`にclassifyした。
+Chapter-13-authorized condition-container relationを両installation orderで
+rejectしたためである。separate documentation/implementationのTask 256C1は
+完了し、このauthenticated containmentだけをadmitしunrelated overlap
+rejectionを保持する。Task 257C2 implementationはlower-stage repairではなく、
+fresh post-commit preflight待ちである。
 
 existing `doc/spec`、`.miz`、outcome、phase、diagnostic detail、semantic
 ownerは変更しない。future reciprocal covered row 1件にexisting sidecarを
@@ -3487,3 +3488,12 @@ test contractはfamily-local validityとnew relationを区別する。applicable
 各wrong relationはTask 255/Task 256で個別validateした後だけ、pair時に
 `SetTermDependencyMismatch`でfailする。substituted optional validation
 context、no publication/replay、explicit absent set fingerprintも別途coverする。
+
+### Task 256C1 implementation classification
+
+bounded authority-backed `source_drift`/`test_gap`はprivate exact relation
+predicate、effective no-wrapper guard、両installation order、complete
+3-test corruption/preservation matrixでcloseした。`design_drift`は
+prerequisiteでclose済み。specification、existing `.miz`、expectation、trace
+status、coverage credit、semantic owner、public schemaは変更していない。全
+semantic deferralとreport-only `repo_metadata_conflict`は不変。
