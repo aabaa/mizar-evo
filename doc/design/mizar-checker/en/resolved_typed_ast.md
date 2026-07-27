@@ -733,6 +733,18 @@ now the next dependency-authorized consumer; Steps 6/7 remain deferred.
 accept evidence, and the legacy projection remains unchanged when the handoff
 is absent.
 
+## Task 256 Final-Handoff Addendum
+
+`ResolvedTypedAst` revalidates the exact Task-252 and conditional
+Task-253/254/255 fingerprints, resolver provenance, request associations,
+nearest-family target partition, and arena sites, then clone-preserves the
+optional checker-owned `SourceAtomicFormulaHandoff`. Its borrowed
+`source_atomic_formula()` getter exposes the immutable handoff. Final assembly
+does not rebuild or retarget dense IDs, select a predicate candidate, answer
+an expected-input request, decide an assertion or formula, publish a fact, or
+accept a theorem; the legacy projection is unchanged when the handoff is
+absent.
+
 ## Task 252 Final-Handoff Addendum
 
 `ResolvedTypedAst` clone-preserves the optional checker-owned

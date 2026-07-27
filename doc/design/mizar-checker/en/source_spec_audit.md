@@ -23,6 +23,7 @@ Module specifications audited:
 - [typed_ast.md](./typed_ast.md)
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
+- [source_atomic_formula.md](./source_atomic_formula.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
@@ -149,6 +150,7 @@ rejection.
 - `overload_resolution`
 - `registration_resolution`
 - `resolved_typed_ast`
+- `source_atomic_formula`
 - `source_context`
 - `source_attribute`
 - `source_evidence`
@@ -445,6 +447,50 @@ substitution/result, direct template transport, candidate collection/
 applicability/viability/ranking/winner, functor-definition semantics, later
 term/formula families, accepted facts/declarations/proofs, or downstream IR.
 Those remain with Tasks 254+, 260, 270, 277, 278, and their explicit owners.
+
+### `source_atomic_formula`
+
+Generated public newtypes:
+
+- `SourceAtomicFormulaId`, `SourceAtomicWrapperId`,
+  `SourcePredicateHeadId`, `SourcePredicateCandidateId`,
+  `SourceAssertionTypeSiteId`, `SourceAssertionAttributeId`,
+  `SourceAtomicEdgeId`, `SourceAtomicRequestId`
+
+Literal top-level public items:
+
+- `SourceAtomicFormulaHandoffInput`, `SourceAtomicFormulaInput`,
+  `SourceAtomicWrapperInput`, `SourcePredicateHeadInput`,
+  `SourcePredicateCandidateInput`, `SourceAssertionTypeSiteInput`,
+  `SourceAssertionAttributeInput`, `SourceAtomicEdgeInput`,
+  `SourceAtomicRequestInput`, `SourceAtomicFormulaKind`,
+  `SourceAtomicFormulaRecovery`, `SourceAssertionTypeHead`,
+  `SourceAssertionAttributePolarityInput`, `SourceAtomicEdgeRole`,
+  `SourceAtomicTermTarget`, `SourceAtomicRequestKind`,
+  `SourceAtomicFormulaHandoff`, `SourceAtomicFormulaTable`,
+  `SourceAtomicWrapperTable`, `SourcePredicateHeadTable`,
+  `SourcePredicateCandidateTable`, `SourceAssertionTypeSiteTable`,
+  `SourceAssertionAttributeTable`, `SourceAtomicEdgeTable`,
+  `SourceAtomicRequestTable`, `SourceAtomicFormula`, `SourceAtomicWrapper`,
+  `SourcePredicateHead`, `SourcePredicateCandidate`,
+  `SourceAssertionTypeSite`, `SourceAssertionAttribute`, `SourceAtomicEdge`,
+  `SourceAtomicRequest`, `SourceAtomicFormulaProducer`,
+  `SourceAtomicFormulaError`.
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Eight syntax-free dense tables retain atomic formulas, wrappers, predicate provenance, asserted types, assertion attributes, nearest-family edges, and unresolved requests. | Public inputs, immutable rows, and tables in `src/source_atomic_formula.rs`. | Exact real `8/0/1/1/1/2/13/11` aggregate and checker shape tests. | Implemented for Task 256. |
+| Task-252/253/254/255 nearest-family ownership and conditional fingerprints validate atomically. | `SourceAtomicFormulaProducer::build` and private installation validation. | Same-arena real composition, cross-family producer probes, corruption, and installation tests. | Implemented transactionally. |
+| Resolver provenance, canonical spelling, arena keys, row cardinality/order, and request association fail closed. | Producer validation and `SourceAtomicFormulaError`. | Predicate/attribute provenance, wrapper, request, spelling, and mutation matrices. | Implemented without partial publication. |
+| `TypedAst` owns one handoff and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_atomic_formula`, later lower-family revalidation, and resolved assembly. | Replacement/install-order checks, final clone equality, and deterministic replay. | Implemented. |
+| Public enums are forward-compatible. | `#[non_exhaustive]` on every public enum. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: predicate-chain and formula-operator ownership stays with Task
+257; overload selection, asserted-type reachability, attribute admissibility
+and truth, formula facts/results, theorem acceptance, proofs, and downstream
+IR remain outside this module.
 
 ### `source_set_term`
 
@@ -3248,3 +3294,26 @@ and 101/5/193/1, with 320 tests and 26 paths / 29,138 lines. The separate
 implementation may add one bounded covered row over the eight existing
 sidecars, projecting 414/379 and 245/233 without changing case count or any
 outcome/detail field.
+
+## Step 5 Checker Task 256 Implementation Audit
+
+The public eight-table `source_atomic_formula` producer and private exact
+consumer implement the frozen source-only slice. The checker accepts no raw
+syntax, reauthenticates resolver identities and Task-252/253/254/255
+dependencies, rederives nearest-family ownership, fail-closes installation
+and later dependency revalidation, and clone-preserves the one-shot handoff
+through `ResolvedTypedAst`.
+
+The eight unchanged routes produce exactly `8/0/1/1/1/2/13/11` plus the
+frozen Task-252/253/255 co-oracles and preserve every prior semantic detail
+owner. The new covered row and reciprocal references reach 414/379 and
+245/233 without changing case count, outcome, phase, detail, tag, or `.miz`
+bytes. The reviewed producer/extractor/real/synthetic/corruption/install/
+exclusion/final-ownership matrix closes the bounded `source_drift` and
+`test_gap`.
+
+No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or surviving `boundary_violation` remains. The
+origin discrepancy stays report-only `repo_metadata_conflict`. MC-G017/
+MC-G020 remain partial, and the frozen later semantic/formula owners plus
+Steps 6/7 receive no new credit.

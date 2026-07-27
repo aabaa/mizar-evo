@@ -40,7 +40,7 @@ use super::{
     },
     source_formula::extract_source_imported_predicate_functor_formula,
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
-    source_term::source_term_parts_for_roots,
+    source_term::{SourceTermParts, source_term_parts_for_roots},
 };
 
 #[cfg(test)]
@@ -1099,6 +1099,67 @@ fn build_output(
         extracted.context,
         &owned_node_kinds,
     )?;
+    build_output_with_source_term(
+        ast,
+        module,
+        symbols,
+        binding_env,
+        extracted,
+        source_term,
+        mutate,
+    )
+}
+
+pub(super) fn imported_source_application_output_with_source_term(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: BindingEnv,
+    source_term: SourceTermParts,
+) -> Option<Result<SourceApplicationRouteOutput, String>> {
+    let extracted = extract_imported(ast, &module, symbols)?;
+    Some(build_output_with_source_term(
+        ast,
+        module,
+        symbols,
+        binding_env,
+        extracted,
+        source_term,
+        |_| {},
+    ))
+}
+
+pub(super) fn imported_source_application_owned_node_kinds(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+) -> Option<BTreeMap<usize, &'static str>> {
+    let extracted = extract_imported(ast, module, symbols)?;
+    let mut kinds = BTreeMap::from([
+        (
+            extracted.application_id.index(),
+            "source.term.functor-application.symbolic",
+        ),
+        (extracted.head_id.index(), "source.term.functor-head.single"),
+    ]);
+    if let Some((wrapper, _)) = extracted.wrapper {
+        kinds.insert(
+            wrapper.index(),
+            "source.term.functor-application.parenthesized",
+        );
+    }
+    Some(kinds)
+}
+
+fn build_output_with_source_term(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: BindingEnv,
+    extracted: ExtractedApplication,
+    source_term: SourceTermParts,
+    mutate: impl FnOnce(&mut SourceFunctorApplicationHandoffInput),
+) -> Result<SourceApplicationRouteOutput, String> {
     let candidate = symbols
         .symbols()
         .get(&extracted.candidate)
@@ -1146,15 +1207,31 @@ fn build_output(
             symbol: candidate.symbol().clone(),
             contribution: candidate.contribution(),
         }],
-        arguments: (0..extracted.argument_roots.len())
-            .map(|ordinal| SourceFunctorArgumentInput {
-                application,
-                ordinal,
-                target: SourceFunctorArgumentTarget::Primary(
-                    mizar_checker::source_term::SourcePrimaryTermId::new(ordinal),
-                ),
+        arguments: extracted
+            .argument_roots
+            .iter()
+            .enumerate()
+            .map(|(ordinal, root)| {
+                let range = ast
+                    .node(*root)
+                    .ok_or_else(|| "Task253 argument root disappeared".to_owned())?
+                    .range;
+                let target = source_term
+                    .handoff
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.parent().is_none() && term.source_range() == range)
+                    .map(|(id, _)| id)
+                    .ok_or_else(|| {
+                        "Task253 argument is not a root of the complete Task252 handoff".to_owned()
+                    })?;
+                Ok(SourceFunctorArgumentInput {
+                    application,
+                    ordinal,
+                    target: SourceFunctorArgumentTarget::Primary(target),
+                })
             })
-            .collect(),
+            .collect::<Result<Vec<_>, String>>()?,
         type_requests: vec![
             SourceFunctorTypeRequestInput {
                 application,

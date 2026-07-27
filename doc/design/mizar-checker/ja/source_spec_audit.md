@@ -21,6 +21,7 @@ public method は、module spec が table、builder、output API として記述
 - [typed_ast.md](./typed_ast.md)
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
+- [source_atomic_formula.md](./source_atomic_formula.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
@@ -127,6 +128,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `overload_resolution`
 - `registration_resolution`
 - `resolved_typed_ast`
+- `source_atomic_formula`
 - `source_context`
 - `source_attribute`
 - `source_evidence`
@@ -419,6 +421,49 @@ direct template transport、candidate collection/applicability/viability/ranking
 winner、functor-definition semantics、later term/formula family、accepted
 fact/declaration/proof、downstream IRを所有しない。これらはTasks 254+、260、
 270、277、278とexplicit ownerに残る。
+
+### `source_atomic_formula`
+
+generated public newtype:
+
+- `SourceAtomicFormulaId`、`SourceAtomicWrapperId`、
+  `SourcePredicateHeadId`、`SourcePredicateCandidateId`、
+  `SourceAssertionTypeSiteId`、`SourceAssertionAttributeId`、
+  `SourceAtomicEdgeId`、`SourceAtomicRequestId`
+
+literal top-level public item:
+
+- `SourceAtomicFormulaHandoffInput`、`SourceAtomicFormulaInput`、
+  `SourceAtomicWrapperInput`、`SourcePredicateHeadInput`、
+  `SourcePredicateCandidateInput`、`SourceAssertionTypeSiteInput`、
+  `SourceAssertionAttributeInput`、`SourceAtomicEdgeInput`、
+  `SourceAtomicRequestInput`、`SourceAtomicFormulaKind`、
+  `SourceAtomicFormulaRecovery`、`SourceAssertionTypeHead`、
+  `SourceAssertionAttributePolarityInput`、`SourceAtomicEdgeRole`、
+  `SourceAtomicTermTarget`、`SourceAtomicRequestKind`、
+  `SourceAtomicFormulaHandoff`、`SourceAtomicFormulaTable`、
+  `SourceAtomicWrapperTable`、`SourcePredicateHeadTable`、
+  `SourcePredicateCandidateTable`、`SourceAssertionTypeSiteTable`、
+  `SourceAssertionAttributeTable`、`SourceAtomicEdgeTable`、
+  `SourceAtomicRequestTable`、`SourceAtomicFormula`、`SourceAtomicWrapper`、
+  `SourcePredicateHead`、`SourcePredicateCandidate`、
+  `SourceAssertionTypeSite`、`SourceAssertionAttribute`、`SourceAtomicEdge`、
+  `SourceAtomicRequest`、`SourceAtomicFormulaProducer`、
+  `SourceAtomicFormulaError`
+
+対応:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| syntax-free dense table 8個がatomic formula、wrapper、predicate provenance、asserted type、assertion attribute、nearest-family edge、unresolved requestを保持する。 | `src/source_atomic_formula.rs`のpublic input、immutable row/table。 | exact real `8/0/1/1/1/2/13/11` aggregateとchecker shape test。 | Task 256でimplemented。 |
+| Task-252/253/254/255 nearest-family ownershipとconditional fingerprintをatomicにvalidateする。 | `SourceAtomicFormulaProducer::build`とprivate install validation。 | same-arena real composition、cross-family producer probe、corruption/install test。 | transactionalにimplemented。 |
+| resolver provenance、canonical spelling、arena key、row cardinality/order、request associationをfail closedにする。 | producer validationと`SourceAtomicFormulaError`。 | predicate/attribute provenance、wrapper、request、spelling、mutation matrix。 | partial publicationなしでimplemented。 |
+| `TypedAst`がhandoff 1件をownし、`ResolvedTypedAst`がrevalidate後にclone-preserveする。 | `with_source_atomic_formula`、later lower-family revalidation、resolved assembly。 | replacement/install-order、final clone equality、deterministic replay。 | Implemented。 |
+| public enumはforward-compatibleである。 | 全public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | guarded。exhaustive exceptionなし。 |
+
+bounded gap: predicate-chain/formula-operator ownershipはTask 257、overload
+selection、asserted-type reachability、attribute admissibility/truth、formula
+fact/result、theorem acceptance、proof、downstream IRは本module外である。
 
 ### `source_set_term`
 
@@ -3106,3 +3151,23 @@ trace row/status/count、coverage、count/hashを変更しない。baselineは
 29,138 linesである。separate implementationは既存sidecar 8件にbounded
 covered row 1件を追加でき、case/outcome/detail不変のまま414/379、
 245/233をprojectする。
+
+## Step 5 Checker Task 256 implementation audit
+
+public 8-table `source_atomic_formula` producerとprivate exact consumerはfrozen
+source-only sliceを実装した。checkerはraw syntaxをacceptせず、resolver identityと
+Task-252/253/254/255 dependencyを再authenticateし、nearest-family ownershipを
+再導出し、install/later dependency revalidationをfail-closeしてone-shot handoffを
+`ResolvedTypedAst`へclone-preserveする。
+
+unchanged route 8件はexact `8/0/1/1/1/2/13/11`とfrozen Task-252/253/255
+co-oracleをproduceし、既存semantic detail ownerをすべて維持する。new covered
+row/reciprocal referenceはcase/outcome/phase/detail/tag/`.miz` byteを変更せず
+414/379、245/233へ到達する。review済みproducer/extractor/real/synthetic/
+corruption/install/exclusion/final-ownership matrixがbounded `source_drift`と
+`test_gap`をcloseする。
+
+blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、surviving `boundary_violation`はない。origin差は
+report-only `repo_metadata_conflict`のままである。MC-G017/MC-G020はpartial、
+frozen later semantic/formula ownerとSteps 6/7へnew creditを与えない。

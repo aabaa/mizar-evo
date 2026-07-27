@@ -2987,3 +2987,26 @@ qualified/argument-bearing attributes, semantic facts/truth, theorem
 acceptance, and conditioned comprehensions remain excluded. This
 documentation prerequisite changes no runner, fixture, sidecar, trace,
 count, test list, production manifest, or hash.
+
+## Checker Task 256 Runner Completion
+
+The private `source_atomic_formula` route now implements that frozen
+boundary. For each exact source it forms one complete Task-252 primary
+handoff and arena, builds any Task-253/255 dependency against those same
+objects, validates the public Task-256 transaction, installs it through
+`TypedAst` and `ResolvedTypedAst`, and then leaves the pre-existing semantic
+detail route in control.
+
+The eight transactions produce exactly Task-256 `8/0/1/1/1/2/13/11`,
+Task-252 `16/0/16`, Task-253 `1/1/1/2/2`, and Task-255
+`2/0/0/0/4/2`, with ten primary edges, one root-application edge, two root
+set-term edges, and no Task-254 target. Tests assert every ordered edge and
+request row, independent resolver/source anchors, the unchanged eight detail
+vectors, selector isolation, atomic corruption, synthetic cardinality and
+shape variants, installation/revalidation boundaries, and final ownership.
+
+No `.miz`, outcome, phase, category, rejection reason, stable detail,
+diagnostic payload, or tag changes. Predicate chains/operators/binders,
+general type and attribute graphs, semantic facts/truth, conditioned
+comprehensions, inline/templates, and overload selection remain deferred to
+their frozen owners.

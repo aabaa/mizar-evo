@@ -1734,6 +1734,8 @@ promoted by this increment.
   244/232, 224/190, 101/5/193/1, 320 tests, 26 paths / 29,138 lines, and
   all hashes. The separate implementation projects 414/379 and 245/233 with
   unchanged case count, subject to fresh preflight.
-- [ ] Implement the separate Task-256 consumer, producer, final handoff,
+- [x] Implement the separate Task-256 consumer, producer, final handoff,
   bounded reciprocal trace increment, and reviewed
-  real/synthetic/exclusion/corruption/install-order matrix.
+  real/synthetic/exclusion/corruption/install-order matrix. The exact eight
+  existing sources now exercise the syntax-free checker transaction while
+  retaining every pre-existing semantic detail owner.

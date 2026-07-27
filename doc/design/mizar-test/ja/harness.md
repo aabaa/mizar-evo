@@ -2837,3 +2837,24 @@ argument-bearing attribute、semantic fact/truth、theorem acceptance、
 conditioned comprehensionはexcludedのままである。本documentation prerequisiteは
 runner、fixture、sidecar、trace、count、test list、production manifest、hashを
 変更しない。
+
+## Checker Task 256 runner completion
+
+private `source_atomic_formula` routeはこのfrozen boundaryを実装した。exact
+sourceごとにcomplete Task-252 primary handoff/arenaを1個形成し、同じobjectに
+対してTask-253/255 dependencyをbuildし、public Task-256 transactionをvalidate
+して`TypedAst`/`ResolvedTypedAst`へinstallした後、既存semantic detail routeへ
+ownershipを戻す。
+
+8 transactionはTask-256 `8/0/1/1/1/2/13/11`、Task-252 `16/0/16`、
+Task-253 `1/1/1/2/2`、Task-255 `2/0/0/0/4/2`をexactにproduceする。
+direct edgeはprimary 10件、root application 1件、root set term 2件で、
+Task-254 targetはない。testは全ordered edge/request row、独立resolver/source
+anchor、不変のdetail vector 8件、selector isolation、atomic corruption、
+synthetic cardinality/shape、install/revalidation boundary、final ownershipを
+assertする。
+
+`.miz`、outcome、phase、category、rejection reason、stable detail、diagnostic
+payload、tagは変更しない。predicate chain/operator/binder、general type/
+attribute graph、semantic fact/truth、conditioned comprehension、inline/template、
+overload selectionはfrozen ownerへdeferしたままである。

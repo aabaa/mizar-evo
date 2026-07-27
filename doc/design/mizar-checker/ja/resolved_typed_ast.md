@@ -736,3 +736,13 @@ immutable handoffをexposeする。final assemblyはdense IDをrebuild/retarget�
 comprehension generatorをbindせず、conditionをresolveせず、sethood/
 nonemptiness/wideningを決定せず、result type/semantic resultを作らない。
 handoff absent時のlegacy projectionは不変である。
+
+## Task 256 final-handoff addendum
+
+`ResolvedTypedAst`はexact Task-252とconditional Task-253/254/255 fingerprint、
+resolver provenance、request association、nearest-family target partition、
+arena siteを再検証し、optional checker-owned `SourceAtomicFormulaHandoff`を
+clone-preserveする。borrowed `source_atomic_formula()` getterがimmutable handoffを
+公開する。final assemblyはdense IDのrebuild/retarget、predicate candidate選択、
+expected-input request回答、assertion/formula判断、fact publish、theorem acceptanceを
+行わず、handoff absent時のlegacy projectionは不変である。

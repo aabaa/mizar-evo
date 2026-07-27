@@ -671,3 +671,17 @@ Replacement, missing dependency, non-root/reverse ownership, overlap, and
 non-equivalent dependency substitution fail atomically. This adds no
 comprehension binding/capture, formula, sethood/nonemptiness/widening result,
 semantic term/type, fact, proof, or downstream IR.
+
+## Task 256 Ownership Addendum
+
+`TypedAst` now owns an optional immutable `SourceAtomicFormulaHandoff`.
+`with_source_atomic_formula` is one-shot, requires Task 252 and every targeted
+Task-253/254/255 handoff already installed, compares exact deterministic
+fingerprints, and revalidates formula sites, provenance, requests, and the
+nearest-family target partition. Later Task-253/254/255 installers revalidate
+an already installed Task-256 handoff before committing their fields, so
+installation order cannot bypass an ownership or fingerprint check.
+Replacement, missing or non-equivalent dependencies, non-root targets,
+overlap, and arena/provenance drift fail atomically. This adds no candidate
+selection, expected-type answer, assertion fact or truth, formula result,
+theorem acceptance, proof, or downstream IR.

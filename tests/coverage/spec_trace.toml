@@ -4980,6 +4980,26 @@ tests = [
 notes = "Task 245 coverage is limited to the exact single-right-parenthesized reserved-variable membership type/well-formedness slice. The real ParenthesizedTerm producer composes with Task 120's real direct membership consumer: direct-left x and right-inner x resolve at source-order ordinals 1 and 2 with both lookups resolving to BindingId(0), transparent lowering preserves one written-range-anchored BuiltinSet identity, and the right-inner semantic site owns the sole expected-set input. A dedicated config, stable invalid-payload key, distinct left-result/right-result/right-expected roles, explicit Right wrapper-side metadata, finite exact/near-miss/provenance/corruption matrix, matched Task243-vs-Task245 cross-route rejection, immutable output, all 58 prior binary-formula owners bidirectionally, focused Task 120 and six left-parenthesized regressions, and a real frontend/resolver sidecar protect active runner 187. Left/both/nested parenthesization, arbitrary parenthesization or operands, precedence, formula grouping, closure/order materialization, membership truth/facts, theorem acceptance, child graphs, broader semantics, and imported-positive provenance receive no Task 245 credit. Missing imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_atomic_formula_payload"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Checker Task 256 Frozen Atomic-Formula Source-Transport Contract"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_builtin_inequality_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_builtin_membership_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_builtin_type_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
+]
+notes = "Task 256 covers only syntax-free source atomic-formula occurrences, ordinary predicate heads and individually authenticated candidates, bare builtin asserted-type sites, simple imported assertion attributes and `non` polarity anchors, nearest-family Task-252/253/255 direct term edges, and eleven unresolved expected-input requests for the exact eight frozen routes. It preserves every existing semantic failure boundary and grants no predicate applicability, overload selection, type reachability, attribute admissibility or truth, equality/inequality/membership fact, formula result, theorem acceptance, downstream IR, or proof credit."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_attribute_payload"
 source = "doc/design/mizar-checker/en/00.crate_plan.md"
 section = "Task 250 Frozen Attribute-Chain/Qualification/Provenance Producer Contract"

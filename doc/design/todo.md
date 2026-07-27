@@ -2157,3 +2157,19 @@ Task 277 templates; Task 278 overload selection. General assertion type
 graphs, qualified/argument-bearing attributes, semantic facts/truth, theorem
 acceptance, Steps 6/7, and global Step-5 completion remain deferred. The
 origin discrepancy remains report-only `repo_metadata_conflict`.
+
+## Step 5 Checker Task 256 Implementation Addendum
+
+Checker Task 256 is implemented as the reviewed public eight-table
+`source_atomic_formula` producer plus one private exact `mizar-test` consumer.
+The eight unchanged fail sidecars and one bounded covered trace row produce
+Task-256 `8/0/1/1/1/2/13/11`, Task-252 `16/0/16`, Task-253
+`1/1/1/2/2`, and Task-255 `2/0/0/0/4/2`, with no real Task-254
+target and with every prior semantic detail owner preserved.
+
+The implementation closes the bounded `source_drift`/`test_gap` and reaches
+414/379 requirements, type 245/233, unchanged pass/fail 224/190, and active
+type 193. Task 257 is next in the dependency-ready checker queue. Predicate
+chains/operators/binders, conditioned comprehensions, inline/templates,
+overload selection, accepted facts/proofs, Steps 6/7, and global Step-5
+completion remain deferred.

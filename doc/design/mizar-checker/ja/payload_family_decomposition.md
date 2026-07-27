@@ -484,3 +484,12 @@ follow-upに残す。
 public producer/final handoffはbounded `source_drift`、real/synthetic/corruption/
 install/exclusion matrixは`test_gap`のままである。source、fixture、
 expectation、trace row/status/count、count/hashを変更しない。
+
+Task 256はこのfrozen boundary内で実装済みである。public 8-table producer、
+private exact consumer、same-arena Task-252/253/255 composition、optional
+Task-253/254/255 fingerprint、unresolved request 11件、immutable final handoff、
+bounded reciprocal trace row、review済みreal/synthetic/corruption/install/
+exclusion matrixがbounded `source_drift`と`test_gap`をcloseする。既存8 semantic
+routeはoutcome/detail ownershipを維持する。predicate chain、formula
+operator/binder、conditioned-comprehension compositionはTask 257、inline
+closure、template role、overload selectionはTasks 270/277/278のままである。

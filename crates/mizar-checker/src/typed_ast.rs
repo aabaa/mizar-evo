@@ -1,7 +1,8 @@
 //! Source-shaped typed AST data tables for checker phase 6.
 
 use crate::{
-    source_application::SourceFunctorApplicationHandoff, source_attribute::SourceAttributeHandoff,
+    source_application::SourceFunctorApplicationHandoff,
+    source_atomic_formula::SourceAtomicFormulaHandoff, source_attribute::SourceAttributeHandoff,
     source_context::SourceBindingContextHandoff, source_evidence::SourceEvidenceHandoff,
     source_set_term::SourceSetTermHandoff, source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff, source_type::SourceTypeApplicationHandoff,
@@ -93,6 +94,7 @@ pub struct TypedAst {
     source_application: Option<SourceFunctorApplicationHandoff>,
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
+    source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -117,6 +119,7 @@ impl TypedAst {
             source_application: None,
             source_structure: None,
             source_set_term: None,
+            source_atomic_formula: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -169,6 +172,10 @@ impl TypedAst {
 
     pub const fn source_set_term(&self) -> Option<&SourceSetTermHandoff> {
         self.source_set_term.as_ref()
+    }
+
+    pub const fn source_atomic_formula(&self) -> Option<&SourceAtomicFormulaHandoff> {
+        self.source_atomic_formula.as_ref()
     }
 
     pub fn with_source_evidence(
@@ -246,6 +253,19 @@ impl TypedAst {
                 )
                 .map_err(|_| TypedAstError::InvalidSourceApplication)?;
         }
+        if let Some(source_atomic_formula) = &self.source_atomic_formula {
+            source_atomic_formula
+                .validate_installation(
+                    self.source_id,
+                    &self.module_id,
+                    source_term,
+                    Some(&handoff),
+                    self.source_structure.as_ref(),
+                    self.source_set_term.as_ref(),
+                    &self.nodes,
+                )
+                .map_err(|_| TypedAstError::InvalidSourceApplication)?;
+        }
         self.source_application = Some(handoff);
         Ok(self)
     }
@@ -282,6 +302,19 @@ impl TypedAst {
                 )
                 .map_err(|_| TypedAstError::InvalidSourceStructure)?;
         }
+        if let Some(source_atomic_formula) = &self.source_atomic_formula {
+            source_atomic_formula
+                .validate_installation(
+                    self.source_id,
+                    &self.module_id,
+                    source_term,
+                    self.source_application.as_ref(),
+                    Some(&handoff),
+                    self.source_set_term.as_ref(),
+                    &self.nodes,
+                )
+                .map_err(|_| TypedAstError::InvalidSourceStructure)?;
+        }
         self.source_structure = Some(handoff);
         Ok(self)
     }
@@ -307,7 +340,46 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceSetTerm)?;
+        if let Some(source_atomic_formula) = &self.source_atomic_formula {
+            source_atomic_formula
+                .validate_installation(
+                    self.source_id,
+                    &self.module_id,
+                    source_term,
+                    self.source_application.as_ref(),
+                    self.source_structure.as_ref(),
+                    Some(&handoff),
+                    &self.nodes,
+                )
+                .map_err(|_| TypedAstError::InvalidSourceSetTerm)?;
+        }
         self.source_set_term = Some(handoff);
+        Ok(self)
+    }
+
+    pub fn with_source_atomic_formula(
+        mut self,
+        handoff: SourceAtomicFormulaHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_atomic_formula.is_some() {
+            return Err(TypedAstError::InvalidSourceAtomicFormula);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceAtomicFormula)?;
+        handoff
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                self.source_application.as_ref(),
+                self.source_structure.as_ref(),
+                self.source_set_term.as_ref(),
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceAtomicFormula)?;
+        self.source_atomic_formula = Some(handoff);
         Ok(self)
     }
 
@@ -373,6 +445,9 @@ impl TypedAst {
         }
         if let Some(source_set_term) = &self.source_set_term {
             output.push_str(&source_set_term.debug_text());
+        }
+        if let Some(source_atomic_formula) = &self.source_atomic_formula {
+            output.push_str(&source_atomic_formula.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1256,6 +1331,7 @@ pub enum TypedAstError {
     InvalidSourceApplication,
     InvalidSourceStructure,
     InvalidSourceSetTerm,
+    InvalidSourceAtomicFormula,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1386,6 +1462,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceSetTerm => {
                 formatter.write_str("typed AST source set-term handoff is inconsistent")
+            }
+            Self::InvalidSourceAtomicFormula => {
+                formatter.write_str("typed AST source atomic-formula handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,

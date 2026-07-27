@@ -1545,6 +1545,7 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   224/190、101/5/193/1、320 tests、26 paths / 29,138 lines、全hashを
   保持する。separate implementationはfresh preflight条件でcase count不変の
   414/379、245/233をprojectする。
-- [ ] separate Task-256 consumer/producer/final handoff、bounded reciprocal
+- [x] separate Task-256 consumer/producer/final handoff、bounded reciprocal
   trace increment、review済みreal/synthetic/exclusion/corruption/install-order
-  matrixを実装する。
+  matrixを実装した。exact 8 existing sourceは既存semantic detail ownerを維持した
+  ままsyntax-free checker transactionをexerciseする。

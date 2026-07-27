@@ -652,3 +652,15 @@ installed Task-255 handoffをrevalidateし、どちらのinstall順でも同じp
 ownership、overlap、non-equivalent dependency substitutionはatomicにfailする。
 comprehension binding/capture、formula、sethood/nonemptiness/widening result、
 semantic term/type、fact、proof、downstream IRは追加しない。
+
+## Task 256 ownership addendum
+
+`TypedAst`はoptional immutable `SourceAtomicFormulaHandoff`を所有する。
+`with_source_atomic_formula`はone-shotで、Task 252とtargeted Task-253/254/255
+handoffの先行installを要求し、exact deterministic fingerprint、formula site、
+provenance、request、nearest-family target partitionを再検証する。later
+Task-253/254/255 installerはfield commit前にinstalled Task-256 handoffを再検証し、
+install orderによるownership/fingerprint bypassを許さない。replacement、
+missing/non-equivalent dependency、non-root target、overlap、arena/provenance driftは
+atomicにfailする。candidate selection、expected-type answer、assertion fact/truth、
+formula result、theorem acceptance、proof、downstream IRは追加しない。

@@ -149,7 +149,7 @@ use type_elaboration::{
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
-    SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_TWO_HOP_ASSERTED_HEAD_CONFIG,
+    SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_TWO_HOP_ASSERTED_HEAD_CONFIG, SourceAtomicFormulaRouteOutput,
     SourceContradictionHandoffCorruption, SourceEvidenceRouteKind, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula,
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
@@ -295,6 +295,7 @@ use type_elaboration::{
     extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
     extract_source_two_edge_local_object_mode_two_hop_asserted_head, resolve_visible_attribute,
     resolve_visible_type_head, source_application_output, source_application_output_with_mutation,
+    source_atomic_formula_output, source_atomic_formula_output_with_mutation,
     source_attribute_output, source_binding_context_output,
     source_binding_context_token_shape_is_exact, source_builtin_type_assertion_formula_output,
     source_chained_local_mode_asserted_head_output,
@@ -443,8 +444,8 @@ use type_elaboration::{
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
     is_active_type_elaboration, source_application_transport_detail_keys,
-    source_attribute_detail_keys, source_binding_context_detail_keys,
-    source_builtin_binary_term_formula_detail_keys,
+    source_atomic_formula_transport_detail_keys, source_attribute_detail_keys,
+    source_binding_context_detail_keys, source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
@@ -1492,6 +1493,11 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    if let Some(keys) =
+        source_atomic_formula_transport_detail_keys(&ast, resolver.module.clone(), &symbols)
+    {
+        return keys;
+    }
     if let Some(keys) = source_set_term_transport_detail_keys(
         &ast,
         resolver.module.clone(),

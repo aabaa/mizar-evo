@@ -7,6 +7,7 @@ mod parenthesized_routes;
 mod result;
 mod source_application;
 mod source_ast;
+mod source_atomic_formula;
 mod source_attribute;
 mod source_context;
 mod source_evidence;
@@ -333,6 +334,12 @@ pub(super) use source_application::{
 #[cfg(test)]
 pub(super) use source_ast::{
     direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site,
+};
+pub(super) use source_atomic_formula::source_atomic_formula_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_atomic_formula::{
+    SourceAtomicFormulaRouteOutput, source_atomic_formula_output,
+    source_atomic_formula_output_with_mutation,
 };
 pub(super) use source_attribute::source_attribute_detail_keys;
 #[cfg(test)]

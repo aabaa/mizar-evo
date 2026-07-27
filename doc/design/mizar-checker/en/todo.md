@@ -4442,13 +4442,14 @@ unchecked row below is one future nonempty logical task and one commit.
   Comprehension binder identity/capture remains Task 257,
   conditioned-comprehension formula ownership remains Tasks 256-257, and
   semantic result/sethood/nonemptiness/widening decisions remain deferred.
-- [ ] **Task 256:** atomic formula producer. The documentation prerequisite is
-  frozen: one public eight-table syntax-free transaction, eight unchanged
-  real fail consumers, exact `8/0/1/1/1/2/13/11` aggregate, Task-252
-  `16/0/16`, Task-253 `1/1/1/2/2`, Task-255 `2/0/0/0/4/2`,
-  conditional Task-253/254/255 fingerprints, and eleven unresolved
-  input requests. The producer, tests, trace increment, and implementation
-  commit remain open.
+- [x] **Task 256:** atomic formula producer. The public eight-table
+  syntax-free transaction, private exact eight-route consumer, exact
+  `8/0/1/1/1/2/13/11` aggregate, Task-252 `16/0/16`, Task-253
+  `1/1/1/2/2`, Task-255 `2/0/0/0/4/2`, conditional
+  Task-253/254/255 fingerprints, eleven unresolved input requests, final
+  immutable handoff, reciprocal trace increment, and reviewed real/synthetic/
+  exclusion/corruption/install matrix are complete. Existing semantic routes
+  and all outcome/detail fields remain unchanged.
 - [ ] **Task 257:** composite/quantified formula and binder producer.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.

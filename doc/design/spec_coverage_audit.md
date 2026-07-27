@@ -3038,3 +3038,28 @@ type 244/232, pass/fail 224/190, active 101/5/193/1, warnings/errors 23/0,
 implementation may add one bounded covered diagnostic row over the eight
 existing sidecars, projecting 414/379 and 245/233 without changing the 414
 cases or any sidecar outcome/detail.
+
+## Step 5 Checker Task 256 Implementation Addendum
+
+Task 256 now supplies executable source-transport coverage for the frozen
+Chapter-9/14 atomic-formula slice, with Chapters 3/6/13/19 retaining their
+type, attribute, term, and resolver ownership boundaries. The new covered row
+`spec.en.checker.type_elaboration.source_atomic_formula_payload` maps exactly
+the eight pre-existing fail sidecars, and the existing rows receive only the
+frozen reciprocal transport backlink. No existing row status, outcome,
+detail, diagnostic payload, tag, or `.miz` changes.
+
+The public checker handoff transports eight dense tables. Across the eight
+transactions the private consumer measures Task-256
+`8/0/1/1/1/2/13/11`, Task-252 `16/0/16`, Task-253
+`1/1/1/2/2`, and Task-255 `2/0/0/0/4/2`; there is no real Task-254
+target. This closes the bounded Task-256 `source_drift` and `test_gap` and
+raises only the requirement/covered counts: plan 414/379 and type
+245/233. Case count, pass/fail 224/190, active
+parse/declaration/type/proof 101/5/193/1, and warnings/errors 23/0 remain
+unchanged.
+
+MC-G017/MC-G020 remain partial. This increment grants no semantic
+formula/type/attribute truth, theorem acceptance, overload selection,
+conditioned-comprehension, Core/CFG/VC, Steps 6/7, or global Step-5
+completion credit. Those owners and deferred statuses remain unchanged.

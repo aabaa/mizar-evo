@@ -529,3 +529,13 @@ The public producer/final handoff remains bounded `source_drift`, and the
 real/synthetic/corruption/install/exclusion matrix remains `test_gap`.
 It changes no source, fixture, expectation, trace row/status/count, count, or
 hash.
+
+Task 256 is now implemented within that frozen boundary. The public
+eight-table producer, private exact consumer, same-arena Task-252/253/255
+composition, optional Task-253/254/255 fingerprints, eleven unresolved
+requests, immutable final handoff, bounded reciprocal trace row, and reviewed
+real/synthetic/corruption/install/exclusion matrix close the bounded
+`source_drift` and `test_gap`. All eight prior semantic routes retain their
+outcome and detail ownership. Task 257 still owns predicate chains, formula
+operators/binders, and conditioned-comprehension composition; Tasks 270,
+277, and 278 retain inline closure, template roles, and overload selection.

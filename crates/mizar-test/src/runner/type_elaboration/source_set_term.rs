@@ -46,6 +46,7 @@ use super::{
         subtree_has_recovery, surface_site,
     },
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
+    source_term::SourceTermParts,
 };
 
 const INVALID_PAYLOAD_KEY: &str = "type_elaboration.checker.typed_ast_invalid";
@@ -241,6 +242,37 @@ pub(in crate::runner) fn synthetic_source_set_term_output(
         roots,
         dependencies,
         degraded_terms,
+        |_| {},
+    )
+}
+
+pub(super) fn source_set_term_output_with_source_term(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    binding_env: BindingEnv,
+    roots: &[usize],
+    source_term: SourceTermParts,
+) -> Result<SourceSetTermRouteOutput, String> {
+    let extracted = extract_set_terms(
+        ast,
+        &module,
+        BindingContextId::new(0),
+        roots,
+        None,
+        None,
+        &BTreeSet::new(),
+    )?;
+    build_output(
+        ast,
+        module,
+        binding_env,
+        extracted,
+        Some(SyntheticSourceSetTermDependencies {
+            arena: source_term.arena,
+            primary: source_term.handoff,
+            application: None,
+            structure: None,
+        }),
         |_| {},
     )
 }
