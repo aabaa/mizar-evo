@@ -2406,3 +2406,28 @@ completion remain deferred. The origin discrepancy remains report-only
   only the reciprocal existing-sidecar reference/note.
 - [x] Measure plan/type `419/386` and `252/240`, libraries `332/361`, active
   `101/5/198/1`, and preserve every frozen semantic deferral.
+
+## Checker Task 257C3 Frozen-Contract Ledger
+
+- [x] Select the unchanged 107-byte Task-257C1 pass consumer and preserve
+  exact source/hash/ranges, imported provenance, and lower public APIs.
+- [x] Freeze Task-252 `3/0/3`, Task-256
+  `1/0/2/2/2/0/0/3/2`, and Task-257C3 `1/1` with no duplicated lower row.
+- [x] Freeze the two dense conjunction/negation tables, exact public
+  handoff/producer/error/accessors/debug, primary/atomic fingerprints, and
+  shared-boundary/negative-token validation.
+- [x] Freeze complete-route precedence, unsupported-subtree exclusion,
+  typed/resolved one-shot ownership, reciprocal A/B/C2/C3 exclusion,
+  corruption/rollback/replay, and final clone tests.
+- [x] Freeze reuse of the existing pass sidecar, one future reciprocal
+  reference/note, one future covered trace row, projected `419/387` and
+  `253/241`, and unchanged cases/active counts.
+- [x] Record `design_drift`, bounded `source_drift`/`test_gap`, report-only
+  `repo_metadata_conflict`, required coverage-audit impact, and all semantic
+  deferrals.
+- [x] Preserve documentation-only baseline `419/386`, `252/240`,
+  `228/191`, active `101/5/198/1`, libraries `332/361`, runner 29 paths /
+  34,064 lines, and all hashes.
+- [ ] Implement Task 257C3 in a separate logical task and commit only after
+  this documentation commit and fresh parser/resolver/lower-API/count/hash
+  preflight.

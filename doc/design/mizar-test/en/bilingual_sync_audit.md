@@ -382,3 +382,11 @@ successful checker-only validation in both install orders, and deferral of
 the Task-257C2 route only until fresh post-commit preflight. The later paired
 implementation updates now record its completed route, tests, trace row, and
 measured baselines. No bilingual drift remains.
+
+## Checker Task 257C3 Frozen-Contract Synchronization
+
+EN/JA now agree on the unchanged 107-byte consumer, the
+`3/0/3 -> 1/0/2/2/2/0/0/3/2 -> 1/1` route, precedence/exclusion and
+test matrix, existing-sidecar/one-row future trace projection, unchanged
+`419/386` / 361-test / 34,064-line baseline, and semantic deferrals. No
+Task-257C3 bilingual drift remains.

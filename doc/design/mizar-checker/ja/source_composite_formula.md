@@ -155,3 +155,11 @@ B3はcombined formula-composition installerだけからpublishできる。
 `Existential`、`ExistentialBody`、exact fourth profile、cumulative
 multi-binder extensionを実装した。exact reserve baseはdiagnostic 0の
 4 contexts/4 bindingsへ拡張され、inner-`r` shadowingとempty captureを保持する。
+
+## Task 257C3 frozen non-ownership
+
+predicate-chain implicit conjunction/segment negationはseparate syntax-free
+Task-257C3 association handoffを使い、source-composite formula/wrapper/root/
+edge/binder/type-site/request rowをfabricateしない。existing Task-257A/B
+profile/debug byteは不変で、installerはfuture C3 ownerへのreciprocal exclusion
+だけを追加する。

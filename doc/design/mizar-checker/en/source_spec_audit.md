@@ -3532,6 +3532,16 @@ corruption/profile tests, and runner selector/near-miss tests. No `spec_gap`,
 `boundary_violation` remains. The origin difference is still a report-only
 `repo_metadata_conflict`.
 
+## Task 257C3 Frozen Surface Audit
+
+The future source-backed public surface is fully named in the canonical crate
+plan: one predicate-chain composition input/handoff/producer/error family,
+two dense row/table/ID families, exact accessors, two lower fingerprints,
+stable debug, typed/resolved ownership, and reciprocal exclusions. It is not
+implemented by this documentation commit. Authority, tests, one future trace
+row, and all semantic exclusions are explicit, so no blocking `spec_gap` or
+unowned public behavior remains.
+
 ## Task 256C1 Condition-Container Compatibility Classification
 
 Chapter 13 §§13.4/13.4.2 puts the optional formula inside the comprehension,

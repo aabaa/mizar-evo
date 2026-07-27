@@ -12,6 +12,14 @@ test 303件、path/content hash `5cc36b8a...` / `b9b6c678...`の
 254+/260/270/277-278とSteps 6/7は両言語でunpromotedのままである。Task 253に
 bilingual driftは残らない。
 
+## Checker Task 257C3 frozen-contract synchronization
+
+EN/JAはunchanged 107-byte consumer、
+`3/0/3 -> 1/0/2/2/2/0/0/3/2 -> 1/1` route、precedence/exclusion/test
+matrix、existing-sidecar/one-row future trace projection、unchanged
+`419/386`/361-test/34,064-line baseline、semantic deferralを同期した。
+Task-257C3 bilingual driftは残らない。
+
 ## Checker Task 257C2 frozen-contract pair
 
 paired plan、harness、TODO、module-boundary auditは同じunchanged 191-byte

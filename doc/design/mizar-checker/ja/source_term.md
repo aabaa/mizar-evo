@@ -189,3 +189,11 @@ baselineではrouteはseparate lower taskをgateとしていた。Task 256C1は�
 installation orderをpassし、Task 252自体にcompatibility editは不要なまま、
 completed Task-257C2 routeはfingerprint/debug byteを変更せずexact rowを
 reuseする。
+
+## Task 257C3 frozen downstream consumer
+
+Task 257C3はexisting Task-252 `3/0/3` numeral handoffをexact fingerprintと、
+primary 1をtargetするTask-256 shared boundary edge経由だけで
+reauthenticateする。term/reference/request row、parent edge、ownership、
+Task-252 APIを追加しない。本documentation prerequisiteでは全Task-252
+byte/testが不変。

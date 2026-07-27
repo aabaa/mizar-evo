@@ -3273,3 +3273,13 @@ already frozen Task-257C2 route remains the first runner consumer after fresh
 post-commit preflight of the completed checker prerequisite; that consumer
 has since been implemented and verified without changing the fixture or
 semantic detail.
+
+## Checker Task 257C3 Frozen Harness Boundary
+
+The future harness route reuses the exact Task-257C1 selector and lower
+builder, then installs the separate `1/1` predicate-chain composition before
+the lower route can return. It introduces no raw traversal beyond the
+existing predicate-chain extractor and no new fixture. Success requires equal
+typed/resolved handoffs and the same empty semantic detail vector. The only
+future metadata changes are one reciprocal sidecar reference/note and one
+covered trace row; this prerequisite changes neither.

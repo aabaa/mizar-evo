@@ -832,3 +832,22 @@ compensate/weakenしない。
 
 checked formula、equality truth、fact、diagnostic、definition acceptance、
 proof、IR outputはderiveしない。
+
+## Task 257C3 frozen final projection
+
+later final projectionはtyped ownership成功後、optional predicate-chain
+composition handoffをrevalidate/clone-preserveする。matching accessor、
+deterministic debug placement、`InvalidSourcePredicateChainComposition`を
+追加するが、expression metadata、diagnostic、checked formula、truth、fact、
+downstream semantic resultは追加しない。本documentation prerequisiteは
+resolved source/outputを変更しない。
+
+```rust
+pub const fn source_predicate_chain_composition(
+    &self,
+) -> Option<&SourcePredicateChainCompositionHandoff>;
+```
+
+cloned C3 debug chunkはTask-252 source-term、Task-256 source-atomic-formula、
+A/B/C2 slotの後、resolved node/table section直前のfinal mutually exclusive
+formula-owner slotを占める。

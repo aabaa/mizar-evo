@@ -4264,8 +4264,10 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
         condition-to-atomic-formula associationをsemanticsなしでfreeze。
       - [x] **Task 257C2 implementation:** separate Task-256C1とfresh
         preflight後、frozen condition-formula associationだけをimplement。
-      - [ ] Task 257C2後、predicate-chain conjunction/segment-negation
-        compositionをseparately freeze。
+      - [x] **Task 257C3 prerequisite:** Task 257C2後、predicate-chain
+        conjunction/segment-negation compositionをseparately freeze。
+      - [ ] **Task 257C3 implementation:** fresh post-documentation
+        preflight後にfrozen predicate-chain compositionだけを実装。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
 - [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
@@ -4475,3 +4477,25 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `101/5/198/1`、warnings/errors `23/0`、libraries `332/361`、runner
   manifest 29 paths / 34,064 linesを測定。
 - [x] 全frozen semantic deferralを保持。
+
+## Checker Task 257C3 frozen-contract ledger
+
+- [x] existing 107-byte Task-257C1 source/hash、exact range、imported
+  `divides` provenance、Task-252 `3/0/3`、Task-256
+  `1/0/2/2/2/0/0/3/2`を保持。
+- [x] `formula=0, left_segment=0, right_segment=1, boundary=1`
+  conjunction row 1件と`formula=0, segment=1` negation row 1件をfreeze。
+- [x] primary/atomic fingerprint、shared-boundary/negative-token
+  reauthentication、deterministic debug/accessor、fail-closed errorをfreeze。
+- [x] typed/resolved one-shot ownership、clone preservation、全orderでの
+  reciprocal A/B/C2/C3 exclusionをfreeze。
+- [x] existing sidecarへfuture reciprocal reference/note 1件とcovered trace
+  row 1件だけを許可し、fixture/semantic changeを追加しない。
+- [x] baseline `419/386`、type `252/240`、pass/fail `228/191`、active
+  `101/5/198/1`、warnings/errors `23/0`、libraries `332/361`、runner
+  production 29 paths / 34,064 linesを保持。
+- [x] signature/applicability、overload selection、conjunction/negation
+  truth、fact/result、theorem acceptance、proof、IR/VC、broader chain、
+  Steps 6/7をdefer。
+- [ ] 本documentation commitとfresh parser/resolver/lower-API/count/hash
+  preflight後だけTask 257C3を実装。

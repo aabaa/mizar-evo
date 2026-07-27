@@ -465,3 +465,129 @@ surface、typed/resolved ownership、exact private runner consumer、checker tes
 追加し、fixture/semantic diagnosticは変更していない。measured exitはplan
 `419/386`、type `252/240`、libraries `332/361`、active
 parse/declaration/type/proof `101/5/198/1`である。
+
+## Task 257C3 frozen predicate-chain composition
+
+Task 257C3は本moduleのthird independent transactionである。existing
+107-byte Task-257C1 pass consumerをreuseし、already validatedなpredicate
+segment 2件のcompositionだけをauthenticateする。
+`SourceCompositeFormula` rowやsemantic formula resultは作らない。
+
+handoff inputはdense table 2件を持ち、exact profile `1/1`は次。
+
+```text
+conjunction#0 formula=0 ordinal=0 left_segment=0 right_segment=1 boundary=1
+negation#0 formula=0 ordinal=0 segment=1
+```
+
+public familyは`SourcePredicateChainConjunction{Id,Input,Table}`、
+`SourcePredicateChainNegation{Id,Input,Table}`、
+`SourcePredicateChainCompositionHandoffInput`/`Handoff`/`Producer`、
+non-exhaustive `SourcePredicateChainCompositionError`。rowはinput fieldだけ、
+ID/tableはstandard dense accessor、handoffはsource/module、exact Task-252/
+Task-256 debug fingerprint、両table、deterministic `debug_text()`を公開する。
+
+exact public ID/row/table signatureは次。
+
+```rust
+impl SourcePredicateChainConjunctionId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+impl SourcePredicateChainNegationId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+impl SourcePredicateChainConjunction {
+    pub const fn formula(&self) -> SourceAtomicFormulaId;
+    pub const fn ordinal(&self) -> usize;
+    pub const fn left_segment(&self) -> SourcePredicateSegmentId;
+    pub const fn right_segment(&self) -> SourcePredicateSegmentId;
+    pub const fn boundary(&self) -> SourceAtomicEdgeId;
+}
+impl SourcePredicateChainNegation {
+    pub const fn formula(&self) -> SourceAtomicFormulaId;
+    pub const fn ordinal(&self) -> usize;
+    pub const fn segment(&self) -> SourcePredicateSegmentId;
+}
+impl SourcePredicateChainConjunctionTable {
+    pub fn get(
+        &self,
+        id: SourcePredicateChainConjunctionId,
+    ) -> Option<&SourcePredicateChainConjunction>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourcePredicateChainConjunctionId,
+            &SourcePredicateChainConjunction,
+        ),
+    >;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+impl SourcePredicateChainNegationTable {
+    pub fn get(
+        &self,
+        id: SourcePredicateChainNegationId,
+    ) -> Option<&SourcePredicateChainNegation>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourcePredicateChainNegationId,
+            &SourcePredicateChainNegation,
+        ),
+    >;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+```
+
+producerはinput、`SourcePrimaryTermHandoff`、
+`SourceAtomicFormulaHandoff`、common `TypedArena`を受ける。Task-252
+`3/0/3`、Task-256 `1/0/2/2/2/0/0/3/2`、same-symbol imported candidate 2件、
+positive segment 0、exact negative `does not` segment 1、canonical root
+spellingをreauthenticateする。conjunction 0はboundary edge 1をsegment 0 right/
+segment 1 leftとしてreuseし、このexisting `PredicateChainBoundary`はprimary 1
+をtargetする。negation 0はsegment 1だけをtargetする。lower row/resolver
+provenanceはcopyしない。
+
+stable headerは`source-predicate-chain-composition-debug-v1`で、module、
+primary/atomic fingerprint、conjunction count/row、negation count/rowの順。
+errorは`DependencyMismatch`、`InvalidConjunction { conjunction }`、
+`InvalidNegation { negation }`、`InvalidAggregate`。
+
+typed/resolved ownershipはoptional/one-shot/revalidated/clone-preservedで、
+`source_predicate_chain_composition()`から参照する。dedicated errorは
+`InvalidSourcePredicateChainComposition`。Task-257A composite、Task-257B
+composition、Task-257C2 condition compositionと全installation orderで
+reciprocally exclusive。optional handoff absent時のexisting B/C2 successful
+fingerprint/debug byteは不変。
+
+C3-after-A/B/C2は
+`TypedAstError::InvalidSourcePredicateChainComposition`にfailする。reverse
+3 orderは順に`TypedAstError::InvalidSourceCompositeFormula`、
+`TypedAstError::InvalidSourceFormulaComposition`、
+`TypedAstError::InvalidSourceConditionFormulaComposition`にfailする。全6 pathは
+何もpublishせずbyte-identical stateを保持し、replay可能。typed/resolved
+debugではC3 chunkはTask-252 source-term、Task-256 source-atomic-formula、
+A/B/C2 slotの後、existing node/table section直前のfinal mutually exclusive
+formula-owner slotを占める。
+
+later implementationはexisting Task-257C1 fixtureをreuseし、sidecar
+reference/noteとcovered trace row
+`spec.en.checker.type_elaboration.source_predicate_chain_composition` 1件だけを
+変更できる。このrowはrequired、stage `type_elaboration`、status `covered`、
+coverage `pass`。canonical sourceは
+`doc/design/mizar-checker/en/source_formula_composition.md` section
+`Task 257C3 Frozen Predicate-Chain Composition`で、sole mapped testはexisting
+Task-257C1 sidecar。同sidecarのexact ordered spec-reference setはexisting
+`spec.en.checker.type_elaboration.source_predicate_chain_segment_payload`、
+次に`spec.en.checker.type_elaboration.source_predicate_chain_composition`。
+new rowはsyntax-free associationだけをcreditする。
+predicate signature answer、overload selection、
+conjunction/negation truth、formula fact/result、theorem acceptance、proof、
+IR/VC、broader chainはdeferred。本documentation prerequisiteはexecutable
+artifactを変更せず、baselineはplan `419/386`、type `252/240`、libraries
+`332/361`、active `101/5/198/1`、runner production 29 paths / 34,064 lines。

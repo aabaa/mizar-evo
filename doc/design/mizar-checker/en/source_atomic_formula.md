@@ -290,3 +290,13 @@ arbitrary, partial, and crossing relations fail closed. Exactly three tests
 cover those results, both `TypedAst` orders, and rollback/replay. No public
 schema, error, fingerprint, debug, semantic result, runner, or trace change
 was made.
+
+## Task 257C3 Frozen Downstream Consumer
+
+Task 257C3 reads the committed Task-257C1 `1/0/2/2/2/0/0/3/2` handoff
+without changing this module. Its separate composition handoff fingerprints
+the complete atomic debug bytes and associates conjunction 0 with segments
+0/1 and their shared edge 1, plus negation 0 with the already negative
+segment 1. This module remains the sole owner of segment polarity tokens,
+heads/candidates, argument edges, and imported provenance. The documentation
+prerequisite changes no source, public API, test, trace row, or hash.

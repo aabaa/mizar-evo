@@ -26,6 +26,18 @@ The plan/parse/declaration/type/proof CLI hashes are
 `142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`,
 and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 
+## Checker Task 257C3 Frozen Boundary Recheck
+
+No production path or line changes in this prerequisite. The future complete
+route keeps loaded-source traversal and resolver selection in
+`source_formula.rs`, reuses the lower Task-252/256 builder in
+`source_atomic_formula.rs`, and places only complete-route orchestration in
+`source_formula_composition.rs`; tests remain in their paired leaves. The
+cohesive manifest stays 29 paths / 34,064 lines with path/content hashes
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`.
+No split is required.
+
 ## Checker Task 257C2 Implementation Boundary Recheck
 
 Task 257C2 adds no production path. The complete exact route remains in the

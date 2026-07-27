@@ -660,3 +660,12 @@ graphは`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255
 1/0/1/1/1/1/2`にdependency-neutral Task-256
 `1/0/0/0/0/0/0/2/2`を加えたままで、Task-257C2がlater sole association
 edgeを追加する。family ownership、ID、fingerprint、semantic boundaryは不変。
+
+## Task 257C3 frozen cross-family edge
+
+next graph sliceは
+`Task252 3/0/3 -> Task256 1/0/2/2/2/0/0/3/2 -> Task257C3 1/1`。
+Task 257C3はpre-existing boundary edge 1を介したsegments 0/1 association 1件と
+negative segment 1 association 1件だけをownする。Task 252はprimary 1、
+Task 256はshared edge/polarity/candidate/resolver provenanceを保持する。new
+composite node/semantic formula ownerは導入しない。

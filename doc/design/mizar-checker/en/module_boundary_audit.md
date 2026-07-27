@@ -130,6 +130,18 @@ fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
 
+## Checker Task 257C3 Frozen Boundary Recheck
+
+The planned two-table predicate-chain composition remains in the cohesive
+`source_formula_composition.rs` owner and reuses existing Task-252/256 public
+handoffs. No source file, path, or measured line count changes in this
+documentation prerequisite. The future mizar-test route keeps raw traversal
+and resolver selection in `source_formula.rs`, reuses the Task-252/256 lower
+builder in `source_atomic_formula.rs`, and owns only complete-route
+orchestration in `source_formula_composition.rs`. Typed/resolved checker
+modules will own only optional installation and final projection. No split is
+required.
+
 ## Task 256C1 Frozen Boundary Recheck
 
 Fresh inventory measures `source_atomic_formula.rs` at 7,428 lines,

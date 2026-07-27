@@ -103,6 +103,14 @@ validation、real consumer 3件、5/3/2 request histogram、bounded outcome
 progression、deferred semantic ownerを記録する。Task 251にbilingual sync debtは
 残らない。
 
+## Task 257C3 frozen-contract synchronization
+
+EN canonical/JA companionはsame 107-byte consumer、
+`3/0/3 -> 1/0/2/2/2/0/0/3/2 -> 1/1` graph、two-table public contract、
+debug/error/ownership rule、tests、future sidecar/trace projection、
+documentation baseline `419/386`/`332/361`、semantic deferralを同期した。
+Task-257C3 bilingual debtは残らない。
+
 ## Task 252 source-term pair recheck
 
 paired plan/TODO/source-term module spec/source-spec audit/payload

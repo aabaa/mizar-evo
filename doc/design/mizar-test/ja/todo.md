@@ -1721,3 +1721,19 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   1件だけを更新。
 - [x] `419/386`、`252/240`、`228/191`、active `101/5/198/1`、
   361 tests、production 29 paths / 34,064 linesを測定。
+
+## Checker Task 257C3 frozen runner checklist
+
+- [x] unchanged 107-byte Task-257C1 pass fixture/hash、exact range、
+  final-LF guard、imported `divides` provenanceをreuse。
+- [x] one arenaでTask-252 `3/0/3`、Task-256
+  `1/0/2/2/2/0/0/3/2`、Task-257C3 `1/1`をfreeze。
+- [x] Task-257C1よりcomplete routeを優先し、named near miss、active
+  isolation、corruption/arena rollback、replay、final clone、empty semantic
+  outputをfreeze。
+- [x] existing sidecarへfuture reference/note 1件とfuture covered trace row
+  1件だけを許可し、fixture/semantic expectationを追加しない。
+- [x] prerequisite baseline `419/386`、`252/240`、`228/191`、active
+  `101/5/198/1`、361 tests、29 paths / 34,064 linesを保持。
+- [ ] documentation commitとfresh parser/resolver/lower-stage/count/hash
+  preflight後だけfrozen routeをimplement。

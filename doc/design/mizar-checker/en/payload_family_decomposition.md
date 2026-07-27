@@ -718,3 +718,13 @@ The immutable graph remains
 1/0/1/1/1/1/2` plus the dependency-neutral Task-256
 `1/0/0/0/0/0/0/2/2`; Task-257C2 later adds the sole association edge.
 No family ownership, ID, fingerprint, or semantic boundary changes.
+
+## Task 257C3 Frozen Cross-Family Edge
+
+The next graph slice is
+`Task252 3/0/3 -> Task256 1/0/2/2/2/0/0/3/2 -> Task257C3 1/1`.
+Task 257C3 owns only one association of segments 0/1 through the pre-existing
+boundary edge 1 and one association of negative segment 1. Task 252 retains
+primary 1; Task 256 retains the shared edge, segment polarity, candidates,
+and resolver provenance. No new composite node or semantic formula owner is
+introduced.

@@ -1912,3 +1912,19 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   single covered trace row.
 - [x] Measure `419/386`, `252/240`, `228/191`, active `101/5/198/1`,
   361 tests, and 29 production paths / 34,064 lines.
+
+## Checker Task 257C3 Frozen Runner Checklist
+
+- [x] Reuse the unchanged 107-byte Task-257C1 pass fixture/hash, exact
+  ranges, final-LF guard, and imported `divides` provenance.
+- [x] Freeze Task-252 `3/0/3`, Task-256
+  `1/0/2/2/2/0/0/3/2`, and Task-257C3 `1/1` in one arena.
+- [x] Freeze complete-route precedence over Task 257C1, named near misses,
+  active isolation, corruption/arena rollback, replay, final clone, and empty
+  semantic output.
+- [x] Freeze reuse of the existing sidecar with one future reference/note and
+  one future covered trace row; add no fixture or semantic expectation.
+- [x] Keep this prerequisite at `419/386`, `252/240`, `228/191`, active
+  `101/5/198/1`, 361 tests, and 29 paths / 34,064 lines.
+- [ ] Implement only the frozen route after the documentation commit and
+  fresh parser/resolver/lower-stage/count/hash preflight.

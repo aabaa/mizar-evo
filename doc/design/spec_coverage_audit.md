@@ -3508,3 +3508,48 @@ association. Equality truth, generator binding/reference/capture,
 predicate-chain conjunction/negation, formula facts/results, sethood/result
 typing, definition/theorem acceptance, proof, CoreIr/ControlFlowIr/VC,
 Steps 6/7, and global Step-5 completion remain deferred.
+
+## Step 5 Checker Task 257C3 Frozen-Contract Addendum
+
+Fresh post-Task-257C2 inventory selects the existing 107-byte Task-257C1 pass
+consumer as the exact authority for the next dependency-ready slice. Task
+257C3 freezes only syntax-free predicate-chain composition:
+
+```text
+Task252 3/0/3
+  -> Task256 1/0/2/2/2/0/0/3/2
+  -> Task257C3 conjunctions/negations 1/1
+```
+
+The conjunction row associates atomic formula 0, segments 0/1, and their
+already shared Task-256 boundary edge 1. The negation row associates only
+the exact `does not` segment 1. Task 252 retains the boundary primary; Task
+256 retains segment/token, edge, candidate, and resolver-provenance
+ownership. No composite source node, formula truth, fact, or semantic result
+is fabricated.
+
+This documentation prerequisite closes the missing contract
+`design_drift`; the separate producer/consumer and test matrix remain bounded
+`source_drift`/`test_gap`. It changes no `doc/spec`, `.miz`, fixture,
+sidecar, expectation, trace row/status/count, executable coverage, or hash.
+Baseline remains plan `419/386`, type `252/240`, pass/fail `228/191`,
+active `101/5/198/1`, warnings/errors `23/0`, and libraries `332/361`.
+
+The later implementation may add one covered requirement
+`spec.en.checker.type_elaboration.source_predicate_chain_composition`,
+sourced from
+`doc/design/mizar-checker/en/source_formula_composition.md`, section
+`Task 257C3 Frozen Predicate-Chain Composition`, and mapped only to the
+existing Task-257C1 sidecar. The row is required, has stage
+`type_elaboration`, status `covered`, and coverage `pass`, and credits
+only the exact syntax-free source association. That sidecar may gain only
+the reciprocal reference and transport note; its exact ordered references
+become the existing segment-payload ID followed by the new composition ID.
+Projected coverage is plan `419/387` and type `253/241`, with no case or
+active-count change.
+Predicate signature/applicability, overload selection, conjunction/negation
+truth, formula facts/results, theorem acceptance, proof, IR/VC, broader
+chains, Steps 6/7, and global Step-5 completion remain deferred. Because the
+task changes follow-up ownership and future traceability, this audit update
+is required; `tests/coverage/spec_trace.toml` remains unchanged until the
+separate implementation.

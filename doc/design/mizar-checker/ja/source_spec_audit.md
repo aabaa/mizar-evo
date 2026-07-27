@@ -3498,3 +3498,12 @@ predicate、effective no-wrapper guard、両installation order、complete
 prerequisiteでclose済み。specification、existing `.miz`、expectation、trace
 status、coverage credit、semantic owner、public schemaは変更していない。全
 semantic deferralとreport-only `repo_metadata_conflict`は不変。
+
+## Task 257C3 frozen surface audit
+
+future source-backed public surfaceはcanonical crate planで完全に命名済み:
+predicate-chain composition input/handoff/producer/error family 1件、dense
+row/table/ID family 2件、exact accessor、lower fingerprint 2件、stable debug、
+typed/resolved ownership、reciprocal exclusion。本documentation commitでは
+実装しない。authority/test/future trace row/semantic exclusionは明示され、
+blocking `spec_gap`/unowned public behaviorは残らない。

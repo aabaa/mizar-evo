@@ -820,3 +820,33 @@ condition/equality relation in both orders. Substituted validation contexts
 still fail through the existing order-specific error, publish no field, and
 allow replay from the unchanged base. Equal full debug output confirms that
 installation order adds no state. No `TypedAst` source or API changed.
+
+## Task 257C3 Frozen Ownership
+
+The later Task-257C3 implementation adds an optional
+`SourcePredicateChainCompositionHandoff`, accessor, one-shot installer, debug
+projection, and `InvalidSourcePredicateChainComposition`. It requires the
+exact Task-252 and Task-256 handoffs and is reciprocally exclusive with
+Task-257A, Task-257B, and Task-257C2 ownership in all installation orders.
+Failure publishes nothing and preserves byte-identical replay. This
+documentation prerequisite changes no `TypedAst` source or executable API.
+
+```rust
+pub const fn source_predicate_chain_composition(
+    &self,
+) -> Option<&SourcePredicateChainCompositionHandoff>;
+
+pub fn with_source_predicate_chain_composition(
+    self,
+    composition: SourcePredicateChainCompositionHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+C3-after-A/B/C2 fails with
+`InvalidSourcePredicateChainComposition`. A/B/C2-after-C3 fails with,
+respectively, `InvalidSourceCompositeFormula`,
+`InvalidSourceFormulaComposition`, or
+`InvalidSourceConditionFormulaComposition`. All six directional paths are
+atomic and replayable. The optional C3 debug chunk is after Task-252
+source-term, Task-256 source-atomic-formula, and the mutually exclusive
+A/B/C2 slots, immediately before the node/table section.

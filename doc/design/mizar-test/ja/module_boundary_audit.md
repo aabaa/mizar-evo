@@ -25,6 +25,18 @@ plan/parse/declaration/type/proof CLI hashは
 `142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`、
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
 
+## Checker Task 257C3 frozen boundary recheck
+
+本prerequisiteではproduction path/lineを変更しない。future complete routeは
+loaded-source traversal/resolver selectionを`source_formula.rs`、
+Task-252/256 lower builderを`source_atomic_formula.rs`、complete-route
+orchestrationだけを`source_formula_composition.rs`に置き、testsはpaired
+leafに置く。cohesive manifestは29 paths /
+34,064 lines、path/content hash
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`を
+保持する。split不要。
+
 ## Checker Task 257C2 implementation boundary recheck
 
 Task 257C2はproduction pathを追加しない。complete exact routeはexisting

@@ -875,3 +875,22 @@ does not compensate for or weaken that lower validation.
 
 No checked formula, equality truth, fact, diagnostic, definition acceptance,
 proof, or IR output is derived.
+
+## Task 257C3 Frozen Final Projection
+
+The later final projection revalidates and clone-preserves the optional
+predicate-chain composition handoff after typed ownership succeeds. It adds
+the matching accessor, deterministic debug placement, and
+`InvalidSourcePredicateChainComposition`, but no expression metadata,
+diagnostic, checked formula, truth, fact, or downstream semantic result. This
+documentation prerequisite changes no resolved source or output.
+
+```rust
+pub const fn source_predicate_chain_composition(
+    &self,
+) -> Option<&SourcePredicateChainCompositionHandoff>;
+```
+
+The cloned C3 debug chunk occupies the final mutually exclusive formula-owner
+slot after Task-252 source-term, Task-256 source-atomic-formula, and the
+A/B/C2 slots, immediately before the resolved node/table section.

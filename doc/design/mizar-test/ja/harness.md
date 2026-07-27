@@ -3104,3 +3104,12 @@ fixtureはexact lower relation/両install orderをauthenticateし、private runn
 がcompleted checker prerequisiteのfresh post-commit preflight後の最初の
 runner consumerであり、そのconsumerはfixture/semantic detailを変更せず
 現在実装・検証済みである。
+
+## Checker Task 257C3 frozen harness boundary
+
+future harness routeはexact Task-257C1 selector/lower builderをreuseし、lower
+routeがreturnする前にseparate `1/1` predicate-chain compositionをinstallする。
+existing extractor以外のraw traversal/new fixtureは追加しない。successはequal
+typed/resolved handoffとsame empty semantic detail vectorを要求する。future
+metadata変更はreciprocal sidecar reference/note 1件とcovered trace row 1件
+だけで、本prerequisiteではどちらも変更しない。

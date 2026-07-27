@@ -141,6 +141,17 @@ cross-family root ownership、conditional fingerprint、rendering、corruption t
 behavior-coupledでありprivate checker splitは不要である。`TypedAst`がone-shot
 immutable handoffをownし、`ResolvedTypedAst`はrevalidate後にclone-preserveする。
 
+## Checker Task 257C3 frozen boundary recheck
+
+planned two-table predicate-chain compositionはcohesiveな
+`source_formula_composition.rs` ownerに留まり、existing Task-252/256 public
+handoffをreuseする。本documentation prerequisiteではsource file/path/
+measured line countは不変。future mizar-test routeではraw traversal/resolver
+selectionを`source_formula.rs`、Task-252/256 lower builderを
+`source_atomic_formula.rs`、complete-route orchestrationだけを
+`source_formula_composition.rs`がownする。typed/resolved checker moduleは
+optional installation/final projectionだけをownする。split不要。
+
 ## Task 256C1 frozen boundary recheck
 
 fresh inventoryでは`source_atomic_formula.rs` 7,428 lines、

@@ -507,3 +507,141 @@ covered trace row, and the reciprocal sidecar reference without changing any
 fixture or semantic diagnostic. Measured exit is plan `419/386`, type
 `252/240`, libraries `332/361`, and active
 parse/declaration/type/proof `101/5/198/1`.
+
+## Task 257C3 Frozen Predicate-Chain Composition
+
+Task 257C3 is a third independent transaction in this module. It reuses the
+existing 107-byte Task-257C1 pass consumer and authenticates only how its two
+already validated predicate segments compose. It does not create
+`SourceCompositeFormula` rows or semantic formula results.
+
+The handoff input contains two dense tables. Exact profile `1/1` is:
+
+```text
+conjunction#0 formula=0 ordinal=0 left_segment=0 right_segment=1 boundary=1
+negation#0 formula=0 ordinal=0 segment=1
+```
+
+The public families are
+`SourcePredicateChainConjunction{Id,Input,Table}`,
+`SourcePredicateChainNegation{Id,Input,Table}`,
+`SourcePredicateChainCompositionHandoffInput`,
+`SourcePredicateChainCompositionHandoff`,
+`SourcePredicateChainCompositionProducer`, and non-exhaustive
+`SourcePredicateChainCompositionError`. Rows expose exactly their input
+fields; IDs and tables expose the standard dense accessors. The handoff
+exposes source/module, exact Task-252 and Task-256 debug fingerprints, both
+tables, and deterministic `debug_text()`.
+
+The exact public ID, row, and table signatures are:
+
+```rust
+impl SourcePredicateChainConjunctionId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+impl SourcePredicateChainNegationId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+impl SourcePredicateChainConjunction {
+    pub const fn formula(&self) -> SourceAtomicFormulaId;
+    pub const fn ordinal(&self) -> usize;
+    pub const fn left_segment(&self) -> SourcePredicateSegmentId;
+    pub const fn right_segment(&self) -> SourcePredicateSegmentId;
+    pub const fn boundary(&self) -> SourceAtomicEdgeId;
+}
+impl SourcePredicateChainNegation {
+    pub const fn formula(&self) -> SourceAtomicFormulaId;
+    pub const fn ordinal(&self) -> usize;
+    pub const fn segment(&self) -> SourcePredicateSegmentId;
+}
+impl SourcePredicateChainConjunctionTable {
+    pub fn get(
+        &self,
+        id: SourcePredicateChainConjunctionId,
+    ) -> Option<&SourcePredicateChainConjunction>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourcePredicateChainConjunctionId,
+            &SourcePredicateChainConjunction,
+        ),
+    >;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+impl SourcePredicateChainNegationTable {
+    pub fn get(
+        &self,
+        id: SourcePredicateChainNegationId,
+    ) -> Option<&SourcePredicateChainNegation>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourcePredicateChainNegationId,
+            &SourcePredicateChainNegation,
+        ),
+    >;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+```
+
+The producer receives the input, `SourcePrimaryTermHandoff`,
+`SourceAtomicFormulaHandoff`, and the common `TypedArena`. It reauthenticates
+Task-252 `3/0/3`, Task-256 `1/0/2/2/2/0/0/3/2`, the two same-symbol imported
+predicate candidates, positive segment 0, exact negative `does not` segment
+1, and the canonical root spelling. Conjunction 0 must reuse boundary edge 1
+as segment 0's right and segment 1's left edge; that existing
+`PredicateChainBoundary` targets primary 1. Negation 0 targets only segment
+1. No lower row or resolver provenance is copied.
+
+The stable header is
+`source-predicate-chain-composition-debug-v1`, followed by module identity,
+primary/atomic fingerprints, the conjunction count/row, and the negation
+count/row in that order. Errors are `DependencyMismatch`,
+`InvalidConjunction { conjunction }`, `InvalidNegation { negation }`, and
+`InvalidAggregate`.
+
+Typed/resolved ownership is optional, one-shot, revalidated, and
+clone-preserved through `source_predicate_chain_composition()`. Dedicated
+typed/resolved errors are `InvalidSourcePredicateChainComposition`. The
+handoff is reciprocally exclusive with Task-257A composite, Task-257B
+composition, and Task-257C2 condition composition in all installation
+orders. Existing B/C2 successful fingerprints and debug bytes remain
+unchanged when this optional handoff is absent.
+
+C3-after-A/B/C2 fails with
+`TypedAstError::InvalidSourcePredicateChainComposition`. The three reverse
+orders fail with, respectively,
+`TypedAstError::InvalidSourceCompositeFormula`,
+`TypedAstError::InvalidSourceFormulaComposition`, and
+`TypedAstError::InvalidSourceConditionFormulaComposition`. All six paths
+publish nothing, preserve byte-identical state, and permit replay. In typed
+and resolved debug output, the C3 chunk occupies the final mutually
+exclusive formula-owner slot after Task-252 source-term, Task-256
+source-atomic-formula, and the A/B/C2 slots, immediately before the existing
+node/table section.
+
+The later implementation reuses the existing Task-257C1 fixture and may
+change only its sidecar reference/note plus one covered trace row
+`spec.en.checker.type_elaboration.source_predicate_chain_composition`.
+That row is required, has stage `type_elaboration`, status `covered`, and
+coverage `pass`; its canonical source is
+`doc/design/mizar-checker/en/source_formula_composition.md`, section
+`Task 257C3 Frozen Predicate-Chain Composition`, and its sole mapped test is
+the existing Task-257C1 sidecar. That sidecar's exact ordered spec-reference
+set becomes the existing
+`spec.en.checker.type_elaboration.source_predicate_chain_segment_payload`
+followed by
+`spec.en.checker.type_elaboration.source_predicate_chain_composition`.
+The new row credits only the syntax-free association.
+Predicate signature answers, overload selection, conjunction/negation truth,
+formula facts/results, theorem acceptance, proof, IR/VC, and broader chains
+remain deferred. This documentation prerequisite changes no executable
+artifact; baseline remains plan `419/386`, type `252/240`, libraries
+`332/361`, active `101/5/198/1`, and runner production 29 paths / 34,064
+lines.

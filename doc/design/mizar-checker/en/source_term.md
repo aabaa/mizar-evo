@@ -201,3 +201,11 @@ pre-Task-256C1 baseline, the route was gated on that separate lower task.
 Task 256C1 now passes both installation orders; Task 252 still requires no
 compatibility edit, and the completed Task-257C2 route now reuses these exact
 rows without modifying their fingerprints or debug bytes.
+
+## Task 257C3 Frozen Downstream Consumer
+
+Task 257C3 reauthenticates the existing Task-252 `3/0/3` numeral handoff only
+through its exact fingerprint and the Task-256 shared boundary edge targeting
+primary 1. It adds no term/reference/request row, parent edge, ownership, or
+Task-252 API. This documentation prerequisite leaves every Task-252 byte and
+test unchanged.

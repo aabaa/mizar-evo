@@ -790,3 +790,31 @@ existing symmetric installerはexact authenticated condition/equality relation�
 errorでfailし、fieldをpublishせず、unchanged baseからreplayできる。equal full
 debug outputによりinstallation orderがstateを追加しないことを確認した。
 `TypedAst` source/APIは変更していない。
+
+## Task 257C3 frozen ownership
+
+later implementationはoptional `SourcePredicateChainCompositionHandoff`、
+accessor、one-shot installer、debug projection、
+`InvalidSourcePredicateChainComposition`を追加する。exact Task-252/256
+handoffを要求し、Task-257A/B/C2 ownershipと全installation orderで
+reciprocally exclusive。failureは何もpublishせずbyte-identical replayを
+保持する。本documentation prerequisiteは`TypedAst` source/executable APIを
+変更しない。
+
+```rust
+pub const fn source_predicate_chain_composition(
+    &self,
+) -> Option<&SourcePredicateChainCompositionHandoff>;
+
+pub fn with_source_predicate_chain_composition(
+    self,
+    composition: SourcePredicateChainCompositionHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+C3-after-A/B/C2は`InvalidSourcePredicateChainComposition`。A/B/C2-after-C3は
+順に`InvalidSourceCompositeFormula`、`InvalidSourceFormulaComposition`、
+`InvalidSourceConditionFormulaComposition`にfailする。directional 6 pathは
+すべてatomic/replayable。optional C3 debug chunkはTask-252 source-term、
+Task-256 source-atomic-formula、mutually exclusive A/B/C2 slotの後、
+node/table section直前。

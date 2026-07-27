@@ -273,3 +273,12 @@ wrong-owner/range/spelling/recovery/kind/context、wrapped、non-direct、
 arbitrary、partial/crossing relationはfail closedする。exactly 3 testsが
 これらと`TypedAst`両order/rollback/replayをcoverする。public schema、error、
 fingerprint、debug、semantic result、runner、traceは変更していない。
+
+## Task 257C3 frozen downstream consumer
+
+Task 257C3はcommitted Task-257C1 `1/0/2/2/2/0/0/3/2` handoffを本module
+変更なしで読む。separate composition handoffはcomplete atomic debugを
+fingerprintし、conjunction 0をsegments 0/1/shared edge 1へ、negation 0を
+already negative segment 1へassociateする。本moduleはpolarity token、
+head/candidate、argument edge、imported provenanceのsole ownerのまま。
+documentation prerequisiteはsource/public API/test/trace/hashを変更しない。

@@ -170,6 +170,14 @@ module-boundary pair is updated because public checker enum/profile surfaces
 and the existing private runner leaf changed. No Task-257B2 bilingual debt
 remains.
 
+## Task 257C3 Frozen-Contract Synchronization
+
+The EN canonical and JA companion now freeze the same 107-byte consumer,
+`3/0/3 -> 1/0/2/2/2/0/0/3/2 -> 1/1` graph, two-table public contract,
+debug/error/ownership rules, tests, future sidecar/trace projection,
+`419/386` and `332/361` documentation baseline, and semantic deferrals. No
+Task-257C3 bilingual debt remains.
+
 ## Task 256C1 Frozen-Contract Pair
 
 The paired plan, atomic/set owner, typed installation, decomposition,

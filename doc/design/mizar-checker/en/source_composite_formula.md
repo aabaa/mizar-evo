@@ -165,3 +165,12 @@ combined formula-composition installer.
 multi-binder extension are implemented. The exact reserve base extends to
 four contexts/four bindings with zero diagnostics, preserving inner-`r`
 shadowing and empty capture.
+
+## Task 257C3 Frozen Non-Ownership
+
+Predicate-chain implicit conjunction and segment negation use the separate
+syntax-free Task-257C3 association handoff. They do not fabricate
+source-composite formula, wrapper, root, edge, binder, type-site, or request
+rows. Existing Task-257A/B profiles and debug bytes remain unchanged, and
+their installers will only add reciprocal exclusion against the future C3
+owner.

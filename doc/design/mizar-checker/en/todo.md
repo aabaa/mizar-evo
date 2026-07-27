@@ -4489,8 +4489,10 @@ unchecked row below is one future nonempty logical task and one commit.
       - [x] **Task 257C2 implementation:** implement only the frozen
         condition-formula association after separate Task-256C1 and fresh
         preflight.
-      - [ ] Freeze predicate-chain conjunction/segment-negation composition
-        separately after Task 257C2.
+      - [x] **Task 257C3 prerequisite:** freeze predicate-chain
+        conjunction/segment-negation composition separately after Task 257C2.
+      - [ ] **Task 257C3 implementation:** implement only the frozen
+        predicate-chain composition after fresh post-documentation preflight.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
 - [ ] **Task 259:** predicate-definition and initial-obligation intake producer.
@@ -4708,3 +4710,25 @@ implementation commit does not satisfy a producer task.
   `101/5/198/1`, warnings/errors `23/0`, libraries `332/361`, and the
   29-path / 34,064-line runner manifest.
 - [x] Preserve all frozen semantic deferrals.
+
+## Checker Task 257C3 Frozen-Contract Ledger
+
+- [x] Preserve the existing 107-byte Task-257C1 source/hash, exact ranges,
+  imported `divides` provenance, Task-252 `3/0/3`, and Task-256
+  `1/0/2/2/2/0/0/3/2`.
+- [x] Freeze one `formula=0, left_segment=0, right_segment=1, boundary=1`
+  conjunction row and one `formula=0, segment=1` negation row.
+- [x] Freeze primary/atomic fingerprints, shared-boundary and negative-token
+  reauthentication, deterministic debug/accessors, and fail-closed errors.
+- [x] Freeze typed/resolved one-shot ownership, clone preservation, and
+  reciprocal A/B/C2/C3 exclusion in every installation order.
+- [x] Freeze reuse of the existing sidecar with only one future reciprocal
+  reference/note and one covered trace row; add no fixture or semantic change.
+- [x] Preserve baseline `419/386`, type `252/240`, pass/fail `228/191`,
+  active `101/5/198/1`, warnings/errors `23/0`, libraries `332/361`, and
+  runner production 29 paths / 34,064 lines.
+- [x] Keep signature/applicability, overload selection, conjunction/negation
+  truth, facts/results, theorem acceptance, proof, IR/VC, broader chains,
+  and Steps 6/7 deferred.
+- [ ] Implement Task 257C3 only after this documentation commit and fresh
+  parser/resolver/lower-API/count/hash preflight.
