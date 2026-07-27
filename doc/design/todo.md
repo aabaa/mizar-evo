@@ -2233,3 +2233,27 @@ production manifest is 29 paths / 31,374 lines with path/content hashes
 `ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
 `8b101e3a0a94fcac1dcfd385d311b31d07f6e9f29cbc47b39f42fb51ac71f0ca`.
 Task 257B2 is the next dependency-ready logical task.
+
+## Step 5 Checker Task 257B2 Frozen-Contract Addendum
+
+Checker Task 257B2 now has a paired EN/JA documentation contract for one exact
+166-byte explicit-universal source. It freezes fixed and repeated conjunction/
+disjunction, `iff`, six executable grouping wrappers, the third exact
+Task-257 profile `8/6/1/1/1/7/9`, Task-252 `16/0/16`, Task-256
+`8/0/0/0/0/0/16/16`, formula composition `8/0`, installation/final
+ownership, tests, exclusions, audit impact, and exit criteria.
+
+The documentation prerequisite changes no production, fixture, sidecar, trace
+metadata/status/count, test list, or executable coverage. Baseline remains plan
+`415/381`, type `247/235`, pass/fail `225/190`, active
+`101/5/194/1`, checker/mizar-test tests `306/338`, and 29 mizar-test
+production paths / 31,374 lines. The separate implementation projects
+`416/382`, `248/236`, `226/190`, and active type 195.
+
+The contract classifies the missing documentation as `design_drift`, the
+unimplemented third profiles/final ownership as bounded `source_drift`, and
+the absent exact consumer/matrices as `test_gap`, with no blocking
+`spec_gap`. Task 257B3, Task 257C, connective truth, repetition expansion,
+theorem ownership/acceptance, facts, proof/IR/VC, Steps 6/7, and global Step-5
+completion remain deferred. The origin discrepancy remains report-only
+`repo_metadata_conflict`.

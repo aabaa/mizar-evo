@@ -600,3 +600,15 @@ Task 257B1 is now implemented at that boundary. The exact pass route composes
 all three predecessor families plus the `1/2` handoff without duplicating an
 occurrence or moving an owner. The bounded `source_drift` and `test_gap` are
 closed; Task 257B2 remains the next graph node.
+
+### Task 257B2 connective/grouping node
+
+The next node composes the unchanged Task-257 explicit-binder environment with
+Task-252 numeral transport, Task-256 equality transport, a third exact
+Task-257 composite profile, and the existing Task-257B1 cross-family table
+shape. Its graph is `Task252 16/0/16 -> Task256 8/.../16/16 ->
+Task257B2 8/6/1/1/1/7/9 -> composition 8/0`. Six
+`ParenthesizedFormula` occurrences remain transparent wrapper rows. The node
+owns fixed/repeated conjunction/disjunction, `iff`, and grouping only; Task
+257B3 binder expansion, Task 257C predicate/comprehension composition, and
+all semantic result families remain downstream.

@@ -4277,3 +4277,18 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
 各taskはfamilyを適用可能な`TypedAst`/`ResolvedTypedAst` tableまでtransactionally
 projectし、実`mizar-test` Task-10 caseがconsumeする。未消費DTO、placeholder
 runner、docs-only implementation commitはproducer taskを満たさない。
+
+## Task 257B2 frozen-contract addendum
+
+- [x] fixed/repeated conjunction/disjunction、`iff`、executable grouping 6件を
+  含むexact 166-byte explicit-universal sourceをfreezeする。
+- [x] parser range/token、第3 `8/6/1/1/1/7/9` composite、Task-252
+  `16/0/16`、Task-256 `8/0/0/0/0/0/16/16`、composition `8/0`をfreeze。
+- [x] new composite kind、same-family/atomic-edge role、real wrapper validation、
+  profile partition、install/final ownership、corruption/isolation test、
+  trace impact、semantic deferralをfreeze。
+- [x] prerequisiteをdocumentation-onlyとし415/381、247/235、225/190、
+  active 101/5/194/1、library 306/338 tests、production 29 paths /
+  31,374 linesを不変にする。
+- [ ] fresh preflight後、別logical task/commitでこのfrozen Task 257B2だけを
+  実装する。

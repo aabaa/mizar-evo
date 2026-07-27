@@ -3176,3 +3176,35 @@ repetition, and executable grouping; Task 257B3 retains additional binder
 forms. Equality or quantified truth, implicit closure, facts, theorem
 ownership or acceptance, proof, Core/CFG/VC, Steps 6/7, and global Step-5
 completion receive no credit.
+
+## Step 5 Checker Task 257B2 Frozen-Contract Addendum
+
+Task 257B2 now has a documentation-only frozen contract for the exact
+166-byte explicit-universal consumer containing fixed/repeated conjunction and
+disjunction, `iff`, and six executable grouping wrappers. The planned public
+profiles are Task-252 `16/0/16`, Task-256
+`8/0/0/0/0/0/16/16`, Task-257B2 `8/6/1/1/1/7/9`, and
+formula composition `8/0`. Task 257B3 retains additional binder shapes and
+Task 257C retains predicate/comprehension composition.
+
+This prerequisite closes only missing-contract `design_drift`. The third
+exact profile/final ownership remain bounded `source_drift`, and the exact
+pass consumer/corruption/isolation matrices remain `test_gap` for the separate
+implementation. Chapter 14 and the existing parser pass/fail fixtures provide
+complete authority for this source tree; there is no blocking `spec_gap`.
+
+No trace row, mapping, status, fixture, sidecar, source, count, hash, or
+executable coverage changes in this commit. Baseline remains plan `415/381`,
+type `247/235`, pass/fail `225/190`, active `101/5/194/1`, and
+warnings/errors `23/0`.
+
+The implementation may add one covered row,
+`spec.en.checker.type_elaboration.source_connective_grouping_payload`, mapped
+only to
+`pass_type_elaboration_formula_connective_grouping_payload_001.expect.toml`,
+and unchanged-status reciprocal notes for Chapter 14 and Tasks
+252/256/257A/257B1. It projects plan `416/382`, type `248/236`,
+pass/fail `226/190`, and active type 195. MC-G017/MC-G020 remain partial:
+connective truth, general repetition validation/expansion, theorem
+ownership/acceptance, facts, proof, Core/CFG/VC, Steps 6/7, and global Step-5
+completion receive no credit.

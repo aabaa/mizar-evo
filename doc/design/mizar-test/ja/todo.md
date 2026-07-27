@@ -1608,3 +1608,17 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] exact consumer、第2 composite profile、lower-family composition、
   public `1/2` handoff、trace row、test、final ownershipを実装する。bounded pass
   routeは全semantic deferralを保持し、次はChecker Task 257B2。
+
+## Checker Task 257B2 frozen runner checklist
+
+- [x] exact 166-byte source/SHA-256、parser range、repeated flag/connective
+  token、grouping wrapper、private selectorをfreeze。
+- [x] same-arena Task-252 `16/0/16`、Task-256
+  `8/0/0/0/0/0/16/16`、Task-257B2 `8/6/1/1/1/7/9`、
+  composition `8/0`をfreeze。
+- [x] selector isolation、mutation/recovery、A/B1 preservation、final ownership、
+  trace/count impact、全semantic deferralをfreeze。
+- [x] prerequisiteをdocumentation-onlyとし415/381、247/235、225/190、
+  active 101/5/194/1、338 tests、29 paths / 31,374 linesを不変にする。
+- [ ] documentation commit/fresh preflight後だけexact route/sidecar/trace/testを
+  実装する。

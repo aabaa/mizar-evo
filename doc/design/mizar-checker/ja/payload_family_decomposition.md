@@ -548,3 +548,14 @@ free-variable capture用に保持する。
 Task 257B1はこのboundaryで実装済みである。exact pass routeはoccurrenceを
 duplicateせずownerも移動せず、3 predecessor familyと`1/2` handoffをcomposeする。
 bounded `source_drift`/`test_gap`はcloseし、次のgraph nodeはTask 257B2である。
+
+### Task 257B2 connective/grouping node
+
+次nodeは変更しないTask-257 explicit-binder environmentへTask-252 numeral、
+Task-256 equality、第3 exact Task-257 composite profile、既存Task-257B1
+cross-family table shapeをcomposeする。graphは`Task252 16/0/16 -> Task256
+8/.../16/16 -> Task257B2 8/6/1/1/1/7/9 -> composition 8/0`。
+`ParenthesizedFormula` 6件はtransparent wrapper rowのまま。fixed/repeated
+conjunction/disjunction、`iff`、groupingだけをownし、Task 257B3 binder
+extension、Task 257C predicate/comprehension、全semantic result familyは
+downstreamに残す。

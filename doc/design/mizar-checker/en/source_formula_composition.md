@@ -250,3 +250,69 @@ only to the new pass sidecar. Counts are plan `415/381`,
 type-elaboration `247/235`, pass/fail `225/190`, active
 parse/declaration/type/proof `101/5/194/1`, and warnings/errors `23/0`.
 Task 257B2 is the next dependency-ready formula slice.
+
+## Task 257B2 Frozen Connective/Grouping Addendum
+
+Task 257B2 extends this transport only for the exact 166-byte source frozen in
+the crate plan. The source retains Task-257B1's explicit `x being set` binder
+and body context but deliberately contains no `x` occurrence. Its body is one
+`iff` whose grouped left side contains repeated conjunction/disjunction and
+whose grouped right side contains fixed conjunction/disjunction. This is a
+Chapter-14 source-transport slice, not connective evaluation.
+
+The third exact composite profile is
+formula/wrapper/root/binder/type-site/same-family-edge/request
+`8/6/1/1/1/7/9`, with binding environment `2/1/4`. It adds
+`Conjunction`, `RepeatedConjunction`, `Disjunction`,
+`RepeatedDisjunction`, and `Biconditional` formula kinds. The exact
+same-family tree adds only disjunction-left/right and
+biconditional-left/right roles; conjunction and repeated nodes reach atomic
+children through the composition table. Repeated kinds remain distinguishable
+by their kind and canonical spelling.
+
+The six wrapper rows are real `ParenthesizedFormula` occurrences with ranges
+`72..122`, `73..94`, `98..121`, `127..164`, `128..143`, and `147..163`.
+They are grouped by formula/ordinal, preserve independent typed sites, use
+context 1 and normal recovery, are associated with exactly one owner and
+strictly contain that owner's range, and never become formulas, child edges,
+requests, or semantic results. Descendant ranges may be nested inside an outer
+wrapper, but an unrelated sibling may not overlap or be contained by it.
+
+The lower profiles are Task 252 `16/0/16` and Task 256
+`8/0/0/0/0/0/16/16`. Every primary term is a numeral, so the binder has no
+reference and `BindingEntry::captured` remains empty. The composition profile
+is atomic-edge/bound-use `8/0`; new `ConjunctionLeft`,
+`ConjunctionRight`, `DisjunctionLeft`, and `DisjunctionRight` atomic-edge
+roles associate the eight Task-256 equalities with their nearest composite
+parent. No row copies a Task-252 or Task-256 occurrence.
+
+Validation authenticates the exact dependency profiles and fingerprints,
+formula tree, contexts, fixed/repeated kinds, direct repetition tokens,
+wrappers, ranges, source order, parent containment, atomic associations, and
+the absence of references/bound uses. It rejects A/B1/B2 hybrids, a fourth
+otherwise valid profile, wrapper crossing or substitution, fixed/repeated
+substitution, dependency replacement, and any omitted, duplicated, reordered,
+or cross-source association.
+
+The existing combined installer publishes the B2 composite and composition
+atomically after exact Task-252/256 installation. The legacy composite
+installer remains A-only; preinstalled Task-248 source context or an existing
+A/B1 composite/composition prevents B2 publication without changing any
+prior byte. Final assembly revalidates and clone-preserves the exact handoff.
+The `source-formula-composition-debug-v1` header and every old A/B1 rendering
+remain byte-identical.
+
+Implementation may add only
+`pass_type_elaboration_formula_connective_grouping_payload_001` and the
+covered row
+`spec.en.checker.type_elaboration.source_connective_grouping_payload`, plus
+reciprocal unchanged-status transport notes. Projected counts are plan
+`416/382`, type `248/236`, pass/fail `226/190`, and active
+`101/5/195/1`. Connective truth, general repetition validation or expansion,
+theorem acceptance, facts, proof/IR/VC, Task 257B3, Task 257C, and Steps 6/7
+remain deferred.
+
+This addendum is a documentation prerequisite only. It leaves production,
+fixtures, sidecars, trace metadata/counts, and executable coverage unchanged
+at plan `415/381`, type `247/235`, pass/fail `225/190`, active
+`101/5/194/1`, and warnings/errors `23/0`.

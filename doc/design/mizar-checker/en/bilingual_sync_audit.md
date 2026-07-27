@@ -150,3 +150,13 @@ credit, semantic deferrals, and Task-257B2 handoff. Both languages record
 checker/mizar-test tests `306/338` and the same 29-path / 31,374-line
 mizar-test manifest and measured hashes. No bilingual sync debt remains in
 Task 257B1.
+
+Task 257B2's frozen connective/grouping contract is synchronized across the
+paired crate plan, formula-composition design, payload decomposition,
+source-spec audit, checker TODO, mizar-test plan/harness/TODO, and global
+coverage/TODO notes. Both languages freeze the same 166-byte source, ranges,
+`8/6/1/1/1/7/9` composite profile, `16/0/16` Task-252 profile,
+`8/0/0/0/0/0/16/16` Task-256 profile, `8/0` composition, exclusions,
+baseline, projected counts, and semantic deferrals. No bilingual sync debt is
+accepted. The paired module-boundary audit is intentionally unchanged because
+the prerequisite changes no source module or public implementation surface.

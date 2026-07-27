@@ -23,6 +23,16 @@ warnings/errors `23/0`、338 tests、同じtest-list/CLI/29-path・31,374-line
 production-manifest hashを記録する。Checker Task 257B1にbilingual driftは
 残らない。
 
+## Checker Task 257B2 frozen-contract pair recheck
+
+paired plan/harness/TODOは同じ166-byte source、SHA-256、parser range、
+fixed/repeated flag/token、wrapper 6件、Task-252 `16/0/16`、Task-256
+`8/0/0/0/0/0/16/16`、Task-257B2 `8/6/1/1/1/7/9`、
+composition `8/0`、selector/test boundary、baseline/projected count、
+semantic deferralをfreezeする。production path/moduleを追加しない
+documentation prerequisiteなのでmodule-boundary auditは意図的に不変。
+Task 257B2 prerequisiteにbilingual driftは残らない。
+
 ## Checker Task 254 / Task-10 pair recheck
 
 paired plan/TODO/harness/module-boundary audit/checker consumer documentは、

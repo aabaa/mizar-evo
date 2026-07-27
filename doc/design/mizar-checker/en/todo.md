@@ -4501,3 +4501,19 @@ Every task projects its family transactionally through applicable `TypedAst`
 and `ResolvedTypedAst` tables and is consumed by a real `mizar-test` Task-10
 case. An unconsumed DTO, placeholder runner, or documentation-only
 implementation commit does not satisfy a producer task.
+
+## Task 257B2 Frozen-Contract Addendum
+
+- [x] Freeze the exact 166-byte explicit-universal source containing fixed and
+  repeated conjunction/disjunction, `iff`, and six executable groupings.
+- [x] Freeze parser ranges/tokens, the third `8/6/1/1/1/7/9` composite
+  profile, Task-252 `16/0/16`, Task-256 `8/0/0/0/0/0/16/16`, and
+  composition `8/0`.
+- [x] Freeze new composite kinds, same-family and atomic-edge roles, real
+  wrapper validation, profile partition, installation/final ownership,
+  corruption/isolation tests, trace impact, and semantic deferrals.
+- [x] Keep this prerequisite documentation-only at 415/381, 247/235,
+  225/190, active 101/5/194/1, 306/338 library tests, and 29 production
+  paths / 31,374 lines.
+- [ ] Implement only this frozen Task 257B2 slice in a separate logical task
+  and commit after fresh preflight.

@@ -231,3 +231,61 @@ resolved clone ownershipはexecutableである。covered trace requirement
 sidecarだけにmapする。countはplan `415/381`、type-elaboration `247/235`、
 pass/fail `225/190`、active parse/declaration/type/proof `101/5/194/1`、
 warnings/errors `23/0`。次のdependency-ready formula sliceはTask 257B2である。
+
+## Task 257B2 frozen connective/grouping addendum
+
+Task 257B2はcrate planでfreezeしたexact 166-byte sourceだけについてこの
+transportを拡張する。Task-257B1のexplicit `x being set` binder/body contextを
+保持するが、`x` occurrenceは意図的に0件。bodyはgrouped left sideにrepeated
+conjunction/disjunction、grouped right sideにfixed conjunction/disjunctionを
+持つ1件の`iff`である。これはChapter-14 source transportでありconnective
+evaluationではない。
+
+第3 exact composite profileはformula/wrapper/root/binder/type-site/
+same-family-edge/request `8/6/1/1/1/7/9`、binding environment `2/1/4`。
+`Conjunction`、`RepeatedConjunction`、`Disjunction`、
+`RepeatedDisjunction`、`Biconditional` kindを追加する。exact same-family
+treeが追加するroleはdisjunction-left/rightとbiconditional-left/rightだけ。
+conjunction/repeated nodeはcomposition tableでatomic childへ到達し、repeated
+kindはkind/canonical spellingでdistinct。
+
+real `ParenthesizedFormula` wrapper range 6件は`72..122`、`73..94`、
+`98..121`、`127..164`、`128..143`、`147..163`。formula/ordinal group順、
+independent typed site、context 1、normal recovery、exactly one ownerとの
+associationとowner rangeのstrict containmentを保持し、formula/child edge/
+request/semantic resultにはならない。outer wrapper内にdescendant rangeは
+nestできるが、unrelated siblingをoverlap/containできない。
+
+lower profileはTask 252 `16/0/16`、Task 256
+`8/0/0/0/0/0/16/16`。全primary termがnumeralなのでbinder referenceは0件、
+`BindingEntry::captured`もempty。compositionはatomic-edge/bound-use `8/0`。
+new `ConjunctionLeft/Right`、`DisjunctionLeft/Right` roleで8件のTask-256
+equalityをnearest composite parentへassociateし、Task-252/256 occurrenceを
+copyしない。
+
+validationはexact dependency profile/fingerprint、formula tree/context、
+fixed/repeated kind/direct repetition token、wrapper、range/source order/
+parent containment、atomic association、reference/bound-use absenceを認証する。
+A/B1/B2 hybrid、第4 otherwise-valid profile、wrapper crossing/substitution、
+fixed/repeated substitution、dependency replacement、omitted/duplicate/
+reordered/cross-source associationをrejectする。
+
+existing combined installerはexact Task-252/256 install後にB2 composite/
+compositionをatomic publishする。legacy composite installerはA-only。
+preinstalled Task-248 source contextまたはexisting A/B1
+composite/compositionはprior byteを変えずB2 publicationをrejectする。final
+assemblyはexact handoffを再validateしてclone-preserveする。
+`source-formula-composition-debug-v1` headerと旧A/B1 renderingはbyte-identical。
+
+implementationは
+`pass_type_elaboration_formula_connective_grouping_payload_001`、covered row
+`spec.en.checker.type_elaboration.source_connective_grouping_payload`、
+status不変のreciprocal transport noteだけを追加できる。projected countはplan
+`416/382`、type `248/236`、pass/fail `226/190`、active `101/5/195/1`。
+connective truth、general repetition validation/expansion、theorem acceptance、
+fact、proof/IR/VC、Task 257B3、Task 257C、Steps 6/7はdefer。
+
+このaddendumはdocumentation prerequisiteだけで、production、fixture、
+sidecar、trace metadata/count、executable coverageを変えない。baselineは
+plan `415/381`、type `247/235`、pass/fail `225/190`、active
+`101/5/194/1`、warnings/errors `23/0`。

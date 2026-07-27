@@ -143,3 +143,12 @@ vector、`1/2` composition、combined installation/exclusion rule、reciprocal
 trace credit、semantic deferral、Task-257B2 handoffを記録する。両languageは
 checker/mizar-test test `306/338`、同じ29-path / 31,374-line mizar-test
 manifest/measured hashを記録する。Task 257B1にbilingual sync debtは残らない。
+
+Task 257B2 frozen connective/grouping contractはpaired crate plan、
+formula-composition design、payload decomposition、source-spec audit、
+checker TODO、mizar-test plan/harness/TODO、global coverage/TODO noteで同期した。
+両言語は同じ166-byte source/range、`8/6/1/1/1/7/9` composite、
+Task-252 `16/0/16`、Task-256 `8/0/0/0/0/0/16/16`、composition `8/0`、
+exclusion、baseline/projected count、semantic deferralをfreezeする。bilingual
+sync debtは認めない。source module/public implementation surfaceを変えない
+prerequisiteなのでpaired module-boundary auditは意図的に不変。

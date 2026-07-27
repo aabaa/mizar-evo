@@ -2951,3 +2951,31 @@ literal composition debug rendering、typed/resolved ownershipをcoverする。
 isolation、corruption、ownership-partition、profile-discriminator、Task-248、
 Task-257A rollback caseはexecutableで、external resultはsemantic formula
 outputを持たない。
+
+## Checker Task 257B2 frozen harness boundary
+
+dedicated private formula-composition leafはexact case ID
+`pass_type_elaboration_formula_connective_grouping_payload_001` 1件だけを追加
+selectできる。exact theorem label/tree、normal recovery、explicit
+`x being set`、fixed/repeated flag/token、wrapper placement、equality endpoint、
+extra item/justificationなしを要求する。
+
+runnerはsame arenaでTask-252、Task-256、第3 Task-257 profile、`8/0`
+compositionをbuildし、composite/composition pairをatomic installする。positive
+assertionは`16/0/16`、`8/0/0/0/0/0/16/16`、
+`8/6/1/1/1/7/9`、`8/0`の全rowをcover。negativeはsource isolation、
+各profile/association mutation、fixed/repeated substitution、wrapper
+cross/order、dependency replacement、ownership collision、valid replay
+recoveryをcoverする。
+
+source-selector near-miss matrixはstatus/justification変更、別item追加、
+binder/binder type変更、operand reorder/count変更、wrapper depth/place変更、
+fixed/repeated token substitution、alternate connective tree、代表的な
+Task-257B3 binder shapeとTask-257C
+predicate-chain/conditioned-comprehension shapeをそれぞれ独立に与え、全variant
+をunselectedに保つ。checker profile-discriminator matrixもcoherentな
+otherwise-valid第4 profileを1件与え、partial stateをpublishせず失敗させる。
+
+active caseはdetail keyなしでpassし、type/fact/checked formula semantics/
+statement semantics/theorem acceptance/proof/IR creditを持たない。既存
+Task-257A/B1 selector/byte oracleは不変。

@@ -3497,3 +3497,21 @@ without status changes. This closes the bounded `source_drift` and `test_gap`;
 no blocking `spec_gap`, `source_undocumented_behavior`,
 `test_expectation_drift`, or `boundary_violation` remains. Task 257B2 retains
 broader connective/grouping transport.
+
+### Task 257B2 frozen source-spec classification
+
+Chapter 14 and the existing parser fixtures provide complete authority for the
+exact fixed/repeated conjunction/disjunction, non-associative `iff`, and
+parenthesized grouping tree. Chapter 4 supplies the unchanged explicit binder
+scope, while Tasks 252/256/257A/B1 supply the required public occurrence and
+composition owners. The missing frozen contract was `design_drift`; the absent
+third exact profiles/final ownership are bounded `source_drift`; and the
+absent exact pass consumer and matrices are `test_gap`. There is no blocking
+`spec_gap`.
+
+The documentation prerequisite changes no executable artifact. General
+alpha-equivalence/repetition expansion, connective truth, other precedence
+trees, binder forms, predicate chains, theorem acceptance, and downstream IR
+remain explicitly excluded, so no `source_undocumented_behavior`,
+`test_expectation_drift`, or accepted `boundary_violation` is introduced. The
+origin difference remains report-only `repo_metadata_conflict`.

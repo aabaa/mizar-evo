@@ -1798,3 +1798,17 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   composition, public `1/2` handoff, trace row, tests, and final ownership.
   The bounded pass route preserves all semantic deferrals; Checker Task 257B2
   is next.
+
+## Checker Task 257B2 Frozen Runner Checklist
+
+- [x] Freeze the exact 166-byte source, SHA-256, parser ranges, repeated flags,
+  connective tokens, grouping wrappers, and exact private selector.
+- [x] Freeze same-arena Task-252 `16/0/16`, Task-256
+  `8/0/0/0/0/0/16/16`, Task-257B2 `8/6/1/1/1/7/9`, and
+  composition `8/0`.
+- [x] Freeze selector isolation, mutation/recovery, A/B1 preservation, final
+  ownership, trace/count impact, and all semantic deferrals.
+- [x] Keep this prerequisite documentation-only at 415/381, 247/235,
+  225/190, active 101/5/194/1, 338 tests, and 29 paths / 31,374 lines.
+- [ ] Implement the exact route, sidecar, trace row, and tests only after the
+  documentation commit and fresh preflight.

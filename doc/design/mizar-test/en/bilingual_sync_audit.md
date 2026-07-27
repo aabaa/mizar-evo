@@ -284,3 +284,13 @@ languages record plan `415/381`, type `247/235`, pass/fail `225/190`,
 active `101/5/194/1`, warnings/errors `23/0`, 338 tests, and the same
 test-list, CLI, and 29-path / 31,374-line production-manifest hashes. No
 bilingual drift remains in Checker Task 257B1.
+
+## Checker Task 257B2 Frozen-Contract Pair Recheck
+
+The paired plan, harness, and TODO documents freeze the same 166-byte source,
+SHA-256, parser ranges, fixed/repeated flags and tokens, six wrappers,
+Task-252 `16/0/16`, Task-256 `8/0/0/0/0/0/16/16`, Task-257B2
+`8/6/1/1/1/7/9`, composition `8/0`, selector/test boundary, baseline,
+projected counts, and semantic deferrals. The module-boundary audit is
+intentionally unchanged because this prerequisite adds no production path or
+module. No bilingual drift remains in the Task 257B2 prerequisite.

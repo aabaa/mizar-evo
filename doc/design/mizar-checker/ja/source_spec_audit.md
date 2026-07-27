@@ -3343,3 +3343,20 @@ Task-252/256/257A rowはstatus不変のreciprocal noteだけを受ける。bound
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`は残らない。broader connective/grouping transportは
 Task 257B2に残る。
+
+### Task 257B2 frozen source-spec classification
+
+Chapter 14と既存parser fixtureはexact fixed/repeated conjunction/disjunction、
+non-associative `iff`、parenthesized grouping treeに十分なauthorityを与える。
+Chapter 4は変更しないexplicit binder scope、Tasks 252/256/257A/B1は必要な
+public occurrence/composition ownerを与える。missing frozen contractは
+`design_drift`、第3 exact profile/final ownershipの欠落はbounded
+`source_drift`、exact pass consumer/matrixの欠落は`test_gap`。blocking
+`spec_gap`はない。
+
+documentation prerequisiteはexecutable artifactを変えない。general
+alpha-equivalence/repetition expansion、connective truth、別precedence tree、
+binder shape、predicate chain、theorem acceptance、downstream IRを明示除外し、
+`source_undocumented_behavior`、`test_expectation_drift`、accepted
+`boundary_violation`を導入しない。origin差はreport-only
+`repo_metadata_conflict`のまま。

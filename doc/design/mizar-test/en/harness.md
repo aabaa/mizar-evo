@@ -3111,3 +3111,35 @@ all dependency fingerprints, the full literal composition debug rendering,
 and typed/resolved ownership. The isolation, corruption, ownership-partition,
 profile-discriminator, Task-248, and Task-257A rollback cases remain
 executable, and the external result contains no semantic formula output.
+
+## Checker Task 257B2 Frozen Harness Boundary
+
+The dedicated private formula-composition leaf may be extended for exactly one
+additional case ID:
+`pass_type_elaboration_formula_connective_grouping_payload_001`. Selection
+requires the exact theorem label/tree, normal recovery, explicit `x being set`
+binder, fixed/repeated operator flags and tokens, wrapper placement, equality
+endpoints, and no extra item or justification.
+
+The runner builds Task-252, Task-256, the third Task-257 profile, and `8/0`
+composition in the same arena and installs the composite/composition pair
+atomically. Positive assertions cover all `16/0/16`,
+`8/0/0/0/0/0/16/16`, `8/6/1/1/1/7/9`, and `8/0` rows. Negative
+assertions cover source isolation, each profile/association mutation,
+fixed/repeated substitution, wrapper crossing/order, dependency replacement,
+ownership collisions, and recovery by replaying valid input.
+
+The source-selector near-miss matrix independently changes status or
+justification, adds another item, changes the binder or binder type, reorders
+or changes the operand count, changes wrapper depth or placement, substitutes
+fixed/repeated tokens, supplies an alternate connective tree, and supplies
+representative Task-257B3 binder and Task-257C
+predicate-chain/conditioned-comprehension shapes. Every variant must remain
+unselected. The checker profile-discriminator matrix also supplies one
+coherent otherwise-valid fourth profile, which must fail without publishing
+partial state.
+
+The active case must pass with no detail key and no types, facts, checked
+formula semantics, statement semantics, theorem acceptance, proof, or IR
+credit. The existing Task-257A and Task-257B1 selectors and byte oracles remain
+unchanged.
