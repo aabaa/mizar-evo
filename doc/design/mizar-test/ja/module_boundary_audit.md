@@ -10003,3 +10003,31 @@ plan/parse/declaration/type/proof CLI hashは
 `0a7225c92a91e96264bec5172948ea82fc7d6be771fc05d0c3f83c615713648c`、
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
 である。Task 263 semanticsとSteps 6/7はこのlayout increment外に残る。
+
+## Checker Task 255 current-layout addendum
+
+Task 255はprivate production leaf
+`src/runner/type_elaboration/source_set_term.rs`（1,804 lines）とtest-only leaf
+1件（1,224 lines）を追加する。`runner.rs`は2,433-line public facade/top-level
+dispatcher、`type_elaboration.rs`は631-line private facadeのままである。raw
+set/comprehension/choice/`qua` syntax、Task-248 context reuse、Task-252
+composition、recursive generator/type-site normalization、checker input
+assembly、frozen outcome projectionはprivate leaf内でbehavior-coupledである。
+
+production manifestは26 paths / 29,138 lines、sorted path hashは
+`fa5d6e533d6c7c953d77f4146929f91d04443d5a9247b8867f8ee50e9ac64bbe`、
+ordered content-manifest hashは
+`4e8cfc6772d8e791f51c35fb2ffe22279b9d5c0c0fadf370ec1ce64a3efa7ba1`である。
+active parse/declaration/type/proofは101/5/193/1、plan 414/378、type
+244/232、pass/fail 224/190、warnings/errors 23/0である。raw/normalized
+320-test-list hashは
+`41b639004b41102aca6d03882510bd37c1b19d6a6e04d36f10a1037d0aeab16a` /
+`62e2ed916bdd13657f0214e46865105166bd1c1ca08ec8587db612de184fc4ec`である。
+plan/parse/declaration/type/proof CLI hashは
+`ae998fc21eb147ebe43f9db180970d883d928d7bfc307ceea431dcec5c4f2f3f`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
+である。Tasks 256-257と全semantic set/choice/`qua` decisionは本layout
+increment外に残す。

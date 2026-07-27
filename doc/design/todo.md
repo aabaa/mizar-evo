@@ -2113,3 +2113,18 @@ with the Chapter-7/8/17/21 owners. No blocking `spec_gap`,
 `boundary_violation` was found; the initial origin difference remains a
 report-only `repo_metadata_conflict`. Steps 6/7 and global Step-5 completion
 remain deferred.
+
+## Step 5 Checker Task 255 Implementation Addendum
+
+Checker Task 255 is implemented as the reviewed public six-table
+`source_set_term` producer plus one private exact `mizar-test` consumer. The
+bounded fixture/sidecar and five reciprocal trace references produce the
+exact 4/0/1/3/4/7 plus Task-252 4/0/4 oracle, close the Task-255
+`source_drift`/`test_gap`, and reach 414/378, 244/232, 224/190, and active
+type 193. A review-found nested-comprehension ordering defect was repaired
+within the Task-255 extractor boundary.
+
+Task 256 is next in the dependency-ready checker queue. Task 257 retains
+comprehension binding/capture, Tasks 256-257 retain condition formula
+ownership, and semantic set/choice/`qua`, accepted facts/proofs, Steps 6/7,
+and global Step-5 completion remain deferred.

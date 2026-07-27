@@ -655,3 +655,19 @@ Task-253 ownership, shared Task-253 argument primaries, and non-equivalent
 dependency substitution fail atomically. This adds no structure signature,
 member/view identity, result type, semantic constructor/selector/update,
 fact, proof, or downstream IR.
+
+## Task 255 Ownership Addendum
+
+`TypedAst` now owns an optional immutable `SourceSetTermHandoff`.
+`with_source_set_term` is one-shot, requires Task 252 and every targeted
+Task-253/254 dependency already installed, compares exact deterministic
+fingerprints, and revalidates all Task-252/253/254/255 targets, arena sites,
+canonical spellings, and nearest-family ownership before installation.
+`with_source_application` and `with_source_structure` revalidate an already
+installed Task-255 handoff before committing their fields, so either install
+order preserves the same partition. Unrelated optional handoffs may coexist
+with absent fingerprints only when their occurrences are range-disjoint.
+Replacement, missing dependency, non-root/reverse ownership, overlap, and
+non-equivalent dependency substitution fail atomically. This adds no
+comprehension binding/capture, formula, sethood/nonemptiness/widening result,
+semantic term/type, fact, proof, or downstream IR.

@@ -1515,3 +1515,8 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   101/5/192/1、312 tests、25 paths / 27,317 lines、全hashを不変にする。
   separate implementationはfresh preflight条件で414/378、244/232、224/190、
   active type 193をprojectする。
+- [x] separate Task-255 consumerをexact fixture/sidecar、reciprocal trace
+  reference 5件、Task-248/252 composition、final 6-table 4/0/1/3/4/7 +
+  4/0/4 oracle、active-case isolation、review済みsynthetic/exclusion/
+  corruption/install-order coverageとともに実装する。external dependency gapを
+  維持し、binder/formula/semantic ownershipはfrozenどおりdeferredに残す。

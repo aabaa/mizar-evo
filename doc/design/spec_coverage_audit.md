@@ -2978,3 +2978,26 @@ type 243/231, pass/fail 224/189, active parse/declaration/type/proof
 remain exact. The separate implementation may add exactly one fail case and
 one bounded covered diagnostic row, with projected 414/378, 244/232,
 224/190, and active type 193, subject to fresh verification.
+
+## Step 5 Checker Task 255 Implementation Addendum
+
+Task 255 now supplies executable source-transport coverage for the frozen
+Chapter-10/13 set/comprehension/choice/`qua` definition slice. The covered
+row `spec.en.checker.type_elaboration.source_set_choice_qua_term_payload`
+maps the exact new sidecar, and the four existing payload-gap rows carry the
+required reciprocal backlink without status or count changes. The public
+checker handoff transports six dense tables; the private consumer measures
+4/0/1/3/4/7 with Task-252 4/0/4 and no real Task-253/254 fingerprint.
+
+The implementation closes the bounded Task-255 `source_drift` and
+`test_gap`. Review-time recursive generator ordering drift was repaired by
+normalizing generator IDs by owner term while retaining written source order
+for target-type sites. The executable increment reaches plan 414/378, type
+244/232, pass/fail 224/190, active parse/declaration/type/proof
+101/5/193/1, and warnings/errors 23/0.
+
+MC-G017/MC-G020 remain partial. This addendum grants no Chapter-7/8/17/21
+semantic sethood, choice, `qua`, cluster, or ATP credit. Comprehension
+binding/capture remains Task 257, condition formula ownership remains Tasks
+256-257, and accepted facts/proofs, downstream IR, Steps 6/7, and global
+Step-5 completion remain deferred.

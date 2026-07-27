@@ -123,6 +123,11 @@ Task-253 handoffはrange/targetがTask 254とdisjointな場合だけ有効であ
 revalidate / clone-preserve する。両ASTのdebug renderingはhandoffがpresentの
 場合だけそれを含む。
 
+Task 255が既にinstall済みなら、`with_source_structure`はTask 254 publish前にその
+structure fingerprint、root-only target、nearest-family range partitionも
+revalidateする。したがってlater structure handoffはinstalled Task-255
+occurrenceをcontain/overlap/retargetできない。
+
 ## Private source consumer
 
 raw `SurfaceAst`、source node ID、syntax kind は

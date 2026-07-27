@@ -761,3 +761,15 @@ handoff. Final assembly does not rebuild or retarget dense IDs, resolve
 members or inheritance views, decide constructor coverage, compute selector
 or update results, or create semantic results; the legacy projection is
 unchanged when the handoff is absent.
+
+## Task 255 Final-Handoff Addendum
+
+`ResolvedTypedAst` revalidates the exact Task-252 and conditional Task-253/254
+fingerprints, nearest-family cross-target partition, canonical spelling, and
+arena-site associations, then clone-preserves the optional checker-owned
+`SourceSetTermHandoff` installed on `TypedAst`. Its borrowed
+`source_set_term()` getter exposes the immutable handoff. Final assembly does
+not rebuild or retarget dense IDs, bind comprehension generators, resolve
+conditions, decide sethood/nonemptiness/widening, compute result types, or
+create semantic results; the legacy projection is unchanged when the handoff
+is absent.

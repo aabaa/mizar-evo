@@ -127,6 +127,11 @@ from Task 254. `ResolvedTypedAst` revalidates and clone-preserves the same
 association without rebuilding or retargeting dense IDs. Both debug
 renderings include the handoff only when present.
 
+When Task 255 is already installed, `with_source_structure` also revalidates
+its structure fingerprint, root-only target, and nearest-family range
+partition before publishing Task 254. A later structure handoff therefore
+cannot contain, overlap, or retarget an installed Task-255 occurrence.
+
 ## Private Source Consumer
 
 Raw `SurfaceAst`, source node IDs, and syntax kinds remain in

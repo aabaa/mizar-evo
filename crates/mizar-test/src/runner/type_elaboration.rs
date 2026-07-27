@@ -12,6 +12,7 @@ mod source_context;
 mod source_evidence;
 mod source_formula;
 mod source_reserve;
+mod source_set_term;
 mod source_structure;
 mod source_term;
 mod source_type;
@@ -370,6 +371,13 @@ pub(super) use source_reserve::extract_builtin_source_reserve_declarations_after
 #[cfg(test)]
 pub(super) use source_reserve::{
     resolve_visible_attribute, resolve_visible_type_head, source_mode_symbol_spelling,
+};
+pub(super) use source_set_term::source_set_term_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_set_term::{
+    SourceSetTermRouteOutput, SyntheticSourceSetTermDependencies, source_set_term_output,
+    source_set_term_output_with_mutation, synthetic_source_set_term_output,
+    synthetic_source_set_term_output_with_mutation,
 };
 pub(super) use source_structure::source_structure_transport_detail_keys;
 #[cfg(test)]

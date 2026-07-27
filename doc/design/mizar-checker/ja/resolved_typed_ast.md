@@ -725,3 +725,14 @@ installされたoptional checker-owned `SourceStructureHandoff`をclone-preserve
 final assemblyはdense IDをrebuild/retargetせず、member/inheritance viewをresolve
 せず、constructor coverageを決めず、selector/update resultやsemantic resultを
 作らない。handoff absent時のlegacy projectionは不変である。
+
+## Task 255 final-handoff addendum
+
+`ResolvedTypedAst`はexact Task-252/conditional Task-253/254 fingerprint、
+nearest-family cross-target partition、canonical spelling、arena-site associationを
+revalidateし、`TypedAst`にinstallされたoptional checker-owned
+`SourceSetTermHandoff`をclone-preserveする。borrowed `source_set_term()` getterが
+immutable handoffをexposeする。final assemblyはdense IDをrebuild/retargetせず、
+comprehension generatorをbindせず、conditionをresolveせず、sethood/
+nonemptiness/wideningを決定せず、result type/semantic resultを作らない。
+handoff absent時のlegacy projectionは不変である。

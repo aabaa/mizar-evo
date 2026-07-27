@@ -443,3 +443,10 @@ Tasks 256-257とのcompositionに残す。semantic result type、sethood、choic
 nonemptiness/stability、`qua` widening/reduct、fact/acceptanceはTask 255の外である。
 本docs-only prerequisiteは`design_drift`だけをcloseし、implementation
 `source_drift`/`test_gap`はopenのままとする。
+
+Task 255はこのfrozen boundary内で実装済みである。public 6-table producer、
+private exact consumer、optional Task-253/254 fingerprint、final
+`TypedAst`/`ResolvedTypedAst` ownership、bounded fixture/trace row、review済み
+test matrixがbounded `source_drift`/`test_gap`をcloseする。generator
+binding/captureはTask 257、condition formulaはTasks 256-257が引き続きownし、
+semantic set/choice/`qua` creditは追加しない。

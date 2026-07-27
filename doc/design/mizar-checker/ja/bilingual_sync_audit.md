@@ -43,6 +43,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary、projection model、validation/recovery/atomicity、determinism、coverage、public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary、flat chain/attribute/qualifier/group/actual model、environment/parent/arena/provenance validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary、five-table application/wrapper/candidate/argument/request transport、Task-252 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
+| `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255 authority/boundary、six-table set/choice/qua/generator/type-site/edge/request transport、Task-252/253/254 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary、three-table primary-term transport、binding lookup/parent/request validation、ownership、exact consumer、exclusion、public enum policy | none |
@@ -118,3 +119,14 @@ exact direct written-child/`FieldUpdate` spelling validation、
 両install順のTask-252/253/254 ownershipとfingerprint matrix、bounded trace
 credit、measured count/hash、Task-263 semantic deferralを記録する。Task 254に
 bilingual sync debtは残らない。
+
+## Task 255 source-set-term pair recheck
+
+paired plan/TODO/source-set-term module specification/source-spec audit/
+payload decomposition/typed-final ownership/module-boundary audit/mizar-test
+consumer docsは、同じsix-table syntax-free transport、Task-248 contextとTask-252
+primary reuse、exact 4/0/1/3/4/7 + 4/0/4 consumer、arena key 8個、recursive
+canonical spelling、両install順のnearest Task-252/253/254/255 ownershipと
+conditional fingerprint matrix、bounded trace credit、measured count/hash、
+generator/formula/term-semantic deferralを記録する。Task 255にbilingual sync
+debtは残らない。

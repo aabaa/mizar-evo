@@ -1227,7 +1227,9 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_predicate_functor_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_functor_application_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_local_set_choice_qua_term_gap_001.expect.toml",
 ]
+notes = "Task 255 adds only source-transport coverage for four local functor definientia after authenticating their set-enumeration, condition-free independent-comprehension, choice, and qua source terms. Functor-definition intake and acceptance remain deferred to Task 260."
 
 [[requirement]]
 id = "spec.en.10.operator_declarations.parser"
@@ -1837,7 +1839,7 @@ tests = [
 [[requirement]]
 id = "spec.en.13.term_expressions.type_elaboration_payload_gap"
 source = "doc/spec/en/13.term_expression.md"
-section = "13.1 Primary Expressions; 13.1.3 Parenthesized Expressions; 13.1.4 Numerals; 13.2 Functor Applications; 13.3 Structure Expressions; 13.3.1 Structure Construction; 13.3.2 Selector Access; 13.3.3 Structure Update; 13.4 Set Expressions; 13.4.1 Set Enumeration; 13.8.8 Parenthesization"
+section = "13.1 Primary Expressions; 13.1.3 Parenthesized Expressions; 13.1.4 Numerals; 13.2 Functor Applications; 13.3 Structure Expressions; 13.3.1 Structure Construction; 13.3.2 Selector Access; 13.3.3 Structure Update; 13.4 Set Expressions; 13.4.1 Set Enumeration; 13.4.2 Set Comprehension; 13.5 Choice Operator; 13.6 Type Qualification (`qua`); 13.8.8 Parenthesization"
 stage = "type_elaboration"
 status = "covered"
 required = true
@@ -1965,6 +1967,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_functor_application_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_local_set_choice_qua_term_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_structure_term_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_builtin_inequality_formula_gap_001.expect.toml",
@@ -4312,7 +4315,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Task 250 supersedes only the exact Task-67 structure-qualified and Task-81 argument-bearing source-attribute gaps with a raw syntax-free handoff and co-installs the exact Task-84/85 imported attribute handoffs. Task 254 additionally transports only the exact local structure constructor, selector, functional-update, written-member, FieldUpdate, and child-edge source shape before retaining the Task-263 semantic boundary. Every other listed payload shape and all semantic arity/admissibility/evidence/truth work remain unchanged."
+notes = "Task 250 supersedes only the exact Task-67 structure-qualified and Task-81 argument-bearing source-attribute gaps with a raw syntax-free handoff and co-installs the exact Task-84/85 imported attribute handoffs. Task 254 additionally transports only the exact local structure constructor, selector, functional-update, written-member, FieldUpdate, and child-edge source shape before retaining the Task-263 semantic boundary. Task 255 transports only the exact local set-enumeration, condition-free independent-comprehension, choice, and qua source shape plus unresolved requests before retaining the Task-260 functor-definition intake and later term-semantics boundaries. Every other listed payload shape and all semantic arity/admissibility/evidence/truth work remain unchanged."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_mode_gap_001.expect.toml",
@@ -4330,6 +4333,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_inline_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_functor_application_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_local_set_choice_qua_term_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_structure_term_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mode_structure_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
@@ -4773,7 +4777,9 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_predicate_functor_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_functor_application_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_local_set_choice_qua_term_gap_001.expect.toml",
 ]
+notes = "Task 255 validates only source-set-term transport inside four local functor definientia and deliberately preserves this Task-260 definition-payload gap. It grants no functor definition acceptance or term semantics."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.proof_local_declaration_gap"
@@ -5045,6 +5051,19 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.source_set_choice_qua_term_payload"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Checker Task 255 Frozen Set/Choice/Qua Source-Transport Contract"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_set_choice_qua_term_gap_001.expect.toml",
+]
+notes = "Task 255 covers only syntax-free set-enumeration, condition-free independent-comprehension, choice, and qua source shapes; transparent set-term wrappers; written generator and bare builtin target-type sites; ordered Task-252/253/254/255 child edges; and unresolved result, sethood, nonemptiness, and widening request intent for the exact four-definiens local route. Generator binding/capture, conditioned-comprehension formulas, sethood, choice witness/stability, qua reachability/widening, result typing, definition acceptance, facts, CoreIr/ControlFlowIr/VC, and proof semantics remain uncredited."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.source_structure_term_payload"

@@ -3,8 +3,8 @@
 use crate::{
     source_application::SourceFunctorApplicationHandoff, source_attribute::SourceAttributeHandoff,
     source_context::SourceBindingContextHandoff, source_evidence::SourceEvidenceHandoff,
-    source_structure::SourceStructureHandoff, source_term::SourcePrimaryTermHandoff,
-    source_type::SourceTypeApplicationHandoff,
+    source_set_term::SourceSetTermHandoff, source_structure::SourceStructureHandoff,
+    source_term::SourcePrimaryTermHandoff, source_type::SourceTypeApplicationHandoff,
 };
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
@@ -92,6 +92,7 @@ pub struct TypedAst {
     source_term: Option<SourcePrimaryTermHandoff>,
     source_application: Option<SourceFunctorApplicationHandoff>,
     source_structure: Option<SourceStructureHandoff>,
+    source_set_term: Option<SourceSetTermHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -115,6 +116,7 @@ impl TypedAst {
             source_term: None,
             source_application: None,
             source_structure: None,
+            source_set_term: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -163,6 +165,10 @@ impl TypedAst {
 
     pub const fn source_structure(&self) -> Option<&SourceStructureHandoff> {
         self.source_structure.as_ref()
+    }
+
+    pub const fn source_set_term(&self) -> Option<&SourceSetTermHandoff> {
+        self.source_set_term.as_ref()
     }
 
     pub fn with_source_evidence(
@@ -228,6 +234,18 @@ impl TypedAst {
                 )
                 .map_err(|_| TypedAstError::InvalidSourceApplication)?;
         }
+        if let Some(source_set_term) = &self.source_set_term {
+            source_set_term
+                .validate_installation(
+                    self.source_id,
+                    &self.module_id,
+                    source_term,
+                    Some(&handoff),
+                    self.source_structure.as_ref(),
+                    &self.nodes,
+                )
+                .map_err(|_| TypedAstError::InvalidSourceApplication)?;
+        }
         self.source_application = Some(handoff);
         Ok(self)
     }
@@ -252,7 +270,44 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStructure)?;
+        if let Some(source_set_term) = &self.source_set_term {
+            source_set_term
+                .validate_installation(
+                    self.source_id,
+                    &self.module_id,
+                    source_term,
+                    self.source_application.as_ref(),
+                    Some(&handoff),
+                    &self.nodes,
+                )
+                .map_err(|_| TypedAstError::InvalidSourceStructure)?;
+        }
         self.source_structure = Some(handoff);
+        Ok(self)
+    }
+
+    pub fn with_source_set_term(
+        mut self,
+        handoff: SourceSetTermHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_set_term.is_some() {
+            return Err(TypedAstError::InvalidSourceSetTerm);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceSetTerm)?;
+        handoff
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                self.source_application.as_ref(),
+                self.source_structure.as_ref(),
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceSetTerm)?;
+        self.source_set_term = Some(handoff);
         Ok(self)
     }
 
@@ -315,6 +370,9 @@ impl TypedAst {
         }
         if let Some(source_structure) = &self.source_structure {
             output.push_str(&source_structure.debug_text());
+        }
+        if let Some(source_set_term) = &self.source_set_term {
+            output.push_str(&source_set_term.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1197,6 +1255,7 @@ pub enum TypedAstError {
     InvalidSourceTerm,
     InvalidSourceApplication,
     InvalidSourceStructure,
+    InvalidSourceSetTerm,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1324,6 +1383,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceStructure => {
                 formatter.write_str("typed AST source structure-term handoff is inconsistent")
+            }
+            Self::InvalidSourceSetTerm => {
+                formatter.write_str("typed AST source set-term handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,

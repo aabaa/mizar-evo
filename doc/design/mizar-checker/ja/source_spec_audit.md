@@ -24,6 +24,7 @@ public method は、module spec が table、builder、output API として記述
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
+- [source_set_term.md](./source_set_term.md)
 - [source_structure.md](./source_structure.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
@@ -130,6 +131,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_attribute`
 - `source_evidence`
 - `source_application`
+- `source_set_term`
 - `source_structure`
 - `source_term`
 - `source_type`
@@ -417,6 +419,43 @@ direct template transport、candidate collection/applicability/viability/ranking
 winner、functor-definition semantics、later term/formula family、accepted
 fact/declaration/proof、downstream IRを所有しない。これらはTasks 254+、260、
 270、277、278とexplicit ownerに残る。
+
+### `source_set_term`
+
+generated public newtype:
+
+- `SourceSetTermId`、`SourceSetWrapperId`、`SourceSetGeneratorId`、
+  `SourceSetTypeSiteId`、`SourceSetEdgeId`、`SourceSetRequestId`
+
+literal top-level public item:
+
+- `SourceSetTermHandoffInput`、`SourceSetTermInput`、
+  `SourceSetWrapperInput`、`SourceSetGeneratorInput`、
+  `SourceSetTypeSiteInput`、`SourceSetEdgeInput`、
+  `SourceSetRequestInput`、`SourceSetTermKind`、
+  `SourceSetTermRecovery`、`SourceSetTypeOwner`、`SourceSetTypeRole`、
+  `SourceSetTypeHead`、`SourceSetEdgeRole`、`SourceSetTarget`、
+  `SourceSetRequestKind`、`SourceSetTermHandoff`、`SourceSetTermTable`、
+  `SourceSetWrapperTable`、`SourceSetGeneratorTable`、
+  `SourceSetTypeSiteTable`、`SourceSetEdgeTable`、`SourceSetRequestTable`、
+  `SourceSetTerm`、`SourceSetWrapper`、`SourceSetGenerator`、
+  `SourceSetTypeSite`、`SourceSetEdge`、`SourceSetRequest`、
+  `SourceSetTermProducer`、`SourceSetTermError`
+
+対応:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| syntax-free dense table 6個がset/choice/`qua` term、wrapper、written generator、bare target site、ordered child、unresolved requestを保持する。 | `SourceSetTermHandoffInput`、dense ID/table 6個、`src/source_set_term.rs`のread-only row。 | exact real 4/0/1/3/4/7 + Task-252 4/0/4 oracleとsynthetic shape matrix。 | Task 255でimplemented。 |
+| Task-252/253/254/255 nearest-family ownershipとconditional dependency fingerprintをatomicにauthenticateする。 | `SourceSetTermProducer::build`、private install validation、immutable fingerprint。 | cross-family root、unrelated/targeted/missing/mismatch、overlap、install-order test。 | transactionalにimplemented。 |
+| canonical spelling、arena key、recovery、context、row association/cardinality/order、request ownershipをfail closedにする。 | producer validationと`SourceSetTermError`。 | producer/extractor corruptionとdegraded-transport matrix。 | partial publicationなしでimplemented。 |
+| `TypedAst`がhandoff 1件をownし、`ResolvedTypedAst`がrevalidate後にclone-preserveする。 | `with_source_set_term`、later Task-253/254 revalidation、resolved assembly。 | one-shot install、later-owner reject、final clone equality、deterministic replay。 | Implemented。 |
+| public enumはforward-compatibleである。 | 全public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | guarded。exhaustive exceptionなし。 |
+
+bounded gap: comprehension binder identity/captureはTask 257、condition
+formulaはTasks 256-257に残す。semantic result type、sethood/nonemptiness/
+widening、choice stability/witness、`qua` reduct、fact/acceptance/proof/
+downstream IRは本module外である。
 
 ### `source_structure`
 
@@ -3003,3 +3042,30 @@ coverage、count/hashを変更しない。baseline 413/377、243/231、224/189�
 future sidecarはChapter-10 functor-definition payload gap、Chapter-13
 term-expression gap、broad checker extraction gap、exact predicate/functor
 definition gap、新規bounded Task-255 rowの5件へreciprocalにmapする。
+
+## Step 5 Checker Task 255 implementation audit
+
+public 6-table `source_set_term` producerとprivate exact consumerはfrozen
+source-only sliceを実装した。Task-252 primary occurrenceとoptional Task-253/254
+rootをduplicate ownershipなしでauthenticateし、nested Task-255 rowは
+nearest-family childに残す。conditional dependency fingerprint、later-install
+revalidation 2経路、one-shot `TypedAst` ownership、clone-preserving
+`ResolvedTypedAst` assemblyはfail-closedである。
+
+exact real sidecarは4/0/1/3/4/7 + Task-252 4/0/4をproduceし、real
+Task-253/254 fingerprintはない。新規bounded covered rowと既存row 4件は
+prerequisiteでfreezeしたreciprocal reference 5件を持つ。plan/coverage/
+pass-fail/active runner countは414/378、244/232、224/190、101/5/193/1、
+warnings 23/errors 0である。
+
+implementation reviewはrecursive extractor orderingの`source_drift`を検出した。
+inner comprehension generatorがouter ownerのgeneratorより先にemitされていた。
+generator rowをterm/ordinal順にsortし、type-site rowを独立にwritten source順へ
+remapすることでlanguage/test intentを変えず修復した。producer/install/
+extractor/exclusion/corruption matrix後、bounded `source_drift`/`test_gap`は
+closedである。blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、surviving `boundary_violation`はない。
+
+MC-G017/MC-G020はpartialのままである。generator binding/captureはTask 257、
+condition formulaはTasks 256-257に残し、semantic sethood/choice/`qua`、
+accepted fact/proof、Core/CFG/VC、Steps 6/7へcreditを与えない。

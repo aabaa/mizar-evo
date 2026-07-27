@@ -1,0 +1,17 @@
+reserve seed for set;
+
+definition
+  let seed be set;
+  func Task255EnumerationDef:
+    task255_enumeration(seed) -> set
+    equals {1, 2};
+  func Task255ComprehensionDef:
+    task255_comprehension(seed) -> set
+    equals {3 where candidate255 is set};
+  func Task255ChoiceDef:
+    task255_choice(seed) -> set
+    equals the set;
+  func Task255QuaDef:
+    task255_qua(seed) -> set
+    equals 4 qua set;
+end;

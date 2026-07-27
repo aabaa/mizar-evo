@@ -86,6 +86,9 @@ structure handoffもrevalidateする。これによりTask-253 argumentによる
 primary targetのownership、Task-254 termとのreverse containment/partial overlap、
 closest Task-254 termがownしないcontained applicationをinstall順に依存せず
 rejectする。
+Task 255が既にinstall済みなら、Task 253 publish前にそのapplication fingerprint、
+root-only target、nearest-family range partitionもrevalidateする。したがってlater
+applicationはinstalled Task-255 occurrenceをcontain/overlap/retargetできない。
 
 `ResolvedTypedAst` は同じ association を再検証して clone-preserve
 するだけで、dense ID を再構築・retarget しない。

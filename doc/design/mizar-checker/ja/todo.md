@@ -4210,12 +4210,12 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   fixture/trace rowとreciprocal backlink、corruption/determinism/final
   ownership coverage、measured 413/377・243/231 oracleはcompleteである。
   structure/member/view semanticsはTask 263 ownershipに残す。
-- [ ] **Task 255:** set/comprehension/choice/`qua` term producer。paired
-  crate-plan prerequisiteはenumeration、conditionなしcomprehension、choice、
-  `qua`の4 definiensを持つexact local-definition consumer、public 6-table
-  syntax-free `source_set_term` transaction、exact 4/0/1/3/4/7 +
-  Task-252 4/0/4 oracle、one-way Task-252/253/254/255 child ownershipをfreeze
-  する。本prerequisiteはdocumentation-onlyである。comprehension binder
+- [x] **Task 255:** set/comprehension/choice/`qua` term producer。public
+  6-table syntax-free `source_set_term` transaction、exact local-definition
+  consumer、4/0/1/3/4/7 + Task-252 4/0/4 oracle、one-way
+  Task-252/253/254/255 child ownership、conditional fingerprint、one-shot
+  final handoff、bounded fixture/trace row、frozen producer/extractor/
+  corruption/install-order matrixはcompleteである。comprehension binder
   identity/captureはTask 257、condition付きcomprehension formula ownershipは
   Tasks 256-257、semantic result/sethood/nonemptiness/widening decisionはdeferred
   のままとする。

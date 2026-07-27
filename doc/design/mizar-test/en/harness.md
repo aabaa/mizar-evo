@@ -2933,3 +2933,19 @@ selection, all-active-case isolation, syntax/recovery/subtree exclusions,
 corruption, deterministic replay, dependency fingerprints, and immutable
 final preservation. This prerequisite changes no runner, fixture, sidecar,
 trace, count, or hash.
+
+## Checker Task 255 Runner Completion
+
+The private route now implements that boundary and preserves the frozen
+external-gap sidecar. The exact real aggregate is Task-255 4/0/1/3/4/7 plus
+Task-252 4/0/4, with no Task-253/254 fingerprint and no semantic output.
+Recursive extraction normalizes generator/type-site IDs after visiting nested
+mappers so term-grouped public order and written type-site order are both
+preserved.
+
+Focused real and synthetic tests authenticate every public row association,
+zero/many and nested shapes, wrappers/recovery, optional cross-family targets,
+explicit exclusions, corruption atomicity, deterministic replay, final
+ownership, and isolation from every other active type-elaboration case. The
+active corpus is 414/378, 244/232, 224/190, and 101/5/193/1 with 23 warnings
+and zero errors. Later binder, formula, and semantic owners remain deferred.

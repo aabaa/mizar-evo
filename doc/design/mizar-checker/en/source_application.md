@@ -92,6 +92,10 @@ revalidates its structure handoff before publishing Task 253. This rejects
 Task-253 argument ownership of a Task-254 primary target, reverse containment
 or partial overlap with a Task-254 term, and any contained application not
 owned by the closest Task-254 term, independent of installation order.
+If Task 255 is already installed, the transaction also revalidates its
+application fingerprint, root-only target, and nearest-family range
+partition before publishing Task 253. Thus a later application cannot
+contain, overlap, or retarget an installed Task-255 occurrence.
 
 `ResolvedTypedAst` revalidates the same association and clone-preserves the
 handoff. It never rebuilds or retargets dense IDs. Both AST debug renderings

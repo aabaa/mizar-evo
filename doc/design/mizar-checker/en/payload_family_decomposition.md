@@ -483,3 +483,11 @@ conditioned-comprehension formula ownership composes only after Tasks
 `qua` widening/reducts, facts, and acceptance remain outside Task 255. This
 documentation-only prerequisite closes `design_drift`; the implementation
 `source_drift` and `test_gap` remain open.
+
+Task 255 is now implemented within this frozen boundary. The public
+six-table producer, private exact consumer, optional Task-253/254
+fingerprints, final `TypedAst`/`ResolvedTypedAst` ownership, bounded
+fixture/trace row, and reviewed test matrix close the bounded
+`source_drift` and `test_gap`. Task 257 still owns generator binding/capture,
+Tasks 256-257 still own condition formulas, and no semantic set/choice/`qua`
+credit is added.

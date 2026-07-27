@@ -11216,3 +11216,32 @@ The plan/parse/declaration/type/proof CLI hashes are
 `0a7225c92a91e96264bec5172948ea82fc7d6be771fc05d0c3f83c615713648c`,
 and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 Task 263 semantics and Steps 6/7 remain outside this layout increment.
+
+## Checker Task 255 Current-Layout Addendum
+
+Task 255 adds one private production leaf,
+`src/runner/type_elaboration/source_set_term.rs` (1,804 lines), and one
+test-only leaf (1,224 lines). `runner.rs` remains the 2,433-line public
+facade/top-level dispatcher and `type_elaboration.rs` the 631-line private
+facade. Raw set/comprehension/choice/`qua` syntax, Task-248 context reuse,
+Task-252 composition, recursive generator/type-site normalization, checker
+input assembly, and frozen outcome projection remain behavior-coupled in the
+private leaf.
+
+The production manifest is 26 paths / 29,138 lines. The sorted path hash is
+`fa5d6e533d6c7c953d77f4146929f91d04443d5a9247b8867f8ee50e9ac64bbe`;
+the ordered content-manifest hash is
+`4e8cfc6772d8e791f51c35fb2ffe22279b9d5c0c0fadf370ec1ce64a3efa7ba1`.
+Active parse/declaration/type/proof counts are 101/5/193/1, plan is 414/378,
+type coverage is 244/232, pass/fail is 224/190, and warnings/errors are 23/0.
+The raw/normalized 320-test-list hashes are
+`41b639004b41102aca6d03882510bd37c1b19d6a6e04d36f10a1037d0aeab16a` /
+`62e2ed916bdd13657f0214e46865105166bd1c1ca08ec8587db612de184fc4ec`.
+The plan/parse/declaration/type/proof CLI hashes are
+`ae998fc21eb147ebe43f9db180970d883d928d7bfc307ceea431dcec5c4f2f3f`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Tasks 256-257 and all semantic set/choice/`qua` decisions remain outside
+this layout increment.

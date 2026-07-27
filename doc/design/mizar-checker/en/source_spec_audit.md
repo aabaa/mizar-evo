@@ -26,6 +26,7 @@ Module specifications audited:
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
+- [source_set_term.md](./source_set_term.md)
 - [source_structure.md](./source_structure.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
@@ -152,6 +153,7 @@ rejection.
 - `source_attribute`
 - `source_evidence`
 - `source_application`
+- `source_set_term`
 - `source_structure`
 - `source_term`
 - `source_type`
@@ -443,6 +445,43 @@ substitution/result, direct template transport, candidate collection/
 applicability/viability/ranking/winner, functor-definition semantics, later
 term/formula families, accepted facts/declarations/proofs, or downstream IR.
 Those remain with Tasks 254+, 260, 270, 277, 278, and their explicit owners.
+
+### `source_set_term`
+
+Generated public newtypes:
+
+- `SourceSetTermId`, `SourceSetWrapperId`, `SourceSetGeneratorId`,
+  `SourceSetTypeSiteId`, `SourceSetEdgeId`, `SourceSetRequestId`
+
+Literal top-level public items:
+
+- `SourceSetTermHandoffInput`, `SourceSetTermInput`,
+  `SourceSetWrapperInput`, `SourceSetGeneratorInput`,
+  `SourceSetTypeSiteInput`, `SourceSetEdgeInput`,
+  `SourceSetRequestInput`, `SourceSetTermKind`,
+  `SourceSetTermRecovery`, `SourceSetTypeOwner`, `SourceSetTypeRole`,
+  `SourceSetTypeHead`, `SourceSetEdgeRole`, `SourceSetTarget`,
+  `SourceSetRequestKind`, `SourceSetTermHandoff`, `SourceSetTermTable`,
+  `SourceSetWrapperTable`, `SourceSetGeneratorTable`,
+  `SourceSetTypeSiteTable`, `SourceSetEdgeTable`, `SourceSetRequestTable`,
+  `SourceSetTerm`, `SourceSetWrapper`, `SourceSetGenerator`,
+  `SourceSetTypeSite`, `SourceSetEdge`, `SourceSetRequest`,
+  `SourceSetTermProducer`, `SourceSetTermError`
+
+Correspondence:
+
+| Spec promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Six syntax-free dense tables retain set/choice/`qua` terms, wrappers, written generators, bare target sites, ordered children, and unresolved requests. | `SourceSetTermHandoffInput`, six dense IDs/tables, and read-only rows in `src/source_set_term.rs`. | Exact real 4/0/1/3/4/7 plus Task-252 4/0/4 oracle and synthetic shape matrix. | Implemented for Task 255. |
+| Task-252/253/254/255 nearest-family ownership and conditional dependency fingerprints are authenticated atomically. | `SourceSetTermProducer::build`, private installation validation, and immutable fingerprints. | Cross-family root, unrelated/targeted/missing/mismatch, overlap, and install-order tests. | Implemented transactionally. |
+| Canonical spelling, arena keys, recovery, contexts, row association/cardinality/order, and request ownership fail closed. | Producer validation and `SourceSetTermError`. | Producer/extractor corruption and degraded-transport matrices. | Implemented without partial publication. |
+| `TypedAst` owns one handoff and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_set_term`, later Task-253/254 revalidation, and resolved assembly. | One-shot installation, later-owner rejection, final clone equality, and deterministic replay. | Implemented. |
+| Public enums are forward-compatible. | `#[non_exhaustive]` on all public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: Task 257 retains comprehension binder identity/capture,
+Tasks 256-257 retain condition formulas, and semantic result typing,
+sethood/nonemptiness/widening, choice stability/witnesses, `qua` reducts,
+facts, acceptance, proofs, and downstream IR remain outside this module.
 
 ### `source_structure`
 
@@ -3140,3 +3179,31 @@ coverage, count, or hash. Baseline 413/377, 243/231, 224/189,
 The future sidecar maps reciprocally to the Chapter-10 functor-definition
 payload gap, Chapter-13 term-expression gap, broad checker extraction gap,
 exact predicate/functor-definition gap, and new bounded Task-255 row.
+
+## Step 5 Checker Task 255 Implementation Audit
+
+The public six-table `source_set_term` producer and private exact consumer now
+implement the frozen source-only slice. Task-252 primary occurrences and
+optional Task-253/254 roots are authenticated without duplicate ownership;
+nested Task-255 rows remain nearest-family children. Conditional dependency
+fingerprints, both later-install revalidation paths, one-shot `TypedAst`
+ownership, and clone-preserving `ResolvedTypedAst` assembly are fail-closed.
+
+The exact real sidecar produces 4/0/1/3/4/7 plus Task-252 4/0/4 and no real
+Task-253/254 fingerprint. The new bounded covered row and four existing rows
+carry the five reciprocal references frozen by the prerequisite. Plan,
+coverage, pass/fail, and active runner counts are 414/378, 244/232, 224/190,
+and 101/5/193/1, with 23 warnings and zero errors.
+
+Implementation review exposed a recursive extractor ordering `source_drift`:
+an inner comprehension generator was initially emitted before its outer
+owner's generator. Sorting generator rows by term/ordinal while independently
+remapping type-site rows to written source order repaired the defect without
+changing language or test intent. The bounded `source_drift` and `test_gap`
+are closed after the producer/install/extractor/exclusion/corruption matrix.
+No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or surviving `boundary_violation` remains.
+
+MC-G017/MC-G020 remain partial. Task 257 retains generator binding/capture,
+Tasks 256-257 retain condition formulas, and semantic sethood, choice,
+`qua`, accepted fact/proof, Core/CFG/VC, and Steps 6/7 receive no credit.

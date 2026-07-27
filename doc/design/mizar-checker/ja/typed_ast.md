@@ -638,3 +638,17 @@ Task-253 ownership、shared Task-253 argument primary、non-equivalent dependenc
 substitutionはatomicにfailする。structure signature、member/view identity、
 result type、semantic constructor/selector/update、fact、proof、downstream IRは
 追加しない。
+
+## Task 255 ownership addendum
+
+`TypedAst`はoptional immutable `SourceSetTermHandoff`をownする。
+`with_source_set_term`はone-shotで、Task 252と全targeted Task-253/254 dependencyの
+先行installを要求し、exact deterministic fingerprint、全Task-252/253/254/255
+target、arena site、canonical spelling、nearest-family ownershipをinstallation前に
+revalidateする。`with_source_application`/`with_source_structure`もfield commit前に
+installed Task-255 handoffをrevalidateし、どちらのinstall順でも同じpartitionを
+保つ。fingerprint absent時のunrelated optional handoffはoccurrenceがrange-disjoint
+な場合だけ共存できる。replacement、missing dependency、non-root/reverse
+ownership、overlap、non-equivalent dependency substitutionはatomicにfailする。
+comprehension binding/capture、formula、sethood/nonemptiness/widening result、
+semantic term/type、fact、proof、downstream IRは追加しない。

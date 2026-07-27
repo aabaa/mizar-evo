@@ -2789,3 +2789,18 @@ implementationはexact-source selection、all-active isolation、syntax/recovery
 subtree exclusion、corruption、deterministic replay、dependency fingerprint、
 immutable final preservationを証明する。本prerequisiteはrunner/fixture/sidecar/
 trace/count/hashを変更しない。
+
+## Checker Task 255 runner completion
+
+private routeはこのboundaryを実装し、frozen external-gap sidecarを維持する。
+exact real aggregateはTask-255 4/0/1/3/4/7 + Task-252 4/0/4で、
+Task-253/254 fingerprintとsemantic outputはない。recursive extractionはnested
+mapper visit後にgenerator/type-site IDをnormalizeし、term-grouped public orderと
+written type-site orderを同時に保存する。
+
+focused real/synthetic testは全public row association、zero/many/nested shape、
+wrapper/recovery、optional cross-family target、explicit exclusion、corruption
+atomicity、deterministic replay、final ownership、全他active type caseからの
+isolationをauthenticateする。active corpusは414/378、244/232、224/190、
+101/5/193/1、warnings 23/errors 0である。later binder/formula/semantic ownerは
+deferredのままである。

@@ -44,6 +44,7 @@ after this task.
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, determinism, coverage, public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary, five-table application/wrapper/candidate/argument/request transport, Task-252 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
+| `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255 authority/boundary, six-table set/choice/qua/generator/type-site/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary, seven-table structure/member/FieldUpdate/edge/request transport, Task-252/253 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary, three-table primary-term transport, binding lookup and parent/request validation, ownership, exact consumers, exclusions, public enum policy | none |
@@ -122,3 +123,15 @@ exact direct written-child and `FieldUpdate` spelling validation,
 Task-252/253/254 ownership in both installation orders and the fingerprint
 matrix, bounded trace credit, measured counts/hashes, and Task-263 semantic
 deferral. No bilingual sync debt remains in Task 254.
+
+## Task 255 Source-Set-Term Pair Recheck
+
+The paired plan, TODO, source-set-term module specification, source/spec
+audit, payload decomposition, typed/final ownership documents,
+module-boundary audit, and mizar-test consumer documents record the same
+six-table syntax-free transport, Task-248 context and Task-252 primary reuse,
+exact 4/0/1/3/4/7 plus 4/0/4 consumer, eight arena keys, recursive canonical
+spelling, nearest Task-252/253/254/255 ownership in both installation orders
+and the conditional fingerprint matrix, bounded trace credit, measured
+counts/hashes, and generator/formula/term-semantic deferrals. No bilingual
+sync debt remains in Task 255.

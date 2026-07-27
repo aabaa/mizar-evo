@@ -29,6 +29,7 @@ pub mod source_application;
 pub mod source_attribute;
 pub mod source_context;
 pub mod source_evidence;
+pub mod source_set_term;
 pub mod source_structure;
 pub mod source_term;
 pub mod source_type;

@@ -1703,3 +1703,9 @@ promoted by this increment.
   243/231, 224/189, 101/5/192/1, 312 tests, 25 paths / 27,317 lines, and all
   hashes. The separate implementation projects 414/378, 244/232, 224/190,
   and active type 193 subject to fresh preflight.
+- [x] Implement the separate Task-255 consumer with the exact fixture,
+  sidecar and five reciprocal trace references, Task-248/252 composition,
+  final six-table 4/0/1/3/4/7 plus 4/0/4 oracle, active-case isolation, and
+  reviewed synthetic/exclusion/corruption/install-order coverage. Preserve
+  the external dependency gap and leave binder/formula/semantic ownership
+  deferred as frozen.
