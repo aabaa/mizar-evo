@@ -161,6 +161,18 @@ deferralを同じ内容で記録する。public checker enum/profile surfaceと�
 runner leafが変わったためmodule-boundary pairも同期した。Task-257B2の
 bilingual debtは残らない。
 
+## Task 256C1 frozen-contract pair
+
+paired plan、atomic/set owner、typed installation、decomposition、
+source/spec、module-boundary、TODO documentは同じexact equality-condition
+containment、direct-child/range/spelling/recovery check、両install order、
+owner-term/formula context equality、unchanged public schema/fingerprint/debug、
+strict corruption rejection、independently validなpair-only failure、
+optional-set substitution/absent-fingerprint check、3-test projection、
+unchanged runner/trace/count/hash baseline、classification、semantic
+deferralをfreezeする。本prerequisiteにexecutable artifact変更はなく、
+bilingual debtは残らない。
+
 ## Task 257B3 Frozen-Contract Pair
 
 EN/JA crate plan/TODO、payload decomposition、source-term、atomic/composite/

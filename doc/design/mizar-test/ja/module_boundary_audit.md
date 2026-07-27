@@ -25,6 +25,15 @@ plan/parse/declaration/type/proof CLI hashは
 `142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`、
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
 
+## Checker Task 256C1 frozen boundary recheck
+
+mizar-test production/test ownerは変更しない。manifest 29 paths / 33,725
+lines、library 357 tests、latest Task-255C1 boundary recheckの
+production/test-list/5 CLI hashをauthorityとして保持する。compatibility
+predicate/projected tests 3件は
+`mizar-checker/src/source_atomic_formula.rs`だけがownし、frozen Task-257C2
+runner routeはdeferredのまま。
+
 ## Checker Task 257C2 frozen boundary
 
 本prerequisiteではproduction path/lineを変更しない。future complete routeは

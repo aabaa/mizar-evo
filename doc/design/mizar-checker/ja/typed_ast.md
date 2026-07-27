@@ -765,3 +765,17 @@ separate Task 256C1がunrelated overlap guardをweakenせず、
 authenticated Task-255 condition containmentをset/atomic両installation orderで
 passさせるまでimplementできない。absent-handoff debug byteは不変で、
 semantic tableをpopulateしない。
+
+## Task 256C1 frozen installation revalidation
+
+`TypedAst` API/production implementationは変更しない。existing symmetric
+revalidationがcontractである。Task 255→Task 256ではinstalled set handoffに
+対してatomic handoffをvalidateし、Task 256→Task 255ではincoming set handoffに
+対してinstalled atomic handoffをrevalidateする。private Task-256 validator
+fix後、両orderはauthenticated equality-condition containerだけをacceptし、
+immutable handoff/full debug outputはbyte-identicalになる。
+
+invalid overlapはexisting `InvalidSourceAtomicFormula`/
+`InvalidSourceSetTerm` variantでatomicにfailし、fieldをpublishせず、
+unchanged baseからvalid replayできる。final resolved revalidation/clone
+ownershipは不変。

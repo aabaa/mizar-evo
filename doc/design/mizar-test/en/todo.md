@@ -1882,8 +1882,20 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   419-case/pass-fail/active counts, projected plan `419/386` and type
   `252/240`, unchanged diagnostic intent, and zero executable artifact
   changes in this prerequisite.
-- [ ] Complete the separately documented/implemented Task-256C1
-  condition-container compatibility prerequisite with both lower install
-  orders before editing this runner slice.
+- [x] Complete the separately documented Task-256C1 frozen-contract
+  prerequisite; its checker-only implementation must still pass both lower
+  install orders before editing this runner slice.
 - [ ] Implement only this frozen runner slice after Task-256C1 and fresh
   preflight, in the separate Task-257C2 implementation commit.
+
+## Checker Task 256C1 Frozen Runner Checklist
+
+- [x] Freeze runner non-ownership: no source, test, fixture, sidecar,
+  expectation, trace, production manifest, or CLI change.
+- [x] Preserve the 191-byte fixture only as authority and a future
+  Task-257C2 consumer; checker-local tests own both install orders and
+  corruption coverage.
+- [x] Preserve `419/385`, `251/239`, `228/191`, active `101/5/198/1`,
+  357 tests, 29 paths / 33,725 lines, and all runner hashes.
+- [ ] Keep this runner unchanged during Task 256C1 implementation, then
+  fresh-preflight the frozen Task-257C2 route.

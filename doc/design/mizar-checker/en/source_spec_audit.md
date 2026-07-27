@@ -3532,6 +3532,34 @@ corruption/profile tests, and runner selector/near-miss tests. No `spec_gap`,
 `boundary_violation` remains. The origin difference is still a report-only
 `repo_metadata_conflict`.
 
+## Task 256C1 Condition-Container Compatibility Classification
+
+Chapter 13 §§13.4/13.4.2 puts the optional formula inside the comprehension,
+and Chapter 14 §§14.2/14.5.2/14.8 makes the exact `3 = 4` condition a
+built-in atomic equality. The committed 191-byte fixture and Task-255C1/256
+schemas therefore authorize the inverse containing-set/direct-equality range
+relation. Rejecting it in both installation orders is bounded
+authority-backed `source_drift`. The missing narrow rule is `design_drift`,
+closed by this prerequisite, and the missing order/corruption checks are
+`test_gap`.
+
+The contract admits only an authenticated Task-255 comprehension condition
+whose direct child is the equal-range/equal-spelling, normally recovered
+Task-256 equality in the same context as the enclosing term. It does not
+generalize set containment, add a fingerprint, or infer other formula forms.
+No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation` remains. Existing `.miz`, expectation, sidecar, trace
+status/count, and coverage credit remain unchanged; origin divergence stays
+report-only `repo_metadata_conflict`.
+
+The test contract distinguishes family-local validity from the new relation:
+each applicable wrong relation must first validate independently in Task 255
+and Task 256, then fail only when paired with
+`SetTermDependencyMismatch`. It separately covers substituted optional
+validation context, no publication/replay, and the explicit absent set
+fingerprint.
+
 ### Task 257B3 frozen-contract classification
 
 Chapters 4 and 14 plus the parser quantifier fixture fully authorize the exact

@@ -210,3 +210,19 @@ operandだけになる。Task-255 table/debug byte/fingerprint/request/validatio
 meaningは変更しない。separate Task 256C1はarbitrary overlap rejectionを
 weakenせず、このexact condition containmentをTask-256 validatorの両
 installation orderでauthenticateする。
+
+## Task 256C1 frozen lower-owner boundary
+
+Task 256C1はimmutable Task-255C1 condition rowをvalidation contextとしてだけ
+consumeし、Task-255 table 7件を変更・再構築しない。term 0は
+`139..184`の`Comprehension`、condition 0はそのtermのordinal 0で、
+colon `175..176`、direct wrapper range `177..182`、spelling `3 = 4`、
+normal recovery、owner-term context 0を保持する。condition siteはdistinct
+Task-256 equality siteをdirect containし、そのcontextはexisting owner-term
+contextと一致しなければならない。
+
+condition rowへcontext/formula IDを追加せず、Task 256C1はimmutable owner
+termからcontextをderiveする。Task 255はcolon/wrapper
+boundaryだけをownし、Task 256はinner equality、Task 257C2はlater explicit
+associationをownする。Task 256C1はTask-255 edge、fingerprint、debug、
+request、semantic、validation schemaを変更しない。

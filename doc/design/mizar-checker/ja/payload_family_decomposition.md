@@ -647,3 +647,14 @@ edgeは`source_formula_composition`のdedicated cross-family handoffで、
 composite-formula placeholderではない。generator binding/capture、
 predicate-chain composition、equality truth、formula result、definition
 acceptanceはdownstreamに残す。
+
+## Task 256C1 frozen compatibility edge
+
+Task 256C1はgraph node/published edgeを追加しない。Task-256 validatorによる
+already authenticated containment 1件の解釈だけを変更する。Task-255 term 0/
+condition 0がsame owner-term/formula contextでTask-256 equality 0をencloseし
+direct parentとなる。immutable
+graphは`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255
+1/0/1/1/1/1/2`にdependency-neutral Task-256
+`1/0/0/0/0/0/0/2/2`を加えたままで、Task-257C2がlater sole association
+edgeを追加する。family ownership、ID、fingerprint、semantic boundaryは不変。

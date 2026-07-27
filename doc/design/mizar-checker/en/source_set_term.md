@@ -231,3 +231,20 @@ Task-256 equality operands. No Task-255 table, debug byte, fingerprint,
 request, or validation meaning changes. Separate Task 256C1 must authenticate
 this exact condition containment in the Task-256 validator for both
 installation orders without weakening arbitrary overlap rejection.
+
+## Task 256C1 Frozen Lower-Owner Boundary
+
+Task 256C1 consumes the immutable Task-255C1 condition row only as validation
+context. It neither changes nor reconstructs the seven Task-255 tables.
+Term 0 remains a `Comprehension` at `139..184`; condition 0 remains ordinal 0
+on that term with colon `175..176`, direct wrapper range `177..182`, spelling
+`3 = 4`, normal recovery, and owner-term context 0. Its condition site must
+directly contain the distinct Task-256 equality site, whose context must
+equal that existing owner-term context.
+
+The condition row intentionally gains no context or formula ID; Task 256C1
+derives context from the immutable owner term. Task 255
+continues to own only the colon and wrapper boundary, while Task 256 owns the
+inner equality and Task 257C2 later owns their explicit association.
+Task 256C1 grants no Task-255 edge, fingerprint, debug, request, semantic, or
+validation-schema change.

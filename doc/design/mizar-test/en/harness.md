@@ -3254,3 +3254,11 @@ tables remain empty. Exact profiles, direct wrapper/equality ownership,
 provenance, near misses, mutation rollback, bidirectional A/B/C2 installer
 exclusion, isolation, and final cloning are the complete test boundary. This
 prerequisite changes no executable runner artifact.
+
+## Checker Task 256C1 Frozen Harness Non-Ownership
+
+No harness edit or test is part of Task 256C1. The checker-local syntax-free
+fixture authenticates the exact lower relation and both install orders; the
+private runner continues to stop at the committed Task-255C1 route. The
+already frozen Task-257C2 route remains the first runner consumer after the
+separate checker prerequisite is committed and freshly verified.

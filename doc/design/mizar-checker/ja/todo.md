@@ -4400,9 +4400,38 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   rejectionをseparate authority-backed `source_drift`、stale Task-255C1
   umbrella checkboxをresolved `design_drift`、origin driftをreport-only
   `repo_metadata_conflict`にclassify。
-- [ ] separate Task-256C1 condition-container compatibility prerequisiteを
-  freeze/review/commitし、両install orderとstrict arbitrary-overlap rejectionを
-  own commitでimplement/verify。
+- [x] separate Task-256C1 condition-container compatibility prerequisiteを
+  freeze/reviewし、documentation-only commitを作る。
+- [ ] Task-256C1を両install order/strict arbitrary-overlap rejection込みで
+  own commitにimplement/verify。
 - [ ] Task-256C1後、fresh parser/resolver/API、both-install-order、
   count/test-list/production/CLI-hash preflightを行い、Task 257C2だけを
   separate logical task/commitでimplement。
+
+## Checker Task 256C1 frozen-contract ledger
+
+- [x] Chapter-13/14 authority、unchanged 191-byte source/hash、exact
+  `139..184` condition container/`177..182` equality、checker-local/future
+  Task-257C2 consumerをfreeze。
+- [x] sole admitted relationをfreeze。Task-255 comprehension condition 0が
+  distinct Task-256 equality 0をdirect containし、equal range/spelling、
+  normal recovery、equality/owner-term context、exact profileを持ちcondition
+  contextをfabricateしない。
+- [x] public API、全table/ID/error/debug byte、
+  `set_term_fingerprint() == None`、disjoint/formula-contains-set case、
+  strict arbitrary/substituted/copied/stale/wrong-context/non-direct overlap
+  rejectionを保持。
+- [x] `TypedAst`両installation order、atomic rollback/replay、checker tests
+  exact 3件、pair前は個別validでpair時だけexact
+  `SetTermDependencyMismatch`となるnear miss、projected libraries
+  `329/357`、runner/trace変更ゼロ、全semantic deferralをfreeze。
+- [x] current two-order rejectionをauthority-backed `source_drift`、missing
+  contractをresolved `design_drift`、testsを`test_gap`、origin divergenceを
+  report-only `repo_metadata_conflict`と分類。blocking `spec_gap`なし。
+- [x] prerequisiteをdocumentation-only plan `419/385`、type `251/239`、
+  pass/fail `228/191`、active `101/5/198/1`、libraries `326/357`、
+  production/test-list/CLI hash不変に保つ。
+- [ ] 本documentation commit/fresh preflight後にTask 256C1だけをimplementし、
+  review/verify後にseparate commit。
+- [ ] Task 256C1の両installation order/fresh inventory後だけTask 257C2
+  implementationへ戻る。

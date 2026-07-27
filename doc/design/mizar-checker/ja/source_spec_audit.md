@@ -3463,3 +3463,27 @@ expectation rebaselineではない。blocking `spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`は残らず、origin divergenceはreport-only
 `repo_metadata_conflict`。
+
+## Task 256C1 condition-container compatibility classification
+
+Chapter 13 §§13.4/13.4.2はoptional formulaをcomprehension内部に置き、
+Chapter 14 §§14.2/14.5.2/14.8はexact `3 = 4` conditionをbuilt-in atomic
+equalityとする。committed 191-byte fixtureとTask-255C1/256 schemaはinverse
+containing-set/direct-equality range relationをauthorizeするため、両installation
+orderでのrejectはbounded authority-backed `source_drift`。missing narrow
+ruleは`design_drift`で本prerequisiteがcloseし、missing order/corruption
+checkは`test_gap`。
+
+contractはdirect childがequal-range/equal-spelling、normally recovered
+Task-256 equalityで、enclosing termとsame contextのauthenticated Task-255
+comprehension conditionだけをadmitする。set containmentをgeneralizeせず
+fingerprintを追加せず、他formula formを推測しない。blocking `spec_gap`、
+`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`はない。existing `.miz`、
+expectation、sidecar、trace status/count、coverage creditは不変。origin
+divergenceはreport-only `repo_metadata_conflict`。
+
+test contractはfamily-local validityとnew relationを区別する。applicableな
+各wrong relationはTask 255/Task 256で個別validateした後だけ、pair時に
+`SetTermDependencyMismatch`でfailする。substituted optional validation
+context、no publication/replay、explicit absent set fingerprintも別途coverする。

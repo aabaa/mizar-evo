@@ -2373,9 +2373,27 @@ completion remain deferred. The origin discrepancy remains report-only
   the Task-256 condition-container rejection as a separate authority-backed
   `source_drift`, and origin divergence as report-only
   `repo_metadata_conflict`.
-- [ ] Freeze and commit the separate Task-256C1 condition-container
-  compatibility prerequisite, then implement it in its own verified commit.
+- [x] Freeze and commit the separate Task-256C1 condition-container
+  compatibility documentation prerequisite.
+- [ ] Implement Task-256C1 in its own verified commit.
 - [ ] Implement Task 257C2 only after Task-256C1 and fresh
   parser/resolver/API, both-install-order, count, test-list,
   production-manifest, and CLI-hash preflight, in a separate logical task and
   commit.
+
+## Checker Task 256C1 Frozen-Contract Ledger
+
+- [x] Freeze the authority-backed direct condition-container/equality
+  compatibility needed before Task 257C2, with exact source/ranges/profiles
+  and owner-term/formula context equality, with no broadened formula intent.
+- [x] Freeze private-only Task-256 validation, unchanged public schema,
+  fingerprints/debug, both install orders, rollback, strict overlap
+  rejection, independently valid paired near misses, explicit absent set
+  fingerprint/substitution checks, three checker tests, and projected
+  libraries `329/357`.
+- [x] Record `source_drift`, resolved `design_drift`, `test_gap`, report-only
+  `repo_metadata_conflict`, zero trace/coverage impact, and unchanged
+  executable baselines.
+- [ ] Implement, review, verify, and separately commit Task 256C1 after fresh
+  preflight.
+- [ ] Resume Task 257C2 only after Task 256C1 and another fresh inventory.

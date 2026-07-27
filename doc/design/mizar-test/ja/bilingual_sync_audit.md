@@ -274,6 +274,14 @@ plan/pass-fail count 404/369と220/184、変更しないparse/type/proof admissi
 `63e4e770...`、content hash `7e5adca2...`も両方に記録する。このincrementにbilingual
 driftは残らない。
 
+## Checker Task 256C1 frozen runner pair
+
+paired plan、harness、TODO、boundary auditは同じrunner non-ownership、
+unchanged 191-byte authority consumer、runner/fixture/trace impactゼロ、
+same-context lower relation、unchanged count/hash、checker-only prerequisiteが
+両install orderをpassするまで
+Task-257C2 routeをdeferすることをfreezeする。bilingual driftは残らない。
+
 ## Parser Task 47 / parse-only pair recheck
 
 paired plan、TODO、harness、traceability、module-boundary documentは、同じnew case、exactly

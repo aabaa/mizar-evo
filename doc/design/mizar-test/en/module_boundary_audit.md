@@ -26,6 +26,16 @@ The plan/parse/declaration/type/proof CLI hashes are
 `142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`,
 and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 
+## Checker Task 256C1 Frozen Boundary Recheck
+
+No mizar-test production or test owner changes. The manifest remains 29
+paths / 33,725 lines, the library remains 357 tests, and the production,
+test-list, and five CLI hashes in the latest Task-255C1 boundary recheck
+remain authoritative. The compatibility predicate and its three projected
+tests belong solely to
+`mizar-checker/src/source_atomic_formula.rs`; the frozen Task-257C2 runner
+route remains deferred.
+
 ## Checker Task 257C2 Frozen Boundary
 
 No production path or line changes in this prerequisite. The future complete

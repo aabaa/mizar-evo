@@ -363,3 +363,12 @@ lower rejection, separate Task-256C1 compatibility gate with unrelated
 overlap rejection preserved, bidirectional installer tests, and semantic
 deferrals. No executable runner artifact changes and no bilingual drift
 remains.
+
+## Checker Task 256C1 Frozen Runner Pair
+
+The paired plan, harness, TODO, and boundary audit freeze identical runner
+non-ownership, unchanged 191-byte authority consumer, zero runner/fixture/
+trace impact, same-context lower relation, unchanged counts and hashes, and
+deferral of the Task-257C2
+route until the checker-only prerequisite passes both install orders.
+No bilingual drift remains.

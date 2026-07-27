@@ -170,6 +170,18 @@ module-boundary pair is updated because public checker enum/profile surfaces
 and the existing private runner leaf changed. No Task-257B2 bilingual debt
 remains.
 
+## Task 256C1 Frozen-Contract Pair
+
+The paired plan, atomic/set owner, typed installation, decomposition,
+source/spec, module-boundary, and TODO documents freeze the same exact
+equality-condition containment, direct-child/range/spelling/recovery checks,
+owner-term/formula context equality, two install orders, unchanged public
+schema/fingerprint/debug, strict corruption rejection, independently valid
+pair-only failures, optional-set substitution/absent-fingerprint checks,
+three-test projection, unchanged runner/trace/count/hash baseline,
+classifications, and semantic deferrals. No executable
+artifact changes in this prerequisite and no bilingual debt remains.
+
 ## Task 257B3 Frozen-Contract Pair
 
 The EN/JA crate plans, TODOs, payload decomposition, source-term,

@@ -1692,8 +1692,19 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   pass-fail/active count、projected plan `419/386`/type `252/240`、
   unchanged diagnostic intent、本prerequisiteのexecutable artifact変更ゼロを
   freeze。
-- [ ] 本runner slice edit前に、separate documentation/implementationの
-  Task-256C1 condition-container compatibility prerequisiteを両lower install
-  order込みでcomplete。
+- [x] 本runner slice edit前にseparate Task-256C1 frozen-contract
+  prerequisiteをdocument。checker-only implementationは両lower install
+  orderをpassするまで未完了。
 - [ ] Task-256C1とfresh preflight後、separate Task-257C2 implementation
   commitでこのfrozen runner sliceだけをimplement。
+
+## Checker Task 256C1 frozen runner checklist
+
+- [x] runner non-ownershipをfreeze。source/test、fixture、sidecar、
+  expectation、trace、production manifest、CLI変更ゼロ。
+- [x] 191-byte fixtureはauthority/future Task-257C2 consumerとしてだけ保持し、
+  checker-local testsが両install order/corruption coverageをown。
+- [x] `419/385`、`251/239`、`228/191`、active `101/5/198/1`、357 tests、
+  29 paths / 33,725 lines、全runner hashを保持。
+- [ ] Task 256C1 implementation中runnerを不変に保ち、その後frozen
+  Task-257C2 routeをfresh-preflight。

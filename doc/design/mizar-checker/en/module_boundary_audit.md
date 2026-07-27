@@ -130,6 +130,17 @@ fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
 
+## Task 256C1 Frozen Boundary Recheck
+
+Fresh inventory measures `source_atomic_formula.rs` at 7,428 lines,
+`source_set_term.rs` at 6,806, `typed_ast.rs` at 4,117, and
+`resolved_typed_ast.rs` at 6,950. Task 256C1 changes only the first cohesive
+owner: a private range predicate and its checker-local tests remain coupled
+to the existing nine-table validation matrix. No new module, public API,
+runner owner, or cross-crate dependency is justified. `TypedAst`,
+`source_set_term`, resolved ownership, and all mizar-test production paths
+remain unchanged.
+
 ## Checker Task 257C2 Frozen Boundary
 
 Task 257C2 remains within the existing `source_formula_composition.rs` owner

@@ -242,3 +242,31 @@ retaining arbitrary/copied/stale/wrong-range overlap rejection. Task 257C2
 still adds no field, row, enum, request kind, debug byte, or semantic behavior
 to this public lower-family transaction. Predicate-chain
 conjunction/negation remains a later Task-257C slice.
+
+## Task 256C1 Frozen Condition-Container Compatibility
+
+Task 256C1 changes only private cross-family range validation for the exact
+Task-255C1 condition/equality consumer. The existing set-term overlap rule
+continues to accept disjoint rows and atomic-formula-contains-set-term
+operands. It additionally accepts the inverse set-container relation only
+when a Task-255 `Comprehension` term owns a matching condition row, the
+condition and `Equality` formula have equal range/spelling and normal
+recovery, the formula context equals the enclosing term context, and the
+condition site's arena node directly contains the distinct formula site.
+
+Every arbitrary, substituted, cross-source copied, stale, wrong-term, wrong-kind,
+wrong-range/spelling/recovery/context, non-direct, partial, crossing, or
+unrelated
+overlap retains `SetTermDependencyMismatch`. Other atomic kinds, composite
+conditions, and generator-dependent conditions remain deferred.
+
+No public or crate-visible producer/installation signature, table, ID,
+accessor, enum, error variant, fingerprint, or debug byte changes.
+`set_term_fingerprint()` remains `None`; an optional matching set handoff is
+validation context only, so building with or without it yields equal atomic
+handoffs and byte-identical debug. Exactly three checker tests freeze the
+valid relation, both `TypedAst` install orders/rollback, and the corruption
+plus preservation matrix. Each applicable relation near miss must validate
+in both lower families independently before pairing fails with exact
+`SetTermDependencyMismatch`; optional-set substitution also proves no
+publication and valid replay.

@@ -229,3 +229,30 @@ narrowにauthenticateし、arbitrary/copied/stale/wrong-range overlap rejection�
 保持する。Task 257C2はこのpublic lower-family transactionへfield/row/enum/
 request kind/debug byte/semantic behaviorを追加しない。predicate-chain
 conjunction/negationはlater Task-257C sliceに残る。
+
+## Task 256C1 frozen condition-container compatibility
+
+Task 256C1はexact Task-255C1 condition/equality consumerに対するprivate
+cross-family range validationだけを変更する。existing set-term overlap ruleは
+disjoint rowとatomic-formula-contains-set-term operandを従来通りacceptする。
+加えてTask-255 `Comprehension` termがmatching condition rowをownし、
+condition/`Equality` formulaがequal range/spellingとnormal recoveryを持ち、
+formula contextがenclosing term contextと一致し、condition siteのarena
+nodeがdistinct formula siteをdirect containする場合だけ、inverse
+set-container relationをacceptする。
+
+arbitrary/substituted/cross-source copied/stale/wrong-term/wrong-kind/
+wrong-range/spelling/recovery/context/non-direct/partial/crossing/unrelated
+overlapは
+`SetTermDependencyMismatch`を保持する。他atomic kind、composite condition、
+generator-dependent conditionはdeferred。
+
+public/crate-visible producer/installation signature、table、ID、accessor、
+enum、error variant、fingerprint、debug byteは変更しない。
+`set_term_fingerprint()`は`None`のまま。optional matching set handoffは
+validation contextだけなので、その有無でbuildしたatomic handoffはequalかつ
+debugはbyte-identical。checker tests exact 3件がvalid relation、
+`TypedAst`両install order/rollback、corruption/preservation matrixをfreezeする。
+applicableなrelation near missはpair前に両lower familyで個別validateし、
+pair時だけexact `SetTermDependencyMismatch`でfailする。optional-set
+substitutionもno publication/valid replayをproveする。

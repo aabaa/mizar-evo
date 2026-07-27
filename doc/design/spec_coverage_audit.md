@@ -3432,3 +3432,34 @@ hash; its measured baseline remains plan `419/385` and type `251/239`.
 Equality truth, generator binding/capture, predicate-chain composition,
 formula facts/results, definition acceptance, proof/IR/VC, Steps 6/7, and
 global Step-5 completion remain deferred.
+
+## Step 5 Checker Task 256C1 Frozen-Contract Addendum
+
+Task 256C1 is the lower-stage compatibility prerequisite for the already
+frozen Task-257C2 condition-formula association. Chapter 13 §§13.4/13.4.2
+places the optional formula inside a comprehension, and Chapter 14
+§§14.2/14.5.2/14.8 authorizes the exact contained built-in equality.
+The current two-order rejection is authority-backed `source_drift`; the
+missing narrow contract is `design_drift`, closed by this prerequisite, and
+the missing order/corruption matrix is `test_gap`.
+
+The implementation may change only Task-256 private range validation to
+accept an authenticated Task-255 comprehension condition whose distinct
+direct child is the equal-range/equal-spelling, normally recovered Task-256
+equality in the same context as the enclosing term. It adds no public row,
+graph edge, fingerprint, requirement,
+trace mapping, or Chapter credit. Arbitrary/copied/stale/wrong/non-direct
+overlaps and all other formula forms remain deferred and fail-closed.
+The checker test contract proves every applicable near miss valid in each
+lower family before the pair fails, and explicitly covers substituted
+optional validation context, absent set fingerprint, rollback, and replay.
+
+Accordingly,
+`spec.en.checker.type_elaboration.source_conditioned_comprehension_payload`
+retains its current Task-255C1 transport credit and sidecar unchanged.
+The future Task-257C2 row remains unimplemented. Plan `419/385`, type
+`251/239`, pass/fail `228/191`, active `101/5/198/1`, and all trace status
+and coverage counts remain unchanged. Task 256C1 is recorded only as the
+lower-stage follow-up owner that makes the existing Chapter-13/14 transport
+shape composable; this documentation prerequisite changes no executable
+artifact.

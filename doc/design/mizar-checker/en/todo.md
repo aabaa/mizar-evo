@@ -4629,10 +4629,39 @@ implementation commit does not satisfy a producer task.
   condition-container rejection as a separate authority-backed
   `source_drift`, the stale Task-255C1 umbrella checkbox as resolved
   `design_drift`, and origin drift as report-only `repo_metadata_conflict`.
-- [ ] Freeze, review, and commit the separate Task-256C1
-  condition-container compatibility prerequisite; then implement and verify
-  it in its own commit with both install orders and strict arbitrary-overlap
-  rejection.
+- [x] Freeze, review, and commit the separate Task-256C1
+  condition-container compatibility documentation prerequisite.
+- [ ] Implement and verify Task-256C1 in its own commit with both install
+  orders and strict arbitrary-overlap rejection.
 - [ ] Implement only Task 257C2 after Task-256C1 and fresh
   parser/resolver/API, both-install-order, count/test-list/production/CLI-hash
   preflight, in a separate logical task and commit.
+
+## Checker Task 256C1 Frozen-Contract Ledger
+
+- [x] Freeze Chapter-13/14 authority, the unchanged 191-byte source/hash,
+  exact `139..184` condition container and `177..182` equality, and the
+  checker-local/future Task-257C2 consumers.
+- [x] Freeze the only admitted relation: Task-255 comprehension condition 0
+  directly contains distinct Task-256 equality 0 with equal range/spelling,
+  normal recovery, equality/owner-term context, exact profiles, and no
+  fabricated condition context.
+- [x] Preserve public APIs, all tables/IDs/errors/debug bytes,
+  `set_term_fingerprint() == None`, disjoint and formula-contains-set cases,
+  and strict arbitrary/substituted/copied/stale/wrong-context/non-direct overlap
+  rejection.
+- [x] Freeze both `TypedAst` installation orders, atomic rollback/replay,
+  independently valid near misses that fail only when paired with exact
+  `SetTermDependencyMismatch`, exactly three checker tests, projected
+  libraries `329/357`, no runner or trace change, and all semantic deferrals.
+- [x] Classify current two-order rejection as authority-backed
+  `source_drift`, the missing contract as resolved `design_drift`, tests as
+  `test_gap`, and origin divergence as report-only
+  `repo_metadata_conflict`; no blocking `spec_gap` remains.
+- [x] Keep this prerequisite documentation-only at plan `419/385`, type
+  `251/239`, pass/fail `228/191`, active `101/5/198/1`, libraries `326/357`,
+  and unchanged production/test-list/CLI hashes.
+- [ ] Implement only Task 256C1 after this documentation commit and fresh
+  preflight, then review, verify, and commit it separately.
+- [ ] Return to Task 257C2 implementation only after Task 256C1 passes both
+  installation orders and fresh inventory.

@@ -794,3 +794,18 @@ The C2 installer is not implementable until separate Task 256C1 makes the
 authenticated Task-255 condition containment pass both set/atomic
 installation orders without weakening unrelated overlap guards.
 Absent-handoff debug bytes remain unchanged; no semantic table is populated.
+
+## Task 256C1 Frozen Installation Revalidation
+
+No `TypedAst` API or production implementation changes. Existing symmetric
+revalidation is the contract: Task 255 then Task 256 validates the atomic
+handoff against the installed set handoff, while Task 256 then Task 255
+revalidates the installed atomic handoff against the incoming set handoff.
+After the private Task-256 validator fix, both orders accept only the
+authenticated equality-condition container and produce byte-identical
+immutable handoffs and full debug output.
+
+Every invalid overlap still fails atomically through the existing
+`InvalidSourceAtomicFormula` or `InvalidSourceSetTerm` variant. No field is
+published, and valid replay from the unchanged base succeeds. Final resolved
+revalidation and clone ownership are unchanged.

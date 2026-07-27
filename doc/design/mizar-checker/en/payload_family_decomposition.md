@@ -703,3 +703,15 @@ The edge is a dedicated cross-family handoff in
 `source_formula_composition`, not a composite-formula placeholder. Generator
 binding/capture, predicate-chain composition, equality truth, formula
 results, and definition acceptance stay downstream.
+
+## Task 256C1 Frozen Compatibility Edge
+
+Task 256C1 adds no graph node or published edge. It changes only the
+Task-256 validator's interpretation of one already authenticated containment:
+Task-255 term 0/condition 0 encloses and directly parents Task-256 equality 0
+in the same owner-term/formula context.
+The immutable graph remains
+`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255
+1/0/1/1/1/1/2` plus the dependency-neutral Task-256
+`1/0/0/0/0/0/0/2/2`; Task-257C2 later adds the sole association edge.
+No family ownership, ID, fingerprint, or semantic boundary changes.
