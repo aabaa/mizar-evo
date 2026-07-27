@@ -1624,4 +1624,22 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   route/sidecar/covered trace/testを実装する。
 - [x] corpus `416/382`、type `248/236`、pass/fail `226/190`、active
   `101/5/195/1`、343 library tests、semantic output absenceをverifyする。
-- [ ] own EN/JA frozen contractのcommitまでTask 257B3をunselectedに保つ。
+- [x] own EN/JA frozen contract準備中はTask 257B3をunselectedに保つ。contractは
+  completeで、implementationはseparateのまま。
+
+## Checker Task 257B3 frozen runner checklist
+
+- [x] exact 138-byte source/hash、Task-48 reserve extraction、mandatory
+  preflight factとしてのparser/resolver node/scope/range、exact private
+  selector boundaryをfreeze。
+- [x] same-arena Task-252 `6/6/0`、Task-256
+  `3/0/0/0/0/0/6/6`、Task-257B3 `3/0/1/3/3/2/6`、
+  composition `3/6`とsource-order lookup/owning-edge associationをfreeze。
+- [x] Task-248 source contextをabsentに保ち、reserve-derived base validation、
+  isolation/mutation/previous-route/final-ownership/semantic-output testを
+  freeze。
+- [x] prerequisiteをdocumentation-onlyで`416/382`、`248/236`、
+  `226/190`、active `101/5/195/1`、343 tests、29 paths /
+  32,064 linesに保つ。
+- [ ] documentation commit/fresh preflight後にexact route、sidecar、covered
+  trace row、testsを実装する。

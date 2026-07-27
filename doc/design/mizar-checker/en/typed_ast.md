@@ -714,3 +714,13 @@ profile plus `8/0` composition. It requires the exact installed Task-252/256
 dependencies and rejects missing/stale fingerprints, Task-248 coexistence,
 existing A/B1/B2 ownership, and partial publication. The legacy composite-only
 installer remains Task-257A-only.
+
+## Task 257B3 Frozen Ownership Addendum
+
+The combined installer will admit only the exact fourth composite profile and
+`3/6` composition over the Task-48-derived one-reserve base plus exact
+Task-252/256 dependencies. `source_context()` remains absent because the
+Task-248 reserve-plus-definition profile is not this consumer. Installation
+authenticates reserve-default provenance, nested contexts, shadowing, owning
+atomic edges, and lookup replay, and rejects existing A/B1/B2/B3 ownership or
+partial publication. The legacy composite-only installer remains A-only.

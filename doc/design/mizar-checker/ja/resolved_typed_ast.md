@@ -768,3 +768,12 @@ Task 257B2もこのboundaryをreuseし、final assemblyはexact third composite
 profileと`8/0` composition fingerprintを再検証してclone-preserveする。
 resolved resultにはchecked formula、statement semantics、accepted theorem、
 proof、IR outputを追加しない。
+
+## Task 257B3 Frozen Final-Handoff Addendum
+
+final assemblyはTask-48 reserve provenance、Task-252/256 fingerprint、fourth
+composite profile、nested binding environment、`3/6` owning-edge/use
+associationを再検証してからhandoffをclone-preserveする。Task-248
+source-context handoffのabsenceはexact profileの一部。checked formula、
+witness、restriction result、closure、fact、theorem acceptance、proof、IR
+outputをassembleしない。

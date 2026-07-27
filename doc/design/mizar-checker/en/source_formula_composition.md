@@ -327,3 +327,28 @@ wrapper/tree ownership, and empty capture are revalidated fail-closed.
 Combined `TypedAst` publication and `ResolvedTypedAst` cloning are atomic;
 connective truth, repetition expansion, theorem status, facts, proof, and IR
 remain deferred.
+
+## Task 257B3 Frozen Nested-Quantifier Composition
+
+The fourth composition profile is exactly `3/6`. Its atomic rows associate
+the outer restriction and inner restriction through new
+`UniversalRestriction` roles and the innermost equality through
+`UniversalBody`. The six source-ordered bound-use rows point to Task-252
+references: three `x` uses select outer binder 1, one `y` use selects binder
+2, and two `r` uses select inner binder 3 rather than reserved binding 0.
+Every association names the atomic edge that encloses its term.
+For source compatibility, public
+`SourceQuantifierBoundUseInput::body_edge`, immutable
+`SourceQuantifierBoundUse::body_edge()`, and the `body-edge` debug key remain
+named as in B1 but are generalized to the owning atomic edge for B3
+restriction uses. Exact owning-edge ids are `0,0,1,1,2,2`;
+binder-row ids are `0,0,2,1,0,2`; per-binder ordinals are
+`0,1,0,0,2,1`.
+
+Validation authenticates Task-48 reserve-default provenance, Task-252
+`6/6/0`, Task-256 `3/0/0/0/0/0/6/6`, Task-257B3
+`3/0/1/3/3/2/6`, context ancestry, lexical lookup replay, shadowing,
+nearest-parent roles, fingerprints, and final ownership. Direct nested
+quantified uses do not become `CapturedFreeVariables`. No quantified truth,
+restriction discharge, witness, theorem closure, fact, acceptance, proof, or
+IR is produced.

@@ -169,3 +169,16 @@ ownership, corpus `416/382`, and the unchanged semantic deferrals. The
 module-boundary pair is updated because public checker enum/profile surfaces
 and the existing private runner leaf changed. No Task-257B2 bilingual debt
 remains.
+
+## Task 257B3 Frozen-Contract Pair
+
+The EN/JA crate plans, TODOs, payload decomposition, source-term,
+atomic/composite/composition, typed/final ownership, source-spec audit,
+mizar-test design, global TODO, and coverage audit freeze the same 138-byte
+source and hash, Task-48 reserve base, four-context/four-binding environment,
+`6/6/0`, `3/0/0/0/0/0/6/6`, `3/0/1/3/3/2/6`, and `3/6`
+profiles, exact use associations, Task-248 exclusion, tests, baseline,
+projection, and semantic deferrals. This documentation prerequisite changes
+no module boundary, production path, executable count, or hash, so the paired
+module-boundary audit is intentionally unchanged. No Task-257B3 bilingual
+sync debt is accepted.

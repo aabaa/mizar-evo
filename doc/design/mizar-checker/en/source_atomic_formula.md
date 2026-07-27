@@ -142,3 +142,16 @@ Task 257B2 reuses eight equality rows with exact profile
 `8/0/0/0/0/0/16/16`. Their sixteen existing operand edges remain owned here;
 the new composition table only associates those atomic roots with repeated or
 fixed conjunction/disjunction parents and does not change atomic semantics.
+
+## Task 257B3 Frozen Consumer Addendum
+
+Task 257B3 reuses exactly three equality rows with profile
+`3/0/0/0/0/0/6/6`: outer restriction `x = x`, inner restriction `r = y`,
+and innermost body `x = r`. Their six Task-252 operand edges and six
+unresolved operand-type requests remain owned here. Formula composition adds
+only two restriction-parent associations and one body-parent association; it
+does not change equality truth or operand typing.
+Atom 0 and terms 0/1 use nested context 1; atoms 1/2 and terms 2..5 use
+context 3. All three atoms are `Equality`/`Normal` with source ordinals
+`0..2`. Source order, spelling, range containment, and request/edge ordinals
+remain exact profile discriminators.

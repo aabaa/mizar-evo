@@ -298,3 +298,25 @@ bound-useはemptyである。dependency spelling/context/numeric request/
 fingerprint、wrapper/tree ownership、empty captureをfail-closedで再検証する。
 combined publication/final cloneはatomicで、truth、repetition expansion、
 theorem status、fact、proof、IRはdeferredのまま。
+
+## Task 257B3 Frozen Nested-Quantifier Composition
+
+fourth composition profileはexact `3/6`。atomic rowはouter restrictionとinner
+restrictionをnew `UniversalRestriction` role、innermost equalityを
+`UniversalBody`でassociateする。source-order bound-use 6件はTask-252
+referenceを指し、`x` 3件はouter binder 1、`y` 1件はbinder 2、`r` 2件は
+reserved binding 0ではなくinner binder 3をselectする。各associationはtermを
+encloseするatomic edgeをnameする。
+source compatibilityのためpublic `SourceQuantifierBoundUseInput::body_edge`、
+immutable `SourceQuantifierBoundUse::body_edge()`、`body-edge` debug keyは
+B1と同じ名前を保ち、B3 restriction useではowning atomic edgeへgeneralizeする。
+exact owning-edge idは`0,0,1,1,2,2`、binder-row idは
+`0,0,2,1,0,2`、per-binder ordinalは`0,1,0,0,2,1`。
+
+validationはTask-48 reserve-default provenance、Task-252 `6/6/0`、
+Task-256 `3/0/0/0/0/0/6/6`、Task-257B3
+`3/0/1/3/3/2/6`、context ancestry、lexical lookup replay、shadow、
+nearest-parent role、fingerprint、final ownershipをauthenticateする。direct
+nested quantified useは`CapturedFreeVariables`にならない。quantified truth、
+restriction discharge、witness、theorem closure、fact、acceptance、proof、IRを
+produceしない。

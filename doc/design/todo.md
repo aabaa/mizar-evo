@@ -2265,5 +2265,19 @@ completion remain deferred. The origin discrepancy remains report-only
   `416/382`.
 - [x] Preserve all semantic deferrals and classify the external origin
   difference only as report-only `repo_metadata_conflict`.
-- [ ] Continue with a separate Task 257B3 frozen-contract prerequisite after
+- [x] Continue with a separate Task 257B3 frozen-contract prerequisite after
   fresh authority/API inventory.
+
+## Checker Task 257B3 Frozen-Contract Ledger
+
+- [x] Freeze the exact 138-byte source and hash, Task-48 reserve-derived base,
+  explicit Task-248 exclusion, nested binding/shadowing, exact lower-family
+  and formula profiles, ownership, tests, trace projection, and deferrals in
+  synchronized EN/JA documentation.
+- [x] Classify the missing contract as `design_drift`, future implementation
+  as bounded `source_drift` and `test_gap`, and the external origin difference
+  as report-only `repo_metadata_conflict`; no blocking `spec_gap` exists.
+- [x] Preserve production, fixtures, sidecars, trace status/count, executable
+  coverage, counts, and hashes at the Task-257B2 completion baseline.
+- [ ] Implement Task 257B3 as the next separate logical task after mandatory
+  parser/resolver/API and count/hash preflight.

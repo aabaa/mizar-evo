@@ -160,3 +160,15 @@ consumer、fail-closed test matrix、final ownership、corpus `416/382`、semant
 deferralを同じ内容で記録する。public checker enum/profile surfaceと既存private
 runner leafが変わったためmodule-boundary pairも同期した。Task-257B2の
 bilingual debtは残らない。
+
+## Task 257B3 Frozen-Contract Pair
+
+EN/JA crate plan/TODO、payload decomposition、source-term、atomic/composite/
+composition、typed/final ownership、source-spec audit、mizar-test design、
+global TODO、coverage auditは同じ138-byte source/hash、Task-48 reserve base、
+4-context/4-binding environment、`6/6/0`、`3/0/0/0/0/0/6/6`、
+`3/0/1/3/3/2/6`、`3/6` profile、exact use association、Task-248 exclusion、
+tests、baseline/projection、semantic deferralをfreezeする。このdocumentation
+prerequisiteはmodule boundary、production path、executable count/hashを変えない
+ためpaired module-boundary auditは意図的に不変。Task-257B3 bilingual sync
+debtは認めない。

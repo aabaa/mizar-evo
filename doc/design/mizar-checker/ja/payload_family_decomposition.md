@@ -566,3 +566,21 @@ frozen nodeは`Task252 16/0/16 -> Task256 8/0/0/0/0/0/16/16 ->
 Task257B2 8/6/1/1/1/7/9 -> composition 8/0`として実行可能になった。
 fixed/repeated connective tree/wrapperだけをtransportし、Task 257B3/257C、
 connective truth、repetition expansion、theorem ownershipはdownstreamに残す。
+
+### Task 257B3 frozen nested-binder node
+
+次のgraph nodeはTask-48 one-binding bare-set reserve baseを4-binding nested
+environmentへ先にextendし、その後Task-252 `6/6/0`、Task-256
+`3/0/0/0/0/0/6/6`、fourth Task-257
+`3/0/1/3/3/2/6` profile、formula composition `3/6`をcomposeする。
+restricted explicit universal 1件、explicit existential 1件、nested
+implicit-reserve universal 1件、same-family child edge 2件、atomic-parent
+association 3件、formula-side bound-use association 6件だけを所有する。
+
+Task 48はwritten reserve/default owner、Task 252はoccurrence/referenceと
+lookup-winner owner、Task 256はequality/operand ownerのままである。
+Task 257B3はreserve bindingをimplicit binder-type sourceとしてauthenticateし
+shadow relationを保持できるが、predecessor rowをcopy/reinterpretしない。
+quantified truth、witness construction、restriction discharge、implicit
+theorem closure、capture result、Task 257C、theorem ownership、later semantic
+stageはdownstreamのままである。

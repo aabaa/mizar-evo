@@ -3152,3 +3152,22 @@ passes with no detail key; selector isolation, source-level near misses,
 profile/association corruption and valid replay, A/B1 preservation, and final
 typed/resolved ownership are executable tests. No semantic output or theorem
 credit is produced.
+
+## Checker Task 257B3 Frozen Harness Boundary
+
+The existing private formula-composition leaf may later select only
+`pass_type_elaboration_formula_nested_quantifier_payload_001`. It must require
+the exact reserve/theorem pair, normal recovery, restricted `x`, existential
+`y`, implicit-reserve nested `r`, three equality atoms, no extra item or
+justification, and the final-LF source hash.
+
+The route prepares the Task-48 reserve binding environment, keeps Task-248
+source context absent, extends three nested quantifier binders, and builds the
+exact `6/6/0`, `3/0/0/0/0/0/6/6`, `3/0/1/3/3/2/6`, and `3/6`
+profiles in one arena. Near misses independently mutate reserve presence,
+name/type/order, explicit versus implicit binders, quantifier kinds, `st`/
+`holds`, nesting, atoms, lookup winners, recovered nodes, theorem label and
+sidecar status/justification, an extra theorem/definition/non-reserve item,
+formula wrappers, attributed or argument-bearing reserve/binder types, and
+B2/C shapes. Passing asserts only immutable source transport: no truth,
+witness, closure, fact, theorem, proof, or IR output.

@@ -143,3 +143,17 @@ Task 257B2 reuses sixteen numeral rows and sixteen numeric-type requests in
 body context 1. It intentionally creates zero references: the explicit `x`
 binder is unused, captured identities remain empty, and the composition layer
 does not invent bound-use rows.
+
+## Task 257B3 Frozen Consumer Addendum
+
+Task 257B3 reuses exactly six `VariableReference`/`Value` terms and six
+Task-252 lookup-selected references. In source order, three `x` occurrences
+select outer quantifier binding 1, one `y` selects binding 2, and two `r`
+occurrences select inner quantifier binding 3 rather than reserved binding 0.
+Terms/references 0-1 use context 1 and rows 2-5 use context 3. Terms are
+`VariableReference`/`Value`/`Normal` with source ordinals `0..5`; references
+retain the variable role.
+Scope paths and local identities are source-derived resolver-shaped preflight
+facts, while use ordinals are authenticated Task-252 producer output. Formula
+composition records owning-edge associations only; Task 252 keeps occurrence,
+reference, spelling, lexical-scope, and lookup-winner ownership.

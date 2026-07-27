@@ -3143,6 +3143,36 @@ connective truth, repetition expansion, Task 257B3/C, theorem ownership,
 facts, proof, Core/CFG/VC, Steps 6/7, and global Step-5 completion remain
 uncredited.
 
+## Step 5 Checker Task 257B3 Frozen-Contract Addendum
+
+Chapters `04.variables_and_constants.md` §§4.3/4.5/4.6 and
+`14.formulas.md` §§14.4.1-14.4.4/14.7.5, together with the existing parser
+quantifier fixture, authorize the exact 138-byte restricted-universal,
+existential, nested implicit-reserve source frozen by Task 257B3. The future
+bounded graph is Task-48 reserve base, Task-257B3 nested binding extension,
+Task-252 `6/6/0`, Task-256 `3/0/0/0/0/0/6/6`, Task-257B3
+`3/0/1/3/3/2/6` table build, and composition `3/6`. Task 248 remains
+explicitly uninstalled because its reserve-plus-
+definition profile does not own this source.
+
+This prerequisite closes only missing-contract `design_drift`. The fourth
+profile, nested binding/shadowing, reserve-default provenance, owning-edge
+associations, and final ownership remain bounded `source_drift`; the exact
+consumer and matrices remain `test_gap` for the separate implementation.
+There is no blocking `spec_gap`. No trace row, mapping, status, fixture,
+sidecar, source, executable coverage, count, test list, or hash changes here:
+baseline remains plan `416/382`, type `248/236`, pass/fail `226/190`,
+active `101/5/195/1`, and warnings/errors `23/0`.
+
+The implementation may add only one covered row,
+`spec.en.checker.type_elaboration.source_nested_quantifier_payload`, mapped
+to its new pass sidecar, plus reciprocal unchanged-status transport notes. It
+projects plan `417/383`, type `249/237`, pass/fail `227/190`, and active
+type 196. Equality/quantified truth, witnesses, restriction discharge,
+implicit theorem closure, capture results, facts, theorem ownership/
+acceptance, proof, Core/CFG/VC, Task 257C, Steps 6/7, and global Step-5
+completion receive no credit.
+
 ## Step 5 Checker Task 257B1 Frozen-Contract Addendum
 
 Task 257B is decomposed before further implementation. Task 257B1 freezes the

@@ -2987,3 +2987,22 @@ composition pairをatomic installする。active caseはdetail keyなしでpass�
 selector isolation、source near-miss、profile/association corruptionとvalid
 replay、A/B1 preservation、final typed/resolved ownershipをtestする。semantic
 output/theorem creditは生成しない。
+
+## Checker Task 257B3 Frozen Harness Boundary
+
+existing private formula-composition leafは将来
+`pass_type_elaboration_formula_nested_quantifier_payload_001`だけをselectできる。
+exact reserve/theorem pair、normal recovery、restricted `x`、existential `y`、
+implicit-reserve nested `r`、equality atom 3件、extra item/justificationなし、
+final-LF source hashを要求する。
+
+routeはTask-48 reserve binding environmentをprepareし、Task-248 source
+contextをabsentに保ち、nested quantifier binder 3件をextendしてexact
+`6/6/0`、`3/0/0/0/0/0/6/6`、`3/0/1/3/3/2/6`、`3/6`をone arenaで
+buildする。near missはreserve presence/name/type/order、explicit/implicit
+binder、quantifier kind、`st`/`holds`、nesting、atom、lookup winner、
+recovered node、theorem labelとsidecar status/justification、extra theorem/
+definition/non-reserve item、formula wrapper、attributed/argument-bearing
+reserve/binder type、B2/C shapeを独立にmutateする。passはimmutable source
+transportだけをassertし、truth、witness、closure、fact、theorem、proof、IR
+outputを持たない。

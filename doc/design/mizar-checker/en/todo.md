@@ -4469,7 +4469,9 @@ unchecked row below is one future nonempty logical task and one commit.
       executable formula grouping transport after Task 257B1, with no
       connective truth or theorem acceptance.
     - [ ] **Task 257B3:** existential, restricted/nested quantification,
-      implicit reserved binders, and additional scoped uses after Task 257B1.
+      implicit reserved binders, and additional scoped uses after Tasks
+      257B1/B2. The EN/JA frozen contract is complete; production
+      implementation remains a separate logical task.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
@@ -4521,5 +4523,24 @@ implementation commit does not satisfy a producer task.
 - [x] Verify exact `16/0/16`, `8/0/0/0/0/0/16/16`,
   `8/6/1/1/1/7/9`, and `8/0` profiles, fail-closed tests, final ownership,
   corpus `416/382`, and all semantic deferrals.
-- [ ] Freeze Task 257B3 as the next dependency-ordered formula slice before
+- [x] Freeze Task 257B3 as the next dependency-ordered formula slice before
   changing its production source or test intent.
+
+## Task 257B3 Frozen-Contract Addendum
+
+- [x] Freeze the exact 138-byte reserve/restricted-universal/existential/
+  nested-implicit-universal source and final-LF SHA-256.
+- [x] Freeze the Task-48 one-reserve base, explicit Task-248 exclusion,
+  four contexts/bindings with empty capture, reserve-default provenance, and
+  inner-`r` shadow.
+- [x] Freeze exact Task-252 `6/6/0`, Task-256
+  `3/0/0/0/0/0/6/6`, Task-257B3 `3/0/1/3/3/2/6`, and composition
+  `3/6` profiles, row order, associations, and `body_edge` compatibility.
+- [x] Freeze parser/resolver preflight facts, complete corruption/isolation/
+  install tests, one sidecar/trace projection, audit impact, and semantic
+  deferrals.
+- [x] Keep this prerequisite documentation-only at corpus `416/382`, type
+  `248/236`, pass/fail `226/190`, active `101/5/195/1`, libraries
+  `312/343`, and 29 paths / 32,064 lines.
+- [ ] Implement only this frozen B3 slice after fresh preflight, in a separate
+  logical task and commit.

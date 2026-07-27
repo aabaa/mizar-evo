@@ -137,3 +137,24 @@ Validation rejects wrapper crossing/order drift, fixed/repeated substitution,
 A/B1/B2 hybrids, and an otherwise coherent unsupported fourth profile.
 Legacy installation remains Task-257A-only; B1/B2 publish only through the
 combined formula-composition installer.
+
+## Task 257B3 Frozen Fourth Profile
+
+The future fourth profile is exactly `3/0/1/3/3/2/6`: source-preorder
+`Universal`, new `Existential`, `Universal`; no wrappers; one unassigned
+root; three binders and type sites; outer `UniversalBody` plus new
+`ExistentialBody` edges; and quantifier/binder-type request pairs in formula
+order. The first two binder type sites are written bare `set` expressions.
+The third authenticates the Task-48 reserved-default `set` source and binding
+for an unqualified segment; it does not invent a child type expression.
+The exact kind/context/spelling rows are `Universal@0 "for st"`,
+`Existential@1 "ex st"`, and `Universal@2 "for st holds"`; binder segments
+are `"x being"`, `"y being"`, and `"r"`.
+
+Binding extension starts from the exact one-reserve module environment, adds
+three resolver-local quantifier binders in nested contexts, and preserves the
+inner `r` binder's shadow of the reserved `r`. Exact local scopes and ranges
+are preflight-measured. Validation rejects missing or substituted reserve
+provenance, flattened contexts, wrong shadow targets, A/B1/B2/B3 hybrids, and
+any otherwise coherent fifth profile. B3 remains publishable only through the
+combined formula-composition installer.

@@ -3369,3 +3369,19 @@ selector/near-miss testsでcloseした。`spec_gap`、`design_drift`、
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`は残らない。origin差はreport-only
 `repo_metadata_conflict`のまま。
+
+### Task 257B3 frozen-contract classification
+
+Chapter 4/14とparser quantifier fixtureはexact restricted/existential/nested/
+implicit-reserve syntaxとlexical binding intentを完全にauthorizeする。missing
+contractは`design_drift`、absent fourth profile、Task-48-derived nested
+environment、reserve provenance、owning-edge association、final ownershipは
+bounded `source_drift`、missing 138-byte pass consumer/matrixは`test_gap`。
+blocking `spec_gap`、`test_expectation_drift`、
+`source_undocumented_behavior`、accepted `boundary_violation`はない。
+
+Task 248は明示的にextend/installしない。そのexact profileはreserve-plus-theorem
+inputを表せない。Task 48がlower-stage changeなしでone-reserve baseを供給する。
+truth、witness、restriction discharge、implicit closure、capture result、
+theorem acceptance、proof、IRはdeferred。origin差はreport-only
+`repo_metadata_conflict`のまま。

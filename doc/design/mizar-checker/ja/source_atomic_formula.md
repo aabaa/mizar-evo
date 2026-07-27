@@ -137,3 +137,16 @@ Task 257B2はexact `8/0/0/0/0/0/16/16`の8 equality rowsをreuseする。16
 operand edgesは引き続き本familyがownし、新composition tableはatomic rootを
 repeated/fixed conjunction/disjunction parentへassociateするだけでatomic
 semanticsを変更しない。
+
+## Task 257B3 Frozen Consumer Addendum
+
+Task 257B3はexact `3/0/0/0/0/0/6/6`、すなわちouter restriction
+`x = x`、inner restriction `r = y`、innermost body `x = r`の3 equality
+rowをreuseする。Task-252 operand edge 6件とunresolved operand-type request
+6件は本family所有のまま。formula compositionはrestriction-parent association
+2件とbody-parent association 1件だけを追加し、equality truth/operand typingを
+変更しない。
+atom 0/term 0・1はnested context 1、atom 1・2/term 2..5はcontext 3を使う。
+3 atomすべて`Equality`/`Normal`、source ordinal `0..2`。source order、
+spelling、range containment、request/edge ordinalはexact profile
+discriminatorのまま。

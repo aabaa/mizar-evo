@@ -620,3 +620,22 @@ The frozen node is now executable as
 8/6/1/1/1/7/9 -> composition 8/0`. It transports the fixed/repeated
 connective tree and wrappers only. Task 257B3, Task 257C, connective truth,
 repetition expansion, and theorem ownership remain separate downstream nodes.
+
+### Task 257B3 frozen nested-binder node
+
+The next graph node first extends the Task-48 one-binding bare-set reserve
+base to the four-binding nested environment, then builds Task-252 `6/6/0`,
+Task-256 `3/0/0/0/0/0/6/6`, the fourth Task-257
+`3/0/1/3/3/2/6` table profile, and formula composition `3/6`. It owns one
+restricted explicit universal, one explicit existential, one nested
+implicit-reserve universal, their two same-family child edges, three
+atomic-parent associations, and six formula-side bound-use associations.
+
+Task 48 remains the written reserve/default owner, Task 252 remains the
+occurrence/reference and lookup-winner owner, and Task 256 remains the
+equality/operand owner. Task 257B3 may authenticate the reserve binding as the
+implicit binder-type source and preserve its shadow relation, but it may not
+copy or reinterpret those predecessor rows. Quantified truth, witness
+construction, restriction discharge, implicit theorem closure, capture
+results, Task 257C, theorem ownership, and later semantic stages remain
+downstream.

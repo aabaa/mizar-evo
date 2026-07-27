@@ -302,3 +302,13 @@ profiles, no-reference/no-bound-use rule, negative matrices, covered sidecar,
 corpus `416/382`, 343 tests, and 29-path / 32,064-line production baseline.
 The paired module-boundary audit records reuse of the existing private leaf.
 No Task-257B2 bilingual drift remains.
+
+## Checker Task 257B3 Frozen-Contract Pair Recheck
+
+The paired plan, harness, and TODO documents freeze the same 138-byte source
+and hash, Task-48 base, Task-248 exclusion, four-context/four-binding nested
+environment, `6/6/0`, `3/0/0/0/0/0/6/6`, `3/0/1/3/3/2/6`, and
+`3/6` profiles, exact lookup/edge associations, test boundary, baseline,
+projection, and semantic deferrals. No production module changes in this
+prerequisite, so the module-boundary audit remains intentionally unchanged.
+No Task-257B3 bilingual drift remains.

@@ -689,3 +689,13 @@ composition `8/0`へ拡張する。exact installed Task-252/256 dependenciesを�
 missing/stale fingerprint、Task-248 coexistence、existing A/B1/B2 ownership、
 partial publicationをrejectする。legacy composite-only installerは
 Task-257A-onlyのまま。
+
+## Task 257B3 Frozen Ownership Addendum
+
+combined installerはTask-48-derived one-reserve baseとexact Task-252/256
+dependency上のexact fourth composite profile/`3/6` compositionだけをadmitする。
+Task-248 reserve-plus-definition profileはこのconsumerでないため
+`source_context()`はabsentのまま。reserve-default provenance、nested context、
+shadow、owning atomic edge、lookup replayを認証し、existing A/B1/B2/B3
+ownershipまたはpartial publicationをrejectする。legacy composite-only
+installerはA-onlyのまま。

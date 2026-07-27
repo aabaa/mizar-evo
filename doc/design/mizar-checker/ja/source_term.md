@@ -132,3 +132,16 @@ quantifierのbinding 0をselectする。occurrence/lookup-winner ownershipはTas
 Task 257B2はbody context 1の16 numeral rows/16 numeric-type requestsをreuse
 する。explicit `x` binderはunusedなのでreferenceは0、captured identitiesは
 emptyであり、composition layerはbound-use rowをfabricateしない。
+
+## Task 257B3 Frozen Consumer Addendum
+
+Task 257B3はexact `VariableReference`/`Value` term 6件とTask-252
+lookup-selected reference 6件をreuseする。source orderで`x` 3件はouter
+quantifier binding 1、`y` 1件はbinding 2、`r` 2件はreserved binding 0ではなく
+inner quantifier binding 3をselectする。term/reference 0・1はcontext 1、
+2..5はcontext 3。termは`VariableReference`/`Value`/`Normal`、source
+ordinal `0..5`、referenceはvariable roleを保持する。scope path/local identityは
+source-derived resolver-shaped preflight fact、use ordinalはauthenticated
+Task-252 producer outputである。formula compositionはowning-edge association
+だけを記録し、occurrence/reference/spelling/lexical-scope/lookup-winner
+ownershipはTask 252に残す。

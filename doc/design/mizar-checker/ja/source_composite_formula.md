@@ -129,3 +129,23 @@ requestsからなるexact `8/6/1/1/1/7/9`だけを追加でadmitする。wrapper
 crossing/order drift、fixed/repeated substitution、A/B1/B2 hybrid、
 otherwise-coherent unsupported fourth profileをrejectする。legacy installerは
 Task-257A-onlyで、B1/B2はcombined installerだけからpublishする。
+
+## Task 257B3 Frozen Fourth Profile
+
+future fourth profileはexact `3/0/1/3/3/2/6`、すなわちsource-preorderの
+`Universal`、new `Existential`、`Universal`、wrapper 0、unassigned root 1、
+binder/type site各3、outer `UniversalBody`とnew `ExistentialBody` edge、
+formula orderのquantifier/binder-type request pairである。最初のtype site
+2件はwritten bare `set` expression。3件目はunqualified segment用のTask-48
+reserved-default `set` source/bindingをauthenticateし、child type expressionを
+inventしない。
+exact kind/context/spelling rowは`Universal@0 "for st"`、
+`Existential@1 "ex st"`、`Universal@2 "for st holds"`、binder segmentは
+`"x being"`、`"y being"`、`"r"`。
+
+binding extensionはexact one-reserve module environmentから開始し、nested
+contextにresolver-local quantifier binder 3件を追加し、inner `r` binderから
+reserved `r`へのshadowを保持する。exact local scope/rangeはpreflightで
+measureする。missing/substituted reserve provenance、flattened context、wrong
+shadow target、A/B1/B2/B3 hybrid、otherwise-coherent fifth profileをrejectする。
+B3はcombined formula-composition installerだけからpublishできる。

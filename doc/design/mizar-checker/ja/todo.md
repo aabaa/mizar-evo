@@ -4245,8 +4245,9 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
     - [x] **Task 257B2:** Task 257B1後のexact conjunction/disjunction/`iff`/
       repetition/executable formula grouping transport。connective
       truth/theorem acceptanceは含めない。
-    - [ ] **Task 257B3:** Task 257B1後のexistential/restricted/nested
-      quantification、implicit reserved binder、追加scoped use。
+    - [ ] **Task 257B3:** Tasks 257B1/B2後のexistential/restricted/nested
+      quantification、implicit reserved binder、追加scoped use。EN/JA frozen
+      contractはcompleteで、production implementationは別logical task。
   - [ ] **Task 257C:** separately frozen Task-256/255 extension後の
     predicate-chain/conditioned-comprehension composition。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
@@ -4296,5 +4297,23 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] exact `16/0/16`、`8/0/0/0/0/0/16/16`、`8/6/1/1/1/7/9`、
   `8/0`、fail-closed tests、final ownership、corpus `416/382`、semantic
   deferralをverifyする。
-- [ ] production/test intentを変える前に次のdependency-ordered Task 257B3を
+- [x] production/test intentを変える前に次のdependency-ordered Task 257B3を
   freezeする。
+
+## Task 257B3 frozen-contract addendum
+
+- [x] exact 138-byte reserve/restricted-universal/existential/
+  nested-implicit-universal sourceとfinal-LF SHA-256をfreeze。
+- [x] Task-48 one-reserve base、明示的Task-248 exclusion、empty captureの
+  4 contexts/bindings、reserve-default provenance、inner-`r` shadowをfreeze。
+- [x] exact Task-252 `6/6/0`、Task-256
+  `3/0/0/0/0/0/6/6`、Task-257B3 `3/0/1/3/3/2/6`、
+  composition `3/6` profile、row order/association、`body_edge`
+  compatibilityをfreeze。
+- [x] parser/resolver preflight fact、complete corruption/isolation/install
+  test、sidecar/trace projection 1件、audit impact、semantic deferralをfreeze。
+- [x] prerequisiteをdocumentation-onlyでcorpus `416/382`、type `248/236`、
+  pass/fail `226/190`、active `101/5/195/1`、library `312/343`、
+  29 paths / 32,064 linesに保つ。
+- [ ] fresh preflight後、別logical task/commitでこのfrozen B3 sliceだけを
+  実装する。

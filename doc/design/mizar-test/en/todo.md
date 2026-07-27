@@ -1814,5 +1814,22 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   the documentation commit and fresh parser/resolver preflight.
 - [x] Verify corpus `416/382`, type `248/236`, pass/fail `226/190`, active
   `101/5/195/1`, 343 library tests, and absence of semantic output.
-- [ ] Keep Task 257B3 unselected until its own EN/JA frozen contract is
-  committed.
+- [x] Keep Task 257B3 unselected while its own EN/JA frozen contract is
+  prepared; the contract is complete and implementation remains separate.
+
+## Checker Task 257B3 Frozen Runner Checklist
+
+- [x] Freeze the exact 138-byte source and hash, Task-48 reserve extraction,
+  parser/resolver nodes/scopes/ranges as mandatory preflight facts, and the
+  exact private selector boundary.
+- [x] Freeze same-arena Task-252 `6/6/0`, Task-256
+  `3/0/0/0/0/0/6/6`, Task-257B3 `3/0/1/3/3/2/6`, and composition
+  `3/6`, including source-order lookup and owning-edge associations.
+- [x] Keep Task-248 source context absent, validate the reserve-derived base,
+  and freeze isolation, mutation, previous-route, final-ownership, and
+  semantic-output tests.
+- [x] Keep this prerequisite documentation-only at `416/382`, `248/236`,
+  `226/190`, active `101/5/195/1`, 343 tests, and 29 paths /
+  32,064 lines.
+- [ ] Implement the exact route, sidecar, covered trace row, and tests after
+  the documentation commit and fresh preflight.

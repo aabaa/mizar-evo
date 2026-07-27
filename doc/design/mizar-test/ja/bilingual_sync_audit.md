@@ -292,3 +292,12 @@ parse-only preflight `test_gap` repair、forbidden later semanticsを記録す�
 279、および同じ5 CLI/test-list/20-path・21,598-line production manifest hashを
 記録する。Tasks 250+/269+、Steps 6/7は両文書でdeferredのままである。Task 249に
 bilingual driftは残らない。
+
+## Checker Task 257B3 frozen-contract pair recheck
+
+paired plan/harness/TODOは同じ138-byte source/hash、Task-48 base、Task-248
+exclusion、4-context/4-binding nested environment、`6/6/0`、
+`3/0/0/0/0/0/6/6`、`3/0/1/3/3/2/6`、`3/6` profile、exact
+lookup/edge association、test boundary、baseline/projection、semantic
+deferralをfreezeする。このprerequisiteはproduction moduleを変更しないため
+module-boundary auditは意図的に不変。Task-257B3 bilingual driftは残らない。

@@ -3524,3 +3524,21 @@ corruption/profile tests, and runner selector/near-miss tests. No `spec_gap`,
 `design_drift`, `source_undocumented_behavior`, `test_expectation_drift`, or
 `boundary_violation` remains. The origin difference is still a report-only
 `repo_metadata_conflict`.
+
+### Task 257B3 frozen-contract classification
+
+Chapters 4 and 14 plus the parser quantifier fixture fully authorize the exact
+restricted/existential/nested/implicit-reserve syntax and lexical binding
+intent. The missing contract is `design_drift`; the absent fourth profile,
+Task-48-derived nested environment, reserve provenance, owning-edge
+associations, and final ownership are bounded `source_drift`; the missing
+138-byte pass consumer and matrices are `test_gap`. There is no blocking
+`spec_gap`, `test_expectation_drift`, `source_undocumented_behavior`, or
+accepted `boundary_violation`.
+
+Task 248 is explicitly not extended or installed: its exact profile cannot
+represent reserve-plus-theorem input. Task 48 supplies the one-reserve base
+without a lower-stage change. Truth, witnesses, restriction discharge,
+implicit closure, capture results, theorem acceptance, proof, and IR remain
+deferred. The origin difference remains report-only
+`repo_metadata_conflict`.
