@@ -555,8 +555,27 @@ provenanceはcopyしない。
 
 stable headerは`source-predicate-chain-composition-debug-v1`で、module、
 primary/atomic fingerprint、conjunction count/row、negation count/rowの順。
-errorは`DependencyMismatch`、`InvalidConjunction { conjunction }`、
-`InvalidNegation { negation }`、`InvalidAggregate`。
+exact error signatureは次。
+
+```rust
+#[non_exhaustive]
+pub enum SourcePredicateChainCompositionError {
+    DependencyMismatch,
+    InvalidConjunction {
+        conjunction: SourcePredicateChainConjunctionId,
+    },
+    InvalidNegation {
+        negation: SourcePredicateChainNegationId,
+    },
+    InvalidAggregate,
+}
+```
+
+producerはどちらのrow validatorより先に両table cardinalityを検査する。
+conjunctionまたはnegationのcardinalityがexactly oneでなければ
+`InvalidAggregate`。exact `1/1`ならconjunction 0、次にnegation 0をvalidateし、
+invalid fieldには対応するstrongly typed ID付き`InvalidConjunction`または
+`InvalidNegation`を返す。
 
 typed/resolved ownershipはoptional/one-shot/revalidated/clone-preservedで、
 `source_predicate_chain_composition()`から参照する。dedicated errorは

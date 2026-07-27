@@ -602,9 +602,27 @@ as segment 0's right and segment 1's left edge; that existing
 The stable header is
 `source-predicate-chain-composition-debug-v1`, followed by module identity,
 primary/atomic fingerprints, the conjunction count/row, and the negation
-count/row in that order. Errors are `DependencyMismatch`,
-`InvalidConjunction { conjunction }`, `InvalidNegation { negation }`, and
-`InvalidAggregate`.
+count/row in that order. The exact error signature is:
+
+```rust
+#[non_exhaustive]
+pub enum SourcePredicateChainCompositionError {
+    DependencyMismatch,
+    InvalidConjunction {
+        conjunction: SourcePredicateChainConjunctionId,
+    },
+    InvalidNegation {
+        negation: SourcePredicateChainNegationId,
+    },
+    InvalidAggregate,
+}
+```
+
+The producer checks both table cardinalities before either row validator.
+Any conjunction or negation cardinality other than exactly one yields
+`InvalidAggregate`. With exact `1/1` cardinality it validates conjunction 0
+and then negation 0; any invalid field yields `InvalidConjunction` or
+`InvalidNegation` with the corresponding strongly typed ID.
 
 Typed/resolved ownership is optional, one-shot, revalidated, and
 clone-preserved through `source_predicate_chain_composition()`. Dedicated
