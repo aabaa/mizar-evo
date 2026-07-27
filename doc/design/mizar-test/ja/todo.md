@@ -1481,9 +1481,11 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   保つ。
 - [x] repeated label/pathをsource orderで保存し、nested pathをmember chainで
   表現し、`FieldUpdate`へ独立term/type/factを割り当てない。
-- [x] one-way same-context Task-252/253/254 child compositionと、reverse
-  Task-253 application、Task-255 term、template、initial
-  type-argument-bearing constructorのwhole-subtree exclusionをfreezeする。
+- [x] one-way same-context Task-252 root、別Task-253 argument edgeからtargetに
+  されないTask-253 root application、Task-254 child compositionをfreezeし、
+  nested Task-253 targetをrejectする。reverse Task-253 application、Task-255
+  term、template、initial type-argument-bearing constructorはwhole-subtree
+  excludedのままとする。
 - [x] sidecarをpublic diagnosticなしの
   `definition_declaration_payload_extraction_gap` /
   `type_elaboration.external_dependency.ast_payload_extraction`へfreezeし、

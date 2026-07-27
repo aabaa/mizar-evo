@@ -424,7 +424,9 @@ source occurrences with unresolved member/path requests; repeated labels and
 paths are preserved rather than decided or deduplicated. A parser
 `FieldUpdate` owns one path and replacement association but no independent
 term/type/fact. Task-254 child edges may point one-way to Task-252 roots,
-same-context Task-253 applications, or later same-context Task-254 rows.
+same-context Task-253 root applications, or later same-context Task-254 rows.
+A Task-253 root is not targeted by any Task-253 argument edge; a nested
+Task-253 application is rejected rather than multiply owned by Task 254.
 Task-253 applications containing structure children remain whole-subtree
 excluded because the frozen Task-253 target vocabulary is not reopened.
 

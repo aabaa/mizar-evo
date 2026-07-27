@@ -2882,8 +2882,10 @@ selector chains/calls, nested update paths, every Task-252/253/254 target
 kind, wrappers, degraded recovery, local/imported roots, signature-shell
 states, corruption, deterministic replay, dependency substitution, final AST
 ownership, and whole-subtree exclusions. Cross-family Task-253 application
-targets must share the owning Task-254 context. Reverse applications
-containing structure children remain excluded.
+targets must be roots not targeted by any Task-253 argument edge and must
+share the owning Task-254 context; nested Task-253 applications are rejected
+rather than multiply owned. Reverse applications containing structure
+children remain excluded.
 
 The real case stays at
 `definition_declaration_payload_extraction_gap` /

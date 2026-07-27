@@ -3001,9 +3001,11 @@ complete root-to-member/inheritance-view association. Nested update paths are
 segment chains; each parser `FieldUpdate` is an association container without
 an independent semantic term. Repeated labels and paths are retained in
 source order without deciding their validity. Cross-family edges consume
-Task-252 roots, same-context Task-253 applications, or later same-context
-Task-254 rows. Reverse Task-253-to-structure composition remains
-whole-subtree excluded.
+Task-252 roots, same-context Task-253 root applications, or later
+same-context Task-254 rows. A root application is not targeted by another
+Task-253 application's argument edge; nested applications are rejected
+rather than multiply owned by Task 254. Reverse Task-253-to-structure
+composition remains whole-subtree excluded.
 
 This inventory classifies the missing frozen design as `design_drift`, the
 absent producer/final handoff as `source_drift`, and the absent exact consumer

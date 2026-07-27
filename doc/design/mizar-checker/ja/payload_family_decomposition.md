@@ -387,9 +387,11 @@ resolver `Structure` referenceとしてauthenticateするのはconstructor root�
 member/path requestを伴うsource occurrenceのままで、repeated label/pathを判断・
 deduplicateせず保存する。parser `FieldUpdate`はpath 1件とreplacement association
 をownするが、独立term/type/factは持たない。Task-254 child edgeはone-wayに
-Task-252 root、same-context Task-253 application、後続same-context Task-254 rowを
-参照できる。structure childを含むTask-253 applicationはfrozen target vocabularyを
-reopenしないためwhole-subtree excludedのままである。
+Task-252 root、same-context Task-253 root application、後続same-context Task-254
+rowを参照できる。Task-253 rootはどのTask-253 argument edgeからもtargetにされない
+applicationで、nested Task-253 applicationはTask 254がmultiply ownせずrejectする。
+structure childを含むTask-253 applicationはfrozen target vocabularyをreopen
+しないためwhole-subtree excludedのままである。
 
 authenticated structure definition、field/property kind、inheritance view、
 coverage/default decision、constructor acceptance、selector result、update-copy

@@ -2876,9 +2876,10 @@ root-to-member/inheritance-view associationを公開しないため、member spe
 source occurrenceのままである。nested update pathはsegment chainで、各parser
 `FieldUpdate`は独立semantic termを持たないassociation containerである。
 repeated label/pathはvalidityを決めずsource orderで保存する。cross-family edgeは
-Task-252 root、same-context Task-253 application、後続same-context Task-254 rowを
-consumeする。reverse Task-253-to-structure compositionはwhole-subtree excludedの
-ままである。
+Task-252 root、same-context Task-253 root application、後続same-context Task-254
+rowをconsumeする。root applicationは別のTask-253 application argument edgeから
+targetにされておらず、nested applicationはTask 254がmultiply ownせずrejectする。
+reverse Task-253-to-structure compositionはwhole-subtree excludedのままである。
 
 inventoryはmissing frozen designを`design_drift`、producer/final handoff欠落を
 `source_drift`、exact consumer/corruption/final-ownership coverage欠落を

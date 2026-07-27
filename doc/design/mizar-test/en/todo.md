@@ -1667,9 +1667,11 @@ promoted by this increment.
 - [x] Preserve repeated labels and paths in source order, represent nested
   paths as member chains, and assign no independent term/type/fact to a
   `FieldUpdate`.
-- [x] Freeze one-way same-context Task-252/253/254 child composition and
-  whole-subtree exclusion for reverse Task-253 applications, Task-255 terms,
-  templates, and initial type-argument-bearing constructors.
+- [x] Freeze one-way same-context Task-252 roots, Task-253 root applications
+  not targeted by another Task-253 argument edge, and Task-254 child
+  composition; reject nested Task-253 targets and keep whole-subtree exclusion
+  for reverse Task-253 applications, Task-255 terms, templates, and initial
+  type-argument-bearing constructors.
 - [x] Freeze the sidecar at
   `definition_declaration_payload_extraction_gap` /
   `type_elaboration.external_dependency.ast_payload_extraction` with no

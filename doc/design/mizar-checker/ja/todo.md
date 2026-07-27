@@ -4207,9 +4207,11 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   frozen-contract documentation prerequisiteは完了した。seven dense
   source-structure table、exact 5/0/3/9/2/10/26 + Task-252 8/0/8 real
   oracle、constructor-root resolver authentication、written member/pathと
-  `FieldUpdate` ownership、one-way Task-252/253/254 child edge、Task-253 reverse
-  whole-subtree exclusion、Task-263 semantic deferral、corruption matrix、
-  unchanged 412/376 baselineを固定した。別のproducer/exact consumer/bounded
+  `FieldUpdate` ownershipとmember/container/wrapperのexact arena key 5個、
+  one-way Task-252 root/Task-253 root application/Task-254 child edge、nested
+  Task-253 target reject、Task-253 reverse whole-subtree exclusion、Task-263
+  semantic deferral、corruption matrix、unchanged 412/376 baselineを固定した。
+  別のproducer/exact consumer/bounded
   fixture/trace row/executable verificationはopenである。
   implementationではexisting Chapter-5/13 payload-gap section/notesを
   transport-only creditへrow status/count不変でwidenし、broad checker rowと

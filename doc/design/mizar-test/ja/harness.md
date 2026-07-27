@@ -2743,8 +2743,9 @@ cardinality/nesting、selector chain/call、nested update path、全Task-252/253
 target kind、wrapper、degraded recovery、local/imported root、signature-shell
 state、corruption、deterministic replay、dependency substitution、final AST
 ownership、whole-subtree exclusionをcoverする。cross-family Task-253 application
-targetはowning Task-254 contextと一致しなければならない。structure childを含む
-reverse applicationはexcludedのままである。
+targetはどのTask-253 argument edgeからもtargetにされないrootで、owning Task-254
+contextと一致しなければならない。nested Task-253 applicationはmultiply ownせず
+rejectする。structure childを含むreverse applicationはexcludedのままである。
 
 real caseはpublic diagnosticなしで
 `definition_declaration_payload_extraction_gap` /

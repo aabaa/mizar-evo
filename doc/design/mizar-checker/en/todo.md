@@ -4430,9 +4430,11 @@ unchecked row below is one future nonempty logical task and one commit.
   The frozen-contract documentation prerequisite is complete: seven dense
   source-structure tables, exact 5/0/3/9/2/10/26 plus Task-252 8/0/8 real
   oracle, constructor-root resolver authentication, written member/path and
-  `FieldUpdate` ownership, one-way Task-252/253/254 child edges, Task-253
-  reverse whole-subtree exclusion, Task-263 semantic deferrals, corruption
-  matrix, and unchanged 412/376 baseline are fixed. The separate producer,
+  `FieldUpdate` ownership with five exact member/container/wrapper arena keys,
+  one-way Task-252 roots, Task-253 root applications, and Task-254 child
+  edges, nested Task-253 target rejection, Task-253 reverse whole-subtree
+  exclusion, Task-263 semantic deferrals, corruption matrix, and unchanged
+  412/376 baseline are fixed. The separate producer,
   exact consumer, bounded fixture/trace row, Chapter-5/13 payload-gap section
   and transport-only note widening, reciprocal backlinks in all four named
   pre-existing rows with unchanged status/count, and executable verification
