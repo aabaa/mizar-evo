@@ -850,3 +850,13 @@ respectively, `InvalidSourceCompositeFormula`,
 atomic and replayable. The optional C3 debug chunk is after Task-252
 source-term, Task-256 source-atomic-formula, and the mutually exclusive
 A/B/C2 slots, immediately before the node/table section.
+
+## Task 257C3 Implementation Result
+
+The optional field, accessor, one-shot installer, dedicated error, and debug
+projection are implemented. The installer requires exact Task-252 and
+Task-256 dependencies and rejects duplicate or A/B/C2 occupancy before
+publication. Reciprocal test-only occupancy mutations exercise each of the
+six directional guards with an otherwise valid attempted install, so lower
+dependency mismatch cannot mask the ownership contract. Failure preserves
+the base debug bytes and valid replay.

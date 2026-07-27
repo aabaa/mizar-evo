@@ -163,3 +163,10 @@ Task-257C3 association handoffを使い、source-composite formula/wrapper/root/
 edge/binder/type-site/request rowをfabricateしない。existing Task-257A/B
 profile/debug byteは不変で、installerはfuture C3 ownerへのreciprocal exclusion
 だけを追加する。
+
+## Task 257C3 implemented non-ownership
+
+C3 ownerはseparateにinstallされる。Task-257A/B production row/debug byteは
+不変で、installerはreciprocal C3 occupancy guardだけを追加する。
+mutation-sensitive testはunrelated dependency mismatchに依存せず
+A/B-after-C3とC3-after-A/Bをexerciseする。

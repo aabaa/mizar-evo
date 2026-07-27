@@ -174,3 +174,10 @@ source-composite formula, wrapper, root, edge, binder, type-site, or request
 rows. Existing Task-257A/B profiles and debug bytes remain unchanged, and
 their installers will only add reciprocal exclusion against the future C3
 owner.
+
+## Task 257C3 Implemented Non-Ownership
+
+The C3 owner is now installed separately. Task-257A/B production rows and
+debug bytes remain unchanged; their installers add only the reciprocal C3
+occupancy guard. Mutation-sensitive tests exercise A/B-after-C3 and
+C3-after-A/B without relying on unrelated dependency mismatch.

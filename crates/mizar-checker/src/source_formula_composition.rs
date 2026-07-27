@@ -11,7 +11,9 @@ use crate::{
     source_atomic_formula::{
         SourceAtomicEdgeId, SourceAtomicEdgeRole, SourceAtomicFormulaHandoff,
         SourceAtomicFormulaId, SourceAtomicFormulaKind, SourceAtomicFormulaRecovery,
-        SourceAtomicRequestKind, SourceAtomicTermTarget,
+        SourceAtomicRequestId, SourceAtomicRequestKind, SourceAtomicTermTarget,
+        SourcePredicateCandidateId, SourcePredicateHeadId, SourcePredicateSegmentId,
+        SourcePredicateSegmentPolarityInput,
     },
     source_composite_formula::{
         SourceCompositeFormulaHandoff, SourceCompositeFormulaId, SourceCompositeFormulaKind,
@@ -57,6 +59,8 @@ macro_rules! dense_id {
 dense_id!(SourceFormulaAtomicEdgeId);
 dense_id!(SourceQuantifierBoundUseId);
 dense_id!(SourceConditionFormulaEdgeId);
+dense_id!(SourcePredicateChainConjunctionId);
+dense_id!(SourcePredicateChainNegationId);
 
 /// Complete input for one cross-family source formula composition transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -102,6 +106,33 @@ pub struct SourceConditionFormulaEdgeInput {
     pub formula: SourceAtomicFormulaId,
 }
 
+/// Complete input for one predicate-chain composition transaction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePredicateChainCompositionHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub conjunctions: Vec<SourcePredicateChainConjunctionInput>,
+    pub negations: Vec<SourcePredicateChainNegationInput>,
+}
+
+/// One association between adjacent predicate-chain segments.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePredicateChainConjunctionInput {
+    pub formula: SourceAtomicFormulaId,
+    pub ordinal: usize,
+    pub left_segment: SourcePredicateSegmentId,
+    pub right_segment: SourcePredicateSegmentId,
+    pub boundary: SourceAtomicEdgeId,
+}
+
+/// One association between a predicate chain and a negated segment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePredicateChainNegationInput {
+    pub formula: SourceAtomicFormulaId,
+    pub ordinal: usize,
+    pub segment: SourcePredicateSegmentId,
+}
+
 /// Cross-family role of an atomic formula under a composite formula.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
@@ -136,6 +167,118 @@ pub struct SourceConditionFormulaCompositionHandoff {
     set_term_fingerprint: String,
     atomic_formula_fingerprint: String,
     edges: SourceConditionFormulaEdgeTable,
+}
+
+/// Immutable validated predicate-chain composition handoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePredicateChainCompositionHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    primary_term_fingerprint: String,
+    atomic_formula_fingerprint: String,
+    conjunctions: SourcePredicateChainConjunctionTable,
+    negations: SourcePredicateChainNegationTable,
+}
+
+impl SourcePredicateChainCompositionHandoff {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub fn primary_term_fingerprint(&self) -> &str {
+        &self.primary_term_fingerprint
+    }
+
+    pub fn atomic_formula_fingerprint(&self) -> &str {
+        &self.atomic_formula_fingerprint
+    }
+
+    pub const fn conjunctions(&self) -> &SourcePredicateChainConjunctionTable {
+        &self.conjunctions
+    }
+
+    pub const fn negations(&self) -> &SourcePredicateChainNegationTable {
+        &self.negations
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("source-predicate-chain-composition-debug-v1\n");
+        let _ = writeln!(
+            output,
+            "module: {}::{}",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str()
+        );
+        let _ = writeln!(
+            output,
+            "primary-term-fingerprint: {:?}",
+            self.primary_term_fingerprint
+        );
+        let _ = writeln!(
+            output,
+            "atomic-formula-fingerprint: {:?}",
+            self.atomic_formula_fingerprint
+        );
+        let _ = writeln!(output, "conjunctions: {}", self.conjunctions.len());
+        for (id, row) in self.conjunctions.iter() {
+            let _ = writeln!(
+                output,
+                "  conjunction#{} formula={} ordinal={} left_segment={} right_segment={} boundary={}",
+                id.index(),
+                row.formula.index(),
+                row.ordinal,
+                row.left_segment.index(),
+                row.right_segment.index(),
+                row.boundary.index(),
+            );
+        }
+        let _ = writeln!(output, "negations: {}", self.negations.len());
+        for (id, row) in self.negations.iter() {
+            let _ = writeln!(
+                output,
+                "  negation#{} formula={} ordinal={} segment={}",
+                id.index(),
+                row.formula.index(),
+                row.ordinal,
+                row.segment.index(),
+            );
+        }
+        output
+    }
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        primary_terms: &SourcePrimaryTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        arena: &TypedArena,
+    ) -> Result<(), SourcePredicateChainCompositionError> {
+        if self.source_id != source_id
+            || &self.module_id != module_id
+            || self.primary_term_fingerprint.is_empty()
+            || self.atomic_formula_fingerprint.is_empty()
+            || self.primary_term_fingerprint != primary_terms.debug_text()
+            || self.atomic_formula_fingerprint != atomic_formulas.debug_text()
+        {
+            return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+        }
+        validate_predicate_chain_transaction(
+            &SourcePredicateChainCompositionHandoffInput {
+                source_id: self.source_id,
+                module_id: self.module_id.clone(),
+                conjunctions: self.conjunctions.rows.iter().map(Into::into).collect(),
+                negations: self.negations.rows.iter().map(Into::into).collect(),
+            },
+            primary_terms,
+            atomic_formulas,
+            arena,
+        )
+    }
 }
 
 impl SourceConditionFormulaCompositionHandoff {
@@ -409,6 +552,16 @@ table!(
     SourceConditionFormulaEdge,
     SourceConditionFormulaEdgeId
 );
+table!(
+    SourcePredicateChainConjunctionTable,
+    SourcePredicateChainConjunction,
+    SourcePredicateChainConjunctionId
+);
+table!(
+    SourcePredicateChainNegationTable,
+    SourcePredicateChainNegation,
+    SourcePredicateChainNegationId
+);
 
 /// One validated composite-formula-to-atomic-formula association.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -466,6 +619,60 @@ impl SourceConditionFormulaEdge {
 
     pub const fn formula(&self) -> SourceAtomicFormulaId {
         self.formula
+    }
+}
+
+/// One validated association between adjacent predicate-chain segments.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePredicateChainConjunction {
+    formula: SourceAtomicFormulaId,
+    ordinal: usize,
+    left_segment: SourcePredicateSegmentId,
+    right_segment: SourcePredicateSegmentId,
+    boundary: SourceAtomicEdgeId,
+}
+
+impl SourcePredicateChainConjunction {
+    pub const fn formula(&self) -> SourceAtomicFormulaId {
+        self.formula
+    }
+
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+
+    pub const fn left_segment(&self) -> SourcePredicateSegmentId {
+        self.left_segment
+    }
+
+    pub const fn right_segment(&self) -> SourcePredicateSegmentId {
+        self.right_segment
+    }
+
+    pub const fn boundary(&self) -> SourceAtomicEdgeId {
+        self.boundary
+    }
+}
+
+/// One validated association between a predicate chain and a negated segment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePredicateChainNegation {
+    formula: SourceAtomicFormulaId,
+    ordinal: usize,
+    segment: SourcePredicateSegmentId,
+}
+
+impl SourcePredicateChainNegation {
+    pub const fn formula(&self) -> SourceAtomicFormulaId {
+        self.formula
+    }
+
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+
+    pub const fn segment(&self) -> SourcePredicateSegmentId {
+        self.segment
     }
 }
 
@@ -553,6 +760,50 @@ impl From<&SourceConditionFormulaEdge> for SourceConditionFormulaEdgeInput {
             condition: row.condition,
             ordinal: row.ordinal,
             formula: row.formula,
+        }
+    }
+}
+
+impl From<SourcePredicateChainConjunctionInput> for SourcePredicateChainConjunction {
+    fn from(input: SourcePredicateChainConjunctionInput) -> Self {
+        Self {
+            formula: input.formula,
+            ordinal: input.ordinal,
+            left_segment: input.left_segment,
+            right_segment: input.right_segment,
+            boundary: input.boundary,
+        }
+    }
+}
+
+impl From<&SourcePredicateChainConjunction> for SourcePredicateChainConjunctionInput {
+    fn from(row: &SourcePredicateChainConjunction) -> Self {
+        Self {
+            formula: row.formula,
+            ordinal: row.ordinal,
+            left_segment: row.left_segment,
+            right_segment: row.right_segment,
+            boundary: row.boundary,
+        }
+    }
+}
+
+impl From<SourcePredicateChainNegationInput> for SourcePredicateChainNegation {
+    fn from(input: SourcePredicateChainNegationInput) -> Self {
+        Self {
+            formula: input.formula,
+            ordinal: input.ordinal,
+            segment: input.segment,
+        }
+    }
+}
+
+impl From<&SourcePredicateChainNegation> for SourcePredicateChainNegationInput {
+    fn from(row: &SourcePredicateChainNegation) -> Self {
+        Self {
+            formula: row.formula,
+            ordinal: row.ordinal,
+            segment: row.segment,
         }
     }
 }
@@ -648,6 +899,38 @@ impl SourceConditionFormulaCompositionProducer {
     }
 }
 
+/// Validates and publishes the exact Task 257C3 predicate-chain composition.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourcePredicateChainCompositionProducer;
+
+impl SourcePredicateChainCompositionProducer {
+    pub fn build(
+        input: SourcePredicateChainCompositionHandoffInput,
+        primary_terms: &SourcePrimaryTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        arena: &TypedArena,
+    ) -> Result<SourcePredicateChainCompositionHandoff, SourcePredicateChainCompositionError> {
+        validate_predicate_chain_transaction(&input, primary_terms, atomic_formulas, arena)?;
+        let primary_term_fingerprint = primary_terms.debug_text();
+        let atomic_formula_fingerprint = atomic_formulas.debug_text();
+        if primary_term_fingerprint.is_empty() || atomic_formula_fingerprint.is_empty() {
+            return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+        }
+        Ok(SourcePredicateChainCompositionHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            primary_term_fingerprint,
+            atomic_formula_fingerprint,
+            conjunctions: SourcePredicateChainConjunctionTable {
+                rows: input.conjunctions.into_iter().map(Into::into).collect(),
+            },
+            negations: SourcePredicateChainNegationTable {
+                rows: input.negations.into_iter().map(Into::into).collect(),
+            },
+        })
+    }
+}
+
 /// Formula composition transaction validation failure.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -715,6 +998,339 @@ impl fmt::Display for SourceConditionFormulaCompositionError {
 }
 
 impl Error for SourceConditionFormulaCompositionError {}
+
+/// Predicate-chain composition transaction validation failure.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePredicateChainCompositionError {
+    DependencyMismatch,
+    InvalidConjunction {
+        conjunction: SourcePredicateChainConjunctionId,
+    },
+    InvalidNegation {
+        negation: SourcePredicateChainNegationId,
+    },
+    InvalidAggregate,
+}
+
+impl fmt::Display for SourcePredicateChainCompositionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DependencyMismatch => {
+                formatter.write_str("source predicate-chain composition dependency mismatch")
+            }
+            Self::InvalidConjunction { conjunction } => write!(
+                formatter,
+                "source predicate-chain conjunction {} is invalid",
+                conjunction.index()
+            ),
+            Self::InvalidNegation { negation } => write!(
+                formatter,
+                "source predicate-chain negation {} is invalid",
+                negation.index()
+            ),
+            Self::InvalidAggregate => {
+                formatter.write_str("source predicate-chain composition aggregate is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourcePredicateChainCompositionError {}
+
+fn validate_predicate_chain_transaction(
+    input: &SourcePredicateChainCompositionHandoffInput,
+    primary_terms: &SourcePrimaryTermHandoff,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourcePredicateChainCompositionError> {
+    if input.source_id != primary_terms.source_id()
+        || input.source_id != atomic_formulas.source_id()
+        || &input.module_id != primary_terms.module_id()
+        || &input.module_id != atomic_formulas.module_id()
+    {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    }
+    primary_terms
+        .validate_installation(input.source_id, &input.module_id, arena)
+        .map_err(|_| SourcePredicateChainCompositionError::DependencyMismatch)?;
+    atomic_formulas
+        .validate_installation(
+            input.source_id,
+            &input.module_id,
+            primary_terms,
+            None,
+            None,
+            None,
+            arena,
+        )
+        .map_err(|_| SourcePredicateChainCompositionError::DependencyMismatch)?;
+    validate_predicate_chain_dependency_profiles(primary_terms, atomic_formulas)?;
+
+    let ([conjunction], [negation]) = (input.conjunctions.as_slice(), input.negations.as_slice())
+    else {
+        return Err(SourcePredicateChainCompositionError::InvalidAggregate);
+    };
+
+    let conjunction_id = SourcePredicateChainConjunctionId::new(0);
+    let left = atomic_formulas
+        .predicate_segments()
+        .get(conjunction.left_segment)
+        .ok_or(SourcePredicateChainCompositionError::InvalidConjunction {
+            conjunction: conjunction_id,
+        })?;
+    let right = atomic_formulas
+        .predicate_segments()
+        .get(conjunction.right_segment)
+        .ok_or(SourcePredicateChainCompositionError::InvalidConjunction {
+            conjunction: conjunction_id,
+        })?;
+    let boundary = atomic_formulas.edges().get(conjunction.boundary).ok_or(
+        SourcePredicateChainCompositionError::InvalidConjunction {
+            conjunction: conjunction_id,
+        },
+    )?;
+    if conjunction.formula != SourceAtomicFormulaId::new(0)
+        || conjunction.ordinal != 0
+        || conjunction.left_segment != SourcePredicateSegmentId::new(0)
+        || conjunction.right_segment != SourcePredicateSegmentId::new(1)
+        || conjunction.boundary != SourceAtomicEdgeId::new(1)
+        || left.formula() != conjunction.formula
+        || right.formula() != conjunction.formula
+        || left.right_edge() != conjunction.boundary
+        || right.left_edge() != conjunction.boundary
+        || boundary.formula() != conjunction.formula
+        || boundary.ordinal() != 1
+        || boundary.role() != SourceAtomicEdgeRole::PredicateChainBoundary
+        || boundary.target() != SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(1))
+    {
+        return Err(SourcePredicateChainCompositionError::InvalidConjunction {
+            conjunction: conjunction_id,
+        });
+    }
+
+    let negation_id = SourcePredicateChainNegationId::new(0);
+    let segment = atomic_formulas
+        .predicate_segments()
+        .get(negation.segment)
+        .ok_or(SourcePredicateChainCompositionError::InvalidNegation {
+            negation: negation_id,
+        })?;
+    if negation.formula != SourceAtomicFormulaId::new(0)
+        || negation.ordinal != 0
+        || negation.segment != SourcePredicateSegmentId::new(1)
+        || segment.formula() != negation.formula
+        || !matches!(
+            segment.polarity(),
+            SourcePredicateSegmentPolarityInput::Negative { .. }
+        )
+    {
+        return Err(SourcePredicateChainCompositionError::InvalidNegation {
+            negation: negation_id,
+        });
+    }
+    Ok(())
+}
+
+fn validate_predicate_chain_dependency_profiles(
+    primary_terms: &SourcePrimaryTermHandoff,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+) -> Result<(), SourcePredicateChainCompositionError> {
+    if primary_terms.terms().len() != 3
+        || !primary_terms.references().is_empty()
+        || primary_terms.numeric_type_requests().len() != 3
+        || atomic_formulas.formulas().len() != 1
+        || !atomic_formulas.wrappers().is_empty()
+        || atomic_formulas.predicate_segments().len() != 2
+        || atomic_formulas.predicate_heads().len() != 2
+        || atomic_formulas.candidates().len() != 2
+        || !atomic_formulas.type_sites().is_empty()
+        || !atomic_formulas.attributes().is_empty()
+        || atomic_formulas.edges().len() != 3
+        || atomic_formulas.requests().len() != 2
+    {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    }
+
+    for (index, (start, end, spelling)) in [(75, 76, "1"), (85, 86, "2"), (104, 105, "3")]
+        .into_iter()
+        .enumerate()
+    {
+        let term = primary_terms
+            .terms()
+            .get(SourcePrimaryTermId::new(index))
+            .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+        let request = primary_terms
+            .numeric_type_requests()
+            .get(SourceNumericTypeRequestId::new(index))
+            .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+        if term.source_ordinal() != index
+            || term.source_range().start != start
+            || term.source_range().end != end
+            || term.context() != crate::binding_env::BindingContextId::new(0)
+            || term.recovery() != SourcePrimaryTermRecovery::Normal
+            || term.spelling() != spelling
+            || term.kind() != SourcePrimaryTermKind::Numeral
+            || term.role() != SourcePrimaryTermRole::Value
+            || term.parent().is_some()
+            || request.term() != SourcePrimaryTermId::new(index)
+            || request.owner() != term.site()
+            || request.source_range() != term.source_range()
+            || request.spelling() != term.spelling()
+            || request.request_ordinal() != index
+        {
+            return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+        }
+    }
+
+    let formula = atomic_formulas
+        .formulas()
+        .get(SourceAtomicFormulaId::new(0))
+        .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+    if formula.source_ordinal() != 0
+        || formula.source_range().start != 75
+        || formula.source_range().end != 105
+        || formula.context() != crate::binding_env::BindingContextId::new(0)
+        || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+        || formula.spelling() != "1 divides 2 does not divides 3"
+        || formula.kind() != SourceAtomicFormulaKind::PredicateApplication
+    {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    }
+
+    for (index, (start, end, spelling, head, left_edge, right_edge)) in [
+        (75, 86, "1 divides 2", 0, 0, 1),
+        (87, 105, "does not divides 3", 1, 1, 2),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let segment = atomic_formulas
+            .predicate_segments()
+            .get(SourcePredicateSegmentId::new(index))
+            .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+        if segment.formula() != SourceAtomicFormulaId::new(0)
+            || segment.ordinal() != index
+            || segment.source_range().start != start
+            || segment.source_range().end != end
+            || segment.context() != crate::binding_env::BindingContextId::new(0)
+            || segment.recovery() != SourceAtomicFormulaRecovery::Normal
+            || segment.spelling() != spelling
+            || segment.head() != SourcePredicateHeadId::new(head)
+            || segment.left_edge() != SourceAtomicEdgeId::new(left_edge)
+            || segment.right_edge() != SourceAtomicEdgeId::new(right_edge)
+        {
+            return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+        }
+    }
+    if !matches!(
+        atomic_formulas
+            .predicate_segments()
+            .get(SourcePredicateSegmentId::new(0))
+            .map(|segment| segment.polarity()),
+        Some(SourcePredicateSegmentPolarityInput::Positive)
+    ) {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    }
+    let Some(SourcePredicateSegmentPolarityInput::Negative {
+        verb_range,
+        verb_spelling,
+        verb_recovery,
+        not_range,
+        not_spelling,
+        not_recovery,
+        ..
+    }) = atomic_formulas
+        .predicate_segments()
+        .get(SourcePredicateSegmentId::new(1))
+        .map(|segment| segment.polarity())
+    else {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    };
+    if verb_range.start != 87
+        || verb_range.end != 91
+        || verb_spelling != "does"
+        || *verb_recovery != SourceAtomicFormulaRecovery::Normal
+        || not_range.start != 92
+        || not_range.end != 95
+        || not_spelling != "not"
+        || *not_recovery != SourceAtomicFormulaRecovery::Normal
+    {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    }
+
+    for (index, (start, end)) in [(77, 84), (96, 103)].into_iter().enumerate() {
+        let head = atomic_formulas
+            .predicate_heads()
+            .get(SourcePredicateHeadId::new(index))
+            .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+        let candidate = atomic_formulas
+            .candidates()
+            .get(SourcePredicateCandidateId::new(index))
+            .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+        if head.formula() != SourceAtomicFormulaId::new(0)
+            || head.source_range().start != start
+            || head.source_range().end != end
+            || head.context() != crate::binding_env::BindingContextId::new(0)
+            || head.recovery() != SourceAtomicFormulaRecovery::Normal
+            || head.spelling() != "divides"
+            || head.left_arity() != 1
+            || head.right_arity() != 1
+            || candidate.head() != SourcePredicateHeadId::new(index)
+            || candidate.ordinal() != 0
+        {
+            return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+        }
+    }
+    let candidate0 = atomic_formulas
+        .candidates()
+        .get(SourcePredicateCandidateId::new(0))
+        .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+    let candidate1 = atomic_formulas
+        .candidates()
+        .get(SourcePredicateCandidateId::new(1))
+        .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+    if candidate0.symbol() != candidate1.symbol()
+        || candidate0.contribution() != candidate1.contribution()
+    {
+        return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+    }
+
+    for (index, role, term) in [
+        (0, SourceAtomicEdgeRole::PredicateLeftArgument, 0),
+        (1, SourceAtomicEdgeRole::PredicateChainBoundary, 1),
+        (2, SourceAtomicEdgeRole::PredicateRightArgument, 2),
+    ] {
+        let edge = atomic_formulas
+            .edges()
+            .get(SourceAtomicEdgeId::new(index))
+            .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+        if edge.formula() != SourceAtomicFormulaId::new(0)
+            || edge.ordinal() != index
+            || edge.role() != role
+            || edge.target() != SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(term))
+        {
+            return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+        }
+    }
+    for index in 0..2 {
+        let request = atomic_formulas
+            .requests()
+            .get(SourceAtomicRequestId::new(index))
+            .ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+        if request.formula() != SourceAtomicFormulaId::new(0)
+            || request.ordinal() != index
+            || request.kind() != SourceAtomicRequestKind::PredicateCandidateSignature
+            || request.edge().is_some()
+            || request.candidate() != Some(SourcePredicateCandidateId::new(index))
+            || request.type_site().is_some()
+            || request.attribute().is_some()
+        {
+            return Err(SourcePredicateChainCompositionError::DependencyMismatch);
+        }
+    }
+    Ok(())
+}
 
 fn validate_condition_transaction(
     input: &SourceConditionFormulaCompositionHandoffInput,
@@ -4056,6 +4672,587 @@ mod tests {
                 statement_proofs: None,
             })
             .is_ok()
+        );
+    }
+
+    struct Task257C3Fixture {
+        lower: crate::source_atomic_formula::tests::Fixture,
+        atomic: SourceAtomicFormulaHandoff,
+        input: SourcePredicateChainCompositionHandoffInput,
+    }
+
+    fn task_257c3_fixture() -> Task257C3Fixture {
+        let lower = crate::source_atomic_formula::tests::predicate_chain_fixture();
+        let atomic = SourceAtomicFormulaProducer::build(
+            lower.input.clone(),
+            &lower.bindings,
+            &lower.symbols,
+            &lower.primary,
+            None,
+            None,
+            None,
+            &lower.arena,
+        )
+        .expect("Task 257C3 atomic handoff");
+        let input = SourcePredicateChainCompositionHandoffInput {
+            source_id: lower.source,
+            module_id: lower.module.clone(),
+            conjunctions: vec![SourcePredicateChainConjunctionInput {
+                formula: SourceAtomicFormulaId::new(0),
+                ordinal: 0,
+                left_segment: SourcePredicateSegmentId::new(0),
+                right_segment: SourcePredicateSegmentId::new(1),
+                boundary: SourceAtomicEdgeId::new(1),
+            }],
+            negations: vec![SourcePredicateChainNegationInput {
+                formula: SourceAtomicFormulaId::new(0),
+                ordinal: 0,
+                segment: SourcePredicateSegmentId::new(1),
+            }],
+        };
+        Task257C3Fixture {
+            lower,
+            atomic,
+            input,
+        }
+    }
+
+    fn build_task_257c3(
+        fixture: &Task257C3Fixture,
+        input: SourcePredicateChainCompositionHandoffInput,
+    ) -> Result<SourcePredicateChainCompositionHandoff, SourcePredicateChainCompositionError> {
+        SourcePredicateChainCompositionProducer::build(
+            input,
+            &fixture.lower.primary,
+            &fixture.atomic,
+            &fixture.lower.arena,
+        )
+    }
+
+    fn assemble_empty_resolved(
+        typed_ast: &TypedAst,
+    ) -> Result<ResolvedTypedAst, crate::resolved_typed_ast::ResolvedTypedAstError> {
+        let cluster_facts = ClusterFactTable::new();
+        let collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability =
+            CandidateViabilityOutput::filter(&expansion, Vec::<CandidateViabilityInput>::new());
+        let specificity =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let selection = OverloadSelectionOutput::resolve(
+            &specificity,
+            Vec::<OverloadSiteResolutionInput>::new(),
+        );
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast,
+            cluster_facts: &cluster_facts,
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &selection,
+            expressions: Vec::new(),
+            node_hints: Vec::new(),
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+    }
+
+    #[test]
+    fn task_257c3_exact_rows_accessors_debug_and_row_errors_are_frozen() {
+        let fixture = task_257c3_fixture();
+        let handoff =
+            build_task_257c3(&fixture, fixture.input.clone()).expect("Task 257C3 handoff");
+        let replay = build_task_257c3(&fixture, fixture.input.clone()).expect("Task 257C3 replay");
+        assert_eq!(handoff.source_id(), fixture.lower.source);
+        assert_eq!(handoff.module_id(), &fixture.lower.module);
+        assert_eq!(
+            handoff.primary_term_fingerprint(),
+            fixture.lower.primary.debug_text()
+        );
+        assert_eq!(
+            handoff.atomic_formula_fingerprint(),
+            fixture.atomic.debug_text()
+        );
+        assert_eq!(handoff.conjunctions().len(), 1);
+        assert!(!handoff.conjunctions().is_empty());
+        let conjunction = handoff
+            .conjunctions()
+            .get(SourcePredicateChainConjunctionId::new(0))
+            .expect("Task 257C3 conjunction");
+        assert_eq!(conjunction.formula(), SourceAtomicFormulaId::new(0));
+        assert_eq!(conjunction.ordinal(), 0);
+        assert_eq!(conjunction.left_segment(), SourcePredicateSegmentId::new(0));
+        assert_eq!(
+            conjunction.right_segment(),
+            SourcePredicateSegmentId::new(1)
+        );
+        assert_eq!(conjunction.boundary(), SourceAtomicEdgeId::new(1));
+        assert_eq!(
+            handoff.conjunctions().iter().collect::<Vec<_>>(),
+            [(SourcePredicateChainConjunctionId::new(0), conjunction)]
+        );
+        assert_eq!(handoff.negations().len(), 1);
+        assert!(!handoff.negations().is_empty());
+        let negation = handoff
+            .negations()
+            .get(SourcePredicateChainNegationId::new(0))
+            .expect("Task 257C3 negation");
+        assert_eq!(negation.formula(), SourceAtomicFormulaId::new(0));
+        assert_eq!(negation.ordinal(), 0);
+        assert_eq!(negation.segment(), SourcePredicateSegmentId::new(1));
+        assert_eq!(
+            handoff.negations().iter().collect::<Vec<_>>(),
+            [(SourcePredicateChainNegationId::new(0), negation)]
+        );
+        assert_eq!(handoff.debug_text(), replay.debug_text());
+        assert_eq!(
+            handoff.debug_text(),
+            format!(
+                concat!(
+                    "source-predicate-chain-composition-debug-v1\n",
+                    "module: {}::{}\n",
+                    "primary-term-fingerprint: {:?}\n",
+                    "atomic-formula-fingerprint: {:?}\n",
+                    "conjunctions: 1\n",
+                    "  conjunction#0 formula=0 ordinal=0 left_segment=0 right_segment=1 boundary=1\n",
+                    "negations: 1\n",
+                    "  negation#0 formula=0 ordinal=0 segment=1\n",
+                ),
+                fixture.lower.module.package().as_str(),
+                fixture.lower.module.path().as_str(),
+                fixture.lower.primary.debug_text(),
+                fixture.atomic.debug_text(),
+            )
+        );
+
+        for mutate in [
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.conjunctions[0].formula = SourceAtomicFormulaId::new(1)
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.conjunctions[0].ordinal = 1
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.conjunctions[0].left_segment = SourcePredicateSegmentId::new(1)
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.conjunctions[0].right_segment = SourcePredicateSegmentId::new(0)
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.conjunctions[0].boundary = SourceAtomicEdgeId::new(0)
+            },
+        ] {
+            let mut input = fixture.input.clone();
+            mutate(&mut input);
+            assert_eq!(
+                build_task_257c3(&fixture, input),
+                Err(SourcePredicateChainCompositionError::InvalidConjunction {
+                    conjunction: SourcePredicateChainConjunctionId::new(0),
+                })
+            );
+            assert!(build_task_257c3(&fixture, fixture.input.clone()).is_ok());
+        }
+        for mutate in [
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.negations[0].formula = SourceAtomicFormulaId::new(1)
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.negations[0].ordinal = 1
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.negations[0].segment = SourcePredicateSegmentId::new(0)
+            },
+        ] {
+            let mut input = fixture.input.clone();
+            mutate(&mut input);
+            assert_eq!(
+                build_task_257c3(&fixture, input),
+                Err(SourcePredicateChainCompositionError::InvalidNegation {
+                    negation: SourcePredicateChainNegationId::new(0),
+                })
+            );
+            assert!(build_task_257c3(&fixture, fixture.input.clone()).is_ok());
+        }
+        for mutate in [
+            |input: &mut SourcePredicateChainCompositionHandoffInput| input.conjunctions.clear(),
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.conjunctions.push(input.conjunctions[0].clone())
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| input.negations.clear(),
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.negations.push(input.negations[0].clone())
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.conjunctions[0].formula = SourceAtomicFormulaId::new(1);
+                input.negations.clear();
+            },
+            |input: &mut SourcePredicateChainCompositionHandoffInput| {
+                input.conjunctions.clear();
+                input.negations[0].formula = SourceAtomicFormulaId::new(1);
+            },
+        ] {
+            let mut input = fixture.input.clone();
+            mutate(&mut input);
+            assert_eq!(
+                build_task_257c3(&fixture, input),
+                Err(SourcePredicateChainCompositionError::InvalidAggregate)
+            );
+            assert!(build_task_257c3(&fixture, fixture.input.clone()).is_ok());
+        }
+
+        let mut invalid_dependency_and_rows = fixture.input.clone();
+        invalid_dependency_and_rows.module_id =
+            ModuleId::new(PackageId::new("other"), ModulePath::new("other.module"));
+        invalid_dependency_and_rows.conjunctions.clear();
+        invalid_dependency_and_rows.negations[0].formula = SourceAtomicFormulaId::new(1);
+        assert_eq!(
+            build_task_257c3(&fixture, invalid_dependency_and_rows),
+            Err(SourcePredicateChainCompositionError::DependencyMismatch)
+        );
+
+        let mut invalid_conjunction_and_negation = fixture.input.clone();
+        invalid_conjunction_and_negation.conjunctions[0].formula = SourceAtomicFormulaId::new(1);
+        invalid_conjunction_and_negation.negations[0].formula = SourceAtomicFormulaId::new(1);
+        assert_eq!(
+            build_task_257c3(&fixture, invalid_conjunction_and_negation),
+            Err(SourcePredicateChainCompositionError::InvalidConjunction {
+                conjunction: SourcePredicateChainConjunctionId::new(0),
+            })
+        );
+    }
+
+    #[test]
+    fn task_257c3_dependency_profiles_and_stale_arena_fail_closed() {
+        let fixture = task_257c3_fixture();
+        let mut mismatched = fixture.input.clone();
+        mismatched.module_id =
+            ModuleId::new(PackageId::new("other"), ModulePath::new("other.module"));
+        assert_eq!(
+            build_task_257c3(&fixture, mismatched),
+            Err(SourcePredicateChainCompositionError::DependencyMismatch)
+        );
+
+        let wrong =
+            crate::source_atomic_formula::tests::single_predicate_on_predicate_chain_arena_fixture(
+            );
+        let wrong_atomic = SourceAtomicFormulaProducer::build(
+            wrong.input.clone(),
+            &wrong.bindings,
+            &wrong.symbols,
+            &wrong.primary,
+            None,
+            None,
+            None,
+            &wrong.arena,
+        )
+        .expect("independently valid wrong-profile Task 256");
+        assert!(
+            wrong
+                .primary
+                .validate_installation(wrong.source, &wrong.module, &wrong.arena)
+                .is_ok()
+        );
+        assert!(
+            wrong_atomic
+                .validate_installation(
+                    wrong.source,
+                    &wrong.module,
+                    &wrong.primary,
+                    None,
+                    None,
+                    None,
+                    &wrong.arena,
+                )
+                .is_ok()
+        );
+        assert_eq!(
+            SourcePredicateChainCompositionProducer::build(
+                fixture.input.clone(),
+                &wrong.primary,
+                &wrong_atomic,
+                &wrong.arena,
+            ),
+            Err(SourcePredicateChainCompositionError::DependencyMismatch)
+        );
+
+        let mut nodes = fixture
+            .lower
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        nodes[0].anchor = SourceAnchor::Range(range(fixture.lower.source, 74, 75));
+        let stale_arena =
+            TypedArena::try_new(fixture.lower.arena.root(), nodes).expect("stale Task 257C3 arena");
+        assert_eq!(
+            SourcePredicateChainCompositionProducer::build(
+                fixture.input.clone(),
+                &fixture.lower.primary,
+                &fixture.atomic,
+                &stale_arena,
+            ),
+            Err(SourcePredicateChainCompositionError::DependencyMismatch)
+        );
+
+        let base = empty_typed_ast(
+            fixture.lower.source,
+            fixture.lower.module.clone(),
+            fixture.lower.arena.clone(),
+        )
+        .with_source_term(fixture.lower.primary.clone())
+        .expect("Task 252 install")
+        .with_source_atomic_formula(fixture.atomic.clone())
+        .expect("Task 256 install");
+        for mutate in [
+            |candidate: &mut SourcePredicateChainCompositionHandoff| {
+                candidate.primary_term_fingerprint.push_str("stale")
+            },
+            |candidate: &mut SourcePredicateChainCompositionHandoff| {
+                candidate.atomic_formula_fingerprint.push_str("stale")
+            },
+        ] {
+            let mut stale =
+                build_task_257c3(&fixture, fixture.input.clone()).expect("stale C3 candidate");
+            mutate(&mut stale);
+            let before = base.debug_text();
+            assert_eq!(
+                base.clone()
+                    .with_source_predicate_chain_composition(stale)
+                    .expect_err("stale C3 handoff"),
+                TypedAstError::InvalidSourcePredicateChainComposition
+            );
+            assert_eq!(base.debug_text(), before);
+        }
+        assert!(
+            base.with_source_predicate_chain_composition(
+                build_task_257c3(&fixture, fixture.input.clone()).expect("valid C3 replay")
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn task_257c3_typed_resolved_ownership_is_atomic_and_clone_preserved() {
+        let fixture = task_257c3_fixture();
+        let composition =
+            build_task_257c3(&fixture, fixture.input.clone()).expect("Task 257C3 composition");
+        let empty = empty_typed_ast(
+            fixture.lower.source,
+            fixture.lower.module.clone(),
+            fixture.lower.arena.clone(),
+        );
+        assert_eq!(
+            empty
+                .clone()
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("missing Task 252"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+        let with_term = empty
+            .with_source_term(fixture.lower.primary.clone())
+            .expect("Task 252 install");
+        assert_eq!(
+            with_term
+                .clone()
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("missing Task 256"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+        let base = with_term
+            .with_source_atomic_formula(fixture.atomic.clone())
+            .expect("Task 256 install");
+        let installed = base
+            .clone()
+            .with_source_predicate_chain_composition(composition.clone())
+            .expect("Task 257C3 install");
+        assert_eq!(
+            installed.source_predicate_chain_composition(),
+            Some(&composition)
+        );
+        assert!(installed.source_composite_formula().is_none());
+        assert!(installed.source_formula_composition().is_none());
+        assert!(installed.source_condition_formula_composition().is_none());
+        let before_duplicate = installed.debug_text();
+        let typed_term = before_duplicate
+            .find("source-primary-term-debug-v1")
+            .expect("typed term debug");
+        let typed_atomic = before_duplicate
+            .find("source-atomic-formula-debug-v1")
+            .expect("typed atomic debug");
+        let typed_composition = before_duplicate
+            .find("source-predicate-chain-composition-debug-v1")
+            .expect("typed C3 debug");
+        let typed_nodes = before_duplicate.find("nodes:").expect("typed nodes");
+        assert!(
+            typed_term < typed_atomic
+                && typed_atomic < typed_composition
+                && typed_composition < typed_nodes
+        );
+        assert_eq!(
+            installed
+                .clone()
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("duplicate Task 257C3"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+        assert_eq!(installed.debug_text(), before_duplicate);
+
+        let task_257a = crate::source_composite_formula::tests::task_257a_installed_typed_ast();
+        let task_257a_handoff = task_257a
+            .source_composite_formula()
+            .expect("Task 257A handoff")
+            .clone();
+        let before_a = task_257a.debug_text();
+        assert_eq!(
+            task_257a
+                .clone()
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("C3 after Task 257A"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+        assert_eq!(task_257a.debug_text(), before_a);
+
+        let b1 = self::fixture();
+        let b1_composition = build(&b1, b1.input.clone()).expect("Task 257B1 composition");
+        let b1_installed = empty_typed_ast(b1.source, b1.module.clone(), b1.arena.clone())
+            .with_source_term(b1.primary.clone())
+            .expect("Task 257B1 term")
+            .with_source_atomic_formula(b1.atomic.clone())
+            .expect("Task 257B1 atomic")
+            .with_source_formula_composition(b1.composite.clone(), b1_composition.clone())
+            .expect("Task 257B1 install");
+        let before_b = b1_installed.debug_text();
+        assert_eq!(
+            b1_installed
+                .clone()
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("C3 after Task 257B"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+        assert_eq!(b1_installed.debug_text(), before_b);
+
+        let c2 = task_257c2_fixture();
+        let c2_composition =
+            build_task_257c2(&c2, c2.input.clone()).expect("Task 257C2 composition");
+        let c2_installed = c2
+            .lower
+            .typed_ast()
+            .with_source_set_term(c2.set.clone())
+            .expect("Task 255 install")
+            .with_source_atomic_formula(c2.atomic.clone())
+            .expect("Task 256 equality install")
+            .with_source_condition_formula_composition(c2_composition.clone())
+            .expect("Task 257C2 install");
+        let before_c2 = c2_installed.debug_text();
+        assert_eq!(
+            c2_installed
+                .clone()
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("C3 after Task 257C2"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+        assert_eq!(c2_installed.debug_text(), before_c2);
+
+        let mut c3_base_with_a = base.clone();
+        c3_base_with_a.inject_source_composite_formula_for_test(task_257a_handoff.clone());
+        assert_eq!(
+            c3_base_with_a
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("Task 257A field excludes C3"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+        let mut c3_base_with_b = base.clone();
+        c3_base_with_b.inject_source_formula_composition_for_test(b1_composition.clone());
+        assert_eq!(
+            c3_base_with_b
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("Task 257B field excludes C3"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+        let mut c3_base_with_c2 = base.clone();
+        c3_base_with_c2
+            .inject_source_condition_formula_composition_for_test(c2_composition.clone());
+        assert_eq!(
+            c3_base_with_c2
+                .with_source_predicate_chain_composition(composition.clone())
+                .expect_err("Task 257C2 field excludes C3"),
+            TypedAstError::InvalidSourcePredicateChainComposition
+        );
+
+        let mut a_base_with_c3 = task_257a;
+        a_base_with_c3.remove_source_composite_formula_for_test();
+        a_base_with_c3.inject_source_predicate_chain_composition_for_test(composition.clone());
+        assert_eq!(
+            a_base_with_c3
+                .with_source_composite_formula(task_257a_handoff)
+                .expect_err("C3 field excludes Task 257A"),
+            TypedAstError::InvalidSourceCompositeFormula
+        );
+        let mut b_base_with_c3 = b1_installed;
+        b_base_with_c3.remove_source_composite_formula_for_test();
+        b_base_with_c3.remove_source_formula_composition_for_test();
+        b_base_with_c3.inject_source_predicate_chain_composition_for_test(composition.clone());
+        assert_eq!(
+            b_base_with_c3
+                .with_source_formula_composition(b1.composite.clone(), b1_composition)
+                .expect_err("C3 field excludes Task 257B"),
+            TypedAstError::InvalidSourceFormulaComposition
+        );
+        let mut c2_base_with_c3 = c2_installed;
+        c2_base_with_c3.remove_source_condition_formula_composition_for_test();
+        c2_base_with_c3.inject_source_predicate_chain_composition_for_test(composition.clone());
+        assert_eq!(
+            c2_base_with_c3
+                .with_source_condition_formula_composition(c2_composition)
+                .expect_err("C3 field excludes Task 257C2"),
+            TypedAstError::InvalidSourceConditionFormulaComposition
+        );
+        assert!(
+            base.clone()
+                .with_source_predicate_chain_composition(composition.clone())
+                .is_ok()
+        );
+
+        let resolved = assemble_empty_resolved(&installed).expect("Task 257C3 resolved assembly");
+        assert_eq!(
+            resolved.source_predicate_chain_composition(),
+            Some(&composition)
+        );
+        let typed_clone = installed.clone();
+        assert_eq!(
+            typed_clone.source_predicate_chain_composition(),
+            Some(&composition)
+        );
+        assert_eq!(typed_clone.debug_text(), installed.debug_text());
+        let resolved_clone = resolved.clone();
+        assert_eq!(resolved_clone, resolved);
+        assert_eq!(
+            resolved_clone.source_predicate_chain_composition(),
+            Some(&composition)
+        );
+        assert_eq!(resolved_clone.debug_text(), resolved.debug_text());
+        let debug = resolved.debug_text();
+        let term = debug
+            .find("source-primary-term-debug-v1")
+            .expect("term debug");
+        let atomic = debug
+            .find("source-atomic-formula-debug-v1")
+            .expect("atomic debug");
+        let composition_debug = debug
+            .find("source-predicate-chain-composition-debug-v1")
+            .expect("C3 debug");
+        let nodes = debug.find("nodes:").expect("resolved nodes");
+        assert!(term < atomic && atomic < composition_debug && composition_debug < nodes);
+
+        let mut orphaned = installed;
+        orphaned.remove_source_atomic_formula_for_test();
+        assert_eq!(
+            assemble_empty_resolved(&orphaned).expect_err("resolved C3 revalidation"),
+            crate::resolved_typed_ast::ResolvedTypedAstError::InvalidSourcePredicateChainComposition
         );
     }
 

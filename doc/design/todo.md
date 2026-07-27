@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] post-Task-46 milestone complete through Tasks 1-48; fresh independent score 99/100 | no authorized parser successor; human-owned P-265-47D | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker Tasks 248-253 consumer increments complete | step 5 task 10, dependency-paced later consumers beginning with Checker Task 254, future `MT10-FS`/`MT10-AS`, and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, and Tasks 248-253 source-payload producers complete | Tasks 254-264/269-279 in dependency order; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker Tasks 248-257C3 consumer increments complete | step 5 task 10, dependency-paced later consumers beginning with Checker Task 258, future `MT10-FS`/`MT10-AS`, and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, and Tasks 248-257C3 source-payload/composition producers complete | Checker Task 258, then Tasks 259-264/269-279 in dependency order; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -2428,6 +2428,17 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Preserve documentation-only baseline `419/386`, `252/240`,
   `228/191`, active `101/5/198/1`, libraries `332/361`, runner 29 paths /
   34,064 lines, and all hashes.
-- [ ] Implement Task 257C3 in a separate logical task and commit only after
+- [x] Implement Task 257C3 in a separate logical task and commit only after
   this documentation commit and fresh parser/resolver/lower-API/count/hash
   preflight.
+
+## Checker Task 257C3 Implementation Ledger
+
+- [x] Close the bounded `source_drift` and `test_gap` with the exact checker
+  transaction, private runner consumer, and mutation-sensitive matrices.
+- [x] Preserve the 107-byte fixture, lower row ownership, empty semantic
+  result, and all deferred truth/proof/IR behavior.
+- [x] Add exactly three checker/four runner tests, one covered trace row, and
+  only the ordered reciprocal reference/note in the existing sidecar.
+- [x] Measure plan/type `419/387` / `253/241`, libraries `335/365`, and
+  runner production 29 paths / 34,290 lines with frozen CLI outcomes.

@@ -728,3 +728,11 @@ boundary edge 1 and one association of negative segment 1. Task 252 retains
 primary 1; Task 256 retains the shared edge, segment polarity, candidates,
 and resolver provenance. No new composite node or semantic formula owner is
 introduced.
+
+## Task 257C3 Implemented Cross-Family Edge
+
+The frozen graph slice is now executable with the same ownership:
+Task 252 retains all primary rows, Task 256 retains all segment/head/
+candidate/edge/request and resolver-provenance rows, and Task 257C3 adds only
+the two syntax-free associations. Typed/resolved ownership is mutually
+exclusive with A/B/C2, and no semantic formula node is introduced.

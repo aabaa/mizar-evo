@@ -1926,5 +1926,15 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   one future covered trace row; add no fixture or semantic expectation.
 - [x] Keep this prerequisite at `419/386`, `252/240`, `228/191`, active
   `101/5/198/1`, 361 tests, and 29 paths / 34,064 lines.
-- [ ] Implement only the frozen route after the documentation commit and
+- [x] Implement only the frozen route after the documentation commit and
   fresh parser/resolver/lower-stage/count/hash preflight.
+
+## Checker Task 257C3 Implementation Checklist
+
+- [x] Publish the exact complete route before the lower C1 route without
+  changing the existing fixture or semantic detail.
+- [x] Add exactly four runner tests for route/provenance/debug, near-miss
+  isolation, all dependency/arena mutations, rollback/replay, and clone.
+- [x] Update only the existing sidecar reference/note and one covered trace
+  row.
+- [x] Measure 365 tests and the 29-path / 34,290-line production manifest.

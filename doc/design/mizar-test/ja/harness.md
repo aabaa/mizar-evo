@@ -3113,3 +3113,13 @@ existing extractor以外のraw traversal/new fixtureは追加しない。success
 typed/resolved handoffとsame empty semantic detail vectorを要求する。future
 metadata変更はreciprocal sidecar reference/note 1件とcovered trace row 1件
 だけで、本prerequisiteではどちらも変更しない。
+
+## Checker Task 257C3 harness result
+
+complete routeはlower atomic-only returnより先に実行し、exact syntax-free C3
+handoffをfresh typed/resolved ownerへinstallする。extractorはexisting
+predicate-chain syntaxだけをownし、new composition leafはlower handoffを
+consumeしてsyntax/resolver rowをcopyしない。primary/atomic/composition/
+arena mutation、exact replay、selector near miss、route isolation、
+typed/resolved debug order、clone preservationをexactly runner tests 4件で
+coverする。fixture/empty semantic detailはbyte-for-byte unchanged。

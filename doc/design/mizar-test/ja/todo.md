@@ -1735,5 +1735,14 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   1件だけを許可し、fixture/semantic expectationを追加しない。
 - [x] prerequisite baseline `419/386`、`252/240`、`228/191`、active
   `101/5/198/1`、361 tests、29 paths / 34,064 linesを保持。
-- [ ] documentation commitとfresh parser/resolver/lower-stage/count/hash
+- [x] documentation commitとfresh parser/resolver/lower-stage/count/hash
   preflight後だけfrozen routeをimplement。
+
+## Checker Task 257C3 implementation checklist
+
+- [x] existing fixture/semantic detailを変更せず、lower C1 routeより先に
+  exact complete routeをpublish。
+- [x] route/provenance/debug、near-miss isolation、全dependency/arena
+  mutation、rollback/replay、cloneをexactly runner tests 4件でcover。
+- [x] existing sidecar reference/noteとcovered trace row 1件だけを更新。
+- [x] 365 tests、production 29 paths / 34,290 linesを測定。

@@ -390,3 +390,11 @@ EN/JA now agree on the unchanged 107-byte consumer, the
 test matrix, existing-sidecar/one-row future trace projection, unchanged
 `419/386` / 361-test / 34,064-line baseline, and semantic deferrals. No
 Task-257C3 bilingual drift remains.
+
+## Checker Task 257C3 Implementation Synchronization
+
+Paired runner documents record the same complete route, exact lower and
+`1/1` profiles, four-test mutation/isolation/clone matrix, unchanged fixture
+and semantic result, ordered existing-sidecar references, one covered trace
+row, 365-test list, and 29-path/34,290-line manifest with identical hashes.
+No Task-257C3 implementation bilingual drift remains.

@@ -263,3 +263,12 @@ source/spec、module-boundary auditは同じprivate exact condition-container
 predicate、effective wrapper exclusion、3-test matrix、library `329/357`、
 checker test-list hash、unchanged runner/coverage artifact、semantic deferralを
 記録する。Task-256C1 bilingual debtは残らない。
+
+## Task 257C3 implementation pair recheck
+
+paired implementation-result、formula-composition、lower-family、
+typed/resolved、decomposition、runner、TODO、source/spec、coverage、
+module-boundary文書は同じexact `1/1` transaction、全6 ownership direction、
+checker 3/runner 4 tests、unchanged fixture/semantic result、existing
+sidecar/trace increment 1件、`419/387`、`253/241`、libraries `335/365`、
+runner 29 paths / 34,290 linesを記録する。Task-257C3 bilingual driftは残らない。

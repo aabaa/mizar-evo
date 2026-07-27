@@ -114,7 +114,6 @@ pub(in crate::runner) fn source_atomic_formula_output(
     source_atomic_formula_output_with_mutation_impl(ast, module, symbols, None, |_| {})
 }
 
-#[cfg(test)]
 pub(in crate::runner) fn source_atomic_formula_output_with_source(
     ast: &SurfaceAst,
     module: ModuleId,

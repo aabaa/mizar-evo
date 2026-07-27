@@ -24,6 +24,7 @@ use crate::{
     source_evidence::SourceEvidenceHandoff,
     source_formula_composition::{
         SourceConditionFormulaCompositionHandoff, SourceFormulaCompositionHandoff,
+        SourcePredicateChainCompositionHandoff,
     },
     source_set_term::SourceSetTermHandoff,
     source_structure::SourceStructureHandoff,
@@ -123,6 +124,7 @@ pub struct ResolvedTypedAst {
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
+    source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -203,6 +205,12 @@ impl ResolvedTypedAst {
         &self,
     ) -> Option<&SourceConditionFormulaCompositionHandoff> {
         self.source_condition_formula_composition.as_ref()
+    }
+
+    pub const fn source_predicate_chain_composition(
+        &self,
+    ) -> Option<&SourcePredicateChainCompositionHandoff> {
+        self.source_predicate_chain_composition.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -318,6 +326,9 @@ impl ResolvedTypedAst {
             &self.source_condition_formula_composition
         {
             output.push_str(&source_condition_formula_composition.debug_text());
+        }
+        if let Some(source_predicate_chain_composition) = &self.source_predicate_chain_composition {
+            output.push_str(&source_predicate_chain_composition.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1271,6 +1282,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
     InvalidSourceConditionFormulaComposition,
+    InvalidSourcePredicateChainComposition,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1365,6 +1377,9 @@ impl fmt::Display for ResolvedTypedAstError {
             ),
             Self::InvalidSourceConditionFormulaComposition => formatter.write_str(
                 "resolved typed AST source condition/formula-composition handoff is inconsistent",
+            ),
+            Self::InvalidSourcePredicateChainComposition => formatter.write_str(
+                "resolved typed AST source predicate-chain-composition handoff is inconsistent",
             ),
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
@@ -1703,6 +1718,36 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceConditionFormulaComposition)?;
         }
+        let source_predicate_chain_composition = self
+            .inputs
+            .typed_ast
+            .source_predicate_chain_composition()
+            .cloned();
+        if let Some(source_predicate_chain_composition) = &source_predicate_chain_composition {
+            if source_composite_formula.is_some()
+                || source_formula_composition.is_some()
+                || source_condition_formula_composition.is_some()
+            {
+                return Err(ResolvedTypedAstError::InvalidSourcePredicateChainComposition);
+            }
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePredicateChainComposition)?;
+            let source_atomic_formula = source_atomic_formula
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePredicateChainComposition)?;
+            source_predicate_chain_composition
+                .validate_installation(
+                    source_id,
+                    &module_id,
+                    source_term,
+                    source_atomic_formula,
+                    self.inputs.typed_ast.nodes(),
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourcePredicateChainComposition)?;
+        }
 
         Ok(ResolvedTypedAst {
             source_id,
@@ -1719,6 +1764,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_composite_formula,
             source_formula_composition,
             source_condition_formula_composition,
+            source_predicate_chain_composition,
             nodes,
             expr_metadata,
             collection_candidates,

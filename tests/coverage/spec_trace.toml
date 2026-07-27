@@ -5124,6 +5124,19 @@ tests = [
 notes = "Checker Task 257B3 covers only immutable syntax-free source transport for the exact reserve/restricted-universal/existential/nested implicit-universal consumer. The runner starts from the Task-48 one-reserve environment and composes its nested 4/4/0 binding extension with Task-252 `6/6/0`, Task-256 `3/0/0/0/0/0/6/6`, Task-257B3 `3/0/1/3/3/2/6`, and composition `3/6` in one typed arena. The inner `r` binding shadows but does not mutate reserved `r`; the six direct lexical uses retain Task-252 occurrence/reference ownership, and the two restrictions plus one body retain formula-composition association ownership. This row grants no equality or quantifier truth, witness, restriction discharge, implicit theorem closure, capture result, formula result or fact, theorem ownership or acceptance, proof, CoreIr, ControlFlowIr, VC, predicate-chain, or conditioned-comprehension credit."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_predicate_chain_composition"
+source = "doc/design/mizar-checker/en/source_formula_composition.md"
+section = "Task 257C3 Frozen Predicate-Chain Composition"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_formula_predicate_chain_segment_payload_001.expect.toml",
+]
+notes = "Checker Task 257C3 covers only immutable syntax-free conjunction and segment-negation associations for the exact imported two-segment predicate-chain consumer. The runner reuses the authenticated Task-252 `3/0/3` and Task-256 `1/0/2/2/2/0/0/3/2` handoffs, publishes one conjunction over the shared boundary and one negation for segment 1, and clone-preserves that `1/1` handoff through final assembly. This row grants no predicate applicability, overload ranking or winner selection, predicate or chain truth, negation truth, formula result or fact, theorem ownership or acceptance, proof, CoreIr, ControlFlowIr, VC, conditioned comprehension, or broader predicate-chain credit."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_predicate_chain_segment_payload"
 source = "doc/design/mizar-checker/en/source_atomic_formula.md"
 section = "Task 257C1 Frozen Predicate-Chain Segment Extension"

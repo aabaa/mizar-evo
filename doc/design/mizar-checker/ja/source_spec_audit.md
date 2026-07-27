@@ -516,29 +516,47 @@ owner/acceptance、proof、fact、downstream IRはTasks 257B/257C/258以降に�
 
 生成public newtype:
 
-- `SourceFormulaAtomicEdgeId`, `SourceQuantifierBoundUseId`
+- `SourceFormulaAtomicEdgeId`、`SourceQuantifierBoundUseId`、
+  `SourceConditionFormulaEdgeId`、`SourcePredicateChainConjunctionId`、
+  `SourcePredicateChainNegationId`
 
 literal top-level public item:
 
 - `SourceFormulaCompositionHandoffInput`,
   `SourceFormulaAtomicEdgeInput`, `SourceQuantifierBoundUseInput`,
+  `SourceConditionFormulaCompositionHandoffInput`、
+  `SourceConditionFormulaEdgeInput`、
+  `SourcePredicateChainCompositionHandoffInput`、
+  `SourcePredicateChainConjunctionInput`、
+  `SourcePredicateChainNegationInput`、
   `SourceFormulaAtomicEdgeRole`, `SourceFormulaCompositionHandoff`,
+  `SourceConditionFormulaCompositionHandoff`、
+  `SourcePredicateChainCompositionHandoff`、
   `SourceFormulaAtomicEdgeTable`, `SourceQuantifierBoundUseTable`,
-  `SourceFormulaAtomicEdge`, `SourceQuantifierBoundUse`,
-  `SourceFormulaCompositionProducer`, `SourceFormulaCompositionError`.
+  `SourceConditionFormulaEdgeTable`、
+  `SourcePredicateChainConjunctionTable`、
+  `SourcePredicateChainNegationTable`、
+  `SourceFormulaAtomicEdge`、`SourceQuantifierBoundUse`、
+  `SourceConditionFormulaEdge`、`SourcePredicateChainConjunction`、
+  `SourcePredicateChainNegation`、`SourceFormulaCompositionProducer`、
+  `SourceConditionFormulaCompositionProducer`、
+  `SourcePredicateChainCompositionProducer`、
+  `SourceFormulaCompositionError`、
+  `SourceConditionFormulaCompositionError`、
+  `SourcePredicateChainCompositionError`。
 
 対応:
 
 | specification promise | source evidence | test evidence | status |
 |---|---|---|---|
-| syntax-free dense table 2件がexact universal-to-equality/binder-to-reference associationを保持する。 | `src/source_formula_composition.rs`のpublic input/immutable row/table。 | exact real `1/2`、full literal debug、independent field/association corruption test。 | Task 257B1としてimplemented。 |
-| Task-252/256/第2 Task-257 identityをone arenaでfingerprint/revalidateする。 | `SourceFormulaCompositionProducer::build`とimmutable owned fingerprint。 | dependency substitution、cross-source、order、lookup-winner、containment test。 | transactionalにimplemented。 |
-| 第2 composite profile/compositionを同時publishしfinal ownershipまでclone-preserveする。 | combined `TypedAst` installer/getter/resolved assembly。 | legacy/combined installer partition、Task-248/257A exclusion、rollback、final clone test。 | intermediate AST stateなしでimplemented。 |
-| public enumはforward-compatible。 | public enum 2件の`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+| syntax-free dense table 5件がexact composite-to-atomic/binder-use、condition-to-formula、predicate-segment conjunction、segment-negation associationを保持する。 | `src/source_formula_composition.rs`のpublic input/immutable row/table。 | exact Task-257B1/B2/B3、C2 `1`、C3 `1/1` transaction、literal debug、independent field/association corruption test。 | Task 257C3までimplemented。 |
+| 各transactionはexact Task-252/253/255/256/257 lower dependencyだけをone arenaでfingerprint/revalidateする。 | public producer 3件、immutable owned fingerprint、exact private profile validator。 | coherent wrong profile、dependency substitution、cross-source、order、lookup-winner、containment、stale arena/fingerprint、validation-precedence test。 | transactionalにimplemented。 |
+| B-family combined ownership、C2 condition ownership、C3 predicate-chain ownershipはatomicにpublishされ、frozen範囲でmutually exclusive、final assemblyまでclone-preserveされる。 | `TypedAst` installer/getter、`ResolvedTypedAst` revalidation。 | legacy/combined partition、Task-248/A/B/C2/C3 exclusion、rollback/replay、debug order、final clone test。 | intermediate AST stateなしでimplemented。 |
+| public enumはforward-compatible。 | public enum 4件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
-bounded gap: connective/grouping expansion、additional binder form、
-quantifier/equality semantics、implicit closure、fact、theorem acceptance、
-proof、downstream IRはTasks 257B2/B3/258以降に残る。
+bounded gap: connective/quantifier/predicate truth、signature applicability、
+overload selection、formula fact/result、implicit theorem closure/acceptance、
+proof、downstream IRはTask 258以降に残る。
 
 ### `source_set_term`
 
@@ -3507,3 +3525,14 @@ row/table/ID family 2件、exact accessor、lower fingerprint 2件、stable debu
 typed/resolved ownership、reciprocal exclusion。本documentation commitでは
 実装しない。authority/test/future trace row/semantic exclusionは明示され、
 blocking `spec_gap`/unowned public behaviorは残らない。
+
+## Task 257C3 implementation classification
+
+dedicated checker transaction、exact private runner consumer、
+mutation-sensitive checker/runner matrixがbounded `source_drift`/`test_gap`を
+closeし、`design_drift`はprerequisiteでclose済み。existing fixture/semantic
+expectationは不変で、authorized existing-sidecar reference/single covered
+trace rowがplanned traceability deltaをcloseする。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`は残らない。origin divergenceはreport-only
+`repo_metadata_conflict`のまま。

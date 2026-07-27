@@ -544,30 +544,47 @@ IR remain with Tasks 257B/257C/258 and later owners.
 
 Generated public newtypes:
 
-- `SourceFormulaAtomicEdgeId`, `SourceQuantifierBoundUseId`
+- `SourceFormulaAtomicEdgeId`, `SourceQuantifierBoundUseId`,
+  `SourceConditionFormulaEdgeId`, `SourcePredicateChainConjunctionId`,
+  `SourcePredicateChainNegationId`
 
 Literal top-level public items:
 
 - `SourceFormulaCompositionHandoffInput`,
   `SourceFormulaAtomicEdgeInput`, `SourceQuantifierBoundUseInput`,
+  `SourceConditionFormulaCompositionHandoffInput`,
+  `SourceConditionFormulaEdgeInput`,
+  `SourcePredicateChainCompositionHandoffInput`,
+  `SourcePredicateChainConjunctionInput`,
+  `SourcePredicateChainNegationInput`,
   `SourceFormulaAtomicEdgeRole`, `SourceFormulaCompositionHandoff`,
+  `SourceConditionFormulaCompositionHandoff`,
+  `SourcePredicateChainCompositionHandoff`,
   `SourceFormulaAtomicEdgeTable`, `SourceQuantifierBoundUseTable`,
+  `SourceConditionFormulaEdgeTable`,
+  `SourcePredicateChainConjunctionTable`,
+  `SourcePredicateChainNegationTable`,
   `SourceFormulaAtomicEdge`, `SourceQuantifierBoundUse`,
-  `SourceFormulaCompositionProducer`, `SourceFormulaCompositionError`.
+  `SourceConditionFormulaEdge`, `SourcePredicateChainConjunction`,
+  `SourcePredicateChainNegation`, `SourceFormulaCompositionProducer`,
+  `SourceConditionFormulaCompositionProducer`,
+  `SourcePredicateChainCompositionProducer`,
+  `SourceFormulaCompositionError`,
+  `SourceConditionFormulaCompositionError`,
+  `SourcePredicateChainCompositionError`.
 
 Correspondence:
 
 | Specification promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Two syntax-free dense tables retain the exact universal-to-equality and binder-to-reference associations. | Public input, immutable rows, and tables in `src/source_formula_composition.rs`. | Exact real `1/2`, full literal debug, and independent field/association corruption tests. | Implemented for Task 257B1. |
-| Task-252, Task-256, and second Task-257 identities are fingerprinted and revalidated in one arena. | `SourceFormulaCompositionProducer::build` and immutable owned fingerprints. | Dependency substitution, cross-source, ordering, lookup-winner, and containment tests. | Implemented transactionally. |
-| The second composite profile and composition publish together and clone-preserve through final ownership. | Combined `TypedAst` installer, getters, and resolved assembly. | Legacy/combined installer partition, Task-248/Task-257A exclusion, rollback, and final clone tests. | Implemented without an intermediate AST state. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on both public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+| Five syntax-free dense tables retain the exact composite-to-atomic/binder-use, condition-to-formula, predicate-segment conjunction, and segment-negation associations. | Public inputs, immutable rows, and tables in `src/source_formula_composition.rs`. | Exact Task-257B1/B2/B3, C2 `1`, and C3 `1/1` transactions, literal debug, and independent field/association corruption tests. | Implemented through Task 257C3. |
+| Every transaction fingerprints and revalidates only its exact Task-252/253/255/256/257 lower dependencies in one arena. | The three public producers, immutable owned fingerprints, and exact private profile validators. | Coherent wrong profiles, dependency substitution, cross-source, ordering, lookup-winner, containment, stale-arena/fingerprint, and validation-precedence tests. | Implemented transactionally. |
+| B-family combined ownership, C2 condition ownership, and C3 predicate-chain ownership publish atomically, are mutually exclusive where frozen, and clone-preserve through final assembly. | `TypedAst` installers/getters and `ResolvedTypedAst` revalidation. | Legacy/combined partition, Task-248/A/B/C2/C3 exclusions, rollback/replay, debug order, and final clone tests. | Implemented without an intermediate AST state. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all four public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
-Bounded gaps: connective/grouping expansion, additional binder forms,
-quantifier and equality semantics, implicit closure, facts, theorem
-acceptance, proofs, and downstream IR remain with Tasks 257B2/B3/258 and
-later owners.
+Bounded gaps: connective/quantifier/predicate truth, signature applicability,
+overload selection, formula facts/results, implicit theorem closure and
+acceptance, proofs, and downstream IR remain with Task 258 and later owners.
 
 ### `source_set_term`
 
@@ -3541,6 +3558,18 @@ stable debug, typed/resolved ownership, and reciprocal exclusions. It is not
 implemented by this documentation commit. Authority, tests, one future trace
 row, and all semantic exclusions are explicit, so no blocking `spec_gap` or
 unowned public behavior remains.
+
+## Task 257C3 Implementation Classification
+
+The dedicated checker transaction, exact private runner consumer, and
+mutation-sensitive checker/runner matrices close the bounded `source_drift`
+and `test_gap`; the prerequisite already closed `design_drift`. The existing
+fixture and semantic expectation remain unchanged, while the authorized
+existing-sidecar reference and single covered trace row close the planned
+traceability delta. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation` remains. Origin divergence remains report-only
+`repo_metadata_conflict`.
 
 ## Task 256C1 Condition-Container Compatibility Classification
 

@@ -9,6 +9,7 @@ use crate::{
     source_evidence::SourceEvidenceHandoff,
     source_formula_composition::{
         SourceConditionFormulaCompositionHandoff, SourceFormulaCompositionHandoff,
+        SourcePredicateChainCompositionHandoff,
     },
     source_set_term::SourceSetTermHandoff,
     source_structure::SourceStructureHandoff,
@@ -106,6 +107,7 @@ pub struct TypedAst {
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
+    source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -134,6 +136,7 @@ impl TypedAst {
             source_composite_formula: None,
             source_formula_composition: None,
             source_condition_formula_composition: None,
+            source_predicate_chain_composition: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -206,14 +209,62 @@ impl TypedAst {
         self.source_condition_formula_composition.as_ref()
     }
 
+    pub const fn source_predicate_chain_composition(
+        &self,
+    ) -> Option<&SourcePredicateChainCompositionHandoff> {
+        self.source_predicate_chain_composition.as_ref()
+    }
+
     #[cfg(test)]
     pub(crate) fn remove_source_formula_composition_for_test(&mut self) {
         self.source_formula_composition = None;
     }
 
     #[cfg(test)]
+    pub(crate) fn remove_source_composite_formula_for_test(&mut self) {
+        self.source_composite_formula = None;
+    }
+
+    #[cfg(test)]
     pub(crate) fn remove_source_condition_formula_composition_for_test(&mut self) {
         self.source_condition_formula_composition = None;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn remove_source_atomic_formula_for_test(&mut self) {
+        self.source_atomic_formula = None;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_composite_formula_for_test(
+        &mut self,
+        handoff: SourceCompositeFormulaHandoff,
+    ) {
+        self.source_composite_formula = Some(handoff);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_formula_composition_for_test(
+        &mut self,
+        handoff: SourceFormulaCompositionHandoff,
+    ) {
+        self.source_formula_composition = Some(handoff);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_condition_formula_composition_for_test(
+        &mut self,
+        handoff: SourceConditionFormulaCompositionHandoff,
+    ) {
+        self.source_condition_formula_composition = Some(handoff);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_predicate_chain_composition_for_test(
+        &mut self,
+        handoff: SourcePredicateChainCompositionHandoff,
+    ) {
+        self.source_predicate_chain_composition = Some(handoff);
     }
 
     pub fn with_source_evidence(
@@ -428,6 +479,7 @@ impl TypedAst {
         if self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
             || self.source_condition_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
             || self.source_context.is_some()
             || !handoff.is_task_257a_profile()
         {
@@ -448,6 +500,7 @@ impl TypedAst {
         if self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
             || self.source_condition_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
             || self.source_context.is_some()
             || !(composite.is_task_257b1_profile()
                 || composite.is_task_257b2_profile()
@@ -488,6 +541,7 @@ impl TypedAst {
         if self.source_condition_formula_composition.is_some()
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
         {
             return Err(TypedAstError::InvalidSourceConditionFormulaComposition);
         }
@@ -519,6 +573,38 @@ impl TypedAst {
             )
             .map_err(|_| TypedAstError::InvalidSourceConditionFormulaComposition)?;
         self.source_condition_formula_composition = Some(composition);
+        Ok(self)
+    }
+
+    pub fn with_source_predicate_chain_composition(
+        mut self,
+        composition: SourcePredicateChainCompositionHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_predicate_chain_composition.is_some()
+            || self.source_composite_formula.is_some()
+            || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
+        {
+            return Err(TypedAstError::InvalidSourcePredicateChainComposition);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourcePredicateChainComposition)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourcePredicateChainComposition)?;
+        composition
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_atomic_formula,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourcePredicateChainComposition)?;
+        self.source_predicate_chain_composition = Some(composition);
         Ok(self)
     }
 
@@ -598,6 +684,9 @@ impl TypedAst {
             &self.source_condition_formula_composition
         {
             output.push_str(&source_condition_formula_composition.debug_text());
+        }
+        if let Some(source_predicate_chain_composition) = &self.source_predicate_chain_composition {
+            output.push_str(&source_predicate_chain_composition.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1485,6 +1574,7 @@ pub enum TypedAstError {
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
     InvalidSourceConditionFormulaComposition,
+    InvalidSourcePredicateChainComposition,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1628,6 +1718,8 @@ impl fmt::Display for TypedAstError {
             Self::InvalidSourceConditionFormulaComposition => formatter.write_str(
                 "typed AST source condition/formula-composition handoff is inconsistent",
             ),
+            Self::InvalidSourcePredicateChainComposition => formatter
+                .write_str("typed AST source predicate-chain-composition handoff is inconsistent"),
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
                 "typed node {} references missing context {}",

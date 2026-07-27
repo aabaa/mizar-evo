@@ -106,6 +106,7 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 | `SourceConditionFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match condition/formula validation failures. |
 | `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`; callers must tolerate later frozen cross-family body roles. |
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+| `SourcePredicateChainCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match predicate-chain composition validation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -663,3 +664,20 @@ remain deferred. This documentation prerequisite changes no executable
 artifact; baseline remains plan `419/386`, type `252/240`, libraries
 `332/361`, active `101/5/198/1`, and runner production 29 paths / 34,064
 lines.
+
+## Task 257C3 Implementation Result
+
+The frozen third transaction is implemented with public dense conjunction
+and negation IDs/tables, immutable input/handoff/producer/error surfaces,
+two lower debug fingerprints, exact accessors, and stable debug text.
+Validation reauthenticates both lower installations and their exact profiles
+before cardinality, conjunction row 0, then negation row 0. Coherent but
+wrong lower profiles, stale arenas/fingerprints, substituted rows, and every
+cardinality/row precedence combination fail with the frozen typed error and
+permit replay.
+
+The runner publishes only the exact `1/1` handoff from the existing fixture.
+No predicate token, candidate, resolver contribution, lower edge, truth,
+fact, diagnostic, or semantic result is duplicated or inferred. Exactly
+three checker and four runner tests cover the complete contract, and the
+single covered trace row credits only this syntax-free association.

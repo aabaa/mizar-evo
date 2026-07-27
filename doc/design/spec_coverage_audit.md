@@ -3553,3 +3553,30 @@ chains, Steps 6/7, and global Step-5 completion remain deferred. Because the
 task changes follow-up ownership and future traceability, this audit update
 is required; `tests/coverage/spec_trace.toml` remains unchanged until the
 separate implementation.
+
+## Step 5 Checker Task 257C3 Implementation Addendum
+
+The frozen syntax-free predicate-chain association is now implemented.
+`source_formula_composition` owns the exact conjunction/negation `1/1`
+transaction; Task 252 and Task 256 retain every lower row and resolver
+provenance object. The private runner reuses the unchanged 107-byte consumer
+and publishes the complete route before the lower Task-257C1 route. Exactly
+three checker and four runner tests close the bounded `source_drift` and
+`test_gap`, including coherent wrong-profile rejection, validation
+precedence, all six ownership directions, dependency/arena mutation,
+rollback/replay, debug order, and clone preservation.
+
+The authorized requirement
+`spec.en.checker.type_elaboration.source_predicate_chain_composition` is now
+required/covered/pass and maps only to the existing Task-257C1 sidecar after
+the prior segment-payload reference. The fixture, outcome, phase,
+diagnostics, active tag, and semantic intent are unchanged. Coverage is now
+plan `419/387`, type elaboration `253/241`, pass/fail `228/191`, active
+`101/5/198/1`, and warnings/errors `23/0`. Libraries are `335/365`;
+runner production is 29 paths / 34,290 lines.
+
+This audit change is required because the task closes the recorded follow-up
+ownership and activates the planned traceability row. Predicate
+signature/applicability, overload selection, conjunction/negation truth,
+formula facts/results, theorem acceptance, proof, IR/VC, broader chains,
+Steps 6/7, and global Step-5 completion remain deferred.

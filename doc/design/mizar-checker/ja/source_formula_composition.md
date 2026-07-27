@@ -100,6 +100,7 @@ tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 | `SourceConditionFormulaCompositionError` | `#[non_exhaustive]`。callerはcondition/formula validation failureをexhaustive matchしない。 |
 | `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`。callerはlater frozen cross-family body roleを許容する。 |
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+| `SourcePredicateChainCompositionError` | `#[non_exhaustive]`。callerはpredicate-chain composition validation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -610,3 +611,19 @@ conjunction/negation truth、formula fact/result、theorem acceptance、proof、
 IR/VC、broader chainはdeferred。本documentation prerequisiteはexecutable
 artifactを変更せず、baselineはplan `419/386`、type `252/240`、libraries
 `332/361`、active `101/5/198/1`、runner production 29 paths / 34,064 lines。
+
+## Task 257C3 implementation result
+
+frozen third transactionをpublic dense conjunction/negation ID/table、
+immutable input/handoff/producer/error surface、lower debug fingerprint 2件、
+exact accessor、stable debug textとして実装した。validationは両lower
+installation/exact profileをreauthenticateした後、cardinality、conjunction
+row 0、negation row 0の順に検証する。coherent wrong lower profile、
+stale arena/fingerprint、substituted row、全cardinality/row precedence
+combinationはfrozen typed errorでfailしreplay可能。
+
+runnerはexisting fixtureからexact `1/1` handoffだけをpublishする。
+predicate token/candidate/resolver contribution/lower edge/truth/fact/
+diagnostic/semantic resultをduplicate/inferしない。checker 3 tests /
+runner 4 testsがcomplete contractをcoverし、single covered trace rowは
+syntax-free associationだけをcreditする。

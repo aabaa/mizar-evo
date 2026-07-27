@@ -37,6 +37,20 @@ leafに置く。cohesive manifestは29 paths /
 `c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`を
 保持する。split不要。
 
+## Checker Task 257C3 implementation boundary recheck
+
+production pathは追加していない。public dispatcherは2,475 lines、private
+type-elaboration facadeは665、reused atomic lower ownerは1,068 lines。
+composition ownerは1,853 linesでbounded C3 input/installation routeをownし、
+paired test leafはtest-only 2,528 lines。29-path production layoutは34,290
+linesでcohesiveなまま、path/content hashは
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`ac85812af57234cbd1af88de729da4b7fe438dc22efe23dd234f3cd10967ca2c`。
+
+runner libraryは365 tests、raw/normalized hashは
+`8194474d60e02ce0c96e69b69957cd0133147b996e3b7cb0acad6ea11b7afd5b` /
+`517ae63c0c7335c1b5c763119e9664c5d6efa3defa7265b7f1fed21e6ea964c3`。
+
 ## Checker Task 257C2 implementation boundary recheck
 
 Task 257C2はproduction pathを追加しない。complete exact routeはexisting

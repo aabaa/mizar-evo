@@ -3616,14 +3616,14 @@ pub(crate) mod tests {
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator as _,
     };
 
-    struct Fixture {
-        source: SourceId,
-        module: ModuleId,
-        bindings: BindingEnv,
-        symbols: SymbolEnv,
-        primary: SourcePrimaryTermHandoff,
-        arena: TypedArena,
-        input: SourceAtomicFormulaHandoffInput,
+    pub(crate) struct Fixture {
+        pub(crate) source: SourceId,
+        pub(crate) module: ModuleId,
+        pub(crate) bindings: BindingEnv,
+        pub(crate) symbols: SymbolEnv,
+        pub(crate) primary: SourcePrimaryTermHandoff,
+        pub(crate) arena: TypedArena,
+        pub(crate) input: SourceAtomicFormulaHandoffInput,
     }
 
     fn source_id() -> SourceId {
@@ -3818,7 +3818,7 @@ pub(crate) mod tests {
         }
     }
 
-    fn make_fixture(kind: SourceAtomicFormulaKind) -> Fixture {
+    pub(crate) fn make_fixture(kind: SourceAtomicFormulaKind) -> Fixture {
         let source = source_id();
         let module = module();
         let bindings = bindings(source, &module);
@@ -4630,7 +4630,7 @@ pub(crate) mod tests {
         fixture
     }
 
-    fn predicate_chain_fixture() -> Fixture {
+    pub(crate) fn predicate_chain_fixture() -> Fixture {
         let source = source_id();
         let module = module();
         let bindings = bindings(source, &module);
@@ -4862,6 +4862,52 @@ pub(crate) mod tests {
                 ],
             },
         }
+    }
+
+    pub(crate) fn single_predicate_on_predicate_chain_arena_fixture() -> Fixture {
+        let mut fixture = predicate_chain_fixture();
+        fixture.primary = primary_handoff(
+            fixture.source,
+            &fixture.module,
+            &fixture.bindings,
+            &fixture.arena,
+            &[(0, 75, 76, "1"), (1, 85, 86, "2")],
+        );
+        fixture.input = SourceAtomicFormulaHandoffInput {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            formulas: vec![SourceAtomicFormulaInput {
+                site: node(3),
+                source_range: range(fixture.source, 75, 105),
+                source_ordinal: 0,
+                context: BindingContextId::new(0),
+                recovery: SourceAtomicFormulaRecovery::Normal,
+                spelling: "1 divides 2".to_owned(),
+                kind: SourceAtomicFormulaKind::PredicateApplication,
+            }],
+            wrappers: Vec::new(),
+            predicate_segments: Vec::new(),
+            predicate_heads: fixture.input.predicate_heads[..1].to_vec(),
+            candidates: fixture.input.candidates[..1].to_vec(),
+            type_sites: Vec::new(),
+            attributes: Vec::new(),
+            edges: vec![
+                SourceAtomicEdgeInput {
+                    formula: SourceAtomicFormulaId::new(0),
+                    ordinal: 0,
+                    role: SourceAtomicEdgeRole::PredicateLeftArgument,
+                    target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(0)),
+                },
+                SourceAtomicEdgeInput {
+                    formula: SourceAtomicFormulaId::new(0),
+                    ordinal: 1,
+                    role: SourceAtomicEdgeRole::PredicateRightArgument,
+                    target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(1)),
+                },
+            ],
+            requests: fixture.input.requests[..1].to_vec(),
+        };
+        fixture
     }
 
     fn install_local_symbols(

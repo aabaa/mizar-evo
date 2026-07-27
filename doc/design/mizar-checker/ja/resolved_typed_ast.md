@@ -851,3 +851,11 @@ pub const fn source_predicate_chain_composition(
 cloned C3 debug chunkはTask-252 source-term、Task-256 source-atomic-formula、
 A/B/C2 slotの後、resolved node/table section直前のfinal mutually exclusive
 formula-owner slotを占める。
+
+## Task 257C3 implementation result
+
+final assemblyはoptional handoffをcloned Task-252/256 dependency/arenaに対して
+revalidateし、`Clone`でpreserveし、frozen slotへdeterministic debug chunkを
+emitする。test-only stateでrequired lower handoffをremoveすると
+`InvalidSourcePredicateChainComposition`でfailする。expression metadata、
+diagnostic、truth、fact、proof、downstream IRはemptyのまま。

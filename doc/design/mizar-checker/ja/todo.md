@@ -4266,7 +4266,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
         preflight後、frozen condition-formula associationだけをimplement。
       - [x] **Task 257C3 prerequisite:** Task 257C2後、predicate-chain
         conjunction/segment-negation compositionをseparately freeze。
-      - [ ] **Task 257C3 implementation:** fresh post-documentation
+      - [x] **Task 257C3 implementation:** fresh post-documentation
         preflight後にfrozen predicate-chain compositionだけを実装。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
@@ -4497,5 +4497,18 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] signature/applicability、overload selection、conjunction/negation
   truth、fact/result、theorem acceptance、proof、IR/VC、broader chain、
   Steps 6/7をdefer。
-- [ ] 本documentation commitとfresh parser/resolver/lower-API/count/hash
+- [x] 本documentation commitとfresh parser/resolver/lower-API/count/hash
   preflight後だけTask 257C3を実装。
+
+## Checker Task 257C3 implementation ledger
+
+- [x] exact Task-252/256 authentication後にfrozen `1/1` compositionだけを
+  publishし、全lower row/semantic deferralを不変に保持。
+- [x] optional handoffをinstall/revalidate/debug-project/clone-preserveし、
+  A/B/C2/C3全6方向をmutation-sensitiveにcover。
+- [x] unchanged 107-byte fixtureをlower C1 consumerより先にrouteし、
+  typed/resolved semantic tableをemptyに保持。
+- [x] exactly checker 3 tests / runner 4 tests、covered trace row 1件、
+  existing sidecar ordered reciprocal reference/noteだけを追加。
+- [x] plan/type `419/387` / `253/241`、libraries `335/365`、runner
+  29 paths / 34,290 linesを測定し、全frozen CLI outcomeを保持。

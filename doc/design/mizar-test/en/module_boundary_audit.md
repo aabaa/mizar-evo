@@ -38,6 +38,21 @@ cohesive manifest stays 29 paths / 34,064 lines with path/content hashes
 `c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`.
 No split is required.
 
+## Checker Task 257C3 Implementation Boundary Recheck
+
+No production path was added. The public dispatcher remains 2,475 lines and
+the private type-elaboration facade 665. The reused atomic lower owner is
+1,068 lines; the composition owner is 1,853 lines and now owns the bounded
+C3 input/installation route. Its paired test leaf is 2,528 test-only lines.
+The 29-path production layout remains cohesive at 34,290 lines with
+path/content hashes
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`ac85812af57234cbd1af88de729da4b7fe438dc22efe23dd234f3cd10967ca2c`.
+
+The runner library has 365 tests with raw/normalized hashes
+`8194474d60e02ce0c96e69b69957cd0133147b996e3b7cb0acad6ea11b7afd5b` /
+`517ae63c0c7335c1b5c763119e9664c5d6efa3defa7265b7f1fed21e6ea964c3`.
+
 ## Checker Task 257C2 Implementation Boundary Recheck
 
 Task 257C2 adds no production path. The complete exact route remains in the

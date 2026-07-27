@@ -28,12 +28,12 @@ remain aligned with their owning specifications.
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
 | `src/lib.rs` | 43 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; Task 257B1 exports the documented syntax-free formula-composition module. |
-| `src/typed_ast.rs` | 4188 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, ids, validation, rendering, tests, bidirectional Task-253/254/255/256 installation checks, Task-257A one-shot installation, Task-257B1/B2/B3 combined installation, and Task-257C2 condition-composition ownership; monitor ergonomics after downstream use. |
+| `src/typed_ast.rs` | 4280 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, ids, validation, rendering, tests, bidirectional Task-253/254/255/256 installation checks, Task-257A one-shot installation, Task-257B1/B2/B3 combined installation, and mutually exclusive Task-257C2/C3 composition ownership; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3143 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula context identity; no behavior-neutral split required. |
 | `src/source_context.rs` | 1150 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
-| `src/source_atomic_formula.rs` | 8460 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and compatibility literals; no split required. |
+| `src/source_atomic_formula.rs` | 8506 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only C3 profile fixtures; no split required. |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
-| `src/source_formula_composition.rs` | 4120 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations plus the separate Task-257C2 condition-to-atomic transaction, dependency fingerprints, deterministic rendering, installation, and corruption tests; no split required. |
+| `src/source_formula_composition.rs` | 5317 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations plus separate Task-257C2 condition-to-atomic and Task-257C3 predicate-chain transactions, dependency fingerprints, deterministic rendering, installation, and corruption tests; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | Cohesive Task-251 request/response tables, upstream association, catalog/payload validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_term.rs` | 2207 | syntax-free source primary-term producer | `source_term.md` | no | no | Cohesive Task-252 term/reference/request tables, binding and parent validation, deterministic rendering, and corruption tests; no split required. |
@@ -45,7 +45,7 @@ remain aligned with their owning specifications.
 | `src/registration_resolution.rs` | 5888 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer and gate logic; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
-| `src/resolved_typed_ast.rs` | 7004 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including Task-251/252/253/254/255/256/257A/257B1/B2/B3/C2 clone-preserving handoffs; no behavior-neutral split required. |
+| `src/resolved_typed_ast.rs` | 7050 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including Task-251/252/253/254/255/256/257A/257B1/B2/B3/C2/C3 clone-preserving handoffs; no behavior-neutral split required. |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
 | `tests/lint_policy.rs` | 1846 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Large support test but intentionally centralizes repository-policy guardrails; no split required for task 34. |
 
@@ -243,6 +243,21 @@ fingerprints, installation revalidation, rendering, and the corruption
 matrix remain behavior-coupled, so no private checker split is required.
 `TypedAst` owns the one-shot immutable handoff and `ResolvedTypedAst`
 revalidates then clone-preserves it.
+
+## Checker Task 257C3 Implementation Boundary Recheck
+
+No checker module was added. `source_formula_composition.rs` is 5,317 lines
+and remains the cohesive owner of three independent syntax-free composition
+transactions. `typed_ast.rs` is 4,280 lines,
+`source_atomic_formula.rs` 8,506, and `resolved_typed_ast.rs` 7,050; the
+atomic change is test-only fixture support and the typed test-only occupancy
+seams directly exercise reciprocal guards. Raw extraction and resolver
+selection remain private to `mizar-test`, so no dependency direction or
+split is justified.
+
+The checker library has 335 tests with raw/normalized test-list hashes
+`de92623800741813a88a2521eaaa99a757f4fccb7d7be4a025e4108c8660e1e0` /
+`7bfae9a1d5f8ec503232a6c68f324cdee0cba65e1b422c563aea9f9951affa64`.
 
 ## Task 257C2 Implementation Boundary Recheck
 

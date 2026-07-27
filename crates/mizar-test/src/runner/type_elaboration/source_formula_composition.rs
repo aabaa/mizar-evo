@@ -12,9 +12,10 @@ use mizar_checker::{
     },
     source_atomic_formula::{
         SourceAtomicEdgeId, SourceAtomicEdgeInput, SourceAtomicEdgeRole,
-        SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId, SourceAtomicFormulaInput,
-        SourceAtomicFormulaKind, SourceAtomicFormulaProducer, SourceAtomicFormulaRecovery,
-        SourceAtomicRequestInput, SourceAtomicRequestKind, SourceAtomicTermTarget,
+        SourceAtomicFormulaHandoff, SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId,
+        SourceAtomicFormulaInput, SourceAtomicFormulaKind, SourceAtomicFormulaProducer,
+        SourceAtomicFormulaRecovery, SourceAtomicRequestInput, SourceAtomicRequestKind,
+        SourceAtomicTermTarget,
     },
     source_composite_formula::{
         SourceBinderTypeHead, SourceBinderTypeSiteId, SourceBinderTypeSiteInput,
@@ -28,14 +29,16 @@ use mizar_checker::{
         SourceConditionFormulaCompositionHandoffInput, SourceConditionFormulaCompositionProducer,
         SourceConditionFormulaEdgeInput, SourceFormulaAtomicEdgeId, SourceFormulaAtomicEdgeInput,
         SourceFormulaAtomicEdgeRole, SourceFormulaCompositionHandoffInput,
-        SourceFormulaCompositionProducer, SourceQuantifierBoundUseInput,
+        SourceFormulaCompositionProducer, SourcePredicateChainCompositionHandoffInput,
+        SourcePredicateChainCompositionProducer, SourcePredicateChainConjunctionInput,
+        SourcePredicateChainNegationInput, SourceQuantifierBoundUseInput,
     },
     source_set_term::SourceSetConditionId,
     source_term::{
-        SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermId,
-        SourcePrimaryTermInput, SourcePrimaryTermKind, SourcePrimaryTermProducer,
-        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceId, SourcePrimaryTermReferenceInput,
-        SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
+        SourceNumericTypeRequestInput, SourcePrimaryTermHandoff, SourcePrimaryTermHandoffInput,
+        SourcePrimaryTermId, SourcePrimaryTermInput, SourcePrimaryTermKind,
+        SourcePrimaryTermProducer, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceId,
+        SourcePrimaryTermReferenceInput, SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
     },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
@@ -53,11 +56,13 @@ use mizar_syntax::{SurfaceAst, SurfaceNodeKind};
 
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
+    source_atomic_formula::source_atomic_formula_output_with_source,
     source_formula::{
         SourceFormulaConnectiveGrouping, SourceFormulaNestedQuantifierPayload,
         SourceFormulaQuantifierBoundUse, extract_source_formula_connective_grouping,
         extract_source_formula_nested_quantifier_payload,
         extract_source_formula_quantifier_bound_use,
+        extract_source_imported_predicate_chain_formula,
     },
     source_set_term::conditioned_source_set_term_output,
 };
@@ -87,12 +92,53 @@ pub(in crate::runner) struct SourceConditionFormulaCompositionRouteInputs {
     pub(in crate::runner) composition: SourceConditionFormulaCompositionHandoffInput,
 }
 
+#[derive(Debug)]
+pub(in crate::runner) struct SourcePredicateChainCompositionRouteInputs {
+    pub(in crate::runner) arena: TypedArena,
+    pub(in crate::runner) primary: Option<SourcePrimaryTermHandoff>,
+    pub(in crate::runner) atomic: Option<SourceAtomicFormulaHandoff>,
+    pub(in crate::runner) composition: SourcePredicateChainCompositionHandoffInput,
+}
+
 pub(in crate::runner) fn source_formula_composition_transport_detail_keys(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
 ) -> Option<Vec<String>> {
+    if let Some(result) = source_predicate_chain_composition_output_with_mutation_impl(
+        ast,
+        module.clone(),
+        symbols,
+        source_text,
+        |_| {},
+    ) {
+        return match result {
+            Ok(output)
+                if output.typed_ast.source_context().is_none()
+                    && output.typed_ast.source_term().is_some()
+                    && output.typed_ast.source_application().is_none()
+                    && output.typed_ast.source_structure().is_none()
+                    && output.typed_ast.source_set_term().is_none()
+                    && output.typed_ast.source_atomic_formula().is_some()
+                    && output.typed_ast.source_composite_formula().is_none()
+                    && output.typed_ast.source_formula_composition().is_none()
+                    && output
+                        .typed_ast
+                        .source_condition_formula_composition()
+                        .is_none()
+                    && output
+                        .typed_ast
+                        .source_predicate_chain_composition()
+                        .is_some()
+                    && output.typed_ast.source_predicate_chain_composition()
+                        == output.resolved.source_predicate_chain_composition() =>
+            {
+                Some(Vec::new())
+            }
+            Ok(_) | Err(_) => Some(vec![INVALID_PAYLOAD_KEY.to_owned()]),
+        };
+    }
     if let Some(result) = source_condition_formula_composition_output_with_mutation_impl(
         ast,
         module.clone(),
@@ -134,6 +180,39 @@ pub(in crate::runner) fn source_formula_composition_transport_detail_keys(
         }
         Some(Ok(_)) | Some(Err(_)) => Some(vec![INVALID_PAYLOAD_KEY.to_owned()]),
     }
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_predicate_chain_composition_output_with_source(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    source_predicate_chain_composition_output_with_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        |_| {},
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_predicate_chain_composition_output_with_source_and_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourcePredicateChainCompositionRouteInputs),
+) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    source_predicate_chain_composition_output_with_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        mutate,
+    )
 }
 
 #[cfg(test)]
@@ -235,6 +314,148 @@ pub(in crate::runner) fn source_condition_formula_composition_output_with_source
         source_text,
         mutate,
     )
+}
+
+fn source_predicate_chain_composition_output_with_mutation_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourcePredicateChainCompositionRouteInputs),
+) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    extract_source_imported_predicate_chain_formula(ast, &module, symbols, source_text)?;
+    let lower =
+        source_atomic_formula_output_with_source(ast, module.clone(), symbols, source_text)?;
+    Some(lower.and_then(|lower| build_task_257c3_output(ast, module, lower.typed_ast, mutate)))
+}
+
+fn build_task_257c3_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    lower: TypedAst,
+    mutate: impl FnOnce(&mut SourcePredicateChainCompositionRouteInputs),
+) -> Result<SourceFormulaCompositionRouteOutput, String> {
+    let primary = lower
+        .source_term()
+        .cloned()
+        .ok_or_else(|| "Task257C3 lost Task252 handoff".to_owned())?;
+    let atomic = lower
+        .source_atomic_formula()
+        .cloned()
+        .ok_or_else(|| "Task257C3 lost Task256 handoff".to_owned())?;
+    let mut inputs =
+        SourcePredicateChainCompositionRouteInputs {
+            arena: lower.nodes().clone(),
+            primary: Some(primary),
+            atomic: Some(atomic),
+            composition: SourcePredicateChainCompositionHandoffInput {
+                source_id: ast.source_id,
+                module_id: module.clone(),
+                conjunctions: vec![SourcePredicateChainConjunctionInput {
+                    formula: SourceAtomicFormulaId::new(0),
+                    ordinal: 0,
+                    left_segment:
+                        mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(0),
+                    right_segment:
+                        mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(1),
+                    boundary: SourceAtomicEdgeId::new(1),
+                }],
+                negations: vec![SourcePredicateChainNegationInput {
+                    formula: SourceAtomicFormulaId::new(0),
+                    ordinal: 0,
+                    segment: mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(1),
+                }],
+            },
+        };
+    mutate(&mut inputs);
+    let primary = inputs
+        .primary
+        .ok_or_else(|| "Task257C3 lost mutable Task252 dependency".to_owned())?;
+    let atomic = inputs
+        .atomic
+        .ok_or_else(|| "Task257C3 lost mutable Task256 dependency".to_owned())?;
+    let composition = SourcePredicateChainCompositionProducer::build(
+        inputs.composition,
+        &primary,
+        &atomic,
+        &inputs.arena,
+    )
+    .map_err(|error| error.to_string())?;
+
+    let typed_ast = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: inputs.arena,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())?
+    .with_source_term(primary)
+    .map_err(|error| error.to_string())?
+    .with_source_atomic_formula(atomic)
+    .map_err(|error| error.to_string())?
+    .with_source_predicate_chain_composition(composition)
+    .map_err(|error| error.to_string())?;
+    let node_hints = typed_ast
+        .nodes()
+        .iter()
+        .map(|(typed_node, _)| ResolvedNodeKindHint {
+            typed_node,
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.formula.predicate-chain-composition"),
+            },
+        })
+        .collect();
+    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
+    if typed_ast.source_context().is_some()
+        || typed_ast.source_application().is_some()
+        || typed_ast.source_structure().is_some()
+        || typed_ast.source_set_term().is_some()
+        || typed_ast.source_composite_formula().is_some()
+        || typed_ast.source_formula_composition().is_some()
+        || typed_ast.source_condition_formula_composition().is_some()
+        || typed_ast.source_predicate_chain_composition().is_none()
+        || typed_ast.source_term() != resolved.source_term()
+        || typed_ast.source_atomic_formula() != resolved.source_atomic_formula()
+        || typed_ast.source_predicate_chain_composition()
+            != resolved.source_predicate_chain_composition()
+        || !typed_ast.contexts().is_empty()
+        || !typed_ast.types().is_empty()
+        || !typed_ast.facts().is_empty()
+        || !typed_ast.coercions().is_empty()
+        || !typed_ast.initial_obligations().is_empty()
+        || !typed_ast.diagnostics().is_empty()
+        || !resolved.expr_metadata().is_empty()
+        || !resolved.collection_candidates().is_empty()
+        || !resolved.expanded_candidates().is_empty()
+        || !resolved.template_expansions().is_empty()
+        || !resolved.viable_candidates().is_empty()
+        || !resolved.viability_decisions().is_empty()
+        || !resolved.specificity_graphs().is_empty()
+        || !resolved.resolved_overloads().is_empty()
+        || !resolved.inserted_coercions().is_empty()
+        || !resolved.cluster_facts().is_empty()
+        || !resolved.diagnostics().is_empty()
+        || !resolved.checked_formulas().is_empty()
+        || !resolved.statement_semantics().is_empty()
+        || !resolved.checked_proofs().is_empty()
+        || !resolved.checked_proof_nodes().is_empty()
+        || !resolved.checked_terminal_goals().is_empty()
+    {
+        return Err("Task257C3 immutable final handoff mismatch".to_owned());
+    }
+    Ok(SourceFormulaCompositionRouteOutput {
+        typed_ast,
+        resolved,
+    })
 }
 
 fn source_condition_formula_composition_output_with_mutation_impl(

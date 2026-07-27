@@ -389,11 +389,14 @@ pub(super) use source_formula_composition::source_formula_composition_transport_
 #[cfg(test)]
 pub(super) use source_formula_composition::{
     SourceConditionFormulaCompositionRouteInputs, SourceFormulaCompositionRouteInputs,
-    SourceFormulaCompositionRouteOutput, source_condition_formula_composition_output_with_source,
+    SourceFormulaCompositionRouteOutput, SourcePredicateChainCompositionRouteInputs,
+    source_condition_formula_composition_output_with_source,
     source_condition_formula_composition_output_with_source_and_mutation,
     source_formula_composition_output, source_formula_composition_output_with_mutation,
     source_formula_composition_output_with_source,
     source_formula_composition_output_with_source_and_mutation,
+    source_predicate_chain_composition_output_with_source,
+    source_predicate_chain_composition_output_with_source_and_mutation,
 };
 pub(super) use source_reserve::extract_builtin_source_reserve_declarations;
 #[cfg(test)]

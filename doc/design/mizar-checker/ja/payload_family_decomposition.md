@@ -669,3 +669,11 @@ Task 257C3はpre-existing boundary edge 1を介したsegments 0/1 association 1�
 negative segment 1 association 1件だけをownする。Task 252はprimary 1、
 Task 256はshared edge/polarity/candidate/resolver provenanceを保持する。new
 composite node/semantic formula ownerは導入しない。
+
+## Task 257C3 implemented cross-family edge
+
+frozen graph sliceは同じownershipでexecutableになった。Task 252は全primary
+row、Task 256は全segment/head/candidate/edge/request/resolver-provenance
+rowを保持し、Task 257C3はsyntax-free association 2件だけを追加する。
+typed/resolved ownershipはA/B/C2とmutually exclusiveで、semantic formula
+nodeは導入しない。

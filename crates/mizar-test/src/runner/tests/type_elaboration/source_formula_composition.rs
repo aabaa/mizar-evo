@@ -1,13 +1,16 @@
 use super::{
     SourceConditionFormulaCompositionRouteInputs, SourceFormulaCompositionRouteInputs,
-    SourceFormulaCompositionRouteOutput,
+    SourceFormulaCompositionRouteOutput, SourcePredicateChainCompositionRouteInputs,
     extract_source_formula_connective_grouping, extract_source_formula_quantifier_bound_use,
     extract_source_formula_nested_quantifier_payload, source_formula_composition_output,
     source_formula_composition_output_with_mutation,
     source_formula_composition_output_with_source,
     source_formula_composition_output_with_source_and_mutation,
+    source_formula_composition_transport_detail_keys,
     source_condition_formula_composition_output_with_source,
     source_condition_formula_composition_output_with_source_and_mutation,
+    source_predicate_chain_composition_output_with_source,
+    source_predicate_chain_composition_output_with_source_and_mutation,
 };
 
 const TASK257B1_CASE: &str = "pass_type_elaboration_formula_quantifier_bound_use_payload_001";
@@ -1992,6 +1995,520 @@ fn task257b1_pass_sidecar_observes_transport_only() {
         .enumerate()
         .find(|(_, case)| case.id.0 == TASK257B1_CASE)
         .expect("Task 257B1 case active");
+    let result = run_type_elaboration_case(&workspace_root, &tests_root, case, ordinal);
+    assert_eq!(result.status, TypeElaborationCaseStatus::Passed);
+    assert!(result.actual_detail_keys.is_empty());
+    assert_eq!(
+        result.actual_detail_keys,
+        expected_type_elaboration_detail_keys(case)
+    );
+}
+
+#[test]
+fn task257c3_real_route_publishes_exact_composition_and_resolver_provenance() {
+    let (ast, module, symbols) = task252_real_ast(TASK257C1_CASE);
+    assert_eq!(TASK257C1_SOURCE.len(), 107);
+    assert!(TASK257C1_SOURCE.ends_with('\n'));
+    let payload =
+        extract_source_imported_predicate_chain_formula(&ast, &module, &symbols, TASK257C1_SOURCE)
+            .expect("Task257C3 exact lower selector");
+    assert_eq!(
+        (
+            payload.formula_range.start,
+            payload.formula_range.end,
+            payload.segment_ranges.map(|range| (range.start, range.end)),
+            payload.head_ranges.map(|range| (range.start, range.end)),
+            payload.term_ranges.map(|range| (range.start, range.end)),
+            (payload.verb_range.start, payload.verb_range.end),
+            (payload.not_range.start, payload.not_range.end),
+        ),
+        (
+            75,
+            105,
+            [(75, 86), (87, 105)],
+            [(77, 84), (96, 103)],
+            [(75, 76), (85, 86), (104, 105)],
+            (87, 91),
+            (92, 95),
+        )
+    );
+
+    let first = source_predicate_chain_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        TASK257C1_SOURCE,
+    )
+    .expect("Task257C3 exact selector")
+    .unwrap_or_else(|error| panic!("Task257C3 real route failed: {error}"));
+    let second = source_predicate_chain_composition_output_with_source(
+        &ast,
+        module,
+        &symbols,
+        TASK257C1_SOURCE,
+    )
+    .expect("Task257C3 repeated selector")
+    .unwrap_or_else(|error| panic!("Task257C3 repeated route failed: {error}"));
+    let primary = first.typed_ast.source_term().expect("Task252 handoff");
+    let atomic = first
+        .typed_ast
+        .source_atomic_formula()
+        .expect("Task256 handoff");
+    let composition = first
+        .typed_ast
+        .source_predicate_chain_composition()
+        .expect("Task257C3 handoff");
+    assert_eq!(
+        (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ),
+        (3, 0, 3)
+    );
+    assert_eq!(
+        (
+            atomic.formulas().len(),
+            atomic.wrappers().len(),
+            atomic.predicate_segments().len(),
+            atomic.predicate_heads().len(),
+            atomic.candidates().len(),
+            atomic.type_sites().len(),
+            atomic.attributes().len(),
+            atomic.edges().len(),
+            atomic.requests().len(),
+        ),
+        (1, 0, 2, 2, 2, 0, 0, 3, 2)
+    );
+    let candidates = atomic.candidates().iter().collect::<Vec<_>>();
+    assert_eq!(candidates.len(), 2);
+    assert_eq!(candidates[0].1.symbol(), candidates[1].1.symbol());
+    assert_eq!(
+        candidates[0].1.contribution(),
+        candidates[1].1.contribution()
+    );
+    assert_eq!(candidates[0].1.symbol(), &payload.predicate_symbol);
+    assert!(matches!(
+        symbols
+            .contributions()
+            .get(candidates[0].1.contribution())
+            .expect("Task257C3 imported predicate contribution")
+            .kind(),
+        mizar_resolve::env::ContributionKind::ImportedSource { .. }
+    ));
+    assert_eq!(
+        composition
+            .conjunctions()
+            .iter()
+            .map(|(id, row)| (
+                id.index(),
+                row.formula().index(),
+                row.ordinal(),
+                row.left_segment().index(),
+                row.right_segment().index(),
+                row.boundary().index(),
+            ))
+            .collect::<Vec<_>>(),
+        [(0, 0, 0, 0, 1, 1)]
+    );
+    assert_eq!(
+        composition
+            .negations()
+            .iter()
+            .map(|(id, row)| (
+                id.index(),
+                row.formula().index(),
+                row.ordinal(),
+                row.segment().index(),
+            ))
+            .collect::<Vec<_>>(),
+        [(0, 0, 0, 1)]
+    );
+    assert_eq!(
+        composition.primary_term_fingerprint(),
+        primary.debug_text()
+    );
+    assert_eq!(
+        composition.atomic_formula_fingerprint(),
+        atomic.debug_text()
+    );
+    assert_eq!(
+        first.typed_ast.source_predicate_chain_composition(),
+        first.resolved.source_predicate_chain_composition()
+    );
+    assert!(first.typed_ast.source_composite_formula().is_none());
+    assert!(first.typed_ast.source_formula_composition().is_none());
+    assert!(
+        first
+            .typed_ast
+            .source_condition_formula_composition()
+            .is_none()
+    );
+    assert!(first.typed_ast.types().is_empty());
+    assert!(first.typed_ast.facts().is_empty());
+    assert!(first.resolved.checked_formulas().is_empty());
+    assert!(first.resolved.statement_semantics().is_empty());
+    assert_eq!(first.typed_ast.debug_text(), second.typed_ast.debug_text());
+    assert_eq!(first.resolved.debug_text(), second.resolved.debug_text());
+    let typed_clone = first.typed_ast.clone();
+    assert_eq!(typed_clone, first.typed_ast);
+    assert_eq!(
+        typed_clone.source_predicate_chain_composition(),
+        Some(composition)
+    );
+    assert_eq!(typed_clone.debug_text(), first.typed_ast.debug_text());
+    let resolved_clone = first.resolved.clone();
+    assert_eq!(resolved_clone, first.resolved);
+    assert_eq!(
+        resolved_clone.source_predicate_chain_composition(),
+        Some(composition)
+    );
+    assert_eq!(resolved_clone.debug_text(), first.resolved.debug_text());
+    let typed_debug = first.typed_ast.debug_text();
+    assert!(
+        typed_debug
+            .find("source-primary-term-debug-v1")
+            .is_some_and(|term| {
+                let atomic = typed_debug
+                    .find("source-atomic-formula-debug-v1")
+                    .expect("typed Task256 debug");
+                let composition = typed_debug
+                    .find("source-predicate-chain-composition-debug-v1")
+                    .expect("typed Task257C3 debug");
+                let nodes = typed_debug.find("nodes:").expect("typed nodes");
+                term < atomic && atomic < composition && composition < nodes
+            })
+    );
+    let debug = first.resolved.debug_text();
+    assert!(
+        debug
+            .find("source-primary-term-debug-v1")
+            .is_some_and(|term| {
+                let atomic = debug
+                    .find("source-atomic-formula-debug-v1")
+                    .expect("Task256 debug");
+                let composition = debug
+                    .find("source-predicate-chain-composition-debug-v1")
+                    .expect("Task257C3 debug");
+                let nodes = debug.find("nodes:").expect("resolved nodes");
+                term < atomic && atomic < composition && composition < nodes
+            })
+    );
+}
+
+#[test]
+fn task257c3_mutations_and_stale_arena_fail_then_valid_route_recovers() {
+    let (ast, module, symbols) = task252_real_ast(TASK257C1_CASE);
+    let baseline = source_predicate_chain_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        TASK257C1_SOURCE,
+    )
+    .expect("Task257C3 baseline selector")
+    .expect("Task257C3 baseline output");
+    let baseline_typed = baseline.typed_ast.debug_text();
+    let baseline_resolved = baseline.resolved.debug_text();
+    type Mutation = fn(&mut SourcePredicateChainCompositionRouteInputs);
+    let corruptions: &[Mutation] = &[
+        |input| input.primary = None,
+        |input| input.atomic = None,
+        |input| input.composition.conjunctions.clear(),
+        |input| {
+            input
+                .composition
+                .conjunctions
+                .push(input.composition.conjunctions[0].clone())
+        },
+        |input| {
+            input.composition.conjunctions[0].left_segment =
+                mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(1)
+        },
+        |input| {
+            input.composition.conjunctions[0].boundary =
+                mizar_checker::source_atomic_formula::SourceAtomicEdgeId::new(0)
+        },
+        |input| input.composition.negations.clear(),
+        |input| {
+            input.composition.negations[0].segment =
+                mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(0)
+        },
+        |input| {
+            let root = input.arena.root();
+            let mut nodes = input
+                .arena
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            let range = nodes
+                .iter_mut()
+                .find(|node| node.kind.as_str() == "source.term.numeral")
+                .and_then(|node| match &mut node.anchor {
+                    mizar_session::SourceAnchor::Range(range) => Some(range),
+                    _ => None,
+                })
+                .expect("Task257C3 primary anchor must be present");
+            range.start = 74;
+            range.end = 75;
+            input.arena = mizar_checker::typed_ast::TypedArena::try_new(root, nodes)
+                .expect("stale Task257C3 arena remains structurally valid");
+        },
+    ];
+    for (ordinal, corrupt) in corruptions.iter().copied().enumerate() {
+        assert!(
+            source_predicate_chain_composition_output_with_source_and_mutation(
+                &ast,
+                module.clone(),
+                &symbols,
+                TASK257C1_SOURCE,
+                corrupt,
+            )
+            .expect("Task257C3 corruption preserves selector")
+            .is_err(),
+            "Task257C3 corruption {ordinal} must fail"
+        );
+        let recovered = source_predicate_chain_composition_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            TASK257C1_SOURCE,
+        )
+        .expect("Task257C3 selector recovers")
+        .expect("Task257C3 valid route recovers");
+        assert_eq!(recovered.typed_ast.debug_text(), baseline_typed);
+        assert_eq!(recovered.resolved.debug_text(), baseline_resolved);
+    }
+}
+
+#[test]
+fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
+    let (exact_ast, exact_module, exact_symbols) = task252_real_ast(TASK257C1_CASE);
+    assert_eq!(
+        source_formula_composition_transport_detail_keys(
+            &exact_ast,
+            exact_module.clone(),
+            &exact_symbols,
+            TASK257C1_SOURCE,
+        ),
+        Some(Vec::new())
+    );
+    assert!(
+        source_atomic_formula_output_with_source(
+            &exact_ast,
+            exact_module.clone(),
+            &exact_symbols,
+            TASK257C1_SOURCE,
+        )
+        .is_some(),
+        "the lower Task257C1 route remains independently available"
+    );
+    for (label, loaded) in [
+        (
+            "missing final LF",
+            TASK257C1_SOURCE.trim_end_matches('\n').to_owned(),
+        ),
+        (
+            "named near miss",
+            TASK257C1_SOURCE.replacen(
+                "FormulaPredicateChainPayloadBoundary",
+                "FormulaPredicateChainCompositionNearMiss",
+                1,
+            ),
+        ),
+        (
+            "positive-only chain",
+            TASK257C1_SOURCE.replacen("does not divides", "divides", 1),
+        ),
+        (
+            "formula subtree",
+            TASK257C1_SOURCE.replacen(
+                "1 divides 2 does not divides 3",
+                "(1 divides 2 does not divides 3) & 0 = 0",
+                1,
+            ),
+        ),
+    ] {
+        let (ast, module, _, symbols) = task253_ast_from_source_text(&loaded, 257_300);
+        let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
+        assert!(
+            source_predicate_chain_composition_output_with_source(
+                &ast, module, &symbols, &loaded,
+            )
+            .is_none(),
+            "{label}"
+        );
+    }
+    assert!(
+        source_predicate_chain_composition_output_with_source(
+            &exact_ast,
+            exact_module.clone(),
+            &exact_symbols,
+            TASK257C1_SOURCE.trim_end_matches('\n'),
+        )
+        .is_none()
+    );
+
+    let (b1_ast, b1_module, b1_symbols) = task252_real_ast(TASK257B1_CASE);
+    assert_eq!(
+        source_formula_composition_transport_detail_keys(
+            &b1_ast,
+            b1_module,
+            &b1_symbols,
+            "",
+        ),
+        Some(Vec::new()),
+        "Task257B1 route remains reachable after C3 preflight"
+    );
+    let (b2_ast, b2_module, b2_symbols) = task252_real_ast(TASK257B2_CASE);
+    assert_eq!(
+        source_formula_composition_transport_detail_keys(
+            &b2_ast,
+            b2_module,
+            &b2_symbols,
+            "",
+        ),
+        Some(Vec::new()),
+        "Task257B2 route remains reachable after C3 preflight"
+    );
+    let (c2_ast, c2_module, _shells, c2_symbols, c2_source) = task255c1_real_ast();
+    assert_eq!(
+        source_formula_composition_transport_detail_keys(
+            &c2_ast,
+            c2_module,
+            &c2_symbols,
+            &c2_source,
+        ),
+        Some(vec![
+            "type_elaboration.external_dependency.ast_payload_extraction".to_owned()
+        ]),
+        "Task257C2 route remains reachable after C3 preflight"
+    );
+
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate below workspace")
+        .to_path_buf();
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: workspace_root.join("tests"),
+        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task257C3 isolation plan");
+    let mut selected = Vec::new();
+    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
+        let source = frontend.source_text;
+        let Some(ast) = frontend.ast else {
+            continue;
+        };
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        if !resolver.detail_keys.is_empty() {
+            continue;
+        }
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        if matches!(
+            source_predicate_chain_composition_output_with_source(
+                &ast,
+                resolver.module,
+                &symbols,
+                &source,
+            ),
+            Some(Ok(_))
+        ) {
+            selected.push(case.id.0.clone());
+        }
+    }
+    assert_eq!(selected, [TASK257C1_CASE]);
+}
+
+#[test]
+fn task257c3_trace_and_shared_sidecar_identity_are_exact() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate below workspace")
+        .to_path_buf();
+    let tests_root = workspace_root.join("tests");
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: tests_root.clone(),
+        manifest_path: tests_root.join("coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task257C3 plan");
+    let requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| {
+            requirement.id.0
+                == "spec.en.checker.type_elaboration.source_predicate_chain_composition"
+        })
+        .expect("Task257C3 trace row");
+    assert_eq!(
+        requirement.source,
+        Path::new("doc/design/mizar-checker/en/source_formula_composition.md")
+    );
+    assert_eq!(
+        requirement.section,
+        "Task 257C3 Frozen Predicate-Chain Composition"
+    );
+    assert_eq!(
+        requirement.stage,
+        crate::staged_model::Stage::TypeElaboration
+    );
+    assert_eq!(
+        requirement.status,
+        crate::traceability::RequirementStatus::Covered
+    );
+    assert!(requirement.required);
+    assert_eq!(
+        requirement.coverage,
+        crate::traceability::CoverageShape::Pass
+    );
+    assert_eq!(
+        requirement.tests,
+        [PathBuf::from(
+            "tests/miz/pass/types/pass_type_elaboration_formula_predicate_chain_segment_payload_001.expect.toml"
+        )]
+    );
+
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257C1_CASE)
+        .expect("Task257C1/C3 shared case active");
+    assert_eq!(
+        case.expectation
+            .spec_refs
+            .iter()
+            .map(|id| id.0.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "spec.en.checker.type_elaboration.source_predicate_chain_segment_payload",
+            "spec.en.checker.type_elaboration.source_predicate_chain_composition",
+        ]
+    );
+    assert_eq!(
+        case.expectation.kind,
+        crate::expectation::TestKind::Pass
+    );
+    assert_eq!(
+        case.expectation.expected_outcome,
+        crate::expectation::ExpectedOutcome::Pass
+    );
+    assert_eq!(
+        case.expectation.expected_phase,
+        Some(crate::expectation::PipelinePhase::TypeCheck)
+    );
+    assert_eq!(case.expectation.tags, ["active_type_elaboration"]);
+    assert!(case.expectation.diagnostic_codes.is_empty());
+    assert!(case.expectation.diagnostic_payloads.is_empty());
     let result = run_type_elaboration_case(&workspace_root, &tests_root, case, ordinal);
     assert_eq!(result.status, TypeElaborationCaseStatus::Passed);
     assert!(result.actual_detail_keys.is_empty());

@@ -300,3 +300,13 @@ the complete atomic debug bytes and associates conjunction 0 with segments
 segment 1. This module remains the sole owner of segment polarity tokens,
 heads/candidates, argument edges, and imported provenance. The documentation
 prerequisite changes no source, public API, test, trace row, or hash.
+
+## Task 257C3 Downstream Consumption Result
+
+Task 257C3 consumes the committed handoff without changing its production
+schema or rows. The composition validator calls the existing installation
+validator, authenticates the exact `1/0/2/2/2/0/0/3/2` profile, and checks
+the shared boundary, negative token ranges/spellings/recovery, common
+candidate symbol, and imported contribution. A test-only coherent
+single-predicate profile on the same source/module/arena proves rejection is
+owned by the C3 profile guard rather than an earlier identity mismatch.

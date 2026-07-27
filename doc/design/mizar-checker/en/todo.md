@@ -4491,7 +4491,7 @@ unchecked row below is one future nonempty logical task and one commit.
         preflight.
       - [x] **Task 257C3 prerequisite:** freeze predicate-chain
         conjunction/segment-negation composition separately after Task 257C2.
-      - [ ] **Task 257C3 implementation:** implement only the frozen
+      - [x] **Task 257C3 implementation:** implement only the frozen
         predicate-chain composition after fresh post-documentation preflight.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
@@ -4730,5 +4730,18 @@ implementation commit does not satisfy a producer task.
 - [x] Keep signature/applicability, overload selection, conjunction/negation
   truth, facts/results, theorem acceptance, proof, IR/VC, broader chains,
   and Steps 6/7 deferred.
-- [ ] Implement Task 257C3 only after this documentation commit and fresh
+- [x] Implement Task 257C3 only after this documentation commit and fresh
   parser/resolver/lower-API/count/hash preflight.
+
+## Checker Task 257C3 Implementation Ledger
+
+- [x] Publish only the frozen `1/1` composition after exact Task-252/256
+  authentication; keep every lower row and semantic deferral unchanged.
+- [x] Install, revalidate, debug-project, and clone-preserve the optional
+  handoff with mutation-sensitive coverage of all six A/B/C2/C3 directions.
+- [x] Route the unchanged 107-byte fixture before the lower C1 consumer and
+  keep typed/resolved semantic tables empty.
+- [x] Add exactly three checker and four runner tests, one covered trace row,
+  and only the ordered reciprocal reference/note in the existing sidecar.
+- [x] Measure plan/type `419/387` / `253/241`, libraries `335/365`, and the
+  29-path / 34,290-line runner manifest; preserve all frozen CLI outcomes.

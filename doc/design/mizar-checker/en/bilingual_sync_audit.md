@@ -276,3 +276,13 @@ condition-container predicate, effective wrapper exclusion, three-test
 matrix, `329/357` library counts, checker test-list hashes, unchanged runner
 and coverage artifacts, and semantic deferrals. No Task-256C1 bilingual debt
 remains.
+
+## Task 257C3 Implementation Pair Recheck
+
+The paired implementation-result, formula-composition, lower-family,
+typed/resolved, decomposition, runner, TODO, source/spec, coverage, and
+module-boundary documents record the same exact `1/1` transaction, all six
+ownership directions, three checker/four runner tests, unchanged fixture and
+semantic result, one existing-sidecar/trace increment, `419/387`,
+`253/241`, libraries `335/365`, and 29-path/34,290-line runner manifest.
+No Task-257C3 bilingual drift remains.

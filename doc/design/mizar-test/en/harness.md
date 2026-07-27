@@ -3283,3 +3283,14 @@ existing predicate-chain extractor and no new fixture. Success requires equal
 typed/resolved handoffs and the same empty semantic detail vector. The only
 future metadata changes are one reciprocal sidecar reference/note and one
 covered trace row; this prerequisite changes neither.
+
+## Checker Task 257C3 Harness Result
+
+The complete route now executes before the lower atomic-only return and
+installs the exact syntax-free C3 handoff into fresh typed and resolved
+owners. The extractor still owns only the existing predicate-chain syntax;
+the new composition leaf consumes lower handoffs and copies no syntax or
+resolver row. Primary/atomic/composition/arena mutation, exact replay,
+selector near misses, route isolation, typed/resolved debug order, and clone
+preservation are covered by exactly four runner tests. The fixture and empty
+semantic detail remain byte-for-byte unchanged.

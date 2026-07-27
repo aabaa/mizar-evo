@@ -20,6 +20,14 @@ matrix、existing-sidecar/one-row future trace projection、unchanged
 `419/386`/361-test/34,064-line baseline、semantic deferralを同期した。
 Task-257C3 bilingual driftは残らない。
 
+## Checker Task 257C3 implementation synchronization
+
+paired runner文書は同じcomplete route、exact lower/`1/1` profile、runner
+4-test mutation/isolation/clone matrix、unchanged fixture/semantic result、
+ordered existing-sidecar reference、covered trace row 1件、365-test list、
+29-path/34,290-line manifestと同一hashを記録する。Task-257C3 implementation
+bilingual driftは残らない。
+
 ## Checker Task 257C2 frozen-contract pair
 
 paired plan、harness、TODO、module-boundary auditは同じunchanged 191-byte

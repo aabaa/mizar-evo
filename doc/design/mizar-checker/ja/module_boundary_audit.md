@@ -27,12 +27,12 @@ note として記録する。
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
 | `src/lib.rs` | 43 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Task 257B1 documented syntax-free formula-composition moduleをexportするcrate rootとして維持。 |
-| `src/typed_ast.rs` | 4188 | typed AST data model | `typed_ast.md` | no | no | Task-253/254/255/256 bidirectional install、Task-257A one-shot install、Task-257B1/B2/B3 combined install、Task-257C2 condition-composition ownershipを含むcohesive owner。 |
+| `src/typed_ast.rs` | 4280 | typed AST data model | `typed_ast.md` | no | no | Task-253/254/255/256 bidirectional install、Task-257A one-shot install、Task-257B1/B2/B3 combined install、mutually exclusive Task-257C2/C3 composition ownershipを含むcohesive owner。 |
 | `src/binding_env.rs` | 3143 | binding environment and resolver shell boundary | `binding_env.md` | no | no | source-formula context identityを含むcohesiveなbinding/context data layer。behavior-neutral splitは不要。 |
 | `src/source_context.rs` | 1150 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
-| `src/source_atomic_formula.rs` | 8460 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal。split不要。 |
+| `src/source_atomic_formula.rs` | 8506 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only C3 profile fixture。split不要。 |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2/B3 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
-| `src/source_formula_composition.rs` | 4120 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3 atomic-edge/bound-use associationとseparate Task-257C2 condition-to-atomic transaction、dependency fingerprint、rendering/install/corruption testsを持つcohesive owner。 |
+| `src/source_formula_composition.rs` | 5317 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3 atomic-edge/bound-use associationとseparate Task-257C2 condition-to-atomic / Task-257C3 predicate-chain transaction、dependency fingerprint、rendering/install/corruption testsを持つcohesive owner。 |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | cohesiveなTask-250 flat table、environment/parent/arena/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | cohesiveなTask-251 request/response table、upstream association、catalog/payload validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_term.rs` | 2207 | syntax-free source primary-term producer | `source_term.md` | no | no | cohesiveなTask-252 term/reference/request table、binding/parent validation、deterministic rendering、corruption test。split不要。 |
@@ -44,7 +44,7 @@ note として記録する。
 | `src/registration_resolution.rs` | 5888 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesive な registration data layer と gate logic。behavior-neutral split は不要。 |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | overload collection、template expansion、viability、specificity、selection、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
-| `src/resolved_typed_ast.rs` | 7004 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Task-251/252/253/254/255/256/257A/257B1/B2/B3/C2 clone-preserving handoffを含むcohesive final projection module。 |
+| `src/resolved_typed_ast.rs` | 7050 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Task-251/252/253/254/255/256/257A/257B1/B2/B3/C2/C3 clone-preserving handoffを含むcohesive final projection module。 |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
 | `tests/lint_policy.rs` | 1846 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | 大きい support test だが repository-policy guardrail を意図的に集約している。task 34 の split は不要。 |
 
@@ -104,6 +104,20 @@ root-only/cross-application ownership、candidate provenance、unresolved reques
 exact dependency fingerprint、rendering、corruption testはbehavior-coupledであり、
 private checker splitは不要である。`TypedAst`がone-shot immutable handoffをownし、
 `ResolvedTypedAst`はrevalidate後にclone-preserveする。
+
+## Checker Task 257C3 implementation boundary recheck
+
+checker moduleは追加していない。`source_formula_composition.rs`は5,317 linesで、
+independent syntax-free composition transaction 3件のcohesive ownerを保持。
+`typed_ast.rs`は4,280、`source_atomic_formula.rs`は8,506、
+`resolved_typed_ast.rs`は7,050 lines。atomic changeはtest-only fixture
+support、typed test-only occupancy seamはreciprocal guardを直接exerciseする。
+raw extraction/resolver selectionはprivate `mizar-test`に残るため、dependency
+direction/splitは不要。
+
+checker libraryは335 tests、raw/normalized test-list hashは
+`de92623800741813a88a2521eaaa99a757f4fccb7d7be4a025e4108c8660e1e0` /
+`7bfae9a1d5f8ec503232a6c68f324cdee0cba65e1b422c563aea9f9951affa64`。
 
 ## Task 257C2 implementation boundary recheck
 

@@ -818,3 +818,12 @@ C3-after-A/B/C2は`InvalidSourcePredicateChainComposition`。A/B/C2-after-C3は
 すべてatomic/replayable。optional C3 debug chunkはTask-252 source-term、
 Task-256 source-atomic-formula、mutually exclusive A/B/C2 slotの後、
 node/table section直前。
+
+## Task 257C3 implementation result
+
+optional field/accessor/one-shot installer/dedicated error/debug projectionを
+実装した。installerはexact Task-252/256 dependencyを要求し、publication前に
+duplicate/A/B/C2 occupancyをrejectする。reciprocal test-only occupancy
+mutationはotherwise-valid attempted installで全6 directional guardを直接
+exerciseし、lower dependency mismatchがownership contractを隠さない。
+failureはbase debug byte/valid replayを保持する。

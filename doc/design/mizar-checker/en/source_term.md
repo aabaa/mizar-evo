@@ -209,3 +209,10 @@ through its exact fingerprint and the Task-256 shared boundary edge targeting
 primary 1. It adds no term/reference/request row, parent edge, ownership, or
 Task-252 API. This documentation prerequisite leaves every Task-252 byte and
 test unchanged.
+
+## Task 257C3 Downstream Consumption Result
+
+The implementation reuses the exact immutable `3/0/3` handoff and its debug
+fingerprint. It adds no Task-252 production API or row. A coherent two-term
+test-only handoff on the same source/module/arena validates independently
+and then fails only at the C3 exact-profile boundary.

@@ -1973,3 +1973,15 @@ parser/syntax ownershipだけに限定する。property payload extraction、ove
 semantics、proof acceptance/discharge、inactive semantic Task-39 seedはdeferredかつ不変である。
 planは407/369、parse-onlyは99/99、pass/failは222/185で、declaration/type/proof
 admissionは5/188/1のままである。
+
+## Checker Task 257C3 predicate-chain composition trace
+
+exactly
+`spec.en.checker.type_elaboration.source_predicate_chain_composition`を
+required/covered、`coverage = "pass"`として追加する。sole backlinkはexisting
+`tests/miz/pass/types/pass_type_elaboration_formula_predicate_chain_segment_payload_001.expect.toml`
+で、pre-existing segment-payload referenceの後にorderする。107-byte fixture、
+outcome、phase、active tag、diagnostic、semantic detailは不変。creditは
+syntax-free conjunction/negation associationだけに限定し、signature
+applicability、truth、fact、theorem acceptance、proof、IR/VCはdeferred。
+plan/type coverageは`419/387` / `253/241`。

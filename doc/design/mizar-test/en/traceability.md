@@ -2065,3 +2065,17 @@ ownership. Property payload extraction, overlap/coherence semantics, proof
 acceptance/discharge, and the inactive semantic Task-39 seed remain deferred
 and unchanged. The plan is 407/369, parse-only is 99/99, and pass/fail is
 222/185; declaration/type/proof admissions remain 5/188/1.
+
+## Checker Task 257C3 Predicate-Chain Composition Trace
+
+Exactly
+`spec.en.checker.type_elaboration.source_predicate_chain_composition` is
+added as required/covered with `coverage = "pass"`. Its sole backlink is the
+existing
+`tests/miz/pass/types/pass_type_elaboration_formula_predicate_chain_segment_payload_001.expect.toml`,
+ordered after the pre-existing segment-payload reference. The 107-byte
+fixture, outcome, phase, active tag, diagnostics, and semantic detail remain
+unchanged. Credit is limited to syntax-free conjunction/negation
+association; signature applicability, truth, facts, theorem acceptance,
+proof, and IR/VC remain deferred. Plan/type coverage is `419/387` /
+`253/241`.
