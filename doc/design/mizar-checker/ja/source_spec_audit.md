@@ -24,6 +24,7 @@ public method は、module spec が table、builder、output API として記述
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
+- [source_structure.md](./source_structure.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -129,6 +130,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_attribute`
 - `source_evidence`
 - `source_application`
+- `source_structure`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -415,6 +417,47 @@ direct template transport、candidate collection/applicability/viability/ranking
 winner、functor-definition semantics、later term/formula family、accepted
 fact/declaration/proof、downstream IRを所有しない。これらはTasks 254+、260、
 270、277、278とexplicit ownerに残る。
+
+### `source_structure`
+
+generated public newtype:
+
+- `SourceStructureTermId`、`SourceStructureWrapperId`、
+  `SourceStructureRootId`、`SourceStructureMemberId`、`SourceFieldUpdateId`、
+  `SourceStructureEdgeId`、`SourceStructureRequestId`
+
+literal top-level public item:
+
+- `SourceStructureHandoffInput`、`SourceStructureTermInput`、
+  `SourceStructureWrapperInput`、`SourceStructureRootInput`、
+  `SourceStructureMemberInput`、`SourceFieldUpdateInput`、
+  `SourceStructureEdgeInput`、`SourceStructureRequestInput`、
+  `SourceStructureTermKind`、`SourceStructureRecovery`、
+  `SourceStructureMemberRole`、`SourceStructureEdgeRole`、
+  `SourceStructureTarget`、`SourceStructureRequestKind`、
+  `SourceStructureHandoff`、
+  `SourceStructureTermTable`、`SourceStructureTerm`、
+  `SourceStructureWrapperTable`、`SourceStructureWrapper`、
+  `SourceStructureRootTable`、`SourceStructureRoot`、
+  `SourceStructureMemberTable`、`SourceStructureMember`、
+  `SourceFieldUpdateTable`、`SourceFieldUpdate`、
+  `SourceStructureEdgeTable`、`SourceStructureEdge`、
+  `SourceStructureRequestTable`、`SourceStructureRequest`、
+  `SourceStructureProducer`、`SourceStructureError`
+
+対応:
+
+| 仕様上の約束 | source根拠 | test根拠 | 状態 |
+|---|---|---|---|
+| syntax-free seven-table transactionがsemantic field/member/view decisionなしにconstructor/selector/functional-update source shapeをtransportする。 | `src/source_structure.rs`のinputとimmutable table。 | exact real 5/0/3/9/2/10/26 + Task-252 8/0/8 oracleとsynthetic family test。 | Task 254について実装済み。 |
+| dense preorder、exact arena key 5個、member/FieldUpdate/wrapper ownership、resolver Structure provenance、child containment、request、Task-253 root-only compositionをfail closedする。 | `SourceStructureProducer::build`が`SymbolEnv`、`BindingEnv`、Task 252、optional Task 253、`TypedArena`を検証する。 | provenance/ownership/key substitution/child family/corruption/exclusion全matrix。 | sort/inference/repair/partial publicationなしにtransactional実装。 |
+| Task-252とconditional Task-253 dependency identityはexact producer-derived debug fingerprintを使う。 | `TypedAst`/`ResolvedTypedAst`がfingerprint/cross-family root/arena siteをrevalidateする。 | `None`両branch、target root付き`Some`、mismatch/missing reject、replacement、clone preservation。 | cross-family duplicate ownershipなしに実装。 |
+| public enumはforward-compatible。 | Task-254 public enumすべてに`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard済み。 |
+
+bounded gap: Task 254はstructure-definition acceptance、field/property identity、
+inheritance view、constructor coverage/default/type checking、selector/update
+semantics、fact、later term/formula family、proof、downstream IRをownしない。
+Tasks 255+/263-264とexplicit ownerに残す。
 
 ### `type_checker`
 
@@ -2898,3 +2941,26 @@ requirement 1件とfail case 1件を追加でき、413/377、243/231、224/189�
 type 192をprojectするがfresh measurementを要求する。MC-G017/MC-G018はpartial、
 全structure member/view/coverage/semantic decisionはTask 263、Tasks 255+と
 Steps 6/7はprerequisite creditなしである。
+
+## Step 5 Checker Task 254 implementation audit
+
+syntax-free public producer、exact private consumer、immutable `TypedAst`
+ownership、revalidate後にclone-preserveする`ResolvedTypedAst` handoffはfrozen
+Task-254 transportを実装した。real aggregateは5/0/3/9/2/10/26、Task-252は
+8/0/8、Task-253 rowはない。synthetic/corruption testはTask-253 root-only
+composition、unrelated-handoff preservation、conditional fingerprint、nested
+Task-254 ownership、arena-key class 5個、exact direct written-child partitionと
+`FieldUpdate` spelling、Task-253 argument-primary exclusion、reverse containment、
+両install順、resolver provenance、atomicity、determinism、final ownershipを
+coverする。
+
+implementationはbounded `source_drift`、`test_gap`、implementation時に見つかった
+generated-context `boundary_violation`をcloseした。後者はTask-248 declaration
+shellと`SourceBindingContextProducer`を再利用してrepairした。review時の
+direct-child association `source_drift`、cross-family install-order
+`boundary_violation`、およびderived `design_drift`はexhaustive range ownership、
+exact spelling、bidirectional install validationでclosedした。prerequisite
+`design_drift`もclosedのままで、blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`はない。
+MC-G017/MC-G018はpartialであり、member/view/coverageとstructure semanticsは
+Task 263、later term familyはTasks 255+、Steps 6/7はunpromotedのままである。

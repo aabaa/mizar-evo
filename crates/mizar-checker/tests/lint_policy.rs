@@ -204,6 +204,7 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
         ("src/source_evidence.rs", "source_evidence.md"),
         ("src/source_term.rs", "source_term.md"),
         ("src/source_application.rs", "source_application.md"),
+        ("src/source_structure.rs", "source_structure.md"),
         ("src/type_checker.rs", "type_checker.md"),
         (
             "src/registration_resolution.rs",
@@ -331,6 +332,7 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
         ("src/source_type.rs", "source_type"),
         ("src/source_attribute.rs", "source_attribute"),
         ("src/source_application.rs", "source_application"),
+        ("src/source_structure.rs", "source_structure"),
         ("src/source_term.rs", "source_term"),
         ("src/type_checker.rs", "type_checker"),
         ("src/registration_resolution.rs", "registration_resolution"),
@@ -831,6 +833,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_evidence.rs")
             || path == Path::new("src/source_term.rs")
             || path == Path::new("src/source_application.rs")
+            || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
             || path == Path::new("src/cluster_trace.rs")
@@ -850,6 +853,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_evidence;"
                 | "pub mod source_term;"
                 | "pub mod source_application;"
+                | "pub mod source_structure;"
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"
                 | "pub mod cluster_trace;"

@@ -750,3 +750,14 @@ association and clone-preserves the optional checker-owned
 does not rebuild or retarget dense IDs, collect/select candidates, resolve a
 signature/result type, or create semantic results; the legacy projection is
 unchanged when the handoff is absent.
+
+## Task 254 Final-Handoff Addendum
+
+`ResolvedTypedAst` revalidates the exact Task-252 and conditional Task-253
+fingerprints, root-only cross-family targets, and arena-site association, then
+clone-preserves the optional checker-owned `SourceStructureHandoff` installed
+on `TypedAst`. Its borrowed `source_structure()` getter exposes the immutable
+handoff. Final assembly does not rebuild or retarget dense IDs, resolve
+members or inheritance views, decide constructor coverage, compute selector
+or update results, or create semantic results; the legacy projection is
+unchanged when the handoff is absent.

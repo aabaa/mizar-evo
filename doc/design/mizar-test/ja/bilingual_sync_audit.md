@@ -12,6 +12,14 @@ test 303件、path/content hash `5cc36b8a...` / `b9b6c678...`の
 254+/260/270/277-278とSteps 6/7は両言語でunpromotedのままである。Task 253に
 bilingual driftは残らない。
 
+## Checker Task 254 / Task-10 pair recheck
+
+paired plan/TODO/harness/module-boundary audit/checker consumer documentは、
+同じexact structure-term route、Task-248 source-context reuse、Task-254
+5/0/3/9/2/10/26 + Task-252 8/0/8 oracle、runner test 9件、312-test list、
+25-path/27,317-line production manifest、5 CLI hash、continued Task-263
+semantic boundaryを記録する。このincrementにbilingual driftは残らない。
+
 ## Checker Task 252 / source-term pair recheck
 
 paired plan、TODO、harness、module-boundary、checker consumer documentは同じ

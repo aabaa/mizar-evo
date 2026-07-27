@@ -2755,3 +2755,21 @@ parser/resolver guard fixtureと他の全active caseはbytes/sidecar/stage/statu
 303-test、24-path/25,607-line baselineはexactに不変である。別implementationは
 plan 413/377、type 243/231、pass/fail 224/189、admission 101/5/192/1、
 warnings/errors 23/0をprojectするがfresh measurementを要求する。
+
+## Checker Task 254 runner completion
+
+production dispatchはexact local structure-term fixtureだけをprivate
+`source_structure` leafへTask-253 application routeより先にrouteする。leafは
+declaration shellとTask-248 binding contextをconsumeし、Task-252をcomposeして
+Task-254 5/0/3/9/2/10/26 + Task-252 8/0/8をpublishし、frozen external-gap
+detailを維持する。generated definition contextやsemantic structure/member/view
+resultは作らない。
+
+focused test 9件はreal oracle、corruption atomicity、他active type case 191件からの
+isolation、frozen syntax/recovery/subtree matrix、synthetic boundary、imported
+producer provenance、Task-253 root/child fingerprint、unrelated-handoff
+preservationをcoverする。measured corpusは413/377、243/231、224/189、
+admission 101/5/192/1、warnings/errors 23/0である。312-test raw/normalized
+list hashは`b7f56668...` / `09acdf12...`、25-path/27,317-line production
+path/content hashは`e81c3b08...` / `3046ae27...`である。exact値と5 CLI
+hashはpaired crate plan/module-boundary auditに記録する。

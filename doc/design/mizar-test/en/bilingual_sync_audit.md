@@ -12,6 +12,15 @@ production manifest with path/content hashes `5cc36b8a...` / `b9b6c678...`.
 Tasks 254+/260/270/277-278 and Steps 6/7 remain unpromoted in both languages.
 No bilingual drift remains in Task 253.
 
+## Checker Task 254 / Task-10 Pair Recheck
+
+The paired plan, TODO, harness, module-boundary audit, and checker consumer
+documents record the same exact structure-term route, Task-248 source-context
+reuse, Task-254 5/0/3/9/2/10/26 plus Task-252 8/0/8 oracle, nine runner tests,
+312-test list, 25-path/27,317-line production manifest, five CLI hashes, and
+continued Task-263 semantic boundary. No bilingual drift remains in this
+increment.
+
 ## Checker Task 252 / Source-Term Pair Recheck
 
 The paired plan, TODO, harness, module-boundary, and checker consumer documents

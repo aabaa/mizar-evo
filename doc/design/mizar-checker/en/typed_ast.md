@@ -631,8 +631,27 @@ formula, accepted fact, proof status, or downstream IR to the typed arena.
 `TypedAst` now owns an optional immutable `SourceFunctorApplicationHandoff`.
 `with_source_application` is one-shot, requires the Task-252 handoff already
 installed, compares its exact deterministic debug fingerprint, and
-revalidates every referenced primary root before installation. An equivalent
-Task-252 clone is accepted; replacement and non-equivalent same-source/module
-substitution fail atomically. This adds no signature, result type, candidate
-selection, definition behavior, semantic term/formula, fact, proof, or
-downstream IR.
+revalidates every referenced primary root before installation. When a
+Task-254 handoff is already present it also revalidates that handoff against
+the new Task-253 ownership graph before committing the field, so install order
+cannot introduce a shared primary, reverse containment, partial overlap, or
+an unowned contained application. An equivalent Task-252 clone is accepted;
+replacement and non-equivalent same-source/module substitution fail
+atomically. This adds no signature, result type, candidate selection,
+definition behavior, semantic term/formula, fact, proof, or downstream IR.
+
+## Task 254 Ownership Addendum
+
+`TypedAst` now owns an optional immutable `SourceStructureHandoff`.
+`with_source_structure` is one-shot, requires Task 252 and any targeted
+Task-253 dependency already installed, compares the exact deterministic
+fingerprints, and revalidates every Task-252/253/254 target plus all
+term/member/FieldUpdate/wrapper arena sites and cross-family ownership before
+installation, preserving the producer-validated direct written partitions.
+An unrelated installed Task-253 handoff may coexist when
+the Task-254 application fingerprint is absent only if its targets and ranges
+are disjoint from Task 254. Replacement, wrong-key input, non-root or reverse
+Task-253 ownership, shared Task-253 argument primaries, and non-equivalent
+dependency substitution fail atomically. This adds no structure signature,
+member/view identity, result type, semantic constructor/selector/update,
+fact, proof, or downstream IR.

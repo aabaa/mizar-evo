@@ -2907,3 +2907,33 @@ measured origin divergence is a report-only `repo_metadata_conflict` and does
 not obscure the safe commit target. MC-G017/MC-G018 remain partial; Tasks
 255+/263-264, Steps 6/7, and global Step-5 completion receive no prerequisite
 credit.
+
+## Step 5 Checker Task 254 Implementation Addendum
+
+Task 254 now implements the bounded MC-G017/MC-G018 source-structure
+transport. The covered diagnostic row
+`spec.en.checker.type_elaboration.source_structure_term_payload` maps exactly
+the new local structure-term sidecar. Chapter-5 and Chapter-13 payload-gap
+sections now include the frozen construction/selector/update slices, and all
+four pre-existing sidecar references have reciprocal backlinks while their
+status and requirement counts remain unchanged.
+
+The public checker handoff transports seven dense tables and authenticates
+constructor-root provenance, written member paths, `FieldUpdate`
+associations and exact spellings, the five exact arena-key classes,
+exhaustive direct written-child partitions, ordered Task-252/253/254 edges,
+bidirectional Task-253/254 installation ownership, and conditional
+fingerprints. The private runner reuses Task-248
+source contexts and measures Task-254 5/0/3/9/2/10/26 with Task-252 8/0/8
+and no real Task-253 row. The exact `source_drift`, `test_gap`, and
+implementation-time generated-context and cross-family installation-order
+`boundary_violation` are closed. These validation repairs do not change
+trace ownership, status, or counts beyond the already recorded Task-254
+increment.
+
+This executable increment reaches plan 413/377, type 243/231, pass/fail
+224/189, active parse/declaration/type/proof 101/5/192/1, and
+warnings/errors 23/0. MC-G017/MC-G018 remain partial because Task 263 retains
+member/view/coverage and structure semantics, Tasks 255+ retain later source
+families, accepted facts/proofs and downstream IR remain uncredited, and
+Steps 6/7 are not promoted.

@@ -1681,10 +1681,8 @@ promoted by this increment.
   row/status/count, runner route, test list, production source, or executable
   credit changes; preserve the 412/376, 242/230, 224/188,
   101/5/191/1, 303-test, and 24-path/25,607-line baselines.
-- [ ] Implement Checker Task 254 as a separate logical task, add exactly the
-  frozen fixture/sidecar and bounded requirement, widen the existing
-  Chapter-5/13 payload-gap rows to the frozen term sections with
-  transport-only notes, add reciprocal sidecar backlinks to all four named
-  pre-existing rows with unchanged status/count, prove the complete
-  real/synthetic/exclusion/corruption/final-ownership matrix, and reach fresh
-  413/377, 243/231, 224/189, and 101/5/192/1 oracles.
+- [x] Implement Checker Task 254 as a separate logical task. The exact
+  fixture/sidecar, bounded requirement, Chapter-5/13 transport-only widening,
+  four reciprocal backlinks, Task-248 context reuse, complete
+  real/synthetic/exclusion/corruption/final-ownership matrix, and measured
+  413/377, 243/231, 224/189, and 101/5/192/1 oracles are complete.

@@ -1,0 +1,19 @@
+reserve seed for set;
+
+definition
+  let seed be set;
+  struct Task254Pair where
+    field carrier -> set;
+    field marker -> set;
+  end;
+  func Task254ConstructorDef:
+    task254_constructor(seed) -> set
+    equals Task254Pair(carrier: 1, marker: 2);
+  func Task254SelectorDef:
+    task254_selector(seed) -> set
+    equals Task254Pair(carrier: 3, marker: 4).carrier;
+  func Task254UpdateDef:
+    task254_update(seed) -> set
+    equals Task254Pair(carrier: 5, marker: 6)
+      with (carrier := 7, marker := 8);
+end;

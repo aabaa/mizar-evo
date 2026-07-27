@@ -81,6 +81,11 @@ output の `primary_term_fingerprint` は build 時の Task-252 exact
 Task-252 handoff の先行 install を要求し、fingerprint と全 Primary target
 を再検証する。replacement と non-equivalent な同一 source/module
 substitution は atomic に失敗し、equivalent clone は許可する。
+Task 254が既にinstall済みなら、同じtransactionでTask 253 publish前にその
+structure handoffもrevalidateする。これによりTask-253 argumentによるTask-254
+primary targetのownership、Task-254 termとのreverse containment/partial overlap、
+closest Task-254 termがownしないcontained applicationをinstall順に依存せず
+rejectする。
 
 `ResolvedTypedAst` は同じ association を再検証して clone-preserve
 するだけで、dense ID を再構築・retarget しない。

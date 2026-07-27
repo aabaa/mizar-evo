@@ -9976,3 +9976,30 @@ plan/parse/declaration/type/proofの5 CLI hashは
 変更するのはplan/parse corpus bytesだけである。declaration/type/proof ownership、
 production layout、inactive semantic Task-39 seed、Steps 6/7はstableで、新しいcreditは
 parser/syntax-onlyである。
+
+## Checker Task 254 current-layout addendum
+
+Task 254はprivate production leaf
+`src/runner/type_elaboration/source_structure.rs`（1,689 line）とtest-only leaf
+（1,716 line）を1件ずつ追加する。`runner.rs`は2,424-line public facade/top-level
+dispatcher、`type_elaboration.rs`は623-line private facadeのままである。raw
+structure syntax、declaration-shell intake、Task-248 context projection、
+Task-252 composition、checker input assembly、frozen outcome projectionはnew
+private leaf内でbehavior-coupledである。
+
+production manifestは25 path / 27,317 line、sorted path hashは
+`e81c3b08ff6f6e7159bac50543fda701a2f41724ecc825d2556f964bc6286d44`、
+ordered content-manifest hashは
+`3046ae270e7d2c72a1ed4f96fcbc6cbcc87aa494ae883a6e31e192ccf16d7b12`。
+active parse/declaration/type/proofは101/5/192/1、planは413/377、type coverageは
+243/231、pass/failは224/189、warnings/errorsは23/0である。raw/normalized
+312-test-list hashは
+`b7f56668669bbc4b5f5b1ab30440032dc67ec202ef5d087d08ce6fa51b9949dd` /
+`09acdf12c4cd034ea3c2a049d1f03c631d35b176db8e488f530d1cf16a4c9bf1`。
+plan/parse/declaration/type/proof CLI hashは
+`c42674aa6b6ad222a2b3f4b5c4154f553e06bd66738589436caf112d06659bb7`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`0a7225c92a91e96264bec5172948ea82fc7d6be771fc05d0c3f83c615713648c`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
+である。Task 263 semanticsとSteps 6/7はこのlayout increment外に残る。

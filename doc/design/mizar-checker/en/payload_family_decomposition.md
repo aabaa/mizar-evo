@@ -437,3 +437,18 @@ independent prerequisite closes the selected Task-254 `design_drift` only.
 Production source, fixtures, sidecars, trace rows/status/counts, executable
 credit, the measured 412/376 and 242/230 baseline, Tasks 255+/263-264, and
 Steps 6/7 remain unchanged.
+
+## Task 254 Current-State Addendum
+
+Task 254 now implements the graph's structure-family source-transport node
+without advancing semantic member or structure-definition ownership. The
+public checker handoff authenticates seven dense tables, five arena-key
+classes, resolver constructor roots, written member paths, `FieldUpdate`
+associations and exact spellings, exhaustive direct written-child partitions,
+Task-252/253/254 ownership in either install order, and conditional
+fingerprints before atomic publication. The private Task-10 consumer reuses Task-248 contexts and
+activates only the frozen three definientia, producing 5/0/3/9/2/10/26 with
+Task-252 8/0/8. The bounded `source_drift`, `test_gap`, and implementation-time
+context and cross-family installation-order `boundary_violation` are closed.
+Tasks 255+ and 263-264 retain later
+families and all structure semantics; Steps 6/7 are not promoted.

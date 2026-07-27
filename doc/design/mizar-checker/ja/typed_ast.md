@@ -617,7 +617,24 @@ status、downstream IRをtyped arenaへ追加しない。
 `TypedAst`はoptional immutable `SourceFunctorApplicationHandoff`をownする。
 `with_source_application`はone-shotで、Task-252 handoffが先にinstall済みである
 ことを要求し、そのexact deterministic debug fingerprintを比較して全referenced
-primary rootをinstallation前にrevalidateする。equivalent Task-252 cloneはacceptし、
+primary rootをinstallation前にrevalidateする。Task-254 handoffが既にpresentなら
+fieldをcommitする前にnew Task-253 ownership graphに対してそのhandoffも
+revalidateし、install順によるshared primary、reverse containment、partial overlap、
+unowned contained applicationを許さない。equivalent Task-252 cloneはacceptし、
 replacementとnon-equivalent same-source/module substitutionはatomicにfailする。
 signature、result type、candidate selection、definition behavior、semantic
 term/formula、fact、proof、downstream IRは追加しない。
+
+## Task 254 ownership addendum
+
+`TypedAst`はoptional immutable `SourceStructureHandoff`をownする。
+`with_source_structure`はone-shotで、Task 252とtargetされるTask-253 dependencyの
+先行installを要求し、exact deterministic fingerprint、全Task-252/253/254
+target、term/member/FieldUpdate/wrapper arena siteをinstallation前にrevalidate
+し、producer-validated direct written partitionを保持する。Task-254 application fingerprint
+absent時のunrelated install済みTask-253 handoffはtarget/rangeがTask 254と
+disjointな場合だけ共存できる。replacement、wrong-key input、non-root/reverse
+Task-253 ownership、shared Task-253 argument primary、non-equivalent dependency
+substitutionはatomicにfailする。structure signature、member/view identity、
+result type、semantic constructor/selector/update、fact、proof、downstream IRは
+追加しない。

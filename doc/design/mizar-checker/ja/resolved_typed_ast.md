@@ -715,3 +715,13 @@ revalidateし、`TypedAst`にinstallされたoptional checker-owned
 dense IDのrebuild/retarget、candidate collect/select、signature/result type
 resolve、semantic result作成を行わず、handoff absent時のlegacy projectionは不変で
 ある。
+
+## Task 254 final-handoff addendum
+
+`ResolvedTypedAst`はexact Task-252/conditional Task-253 fingerprint、
+root-only cross-family target、arena-site associationをrevalidateし、`TypedAst`に
+installされたoptional checker-owned `SourceStructureHandoff`をclone-preserve
+する。borrowed `source_structure()` getterがimmutable handoffをexposeする。
+final assemblyはdense IDをrebuild/retargetせず、member/inheritance viewをresolve
+せず、constructor coverageを決めず、selector/update resultやsemantic resultを
+作らない。handoff absent時のlegacy projectionは不変である。

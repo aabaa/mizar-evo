@@ -1494,10 +1494,8 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   row/status/count、runner route、test list、production source、executable
   creditを変更せず、412/376、242/230、224/188、101/5/191/1、303-test、
   24-path/25,607-line baselineを維持する。
-- [ ] Checker Task 254を別logical taskで実装し、exact frozen fixture/sidecarと
-  bounded requirementだけを追加し、existing Chapter-5/13 payload-gap rowを
-  frozen term sectionとtransport-only notesへstatus/count不変でwidenし、named
-  pre-existing 4 rowすべてへreciprocal sidecar backlinkを追加して、full
-  real/synthetic/exclusion/corruption/
-  final-ownership matrixを証明してfresh 413/377、243/231、224/189、
-  101/5/192/1 oracleへ到達する。
+- [x] Checker Task 254を別logical taskで実装した。exact fixture/sidecar、
+  bounded requirement、Chapter-5/13 transport-only widening、reciprocal
+  backlink 4件、Task-248 context reuse、complete real/synthetic/exclusion/
+  corruption/final-ownership matrix、measured 413/377、243/231、224/189、
+  101/5/192/1 oracleはcompleteである。

@@ -155,8 +155,9 @@ use type_elaboration::{
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
     SourceReservedVariableBuiltinType, SourceReservedVariableTypeAssertion,
-    SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
-    SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead, assemble_source_checker_handoff,
+    SourceStructureRouteOutput, SyntheticSourceApplicationOutput,
+    SyntheticSourceFunctorApplication, SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
+    SyntheticSourceStructureDependencies, assemble_source_checker_handoff,
     assemble_source_contradiction_checker_handoff, assert_source_contradiction_handoff,
     assert_source_parenthesized_heterogeneous_reserve_membership_output,
     assert_source_parenthesized_reserved_object_variable_equality_output,
@@ -399,7 +400,8 @@ use type_elaboration::{
     source_reserved_variable_type_assertion_result_detail_keys,
     source_right_parenthesized_reserved_variable_membership_output,
     source_right_parenthesized_reserved_variable_membership_output_detail_keys,
-    source_set_enumeration_formula_output, source_term_output, source_term_output_with_mutation,
+    source_set_enumeration_formula_output, source_structure_output,
+    source_structure_output_with_mutation, source_term_output, source_term_output_with_mutation,
     source_three_edge_local_mode_asserted_head_output,
     source_three_edge_local_mode_radix_asserted_head_output,
     source_three_edge_local_mode_reserved_variable_equality_output,
@@ -432,6 +434,7 @@ use type_elaboration::{
     source_two_edge_local_object_mode_two_hop_asserted_head_output, source_type_application_output,
     structural_child_ids, surface_nodes_with_kind, surface_site, synthetic_functional_actual_count,
     synthetic_source_application_output, synthetic_source_attribute_output,
+    synthetic_source_structure_output, synthetic_source_structure_output_with_mutation,
     synthetic_source_term_output,
 };
 use type_elaboration::{
@@ -534,7 +537,8 @@ use type_elaboration::{
     source_reserved_variable_membership_detail_keys,
     source_reserved_variable_type_assertion_detail_keys,
     source_right_parenthesized_reserved_variable_membership_detail_keys,
-    source_set_enumeration_formula_detail_keys, source_term_transport_error_detail_keys,
+    source_set_enumeration_formula_detail_keys, source_structure_transport_detail_keys,
+    source_term_transport_error_detail_keys,
     source_three_edge_local_mode_asserted_head_detail_keys,
     source_three_edge_local_mode_radix_asserted_head_detail_keys,
     source_three_edge_local_mode_reserved_variable_equality_detail_keys,
@@ -1487,6 +1491,14 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    if let Some(keys) = source_structure_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) = source_application_transport_detail_keys(
         &ast,
         resolver.module.clone(),

@@ -399,3 +399,18 @@ semantics、exact-instance evidenceはTask 263に残す。この独立prerequisi
 するのはselected Task-254 `design_drift`だけである。production source、fixture、
 sidecar、trace row/status/count、executable credit、measured 412/376・242/230
 baseline、Tasks 255+/263-264、Steps 6/7は不変である。
+
+## Task 254 current-state addendum
+
+Task 254はsemantic member/structure-definition ownershipを進めずgraphの
+structure-family source-transport nodeを実装する。public checker handoffはseven
+dense table、arena-key class 5個、resolver constructor root、written member path、
+`FieldUpdate` association/exact spelling、exhaustive direct written-child
+partition、両install順のTask-252/253/254 ownership、conditional fingerprintを
+atomic publication前にauthenticateする。private Task-10 consumerはTask-248
+contextを再利用し、frozen definiens 3件だけをactivateしてTask-254
+5/0/3/9/2/10/26とTask-252 8/0/8をproduceする。bounded `source_drift`、
+`test_gap`、implementation時のcontext/cross-family install-order
+`boundary_violation`はclosedである。
+Tasks 255+/263-264がlater familyと全structure semanticsをretainし、Steps 6/7を
+promoteしない。

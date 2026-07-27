@@ -3,7 +3,8 @@
 use crate::{
     source_application::SourceFunctorApplicationHandoff, source_attribute::SourceAttributeHandoff,
     source_context::SourceBindingContextHandoff, source_evidence::SourceEvidenceHandoff,
-    source_term::SourcePrimaryTermHandoff, source_type::SourceTypeApplicationHandoff,
+    source_structure::SourceStructureHandoff, source_term::SourcePrimaryTermHandoff,
+    source_type::SourceTypeApplicationHandoff,
 };
 use mizar_resolve::resolved_ast::{ModuleId, ResolvedNodeId, SymbolId};
 use mizar_session::{GeneratedSpanAnchor, SourceAnchor, SourceId, SourceRange};
@@ -90,6 +91,7 @@ pub struct TypedAst {
     source_evidence: Option<SourceEvidenceHandoff>,
     source_term: Option<SourcePrimaryTermHandoff>,
     source_application: Option<SourceFunctorApplicationHandoff>,
+    source_structure: Option<SourceStructureHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -112,6 +114,7 @@ impl TypedAst {
             source_evidence: None,
             source_term: None,
             source_application: None,
+            source_structure: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -156,6 +159,10 @@ impl TypedAst {
 
     pub const fn source_application(&self) -> Option<&SourceFunctorApplicationHandoff> {
         self.source_application.as_ref()
+    }
+
+    pub const fn source_structure(&self) -> Option<&SourceStructureHandoff> {
+        self.source_structure.as_ref()
     }
 
     pub fn with_source_evidence(
@@ -210,7 +217,42 @@ impl TypedAst {
         handoff
             .validate_installation(self.source_id, &self.module_id, source_term)
             .map_err(|_| TypedAstError::InvalidSourceApplication)?;
+        if let Some(source_structure) = &self.source_structure {
+            source_structure
+                .validate_installation(
+                    self.source_id,
+                    &self.module_id,
+                    source_term,
+                    Some(&handoff),
+                    &self.nodes,
+                )
+                .map_err(|_| TypedAstError::InvalidSourceApplication)?;
+        }
         self.source_application = Some(handoff);
+        Ok(self)
+    }
+
+    pub fn with_source_structure(
+        mut self,
+        handoff: SourceStructureHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_structure.is_some() {
+            return Err(TypedAstError::InvalidSourceStructure);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStructure)?;
+        handoff
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                self.source_application.as_ref(),
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStructure)?;
+        self.source_structure = Some(handoff);
         Ok(self)
     }
 
@@ -270,6 +312,9 @@ impl TypedAst {
         }
         if let Some(source_application) = &self.source_application {
             output.push_str(&source_application.debug_text());
+        }
+        if let Some(source_structure) = &self.source_structure {
+            output.push_str(&source_structure.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1151,6 +1196,7 @@ pub enum TypedAstError {
     InvalidSourceEvidence,
     InvalidSourceTerm,
     InvalidSourceApplication,
+    InvalidSourceStructure,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1275,6 +1321,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceApplication => {
                 formatter.write_str("typed AST source functor-application handoff is inconsistent")
+            }
+            Self::InvalidSourceStructure => {
+                formatter.write_str("typed AST source structure-term handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,

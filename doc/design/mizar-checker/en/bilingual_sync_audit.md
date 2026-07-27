@@ -44,6 +44,7 @@ after this task.
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, determinism, coverage, public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary, five-table application/wrapper/candidate/argument/request transport, Task-252 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
+| `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary, seven-table structure/member/FieldUpdate/edge/request transport, Task-252/253 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary, three-table primary-term transport, binding lookup and parent/request validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary, flat application/expression/argument model, environment/arena/graph/provenance validation, ownership, consumers, exclusions, public enum policy | none |
@@ -109,3 +110,15 @@ mizar-test consumer documents record the same three-table syntax-free
 transport, corrected binding-event ordinal rule, exact three-route 7/4/2
 oracle, synthetic dependency-boundary probes, unchanged semantic outcomes,
 and deferred semantic owners. No bilingual sync debt remains in Task 252.
+
+## Task 254 Source-Structure Pair Recheck
+
+The paired plan, TODO, source-structure module specification, source/spec
+audit, payload decomposition, typed/final ownership documents,
+module-boundary audit, and mizar-test consumer documents record the same
+seven-table syntax-free transport, Task-248 context reuse, exact
+5/0/3/9/2/10/26 plus 8/0/8 consumer, five arena-key classes,
+exact direct written-child and `FieldUpdate` spelling validation,
+Task-252/253/254 ownership in both installation orders and the fingerprint
+matrix, bounded trace credit, measured counts/hashes, and Task-263 semantic
+deferral. No bilingual sync debt remains in Task 254.

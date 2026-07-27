@@ -43,6 +43,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary、projection model、validation/recovery/atomicity、determinism、coverage、public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary、flat chain/attribute/qualifier/group/actual model、environment/parent/arena/provenance validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary、five-table application/wrapper/candidate/argument/request transport、Task-252 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
+| `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary、three-table primary-term transport、binding lookup/parent/request validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary、flat application/expression/argument model、environment/arena/graph/provenance validation、ownership、consumer、exclusion、public enum policy | none |
@@ -106,3 +107,14 @@ decomposition/typed-final ownership/module audit/mizar-test consumer docsは、
 exact three-route 7/4/2 oracle、synthetic dependency-boundary probe、unchanged
 semantic outcome、deferred semantic ownerを記録する。Task 252にbilingual sync
 debtは残らない。
+
+## Task 254 source-structure pair recheck
+
+paired plan/TODO/source-structure module specification/source-spec audit/
+payload decomposition/typed-final ownership/module-boundary audit/mizar-test
+consumer docsは、同じseven-table syntax-free transport、Task-248 context reuse、
+exact 5/0/3/9/2/10/26 + 8/0/8 consumer、arena-key class 5個、
+exact direct written-child/`FieldUpdate` spelling validation、
+両install順のTask-252/253/254 ownershipとfingerprint matrix、bounded trace
+credit、measured count/hash、Task-263 semantic deferralを記録する。Task 254に
+bilingual sync debtは残らない。

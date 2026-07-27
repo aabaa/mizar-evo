@@ -2896,3 +2896,22 @@ changes no route, test list, layout, or hash; current 303-test and
 24-path/25,607-line baselines remain exact. The separate implementation
 projects plan 413/377, type 243/231, pass/fail 224/189, admissions
 101/5/192/1, and warnings/errors 23/0, subject to fresh measurement.
+
+## Checker Task 254 Runner Completion
+
+The production dispatch now routes only the exact local structure-term
+fixture through the private `source_structure` leaf before the Task-253
+application route. The leaf consumes declaration shells and Task-248 binding
+contexts, composes Task-252, publishes Task-254 5/0/3/9/2/10/26 plus
+Task-252 8/0/8, and preserves the frozen external-gap detail. It creates no
+generated definition context and no semantic structure/member/view result.
+
+Nine focused tests cover the real oracle, corruption atomicity, isolation
+from all 191 other active type cases, the frozen syntax/recovery/subtree matrix,
+synthetic boundaries, imported producer provenance, Task-253 root/child
+fingerprints, and unrelated-handoff preservation. The measured corpus is
+413/377, 243/231, 224/189, admissions 101/5/192/1, and warnings/errors 23/0.
+The 312-test raw/normalized list hashes are `b7f56668...` / `09acdf12...`;
+the 25-path/27,317-line production path/content hashes are `e81c3b08...` /
+`3046ae27...`. Exact values and all five CLI hashes are recorded in the
+paired crate plan and module-boundary audit.

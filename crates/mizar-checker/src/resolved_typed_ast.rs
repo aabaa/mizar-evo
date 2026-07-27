@@ -20,6 +20,7 @@ use crate::{
     source_attribute::SourceAttributeHandoff,
     source_context::SourceBindingContextHandoff,
     source_evidence::SourceEvidenceHandoff,
+    source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff,
     source_type::SourceTypeApplicationHandoff,
     type_checker::{
@@ -110,6 +111,7 @@ pub struct ResolvedTypedAst {
     source_evidence: Option<SourceEvidenceHandoff>,
     source_term: Option<SourcePrimaryTermHandoff>,
     source_application: Option<SourceFunctorApplicationHandoff>,
+    source_structure: Option<SourceStructureHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -164,6 +166,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_application(&self) -> Option<&SourceFunctorApplicationHandoff> {
         self.source_application.as_ref()
+    }
+
+    pub const fn source_structure(&self) -> Option<&SourceStructureHandoff> {
+        self.source_structure.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -259,6 +265,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_application) = &self.source_application {
             output.push_str(&source_application.debug_text());
+        }
+        if let Some(source_structure) = &self.source_structure {
+            output.push_str(&source_structure.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1206,6 +1215,7 @@ pub enum CandidateSummaryNamespace {
 #[non_exhaustive]
 pub enum ResolvedTypedAstError {
     InvalidSourceApplication,
+    InvalidSourceStructure,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1287,6 +1297,8 @@ impl fmt::Display for ResolvedTypedAstError {
         match self {
             Self::InvalidSourceApplication => formatter
                 .write_str("resolved typed AST source functor-application handoff is inconsistent"),
+            Self::InvalidSourceStructure => formatter
+                .write_str("resolved typed AST source structure-term handoff is inconsistent"),
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
             ),
@@ -1495,6 +1507,23 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 .validate_installation(source_id, &module_id, source_term)
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceApplication)?;
         }
+        let source_structure = self.inputs.typed_ast.source_structure().cloned();
+        if let Some(source_structure) = &source_structure {
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourceStructure)?;
+            source_structure
+                .validate_installation(
+                    source_id,
+                    &module_id,
+                    source_term,
+                    source_application.as_ref(),
+                    self.inputs.typed_ast.nodes(),
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceStructure)?;
+        }
 
         Ok(ResolvedTypedAst {
             source_id,
@@ -1505,6 +1534,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_evidence: self.inputs.typed_ast.source_evidence().cloned(),
             source_term: self.inputs.typed_ast.source_term().cloned(),
             source_application,
+            source_structure,
             nodes,
             expr_metadata,
             collection_candidates,

@@ -26,6 +26,7 @@ Module specifications audited:
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
+- [source_structure.md](./source_structure.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -151,6 +152,7 @@ rejection.
 - `source_attribute`
 - `source_evidence`
 - `source_application`
+- `source_structure`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -441,6 +443,48 @@ substitution/result, direct template transport, candidate collection/
 applicability/viability/ranking/winner, functor-definition semantics, later
 term/formula families, accepted facts/declarations/proofs, or downstream IR.
 Those remain with Tasks 254+, 260, 270, 277, 278, and their explicit owners.
+
+### `source_structure`
+
+Generated public newtypes:
+
+- `SourceStructureTermId`, `SourceStructureWrapperId`,
+  `SourceStructureRootId`, `SourceStructureMemberId`, `SourceFieldUpdateId`,
+  `SourceStructureEdgeId`, `SourceStructureRequestId`
+
+Literal top-level public items:
+
+- `SourceStructureHandoffInput`, `SourceStructureTermInput`,
+  `SourceStructureWrapperInput`, `SourceStructureRootInput`,
+  `SourceStructureMemberInput`, `SourceFieldUpdateInput`,
+  `SourceStructureEdgeInput`, `SourceStructureRequestInput`,
+  `SourceStructureTermKind`, `SourceStructureRecovery`,
+  `SourceStructureMemberRole`, `SourceStructureEdgeRole`,
+  `SourceStructureTarget`, `SourceStructureRequestKind`,
+  `SourceStructureHandoff`,
+  `SourceStructureTermTable`, `SourceStructureTerm`,
+  `SourceStructureWrapperTable`, `SourceStructureWrapper`,
+  `SourceStructureRootTable`, `SourceStructureRoot`,
+  `SourceStructureMemberTable`, `SourceStructureMember`,
+  `SourceFieldUpdateTable`, `SourceFieldUpdate`,
+  `SourceStructureEdgeTable`, `SourceStructureEdge`,
+  `SourceStructureRequestTable`, `SourceStructureRequest`,
+  `SourceStructureProducer`, `SourceStructureError`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| A syntax-free seven-table transaction transports constructor, selector, and functional-update source shape without semantic field/member/view decisions. | `SourceStructureHandoffInput` and immutable tables in `src/source_structure.rs`. | Exact real 5/0/3/9/2/10/26 plus Task-252 8/0/8 oracle and synthetic family tests. | Implemented for Task 254. |
+| Dense preorder, five exact arena keys, member/FieldUpdate/wrapper ownership, resolver Structure provenance, child containment, requests, and Task-253 root-only composition fail closed. | `SourceStructureProducer::build` validates against `SymbolEnv`, `BindingEnv`, Task 252, optional Task 253, and `TypedArena`. | Full provenance, ownership, key-substitution, child-family, corruption, and exclusion matrix. | Implemented transactionally without sorting, inference, repair, or partial publication. |
+| Task-252 and conditional Task-253 dependency identities use exact producer-derived debug fingerprints. | `TypedAst` and `ResolvedTypedAst` revalidate fingerprints, cross-family roots, and arena sites. | Both `None` branches, targeted-root `Some`, mismatch/missing rejection, replacement, and clone preservation. | Implemented without duplicate cross-family ownership. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-254 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: Task 254 does not own structure-definition acceptance,
+field/property identity, inheritance views, constructor coverage/default/type
+checking, selector or update semantics, facts, later term/formula families,
+proofs, or downstream IR. Those remain with Tasks 255+, 263-264, and their
+explicit owners.
 
 ### `type_checker`
 
@@ -3027,3 +3071,29 @@ fail case, projecting 413/377, 243/231, 224/189, and active type 192, subject
 to fresh measurement. MC-G017/MC-G018 remain partial; Task 263 retains all
 structure member/view/coverage and semantic decisions, while Tasks 255+ and
 Steps 6/7 receive no prerequisite credit.
+
+## Step 5 Checker Task 254 Implementation Audit
+
+The syntax-free public producer, exact private consumer, immutable
+`TypedAst` ownership, and revalidated clone-preserving `ResolvedTypedAst`
+handoff now implement the frozen Task-254 transport. The real aggregate is
+5/0/3/9/2/10/26 with Task-252 8/0/8 and no Task-253 row. Synthetic and
+corruption tests cover Task-253 root-only composition, unrelated-handoff
+preservation, conditional fingerprints, nested Task-254 ownership, all five
+arena-key classes, exact direct written-child partitions and `FieldUpdate`
+spelling, Task-253 argument-primary exclusion, reverse containment and both
+installation orders, resolver provenance, atomicity, determinism, and final
+ownership.
+
+The implementation closes the bounded `source_drift`, `test_gap`, and the
+implementation-time generated-context `boundary_violation`; the latter was
+repaired by reusing Task-248 declaration shells and
+`SourceBindingContextProducer`. Review-time direct-child association
+`source_drift`, cross-family installation-order `boundary_violation`, and
+their derived `design_drift` were closed by exhaustive range ownership,
+exact spelling, and bidirectional installation validation. The prerequisite
+`design_drift` remains closed. No blocking `spec_gap`,
+`source_undocumented_behavior`, or
+`test_expectation_drift` was found. MC-G017/MC-G018 remain partial because
+Task 263 retains member/view/coverage and structure semantics, Tasks 255+
+retain later term families, and Steps 6/7 remain unpromoted.

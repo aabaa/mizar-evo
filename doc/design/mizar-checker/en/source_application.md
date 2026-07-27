@@ -87,7 +87,11 @@ The output derives `primary_term_fingerprint` from the exact Task-252
 requires the Task-252 handoff to be installed first, compares that exact
 fingerprint, and revalidates every primary target. Replacement and
 non-equivalent same-source/module substitution fail atomically; an equivalent
-clone is accepted.
+clone is accepted. If Task 254 is already installed, the same transaction
+revalidates its structure handoff before publishing Task 253. This rejects
+Task-253 argument ownership of a Task-254 primary target, reverse containment
+or partial overlap with a Task-254 term, and any contained application not
+owned by the closest Task-254 term, independent of installation order.
 
 `ResolvedTypedAst` revalidates the same association and clone-preserves the
 handoff. It never rebuilds or retargets dense IDs. Both AST debug renderings

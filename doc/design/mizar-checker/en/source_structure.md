@@ -1,0 +1,163 @@
+# Source Structure-Term Transport
+
+> Canonical language: English. Japanese companion:
+> [../ja/source_structure.md](../ja/source_structure.md).
+
+## Scope
+
+Checker Task 254 owns a syntax-free, immutable description of source
+structure construction, selector access, and functional update occurrences.
+It transports source shape, resolver-authenticated constructor roots, written
+members, `FieldUpdate` associations, ordered children, and unresolved
+requests only. It does not decide field/property identity, inheritance views,
+constructor coverage or defaults, selector or update results, value types,
+facts, acceptance, proofs, or downstream IR.
+
+The canonical language requirements are Chapter 5 Sections 5.5 and 5.7 and
+Chapter 13 Section 13.3. Task 252 owns primary-term children. Task 253 owns
+functor-application children. Task 254 links to their dense root IDs without
+copying rows. Task 263 retains structure-definition, member, inheritance-view,
+and constructor semantic payloads.
+
+## Public Transaction
+
+`SourceStructureProducer::build` consumes `SourceStructureHandoffInput`,
+`SymbolEnv`, `BindingEnv`, `SourcePrimaryTermHandoff`, an optional
+`SourceFunctorApplicationHandoff`, and `TypedArena`. The input has seven
+source-ordered vectors:
+
+- structure-family terms;
+- transparent structure wrappers;
+- resolver-authenticated constructor roots;
+- written constructor, selector, and update-path members;
+- parser `FieldUpdate` association containers;
+- ordered child edges;
+- unresolved constructor-signature, member-identity, inheritance-path, and
+  result-type requests.
+
+The producer publishes seven dense immutable tables only after the entire
+transaction validates. Each public ID is a zero-based row index with `new`
+and `index`; each table exposes `get`, source-ordered `iter`, `len`, and
+`is_empty`. Rows expose read-only validated fields.
+
+Term kinds are `Constructor`, `SelectorAccess`, and `FunctionalUpdate`.
+Recovery is `Normal` or `Degraded`. Member roles are
+`ConstructorAssignment`, `Selector`, and `UpdatePathSegment`. Edge roles are
+`ConstructorValue`, `SelectorBase`, `SelectorArgument`, `UpdateBase`, and
+`UpdateValue`. Targets are a Task-252 `Primary`, a Task-253 root
+`Application`, or a later Task-254 `Structure` row.
+
+## Public Enum Policy
+
+| Public enum | Compatibility policy |
+|---|---|
+| `SourceStructureTermKind` | `#[non_exhaustive]`; callers must tolerate later structure-family source kinds. |
+| `SourceStructureRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
+| `SourceStructureMemberRole` | `#[non_exhaustive]`; callers must tolerate later written-member roles. |
+| `SourceStructureEdgeRole` | `#[non_exhaustive]`; callers must tolerate later child-edge roles. |
+| `SourceStructureTarget` | `#[non_exhaustive]`; callers must tolerate later frozen cross-family targets. |
+| `SourceStructureRequestKind` | `#[non_exhaustive]`; callers must tolerate later unresolved request kinds. |
+| `SourceStructureError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+
+No exhaustive public enum exceptions are owned by this module.
+
+## Validation And Ownership
+
+The producer authenticates source/module identity, dense source preorder,
+context, range, canonical spelling, recovery, exact arena anchors, grouping,
+ordinals, and single ownership. Term sites use
+`source.term.structure.constructor`, `.selector`, or `.update`. Written
+member sites use the exact role-specific keys
+`source.term.structure.member.constructor-assignment`,
+`source.term.structure.member.selector`, and
+`source.term.structure.member.update-path-segment`. Whole update containers
+use `source.term.structure.field-update`; transparent wrappers use
+`source.term.structure.parenthesized`.
+
+Each constructor has exactly one resolver-authenticated `Structure` root.
+Local roots require a normal, conflict-free, source-preceding definition and
+exact symbol/definition/contribution cross-index agreement. Imported roots
+require public exported or re-exported provenance and an authenticated import
+effect. Missing, pending, and opaque signature shells remain unresolved;
+malformed or recovered provenance fails closed.
+
+Constructor assignments and update values retain their final member.
+Selector and update bases have no member. Update-path segments form
+source-ordered parent chains; a `FieldUpdate` owns exactly one nonempty path
+and replacement edge but is not a term. Repeated labels and paths remain
+distinct ordered rows for Task 263.
+
+Primary children must be same-context Task-252 roots. Application children
+must be same-context Task-253 roots, meaning no Task-253 argument edge targets
+them; nested Task-253 applications are rejected rather than multiply owned.
+Structure children are later same-context Task-254 rows with one incoming
+edge. Reverse Task-253 applications containing structure children and all
+other frozen subtree exclusions fail closed without detached descendants.
+
+For every structure term, the edge list is exactly the source-ordered set of
+direct written children: parentless Task-252 roots not already owned as
+Task-253 arguments, Task-253 root applications, and later Task-254 terms.
+Candidates contained by another candidate belong to that nearer child and are
+not detached into the outer term. No direct child may be omitted, duplicated,
+or retargeted. Constructor values occur after their assignment label and
+before the next label; selector bases end before the selector member and
+arguments begin after it; update bases end before the first `FieldUpdate`;
+each replacement is strictly inside its owning `FieldUpdate` and begins after
+the final path member. A `FieldUpdate` spelling is exactly the written path
+joined by ` . `, followed by ` := ` and the effective replacement spelling.
+
+## Derived Dependency Fingerprints
+
+The output derives `primary_term_fingerprint` from the exact Task-252
+`debug_text()`. `application_fingerprint` is `Some` exactly when an
+application edge exists and is derived from the exact Task-253 `debug_text()`;
+otherwise it is `None`. An unrelated installed Task-253 handoff may coexist
+with `None`.
+
+`TypedAst::with_source_structure` is one-shot, requires Task 252 and the
+targeted Task 253 dependency first, preserves the producer-validated written
+partitions, and revalidates fingerprints, targets, cross-family ownership,
+and arena sites. Conversely,
+`with_source_application` revalidates an already installed Task-254 handoff,
+so a Task-253 argument cannot claim a Task-254 primary target and a Task-253
+application cannot contain, partially overlap, or bypass ownership of a
+Task-254 term in either installation order. An unrelated Task-253 handoff is
+valid with a `None` fingerprint only when its ranges and targets are disjoint
+from Task 254. `ResolvedTypedAst` revalidates and clone-preserves the same
+association without rebuilding or retargeting dense IDs. Both debug
+renderings include the handoff only when present.
+
+## Private Source Consumer
+
+Raw `SurfaceAst`, source node IDs, and syntax kinds remain in
+`mizar-test::runner::type_elaboration::source_structure`. Production selects
+only the three functor definientia in
+`fail_type_elaboration_local_structure_term_gap_001`.
+The leaf consumes the real declaration shells and reuses Task 248's
+`SourceBindingContextProducer`; it does not fabricate a generated definition
+context.
+
+The exact term/wrapper/root/member/field-update/edge/request oracle is
+5/0/3/9/2/10/26. The one shared arena also contains the Task-252
+primary/reference/numeric-request slice 8/0/8. The real route has no Task-253
+row or fingerprint. After transport validation it retains the Task-263
+`type_elaboration.external_dependency.ast_payload_extraction` boundary with
+no public diagnostic.
+
+## Verification Boundary
+
+Checker tests cover dense tables, all five arena keys and wrong-key
+substitution, member/path and `FieldUpdate` ownership, wrapper nesting,
+local/imported root provenance, all request cardinalities, Task-252/253/254
+children, Task-253 root-only ownership, the full conditional fingerprint
+matrix, corruption, determinism, installation, clone preservation, and atomic
+failure. Runner tests cover the exact consumer and oracle, lower-stage shape,
+synthetic child families, recovery, exclusions, mutation isolation,
+deterministic replay, final ownership, and exclusion of every other active
+type-elaboration case.
+
+The bounded trace row is
+`spec.en.checker.type_elaboration.source_structure_term_payload`. Task 254
+changes MC-G017/MC-G018 executable coverage but leaves semantic
+structure/member/view behavior, later term families, accepted facts/proofs,
+and Steps 6/7 unimplemented.
