@@ -708,3 +708,9 @@ second composite profile and composition together. It rejects Task-248
 source-context coexistence, an already installed Task-257A profile, all
 dependency drift, and partial publication. The legacy composite installer
 continues to reject the second profile.
+
+Task 257B2 extends the same combined installer to the exact third composite
+profile plus `8/0` composition. It requires the exact installed Task-252/256
+dependencies and rejects missing/stale fingerprints, Task-248 coexistence,
+existing A/B1/B2 ownership, and partial publication. The legacy composite-only
+installer remains Task-257A-only.

@@ -4242,8 +4242,9 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       composite profile、Task-252/256 dependency、`1/2` formula-composition
       transaction、final ownership、bounded trace rowはsemantic truth/theorem
       acceptanceなしでcomplete。
-    - [ ] **Task 257B2:** Task 257B1後のconjunction/disjunction/`iff`/
-      repetition/executable formula grouping。
+    - [x] **Task 257B2:** Task 257B1後のexact conjunction/disjunction/`iff`/
+      repetition/executable formula grouping transport。connective
+      truth/theorem acceptanceは含めない。
     - [ ] **Task 257B3:** Task 257B1後のexistential/restricted/nested
       quantification、implicit reserved binder、追加scoped use。
   - [ ] **Task 257C:** separately frozen Task-256/255 extension後の
@@ -4290,5 +4291,10 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] prerequisiteをdocumentation-onlyとし415/381、247/235、225/190、
   active 101/5/194/1、library 306/338 tests、production 29 paths /
   31,374 linesを不変にする。
-- [ ] fresh preflight後、別logical task/commitでこのfrozen Task 257B2だけを
-  実装する。
+- [x] fresh parser/resolver/baseline preflight後、別logical taskでこのfrozen
+  Task 257B2だけを実装する。
+- [x] exact `16/0/16`、`8/0/0/0/0/0/16/16`、`8/6/1/1/1/7/9`、
+  `8/0`、fail-closed tests、final ownership、corpus `416/382`、semantic
+  deferralをverifyする。
+- [ ] production/test intentを変える前に次のdependency-ordered Task 257B3を
+  freezeする。

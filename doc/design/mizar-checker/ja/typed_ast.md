@@ -683,3 +683,9 @@ primary term/Task-256 atomic formulaを要求し、第2 composite profileとcomp
 同時にvalidate/publishする。Task-248 source-context coexistence、installed
 Task-257A profile、dependency drift、partial publicationをrejectする。legacy
 composite installerは第2 profileを引き続きrejectする。
+
+Task 257B2は同じcombined installerをexact third composite profile +
+composition `8/0`へ拡張する。exact installed Task-252/256 dependenciesを必須とし、
+missing/stale fingerprint、Task-248 coexistence、existing A/B1/B2 ownership、
+partial publicationをrejectする。legacy composite-only installerは
+Task-257A-onlyのまま。

@@ -160,3 +160,12 @@ coverage/TODO notes. Both languages freeze the same 166-byte source, ranges,
 baseline, projected counts, and semantic deferrals. No bilingual sync debt is
 accepted. The paired module-boundary audit is intentionally unchanged because
 the prerequisite changes no source module or public implementation surface.
+
+## Task 257B2 Implementation Pair Recheck
+
+The EN/JA pairs now both record the implemented third composite profile,
+`8/0` composition, exact pass consumer, fail-closed test matrix, final
+ownership, corpus `416/382`, and the unchanged semantic deferrals. The
+module-boundary pair is updated because public checker enum/profile surfaces
+and the existing private runner leaf changed. No Task-257B2 bilingual debt
+remains.

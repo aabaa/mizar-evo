@@ -559,3 +559,10 @@ cross-family table shapeをcomposeする。graphは`Task252 16/0/16 -> Task256
 conjunction/disjunction、`iff`、groupingだけをownし、Task 257B3 binder
 extension、Task 257C predicate/comprehension、全semantic result familyは
 downstreamに残す。
+
+### Task 257B2 implemented node
+
+frozen nodeは`Task252 16/0/16 -> Task256 8/0/0/0/0/0/16/16 ->
+Task257B2 8/6/1/1/1/7/9 -> composition 8/0`として実行可能になった。
+fixed/repeated connective tree/wrapperだけをtransportし、Task 257B3/257C、
+connective truth、repetition expansion、theorem ownershipはdownstreamに残す。

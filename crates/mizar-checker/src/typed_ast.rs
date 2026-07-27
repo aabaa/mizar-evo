@@ -192,6 +192,11 @@ impl TypedAst {
         self.source_formula_composition.as_ref()
     }
 
+    #[cfg(test)]
+    pub(crate) fn remove_source_formula_composition_for_test(&mut self) {
+        self.source_formula_composition = None;
+    }
+
     pub fn with_source_evidence(
         mut self,
         handoff: SourceEvidenceHandoff,
@@ -423,7 +428,7 @@ impl TypedAst {
         if self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
             || self.source_context.is_some()
-            || !composite.is_task_257b1_profile()
+            || !(composite.is_task_257b1_profile() || composite.is_task_257b2_profile())
         {
             return Err(TypedAstError::InvalidSourceFormulaComposition);
         }

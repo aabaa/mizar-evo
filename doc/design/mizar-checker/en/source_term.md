@@ -138,3 +138,8 @@ select the explicit quantifier's binding 0 in body context 1. Task 252 keeps
 exclusive occurrence and lookup-winner ownership; the formula-composition
 handoff records only binder-to-reference associations and does not repurpose
 captured-free-variable metadata.
+
+Task 257B2 reuses sixteen numeral rows and sixteen numeric-type requests in
+body context 1. It intentionally creates zero references: the explicit `x`
+binder is unused, captured identities remain empty, and the composition layer
+does not invent bound-use rows.

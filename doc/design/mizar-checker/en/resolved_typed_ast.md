@@ -804,3 +804,8 @@ atomic-edge or bound-use rows. The borrowed
 `source_formula_composition()` getter exposes the immutable handoff. Absence
 preserves legacy bytes; presence adds no formula result, fact, truth, theorem
 acceptance, proof, or downstream IR.
+
+Task 257B2 reuses this boundary: final assembly revalidates and clone-preserves
+the exact third composite profile and `8/0` composition fingerprints. The
+resolved result still contains no checked formula, statement semantics,
+accepted theorem, proof, or IR output.

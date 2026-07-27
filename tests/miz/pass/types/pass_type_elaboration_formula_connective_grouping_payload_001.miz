@@ -1,0 +1,1 @@
+theorem FormulaConnectiveGroupingPayloadBoundary: for x being set holds ((0 = 0 & ... & 0 = 3) or (0 = 0 or ... or 0 = 3)) iff ((0 = 0 & 0 = 0) or (0 = 0 or 0 = 0));

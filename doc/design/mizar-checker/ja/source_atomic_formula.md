@@ -132,3 +132,8 @@ Task 257B1は本moduleのexisting equality 1件とprimary-term operand edge 2件
 universal body 1件のauthenticated dependencyとしてreuseする。atomic-formula row
 ownership、validation、semantic deferralは変更せず、new formula-composition
 handoffはcross-family parent associationだけを保持する。
+
+Task 257B2はexact `8/0/0/0/0/0/16/16`の8 equality rowsをreuseする。16
+operand edgesは引き続き本familyがownし、新composition tableはatomic rootを
+repeated/fixed conjunction/disjunction parentへassociateするだけでatomic
+semanticsを変更しない。

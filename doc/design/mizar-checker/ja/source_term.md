@@ -128,3 +128,7 @@ Task 257B1はexact pass consumerへadditional `VariableReference`/`Value` row
 quantifierのbinding 0をselectする。occurrence/lookup-winner ownershipはTask 252
 だけに残り、formula-composition handoffはbinder-to-reference associationだけを
 記録し、captured-free-variable metadataをrepurposeしない。
+
+Task 257B2はbody context 1の16 numeral rows/16 numeric-type requestsをreuse
+する。explicit `x` binderはunusedなのでreferenceは0、captured identitiesは
+emptyであり、composition layerはbound-use rowをfabricateしない。

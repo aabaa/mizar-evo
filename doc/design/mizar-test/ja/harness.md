@@ -2979,3 +2979,11 @@ otherwise-valid第4 profileを1件与え、partial stateをpublishせず失敗�
 active caseはdetail keyなしでpassし、type/fact/checked formula semantics/
 statement semantics/theorem acceptance/proof/IR creditを持たない。既存
 Task-257A/B1 selector/byte oracleは不変。
+
+## Checker Task 257B2 Implemented Harness Route
+
+routeはfrozen extraction/same-arena producer sequenceを実行し、composite/
+composition pairをatomic installする。active caseはdetail keyなしでpassし、
+selector isolation、source near-miss、profile/association corruptionとvalid
+replay、A/B1 preservation、final typed/resolved ownershipをtestする。semantic
+output/theorem creditは生成しない。

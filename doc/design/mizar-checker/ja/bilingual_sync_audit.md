@@ -152,3 +152,11 @@ Task-252 `16/0/16`、Task-256 `8/0/0/0/0/0/16/16`、composition `8/0`、
 exclusion、baseline/projected count、semantic deferralをfreezeする。bilingual
 sync debtは認めない。source module/public implementation surfaceを変えない
 prerequisiteなのでpaired module-boundary auditは意図的に不変。
+
+## Task 257B2 Implementation Pair Recheck
+
+EN/JA pairはimplemented third composite profile、`8/0` composition、exact pass
+consumer、fail-closed test matrix、final ownership、corpus `416/382`、semantic
+deferralを同じ内容で記録する。public checker enum/profile surfaceと既存private
+runner leafが変わったためmodule-boundary pairも同期した。Task-257B2の
+bilingual debtは残らない。

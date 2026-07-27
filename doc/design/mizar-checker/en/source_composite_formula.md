@@ -127,3 +127,13 @@ shape. The legacy `with_source_composite_formula` installer remains
 Task-257A-only; the second profile is publishable only with its Task-252/256
 dependencies and `1/2` cross-family handoff through the combined installer
 specified in [source_formula_composition.md](./source_formula_composition.md).
+
+## Task 257B2 Implemented Third Profile
+
+The producer now admits exactly `8/6/1/1/1/7/9`, with the frozen universal,
+`iff`, disjunction, repeated/fixed conjunction/disjunction preorder, six
+independent wrappers, seven exact child edges, and nine unresolved requests.
+Validation rejects wrapper crossing/order drift, fixed/repeated substitution,
+A/B1/B2 hybrids, and an otherwise coherent unsupported fourth profile.
+Legacy installation remains Task-257A-only; B1/B2 publish only through the
+combined formula-composition installer.

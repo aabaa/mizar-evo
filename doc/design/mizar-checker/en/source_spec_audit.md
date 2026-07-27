@@ -3515,3 +3515,12 @@ trees, binder forms, predicate chains, theorem acceptance, and downstream IR
 remain explicitly excluded, so no `source_undocumented_behavior`,
 `test_expectation_drift`, or accepted `boundary_violation` is introduced. The
 origin difference remains report-only `repo_metadata_conflict`.
+
+### Task 257B2 implementation classification
+
+The previously classified `source_drift` and `test_gap` are closed by the
+exact third-profile producers, real pass fixture, covered trace row, checker
+corruption/profile tests, and runner selector/near-miss tests. No `spec_gap`,
+`design_drift`, `source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation` remains. The origin difference is still a report-only
+`repo_metadata_conflict`.

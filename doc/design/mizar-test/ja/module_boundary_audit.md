@@ -10113,3 +10113,11 @@ plan/parse/declaration/type/proof CLI hashは
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
 である。Task 257と全deferred semantic formula decisionは本layout increment外
 に残す。
+
+## Checker Task 257B2 Boundary Recheck
+
+production pathは追加しない。selector/payloadは
+`type_elaboration/source_formula.rs`、arena construction/producer sequencingは
+既存`source_formula_composition.rs` leaf、testsはpaired test leafに留める。
+manifestは29 paths / 32,064 linesであり、このbounded second consumerのための
+追加splitは不要。

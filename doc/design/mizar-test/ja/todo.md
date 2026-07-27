@@ -1620,5 +1620,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   trace/count impact、全semantic deferralをfreeze。
 - [x] prerequisiteをdocumentation-onlyとし415/381、247/235、225/190、
   active 101/5/194/1、338 tests、29 paths / 31,374 linesを不変にする。
-- [ ] documentation commit/fresh preflight後だけexact route/sidecar/trace/testを
-  実装する。
+- [x] documentation commit/fresh parser/resolver preflight後、exact
+  route/sidecar/covered trace/testを実装する。
+- [x] corpus `416/382`、type `248/236`、pass/fail `226/190`、active
+  `101/5/195/1`、343 library tests、semantic output absenceをverifyする。
+- [ ] own EN/JA frozen contractのcommitまでTask 257B3をunselectedに保つ。

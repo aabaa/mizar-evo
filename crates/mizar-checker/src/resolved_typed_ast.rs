@@ -1643,10 +1643,9 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     self.inputs.typed_ast.nodes(),
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceFormulaComposition)?;
-        } else if source_composite_formula
-            .as_ref()
-            .is_some_and(|handoff| handoff.is_task_257b1_profile())
-        {
+        } else if source_composite_formula.as_ref().is_some_and(|handoff| {
+            handoff.is_task_257b1_profile() || handoff.is_task_257b2_profile()
+        }) {
             return Err(ResolvedTypedAstError::InvalidSourceFormulaComposition);
         }
 

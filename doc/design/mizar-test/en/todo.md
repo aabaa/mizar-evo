@@ -1810,5 +1810,9 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   ownership, trace/count impact, and all semantic deferrals.
 - [x] Keep this prerequisite documentation-only at 415/381, 247/235,
   225/190, active 101/5/194/1, 338 tests, and 29 paths / 31,374 lines.
-- [ ] Implement the exact route, sidecar, trace row, and tests only after the
-  documentation commit and fresh preflight.
+- [x] Implement the exact route, sidecar, covered trace row, and tests after
+  the documentation commit and fresh parser/resolver preflight.
+- [x] Verify corpus `416/382`, type `248/236`, pass/fail `226/190`, active
+  `101/5/195/1`, 343 library tests, and absence of semantic output.
+- [ ] Keep Task 257B3 unselected until its own EN/JA frozen contract is
+  committed.

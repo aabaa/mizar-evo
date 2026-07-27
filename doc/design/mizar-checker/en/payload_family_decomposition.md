@@ -612,3 +612,11 @@ Task257B2 8/6/1/1/1/7/9 -> composition 8/0`. Six
 owns fixed/repeated conjunction/disjunction, `iff`, and grouping only; Task
 257B3 binder expansion, Task 257C predicate/comprehension composition, and
 all semantic result families remain downstream.
+
+### Task 257B2 implemented node
+
+The frozen node is now executable as
+`Task252 16/0/16 -> Task256 8/0/0/0/0/0/16/16 -> Task257B2
+8/6/1/1/1/7/9 -> composition 8/0`. It transports the fixed/repeated
+connective tree and wrappers only. Task 257B3, Task 257C, connective truth,
+repetition expansion, and theorem ownership remain separate downstream nodes.

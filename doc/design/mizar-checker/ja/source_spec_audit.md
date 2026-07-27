@@ -3360,3 +3360,12 @@ binder shape、predicate chain、theorem acceptance、downstream IRを明示除�
 `source_undocumented_behavior`、`test_expectation_drift`、accepted
 `boundary_violation`を導入しない。origin差はreport-only
 `repo_metadata_conflict`のまま。
+
+### Task 257B2 implementation classification
+
+従来の`source_drift`/`test_gap`はexact third-profile producer、real pass
+fixture、covered trace row、checker corruption/profile tests、runner
+selector/near-miss testsでcloseした。`spec_gap`、`design_drift`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`は残らない。origin差はreport-only
+`repo_metadata_conflict`のまま。

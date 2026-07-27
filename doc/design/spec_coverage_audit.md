@@ -3129,6 +3129,20 @@ comprehension work. Task 258 retains theorem ownership and acceptance.
 Semantic formula truth/facts, Core/CFG/VC, Steps 6/7, and global Step-5
 completion receive no credit.
 
+## Step 5 Checker Task 257B2 Implementation Addendum
+
+Task 257B2 closes the frozen source-transport gap with one exact pass
+fixture/sidecar and covered requirement
+`spec.en.checker.type_elaboration.source_connective_grouping_payload`.
+Reciprocal Chapter-14, Task-252, Task-256, Task-257A, and Task-257B1 notes
+remain transport-only and retain their status. Coverage is now plan
+`416/382`, type-elaboration `248/236`, pass/fail `226/190`, and active
+`101/5/195/1`. This adds executable coverage for the exact fixed/repeated
+connective tree, grouping wrappers, and syntax-free ownership associations;
+connective truth, repetition expansion, Task 257B3/C, theorem ownership,
+facts, proof, Core/CFG/VC, Steps 6/7, and global Step-5 completion remain
+uncredited.
+
 ## Step 5 Checker Task 257B1 Frozen-Contract Addendum
 
 Task 257B is decomposed before further implementation. Task 257B1 freezes the

@@ -368,9 +368,9 @@ pub(super) use source_formula::{
     SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula, SourceReservedVariableAssertedHeadRelation,
     extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
-    extract_source_contradiction_formula, extract_source_formula_connective_quantifier,
-    extract_source_formula_quantifier_bound_use, extract_source_formula_statement,
-    extract_source_imported_attribute_assertion_formula,
+    extract_source_contradiction_formula, extract_source_formula_connective_grouping,
+    extract_source_formula_connective_quantifier, extract_source_formula_quantifier_bound_use,
+    extract_source_formula_statement, extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
     extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
 };

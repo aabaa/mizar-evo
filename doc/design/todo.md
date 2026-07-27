@@ -2257,3 +2257,13 @@ the absent exact consumer/matrices as `test_gap`, with no blocking
 theorem ownership/acceptance, facts, proof/IR/VC, Steps 6/7, and global Step-5
 completion remain deferred. The origin discrepancy remains report-only
 `repo_metadata_conflict`.
+
+## Checker Task 257B2 Implementation Ledger
+
+- [x] Implement and verify the exact connective/grouping source transport,
+  synchronized EN/JA design, one pass sidecar/covered trace row, and corpus
+  `416/382`.
+- [x] Preserve all semantic deferrals and classify the external origin
+  difference only as report-only `repo_metadata_conflict`.
+- [ ] Continue with a separate Task 257B3 frozen-contract prerequisite after
+  fresh authority/API inventory.

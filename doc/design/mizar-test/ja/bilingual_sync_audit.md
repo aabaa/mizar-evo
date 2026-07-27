@@ -12,6 +12,14 @@ test 303件、path/content hash `5cc36b8a...` / `b9b6c678...`の
 254+/260/270/277-278とSteps 6/7は両言語でunpromotedのままである。Task 253に
 bilingual driftは残らない。
 
+## Checker Task 257B2 Implementation Pair Recheck
+
+両言語はimplemented exact selector、4 aggregate profiles、no-reference/
+no-bound-use rule、negative matrices、covered sidecar、corpus `416/382`、
+343 tests、29-path / 32,064-line production baselineを同じ内容で記録する。
+paired module-boundary auditもexisting private leaf reuseを記録し、Task-257B2の
+bilingual driftは残らない。
+
 ## Checker Task 257B1 Pair Recheck
 
 paired plan/TODO/harness/module-boundary documentは、同じ79-byte pass source、

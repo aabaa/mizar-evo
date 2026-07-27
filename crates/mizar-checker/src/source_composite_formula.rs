@@ -143,6 +143,11 @@ pub enum SourceCompositeFormulaKind {
     Universal,
     Negation,
     Contradiction,
+    Conjunction,
+    RepeatedConjunction,
+    Disjunction,
+    RepeatedDisjunction,
+    Biconditional,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -171,6 +176,10 @@ pub enum SourceFormulaEdgeRole {
     ImplicationRight,
     UniversalBody,
     NegatedFormula,
+    DisjunctionLeft,
+    DisjunctionRight,
+    BiconditionalLeft,
+    BiconditionalRight,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -400,6 +409,16 @@ impl SourceCompositeFormulaHandoff {
             && self.type_sites.len() == 1
             && self.edges.is_empty()
             && self.requests.len() == 2
+    }
+
+    pub(crate) fn is_task_257b2_profile(&self) -> bool {
+        self.formulas.len() == 8
+            && self.wrappers.len() == 6
+            && self.roots.len() == 1
+            && self.binders.len() == 1
+            && self.type_sites.len() == 1
+            && self.edges.len() == 7
+            && self.requests.len() == 9
     }
 
     fn to_input(&self) -> SourceCompositeFormulaHandoffInput {
@@ -1006,9 +1025,52 @@ fn validate_input(
         BindingContextId::new(0),
         "for holds",
     )];
+    let task_257b2_formulas = [
+        (
+            SourceCompositeFormulaKind::Universal,
+            BindingContextId::new(0),
+            "for holds",
+        ),
+        (
+            SourceCompositeFormulaKind::Biconditional,
+            BindingContextId::new(1),
+            "iff",
+        ),
+        (
+            SourceCompositeFormulaKind::Disjunction,
+            BindingContextId::new(1),
+            "or",
+        ),
+        (
+            SourceCompositeFormulaKind::RepeatedConjunction,
+            BindingContextId::new(1),
+            "& ... &",
+        ),
+        (
+            SourceCompositeFormulaKind::RepeatedDisjunction,
+            BindingContextId::new(1),
+            "or ... or",
+        ),
+        (
+            SourceCompositeFormulaKind::Disjunction,
+            BindingContextId::new(1),
+            "or",
+        ),
+        (
+            SourceCompositeFormulaKind::Conjunction,
+            BindingContextId::new(1),
+            "&",
+        ),
+        (
+            SourceCompositeFormulaKind::Disjunction,
+            BindingContextId::new(1),
+            "or",
+        ),
+    ];
     let expected_formulas = match profile {
         CompositeProfile::Task257A => task_257a_formulas.as_slice(),
         CompositeProfile::Task257B1 => task_257b1_formulas.as_slice(),
+        CompositeProfile::Task257B2 => task_257b2_formulas.as_slice(),
     };
     let mut sites = BTreeSet::new();
     for (index, (row, (kind, context, spelling))) in
@@ -1051,6 +1113,7 @@ fn validate_input(
 enum CompositeProfile {
     Task257A,
     Task257B1,
+    Task257B2,
 }
 
 fn composite_profile(
@@ -1067,6 +1130,7 @@ fn composite_profile(
     match counts {
         (5, 1, 1, 1, 4, 6) if input.wrappers.is_empty() => Ok(CompositeProfile::Task257A),
         (1, 1, 1, 1, 0, 2) if input.wrappers.is_empty() => Ok(CompositeProfile::Task257B1),
+        (8, 1, 1, 1, 7, 9) if input.wrappers.len() == 6 => Ok(CompositeProfile::Task257B2),
         _ => Err(SourceCompositeFormulaError::InvalidTree),
     }
 }
@@ -1141,15 +1205,23 @@ fn wrapper_is_within_parent(
     owner: usize,
     wrapper_range: SourceRange,
 ) -> bool {
-    if profile == CompositeProfile::Task257B1 {
-        return owner == 0;
-    }
-    let parent = match owner {
-        0 => return true,
-        1 | 2 => 0,
-        3 => 2,
-        4 => 3,
-        _ => return false,
+    let parent = match profile {
+        CompositeProfile::Task257B1 => return owner == 0,
+        CompositeProfile::Task257A => match owner {
+            0 => return true,
+            1 | 2 => 0,
+            3 => 2,
+            4 => 3,
+            _ => return false,
+        },
+        CompositeProfile::Task257B2 => match owner {
+            0 => return true,
+            1 => 0,
+            2 | 5 => 1,
+            3 | 4 => 2,
+            6 | 7 => 5,
+            _ => return false,
+        },
     };
     properly_contains(input.formulas[parent].source_range, wrapper_range)
 }
@@ -1169,8 +1241,16 @@ fn wrapper_crosses_unrelated_formula(
 }
 
 fn formula_is_ancestor(profile: CompositeProfile, ancestor: usize, descendant: usize) -> bool {
-    profile == CompositeProfile::Task257A
-        && matches!((ancestor, descendant), (0, 1..=4) | (2, 3 | 4) | (3, 4))
+    match profile {
+        CompositeProfile::Task257A => {
+            matches!((ancestor, descendant), (0, 1..=4) | (2, 3 | 4) | (3, 4))
+        }
+        CompositeProfile::Task257B1 => false,
+        CompositeProfile::Task257B2 => matches!(
+            (ancestor, descendant),
+            (0, 1..=7) | (1, 2..=7) | (2, 3 | 4) | (5, 6 | 7)
+        ),
+    }
 }
 
 fn ranges_overlap(left: SourceRange, right: SourceRange) -> bool {
@@ -1205,7 +1285,7 @@ fn validate_binder(
     };
     let universal_index = match profile {
         CompositeProfile::Task257A => 2,
-        CompositeProfile::Task257B1 => 0,
+        CompositeProfile::Task257B1 | CompositeProfile::Task257B2 => 0,
     };
     let universal = &input.formulas[universal_index];
     if binder.formula != SourceCompositeFormulaId::new(universal_index)
@@ -1298,25 +1378,38 @@ fn validate_edges(
     input: &SourceCompositeFormulaHandoffInput,
     profile: CompositeProfile,
 ) -> Result<(), SourceCompositeFormulaError> {
-    if profile == CompositeProfile::Task257B1 {
-        return if input.edges.is_empty() {
-            Ok(())
-        } else {
-            Err(SourceCompositeFormulaError::InvalidTree)
-        };
-    }
-    let expected = [
+    let task_257a_expected = [
         (0, 0, SourceFormulaEdgeRole::ImplicationLeft, 1),
         (0, 1, SourceFormulaEdgeRole::ImplicationRight, 2),
         (2, 0, SourceFormulaEdgeRole::UniversalBody, 3),
         (3, 0, SourceFormulaEdgeRole::NegatedFormula, 4),
     ];
+    let task_257b2_expected = [
+        (0, 0, SourceFormulaEdgeRole::UniversalBody, 1),
+        (1, 0, SourceFormulaEdgeRole::BiconditionalLeft, 2),
+        (1, 1, SourceFormulaEdgeRole::BiconditionalRight, 5),
+        (2, 0, SourceFormulaEdgeRole::DisjunctionLeft, 3),
+        (2, 1, SourceFormulaEdgeRole::DisjunctionRight, 4),
+        (5, 0, SourceFormulaEdgeRole::DisjunctionLeft, 6),
+        (5, 1, SourceFormulaEdgeRole::DisjunctionRight, 7),
+    ];
+    let expected = match profile {
+        CompositeProfile::Task257A => task_257a_expected.as_slice(),
+        CompositeProfile::Task257B1 => {
+            return if input.edges.is_empty() {
+                Ok(())
+            } else {
+                Err(SourceCompositeFormulaError::InvalidTree)
+            };
+        }
+        CompositeProfile::Task257B2 => task_257b2_expected.as_slice(),
+    };
     if input.edges.len() != expected.len() {
         return Err(SourceCompositeFormulaError::InvalidTree);
     }
-    let mut incoming = [0_u8; 5];
+    let mut incoming = vec![0_u8; input.formulas.len()];
     for (index, (row, (parent, ordinal, role, child))) in
-        input.edges.iter().zip(expected).enumerate()
+        input.edges.iter().zip(expected.iter().copied()).enumerate()
     {
         if row.parent != SourceCompositeFormulaId::new(parent)
             || row.ordinal != ordinal
@@ -1333,7 +1426,7 @@ fn validate_edges(
         }
         incoming[child] += 1;
     }
-    if incoming != [0, 1, 1, 1, 1] {
+    if incoming.first() != Some(&0) || incoming[1..].iter().any(|count| *count != 1) {
         return Err(SourceCompositeFormulaError::InvalidTree);
     }
     Ok(())
@@ -1403,9 +1496,75 @@ fn validate_requests(
             Some(SourceBinderTypeSiteId::new(0)),
         ),
     ];
+    let task_257b2_expected = [
+        (
+            0,
+            0,
+            SourceFormulaRequestKind::QuantifierSemantics,
+            None,
+            None,
+        ),
+        (
+            0,
+            1,
+            SourceFormulaRequestKind::BinderType,
+            Some(SourceQuantifierBinderId::new(0)),
+            Some(SourceBinderTypeSiteId::new(0)),
+        ),
+        (
+            1,
+            0,
+            SourceFormulaRequestKind::ConnectiveSemantics,
+            None,
+            None,
+        ),
+        (
+            2,
+            0,
+            SourceFormulaRequestKind::ConnectiveSemantics,
+            None,
+            None,
+        ),
+        (
+            3,
+            0,
+            SourceFormulaRequestKind::ConnectiveSemantics,
+            None,
+            None,
+        ),
+        (
+            4,
+            0,
+            SourceFormulaRequestKind::ConnectiveSemantics,
+            None,
+            None,
+        ),
+        (
+            5,
+            0,
+            SourceFormulaRequestKind::ConnectiveSemantics,
+            None,
+            None,
+        ),
+        (
+            6,
+            0,
+            SourceFormulaRequestKind::ConnectiveSemantics,
+            None,
+            None,
+        ),
+        (
+            7,
+            0,
+            SourceFormulaRequestKind::ConnectiveSemantics,
+            None,
+            None,
+        ),
+    ];
     let expected = match profile {
         CompositeProfile::Task257A => task_257a_expected.as_slice(),
         CompositeProfile::Task257B1 => task_257b1_expected.as_slice(),
+        CompositeProfile::Task257B2 => task_257b2_expected.as_slice(),
     };
     if input.requests.len() != expected.len() {
         return Err(SourceCompositeFormulaError::InvalidTree);
@@ -1481,7 +1640,7 @@ fn validate_extended_bindings(
     let type_site = &input.type_sites[0];
     let universal_index = match composite_profile(input)? {
         CompositeProfile::Task257A => 2,
-        CompositeProfile::Task257B1 => 0,
+        CompositeProfile::Task257B1 | CompositeProfile::Task257B2 => 0,
     };
     if root.owner != BindingContextOwner::Module
         || root.parent.is_some()
@@ -1596,6 +1755,15 @@ fn formula_node_key(kind: SourceCompositeFormulaKind) -> &'static str {
         SourceCompositeFormulaKind::Universal => "source.formula.composite.universal",
         SourceCompositeFormulaKind::Negation => "source.formula.composite.negation",
         SourceCompositeFormulaKind::Contradiction => "source.formula.constant.contradiction",
+        SourceCompositeFormulaKind::Conjunction => "source.formula.composite.conjunction",
+        SourceCompositeFormulaKind::RepeatedConjunction => {
+            "source.formula.composite.repeated-conjunction"
+        }
+        SourceCompositeFormulaKind::Disjunction => "source.formula.composite.disjunction",
+        SourceCompositeFormulaKind::RepeatedDisjunction => {
+            "source.formula.composite.repeated-disjunction"
+        }
+        SourceCompositeFormulaKind::Biconditional => "source.formula.composite.biconditional",
     }
 }
 
@@ -1605,6 +1773,11 @@ fn formula_kind_key(kind: SourceCompositeFormulaKind) -> &'static str {
         SourceCompositeFormulaKind::Universal => "universal",
         SourceCompositeFormulaKind::Negation => "negation",
         SourceCompositeFormulaKind::Contradiction => "contradiction",
+        SourceCompositeFormulaKind::Conjunction => "conjunction",
+        SourceCompositeFormulaKind::RepeatedConjunction => "repeated-conjunction",
+        SourceCompositeFormulaKind::Disjunction => "disjunction",
+        SourceCompositeFormulaKind::RepeatedDisjunction => "repeated-disjunction",
+        SourceCompositeFormulaKind::Biconditional => "biconditional",
     }
 }
 
@@ -1633,6 +1806,10 @@ fn edge_role_key(role: SourceFormulaEdgeRole) -> &'static str {
         SourceFormulaEdgeRole::ImplicationRight => "implication-right",
         SourceFormulaEdgeRole::UniversalBody => "universal-body",
         SourceFormulaEdgeRole::NegatedFormula => "negated-formula",
+        SourceFormulaEdgeRole::DisjunctionLeft => "disjunction-left",
+        SourceFormulaEdgeRole::DisjunctionRight => "disjunction-right",
+        SourceFormulaEdgeRole::BiconditionalLeft => "biconditional-left",
+        SourceFormulaEdgeRole::BiconditionalRight => "biconditional-right",
     }
 }
 
@@ -1686,6 +1863,14 @@ pub(crate) mod tests {
         arena: TypedArena,
         input: SourceCompositeFormulaHandoffInput,
         base: BindingEnv,
+    }
+
+    pub(crate) struct Task257B2CompositeFixture {
+        pub(crate) source: SourceId,
+        pub(crate) module: ModuleId,
+        pub(crate) arena: TypedArena,
+        pub(crate) input: SourceCompositeFormulaHandoffInput,
+        pub(crate) base: BindingEnv,
     }
 
     fn source_id() -> SourceId {
@@ -2056,6 +2241,252 @@ pub(crate) mod tests {
         }
     }
 
+    pub(crate) fn task_257b2_composite_fixture() -> Task257B2CompositeFixture {
+        let source = source_id_with_snapshot_byte("d7");
+        let module = ModuleId::new(
+            PackageId::new("pkg"),
+            ModulePath::new("composite.task257b2"),
+        );
+        let formula_ranges = [
+            (50, 164),
+            (72, 164),
+            (73, 121),
+            (74, 93),
+            (99, 120),
+            (128, 163),
+            (129, 142),
+            (148, 162),
+        ];
+        let wrapper_ranges = [
+            (72, 122),
+            (73, 94),
+            (98, 121),
+            (127, 164),
+            (128, 143),
+            (147, 163),
+        ];
+        let equality_ranges = [
+            (74, 79),
+            (88, 93),
+            (99, 104),
+            (115, 120),
+            (129, 134),
+            (137, 142),
+            (148, 153),
+            (157, 162),
+        ];
+        let numeral_ranges = [
+            (74, 75),
+            (78, 79),
+            (88, 89),
+            (92, 93),
+            (99, 100),
+            (103, 104),
+            (115, 116),
+            (119, 120),
+            (129, 130),
+            (133, 134),
+            (137, 138),
+            (141, 142),
+            (148, 149),
+            (152, 153),
+            (157, 158),
+            (161, 162),
+        ];
+        let formula_keys = [
+            "source.formula.composite.universal",
+            "source.formula.composite.biconditional",
+            "source.formula.composite.disjunction",
+            "source.formula.composite.repeated-conjunction",
+            "source.formula.composite.repeated-disjunction",
+            "source.formula.composite.disjunction",
+            "source.formula.composite.conjunction",
+            "source.formula.composite.disjunction",
+        ];
+        let mut nodes = formula_ranges
+            .into_iter()
+            .zip(formula_keys)
+            .map(|((start, end), key)| {
+                TypedNode::new(key, SourceAnchor::Range(range(source, start, end)))
+            })
+            .collect::<Vec<_>>();
+        nodes.extend(wrapper_ranges.into_iter().map(|(start, end)| {
+            TypedNode::new(
+                "source.formula.parenthesized",
+                SourceAnchor::Range(range(source, start, end)),
+            )
+        }));
+        nodes.extend(
+            [
+                ((54, 65), "source.formula.quantifier-binder"),
+                ((54, 55), "source.formula.quantifier-binder"),
+                ((62, 65), "source.formula.binder-type"),
+                ((62, 65), "source.formula.binder-type-head"),
+            ]
+            .into_iter()
+            .map(|((start, end), key)| {
+                TypedNode::new(key, SourceAnchor::Range(range(source, start, end)))
+            }),
+        );
+        nodes.extend(equality_ranges.into_iter().map(|(start, end)| {
+            TypedNode::new(
+                "source.formula.atomic.equality",
+                SourceAnchor::Range(range(source, start, end)),
+            )
+        }));
+        nodes.extend(numeral_ranges.into_iter().map(|(start, end)| {
+            TypedNode::new(
+                "source.term.numeral",
+                SourceAnchor::Range(range(source, start, end)),
+            )
+        }));
+        let arena = TypedArena::try_new(None, nodes).expect("Task 257B2 arena");
+        let formula_specs = [
+            (SourceCompositeFormulaKind::Universal, "for holds"),
+            (SourceCompositeFormulaKind::Biconditional, "iff"),
+            (SourceCompositeFormulaKind::Disjunction, "or"),
+            (SourceCompositeFormulaKind::RepeatedConjunction, "& ... &"),
+            (SourceCompositeFormulaKind::RepeatedDisjunction, "or ... or"),
+            (SourceCompositeFormulaKind::Disjunction, "or"),
+            (SourceCompositeFormulaKind::Conjunction, "&"),
+            (SourceCompositeFormulaKind::Disjunction, "or"),
+        ];
+        let formulas = formula_specs
+            .into_iter()
+            .zip(formula_ranges)
+            .enumerate()
+            .map(
+                |(index, ((kind, spelling), (start, end)))| SourceCompositeFormulaInput {
+                    site: node(index),
+                    source_range: range(source, start, end),
+                    source_ordinal: index,
+                    context: BindingContextId::new(usize::from(index != 0)),
+                    recovery: SourceCompositeFormulaRecovery::Normal,
+                    spelling: spelling.to_owned(),
+                    kind,
+                },
+            )
+            .collect();
+        let wrapper_owners = [2, 3, 4, 5, 6, 7];
+        let wrapper_spellings = [
+            "( or )",
+            "( & ... & )",
+            "( or ... or )",
+            "( or )",
+            "( & )",
+            "( or )",
+        ];
+        let wrappers = wrapper_owners
+            .into_iter()
+            .zip(wrapper_spellings)
+            .zip(wrapper_ranges)
+            .enumerate()
+            .map(
+                |(index, ((formula, spelling), (start, end)))| SourceFormulaWrapperInput {
+                    formula: SourceCompositeFormulaId::new(formula),
+                    ordinal: 0,
+                    site: node(8 + index),
+                    source_range: range(source, start, end),
+                    context: BindingContextId::new(1),
+                    recovery: SourceCompositeFormulaRecovery::Normal,
+                    spelling: spelling.to_owned(),
+                },
+            )
+            .collect();
+        let mut requests = vec![
+            SourceFormulaRequestInput {
+                formula: SourceCompositeFormulaId::new(0),
+                ordinal: 0,
+                kind: SourceFormulaRequestKind::QuantifierSemantics,
+                binder: None,
+                type_site: None,
+            },
+            SourceFormulaRequestInput {
+                formula: SourceCompositeFormulaId::new(0),
+                ordinal: 1,
+                kind: SourceFormulaRequestKind::BinderType,
+                binder: Some(SourceQuantifierBinderId::new(0)),
+                type_site: Some(SourceBinderTypeSiteId::new(0)),
+            },
+        ];
+        requests.extend((1..8).map(|formula| SourceFormulaRequestInput {
+            formula: SourceCompositeFormulaId::new(formula),
+            ordinal: 0,
+            kind: SourceFormulaRequestKind::ConnectiveSemantics,
+            binder: None,
+            type_site: None,
+        }));
+        let input = SourceCompositeFormulaHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            formulas,
+            wrappers,
+            roots: vec![SourceFormulaRootInput {
+                formula: SourceCompositeFormulaId::new(0),
+                ordinal: 0,
+                ownership: SourceFormulaRootOwnership::UnassignedStatement,
+            }],
+            binders: vec![SourceQuantifierBinderInput {
+                formula: SourceCompositeFormulaId::new(0),
+                ordinal: 0,
+                segment_site: node(14),
+                segment_range: range(source, 54, 65),
+                segment_spelling: "x being".to_owned(),
+                identifier_site: node(15),
+                identifier_range: range(source, 54, 55),
+                identifier_spelling: "x".to_owned(),
+                local: LocalTermBinding::new(
+                    "x",
+                    LocalTermScope::new(vec![0]),
+                    range(source, 54, 55),
+                    0,
+                ),
+                binding: BindingId::new(0),
+                body_context: BindingContextId::new(1),
+                type_site: SourceBinderTypeSiteId::new(0),
+                recovery: SourceCompositeFormulaRecovery::Normal,
+            }],
+            type_sites: vec![SourceBinderTypeSiteInput {
+                binder: SourceQuantifierBinderId::new(0),
+                site: node(16),
+                source_range: range(source, 62, 65),
+                spelling: "set".to_owned(),
+                head_site: node(17),
+                head_range: range(source, 62, 65),
+                head_spelling: "set".to_owned(),
+                context: BindingContextId::new(0),
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                head: SourceBinderTypeHead::BuiltinSet,
+            }],
+            edges: [
+                (0, 0, SourceFormulaEdgeRole::UniversalBody, 1),
+                (1, 0, SourceFormulaEdgeRole::BiconditionalLeft, 2),
+                (1, 1, SourceFormulaEdgeRole::BiconditionalRight, 5),
+                (2, 0, SourceFormulaEdgeRole::DisjunctionLeft, 3),
+                (2, 1, SourceFormulaEdgeRole::DisjunctionRight, 4),
+                (5, 0, SourceFormulaEdgeRole::DisjunctionLeft, 6),
+                (5, 1, SourceFormulaEdgeRole::DisjunctionRight, 7),
+            ]
+            .into_iter()
+            .map(|(parent, ordinal, role, child)| SourceFormulaEdgeInput {
+                parent: SourceCompositeFormulaId::new(parent),
+                ordinal,
+                role,
+                child: SourceCompositeFormulaId::new(child),
+            })
+            .collect(),
+            requests,
+        };
+        let base = base_bindings(source, &module);
+        Task257B2CompositeFixture {
+            source,
+            module,
+            arena,
+            input,
+            base,
+        }
+    }
+
     fn build(
         fixture: &Fixture,
         input: SourceCompositeFormulaHandoffInput,
@@ -2063,6 +2494,27 @@ pub(crate) mod tests {
         let extended =
             SourceCompositeFormulaProducer::extend_bindings(&input, &fixture.base, &fixture.arena)?;
         SourceCompositeFormulaProducer::build(input, &extended, &fixture.arena)
+    }
+
+    fn build_task_257b2(
+        fixture: &Task257B2CompositeFixture,
+        input: SourceCompositeFormulaHandoffInput,
+    ) -> Result<SourceCompositeFormulaHandoff, SourceCompositeFormulaError> {
+        let extended =
+            SourceCompositeFormulaProducer::extend_bindings(&input, &fixture.base, &fixture.arena)?;
+        SourceCompositeFormulaProducer::build(input, &extended, &fixture.arena)
+    }
+
+    pub(crate) fn task_257b2_debug_oracle(value: &str) -> (usize, u64, u64) {
+        let mut fnv = 0xcbf2_9ce4_8422_2325_u64;
+        let mut mixed = 0x6a09_e667_f3bc_c909_u64;
+        for (index, byte) in value.bytes().enumerate() {
+            fnv ^= u64::from(byte);
+            fnv = fnv.wrapping_mul(0x0000_0100_0000_01b3);
+            mixed ^= u64::from(byte).wrapping_add((index as u64).rotate_left(17));
+            mixed = mixed.rotate_left(11).wrapping_mul(0x9e37_79b1_85eb_ca87);
+        }
+        (value.len(), fnv, mixed)
     }
 
     pub(crate) fn task_257a_installed_typed_ast() -> TypedAst {
@@ -2081,6 +2533,390 @@ pub(crate) mod tests {
         let mut input = fixture.input.clone();
         mutate(&mut input);
         assert!(build(fixture, input).is_err());
+    }
+
+    #[track_caller]
+    fn assert_task_257b2_input_rejected(
+        fixture: &Task257B2CompositeFixture,
+        mutate: impl FnOnce(&mut SourceCompositeFormulaHandoffInput),
+    ) {
+        let mut input = fixture.input.clone();
+        mutate(&mut input);
+        assert!(build_task_257b2(fixture, input).is_err());
+    }
+
+    #[test]
+    fn task_257b2_exact_third_profile_wrappers_edges_requests_and_debug_publish() {
+        let fixture = task_257b2_composite_fixture();
+        let first =
+            build_task_257b2(&fixture, fixture.input.clone()).expect("Task 257B2 composite");
+        let second = build_task_257b2(&fixture, fixture.input.clone()).expect("Task 257B2 replay");
+        assert!(first.is_task_257b2_profile());
+        assert_eq!(first, second);
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert_eq!(
+            task_257b2_debug_oracle(&first.debug_text()),
+            (4255, 15930575779633039590, 13566331828362069151),
+            "Task 257B2 composite debug bytes changed"
+        );
+        assert_eq!(
+            (
+                first.formulas().len(),
+                first.wrappers().len(),
+                first.roots().len(),
+                first.binders().len(),
+                first.type_sites().len(),
+                first.edges().len(),
+                first.requests().len(),
+                first.binding_env().contexts().len(),
+                first.binding_env().bindings().len(),
+                first.binding_env().diagnostics().len(),
+            ),
+            (8, 6, 1, 1, 1, 7, 9, 2, 1, 4)
+        );
+        assert_eq!(
+            first
+                .wrappers()
+                .iter()
+                .map(|(_, row)| {
+                    (
+                        row.formula().index(),
+                        row.ordinal(),
+                        row.source_range().start,
+                        row.source_range().end,
+                        row.spelling(),
+                    )
+                })
+                .collect::<Vec<_>>(),
+            [
+                (2, 0, 72, 122, "( or )"),
+                (3, 0, 73, 94, "( & ... & )"),
+                (4, 0, 98, 121, "( or ... or )"),
+                (5, 0, 127, 164, "( or )"),
+                (6, 0, 128, 143, "( & )"),
+                (7, 0, 147, 163, "( or )"),
+            ]
+        );
+        assert_eq!(
+            first
+                .edges()
+                .iter()
+                .map(|(_, row)| {
+                    (
+                        row.parent().index(),
+                        row.ordinal(),
+                        row.role(),
+                        row.child().index(),
+                    )
+                })
+                .collect::<Vec<_>>(),
+            [
+                (0, 0, SourceFormulaEdgeRole::UniversalBody, 1),
+                (1, 0, SourceFormulaEdgeRole::BiconditionalLeft, 2),
+                (1, 1, SourceFormulaEdgeRole::BiconditionalRight, 5),
+                (2, 0, SourceFormulaEdgeRole::DisjunctionLeft, 3),
+                (2, 1, SourceFormulaEdgeRole::DisjunctionRight, 4),
+                (5, 0, SourceFormulaEdgeRole::DisjunctionLeft, 6),
+                (5, 1, SourceFormulaEdgeRole::DisjunctionRight, 7),
+            ]
+        );
+        assert_eq!(
+            first
+                .requests()
+                .iter()
+                .map(|(_, row)| (row.formula().index(), row.ordinal(), row.kind()))
+                .collect::<Vec<_>>(),
+            [
+                (0, 0, SourceFormulaRequestKind::QuantifierSemantics),
+                (0, 1, SourceFormulaRequestKind::BinderType),
+                (1, 0, SourceFormulaRequestKind::ConnectiveSemantics),
+                (2, 0, SourceFormulaRequestKind::ConnectiveSemantics),
+                (3, 0, SourceFormulaRequestKind::ConnectiveSemantics),
+                (4, 0, SourceFormulaRequestKind::ConnectiveSemantics),
+                (5, 0, SourceFormulaRequestKind::ConnectiveSemantics),
+                (6, 0, SourceFormulaRequestKind::ConnectiveSemantics),
+                (7, 0, SourceFormulaRequestKind::ConnectiveSemantics),
+            ]
+        );
+        assert!(first.debug_text().contains("kind=repeated-conjunction"));
+        assert!(first.debug_text().contains("role=biconditional-right"));
+    }
+
+    #[test]
+    fn task_257b2_profile_specific_field_and_link_corruptions_fail_closed() {
+        let fixture = task_257b2_composite_fixture();
+        for index in 0..8 {
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.formulas[index].site = node(17);
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.formulas[index].source_range.end -= 1;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.formulas[index].kind = SourceCompositeFormulaKind::Contradiction;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.formulas[index].spelling.push_str("-substituted");
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.formulas[index].source_ordinal += 1;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.formulas[index].context =
+                    BindingContextId::new(1 - input.formulas[index].context.index());
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.formulas[index].recovery = SourceCompositeFormulaRecovery::Degraded;
+            });
+        }
+        for index in 0..6 {
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.wrappers[index].formula = SourceCompositeFormulaId::new(0);
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.wrappers[index].ordinal = 1;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.wrappers[index].site = node(0);
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.wrappers[index].source_range.end -= 1;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.wrappers[index].context = BindingContextId::new(0);
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.wrappers[index].spelling.push_str("-substituted");
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.wrappers[index].recovery = SourceCompositeFormulaRecovery::Degraded;
+            });
+        }
+        for index in 0..7 {
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.edges[index].parent = SourceCompositeFormulaId::new(7);
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.edges[index].ordinal += 1;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.edges[index].role = SourceFormulaEdgeRole::ImplicationLeft;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.edges[index].child = SourceCompositeFormulaId::new(0);
+            });
+        }
+        for index in 0..9 {
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.requests[index].formula =
+                    if input.requests[index].formula == SourceCompositeFormulaId::new(7) {
+                        SourceCompositeFormulaId::new(0)
+                    } else {
+                        SourceCompositeFormulaId::new(7)
+                    };
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.requests[index].ordinal += 1;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.requests[index].kind = SourceFormulaRequestKind::ConstantSemantics;
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.requests[index].binder = if index == 1 {
+                    None
+                } else {
+                    Some(SourceQuantifierBinderId::new(0))
+                };
+            });
+            assert_task_257b2_input_rejected(&fixture, |input| {
+                input.requests[index].type_site = if index == 1 {
+                    None
+                } else {
+                    Some(SourceBinderTypeSiteId::new(0))
+                };
+            });
+        }
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.roots[0].formula = SourceCompositeFormulaId::new(1);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| input.roots[0].ordinal = 1);
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].formula = SourceCompositeFormulaId::new(1);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| input.binders[0].ordinal = 1);
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].segment_site = node(0);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].segment_range.end -= 1;
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].segment_spelling = "y being".to_owned();
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].identifier_site = node(0);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].identifier_range.end += 1;
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].identifier_spelling = "y".to_owned();
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].local = LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![0]),
+                input.binders[0].identifier_range,
+                0,
+            );
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].local = LocalTermBinding::new(
+                "x",
+                LocalTermScope::new(vec![1]),
+                input.binders[0].identifier_range,
+                0,
+            );
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].local = LocalTermBinding::new(
+                "x",
+                LocalTermScope::new(vec![0]),
+                input.binders[0].identifier_range,
+                1,
+            );
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].binding = BindingId::new(1);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].body_context = BindingContextId::new(0);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].type_site = SourceBinderTypeSiteId::new(1);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.binders[0].recovery = SourceCompositeFormulaRecovery::Degraded;
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].binder = SourceQuantifierBinderId::new(1);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].site = node(0);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].source_range.start -= 1;
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].spelling = "object".to_owned();
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].head_site = node(0);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].head_range.start -= 1;
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].head_spelling = "object".to_owned();
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].context = BindingContextId::new(1);
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.type_sites[0].recovery = SourceCompositeFormulaRecovery::Degraded;
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.formulas[3].kind = SourceCompositeFormulaKind::Conjunction;
+            input.formulas[3].spelling = "&".to_owned();
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.formulas[6].kind = SourceCompositeFormulaKind::RepeatedConjunction;
+            input.formulas[6].spelling = "& ... &".to_owned();
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| input.wrappers.swap(0, 1));
+        assert_task_257b2_input_rejected(&fixture, |input| input.edges.swap(1, 2));
+        assert_task_257b2_input_rejected(&fixture, |input| input.requests.swap(1, 2));
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.wrappers[0].source_range.end = 164;
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| input.formulas.pop().map_or((), drop));
+        assert_task_257b2_input_rejected(&fixture, |input| input.wrappers.pop().map_or((), drop));
+        assert_task_257b2_input_rejected(&fixture, |input| input.edges.pop().map_or((), drop));
+        assert_task_257b2_input_rejected(&fixture, |input| input.requests.pop().map_or((), drop));
+        assert!(
+            build_task_257b2(&fixture, fixture.input.clone()).is_ok(),
+            "valid replay must recover after every rejected corruption"
+        );
+    }
+
+    #[test]
+    fn task_257b2_profile_partition_rejects_hybrids_and_a_coherent_fourth_shape() {
+        let fixture = task_257b2_composite_fixture();
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.formulas[0].kind = SourceCompositeFormulaKind::Implication;
+            input.formulas[0].spelling = "implies".to_owned();
+        });
+        assert_task_257b2_input_rejected(&fixture, |input| {
+            input.formulas.truncate(1);
+            input.wrappers.clear();
+            input.edges.clear();
+            input.requests.truncate(2);
+            input.formulas[0].kind = SourceCompositeFormulaKind::Biconditional;
+            input.formulas[0].spelling = "iff".to_owned();
+        });
+
+        let fourth_source = source_id_with_snapshot_byte("e7");
+        let fourth_module = ModuleId::new(
+            PackageId::new("pkg"),
+            ModulePath::new("composite.fourth-profile"),
+        );
+        let fourth_range = range(fourth_source, 10, 20);
+        let fourth_arena = TypedArena::try_new(
+            None,
+            vec![TypedNode::new(
+                "source.formula.composite.conjunction",
+                SourceAnchor::Range(fourth_range),
+            )],
+        )
+        .expect("coherent fourth-profile arena");
+        let fourth = SourceCompositeFormulaHandoffInput {
+            source_id: fourth_source,
+            module_id: fourth_module.clone(),
+            formulas: vec![SourceCompositeFormulaInput {
+                site: node(0),
+                source_range: fourth_range,
+                source_ordinal: 0,
+                context: BindingContextId::new(0),
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                spelling: "&".to_owned(),
+                kind: SourceCompositeFormulaKind::Conjunction,
+            }],
+            wrappers: Vec::new(),
+            roots: vec![SourceFormulaRootInput {
+                formula: SourceCompositeFormulaId::new(0),
+                ordinal: 0,
+                ownership: SourceFormulaRootOwnership::UnassignedStatement,
+            }],
+            binders: Vec::new(),
+            type_sites: Vec::new(),
+            edges: Vec::new(),
+            requests: vec![SourceFormulaRequestInput {
+                formula: SourceCompositeFormulaId::new(0),
+                ordinal: 0,
+                kind: SourceFormulaRequestKind::ConnectiveSemantics,
+                binder: None,
+                type_site: None,
+            }],
+        };
+        assert!(
+            SourceCompositeFormulaProducer::extend_bindings(
+                &fourth,
+                &base_bindings(fourth_source, &fourth_module),
+                &fourth_arena,
+            )
+            .is_err(),
+            "an otherwise coherent unsupported fourth profile must fail closed"
+        );
     }
 
     #[test]

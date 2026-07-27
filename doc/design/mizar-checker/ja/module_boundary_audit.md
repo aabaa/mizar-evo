@@ -27,12 +27,12 @@ note として記録する。
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
 | `src/lib.rs` | 43 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Task 257B1 documented syntax-free formula-composition moduleをexportするcrate rootとして維持。 |
-| `src/typed_ast.rs` | 4110 | typed AST data model | `typed_ast.md` | no | no | Task-253/254/255/256 bidirectional install、Task-257A one-shot install、Task-257B1 combined installを含むcohesive owner。 |
+| `src/typed_ast.rs` | 4115 | typed AST data model | `typed_ast.md` | no | no | Task-253/254/255/256 bidirectional install、Task-257A one-shot install、Task-257B1/B2 combined installを含むcohesive owner。 |
 | `src/binding_env.rs` | 3143 | binding environment and resolver shell boundary | `binding_env.md` | no | no | source-formula context identityを含むcohesiveなbinding/context data layer。behavior-neutral splitは不要。 |
 | `src/source_context.rs` | 1150 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 6414 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256 eight-table association、resolver provenance、cross-family ownership/fingerprint validation、deterministic rendering、install check、corruption test。split不要。 |
-| `src/source_composite_formula.rs` | 2913 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Task-257A tableとexact Task-257B1 profile discriminator、binding extension、validation、rendering/install/corruption testを持つcohesive owner。 |
-| `src/source_formula_composition.rs` | 1475 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1 atomic-edge/bound-use association、dependency fingerprint、rendering、corruption testを持つcohesive owner。 |
+| `src/source_composite_formula.rs` | 3749 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
+| `src/source_formula_composition.rs` | 2177 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2 atomic-edge/bound-use association、dependency fingerprint、rendering/install/corruption testsを持つcohesive owner。 |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | cohesiveなTask-250 flat table、environment/parent/arena/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | cohesiveなTask-251 request/response table、upstream association、catalog/payload validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_term.rs` | 2207 | syntax-free source primary-term producer | `source_term.md` | no | no | cohesiveなTask-252 term/reference/request table、binding/parent validation、deterministic rendering、corruption test。split不要。 |
@@ -44,7 +44,7 @@ note として記録する。
 | `src/registration_resolution.rs` | 5888 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesive な registration data layer と gate logic。behavior-neutral split は不要。 |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | overload collection、template expansion、viability、specificity、selection、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
-| `src/resolved_typed_ast.rs` | 6949 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Task-251/252/253/254/255/256/257A/257B1 clone-preserving handoffを含むcohesive final projection module。 |
+| `src/resolved_typed_ast.rs` | 6948 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Task-251/252/253/254/255/256/257A/257B1/B2 clone-preserving handoffを含むcohesive final projection module。 |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
 | `tests/lint_policy.rs` | 1846 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | 大きい support test だが repository-policy guardrail を意図的に集約している。task 34 の split は不要。 |
 
@@ -124,6 +124,14 @@ seven-table association、constructor provenance、member/`FieldUpdate` geometry
 cross-family root ownership、conditional fingerprint、rendering、corruption testは
 behavior-coupledでありprivate checker splitは不要である。`TypedAst`がone-shot
 immutable handoffをownし、`ResolvedTypedAst`はrevalidate後にclone-preserveする。
+
+## Task 257B2 Boundary Delta
+
+checker moduleは追加しない。`source_composite_formula`が5 frozen connective
+kinds、4 same-family roles、6-wrapper validation、third profileをownし、
+`source_formula_composition`が4 atomic rolesとexact `8/0` tableをownする。
+`TypedAst`/`ResolvedTypedAst`は既存combined publication boundaryを維持し、
+runner extractionも既存private leafに留める。
 
 ## Task 257B1 current-layout addendum
 

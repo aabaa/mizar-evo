@@ -1647,6 +1647,27 @@ pub(in crate::runner) struct SourceFormulaQuantifierBoundUse {
 }
 
 #[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceFormulaConnectiveGrouping {
+    pub(in crate::runner) formula_sites: Vec<TypedSiteRef>,
+    pub(in crate::runner) formula_ranges: Vec<SourceRange>,
+    pub(in crate::runner) wrapper_sites: Vec<TypedSiteRef>,
+    pub(in crate::runner) wrapper_ranges: Vec<SourceRange>,
+    pub(in crate::runner) binder_segment_site: TypedSiteRef,
+    pub(in crate::runner) binder_segment_range: SourceRange,
+    pub(in crate::runner) binder_identifier_site: TypedSiteRef,
+    pub(in crate::runner) binder_identifier_range: SourceRange,
+    pub(in crate::runner) binder_type_site: TypedSiteRef,
+    pub(in crate::runner) binder_type_range: SourceRange,
+    pub(in crate::runner) binder_type_head_site: TypedSiteRef,
+    pub(in crate::runner) binder_type_head_range: SourceRange,
+    pub(in crate::runner) equality_sites: Vec<TypedSiteRef>,
+    pub(in crate::runner) equality_ranges: Vec<SourceRange>,
+    pub(in crate::runner) numeral_sites: Vec<TypedSiteRef>,
+    pub(in crate::runner) numeral_ranges: Vec<SourceRange>,
+    pub(in crate::runner) numeral_spellings: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceFormulaStatement {
     pub(in crate::runner) root_range: SourceRange,
     pub(in crate::runner) owner_site: SurfaceNodeId,
@@ -2520,6 +2541,277 @@ pub(in crate::runner) fn extract_source_formula_quantifier_bound_use(
     })
 }
 
+pub(in crate::runner) fn extract_source_formula_connective_grouping(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceFormulaConnectiveGrouping> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_formula_connective_grouping_theorem_bridge_node(node))
+    {
+        return None;
+    }
+    let item_list = exact_compilation_item_list(ast)?;
+    let item_children = structural_child_ids(ast, item_list);
+    let [theorem_id] = item_children.as_slice() else {
+        return None;
+    };
+    let theorem = ast.node(*theorem_id)?;
+    if !matches!(theorem.kind, SurfaceNodeKind::TheoremItem)
+        || subtree_has_recovery(ast, theorem)
+        || direct_token_texts(ast, theorem).as_slice()
+            != [
+                "theorem",
+                "FormulaConnectiveGroupingPayloadBoundary",
+                ":",
+                ";",
+            ]
+    {
+        return None;
+    }
+    let theorem_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [quantified_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let quantified = ast.node(*quantified_id)?;
+    if !matches!(
+        quantified.kind,
+        SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+    ) || subtree_has_recovery(ast, quantified)
+        || direct_token_texts(ast, quantified).as_slice() != ["for", "holds"]
+    {
+        return None;
+    }
+    let quantified_children = structural_child_ids(ast, quantified);
+    let [segment_id, iff_id] = quantified_children.as_slice() else {
+        return None;
+    };
+
+    let segment = ast.node(*segment_id)?;
+    if !matches!(segment.kind, SurfaceNodeKind::QuantifierVariableSegment)
+        || subtree_has_recovery(ast, segment)
+        || direct_token_texts(ast, segment).as_slice() != ["x", "being"]
+    {
+        return None;
+    }
+    let segment_children = structural_child_ids(ast, segment);
+    let [type_expression_id] = segment_children.as_slice() else {
+        return None;
+    };
+    let binder_identifier_id = segment.children.iter().copied().find(|child| {
+        ast.node(*child)
+            .and_then(SurfaceNode::token_text)
+            .is_some_and(|text| text == "x")
+    })?;
+    let binder_identifier = ast.node(binder_identifier_id)?;
+    let type_expression = ast.node(*type_expression_id)?;
+    let type_expression_children = structural_child_ids(ast, type_expression);
+    let [type_head_id] = type_expression_children.as_slice() else {
+        return None;
+    };
+    let type_head = ast.node(*type_head_id)?;
+    let binder_type =
+        extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
+    if binder_type.spelling != "set"
+        || binder_type.head != TypeHeadInput::BuiltinSet
+        || !binder_type.attributes.is_empty()
+    {
+        return None;
+    }
+
+    let [left_wrapper_id, right_wrapper_id] =
+        exact_binary_formula(ast, *iff_id, SurfaceFormulaConnective::Iff, false, &["iff"])?;
+    let left_or_id = exact_parenthesized_formula(ast, left_wrapper_id)?;
+    let right_or_id = exact_parenthesized_formula(ast, right_wrapper_id)?;
+
+    let [repeated_and_wrapper_id, repeated_or_wrapper_id] = exact_binary_formula(
+        ast,
+        left_or_id,
+        SurfaceFormulaConnective::Or,
+        false,
+        &["or"],
+    )?;
+    let repeated_and_id = exact_parenthesized_formula(ast, repeated_and_wrapper_id)?;
+    let repeated_or_id = exact_parenthesized_formula(ast, repeated_or_wrapper_id)?;
+    let repeated_and_children = exact_binary_formula(
+        ast,
+        repeated_and_id,
+        SurfaceFormulaConnective::And,
+        true,
+        &["&", "...", "&"],
+    )?;
+    let repeated_or_children = exact_binary_formula(
+        ast,
+        repeated_or_id,
+        SurfaceFormulaConnective::Or,
+        true,
+        &["or", "...", "or"],
+    )?;
+
+    let [fixed_and_wrapper_id, fixed_or_wrapper_id] = exact_binary_formula(
+        ast,
+        right_or_id,
+        SurfaceFormulaConnective::Or,
+        false,
+        &["or"],
+    )?;
+    let fixed_and_id = exact_parenthesized_formula(ast, fixed_and_wrapper_id)?;
+    let fixed_or_id = exact_parenthesized_formula(ast, fixed_or_wrapper_id)?;
+    let fixed_and_children = exact_binary_formula(
+        ast,
+        fixed_and_id,
+        SurfaceFormulaConnective::And,
+        false,
+        &["&"],
+    )?;
+    let fixed_or_children = exact_binary_formula(
+        ast,
+        fixed_or_id,
+        SurfaceFormulaConnective::Or,
+        false,
+        &["or"],
+    )?;
+
+    let equality_specs = [
+        (repeated_and_children[0], "0"),
+        (repeated_and_children[1], "3"),
+        (repeated_or_children[0], "0"),
+        (repeated_or_children[1], "3"),
+        (fixed_and_children[0], "0"),
+        (fixed_and_children[1], "0"),
+        (fixed_or_children[0], "0"),
+        (fixed_or_children[1], "0"),
+    ];
+    let mut equality_sites = Vec::with_capacity(8);
+    let mut equality_ranges = Vec::with_capacity(8);
+    let mut numeral_sites = Vec::with_capacity(16);
+    let mut numeral_ranges = Vec::with_capacity(16);
+    let mut numeral_spellings = Vec::with_capacity(16);
+    for (equality_id, right_spelling) in equality_specs {
+        let equality = ast.node(equality_id)?;
+        if !matches!(equality.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+            || subtree_has_recovery(ast, equality)
+            || direct_token_texts(ast, equality).as_slice() != ["="]
+        {
+            return None;
+        }
+        let equality_children = structural_child_ids(ast, equality);
+        let [left_expression_id, right_expression_id] = equality_children.as_slice() else {
+            return None;
+        };
+        let left = exact_numeral_term_operand(ast, *left_expression_id, "0")?;
+        let right = exact_numeral_term_operand(ast, *right_expression_id, right_spelling)?;
+        equality_sites.push(surface_site(equality_id));
+        equality_ranges.push(equality.range);
+        for (id, range, spelling) in [(left.0, left.1, "0"), (right.0, right.1, right_spelling)] {
+            numeral_sites.push(surface_site(id));
+            numeral_ranges.push(range);
+            numeral_spellings.push(spelling.to_owned());
+        }
+    }
+
+    let formula_ids = [
+        *quantified_id,
+        *iff_id,
+        left_or_id,
+        repeated_and_id,
+        repeated_or_id,
+        right_or_id,
+        fixed_and_id,
+        fixed_or_id,
+    ];
+    let wrapper_ids = [
+        left_wrapper_id,
+        repeated_and_wrapper_id,
+        repeated_or_wrapper_id,
+        right_wrapper_id,
+        fixed_and_wrapper_id,
+        fixed_or_wrapper_id,
+    ];
+    Some(SourceFormulaConnectiveGrouping {
+        formula_sites: formula_ids.into_iter().map(surface_site).collect(),
+        formula_ranges: formula_ids
+            .into_iter()
+            .map(|id| ast.node(id).map(|node| node.range))
+            .collect::<Option<Vec<_>>>()?,
+        wrapper_sites: wrapper_ids.into_iter().map(surface_site).collect(),
+        wrapper_ranges: wrapper_ids
+            .into_iter()
+            .map(|id| ast.node(id).map(|node| node.range))
+            .collect::<Option<Vec<_>>>()?,
+        binder_segment_site: surface_site(*segment_id),
+        binder_segment_range: segment.range,
+        binder_identifier_site: surface_site(binder_identifier_id),
+        binder_identifier_range: binder_identifier.range,
+        binder_type_site: surface_site(*type_expression_id),
+        binder_type_range: type_expression.range,
+        binder_type_head_site: surface_site(*type_head_id),
+        binder_type_head_range: type_head.range,
+        equality_sites,
+        equality_ranges,
+        numeral_sites,
+        numeral_ranges,
+        numeral_spellings,
+    })
+}
+
+fn exact_binary_formula(
+    ast: &SurfaceAst,
+    id: SurfaceNodeId,
+    connective: SurfaceFormulaConnective,
+    repeated: bool,
+    direct_tokens: &[&str],
+) -> Option<[SurfaceNodeId; 2]> {
+    let node = ast.node(id)?;
+    if !matches!(
+        node.kind,
+        SurfaceNodeKind::BinaryFormula(operator)
+            if operator.connective == connective && operator.repeated == repeated
+    ) || subtree_has_recovery(ast, node)
+        || direct_token_texts(ast, node).as_slice() != direct_tokens
+    {
+        return None;
+    }
+    let children = structural_child_ids(ast, node);
+    let [left, right] = children.as_slice() else {
+        return None;
+    };
+    Some([*left, *right])
+}
+
+fn exact_parenthesized_formula(ast: &SurfaceAst, id: SurfaceNodeId) -> Option<SurfaceNodeId> {
+    let wrapper = ast.node(id)?;
+    if !matches!(wrapper.kind, SurfaceNodeKind::ParenthesizedFormula)
+        || subtree_has_recovery(ast, wrapper)
+        || direct_token_texts(ast, wrapper).as_slice() != ["(", ")"]
+    {
+        return None;
+    }
+    let wrapper_children = structural_child_ids(ast, wrapper);
+    let [expression_id] = wrapper_children.as_slice() else {
+        return None;
+    };
+    let expression = ast.node(*expression_id)?;
+    if !matches!(expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let expression_children = structural_child_ids(ast, expression);
+    let [formula_id] = expression_children.as_slice() else {
+        return None;
+    };
+    Some(*formula_id)
+}
+
 fn extract_exact_source_formula_constant(
     ast: &SurfaceAst,
     expected_label: &str,
@@ -2843,6 +3135,27 @@ fn is_supported_formula_quantifier_bound_use_theorem_bridge_node(node: &SurfaceN
             | SurfaceNodeKind::BuiltinPredicateApplication
             | SurfaceNodeKind::TermExpression
             | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_formula_connective_grouping_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::QuantifiedFormula(_)
+            | SurfaceNodeKind::QuantifierVariableSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::BinaryFormula(_)
+            | SurfaceNodeKind::ParenthesizedFormula
+            | SurfaceNodeKind::BuiltinPredicateApplication
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::Token(_)
     )
 }

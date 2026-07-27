@@ -137,3 +137,8 @@ Task 257B1 reuses this module's existing equality and two primary-term operand
 edges as an authenticated dependency for one universal body. Atomic-formula
 row ownership, validation, and semantic deferrals do not change; the new
 formula-composition handoff stores only the cross-family parent association.
+
+Task 257B2 reuses eight equality rows with exact profile
+`8/0/0/0/0/0/16/16`. Their sixteen existing operand edges remain owned here;
+the new composition table only associates those atomic roots with repeated or
+fixed conjunction/disjunction parents and does not change atomic semantics.

@@ -289,3 +289,12 @@ fact、proof/IR/VC、Task 257B3、Task 257C、Steps 6/7はdefer。
 sidecar、trace metadata/count、executable coverageを変えない。baselineは
 plan `415/381`、type `247/235`、pass/fail `225/190`、active
 `101/5/194/1`、warnings/errors `23/0`。
+
+## Task 257B2 Implemented Connective/Grouping Composition
+
+third profileを実装し、8 ordered atomic edgesがrepeated/fixed conjunction/
+disjunction rowsを8 Task-256 equalitiesへmapする。explicit binderはunusedなので
+bound-useはemptyである。dependency spelling/context/numeric request/
+fingerprint、wrapper/tree ownership、empty captureをfail-closedで再検証する。
+combined publication/final cloneはatomicで、truth、repetition expansion、
+theorem status、fact、proof、IRはdeferredのまま。

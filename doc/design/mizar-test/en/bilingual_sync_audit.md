@@ -294,3 +294,11 @@ Task-252 `16/0/16`, Task-256 `8/0/0/0/0/0/16/16`, Task-257B2
 projected counts, and semantic deferrals. The module-boundary audit is
 intentionally unchanged because this prerequisite adds no production path or
 module. No bilingual drift remains in the Task 257B2 prerequisite.
+
+## Checker Task 257B2 Implementation Pair Recheck
+
+Both languages now record the implemented exact selector, four aggregate
+profiles, no-reference/no-bound-use rule, negative matrices, covered sidecar,
+corpus `416/382`, 343 tests, and 29-path / 32,064-line production baseline.
+The paired module-boundary audit records reuse of the existing private leaf.
+No Task-257B2 bilingual drift remains.

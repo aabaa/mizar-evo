@@ -11328,3 +11328,11 @@ The plan/parse/declaration/type/proof CLI hashes are
 and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 Task 257 and every deferred semantic formula decision remain outside this
 layout increment.
+
+## Checker Task 257B2 Boundary Recheck
+
+No production path was added. The new selector/payload stays in
+`type_elaboration/source_formula.rs`, while arena construction and producer
+sequencing stay in the existing `source_formula_composition.rs` leaf. Tests
+remain in its paired test leaf. The resulting manifest is 29 paths / 32,064
+lines; no further split is warranted for this bounded second consumer.

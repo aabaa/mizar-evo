@@ -316,3 +316,14 @@ This addendum is a documentation prerequisite only. It leaves production,
 fixtures, sidecars, trace metadata/counts, and executable coverage unchanged
 at plan `415/381`, type `247/235`, pass/fail `225/190`, active
 `101/5/194/1`, and warnings/errors `23/0`.
+
+## Task 257B2 Implemented Connective/Grouping Composition
+
+The frozen third profile is now implemented. Eight ordered atomic edges map
+the repeated/fixed conjunction and disjunction rows to their eight Task-256
+equalities, while bound-use remains empty because the explicit binder is
+unused. Exact dependency spellings, contexts, numeric requests, fingerprints,
+wrapper/tree ownership, and empty capture are revalidated fail-closed.
+Combined `TypedAst` publication and `ResolvedTypedAst` cloning are atomic;
+connective truth, repetition expansion, theorem status, facts, proof, and IR
+remain deferred.

@@ -763,3 +763,8 @@ bound-use rowをrebuild/renumberせずclone-preserveする。borrowed
 `source_formula_composition()` getterがimmutable handoffを公開する。absenceは
 legacy byteを保持し、presenceはformula result/fact/truth、theorem acceptance、
 proof、downstream IRを追加しない。
+
+Task 257B2もこのboundaryをreuseし、final assemblyはexact third composite
+profileと`8/0` composition fingerprintを再検証してclone-preserveする。
+resolved resultにはchecked formula、statement semantics、accepted theorem、
+proof、IR outputを追加しない。

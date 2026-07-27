@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_formula_connective_grouping_payload_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_formula_connective_grouping_payload_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.source_connective_grouping_payload",
+]
+notes = "Checker Task 257B2 bounded source-transport coverage for the exact explicit universal connective/grouping consumer. The private runner composes Task-252 `16/0/16` numerals, Task-256 `8/0/0/0/0/0/16/16` equality rows, Task-257B2 `8/6/1/1/1/7/9` composite rows, and `8/0` nearest-parent atomic associations in one typed arena. The explicit `x` binder remains unused, all sixteen numerals remain in body context 1, fixed and repeated connective shapes stay distinct, and wrappers remain transparent transport sites. Passing asserts no connective truth, repetition expansion, formula fact, theorem ownership or acceptance, proof, CoreIr, ControlFlowIr, or VC."

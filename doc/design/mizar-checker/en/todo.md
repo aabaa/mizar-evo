@@ -4465,8 +4465,9 @@ unchecked row below is one future nonempty logical task and one commit.
       exact Task-257 composite profile, Task-252/256 dependencies, `1/2`
       formula-composition transaction, final ownership, and bounded trace row
       are complete without semantic truth or theorem acceptance.
-    - [ ] **Task 257B2:** conjunction/disjunction/`iff`/repetition and
-      executable formula grouping after Task 257B1.
+    - [x] **Task 257B2:** exact conjunction/disjunction/`iff`/repetition and
+      executable formula grouping transport after Task 257B1, with no
+      connective truth or theorem acceptance.
     - [ ] **Task 257B3:** existential, restricted/nested quantification,
       implicit reserved binders, and additional scoped uses after Task 257B1.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
@@ -4515,5 +4516,10 @@ implementation commit does not satisfy a producer task.
 - [x] Keep this prerequisite documentation-only at 415/381, 247/235,
   225/190, active 101/5/194/1, 306/338 library tests, and 29 production
   paths / 31,374 lines.
-- [ ] Implement only this frozen Task 257B2 slice in a separate logical task
-  and commit after fresh preflight.
+- [x] Implement only this frozen Task 257B2 slice in a separate logical task
+  after fresh parser/resolver and baseline preflight.
+- [x] Verify exact `16/0/16`, `8/0/0/0/0/0/16/16`,
+  `8/6/1/1/1/7/9`, and `8/0` profiles, fail-closed tests, final ownership,
+  corpus `416/382`, and all semantic deferrals.
+- [ ] Freeze Task 257B3 as the next dependency-ordered formula slice before
+  changing its production source or test intent.

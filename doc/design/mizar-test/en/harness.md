@@ -3143,3 +3143,12 @@ The active case must pass with no detail key and no types, facts, checked
 formula semantics, statement semantics, theorem acceptance, proof, or IR
 credit. The existing Task-257A and Task-257B1 selectors and byte oracles remain
 unchanged.
+
+## Checker Task 257B2 Implemented Harness Route
+
+The route now performs the frozen extraction and same-arena producer sequence,
+then atomically installs the composite/composition pair. The active case
+passes with no detail key; selector isolation, source-level near misses,
+profile/association corruption and valid replay, A/B1 preservation, and final
+typed/resolved ownership are executable tests. No semantic output or theorem
+credit is produced.

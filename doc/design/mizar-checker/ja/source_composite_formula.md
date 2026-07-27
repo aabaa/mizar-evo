@@ -120,3 +120,12 @@ deriveし、A/B hybridとthird shapeをrejectする。legacy
 [source_formula_composition.md](./source_formula_composition.md)で規定するcombined
 installerを通じ、Task-252/256 dependencyと`1/2` cross-family handoffを伴う場合
 だけpublishできる。
+
+## Task 257B2 Implemented Third Profile
+
+producerはfrozen universal/`iff`/disjunction/repeated・fixed
+conjunction/disjunction preorder、6 wrappers、7 child edges、9 unresolved
+requestsからなるexact `8/6/1/1/1/7/9`だけを追加でadmitする。wrapper
+crossing/order drift、fixed/repeated substitution、A/B1/B2 hybrid、
+otherwise-coherent unsupported fourth profileをrejectする。legacy installerは
+Task-257A-onlyで、B1/B2はcombined installerだけからpublishする。
