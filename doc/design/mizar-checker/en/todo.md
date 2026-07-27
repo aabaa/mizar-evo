@@ -4460,6 +4460,16 @@ unchecked row below is one future nonempty logical task and one commit.
     without changing the canonical `.miz` or its semantic detail vector.
   - [ ] **Task 257B:** broader connective/quantifier shapes, implicit binders,
     bound use, and capture.
+    - [ ] **Task 257B1:** explicit universal-to-atomic composition and two
+      binder-selected bound uses. The EN/JA frozen contract is complete; the
+      separate implementation must add the exact 79-byte pass consumer,
+      second exact Task-257A profile, Task-252/256 dependencies, and the
+      `1/2` formula-composition transaction without semantic truth or theorem
+      acceptance.
+    - [ ] **Task 257B2:** conjunction/disjunction/`iff`/repetition and
+      executable formula grouping after Task 257B1.
+    - [ ] **Task 257B3:** existential, restricted/nested quantification,
+      implicit reserved binders, and additional scoped uses after Task 257B1.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and

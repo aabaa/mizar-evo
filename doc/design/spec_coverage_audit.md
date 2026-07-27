@@ -3128,3 +3128,29 @@ connective/quantifier, bound-use/capture, predicate-chain, and conditioned-
 comprehension work. Task 258 retains theorem ownership and acceptance.
 Semantic formula truth/facts, Core/CFG/VC, Steps 6/7, and global Step-5
 completion receive no credit.
+
+## Step 5 Checker Task 257B1 Frozen-Contract Addendum
+
+Task 257B is decomposed before further implementation. Task 257B1 freezes the
+first cross-family quantified bound-use slice: a new exact explicit-universal
+pass consumer, Task-252 `2/2/0` primary-term/reference dependency, Task-256
+`1/0/0/0/0/0/2/2` equality dependency, Task-257
+`1/0/1/1/1/0/2` composite profile, and a `1/2`
+universal-to-atomic/binder-use composition handoff. Task 257B2 retains broader
+connectives and grouping; Task 257B3 retains existential, restricted/nested,
+and implicit-reserve binder shapes.
+
+This prerequisite changes no trace row, mapping, status, fixture, sidecar,
+source, count, hash, or executable coverage. Baseline remains plan 414/380,
+type 246/234, pass/fail 224/190, active 101/5/193/1, and warnings/errors
+23/0. It closes only the missing frozen-contract `design_drift`; the exact
+consumer is a `test_gap`, and the second composite profile and cross-family
+handoff are bounded `source_drift`.
+
+The separate implementation may add one covered row,
+`spec.en.checker.type_elaboration.source_quantifier_bound_use_payload`, mapped
+only to the new pass sidecar, and reciprocal transport notes with unchanged
+status. It projects plan 415/381, type 247/235, pass/fail 225/190, and active
+type 194. No equality or quantified truth, implicit closure, theorem owner or
+acceptance, fact, proof, Core/CFG/VC, Steps 6/7, or global Step-5 completion
+credit is granted.

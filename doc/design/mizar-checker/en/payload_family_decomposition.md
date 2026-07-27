@@ -580,3 +580,18 @@ implementation adds only its covered reciprocal trace requirement over the
 existing sidecar; the canonical source and existing semantic outcome/detail
 intent are unchanged. Broader shapes, bound use/capture, executable wrappers,
 predicate chains, and conditioned comprehensions remain Tasks 257B-C.
+
+### Task 257B Dependency Refinement
+
+Task 257B is split without changing the Task-257 authority or exit boundary.
+Task 257B1 first composes the explicit universal/binder profile with one
+Task-256 equality and two Task-252 binding references. Task 257B2 then adds
+broader binary/repeated connective and grouping occurrences. Task 257B3 adds
+existential, restricted/nested, and implicit-reserve binder forms. The graph
+remains acyclic: binding context precedes primary terms, primary terms precede
+atomic formulas, and all three precede formula composition.
+
+Task-257B1 `bound_uses` rows are formula-side associations only. Task 252
+remains the lookup-winner and source-reference owner, Task 256 remains the
+equality/operand owner, and `BindingEntry::captured` remains reserved for
+free-variable capture rather than direct quantified occurrences.

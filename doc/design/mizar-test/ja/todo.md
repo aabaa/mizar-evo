@@ -1581,3 +1581,29 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   routeは不変two-key semantic detail vectorとcorrected parser range
   `52..113`、`78..89`、`78..79`、`86..89`を保持する。次のdependency-ready
   sliceはChecker Task 257Bである。
+
+## Checker Task 257B1 frozen consumer prerequisite
+
+- [x] exact 79-byte spec-derived pass sourceとuniversal/binder/type/equality/
+  two-use rangeをfreezeする。
+- [x] same-arena compositionをTask-252 `2/2/0`、Task-256
+  `1/0/0/0/0/0/2/2`、Task-257 `1/0/1/1/1/0/2`、Task-257B1 `1/2`で
+  freezeする。
+- [x] Task-252 reference ownershipを保持し、両referenceがcontext 1でquantifier
+  binding 0をselectすることを要求する。captured-free-variable metadataを
+  誤用しない。
+- [x] Task-257A source-context exclusionを維持する。combined installerは
+  `source_context()`をabsentに保ち、preinstalled Task-248 handoffをatomic
+  rejectする。
+- [x] ownership-partition testをfreezeする。legacy installerはB1、combined
+  installerはTask 257Aを持つASTをrejectし、両方partial publicationなしで
+  byte-identical rollbackする。
+- [x] A-cardinality/B-row hybrid、inverse hybrid、otherwise valid third
+  profileのprofile-discriminator testをfreezeする。
+- [x] semantic truth、theorem acceptance、broader connective、
+  existential/restricted/nested/implicit binder、predicate chain、
+  conditioned comprehensionをTask 257B1外に保つ。
+- [x] prerequisiteをdocumentation-onlyで414/380、246/234、224/190、
+  101/5/193/1、299/333 tests、28 paths / 30,654 linesに保つ。
+- [ ] exact consumer、第2 composite profile、lower-family composition、
+  public `1/2` handoff、trace row、test、final ownershipを別commitで実装する。

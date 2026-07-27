@@ -2198,3 +2198,22 @@ Task-256/255 extensions. The parent Task 257 remains incomplete. Formula
 semantics, theorem ownership/acceptance, accepted facts/proofs, Steps 6/7,
 and global Step-5 completion remain deferred; the origin discrepancy remains
 report-only `repo_metadata_conflict`.
+
+## Step 5 Checker Task 257B1 Frozen-Contract Addendum
+
+Task 257B is decomposed in dependency order. Task 257B1 now has a
+documentation-only EN/JA frozen contract for one explicit universal, one
+Task-256 equality body, two Task-252 binder-selected references, the second
+exact `1/0/1/1/1/0/2` Task-257A profile, and a `1/2` cross-family
+formula-composition handoff. Task 257B2 retains broader connectives and
+grouping; Task 257B3 retains existential/restricted/nested and implicit
+binder shapes.
+
+This prerequisite closes only `design_drift`. The exact 79-byte pass
+consumer, source transactions, final ownership, tests, and trace row remain
+bounded `test_gap` and `source_drift` for the separate implementation. It
+changes no production source, fixture, sidecar, trace metadata, executable
+coverage, count, or hash. Baseline remains plan 414/380, type 246/234,
+pass/fail 224/190, active 101/5/193/1, checker/mizar-test 299/333 tests,
+and 28 private production paths / 30,654 lines. Implementation projects
+415/381, 247/235, 225/190, and active type 194.

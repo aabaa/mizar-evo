@@ -3275,3 +3275,27 @@ blocking `spec_gap`、`source_undocumented_behavior`、
 report-only `repo_metadata_conflict`のままである。Tasks 257B/257C/258が
 broader formula semantics、bound-use/capture、predicate-chain/comprehension
 composition、statement ownershipをretainする。
+
+## Checker Task 257B1 frozen-contract audit
+
+post-Task-257A fresh auditによりdependency-ready bounded sliceを1件確認した。
+Chapter 4 §§4.1/4.5/4.6とChapter 14
+§§14.4.1/14.4.4/14.5.2/14.7.5からlanguage intentを変更せずexact
+explicit-universal/equality/bound-use sourceをderiveできる。parser fixtureは
+grammarを示すが、active type-elaboration fixtureはquantified bound
+occurrenceをtransportしない。
+
+classification:
+
+- `design_drift`: Task-257B subtask/cross-family composition contract欠落。
+- `test_gap`: binder-selected body occurrenceのexact type consumer欠落。
+- `source_drift`: 第2 exact composite profile、formula-to-atomic child edge、
+  formula-side bound-use handoff欠落。
+- blocking `spec_gap`、`source_undocumented_behavior`、
+  `test_expectation_drift`、`boundary_violation`なし。
+- initial origin differenceはreport-only `repo_metadata_conflict`。
+
+Task 257B1はexplicit one-binder/one-equality dependency seamだけをcloseする。
+Task 257B2/B3、Task 257C、semantic truth、implicit closure、theorem acceptance、
+proof、downstream IRはopen。documentation prerequisiteはtrace status/coverage
+countを変更しない。

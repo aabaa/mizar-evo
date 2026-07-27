@@ -3426,3 +3426,28 @@ No blocking `spec_gap`, `source_undocumented_behavior`,
 origin discrepancy stays report-only `repo_metadata_conflict`. Tasks 257B,
 257C, and 258 retain all broader formula semantics, bound-use/capture,
 predicate-chain/comprehension composition, and statement ownership.
+
+## Checker Task 257B1 Frozen-Contract Audit
+
+Fresh post-Task-257A audit finds one dependency-ready bounded slice. Chapter 4
+§§4.1/4.5/4.6 and Chapter 14 §§14.4.1/14.4.4/14.5.2/14.7.5 are sufficient to
+derive the exact explicit-universal/equality/bound-use source without changing
+language intent. The parser fixture demonstrates the grammar, but no active
+type-elaboration fixture transports a quantified bound occurrence.
+
+Classification:
+
+- `design_drift`: no Task-257B subtask or cross-family composition contract;
+- `test_gap`: no exact type-elaboration consumer for binder-selected body
+  occurrences;
+- `source_drift`: no second exact composite profile, formula-to-atomic child
+  edge, or formula-side bound-use handoff;
+- no blocking `spec_gap`, `source_undocumented_behavior`,
+  `test_expectation_drift`, or `boundary_violation`;
+- the initial origin difference remains report-only
+  `repo_metadata_conflict`.
+
+Task 257B1 closes only the explicit one-binder, one-equality dependency seam.
+Task 257B2/B3, Task 257C, semantic truth, implicit closure, theorem
+acceptance, proof, and downstream IR remain open. This documentation
+prerequisite changes no trace status or coverage count.

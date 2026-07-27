@@ -1771,3 +1771,29 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   The route preserves the unchanged two-key semantic detail vector and the
   corrected parser ranges `52..113`, `78..89`, `78..79`, and `86..89`.
   Checker Task 257B is the next dependency-ready slice.
+
+## Checker Task 257B1 Frozen Consumer Prerequisite
+
+- [x] Freeze the exact 79-byte specification-derived pass source and its
+  universal/binder/type/equality/two-use ranges.
+- [x] Freeze same-arena composition at Task-252 `2/2/0`, Task-256
+  `1/0/0/0/0/0/2/2`, Task-257 `1/0/1/1/1/0/2`, and Task-257B1 `1/2`.
+- [x] Preserve Task-252 reference ownership and require both references to
+  select quantifier binding 0 in context 1; do not misuse captured-free-
+  variable metadata.
+- [x] Preserve Task-257A source-context exclusion: the combined installer
+  keeps `source_context()` absent and atomically rejects a preinstalled
+  Task-248 handoff.
+- [x] Freeze ownership-partition tests: the legacy installer rejects B1, the
+  combined installer rejects an AST with Task 257A, and both roll back
+  byte-identically without partial publication.
+- [x] Freeze profile-discriminator tests for A-cardinality/B-row hybrids, the
+  inverse hybrids, and a third otherwise valid profile.
+- [x] Keep semantic truth, theorem acceptance, broader connectives,
+  existential/restricted/nested/implicit binders, predicate chains, and
+  conditioned comprehensions outside Task 257B1.
+- [x] Keep this prerequisite documentation-only at 414/380, 246/234,
+  224/190, 101/5/193/1, 299/333 tests, and 28 paths / 30,654 lines.
+- [ ] Implement the exact consumer, second composite profile, lower-family
+  composition, public `1/2` handoff, trace row, tests, and final ownership in
+  a separate commit.

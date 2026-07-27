@@ -530,3 +530,17 @@ clone preservation、bounded corruption/context/install/exclusion matrixが記�
 reciprocal trace requirementだけを追加し、canonical sourceと既存semantic
 outcome/detail intentは不変である。broader shape、bound use/capture、
 executable wrapper、predicate chain、conditioned comprehensionはTasks 257B-Cに残る。
+
+### Task 257B dependency refinement
+
+Task-257 authority/exit boundaryを変えずTask 257Bを分割する。Task 257B1は
+explicit universal/binder profileをTask-256 equality 1件とTask-252 binding
+reference 2件へ最初にcomposeする。Task 257B2はbroader binary/repeated
+connective/grouping、Task 257B3はexistential/restricted/nested/
+implicit-reserve binder formを追加する。binding context→primary term→atomic
+formula→formula compositionの順でgraphはacyclic。
+
+Task-257B1 `bound_uses` rowはformula-side associationだけである。Task 252は
+lookup-winner/source-reference owner、Task 256はequality/operand ownerのまま。
+`BindingEntry::captured`はdirect quantified occurrenceではなく
+free-variable capture用に保持する。

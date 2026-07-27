@@ -3070,3 +3070,35 @@ and installs the handoff; and clone-preserves it into the resolved result.
 Five private tests cover the exact real oracle/final ownership, independent
 table corruption with recovery, all-active and lower-family isolation,
 unchanged semantic details, and preinstalled Task-248 rejection.
+
+## Checker Task 257B1 Frozen Runner Boundary
+
+The exact 79-byte pass source is selected in the existing formula extraction
+owner and composed in a dedicated private Task-257B1 leaf. The leaf must use
+the Task-257 binding extension before building the two Task-252 primary
+references, the Task-256 equality, the one-node Task-257 composite profile,
+and the `1/2` formula-composition handoff in one arena.
+
+Positive tests assert the exact parser ranges, both binding lookup winners,
+all lower/composite/composition rows, dependency fingerprints, final typed and
+resolved ownership, and absence of semantic output. Negative tests cover
+selector isolation, recovery, every cross-family association, dependency
+substitution, corruption recovery, and byte preservation of the existing
+Task-257A route. They also construct `TypedAstParts` with a preinstalled
+Task-248 source-context handoff and require the combined installer to fail
+without publishing either Task-257B1 handoff. No current active selector or
+semantic route is widened.
+
+The positive composition oracle is one full literal
+`source-formula-composition-debug-v1` rendering: module, exact Task-252/256/257
+debug-string fingerprints, edge count/row, and both bound-use rows in field
+order. Typed and resolved getters must expose the identical handoff after the
+existing composite-formula debug section; an absent B1 handoff preserves all
+legacy bytes.
+
+The ownership-partition matrix also passes a valid second-profile handoff to
+the Task-257A legacy installer and passes a combined B1 transaction to an AST
+that already owns Task 257A; both must fail with byte-identical rollback. The
+profile matrix mixes A cardinalities with B rows, B cardinalities with A rows,
+and supplies a third otherwise valid shape. Only the two exact profiles may
+build, and neither failed build/install path may publish partial B1 state.

@@ -4237,6 +4237,15 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
     不変のまま保持する。
   - [ ] **Task 257B:** broader connective/quantifier shape、implicit binder、
     bound use/capture。
+    - [ ] **Task 257B1:** explicit universal-to-atomic compositionとbinderが
+      selectするbound use 2件。EN/JA frozen contractはcomplete。別
+      implementationでexact 79-byte pass consumer、第2 exact Task-257A
+      profile、Task-252/256 dependency、`1/2` formula-composition transactionを
+      semantic truth/theorem acceptanceなしで追加する。
+    - [ ] **Task 257B2:** Task 257B1後のconjunction/disjunction/`iff`/
+      repetition/executable formula grouping。
+    - [ ] **Task 257B3:** Task 257B1後のexistential/restricted/nested
+      quantification、implicit reserved binder、追加scoped use。
   - [ ] **Task 257C:** separately frozen Task-256/255 extension後の
     predicate-chain/conditioned-comprehension composition。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/

@@ -2913,3 +2913,32 @@ assembleし、handoffをvalidate/installしてresolved resultへclone-preserve�
 private test 5件はexact real oracle/final ownership、independent table
 corruption後のrecovery、all-active/lower-family isolation、不変semantic detail、
 preinstalled Task-248 rejectionをcoverする。
+
+## Checker Task 257B1 frozen runner boundary
+
+exact 79-byte pass sourceは既存formula extraction ownerでselectし、専用private
+Task-257B1 leafでcomposeする。leafはTask-257 binding extensionを先に使い、
+one arenaでTask-252 primary reference 2件、Task-256 equality、第2
+one-node Task-257 composite profile、`1/2` formula-composition handoffをbuild
+する。
+
+positive testはexact parser range、binding lookup winner 2件、全lower/
+composite/composition row、dependency fingerprint、final typed/resolved
+ownership、semantic output非生成をassertする。negative testはselector
+isolation、recovery、各cross-family association、dependency substitution、
+corruption recovery、既存Task-257A route byte不変をcoverする。さらに
+`TypedAstParts`へTask-248 source-context handoffをpreinstallし、combined
+installerがTask-257B1 handoffを一切publishせずfailすることを要求する。current active
+selector/semantic routeをwidenしない。
+
+positive composition oracleはsingle full literal
+`source-formula-composition-debug-v1` renderingで、module、exact
+Task-252/256/257 debug-string fingerprint、edge count/row、bound-use row 2件を
+field順で含む。typed/resolved getterはexisting composite-formula debug section
+後のidentical handoffを公開し、B1 absent時は全legacy byteを保持する。
+
+ownership-partition matrixはvalid second-profile handoffをTask-257A legacy
+installerへ渡し、Task 257Aを既にownするASTへcombined B1 transactionを渡す。
+両方byte-identical rollbackでfailする。profile matrixはA cardinality+B row、
+B cardinality+A row、otherwise valid third shapeを検証する。exact 2 profileだけ
+build可能で、failed build/install pathはpartial B1 stateをpublishしない。
