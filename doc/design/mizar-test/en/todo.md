@@ -1867,3 +1867,23 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   after the documentation commit and fresh preflight. The runner now measures
   `419/385`, `251/239`, `228/191`, active `101/5/198/1`, 357 library tests,
   and preserves empty semantic output and every prior route.
+
+## Checker Task 257C2 Frozen Runner Checklist
+
+- [x] Freeze reuse of the unchanged 191-byte fixture, hash, parser ranges,
+  imported mapper provenance, and exact Task-252/253/255 profiles.
+- [x] Freeze the reusable Task-256 equality builder, exact
+  `1/0/0/0/0/0/0/2/2` profile, direct wrapper/equality ownership split, and
+  same-arena association.
+- [x] Freeze the dedicated one-edge Task-257C2 handoff, route order,
+  mutation/near-miss/isolation/final-clone tests, bidirectional A/B/C2
+  installer exclusion, and semantic exclusions.
+- [x] Freeze reuse of the existing sidecar, one future trace row, unchanged
+  419-case/pass-fail/active counts, projected plan `419/386` and type
+  `252/240`, unchanged diagnostic intent, and zero executable artifact
+  changes in this prerequisite.
+- [ ] Complete the separately documented/implemented Task-256C1
+  condition-container compatibility prerequisite with both lower install
+  orders before editing this runner slice.
+- [ ] Implement only this frozen runner slice after Task-256C1 and fresh
+  preflight, in the separate Task-257C2 implementation commit.

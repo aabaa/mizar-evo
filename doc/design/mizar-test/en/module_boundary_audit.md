@@ -26,6 +26,17 @@ The plan/parse/declaration/type/proof CLI hashes are
 `142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`,
 and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 
+## Checker Task 257C2 Frozen Boundary
+
+No production path or line changes in this prerequisite. The future complete
+route remains in the existing private formula-composition leaf and reuses
+bounded seams from the source-set, source-application, and atomic-formula
+leaves. Raw traversal and resolver work remain in `mizar-test`; the checker
+receives only syntax-free handoffs. The current 29-path/33,725-line manifest,
+357-test list, and all recorded hashes remain the documentation baseline.
+Separate Task 256C1 stays in the checker atomic-formula owner and must complete
+before this runner leaf changes.
+
 ## Checker Task 257A Source-Composite-Formula Current-State Addendum
 
 Checker Task 257A adds one cohesive private `source_composite_formula`

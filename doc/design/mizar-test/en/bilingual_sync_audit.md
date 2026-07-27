@@ -351,3 +351,15 @@ shared-arena profiles, imported provenance, named near misses, corruption and
 final-clone matrices, `419/385`, `251/239`, `228/191`, active
 `101/5/198/1`, 357 tests, and the 29-path/33,725-line manifest with identical
 test-list, production, and five CLI hashes. No bilingual drift remains.
+
+## Checker Task 257C2 Frozen-Contract Pair
+
+The paired plan, harness, TODO, and module-boundary audit freeze the same
+unchanged 191-byte consumer, five lower/association profiles, reusable seams,
+direct wrapper/equality ownership, existing-sidecar trace projection,
+unchanged diagnostic intent and 419-case/pass-fail/active counts, projected
+plan `419/386` and type `252/240`, unchanged hashes, the current two-order
+lower rejection, separate Task-256C1 compatibility gate with unrelated
+overlap rejection preserved, bidirectional installer tests, and semantic
+deferrals. No executable runner artifact changes and no bilingual drift
+remains.

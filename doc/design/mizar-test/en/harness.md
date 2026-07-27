@@ -3235,3 +3235,22 @@ provenance select one transaction; every named near miss returns before
 publication. The runner composes the shared `4/0/4`, `1/0/1/2/2`, and
 `1/0/1/1/1/1/2` handoffs, leaves the inner condition formula unowned, and
 preserves empty semantic output and every prior route.
+
+## Checker Task 257C2 Frozen Runner Boundary
+
+The private complete route reuses the exact Task-255C1 loaded-source selector,
+Task-253 imported-application seam, and a reusable Task-256 equality builder
+before the lower Task-256/255 diagnostic routes. It extends the same arena
+with one atomic equality and one immutable condition-formula association.
+Every Task-252/253/255 row and site remains unchanged.
+
+This target route is gated on separate Task 256C1 because the current lower
+validator rejects the enclosing condition set term in both set/atomic install
+orders. The lower prerequisite must pass those orders only for the
+authenticated condition relation and keep arbitrary overlap fail-closed.
+
+The existing fail case retains its definition-intake detail and semantic
+tables remain empty. Exact profiles, direct wrapper/equality ownership,
+provenance, near misses, mutation rollback, bidirectional A/B/C2 installer
+exclusion, isolation, and final cloning are the complete test boundary. This
+prerequisite changes no executable runner artifact.

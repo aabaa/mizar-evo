@@ -160,3 +160,12 @@ builds `1/0/1/2/2` against the supplied shared Task-252 `4/0/4` handoff and
 retains the exact imported symbol and contribution. The existing wrapped
 selector, public API, debug bytes, and all prior Task-253 tests remain
 unchanged.
+
+## Task 257C2 Frozen Consumer Boundary
+
+The complete Task-257C2 runner reuses the same private unwrapped imported-`++`
+seam and immutable `1/0/1/2/2` handoff. The new association stores its exact
+debug fingerprint only to authenticate the Task-255 dependency chain; it adds
+no application target, candidate, argument, request, resolver selection, or
+public Task-253 API. The route starts only after separate Task 256C1 makes the
+condition-container lower graph executable; Task 253 itself does not change.

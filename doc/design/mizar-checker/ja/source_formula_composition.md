@@ -349,3 +349,112 @@ semantic behaviorを追加しない。
 compatibility editはinstall/verify済み。Task 257C1がpublishするのはlower
 Task-256 handoffだけで、本moduleはpredicate-chain composition rowやsemantic
 conjunction/negationをまだownしない。
+
+## Task 257C2 frozen condition-formula composition
+
+Task 257C2は本moduleにdedicatedな第2 transactionを追加する。Task-255C1
+`SourceSetConditionId` 1件をdirect Task-256 `SourceAtomicFormulaId` 1件へ
+associateし、synthetic `SourceCompositeFormulaHandoff`を作成・要求しない。
+canonical authorityはChapters 10 §10.1、13 §§13.4/13.4.2、14
+§§14.2/14.5.2/14.8。exact sourceはcommitted 191-byte conditioned-
+comprehension fixtureのままで、final-LF SHA-256は
+`8d9c3208d0e5a099e54c58f57642642046f0669c9b49e30d115549ba15a6eb3f`。
+
+lower graphはTask-252 `4/0/4`、Task-253 `1/0/1/2/2`、Task-255
+`1/0/1/1/1/1/2`、Task-256
+formula/wrapper/segment/head/candidate/type/attribute/edge/request
+`1/0/0/0/0/0/0/2/2`。Task 255は`177..182` `FormulaExpression` wrapper、
+Task 256は同range/spelling `3 = 4`/context 0/normal recoveryを持つ別のdirect
+`BuiltinPredicateApplication` equality siteをownする。operand edges 2件は
+Task-252 primaries 2/3へ向く。new associationはsiteをownせずlower rowをcopyしない。
+
+new public surfaceは`SourceConditionFormulaCompositionHandoffInput`、
+`SourceConditionFormulaEdgeInput`、immutable
+`SourceConditionFormulaCompositionHandoff`/`SourceConditionFormulaEdge`、
+`SourceConditionFormulaEdgeTable`、dense `SourceConditionFormulaEdgeId`、
+`SourceConditionFormulaCompositionProducer`、non-exhaustive
+`SourceConditionFormulaCompositionError`。inputはsource/module identityと
+`edges` vectorだけを持ち、edgeはcondition/dense ordinal/atomic formulaを保持。
+sole exact rowは`0/0/0`。
+
+producerはTask-252 primary、Task-253 application、Task-255 set term、
+Task-256 atomic formula、arena dependencyを受け、exact nonempty debug
+fingerprint 4件をその順で保持する。IDは`new`/`index`、tableは
+`get`/`iter`/`len`/`is_empty`、row/handoffはread-only accessorだけを公開。
+public producer/handoff signatureを次にfreezeする。
+
+```rust
+impl SourceConditionFormulaCompositionProducer {
+    pub fn build(
+        input: SourceConditionFormulaCompositionHandoffInput,
+        primary_terms: &SourcePrimaryTermHandoff,
+        applications: &SourceFunctorApplicationHandoff,
+        set_terms: &SourceSetTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        arena: &TypedArena,
+    ) -> Result<
+        SourceConditionFormulaCompositionHandoff,
+        SourceConditionFormulaCompositionError,
+    >;
+}
+
+impl SourceConditionFormulaCompositionHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn primary_term_fingerprint(&self) -> &str;
+    pub fn application_fingerprint(&self) -> &str;
+    pub fn set_term_fingerprint(&self) -> &str;
+    pub fn atomic_formula_fingerprint(&self) -> &str;
+    pub const fn edges(&self) -> &SourceConditionFormulaEdgeTable;
+    pub fn debug_text(&self) -> String;
+}
+```
+
+exact ID/table/row signatureはcanonical crate planにfreezeする。errorは
+`DependencyMismatch`、`InvalidEdge { edge }`、`InvalidAggregate`。
+
+debugはseparate `source-condition-formula-composition-debug-v1` header、
+module identity、primary/application/set/atomic fingerprint、次のrowをrender。
+
+```text
+edges: 1
+  edge#0 condition=0 ordinal=0 formula=0
+```
+
+validationはexact lower profile/fingerprint、equal source/module、direct
+wrapper-to-atomic arena relation、equal condition/formula range/spelling/
+context/recovery、exact operand edge/request、duplicate Task-255 ownership
+なしを要求する。missing/duplicated/reordered/substituted/copied/stale/
+wrong-profile inputはpublication前に失敗する。new typed/resolved optional
+handoffはlower handoff 4件の後だけinstallし、bounded profileではTask-257
+composite/Task-257B compositionをexcludeする。final assemblyはrevalidate/
+clone-preserveする。`TypedAstError`と`ResolvedTypedAstError`はそれぞれ
+dedicated `InvalidSourceConditionFormulaComposition` variantを追加する。
+
+このtransactionはseparate Task-256C1 condition-container compatibility
+prerequisiteがauthenticated Task-255-encloses-Task-256 relationを両lower-
+handoff installation orderでvalidにした後だけexecutableとなる。Task 256C1は
+arbitrary overlap rejectionをweakenできない。そのdedicated documentation/
+implementation commitとfresh preflightがpassするまでC2 production editを
+開始しない。
+
+既存Task-257B input literal、producer call、table、installer signature、
+successful legacy fingerprint/debug byteはすべて不変。legacy Task-257A/
+combined Task-257B installerはreciprocal checkを追加し、C2 install済みなら
+それぞれexisting `InvalidSourceCompositeFormula`/
+`InvalidSourceFormulaComposition` variantでatomicにrejectする。逆にC2
+installerはA/B install済みを
+`InvalidSourceConditionFormulaComposition`でrejectし、testsは両installation
+orderとbyte-identical rollbackをcoverする。exact private consumerは
+Task-255C1 selector、
+Task-253 imported-`++` seam、reusable Task-256 equality builderをone
+surface-indexed arenaでreuseする。fixtureは追加せず、existing fail sidecarは
+same definition-intake diagnosticを保ち、reciprocal Task-257C2 spec reference
+だけを追加できる。new covered trace row 1件だけがそのsidecarへmapできる。
+
+equality truth、generator binding/reference/capture、predicate-chain
+conjunction/segment negation、formula fact/result、sethood/result typing、
+definition/theorem acceptance、proof/IR/VC、broader comprehension coverageは
+deferred。本documentation prerequisiteはproduction/fixture/sidecar/trace/
+count/test list/hashを変更せず、implementationはTask 256C1/fresh preflight後の
+separate commitで開始する。

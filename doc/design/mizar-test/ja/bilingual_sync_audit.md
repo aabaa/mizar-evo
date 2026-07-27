@@ -12,6 +12,17 @@ test 303件、path/content hash `5cc36b8a...` / `b9b6c678...`の
 254+/260/270/277-278とSteps 6/7は両言語でunpromotedのままである。Task 253に
 bilingual driftは残らない。
 
+## Checker Task 257C2 frozen-contract pair
+
+paired plan、harness、TODO、module-boundary auditは同じunchanged 191-byte
+consumer、lower/association profile 5件、reusable seam、direct wrapper/equality
+ownership、existing-sidecar trace projection、unchanged diagnostic intent/
+419-case/pass-fail/active count、projected plan `419/386`/type `252/240`、
+unchanged hash、current two-order lower rejection、unrelated overlap rejectionを
+保持するseparate Task-256C1 compatibility gate、bidirectional installer
+tests、semantic deferralをfreezeする。executable runner artifact変更も
+bilingual driftもない。
+
 ## Checker Task 257B2 Implementation Pair Recheck
 
 両言語はimplemented exact selector、4 aggregate profiles、no-reference/

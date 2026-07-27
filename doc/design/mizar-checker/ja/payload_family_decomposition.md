@@ -630,3 +630,20 @@ frozen dependency chain
 1/0/1/1/1/1/2`はexecutableになった。condition wrapperをrecursive exclusion
 boundaryとし、inner equalityはdownstream Task-256/257 consumerに残す。semantic
 familyはpromoteしていない。
+
+## Task 257C2 frozen condition-formula edge
+
+次のgraph nodeは
+`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255
+1/0/1/1/1/1/2 -> Task256 1/0/0/0/0/0/0/2/2 -> Task257C2 1`。
+Task 256はinner equalityとTask-252 operand edge 2件だけを取り、Task 257C2は
+immutable condition-0-to-formula-0 associationだけを追加する。Task-255
+wrapper ownershipと全existing dense IDは不変。
+このtarget edgeはseparate Task 256C1をgateとする。Task 256C1はunrelated
+overlap rejectionを保持しながらauthenticated Task-255 condition containment
+だけをset/atomic両installation orderでexecutableにしなければならない。
+
+edgeは`source_formula_composition`のdedicated cross-family handoffで、
+composite-formula placeholderではない。generator binding/capture、
+predicate-chain composition、equality truth、formula result、definition
+acceptanceはdownstreamに残す。

@@ -3596,3 +3596,28 @@ Implementation closes the classified Task-255C1 `source_drift` and
 Task-253 seam, exact fixture/sidecar/trace row, and full matrices are present.
 The prerequisite already closed `design_drift`. The semantic deferrals and
 report-only `repo_metadata_conflict` remain unchanged.
+
+## Task 257C2 Condition-Formula Association Classification
+
+Chapters 10 §10.1, 13 §§13.4/13.4.2, and 14 §§14.2/14.5.2/14.8 authorize the
+exact direct equality condition without authorizing truth, binding, capture,
+or definition acceptance. Tasks 252/253/255C1 already own every term,
+application, comprehension, condition wrapper, and provenance occurrence;
+Task 256 already has the syntax-free equality/operand schema. The missing
+association contract is `design_drift`, closed by this prerequisite. The
+absent dedicated handoff/final projection is bounded `source_drift`, and the
+absent exact consumer/corruption matrix is `test_gap`. Fresh preflight also
+classifies the committed Task-256 range validator as a separate
+authority-backed `source_drift`: it rejects the Chapter-13-authorized
+condition-container relation in both installation orders. Task 257C2
+implementation is blocked until separately documented and implemented Task
+256C1 admits only that authenticated containment while preserving unrelated
+overlap rejection.
+
+No existing `doc/spec`, `.miz`, outcome, phase, diagnostic detail, or semantic
+owner changes. Reusing the existing sidecar for one future reciprocal covered
+row is bounded transport traceability, not an implementation-derived
+expectation rebaseline. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation` remains; origin divergence is report-only
+`repo_metadata_conflict`.

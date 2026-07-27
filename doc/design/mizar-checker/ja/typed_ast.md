@@ -733,3 +733,35 @@ rowをpublishせず、既存field/debug byteをすべて保持する。
 installする。condition/dependency revalidation failureは何もpublishせず、
 unchanged base objectからlater valid installが成功する。legacy condition-empty
 objectはbyte-identicalのままである。
+
+## Task 257C2 frozen ownership addendum
+
+`TypedAst`はTask-252/253/255/256 install後にoptional
+`SourceConditionFormulaCompositionHandoff` 1件を次のexact surfaceで公開する。
+
+```rust
+pub const fn source_condition_formula_composition(
+    &self,
+) -> Option<&SourceConditionFormulaCompositionHandoff>;
+
+pub fn with_source_condition_formula_composition(
+    self,
+    composition: SourceConditionFormulaCompositionHandoff,
+) -> Result<Self, TypedAstError>;
+
+// New #[non_exhaustive] TypedAstError variant:
+InvalidSourceConditionFormulaComposition,
+```
+
+installerはlower fingerprint 4件、direct condition-wrapper/equality relation、
+exact operand ownership、association row 1件をreauthenticateする。missing/
+substituted dependency、existing Task-257 composite/Task-257B composition、
+second condition-composition handoffをdedicated error variantでatomicに
+rejectする。existing Task-257A/combined Task-257B installerのsignatureと
+successful legacy behaviorは不変だが、C2 install済みをexisting error
+variantでrejectするreciprocal fail-closed checkを両方へ追加する。testsは
+A/B-before-C2とC2-before-A/Bをrollback込みでcoverする。C2 installerは
+separate Task 256C1がunrelated overlap guardをweakenせず、
+authenticated Task-255 condition containmentをset/atomic両installation orderで
+passさせるまでimplementできない。absent-handoff debug byteは不変で、
+semantic tableをpopulateしない。

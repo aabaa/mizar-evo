@@ -178,3 +178,11 @@ exact routeはこのsingle `4/0/4` handoffをpublishする。copied、omitted、
 range-substituted condition primaryはcomplete Task-255 transactionをfailさせる。
 authentic condition operands 2件はTask-255 edgeを持たず、later Task-256
 installation向けに保持される。
+
+## Task 257C2 frozen consumer boundary
+
+Task 257C2は同じimmutable `4/0/4` handoffをreuseする。Task-256 equality
+edgesはprimaries 2/3をdirectにtargetし、Task-257C2 associationがtargetするのは
+condition/formula IDだけ。Task-252 row/request/parent/context/fingerprint/
+debug byte/numeric semantic meaningは変更しない。routeはseparate Task
+256C1をgateとし、Task 252自体にcompatibility editは不要。

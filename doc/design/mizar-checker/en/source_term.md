@@ -190,3 +190,11 @@ The exact route now publishes that single `4/0/4` handoff. Copied, omitted,
 or range-substituted condition primaries fail the complete Task-255
 transaction, while both authentic condition operands remain available to
 later Task-256 installation without a Task-255 edge.
+
+## Task 257C2 Frozen Consumer Boundary
+
+Task 257C2 reuses the same immutable `4/0/4` handoff. Task-256 equality edges
+target primaries 2 and 3 directly; the Task-257C2 association targets only
+the condition and formula IDs. No Task-252 row, request, parent, context,
+fingerprint, debug byte, or numeric semantic meaning changes. The route is
+gated on separate Task 256C1; Task 252 itself requires no compatibility edit.

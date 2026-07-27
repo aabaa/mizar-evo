@@ -383,3 +383,119 @@ semantic behavior.
 The compatibility edits are now installed and verified. Task 257C1 publishes
 only the lower Task-256 handoff; this module still owns no predicate-chain
 composition row or semantic conjunction/negation.
+
+## Task 257C2 Frozen Condition-Formula Composition
+
+Task 257C2 adds a dedicated second transaction in this module. It associates
+the one Task-255C1 `SourceSetConditionId` with the one direct Task-256
+`SourceAtomicFormulaId`; it does not create or require a synthetic
+`SourceCompositeFormulaHandoff`. Canonical authority is Chapters 10 §10.1,
+13 §§13.4/13.4.2, and 14 §§14.2/14.5.2/14.8. The exact source remains the
+committed 191-byte conditioned-comprehension fixture with final-LF SHA-256
+`8d9c3208d0e5a099e54c58f57642642046f0669c9b49e30d115549ba15a6eb3f`.
+
+The lower graph is Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, Task-255
+`1/0/1/1/1/1/2`, and Task-256
+formula/wrapper/segment/head/candidate/type/attribute/edge/request
+`1/0/0/0/0/0/0/2/2`. Task 255 owns the `177..182`
+`FormulaExpression` wrapper; Task 256 owns the distinct direct
+`BuiltinPredicateApplication` equality site with the same range, spelling
+`3 = 4`, context 0, and normal recovery. Its two operand edges point to
+Task-252 primaries 2 and 3. The new association owns no site and copies no
+lower row.
+
+The new public surface is
+`SourceConditionFormulaCompositionHandoffInput`,
+`SourceConditionFormulaEdgeInput`, immutable
+`SourceConditionFormulaCompositionHandoff`/`SourceConditionFormulaEdge`,
+`SourceConditionFormulaEdgeTable`, dense `SourceConditionFormulaEdgeId`,
+`SourceConditionFormulaCompositionProducer`, and non-exhaustive
+`SourceConditionFormulaCompositionError`. The input has only source/module
+identity and an `edges` vector. Each edge stores condition, dense ordinal, and
+atomic formula. The sole exact row is `0/0/0`.
+
+The producer consumes Task-252 primary, Task-253 application, Task-255 set
+term, Task-256 atomic formula, and arena dependencies. The handoff retains
+their four exact nonempty debug fingerprints in that order. IDs expose
+`new`/`index`; tables expose `get`/`iter`/`len`/`is_empty`; rows and the
+handoff expose only read-only accessors. The public producer and handoff
+signatures are frozen as:
+
+```rust
+impl SourceConditionFormulaCompositionProducer {
+    pub fn build(
+        input: SourceConditionFormulaCompositionHandoffInput,
+        primary_terms: &SourcePrimaryTermHandoff,
+        applications: &SourceFunctorApplicationHandoff,
+        set_terms: &SourceSetTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        arena: &TypedArena,
+    ) -> Result<
+        SourceConditionFormulaCompositionHandoff,
+        SourceConditionFormulaCompositionError,
+    >;
+}
+
+impl SourceConditionFormulaCompositionHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn primary_term_fingerprint(&self) -> &str;
+    pub fn application_fingerprint(&self) -> &str;
+    pub fn set_term_fingerprint(&self) -> &str;
+    pub fn atomic_formula_fingerprint(&self) -> &str;
+    pub const fn edges(&self) -> &SourceConditionFormulaEdgeTable;
+    pub fn debug_text(&self) -> String;
+}
+```
+
+The exact ID/table/row signatures are frozen in the canonical crate plan.
+Errors are `DependencyMismatch`, `InvalidEdge { edge }`, and
+`InvalidAggregate`.
+
+Debug output has a separate
+`source-condition-formula-composition-debug-v1` header, module identity,
+primary/application/set/atomic fingerprints, and:
+
+```text
+edges: 1
+  edge#0 condition=0 ordinal=0 formula=0
+```
+
+Validation requires exact lower profiles and fingerprints, equal
+source/module, the direct wrapper-to-atomic arena relation, equal
+condition/formula range/spelling/context/recovery, exact operand edges and
+requests, and absence of duplicate Task-255 ownership. Missing, duplicated,
+reordered, substituted, copied, stale, or wrong-profile inputs fail before
+publication. The new typed/resolved optional handoff installs only after all
+four lower handoffs and excludes any Task-257 composite/Task-257B composition
+in this bounded profile. `TypedAstError` and `ResolvedTypedAstError` each add
+the dedicated `InvalidSourceConditionFormulaComposition` variant. Final
+assembly revalidates and clone-preserves it.
+
+This transaction is executable only after the separate Task-256C1
+condition-container compatibility prerequisite makes the authenticated
+Task-255-encloses-Task-256 relation valid in both lower-handoff installation
+orders. Task 256C1 may not weaken arbitrary overlap rejection. No C2
+production edit starts before that prerequisite's dedicated documentation and
+implementation commits pass fresh preflight.
+
+All existing Task-257B input literals, producer calls, tables, installer
+signature, successful legacy fingerprints, and debug bytes remain unchanged.
+The legacy Task-257A and combined Task-257B installers add reciprocal checks:
+if C2 is already installed, they reject atomically through their existing
+`InvalidSourceCompositeFormula` and `InvalidSourceFormulaComposition`
+variants. Conversely, the C2 installer rejects already installed A/B through
+`InvalidSourceConditionFormulaComposition`; tests cover both installation
+orders and byte-identical rollback. The exact private consumer
+reuses the Task-255C1 selector, Task-253 imported-`++` seam, and a reusable
+Task-256 equality builder in one surface-indexed arena. It adds no fixture:
+the existing fail sidecar keeps the same definition-intake diagnostic and may
+gain only the reciprocal Task-257C2 spec reference. One new covered trace row
+may map only to that sidecar.
+
+Equality truth, generator binding/reference/capture, predicate-chain
+conjunction or segment negation, formula facts/results, sethood/result typing,
+definition/theorem acceptance, proof/IR/VC, and broader comprehension
+coverage remain deferred. This documentation prerequisite changes no
+production, fixture, sidecar, trace, count, test list, or hash; implementation
+must begin in a separate commit only after Task 256C1 and fresh preflight.

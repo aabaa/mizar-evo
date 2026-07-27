@@ -130,6 +130,22 @@ fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
 
+## Checker Task 257C2 Frozen Boundary
+
+Task 257C2 remains within the existing `source_formula_composition.rs` owner
+but freezes a separate condition-formula transaction rather than mixing it
+into the Task-257B composite/bound-use tables. Its checker input is limited to
+syntax-free Task-252/253/255/256 handoffs and `TypedArena`; raw AST selection,
+loaded-source guards, and parser/resolver inspection stay in the private
+`mizar-test` leaves. The new association owns no site or semantic result.
+Production is unchanged in this prerequisite, so the measured 3,117-line
+module and all current boundary-table counts remain unchanged. Implementation
+must remeasure before editing and repeat this audit afterward. Fresh preflight
+found a separate Task-256 condition-container compatibility `source_drift` in
+`source_atomic_formula.rs`; its dedicated Task-256C1 documentation and
+implementation commits must preserve that lower module's ownership and pass
+both lower-handoff installation orders before this module is edited.
+
 ## Task 255C1 Current-Layout Addendum
 
 No checker production path was added. `source_set_term.rs` is the cohesive

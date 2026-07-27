@@ -849,3 +849,27 @@ Final assembly revalidates and clone-preserves the exact Task-252/253/255
 objects, including the recursive condition boundary. The resolved object has
 no expression metadata, fact, diagnostic, Task-256 condition formula, or
 Task-257 composition from this task.
+
+## Task 257C2 Frozen Resolution Addendum
+
+Final assembly will clone and revalidate the optional
+`SourceConditionFormulaCompositionHandoff` only after the exact
+Task-252/253/255/256 objects. It compares all four fingerprints and the
+condition-to-atomic relation without rebuilding IDs or formula rows. Missing,
+stale, substituted, or reordered dependencies fail final assembly through
+the dedicated `ResolvedTypedAstError::InvalidSourceConditionFormulaComposition`
+variant. The exact accessor is:
+
+```rust
+pub const fn source_condition_formula_composition(
+    &self,
+) -> Option<&SourceConditionFormulaCompositionHandoff>;
+```
+
+This projection remains gated on separately completed Task 256C1, which must
+first make the authenticated condition containment valid in both lower
+installation orders. Final assembly does not compensate for or weaken that
+lower validation.
+
+No checked formula, equality truth, fact, diagnostic, definition acceptance,
+proof, or IR output is derived.

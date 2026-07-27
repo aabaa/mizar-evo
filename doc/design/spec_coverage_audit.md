@@ -3382,3 +3382,53 @@ independent conditioned comprehension. Generator binding/capture, inner
 Task-256 equality ownership and truth, Task-257 composition, sethood/result
 answers, definition acceptance, facts, proof, CoreIr/ControlFlowIr/VC, Steps
 6/7, and global Step-5 completion remain deferred.
+
+## Step 5 Checker Task 257C2 Frozen-Contract Addendum
+
+Task 257C2 freezes the next dependency-ready cross-family graph edge for the
+same exact independent conditioned-comprehension source. The source remains
+191 bytes with SHA-256
+`8d9c3208d0e5a099e54c58f57642642046f0669c9b49e30d115549ba15a6eb3f`;
+no `.miz` or sidecar changes in this prerequisite. The frozen graph is
+Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, Task-255
+`1/0/1/1/1/1/2`, Task-256 `1/0/0/0/0/0/0/2/2`, then one immutable
+condition-to-atomic association.
+
+This prerequisite closes the association-contract `design_drift`. The absent
+dedicated handoff/final projection remains bounded `source_drift`; the absent
+complete consumer and corruption matrix remain `test_gap`. Fresh lower-stage
+preflight also found a separate authority-backed `source_drift`: the committed
+Task-256 overlap validator rejects the Chapter-13-authorized enclosing
+condition set term in both set/atomic installation orders. Chapters 10, 13,
+and 14 authorize the exact source shape and ownership boundary but no truth,
+binding, capture, or definition acceptance. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation` remains.
+
+Task 257C2 implementation is gated on separately documented, reviewed,
+implemented, and committed Task 256C1 condition-container compatibility.
+That prerequisite must admit only the authenticated Task-255 condition
+containment and preserve arbitrary/copied/stale/wrong-range overlap rejection.
+It changes no trace status by itself; any later audit impact belongs to its
+own logical task.
+
+Implementation may add one covered row,
+`spec.en.checker.type_elaboration.source_condition_formula_composition`,
+sourced from
+`doc/design/mizar-checker/en/source_formula_composition.md`, section
+`Task 257C2 Frozen Condition-Formula Composition`, and mapped only to the
+existing conditioned-comprehension sidecar. The sidecar may add the
+reciprocal reference and transport note without changing its source, outcome,
+phase, rejection reason, stable detail key, or diagnostic payload. Existing
+Chapter-10/13/14 and Task-252/253/255/256 notes may gain reciprocal
+unchanged-status references.
+
+Because no fixture is added, the 419 cases remain fixed while the future new
+requirement projects plan `419/386` and type requirements/covered `252/240`;
+pass/fail remains `228/191` and active remains `101/5/198/1`. This
+documentation commit changes no trace row/status/count,
+fixture, sidecar, executable coverage, test list, production manifest, or
+hash; its measured baseline remains plan `419/385` and type `251/239`.
+Equality truth, generator binding/capture, predicate-chain composition,
+formula facts/results, definition acceptance, proof/IR/VC, Steps 6/7, and
+global Step-5 completion remain deferred.

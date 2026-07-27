@@ -219,3 +219,26 @@ rows, source-token polarity, two same-provenance heads/candidates, three
 primary edges with one shared boundary, and two unresolved signature
 requests. Exact, corruption, legacy-byte, installation, and clone tests pass;
 no semantic predicate result is produced.
+
+## Task 257C2 Frozen Consumer Boundary
+
+Task 257C2 targets reuse of the existing Task-256 producer for exactly one
+normal equality inside the Task-255C1 condition. The profile is
+formula/wrapper/segment/head/candidate/type/attribute/edge/request
+`1/0/0/0/0/0/0/2/2`. The formula owns the direct
+`BuiltinPredicateApplication` site at `177..182`; two ordered operand edges
+point to Task-252 primaries 2 and 3 and carry two unresolved
+`OperandExpectedType` requests. It owns neither the enclosing Task-255
+`FormulaExpression` wrapper nor a semantic result.
+
+The runner must extract this row through a reusable built-in-equality builder
+and validate it against the Task-252/253/255 handoffs in the same arena.
+Current `validate_cross_family_ranges` rejects the legitimate enclosing
+Task-255 set term in both install orders because the set term, rather than the
+formula, is the containing occurrence. Task 257C2 is therefore gated on the
+separate Task-256C1 condition-container compatibility prerequisite. That
+prerequisite must narrowly authenticate the Task-255 condition relation while
+retaining arbitrary/copied/stale/wrong-range overlap rejection. Task 257C2
+still adds no field, row, enum, request kind, debug byte, or semantic behavior
+to this public lower-family transaction. Predicate-chain
+conjunction/negation remains a later Task-257C slice.

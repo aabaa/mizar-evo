@@ -25,6 +25,16 @@ plan/parse/declaration/type/proof CLI hashは
 `142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`、
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
 
+## Checker Task 257C2 frozen boundary
+
+本prerequisiteではproduction path/lineを変更しない。future complete routeは
+existing private formula-composition leafに留まり、source-set、
+source-application、atomic-formula leafのbounded seamをreuseする。raw
+traversal/resolver workは`mizar-test`に残し、checkerはsyntax-free handoffだけを
+受ける。current 29-path/33,725-line manifest、357-test list、全recorded hashを
+documentation baselineとして保持する。separate Task 256C1はchecker
+atomic-formula owner内に留まり、本runner leaf変更前にcompleteする。
+
 ## Checker Task 257A source-composite-formula current-state addendum
 
 Checker Task 257Aはcohesiveなprivate `source_composite_formula` consumer leaf

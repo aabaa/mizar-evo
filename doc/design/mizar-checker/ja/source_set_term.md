@@ -198,3 +198,15 @@ Task-253/254/255 descendantとcondition-directed edgeをrejectする。direct-ch
 discoveryから除外するのはauthenticated condition内lower-family rowだけである。
 full debug、legacy empty-table byte equality、group/order/cardinality、
 dependency substitution、rollback、final clone testsはpassする。
+
+## Task 257C2 frozen consumer boundary
+
+Task 257C2はexact Task-255C1 profileのcondition row 0を変更せずconsumeする。
+rowはcolon/direct `FormulaExpression` wrapperだけを引き続きownする。
+`177..182` rangeと`3 = 4` spellingは別のdirect Task-256 equality rowと一致
+しなければならず、future Task-257C2 associationはsiteをownしない。
+Task-252 primaries 2/3はTask-255 edgeからexcludedのままで、Task-256 equality
+operandだけになる。Task-255 table/debug byte/fingerprint/request/validation
+meaningは変更しない。separate Task 256C1はarbitrary overlap rejectionを
+weakenせず、このexact condition containmentをTask-256 validatorの両
+installation orderでauthenticateする。

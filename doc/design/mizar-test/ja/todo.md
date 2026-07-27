@@ -1677,3 +1677,23 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   covered trace row、testsをimplement。runnerは`419/385`、`251/239`、
   `228/191`、active `101/5/198/1`、library tests 357件を実測し、empty
   semantic outputと全prior routeを保持する。
+
+## Checker Task 257C2 frozen runner checklist
+
+- [x] unchanged 191-byte fixture/hash/parser range/imported mapper
+  provenance/exact Task-252/253/255 profileのreuseをfreeze。
+- [x] reusable Task-256 equality builder、exact
+  `1/0/0/0/0/0/0/2/2` profile、direct wrapper/equality ownership split、
+  same-arena associationをfreeze。
+- [x] dedicated one-edge Task-257C2 handoff、route order、
+  mutation/near-miss/isolation/final-clone test、bidirectional A/B/C2
+  installer exclusion、semantic exclusionをfreeze。
+- [x] existing sidecar reuse、future trace row 1件、unchanged 419-case/
+  pass-fail/active count、projected plan `419/386`/type `252/240`、
+  unchanged diagnostic intent、本prerequisiteのexecutable artifact変更ゼロを
+  freeze。
+- [ ] 本runner slice edit前に、separate documentation/implementationの
+  Task-256C1 condition-container compatibility prerequisiteを両lower install
+  order込みでcomplete。
+- [ ] Task-256C1とfresh preflight後、separate Task-257C2 implementation
+  commitでこのfrozen runner sliceだけをimplement。

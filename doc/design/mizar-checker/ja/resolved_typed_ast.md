@@ -807,3 +807,25 @@ final assemblyはrecursive condition boundaryを含むexact Task-252/253/255
 objectをrevalidateしてclone-preserveする。本task由来のexpression metadata、
 fact、diagnostic、Task-256 condition formula、Task-257 compositionはresolved
 objectに存在しない。
+
+## Task 257C2 frozen resolution addendum
+
+final assemblyはexact Task-252/253/255/256 object後にoptional
+`SourceConditionFormulaCompositionHandoff`をclone/revalidateする。
+fingerprint 4件とcondition-to-atomic relationを比較し、ID/formula rowを
+rebuildしない。missing/stale/substituted/reordered dependencyはdedicated
+`ResolvedTypedAstError::InvalidSourceConditionFormulaComposition` variantで
+final assemblyをfailさせる。exact accessorは次の通り。
+
+```rust
+pub const fn source_condition_formula_composition(
+    &self,
+) -> Option<&SourceConditionFormulaCompositionHandoff>;
+```
+
+このprojectionはseparate Task 256C1完了をgateとし、まずauthenticated condition
+containmentを両lower installation orderでvalidにしなければならない。final
+assemblyはそのlower validationをcompensate/weakenしない。
+
+checked formula、equality truth、fact、diagnostic、definition acceptance、
+proof、IR outputはderiveしない。

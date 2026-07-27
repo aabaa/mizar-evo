@@ -125,6 +125,21 @@ cross-family root ownership、conditional fingerprint、rendering、corruption t
 behavior-coupledでありprivate checker splitは不要である。`TypedAst`がone-shot
 immutable handoffをownし、`ResolvedTypedAst`はrevalidate後にclone-preserveする。
 
+## Checker Task 257C2 frozen boundary
+
+Task 257C2はexisting `source_formula_composition.rs` owner内に留めるが、
+Task-257B composite/bound-use tableへ混在させずseparate condition-formula
+transactionをfreezeする。checker inputはsyntax-free Task-252/253/255/256
+handoffと`TypedArena`だけに限定し、raw AST selection、loaded-source guard、
+parser/resolver inspectionはprivate `mizar-test` leafに残す。new associationは
+site/semantic resultをownしない。本prerequisiteはproduction不変なので、
+measured 3,117-line moduleとcurrent boundary-table countはすべて不変。
+implementationはediting前に再測定し、その後本auditを再実行する。fresh
+preflightで`source_atomic_formula.rs`内にseparate Task-256
+condition-container compatibility `source_drift`を確認した。そのdedicated
+Task-256C1 documentation/implementation commitはlower module ownershipを保持し、
+両lower-handoff installation orderをpassさせた後に本moduleをeditする。
+
 ## Task 255C1 current-layout addendum
 
 checker production pathは追加していない。`source_set_term.rs`は6,806-lineの

@@ -2353,3 +2353,29 @@ completion remain deferred. The origin discrepancy remains report-only
   bounded `source_drift`/`test_gap`, adds only its one fail
   fixture/sidecar/covered trace row, and measures `419/385`, `251/239`,
   `228/191`, active `101/5/198/1`, and `326/357` library tests.
+
+## Checker Task 257C2 Frozen-Contract Ledger
+
+- [x] Freeze the unchanged 191-byte source/hash, direct Task-255 wrapper to
+  Task-256 equality relation, exact lower profiles, and imported/built-in
+  provenance boundary.
+- [x] Freeze a dedicated immutable one-edge condition-formula composition
+  transaction with four dependency fingerprints and no synthetic
+  composite-formula handoff.
+- [x] Freeze validation, debug, typed/resolved ownership, reusable runner
+  seams, exact/corruption/near-miss/isolation tests, and all semantic
+  deferrals.
+- [x] Freeze reuse of the existing sidecar, one future covered trace row,
+  unchanged 419-case/pass-fail/active counts and hashes, projected plan
+  `419/386` and type `252/240`, and the required coverage-audit impact.
+- [x] Reconcile the stale Task-255C1 umbrella checkbox as `design_drift`;
+  classify Task-257C2 implementation as bounded `source_drift`/`test_gap`,
+  the Task-256 condition-container rejection as a separate authority-backed
+  `source_drift`, and origin divergence as report-only
+  `repo_metadata_conflict`.
+- [ ] Freeze and commit the separate Task-256C1 condition-container
+  compatibility prerequisite, then implement it in its own verified commit.
+- [ ] Implement Task 257C2 only after Task-256C1 and fresh
+  parser/resolver/API, both-install-order, count, test-list,
+  production-manifest, and CLI-hash preflight, in a separate logical task and
+  commit.

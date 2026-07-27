@@ -3439,3 +3439,27 @@ implementationはclassified Task-255C1 `source_drift` / `test_gap`をcloseした
 fixture/sidecar/trace row、full matrixが存在する。prerequisiteが既に
 `design_drift`をcloseしている。semantic deferralとreport-only
 `repo_metadata_conflict`は不変である。
+
+## Task 257C2 condition-formula association classification
+
+Chapters 10 §10.1、13 §§13.4/13.4.2、14 §§14.2/14.5.2/14.8はexact direct
+equality conditionをauthorizeするが、truth/binding/capture/definition
+acceptanceはauthorizeしない。Tasks 252/253/255C1は全term/application/
+comprehension/condition wrapper/provenance occurrenceを既にownし、Task 256は
+syntax-free equality/operand schemaを持つ。missing association contractは
+`design_drift`で、本prerequisiteがcloseする。dedicated handoff/final
+projectionの欠落はbounded `source_drift`、exact consumer/corruption matrixの
+欠落は`test_gap`。fresh preflightはcommitted Task-256 range validatorも別の
+authority-backed `source_drift`にclassifyする。Chapter-13-authorized
+condition-container relationを両installation orderでrejectするため、Task 257C2
+implementationはseparate documentation/implementationのTask 256C1がこの
+authenticated containmentだけをadmitしunrelated overlap rejectionを保持する
+までblocked。
+
+existing `doc/spec`、`.miz`、outcome、phase、diagnostic detail、semantic
+ownerは変更しない。future reciprocal covered row 1件にexisting sidecarを
+reuseすることはbounded transport traceabilityで、implementation-derived
+expectation rebaselineではない。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`は残らず、origin divergenceはreport-only
+`repo_metadata_conflict`。

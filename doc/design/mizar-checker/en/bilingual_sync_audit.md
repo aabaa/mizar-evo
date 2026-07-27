@@ -44,9 +44,9 @@ after this task.
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, determinism, coverage, public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary, five-table application/wrapper/candidate/argument/request transport, Task-252 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
-| `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, exclusions, public enum policy | none |
+| `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 and Task-257C2/256C1 lower-compatibility authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, condition-container gate, exclusions, public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary, seven-table composite-formula/binder/type/edge/request transport, source-derived binding extension, exact consumer, exclusions, public enum policy | none |
-| `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1 authority/boundary, explicit universal-to-atomic edge and bound-use transport, Task-252/256/257 dependency fingerprints, combined atomic installation, exact consumer, exclusions, public enum policy | none |
+| `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3 plus frozen Task-257C2 authority/boundary, composite-to-atomic/bound-use transport, dedicated condition-to-atomic transport, dependency fingerprints, atomic installation, exact consumers, exclusions, public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary, seven-table set/choice/qua/generator/type-site/condition/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary, seven-table structure/member/FieldUpdate/edge/request transport, Task-252/253 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
@@ -225,3 +225,16 @@ runner, TODO, and coverage documents now record the same seven-table API,
 recursive condition boundary, exact dependency profiles, fixture/trace
 increment, measured counts/hashes, and unchanged semantic deferrals. No
 Task-255C1 bilingual drift remains.
+
+## Task 257C2 Frozen-Contract Pair
+
+The paired plan, TODO, formula-composition, set/atomic lower-family,
+typed/resolved ownership, decomposition, source/spec, and module-boundary
+documents freeze the same unchanged 191-byte source/hash, direct wrapper/
+equality relation, five dependency profiles, dedicated one-edge transaction,
+four fingerprints, validation/tests, existing-sidecar trace projection,
+unchanged baselines, the separate Task-256C1 lower compatibility gate,
+current two-order lower rejection with unrelated-overlap rejection preserved,
+bidirectional A/B/C2 installer exclusion, and semantic deferrals. No
+executable artifact changes in this prerequisite and no bilingual debt
+remains.

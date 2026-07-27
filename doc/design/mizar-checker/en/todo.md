@@ -4480,10 +4480,17 @@ unchecked row below is one future nonempty logical task and one commit.
         trace projection, ownership, and semantic deferrals.
       - [x] Implement the frozen contract after fresh preflight in a separate
         logical task and commit.
-    - [ ] Extend Task 255 with condition-bearing comprehension transport in a
+    - [x] Extend Task 255 with condition-bearing comprehension transport in a
       separately frozen documentation/implementation pair.
     - [ ] Add predicate-chain and conditioned-comprehension formula
       composition only in later separately frozen Task-257C slices.
+      - [x] **Task 257C2 prerequisite:** freeze the exact independent
+        condition-to-atomic-formula association without semantics.
+      - [ ] **Task 257C2 implementation:** implement only the frozen
+        condition-formula association after separate Task-256C1 and fresh
+        preflight.
+      - [ ] Freeze predicate-chain conjunction/segment-negation composition
+        separately after Task 257C2.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
 - [ ] **Task 259:** predicate-definition and initial-obligation intake producer.
@@ -4602,3 +4609,30 @@ implementation commit does not satisfy a producer task.
   boundary, one fixture/sidecar/trace row, `419/385`, `251/239`, `228/191`,
   active `101/5/198/1`, and `326/357` checker/runner tests without semantic
   promotion.
+
+## Checker Task 257C2 Frozen-Contract Ledger
+
+- [x] Freeze the unchanged 191-byte source/hash, direct condition-wrapper to
+  inner equality relation, exact ranges, built-in equality identity, and
+  imported `++` provenance exclusion.
+- [x] Freeze Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, Task-255
+  `1/0/1/1/1/1/2`, Task-256 `1/0/0/0/0/0/0/2/2`, and one
+  condition-formula association.
+- [x] Freeze a dedicated immutable handoff/producer/table, four dependency
+  fingerprints, deterministic debug, typed/resolved ownership, validation,
+  rollback, and compatibility boundary without changing Task-257B APIs.
+- [x] Freeze reuse of the existing fixture/sidecar, one future trace row,
+  exact test matrices, unchanged 419-case/pass-fail/active counts, projected
+  plan `419/386` and type `252/240`, semantic deferrals, and audit impact.
+- [x] Classify the missing contract as `design_drift`, implementation as
+  bounded `source_drift`/`test_gap`, the committed Task-256
+  condition-container rejection as a separate authority-backed
+  `source_drift`, the stale Task-255C1 umbrella checkbox as resolved
+  `design_drift`, and origin drift as report-only `repo_metadata_conflict`.
+- [ ] Freeze, review, and commit the separate Task-256C1
+  condition-container compatibility prerequisite; then implement and verify
+  it in its own commit with both install orders and strict arbitrary-overlap
+  rejection.
+- [ ] Implement only Task 257C2 after Task-256C1 and fresh
+  parser/resolver/API, both-install-order, count/test-list/production/CLI-hash
+  preflight, in a separate logical task and commit.

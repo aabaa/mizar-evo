@@ -207,3 +207,25 @@ source-token polarity、same-provenance head/candidate 2組、shared boundary
 1件を含むprimary edge 3件、unresolved signature request 2件を公開する。
 exact/corruption/legacy-byte/install/clone testはpassし、semantic predicate
 resultは生成しない。
+
+## Task 257C2 frozen consumer boundary
+
+Task 257C2はTask-255C1 condition内のnormal equality 1件だけについてexisting
+Task-256 producerのreuseをtargetとする。profileは
+formula/wrapper/segment/head/candidate/type/attribute/edge/request
+`1/0/0/0/0/0/0/2/2`。formulaは`177..182`のdirect
+`BuiltinPredicateApplication` siteをownし、ordered operand edge 2件は
+Task-252 primaries 2/3へ向き、unresolved `OperandExpectedType` request 2件を
+持つ。enclosing Task-255 `FormulaExpression` wrapperやsemantic resultは
+ownしない。
+
+runnerはreusable built-in-equality builderでこのrowをextractし、same arenaの
+Task-252/253/255 handoffに対してvalidateする。current
+`validate_cross_family_ranges`はset term側がformulaをcontainするため、両
+install orderでlegitimate enclosing Task-255 set termをrejectする。よって
+Task 257C2はseparate Task-256C1 condition-container compatibility
+prerequisiteをgateとする。そのprerequisiteはTask-255 condition relationだけを
+narrowにauthenticateし、arbitrary/copied/stale/wrong-range overlap rejectionを
+保持する。Task 257C2はこのpublic lower-family transactionへfield/row/enum/
+request kind/debug byte/semantic behaviorを追加しない。predicate-chain
+conjunction/negationはlater Task-257C sliceに残る。

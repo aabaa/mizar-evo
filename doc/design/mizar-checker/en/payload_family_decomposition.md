@@ -686,3 +686,20 @@ The frozen dependency chain is now executable:
 1/0/1/1/1/1/2`. The condition wrapper is the recursive exclusion boundary;
 the inner equality remains a downstream Task-256/257 consumer. No semantic
 family was promoted.
+
+## Task 257C2 Frozen Condition-Formula Edge
+
+The next graph node is
+`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255
+1/0/1/1/1/1/2 -> Task256 1/0/0/0/0/0/0/2/2 -> Task257C2 1`.
+Task 256 takes only the inner equality and its two Task-252 operand edges;
+Task 257C2 adds only the immutable condition-0-to-formula-0 association.
+Task-255 wrapper ownership and every existing dense ID remain unchanged.
+This target edge is gated on separate Task 256C1, which must make only the
+authenticated Task-255 condition containment executable in both set/atomic
+installation orders while preserving unrelated overlap rejection.
+
+The edge is a dedicated cross-family handoff in
+`source_formula_composition`, not a composite-formula placeholder. Generator
+binding/capture, predicate-chain composition, equality truth, formula
+results, and definition acceptance stay downstream.

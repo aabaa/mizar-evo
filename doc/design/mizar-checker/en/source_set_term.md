@@ -219,3 +219,15 @@ edges, and exclude only authenticated condition-contained lower-family rows
 from direct-child discovery. Full debug, legacy empty-table byte equality,
 group/order/cardinality, dependency substitution, rollback, and final clone
 tests pass.
+
+## Task 257C2 Frozen Consumer Boundary
+
+Task 257C2 consumes, without modifying, condition row 0 of the exact Task-255C1
+profile. The row continues to own the colon and direct `FormulaExpression`
+wrapper only. Its `177..182` range and `3 = 4` spelling must match the distinct
+direct Task-256 equality row; the future Task-257C2 association owns no site.
+Task-252 primaries 2 and 3 remain excluded from Task-255 edges and become only
+Task-256 equality operands. No Task-255 table, debug byte, fingerprint,
+request, or validation meaning changes. Separate Task 256C1 must authenticate
+this exact condition containment in the Task-256 validator for both
+installation orders without weakening arbitrary overlap rejection.

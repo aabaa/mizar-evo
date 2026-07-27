@@ -4256,10 +4256,16 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       - [x] syntax-free 9-table contract、exact consumer、test、trace
         projection、ownership、semantic deferralをfreeze。
       - [x] fresh preflight後、別logical task/commitでfrozen contractを実装。
-    - [ ] Task 255のcondition-bearing comprehension transportを別の
+    - [x] Task 255のcondition-bearing comprehension transportを別の
       documentation/implementation pairとしてfreeze/実装する。
     - [ ] predicate-chain/conditioned-comprehension formula compositionは
       後続の別Task-257C sliceだけで追加する。
+      - [x] **Task 257C2 prerequisite:** exact independent
+        condition-to-atomic-formula associationをsemanticsなしでfreeze。
+      - [ ] **Task 257C2 implementation:** separate Task-256C1とfresh
+        preflight後、frozen condition-formula associationだけをimplement。
+      - [ ] Task 257C2後、predicate-chain conjunction/segment-negation
+        compositionをseparately freeze。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
 - [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
@@ -4374,3 +4380,29 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   boundary、fixture/sidecar/trace row各1件、`419/385`、`251/239`、
   `228/191`、active `101/5/198/1`、checker/runner tests `326/357`を
   semantic promotionなしでpublishする。
+
+## Checker Task 257C2 frozen-contract ledger
+
+- [x] unchanged 191-byte source/hash、direct condition-wrapperからinner
+  equalityへのrelation、exact range、built-in equality identity、imported
+  `++` provenance exclusionをfreeze。
+- [x] Task-252 `4/0/4`、Task-253 `1/0/1/2/2`、Task-255
+  `1/0/1/1/1/1/2`、Task-256 `1/0/0/0/0/0/0/2/2`、condition-formula
+  association 1件をfreeze。
+- [x] Task-257B APIを変更しないdedicated immutable handoff/producer/table、
+  dependency fingerprint 4件、deterministic debug、typed/resolved ownership、
+  validation、rollback、compatibility boundaryをfreeze。
+- [x] existing fixture/sidecar reuse、future trace row 1件、exact test
+  matrix、unchanged 419-case/pass-fail/active count、projected plan
+  `419/386`/type `252/240`、semantic deferral、audit impactをfreeze。
+- [x] missing contractを`design_drift`、implementationをbounded
+  `source_drift`/`test_gap`、committed Task-256 condition-container
+  rejectionをseparate authority-backed `source_drift`、stale Task-255C1
+  umbrella checkboxをresolved `design_drift`、origin driftをreport-only
+  `repo_metadata_conflict`にclassify。
+- [ ] separate Task-256C1 condition-container compatibility prerequisiteを
+  freeze/review/commitし、両install orderとstrict arbitrary-overlap rejectionを
+  own commitでimplement/verify。
+- [ ] Task-256C1後、fresh parser/resolver/API、both-install-order、
+  count/test-list/production/CLI-hash preflightを行い、Task 257C2だけを
+  separate logical task/commitでimplement。

@@ -3067,3 +3067,22 @@ transactionだけをselectし、全named near missはpublication前にreturnす�
 runnerはshared `4/0/4`、`1/0/1/2/2`、`1/0/1/1/1/1/2` handoffをcomposeし、
 inner condition formulaをunownedに保ち、empty semantic outputと全prior
 routeを保持する。
+
+## Checker Task 257C2 frozen runner boundary
+
+private complete routeはlower Task-256/255 diagnostic routeより先にexact
+Task-255C1 loaded-source selector、Task-253 imported-application seam、
+reusable Task-256 equality builderをreuseする。同じarenaをatomic equality
+1件/immutable condition-formula association 1件でextendし、全Task-252/253/255
+row/siteを不変に保つ。
+
+このtarget routeはcurrent lower validatorがenclosing condition set termを
+set/atomic両install orderでrejectするためseparate Task 256C1をgateとする。
+lower prerequisiteはauthenticated condition relationだけで両orderをpassさせ、
+arbitrary overlapをfail-closedに保つ。
+
+existing fail caseはdefinition-intake detailを保持し、semantic tableはempty。
+exact profile、direct wrapper/equality ownership、provenance、near miss、
+mutation rollback、bidirectional A/B/C2 installer exclusion、isolation、
+final cloneがcomplete test boundary。本prerequisiteはexecutable runner
+artifactを変更しない。

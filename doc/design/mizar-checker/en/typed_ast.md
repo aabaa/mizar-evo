@@ -760,3 +760,37 @@ and preserves all previous fields and debug bytes.
 after Task 252 and Task 253. Failed condition or dependency revalidation
 publishes nothing; a subsequent valid install succeeds from the unchanged
 base object. Legacy condition-empty objects remain byte-identical.
+
+## Task 257C2 Frozen Ownership Addendum
+
+`TypedAst` will expose one optional
+`SourceConditionFormulaCompositionHandoff` after Task-252/253/255/256
+installation through this exact surface:
+
+```rust
+pub const fn source_condition_formula_composition(
+    &self,
+) -> Option<&SourceConditionFormulaCompositionHandoff>;
+
+pub fn with_source_condition_formula_composition(
+    self,
+    composition: SourceConditionFormulaCompositionHandoff,
+) -> Result<Self, TypedAstError>;
+
+// New #[non_exhaustive] TypedAstError variant:
+InvalidSourceConditionFormulaComposition,
+```
+
+The installer reauthenticates the four lower fingerprints, direct
+condition-wrapper/equality relation, exact operand ownership, and one
+association row. It rejects missing or substituted dependencies, an existing
+Task-257 composite/Task-257B composition, or a second
+condition-composition handoff atomically through the dedicated error variant.
+The existing Task-257A and combined Task-257B installer signatures and
+successful legacy behavior remain unchanged, but both add a reciprocal
+fail-closed check for an already installed C2 handoff through their existing
+error variants. Tests cover A/B-before-C2 and C2-before-A/B with rollback.
+The C2 installer is not implementable until separate Task 256C1 makes the
+authenticated Task-255 condition containment pass both set/atomic
+installation orders without weakening unrelated overlap guards.
+Absent-handoff debug bytes remain unchanged; no semantic table is populated.

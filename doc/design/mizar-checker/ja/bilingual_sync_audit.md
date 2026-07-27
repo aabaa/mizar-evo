@@ -43,9 +43,9 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary、projection model、validation/recovery/atomicity、determinism、coverage、public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary、flat chain/attribute/qualifier/group/actual model、environment/parent/arena/provenance validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary、five-table application/wrapper/candidate/argument/request transport、Task-252 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
-| `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 authority/boundary、nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport、Task-252/253/254/255 fingerprint association、base consumer 8件とexact C1 consumer、exclusion、public enum policy | none |
+| `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1とTask-257C2/256C1 lower-compatibility authority/boundary、nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport、Task-252/253/254/255 fingerprint association、base consumer 8件とexact C1 consumer、condition-container gate、exclusion、public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary、seven-table composite-formula/binder/type/edge/request transport、source-derived binding extension、exact consumer、exclusion、public enum policy | none |
-| `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1 authority/boundary、explicit universal-to-atomic edge/bound-use transport、Task-252/256/257 dependency fingerprint、combined atomic installation、exact consumer、exclusion、public enum policy | none |
+| `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3とfrozen Task-257C2 authority/boundary、composite-to-atomic/bound-use transport、dedicated condition-to-atomic transport、dependency fingerprint、atomic installation、exact consumer、exclusion、public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary、seven-table set/choice/qua/generator/type-site/condition/edge/request transport、Task-252/253/254 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
@@ -213,3 +213,15 @@ paired implementation-result、module-boundary、public-surface、ownership、
 runner、TODO、coverage documentは同じseven-table API、recursive condition
 boundary、exact dependency profile、fixture/trace increment、実測count/hash、
 unchanged semantic deferralを記録する。Task-255C1 bilingual driftは残らない。
+
+## Task 257C2 frozen-contract pair
+
+paired plan、TODO、formula-composition、set/atomic lower-family、
+typed/resolved ownership、decomposition、source/spec、module-boundary文書は、
+同じunchanged 191-byte source/hash、direct wrapper/equality relation、
+dependency profile 5件、dedicated one-edge transaction、fingerprint 4件、
+validation/tests、existing-sidecar trace projection、unchanged baseline、
+separate Task-256C1 lower compatibility gate、current two-order lower
+rejectionとunrelated-overlap rejection保持、bidirectional A/B/C2 installer
+exclusion、semantic deferralをfreezeする。本prerequisiteにexecutable
+artifact変更はなく、bilingual debtは残らない。
