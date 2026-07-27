@@ -12,6 +12,17 @@ test 303件、path/content hash `5cc36b8a...` / `b9b6c678...`の
 254+/260/270/277-278とSteps 6/7は両言語でunpromotedのままである。Task 253に
 bilingual driftは残らない。
 
+## Checker Task 257B1 Pair Recheck
+
+paired plan/TODO/harness/module-boundary documentは、同じ79-byte pass source、
+exact parser range、Task-252/256/257 + `1/2` same-arena composition、binding-0
+lookup winner 2件、combined installation、semantic-output exclusion、covered
+trace row、Task-257B2 handoffを記録する。両languageはplan `415/381`、type
+`247/235`、pass/fail `225/190`、active `101/5/194/1`、
+warnings/errors `23/0`、338 tests、同じtest-list/CLI/29-path・31,374-line
+production-manifest hashを記録する。Checker Task 257B1にbilingual driftは
+残らない。
+
 ## Checker Task 254 / Task-10 pair recheck
 
 paired plan/TODO/harness/module-boundary audit/checker consumer documentは、

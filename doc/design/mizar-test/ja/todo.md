@@ -1605,5 +1605,6 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   conditioned comprehensionをTask 257B1外に保つ。
 - [x] prerequisiteをdocumentation-onlyで414/380、246/234、224/190、
   101/5/193/1、299/333 tests、28 paths / 30,654 linesに保つ。
-- [ ] exact consumer、第2 composite profile、lower-family composition、
-  public `1/2` handoff、trace row、test、final ownershipを別commitで実装する。
+- [x] exact consumer、第2 composite profile、lower-family composition、
+  public `1/2` handoff、trace row、test、final ownershipを実装する。bounded pass
+  routeは全semantic deferralを保持し、次はChecker Task 257B2。

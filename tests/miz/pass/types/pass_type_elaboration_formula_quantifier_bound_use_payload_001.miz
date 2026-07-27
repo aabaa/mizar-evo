@@ -1,0 +1,1 @@
+theorem FormulaQuantifierBoundUsePayloadBoundary: for x being set holds x = x;

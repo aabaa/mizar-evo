@@ -120,3 +120,11 @@ application、structure/set/choice/comprehension/`qua` term、formula graph、
 definition result semantics、real proof-local constant production、numeric
 response、accepted fact/declaration/proof、downstream IR、Tasks 253+、Steps 6/7は
 explicit ownerに残る。
+
+## Task 257B1 Consumer Addendum
+
+Task 257B1はexact pass consumerへadditional `VariableReference`/`Value` row
+2件とbinding reference 2件を追加する。両referenceはbody context 1でexplicit
+quantifierのbinding 0をselectする。occurrence/lookup-winner ownershipはTask 252
+だけに残り、formula-composition handoffはbinder-to-reference associationだけを
+記録し、captured-free-variable metadataをrepurposeしない。

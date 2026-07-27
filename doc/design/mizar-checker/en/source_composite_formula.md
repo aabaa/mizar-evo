@@ -71,10 +71,12 @@ Validation authenticates source/module identity, the exact base and extended
 binding environments, dense row order, source ranges and typed-arena keys,
 canonical spellings, normal recovery, a single complete tree, the unique
 context transition, binder scope and identity, type association, and all
-request associations. Transparent synthetic wrappers must be strictly nested,
-normal, context-preserving, and attached to one represented formula. Their
-dense ordinals are source ordered outermost-to-innermost, and their canonical
-spellings recursively wrap the next inner occurrence.
+request associations. Task 257B1 supersedes the former Task-257A-only
+synthetic-wrapper admission: both currently admitted exact profiles require
+an empty wrapper table. The public wrapper row/table shape remains reserved,
+but executable parenthesized formula occurrences and their nesting contract
+are deferred to Task 257B2; any nonempty wrapper shape is currently rejected
+atomically as an unowned third profile.
 
 `TypedAst::with_source_composite_formula` is one-shot, revalidates the complete
 handoff, and rejects an already installed source-context handoff.
@@ -95,8 +97,9 @@ installs the handoff, and assembles the resolved AST before the older semantic
 route runs. The existing two semantic detail keys remain unchanged.
 
 Checker tests cover the seven-table aggregate, full literal debug oracle,
-deterministic replay, nested wrappers, binding extension, arena vocabulary,
-cross-table corruption, one-shot installation, and legacy debug bytes.
+deterministic replay, rejection of the retired synthetic-wrapper/third-profile
+shapes, binding extension, arena vocabulary, cross-table corruption, one-shot
+installation, and legacy debug bytes.
 Runner tests cover the real sites and corrected parser ranges, exact selector
 isolation, unchanged external details, corruption recovery, clone-preserving
 final ownership, and preinstalled Task-248 rejection.
@@ -114,3 +117,13 @@ final ownership, and preinstalled Task-248 rejection.
 | `SourceCompositeFormulaError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
+
+## Task 257B1 Profile Addendum
+
+Task 257B1 adds the second exact `1/0/1/1/1/0/2` profile without changing
+the Task-257A `5/0/1/1/1/4/6` input or debug bytes. The producer derives the
+profile from validated table shape and rejects A/B hybrids or any third
+shape. The legacy `with_source_composite_formula` installer remains
+Task-257A-only; the second profile is publishable only with its Task-252/256
+dependencies and `1/2` cross-family handoff through the combined installer
+specified in [source_formula_composition.md](./source_formula_composition.md).

@@ -3102,3 +3102,12 @@ that already owns Task 257A; both must fail with byte-identical rollback. The
 profile matrix mixes A cardinalities with B rows, B cardinalities with A rows,
 and supplies a third otherwise valid shape. Only the two exact profiles may
 build, and neither failed build/install path may publish partial B1 state.
+
+### Checker Task 257B1 Implemented Route
+
+The private leaf now executes the frozen selector and same-arena composition.
+Its positive oracle covers every Task-252/256/257/B1 row, both lookup winners,
+all dependency fingerprints, the full literal composition debug rendering,
+and typed/resolved ownership. The isolation, corruption, ownership-partition,
+profile-discriminator, Task-248, and Task-257A rollback cases remain
+executable, and the external result contains no semantic formula output.

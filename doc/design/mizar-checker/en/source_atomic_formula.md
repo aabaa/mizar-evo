@@ -130,3 +130,10 @@ The bounded trace row is
 `spec.en.checker.type_elaboration.source_atomic_formula_payload`. Task 256
 adds executable source-transport coverage only; semantic formula work and
 Steps 6/7 remain unimplemented.
+
+## Task 257B1 Consumer Addendum
+
+Task 257B1 reuses this module's existing equality and two primary-term operand
+edges as an authenticated dependency for one universal body. Atomic-formula
+row ownership, validation, and semantic deferrals do not change; the new
+formula-composition handoff stores only the cross-family parent association.

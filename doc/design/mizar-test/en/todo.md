@@ -1794,6 +1794,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   conditioned comprehensions outside Task 257B1.
 - [x] Keep this prerequisite documentation-only at 414/380, 246/234,
   224/190, 101/5/193/1, 299/333 tests, and 28 paths / 30,654 lines.
-- [ ] Implement the exact consumer, second composite profile, lower-family
-  composition, public `1/2` handoff, trace row, tests, and final ownership in
-  a separate commit.
+- [x] Implement the exact consumer, second composite profile, lower-family
+  composition, public `1/2` handoff, trace row, tests, and final ownership.
+  The bounded pass route preserves all semantic deferrals; Checker Task 257B2
+  is next.

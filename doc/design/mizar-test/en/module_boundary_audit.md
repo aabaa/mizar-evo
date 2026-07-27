@@ -1,5 +1,31 @@
 # Module-Boundary Audit: mizar-test Runner
 
+## Checker Task 257B1 Formula-Composition Current-State Addendum
+
+Task 257B1 adds one cohesive 540-line private
+`source_formula_composition.rs` consumer leaf, a 326-line private runner test
+leaf, and a bounded extraction extension to the 2,848-line
+`source_formula.rs`. Raw `SurfaceAst` traversal remains private; the checker
+receives only syntax-free Task-252/256/257 and `1/2` composition inputs.
+`runner.rs` is 2,455 lines and the type-elaboration facade is 654 lines.
+
+The measured coverage boundary is plan `415/381`, type-elaboration
+`247/235`, pass/fail `225/190`, active parse/declaration/type/proof
+`101/5/194/1`, and warnings/errors `23/0`. The only new corpus consumer is
+the exact 79-byte pass fixture. The production manifest is 29 paths / 31,374
+lines with path/content hashes
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`8b101e3a0a94fcac1dcfd385d311b31d07f6e9f29cbc47b39f42fb51ac71f0ca`.
+The 338-test raw/normalized list hashes are
+`2900152f79beca3c1046343b3cce4d559093efb552fc2930b8356760b91c8734` /
+`3ed20d0a843900cc540c30821532a971a89ca15269307be7de5cebb0dfae7d94`.
+The plan/parse/declaration/type/proof CLI hashes are
+`73e71d3a40136e1ae4c47db6e3a296a5370b3bcd461e3b60da36b3b3f8157aab`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+
 ## Checker Task 257A Source-Composite-Formula Current-State Addendum
 
 Checker Task 257A adds one cohesive private `source_composite_formula`

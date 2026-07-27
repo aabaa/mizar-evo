@@ -595,3 +595,8 @@ Task-257B1 `bound_uses` rows are formula-side associations only. Task 252
 remains the lookup-winner and source-reference owner, Task 256 remains the
 equality/operand owner, and `BindingEntry::captured` remains reserved for
 free-variable capture rather than direct quantified occurrences.
+
+Task 257B1 is now implemented at that boundary. The exact pass route composes
+all three predecessor families plus the `1/2` handoff without duplicating an
+occurrence or moving an owner. The bounded `source_drift` and `test_gap` are
+closed; Task 257B2 remains the next graph node.

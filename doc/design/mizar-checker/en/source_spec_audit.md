@@ -152,6 +152,7 @@ rejection.
 - `resolved_typed_ast`
 - `source_atomic_formula`
 - `source_composite_formula`
+- `source_formula_composition`
 - `source_context`
 - `source_attribute`
 - `source_evidence`
@@ -524,7 +525,7 @@ Correspondence:
 
 | Specification promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Seven syntax-free dense tables retain the exact composite tree, transparent wrappers, root, binder, written binder type, child roles, and unresolved requests. | Public inputs, immutable rows, and tables in `src/source_composite_formula.rs`. | Exact real `5/0/1/1/1/4/6`, full literal debug, wrapper, and corruption tests. | Implemented for Task 257A. |
+| Seven syntax-free dense tables retain the exact composite tree, reserved wrapper table, root, binder, written binder type, child roles, and unresolved requests. Both currently admitted Task-257A/257B1 profiles require the wrapper table to be empty; executable parenthesized occurrences are deferred to Task 257B2. | Public inputs, immutable rows, and tables in `src/source_composite_formula.rs`. | Exact real `5/0/1/1/1/4/6`, exact B1 `1/0/1/1/1/0/2`, full literal debug, wrapper/third-profile rejection, and corruption tests. | Implemented for Tasks 257A/257B1 with parenthesized occurrences deferred. |
 | The same immutable input extends the exact `1/0/4` module shell to the source-derived `2/1/4` environment. | `SourceCompositeFormulaProducer::extend_bindings`, `BindingContextOwner::SourceFormula`, and `build`. | Binder identity, context transition, diagnostic prefix, stale environment, and arena-key tests. | Implemented transactionally. |
 | `TypedAst` owns one handoff, rejects Task-248 coexistence, and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_composite_formula`, accessors, and resolved assembly. | One-shot, preinstalled-source-context, final clone equality, deterministic replay, and legacy debug tests. | Implemented without raw-source rebuilding. |
 | Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-257A enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
@@ -533,6 +534,35 @@ Bounded gaps: semantic connective/quantifier evaluation, other connectives
 and quantifier forms, bound uses/capture, predicate chains, conditioned
 comprehensions, theorem ownership/acceptance, proofs, facts, and downstream
 IR remain with Tasks 257B/257C/258 and later owners.
+
+### `source_formula_composition`
+
+Generated public newtypes:
+
+- `SourceFormulaAtomicEdgeId`, `SourceQuantifierBoundUseId`
+
+Literal top-level public items:
+
+- `SourceFormulaCompositionHandoffInput`,
+  `SourceFormulaAtomicEdgeInput`, `SourceQuantifierBoundUseInput`,
+  `SourceFormulaAtomicEdgeRole`, `SourceFormulaCompositionHandoff`,
+  `SourceFormulaAtomicEdgeTable`, `SourceQuantifierBoundUseTable`,
+  `SourceFormulaAtomicEdge`, `SourceQuantifierBoundUse`,
+  `SourceFormulaCompositionProducer`, `SourceFormulaCompositionError`.
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Two syntax-free dense tables retain the exact universal-to-equality and binder-to-reference associations. | Public input, immutable rows, and tables in `src/source_formula_composition.rs`. | Exact real `1/2`, full literal debug, and independent field/association corruption tests. | Implemented for Task 257B1. |
+| Task-252, Task-256, and second Task-257 identities are fingerprinted and revalidated in one arena. | `SourceFormulaCompositionProducer::build` and immutable owned fingerprints. | Dependency substitution, cross-source, ordering, lookup-winner, and containment tests. | Implemented transactionally. |
+| The second composite profile and composition publish together and clone-preserve through final ownership. | Combined `TypedAst` installer, getters, and resolved assembly. | Legacy/combined installer partition, Task-248/Task-257A exclusion, rollback, and final clone tests. | Implemented without an intermediate AST state. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on both public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: connective/grouping expansion, additional binder forms,
+quantifier and equality semantics, implicit closure, facts, theorem
+acceptance, proofs, and downstream IR remain with Tasks 257B2/B3/258 and
+later owners.
 
 ### `source_set_term`
 
@@ -3451,3 +3481,19 @@ Task 257B1 closes only the explicit one-binder, one-equality dependency seam.
 Task 257B2/B3, Task 257C, semantic truth, implicit closure, theorem
 acceptance, proof, and downstream IR remain open. This documentation
 prerequisite changes no trace status or coverage count.
+
+## Checker Task 257B1 Implementation Audit
+
+The exact pass consumer, second composite profile, Task-252/256 composition,
+combined installation, and immutable final handoff now implement the frozen
+source-only boundary. The public checker surface remains syntax-free and the
+private runner retains all raw parser nodes. Both bound uses authenticate
+binding 0 in body context 1 without changing Task-252 occurrence ownership or
+`BindingEntry::captured`.
+
+The new covered trace row maps only to the new pass sidecar, while Chapter-4,
+Chapter-14, Task-252, Task-256, and Task-257A rows receive reciprocal notes
+without status changes. This closes the bounded `source_drift` and `test_gap`;
+no blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `boundary_violation` remains. Task 257B2 retains
+broader connective/grouping transport.

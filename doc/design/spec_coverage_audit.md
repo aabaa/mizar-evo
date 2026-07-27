@@ -3154,3 +3154,25 @@ status. It projects plan 415/381, type 247/235, pass/fail 225/190, and active
 type 194. No equality or quantified truth, implicit closure, theorem owner or
 acceptance, fact, proof, Core/CFG/VC, Steps 6/7, or global Step-5 completion
 credit is granted.
+
+## Step 5 Checker Task 257B1 Implementation Addendum
+
+Task 257B1 now supplies executable source-transport coverage for the exact
+explicit-universal/equality/bound-use slice. The new covered row
+`spec.en.checker.type_elaboration.source_quantifier_bound_use_payload` maps
+only to
+`pass_type_elaboration_formula_quantifier_bound_use_payload_001.expect.toml`.
+Chapter-4, Chapter-14, Task-252, Task-256, and Task-257A trace rows receive
+reciprocal notes without status changes.
+
+The public checker boundary composes Task-252 `2/2/0`, Task-256
+`1/0/0/0/0/0/2/2`, the second Task-257 `1/0/1/1/1/0/2` profile,
+and Task-257B1 `1/2`. This closes the bounded `source_drift` and `test_gap`
+and reaches plan `415/381`, type `247/235`, pass/fail `225/190`, active
+parse/declaration/type/proof `101/5/194/1`, and warnings/errors `23/0`.
+
+MC-G017/MC-G020 remain partial. Task 257B2 retains broader connectives,
+repetition, and executable grouping; Task 257B3 retains additional binder
+forms. Equality or quantified truth, implicit closure, facts, theorem
+ownership or acceptance, proof, Core/CFG/VC, Steps 6/7, and global Step-5
+completion receive no credit.

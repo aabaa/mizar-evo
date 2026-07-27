@@ -455,6 +455,7 @@ tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
   "tests/property/scope_skeleton_phase5_001.expect.toml",
 ]
+notes = "Checker Task 257B1 adds a separate type-elaboration transport backlink for one explicit universal binder and its two direct bound uses. That fixture relies on the Chapter-4 lexical scope and lookup contract but does not change this lexical-stage status or claim broader shadowing, nested-binder, restricted-binder, or implicit-binder coverage."
 
 [[requirement]]
 id = "spec.en.02.lexical.string_literals.context_sensitive"
@@ -2163,7 +2164,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
 ]
-notes = "Task 117 supersedes task 115 for the exact formula-only theorem by passing the source-derived `thesis` formula constant as a checker FormulaInput with FormulaKind::Thesis before failing closed on missing formula payload. Task 117 also extends task 112 for the exact connective/quantifier theorem formula by passing source-derived FormulaKind::Contradiction payloads for both contradiction constants in addition to the implication, universal quantification, and negation shells before failing closed on missing formula and quantifier payloads. Checker Task 257A now transports that exact five-node source tree, its four child-role edges, one explicit universal binder and bare-set type site, and six unresolved requests through a syntax-free immutable handoff while preserving the semantic failures. Task 180 separately checks only the exact standalone SourceDerivedContradictionConstantBoundary leaf for formula type/well-formedness. Constant truth values, thesis semantics, broader connective/quantifier semantics, formula checking, facts, theorem acceptance, and broader formula extraction remain deferred."
+notes = "Task 117 supersedes task 115 for the exact formula-only theorem by passing the source-derived `thesis` formula constant as a checker FormulaInput with FormulaKind::Thesis before failing closed on missing formula payload. Task 117 also extends task 112 for the exact connective/quantifier theorem formula by passing source-derived FormulaKind::Contradiction payloads for both contradiction constants in addition to the implication, universal quantification, and negation shells before failing closed on missing formula and quantifier payloads. Checker Task 257A now transports that exact five-node source tree, its four child-role edges, one explicit universal binder and bare-set type site, and six unresolved requests through a syntax-free immutable handoff while preserving the semantic failures. Checker Task 257B1 independently adds one pass-sidecar backlink for syntax-free explicit-universal/equality/bound-use composition while leaving quantifier and equality semantics, formula checking, facts, theorem acceptance, and this diagnostic status unchanged. Task 180 separately checks only the exact standalone SourceDerivedContradictionConstantBoundary leaf for formula type/well-formedness. Constant truth values, thesis semantics, broader connective/quantifier semantics, formula checking, facts, theorem acceptance, and broader formula extraction remain deferred."
 
 [[requirement]]
 id = "spec.en.15.reconsider.omitted_justification.parser"
@@ -4997,7 +4998,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
 ]
-notes = "Task 256 covers only syntax-free source atomic-formula occurrences, ordinary predicate heads and individually authenticated candidates, bare builtin asserted-type sites, simple imported assertion attributes and `non` polarity anchors, nearest-family Task-252/253/255 direct term edges, and eleven unresolved expected-input requests for the exact eight frozen routes. It preserves every existing semantic failure boundary and grants no predicate applicability, overload selection, type reachability, attribute admissibility or truth, equality/inequality/membership fact, formula result, theorem acceptance, downstream IR, or proof credit."
+notes = "Task 256 covers only syntax-free source atomic-formula occurrences, ordinary predicate heads and individually authenticated candidates, bare builtin asserted-type sites, simple imported assertion attributes and `non` polarity anchors, nearest-family Task-252/253/255 direct term edges, and eleven unresolved expected-input requests for the exact eight frozen routes. Checker Task 257B1 adds a reciprocal transport backlink for one equality row and its two Task-252 operand edges in the new pass consumer without changing Task-256 ownership or this diagnostic status. It preserves every existing semantic failure boundary and grants no predicate applicability, overload selection, type reachability, attribute admissibility or truth, equality/inequality/membership fact, formula result, theorem acceptance, downstream IR, or proof credit."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.source_attribute_payload"
@@ -5039,7 +5040,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
 ]
-notes = "Checker Task 257A covers only the exact syntax-free five-node implication/universal/negation/contradiction source tree, one unassigned root, four source-role edges, one explicit universal binder and bare-set type site, six unresolved input requests, and the source-derived 2/1/4 binding environment for the unchanged connective/quantifier fail route. It preserves the existing MissingFormulaPayload and MissingQuantifierPayload failures and grants no connective or constant truth, quantifier semantics, bound-use/capture, formula fact/result, theorem ownership or acceptance, proof, downstream IR, broader connective/quantifier, predicate-chain, or conditioned-comprehension credit."
+notes = "Checker Task 257A covers only the exact syntax-free five-node implication/universal/negation/contradiction source tree, one unassigned root, four source-role edges, one explicit universal binder and bare-set type site, six unresolved input requests, and the source-derived 2/1/4 binding environment for the unchanged connective/quantifier fail route. Checker Task 257B1 adds a reciprocal transport backlink for the second exact one-universal profile and its cross-family body/use associations without changing Task-257A ownership, fixture outcome, or this diagnostic status. It preserves the existing MissingFormulaPayload and MissingQuantifierPayload failures and grants no connective or constant truth, quantifier semantics, formula fact/result, theorem ownership or acceptance, proof, downstream IR, broader connective/quantifier, predicate-chain, or conditioned-comprehension credit."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.source_evidence_request_payload"
@@ -5078,12 +5079,25 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
-notes = "Task 252 bounded source-transport coverage for the exact numeral-equality, reserved-variable-equality, and parenthesized-reserved-variable-equality routes. Their immutable TypedAst-to-ResolvedTypedAst aggregate is seven primary-term rows, four authenticated binding references, and two unresolved numeric-type requests. Synthetic Rust probes cover constant, it, nested-parenthesis, and mixed-family boundaries without corpus credit. This row does not credit numeric results, semantic terms or formulas, definition-result ownership, real local-constant production, facts, acceptance, other term families, or downstream IR."
+notes = "Task 252 bounded source-transport coverage for the exact numeral-equality, reserved-variable-equality, and parenthesized-reserved-variable-equality routes. Their immutable TypedAst-to-ResolvedTypedAst aggregate is seven primary-term rows, four authenticated binding references, and two unresolved numeric-type requests. Checker Task 257B1 adds a reciprocal transport backlink for two additional Task-252-owned variable/reference rows that both select explicit quantifier binding 0 in context 1; formula composition does not replace occurrence ownership or change this row's status. Synthetic Rust probes cover constant, it, nested-parenthesis, and mixed-family boundaries without corpus credit. This row does not credit numeric results, semantic terms or formulas, definition-result ownership, real local-constant production, facts, acceptance, other term families, or downstream IR."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.source_quantifier_bound_use_payload"
+source = "doc/design/mizar-checker/en/source_formula_composition.md"
+section = "Exact Real Consumer; Cross-Family Transaction; Validation And Final Ownership"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_formula_quantifier_bound_use_payload_001.expect.toml",
+]
+notes = "Checker Task 257B1 covers only immutable syntax-free source transport for the exact explicit `for x being set holds x = x` consumer. The runner composes Task-252 `2/2/0`, Task-256 `1/0/0/0/0/0/2/2`, the second Task-257 `1/0/1/1/1/0/2` profile, and Task-257B1 `1/2` atomic-edge/bound-use rows in one typed arena; both references select binding 0 in body context 1 while Task 252 retains occurrence ownership. This row grants no equality or quantified truth, implicit closure, formula result or fact, theorem ownership or acceptance, proof, CoreIr, ControlFlowIr, VC, broader connective/grouping shape, existential/restricted/nested/implicit binder, predicate-chain, or conditioned-comprehension credit."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.source_set_choice_qua_term_payload"

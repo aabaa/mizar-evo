@@ -382,6 +382,26 @@ impl SourceCompositeFormulaHandoff {
         validate_extended_bindings(&input, &self.binding_env)
     }
 
+    pub(crate) fn is_task_257a_profile(&self) -> bool {
+        self.formulas.len() == 5
+            && self.wrappers.is_empty()
+            && self.roots.len() == 1
+            && self.binders.len() == 1
+            && self.type_sites.len() == 1
+            && self.edges.len() == 4
+            && self.requests.len() == 6
+    }
+
+    pub(crate) fn is_task_257b1_profile(&self) -> bool {
+        self.formulas.len() == 1
+            && self.wrappers.is_empty()
+            && self.roots.len() == 1
+            && self.binders.len() == 1
+            && self.type_sites.len() == 1
+            && self.edges.is_empty()
+            && self.requests.len() == 2
+    }
+
     fn to_input(&self) -> SourceCompositeFormulaHandoffInput {
         SourceCompositeFormulaHandoffInput {
             source_id: self.source_id,
@@ -953,10 +973,8 @@ fn validate_input(
     input: &SourceCompositeFormulaHandoffInput,
     arena: &TypedArena,
 ) -> Result<(), SourceCompositeFormulaError> {
-    if input.formulas.len() != 5 {
-        return Err(SourceCompositeFormulaError::InvalidTree);
-    }
-    let expected_formulas = [
+    let profile = composite_profile(input)?;
+    let task_257a_formulas = [
         (
             SourceCompositeFormulaKind::Implication,
             BindingContextId::new(0),
@@ -983,15 +1001,24 @@ fn validate_input(
             "contradiction",
         ),
     ];
+    let task_257b1_formulas = [(
+        SourceCompositeFormulaKind::Universal,
+        BindingContextId::new(0),
+        "for holds",
+    )];
+    let expected_formulas = match profile {
+        CompositeProfile::Task257A => task_257a_formulas.as_slice(),
+        CompositeProfile::Task257B1 => task_257b1_formulas.as_slice(),
+    };
     let mut sites = BTreeSet::new();
     for (index, (row, (kind, context, spelling))) in
         input.formulas.iter().zip(expected_formulas).enumerate()
     {
         if row.source_ordinal != index
-            || row.kind != kind
-            || row.context != context
+            || row.kind != *kind
+            || row.context != *context
             || row.recovery != SourceCompositeFormulaRecovery::Normal
-            || row.spelling != spelling
+            || row.spelling != *spelling
             || !valid_range(input.source_id, row.source_range)
             || validate_arena_site(
                 &row.site,
@@ -1011,22 +1038,50 @@ fn validate_input(
         }
     }
 
-    validate_wrappers(input, arena, &mut sites)?;
+    validate_wrappers(input, profile, arena, &mut sites)?;
     validate_root(input)?;
-    validate_binder(input, arena, &mut sites)?;
+    validate_binder(input, profile, arena, &mut sites)?;
     validate_type_site(input, arena, &mut sites)?;
-    validate_edges(input)?;
-    validate_requests(input)?;
+    validate_edges(input, profile)?;
+    validate_requests(input, profile)?;
     Ok(())
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum CompositeProfile {
+    Task257A,
+    Task257B1,
+}
+
+fn composite_profile(
+    input: &SourceCompositeFormulaHandoffInput,
+) -> Result<CompositeProfile, SourceCompositeFormulaError> {
+    let counts = (
+        input.formulas.len(),
+        input.roots.len(),
+        input.binders.len(),
+        input.type_sites.len(),
+        input.edges.len(),
+        input.requests.len(),
+    );
+    match counts {
+        (5, 1, 1, 1, 4, 6) if input.wrappers.is_empty() => Ok(CompositeProfile::Task257A),
+        (1, 1, 1, 1, 0, 2) if input.wrappers.is_empty() => Ok(CompositeProfile::Task257B1),
+        _ => Err(SourceCompositeFormulaError::InvalidTree),
+    }
 }
 
 fn validate_wrappers(
     input: &SourceCompositeFormulaHandoffInput,
+    profile: CompositeProfile,
     arena: &TypedArena,
     sites: &mut BTreeSet<TypedSiteRef>,
 ) -> Result<(), SourceCompositeFormulaError> {
-    let mut groups: [Vec<usize>; 5] = std::array::from_fn(|_| Vec::new());
-    let mut expected_ordinal = [0; 5];
+    if profile == CompositeProfile::Task257B1 && !input.wrappers.is_empty() {
+        return Err(SourceCompositeFormulaError::InvalidTree);
+    }
+    let mut groups = vec![Vec::new(); input.formulas.len()];
+    let mut expected_ordinal = vec![0; input.formulas.len()];
     let mut previous_formula = None;
     for (index, row) in input.wrappers.iter().enumerate() {
         let formula = row.formula.index();
@@ -1040,8 +1095,8 @@ fn validate_wrappers(
             || row.context != owner.context
             || row.recovery != SourceCompositeFormulaRecovery::Normal
             || !strictly_contains(row.source_range, owner.source_range)
-            || !wrapper_is_within_parent(input, formula, row.source_range)
-            || wrapper_crosses_unrelated_formula(input, formula, row.source_range)
+            || !wrapper_is_within_parent(input, profile, formula, row.source_range)
+            || wrapper_crosses_unrelated_formula(input, profile, formula, row.source_range)
             || validate_arena_site(
                 &row.site,
                 row.source_range,
@@ -1082,9 +1137,13 @@ fn validate_wrappers(
 
 fn wrapper_is_within_parent(
     input: &SourceCompositeFormulaHandoffInput,
+    profile: CompositeProfile,
     owner: usize,
     wrapper_range: SourceRange,
 ) -> bool {
+    if profile == CompositeProfile::Task257B1 {
+        return owner == 0;
+    }
     let parent = match owner {
         0 => return true,
         1 | 2 => 0,
@@ -1097,19 +1156,21 @@ fn wrapper_is_within_parent(
 
 fn wrapper_crosses_unrelated_formula(
     input: &SourceCompositeFormulaHandoffInput,
+    profile: CompositeProfile,
     owner: usize,
     wrapper_range: SourceRange,
 ) -> bool {
     input.formulas.iter().enumerate().any(|(other, formula)| {
         other != owner
-            && !formula_is_ancestor(owner, other)
-            && !formula_is_ancestor(other, owner)
+            && !formula_is_ancestor(profile, owner, other)
+            && !formula_is_ancestor(profile, other, owner)
             && ranges_overlap(wrapper_range, formula.source_range)
     })
 }
 
-fn formula_is_ancestor(ancestor: usize, descendant: usize) -> bool {
-    matches!((ancestor, descendant), (0, 1..=4) | (2, 3 | 4) | (3, 4))
+fn formula_is_ancestor(profile: CompositeProfile, ancestor: usize, descendant: usize) -> bool {
+    profile == CompositeProfile::Task257A
+        && matches!((ancestor, descendant), (0, 1..=4) | (2, 3 | 4) | (3, 4))
 }
 
 fn ranges_overlap(left: SourceRange, right: SourceRange) -> bool {
@@ -1135,14 +1196,19 @@ fn validate_root(
 
 fn validate_binder(
     input: &SourceCompositeFormulaHandoffInput,
+    profile: CompositeProfile,
     arena: &TypedArena,
     sites: &mut BTreeSet<TypedSiteRef>,
 ) -> Result<(), SourceCompositeFormulaError> {
     let [binder] = input.binders.as_slice() else {
         return Err(SourceCompositeFormulaError::InvalidTree);
     };
-    let universal = &input.formulas[2];
-    if binder.formula != SourceCompositeFormulaId::new(2)
+    let universal_index = match profile {
+        CompositeProfile::Task257A => 2,
+        CompositeProfile::Task257B1 => 0,
+    };
+    let universal = &input.formulas[universal_index];
+    if binder.formula != SourceCompositeFormulaId::new(universal_index)
         || binder.ordinal != 0
         || binder.segment_spelling != "x being"
         || binder.identifier_spelling != "x"
@@ -1230,7 +1296,15 @@ fn validate_type_site(
 
 fn validate_edges(
     input: &SourceCompositeFormulaHandoffInput,
+    profile: CompositeProfile,
 ) -> Result<(), SourceCompositeFormulaError> {
+    if profile == CompositeProfile::Task257B1 {
+        return if input.edges.is_empty() {
+            Ok(())
+        } else {
+            Err(SourceCompositeFormulaError::InvalidTree)
+        };
+    }
     let expected = [
         (0, 0, SourceFormulaEdgeRole::ImplicationLeft, 1),
         (0, 1, SourceFormulaEdgeRole::ImplicationRight, 2),
@@ -1267,8 +1341,9 @@ fn validate_edges(
 
 fn validate_requests(
     input: &SourceCompositeFormulaHandoffInput,
+    profile: CompositeProfile,
 ) -> Result<(), SourceCompositeFormulaError> {
-    let expected = [
+    let task_257a_expected = [
         (
             0,
             0,
@@ -1312,17 +1387,37 @@ fn validate_requests(
             None,
         ),
     ];
+    let task_257b1_expected = [
+        (
+            0,
+            0,
+            SourceFormulaRequestKind::QuantifierSemantics,
+            None,
+            None,
+        ),
+        (
+            0,
+            1,
+            SourceFormulaRequestKind::BinderType,
+            Some(SourceQuantifierBinderId::new(0)),
+            Some(SourceBinderTypeSiteId::new(0)),
+        ),
+    ];
+    let expected = match profile {
+        CompositeProfile::Task257A => task_257a_expected.as_slice(),
+        CompositeProfile::Task257B1 => task_257b1_expected.as_slice(),
+    };
     if input.requests.len() != expected.len() {
         return Err(SourceCompositeFormulaError::InvalidTree);
     }
     for (index, (row, (formula, ordinal, kind, binder, type_site))) in
         input.requests.iter().zip(expected).enumerate()
     {
-        if row.formula != SourceCompositeFormulaId::new(formula)
-            || row.ordinal != ordinal
-            || row.kind != kind
-            || row.binder != binder
-            || row.type_site != type_site
+        if row.formula != SourceCompositeFormulaId::new(*formula)
+            || row.ordinal != *ordinal
+            || row.kind != *kind
+            || row.binder != *binder
+            || row.type_site != *type_site
         {
             return Err(SourceCompositeFormulaError::InvalidRequest {
                 request: SourceFormulaRequestId::new(index),
@@ -1384,6 +1479,10 @@ fn validate_extended_bindings(
     };
     let binder = &input.binders[0];
     let type_site = &input.type_sites[0];
+    let universal_index = match composite_profile(input)? {
+        CompositeProfile::Task257A => 2,
+        CompositeProfile::Task257B1 => 0,
+    };
     if root.owner != BindingContextOwner::Module
         || root.parent.is_some()
         || root.layer != BindingContextLayer::Module
@@ -1393,7 +1492,7 @@ fn validate_extended_bindings(
         || root.recovery != BindingContextRecovery::Normal
         || body.owner
             != (BindingContextOwner::SourceFormula {
-                source_range: input.formulas[2].source_range,
+                source_range: input.formulas[universal_index].source_range,
             })
         || body.parent != Some(BindingContextId::new(0))
         || body.layer != BindingContextLayer::Expression
@@ -1565,7 +1664,7 @@ fn write_module_id(output: &mut String, module: &ModuleId) {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::{
         binding_env::{
@@ -1966,6 +2065,14 @@ mod tests {
         SourceCompositeFormulaProducer::build(input, &extended, &fixture.arena)
     }
 
+    pub(crate) fn task_257a_installed_typed_ast() -> TypedAst {
+        let fixture = fixture();
+        let handoff = build(&fixture, fixture.input.clone()).expect("Task 257A handoff");
+        empty_typed_ast(fixture.source, fixture.module, fixture.arena)
+            .with_source_composite_formula(handoff)
+            .expect("Task 257A installation")
+    }
+
     #[track_caller]
     fn assert_input_rejected(
         fixture: &Fixture,
@@ -2039,7 +2146,7 @@ mod tests {
     }
 
     #[test]
-    fn transparent_nested_wrappers_are_bounded_and_ordered() {
+    fn task_257a_wrapper_shape_is_rejected_as_a_third_profile() {
         let fixture = fixture();
         let mut input = fixture.input.clone();
         input.wrappers = vec![
@@ -2062,12 +2169,28 @@ mod tests {
                 spelling: "( implies )".to_owned(),
             },
         ];
-        let handoff = build(&fixture, input.clone()).expect("nested wrappers");
-        assert_eq!(handoff.wrappers().len(), 2);
+        assert!(build(&fixture, input).is_err());
+    }
 
-        input.wrappers.swap(0, 1);
-        input.wrappers[0].ordinal = 0;
-        input.wrappers[1].ordinal = 1;
+    #[test]
+    fn task_257a_rows_at_task_257b1_cardinality_reject_as_a_profile_hybrid() {
+        let fixture = fixture();
+        let mut input = fixture.input.clone();
+        input.formulas.truncate(1);
+        input.edges.clear();
+        input.requests.truncate(2);
+        assert_eq!(
+            (
+                input.formulas.len(),
+                input.wrappers.len(),
+                input.roots.len(),
+                input.binders.len(),
+                input.type_sites.len(),
+                input.edges.len(),
+                input.requests.len(),
+            ),
+            (1, 0, 1, 1, 1, 0, 2)
+        );
         assert!(build(&fixture, input).is_err());
     }
 

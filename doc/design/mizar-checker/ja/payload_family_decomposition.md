@@ -544,3 +544,7 @@ Task-257B1 `bound_uses` rowはformula-side associationだけである。Task 252
 lookup-winner/source-reference owner、Task 256はequality/operand ownerのまま。
 `BindingEntry::captured`はdirect quantified occurrenceではなく
 free-variable capture用に保持する。
+
+Task 257B1はこのboundaryで実装済みである。exact pass routeはoccurrenceを
+duplicateせずownerも移動せず、3 predecessor familyと`1/2` handoffをcomposeする。
+bounded `source_drift`/`test_gap`はcloseし、次のgraph nodeはTask 257B2である。

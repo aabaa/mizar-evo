@@ -2942,3 +2942,12 @@ installerへ渡し、Task 257Aを既にownするASTへcombined B1 transactionを
 両方byte-identical rollbackでfailする。profile matrixはA cardinality+B row、
 B cardinality+A row、otherwise valid third shapeを検証する。exact 2 profileだけ
 build可能で、failed build/install pathはpartial B1 stateをpublishしない。
+
+### Checker Task 257B1 Implemented Route
+
+private leafはfrozen selector/same-arena compositionを実行する。positive oracleは
+Task-252/256/257/B1の全row、lookup winner 2件、全dependency fingerprint、full
+literal composition debug rendering、typed/resolved ownershipをcoverする。
+isolation、corruption、ownership-partition、profile-discriminator、Task-248、
+Task-257A rollback caseはexecutableで、external resultはsemantic formula
+outputを持たない。

@@ -1013,8 +1013,95 @@ impl fmt::Display for SourceContextError {
 impl Error for SourceContextError {}
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
+    use crate::typed_ast::{
+        CoercionTable, InitialObligationTable, TypeDiagnosticTable, TypeFactTable, TypeTable,
+        TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks,
+    };
+
+    pub(crate) fn task_248_occupied_typed_ast(source: SourceId, module: ModuleId) -> TypedAst {
+        let root = TypedNodeId::new(0);
+        let root_site = TypedSiteRef::Node(root);
+        let root_range = SourceRange {
+            source_id: source,
+            start: 0,
+            end: 1,
+        };
+        let mut binding_contexts = BindingContextTable::new();
+        binding_contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let binding_env = BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module.clone(),
+            contexts: binding_contexts,
+            bindings: BindingTable::new(),
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("Task 248 occupancy binding environment");
+        let mut local_contexts = LocalTypeContextTable::new();
+        local_contexts.insert(LocalTypeContextDraft {
+            owner: root_site,
+            parent: None,
+            layer: TypeContextLayer::Module,
+            bindings: Vec::new(),
+            introduced_assumptions: Vec::new(),
+            visible_facts: Vec::new(),
+            recovery: ContextRecoveryState::Normal,
+        });
+        let source_context = SourceBindingContextHandoff {
+            source_id: source,
+            module_id: module.clone(),
+            binding_env,
+            local_contexts: local_contexts.clone(),
+            items: SourceItemTable::default(),
+            declarations: SourceDeclarationTable::default(),
+            context_links: SourceContextLinkTable {
+                entries: vec![SourceContextLink {
+                    binding_context: BindingContextId::new(0),
+                    local_context: LocalTypeContextId::new(0),
+                    item: None,
+                }],
+            },
+        };
+        let nodes = TypedArena::try_new(
+            Some(root),
+            vec![
+                TypedNode::new(
+                    "source.module",
+                    mizar_session::SourceAnchor::Range(root_range),
+                )
+                .with_links(TypedNodeLinks {
+                    context: Some(LocalTypeContextId::new(0)),
+                    ..TypedNodeLinks::default()
+                }),
+            ],
+        )
+        .expect("Task 248 occupancy arena");
+        TypedAst::try_new(TypedAstParts {
+            source_id: source,
+            module_id: module,
+            resolved_root: None,
+            source_context: Some(source_context),
+            source_type: None,
+            source_attribute: None,
+            nodes,
+            contexts: local_contexts,
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("Task 248 occupied typed AST")
+    }
 
     #[test]
     fn empty_input_is_rejected_without_syntax_or_shell_fabrication() {

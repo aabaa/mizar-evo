@@ -674,3 +674,12 @@ arena、exact extended `BindingEnv`、dense table 7個を再検証する。borro
 syntax-free transportを公開する。field absent時はlegacy ASTのexact debug bytesを
 保持する。handoffはunresolved source intentだけを持ち、formula truth、type
 answer、fact、theorem owner、proof、acceptanceを作らない。
+
+## Task 257B1 Ownership Addendum
+
+`TypedAst`はoptional immutable `SourceFormulaCompositionHandoff`もownする。
+combined `with_source_formula_composition` installerはpreinstalled Task-252
+primary term/Task-256 atomic formulaを要求し、第2 composite profileとcompositionを
+同時にvalidate/publishする。Task-248 source-context coexistence、installed
+Task-257A profile、dependency drift、partial publicationをrejectする。legacy
+composite installerは第2 profileを引き続きrejectする。

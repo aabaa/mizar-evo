@@ -151,8 +151,9 @@ use type_elaboration::{
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_TWO_HOP_ASSERTED_HEAD_CONFIG, SourceAtomicFormulaRouteOutput,
     SourceBindingContextRouteOutput, SourceCompositeFormulaRouteOutput,
-    SourceContradictionHandoffCorruption, SourceEvidenceRouteKind, SourceParenthesizedOperandSide,
-    SourceParenthesizedReservedVariableBinaryFormula,
+    SourceContradictionHandoffCorruption, SourceEvidenceRouteKind,
+    SourceFormulaCompositionRouteInputs, SourceFormulaCompositionRouteOutput,
+    SourceParenthesizedOperandSide, SourceParenthesizedReservedVariableBinaryFormula,
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourceReservedVariableAssertedHeadRelation, SourceReservedVariableBinaryFormula,
     SourceReservedVariableBuiltinType, SourceReservedVariableTypeAssertion,
@@ -193,8 +194,8 @@ use type_elaboration::{
     extract_source_distinct_reserved_variable_equality,
     extract_source_distinct_reserved_variable_inequality,
     extract_source_distinct_reserved_variable_membership,
-    extract_source_formula_connective_quantifier, extract_source_formula_statement,
-    extract_source_four_edge_local_mode_asserted_head,
+    extract_source_formula_connective_quantifier, extract_source_formula_quantifier_bound_use,
+    extract_source_formula_statement, extract_source_four_edge_local_mode_asserted_head,
     extract_source_four_edge_local_mode_four_hop_asserted_head,
     extract_source_four_edge_local_mode_radix_asserted_head,
     extract_source_four_edge_local_mode_reserved_variable_equality,
@@ -319,7 +320,8 @@ use type_elaboration::{
     source_distinct_reserved_variable_equality_output,
     source_distinct_reserved_variable_inequality_output,
     source_distinct_reserved_variable_membership_output, source_evidence_output,
-    source_evidence_output_with_mutation, source_formula_connective_quantifier_output,
+    source_evidence_output_with_mutation, source_formula_composition_output,
+    source_formula_composition_output_with_mutation, source_formula_connective_quantifier_output,
     source_formula_statement_output, source_four_edge_local_mode_asserted_head_output,
     source_four_edge_local_mode_four_hop_asserted_head_output,
     source_four_edge_local_mode_radix_asserted_head_output,
@@ -468,6 +470,7 @@ use type_elaboration::{
     source_distinct_reserved_variable_equality_detail_keys,
     source_distinct_reserved_variable_inequality_detail_keys,
     source_distinct_reserved_variable_membership_detail_keys, source_evidence_detail_keys,
+    source_formula_composition_transport_detail_keys,
     source_formula_connective_quantifier_detail_keys, source_formula_statement_detail_keys,
     source_four_edge_local_mode_asserted_head_detail_keys,
     source_four_edge_local_mode_four_hop_asserted_head_detail_keys,
@@ -1496,6 +1499,11 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    if let Some(keys) =
+        source_formula_composition_transport_detail_keys(&ast, resolver.module.clone(), &symbols)
+    {
+        return keys;
+    }
     if let Some(keys) =
         source_composite_formula_transport_detail_keys(&ast, resolver.module.clone(), &symbols)
     {

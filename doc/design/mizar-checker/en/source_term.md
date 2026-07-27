@@ -129,3 +129,12 @@ structure/set/choice/comprehension/`qua` terms, formula graphs, definition
 result semantics, real proof-local constant production, numeric responses,
 accepted facts/declarations/proofs, downstream IR, Tasks 253+, and Steps 6/7
 remain with their explicit owners.
+
+## Task 257B1 Consumer Addendum
+
+Task 257B1 adds one exact pass consumer with two additional
+`VariableReference`/`Value` rows and two binding references. Both references
+select the explicit quantifier's binding 0 in body context 1. Task 252 keeps
+exclusive occurrence and lookup-winner ownership; the formula-composition
+handoff records only binder-to-reference associations and does not repurpose
+captured-free-variable metadata.

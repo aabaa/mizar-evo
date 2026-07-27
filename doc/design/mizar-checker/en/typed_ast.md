@@ -697,3 +697,14 @@ getter exposes the syntax-free transport. Legacy ASTs retain their exact debug
 bytes when the field is absent. The handoff contains unresolved source intent
 only and creates no formula truth, type answer, fact, theorem owner, proof, or
 acceptance.
+
+## Task 257B1 Ownership Addendum
+
+`TypedAst` now also owns an optional immutable
+`SourceFormulaCompositionHandoff`. The combined
+`with_source_formula_composition` installer requires preinstalled Task-252
+primary terms and Task-256 atomic formulas, then validates and publishes the
+second composite profile and composition together. It rejects Task-248
+source-context coexistence, an already installed Task-257A profile, all
+dependency drift, and partial publication. The legacy composite installer
+continues to reject the second profile.

@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_formula_quantifier_bound_use_payload_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_formula_quantifier_bound_use_payload_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.source_quantifier_bound_use_payload",
+]
+notes = "Checker Task 257B1 bounded source-transport coverage for the exact explicit universal `for x being set holds x = x` consumer. The private runner composes the Task-257 `1/0/1/1/1/0/2` universal/binder profile, Task-252 `2/2/0` primary-term/reference dependency, Task-256 `1/0/0/0/0/0/2/2` equality dependency, and Task-257B1 `1/2` universal-body/bound-use handoff in one typed arena. Both `x` references select quantifier binding 0 in body context 1 while Task 252 retains occurrence ownership. Passing asserts only immutable source-to-checker transport; equality truth, quantified truth, implicit closure, theorem ownership or acceptance, facts, proof, CoreIr, ControlFlowIr, and VC remain deferred."

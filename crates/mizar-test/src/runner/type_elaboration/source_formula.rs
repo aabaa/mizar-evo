@@ -1627,6 +1627,26 @@ pub(in crate::runner) struct SourceFormulaConnectiveQuantifier {
 }
 
 #[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceFormulaQuantifierBoundUse {
+    pub(in crate::runner) quantified_site: TypedSiteRef,
+    pub(in crate::runner) quantified_range: SourceRange,
+    pub(in crate::runner) binder_segment_site: TypedSiteRef,
+    pub(in crate::runner) binder_segment_range: SourceRange,
+    pub(in crate::runner) binder_identifier_site: TypedSiteRef,
+    pub(in crate::runner) binder_identifier_range: SourceRange,
+    pub(in crate::runner) binder_type_site: TypedSiteRef,
+    pub(in crate::runner) binder_type_range: SourceRange,
+    pub(in crate::runner) binder_type_head_site: TypedSiteRef,
+    pub(in crate::runner) binder_type_head_range: SourceRange,
+    pub(in crate::runner) equality_site: TypedSiteRef,
+    pub(in crate::runner) equality_range: SourceRange,
+    pub(in crate::runner) left_site: TypedSiteRef,
+    pub(in crate::runner) left_range: SourceRange,
+    pub(in crate::runner) right_site: TypedSiteRef,
+    pub(in crate::runner) right_range: SourceRange,
+}
+
+#[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceFormulaStatement {
     pub(in crate::runner) root_range: SourceRange,
     pub(in crate::runner) owner_site: SurfaceNodeId,
@@ -2375,6 +2395,131 @@ pub(in crate::runner) fn extract_source_formula_connective_quantifier(
     })
 }
 
+pub(in crate::runner) fn extract_source_formula_quantifier_bound_use(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceFormulaQuantifierBoundUse> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_formula_quantifier_bound_use_theorem_bridge_node(node))
+    {
+        return None;
+    }
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    if subtree_has_recovery(ast, theorem)
+        || direct_token_texts(ast, theorem).as_slice()
+            != [
+                "theorem",
+                "FormulaQuantifierBoundUsePayloadBoundary",
+                ":",
+                ";",
+            ]
+    {
+        return None;
+    }
+
+    let theorem_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [quantified_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let quantified = ast.node(*quantified_id)?;
+    if !matches!(
+        quantified.kind,
+        SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+    ) || subtree_has_recovery(ast, quantified)
+        || direct_token_texts(ast, quantified).as_slice() != ["for", "holds"]
+    {
+        return None;
+    }
+    let quantified_children = structural_child_ids(ast, quantified);
+    let [segment_id, equality_id] = quantified_children.as_slice() else {
+        return None;
+    };
+
+    let segment = ast.node(*segment_id)?;
+    if !matches!(segment.kind, SurfaceNodeKind::QuantifierVariableSegment)
+        || subtree_has_recovery(ast, segment)
+        || direct_token_texts(ast, segment).as_slice() != ["x", "being"]
+    {
+        return None;
+    }
+    let segment_children = structural_child_ids(ast, segment);
+    let [type_expression_id] = segment_children.as_slice() else {
+        return None;
+    };
+    let binder_identifier_id = segment.children.iter().copied().find(|child| {
+        ast.node(*child)
+            .and_then(SurfaceNode::token_text)
+            .is_some_and(|text| text == "x")
+    })?;
+    let binder_identifier = ast.node(binder_identifier_id)?;
+    let type_expression = ast.node(*type_expression_id)?;
+    let type_expression_children = structural_child_ids(ast, type_expression);
+    let [type_head_id] = type_expression_children.as_slice() else {
+        return None;
+    };
+    let type_head = ast.node(*type_head_id)?;
+    let binder_type =
+        extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
+    if binder_type.spelling != "set"
+        || binder_type.head != TypeHeadInput::BuiltinSet
+        || !binder_type.attributes.is_empty()
+    {
+        return None;
+    }
+
+    let equality = ast.node(*equality_id)?;
+    if !matches!(equality.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+        || subtree_has_recovery(ast, equality)
+        || direct_token_texts(ast, equality).as_slice() != ["="]
+    {
+        return None;
+    }
+    let equality_children = structural_child_ids(ast, equality);
+    let [left_expression_id, right_expression_id] = equality_children.as_slice() else {
+        return None;
+    };
+    let (left_id, left_range, left_spelling) =
+        exact_identifier_term_operand(ast, *left_expression_id)?;
+    let (right_id, right_range, right_spelling) =
+        exact_identifier_term_operand(ast, *right_expression_id)?;
+    if left_id == right_id || left_spelling != "x" || right_spelling != "x" {
+        return None;
+    }
+
+    Some(SourceFormulaQuantifierBoundUse {
+        quantified_site: surface_site(*quantified_id),
+        quantified_range: quantified.range,
+        binder_segment_site: surface_site(*segment_id),
+        binder_segment_range: segment.range,
+        binder_identifier_site: surface_site(binder_identifier_id),
+        binder_identifier_range: binder_identifier.range,
+        binder_type_site: surface_site(*type_expression_id),
+        binder_type_range: type_expression.range,
+        binder_type_head_site: surface_site(*type_head_id),
+        binder_type_head_range: type_head.range,
+        equality_site: surface_site(*equality_id),
+        equality_range: equality.range,
+        left_site: surface_site(left_id),
+        left_range,
+        right_site: surface_site(right_id),
+        right_range,
+    })
+}
+
 fn extract_exact_source_formula_constant(
     ast: &SurfaceAst,
     expected_label: &str,
@@ -2679,6 +2824,25 @@ fn is_supported_formula_connective_quantifier_theorem_bridge_node(node: &Surface
             | SurfaceNodeKind::FormulaConstant(_)
             | SurfaceNodeKind::TypeExpression
             | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_formula_quantifier_bound_use_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::QuantifiedFormula(_)
+            | SurfaceNodeKind::QuantifierVariableSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::BuiltinPredicateApplication
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
             | SurfaceNodeKind::Token(_)
     )
 }

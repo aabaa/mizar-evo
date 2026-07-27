@@ -273,3 +273,14 @@ record plan 411/372, type coverage 238/226, pass/fail 224/187, active type 190,
 warnings/errors 23/0, 279 library tests, and the same five CLI, test-list, and
 20-path/21,598-line production manifest hashes. Tasks 250+, 269+, and Steps 6/7
 remain deferred in both documents. No bilingual drift remains in Task 249.
+
+## Checker Task 257B1 Pair Recheck
+
+The paired plan, TODO, harness, and module-boundary documents record the same
+79-byte pass source, exact parser ranges, Task-252/256/257 plus `1/2`
+same-arena composition, two binding-0 lookup winners, combined installation,
+semantic-output exclusion, covered trace row, and Task-257B2 handoff. Both
+languages record plan `415/381`, type `247/235`, pass/fail `225/190`,
+active `101/5/194/1`, warnings/errors `23/0`, 338 tests, and the same
+test-list, CLI, and 29-path / 31,374-line production-manifest hashes. No
+bilingual drift remains in Checker Task 257B1.

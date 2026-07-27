@@ -130,6 +130,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `resolved_typed_ast`
 - `source_atomic_formula`
 - `source_composite_formula`
+- `source_formula_composition`
 - `source_context`
 - `source_attribute`
 - `source_evidence`
@@ -497,7 +498,7 @@ literal top-level public item:
 
 | specification promise | source evidence | test evidence | status |
 |---|---|---|---|
-| 7件のsyntax-free dense tableがexact composite tree、transparent wrapper、root、binder、written binder type、child role、unresolved requestを保持する。 | `src/source_composite_formula.rs`のpublic input/immutable row/table。 | exact real `5/0/1/1/1/4/6`、full literal debug、wrapper、corruption test。 | Task 257Aとしてimplemented。 |
+| 7件のsyntax-free dense tableがexact composite tree、reserved wrapper table、root、binder、written binder type、child role、unresolved requestを保持する。現在acceptするTask-257A/257B1 profileはいずれもwrapper table emptyを要求し、実行可能なparenthesized occurrenceはTask 257B2へdeferする。 | `src/source_composite_formula.rs`のpublic input/immutable row/table。 | exact real `5/0/1/1/1/4/6`、exact B1 `1/0/1/1/1/0/2`、full literal debug、wrapper/third-profile rejection、corruption test。 | Task 257A/257B1としてimplementedし、parenthesized occurrenceはdeferred。 |
 | 同じimmutable inputがexact `1/0/4` module shellをsource-derived `2/1/4` environmentへextendする。 | `SourceCompositeFormulaProducer::extend_bindings`、`BindingContextOwner::SourceFormula`、`build`。 | binder identity、context transition、diagnostic prefix、stale environment、arena-key test。 | transactionalにimplemented。 |
 | `TypedAst`がhandoff 1件をownしてTask-248 coexistenceをrejectし、`ResolvedTypedAst`がrevalidate後clone-preserveする。 | `with_source_composite_formula`、accessor、resolved assembly。 | one-shot、preinstalled-source-context、final clone equality、deterministic replay、legacy debug test。 | raw-source rebuildなしでimplemented。 |
 | public enumはforward-compatible。 | 全public Task-257A enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
@@ -505,6 +506,34 @@ literal top-level public item:
 bounded gap: semantic connective/quantifier evaluation、他connective/quantifier
 form、bound use/capture、predicate chain、conditioned comprehension、theorem
 owner/acceptance、proof、fact、downstream IRはTasks 257B/257C/258以降に残る。
+
+### `source_formula_composition`
+
+生成public newtype:
+
+- `SourceFormulaAtomicEdgeId`, `SourceQuantifierBoundUseId`
+
+literal top-level public item:
+
+- `SourceFormulaCompositionHandoffInput`,
+  `SourceFormulaAtomicEdgeInput`, `SourceQuantifierBoundUseInput`,
+  `SourceFormulaAtomicEdgeRole`, `SourceFormulaCompositionHandoff`,
+  `SourceFormulaAtomicEdgeTable`, `SourceQuantifierBoundUseTable`,
+  `SourceFormulaAtomicEdge`, `SourceQuantifierBoundUse`,
+  `SourceFormulaCompositionProducer`, `SourceFormulaCompositionError`.
+
+対応:
+
+| specification promise | source evidence | test evidence | status |
+|---|---|---|---|
+| syntax-free dense table 2件がexact universal-to-equality/binder-to-reference associationを保持する。 | `src/source_formula_composition.rs`のpublic input/immutable row/table。 | exact real `1/2`、full literal debug、independent field/association corruption test。 | Task 257B1としてimplemented。 |
+| Task-252/256/第2 Task-257 identityをone arenaでfingerprint/revalidateする。 | `SourceFormulaCompositionProducer::build`とimmutable owned fingerprint。 | dependency substitution、cross-source、order、lookup-winner、containment test。 | transactionalにimplemented。 |
+| 第2 composite profile/compositionを同時publishしfinal ownershipまでclone-preserveする。 | combined `TypedAst` installer/getter/resolved assembly。 | legacy/combined installer partition、Task-248/257A exclusion、rollback、final clone test。 | intermediate AST stateなしでimplemented。 |
+| public enumはforward-compatible。 | public enum 2件の`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+
+bounded gap: connective/grouping expansion、additional binder form、
+quantifier/equality semantics、implicit closure、fact、theorem acceptance、
+proof、downstream IRはTasks 257B2/B3/258以降に残る。
 
 ### `source_set_term`
 
@@ -3299,3 +3328,18 @@ Task 257B1はexplicit one-binder/one-equality dependency seamだけをcloseす�
 Task 257B2/B3、Task 257C、semantic truth、implicit closure、theorem acceptance、
 proof、downstream IRはopen。documentation prerequisiteはtrace status/coverage
 countを変更しない。
+
+## Checker Task 257B1 Implementation Audit
+
+exact pass consumer、第2 composite profile、Task-252/256 composition、combined
+installation、immutable final handoffはfrozen source-only boundaryを実装済みである。
+public checker surfaceはsyntax-freeのまま、raw parser nodeはprivate runnerだけが
+保持する。bound use 2件はTask-252 occurrence ownership/
+`BindingEntry::captured`を変更せずbody context 1のbinding 0をauthenticateする。
+
+new covered trace rowはnew pass sidecarだけにmapし、Chapter-4/14、
+Task-252/256/257A rowはstatus不変のreciprocal noteだけを受ける。bounded
+`source_drift`/`test_gap`はcloseし、blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`は残らない。broader connective/grouping transportは
+Task 257B2に残る。

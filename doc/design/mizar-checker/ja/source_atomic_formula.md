@@ -125,3 +125,10 @@ bounded trace row は
 `spec.en.checker.type_elaboration.source_atomic_formula_payload` である。
 Task 256 は executable source-transport coverage だけを追加し、semantic
 formula work と Steps 6/7 は未実装のままである。
+
+## Task 257B1 Consumer Addendum
+
+Task 257B1は本moduleのexisting equality 1件とprimary-term operand edge 2件を、
+universal body 1件のauthenticated dependencyとしてreuseする。atomic-formula row
+ownership、validation、semantic deferralは変更せず、new formula-composition
+handoffはcross-family parent associationだけを保持する。

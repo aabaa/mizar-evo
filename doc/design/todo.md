@@ -2204,7 +2204,7 @@ report-only `repo_metadata_conflict`.
 Task 257B is decomposed in dependency order. Task 257B1 now has a
 documentation-only EN/JA frozen contract for one explicit universal, one
 Task-256 equality body, two Task-252 binder-selected references, the second
-exact `1/0/1/1/1/0/2` Task-257A profile, and a `1/2` cross-family
+exact `1/0/1/1/1/0/2` Task-257 composite profile, and a `1/2` cross-family
 formula-composition handoff. Task 257B2 retains broader connectives and
 grouping; Task 257B3 retains existential/restricted/nested and implicit
 binder shapes.
@@ -2217,3 +2217,19 @@ coverage, count, or hash. Baseline remains plan 414/380, type 246/234,
 pass/fail 224/190, active 101/5/193/1, checker/mizar-test 299/333 tests,
 and 28 private production paths / 30,654 lines. Implementation projects
 415/381, 247/235, 225/190, and active type 194.
+
+## Step 5 Checker Task 257B1 Implementation Addendum
+
+Checker Task 257B1 is implemented as the exact 79-byte pass consumer, second
+Task-257 composite profile, Task-252/256 same-arena dependencies, public
+`1/2` composition handoff, combined final ownership, tests, and one bounded
+covered trace row. It closes the task-local `source_drift` and `test_gap`
+without granting formula semantics or theorem acceptance.
+
+Measured coverage is plan `415/381`, type `247/235`, pass/fail `225/190`,
+active parse/declaration/type/proof `101/5/194/1`, and warnings/errors
+`23/0`. Checker/mizar-test library tests are `306/338`; the mizar-test
+production manifest is 29 paths / 31,374 lines with path/content hashes
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`8b101e3a0a94fcac1dcfd385d311b31d07f6e9f29cbc47b39f42fb51ac71f0ca`.
+Task 257B2 is the next dependency-ready logical task.

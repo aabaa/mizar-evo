@@ -48,10 +48,12 @@ unassigned root 1件、explicit `x` binder/bare-`set` type site 1件、same-fami
 child edge 0件、quantifier-semantics/binder-type request 2件である。extended
 binding environmentは`2/1/4`のまま。
 
-Task-257Aの`5/0/1/1/1/4/6` input、validation、debug、installation、既存consumer
-はbyte-identicalを維持する。既存public input field/row meaningをrepurpose
-しない。profile discriminatorはvalidated table shapeからderiveし、callerが
-sourceでmodeを指定しない。
+exact real Task-257A `5/0/1/1/1/4/6` transaction、そのvalidation/debug、
+installation、既存consumerはbyte-identicalを維持する。このpreservationは
+exact profile partitionがretireしてTask 257B2へdeferする従来のsynthetic
+nonempty-wrapper admissionを含まない。既存public input field/row meaningを
+repurposeしない。profile discriminatorはvalidated table shapeからderiveし、
+callerがsourceでmodeを指定しない。
 exact 2 profileだけをacceptする。Task-257A cardinalityへTask-257B1
 formula/request/binder/edgeを混ぜる形、そのinverse、otherwise well-formed
 third shapeはatomicにfailする。
@@ -90,6 +92,15 @@ private storage、`new`、`index`を持つ。immutable rowはread-only accessor�
 tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 `SourceFormulaAtomicEdgeRole`は本sliceでは`UniversalBody`だけ。
 `SourceFormulaCompositionError`と全public enumは`#[non_exhaustive]`。
+
+## Public Enum Policy
+
+| public enum | compatibility policy |
+|---|---|
+| `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`。callerはlater frozen cross-family body roleを許容する。 |
+| `SourceFormulaCompositionError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+
+この module が所有する exhaustive public enum exception はない。
 
 exact producer/output surfaceは次のとおり。
 
@@ -204,3 +215,19 @@ Task 257B2はconjunction/disjunction/`iff`/repetition/executable grouping、
 Task 257B3はexistential/restricted/nested quantification、implicit reserved
 binder、その追加scoped useをretainedする。Task 257Cはpredicate-chain/
 conditioned-comprehension compositionをretainedする。
+
+## Implementation Result
+
+Task 257B1はこのfrozen boundaryを実装済みである。exact 79-byte pass consumerは
+one arenaでTask-252 `2/2/0`、Task-256 `1/0/0/0/0/0/2/2`、第2
+Task-257 `1/0/1/1/1/0/2`、formula-composition `1/2` transactionをbuildする。
+direct `x` reference 2件はbody context 1のbinding 0をselectし、occurrence
+ownershipはTask 252に残り、`BindingEntry::captured`は空のままである。
+
+combined installer、legacy-profile partition、dependency fingerprint、full
+literal debug rendering、corruption matrix、Task-248/Task-257A exclusion、
+resolved clone ownershipはexecutableである。covered trace requirement
+`spec.en.checker.type_elaboration.source_quantifier_bound_use_payload`はnew pass
+sidecarだけにmapする。countはplan `415/381`、type-elaboration `247/235`、
+pass/fail `225/190`、active parse/declaration/type/proof `101/5/194/1`、
+warnings/errors `23/0`。次のdependency-ready formula sliceはTask 257B2である。

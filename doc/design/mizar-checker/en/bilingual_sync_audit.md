@@ -138,3 +138,15 @@ spelling, nearest Task-252/253/254/255 ownership in both installation orders
 and the conditional fingerprint matrix, bounded trace credit, measured
 counts/hashes, and generator/formula/term-semantic deferrals. No bilingual
 sync debt remains in Task 255.
+
+## Task 257B1 Formula-Composition Pair Recheck
+
+The paired plan, TODO, formula-composition and predecessor module
+specifications, typed/final ownership documents, source/spec and
+module-boundary audits, and mizar-test consumer documents record the same
+exact 79-byte pass source, Task-252/256/257 dependency vectors, `1/2`
+composition, combined installation and exclusion rules, reciprocal trace
+credit, semantic deferrals, and Task-257B2 handoff. Both languages record
+checker/mizar-test tests `306/338` and the same 29-path / 31,374-line
+mizar-test manifest and measured hashes. No bilingual sync debt remains in
+Task 257B1.

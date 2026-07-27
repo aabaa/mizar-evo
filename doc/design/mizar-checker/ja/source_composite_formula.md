@@ -67,11 +67,12 @@ builtin `set`のwritten `TypeExpression`/`TypeHead` siteを保持する。Task-2
 validationはsource/module identity、exact base/extended binding environment、
 dense order、source range/typed-arena key、canonical spelling、normal recovery、
 single complete tree、unique context transition、binder scope/identity、
-type association、全request associationをauthenticateする。synthetic
-transparent wrapperはstrict nesting、normal、context-preserving、single
-represented formula ownershipを満たす。dense ordinalはsource-ordered
-outermost-to-innermostで、canonical spellingは次のinner occurrenceをrecursiveに
-wrapする。
+type association、全request associationをauthenticateする。Task 257B1は従来の
+Task-257A-only synthetic-wrapper admissionをsupersedeし、現在acceptする2つの
+exact profileはいずれもwrapper table emptyを要求する。public wrapper row/table
+shapeはreserveしたままだが、実行可能なparenthesized formula occurrenceとその
+nesting contractはTask 257B2へdeferし、nonempty wrapper shapeは現在unowned
+third profileとしてatomicにrejectする。
 
 `TypedAst::with_source_composite_formula`はone-shotで全handoffを再validateし、
 preinstalled source-context handoffをrejectする。
@@ -90,11 +91,11 @@ build、install、resolved assemblyをolder semantic routeより前に実行す�
 既存2 semantic detail keyはunchangedである。
 
 checker testは7-table aggregate、full literal debug oracle、deterministic replay、
-nested wrapper、binding extension、arena vocabulary、cross-table corruption、
-one-shot install、legacy debug byteをcoverする。runner testはreal site/corrected
-parser range、exact selector isolation、unchanged external detail、corruption
-recovery、clone-preserving final ownership、preinstalled Task-248 rejectionを
-coverする。
+retired synthetic-wrapper/third-profile shapeのrejection、binding extension、
+arena vocabulary、cross-table corruption、one-shot install、legacy debug byteを
+coverする。runner testはreal site/corrected parser range、exact selector
+isolation、unchanged external detail、corruption recovery、clone-preserving final
+ownership、preinstalled Task-248 rejectionをcoverする。
 
 ## Public Enum Policy
 
@@ -109,3 +110,13 @@ coverする。
 | `SourceCompositeFormulaError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
+
+## Task 257B1 Profile Addendum
+
+Task 257B1はTask-257A `5/0/1/1/1/4/6` input/debug byteを変更せず、第2 exact
+`1/0/1/1/1/0/2` profileを追加する。producerはvalidated table shapeからprofileを
+deriveし、A/B hybridとthird shapeをrejectする。legacy
+`with_source_composite_formula` installerはTask-257A-onlyのままで、第2 profileは
+[source_formula_composition.md](./source_formula_composition.md)で規定するcombined
+installerを通じ、Task-252/256 dependencyと`1/2` cross-family handoffを伴う場合
+だけpublishできる。

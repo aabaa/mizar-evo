@@ -754,3 +754,12 @@ expected-input request回答、assertion/formula判断、fact publish、theorem 
 tree/binder/contextをrebuildしない。borrowed `source_composite_formula()` getterは
 同じimmutable transactionを公開する。assemblyはinvalid source-context coexistence
 またはdependency driftをrejectし、unresolved request 6件へ回答しない。
+
+## Task 257B1 Final-Handoff Addendum
+
+`ResolvedTypedAst::assemble`はTask-252/Task-256/第2 Task-257 fingerprintを
+revalidateし、optional `SourceFormulaCompositionHandoff`のatomic-edge/
+bound-use rowをrebuild/renumberせずclone-preserveする。borrowed
+`source_formula_composition()` getterがimmutable handoffを公開する。absenceは
+legacy byteを保持し、presenceはformula result/fact/truth、theorem acceptance、
+proof、downstream IRを追加しない。

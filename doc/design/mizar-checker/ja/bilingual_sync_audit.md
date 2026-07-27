@@ -133,3 +133,13 @@ canonical spelling、両install順のnearest Task-252/253/254/255 ownershipと
 conditional fingerprint matrix、bounded trace credit、measured count/hash、
 generator/formula/term-semantic deferralを記録する。Task 255にbilingual sync
 debtは残らない。
+
+## Task 257B1 Formula-Composition Pair Recheck
+
+paired plan/TODO/formula-compositionとpredecessor module specification、
+typed/final ownership document、source-spec/module-boundary audit、mizar-test
+consumer documentは、同じexact 79-byte pass source、Task-252/256/257 dependency
+vector、`1/2` composition、combined installation/exclusion rule、reciprocal
+trace credit、semantic deferral、Task-257B2 handoffを記録する。両languageは
+checker/mizar-test test `306/338`、同じ29-path / 31,374-line mizar-test
+manifest/measured hashを記録する。Task 257B1にbilingual sync debtは残らない。

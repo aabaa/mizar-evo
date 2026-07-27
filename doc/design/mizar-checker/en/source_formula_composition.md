@@ -51,10 +51,13 @@ explicit `x` binder and bare-`set` type site, no same-family child edge, and
 quantifier-semantics plus binder-type requests. Its extended binding
 environment remains `2/1/4`.
 
-The Task-257A `5/0/1/1/1/4/6` input, validation, debug output, installation,
-and existing consumer remain byte-identical. No existing public input field or
-row meaning is repurposed. A profile discriminator is derived from the
-validated table shape; the source does not provide a caller-selected mode.
+The exact real Task-257A `5/0/1/1/1/4/6` transaction, its validation/debug
+output, installation, and existing consumer remain byte-identical. This
+preservation excludes the former synthetic nonempty-wrapper admission, which
+the exact profile partition retires and defers to Task 257B2. No existing
+public input field or row meaning is repurposed. A profile discriminator is
+derived from the validated table shape; the source does not provide a
+caller-selected mode.
 Validation accepts only the two exact profiles. Task-257A cardinalities with
 Task-257B1 formulas, requests, binders, or edges, the inverse mixtures, and
 any otherwise well-formed third shape fail atomically.
@@ -95,6 +98,15 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 `SourceFormulaAtomicEdgeRole` has only `UniversalBody` in this slice.
 `SourceFormulaCompositionError` and every public enum are
 `#[non_exhaustive]`.
+
+## Public Enum Policy
+
+| Public enum | Compatibility policy |
+|---|---|
+| `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`; callers must tolerate later frozen cross-family body roles. |
+| `SourceFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+
+No exhaustive public enum exceptions are owned by this module.
 
 The exact producer and output surface is:
 
@@ -219,3 +231,22 @@ Task 257B2 retains conjunction, disjunction, `iff`, repetition, and executable
 formula grouping. Task 257B3 retains existential, restricted and nested
 quantification, implicit reserved binders, and their additional scoped uses.
 Task 257C retains predicate-chain and conditioned-comprehension composition.
+
+## Implementation Result
+
+Task 257B1 now implements this frozen boundary. The exact 79-byte pass
+consumer builds the Task-252 `2/2/0`, Task-256 `1/0/0/0/0/0/2/2`,
+second Task-257 `1/0/1/1/1/0/2`, and formula-composition `1/2`
+transactions in one arena. Both direct `x` references resolve to binding 0 in
+body context 1, while Task 252 remains their occurrence owner and
+`BindingEntry::captured` remains empty.
+
+The combined installer, legacy-profile partition, dependency fingerprints,
+full literal debug rendering, corruption matrix, Task-248/Task-257A
+exclusion, and resolved clone ownership are executable. The covered trace
+requirement is
+`spec.en.checker.type_elaboration.source_quantifier_bound_use_payload`, mapped
+only to the new pass sidecar. Counts are plan `415/381`,
+type-elaboration `247/235`, pass/fail `225/190`, active
+parse/declaration/type/proof `101/5/194/1`, and warnings/errors `23/0`.
+Task 257B2 is the next dependency-ready formula slice.

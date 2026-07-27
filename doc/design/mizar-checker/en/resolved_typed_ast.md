@@ -794,3 +794,13 @@ binder, or context from raw source. Its borrowed
 `source_composite_formula()` getter exposes the same immutable transaction.
 Assembly rejects invalid source-context coexistence or dependency drift and
 does not answer any of the six unresolved requests.
+
+## Task 257B1 Final-Handoff Addendum
+
+`ResolvedTypedAst::assemble` revalidates the Task-252, Task-256, and second
+Task-257 fingerprints, then clone-preserves the optional
+`SourceFormulaCompositionHandoff` without rebuilding or renumbering its
+atomic-edge or bound-use rows. The borrowed
+`source_formula_composition()` getter exposes the immutable handoff. Absence
+preserves legacy bytes; presence adds no formula result, fact, truth, theorem
+acceptance, proof, or downstream IR.
