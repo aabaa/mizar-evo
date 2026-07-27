@@ -321,3 +321,13 @@ production path、count/hashを変更しないためpaired module-boundary audit
 implemented exact route、fixture/sidecar/trace projection、実測count/hash、
 module-boundary recheck、不変semantic deferralをpaired EN/JA runner文書で
 同期した。driftは残らない。
+
+## Checker Task 255C1 frozen-contract pair
+
+paired plan、harness、TODOは同じ191-byte source/hash、range、imported
+provenance、`4/0/4`、`1/0/1/2/2`、`1/0/1/1/1/1/2` profile、
+reusable Task-253 seam、condition exclusion、direct condition-wrapper anchor、
+future fail detail、tests、baseline、projection、semantic deferralをfreezeする。
+このprerequisiteではrunner
+module/executable artifactを変更しないためmodule-boundary auditは意図的に不変。
+bilingual driftは残らない。

@@ -3413,3 +3413,20 @@ report-only `repo_metadata_conflict`のまま。
 implementationはfrozen contractに対するTask-257C1 `source_drift` /
 `test_gap`を閉じた。preceding docs commitが`design_drift`を閉じ、上記の
 他classification/semantic deferralは不変。
+
+## Task 255C1 condition-bearing-comprehension classification
+
+Chapters 10、13、14とparser comprehension fixturesはexact valid zero-locus
+definition、imported mapper、colon、equality-condition shapeを完全にauthorize
+する。欠けた7番目のtableとcondition-aware ownership partitionは
+`design_drift`であり、ここでcloseする。producer、reusable Task-253 seam、
+installation、clone preservationの欠落はbounded `source_drift`、exact fail
+consumer/matrixの欠落は`test_gap`である。
+
+frozen Task-252 `4/0/4` handoffはmapper/condition operandsを保持するが、
+いずれのcondition operandにもTask-255 ownershipを与えない。colon/direct
+`FormulaExpression` wrapperはTask-255 arena anchorを持ち、inner atomic
+formula nodeはTask 256へdeferする。blockingな`spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、accepted
+`boundary_violation`は残らない。external origin差はreport-only
+`repo_metadata_conflict`である。

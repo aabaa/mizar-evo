@@ -717,3 +717,12 @@ fail closed。existing Task-256/Task-257A/B1/B2/B3 installer/bytesはexclusive
 Task 257C1はexisting one-shot `with_source_atomic_formula` pathで実装済み。
 successful install/subsequent clone revalidationは9 tableすべてを保持し、
 tested partial/cross-profile mutationはatomicかつfail-closedである。
+
+## Task 255C1 frozen ownership addendum
+
+existing one-shot `with_source_set_term` pathはcomplete Task-252 `4/0/4`と
+Task-253 `1/0/1/2/2` dependencyのinstall後だけexact seven-table
+Task-255C1 profileをadmitする。colon/direct condition-wrapper anchor、
+condition内lower-family exclusion、両fingerprintをrevalidateする。condition
+operandはTask-255 edgeなしでimmutable Task-252 handoffに残る。failureはcondition
+rowをpublishせず、既存field/debug byteをすべて保持する。

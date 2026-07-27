@@ -607,3 +607,18 @@ prerequisiteの後に続く。conditioned-comprehension/predicate-chain composit
 Task 257C1 transportはこのlower-family boundaryで実装済み。predicate-chain
 compositionは未実装で、次のprerequisiteは別Task-255
 condition-bearing-comprehension transportのまま。
+
+## Task 255C1 frozen condition node
+
+次のgraph nodeは
+`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255C1
+1/0/1/1/1/1/2`である。Task 252はmapper/condition numeral、Task 253は
+imported mapper、Task 255はcomprehension、generator、bare type、colon
+association、direct condition-wrapper association、mapper edge、unresolved
+set requestだけをownする。condition内のlower-family rowはcopy/targetせず、
+Task-255 child discoveryから除外する。
+
+Task 256がlater inner equality node/operand edge、Task 257Cがlater condition
+compositionをownする。generator binding/captureと全semantic resultはdownstream
+のままである。このprerequisiteはlater nodeがconsumeすべきimmutable objectを
+凍結する。

@@ -4578,5 +4578,23 @@ implementation commit does not satisfy a producer task.
 - [x] Verify `322/353` library tests, the exact source/near-miss/corruption
   matrices, shared-boundary ownership, covered trace row, and all semantic
   deferrals.
-- [ ] Freeze the separate Task-255 condition-bearing-comprehension transport
+- [x] Freeze the separate Task-255 condition-bearing-comprehension transport
   prerequisite next.
+
+## Checker Task 255C1 Frozen-Contract Ledger
+
+- [x] Freeze the valid 191-byte source/hash, exact parser ranges, imported
+  `++` provenance, and loaded-source/final-LF guards.
+- [x] Freeze the seven-table public API/debug contract, colon and direct
+  condition-wrapper arena anchors,
+  Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, and Task-255
+  `1/0/1/1/1/1/2`.
+- [x] Freeze condition-subtree lower-family exclusion, the reusable private
+  Task-253 seam, 16 compatibility literals, atomic install/clone, and tests.
+- [x] Classify the missing contract as `design_drift`, implementation as
+  bounded `source_drift`/`test_gap`, and origin drift as report-only
+  `repo_metadata_conflict`; no blocking `spec_gap` remains.
+- [x] Preserve production, fixtures, sidecars, trace metadata/count,
+  executable coverage, counts, and hashes at the Task-257C1 baseline.
+- [ ] Implement Task 255C1 as the next separate logical task after fresh
+  parser/resolver/API and count/hash preflight.

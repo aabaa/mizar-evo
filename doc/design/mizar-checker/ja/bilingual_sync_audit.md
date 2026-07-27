@@ -194,3 +194,15 @@ Task-257C1 bilingual sync debtは認めない。
 Task 257C1 implementation result、count/hash、public ownership、
 classification closure、module-boundary recheck、next prerequisiteをpaired
 EN/JA checker文書で同期した。bilingual debtは残らない。
+
+## Task 255C1 frozen-contract pair
+
+paired plan、source-set、source-term、source-application、typed/resolved、
+decomposition、audit、TODO文書は同じ191-byte source/hash、parser range、
+imported provenance、seven-table API/debug contract、`4/0/4`、
+`1/0/1/2/2`、`1/0/1/1/1/1/2` profile、Task-253 reuse seam、
+colon/direct condition-wrapper anchor、condition-subtree exclusion、tests、
+projection、semantic deferralをfreezeする。
+このprerequisiteはproduction module、fixture、sidecar、trace metadata、count、
+hashを変更しないため、paired module-boundary auditは意図的に不変。bilingual debtは
+残らない。

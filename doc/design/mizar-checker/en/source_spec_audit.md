@@ -3571,3 +3571,20 @@ Implementation closes the classified Task-257C1 `source_drift` and `test_gap`
 against the frozen contract. The prior documentation commit closed
 `design_drift`; all other classifications and semantic deferrals above remain
 unchanged.
+
+## Task 255C1 Condition-Bearing-Comprehension Classification
+
+Chapters 10, 13, and 14 plus the parser comprehension fixtures fully
+authorize the exact valid zero-locus definition, imported mapper, colon, and
+equality-condition shape. The missing seventh table and condition-aware
+ownership partition are `design_drift`, closed here. The absent producer,
+reusable Task-253 seam, installation, and clone preservation are bounded
+`source_drift`; the absent exact fail consumer and matrices are `test_gap`.
+
+The frozen `4/0/4` Task-252 handoff preserves both mapper and condition
+operands without granting Task-255 ownership of either operand. The colon and
+direct `FormulaExpression` wrapper have Task-255 arena anchors while the
+inner atomic formula node remains deferred to Task 256. No blocking
+`spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or accepted `boundary_violation` remains. The
+external origin difference is report-only `repo_metadata_conflict`.

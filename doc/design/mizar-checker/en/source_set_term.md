@@ -148,3 +148,60 @@ The bounded trace row is
 Task 255 changes only executable source-transport coverage; generator/capture,
 formula, typing, evidence, facts, proof, and Steps 6/7 semantics remain
 unimplemented.
+
+## Task 255C1 Frozen Condition-Bearing-Comprehension Extension
+
+Task 255C1 extends this module from six to seven source-ordered tables only
+for one independent conditioned comprehension. Canonical Chapters 10, 13,
+and 14 plus the existing parser fixtures authorize the exact 191-byte source
+and ranges frozen in the crate plan. The new exact profile is
+term/wrapper/generator/type-site/condition/edge/request
+`1/0/1/1/1/1/2`, over Task-253 `1/0/1/2/2` and the one immutable
+Task-252 `4/0/4` handoff.
+
+`SourceSetConditionInput` and its immutable row retain owner term/ordinal,
+Task-255-owned colon site/range/spelling, direct condition-wrapper site,
+condition range/spelling, and recovery. The colon uses typed-arena key
+`source.term.set.comprehension-condition-colon`; `condition_site` anchors the
+direct `FormulaExpression` with Task-255 association key
+`source.term.set.comprehension-condition`. Task 255 authenticates that wrapper
+as the subtree boundary but leaves the inner `BuiltinPredicateApplication`
+formula site and row to Task 256. Context is derived from the owner term.
+`SourceSetConditionId` exposes `new`/`index`; its table exposes
+`get`/`iter`/`len`/`is_empty`; the row and handoff expose every frozen field
+and `conditions()` read-only.
+
+Conditions group densely, appear only zero-or-one per comprehension, follow
+the final generator type, and contribute ` : condition` to canonical term
+spelling. They create no Task-255 edge or request. Every lower-family
+occurrence wholly inside an authenticated condition range is excluded from
+Task-255 direct-child discovery. The exact C1 route retains Task-252 numerals
+3 and 4 there without a Task-255 edge; Task 256 may later own the equality
+edges, but no formula handoff is installed by this extension. Outside
+condition ranges, every previous nearest-family and whole-subtree exclusion
+remains unchanged.
+
+Condition rows render after type sites and before edges:
+
+```text
+condition#<id> term=<term> ordinal=<n> colon_range=<s>..<e> colon_site=<site> colon_spelling=<quoted> condition_site=<site> range=<s>..<e> spelling=<quoted> recovery=<key>
+```
+
+Empty condition tables render nothing, preserving every legacy debug byte.
+Sixteen existing input literals receive empty vectors; `to_input`
+clone-preserves nonempty rows.
+
+Checker corruption coverage explicitly rejects omitted, copied, out-of-range,
+or wrong-kind condition sites; omitted, copied, or out-of-range condition
+primaries; and condition-contained Task-253/254/255 descendants. It proves
+that Task 255 owns the direct condition
+`FormulaExpression` site but not its inner `BuiltinPredicateApplication`
+formula site; and rechecks unchanged nearest-family ownership immediately
+outside the condition range.
+
+The private runner must call a reusable unwrapped imported-`++` Task-253
+extractor/builder and install Task 252, Task 253, and Task 255 in one arena.
+The exact future fail sidecar and covered trace row prove source transport
+only. Generator binding/capture, inner condition-formula ownership/composition,
+sethood/result answers, equality truth, definition acceptance, proof, and IR
+remain deferred.

@@ -3324,3 +3324,42 @@ pass/fail `226/190`, and active type 195. MC-G017/MC-G020 remain partial:
 connective truth, general repetition validation/expansion, theorem
 ownership/acceptance, facts, proof, Core/CFG/VC, Steps 6/7, and global Step-5
 completion receive no credit.
+
+## Step 5 Checker Task 255C1 Frozen-Contract Addendum
+
+Task 255C1 now has a documentation-only frozen contract for one exact
+condition-bearing independent comprehension. The design retains Task-255-owned
+colon and direct `FormulaExpression` wrapper associations while reserving the
+inner atomic condition formula node for Task 256 and later Task-257C
+composition. The exact dependency graph is
+Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, and Task-255
+term/wrapper/generator/type-site/condition/edge/request
+`1/0/1/1/1/1/2`. Condition operands remain Task-252 rows without a
+Task-255 edge.
+
+This prerequisite closes only missing-contract `design_drift`. The public
+seventh table, condition-aware ownership, reusable private Task-253 seam, and
+final preservation remain bounded `source_drift`; the exact 191-byte fail
+consumer and matrices remain `test_gap`. Chapters 10, 13, and 14 plus the
+existing parser fixtures provide complete authority. There is no blocking
+`spec_gap`, and no existing `.miz` or expectation is changed.
+
+Implementation may add one covered row,
+`spec.en.checker.type_elaboration.source_conditioned_comprehension_payload`,
+whose source is
+`doc/design/mizar-checker/en/source_set_term.md`, section
+`Task 255C1 Frozen Condition-Bearing-Comprehension Extension`, mapped only to
+`fail_type_elaboration_conditioned_comprehension_source_payload_001.expect.toml`.
+Existing Chapter-10/13/14 and Task-252/253/255 notes may gain reciprocal
+transport references without status changes.
+
+The projected result is plan `419/385`, type `251/239`, pass/fail
+`228/191`, and active parse/declaration/type/proof `101/5/198/1`. This
+documentation commit changes no trace row, status, source, fixture, sidecar,
+executable coverage, count, test list, or hash; baseline remains `418/384`,
+`250/238`, `228/190`, and `101/5/197/1`.
+
+Generator binding/capture, inner condition-formula ownership/composition, sethood
+and result answers, equality truth, definition acceptance, facts, proof,
+CoreIr/ControlFlowIr/VC, Steps 6/7, and global Step-5 completion receive no
+credit. The implementation remains a separate logical task.

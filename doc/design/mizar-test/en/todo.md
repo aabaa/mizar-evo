@@ -1851,3 +1851,17 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Verify `418/384`, `250/238`, `228/190`, active `101/5/197/1`, 353
   tests, exact selector isolation, fail-closed corruption, and empty semantic
   output.
+
+## Checker Task 255C1 Frozen Runner Checklist
+
+- [x] Freeze the valid 191-byte source/hash, parser ranges, imported `++`
+  provenance, loaded-source/final-LF selector, and future fail detail.
+- [x] Freeze same-arena Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, and
+  Task-255 `1/0/1/1/1/1/2`, including the direct condition-wrapper anchor
+  and untargeted condition operands.
+- [x] Freeze reusable Task-253 ownership, near-miss/corruption/isolation,
+  atomic install/clone, empty semantic output, and unchanged prior routes.
+- [x] Keep this prerequisite documentation-only at `418/384`, `250/238`,
+  `228/190`, active `101/5/197/1`, 353 tests, and 29 paths / 33,184 lines.
+- [ ] Implement the exact route, fail sidecar, covered trace row, and tests
+  after the documentation commit and fresh preflight.

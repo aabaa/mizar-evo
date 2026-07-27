@@ -3210,3 +3210,20 @@ The exact source route, pass sidecar, covered trace row, loaded-text near-miss
 matrix, input-corruption matrix, active-corpus isolation, and unchanged prior
 routes are executable. Its successful external detail vector is empty; all
 semantic predicate and theorem work remains deferred.
+
+## Checker Task 255C1 Frozen Runner Boundary
+
+The private source-set leaf will recognize only the exact 191-byte
+conditioned-comprehension definition. It receives loaded source text,
+authenticates final LF and parser ranges, derives the unique imported `++`
+candidate, and rejects every named structural, recovery, provenance, and byte
+near miss before publication.
+
+It produces Task-252 `4/0/4`, reuses the Task-253 private builder for
+`1/0/1/2/2`, and produces Task-255
+`1/0/1/1/1/1/2` in one arena. The condition colon is Task-255-owned; its
+direct `FormulaExpression` wrapper is separately Task-255-anchored; and its
+two numeral operands are Task-252-owned and untargeted by Task 255. No
+Task-256/257 handoff or semantic table is produced. The future fail sidecar
+retains the definition-extraction detail key after successful source
+transport.

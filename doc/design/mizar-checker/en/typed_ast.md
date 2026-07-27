@@ -743,3 +743,13 @@ Task 257C1 is implemented through the existing one-shot
 `with_source_atomic_formula` path. Successful installation and subsequent
 clone revalidation preserve all nine tables; every tested partial or
 cross-profile mutation remains atomic and fail-closed.
+
+## Task 255C1 Frozen Ownership Addendum
+
+The existing one-shot `with_source_set_term` path will admit the exact
+seven-table Task-255C1 profile only after the complete Task-252 `4/0/4` and
+Task-253 `1/0/1/2/2` dependencies are installed. It revalidates the colon
+and direct condition-wrapper anchors, condition-contained lower-family
+exclusion, and both fingerprints. Condition operands stay in the immutable
+Task-252 handoff without a Task-255 edge. Failure publishes no condition row
+and preserves all previous fields and debug bytes.

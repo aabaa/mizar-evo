@@ -162,3 +162,12 @@ predicate grouping/polarityはTask 256に残る。
 Task 257C1 active pass consumerはこのfrozen backlinkを実行する。実測
 `3/0/3` profileとsingle middle-primary identityを保持し、Task-252 API/
 semantic numeric resultは変更しない。
+
+## Task 255C1 frozen backlink
+
+exact conditioned-comprehension prerequisiteはone immutable Task-252
+`4/0/4` handoffをbuildする。primaries 0/1はTask-253 mapper argument、
+primaries 2/3はauthenticated condition range内のequality operandである。後者は
+ordinary Task-252 occurrence/numeric-request rowのままだがTask-255 edgeを
+持たない。formula/numeric semanticsをここへ与えず、later Task 256がtargetする
+exact objectを保持する。

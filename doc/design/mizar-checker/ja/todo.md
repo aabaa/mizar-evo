@@ -4350,5 +4350,23 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `197`とする。
 - [x] library `322/353`、exact source/near-miss/corruption matrix、
   shared-boundary ownership、covered trace row、全semantic deferralをverify。
-- [ ] 別Task-255 condition-bearing-comprehension transport prerequisiteを
+- [x] 別Task-255 condition-bearing-comprehension transport prerequisiteを
   次にfreezeする。
+
+## Checker Task 255C1 frozen-contract ledger
+
+- [x] valid 191-byte source/hash、exact parser range、imported `++`
+  provenance、loaded-source/final-LF guardをfreeze。
+- [x] seven-table public API/debug contract、colon/direct condition-wrapper
+  arena anchor、Task-252
+  `4/0/4`、Task-253 `1/0/1/2/2`、Task-255
+  `1/0/1/1/1/1/2`をfreeze。
+- [x] condition-subtree lower-family exclusion、reusable private Task-253
+  seam、16 compatibility literal、atomic install/clone、testsをfreeze。
+- [x] missing contractを`design_drift`、implementationをbounded
+  `source_drift`/`test_gap`、origin driftをreport-only
+  `repo_metadata_conflict`にclassifyし、blocking `spec_gap`なし。
+- [x] production、fixture、sidecar、trace metadata/count、executable
+  coverage、count、hashをTask-257C1 baselineで保持。
+- [ ] fresh parser/resolver/APIとcount/hash preflight後、Task 255C1を次の
+  separate logical taskとしてimplement。

@@ -132,3 +132,57 @@ bounded trace rowは
 `spec.en.checker.type_elaboration.source_set_choice_qua_term_payload`である。
 Task 255はexecutable source transport coverageだけを変更し、generator/capture、
 formula、typing、evidence、fact、proof、Steps 6/7 semanticsは未実装のままである。
+
+## Task 255C1 frozen condition-bearing-comprehension extension
+
+Task 255C1は、このmoduleをindependent conditioned comprehension 1件だけに対して
+6 tableから7 source-ordered tableへ拡張する。canonical Chapters 10、13、14と
+既存parser fixturesがcrate planで凍結したexact 191-byte source/rangeを
+authorizeする。new exact profileはTask-253 `1/0/1/2/2`とone immutable
+Task-252 `4/0/4` handoff上の
+term/wrapper/generator/type-site/condition/edge/request
+`1/0/1/1/1/1/2`である。
+
+`SourceSetConditionInput`とimmutable rowはowner term/ordinal、
+Task-255-owned colon site/range/spelling、direct condition-wrapper site、
+condition range/spelling、recoveryを保持する。colonはtyped-arena key
+`source.term.set.comprehension-condition-colon`を使い、`condition_site`は
+Task-255 association key `source.term.set.comprehension-condition`でdirect
+`FormulaExpression`をanchorする。Task 255はそのwrapperをsubtree boundary
+としてauthenticateするが、inner `BuiltinPredicateApplication` formula site/
+rowはTask 256に残す。contextはowner termからderiveする。
+`SourceSetConditionId`は`new`/`index`、tableは
+`get`/`iter`/`len`/`is_empty`、row/handoffは全frozen fieldと
+read-only `conditions()`を公開する。
+
+conditionはdenseにgroupされ、comprehensionあたり0または1件だけで、final
+generator typeより後にあり、canonical term spellingへ` : condition`を加える。
+Task-255 edge/requestは作らない。authenticated condition range内に完全に含まれる
+全lower-family occurrenceはTask-255 direct-child discoveryから除外する。exact C1
+routeはそこにTask-252 numeral 3/4をTask-255 edgeなしで保持する。Task 256は
+later equality edgeをownできるが、このextensionはformula handoffをinstallしない。
+condition range外の既存nearest-family/whole-subtree exclusionはすべて不変である。
+
+condition rowはtype siteの後、edgeの前にrenderする。
+
+```text
+condition#<id> term=<term> ordinal=<n> colon_range=<s>..<e> colon_site=<site> colon_spelling=<quoted> condition_site=<site> range=<s>..<e> spelling=<quoted> recovery=<key>
+```
+
+empty condition tableは何もrenderせず、legacy debug byteをすべて保持する。既存16
+input literalはempty vectorを受け取り、`to_input`はnonempty rowを
+clone-preserveする。
+
+checker corruption coverageはomitted/copied/out-of-range/wrong-kind
+condition site、omitted/copied/out-of-range condition primary、
+condition-contained Task-253/254/255 descendantを明示的にrejectする。
+condition `FormulaExpression` siteをTask 255がownする一方、そのinner
+`BuiltinPredicateApplication` formula siteをownしないことを証明し、condition
+range直外のnearest-family ownership不変を再確認する。
+
+private runnerはreusable unwrapped imported-`++` Task-253
+extractor/builderを呼び、Task 252、Task 253、Task 255をone arenaへinstallする。
+exact future fail sidecar/covered trace rowが証明するのはsource transportだけである。
+generator binding/capture、inner condition-formula ownership/composition、
+sethood/result answer、equality truth、definition acceptance、proof、IRはdeferredの
+ままである。

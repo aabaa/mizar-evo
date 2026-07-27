@@ -174,3 +174,12 @@ numeric-request ownership; predicate grouping and polarity remain Task 256.
 Task 257C1 now exercises this frozen backlink in the active pass consumer.
 The measured `3/0/3` profile and single middle-primary identity are preserved;
 no Task-252 API or semantic numeric result changed.
+
+## Task 255C1 Frozen Backlink
+
+The exact conditioned-comprehension prerequisite builds one immutable
+Task-252 `4/0/4` handoff. Primaries 0/1 are Task-253 mapper arguments;
+primaries 2/3 are equality operands wholly inside the authenticated condition
+range. The latter remain ordinary Task-252 occurrence/numeric-request rows
+but have no Task-255 edge. This preserves the exact objects later Task 256
+must target without granting formula or numeric semantics here.

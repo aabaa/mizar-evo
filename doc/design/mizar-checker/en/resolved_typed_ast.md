@@ -834,3 +834,11 @@ predicate winner, theorem acceptance, proof, or IR output is assembled.
 The implemented Task 257C1 runner confirms byte-stable typed/resolved debug
 output and equality of both Task-252 and Task-256 handoffs. Resolution remains
 clone-only and adds no semantic selection.
+
+## Task 255C1 Frozen Resolution Addendum
+
+Final assembly will revalidate and clone-preserve the seventh Task-255 table,
+colon and direct condition-wrapper arena anchors, authenticated condition
+range, and unchanged Task-252/253 fingerprints. It does not construct a
+Task-256 inner equality or Task-257 composition, retarget a condition
+operand, or rebuild any dense ID.

@@ -2327,5 +2327,26 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Keep predicate applicability/selection, implicit conjunction, semantic
   negation, truth/facts, theorem acceptance, proof, downstream IR, and
   conditioned comprehension deferred.
-- [ ] Continue with the separate Task-255 condition-bearing-comprehension
+- [x] Continue with the separate Task-255 condition-bearing-comprehension
   frozen-contract prerequisite after this implementation commit.
+
+## Checker Task 255C1 Frozen-Contract Ledger
+
+- [x] Freeze the valid 191-byte zero-locus definition, exact ranges/hash,
+  imported `++` provenance, and exact future fail consumer.
+- [x] Freeze the seven-table condition API/debug surface, colon and direct
+  condition-wrapper arena anchors,
+  Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, and Task-255
+  `1/0/1/1/1/1/2`.
+- [x] Preserve condition operands as immutable Task-252 rows without a
+  Task-255 edge, and freeze condition-aware lower-family exclusion for later
+  Task-256/257C reuse.
+- [x] Freeze the reusable private Task-253 seam, 16 compatibility literals,
+  tests, final ownership, trace projection, and every semantic deferral.
+- [x] Classify the missing contract as `design_drift`, implementation as
+  bounded `source_drift`/`test_gap`, and origin difference as report-only
+  `repo_metadata_conflict`; no blocking `spec_gap` remains.
+- [x] Preserve production, fixtures, sidecars, trace metadata/status/count,
+  executable coverage, counts, and hashes at the Task-257C1 baseline.
+- [ ] Implement Task 255C1 as a separate logical task after mandatory fresh
+  parser/resolver/API and count/hash preflight.

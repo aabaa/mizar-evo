@@ -132,3 +132,12 @@ bounded trace row は
 MC-G017/MC-G020 は executable coverage が増えるが partial のままであり、
 semantic term/formula/definition、overload selection、later cross-family
 terms、accepted facts/proofs、Steps 6/7 は未実装である。
+
+## Task 255C1 frozen private reuse seam
+
+later implementationはprivate mizar-test consumerだけにbounded unwrapped
+imported-`++` extractor/builderを追加する。exact mapper node/head/argumentsと
+imported candidate provenanceをvalidateし、supplied complete Task-252 partsに
+対してexisting public Task-253 `1/0/1/2/2` profileをbuildする。Task-255
+codeはこのseamを呼び、application rowをduplicateしない。existing wrapped
+theorem selectorとpublic checker APIは不変である。

@@ -141,3 +141,13 @@ The bounded trace row is
 253 changes MC-G017/MC-G020 executable coverage but leaves both gaps partial:
 semantic term/formula/definition behavior, overload selection, later
 cross-family terms, accepted facts/proofs, and Steps 6/7 remain unimplemented.
+
+## Task 255C1 Frozen Private Reuse Seam
+
+The later implementation extends only the private mizar-test consumer with a
+bounded unwrapped imported-`++` extractor/builder. It validates the exact
+mapper node/head/arguments and imported candidate provenance, then builds the
+existing public Task-253 `1/0/1/2/2` profile against supplied complete
+Task-252 parts. Task-255 code calls this seam and does not duplicate
+application rows. The existing wrapped theorem selector and public checker
+API remain unchanged.

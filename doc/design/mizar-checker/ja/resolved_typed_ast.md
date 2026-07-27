@@ -793,3 +793,10 @@ theorem acceptance、proof、IR outputをassembleしない。
 implemented Task 257C1 runnerはtyped/resolved debug byte stabilityと
 Task-252/Task-256両handoff equalityを確認する。resolutionはclone-onlyで、
 semantic selectionを追加しない。
+
+## Task 255C1 frozen resolution addendum
+
+final assemblyは7番目のTask-255 table、colon/direct condition-wrapper arena
+anchor、authenticated condition range、unchanged Task-252/253 fingerprintを
+revalidateしてclone-preserveする。Task-256 inner equality/Task-257
+compositionを構築せず、condition operandをretargetせず、dense IDをrebuildしない。

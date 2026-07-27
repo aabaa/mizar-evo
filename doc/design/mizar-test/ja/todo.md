@@ -1661,3 +1661,17 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] `418/384`、`250/238`、`228/190`、active `101/5/197/1`、353
   tests、exact selector isolation、fail-closed corruption、empty semantic
   outputをverifyする。
+
+## Checker Task 255C1 frozen runner checklist
+
+- [x] valid 191-byte source/hash、parser range、imported `++` provenance、
+  loaded-source/final-LF selector、future fail detailをfreeze。
+- [x] same-arena Task-252 `4/0/4`、Task-253 `1/0/1/2/2`、
+  Task-255 `1/0/1/1/1/1/2`をdirect condition-wrapper anchorと
+  untargeted condition operand込みでfreeze。
+- [x] reusable Task-253 ownership、near-miss/corruption/isolation、atomic
+  install/clone、empty semantic output、prior route不変をfreeze。
+- [x] prerequisiteをdocumentation-only `418/384`、`250/238`、
+  `228/190`、active `101/5/197/1`、353 tests、29 paths / 33,184 linesに保つ。
+- [ ] documentation commit/fresh preflight後にexact route、fail sidecar、
+  covered trace row、testsをimplement。

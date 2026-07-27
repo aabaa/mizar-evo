@@ -662,3 +662,19 @@ neither family semantic credit.
 Task 257C1 transport is now implemented at this lower-family boundary.
 Predicate-chain composition remains unimplemented, and the next prerequisite
 is still the separate Task-255 condition-bearing-comprehension transport.
+
+## Task 255C1 Frozen Condition Node
+
+The next graph node is
+`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255C1
+1/0/1/1/1/1/2`. Task 252 owns mapper and condition numerals, Task 253 owns
+the imported mapper, and Task 255 owns only the comprehension, generator,
+bare type, colon association, direct condition-wrapper association, mapper
+edge, and unresolved set requests.
+Condition-contained lower-family rows are excluded from Task-255 child
+discovery rather than copied or targeted.
+
+Task 256 later owns the inner equality node/operand edges and Task 257C later
+owns condition composition. Generator binding/capture and every semantic
+result remain downstream. This prerequisite freezes the immutable objects
+those later nodes must consume.

@@ -3045,3 +3045,17 @@ exact source route、pass sidecar、covered trace row、loaded-text near-miss
 matrix、input-corruption matrix、active-corpus isolation、prior route不変は
 executableである。successful external detail vectorはemptyで、全semantic
 predicate/theorem workはdeferredのまま。
+
+## Checker Task 255C1 frozen runner boundary
+
+private source-set leafがrecognizeするのはexact 191-byte
+conditioned-comprehension definitionだけである。loaded source textを受け取り、
+final LF/parser rangeをauthenticateし、unique imported `++` candidateをderiveし、
+全named structural/recovery/provenance/byte near missをpublication前にrejectする。
+
+one arenaでTask-252 `4/0/4`をproduceし、Task-253 private builderをreuseして
+`1/0/1/2/2`を作り、Task-255 `1/0/1/1/1/1/2`をproduceする。condition
+colonはTask-255-owned、direct `FormulaExpression` wrapperは別のTask-255
+anchorを持ち、2 numeral operandsはTask-252-ownedでTask 255からuntargetedである。
+Task-256/257 handoff/semantic tableは作らない。future fail sidecarはsuccessful
+source transport後にdefinition-extraction detail keyを保持する。

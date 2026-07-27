@@ -205,3 +205,15 @@ intentionally unchanged. No Task-257C1 bilingual sync debt is accepted.
 The Task 257C1 implementation result, counts/hashes, public ownership,
 classification closure, module-boundary recheck, and next prerequisite are
 synchronized in the paired EN/JA checker documents. No bilingual debt remains.
+
+## Task 255C1 Frozen-Contract Pair
+
+The paired plan, source-set, source-term, source-application, typed/resolved,
+decomposition, audit, and TODO documents freeze the same 191-byte source and
+hash, parser ranges, imported provenance, seven-table API/debug contract,
+`4/0/4`, `1/0/1/2/2`, and `1/0/1/1/1/1/2` profiles, Task-253 reuse
+seam, colon/direct condition-wrapper anchors, condition-subtree exclusion,
+tests, projection, and semantic deferrals.
+No production module, fixture, sidecar, trace metadata, count, or hash changes
+in this prerequisite; the paired module-boundary audit is intentionally
+unchanged. No bilingual debt remains.

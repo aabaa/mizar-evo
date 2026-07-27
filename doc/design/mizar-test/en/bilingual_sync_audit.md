@@ -333,3 +333,13 @@ Task-257C1 bilingual drift remains.
 The implemented exact route, fixture/sidecar/trace projection, measured
 counts/hashes, module-boundary recheck, and unchanged semantic deferrals are
 now synchronized in the paired EN/JA runner documents. No drift remains.
+
+## Checker Task 255C1 Frozen-Contract Pair
+
+The paired plan, harness, and TODO freeze the same 191-byte source/hash,
+ranges, imported provenance, `4/0/4`, `1/0/1/2/2`, and
+`1/0/1/1/1/1/2` profiles, reusable Task-253 seam, condition exclusion,
+direct condition-wrapper anchor, future fail detail, tests, baseline,
+projection, and semantic deferrals. No
+runner module or executable artifact changes in this prerequisite, so the
+module-boundary audit is intentionally unchanged. No bilingual drift remains.
