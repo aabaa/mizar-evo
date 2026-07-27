@@ -736,3 +736,23 @@ Task 252 retains all primary rows, Task 256 retains all segment/head/
 candidate/edge/request and resolver-provenance rows, and Task 257C3 adds only
 the two syntax-free associations. Typed/resolved ownership is mutually
 exclusive with A/B/C2, and no semantic formula node is introduced.
+
+## Task 258A Frozen Statement Edge
+
+Task 258 is an umbrella. Task 258A owns only the exact 81-byte
+`FormulaStatementReservedVariableEqualitySmoke` transaction:
+one resolver-authenticated theorem/label owner, one theorem-proposition
+shell, one statement context, one visible reserved-type-guard input, and one
+unverified atomic-equality candidate (`1/1/1/1/1`). It fingerprints exact
+Task-252 `2/2/0` and Task-256 `1/0/0/0/0/0/2/2` handoffs and owns an
+exact clone/fingerprint of the validated Task-48 `BindingEnv`. Task 248 and
+Task 258A typed owners are mutually exclusive across the production
+Task-248-first path, named reverse checker-test seam, and final assembly. It
+creates no checked formula,
+`statement_semantics` row, proof intent, accepted fact, or runner coverage.
+
+Task 258B retains explicit assumptions, conclusions, witnesses, citations,
+composite roots, nested contexts, and broader visibility. Tasks 269-272
+retain proof-local declaration and proof/justification ownership. The
+deferred `MT10-FS` row stays deferred until the complete dependency chain and
+runner are executable.

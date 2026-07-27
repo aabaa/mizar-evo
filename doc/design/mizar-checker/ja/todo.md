@@ -4270,6 +4270,21 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
         preflight後にfrozen predicate-chain compositionだけを実装。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
+  - [ ] **Task 258A:** exact reserved-variable equality theorem owner、
+    statement shell、implicit reserved-type-guard input、unverified
+    proposition candidate。
+    - [x] exact 81-byte future `MT10-FS` source、resolver owner/label
+      provenance、Task-252/256 lower profile、syntax-free `1/1/1/1/1`
+      transaction、typed/resolved ownership、empty-semantic boundary、owned
+      BindingEnv/fingerprint、production/named test-only seamでのTask-248
+      exclusion、tests、trace non-activation、exit criteriaをfreeze。
+    - [ ] dedicated documentation commitとfresh parser/resolver/lower-API/
+      count/hash preflight後にfrozen Task-258A transportだけを実装。
+  - [ ] **Task 258B:** explicit assumption/conclusion/witness、local
+    label/citation input、composite theorem root、nested statement context、
+    broader visibility。Task 258A後にseparately freezeする。Tasks 269-272が
+    proof-local binding/closure/reconsider intent/proof skeleton/
+    justification semanticsを保持する。
 - [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
 - [ ] **Task 260:** functor-definition/initial-obligation intake producer。
 - [ ] **Task 261:** attribute-definition producer。

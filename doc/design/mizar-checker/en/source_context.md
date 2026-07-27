@@ -100,3 +100,25 @@ No exhaustive public enum exceptions are owned by this module.
 | `boundary_violation` | No current violation; shell fabrication and syntax imports are forbidden. |
 | `spec_gap` | Only same-identifier re-reservation replacement/duplicate semantics remain undefined; this nonblocking gap does not authorize implementation. |
 | `repo_metadata_conflict` | None observed. |
+
+## Task 258A Downstream Exclusion
+
+Task 258A reuses the Task-248 binding/context model as authority, but the
+current exact `SourceBindingContextHandoff` profiles do not admit a
+reserve-plus-theorem source transaction. The statement producer therefore
+receives the Task-48-derived `BindingEnv` directly and must not fabricate,
+extend, or install a Task-248 handoff. Task 258A owns its one theorem
+visibility row in `source_statement`; this module retains its existing
+tables, profiles, API, tests, counts, and hashes unchanged.
+
+The later typed owner is exclusive. Production can only construct Task 248
+first, after which Task 258A fails with
+`TypedAstError::InvalidSourceStatement`; there is no Task-248
+post-construction installer and this task adds none. The reverse logical
+attempt is checker-test-only through
+`with_source_context_for_test`, which executes the same validation and fails
+with `TypedAstError::InvalidSourceContext`. Final assembly rejects
+coexistence prepared only through `inject_source_statement_for_test` with
+`ResolvedTypedAstError::InvalidSourceStatement`. Tests cover the production
+direction, named reverse test seam, final rejection, byte-identical rollback,
+and valid single-owner replay.

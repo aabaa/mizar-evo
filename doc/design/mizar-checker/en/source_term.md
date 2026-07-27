@@ -216,3 +216,17 @@ The implementation reuses the exact immutable `3/0/3` handoff and its debug
 fingerprint. It adds no Task-252 production API or row. A coherent two-term
 test-only handoff on the same source/module/arena validates independently
 and then fails only at the C3 exact-profile boundary.
+
+## Task 258A Frozen Downstream Consumer
+
+Task 258A reuses exactly two normal `VariableReference` / `Value` primaries
+at `74..75` and `78..79` and their two independently lookup-authenticated
+references to reserved binding 0. The profile is `2/2/0`; both Task-252
+`SourcePrimaryTermReference::use_ordinal()` values are 1 because one binding
+row is complete before either use. These are distinct from the runner's
+upstream binding/use source-event lookup ordinals 1 and 2. The statement
+input fact points to reference IDs `[0, 1]`
+without copying their binding, spelling, range, lookup winner, or source
+ordinal. Task 252 retains all occurrence/reference ownership and semantics.
+This documentation prerequisite changes no Task-252 API, source, test, or
+debug byte.

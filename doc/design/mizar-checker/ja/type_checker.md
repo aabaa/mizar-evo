@@ -2899,3 +2899,13 @@ read-only getterを公開する。unit testはsymbol visibility、export status�
 definition visibilityを独立にcorruptし、proof assemblyはauthenticated ownerと
 intent rowのmismatchを別にrejectする。これらはresolver name-visibility evidence
 だけで、theorem acceptanceを付与しない。
+
+### Task 258A frozen owner reuse
+
+Task 258Aはstricter source-statement transactionの一部として
+`CheckedStatementOwner::validate_exact_local_theorem`をreuseする。new
+producerはexact resolver theorem `LabelEntry`/contribution identityも
+cross-checkするが、別owner constructorを追加せず、single-local-theorem、
+normal-origin、public/exported contractをrelaxしない。checked ownerは
+provenance evidenceだけ。formula checking、fact recording、proof intent、
+theorem acceptanceは`type_checker`へ入らない。

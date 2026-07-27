@@ -310,3 +310,14 @@ the shared boundary, negative token ranges/spellings/recovery, common
 candidate symbol, and imported contribution. A test-only coherent
 single-predicate profile on the same source/module/arena proves rejection is
 owned by the C3 profile guard rather than an earlier identity mismatch.
+
+## Task 258A Frozen Downstream Consumer
+
+Task 258A consumes one independently valid Task-256 profile
+`1/0/0/0/0/0/2/2`: one normal built-in equality at `74..79`, two operand
+edges to Task-252 primaries 0/1, and two unresolved expected-type requests.
+The statement handoff fingerprints the complete Task-256 debug output and
+targets only `SourceAtomicFormulaId::new(0)`. It does not copy formula,
+operand, request, range, context, or recovery rows and adds no truth, fact,
+checked formula, or acceptance result. This prerequisite changes no
+Task-256 API or executable artifact.

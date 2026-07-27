@@ -97,3 +97,22 @@ statement/proof payload はすべて empty のままである。
 | `boundary_violation` | current violation なし。shell fabrication と syntax import は禁止。 |
 | `spec_gap` | same-identifier re-reservationのreplacement/duplicate semanticsだけが未定義。このnonblocking gapは実装authorityを与えない。 |
 | `repo_metadata_conflict` | 未検出。 |
+
+## Task 258A downstream exclusion
+
+Task 258AはTask-248 binding/context modelをauthorityとして再利用するが、現行
+exact `SourceBindingContextHandoff` profileはreserve-plus-theorem source
+transactionを受理しない。従ってstatement producerはTask-48由来
+`BindingEnv`をdirectに受け、Task-248 handoffをfabricate/extend/installしては
+ならない。Task 258Aのtheorem visibility row 1件は`source_statement`がownし、
+本moduleのexisting table/profile/API/test/count/hashは不変。
+
+later typed ownerはexclusive。productionはTask 248を先にconstructするだけで、
+その後のTask 258Aは`TypedAstError::InvalidSourceStatement`。Task 248に
+post-construction installerはなく本taskも追加しない。reverse logical attemptは
+checker-test-only `with_source_context_for_test`でsame validationを実行し、
+`TypedAstError::InvalidSourceContext`。`inject_source_statement_for_test`
+だけでprepareしたcoexistenceのfinal assemblyは
+`ResolvedTypedAstError::InvalidSourceStatement`。testsはproduction direction、
+named reverse test seam、final rejection、byte-identical rollback、valid
+single-owner replayをcoverする。

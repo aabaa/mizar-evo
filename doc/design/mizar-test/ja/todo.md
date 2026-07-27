@@ -1746,3 +1746,18 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   mutation、rollback/replay、cloneをexactly runner tests 4件でcover。
 - [x] existing sidecar reference/noteとcovered trace row 1件だけを更新。
 - [x] 365 tests、production 29 paths / 34,290 linesを測定。
+
+## Checker Task 258A frozen consumer checklist
+
+- [x] exact 81-byte final-LF source/hashとreal frontend/resolver library-test
+  pathをfreezeし、future corpus fixtureは追加しない。
+- [x] Task-48 binding、Task-252 `2/2/0`、Task-256
+  `1/0/0/0/0/0/2/2`、Task-258A `1/1/1/1/1` compositionをfreeze。
+- [x] exact owner/label provenance、selector/subtree exclusion、
+  owned BindingEnv/fingerprint、absent Task-248 owner、typed/resolved
+  equality、empty semantics、active-route isolationをfreeze。
+- [x] fixture/sidecar/trace metadata/status/count/CLI count/hash、365-test list、
+  29-path / 34,290-line production manifestをpreserve。
+- [ ] checker documentation commit/fresh preflight後、dormant production
+  routeとexactly library tests 4件だけを追加し、corpus activationは
+  `MT10-FS`に残す。

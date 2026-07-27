@@ -1938,3 +1938,18 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Update only the existing sidecar reference/note and one covered trace
   row.
 - [x] Measure 365 tests and the 29-path / 34,290-line production manifest.
+
+## Checker Task 258A Frozen Consumer Checklist
+
+- [x] Freeze the exact 81-byte final-LF source/hash and real frontend/
+  resolver library-test path without adding the future corpus fixture.
+- [x] Freeze Task-48 binding, Task-252 `2/2/0`, Task-256
+  `1/0/0/0/0/0/2/2`, and Task-258A `1/1/1/1/1` composition.
+- [x] Freeze exact owner/label provenance, selector/subtree exclusions,
+  owned BindingEnv/fingerprint, absent Task-248 owner, typed/resolved
+  equality, empty semantic output, and active-route isolation.
+- [x] Preserve all fixtures, sidecars, trace metadata/status/count, CLI
+  counts/hashes, 365-test list, and 29-path / 34,290-line production manifest.
+- [ ] After the checker documentation commit and fresh preflight, add only
+  the dormant production route and exactly four library tests; leave corpus
+  activation to `MT10-FS`.

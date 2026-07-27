@@ -4495,6 +4495,23 @@ unchecked row below is one future nonempty logical task and one commit.
         predicate-chain composition after fresh post-documentation preflight.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
+  - [ ] **Task 258A:** exact reserved-variable equality theorem owner,
+    statement shell, implicit reserved-type-guard input, and unverified
+    proposition candidate.
+    - [x] Freeze the exact 81-byte future `MT10-FS` source, resolver owner/
+      label provenance, Task-252/256 lower profiles, syntax-free
+      `1/1/1/1/1` transaction, typed/resolved ownership, empty-semantic
+      boundary, owned BindingEnv/fingerprint, Task-248 exclusion through the
+      production and named test-only seams, tests, trace non-activation, and
+      exit criteria.
+    - [ ] Implement only the frozen Task-258A transport after the dedicated
+      documentation commit and fresh parser/resolver/lower-API/count/hash
+      preflight.
+  - [ ] **Task 258B:** explicit assumptions, conclusions, witnesses, local
+    label/citation inputs, composite theorem roots, nested statement contexts,
+    and broader visibility. Freeze this slice separately after Task 258A;
+    Tasks 269-272 retain proof-local bindings, closures, reconsider intent,
+    proof skeletons, and justification semantics.
 - [ ] **Task 259:** predicate-definition and initial-obligation intake producer.
 - [ ] **Task 260:** functor-definition and initial-obligation intake producer.
 - [ ] **Task 261:** attribute-definition producer.

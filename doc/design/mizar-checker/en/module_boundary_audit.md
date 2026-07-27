@@ -130,6 +130,20 @@ fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
 
+## Checker Task 258A Frozen-Contract Boundary
+
+This documentation prerequisite adds no checker source path, public module,
+dependency direction, or line-count change. The future
+`source_statement.rs` is frozen as one cohesive syntax-free owner for the
+five theorem-owner/statement/context/input/candidate tables, dependency
+fingerprints, its exact owned BindingEnv, asymmetric production plus named
+test-only Task-248 exclusion,
+transaction validation, and deterministic rendering. Raw
+statement selection remains in a private `mizar-test` leaf; truth, proof,
+acceptance, and publication remain in later semantic owners. No pre-
+implementation module split is justified, and the current source-layout
+inventory remains unchanged.
+
 ## Checker Task 257C3 Frozen Boundary Recheck
 
 The planned two-table predicate-chain composition remains in the cohesive

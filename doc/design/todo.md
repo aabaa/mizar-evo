@@ -2442,3 +2442,28 @@ completion remain deferred. The origin discrepancy remains report-only
   only the ordered reciprocal reference/note in the existing sidecar.
 - [x] Measure plan/type `419/387` / `253/241`, libraries `335/365`, and
   runner production 29 paths / 34,290 lines with frozen CLI outcomes.
+
+## Checker Task 258A Frozen-Contract Ledger
+
+- [x] Select only the exact 81-byte future `MT10-FS` reserved-variable
+  equality theorem and freeze its hash, ranges, parser/resolver owner/label
+  provenance, and exact subtree exclusions.
+- [x] Freeze Task-48 binding, Task-252 `2/2/0`, Task-256
+  `1/0/0/0/0/0/2/2`, and source-statement `1/1/1/1/1` ownership without
+  extending or fabricating Task 248.
+- [x] Freeze the five dense table/API/error/debug contract, typed/resolved
+  one-shot ownership, handoff-owned BindingEnv/fingerprint, production plus
+  named test-only Task-248 exclusion seams, rollback/replay, real
+  frontend/resolver tests, and exact empty-semantic boundary.
+- [x] Keep the future fixture/sidecar and deferred trace row with `MT10-FS`;
+  preserve the existing active reserved-variable equality case unchanged.
+- [x] Classify the missing frozen contract as `design_drift`, future producer
+  and dormant route as bounded `source_drift`, tests as `test_gap`, and
+  origin divergence as report-only `repo_metadata_conflict`; no blocking
+  `spec_gap` exists.
+- [x] Preserve documentation-only baselines `419/387`, `253/241`,
+  `228/191`, active `101/5/198/1`, libraries `335/365`, runner 29 paths /
+  34,290 lines, and every test-list/CLI/production hash.
+- [ ] Implement Task 258A in a separate logical task/commit only after this
+  documentation commit and fresh parser/resolver/lower-API/count/hash
+  preflight; keep Task 258B open.

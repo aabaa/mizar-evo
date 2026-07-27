@@ -35,6 +35,11 @@ public method は、module spec が table、builder、output API として記述
 - [overload_resolution.md](./overload_resolution.md)
 - [resolved_typed_ast.md](./resolved_typed_ast.md)
 
+Task 258A frozen contract
+[source_statement.md](./source_statement.md)はfuture public moduleをfully
+nameする。separate implementation taskがsource moduleを追加するまではcurrent
+module-export/public-surface inventoryへ含めない。
+
 結果: 実装済み explicit-payload API について、blocking な `source_drift`、
 `design_drift`、`source_undocumented_behavior` は観測していない。残る
 source-derived behavior の未 coverage は、下記の gap row により意図的に
@@ -3536,3 +3541,35 @@ trace rowがplanned traceability deltaをcloseする。blocking `spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`は残らない。origin divergenceはreport-only
 `repo_metadata_conflict`のまま。
+
+## Task 258A frozen surface audit
+
+Chapter 4 §§4.3/4.7.1、Chapter 14 §14.5.2、Chapter 15
+§§15.8/15.10、Chapter 16 §§16.1/16.2/16.7.1/16.9は、exact
+reserved-variable theorem shell、implicit-closure input、equality
+candidate、theorem owner、unmodified status、omitted-justification boundary、
+verification-before-publication exclusionを十分にauthorizeする。既存
+parser/resolver fixtureとTasks 248–253 public APIはtruth/proof/acceptance
+semanticsを付与せず、executable lower input/provenance viewを確立する。
+
+不足していたsyntax-free owner/statement/context/input/candidate contractは
+`design_drift`で、本documentation prerequisiteによりclosed。
+future `source_statement` module/producer、typed/final installation、dormant
+exact-source bridgeはbounded `source_drift`、checker/runner matrixは
+`test_gap`。blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、accepted `boundary_violation`はない。現行Task-248
+exact handoffはreserve-plus-theorem transactionを表せず、extend/fabricateせず
+明示的にexcludeする。origin divergenceはreport-only
+`repo_metadata_conflict`のまま。
+
+future public surfaceは`source_statement.md`でfully namedされ、five dense
+ID/table、immutable input/output row、producer signature、semantic boundary用
+non-exhaustive enum 7件、row-local failure、aggregate precedence、
+owned BindingEnv/fingerprint、Task-252/256 dependency fingerprint、
+asymmetric production plus named test-only Task-248 exclusion、stable debug
+schemaを含む。
+implementationまではcurrent module-export/public-surface inventoryに含めない。
+既存deferred `spec.en.checker.formula_statement.source_payloads` rowはempty
+test listを保ち、本prerequisiteではstatus/count/fixture/sidecar/expectation/
+coverageを変更しない。broader statement formはTask 258BとTasks 269–272が
+所有する。

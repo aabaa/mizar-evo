@@ -398,3 +398,15 @@ Paired runner documents record the same complete route, exact lower and
 and semantic result, ordered existing-sidecar references, one covered trace
 row, 365-test list, and 29-path/34,290-line manifest with identical hashes.
 No Task-257C3 implementation bilingual drift remains.
+
+## Checker Task 258A Frozen-Contract Synchronization
+
+The paired plan, harness, TODO, and checker-consumer documents freeze the
+same exact future 81-byte `MT10-FS` source/hash, parser/resolver ranges,
+Task-48 binding base, Task-252 `2/2/0`, Task-256
+`1/0/0/0/0/0/2/2`, future five-table `1/1/1/1/1` transaction, dormant
+real-frontend/resolver route, owned BindingEnv/fingerprint, absent Task-248
+owner, named near-miss matrix, unchanged
+`419/387` and 365-test baseline, and semantic deferrals. This prerequisite
+adds no runner source, fixture, sidecar, trace metadata/status/count,
+executable count, or hash. No Task-258A bilingual drift is accepted.

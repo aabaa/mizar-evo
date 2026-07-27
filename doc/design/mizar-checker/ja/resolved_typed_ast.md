@@ -859,3 +859,22 @@ revalidateし、`Clone`でpreserveし、frozen slotへdeterministic debug chunk�
 emitする。test-only stateでrequired lower handoffをremoveすると
 `InvalidSourcePredicateChainComposition`でfailする。expression metadata、
 diagnostic、truth、fact、proof、downstream IRはemptyのまま。
+
+## Task 258A frozen final projection
+
+final assemblyはexact Task-252/256 lower handoff後にoptional
+`SourceStatementHandoff`をrevalidate/clone-preserveし、read-only
+`source_statement()` accessorだけを追加する。missing/stale/substituted/
+corruptなlower/owner/statement/context/fact relationは
+`ResolvedTypedAstError::InvalidSourceStatement`。assemblyはIDをrebuildせず、
+label resolve/equality check/existing `StatementSemanticInput`/
+`StatementProofIntentInput`生成を行わない。Task-266/268 standalone-
+contradiction checked tableはdisjoint/unchanged。expression metadata、
+checked formula、statement semantics、proof/terminal goal、fact、diagnostic、
+downstream IRはempty。本prerequisiteはresolved source/outputを変更しない。
+
+revalidationはhandoff-owned exact `BindingEnv`とfingerprintを含む。
+Task-248 `source_context`とTask-258A `source_statement`を同時に含む
+test-injected typed inputはdeterministically `InvalidSourceStatement`。
+final outputをpublishせずoriginal typed debugをbyte-identicalに保ち、validな
+single-owner inputはいずれもreplayできる。

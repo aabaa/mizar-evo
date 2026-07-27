@@ -3123,3 +3123,20 @@ consumeしてsyntax/resolver rowをcopyしない。primary/atomic/composition/
 arena mutation、exact replay、selector near miss、route isolation、
 typed/resolved debug order、clone preservationをexactly runner tests 4件で
 coverする。fixture/empty semantic detailはbyte-for-byte unchanged。
+
+## Checker Task 258A frozen harness boundary
+
+later harness leafはexact 81-byte future `MT10-FS` sourceをparse/resolveし、
+Task-252 `2/2/0`、Task-256 `1/0/0/0/0/0/2/2`、Task-258A
+`1/1/1/1/1`をone transactionで構築する。production-capableだが、`MT10-FS`
+がdistinct `.miz`/singular sidecarを追加するまでcorpus dispatchはない。
+library tests 4件がreal frontend/resolver pathをexecuteし、left/right
+Task-252 stored use ordinalをexact 1/1、upstream binding/use source-event
+lookup ordinalをseparate exact 1/2にfreezeする。
+
+active type-elaboration route/detail/fixture/sidecar/trace row/admission ruleは
+変更しない。existing reserved-variable equality caseはexact-name routeを
+selectしてはならない。successはtyped/resolved same source-statement handoffと
+same owned binding environment/fingerprint、absent Task-248 source context、
+empty checked formula/statement/proof/fact/diagnosticを要求。本prerequisiteは
+executable harness artifactを変更しない。

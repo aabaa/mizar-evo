@@ -3294,3 +3294,22 @@ resolver row. Primary/atomic/composition/arena mutation, exact replay,
 selector near misses, route isolation, typed/resolved debug order, and clone
 preservation are covered by exactly four runner tests. The fixture and empty
 semantic detail remain byte-for-byte unchanged.
+
+## Checker Task 258A Frozen Harness Boundary
+
+The later harness leaf parses/resolves the exact 81-byte future `MT10-FS`
+source and builds Task-252 `2/2/0`, Task-256
+`1/0/0/0/0/0/2/2`, and Task-258A `1/1/1/1/1` in one transaction. It is
+production-capable but has no corpus dispatch until `MT10-FS` adds its
+distinct `.miz` and singular sidecar. Four library tests execute the real
+frontend/resolver path now and freeze the left/right Task-252 stored use
+ordinals as 1/1 independently from the upstream binding/use source-event
+lookup ordinals 1/2.
+
+No active type-elaboration route, detail vector, fixture, sidecar, trace row,
+or admission rule changes. The existing reserved-variable equality case must
+not select this exact-name route. Success requires equal typed/resolved
+source-statement handoffs, the same owned binding environment/fingerprint,
+absent Task-248 source context, and empty checked formula/statement/proof/
+fact/diagnostic output. This prerequisite changes no executable harness
+artifact.

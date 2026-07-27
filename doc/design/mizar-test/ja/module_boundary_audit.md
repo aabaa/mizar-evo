@@ -10244,3 +10244,13 @@ plan/parse/declaration/type/proof CLI hashは
 `210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
 `f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`、
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+
+## Checker Task 258A frozen-contract boundary
+
+このdocumentation prerequisiteはrunner source pathを追加せず、29-path /
+34,290-line production manifestと全hashを不変に保つ。future exact
+`MT10-FS` selectorはexisting type-elaboration facade配下のdedicated private
+`source_statement.rs` leaf 1件としてfreezeする。raw statement selectionと
+syntax-free input assemblyだけをownし、validation/immutable publicationは
+checkerがownする。planned leafはcohesiveでpre-implementation splitを要せず、
+proof/acceptance/trace/fixture/active-corpus ownershipを取り込んではならない。

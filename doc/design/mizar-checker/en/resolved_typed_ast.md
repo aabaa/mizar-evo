@@ -903,3 +903,30 @@ its deterministic debug chunk in the frozen slot. Removing a required lower
 handoff in a test-only state fails with
 `InvalidSourcePredicateChainComposition`. Expression metadata, diagnostics,
 truth, facts, proof, and downstream IR remain empty.
+
+## Task 258A Frozen Final Projection
+
+Final assembly will revalidate and clone-preserve the optional
+`SourceStatementHandoff` after the exact Task-252 and Task-256 lower
+handoffs. It adds only:
+
+```rust
+pub const fn source_statement(&self) -> Option<&SourceStatementHandoff>;
+```
+
+Missing, stale, substituted, or corrupt lower/owner/statement/context/fact
+relations fail through
+`ResolvedTypedAstError::InvalidSourceStatement`. Assembly does not rebuild
+IDs, resolve a label, check the equality, or create any existing
+`StatementSemanticInput` or `StatementProofIntentInput`. The Task-266/268
+standalone-contradiction checked tables remain disjoint and unchanged.
+Expression metadata, checked formulas, statement semantics, proofs, terminal
+goals, facts, diagnostics, and downstream IR remain empty. This prerequisite
+changes no resolved source or output.
+
+The revalidation includes the handoff-owned exact `BindingEnv` and its
+fingerprint. A test-injected typed input that contains both Task-248
+`source_context` and Task-258A `source_statement` deterministically fails
+with `InvalidSourceStatement`; no final output is published, the original
+typed debug remains byte-identical, and either valid single-owner input can
+be replayed.

@@ -483,3 +483,13 @@ source. The bounded producer extends the exact normal `1/0/4` module shell to
 resolver-shaped `QuantifierBinder`, and exposes that binding as visible.
 The context owner records source provenance only; it does not publish a
 semantic formula result, accepted fact, or theorem owner.
+
+## Task 258A Reserved-Theorem Consumer
+
+Task 258A consumes one Task-48-derived normal module environment with context
+0 and one active, visible `ReservedVariable` binding 0 for `x`. The
+declaration is `0..18`, the written type site is `14..17`, and the theorem's
+first use has ordinal 1. The statement context copies only the authenticated
+visible binding ID and reserved-type-guard association; it does not mutate
+the environment, add a theorem/proof context, publish a fact, or extend this
+module's public API.

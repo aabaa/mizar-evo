@@ -3064,3 +3064,13 @@ visibility, export status, and definition visibility independently; proof
 assembly separately rejects an authenticated-owner/intent-row mismatch. These
 facts remain resolver name-visibility evidence only and confer no theorem
 acceptance.
+
+### Task 258A Frozen Owner Reuse
+
+Task 258A reuses `CheckedStatementOwner::validate_exact_local_theorem` as
+one part of a stricter source-statement transaction. The new producer also
+cross-checks the exact resolver theorem `LabelEntry` and contribution
+identity; it does not add another owner constructor or relax the validator's
+single-local-theorem, normal-origin, public/exported contract. The checked
+owner is provenance evidence only. No formula checking, fact recording,
+proof intent, or theorem acceptance enters `type_checker`.

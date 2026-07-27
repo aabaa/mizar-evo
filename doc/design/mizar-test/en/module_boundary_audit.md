@@ -11462,3 +11462,14 @@ Plan/parse/declaration/type/proof CLI hashes are
 `210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
 `f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
 and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+
+## Checker Task 258A Frozen-Contract Boundary
+
+This documentation prerequisite adds no runner source path and leaves the
+29-path / 34,290-line production manifest and all hashes unchanged. The
+future exact `MT10-FS` selector is frozen as one dedicated private
+`source_statement.rs` leaf below the existing type-elaboration facade. It
+will own only raw statement selection and syntax-free input assembly; the
+checker owns validation and immutable publication. The planned leaf is
+cohesive, does not justify a pre-implementation split, and must not absorb
+proof, acceptance, trace, fixture, or active-corpus ownership.

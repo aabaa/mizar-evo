@@ -204,3 +204,15 @@ implementationはexact immutable `3/0/3` handoff/debug fingerprintをreuseし、
 Task-252 production API/rowを追加しない。same source/module/arena上のcoherent
 two-term test-only handoffは個別validate後、C3 exact-profile boundaryだけで
 failする。
+
+## Task 258A frozen downstream consumer
+
+Task 258Aは`74..75`/`78..79`のnormal `VariableReference`/`Value` primary
+2件とreserved binding 0へlookup-authenticatedされたreference 2件だけを
+reuseする。profileは`2/2/0`、1 binding rowが両useより前にcompleteするため
+Task-252 `SourcePrimaryTermReference::use_ordinal()`は両方1。これはrunner
+upstream binding/use source-event lookup ordinal 1/2とはdistinct。
+statement input factはreference IDs `[0, 1]`を指すだけでbinding/spelling/
+range/lookup winner/source ordinalをcopyしない。Task 252が全occurrence/
+reference ownership/semanticsを保持する。本prerequisiteはTask-252 API/
+source/test/debug byteを変更しない。

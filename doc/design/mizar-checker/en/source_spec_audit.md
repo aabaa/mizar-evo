@@ -37,6 +37,11 @@ Module specifications audited:
 - [overload_resolution.md](./overload_resolution.md)
 - [resolved_typed_ast.md](./resolved_typed_ast.md)
 
+The Task 258A frozen contract in
+[source_statement.md](./source_statement.md) names a future public module.
+It is not included in the current module-export or public-surface inventory
+until the separate implementation task adds that source module.
+
 Result: no blocking `source_drift`, `design_drift`, or
 `source_undocumented_behavior` is observed for implemented explicit-payload
 APIs. Remaining uncovered source-derived behavior is intentionally deferred by
@@ -3699,3 +3704,38 @@ expectation rebaseline. No blocking `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`, or
 `boundary_violation` remains; origin divergence is report-only
 `repo_metadata_conflict`.
+
+## Task 258A Frozen Surface Audit
+
+Chapter 4 §§4.3 and 4.7.1, Chapter 14 §14.5.2, Chapter 15 §§15.8 and
+15.10, and Chapter 16 §§16.1, 16.2, 16.7.1, and 16.9 fully authorize the
+exact reserved-variable theorem shell, implicit-closure input, equality
+candidate, theorem owner, unmodified status, omitted-justification boundary,
+and verification-before-publication exclusion. The existing parser/resolver
+fixtures and Tasks 248–253 public APIs establish the executable lower inputs
+and provenance views without granting this task truth, proof, or acceptance
+semantics.
+
+The previously missing syntax-free owner/statement/context/input/candidate
+contract was `design_drift`, closed by this documentation prerequisite. The
+future `source_statement` module, producer, typed/final installation, and
+dormant exact-source bridge are bounded `source_drift`; their checker and
+runner matrices are `test_gap`. There is no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or accepted
+`boundary_violation`. The current Task-248 exact handoff cannot represent the
+reserve-plus-theorem transaction and is explicitly excluded rather than
+extended or fabricated. The origin divergence remains report-only
+`repo_metadata_conflict`.
+
+The future public surface is fully named in `source_statement.md`, including
+five dense IDs/tables, immutable input and output rows, producer signature,
+seven non-exhaustive semantic-boundary enums, row-local failures, aggregate
+precedence, owned BindingEnv/fingerprint, Task-252/256 dependency
+fingerprints, asymmetric production plus named test-only Task-248 exclusion,
+and stable debug schema.
+It is intentionally absent from the current module-export and public-surface
+inventory until implementation. The existing deferred
+`spec.en.checker.formula_statement.source_payloads` row keeps an empty test
+list and receives no status, count, fixture, sidecar, expectation, or
+coverage change in this prerequisite. Broader statement forms remain owned
+by Task 258B and Tasks 269–272.

@@ -677,3 +677,22 @@ row、Task 256は全segment/head/candidate/edge/request/resolver-provenance
 rowを保持し、Task 257C3はsyntax-free association 2件だけを追加する。
 typed/resolved ownershipはA/B/C2とmutually exclusiveで、semantic formula
 nodeは導入しない。
+
+## Task 258A frozen statement edge
+
+Task 258はumbrella。Task 258Aはexact 81-byte
+`FormulaStatementReservedVariableEqualitySmoke` transactionだけをownする。
+resolver-authenticated theorem/label owner、theorem-proposition shell、
+statement context、visible reserved-type-guard input、unverified
+atomic-equality candidateが各1件 (`1/1/1/1/1`)。exact Task-252 `2/2/0`と
+Task-256 `1/0/0/0/0/0/2/2`をfingerprintし、validated Task-48
+`BindingEnv`のexact clone/fingerprintをownする。Task 248/Task 258A typed
+ownerはproduction Task-248-first path、named reverse checker-test seam、
+final assemblyでmutually exclusive。
+checked formula、`statement_semantics` row、proof intent、accepted fact、
+runner coverageは生成しない。
+
+Task 258Bがexplicit assumption/conclusion/witness/citation、composite root、
+nested context、broader visibilityを保持する。Tasks 269-272がproof-local
+declarationとproof/justification ownershipを保持する。complete dependency
+chain/runnerがexecutableになるまでdeferred `MT10-FS` rowはdeferredのまま。

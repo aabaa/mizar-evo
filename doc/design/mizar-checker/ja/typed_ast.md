@@ -827,3 +827,39 @@ duplicate/A/B/C2 occupancyをrejectする。reciprocal test-only occupancy
 mutationはotherwise-valid attempted installで全6 directional guardを直接
 exerciseし、lower dependency mismatchがownership contractを隠さない。
 failureはbase debug byte/valid replayを保持する。
+
+## Task 258A frozen source-statement ownership
+
+later Task-258A implementationはoptional `SourceStatementHandoff`、read-only
+accessor、one-shot installer、debug projection、`InvalidSourceStatement`を
+追加する。exact Task-252/256 handoffが先にinstallされ、frozen `MT10-FS`
+smoke profileでは他lower/Task-257 ownerはabsent。
+
+```rust
+pub const fn source_statement(&self) -> Option<&SourceStatementHandoff>;
+
+pub fn with_source_statement(
+    self,
+    statement: SourceStatementHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+installerはsource/module、lower fingerprint 2件、handoff内のresolver-
+authenticated owner、全`1/1/1/1/1` row、arena site/range、binding
+environmentとfingerprint、visibility、reference use、formula targetを
+publication前にrevalidateする。exact `BindingEnv`はhandoff-owned。
+duplicate/missing lower/stale/substituted binding/corruptはatomic failし、
+byte-identical state/valid replayを保持。
+
+Task 248/Task 258Aはexclusive。productionが公開するのはTask-248
+constructor-first directionだけで、`source_context`後の
+`with_source_statement`は`InvalidSourceStatement`。Task 248に
+post-construction installerはなく本taskも追加しない。exact reverse test
+oracleはcanonical English blockの`#[cfg(test)]`
+`with_source_context_for_test`でsame private validationを呼び、
+`InvalidSourceContext`。各rejectionはfirst ownerのexact debugとvalid replayを
+保持する。separate `inject_source_statement_for_test(&mut self,
+SourceStatementHandoff)` bypassはfinal-assembly coexistence rejectionの準備
+だけに使いproduction construction pathではない。debug chunkは全Task-257 owner
+slotの後、node/table sectionの前。`facts`/existing semantic tableはempty。
+本documentation commitは`TypedAst` source/APIを変更しない。

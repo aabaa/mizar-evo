@@ -292,3 +292,13 @@ spelling/recovery、common candidate symbol、imported contributionを
 authenticateする。same source/module/arena上のtest-only coherent
 single-predicate profileにより、earlier identity mismatchではなくC3 profile
 guardがrejectをownすることを確認する。
+
+## Task 258A frozen downstream consumer
+
+Task 258Aはindependently validなTask-256
+`1/0/0/0/0/0/2/2`をconsumeする。`74..79`のnormal builtin equality 1件、
+Task-252 primaries 0/1へのoperand edge 2件、unresolved expected-type request
+2件。statement handoffはcomplete Task-256 debugをfingerprintし、
+`SourceAtomicFormulaId::new(0)`だけをtargetする。formula/operand/request/
+range/context/recovery rowをcopyせず、truth/fact/checked formula/acceptance
+resultを追加しない。本prerequisiteはTask-256 API/executable artifactを変更しない。

@@ -860,3 +860,52 @@ publication. Reciprocal test-only occupancy mutations exercise each of the
 six directional guards with an otherwise valid attempted install, so lower
 dependency mismatch cannot mask the ownership contract. Failure preserves
 the base debug bytes and valid replay.
+
+## Task 258A Frozen Source-Statement Ownership
+
+The later Task-258A implementation adds one optional
+`SourceStatementHandoff`, read-only accessor, one-shot installer, debug
+projection, and `InvalidSourceStatement`. Exact Task-252 and Task-256
+handoffs must already be installed; every other lower and Task-257 owner is
+absent in the frozen `MT10-FS` smoke profile.
+
+```rust
+pub const fn source_statement(&self) -> Option<&SourceStatementHandoff>;
+
+pub fn with_source_statement(
+    self,
+    statement: SourceStatementHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+The installer revalidates source/module, both lower fingerprints, resolver-
+authenticated owner data already frozen in the handoff, all five
+`1/1/1/1/1` rows, arena sites/ranges, the handoff-owned exact `BindingEnv`
+and its fingerprint, binding visibility, reference uses, and formula target
+before publication. Duplicate, missing lower, stale, substituted binding, or
+corrupt input fails atomically, preserves byte-identical state, and permits
+valid replay.
+
+Task 248 and Task 258A are exclusive. Production exposes only the
+Task-248-constructor-first direction: `with_source_statement` after
+`source_context` fails with `InvalidSourceStatement`. Task 248 has no
+post-construction installer and this task adds none. The exact reverse test
+oracle uses:
+
+```rust
+#[cfg(test)]
+pub(crate) fn with_source_context_for_test(
+    self,
+    source_context: SourceBindingContextHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+It invokes the same private validation and fails with
+`InvalidSourceContext`. Each rejection preserves the first owner's exact
+debug and supports valid replay. A separate
+`inject_source_statement_for_test(&mut self, SourceStatementHandoff)` bypass
+exists only to prepare the final-assembly coexistence rejection; it is not a
+production construction path. The debug chunk follows every Task-257 owner
+slot and precedes the node/table section. `facts` and all existing semantic
+tables remain empty. This documentation commit changes no `TypedAst` source
+or API.

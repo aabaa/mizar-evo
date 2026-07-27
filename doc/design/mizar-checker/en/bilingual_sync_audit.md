@@ -30,7 +30,7 @@ after this task.
 | Pair | EN companion | JA companion | Comparison basis | Sync debt |
 |---|---|---|---|---|
 | `00.crate_plan.md` | `../ja/00.crate_plan.md` | `../en/00.crate_plan.md` | crate status, responsibility, authority refs, test coverage, design/source inventory, MC-G tables, task decomposition, forbidden behavior, exit criteria | none |
-| `binding_env.md` | `../ja/binding_env.md` | `../en/binding_env.md` | purpose/boundary, context and binding tables, lookup/reserve/closure behavior, diagnostics, public enum policy, task classification | none |
+| `binding_env.md` | `../ja/binding_env.md` | `../en/binding_env.md` | purpose/boundary, context and binding tables, lookup/reserve/closure behavior, Task-258A reserved-theorem consumer, diagnostics, public enum policy, task classification | none |
 | `bilingual_sync_audit.md` | `../ja/bilingual_sync_audit.md` | `../en/bilingual_sync_audit.md` | pair inventory, synchronization definition, task classification, completion decision | none |
 | `cluster_trace.md` | `../ja/cluster_trace.md` | `../en/cluster_trace.md` | authority/scope, trace model, cluster/reduction steps, determinism, bounds/failures, public enum policy, deferred inputs | none |
 | `crate_exit_report.md` | `../ja/crate_exit_report.md` | `../en/crate_exit_report.md` | result, scope, task commits, hard gates, score breakdown, deferred items, verification, handoff | none |
@@ -41,7 +41,7 @@ after this task.
 | `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility, inputs, data shape, metadata/summaries, overload/coercion/cluster tables, failure/recovery, public enum policy, deferred gaps | none |
 | `semantic_spec_audit.md` | `../ja/semantic_spec_audit.md` | `../en/semantic_spec_audit.md` | audit scope, severity legend, findings index/details, adversarial corpus table, traceability requirement ids, TODO impact | none |
 | `source_spec_audit.md` | `../ja/source_spec_audit.md` | `../en/source_spec_audit.md` | public surface inventory, behavior/test correspondence, MC-G reconciliation, task classification | none |
-| `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, determinism, coverage, public enum policy | none |
+| `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, Task-258A bidirectional exclusion, determinism, coverage, public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary, five-table application/wrapper/candidate/argument/request transport, Task-252 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 and Task-257C2/256C1 lower-compatibility authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, condition-container gate, exclusions, public enum policy | none |
@@ -49,6 +49,7 @@ after this task.
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3 plus frozen Task-257C2 authority/boundary, composite-to-atomic/bound-use transport, dedicated condition-to-atomic transport, dependency fingerprints, atomic installation, exact consumers, exclusions, public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary, seven-table set/choice/qua/generator/type-site/condition/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary, seven-table structure/member/FieldUpdate/edge/request transport, Task-252/253 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
+| `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Task-258A authority/boundary, five-table theorem-owner/statement/context/input/candidate transport, owned BindingEnv plus Task-252/256 fingerprints, asymmetric production plus named test-only Task-248 exclusion, exact future MT10-FS consumer, semantic-table exclusions, public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary, three-table primary-term transport, binding lookup and parent/request validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary, flat application/expression/argument model, environment/arena/graph/provenance validation, ownership, consumers, exclusions, public enum policy | none |
@@ -286,3 +287,21 @@ ownership directions, three checker/four runner tests, unchanged fixture and
 semantic result, one existing-sidecar/trace increment, `419/387`,
 `253/241`, libraries `335/365`, and 29-path/34,290-line runner manifest.
 No Task-257C3 bilingual drift remains.
+
+## Task 258A Frozen-Contract Pair
+
+The paired EN/JA plans, TODOs, payload-family and lower-family notes,
+typed/final ownership documents, checker and runner audits, global ledger,
+and coverage audit freeze the same 81-byte source/hash, parser/resolver
+ranges, Task-48 binding base, Task-252 `2/2/0` and Task-256
+`1/0/0/0/0/0/2/2` profiles, five-table `1/1/1/1/1` transaction, owned
+BindingEnv/fingerprint, all-resolver-view theorem provenance, asymmetric
+production plus named test-only Task-248 exclusion, exact future `MT10-FS`
+consumer, subtree exclusions, tests, unchanged baseline, and semantic
+deferrals.
+
+This documentation prerequisite changes no production module, fixture,
+sidecar, expectation, trace metadata/status/count, executable count, or hash.
+The future `source_statement` API is fully named but remains unimplemented;
+Task 258B retains the broader statement family. No Task-258A bilingual sync
+debt is accepted.

@@ -385,3 +385,15 @@ imported provenance、全named near miss、corruption/final-clone matrix、
 `419/385`、`251/239`、`228/191`、active `101/5/198/1`、357 tests、
 29-path/33,725-line manifest、同一test-list/production/5 CLI hashを同期する。
 bilingual driftは残らない。
+
+## Checker Task 258A frozen-contract synchronization
+
+paired plan/harness/TODO/checker-consumer文書は、同じexact future 81-byte
+`MT10-FS` source/hash、parser/resolver range、Task-48 binding base、
+Task-252 `2/2/0`、Task-256 `1/0/0/0/0/0/2/2`、future five-table
+`1/1/1/1/1` transaction、dormant real-frontend/resolver route、owned
+BindingEnv/fingerprint、absent Task-248 owner、named near-miss matrix、
+unchanged `419/387` / 365-test baseline、semantic deferralをfreezeする。
+本prerequisiteはrunner source、fixture、sidecar、
+trace metadata/status/count、executable count/hashを追加しない。Task-258A
+bilingual driftは認めない。

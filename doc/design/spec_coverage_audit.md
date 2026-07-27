@@ -3580,3 +3580,52 @@ ownership and activates the planned traceability row. Predicate
 signature/applicability, overload selection, conjunction/negation truth,
 formula facts/results, theorem acceptance, proof, IR/VC, broader chains,
 Steps 6/7, and global Step-5 completion remain deferred.
+
+## Step 5 Checker Task 258A Frozen-Contract Addendum
+
+Fresh post-Task-257C3 inventory selects the first bounded Task-258 source
+statement slice. Canonical Chapter 4 §§4.3/4.7.1, Chapter 14 §14.5.2,
+Chapter 15 §§15.8/15.10, and Chapter 16
+§§16.1/16.2/16.7.1/16.9 authority freezes an exact future 81-byte,
+final-LF `MT10-FS` source and SHA-256
+`341aad596ef6891dfa33c189895df2350d357ac8edaf3747f160bbad7a2ddd96`.
+The exact lower route is:
+
+```text
+Task48 reserve binding/context base
+  -> Task252 primary terms/references 2/2/0
+  -> Task256 atomic formula 1/0/0/0/0/0/2/2
+  -> Task258A owner/statement/context/input/candidate 1/1/1/1/1
+```
+
+The frozen transaction carries one resolver-authenticated local public/
+exported theorem owner, one unmodified theorem statement shell, one
+visibility context, one reserved-type-guard input fact, and one unverified
+equality candidate. Task 248 remains authority for the binding model, but its
+current exact source-context handoff is absent because it cannot represent
+the reserve-plus-theorem profile. Task 258A instead owns an exact clone and
+fingerprint of the producer-validated Task-48 `BindingEnv`; Task-248 and
+Task-258A typed owners are rejected through the production Task-248-first
+path, the named reverse checker-test seam, and final assembly. The candidate
+is never an input fact,
+checked formula, theorem result, accepted premise, discharged goal, or
+published theorem. Broader assumptions, conclusions, witnesses, citations,
+composite roots, nested contexts, and visibility profiles remain Task 258B
+or Tasks 269–272.
+
+This prerequisite closes the missing contract `design_drift`. The separate
+producer/typed/final implementation and dormant real parser/resolver bridge
+remain bounded `source_drift`; their checker and runner matrices remain
+`test_gap`. The existing
+`spec.en.checker.formula_statement.source_payloads` trace row stays deferred
+with an empty test list until the Task-258 family, Tasks 269–272, and
+`MT10-FS` are complete. No requirement, trace row/status/count, fixture,
+sidecar, expectation, active tag, diagnostic, executable count, or hash
+changes in this documentation prerequisite.
+
+Baseline remains plan `419/387`, type elaboration `253/241`, pass/fail
+`228/191`, active parse/declaration/type/proof `101/5/198/1`,
+warnings/errors `23/0`, and checker/runner libraries `335/365`. This audit
+update is required because the task refines Step-5 follow-up ownership and
+freezes the future consumer and traceability exit gate; no no-op trace
+metadata edit is permitted.

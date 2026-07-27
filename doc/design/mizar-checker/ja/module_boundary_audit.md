@@ -155,6 +155,19 @@ cross-family root ownership、conditional fingerprint、rendering、corruption t
 behavior-coupledでありprivate checker splitは不要である。`TypedAst`がone-shot
 immutable handoffをownし、`ResolvedTypedAst`はrevalidate後にclone-preserveする。
 
+## Checker Task 258A frozen-contract boundary
+
+このdocumentation prerequisiteはchecker source path、public module、
+dependency direction、line countを変更しない。future
+`source_statement.rs`はfive theorem-owner/statement/context/input/candidate
+table、dependency fingerprint、exact owned BindingEnv、asymmetric production
+plus named test-only Task-248 exclusion、transaction validation、
+deterministic renderingの
+cohesive syntax-free owner 1件としてfreezeする。raw statement
+selectionはprivate `mizar-test` leafに残し、truth/proof/acceptance/publicationは
+later semantic ownerに残す。pre-implementation module splitは不要で、current
+source-layout inventoryは不変。
+
 ## Checker Task 257C3 frozen boundary recheck
 
 planned two-table predicate-chain compositionはcohesiveな
