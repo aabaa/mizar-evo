@@ -2292,3 +2292,23 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Close independent test, implementation, source/documentation, and final
   quality reviews; verify corpus `417/383`, type `249/237`, active type
   `196`, and checker/mizar-test libraries `319/349`.
+
+## Checker Task 257C1 Frozen-Contract Ledger
+
+- [x] Decompose Task 257C and freeze only the lower Task-256 predicate-chain
+  segment extension before predicate-chain composition or the separate
+  Task-255 condition-bearing comprehension prerequisite.
+- [x] Freeze the exact 107-byte source/hash, parser/resolver provenance,
+  Task-252 `3/0/3`, extended Task-256
+  `1/0/2/2/2/0/0/3/2`, two segment polarities, and one shared boundary.
+- [x] Freeze syntax-free public rows, exact consumer/exclusions, validation,
+  debug/final ownership, complete tests, one sidecar/trace projection, and all
+  semantic deferrals.
+- [x] Classify missing contract as `design_drift`, future public transport as
+  bounded `source_drift`, missing consumer/matrices as `test_gap`, and the
+  origin difference as report-only `repo_metadata_conflict`; no blocking
+  `spec_gap` exists.
+- [x] Preserve production, fixtures, sidecars, trace status/count, executable
+  coverage, counts, test lists, and hashes at the Task-257B3 baseline.
+- [ ] Implement Task 257C1 next as a separate logical task after mandatory
+  fresh parser/resolver/API and count/hash preflight.

@@ -702,3 +702,14 @@ installerはA-onlyのまま。
 
 B3 combined installationとduplicate/collision rollback pathはexecutableに
 なった。Task-248 exclusionとlegacy installerは不変。
+
+## Task 257C1 frozen ownership addendum
+
+caller/pipelineがTask 252を先にinstallし、その後
+`TypedAst::with_source_atomic_formula`がextended Task-256 handoffだけを
+atomicにvalidate/publishする。exact chain transactionはshared boundary edge
+1件、imported candidate 2件、candidate request 2件を含む`3/0/3`と
+`1/0/2/2/2/0/0/3/2`をauthenticateする。missing/stale dependency
+fingerprint、old-family collision、partial publication、segment corruptionは
+fail closed。existing Task-256/Task-257A/B1/B2/B3 installer/bytesはexclusive
+かつ不変。

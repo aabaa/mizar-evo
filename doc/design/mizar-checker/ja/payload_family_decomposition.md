@@ -588,3 +588,18 @@ stageはdownstreamのままである。
 Task 257B3 implementationがcloseするのはfrozen composition transportの
 `source_drift`とexact-consumerの`test_gap`だけで、predecessor row
 ownership/downstream semantic responsibilityは移動しない。
+
+## Task 257C1 frozen decomposition
+
+Task 257C1はformula compositionではなくlower-family Task-256 extensionである。
+Task 252はexact `3/0/3` numeral occurrence/requestを所有する。Task 256は
+exact `1/0/2/2/2/0/0/3/2`のroot、segment/head/candidate各2 row、
+polarity-token provenance、global argument/boundary edge 3件、
+candidate-signature request 2件を所有する。middle primaryはedge idで共有し、
+copyしない。Task 257は後でimplicit conjunction/semantic segment negation、
+Task 278は後でoverload selectionを所有する。
+
+別Task-255 condition-bearing comprehension extensionはこのimplementation
+prerequisiteの後に続く。conditioned-comprehension/predicate-chain compositionは
+別々のfuture Task-257C sliceなので、本contractはどちらにもsemantic creditを
+与えない。

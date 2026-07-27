@@ -190,3 +190,14 @@ profile, nested reserve shadowing, six Task-252 lookups, three Task-256
 associations, `3/6` composition, full fail-closed matrices, final ownership,
 one sidecar/trace row, and unchanged semantic deferrals. No bilingual drift is
 accepted.
+
+## Task 257C1 Frozen-Contract Pair
+
+The paired EN/JA plans, TODOs, term/atomic/decomposition/composition modules,
+typed/final ownership, source-spec audit, mizar-test design, global ledger, and
+coverage audit freeze the same 107-byte source/hash, parser/resolver ranges,
+`3/0/3` and `1/0/2/2/2/0/0/3/2` profiles, two segment polarities, one
+shared boundary edge, imported provenance, tests, projection, and semantic
+deferrals. This prerequisite changes no module boundary, production path,
+fixture, trace metadata, count, or hash, so the paired module-boundary audit is
+intentionally unchanged. No Task-257C1 bilingual sync debt is accepted.

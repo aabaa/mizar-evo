@@ -308,3 +308,12 @@ paired plan/harness/TODO/boundary auditはexecutable exact selector、
 reserve-derived environment、same-arena route、拡張near-miss/corruption/
 isolation tests、sidecar/trace ownership、不変semantic outputを記録する。
 implementation-era bilingual driftは残らない。
+
+## Checker Task 257C1 frozen-contract pair
+
+paired plan/harness/TODOは同じ107-byte source/hash、segment/head/polarity
+range、imported provenance、`3/0/3`と`1/0/2/2/2/0/0/3/2` profile、
+shared boundary、exact tests、baseline/projection、semantic deferralをfreeze
+する。このprerequisiteはrunner module、fixture、sidecar、trace metadata、
+production path、count/hashを変更しないためpaired module-boundary auditは
+意図的に不変。Task-257C1 bilingual driftは残らない。

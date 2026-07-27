@@ -319,3 +319,13 @@ The paired plan, harness, TODO, and boundary audit now describe the executable
 exact selector, reserve-derived environment, same-arena route, expanded
 near-miss/corruption/isolation tests, sidecar/trace ownership, and unchanged
 semantic output. No implementation-era bilingual drift remains.
+
+## Checker Task 257C1 Frozen-Contract Pair
+
+The paired plan, harness, and TODO freeze the same 107-byte source/hash,
+segment/head/polarity ranges, imported provenance, `3/0/3` and
+`1/0/2/2/2/0/0/3/2` profiles, shared boundary, exact tests, baseline,
+projection, and semantic deferrals. This prerequisite changes no runner
+module, fixture, sidecar, trace metadata, production path, count, or hash, so
+the paired module-boundary audit remains intentionally unchanged. No
+Task-257C1 bilingual drift remains.

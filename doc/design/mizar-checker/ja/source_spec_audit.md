@@ -3389,3 +3389,18 @@ theorem acceptance、proof、IRはdeferred。origin差はreport-only
 implementationはexact source consumerとimmutable handoffによりbounded B3
 `source_drift`/`test_gap`をcloseした。source behaviorに合わせたcanonical
 spec、existing `.miz`、expectationの変更はない。
+
+## Task 257C1 predicate-chain segment classification
+
+Chapters 9/11/14とexisting user-predicate parser/resolver fixturesはadjacent
+split、`does not` token provenance、共通imported predicate identityをauthorize
+する。従来missingだったsyntax-free segment contract/decompositionは
+`design_drift`で、本prerequisiteがcloseする。absent public Task-256
+extensionはbounded `source_drift`、absent exact 107-byte consumer/matrixは
+`test_gap`である。
+
+blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、accepted `boundary_violation`はない。mixed built-in
+chain、recovered input、predicate applicability/selection、semantic
+conjunction/negation、conditioned comprehensionはexclude/deferする。origin差は
+report-only `repo_metadata_conflict`のまま。

@@ -1645,3 +1645,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   trace row、testsを実装する。
 - [x] corpus `417/383`、type `249/237`、active type `196`、library 349
   tests、exact selector isolation、semantic output不在をverifyする。
+
+## Checker Task 257C1 frozen runner checklist
+
+- [x] exact 107-byte source/hash、segment/head range 2件、negative token
+  range、同じimported provenance、loaded-source/final-LF guardをfreeze。
+- [x] same-arena Task-252 `3/0/3`とextended Task-256
+  `1/0/2/2/2/0/0/3/2`（shared middle boundary edge 1件）をfreeze。
+- [x] exact source near miss、recovery/mixed-chain exclusion、corruption/
+  isolation/install/final matrix、empty semantic outputをfreeze。
+- [x] prerequisiteを`417/383`、`249/237`、`227/190`、active
+  `101/5/196/1`、349 tests、29 paths / 32,809 linesに保つ。
+- [ ] documentation commit/fresh preflight後にexact route、fixture/sidecar
+  1件、covered trace row、testsを実装する。

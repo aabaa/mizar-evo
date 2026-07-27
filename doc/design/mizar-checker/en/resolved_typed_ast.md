@@ -821,3 +821,12 @@ acceptance, proof, or IR output is assembled.
 
 The B3 orphan rejection, exact revalidation, and deterministic clone are now
 covered by executable checker and runner tests.
+
+## Task 257C1 Frozen Final-Handoff Addendum
+
+`ResolvedTypedAst::assemble` will rerun the extended Task-256 nine-table
+validation and clone-preserve the exact chain handoff. It neither reconstructs
+segments nor selects the duplicated imported candidate. Orphan/shared-edge,
+polarity-token, provenance, request, fingerprint, and legacy-profile
+corruption fail closed. No checked formula, conjunction/negation result,
+predicate winner, theorem acceptance, proof, or IR output is assembled.

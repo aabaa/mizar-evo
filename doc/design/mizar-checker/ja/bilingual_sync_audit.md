@@ -179,3 +179,14 @@ paired EN/JA implementation updateはexecutable fourth profile、nested reserve
 shadowing、Task-252 lookup 6件、Task-256 association 3件、`3/6`
 composition、full fail-closed matrix、final ownership、sidecar/trace row 1件、
 不変semantic deferralを記録する。bilingual driftは認めない。
+
+## Task 257C1 frozen-contract pair
+
+paired EN/JA plan/TODO、term/atomic/decomposition/composition module、
+typed/final ownership、source-spec audit、mizar-test design、global ledger、
+coverage auditは同じ107-byte source/hash、parser/resolver range、`3/0/3`と
+`1/0/2/2/2/0/0/3/2` profile、segment polarity 2件、shared boundary edge
+1件、imported provenance、tests、projection、semantic deferralをfreezeする。
+このprerequisiteはmodule boundary、production path、fixture、trace metadata、
+count/hashを変更しないためpaired module-boundary auditは意図的に不変。
+Task-257C1 bilingual sync debtは認めない。

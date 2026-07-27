@@ -780,3 +780,12 @@ outputをassembleしない。
 
 B3 orphan rejection、exact revalidation、deterministic cloneはchecker/
 runner executable testsでcover済み。
+
+## Task 257C1 frozen final-handoff addendum
+
+`ResolvedTypedAst::assemble`はextended Task-256 9-table validationを再実行し、
+exact chain handoffをclone-preserveする。segmentをreconstructせず、重複した
+imported candidateからwinnerをselectしない。orphan/shared-edge、
+polarity-token、provenance、request、fingerprint、legacy-profile corruptionは
+fail closed。checked formula、conjunction/negation result、predicate winner、
+theorem acceptance、proof、IR outputをassembleしない。

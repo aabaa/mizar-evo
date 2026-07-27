@@ -363,3 +363,19 @@ Atomic-edge validation rejects an outer assignment whenever a deeper
 descendant composite formula also contains the atom, preserving the frozen
 nearest-parent/subtree exclusion. The frozen semantic deferrals remain
 unchanged.
+
+## Task 257C1 Prerequisite Boundary
+
+Task 257C1 supplies only the lower Task-256 predicate-segment graph and shared
+term boundary. This module receives no new row in that slice. Predicate-chain
+implicit conjunction and segment-local semantic negation require a later,
+separately frozen Task-257C composition contract after the C1 implementation.
+Conditioned-comprehension composition also waits for its separate Task-255
+condition-bearing prerequisite.
+
+The implementation must nevertheless add an empty `predicate_segments`
+vector to all three existing `SourceAtomicFormulaHandoffInput` literals in
+this production file. The three matching mizar-test composition literals also
+remain empty. These are mandatory compatibility edits for the extended input
+shape; they add no composition row, selector admission, debug output, or
+semantic behavior.

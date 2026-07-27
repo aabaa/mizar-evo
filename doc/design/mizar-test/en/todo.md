@@ -1835,3 +1835,16 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   the documentation commit and fresh preflight.
 - [x] Verify corpus `417/383`, type `249/237`, active type `196`, 349
   library tests, exact selector isolation, and absence of semantic output.
+
+## Checker Task 257C1 Frozen Runner Checklist
+
+- [x] Freeze the exact 107-byte source/hash, two segment/head ranges, negative
+  token ranges, same imported provenance, and loaded-source/final-LF guards.
+- [x] Freeze same-arena Task-252 `3/0/3` and extended Task-256
+  `1/0/2/2/2/0/0/3/2`, including one shared middle boundary edge.
+- [x] Freeze exact source near misses, recovery/mixed-chain exclusion,
+  corruption/isolation/install/final matrices, and empty semantic output.
+- [x] Keep this prerequisite at `417/383`, `249/237`, `227/190`, active
+  `101/5/196/1`, 349 tests, and 29 paths / 32,809 lines.
+- [ ] Implement the exact route, one fixture/sidecar, covered trace row, and
+  tests after the documentation commit and fresh preflight.

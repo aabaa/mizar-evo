@@ -643,3 +643,18 @@ downstream.
 Task 257B3 implementation closes only the frozen composition-transport
 `source_drift` and exact-consumer `test_gap`; predecessor row ownership and
 downstream semantic responsibility do not move.
+
+## Task 257C1 Frozen Decomposition
+
+Task 257C1 is a lower-family Task-256 extension, not formula composition.
+Task 252 owns the exact `3/0/3` numeral occurrences and requests. Task 256
+owns the root, two segment/head/candidate rows, polarity-token provenance,
+three global argument/boundary edges, and two candidate-signature requests in
+exact profile `1/0/2/2/2/0/0/3/2`. The middle primary is shared by edge id,
+never copied. Task 257 later owns implicit conjunction and semantic segment
+negation; Task 278 later owns overload selection.
+
+The separate Task-255 condition-bearing comprehension extension follows this
+implementation prerequisite. Conditioned-comprehension and predicate-chain
+composition remain separate future Task-257C slices, so this contract grants
+neither family semantic credit.

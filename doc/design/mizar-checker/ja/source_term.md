@@ -149,3 +149,12 @@ ownershipはTask 252に残す。
 Task 257B3はこのsix-row reciprocal consumerを実行し、binding ids
 `1,1,3,2,1,3`とuse ordinals `2,2,4,4,4,4`を検証する。全occurrence/
 referenceのownershipはTask 252に残る。
+
+## Task 257C1 frozen consumer addendum
+
+Task 257C1はsource term `1`、`2`、`3`のTask-252 `Numeral`/`Value`
+primary/numeric requestをexact `3/0/3`でreuseする。primary 1
+（`2`、`85..86`）は単一occurrenceで、新Task-256 shared-boundary edgeはterm/
+requestをduplicateせず、隣接する両segment descriptionから同じrowを参照する。
+occurrence、spelling、range、arena、numeric-request ownershipはTask 252、
+predicate grouping/polarityはTask 256に残る。

@@ -3546,3 +3546,18 @@ deferred. The origin difference remains report-only
 Implementation closes the bounded B3 `source_drift` and `test_gap` with the
 exact source consumer and immutable handoffs. No canonical specification,
 existing `.miz`, or expectation was changed to match source behavior.
+
+## Task 257C1 Predicate-Chain Segment Classification
+
+Chapters 9, 11, and 14 plus the existing user-predicate parser/resolver
+fixtures authorize the adjacent split, `does not` token provenance, and common
+imported predicate identity. The previously missing syntax-free segment
+contract/decomposition was `design_drift`, closed by this prerequisite. The
+absent public Task-256 extension is bounded `source_drift`; the absent exact
+107-byte consumer and matrices are `test_gap`.
+
+There is no blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or accepted `boundary_violation`. Mixed built-in
+chains, recovered input, predicate applicability/selection, semantic
+conjunction/negation, and conditioned comprehensions are excluded or deferred.
+The origin difference remains report-only `repo_metadata_conflict`.

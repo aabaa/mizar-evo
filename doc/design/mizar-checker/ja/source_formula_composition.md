@@ -330,3 +330,18 @@ installation/rollback、resolved cloneを認証する。atomic-edge validation�
 deeper descendant composite formulaもatomをcontainする場合のouter assignmentを
 rejectし、frozen nearest-parent/subtree exclusionを保持する。frozen semantic
 deferralは不変。
+
+## Task 257C1 prerequisite boundary
+
+Task 257C1が供給するのはlower Task-256 predicate-segment graph/shared term
+boundaryだけで、本moduleにnew rowは追加しない。predicate-chain implicit
+conjunction/segment-local semantic negationはC1 implementation後に別途freeze
+するTask-257C composition contractを必要とする。conditioned-comprehension
+compositionも別Task-255 condition-bearing prerequisiteを待つ。
+
+ただしimplementationでは、本production fileのexisting
+`SourceAtomicFormulaHandoffInput` literal 3件すべてにempty
+`predicate_segments` vectorを追加する。対応するmizar-test composition
+literal 3件もemptyのまま。これはextended input shapeのmandatory
+compatibility editで、composition row、selector admission、debug output、
+semantic behaviorを追加しない。

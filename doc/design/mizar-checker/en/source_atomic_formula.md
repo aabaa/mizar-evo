@@ -159,3 +159,37 @@ remain exact profile discriminators.
 Task 257B3 is now an executable reciprocal consumer of these exact three
 atoms and six operand rows. Atomic ownership and all semantic deferrals remain
 unchanged.
+
+## Task 257C1 Frozen Predicate-Chain Segment Extension
+
+Task 257C1 extends this producer with syntax-free
+`SourcePredicateSegment{Id,Table,Input}` rows and immutable segment output,
+non-exhaustive positive/negative polarity input, and
+`SourceAtomicEdgeRole::PredicateChainBoundary`. The exact 107-byte consumer
+has two dense segments at `75..86` / `87..105`, heads at `77..84` /
+`96..103`, and normal `does` / `not` tokens at `87..91` / `92..95`.
+Both heads independently preserve the same imported `divides` candidate and
+provenance.
+
+The Task-256
+formula/wrapper/segment/head/candidate/type/attribute/edge/request profile is
+exactly `1/0/2/2/2/0/0/3/2`. Segment 0 uses edges 0/1 and segment 1
+reuses edge 1 as its implicit left boundary before edge 2. Edge 1 targets the
+single Task-252 primary for `2`; it is not copied and is the only target
+allowed outside the later segment, under the exact preceding-final-term rule.
+A legacy empty-segment predicate application remains one-head and byte
+compatible.
+
+Nonempty debug segment lines appear after wrappers and before heads, while the
+header remains `source-atomic-formula-debug-v1`. This slice transports source
+partitioning, token provenance, edges, candidates, requests, and final
+ownership only. Predicate applicability/selection, implicit conjunction,
+semantic negation, truth, facts, theorem acceptance, proof, and IR remain
+deferred.
+
+Adding `predicate_segments` changes 11 existing input literals across four
+production files. This module's `to_input` conversion clone-preserves segment
+rows; its legacy fixtures use empty rows. The atomic runner supplies nonempty
+rows only for the exact C1 consumer, while all prior atomic routes and every
+formula-composition literal use an empty vector. These are compile-time input
+compatibility edits, not additional family admission.

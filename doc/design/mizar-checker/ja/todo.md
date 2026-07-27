@@ -4251,6 +4251,15 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       source-to-final-handoff transportを実装済み。
   - [ ] **Task 257C:** separately frozen Task-256/255 extension後の
     predicate-chain/conditioned-comprehension composition。
+    - [ ] **Task 257C1:** Task 256をpredicate-chain segment、polarity token、
+      shared-boundary transportで拡張する。
+      - [x] syntax-free 9-table contract、exact consumer、test、trace
+        projection、ownership、semantic deferralをfreeze。
+      - [ ] fresh preflight後、別logical task/commitでfrozen contractを実装。
+    - [ ] Task 255のcondition-bearing comprehension transportを別の
+      documentation/implementation pairとしてfreeze/実装する。
+    - [ ] predicate-chain/conditioned-comprehension formula compositionは
+      後続の別Task-257C sliceだけで追加する。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
 - [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
@@ -4321,3 +4330,21 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] exact `4/4/0`、`6/6/0`、`3/0/0/0/0/0/6/6`、
   `3/0/1/3/3/2/6`、`3/6` profile、fail-closed install/final ownership、
   corpus `417/383`、全semantic deferralをverifyする。
+
+## Task 257C1 frozen-contract addendum
+
+- [x] exact 107-byte imported-predicate chain/final-LF hash、parser/resolver
+  range、同一imported symbolを指す2 head、exact private selector/subtree
+  exclusionをfreeze。
+- [x] Task-252 `3/0/3`と拡張Task-256
+  `1/0/2/2/2/0/0/3/2`（segment row 2件、`does not` token provenance、
+  shared `PredicateChainBoundary` edge 1件）をfreeze。
+- [x] public segment schema、legacy empty-segment compatibility、validation/
+  debug/final ownership、complete corruption/isolation tests、exact
+  sidecar/trace projection 1件、semantic deferralをfreeze。
+- [x] prerequisiteをdocumentation-onlyでcorpus `417/383`、type `249/237`、
+  pass/fail `227/190`、active `101/5/196/1`、libraries `319/349`、
+  29 paths / 32,809 linesに保つ。
+- [ ] fresh preflight後、このfrozen C1 sliceだけを実装し、projectionを
+  corpus `418/384`、type `250/238`、pass/fail `228/190`、active type
+  `197`とする。

@@ -727,3 +727,14 @@ partial publication. The legacy composite-only installer remains A-only.
 
 The B3 combined installation and duplicate/collision rollback paths are now
 executable; the Task-248 exclusion and legacy installer remain unchanged.
+
+## Task 257C1 Frozen Ownership Addendum
+
+The caller/pipeline installs Task 252 first. It then invokes
+`TypedAst::with_source_atomic_formula`, which atomically validates and
+publishes only the extended Task-256 handoff. The exact chain transaction must
+authenticate `3/0/3` and `1/0/2/2/2/0/0/3/2`, including one shared
+boundary edge, two imported candidates, and both candidate requests.
+Missing/stale dependency fingerprints, old-family collision, partial
+publication, or segment corruption fail closed. Existing Task-256 and
+Task-257A/B1/B2/B3 installers and bytes remain exclusive and unchanged.

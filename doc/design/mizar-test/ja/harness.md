@@ -3016,3 +3016,25 @@ corruption/replay、transport-only sidecar、final typed/resolved ownershipを
 coverする。selectorはloaded source textを受け取り、final LF込みfrozen
 138 bytesを要求する。missing-final-LFとwhitespace-only variantを独立に
 rejectする。
+
+## Checker Task 257C1 frozen runner route
+
+private exact routeはfrozen 107-byte
+`FormulaPredicateChainPayloadBoundary` sourceだけをrecognizeする。predicate
+segment 2件、同じimported `divides` provenance、normal `does not` token
+range、Task-252 `3/0/3`、extended Task-256
+`1/0/2/2/2/0/0/3/2`、middle term `2`に対するshared edge id 1件を
+verifyする。selectorはloaded source textを受け、final LFをguardする。
+
+runner matrixは全named source near miss、parser recovery、mixed/built-in
+chain、segment/polarity/edge/candidate/request corruption、active-corpus
+isolation、old route preservation、atomic install/rollback、resolved clone、
+empty semantic outputをcoverする。future sidecarはimmutable source transport
+だけを持ち、truth、negation result、predicate winner、theorem result、proof、
+IR detailを追加しない。
+
+extended input fieldはcurrent runner literal 4件に到達する。sole
+atomic-formula constructorはexact C1 segment 2件を条件付きemitし、prior
+routeではemptyのまま。formula-composition constructor 3件もすべてemptyを
+保つ。これらliteral editはcompatibilityだけに必要で、Task-257 composition
+routeをactivateしない。

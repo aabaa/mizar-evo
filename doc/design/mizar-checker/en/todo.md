@@ -4474,6 +4474,16 @@ unchecked row below is one future nonempty logical task and one commit.
       without semantic truth, closure, capture-result, or theorem credit.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
+    - [ ] **Task 257C1:** extend Task 256 with predicate-chain segment,
+      polarity-token, and shared-boundary transport.
+      - [x] Freeze the syntax-free nine-table contract, exact consumer, tests,
+        trace projection, ownership, and semantic deferrals.
+      - [ ] Implement the frozen contract after fresh preflight in a separate
+        logical task and commit.
+    - [ ] Extend Task 255 with condition-bearing comprehension transport in a
+      separately frozen documentation/implementation pair.
+    - [ ] Add predicate-chain and conditioned-comprehension formula
+      composition only in later separately frozen Task-257C slices.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
 - [ ] **Task 259:** predicate-definition and initial-obligation intake producer.
@@ -4547,3 +4557,21 @@ implementation commit does not satisfy a producer task.
 - [x] Verify exact `4/4/0`, `6/6/0`, `3/0/0/0/0/0/6/6`,
   `3/0/1/3/3/2/6`, and `3/6` profiles, fail-closed installation/final
   ownership, corpus `417/383`, and all semantic deferrals.
+
+## Task 257C1 Frozen-Contract Addendum
+
+- [x] Freeze the exact 107-byte imported-predicate chain and final-LF hash,
+  parser/resolver ranges, two same-symbol imported heads, and exact private
+  selector/subtree exclusion.
+- [x] Freeze Task-252 `3/0/3` and extended Task-256
+  `1/0/2/2/2/0/0/3/2`, including two segment rows, `does not` token
+  provenance, and one shared `PredicateChainBoundary` edge.
+- [x] Freeze the public segment schema, legacy empty-segment compatibility,
+  validation/debug/final ownership, complete corruption/isolation tests, one
+  exact sidecar/trace projection, and semantic deferrals.
+- [x] Keep this prerequisite documentation-only at corpus `417/383`, type
+  `249/237`, pass/fail `227/190`, active `101/5/196/1`, libraries
+  `319/349`, and 29 paths / 32,809 lines.
+- [ ] Implement only this frozen C1 slice after fresh preflight, with projected
+  corpus `418/384`, type `250/238`, pass/fail `228/190`, and active type
+  `197`.

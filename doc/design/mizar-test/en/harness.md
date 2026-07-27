@@ -3181,3 +3181,25 @@ near misses, aggregate corruption/replay, transport-only sidecar, and final
 typed/resolved ownership. The selector receives the loaded source text and
 requires the frozen 138 bytes including the final LF; missing-final-LF and
 whitespace-only variants are independently rejected.
+
+## Checker Task 257C1 Frozen Runner Route
+
+The private exact route will recognize only the frozen 107-byte
+`FormulaPredicateChainPayloadBoundary` source. It must verify two predicate
+segments, same imported `divides` provenance, normal `does not` token ranges,
+Task-252 `3/0/3`, extended Task-256
+`1/0/2/2/2/0/0/3/2`, and one shared edge id for middle term `2`.
+The selector receives loaded source text and guards its final LF.
+
+Runner matrices cover every named source near miss, parser recovery,
+mixed/built-in chains, segment/polarity/edge/candidate/request corruption,
+active-corpus isolation, old route preservation, atomic install/rollback,
+resolved clone, and empty semantic output. The future sidecar carries only
+immutable source transport; it adds no truth, negation result, predicate
+winner, theorem result, proof, or IR detail.
+
+The extended input field reaches four current runner literals: the sole
+atomic-formula constructor conditionally emits the exact two C1 segments and
+stays empty for prior routes; all three formula-composition constructors
+remain empty. These literal edits are required for compatibility only and do
+not activate a Task-257 composition route.

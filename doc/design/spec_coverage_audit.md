@@ -3243,6 +3243,39 @@ forms. Equality or quantified truth, implicit closure, facts, theorem
 ownership or acceptance, proof, Core/CFG/VC, Steps 6/7, and global Step-5
 completion receive no credit.
 
+## Step 5 Checker Task 257C1 Frozen-Contract Addendum
+
+Task 257C is decomposed before further implementation. Task 257C1 freezes only
+the lower Task-256 source-predicate segment extension authorized by Chapters
+9, 11, and 14 and existing parser/resolver fixtures: exact Task-252 `3/0/3`,
+extended Task-256 `1/0/2/2/2/0/0/3/2`, two source segments and heads,
+normal `does not` token provenance, two same-symbol imported candidates, and
+one globally shared middle boundary edge. Predicate-chain implicit
+conjunction/semantic negation and conditioned-comprehension composition remain
+future Task-257C slices; the latter also waits for a separate Task-255
+condition-bearing prerequisite.
+
+This prerequisite closes only the missing-contract `design_drift`. The public
+segment transport is bounded `source_drift`; the exact 107-byte consumer and
+matrices are `test_gap`. There is no blocking `spec_gap`. No trace row,
+mapping, status, fixture, sidecar, source, executable coverage, count, test
+list, or hash changes here: baseline remains plan `417/383`, type
+`249/237`, pass/fail `227/190`, active `101/5/196/1`, and
+warnings/errors `23/0`.
+
+The implementation may add one covered row,
+`spec.en.checker.type_elaboration.source_predicate_chain_segment_payload`,
+whose source is
+`doc/design/mizar-checker/en/source_atomic_formula.md`, section
+`Task 257C1 Frozen Predicate-Chain Segment Extension`, mapped only to
+`pass_type_elaboration_formula_predicate_chain_segment_payload_001.expect.toml`.
+It projects plan `418/384`, type `250/238`, pass/fail `228/190`, and
+active type 197. Existing Chapter-9/11/14 and Task-252/256 coverage may gain
+reciprocal transport notes without status changes. Predicate applicability or
+selection, implicit conjunction, semantic negation, truth, facts, theorem
+ownership/acceptance, proof, Core/CFG/VC, Steps 6/7, and global Step-5
+completion receive no credit.
+
 ## Step 5 Checker Task 257B2 Frozen-Contract Addendum
 
 Task 257B2 now has a documentation-only frozen contract for the exact

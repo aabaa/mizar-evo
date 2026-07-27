@@ -153,3 +153,33 @@ discriminatorのまま。
 
 Task 257B3はこのexact 3 atoms/6 operand rowsのexecutable reciprocal
 consumerになった。atomic ownershipと全semantic deferralは不変。
+
+## Task 257C1 frozen predicate-chain segment extension
+
+Task 257C1は本producerをsyntax-free
+`SourcePredicateSegment{Id,Table,Input}` row/immutable segment output、
+non-exhaustive positive/negative polarity input、
+`SourceAtomicEdgeRole::PredicateChainBoundary`で拡張する。exact 107-byte
+consumerは`75..86` / `87..105`のdense segment 2件、`77..84` /
+`96..103`のhead、`87..91` / `92..95`のnormal `does` / `not` tokenを持つ。
+両headは同じimported `divides` candidate/provenanceを独立に保持する。
+
+Task-256 formula/wrapper/segment/head/candidate/type/attribute/edge/request
+profileはexact `1/0/2/2/2/0/0/3/2`。segment 0はedge 0/1、segment 1は
+edge 1をimplicit left boundaryとしてreuseした後edge 2を使う。edge 1は`2`
+の単一Task-252 primaryをtargetとしcopyしない。exact preceding-final-term
+ruleの下でのみ、later segment外にtargetを持てる唯一のedgeである。legacy
+empty-segment predicate applicationはone-head/byte-compatibleのまま。
+
+nonempty debug segment lineはwrapper後/head前に置き、headerは
+`source-atomic-formula-debug-v1`のまま。このsliceはsource partition、
+token provenance、edge、candidate、request、final ownershipだけをtransport
+する。predicate applicability/selection、implicit conjunction、semantic
+negation、truth、fact、theorem acceptance、proof、IRはdeferred。
+
+`predicate_segments`追加は4 production filesのexisting input literal 11件を
+変更する。本moduleの`to_input` conversionはsegment rowをclone-preserveし、
+legacy fixtureはempty rowsを使う。atomic runnerはexact C1 consumerだけに
+nonempty rows、それ以前のatomic routeと全formula-composition literalには
+empty vectorを供給する。これはcompile-time input compatibility editであり、
+別family admissionではない。

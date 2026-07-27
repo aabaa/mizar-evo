@@ -161,3 +161,12 @@ reference, spelling, lexical-scope, and lookup-winner ownership.
 Task 257B3 now executes this six-row reciprocal consumer and verifies binding
 ids `1,1,3,2,1,3` with use ordinals `2,2,4,4,4,4`; Task 252 retains
 every occurrence and reference.
+
+## Task 257C1 Frozen Consumer Addendum
+
+Task 257C1 reuses exactly three Task-252 `Numeral`/`Value` primaries and
+numeric requests, profile `3/0/3`, for source terms `1`, `2`, and `3`.
+Primary 1 (`2`, `85..86`) is one occurrence: the new Task-256 shared-boundary
+edge references it from both adjacent segment descriptions without duplicating
+the term or request. Task 252 retains occurrence, spelling, range, arena, and
+numeric-request ownership; predicate grouping and polarity remain Task 256.
