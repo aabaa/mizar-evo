@@ -1765,6 +1765,9 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   245/233, 224/190, 101/5/193/1, 287/328 checker/mizar-test tests,
   27 paths / 30,154 lines, and all hashes. The separate implementation
   projects 414/380 and 246/234 with unchanged case count.
-- [ ] Implement the separate Checker Task 257A selector extension, private assembler,
+- [x] Implement the separate Checker Task 257A selector extension, private assembler,
   public producer/binding prepass/final handoff, bounded reciprocal trace
   increment, and reviewed real/synthetic/exclusion/corruption/install matrix.
+  The route preserves the unchanged two-key semantic detail vector and the
+  corrected parser ranges `52..113`, `78..89`, `78..79`, and `86..89`.
+  Checker Task 257B is the next dependency-ready slice.

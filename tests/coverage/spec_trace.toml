@@ -2163,7 +2163,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
 ]
-notes = "Task 117 supersedes task 115 for the exact formula-only theorem by passing the source-derived `thesis` formula constant as a checker FormulaInput with FormulaKind::Thesis before failing closed on missing formula payload. Task 117 also extends task 112 for the exact connective/quantifier theorem formula by passing source-derived FormulaKind::Contradiction payloads for both contradiction constants in addition to the implication, universal quantification, and negation shells before failing closed on missing formula and quantifier payloads. Task 180 separately checks only the exact standalone SourceDerivedContradictionConstantBoundary leaf for formula type/well-formedness. Constant truth values, thesis semantics, child-formula graph payloads, binder/context payloads, broader formula checking, facts, theorem acceptance, and broader formula extraction remain deferred."
+notes = "Task 117 supersedes task 115 for the exact formula-only theorem by passing the source-derived `thesis` formula constant as a checker FormulaInput with FormulaKind::Thesis before failing closed on missing formula payload. Task 117 also extends task 112 for the exact connective/quantifier theorem formula by passing source-derived FormulaKind::Contradiction payloads for both contradiction constants in addition to the implication, universal quantification, and negation shells before failing closed on missing formula and quantifier payloads. Checker Task 257A now transports that exact five-node source tree, its four child-role edges, one explicit universal binder and bare-set type site, and six unresolved requests through a syntax-free immutable handoff while preserving the semantic failures. Task 180 separately checks only the exact standalone SourceDerivedContradictionConstantBoundary leaf for formula type/well-formedness. Constant truth values, thesis semantics, broader connective/quantifier semantics, formula checking, facts, theorem acceptance, and broader formula extraction remain deferred."
 
 [[requirement]]
 id = "spec.en.15.reconsider.omitted_justification.parser"
@@ -2551,7 +2551,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
 ]
-notes = "Task 117 supersedes task 115 for the exact formula-only theorem by passing the source-derived `thesis` formula constant as FormulaKind::Thesis before failing closed on missing formula payload, and extends task 112 by passing the exact connective/quantifier theorem's contradiction constants as FormulaKind::Contradiction payloads alongside the existing shells. Task 180 separately checks only the exact standalone SourceDerivedContradictionConstantBoundary leaf for formula type/well-formedness. The theorem declaration remains unaccepted and lacks formula_statement execution, recorded facts, proof skeletons, constant truth values and thesis semantics, quantifier binder/context payloads, and downstream semantic payloads."
+notes = "Task 117 supersedes task 115 for the exact formula-only theorem by passing the source-derived `thesis` formula constant as FormulaKind::Thesis before failing closed on missing formula payload, and extends task 112 by passing the exact connective/quantifier theorem's contradiction constants as FormulaKind::Contradiction payloads alongside the existing shells. Checker Task 257A transports the exact source formula tree and explicit universal binder into an unassigned formula root with a source-derived body context; it assigns no theorem owner, status, fact, proof, or acceptance. Task 180 separately checks only the exact standalone SourceDerivedContradictionConstantBoundary leaf for formula type/well-formedness. The theorem declaration remains unaccepted and lacks formula_statement execution, recorded facts, proof skeletons, constant truth values and thesis semantics, quantifier semantics, and downstream semantic payloads."
 
 [[requirement]]
 id = "spec.en.17.clusters.functorial_for_guard.semantic"
@@ -4315,7 +4315,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Task 250 supersedes only the exact Task-67 structure-qualified and Task-81 argument-bearing source-attribute gaps with a raw syntax-free handoff and co-installs the exact Task-84/85 imported attribute handoffs. Task 254 additionally transports only the exact local structure constructor, selector, functional-update, written-member, FieldUpdate, and child-edge source shape before retaining the Task-263 semantic boundary. Task 255 transports only the exact local set-enumeration, condition-free independent-comprehension, choice, and qua source shape plus unresolved requests before retaining the Task-260 functor-definition intake and later term-semantics boundaries. Every other listed payload shape and all semantic arity/admissibility/evidence/truth work remain unchanged."
+notes = "Task 250 supersedes only the exact Task-67 structure-qualified and Task-81 argument-bearing source-attribute gaps with a raw syntax-free handoff and co-installs the exact Task-84/85 imported attribute handoffs. Task 254 additionally transports only the exact local structure constructor, selector, functional-update, written-member, FieldUpdate, and child-edge source shape before retaining the Task-263 semantic boundary. Task 255 transports only the exact local set-enumeration, condition-free independent-comprehension, choice, and qua source shape plus unresolved requests before retaining the Task-260 functor-definition intake and later term-semantics boundaries. Task 256 transports the bounded atomic-formula families, and Checker Task 257A transports only the exact implication/universal/negation/contradiction tree, one explicit binder and bare-set type site, source role edges, and unresolved requests before retaining all formula semantic boundaries. Every other listed payload shape and all semantic arity/admissibility/evidence/truth work remain unchanged."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_mode_gap_001.expect.toml",
@@ -4579,7 +4579,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
 ]
-notes = "Task 117 extends task 112 for the exact `FormulaConnectiveQuantifierPayloadBoundary` source by passing both source-derived `contradiction` constants as checker FormulaInput payloads with FormulaKind::Contradiction, alongside the existing implication, universal quantification, and negation shells. It still fails closed on missing formula and quantifier payloads and does not credit formula constant semantic truth values, child-formula graph payloads, quantifier binder/context payloads, formula checking, facts, theorem acceptance, formula_statement execution, CoreIr, ControlFlowIr, VC, or proof payloads."
+notes = "Task 117 extends task 112 for the exact `FormulaConnectiveQuantifierPayloadBoundary` source by passing both source-derived `contradiction` constants as checker FormulaInput payloads with FormulaKind::Contradiction, alongside the existing implication, universal quantification, and negation shells. Checker Task 257A runs first and transports the exact parent-before-child tree, four source-role edges, one explicit universal binder and bare-set type site, one module-to-body context transition, and six unresolved requests through immutable typed and resolved AST handoffs. The older route still fails closed on missing formula and quantifier payloads and does not credit formula constant truth, connective/quantifier semantics, formula checking, facts, theorem acceptance, formula_statement execution, CoreIr, ControlFlowIr, VC, or proof payloads."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.formula_statement_gap"
@@ -5027,6 +5027,19 @@ notes = "Task 248 bounded producer coverage for one exact reserve followed by on
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_source_binding_context_shadowing_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.source_composite_formula_payload"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Checker Task 257A Frozen Composite-Formula/Binder Core Contract"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
+]
+notes = "Checker Task 257A covers only the exact syntax-free five-node implication/universal/negation/contradiction source tree, one unassigned root, four source-role edges, one explicit universal binder and bare-set type site, six unresolved input requests, and the source-derived 2/1/4 binding environment for the unchanged connective/quantifier fail route. It preserves the existing MissingFormulaPayload and MissingQuantifierPayload failures and grants no connective or constant truth, quantifier semantics, bound-use/capture, formula fact/result, theorem ownership or acceptance, proof, downstream IR, broader connective/quantifier, predicate-chain, or conditioned-comprehension credit."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.source_evidence_request_payload"

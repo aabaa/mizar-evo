@@ -3098,3 +3098,33 @@ predicate-chain and conditioned-comprehension composition after separately
 frozen Task-256/255 extensions. Theorem ownership and acceptance, semantic
 formula truth/facts, Core/CFG/VC, Steps 6/7, and global Step-5 completion
 receive no credit.
+
+## Step 5 Checker Task 257A Implementation Addendum
+
+Task 257A now supplies executable source-transport coverage for the frozen
+Chapter-14 composite-formula/binder slice. The new covered row
+`spec.en.checker.type_elaboration.source_composite_formula_payload` maps only
+the unchanged connective/quantifier fail sidecar. The Chapter-14,
+Chapter-16, broad payload-extraction, and exact connective/quantifier rows
+receive only reciprocal Task-257A transport notes; no existing status,
+outcome, phase, detail, diagnostic payload, tag, or `.miz` changes.
+
+The public checker handoff transports seven dense tables with exact real
+counts `5/0/1/1/1/4/6` and owns the source-derived `2/1/4` binding
+environment. The private exact consumer preserves the older two-key semantic
+failure vector and admits no other active type-elaboration case. This closes
+the bounded Task-257A `source_drift` and `test_gap` and raises only the
+requirement/covered counts: plan 414/380 and type 246/234. Case count,
+pass/fail 224/190, active parse/declaration/type/proof 101/5/193/1, and
+warnings/errors 23/0 remain unchanged.
+
+Implementation preflight corrected one documentation-only `design_drift`:
+the frozen contract had copied synthetic-builder offsets one byte later than
+the real unchanged 115-byte `.miz`. The corrected real parser ranges do not
+change fixture, parser, sidecar, trace intent, or coverage ownership.
+
+MC-G017/MC-G020 remain partial. Tasks 257B/257C retain broader
+connective/quantifier, bound-use/capture, predicate-chain, and conditioned-
+comprehension work. Task 258 retains theorem ownership and acceptance.
+Semantic formula truth/facts, Core/CFG/VC, Steps 6/7, and global Step-5
+completion receive no credit.

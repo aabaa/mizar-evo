@@ -150,6 +150,7 @@ use type_elaboration::{
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_TWO_HOP_ASSERTED_HEAD_CONFIG, SourceAtomicFormulaRouteOutput,
+    SourceBindingContextRouteOutput, SourceCompositeFormulaRouteOutput,
     SourceContradictionHandoffCorruption, SourceEvidenceRouteKind, SourceParenthesizedOperandSide,
     SourceParenthesizedReservedVariableBinaryFormula,
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
@@ -310,6 +311,7 @@ use type_elaboration::{
     source_chained_local_object_mode_reserved_variable_inequality_output,
     source_chained_local_object_mode_reserved_variable_membership_output,
     source_chained_local_object_mode_reserved_variable_type_assertion_output,
+    source_composite_formula_output, source_composite_formula_output_with_mutation,
     source_contradiction_formula_output, source_contradiction_handoff_corruption_error,
     source_contradiction_handoff_with_extra_expression,
     source_distinct_reserved_object_variable_equality_output,
@@ -459,7 +461,8 @@ use type_elaboration::{
     source_chained_local_object_mode_reserved_variable_inequality_detail_keys,
     source_chained_local_object_mode_reserved_variable_membership_detail_keys,
     source_chained_local_object_mode_reserved_variable_type_assertion_detail_keys,
-    source_contradiction_core_ir_snapshot, source_contradiction_formula_detail_keys,
+    source_composite_formula_transport_detail_keys, source_contradiction_core_ir_snapshot,
+    source_contradiction_formula_detail_keys,
     source_distinct_reserved_object_variable_equality_detail_keys,
     source_distinct_reserved_object_variable_inequality_detail_keys,
     source_distinct_reserved_variable_equality_detail_keys,
@@ -1493,6 +1496,11 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    if let Some(keys) =
+        source_composite_formula_transport_detail_keys(&ast, resolver.module.clone(), &symbols)
+    {
+        return keys;
+    }
     if let Some(keys) =
         source_atomic_formula_transport_detail_keys(&ast, resolver.module.clone(), &symbols)
     {

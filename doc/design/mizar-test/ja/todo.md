@@ -1575,6 +1575,9 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   224/190、101/5/193/1、checker/mizar-test 287/328 tests、27 paths /
   30,154 lines、全hashを保持する。separate implementationはcase count不変で
   414/380、246/234をprojectする。
-- [ ] separate Checker Task 257A selector extension、private assembler、public
+- [x] separate Checker Task 257A selector extension、private assembler、public
   producer/binding prepass/final handoff、bounded reciprocal trace increment、
-  review済みreal/synthetic/exclusion/corruption/install matrixを実装する。
+  review済みreal/synthetic/exclusion/corruption/install matrixを実装した。
+  routeは不変two-key semantic detail vectorとcorrected parser range
+  `52..113`、`78..89`、`78..79`、`86..89`を保持する。次のdependency-ready
+  sliceはChecker Task 257Bである。

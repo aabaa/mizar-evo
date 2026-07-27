@@ -685,3 +685,15 @@ Replacement, missing or non-equivalent dependencies, non-root targets,
 overlap, and arena/provenance drift fail atomically. This adds no candidate
 selection, expected-type answer, assertion fact or truth, formula result,
 theorem acceptance, proof, or downstream IR.
+
+## Task 257A Ownership Addendum
+
+`TypedAst` now owns one optional immutable
+`SourceCompositeFormulaHandoff`. `with_source_composite_formula` is one-shot,
+rejects coexistence with the Task-248 source-context handoff, and revalidates
+source/module identity, the complete typed arena, the exact extended
+`BindingEnv`, and all seven dense tables before publication. The borrowed
+getter exposes the syntax-free transport. Legacy ASTs retain their exact debug
+bytes when the field is absent. The handoff contains unresolved source intent
+only and creates no formula truth, type answer, fact, theorem owner, proof, or
+acceptance.

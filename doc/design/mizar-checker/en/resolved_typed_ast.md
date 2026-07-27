@@ -785,3 +785,12 @@ not rebuild or retarget dense IDs, bind comprehension generators, resolve
 conditions, decide sethood/nonemptiness/widening, compute result types, or
 create semantic results; the legacy projection is unchanged when the handoff
 is absent.
+
+## Task 257A Final-Handoff Addendum
+
+`ResolvedTypedAst::assemble` revalidates and clone-preserves the optional
+checker-owned `SourceCompositeFormulaHandoff`; it never rebuilds the tree,
+binder, or context from raw source. Its borrowed
+`source_composite_formula()` getter exposes the same immutable transaction.
+Assembly rejects invalid source-context coexistence or dependency drift and
+does not answer any of the six unresolved requests.

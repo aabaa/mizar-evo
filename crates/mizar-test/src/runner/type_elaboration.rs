@@ -9,6 +9,7 @@ mod source_application;
 mod source_ast;
 mod source_atomic_formula;
 mod source_attribute;
+mod source_composite_formula;
 mod source_context;
 mod source_evidence;
 mod source_formula;
@@ -344,10 +345,17 @@ pub(super) use source_atomic_formula::{
 pub(super) use source_attribute::source_attribute_detail_keys;
 #[cfg(test)]
 pub(super) use source_attribute::{source_attribute_output, synthetic_source_attribute_output};
+pub(super) use source_composite_formula::source_composite_formula_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_composite_formula::{
+    SourceCompositeFormulaRouteOutput, source_composite_formula_output,
+    source_composite_formula_output_with_mutation,
+};
 pub(super) use source_context::source_binding_context_detail_keys;
 #[cfg(test)]
 pub(super) use source_context::{
-    source_binding_context_output, source_binding_context_token_shape_is_exact,
+    SourceBindingContextRouteOutput, source_binding_context_output,
+    source_binding_context_token_shape_is_exact,
 };
 pub(super) use source_evidence::source_evidence_detail_keys;
 #[cfg(test)]

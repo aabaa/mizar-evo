@@ -570,7 +570,13 @@ The bounded binder type is an occurrence-specific bare builtin `set` site,
 not a Task-249 declaration application. The resolver-shaped local binder
 identity uses its written declaration range and stable local scope; no symbol,
 contribution, declaration shell, opaque id, or generated counter is
-fabricated. This prerequisite closes only `design_drift`. Public transport,
-binding extension, final ownership, and the corruption/context/install/
-exclusion matrix remain bounded `source_drift` and `test_gap`; it changes no
-source, fixture, sidecar, trace row/status/count, count, or hash.
+fabricated.
+
+Task 257A now implements this exact slice. The public transport, binding
+extension, private consumer, one-shot `TypedAst` installation, final
+`ResolvedTypedAst` clone preservation, and bounded corruption/context/install/
+exclusion matrix close the recorded `source_drift` and `test_gap`. The
+implementation adds only its covered reciprocal trace requirement over the
+existing sidecar; the canonical source and existing semantic outcome/detail
+intent are unchanged. Broader shapes, bound use/capture, executable wrappers,
+predicate chains, and conditioned comprehensions remain Tasks 257B-C.

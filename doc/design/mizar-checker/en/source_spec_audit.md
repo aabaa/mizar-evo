@@ -151,6 +151,7 @@ rejection.
 - `registration_resolution`
 - `resolved_typed_ast`
 - `source_atomic_formula`
+- `source_composite_formula`
 - `source_context`
 - `source_attribute`
 - `source_evidence`
@@ -491,6 +492,47 @@ Bounded gaps: predicate-chain and formula-operator ownership stays with Task
 257; overload selection, asserted-type reachability, attribute admissibility
 and truth, formula facts/results, theorem acceptance, proofs, and downstream
 IR remain outside this module.
+
+### `source_composite_formula`
+
+Generated public newtypes:
+
+- `SourceCompositeFormulaId`, `SourceFormulaWrapperId`,
+  `SourceFormulaRootId`, `SourceQuantifierBinderId`,
+  `SourceBinderTypeSiteId`, `SourceFormulaEdgeId`,
+  `SourceFormulaRequestId`
+
+Literal top-level public items:
+
+- `SourceCompositeFormulaHandoffInput`, `SourceCompositeFormulaInput`,
+  `SourceFormulaWrapperInput`, `SourceFormulaRootInput`,
+  `SourceQuantifierBinderInput`, `SourceBinderTypeSiteInput`,
+  `SourceFormulaEdgeInput`, `SourceFormulaRequestInput`,
+  `SourceCompositeFormulaKind`, `SourceCompositeFormulaRecovery`,
+  `SourceFormulaRootOwnership`, `SourceBinderTypeHead`,
+  `SourceFormulaEdgeRole`, `SourceFormulaRequestKind`,
+  `SourceCompositeFormulaHandoff`, `SourceCompositeFormulaTable`,
+  `SourceFormulaWrapperTable`, `SourceFormulaRootTable`,
+  `SourceQuantifierBinderTable`, `SourceBinderTypeSiteTable`,
+  `SourceFormulaEdgeTable`, `SourceFormulaRequestTable`,
+  `SourceCompositeFormula`, `SourceFormulaWrapper`, `SourceFormulaRoot`,
+  `SourceQuantifierBinder`, `SourceBinderTypeSite`, `SourceFormulaEdge`,
+  `SourceFormulaRequest`, `SourceCompositeFormulaProducer`,
+  `SourceCompositeFormulaError`.
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Seven syntax-free dense tables retain the exact composite tree, transparent wrappers, root, binder, written binder type, child roles, and unresolved requests. | Public inputs, immutable rows, and tables in `src/source_composite_formula.rs`. | Exact real `5/0/1/1/1/4/6`, full literal debug, wrapper, and corruption tests. | Implemented for Task 257A. |
+| The same immutable input extends the exact `1/0/4` module shell to the source-derived `2/1/4` environment. | `SourceCompositeFormulaProducer::extend_bindings`, `BindingContextOwner::SourceFormula`, and `build`. | Binder identity, context transition, diagnostic prefix, stale environment, and arena-key tests. | Implemented transactionally. |
+| `TypedAst` owns one handoff, rejects Task-248 coexistence, and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_composite_formula`, accessors, and resolved assembly. | One-shot, preinstalled-source-context, final clone equality, deterministic replay, and legacy debug tests. | Implemented without raw-source rebuilding. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-257A enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: semantic connective/quantifier evaluation, other connectives
+and quantifier forms, bound uses/capture, predicate chains, conditioned
+comprehensions, theorem ownership/acceptance, proofs, facts, and downstream
+IR remain with Tasks 257B/257C/258 and later owners.
 
 ### `source_set_term`
 
@@ -3353,3 +3395,34 @@ covered row
 `spec.en.checker.type_elaboration.source_composite_formula_payload`,
 projecting 414/380 and 246/234 without changing case count or any existing
 outcome/detail field.
+
+## Step 5 Checker Task 257A Implementation Audit
+
+The public seven-table `source_composite_formula` producer and private exact
+consumer implement the frozen source-only slice. The checker accepts no raw
+syntax, validates the exact normal `1/0/4` base, atomically creates and owns
+the source-derived `2/1/4` environment, authenticates the formula tree,
+binder, written type, edges, requests, and arena vocabulary, and
+clone-preserves the one-shot handoff through `ResolvedTypedAst`.
+
+The unchanged real route produces `5/0/1/1/1/4/6`, preserves the existing
+two semantic detail keys, and admits no other active type-elaboration case.
+Implementation preflight corrected one `design_drift`: the frozen document
+had copied synthetic-builder offsets one byte later than the real unchanged
+115-byte `.miz`; real parser offsets are `52..113`, `52..65`, `74..113`,
+`78..89`, `78..79`, `86..89`, `96..113`, and `100..113`. Neither the parser,
+fixture, sidecar outcome/detail vector, nor test intent changed; the sidecar
+received only the reciprocal Task-257A `spec_refs` entry and transport note.
+
+The producer, full literal debug oracle, environment/arena/table corruption
+matrix, wrapper boundary, one-shot and Task-248 coexistence rejection,
+selector isolation, unchanged semantic route, and final ownership tests close
+the bounded `source_drift` and `test_gap`. The new covered row and reciprocal
+references reach 414/380 and 246/234 without changing case count, outcome,
+phase, detail, tag, or `.miz` bytes.
+
+No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or surviving `boundary_violation` remains. The
+origin discrepancy stays report-only `repo_metadata_conflict`. Tasks 257B,
+257C, and 258 retain all broader formula semantics, bound-use/capture,
+predicate-chain/comprehension composition, and statement ownership.

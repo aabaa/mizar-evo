@@ -1,5 +1,33 @@
 # Module-Boundary Audit: mizar-test Runner
 
+## Checker Task 257A source-composite-formula current-state addendum
+
+Checker Task 257Aはcohesiveなprivate `source_composite_formula` consumer leaf
+1件と既存`source_formula` extractor recordへのbounded extensionを追加する。raw
+`SurfaceAst` traversalはprivateのままで、checkerへはsyntax-free seven-table
+transactionとresolver-shaped binder identityだけを渡す。`runner.rs`は2,447行で
+top-level orchestrationを維持する。646行のtype-elaboration facadeはprivate leaf
+21件へdispatchし、`source_formula.rs`は2,684行、new ownerは451行である。
+
+production manifestは28 paths / 30,654 linesで、sorted path hashは
+`425c41292c569afecfc30961c59b3b1a9b7fd5844c4ab1141968b62382ecf0b1`、
+ordered content-manifest hashは
+`e31dee03e0a14c21f6a5811d6bdcec91479794efea24548e1c76f89f24ad8b1f`
+である。new production pathはprivate source-composite-formula leafだけである。
+
+bounded trace rowによりplan 414/380、type-elaboration 246/234、pass/fail
+224/190、active parse/declaration/type/proof 101/5/193/1、warnings/errors
+23/0となる。plan/parse/declaration/type/proof stdout hashは
+`88c1c276cae2d5d927a43c94f4032a297ea7daa02c8f90a9f893ec45064ace8c`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
+である。library testは333件、raw/normalized sorted-list hashは
+`588d513b32f8ded332c86303d17d63a9e828fb6c76d8ba1f8ac31d23b48c6c24` /
+`727a1d54aa967f3973338956dae9269945730e6abe32b572a198d71377aea53b`
+である。
+
 ## Checker Task 253 source-application current-state addendum
 
 Checker Task 253はcohesiveなprivate `source_application` consumer/extractor

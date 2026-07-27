@@ -2903,3 +2903,13 @@ broader formula shape、bound use/capture、predicate chain、conditioned
 comprehension、theorem ownership、全semantic answerはdeferredのままである。
 本documentation prerequisiteはrunner、fixture、sidecar、trace、count、test
 list、production manifest、hashを変更しない。
+
+### Checker Task 257A implemented route
+
+runnerはfrozen routeを不変semantic-detail ownerより先に実行する。extended
+private extraction recordでexact formula、binder segment、identifier、type
+expression/head siteを保持し、syntax typeをexportせずpublic transactionを
+assembleし、handoffをvalidate/installしてresolved resultへclone-preserveする。
+private test 5件はexact real oracle/final ownership、independent table
+corruption後のrecovery、all-active/lower-family isolation、不変semantic detail、
+preinstalled Task-248 rejectionをcoverする。

@@ -4452,9 +4452,12 @@ unchecked row below is one future nonempty logical task and one commit.
   and all outcome/detail fields remain unchanged.
 - [ ] **Task 257:** composite/quantified formula, binder, predicate-chain, and
   conditioned-comprehension umbrella.
-  - [ ] **Task 257A:** exact implication/universal/negation/contradiction tree
-    and one explicit unused binder. The EN/JA frozen-contract prerequisite is
-    complete; the separate producer/consumer/trace implementation remains.
+  - [x] **Task 257A:** exact implication/universal/negation/contradiction tree
+    and one explicit unused binder. The public seven-table transaction,
+    `2/1/4` binding extension, private exact consumer, final ownership,
+    reciprocal trace row, and reviewed real/synthetic/corruption/isolation
+    matrix are complete. The preflight-corrected real ranges are retained
+    without changing the canonical `.miz` or its semantic detail vector.
   - [ ] **Task 257B:** broader connective/quantifier shapes, implicit binders,
     bound use, and capture.
   - [ ] **Task 257C:** predicate-chain and conditioned-comprehension

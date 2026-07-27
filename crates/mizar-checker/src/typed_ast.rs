@@ -3,6 +3,7 @@
 use crate::{
     source_application::SourceFunctorApplicationHandoff,
     source_atomic_formula::SourceAtomicFormulaHandoff, source_attribute::SourceAttributeHandoff,
+    source_composite_formula::SourceCompositeFormulaHandoff,
     source_context::SourceBindingContextHandoff, source_evidence::SourceEvidenceHandoff,
     source_set_term::SourceSetTermHandoff, source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff, source_type::SourceTypeApplicationHandoff,
@@ -95,6 +96,7 @@ pub struct TypedAst {
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
+    source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -120,6 +122,7 @@ impl TypedAst {
             source_structure: None,
             source_set_term: None,
             source_atomic_formula: None,
+            source_composite_formula: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -176,6 +179,10 @@ impl TypedAst {
 
     pub const fn source_atomic_formula(&self) -> Option<&SourceAtomicFormulaHandoff> {
         self.source_atomic_formula.as_ref()
+    }
+
+    pub const fn source_composite_formula(&self) -> Option<&SourceCompositeFormulaHandoff> {
+        self.source_composite_formula.as_ref()
     }
 
     pub fn with_source_evidence(
@@ -383,6 +390,20 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_composite_formula(
+        mut self,
+        handoff: SourceCompositeFormulaHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_composite_formula.is_some() || self.source_context.is_some() {
+            return Err(TypedAstError::InvalidSourceCompositeFormula);
+        }
+        handoff
+            .validate_installation(self.source_id, &self.module_id, &self.nodes)
+            .map_err(|_| TypedAstError::InvalidSourceCompositeFormula)?;
+        self.source_composite_formula = Some(handoff);
+        Ok(self)
+    }
+
     pub const fn nodes(&self) -> &TypedArena {
         &self.nodes
     }
@@ -448,6 +469,9 @@ impl TypedAst {
         }
         if let Some(source_atomic_formula) = &self.source_atomic_formula {
             output.push_str(&source_atomic_formula.debug_text());
+        }
+        if let Some(source_composite_formula) = &self.source_composite_formula {
+            output.push_str(&source_composite_formula.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1332,6 +1356,7 @@ pub enum TypedAstError {
     InvalidSourceStructure,
     InvalidSourceSetTerm,
     InvalidSourceAtomicFormula,
+    InvalidSourceCompositeFormula,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1465,6 +1490,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceAtomicFormula => {
                 formatter.write_str("typed AST source atomic-formula handoff is inconsistent")
+            }
+            Self::InvalidSourceCompositeFormula => {
+                formatter.write_str("typed AST source composite-formula handoff is inconsistent")
             }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,

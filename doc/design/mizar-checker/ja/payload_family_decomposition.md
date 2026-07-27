@@ -521,8 +521,12 @@ publishしない。
 bounded binder typeはoccurrence-specific bare builtin `set` siteで、Task-249
 declaration applicationではない。resolver-shaped local binder identityはwritten
 declaration rangeとstable local scopeを使い、symbol/contribution/declaration
-shell/opaque id/generated counterを捏造しない。本prerequisiteは
-`design_drift`だけをcloseする。public transport、binding extension、final
-ownership、corruption/context/install/exclusion matrixはbounded
-`source_drift`/`test_gap`のままで、source、fixture、sidecar、trace
-row/status/count、count/hashを変更しない。
+shell/opaque id/generated counterを捏造しない。
+
+Task 257Aはこのexact sliceを実装した。public transport、binding extension、
+private consumer、one-shot `TypedAst` install、final `ResolvedTypedAst`
+clone preservation、bounded corruption/context/install/exclusion matrixが記録済み
+`source_drift`/`test_gap`をcloseする。implementationは既存sidecar上のcovered
+reciprocal trace requirementだけを追加し、canonical sourceと既存semantic
+outcome/detail intentは不変である。broader shape、bound use/capture、
+executable wrapper、predicate chain、conditioned comprehensionはTasks 257B-Cに残る。

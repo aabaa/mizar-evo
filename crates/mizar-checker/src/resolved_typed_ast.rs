@@ -19,6 +19,7 @@ use crate::{
     source_application::SourceFunctorApplicationHandoff,
     source_atomic_formula::SourceAtomicFormulaHandoff,
     source_attribute::SourceAttributeHandoff,
+    source_composite_formula::SourceCompositeFormulaHandoff,
     source_context::SourceBindingContextHandoff,
     source_evidence::SourceEvidenceHandoff,
     source_set_term::SourceSetTermHandoff,
@@ -116,6 +117,7 @@ pub struct ResolvedTypedAst {
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
+    source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -182,6 +184,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_atomic_formula(&self) -> Option<&SourceAtomicFormulaHandoff> {
         self.source_atomic_formula.as_ref()
+    }
+
+    pub const fn source_composite_formula(&self) -> Option<&SourceCompositeFormulaHandoff> {
+        self.source_composite_formula.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -286,6 +292,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_atomic_formula) = &self.source_atomic_formula {
             output.push_str(&source_atomic_formula.debug_text());
+        }
+        if let Some(source_composite_formula) = &self.source_composite_formula {
+            output.push_str(&source_composite_formula.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1236,6 +1245,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceStructure,
     InvalidSourceSetTerm,
     InvalidSourceAtomicFormula,
+    InvalidSourceCompositeFormula,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1323,6 +1333,8 @@ impl fmt::Display for ResolvedTypedAstError {
                 .write_str("resolved typed AST source set-term handoff is inconsistent"),
             Self::InvalidSourceAtomicFormula => formatter
                 .write_str("resolved typed AST source atomic-formula handoff is inconsistent"),
+            Self::InvalidSourceCompositeFormula => formatter
+                .write_str("resolved typed AST source composite-formula handoff is inconsistent"),
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
             ),
@@ -1585,6 +1597,15 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceAtomicFormula)?;
         }
+        let source_composite_formula = self.inputs.typed_ast.source_composite_formula().cloned();
+        if let Some(source_composite_formula) = &source_composite_formula {
+            if self.inputs.typed_ast.source_context().is_some() {
+                return Err(ResolvedTypedAstError::InvalidSourceCompositeFormula);
+            }
+            source_composite_formula
+                .validate_installation(source_id, &module_id, self.inputs.typed_ast.nodes())
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceCompositeFormula)?;
+        }
 
         Ok(ResolvedTypedAst {
             source_id,
@@ -1598,6 +1619,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_structure,
             source_set_term,
             source_atomic_formula,
+            source_composite_formula,
             nodes,
             expr_metadata,
             collection_candidates,

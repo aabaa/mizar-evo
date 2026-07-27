@@ -472,3 +472,14 @@ produces an explicit empty recovered context and one internal diagnostic, but
 remains incomplete and cannot enter `TypedAst`. This closes only the exact
 Task-248 MC-G011/MC-G016 slice; term-use lookup and later proof/closure contexts
 remain owned by Tasks 252/257/258/269/270/272.
+
+## Task 257A Source-Formula Context Addendum
+
+Task 257A adds `BindingContextOwner::SourceFormula { source_range }` for the
+one syntax-free quantified-formula body context. `BindingEnv::try_new`
+authenticates that the owner range is nonempty and belongs to the environment
+source. The bounded producer extends the exact normal `1/0/4` module shell to
+`2/1/4`: context 1 is an expression child of context 0, owns one
+resolver-shaped `QuantifierBinder`, and exposes that binding as visible.
+The context owner records source provenance only; it does not publish a
+semantic formula result, accepted fact, or theorem owner.

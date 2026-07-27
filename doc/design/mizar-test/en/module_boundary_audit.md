@@ -1,5 +1,33 @@
 # Module-Boundary Audit: mizar-test Runner
 
+## Checker Task 257A Source-Composite-Formula Current-State Addendum
+
+Checker Task 257A adds one cohesive private `source_composite_formula`
+consumer leaf and a bounded extension to the existing `source_formula`
+extractor record. Raw `SurfaceAst` traversal remains private; the checker
+receives only the syntax-free seven-table transaction and resolver-shaped
+binder identity. `runner.rs` remains top-level orchestration at 2,447 lines.
+The 646-line type-elaboration facade dispatches to twenty-one private leaves;
+`source_formula.rs` is 2,684 lines and the new owner is 451 lines.
+
+The production manifest is 28 paths / 30,654 lines. Its sorted path hash is
+`425c41292c569afecfc30961c59b3b1a9b7fd5844c4ab1141968b62382ecf0b1`,
+and its ordered content-manifest hash is
+`e31dee03e0a14c21f6a5811d6bdcec91479794efea24548e1c76f89f24ad8b1f`.
+The only new production path is the private source-composite-formula leaf.
+
+The bounded trace row produces plan 414/380, type-elaboration 246/234,
+pass/fail 224/190, active parse/declaration/type/proof 101/5/193/1, and
+warnings/errors 23/0. The plan/parse/declaration/type/proof stdout hashes are
+`88c1c276cae2d5d927a43c94f4032a297ea7daa02c8f90a9f893ec45064ace8c`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+The library has 333 tests; its raw/normalized sorted-list hashes are
+`588d513b32f8ded332c86303d17d63a9e828fb6c76d8ba1f8ac31d23b48c6c24` /
+`727a1d54aa967f3973338956dae9269945730e6abe32b572a198d71377aea53b`.
+
 ## Checker Task 253 Source-Application Current-State Addendum
 
 Checker Task 253 adds one cohesive private `source_application` consumer and

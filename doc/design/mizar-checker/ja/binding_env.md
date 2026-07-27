@@ -456,3 +456,14 @@ identity/provenance、duplicate/partial row、bindingをclaimするrecovered she
 contextとinternal diagnostic 1件を生成するがincompleteのままで、`TypedAst`へ入れない。
 これはexact Task-248 MC-G011/MC-G016 sliceだけをcloseする。term-use lookupと後続
 proof/closure contextはTasks 252/257/258/269/270/272が所有し続ける。
+
+## Task 257A source-formula context addendum
+
+Task 257Aはsyntax-free quantified-formula body context 1件のため
+`BindingContextOwner::SourceFormula { source_range }`を追加する。
+`BindingEnv::try_new`はowner rangeがnonemptyでenvironment sourceに属することを
+authenticateする。bounded producerはexact normal `1/0/4` module shellを
+`2/1/4`へextendする。context 1はcontext 0のexpression childで、
+resolver-shaped `QuantifierBinder` 1件をownしvisible bindingとして公開する。
+context ownerはsource provenanceだけを記録し、semantic formula result、
+accepted fact、theorem ownerをpublishしない。

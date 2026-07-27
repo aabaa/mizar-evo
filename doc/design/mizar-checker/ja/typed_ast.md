@@ -664,3 +664,13 @@ install orderによるownership/fingerprint bypassを許さない。replacement�
 missing/non-equivalent dependency、non-root target、overlap、arena/provenance driftは
 atomicにfailする。candidate selection、expected-type answer、assertion fact/truth、
 formula result、theorem acceptance、proof、downstream IRは追加しない。
+
+## Task 257A ownership addendum
+
+`TypedAst`はoptional immutable `SourceCompositeFormulaHandoff` 1件をownする。
+`with_source_composite_formula`はone-shotでTask-248 source-context handoffとの
+coexistenceをrejectし、publication前にsource/module identity、complete typed
+arena、exact extended `BindingEnv`、dense table 7個を再検証する。borrowed getterが
+syntax-free transportを公開する。field absent時はlegacy ASTのexact debug bytesを
+保持する。handoffはunresolved source intentだけを持ち、formula truth、type
+answer、fact、theorem owner、proof、acceptanceを作らない。

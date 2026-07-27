@@ -4229,9 +4229,12 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   fieldは不変である。
 - [ ] **Task 257:** composite/quantified formula、binder、predicate-chain、
   conditioned-comprehension umbrella。
-  - [ ] **Task 257A:** exact implication/universal/negation/contradiction treeと
-    explicit unused binder 1件。EN/JA frozen-contract prerequisiteは完了し、
-    separate producer/consumer/trace implementationが残る。
+  - [x] **Task 257A:** exact implication/universal/negation/contradiction treeと
+    explicit unused binder 1件。public seven-table transaction、`2/1/4`
+    binding extension、private exact consumer、final ownership、reciprocal
+    trace row、review済みreal/synthetic/corruption/isolation matrixは完了した。
+    preflight-corrected real rangeをcanonical `.miz`/semantic detail vector
+    不変のまま保持する。
   - [ ] **Task 257B:** broader connective/quantifier shape、implicit binder、
     bound use/capture。
   - [ ] **Task 257C:** separately frozen Task-256/255 extension後の

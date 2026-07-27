@@ -3059,3 +3059,14 @@ Broader formula shapes, bound use/capture, predicate chains, conditioned
 comprehensions, theorem ownership, and all semantic answers remain deferred.
 This documentation prerequisite changes no runner, fixture, sidecar, trace,
 count, test list, production manifest, or hash.
+
+### Checker Task 257A Implemented Route
+
+The runner now executes the frozen route before the unchanged semantic-detail
+owner. It uses the extended private extraction record to preserve the exact
+formula, binder-segment, identifier, type-expression, and type-head sites;
+assembles the public transaction without exporting syntax types; validates
+and installs the handoff; and clone-preserves it into the resolved result.
+Five private tests cover the exact real oracle/final ownership, independent
+table corruption with recovery, all-active and lower-family isolation,
+unchanged semantic details, and preinstalled Task-248 rejection.

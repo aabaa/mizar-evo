@@ -746,3 +746,11 @@ clone-preserveする。borrowed `source_atomic_formula()` getterがimmutable han
 公開する。final assemblyはdense IDのrebuild/retarget、predicate candidate選択、
 expected-input request回答、assertion/formula判断、fact publish、theorem acceptanceを
 行わず、handoff absent時のlegacy projectionは不変である。
+
+## Task 257A final-handoff addendum
+
+`ResolvedTypedAst::assemble`はoptional checker-owned
+`SourceCompositeFormulaHandoff`をrevalidateしてclone-preserveし、raw sourceから
+tree/binder/contextをrebuildしない。borrowed `source_composite_formula()` getterは
+同じimmutable transactionを公開する。assemblyはinvalid source-context coexistence
+またはdependency driftをrejectし、unresolved request 6件へ回答しない。

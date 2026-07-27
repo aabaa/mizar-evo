@@ -129,6 +129,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `registration_resolution`
 - `resolved_typed_ast`
 - `source_atomic_formula`
+- `source_composite_formula`
 - `source_context`
 - `source_attribute`
 - `source_evidence`
@@ -464,6 +465,46 @@ literal top-level public item:
 bounded gap: predicate-chain/formula-operator ownershipはTask 257、overload
 selection、asserted-type reachability、attribute admissibility/truth、formula
 fact/result、theorem acceptance、proof、downstream IRは本module外である。
+
+### `source_composite_formula`
+
+生成 public newtype:
+
+- `SourceCompositeFormulaId`, `SourceFormulaWrapperId`,
+  `SourceFormulaRootId`, `SourceQuantifierBinderId`,
+  `SourceBinderTypeSiteId`, `SourceFormulaEdgeId`,
+  `SourceFormulaRequestId`
+
+literal top-level public item:
+
+- `SourceCompositeFormulaHandoffInput`, `SourceCompositeFormulaInput`,
+  `SourceFormulaWrapperInput`, `SourceFormulaRootInput`,
+  `SourceQuantifierBinderInput`, `SourceBinderTypeSiteInput`,
+  `SourceFormulaEdgeInput`, `SourceFormulaRequestInput`,
+  `SourceCompositeFormulaKind`, `SourceCompositeFormulaRecovery`,
+  `SourceFormulaRootOwnership`, `SourceBinderTypeHead`,
+  `SourceFormulaEdgeRole`, `SourceFormulaRequestKind`,
+  `SourceCompositeFormulaHandoff`, `SourceCompositeFormulaTable`,
+  `SourceFormulaWrapperTable`, `SourceFormulaRootTable`,
+  `SourceQuantifierBinderTable`, `SourceBinderTypeSiteTable`,
+  `SourceFormulaEdgeTable`, `SourceFormulaRequestTable`,
+  `SourceCompositeFormula`, `SourceFormulaWrapper`, `SourceFormulaRoot`,
+  `SourceQuantifierBinder`, `SourceBinderTypeSite`, `SourceFormulaEdge`,
+  `SourceFormulaRequest`, `SourceCompositeFormulaProducer`,
+  `SourceCompositeFormulaError`.
+
+対応:
+
+| specification promise | source evidence | test evidence | status |
+|---|---|---|---|
+| 7件のsyntax-free dense tableがexact composite tree、transparent wrapper、root、binder、written binder type、child role、unresolved requestを保持する。 | `src/source_composite_formula.rs`のpublic input/immutable row/table。 | exact real `5/0/1/1/1/4/6`、full literal debug、wrapper、corruption test。 | Task 257Aとしてimplemented。 |
+| 同じimmutable inputがexact `1/0/4` module shellをsource-derived `2/1/4` environmentへextendする。 | `SourceCompositeFormulaProducer::extend_bindings`、`BindingContextOwner::SourceFormula`、`build`。 | binder identity、context transition、diagnostic prefix、stale environment、arena-key test。 | transactionalにimplemented。 |
+| `TypedAst`がhandoff 1件をownしてTask-248 coexistenceをrejectし、`ResolvedTypedAst`がrevalidate後clone-preserveする。 | `with_source_composite_formula`、accessor、resolved assembly。 | one-shot、preinstalled-source-context、final clone equality、deterministic replay、legacy debug test。 | raw-source rebuildなしでimplemented。 |
+| public enumはforward-compatible。 | 全public Task-257A enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+
+bounded gap: semantic connective/quantifier evaluation、他connective/quantifier
+form、bound use/capture、predicate chain、conditioned comprehension、theorem
+owner/acceptance、proof、fact、downstream IRはTasks 257B/257C/258以降に残る。
 
 ### `source_set_term`
 
@@ -3204,3 +3245,33 @@ checker/mizar-test 287/328 tests、private production 27 paths / 30,154 linesで
 ある。separate implementationはcovered row
 `spec.en.checker.type_elaboration.source_composite_formula_payload` 1件を追加でき、
 case countとexisting outcome/detailを変えず414/380、246/234をprojectする。
+
+## Step 5 Checker Task 257A implementation audit
+
+public seven-table `source_composite_formula` producerとprivate exact consumerが
+frozen source-only sliceをimplementする。checkerはraw syntaxをacceptせず、
+exact normal `1/0/4` baseをvalidateし、source-derived `2/1/4` environmentを
+atomicにcreate/ownしてformula tree、binder、written type、edge、request、
+arena vocabularyをauthenticateし、one-shot handoffを`ResolvedTypedAst`まで
+clone-preserveする。
+
+unchanged real routeは`5/0/1/1/1/4/6`をproduceし、既存2 semantic detail
+keyを維持して他active type-elaboration caseをadmitしない。implementation
+preflightは`design_drift` 1件をcorrectした。frozen documentはsynthetic
+builder offsetをreal unchanged 115-byte `.miz`より1 byte後へ転記していた。
+real parser offsetは`52..113`、`52..65`、`74..113`、`78..89`、`78..79`、
+`86..89`、`96..113`、`100..113`である。parser/fixtureは変更していない。
+sidecar outcome/detail vectorとtest intentは不変で、reciprocal Task-257A
+`spec_refs` entry/transport noteだけを追加した。
+
+producer、full literal debug oracle、environment/arena/table corruption
+matrix、wrapper boundary、one-shot/Task-248 coexistence rejection、selector
+isolation、unchanged semantic route、final ownership testがbounded
+`source_drift`/`test_gap`をcloseする。new covered row/reciprocal referenceは
+case/outcome/phase/detail/tag/`.miz` byteを変えず414/380、246/234へ到達する。
+
+blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、surviving `boundary_violation`はない。origin差は
+report-only `repo_metadata_conflict`のままである。Tasks 257B/257C/258が
+broader formula semantics、bound-use/capture、predicate-chain/comprehension
+composition、statement ownershipをretainする。

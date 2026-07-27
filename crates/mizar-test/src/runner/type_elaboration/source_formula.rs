@@ -1609,6 +1609,17 @@ pub(in crate::runner) struct SourceFormulaConnectiveQuantifier {
     pub(in crate::runner) implication_range: SourceRange,
     pub(in crate::runner) quantified_site: TypedSiteRef,
     pub(in crate::runner) quantified_range: SourceRange,
+    pub(in crate::runner) binder_segment_site: TypedSiteRef,
+    pub(in crate::runner) binder_segment_range: SourceRange,
+    pub(in crate::runner) binder_identifier_site: TypedSiteRef,
+    pub(in crate::runner) binder_identifier_range: SourceRange,
+    pub(in crate::runner) binder_identifier_spelling: String,
+    pub(in crate::runner) binder_type_site: TypedSiteRef,
+    pub(in crate::runner) binder_type_range: SourceRange,
+    pub(in crate::runner) binder_type_spelling: String,
+    pub(in crate::runner) binder_type_head_site: TypedSiteRef,
+    pub(in crate::runner) binder_type_head_range: SourceRange,
+    pub(in crate::runner) binder_type_head_spelling: String,
     pub(in crate::runner) negation_site: TypedSiteRef,
     pub(in crate::runner) negation_range: SourceRange,
     pub(in crate::runner) body_constant_site: TypedSiteRef,
@@ -2296,7 +2307,18 @@ pub(in crate::runner) fn extract_source_formula_connective_quantifier(
     let [type_expression_id] = segment_children.as_slice() else {
         return None;
     };
+    let identifier_id = segment.children.iter().copied().find(|child| {
+        ast.node(*child)
+            .and_then(SurfaceNode::token_text)
+            .is_some_and(|text| text == "x")
+    })?;
+    let identifier = ast.node(identifier_id)?;
     let type_expression = ast.node(*type_expression_id)?;
+    let type_expression_children = structural_child_ids(ast, type_expression);
+    let [type_head_id] = type_expression_children.as_slice() else {
+        return None;
+    };
+    let type_head = ast.node(*type_head_id)?;
     let binder_type =
         extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
     if binder_type.spelling != "set"
@@ -2335,6 +2357,17 @@ pub(in crate::runner) fn extract_source_formula_connective_quantifier(
         implication_range: implication.range,
         quantified_site: surface_site(*quantified_id),
         quantified_range: quantified.range,
+        binder_segment_site: surface_site(*segment_id),
+        binder_segment_range: segment.range,
+        binder_identifier_site: surface_site(identifier_id),
+        binder_identifier_range: identifier.range,
+        binder_identifier_spelling: "x".to_owned(),
+        binder_type_site: surface_site(*type_expression_id),
+        binder_type_range: type_expression.range,
+        binder_type_spelling: "set".to_owned(),
+        binder_type_head_site: surface_site(*type_head_id),
+        binder_type_head_range: type_head.range,
+        binder_type_head_spelling: "set".to_owned(),
         negation_site: surface_site(*negation_id),
         negation_range: negation.range,
         body_constant_site: surface_site(*negated_id),

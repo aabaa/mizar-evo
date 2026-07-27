@@ -315,6 +315,7 @@ pub struct BindingContextDraft {
 pub enum BindingContextOwner {
     Module,
     DeclarationShell(DeclarationShellId),
+    SourceFormula { source_range: SourceRange },
     Generated(String),
 }
 
@@ -714,6 +715,9 @@ pub enum BindingEnvError {
         context: BindingContextId,
         parent: BindingContextId,
     },
+    InvalidContextSourceRange {
+        context: BindingContextId,
+    },
     ContextCycle {
         context: BindingContextId,
     },
@@ -803,6 +807,11 @@ impl fmt::Display for BindingEnvError {
                 "context {} references missing parent {}",
                 context.index(),
                 parent.index()
+            ),
+            Self::InvalidContextSourceRange { context } => write!(
+                formatter,
+                "context {} has a source-formula range from another source",
+                context.index()
             ),
             Self::ContextCycle { context } => {
                 write!(
@@ -951,6 +960,13 @@ fn validate_module_root(contexts: &BindingContextTable) -> Result<(), BindingEnv
 fn validate_contexts(parts: &BindingEnvParts) -> Result<(), BindingEnvError> {
     let mut states = vec![None; parts.contexts.len()];
     for (context_id, context) in parts.contexts.iter() {
+        if let BindingContextOwner::SourceFormula { source_range } = context.owner
+            && (source_range.source_id != parts.source_id || source_range.start >= source_range.end)
+        {
+            return Err(BindingEnvError::InvalidContextSourceRange {
+                context: context_id,
+            });
+        }
         if let Some(parent) = context.parent
             && parts.contexts.get(parent).is_none()
         {
@@ -1406,6 +1422,13 @@ fn write_context_owner(output: &mut String, owner: &BindingContextOwner) {
         BindingContextOwner::Module => output.push_str("module"),
         BindingContextOwner::DeclarationShell(shell) => {
             let _ = write!(output, "declaration-shell({})", shell.index());
+        }
+        BindingContextOwner::SourceFormula { source_range } => {
+            let _ = write!(
+                output,
+                "source-formula({}..{})",
+                source_range.start, source_range.end
+            );
         }
         BindingContextOwner::Generated(key) => {
             output.push_str("generated(");
@@ -2515,6 +2538,31 @@ mod tests {
                 BindingTable::new(),
             )),
             Err(BindingEnvError::MultipleRootContexts { context }) if context == extra_root
+        ));
+
+        let mut invalid_source_formula_contexts = BindingContextTable::new();
+        let root = invalid_source_formula_contexts.insert(context_draft(
+            BindingContextOwner::Module,
+            None,
+            BindingContextLayer::Module,
+            None,
+        ));
+        let source_formula = invalid_source_formula_contexts.insert(context_draft(
+            BindingContextOwner::SourceFormula {
+                source_range: range(source, 4, 4),
+            },
+            Some(root),
+            BindingContextLayer::Expression,
+            Some(LocalTermScope::new(vec![0])),
+        ));
+        assert!(matches!(
+            BindingEnv::try_new(parts_with(
+                source,
+                invalid_source_formula_contexts,
+                BindingTable::new(),
+            )),
+            Err(BindingEnvError::InvalidContextSourceRange { context })
+                if context == source_formula
         ));
 
         let mut missing_owner_contexts = BindingContextTable::new();
