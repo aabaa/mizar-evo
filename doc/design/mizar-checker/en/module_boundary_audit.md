@@ -31,9 +31,9 @@ remain aligned with their owning specifications.
 | `src/typed_ast.rs` | 4117 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, ids, validation, rendering, tests, bidirectional Task-253/254/255/256 installation checks, Task-257A one-shot installation, and Task-257B1/B2/B3 combined installation; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3143 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula context identity; no behavior-neutral split required. |
 | `src/source_context.rs` | 1150 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
-| `src/source_atomic_formula.rs` | 6414 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256 eight-table association, resolver provenance, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
+| `src/source_atomic_formula.rs` | 7422 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
-| `src/source_formula_composition.rs` | 3114 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, dependency fingerprints, deterministic rendering, installation, and corruption tests; no split required. |
+| `src/source_formula_composition.rs` | 3117 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations plus Task-257C1 empty-segment compatibility, dependency fingerprints, deterministic rendering, installation, and corruption tests; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | Cohesive Task-251 request/response tables, upstream association, catalog/payload validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_term.rs` | 2207 | syntax-free source primary-term producer | `source_term.md` | no | no | Cohesive Task-252 term/reference/request tables, binding and parent validation, deterministic rendering, and corruption tests; no split required. |
@@ -129,6 +129,17 @@ member/`FieldUpdate` geometry, cross-family root ownership, conditional
 fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
+
+## Checker Task 257C1 Boundary Recheck
+
+No checker production path was added. The now 7,422-line
+`source_atomic_formula.rs` remains the cohesive syntax-free owner of the
+extended nine-table transaction. Segment/head/candidate/edge/request
+association, polarity-token authentication, shared-boundary validation,
+dependency fingerprints, rendering, installation revalidation, and rollback
+remain behavior-coupled. Raw parsing and exact-source selection remain
+private to `mizar-test`; no checker split is warranted. `TypedAst` and
+`ResolvedTypedAst` retain the existing publication boundary.
 
 ## Checker Task 257B3 Boundary Recheck
 

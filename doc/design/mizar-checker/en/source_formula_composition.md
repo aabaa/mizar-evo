@@ -379,3 +379,7 @@ this production file. The three matching mizar-test composition literals also
 remain empty. These are mandatory compatibility edits for the extended input
 shape; they add no composition row, selector admission, debug output, or
 semantic behavior.
+
+The compatibility edits are now installed and verified. Task 257C1 publishes
+only the lower Task-256 handoff; this module still owns no predicate-chain
+composition row or semantic conjunction/negation.

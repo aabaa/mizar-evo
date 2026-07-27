@@ -603,3 +603,7 @@ Task 278は後でoverload selectionを所有する。
 prerequisiteの後に続く。conditioned-comprehension/predicate-chain compositionは
 別々のfuture Task-257C sliceなので、本contractはどちらにもsemantic creditを
 与えない。
+
+Task 257C1 transportはこのlower-family boundaryで実装済み。predicate-chain
+compositionは未実装で、次のprerequisiteは別Task-255
+condition-bearing-comprehension transportのまま。

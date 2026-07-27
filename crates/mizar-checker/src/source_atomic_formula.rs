@@ -43,6 +43,7 @@ macro_rules! dense_id {
 
 dense_id!(SourceAtomicFormulaId);
 dense_id!(SourceAtomicWrapperId);
+dense_id!(SourcePredicateSegmentId);
 dense_id!(SourcePredicateHeadId);
 dense_id!(SourcePredicateCandidateId);
 dense_id!(SourceAssertionTypeSiteId);
@@ -57,6 +58,7 @@ pub struct SourceAtomicFormulaHandoffInput {
     pub module_id: ModuleId,
     pub formulas: Vec<SourceAtomicFormulaInput>,
     pub wrappers: Vec<SourceAtomicWrapperInput>,
+    pub predicate_segments: Vec<SourcePredicateSegmentInput>,
     pub predicate_heads: Vec<SourcePredicateHeadInput>,
     pub candidates: Vec<SourcePredicateCandidateInput>,
     pub type_sites: Vec<SourceAssertionTypeSiteInput>,
@@ -87,6 +89,22 @@ pub struct SourceAtomicWrapperInput {
     pub context: BindingContextId,
     pub recovery: SourceAtomicFormulaRecovery,
     pub spelling: String,
+}
+
+/// One source-written segment of an ordinary predicate chain.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePredicateSegmentInput {
+    pub formula: SourceAtomicFormulaId,
+    pub ordinal: usize,
+    pub site: TypedSiteRef,
+    pub source_range: SourceRange,
+    pub context: BindingContextId,
+    pub recovery: SourceAtomicFormulaRecovery,
+    pub spelling: String,
+    pub head: SourcePredicateHeadId,
+    pub polarity: SourcePredicateSegmentPolarityInput,
+    pub left_edge: SourceAtomicEdgeId,
+    pub right_edge: SourceAtomicEdgeId,
 }
 
 /// One ordinary predicate-segment head.
@@ -206,11 +224,29 @@ pub enum SourceAssertionAttributePolarityInput {
     },
 }
 
+/// Source-written polarity tokens for one ordinary predicate segment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePredicateSegmentPolarityInput {
+    Positive,
+    Negative {
+        verb_site: TypedSiteRef,
+        verb_range: SourceRange,
+        verb_spelling: String,
+        verb_recovery: SourceAtomicFormulaRecovery,
+        not_site: TypedSiteRef,
+        not_range: SourceRange,
+        not_spelling: String,
+        not_recovery: SourceAtomicFormulaRecovery,
+    },
+}
+
 /// Source role of one direct atomic-formula term.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum SourceAtomicEdgeRole {
     PredicateLeftArgument,
+    PredicateChainBoundary,
     PredicateRightArgument,
     BuiltinLeftOperand,
     BuiltinRightOperand,
@@ -248,6 +284,7 @@ pub struct SourceAtomicFormulaHandoff {
     set_term_fingerprint: Option<String>,
     formulas: SourceAtomicFormulaTable,
     wrappers: SourceAtomicWrapperTable,
+    predicate_segments: SourcePredicateSegmentTable,
     predicate_heads: SourcePredicateHeadTable,
     candidates: SourcePredicateCandidateTable,
     type_sites: SourceAssertionTypeSiteTable,
@@ -287,6 +324,10 @@ impl SourceAtomicFormulaHandoff {
 
     pub const fn wrappers(&self) -> &SourceAtomicWrapperTable {
         &self.wrappers
+    }
+
+    pub const fn predicate_segments(&self) -> &SourcePredicateSegmentTable {
+        &self.predicate_segments
     }
 
     pub const fn predicate_heads(&self) -> &SourcePredicateHeadTable {
@@ -365,6 +406,29 @@ impl SourceAtomicFormulaHandoff {
                 row.context.index(),
                 recovery_key(row.recovery),
                 row.spelling,
+            );
+        }
+        for (id, row) in self.predicate_segments.iter() {
+            let _ = write!(
+                output,
+                "predicate-segment#{} formula={} ordinal={} range={}..{} site={} context={} recovery={} spelling={:?} head={} polarity=",
+                id.index(),
+                row.formula.index(),
+                row.ordinal,
+                row.source_range.start,
+                row.source_range.end,
+                row.site.node().index(),
+                row.context.index(),
+                recovery_key(row.recovery),
+                row.spelling,
+                row.head.index(),
+            );
+            write_predicate_segment_polarity(&mut output, &row.polarity);
+            let _ = writeln!(
+                output,
+                " left_edge={} right_edge={}",
+                row.left_edge.index(),
+                row.right_edge.index(),
             );
         }
         for (id, row) in self.predicate_heads.iter() {
@@ -581,6 +645,23 @@ impl SourceAtomicFormulaHandoff {
                     spelling: row.spelling.clone(),
                 })
                 .collect(),
+            predicate_segments: self
+                .predicate_segments
+                .iter()
+                .map(|(_, row)| SourcePredicateSegmentInput {
+                    formula: row.formula,
+                    ordinal: row.ordinal,
+                    site: row.site.clone(),
+                    source_range: row.source_range,
+                    context: row.context,
+                    recovery: row.recovery,
+                    spelling: row.spelling.clone(),
+                    head: row.head,
+                    polarity: row.polarity.clone(),
+                    left_edge: row.left_edge,
+                    right_edge: row.right_edge,
+                })
+                .collect(),
             predicate_heads: self
                 .predicate_heads
                 .iter()
@@ -708,6 +789,11 @@ table!(
     SourceAtomicWrapperId
 );
 table!(
+    SourcePredicateSegmentTable,
+    SourcePredicateSegment,
+    SourcePredicateSegmentId
+);
+table!(
     SourcePredicateHeadTable,
     SourcePredicateHead,
     SourcePredicateHeadId
@@ -803,6 +889,58 @@ impl SourceAtomicWrapper {
     }
     pub fn spelling(&self) -> &str {
         &self.spelling
+    }
+}
+
+/// One validated source-written predicate-chain segment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePredicateSegment {
+    formula: SourceAtomicFormulaId,
+    ordinal: usize,
+    site: TypedSiteRef,
+    source_range: SourceRange,
+    context: BindingContextId,
+    recovery: SourceAtomicFormulaRecovery,
+    spelling: String,
+    head: SourcePredicateHeadId,
+    polarity: SourcePredicateSegmentPolarityInput,
+    left_edge: SourceAtomicEdgeId,
+    right_edge: SourceAtomicEdgeId,
+}
+
+impl SourcePredicateSegment {
+    pub const fn formula(&self) -> SourceAtomicFormulaId {
+        self.formula
+    }
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+    pub const fn site(&self) -> &TypedSiteRef {
+        &self.site
+    }
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+    pub const fn context(&self) -> BindingContextId {
+        self.context
+    }
+    pub const fn recovery(&self) -> SourceAtomicFormulaRecovery {
+        self.recovery
+    }
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+    pub const fn head(&self) -> SourcePredicateHeadId {
+        self.head
+    }
+    pub const fn polarity(&self) -> &SourcePredicateSegmentPolarityInput {
+        &self.polarity
+    }
+    pub const fn left_edge(&self) -> SourceAtomicEdgeId {
+        self.left_edge
+    }
+    pub const fn right_edge(&self) -> SourceAtomicEdgeId {
+        self.right_edge
     }
 }
 
@@ -1123,6 +1261,25 @@ impl SourceAtomicFormulaProducer {
                     })
                     .collect(),
             },
+            predicate_segments: SourcePredicateSegmentTable {
+                rows: input
+                    .predicate_segments
+                    .into_iter()
+                    .map(|row| SourcePredicateSegment {
+                        formula: row.formula,
+                        ordinal: row.ordinal,
+                        site: row.site,
+                        source_range: row.source_range,
+                        context: row.context,
+                        recovery: row.recovery,
+                        spelling: row.spelling,
+                        head: row.head,
+                        polarity: row.polarity,
+                        left_edge: row.left_edge,
+                        right_edge: row.right_edge,
+                    })
+                    .collect(),
+            },
             predicate_heads: SourcePredicateHeadTable {
                 rows: input
                     .predicate_heads
@@ -1236,6 +1393,9 @@ pub enum SourceAtomicFormulaError {
     InvalidWrapper {
         wrapper: SourceAtomicWrapperId,
     },
+    InvalidPredicateSegment {
+        segment: SourcePredicateSegmentId,
+    },
     InvalidPredicateHead {
         head: SourcePredicateHeadId,
     },
@@ -1260,6 +1420,9 @@ pub enum SourceAtomicFormulaError {
     },
     ReorderedWrapper {
         wrapper: SourceAtomicWrapperId,
+    },
+    ReorderedPredicateSegment {
+        segment: SourcePredicateSegmentId,
     },
     ReorderedPredicateHead {
         head: SourcePredicateHeadId,
@@ -1317,6 +1480,11 @@ impl fmt::Display for SourceAtomicFormulaError {
                 "source atomic formula wrapper {} is invalid",
                 wrapper.index()
             ),
+            Self::InvalidPredicateSegment { segment } => write!(
+                formatter,
+                "source predicate segment {} is invalid",
+                segment.index()
+            ),
             Self::InvalidPredicateHead { head } => write!(
                 formatter,
                 "source predicate head {} is invalid",
@@ -1357,6 +1525,11 @@ impl fmt::Display for SourceAtomicFormulaError {
                 formatter,
                 "source atomic wrapper {} is out of order",
                 wrapper.index()
+            ),
+            Self::ReorderedPredicateSegment { segment } => write!(
+                formatter,
+                "source predicate segment {} is out of order",
+                segment.index()
             ),
             Self::ReorderedPredicateHead { head } => {
                 write!(
@@ -1499,6 +1672,7 @@ fn validate_payload(
 ) -> Result<(), SourceAtomicFormulaError> {
     if input.formulas.is_empty()
         && (!input.wrappers.is_empty()
+            || !input.predicate_segments.is_empty()
             || !input.predicate_heads.is_empty()
             || !input.candidates.is_empty()
             || !input.type_sites.is_empty()
@@ -1543,8 +1717,20 @@ fn validate_payload(
         structures,
         set_terms,
     )?;
-    let head_by_formula = validate_predicate_heads(input, arena, &mut sites)?;
-    let candidate_groups = validate_candidates(input, symbols, &head_by_formula)?;
+    let segment_groups = validate_predicate_segments(input, arena, &mut sites)?;
+    let head_groups = validate_predicate_heads(input, arena, &mut sites, &segment_groups)?;
+    let candidate_groups = validate_candidates(input, symbols, &head_groups)?;
+    for (formula_index, segments) in segment_groups.iter().enumerate() {
+        if !segments.is_empty()
+            && head_groups[formula_index]
+                .iter()
+                .any(|head| candidate_groups[*head].len() != 1)
+        {
+            return Err(SourceAtomicFormulaError::InvalidFormula {
+                formula: SourceAtomicFormulaId::new(formula_index),
+            });
+        }
+    }
     let type_by_formula = validate_type_sites(input, arena, &mut sites)?;
     let attribute_groups = validate_attributes(input, symbols, arena, &mut sites)?;
     let edge_groups = validate_edges(input, primary_terms, applications, structures, set_terms)?;
@@ -1554,14 +1740,15 @@ fn validate_payload(
         applications,
         structures,
         set_terms,
-        &head_by_formula,
+        &segment_groups,
+        &head_groups,
         &type_by_formula,
         &attribute_groups,
         &edge_groups,
     )?;
     validate_requests(
         input,
-        &head_by_formula,
+        &head_groups,
         &candidate_groups,
         &type_by_formula,
         &attribute_groups,
@@ -1749,26 +1936,151 @@ fn validate_formula_order(
     Ok(())
 }
 
+fn validate_predicate_segments(
+    input: &SourceAtomicFormulaHandoffInput,
+    arena: &TypedArena,
+    sites: &mut BTreeSet<TypedSiteRef>,
+) -> Result<Vec<Vec<usize>>, SourceAtomicFormulaError> {
+    let groups = grouped_rows(
+        input.formulas.len(),
+        &input.predicate_segments,
+        |row| row.formula.index(),
+        |row| row.ordinal,
+        |index| SourceAtomicFormulaError::ReorderedPredicateSegment {
+            segment: SourcePredicateSegmentId::new(index),
+        },
+    )?;
+    for (formula_index, group) in groups.iter().enumerate() {
+        let formula_id = SourceAtomicFormulaId::new(formula_index);
+        let formula = &input.formulas[formula_index];
+        if formula.kind != SourceAtomicFormulaKind::PredicateApplication {
+            if !group.is_empty() {
+                return Err(SourceAtomicFormulaError::InvalidFormula {
+                    formula: formula_id,
+                });
+            }
+            continue;
+        }
+        if !group.is_empty() && group.len() < 2 {
+            return Err(SourceAtomicFormulaError::InvalidPredicateSegment {
+                segment: SourcePredicateSegmentId::new(group[0]),
+            });
+        }
+        let mut previous_range = None;
+        for segment_index in group {
+            let id = SourcePredicateSegmentId::new(*segment_index);
+            let segment = &input.predicate_segments[*segment_index];
+            if segment.context != formula.context
+                || segment.recovery != formula.recovery
+                || !valid_range(input.source_id, segment.source_range)
+                || !properly_contains(formula.source_range, segment.source_range)
+                || !canonical_spelling(&segment.spelling)
+                || previous_range
+                    .is_some_and(|previous: SourceRange| previous.end > segment.source_range.start)
+            {
+                return Err(SourceAtomicFormulaError::InvalidPredicateSegment { segment: id });
+            }
+            validate_arena_site(
+                &segment.site,
+                segment.source_range,
+                "source.formula.atomic.predicate-segment",
+                segment.recovery,
+                arena,
+            )
+            .map_err(|()| SourceAtomicFormulaError::InvalidPredicateSegment { segment: id })?;
+            if !sites.insert(segment.site.clone()) {
+                return Err(SourceAtomicFormulaError::DuplicateSite);
+            }
+            validate_predicate_segment_polarity(input, id, segment, arena, sites)?;
+            previous_range = Some(segment.source_range);
+        }
+    }
+    Ok(groups)
+}
+
+fn validate_predicate_segment_polarity(
+    input: &SourceAtomicFormulaHandoffInput,
+    id: SourcePredicateSegmentId,
+    segment: &SourcePredicateSegmentInput,
+    arena: &TypedArena,
+    sites: &mut BTreeSet<TypedSiteRef>,
+) -> Result<(), SourceAtomicFormulaError> {
+    let invalid = || SourceAtomicFormulaError::InvalidPredicateSegment { segment: id };
+    let SourcePredicateSegmentPolarityInput::Negative {
+        verb_site,
+        verb_range,
+        verb_spelling,
+        verb_recovery,
+        not_site,
+        not_range,
+        not_spelling,
+        not_recovery,
+    } = &segment.polarity
+    else {
+        return Ok(());
+    };
+    if !matches!(verb_spelling.as_str(), "does" | "do")
+        || not_spelling != "not"
+        || *verb_recovery != segment.recovery
+        || *not_recovery != segment.recovery
+        || !valid_range(input.source_id, *verb_range)
+        || !valid_range(input.source_id, *not_range)
+        || !range_contains(segment.source_range, *verb_range)
+        || !range_contains(segment.source_range, *not_range)
+        || verb_range.end > not_range.start
+        || verb_site == &segment.site
+        || not_site == &segment.site
+        || verb_site == not_site
+    {
+        return Err(invalid());
+    }
+    validate_arena_site(
+        verb_site,
+        *verb_range,
+        "source.formula.atomic.predicate-negation-verb",
+        *verb_recovery,
+        arena,
+    )
+    .map_err(|()| invalid())?;
+    validate_arena_site(
+        not_site,
+        *not_range,
+        "source.formula.atomic.predicate-negation-not",
+        *not_recovery,
+        arena,
+    )
+    .map_err(|()| invalid())?;
+    if !sites.insert(verb_site.clone()) || !sites.insert(not_site.clone()) {
+        return Err(SourceAtomicFormulaError::DuplicateSite);
+    }
+    Ok(())
+}
+
 fn validate_predicate_heads(
     input: &SourceAtomicFormulaHandoffInput,
     arena: &TypedArena,
     sites: &mut BTreeSet<TypedSiteRef>,
-) -> Result<Vec<Option<usize>>, SourceAtomicFormulaError> {
-    let mut by_formula = vec![None; input.formulas.len()];
+    segment_groups: &[Vec<usize>],
+) -> Result<Vec<Vec<usize>>, SourceAtomicFormulaError> {
+    let mut groups = vec![Vec::new(); input.formulas.len()];
     let mut previous_formula = None;
+    let mut previous_range = None;
     for (index, head) in input.predicate_heads.iter().enumerate() {
         let id = SourcePredicateHeadId::new(index);
         let Some(formula) = input.formulas.get(head.formula.index()) else {
             return Err(SourceAtomicFormulaError::InvalidPredicateHead { head: id });
         };
-        if previous_formula.is_some_and(|previous| previous >= head.formula)
+        let formula_changed = previous_formula.is_some_and(|previous| previous != head.formula);
+        if previous_formula.is_some_and(|previous| previous > head.formula)
             || formula.kind != SourceAtomicFormulaKind::PredicateApplication
-            || by_formula[head.formula.index()].replace(index).is_some()
             || head.context != formula.context
             || !valid_range(input.source_id, head.source_range)
             || !properly_contains(formula.source_range, head.source_range)
             || !canonical_spelling(&head.spelling)
             || head.left_arity + head.right_arity == 0
+            || (!formula_changed
+                && previous_range
+                    .is_some_and(|previous: SourceRange| previous.end > head.source_range.start))
         {
             return Err(SourceAtomicFormulaError::ReorderedPredicateHead { head: id });
         }
@@ -1783,24 +2095,40 @@ fn validate_predicate_heads(
         if !sites.insert(head.site.clone()) {
             return Err(SourceAtomicFormulaError::DuplicateSite);
         }
+        groups[head.formula.index()].push(index);
         previous_formula = Some(head.formula);
+        previous_range = Some(head.source_range);
     }
     for (index, formula) in input.formulas.iter().enumerate() {
-        if (formula.kind == SourceAtomicFormulaKind::PredicateApplication)
-            != by_formula[index].is_some()
-        {
+        let heads = &groups[index];
+        let segments = &segment_groups[index];
+        let valid = if formula.kind != SourceAtomicFormulaKind::PredicateApplication {
+            heads.is_empty() && segments.is_empty()
+        } else if segments.is_empty() {
+            heads.len() == 1
+        } else {
+            heads.len() == segments.len()
+                && segments.iter().enumerate().all(|(ordinal, segment_index)| {
+                    let segment = &input.predicate_segments[*segment_index];
+                    let head = &input.predicate_heads[heads[ordinal]];
+                    segment.head == SourcePredicateHeadId::new(heads[ordinal])
+                        && head.recovery == segment.recovery
+                        && properly_contains(segment.source_range, head.source_range)
+                })
+        };
+        if !valid {
             return Err(SourceAtomicFormulaError::InvalidFormula {
                 formula: SourceAtomicFormulaId::new(index),
             });
         }
     }
-    Ok(by_formula)
+    Ok(groups)
 }
 
 fn validate_candidates(
     input: &SourceAtomicFormulaHandoffInput,
     symbols: Option<&SymbolEnv>,
-    head_by_formula: &[Option<usize>],
+    head_groups: &[Vec<usize>],
 ) -> Result<Vec<Vec<usize>>, SourceAtomicFormulaError> {
     let groups = grouped_rows(
         input.predicate_heads.len(),
@@ -1818,10 +2146,13 @@ fn validate_candidates(
         if group.is_empty() {
             return Err(SourceAtomicFormulaError::InvalidPredicateHead { head: head_id });
         }
-        let formula = head_by_formula
-            .iter()
-            .position(|candidate| *candidate == Some(head_index))
-            .ok_or(SourceAtomicFormulaError::InvalidPredicateHead { head: head_id })?;
+        let formula = head.formula.index();
+        if head_groups
+            .get(formula)
+            .is_none_or(|heads| !heads.contains(&head_index))
+        {
+            return Err(SourceAtomicFormulaError::InvalidPredicateHead { head: head_id });
+        }
         for candidate_index in group {
             let id = SourcePredicateCandidateId::new(*candidate_index);
             let candidate = &input.candidates[*candidate_index];
@@ -2272,7 +2603,8 @@ fn validate_shapes(
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     set_terms: Option<&SourceSetTermHandoff>,
-    head_by_formula: &[Option<usize>],
+    segment_groups: &[Vec<usize>],
+    head_groups: &[Vec<usize>],
     type_by_formula: &[Option<usize>],
     attribute_groups: &[Vec<usize>],
     edge_groups: &[Vec<usize>],
@@ -2300,118 +2632,206 @@ fn validate_shapes(
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let (expected_spelling, positions_valid) = match formula.kind {
-            SourceAtomicFormulaKind::PredicateApplication => {
-                let head_index = head_by_formula[formula_index].ok_or(
-                    SourceAtomicFormulaError::InvalidFormula {
-                        formula: formula_id,
-                    },
-                )?;
-                let head = &input.predicate_heads[head_index];
-                if edges.len() != head.left_arity + head.right_arity
-                    || edges
+        let (expected_spelling, positions_valid) =
+            match formula.kind {
+                SourceAtomicFormulaKind::PredicateApplication => {
+                    let segments = &segment_groups[formula_index];
+                    let heads = &head_groups[formula_index];
+                    if segments.is_empty() {
+                        let Some(head_index) = heads.first().copied() else {
+                            return Err(SourceAtomicFormulaError::InvalidFormula {
+                                formula: formula_id,
+                            });
+                        };
+                        let head = &input.predicate_heads[head_index];
+                        if edges.len() != head.left_arity + head.right_arity
+                            || edges.iter().take(head.left_arity).any(|edge| {
+                                edge.role != SourceAtomicEdgeRole::PredicateLeftArgument
+                            })
+                            || edges.iter().skip(head.left_arity).any(|edge| {
+                                edge.role != SourceAtomicEdgeRole::PredicateRightArgument
+                            })
+                        {
+                            return Err(SourceAtomicFormulaError::InvalidFormula {
+                                formula: formula_id,
+                            });
+                        }
+                        let left = occurrences
+                            .iter()
+                            .take(head.left_arity)
+                            .map(|row| row.spelling.as_str())
+                            .collect::<Vec<_>>()
+                            .join(" , ");
+                        let right = occurrences
+                            .iter()
+                            .skip(head.left_arity)
+                            .map(|row| row.spelling.as_str())
+                            .collect::<Vec<_>>()
+                            .join(" , ");
+                        let spelling = [left.as_str(), head.spelling.as_str(), right.as_str()]
+                            .into_iter()
+                            .filter(|part| !part.is_empty())
+                            .collect::<Vec<_>>()
+                            .join(" ");
+                        let left_valid = occurrences
+                            .get(head.left_arity.wrapping_sub(1))
+                            .is_none_or(|row| row.range.end <= head.source_range.start);
+                        let right_valid = occurrences
+                            .get(head.left_arity)
+                            .is_none_or(|row| head.source_range.end <= row.range.start);
+                        (spelling, left_valid && right_valid)
+                    } else {
+                        if edges.len() != segments.len() + 1
+                            || heads.len() != segments.len()
+                            || edges.iter().enumerate().any(|(ordinal, edge)| {
+                                edge.role
+                                    != if ordinal == 0 {
+                                        SourceAtomicEdgeRole::PredicateLeftArgument
+                                    } else if ordinal + 1 == edges.len() {
+                                        SourceAtomicEdgeRole::PredicateRightArgument
+                                    } else {
+                                        SourceAtomicEdgeRole::PredicateChainBoundary
+                                    }
+                            })
+                        {
+                            return Err(SourceAtomicFormulaError::InvalidFormula {
+                                formula: formula_id,
+                            });
+                        }
+                        let mut spellings = Vec::with_capacity(segments.len());
+                        for (ordinal, segment_index) in segments.iter().copied().enumerate() {
+                            let segment_id = SourcePredicateSegmentId::new(segment_index);
+                            let segment = &input.predicate_segments[segment_index];
+                            let head_index = heads[ordinal];
+                            let head = &input.predicate_heads[head_index];
+                            let left_edge = SourceAtomicEdgeId::new(edge_indexes[ordinal]);
+                            let right_edge = SourceAtomicEdgeId::new(edge_indexes[ordinal + 1]);
+                            let left = &occurrences[ordinal];
+                            let right = &occurrences[ordinal + 1];
+                            if segment.head != SourcePredicateHeadId::new(head_index)
+                                || segment.left_edge != left_edge
+                                || segment.right_edge != right_edge
+                                || head.left_arity != 1
+                                || head.right_arity != 1
+                                || !properly_contains(segment.source_range, head.source_range)
+                                || !range_contains(segment.source_range, right.range)
+                                || head.source_range.end > right.range.start
+                                || (ordinal == 0
+                                    && (!range_contains(segment.source_range, left.range)
+                                        || left.range.end > head.source_range.start))
+                                || (ordinal > 0
+                                    && (range_contains(segment.source_range, left.range)
+                                        || left.range.end > segment.source_range.start))
+                            {
+                                return Err(SourceAtomicFormulaError::InvalidPredicateSegment {
+                                    segment: segment_id,
+                                });
+                            }
+                            let polarity = match &segment.polarity {
+                                SourcePredicateSegmentPolarityInput::Positive => String::new(),
+                                SourcePredicateSegmentPolarityInput::Negative {
+                                    verb_range,
+                                    verb_spelling,
+                                    not_range,
+                                    not_spelling,
+                                    ..
+                                } => {
+                                    if verb_range.start < segment.source_range.start
+                                        || verb_range.end > not_range.start
+                                        || not_range.end > head.source_range.start
+                                    {
+                                        return Err(
+                                            SourceAtomicFormulaError::InvalidPredicateSegment {
+                                                segment: segment_id,
+                                            },
+                                        );
+                                    }
+                                    format!("{verb_spelling} {not_spelling} ")
+                                }
+                            };
+                            let expected = if ordinal == 0 {
+                                format!(
+                                    "{} {polarity}{} {}",
+                                    left.spelling, head.spelling, right.spelling
+                                )
+                            } else {
+                                format!("{polarity}{} {}", head.spelling, right.spelling)
+                            };
+                            if segment.spelling != expected {
+                                return Err(SourceAtomicFormulaError::InvalidPredicateSegment {
+                                    segment: segment_id,
+                                });
+                            }
+                            spellings.push(expected);
+                        }
+                        (spellings.join(" "), true)
+                    }
+                }
+                SourceAtomicFormulaKind::Equality
+                | SourceAtomicFormulaKind::Inequality
+                | SourceAtomicFormulaKind::Membership => {
+                    if edges.len() != 2
+                        || edges[0].role != SourceAtomicEdgeRole::BuiltinLeftOperand
+                        || edges[1].role != SourceAtomicEdgeRole::BuiltinRightOperand
+                    {
+                        return Err(SourceAtomicFormulaError::InvalidFormula {
+                            formula: formula_id,
+                        });
+                    }
+                    let operator = match formula.kind {
+                        SourceAtomicFormulaKind::Equality => "=",
+                        SourceAtomicFormulaKind::Inequality => "<>",
+                        SourceAtomicFormulaKind::Membership => "in",
+                        _ => unreachable!(),
+                    };
+                    (
+                        format!(
+                            "{} {operator} {}",
+                            occurrences[0].spelling, occurrences[1].spelling
+                        ),
+                        occurrences[0].range.end <= occurrences[1].range.start,
+                    )
+                }
+                SourceAtomicFormulaKind::TypeAssertion => {
+                    if edges.len() != 1
+                        || edges[0].role != SourceAtomicEdgeRole::AssertionSubject
+                        || !attribute_groups[formula_index].is_empty()
+                    {
+                        return Err(SourceAtomicFormulaError::InvalidFormula {
+                            formula: formula_id,
+                        });
+                    }
+                    let type_site = type_by_formula[formula_index]
+                        .and_then(|index| input.type_sites.get(index))
+                        .ok_or(SourceAtomicFormulaError::InvalidFormula {
+                            formula: formula_id,
+                        })?;
+                    (
+                        format!("{} is {}", occurrences[0].spelling, type_site.spelling),
+                        occurrences[0].range.end <= type_site.source_range.start,
+                    )
+                }
+                SourceAtomicFormulaKind::AttributeAssertion => {
+                    if edges.len() != 1
+                        || edges[0].role != SourceAtomicEdgeRole::AssertionSubject
+                        || type_by_formula[formula_index].is_some()
+                    {
+                        return Err(SourceAtomicFormulaError::InvalidFormula {
+                            formula: formula_id,
+                        });
+                    }
+                    let attributes = attribute_groups[formula_index]
                         .iter()
-                        .take(head.left_arity)
-                        .any(|edge| edge.role != SourceAtomicEdgeRole::PredicateLeftArgument)
-                    || edges
-                        .iter()
-                        .skip(head.left_arity)
-                        .any(|edge| edge.role != SourceAtomicEdgeRole::PredicateRightArgument)
-                {
-                    return Err(SourceAtomicFormulaError::InvalidFormula {
-                        formula: formula_id,
-                    });
+                        .map(|index| input.attributes[*index].spelling.as_str())
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    let first = &input.attributes[attribute_groups[formula_index][0]];
+                    (
+                        format!("{} is {attributes}", occurrences[0].spelling),
+                        occurrences[0].range.end <= first.source_range.start,
+                    )
                 }
-                let left = occurrences
-                    .iter()
-                    .take(head.left_arity)
-                    .map(|row| row.spelling.as_str())
-                    .collect::<Vec<_>>()
-                    .join(" , ");
-                let right = occurrences
-                    .iter()
-                    .skip(head.left_arity)
-                    .map(|row| row.spelling.as_str())
-                    .collect::<Vec<_>>()
-                    .join(" , ");
-                let spelling = [left.as_str(), head.spelling.as_str(), right.as_str()]
-                    .into_iter()
-                    .filter(|part| !part.is_empty())
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                let left_valid = occurrences
-                    .get(head.left_arity.wrapping_sub(1))
-                    .is_none_or(|row| row.range.end <= head.source_range.start);
-                let right_valid = occurrences
-                    .get(head.left_arity)
-                    .is_none_or(|row| head.source_range.end <= row.range.start);
-                (spelling, left_valid && right_valid)
-            }
-            SourceAtomicFormulaKind::Equality
-            | SourceAtomicFormulaKind::Inequality
-            | SourceAtomicFormulaKind::Membership => {
-                if edges.len() != 2
-                    || edges[0].role != SourceAtomicEdgeRole::BuiltinLeftOperand
-                    || edges[1].role != SourceAtomicEdgeRole::BuiltinRightOperand
-                {
-                    return Err(SourceAtomicFormulaError::InvalidFormula {
-                        formula: formula_id,
-                    });
-                }
-                let operator = match formula.kind {
-                    SourceAtomicFormulaKind::Equality => "=",
-                    SourceAtomicFormulaKind::Inequality => "<>",
-                    SourceAtomicFormulaKind::Membership => "in",
-                    _ => unreachable!(),
-                };
-                (
-                    format!(
-                        "{} {operator} {}",
-                        occurrences[0].spelling, occurrences[1].spelling
-                    ),
-                    occurrences[0].range.end <= occurrences[1].range.start,
-                )
-            }
-            SourceAtomicFormulaKind::TypeAssertion => {
-                if edges.len() != 1
-                    || edges[0].role != SourceAtomicEdgeRole::AssertionSubject
-                    || !attribute_groups[formula_index].is_empty()
-                {
-                    return Err(SourceAtomicFormulaError::InvalidFormula {
-                        formula: formula_id,
-                    });
-                }
-                let type_site = type_by_formula[formula_index]
-                    .and_then(|index| input.type_sites.get(index))
-                    .ok_or(SourceAtomicFormulaError::InvalidFormula {
-                        formula: formula_id,
-                    })?;
-                (
-                    format!("{} is {}", occurrences[0].spelling, type_site.spelling),
-                    occurrences[0].range.end <= type_site.source_range.start,
-                )
-            }
-            SourceAtomicFormulaKind::AttributeAssertion => {
-                if edges.len() != 1
-                    || edges[0].role != SourceAtomicEdgeRole::AssertionSubject
-                    || type_by_formula[formula_index].is_some()
-                {
-                    return Err(SourceAtomicFormulaError::InvalidFormula {
-                        formula: formula_id,
-                    });
-                }
-                let attributes = attribute_groups[formula_index]
-                    .iter()
-                    .map(|index| input.attributes[*index].spelling.as_str())
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                let first = &input.attributes[attribute_groups[formula_index][0]];
-                (
-                    format!("{} is {attributes}", occurrences[0].spelling),
-                    occurrences[0].range.end <= first.source_range.start,
-                )
-            }
-        };
+            };
         if formula.spelling != expected_spelling || !positions_valid {
             return Err(SourceAtomicFormulaError::InvalidFormula {
                 formula: formula_id,
@@ -2424,7 +2844,7 @@ fn validate_shapes(
 #[allow(clippy::too_many_arguments)] // Rationale: request validation receives each precomputed association group explicitly.
 fn validate_requests(
     input: &SourceAtomicFormulaHandoffInput,
-    head_by_formula: &[Option<usize>],
+    head_groups: &[Vec<usize>],
     candidate_groups: &[Vec<usize>],
     type_by_formula: &[Option<usize>],
     attribute_groups: &[Vec<usize>],
@@ -2442,21 +2862,19 @@ fn validate_requests(
     for (formula_index, group) in groups.iter().enumerate() {
         let formula = &input.formulas[formula_index];
         let expected = match formula.kind {
-            SourceAtomicFormulaKind::PredicateApplication => {
-                let head = head_by_formula[formula_index].expect("validated predicate head");
-                candidate_groups[head]
-                    .iter()
-                    .map(|candidate| {
-                        (
-                            SourceAtomicRequestKind::PredicateCandidateSignature,
-                            None,
-                            Some(SourcePredicateCandidateId::new(*candidate)),
-                            None,
-                            None,
-                        )
-                    })
-                    .collect::<Vec<_>>()
-            }
+            SourceAtomicFormulaKind::PredicateApplication => head_groups[formula_index]
+                .iter()
+                .flat_map(|head| candidate_groups[*head].iter())
+                .map(|candidate| {
+                    (
+                        SourceAtomicRequestKind::PredicateCandidateSignature,
+                        None,
+                        Some(SourcePredicateCandidateId::new(*candidate)),
+                        None,
+                        None,
+                    )
+                })
+                .collect::<Vec<_>>(),
             SourceAtomicFormulaKind::Equality | SourceAtomicFormulaKind::Inequality => edge_groups
                 [formula_index]
                 .iter()
@@ -3006,6 +3424,7 @@ fn type_head_key(head: SourceAssertionTypeHead) -> &'static str {
 fn edge_role_key(role: SourceAtomicEdgeRole) -> &'static str {
     match role {
         SourceAtomicEdgeRole::PredicateLeftArgument => "predicate-left",
+        SourceAtomicEdgeRole::PredicateChainBoundary => "predicate-chain-boundary",
         SourceAtomicEdgeRole::PredicateRightArgument => "predicate-right",
         SourceAtomicEdgeRole::BuiltinLeftOperand => "builtin-left",
         SourceAtomicEdgeRole::BuiltinRightOperand => "builtin-right",
@@ -3056,6 +3475,40 @@ fn write_polarity(output: &mut String, polarity: &SourceAssertionAttributePolari
                 non_range.end,
                 non_spelling,
                 recovery_key(*non_recovery),
+            );
+        }
+    }
+}
+
+fn write_predicate_segment_polarity(
+    output: &mut String,
+    polarity: &SourcePredicateSegmentPolarityInput,
+) {
+    match polarity {
+        SourcePredicateSegmentPolarityInput::Positive => output.push_str("positive"),
+        SourcePredicateSegmentPolarityInput::Negative {
+            verb_site,
+            verb_range,
+            verb_spelling,
+            verb_recovery,
+            not_site,
+            not_range,
+            not_spelling,
+            not_recovery,
+        } => {
+            let _ = write!(
+                output,
+                "negative(verb_site={} verb_range={}..{} verb_spelling={:?} verb_recovery={} not_site={} not_range={}..{} not_spelling={:?} not_recovery={})",
+                verb_site.node().index(),
+                verb_range.start,
+                verb_range.end,
+                verb_spelling,
+                recovery_key(*verb_recovery),
+                not_site.node().index(),
+                not_range.start,
+                not_range.end,
+                not_spelling,
+                recovery_key(*not_recovery),
             );
         }
     }
@@ -3277,6 +3730,7 @@ mod tests {
                 kind: SourceAtomicFormulaKind::TypeAssertion,
             }],
             wrappers: Vec::new(),
+            predicate_segments: Vec::new(),
             predicate_heads: Vec::new(),
             candidates: Vec::new(),
             type_sites: vec![SourceAssertionTypeSiteInput {
@@ -3490,6 +3944,7 @@ mod tests {
                     kind,
                 }],
                 wrappers: Vec::new(),
+                predicate_segments: Vec::new(),
                 predicate_heads: Vec::new(),
                 candidates: Vec::new(),
                 type_sites,
@@ -3626,6 +4081,240 @@ mod tests {
             attribute: None,
         }];
         fixture
+    }
+
+    fn predicate_chain_fixture() -> Fixture {
+        let source = source_id();
+        let module = module();
+        let bindings = bindings(source, &module);
+        let arena = TypedArena::try_new(
+            None,
+            vec![
+                TypedNode::new(
+                    "source.term.numeral",
+                    SourceAnchor::Range(range(source, 75, 76)),
+                ),
+                TypedNode::new(
+                    "source.term.numeral",
+                    SourceAnchor::Range(range(source, 85, 86)),
+                ),
+                TypedNode::new(
+                    "source.term.numeral",
+                    SourceAnchor::Range(range(source, 104, 105)),
+                ),
+                TypedNode::new(
+                    "source.formula.atomic.predicate",
+                    SourceAnchor::Range(range(source, 75, 105)),
+                ),
+                TypedNode::new(
+                    "source.formula.atomic.predicate-segment",
+                    SourceAnchor::Range(range(source, 75, 86)),
+                ),
+                TypedNode::new(
+                    "source.formula.atomic.predicate-segment",
+                    SourceAnchor::Range(range(source, 87, 105)),
+                ),
+                TypedNode::new(
+                    "source.formula.atomic.predicate-head",
+                    SourceAnchor::Range(range(source, 77, 84)),
+                ),
+                TypedNode::new(
+                    "source.formula.atomic.predicate-head",
+                    SourceAnchor::Range(range(source, 96, 103)),
+                ),
+                TypedNode::new(
+                    "source.formula.atomic.predicate-negation-verb",
+                    SourceAnchor::Range(range(source, 87, 91)),
+                ),
+                TypedNode::new(
+                    "source.formula.atomic.predicate-negation-not",
+                    SourceAnchor::Range(range(source, 92, 95)),
+                ),
+            ],
+        )
+        .expect("predicate-chain arena");
+        let primary = primary_handoff(
+            source,
+            &module,
+            &bindings,
+            &arena,
+            &[(0, 75, 76, "1"), (1, 85, 86, "2"), (2, 104, 105, "3")],
+        );
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 1, 2)),
+        );
+        let symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new("divides/chain"),
+            FullyQualifiedName::new("atomic.fixture::divides"),
+        );
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 3, 4)),
+            vec![0],
+        );
+        indexes.symbols.insert(SymbolEntry::new(
+            symbol.clone(),
+            SymbolKind::Predicate,
+            NamespacePath::new(module.path().as_str()),
+            "divides",
+            origin.clone(),
+            contribution,
+        ));
+        indexes
+            .contributions
+            .add_symbol(contribution, symbol.clone());
+        let definition = indexes.definitions.insert(DefinitionShell::new(
+            symbol.clone(),
+            DefinitionKind::Predicate,
+            origin,
+            contribution,
+        ));
+        indexes
+            .contributions
+            .add_definition(contribution, definition);
+        let formula = SourceAtomicFormulaId::new(0);
+        Fixture {
+            source,
+            module: module.clone(),
+            bindings,
+            symbols: SymbolEnv::new(module.clone(), indexes),
+            primary,
+            arena,
+            input: SourceAtomicFormulaHandoffInput {
+                source_id: source,
+                module_id: module,
+                formulas: vec![SourceAtomicFormulaInput {
+                    site: node(3),
+                    source_range: range(source, 75, 105),
+                    source_ordinal: 0,
+                    context: BindingContextId::new(0),
+                    recovery: SourceAtomicFormulaRecovery::Normal,
+                    spelling: "1 divides 2 does not divides 3".to_owned(),
+                    kind: SourceAtomicFormulaKind::PredicateApplication,
+                }],
+                wrappers: Vec::new(),
+                predicate_segments: vec![
+                    SourcePredicateSegmentInput {
+                        formula,
+                        ordinal: 0,
+                        site: node(4),
+                        source_range: range(source, 75, 86),
+                        context: BindingContextId::new(0),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "1 divides 2".to_owned(),
+                        head: SourcePredicateHeadId::new(0),
+                        polarity: SourcePredicateSegmentPolarityInput::Positive,
+                        left_edge: SourceAtomicEdgeId::new(0),
+                        right_edge: SourceAtomicEdgeId::new(1),
+                    },
+                    SourcePredicateSegmentInput {
+                        formula,
+                        ordinal: 1,
+                        site: node(5),
+                        source_range: range(source, 87, 105),
+                        context: BindingContextId::new(0),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "does not divides 3".to_owned(),
+                        head: SourcePredicateHeadId::new(1),
+                        polarity: SourcePredicateSegmentPolarityInput::Negative {
+                            verb_site: node(8),
+                            verb_range: range(source, 87, 91),
+                            verb_spelling: "does".to_owned(),
+                            verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                            not_site: node(9),
+                            not_range: range(source, 92, 95),
+                            not_spelling: "not".to_owned(),
+                            not_recovery: SourceAtomicFormulaRecovery::Normal,
+                        },
+                        left_edge: SourceAtomicEdgeId::new(1),
+                        right_edge: SourceAtomicEdgeId::new(2),
+                    },
+                ],
+                predicate_heads: vec![
+                    SourcePredicateHeadInput {
+                        formula,
+                        site: node(6),
+                        source_range: range(source, 77, 84),
+                        context: BindingContextId::new(0),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "divides".to_owned(),
+                        left_arity: 1,
+                        right_arity: 1,
+                    },
+                    SourcePredicateHeadInput {
+                        formula,
+                        site: node(7),
+                        source_range: range(source, 96, 103),
+                        context: BindingContextId::new(0),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "divides".to_owned(),
+                        left_arity: 1,
+                        right_arity: 1,
+                    },
+                ],
+                candidates: vec![
+                    SourcePredicateCandidateInput {
+                        head: SourcePredicateHeadId::new(0),
+                        ordinal: 0,
+                        symbol: symbol.clone(),
+                        contribution,
+                    },
+                    SourcePredicateCandidateInput {
+                        head: SourcePredicateHeadId::new(1),
+                        ordinal: 0,
+                        symbol,
+                        contribution,
+                    },
+                ],
+                type_sites: Vec::new(),
+                attributes: Vec::new(),
+                edges: vec![
+                    SourceAtomicEdgeInput {
+                        formula,
+                        ordinal: 0,
+                        role: SourceAtomicEdgeRole::PredicateLeftArgument,
+                        target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(0)),
+                    },
+                    SourceAtomicEdgeInput {
+                        formula,
+                        ordinal: 1,
+                        role: SourceAtomicEdgeRole::PredicateChainBoundary,
+                        target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(1)),
+                    },
+                    SourceAtomicEdgeInput {
+                        formula,
+                        ordinal: 2,
+                        role: SourceAtomicEdgeRole::PredicateRightArgument,
+                        target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(2)),
+                    },
+                ],
+                requests: vec![
+                    SourceAtomicRequestInput {
+                        formula,
+                        ordinal: 0,
+                        kind: SourceAtomicRequestKind::PredicateCandidateSignature,
+                        edge: None,
+                        candidate: Some(SourcePredicateCandidateId::new(0)),
+                        type_site: None,
+                        attribute: None,
+                    },
+                    SourceAtomicRequestInput {
+                        formula,
+                        ordinal: 1,
+                        kind: SourceAtomicRequestKind::PredicateCandidateSignature,
+                        edge: None,
+                        candidate: Some(SourcePredicateCandidateId::new(1)),
+                        type_site: None,
+                        attribute: None,
+                    },
+                ],
+            },
+        }
     }
 
     fn install_local_symbols(
@@ -5570,6 +6259,324 @@ mod tests {
     }
 
     #[test]
+    fn legacy_predicate_head_recovery_remains_independent_of_formula_recovery() {
+        let mut fixture = predicate_fixture((13, 19), 1, 1, "1 divides 2");
+        install_local_symbols(
+            &mut fixture,
+            "divides",
+            SymbolKind::Predicate,
+            DefinitionKind::Predicate,
+            1,
+        );
+        let mut nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        nodes[6] = nodes[6].clone().with_recovery(NodeRecoveryState::Degraded);
+        fixture.arena = TypedArena::try_new(None, nodes).expect("degraded predicate-head arena");
+        fixture.input.predicate_heads[0].recovery = SourceAtomicFormulaRecovery::Degraded;
+
+        let handoff = build(&fixture).expect("legacy predicate head recovery stays independent");
+        assert_eq!(
+            handoff
+                .formulas()
+                .get(SourceAtomicFormulaId::new(0))
+                .expect("legacy formula")
+                .recovery(),
+            SourceAtomicFormulaRecovery::Normal
+        );
+        assert_eq!(
+            handoff
+                .predicate_heads()
+                .get(SourcePredicateHeadId::new(0))
+                .expect("legacy head")
+                .recovery(),
+            SourceAtomicFormulaRecovery::Degraded
+        );
+    }
+
+    #[test]
+    fn predicate_chain_segments_share_one_boundary_and_clone_preserve() {
+        let fixture = predicate_chain_fixture();
+        let handoff = build(&fixture).expect("predicate-chain handoff");
+        assert_eq!(handoff.formulas().len(), 1);
+        assert_eq!(handoff.wrappers().len(), 0);
+        assert_eq!(handoff.predicate_segments().len(), 2);
+        assert_eq!(handoff.predicate_heads().len(), 2);
+        assert_eq!(handoff.candidates().len(), 2);
+        assert_eq!(handoff.type_sites().len(), 0);
+        assert_eq!(handoff.attributes().len(), 0);
+        assert_eq!(handoff.edges().len(), 3);
+        assert_eq!(handoff.requests().len(), 2);
+
+        let first = handoff
+            .predicate_segments()
+            .get(SourcePredicateSegmentId::new(0))
+            .expect("first segment");
+        let second = handoff
+            .predicate_segments()
+            .get(SourcePredicateSegmentId::new(1))
+            .expect("second segment");
+        assert_eq!(
+            handoff
+                .predicate_segments()
+                .iter()
+                .map(|(id, row)| (id.index(), row.ordinal()))
+                .collect::<Vec<_>>(),
+            [(0, 0), (1, 1)]
+        );
+        assert_eq!(first.formula(), SourceAtomicFormulaId::new(0));
+        assert_eq!(first.ordinal(), 0);
+        assert_eq!(first.site(), &node(4));
+        assert_eq!(first.source_range(), range(fixture.source, 75, 86));
+        assert_eq!(first.context(), BindingContextId::new(0));
+        assert_eq!(first.recovery(), SourceAtomicFormulaRecovery::Normal);
+        assert_eq!(first.spelling(), "1 divides 2");
+        assert_eq!(first.head(), SourcePredicateHeadId::new(0));
+        assert_eq!(first.left_edge(), SourceAtomicEdgeId::new(0));
+        assert_eq!(first.right_edge(), SourceAtomicEdgeId::new(1));
+        assert_eq!(
+            first.polarity(),
+            &SourcePredicateSegmentPolarityInput::Positive
+        );
+        assert_eq!(second.formula(), SourceAtomicFormulaId::new(0));
+        assert_eq!(second.ordinal(), 1);
+        assert_eq!(second.site(), &node(5));
+        assert_eq!(second.source_range(), range(fixture.source, 87, 105));
+        assert_eq!(second.context(), BindingContextId::new(0));
+        assert_eq!(second.recovery(), SourceAtomicFormulaRecovery::Normal);
+        assert_eq!(second.spelling(), "does not divides 3");
+        assert_eq!(second.head(), SourcePredicateHeadId::new(1));
+        assert_eq!(second.left_edge(), SourceAtomicEdgeId::new(1));
+        assert_eq!(second.right_edge(), SourceAtomicEdgeId::new(2));
+        assert_eq!(
+            second.polarity(),
+            &SourcePredicateSegmentPolarityInput::Negative {
+                verb_site: node(8),
+                verb_range: range(fixture.source, 87, 91),
+                verb_spelling: "does".to_owned(),
+                verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                not_site: node(9),
+                not_range: range(fixture.source, 92, 95),
+                not_spelling: "not".to_owned(),
+                not_recovery: SourceAtomicFormulaRecovery::Normal,
+            }
+        );
+        assert_eq!(
+            handoff
+                .edges()
+                .get(SourceAtomicEdgeId::new(1))
+                .map(|edge| (edge.role(), edge.target())),
+            Some((
+                SourceAtomicEdgeRole::PredicateChainBoundary,
+                SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(1)),
+            ))
+        );
+        assert_eq!(
+            handoff
+                .candidates()
+                .get(SourcePredicateCandidateId::new(0))
+                .map(SourcePredicateCandidate::symbol),
+            handoff
+                .candidates()
+                .get(SourcePredicateCandidateId::new(1))
+                .map(SourcePredicateCandidate::symbol)
+        );
+
+        let debug = handoff.debug_text();
+        assert_eq!(
+            debug,
+            r#"source-atomic-formula-debug-v1
+module: atomic.fixture
+primary-term-fingerprint: "source-primary-term-debug-v1\nmodule: atomic.fixture\nterm#0 ordinal=0 kind=numeral role=value range=75..76 site=0 context=0 recovery=normal spelling=\"1\" parent=-\nterm#1 ordinal=1 kind=numeral role=value range=85..86 site=1 context=0 recovery=normal spelling=\"2\" parent=-\nterm#2 ordinal=2 kind=numeral role=value range=104..105 site=2 context=0 recovery=normal spelling=\"3\" parent=-\nnumeric-request#0 term=0 ordinal=0 owner=0 range=75..76 spelling=\"1\"\nnumeric-request#1 term=1 ordinal=1 owner=1 range=85..86 spelling=\"2\"\nnumeric-request#2 term=2 ordinal=2 owner=2 range=104..105 spelling=\"3\"\n"
+application-fingerprint: None
+structure-fingerprint: None
+set-term-fingerprint: None
+formula#0 ordinal=0 kind=predicate range=75..105 site=3 context=0 recovery=normal spelling="1 divides 2 does not divides 3"
+predicate-segment#0 formula=0 ordinal=0 range=75..86 site=4 context=0 recovery=normal spelling="1 divides 2" head=0 polarity=positive left_edge=0 right_edge=1
+predicate-segment#1 formula=0 ordinal=1 range=87..105 site=5 context=0 recovery=normal spelling="does not divides 3" head=1 polarity=negative(verb_site=8 verb_range=87..91 verb_spelling="does" verb_recovery=normal not_site=9 not_range=92..95 not_spelling="not" not_recovery=normal) left_edge=1 right_edge=2
+predicate-head#0 formula=0 range=77..84 site=6 context=0 recovery=normal spelling="divides" left_arity=1 right_arity=1
+predicate-head#1 formula=0 range=96..103 site=7 context=0 recovery=normal spelling="divides" left_arity=1 right_arity=1
+candidate#0 head=0 ordinal=0 symbol=SymbolId { module: ModuleId { package: PackageId("pkg"), path: ModulePath("atomic.fixture") }, local: LocalSymbolId("divides/chain"), fqn: FullyQualifiedName("atomic.fixture::divides") } contribution=0
+candidate#1 head=1 ordinal=0 symbol=SymbolId { module: ModuleId { package: PackageId("pkg"), path: ModulePath("atomic.fixture") }, local: LocalSymbolId("divides/chain"), fqn: FullyQualifiedName("atomic.fixture::divides") } contribution=0
+edge#0 formula=0 ordinal=0 role=predicate-left target=primary:0
+edge#1 formula=0 ordinal=1 role=predicate-chain-boundary target=primary:1
+edge#2 formula=0 ordinal=2 role=predicate-right target=primary:2
+request#0 formula=0 ordinal=0 kind=predicate-candidate-signature edge=- candidate=0 type_site=- attribute=-
+request#1 formula=0 ordinal=1 kind=predicate-candidate-signature edge=- candidate=1 type_site=- attribute=-
+"#
+        );
+
+        let typed = typed_ast(&fixture)
+            .with_source_atomic_formula(handoff.clone())
+            .expect("install predicate chain");
+        assert_eq!(typed.source_atomic_formula(), Some(&handoff));
+        handoff
+            .validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                None,
+                None,
+                None,
+                &fixture.arena,
+            )
+            .expect("clone-preserved revalidation");
+
+        let legacy =
+            build(&make_fixture(SourceAtomicFormulaKind::Equality)).expect("legacy atomic formula");
+        assert_eq!(
+            legacy.debug_text(),
+            r#"source-atomic-formula-debug-v1
+module: atomic.fixture
+primary-term-fingerprint: "source-primary-term-debug-v1\nmodule: atomic.fixture\nterm#0 ordinal=0 kind=numeral role=value range=10..11 site=0 context=0 recovery=normal spelling=\"1\" parent=-\nterm#1 ordinal=1 kind=numeral role=value range=20..21 site=1 context=0 recovery=normal spelling=\"2\" parent=-\nnumeric-request#0 term=0 ordinal=0 owner=0 range=10..11 spelling=\"1\"\nnumeric-request#1 term=1 ordinal=1 owner=1 range=20..21 spelling=\"2\"\n"
+application-fingerprint: None
+structure-fingerprint: None
+set-term-fingerprint: None
+formula#0 ordinal=0 kind=equality range=5..25 site=2 context=0 recovery=normal spelling="1 = 2"
+edge#0 formula=0 ordinal=0 role=builtin-left target=primary:0
+edge#1 formula=0 ordinal=1 role=builtin-right target=primary:1
+request#0 formula=0 ordinal=0 kind=operand-expected-type edge=0 candidate=- type_site=- attribute=-
+request#1 formula=0 ordinal=1 kind=operand-expected-type edge=1 candidate=- type_site=- attribute=-
+"#
+        );
+        assert!(legacy.predicate_segments().is_empty());
+    }
+
+    #[test]
+    fn predicate_chain_segment_corruption_fails_closed() {
+        type Mutation = fn(&mut Fixture);
+        let mutations: &[Mutation] = &[
+            |fixture| {
+                fixture.input.predicate_segments.pop();
+            },
+            |fixture| fixture.input.predicate_segments[1].ordinal = 0,
+            |fixture| {
+                fixture.input.predicate_segments[1].formula = SourceAtomicFormulaId::new(1);
+            },
+            |fixture| fixture.input.predicate_segments[1].site = node(4),
+            |fixture| {
+                fixture.input.predicate_segments[1].source_range = range(fixture.source, 84, 105);
+            },
+            |fixture| {
+                fixture.input.predicate_segments[1].context = BindingContextId::new(1);
+            },
+            |fixture| {
+                fixture.input.predicate_segments[1].recovery =
+                    SourceAtomicFormulaRecovery::Degraded;
+            },
+            |fixture| fixture.input.predicate_segments[1].spelling = "divides 3".to_owned(),
+            |fixture| fixture.input.predicate_segments[1].head = SourcePredicateHeadId::new(0),
+            |fixture| fixture.input.predicate_segments[1].left_edge = SourceAtomicEdgeId::new(0),
+            |fixture| fixture.input.predicate_segments[1].right_edge = SourceAtomicEdgeId::new(1),
+            |fixture| {
+                let SourcePredicateSegmentPolarityInput::Negative { verb_spelling, .. } =
+                    &mut fixture.input.predicate_segments[1].polarity
+                else {
+                    unreachable!()
+                };
+                *verb_spelling = "is".to_owned();
+            },
+            |fixture| {
+                let SourcePredicateSegmentPolarityInput::Negative { verb_site, .. } =
+                    &mut fixture.input.predicate_segments[1].polarity
+                else {
+                    unreachable!()
+                };
+                *verb_site = node(9);
+            },
+            |fixture| {
+                let SourcePredicateSegmentPolarityInput::Negative { verb_range, .. } =
+                    &mut fixture.input.predicate_segments[1].polarity
+                else {
+                    unreachable!()
+                };
+                *verb_range = range(fixture.source, 86, 91);
+            },
+            |fixture| {
+                let SourcePredicateSegmentPolarityInput::Negative { verb_recovery, .. } =
+                    &mut fixture.input.predicate_segments[1].polarity
+                else {
+                    unreachable!()
+                };
+                *verb_recovery = SourceAtomicFormulaRecovery::Degraded;
+            },
+            |fixture| {
+                let SourcePredicateSegmentPolarityInput::Negative { not_site, .. } =
+                    &mut fixture.input.predicate_segments[1].polarity
+                else {
+                    unreachable!()
+                };
+                *not_site = node(8);
+            },
+            |fixture| {
+                let SourcePredicateSegmentPolarityInput::Negative { not_range, .. } =
+                    &mut fixture.input.predicate_segments[1].polarity
+                else {
+                    unreachable!()
+                };
+                *not_range = range(fixture.source, 91, 95);
+            },
+            |fixture| {
+                let SourcePredicateSegmentPolarityInput::Negative { not_spelling, .. } =
+                    &mut fixture.input.predicate_segments[1].polarity
+                else {
+                    unreachable!()
+                };
+                *not_spelling = "non".to_owned();
+            },
+            |fixture| {
+                let SourcePredicateSegmentPolarityInput::Negative { not_recovery, .. } =
+                    &mut fixture.input.predicate_segments[1].polarity
+                else {
+                    unreachable!()
+                };
+                *not_recovery = SourceAtomicFormulaRecovery::Degraded;
+            },
+            |fixture| {
+                fixture.input.predicate_segments[1].polarity =
+                    SourcePredicateSegmentPolarityInput::Positive;
+            },
+            |fixture| {
+                let mut nodes = fixture
+                    .arena
+                    .iter()
+                    .map(|(_, row)| row.clone())
+                    .collect::<Vec<_>>();
+                nodes[7] = nodes[7].clone().with_recovery(NodeRecoveryState::Degraded);
+                fixture.arena =
+                    TypedArena::try_new(None, nodes).expect("degraded chain-head arena");
+                fixture.input.predicate_heads[1].recovery = SourceAtomicFormulaRecovery::Degraded;
+            },
+            |fixture| fixture.input.predicate_heads[1].left_arity = 2,
+            |fixture| fixture.input.candidates[1].head = SourcePredicateHeadId::new(0),
+            |fixture| fixture.input.edges[1].role = SourceAtomicEdgeRole::PredicateRightArgument,
+            |fixture| {
+                fixture.input.edges[1].target =
+                    SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(0));
+            },
+            |fixture| {
+                fixture.input.requests[1].candidate = Some(SourcePredicateCandidateId::new(0));
+            },
+        ];
+        for mutate in mutations {
+            let mut fixture = predicate_chain_fixture();
+            mutate(&mut fixture);
+            assert_build_rejects(&fixture);
+        }
+
+        let mut one_segment = predicate_chain_fixture();
+        one_segment.input.predicate_segments.truncate(1);
+        one_segment.input.predicate_heads.truncate(1);
+        one_segment.input.candidates.truncate(1);
+        one_segment.input.edges.truncate(2);
+        one_segment.input.edges[1].role = SourceAtomicEdgeRole::PredicateRightArgument;
+        one_segment.input.requests.truncate(1);
+        assert_build_rejects(&one_segment);
+    }
+
+    #[test]
     fn prefix_infix_and_postfix_predicate_arities_preserve_written_order() {
         for (head_range, left, right, spelling) in [
             ((6, 9), 0, 2, "divides 1 , 2"),
@@ -5802,6 +6809,7 @@ mod tests {
                 recovery: SourceAtomicFormulaRecovery::Normal,
                 spelling: "( 3 = 4 )".to_owned(),
             }],
+            predicate_segments: Vec::new(),
             predicate_heads: Vec::new(),
             candidates: Vec::new(),
             type_sites: Vec::new(),

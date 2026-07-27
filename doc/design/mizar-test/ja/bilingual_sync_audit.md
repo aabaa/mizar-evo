@@ -317,3 +317,7 @@ shared boundary、exact tests、baseline/projection、semantic deferralをfreeze
 する。このprerequisiteはrunner module、fixture、sidecar、trace metadata、
 production path、count/hashを変更しないためpaired module-boundary auditは
 意図的に不変。Task-257C1 bilingual driftは残らない。
+
+implemented exact route、fixture/sidecar/trace projection、実測count/hash、
+module-boundary recheck、不変semantic deferralをpaired EN/JA runner文書で
+同期した。driftは残らない。

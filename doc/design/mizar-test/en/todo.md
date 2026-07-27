@@ -1846,5 +1846,8 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   corruption/isolation/install/final matrices, and empty semantic output.
 - [x] Keep this prerequisite at `417/383`, `249/237`, `227/190`, active
   `101/5/196/1`, 349 tests, and 29 paths / 32,809 lines.
-- [ ] Implement the exact route, one fixture/sidecar, covered trace row, and
+- [x] Implement the exact route, one fixture/sidecar, covered trace row, and
   tests after the documentation commit and fresh preflight.
+- [x] Verify `418/384`, `250/238`, `228/190`, active `101/5/197/1`, 353
+  tests, exact selector isolation, fail-closed corruption, and empty semantic
+  output.

@@ -4251,11 +4251,11 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       source-to-final-handoff transportを実装済み。
   - [ ] **Task 257C:** separately frozen Task-256/255 extension後の
     predicate-chain/conditioned-comprehension composition。
-    - [ ] **Task 257C1:** Task 256をpredicate-chain segment、polarity token、
+    - [x] **Task 257C1:** Task 256をpredicate-chain segment、polarity token、
       shared-boundary transportで拡張する。
       - [x] syntax-free 9-table contract、exact consumer、test、trace
         projection、ownership、semantic deferralをfreeze。
-      - [ ] fresh preflight後、別logical task/commitでfrozen contractを実装。
+      - [x] fresh preflight後、別logical task/commitでfrozen contractを実装。
     - [ ] Task 255のcondition-bearing comprehension transportを別の
       documentation/implementation pairとしてfreeze/実装する。
     - [ ] predicate-chain/conditioned-comprehension formula compositionは
@@ -4345,6 +4345,10 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] prerequisiteをdocumentation-onlyでcorpus `417/383`、type `249/237`、
   pass/fail `227/190`、active `101/5/196/1`、libraries `319/349`、
   29 paths / 32,809 linesに保つ。
-- [ ] fresh preflight後、このfrozen C1 sliceだけを実装し、projectionを
+- [x] fresh preflight後、このfrozen C1 sliceだけを実装し、実測を
   corpus `418/384`、type `250/238`、pass/fail `228/190`、active type
   `197`とする。
+- [x] library `322/353`、exact source/near-miss/corruption matrix、
+  shared-boundary ownership、covered trace row、全semantic deferralをverify。
+- [ ] 別Task-255 condition-bearing-comprehension transport prerequisiteを
+  次にfreezeする。

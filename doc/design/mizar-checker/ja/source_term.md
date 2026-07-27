@@ -158,3 +158,7 @@ primary/numeric requestをexact `3/0/3`でreuseする。primary 1
 requestをduplicateせず、隣接する両segment descriptionから同じrowを参照する。
 occurrence、spelling、range、arena、numeric-request ownershipはTask 252、
 predicate grouping/polarityはTask 256に残る。
+
+Task 257C1 active pass consumerはこのfrozen backlinkを実行する。実測
+`3/0/3` profileとsingle middle-primary identityを保持し、Task-252 API/
+semantic numeric resultは変更しない。

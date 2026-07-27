@@ -5,19 +5,22 @@
 
 ## Scope
 
-Checker Task 256 owns a syntax-free immutable description of bounded source
-atomic formulas: ordinary predicate applications, equality, inequality,
-membership, bare builtin type assertions, and simple imported attribute
-assertions. It transports source occurrence identity, transparent wrappers,
-predicate-head and resolver-candidate provenance, formula-owned asserted-type
-or assertion-attribute sites, nearest-family direct term edges, and unresolved
+Checker Task 256, extended by Task 257C1, owns a syntax-free immutable
+description of bounded source atomic formulas: ordinary predicate
+applications, one exact two-segment predicate-chain transport, equality,
+inequality, membership, bare builtin type assertions, and simple imported
+attribute assertions. It transports source occurrence identity, transparent
+wrappers, predicate segments and their direct polarity tokens, predicate-head
+and resolver-candidate provenance, formula-owned asserted-type or
+assertion-attribute sites, nearest-family direct term edges, and unresolved
 expected-input requests only.
 
 The authority is Chapters 9 and 14, with Chapters 3, 6, 13, and 19 defining
 the owned type, attribute, term, and resolver boundaries. Task 252 owns
 primary terms, Task 253 owns applications, Task 254 owns structure terms, and
-Task 255 owns set/choice/`qua` terms. Task 256 links their dense root IDs
-without copying rows. Predicate chains, negation, connectives, quantifiers,
+Task 255 owns set/choice/`qua` terms. This module links their dense root IDs
+without copying rows. Predicate-chain applicability, implicit conjunction,
+semantic segment negation, broader predicate chains, connectives, quantifiers,
 condition formulas, candidate selection, assertion truth, formula results,
 theorem acceptance, facts, proof, and downstream IR remain deferred.
 
@@ -26,10 +29,11 @@ theorem acceptance, facts, proof, and downstream IR remain deferred.
 `SourceAtomicFormulaProducer::build` consumes
 `SourceAtomicFormulaHandoffInput`, `BindingEnv`, `SymbolEnv`, the required
 `SourcePrimaryTermHandoff`, optional Task-253/254/255 handoffs, and the shared
-`TypedArena`. The input has eight source-ordered vectors:
+`TypedArena`. The input has nine source-ordered vectors:
 
 - atomic formulas;
 - transparent formula wrappers;
+- predicate-chain segments and their source polarity;
 - ordinary predicate heads;
 - individually resolver-authenticated predicate candidates;
 - formula-owned bare asserted-type sites;
@@ -38,7 +42,7 @@ theorem acceptance, facts, proof, and downstream IR remain deferred.
 - unresolved operand, candidate-signature, type-reachability, and attribute
   admissibility requests.
 
-The producer publishes eight dense immutable tables only after the entire
+The producer publishes nine dense immutable tables only after the entire
 transaction validates. Public IDs expose zero-based `new` and `index`; tables
 expose `get`, source-ordered `iter`, `len`, and `is_empty`; validated rows
 expose read-only accessors. The handoff always fingerprints Task 252 and
@@ -53,6 +57,7 @@ targets that family.
 | `SourceAtomicFormulaRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
 | `SourceAssertionTypeHead` | `#[non_exhaustive]`; callers must tolerate later frozen bare builtin heads. |
 | `SourceAssertionAttributePolarityInput` | `#[non_exhaustive]`; callers must tolerate later source polarity forms. |
+| `SourcePredicateSegmentPolarityInput` | `#[non_exhaustive]`; callers must tolerate later predicate-segment polarity forms. |
 | `SourceAtomicEdgeRole` | `#[non_exhaustive]`; callers must tolerate later direct-slot roles. |
 | `SourceAtomicTermTarget` | `#[non_exhaustive]`; callers must tolerate later frozen cross-family targets. |
 | `SourceAtomicRequestKind` | `#[non_exhaustive]`; callers must tolerate later unresolved request kinds. |
@@ -67,8 +72,9 @@ recovery, ranges, typed-arena keys, canonical token spelling, formula-local
 ordinals, table associations, resolver symbol/contribution provenance, and
 single ownership. Formula keys distinguish predicate, equality, inequality,
 membership, type assertion, and attribute assertion. Dedicated keys own
-predicate heads, asserted type expression/head sites, attribute occurrence
-and target sites, `non`, and transparent wrappers.
+predicate segments, segment-level `does`/`do` and `not` tokens, predicate
+heads, asserted type expression/head sites, attribute occurrence and target
+sites, `non`, and transparent wrappers.
 
 Each direct written term slot resolves to exactly one maximal root occurrence
 from Task 252, 253, 254, or 255. Descendants remain with the nearest term
@@ -77,14 +83,18 @@ cross-context targets fail atomically. An unrelated optional handoff may
 coexist with an absent fingerprint only when its occurrences are disjoint
 from all formula, wrapper, and direct-slot ranges.
 
-Predicate formulas require one ordinary head, one or more authenticated
-candidates, and one candidate-signature request per candidate. Equality and
-inequality require two operand requests. Membership retains only its
-right/container operand request. A bare type assertion requires one asserted
-type site and one reachability request. Each simple attribute assertion
-requires one or more authenticated attribute rows and one admissibility
-request per attribute. Requests publish intent only; they contain no answer,
-selected candidate, type, fact, or truth.
+A legacy predicate formula with no segment rows requires one ordinary head,
+one or more authenticated candidates, and one candidate-signature request per
+candidate. A predicate-chain formula requires at least two dense segments,
+one linked head per segment, exact polarity-token provenance, and one shared
+boundary edge between adjacent segments; the frozen C1 profile requires one
+candidate and one request per head. Equality and inequality require two
+operand requests. Membership retains only its right/container operand
+request. A bare type assertion requires one asserted type site and one
+reachability request. Each simple attribute assertion requires one or more
+authenticated attribute rows and one admissibility request per attribute.
+Requests publish intent only; they contain no answer, selected candidate,
+type, fact, or truth.
 
 ## AST Installation
 
@@ -103,33 +113,41 @@ fact, coercion, obligation, diagnostic, expression metadata, or cluster fact.
 
 Raw `SurfaceAst`, source node IDs, and syntax kinds remain in
 `mizar-test::runner::type_elaboration::source_atomic_formula`. Production
-selects exactly eight existing active fixtures: numeral equality, inequality,
-membership, bare builtin type assertion, imported predicate/functor,
-positive and negative imported attribute assertions, and set-enumeration
-equality.
+selects the eight unchanged Task-256 base fixtures—numeral equality,
+inequality, membership, bare builtin type assertion, imported
+predicate/functor, positive and negative imported attribute assertions, and
+set-enumeration equality—plus the exact Task-257C1 two-segment imported
+predicate-chain fixture.
 
 Across the eight transactions the Task-256
 formula/wrapper/predicate-head/candidate/type-site/attribute/edge/request
 aggregate is `8/0/1/1/1/2/13/11`. The shared lower-family aggregate is Task
 252 `16/0/16`, Task 253 `1/1/1/2/2`, and Task 255
-`2/0/0/0/4/2`; no real Task-254 target exists. The private composer builds
-each selected transaction in one arena, then runs the existing semantic route
-unchanged, so all outcome and detail keys remain byte-identical.
+`2/0/0/0/4/2`; no real Task-254 target exists. The C1 route separately has
+Task-252 `3/0/3` and Task-256 formula/wrapper/segment/head/candidate/type-site/
+attribute/edge/request profile `1/0/2/2/2/0/0/3/2`. The private composer
+builds each selected transaction in one arena. The eight base routes keep
+their existing semantic outcomes and detail keys byte-identical; C1 publishes
+transport only and returns the frozen empty external detail vector.
 
 ## Verification Boundary
 
 Checker tests cover dense tables, formula kinds, wrappers, canonical
 spelling, provenance, request cardinality, arena and dependency identity,
 nearest-family ownership, corruption, deterministic replay, installation,
-and atomic failure. Runner tests cover all eight exact consumers, ordered
-edges and requests, lower-family fingerprints, imported provenance and
-anchors, same-arena composition, selector isolation, mutation failure, final
-`TypedAst`/`ResolvedTypedAst` ownership, and unchanged external details.
+and atomic failure. Runner tests cover the eight base consumers and exact C1
+consumer, ordered segments/edges/requests, polarity tokens, shared-boundary
+reuse, lower-family fingerprints, imported provenance and anchors, same-arena
+composition, selector isolation, mutation failure, final
+`TypedAst`/`ResolvedTypedAst` ownership, and unchanged base-route external
+details.
 
-The bounded trace row is
-`spec.en.checker.type_elaboration.source_atomic_formula_payload`. Task 256
-adds executable source-transport coverage only; semantic formula work and
-Steps 6/7 remain unimplemented.
+The bounded trace rows are
+`spec.en.checker.type_elaboration.source_atomic_formula_payload` for the base
+transaction and
+`spec.en.checker.type_elaboration.source_predicate_chain_segment_payload` for
+C1. They add executable source-transport coverage only; semantic formula work
+and Steps 6/7 remain unimplemented.
 
 ## Task 257B1 Consumer Addendum
 
@@ -193,3 +211,11 @@ rows; its legacy fixtures use empty rows. The atomic runner supplies nonempty
 rows only for the exact C1 consumer, while all prior atomic routes and every
 formula-composition literal use an empty vector. These are compile-time input
 compatibility edits, not additional family admission.
+
+### Task 257C1 implementation status
+
+Implemented exactly as frozen: the handoff exposes two validated segment
+rows, source-token polarity, two same-provenance heads/candidates, three
+primary edges with one shared boundary, and two unresolved signature
+requests. Exact, corruption, legacy-byte, installation, and clone tests pass;
+no semantic predicate result is produced.

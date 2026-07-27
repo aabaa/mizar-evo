@@ -5,17 +5,20 @@
 
 ## スコープ
 
-Checker Task 256 は、ordinary predicate application、equality、inequality、
-membership、bare builtin type assertion、simple imported attribute assertion
-という限定された source atomic formula の syntax-free immutable 記述を所有する。
-source occurrence、transparent wrapper、predicate head と resolver candidate
+Checker Task 256 は Task 257C1 により拡張され、ordinary predicate
+application、exact two-segment predicate-chain transport 1件、equality、
+inequality、membership、bare builtin type assertion、simple imported
+attribute assertionという限定された source atomic formula の syntax-free
+immutable 記述を所有する。source occurrence、transparent wrapper、predicate
+segment と direct polarity token、predicate head と resolver candidate
 provenance、formula-owned asserted-type/attribute site、nearest-family direct
 term edge、unresolved expected-input request だけを運ぶ。
 
 authority は Chapters 9/14 で、Chapters 3/6/13/19 が type、attribute、term、
 resolver boundary を定める。Task 252/253/254/255 はそれぞれ primary、
-application、structure、set/choice/`qua` term を所有し、Task 256 は row を
-複製せず dense root ID を参照する。predicate chain、negation/connective/
+application、structure、set/choice/`qua` term を所有し、本module は row を
+複製せず dense root ID を参照する。predicate-chain applicability、implicit
+conjunction、semantic segment negation、broader predicate chain、connective/
 quantifier、condition formula、candidate selection、assertion truth、formula
 result、theorem acceptance、fact、proof、downstream IR は deferred のままである。
 
@@ -24,10 +27,11 @@ result、theorem acceptance、fact、proof、downstream IR は deferred のま�
 `SourceAtomicFormulaProducer::build` は
 `SourceAtomicFormulaHandoffInput`、`BindingEnv`、`SymbolEnv`、required
 `SourcePrimaryTermHandoff`、optional Task-253/254/255 handoff、shared
-`TypedArena` を受ける。入力は8個の source-ordered vector を持つ。
+`TypedArena` を受ける。入力は9個の source-ordered vector を持つ。
 
 - atomic formula
 - transparent formula wrapper
+- predicate-chain segment と source polarity
 - ordinary predicate head
 - individually resolver-authenticated predicate candidate
 - formula-owned bare asserted-type site
@@ -36,7 +40,7 @@ result、theorem acceptance、fact、proof、downstream IR は deferred のま�
 - unresolved operand/candidate-signature/type-reachability/attribute-
   admissibility request
 
-transaction 全体の validation 後だけ8個の dense immutable table を publish
+transaction 全体の validation 後だけ9個の dense immutable table を publish
 する。public ID は zero-based `new`/`index`、table は `get`/source-ordered
 `iter`/`len`/`is_empty`、row は read-only accessor を持つ。handoff は常に
 Task 252 を fingerprint し、edge が target にする場合だけ Task 253/254/255
@@ -50,6 +54,7 @@ Task 252 を fingerprint し、edge が target にする場合だけ Task 253/25
 | `SourceAtomicFormulaRecovery` | `#[non_exhaustive]`。caller は later recovery class を許容する。 |
 | `SourceAssertionTypeHead` | `#[non_exhaustive]`。caller は later bare builtin head を許容する。 |
 | `SourceAssertionAttributePolarityInput` | `#[non_exhaustive]`。caller は later source polarity form を許容する。 |
+| `SourcePredicateSegmentPolarityInput` | `#[non_exhaustive]`。caller は later predicate-segment polarity form を許容する。 |
 | `SourceAtomicEdgeRole` | `#[non_exhaustive]`。caller は later direct-slot role を許容する。 |
 | `SourceAtomicTermTarget` | `#[non_exhaustive]`。caller は later cross-family target を許容する。 |
 | `SourceAtomicRequestKind` | `#[non_exhaustive]`。caller は later unresolved request kind を許容する。 |
@@ -63,9 +68,9 @@ source/module identity、dense source order、context、recovery、range、
 typed-arena key、canonical token spelling、formula-local ordinal、table
 association、resolver symbol/contribution provenance、single ownership を
 認証する。formula key は predicate/equality/inequality/membership/type
-assertion/attribute assertion を区別する。専用 key は predicate head、
-asserted type expression/head、attribute occurrence/target、`non`、wrapper
-を所有する。
+assertion/attribute assertion を区別する。専用 key は predicate segment、
+segment-level `does`/`do`/`not` token、predicate head、asserted type
+expression/head、attribute occurrence/target、`non`、wrapper を所有する。
 
 各 direct written term slot は Task 252/253/254/255 の maximal root
 occurrence 1件へ対応する。descendant は nearest term family に残る。
@@ -74,8 +79,12 @@ atomic に fail する。absent fingerprint の unrelated optional handoff は�
 その occurrence が全 formula/wrapper/direct-slot range と disjoint な場合だけ
 共存できる。
 
-predicate formula は ordinary head と1件以上の authenticated candidate を
-要求し、candidate ごとに candidate-signature request 1件を持つ。
+segment row が空の legacy predicate formula は ordinary head 1件と1件以上の
+authenticated candidate を要求し、candidate ごとに candidate-signature
+request 1件を持つ。predicate-chain formula は dense segment 2件以上、
+segment ごとに linked head 1件、exact polarity-token provenance、隣接 segment
+間の shared-boundary edge 1件を要求し、frozen C1 profile は head ごとに
+candidate/request 1件を要求する。
 equality/inequality は operand request 2件、membership は right/container
 request だけを持つ。bare type assertion は asserted type site と
 reachability request を持つ。simple attribute assertion は1件以上の
@@ -99,32 +108,39 @@ obligation、diagnostic、expression metadata、cluster fact を追加しない�
 
 raw `SurfaceAst`、source node ID、syntax kind は
 `mizar-test::runner::type_elaboration::source_atomic_formula`だけに置く。
-production は既存 active fixture 8件、すなわち numeral equality、
-inequality、membership、bare builtin type assertion、imported
+production は unchanged Task-256 base fixture 8件、すなわち numeral
+equality、inequality、membership、bare builtin type assertion、imported
 predicate/functor、positive/negative imported attribute assertion、
-set-enumeration equality だけを select する。
+set-enumeration equality と、exact Task-257C1 two-segment imported
+predicate-chain fixture を select する。
 
 8 transaction の Task-256 formula/wrapper/predicate-head/candidate/type-site/
 attribute/edge/request aggregate は `8/0/1/1/1/2/13/11` である。shared
 lower-family aggregate は Task 252 `16/0/16`、Task 253 `1/1/1/2/2`、
-Task 255 `2/0/0/0/4/2` で、real Task-254 target はない。private composer は
-各 transaction を1 arena で構築して既存 semantic route をそのまま実行するため、
-outcome/detail key は byte-identical のままである。
+Task 255 `2/0/0/0/4/2` で、real Task-254 target はない。C1 route は別に
+Task-252 `3/0/3` と Task-256
+formula/wrapper/segment/head/candidate/type-site/attribute/edge/request
+`1/0/2/2/2/0/0/3/2` を持つ。private composer は各 transaction を1 arena
+で構築する。base 8 routes の既存 semantic outcome/detail key は
+byte-identical のまま、C1 は transport だけを publish して frozen empty
+external detail vector を返す。
 
 ## Verification boundary
 
 checker test は dense table、formula kind、wrapper、canonical spelling、
 provenance、request cardinality、arena/dependency identity、nearest-family
 ownership、corruption、deterministic replay、installation、atomic failureを
-coverする。runner test は8 exact consumer、ordered edge/request、
-lower-family fingerprint、imported provenance/anchor、same-arena composition、
-selector isolation、mutation failure、final `TypedAst`/`ResolvedTypedAst`
-ownership、unchanged external detail を coverする。
+coverする。runner test は base consumer 8件と exact C1 consumer、ordered
+segment/edge/request、polarity token、shared-boundary reuse、lower-family
+fingerprint、imported provenance/anchor、same-arena composition、selector
+isolation、mutation failure、final `TypedAst`/`ResolvedTypedAst` ownership、
+unchanged base-route external detail を coverする。
 
-bounded trace row は
-`spec.en.checker.type_elaboration.source_atomic_formula_payload` である。
-Task 256 は executable source-transport coverage だけを追加し、semantic
-formula work と Steps 6/7 は未実装のままである。
+bounded trace row は base transaction の
+`spec.en.checker.type_elaboration.source_atomic_formula_payload` と C1 の
+`spec.en.checker.type_elaboration.source_predicate_chain_segment_payload`
+である。executable source-transport coverage だけを追加し、semantic formula
+work と Steps 6/7 は未実装のままである。
 
 ## Task 257B1 Consumer Addendum
 
@@ -183,3 +199,11 @@ legacy fixtureはempty rowsを使う。atomic runnerはexact C1 consumerだけ�
 nonempty rows、それ以前のatomic routeと全formula-composition literalには
 empty vectorを供給する。これはcompile-time input compatibility editであり、
 別family admissionではない。
+
+### Task 257C1 implementation status
+
+frozen contractどおり実装済み。handoffはvalidated segment row 2件、
+source-token polarity、same-provenance head/candidate 2組、shared boundary
+1件を含むprimary edge 3件、unresolved signature request 2件を公開する。
+exact/corruption/legacy-byte/install/clone testはpassし、semantic predicate
+resultは生成しない。

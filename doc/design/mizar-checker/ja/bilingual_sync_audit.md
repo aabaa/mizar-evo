@@ -43,7 +43,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary、projection model、validation/recovery/atomicity、determinism、coverage、public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary、flat chain/attribute/qualifier/group/actual model、environment/parent/arena/provenance validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary、five-table application/wrapper/candidate/argument/request transport、Task-252 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
-| `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256 authority/boundary、eight-table atomic-formula/provenance/type/attribute/edge/request transport、Task-252/253/254/255 fingerprint association、exact consumer、exclusion、public enum policy | none |
+| `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 authority/boundary、nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport、Task-252/253/254/255 fingerprint association、base consumer 8件とexact C1 consumer、exclusion、public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary、seven-table composite-formula/binder/type/edge/request transport、source-derived binding extension、exact consumer、exclusion、public enum policy | none |
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1 authority/boundary、explicit universal-to-atomic edge/bound-use transport、Task-252/256/257 dependency fingerprint、combined atomic installation、exact consumer、exclusion、public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255 authority/boundary、six-table set/choice/qua/generator/type-site/edge/request transport、Task-252/253/254 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
@@ -190,3 +190,7 @@ coverage auditは同じ107-byte source/hash、parser/resolver range、`3/0/3`と
 このprerequisiteはmodule boundary、production path、fixture、trace metadata、
 count/hashを変更しないためpaired module-boundary auditは意図的に不変。
 Task-257C1 bilingual sync debtは認めない。
+
+Task 257C1 implementation result、count/hash、public ownership、
+classification closure、module-boundary recheck、next prerequisiteをpaired
+EN/JA checker文書で同期した。bilingual debtは残らない。

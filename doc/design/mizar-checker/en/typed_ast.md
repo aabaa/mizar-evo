@@ -738,3 +738,8 @@ boundary edge, two imported candidates, and both candidate requests.
 Missing/stale dependency fingerprints, old-family collision, partial
 publication, or segment corruption fail closed. Existing Task-256 and
 Task-257A/B1/B2/B3 installers and bytes remain exclusive and unchanged.
+
+Task 257C1 is implemented through the existing one-shot
+`with_source_atomic_formula` path. Successful installation and subsequent
+clone revalidation preserve all nine tables; every tested partial or
+cross-profile mutation remains atomic and fail-closed.

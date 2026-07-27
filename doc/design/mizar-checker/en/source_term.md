@@ -170,3 +170,7 @@ Primary 1 (`2`, `85..86`) is one occurrence: the new Task-256 shared-boundary
 edge references it from both adjacent segment descriptions without duplicating
 the term or request. Task 252 retains occurrence, spelling, range, arena, and
 numeric-request ownership; predicate grouping and polarity remain Task 256.
+
+Task 257C1 now exercises this frozen backlink in the active pass consumer.
+The measured `3/0/3` profile and single middle-primary identity are preserved;
+no Task-252 API or semantic numeric result changed.

@@ -345,3 +345,7 @@ compositionも別Task-255 condition-bearing prerequisiteを待つ。
 literal 3件もemptyのまま。これはextended input shapeのmandatory
 compatibility editで、composition row、selector admission、debug output、
 semantic behaviorを追加しない。
+
+compatibility editはinstall/verify済み。Task 257C1がpublishするのはlower
+Task-256 handoffだけで、本moduleはpredicate-chain composition rowやsemantic
+conjunction/negationをまだownしない。

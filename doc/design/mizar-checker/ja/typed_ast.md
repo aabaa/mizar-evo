@@ -713,3 +713,7 @@ atomicにvalidate/publishする。exact chain transactionはshared boundary edge
 fingerprint、old-family collision、partial publication、segment corruptionは
 fail closed。existing Task-256/Task-257A/B1/B2/B3 installer/bytesはexclusive
 かつ不変。
+
+Task 257C1はexisting one-shot `with_source_atomic_formula` pathで実装済み。
+successful install/subsequent clone revalidationは9 tableすべてを保持し、
+tested partial/cross-profile mutationはatomicかつfail-closedである。

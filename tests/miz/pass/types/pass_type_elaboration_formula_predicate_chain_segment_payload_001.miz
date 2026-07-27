@@ -1,0 +1,2 @@
+import parser.type_fixtures;
+theorem FormulaPredicateChainPayloadBoundary: 1 divides 2 does not divides 3;

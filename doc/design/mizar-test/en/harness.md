@@ -3203,3 +3203,10 @@ atomic-formula constructor conditionally emits the exact two C1 segments and
 stays empty for prior routes; all three formula-composition constructors
 remain empty. These literal edits are required for compatibility only and do
 not activate a Task-257 composition route.
+
+### Task 257C1 runner status
+
+The exact source route, pass sidecar, covered trace row, loaded-text near-miss
+matrix, input-corruption matrix, active-corpus isolation, and unchanged prior
+routes are executable. Its successful external detail vector is empty; all
+semantic predicate and theorem work remains deferred.

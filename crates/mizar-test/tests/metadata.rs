@@ -4936,8 +4936,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 196);
-    assert_eq!(report.passed_count(), 196);
+    assert_eq!(report.results.len(), 197);
+    assert_eq!(report.passed_count(), 197);
     assert_eq!(report.failed_count(), 0);
     let task31_result = report
         .results
@@ -4946,6 +4946,17 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
         .expect("exact Task-31 Core snapshot fixture should execute");
     assert_eq!(
         task31_result.status,
+        mizar_test::TypeElaborationCaseStatus::Passed
+    );
+    let task257c1_result = report
+        .results
+        .iter()
+        .find(|result| {
+            result.id.0 == "pass_type_elaboration_formula_predicate_chain_segment_payload_001"
+        })
+        .expect("exact Task-257C1 predicate-chain fixture should execute");
+    assert_eq!(
+        task257c1_result.status,
         mizar_test::TypeElaborationCaseStatus::Passed
     );
     assert!(task31_result.actual_detail_keys.is_empty());
@@ -9489,8 +9500,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 196"));
-    assert!(stdout.contains("passed: 196"));
+    assert!(stdout.contains("type-elaboration cases: 197"));
+    assert!(stdout.contains("passed: 197"));
     assert!(stdout.contains("failed: 0"));
 }
 

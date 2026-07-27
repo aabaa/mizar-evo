@@ -830,3 +830,7 @@ segments nor selects the duplicated imported candidate. Orphan/shared-edge,
 polarity-token, provenance, request, fingerprint, and legacy-profile
 corruption fail closed. No checked formula, conjunction/negation result,
 predicate winner, theorem acceptance, proof, or IR output is assembled.
+
+The implemented Task 257C1 runner confirms byte-stable typed/resolved debug
+output and equality of both Task-252 and Task-256 handoffs. Resolution remains
+clone-only and adds no semantic selection.

@@ -455,26 +455,31 @@ Those remain with Tasks 254+, 260, 270, 277, 278, and their explicit owners.
 Generated public newtypes:
 
 - `SourceAtomicFormulaId`, `SourceAtomicWrapperId`,
-  `SourcePredicateHeadId`, `SourcePredicateCandidateId`,
+  `SourcePredicateSegmentId`, `SourcePredicateHeadId`,
+  `SourcePredicateCandidateId`,
   `SourceAssertionTypeSiteId`, `SourceAssertionAttributeId`,
   `SourceAtomicEdgeId`, `SourceAtomicRequestId`
 
 Literal top-level public items:
 
 - `SourceAtomicFormulaHandoffInput`, `SourceAtomicFormulaInput`,
-  `SourceAtomicWrapperInput`, `SourcePredicateHeadInput`,
+  `SourceAtomicWrapperInput`, `SourcePredicateSegmentInput`,
+  `SourcePredicateHeadInput`,
   `SourcePredicateCandidateInput`, `SourceAssertionTypeSiteInput`,
   `SourceAssertionAttributeInput`, `SourceAtomicEdgeInput`,
   `SourceAtomicRequestInput`, `SourceAtomicFormulaKind`,
   `SourceAtomicFormulaRecovery`, `SourceAssertionTypeHead`,
-  `SourceAssertionAttributePolarityInput`, `SourceAtomicEdgeRole`,
+  `SourceAssertionAttributePolarityInput`,
+  `SourcePredicateSegmentPolarityInput`, `SourceAtomicEdgeRole`,
   `SourceAtomicTermTarget`, `SourceAtomicRequestKind`,
   `SourceAtomicFormulaHandoff`, `SourceAtomicFormulaTable`,
-  `SourceAtomicWrapperTable`, `SourcePredicateHeadTable`,
+  `SourceAtomicWrapperTable`, `SourcePredicateSegmentTable`,
+  `SourcePredicateHeadTable`,
   `SourcePredicateCandidateTable`, `SourceAssertionTypeSiteTable`,
   `SourceAssertionAttributeTable`, `SourceAtomicEdgeTable`,
   `SourceAtomicRequestTable`, `SourceAtomicFormula`, `SourceAtomicWrapper`,
-  `SourcePredicateHead`, `SourcePredicateCandidate`,
+  `SourcePredicateSegment`, `SourcePredicateHead`,
+  `SourcePredicateCandidate`,
   `SourceAssertionTypeSite`, `SourceAssertionAttribute`, `SourceAtomicEdge`,
   `SourceAtomicRequest`, `SourceAtomicFormulaProducer`,
   `SourceAtomicFormulaError`.
@@ -483,7 +488,7 @@ Correspondence:
 
 | Specification promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Eight syntax-free dense tables retain atomic formulas, wrappers, predicate provenance, asserted types, assertion attributes, nearest-family edges, and unresolved requests. | Public inputs, immutable rows, and tables in `src/source_atomic_formula.rs`. | Exact real `8/0/1/1/1/2/13/11` aggregate and checker shape tests. | Implemented for Task 256. |
+| Nine syntax-free dense tables retain atomic formulas, wrappers, predicate segments/provenance, asserted types, assertion attributes, nearest-family edges, and unresolved requests. | Public inputs, immutable rows, and tables in `src/source_atomic_formula.rs`. | Exact Task-256 `8/0/0/1/1/1/2/13/11` aggregate, Task-257C1 `1/0/2/2/2/0/0/3/2`, and checker shape tests. | Implemented for Tasks 256/257C1. |
 | Task-252/253/254/255 nearest-family ownership and conditional fingerprints validate atomically. | `SourceAtomicFormulaProducer::build` and private installation validation. | Same-arena real composition, cross-family producer probes, corruption, and installation tests. | Implemented transactionally. |
 | Resolver provenance, canonical spelling, arena keys, row cardinality/order, and request association fail closed. | Producer validation and `SourceAtomicFormulaError`. | Predicate/attribute provenance, wrapper, request, spelling, and mutation matrices. | Implemented without partial publication. |
 | `TypedAst` owns one handoff and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_atomic_formula`, later lower-family revalidation, and resolved assembly. | Replacement/install-order checks, final clone equality, and deterministic replay. | Implemented. |
@@ -3561,3 +3566,8 @@ There is no blocking `spec_gap`, `source_undocumented_behavior`,
 chains, recovered input, predicate applicability/selection, semantic
 conjunction/negation, and conditioned comprehensions are excluded or deferred.
 The origin difference remains report-only `repo_metadata_conflict`.
+
+Implementation closes the classified Task-257C1 `source_drift` and `test_gap`
+against the frozen contract. The prior documentation commit closed
+`design_drift`; all other classifications and semantic deferrals above remain
+unchanged.

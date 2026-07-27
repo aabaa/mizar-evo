@@ -217,6 +217,7 @@ use type_elaboration::{
     extract_source_heterogeneous_reserve_membership,
     extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
+    extract_source_imported_predicate_chain_formula,
     extract_source_imported_predicate_functor_formula, extract_source_local_mode_asserted_head,
     extract_source_local_mode_long_chain_asserted_head,
     extract_source_local_mode_long_chain_five_hop_asserted_head,
@@ -299,9 +300,10 @@ use type_elaboration::{
     extract_source_two_edge_local_object_mode_two_hop_asserted_head, resolve_visible_attribute,
     resolve_visible_type_head, source_application_output, source_application_output_with_mutation,
     source_atomic_formula_output, source_atomic_formula_output_with_mutation,
-    source_attribute_output, source_binding_context_output,
-    source_binding_context_token_shape_is_exact, source_builtin_type_assertion_formula_output,
-    source_chained_local_mode_asserted_head_output,
+    source_atomic_formula_output_with_source,
+    source_atomic_formula_output_with_source_and_mutation, source_attribute_output,
+    source_binding_context_output, source_binding_context_token_shape_is_exact,
+    source_builtin_type_assertion_formula_output, source_chained_local_mode_asserted_head_output,
     source_chained_local_mode_radix_asserted_head_output,
     source_chained_local_mode_reserved_variable_equality_output,
     source_chained_local_mode_reserved_variable_inequality_output,
@@ -1516,9 +1518,12 @@ fn type_elaboration_detail_keys(
     {
         return keys;
     }
-    if let Some(keys) =
-        source_atomic_formula_transport_detail_keys(&ast, resolver.module.clone(), &symbols)
-    {
+    if let Some(keys) = source_atomic_formula_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &symbols,
+        &source_text,
+    ) {
         return keys;
     }
     if let Some(keys) = source_set_term_transport_detail_keys(

@@ -658,3 +658,7 @@ The separate Task-255 condition-bearing comprehension extension follows this
 implementation prerequisite. Conditioned-comprehension and predicate-chain
 composition remain separate future Task-257C slices, so this contract grants
 neither family semantic credit.
+
+Task 257C1 transport is now implemented at this lower-family boundary.
+Predicate-chain composition remains unimplemented, and the next prerequisite
+is still the separate Task-255 condition-bearing-comprehension transport.

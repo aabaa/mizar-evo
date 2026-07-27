@@ -13,6 +13,7 @@ use mizar_checker::{
         SourceAtomicFormulaProducer, SourceAtomicFormulaRecovery, SourceAtomicRequestInput,
         SourceAtomicRequestKind, SourceAtomicTermTarget, SourcePredicateCandidateId,
         SourcePredicateCandidateInput, SourcePredicateHeadId, SourcePredicateHeadInput,
+        SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
     },
     source_set_term::SourceSetTermHandoff,
     source_term::SourcePrimaryTermHandoff,
@@ -37,11 +38,12 @@ use super::{
     source_ast::{structural_child_ids, surface_site},
     source_formula::{
         SourceBuiltinBinaryTermFormula, SourceBuiltinTypeAssertionFormula,
-        SourceImportedAttributeAssertionFormula, SourceImportedPredicateFunctorFormula,
-        SourceSetEnumerationFormula, extract_source_builtin_binary_term_formula,
-        extract_source_builtin_type_assertion_formula,
+        SourceImportedAttributeAssertionFormula, SourceImportedPredicateChainFormula,
+        SourceImportedPredicateFunctorFormula, SourceSetEnumerationFormula,
+        extract_source_builtin_binary_term_formula, extract_source_builtin_type_assertion_formula,
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
+        extract_source_imported_predicate_chain_formula,
         extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
     },
     source_set_term::source_set_term_output_with_source_term,
@@ -61,6 +63,7 @@ enum ExactAtomicRoute {
     Binary(SourceBuiltinBinaryTermFormula),
     TypeAssertion(SourceBuiltinTypeAssertionFormula),
     Predicate(SourceImportedPredicateFunctorFormula),
+    PredicateChain(SourceImportedPredicateChainFormula),
     Attribute {
         payload: SourceImportedAttributeAssertionFormula,
         negative: bool,
@@ -74,8 +77,10 @@ pub(in crate::runner) fn source_atomic_formula_transport_detail_keys(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
+    source_text: &str,
 ) -> Option<Vec<String>> {
-    match source_atomic_formula_output(ast, module, symbols) {
+    match source_atomic_formula_output_with_optional_source(ast, module, symbols, Some(source_text))
+    {
         None => None,
         Some(Ok(output))
             if output.typed_ast.source_atomic_formula().is_some()
@@ -86,7 +91,15 @@ pub(in crate::runner) fn source_atomic_formula_transport_detail_keys(
                     == output.resolved.source_application()
                 && output.typed_ast.source_set_term() == output.resolved.source_set_term() =>
         {
-            None
+            if output
+                .typed_ast
+                .source_atomic_formula()
+                .is_some_and(|handoff| !handoff.predicate_segments().is_empty())
+            {
+                Some(Vec::new())
+            } else {
+                None
+            }
         }
         Some(Ok(_)) | Some(Err(_)) => Some(vec![INVALID_PAYLOAD_KEY.to_owned()]),
     }
@@ -98,16 +111,17 @@ pub(in crate::runner) fn source_atomic_formula_output(
     module: ModuleId,
     symbols: &SymbolEnv,
 ) -> Option<Result<SourceAtomicFormulaRouteOutput, String>> {
-    source_atomic_formula_output_with_mutation(ast, module, symbols, |_| {})
+    source_atomic_formula_output_with_mutation_impl(ast, module, symbols, None, |_| {})
 }
 
-#[cfg(not(test))]
-fn source_atomic_formula_output(
+#[cfg(test)]
+pub(in crate::runner) fn source_atomic_formula_output_with_source(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
+    source_text: &str,
 ) -> Option<Result<SourceAtomicFormulaRouteOutput, String>> {
-    source_atomic_formula_output_with_mutation(ast, module, symbols, |_| {})
+    source_atomic_formula_output_with_mutation_impl(ast, module, symbols, Some(source_text), |_| {})
 }
 
 #[cfg(test)]
@@ -117,26 +131,37 @@ pub(in crate::runner) fn source_atomic_formula_output_with_mutation(
     symbols: &SymbolEnv,
     mutate: impl FnOnce(&mut SourceAtomicFormulaHandoffInput),
 ) -> Option<Result<SourceAtomicFormulaRouteOutput, String>> {
-    source_atomic_formula_output_with_mutation_impl(ast, module, symbols, mutate)
+    source_atomic_formula_output_with_mutation_impl(ast, module, symbols, None, mutate)
 }
 
-#[cfg(not(test))]
-fn source_atomic_formula_output_with_mutation(
+#[cfg(test)]
+pub(in crate::runner) fn source_atomic_formula_output_with_source_and_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
+    source_text: &str,
     mutate: impl FnOnce(&mut SourceAtomicFormulaHandoffInput),
 ) -> Option<Result<SourceAtomicFormulaRouteOutput, String>> {
-    source_atomic_formula_output_with_mutation_impl(ast, module, symbols, mutate)
+    source_atomic_formula_output_with_mutation_impl(ast, module, symbols, Some(source_text), mutate)
+}
+
+fn source_atomic_formula_output_with_optional_source(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: Option<&str>,
+) -> Option<Result<SourceAtomicFormulaRouteOutput, String>> {
+    source_atomic_formula_output_with_mutation_impl(ast, module, symbols, source_text, |_| {})
 }
 
 fn source_atomic_formula_output_with_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
+    source_text: Option<&str>,
     mutate: impl FnOnce(&mut SourceAtomicFormulaHandoffInput),
 ) -> Option<Result<SourceAtomicFormulaRouteOutput, String>> {
-    let route = exact_atomic_route(ast, &module, symbols)?;
+    let route = exact_atomic_route(ast, &module, symbols, source_text)?;
     Some(build_output(ast, module, symbols, route, mutate))
 }
 
@@ -144,7 +169,13 @@ fn exact_atomic_route(
     ast: &SurfaceAst,
     module: &ModuleId,
     symbols: &SymbolEnv,
+    source_text: Option<&str>,
 ) -> Option<ExactAtomicRoute> {
+    if let Some(payload) = source_text.and_then(|source_text| {
+        extract_source_imported_predicate_chain_formula(ast, module, symbols, source_text)
+    }) {
+        return Some(ExactAtomicRoute::PredicateChain(payload));
+    }
     if let Some(payload) = extract_source_builtin_binary_term_formula(ast) {
         return Some(ExactAtomicRoute::Binary(payload));
     }
@@ -306,7 +337,12 @@ fn lower_family_typed_ast(
             )?;
             Ok(output.typed_ast)
         }
-        _ => empty_typed_ast_with_primary(ast, module, source_term),
+        ExactAtomicRoute::PredicateChain(_)
+        | ExactAtomicRoute::Binary(_)
+        | ExactAtomicRoute::TypeAssertion(_)
+        | ExactAtomicRoute::Attribute { .. } => {
+            empty_typed_ast_with_primary(ast, module, source_term)
+        }
     }
 }
 
@@ -341,6 +377,7 @@ impl ExactAtomicRoute {
             Self::Binary(payload) => payload.formula_site.node().index(),
             Self::TypeAssertion(payload) => payload.formula_site.node().index(),
             Self::Predicate(payload) => payload.formula_site.node().index(),
+            Self::PredicateChain(payload) => payload.formula_site.node().index(),
             Self::Attribute { payload, .. } => payload.formula_site.node().index(),
             Self::SetEnumeration(payload) => payload.formula_site.node().index(),
         }
@@ -351,6 +388,7 @@ impl ExactAtomicRoute {
             Self::Binary(payload) => payload.formula_range,
             Self::TypeAssertion(payload) => payload.formula_range,
             Self::Predicate(payload) => payload.formula_range,
+            Self::PredicateChain(payload) => payload.formula_range,
             Self::Attribute { payload, .. } => payload.formula_range,
             Self::SetEnumeration(payload) => payload.formula_range,
         }
@@ -361,6 +399,7 @@ impl ExactAtomicRoute {
             Self::Binary(payload) => payload.formula_site.clone(),
             Self::TypeAssertion(payload) => payload.formula_site.clone(),
             Self::Predicate(payload) => payload.formula_site.clone(),
+            Self::PredicateChain(payload) => payload.formula_site.clone(),
             Self::Attribute { payload, .. } => payload.formula_site.clone(),
             Self::SetEnumeration(payload) => payload.formula_site.clone(),
         }
@@ -378,6 +417,11 @@ impl ExactAtomicRoute {
                 payload.functor_left_site.node().index(),
                 payload.functor_right_site.node().index(),
             ],
+            Self::PredicateChain(payload) => payload
+                .term_sites
+                .iter()
+                .map(|site| site.node().index())
+                .collect(),
             Self::Attribute { payload, .. } => vec![payload.subject_site.node().index()],
             Self::SetEnumeration(payload) => payload
                 .left_items
@@ -403,7 +447,9 @@ impl ExactAtomicRoute {
                 _ => unreachable!("exact Task256 binary selector admitted an unsupported kind"),
             },
             Self::TypeAssertion(_) => SourceAtomicFormulaKind::TypeAssertion,
-            Self::Predicate(_) => SourceAtomicFormulaKind::PredicateApplication,
+            Self::Predicate(_) | Self::PredicateChain(_) => {
+                SourceAtomicFormulaKind::PredicateApplication
+            }
             Self::Attribute { .. } => SourceAtomicFormulaKind::AttributeAssertion,
             Self::SetEnumeration(_) => SourceAtomicFormulaKind::Equality,
         }
@@ -440,6 +486,32 @@ impl ExactAtomicRoute {
                     &mut kinds,
                     head.index(),
                     "source.formula.atomic.predicate-head",
+                )?;
+            }
+            Self::PredicateChain(payload) => {
+                for site in &payload.segment_sites {
+                    insert_kind(
+                        &mut kinds,
+                        site.node().index(),
+                        "source.formula.atomic.predicate-segment",
+                    )?;
+                }
+                for site in &payload.head_sites {
+                    insert_kind(
+                        &mut kinds,
+                        site.node().index(),
+                        "source.formula.atomic.predicate-head",
+                    )?;
+                }
+                insert_kind(
+                    &mut kinds,
+                    payload.verb_site.node().index(),
+                    "source.formula.atomic.predicate-negation-verb",
+                )?;
+                insert_kind(
+                    &mut kinds,
+                    payload.not_site.node().index(),
+                    "source.formula.atomic.predicate-negation-not",
                 )?;
             }
             Self::Attribute { negative, .. } => {
@@ -484,6 +556,7 @@ impl ExactAtomicRoute {
             .nodes()
             .get(self.formula_node())
             .ok_or_else(|| "Task256 formula node disappeared".to_owned())?;
+        let mut predicate_segments = Vec::new();
         let mut predicate_heads = Vec::new();
         let mut candidates = Vec::new();
         let mut type_sites = Vec::new();
@@ -640,6 +713,107 @@ impl ExactAtomicRoute {
                     attribute: None,
                 });
             }
+            Self::PredicateChain(payload) => {
+                let primary = typed_ast
+                    .source_term()
+                    .ok_or_else(|| "Task257C1 lost Task252".to_owned())?;
+                let targets = payload
+                    .term_ranges
+                    .iter()
+                    .copied()
+                    .map(|range| primary_target(primary, range))
+                    .collect::<Result<Vec<_>, _>>()?;
+                let entry =
+                    exact_symbol(symbols, &payload.predicate_symbol, SymbolKind::Predicate)?;
+
+                for ordinal in 0..2 {
+                    predicate_heads.push(SourcePredicateHeadInput {
+                        formula,
+                        site: payload.head_sites[ordinal].clone(),
+                        source_range: payload.head_ranges[ordinal],
+                        context: BindingContextId::new(0),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "divides".to_owned(),
+                        left_arity: 1,
+                        right_arity: 1,
+                    });
+                    candidates.push(SourcePredicateCandidateInput {
+                        head: SourcePredicateHeadId::new(ordinal),
+                        ordinal: 0,
+                        symbol: entry.symbol().clone(),
+                        contribution: entry.contribution(),
+                    });
+                }
+
+                edges.extend([
+                    edge(
+                        formula,
+                        0,
+                        SourceAtomicEdgeRole::PredicateLeftArgument,
+                        targets[0],
+                    ),
+                    edge(
+                        formula,
+                        1,
+                        SourceAtomicEdgeRole::PredicateChainBoundary,
+                        targets[1],
+                    ),
+                    edge(
+                        formula,
+                        2,
+                        SourceAtomicEdgeRole::PredicateRightArgument,
+                        targets[2],
+                    ),
+                ]);
+                predicate_segments.extend([
+                    SourcePredicateSegmentInput {
+                        formula,
+                        ordinal: 0,
+                        site: payload.segment_sites[0].clone(),
+                        source_range: payload.segment_ranges[0],
+                        context: BindingContextId::new(0),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "1 divides 2".to_owned(),
+                        head: SourcePredicateHeadId::new(0),
+                        polarity: SourcePredicateSegmentPolarityInput::Positive,
+                        left_edge: SourceAtomicEdgeId::new(0),
+                        right_edge: SourceAtomicEdgeId::new(1),
+                    },
+                    SourcePredicateSegmentInput {
+                        formula,
+                        ordinal: 1,
+                        site: payload.segment_sites[1].clone(),
+                        source_range: payload.segment_ranges[1],
+                        context: BindingContextId::new(0),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "does not divides 3".to_owned(),
+                        head: SourcePredicateHeadId::new(1),
+                        polarity: SourcePredicateSegmentPolarityInput::Negative {
+                            verb_site: payload.verb_site.clone(),
+                            verb_range: payload.verb_range,
+                            verb_spelling: "does".to_owned(),
+                            verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                            not_site: payload.not_site.clone(),
+                            not_range: payload.not_range,
+                            not_spelling: "not".to_owned(),
+                            not_recovery: SourceAtomicFormulaRecovery::Normal,
+                        },
+                        left_edge: SourceAtomicEdgeId::new(1),
+                        right_edge: SourceAtomicEdgeId::new(2),
+                    },
+                ]);
+                for ordinal in 0..2 {
+                    requests.push(SourceAtomicRequestInput {
+                        formula,
+                        ordinal,
+                        kind: SourceAtomicRequestKind::PredicateCandidateSignature,
+                        edge: None,
+                        candidate: Some(SourcePredicateCandidateId::new(ordinal)),
+                        type_site: None,
+                        attribute: None,
+                    });
+                }
+            }
             Self::Attribute { payload, negative } => {
                 let subject = primary_target(
                     typed_ast
@@ -739,6 +913,7 @@ impl ExactAtomicRoute {
                 kind: self.formula_kind(),
             }],
             wrappers: Vec::new(),
+            predicate_segments,
             predicate_heads,
             candidates,
             type_sites,

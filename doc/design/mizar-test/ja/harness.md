@@ -3038,3 +3038,10 @@ atomic-formula constructorはexact C1 segment 2件を条件付きemitし、prior
 routeではemptyのまま。formula-composition constructor 3件もすべてemptyを
 保つ。これらliteral editはcompatibilityだけに必要で、Task-257 composition
 routeをactivateしない。
+
+### Task 257C1 runner status
+
+exact source route、pass sidecar、covered trace row、loaded-text near-miss
+matrix、input-corruption matrix、active-corpus isolation、prior route不変は
+executableである。successful external detail vectorはemptyで、全semantic
+predicate/theorem workはdeferredのまま。

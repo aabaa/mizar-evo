@@ -329,3 +329,7 @@ projection, and semantic deferrals. This prerequisite changes no runner
 module, fixture, sidecar, trace metadata, production path, count, or hash, so
 the paired module-boundary audit remains intentionally unchanged. No
 Task-257C1 bilingual drift remains.
+
+The implemented exact route, fixture/sidecar/trace projection, measured
+counts/hashes, module-boundary recheck, and unchanged semantic deferrals are
+now synchronized in the paired EN/JA runner documents. No drift remains.

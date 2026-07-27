@@ -11349,3 +11349,20 @@ test-only lines. The existing 29-path layout remains cohesive at 32,809
 production lines. Its path/content hashes are
 `ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
 `2e0b08093af337b154a278646cd61218b0bedbc5e9505f07744e81eccd9692f8`.
+
+## Checker Task 257C1 Boundary Recheck
+
+No production path was added. Exact predicate-chain extraction remains in
+`source_formula.rs` (3,690 lines); Task-252 assembly and Task-256 input
+construction remain in `source_atomic_formula.rs` (1,069 lines); the public
+dispatcher and private facade remain `runner.rs` (2,467) and
+`type_elaboration.rs` (659). The paired atomic-formula test leaf is 1,458
+test-only lines. These ownership boundaries remain cohesive.
+
+The production manifest remains 29 paths / 33,184 lines with path/content
+hashes
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`60799e517f7a59ae9485e3b1fd4a3843a4fc9b2e927d0ed6d1d953ece799bdbd`.
+The library has 353 tests with raw/normalized hashes
+`61f3ae8d76f3f3425d41abad07b095c44a632e3444449efd229681369cb72497` /
+`b729bc119ad536dbded0c2d41ffefe44fc40d78a7a2c05d20154349f76dac557`.

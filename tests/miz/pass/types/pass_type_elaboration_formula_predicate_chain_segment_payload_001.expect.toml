@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_formula_predicate_chain_segment_payload_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_formula_predicate_chain_segment_payload_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.source_predicate_chain_segment_payload",
+]
+notes = "Checker Task 257C1 bounded source-transport coverage for the exact imported predicate-chain consumer. The private runner composes Task-252 `3/0/3` numeral roots with Task-256 `1/0/2/2/2/0/0/3/2` formula/wrapper/segment/head/candidate/type/attribute/edge/request rows in one typed arena. Both heads preserve the same imported `parser.type_fixtures::divides` resolver symbol and ImportedSource contribution, while the middle primary owns exactly one shared predicate-chain boundary edge and the second segment preserves direct `does not` polarity tokens. Passing asserts immutable syntax-derived transport only; predicate signature semantics, chain truth, negation truth, facts, theorem ownership or acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred."

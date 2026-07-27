@@ -10133,3 +10133,19 @@ leafはtest-only 1,452 linesである。existing 29-path layoutはproduction
 32,809 linesでcohesiveなまま。path/content hashは
 `ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
 `2e0b08093af337b154a278646cd61218b0bedbc5e9505f07744e81eccd9692f8`。
+
+## Checker Task 257C1 boundary recheck
+
+production pathは追加していない。exact predicate-chain extractionは
+`source_formula.rs`（3,690 lines）、Task-252 assembly/Task-256 input
+constructionは`source_atomic_formula.rs`（1,069 lines）に留める。public
+dispatcher/private facadeは`runner.rs`（2,467）/
+`type_elaboration.rs`（659）、paired atomic-formula test leafはtest-only
+1,458 linesであり、existing ownership boundaryはcohesiveなまま。
+
+production manifestは29 paths / 33,184 lines、path/content hashは
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`60799e517f7a59ae9485e3b1fd4a3843a4fc9b2e927d0ed6d1d953ece799bdbd`。
+libraryは353 tests、raw/normalized hashは
+`61f3ae8d76f3f3425d41abad07b095c44a632e3444449efd229681369cb72497` /
+`b729bc119ad536dbded0c2d41ffefe44fc40d78a7a2c05d20154349f76dac557`。

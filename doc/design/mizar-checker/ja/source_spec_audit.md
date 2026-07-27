@@ -429,26 +429,31 @@ fact/declaration/proof、downstream IRを所有しない。これらはTasks 254
 generated public newtype:
 
 - `SourceAtomicFormulaId`、`SourceAtomicWrapperId`、
-  `SourcePredicateHeadId`、`SourcePredicateCandidateId`、
+  `SourcePredicateSegmentId`、`SourcePredicateHeadId`、
+  `SourcePredicateCandidateId`、
   `SourceAssertionTypeSiteId`、`SourceAssertionAttributeId`、
   `SourceAtomicEdgeId`、`SourceAtomicRequestId`
 
 literal top-level public item:
 
 - `SourceAtomicFormulaHandoffInput`、`SourceAtomicFormulaInput`、
-  `SourceAtomicWrapperInput`、`SourcePredicateHeadInput`、
+  `SourceAtomicWrapperInput`、`SourcePredicateSegmentInput`、
+  `SourcePredicateHeadInput`、
   `SourcePredicateCandidateInput`、`SourceAssertionTypeSiteInput`、
   `SourceAssertionAttributeInput`、`SourceAtomicEdgeInput`、
   `SourceAtomicRequestInput`、`SourceAtomicFormulaKind`、
   `SourceAtomicFormulaRecovery`、`SourceAssertionTypeHead`、
-  `SourceAssertionAttributePolarityInput`、`SourceAtomicEdgeRole`、
+  `SourceAssertionAttributePolarityInput`、
+  `SourcePredicateSegmentPolarityInput`、`SourceAtomicEdgeRole`、
   `SourceAtomicTermTarget`、`SourceAtomicRequestKind`、
   `SourceAtomicFormulaHandoff`、`SourceAtomicFormulaTable`、
-  `SourceAtomicWrapperTable`、`SourcePredicateHeadTable`、
+  `SourceAtomicWrapperTable`、`SourcePredicateSegmentTable`、
+  `SourcePredicateHeadTable`、
   `SourcePredicateCandidateTable`、`SourceAssertionTypeSiteTable`、
   `SourceAssertionAttributeTable`、`SourceAtomicEdgeTable`、
   `SourceAtomicRequestTable`、`SourceAtomicFormula`、`SourceAtomicWrapper`、
-  `SourcePredicateHead`、`SourcePredicateCandidate`、
+  `SourcePredicateSegment`、`SourcePredicateHead`、
+  `SourcePredicateCandidate`、
   `SourceAssertionTypeSite`、`SourceAssertionAttribute`、`SourceAtomicEdge`、
   `SourceAtomicRequest`、`SourceAtomicFormulaProducer`、
   `SourceAtomicFormulaError`
@@ -457,7 +462,7 @@ literal top-level public item:
 
 | spec promise | source evidence | test evidence | status |
 |---|---|---|---|
-| syntax-free dense table 8個がatomic formula、wrapper、predicate provenance、asserted type、assertion attribute、nearest-family edge、unresolved requestを保持する。 | `src/source_atomic_formula.rs`のpublic input、immutable row/table。 | exact real `8/0/1/1/1/2/13/11` aggregateとchecker shape test。 | Task 256でimplemented。 |
+| syntax-free dense table 9個がatomic formula、wrapper、predicate segment/provenance、asserted type、assertion attribute、nearest-family edge、unresolved requestを保持する。 | `src/source_atomic_formula.rs`のpublic input、immutable row/table。 | exact Task-256 `8/0/0/1/1/1/2/13/11` aggregate、Task-257C1 `1/0/2/2/2/0/0/3/2`、checker shape test。 | Tasks 256/257C1でimplemented。 |
 | Task-252/253/254/255 nearest-family ownershipとconditional fingerprintをatomicにvalidateする。 | `SourceAtomicFormulaProducer::build`とprivate install validation。 | same-arena real composition、cross-family producer probe、corruption/install test。 | transactionalにimplemented。 |
 | resolver provenance、canonical spelling、arena key、row cardinality/order、request associationをfail closedにする。 | producer validationと`SourceAtomicFormulaError`。 | predicate/attribute provenance、wrapper、request、spelling、mutation matrix。 | partial publicationなしでimplemented。 |
 | `TypedAst`がhandoff 1件をownし、`ResolvedTypedAst`がrevalidate後にclone-preserveする。 | `with_source_atomic_formula`、later lower-family revalidation、resolved assembly。 | replacement/install-order、final clone equality、deterministic replay。 | Implemented。 |
@@ -3404,3 +3409,7 @@ blocking `spec_gap`、`source_undocumented_behavior`、
 chain、recovered input、predicate applicability/selection、semantic
 conjunction/negation、conditioned comprehensionはexclude/deferする。origin差は
 report-only `repo_metadata_conflict`のまま。
+
+implementationはfrozen contractに対するTask-257C1 `source_drift` /
+`test_gap`を閉じた。preceding docs commitが`design_drift`を閉じ、上記の
+他classification/semantic deferralは不変。

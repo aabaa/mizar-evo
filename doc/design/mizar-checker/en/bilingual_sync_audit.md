@@ -44,7 +44,7 @@ after this task.
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, determinism, coverage, public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary, five-table application/wrapper/candidate/argument/request transport, Task-252 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
-| `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256 authority/boundary, eight-table atomic-formula/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, exact consumers, exclusions, public enum policy | none |
+| `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, exclusions, public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary, seven-table composite-formula/binder/type/edge/request transport, source-derived binding extension, exact consumer, exclusions, public enum policy | none |
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1 authority/boundary, explicit universal-to-atomic edge and bound-use transport, Task-252/256/257 dependency fingerprints, combined atomic installation, exact consumer, exclusions, public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255 authority/boundary, six-table set/choice/qua/generator/type-site/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
@@ -201,3 +201,7 @@ shared boundary edge, imported provenance, tests, projection, and semantic
 deferrals. This prerequisite changes no module boundary, production path,
 fixture, trace metadata, count, or hash, so the paired module-boundary audit is
 intentionally unchanged. No Task-257C1 bilingual sync debt is accepted.
+
+The Task 257C1 implementation result, counts/hashes, public ownership,
+classification closure, module-boundary recheck, and next prerequisite are
+synchronized in the paired EN/JA checker documents. No bilingual debt remains.

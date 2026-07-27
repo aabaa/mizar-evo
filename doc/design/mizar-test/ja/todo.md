@@ -1656,5 +1656,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   isolation/install/final matrix、empty semantic outputをfreeze。
 - [x] prerequisiteを`417/383`、`249/237`、`227/190`、active
   `101/5/196/1`、349 tests、29 paths / 32,809 linesに保つ。
-- [ ] documentation commit/fresh preflight後にexact route、fixture/sidecar
+- [x] documentation commit/fresh preflight後にexact route、fixture/sidecar
   1件、covered trace row、testsを実装する。
+- [x] `418/384`、`250/238`、`228/190`、active `101/5/197/1`、353
+  tests、exact selector isolation、fail-closed corruption、empty semantic
+  outputをverifyする。

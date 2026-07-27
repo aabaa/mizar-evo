@@ -341,7 +341,8 @@ pub(super) use source_atomic_formula::source_atomic_formula_transport_detail_key
 #[cfg(test)]
 pub(super) use source_atomic_formula::{
     SourceAtomicFormulaRouteOutput, source_atomic_formula_output,
-    source_atomic_formula_output_with_mutation,
+    source_atomic_formula_output_with_mutation, source_atomic_formula_output_with_source,
+    source_atomic_formula_output_with_source_and_mutation,
 };
 pub(super) use source_attribute::source_attribute_detail_keys;
 #[cfg(test)]
@@ -373,6 +374,7 @@ pub(super) use source_formula::{
     extract_source_formula_quantifier_bound_use, extract_source_formula_statement,
     extract_source_imported_attribute_assertion_formula,
     extract_source_imported_non_empty_attribute_assertion_formula,
+    extract_source_imported_predicate_chain_formula,
     extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
 };
 pub(super) use source_formula::{

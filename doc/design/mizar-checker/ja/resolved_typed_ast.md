@@ -789,3 +789,7 @@ imported candidateからwinnerをselectしない。orphan/shared-edge、
 polarity-token、provenance、request、fingerprint、legacy-profile corruptionは
 fail closed。checked formula、conjunction/negation result、predicate winner、
 theorem acceptance、proof、IR outputをassembleしない。
+
+implemented Task 257C1 runnerはtyped/resolved debug byte stabilityと
+Task-252/Task-256両handoff equalityを確認する。resolutionはclone-onlyで、
+semantic selectionを追加しない。

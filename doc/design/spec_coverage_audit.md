@@ -3276,6 +3276,23 @@ selection, implicit conjunction, semantic negation, truth, facts, theorem
 ownership/acceptance, proof, Core/CFG/VC, Steps 6/7, and global Step-5
 completion receive no credit.
 
+## Step 5 Checker Task 257C1 Implementation Result
+
+The frozen Task 257C1 transport is implemented and the projected covered row
+`spec.en.checker.type_elaboration.source_predicate_chain_segment_payload` is
+active through its single new pass sidecar. Reciprocal Task-252 and Task-256
+notes are updated without changing their status. Coverage is now plan
+`418/384`, type-elaboration `250/238`, pass/fail `228/190`, and active
+parse/declaration/type/proof `101/5/197/1`.
+
+This increment closes only the classified `source_drift` and `test_gap`; the
+documentation prerequisite already closed `design_drift`. It does not change
+owner crates or follow-up ownership for predicate applicability/selection,
+implicit conjunction, semantic segment negation, truth/facts, theorem
+acceptance, proof, CoreIr/ControlFlowIr/VC, or conditioned comprehension.
+Those remain deferred, and the next coverage change requires the separate
+Task-255 condition-bearing-comprehension contract and implementation.
+
 ## Step 5 Checker Task 257B2 Frozen-Contract Addendum
 
 Task 257B2 now has a documentation-only frozen contract for the exact

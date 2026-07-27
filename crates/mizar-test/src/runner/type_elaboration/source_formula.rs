@@ -28,6 +28,7 @@ use super::source_reserve::{
 };
 
 const SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n";
+const SOURCE_FORMULA_PREDICATE_CHAIN_PAYLOAD: &str = "import parser.type_fixtures;\ntheorem FormulaPredicateChainPayloadBoundary: 1 divides 2 does not divides 3;\n";
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceReservedVariableBinaryFormulaConfig {
@@ -1584,6 +1585,23 @@ pub(in crate::runner) struct SourceImportedPredicateFunctorFormula {
 }
 
 #[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceImportedPredicateChainFormula {
+    pub(in crate::runner) formula_site: TypedSiteRef,
+    pub(in crate::runner) formula_range: SourceRange,
+    pub(in crate::runner) segment_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) segment_ranges: [SourceRange; 2],
+    pub(in crate::runner) head_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) head_ranges: [SourceRange; 2],
+    pub(in crate::runner) verb_site: TypedSiteRef,
+    pub(in crate::runner) verb_range: SourceRange,
+    pub(in crate::runner) not_site: TypedSiteRef,
+    pub(in crate::runner) not_range: SourceRange,
+    pub(in crate::runner) term_sites: [TypedSiteRef; 3],
+    pub(in crate::runner) term_ranges: [SourceRange; 3],
+    pub(in crate::runner) predicate_symbol: ResolverSymbolId,
+}
+
+#[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceImportedAttributeAssertionFormula {
     pub(in crate::runner) formula_site: TypedSiteRef,
     pub(in crate::runner) formula_range: SourceRange,
@@ -2033,6 +2051,156 @@ pub(in crate::runner) fn extract_source_imported_predicate_functor_formula(
         functor_right_site: surface_site(functor.right.0),
         functor_right_range: functor.right.1,
     })
+}
+
+pub(in crate::runner) fn extract_source_imported_predicate_chain_formula(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<SourceImportedPredicateChainFormula> {
+    if source_text != SOURCE_FORMULA_PREDICATE_CHAIN_PAYLOAD
+        || ast
+            .nodes()
+            .iter()
+            .any(|node| !is_supported_imported_predicate_chain_theorem_bridge_node(node))
+    {
+        return None;
+    }
+
+    let item_list = exact_compilation_item_list(ast)?;
+    let item_children = structural_child_ids(ast, item_list);
+    let [import_item_id, theorem_id] = item_children.as_slice() else {
+        return None;
+    };
+    if !is_exact_parser_type_fixtures_import(ast, ast.node(*import_item_id)?) {
+        return None;
+    }
+
+    let theorem = ast.node(*theorem_id)?;
+    if !matches!(theorem.kind, SurfaceNodeKind::TheoremItem)
+        || subtree_has_recovery(ast, theorem)
+        || direct_token_texts(ast, theorem).as_slice()
+            != ["theorem", "FormulaPredicateChainPayloadBoundary", ":", ";"]
+    {
+        return None;
+    }
+    let theorem_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::PredicateApplication)
+        || subtree_has_recovery(ast, formula)
+        || !direct_token_texts(ast, formula).is_empty()
+    {
+        return None;
+    }
+
+    let segment_ids = structural_child_ids(ast, formula);
+    let [first_segment_id, second_segment_id] = segment_ids.as_slice() else {
+        return None;
+    };
+    let first_segment = ast.node(*first_segment_id)?;
+    let second_segment = ast.node(*second_segment_id)?;
+    if !matches!(first_segment.kind, SurfaceNodeKind::PredicateSegment)
+        || !matches!(second_segment.kind, SurfaceNodeKind::PredicateSegment)
+        || !direct_token_texts(ast, first_segment).is_empty()
+        || direct_token_texts(ast, second_segment).as_slice() != ["does", "not"]
+    {
+        return None;
+    }
+    let first_children = structural_child_ids(ast, first_segment);
+    let [first_term_id, first_head_id, second_term_id] = first_children.as_slice() else {
+        return None;
+    };
+    let second_children = structural_child_ids(ast, second_segment);
+    let [second_head_id, third_term_id] = second_children.as_slice() else {
+        return None;
+    };
+
+    for head_id in [*first_head_id, *second_head_id] {
+        let head = ast.node(head_id)?;
+        if !matches!(head.kind, SurfaceNodeKind::PredicateHead)
+            || !direct_token_texts(ast, head).is_empty()
+        {
+            return None;
+        }
+        let head_children = structural_child_ids(ast, head);
+        let [symbol_id] = head_children.as_slice() else {
+            return None;
+        };
+        let symbol = ast.node(*symbol_id)?;
+        if !matches!(symbol.kind, SurfaceNodeKind::QualifiedSymbol)
+            || qualified_symbol_spelling(ast, symbol).ok()?.as_str() != "divides"
+        {
+            return None;
+        }
+    }
+
+    let first_term = exact_numeral_term_operand(ast, *first_term_id, "1")?;
+    let second_term = exact_numeral_term_operand(ast, *second_term_id, "2")?;
+    let third_term = exact_numeral_term_operand(ast, *third_term_id, "3")?;
+    let verb_id = unique_direct_source_token(ast, second_segment, "does")?;
+    let not_id = unique_direct_source_token(ast, second_segment, "not")?;
+    let predicate_symbol = resolve_imported_fixture_term_formula_symbol(
+        symbols,
+        module,
+        "divides",
+        SymbolKind::Predicate,
+    )
+    .ok()?;
+
+    Some(SourceImportedPredicateChainFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        segment_sites: [
+            surface_site(*first_segment_id),
+            surface_site(*second_segment_id),
+        ],
+        segment_ranges: [first_segment.range, second_segment.range],
+        head_sites: [surface_site(*first_head_id), surface_site(*second_head_id)],
+        head_ranges: [
+            ast.node(*first_head_id)?.range,
+            ast.node(*second_head_id)?.range,
+        ],
+        verb_site: surface_site(verb_id),
+        verb_range: ast.node(verb_id)?.range,
+        not_site: surface_site(not_id),
+        not_range: ast.node(not_id)?.range,
+        term_sites: [
+            surface_site(first_term.0),
+            surface_site(second_term.0),
+            surface_site(third_term.0),
+        ],
+        term_ranges: [first_term.1, second_term.1, third_term.1],
+        predicate_symbol,
+    })
+}
+
+fn unique_direct_source_token(
+    ast: &SurfaceAst,
+    owner: &SurfaceNode,
+    spelling: &str,
+) -> Option<SurfaceNodeId> {
+    let matches = owner
+        .children
+        .iter()
+        .copied()
+        .filter(|child| ast.node(*child).and_then(SurfaceNode::token_text) == Some(spelling))
+        .collect::<Vec<_>>();
+    let [token] = matches.as_slice() else {
+        return None;
+    };
+    Some(*token)
 }
 
 pub(in crate::runner) fn extract_source_imported_attribute_assertion_formula(
@@ -3377,6 +3545,28 @@ fn is_supported_imported_predicate_functor_theorem_bridge_node(node: &SurfaceNod
             | SurfaceNodeKind::ParenthesizedTerm
             | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_imported_predicate_chain_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::PredicateApplication
+            | SurfaceNodeKind::PredicateSegment
+            | SurfaceNodeKind::PredicateHead
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::Token(_)
     )
 }

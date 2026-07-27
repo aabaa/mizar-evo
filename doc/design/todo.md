@@ -2310,5 +2310,22 @@ completion remain deferred. The origin discrepancy remains report-only
   `spec_gap` exists.
 - [x] Preserve production, fixtures, sidecars, trace status/count, executable
   coverage, counts, test lists, and hashes at the Task-257B3 baseline.
-- [ ] Implement Task 257C1 next as a separate logical task after mandatory
-  fresh parser/resolver/API and count/hash preflight.
+- [x] Implement Task 257C1 as a separate logical task after mandatory fresh
+  parser/resolver/API and count/hash preflight.
+
+## Checker Task 257C1 Implementation Ledger
+
+- [x] Add the syntax-free public segment table/polarity schema and shared
+  boundary role while preserving all eleven existing input constructors.
+- [x] Add the exact 107-byte private selector and same-arena Task-252/256
+  transaction without admitting any near miss or Task-257 composition.
+- [x] Add one pass fixture/sidecar and one covered trace row; preserve all
+  existing `.miz` sources, expectations, and semantic owners.
+- [x] Close exact/corruption/isolation/install/clone tests and measure plan
+  `418/384`, type `250/238`, pass/fail `228/190`, active type `197`, and
+  libraries `322/353`.
+- [x] Keep predicate applicability/selection, implicit conjunction, semantic
+  negation, truth/facts, theorem acceptance, proof, downstream IR, and
+  conditioned comprehension deferred.
+- [ ] Continue with the separate Task-255 condition-bearing-comprehension
+  frozen-contract prerequisite after this implementation commit.
