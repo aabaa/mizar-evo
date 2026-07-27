@@ -2949,3 +2949,41 @@ explicit exclusions, corruption atomicity, deterministic replay, final
 ownership, and isolation from every other active type-elaboration case. The
 active corpus is 414/378, 244/232, 224/190, and 101/5/193/1 with 23 warnings
 and zero errors. Later binder, formula, and semantic owners remain deferred.
+
+## Checker Task 256 Frozen Runner Boundary
+
+The future private `source_atomic_formula` route reuses eight existing active
+fail cases and adds no source case. It validates one syntax-free public
+Task-256 transaction per source before preserving the current semantic
+bridge and exact external-gap outcome.
+
+The real aggregate is Task-256
+formula/wrapper/head/candidate/type-site/attribute/edge/request
+`8/0/1/1/1/2/13/11`, Task-252 `16/0/16`, Task-253
+`1/1/1/2/2`, and Task-255 `2/0/0/0/4/2`, with no Task-254 target. Raw
+syntax and selection stay private; the checker receives only dense rows,
+resolver identities, cross-family IDs, and unresolved requests.
+
+The route first forms the complete Task-252 primary union in one shared
+handoff and arena, then builds its Task-253 and Task-255 dependencies against
+those same objects before Task 256. It may reuse narrowly exposed private
+helpers, but it does not widen or alter any existing lower-family standalone
+selector or allowlist.
+
+The runner must prove exact-source selection, all-active-case isolation,
+candidate/attribute provenance, bare assertion-type ownership, direct-child
+exhaustiveness, request associations, dependency fingerprints, both install
+orders, corruption atomicity, deterministic replay, and immutable final
+preservation. It must not change the existing sidecars except the separately
+frozen reciprocal trace reference/transport note during implementation.
+The positive oracle is an exact ordered vector of all thirteen edge rows and
+eleven request rows, including IDs, ordinals, roles/kinds, targets/
+associations, effective ranges, the Task-253 outer parenthesized range, and
+the positive/negative attribute target plus `non` anchors. Tests also retain
+the unchanged Task-252/253/255 standalone-selector isolation oracles.
+
+Predicate chains/negation, inline/templates, general type graphs,
+qualified/argument-bearing attributes, semantic facts/truth, theorem
+acceptance, and conditioned comprehensions remain excluded. This
+documentation prerequisite changes no runner, fixture, sidecar, trace,
+count, test list, production manifest, or hash.

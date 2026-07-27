@@ -450,3 +450,37 @@ private exact consumer、optional Task-253/254 fingerprint、final
 test matrixがbounded `source_drift`/`test_gap`をcloseする。generator
 binding/captureはTask 257、condition formulaはTasks 256-257が引き続きownし、
 semantic set/choice/`qua` creditは追加しない。
+
+## Task 256 frozen atomic-formula family
+
+Task 256はTasks 248/252-255直後のsource-transport graph nodeとしてfreezeする。
+future `source_atomic_formula` handoffはformula occurrence、transparent wrapper、
+ordinary predicate head、individually authenticated predicate candidate、
+formula-owned bare asserted-type site、formula-owned simple attribute、direct term
+edge、unresolved expected-input requestのdense table 8個を持つ。
+
+exact real selectorは既存active fail fixture 8件を再利用し、新規`.miz`を追加しない。
+independent transaction aggregateはTask-256 formula/wrapper/head/candidate/
+type-site/attribute/edge/request `8/0/1/1/1/2/13/11`。direct edgeはTask-252
+primary 10、Task-253 root application 1、Task-255 root set term 2である。
+complete dependency aggregateはTask-252 `16/0/16`、Task-253
+`1/1/1/2/2`、Task-255 `2/0/0/0/4/2`で、real Task-254 targetはない。
+
+assertion type/attributeはoccurrence-specific Task-256 rowで、Task-249 declaration
+applicationやTask-250 chainを捏造しない。initial sliceはbare builtin
+`set`/`object`とsimple unqualified argument-free attributeだけをadmitする。
+requestはoperand expected type、candidate signature、type reachability、attribute
+admissibilityのunresolved intentだけを運び、Task 251をextendせず、answer/fact/
+winner/truth/accepted formulaを作らない。
+
+single-segment ordinary predicateだけをadmitし、chain conjunction、segment
+negation、inline substitution、template argumentを作らない。predicate chainと
+formula operator/binderはTask 257、inline closure/substitutionはTask 270、
+template roleはTask 277、overload collection/selectionはTask 278がownする。
+condition付きcomprehensionはTask-255をreopenせずTask-255/256/257 joint
+follow-upに残す。
+
+本documentation-only prerequisiteはTask-256 `design_drift`をcloseする。
+public producer/final handoffはbounded `source_drift`、real/synthetic/corruption/
+install/exclusion matrixは`test_gap`のままである。source、fixture、
+expectation、trace row/status/count、count/hashを変更しない。

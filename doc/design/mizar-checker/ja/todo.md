@@ -4219,7 +4219,12 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   identity/captureはTask 257、condition付きcomprehension formula ownershipは
   Tasks 256-257、semantic result/sethood/nonemptiness/widening decisionはdeferred
   のままとする。
-- [ ] **Task 256:** atomic formula producer。
+- [ ] **Task 256:** atomic formula producer。documentation prerequisiteは
+  public 8-table syntax-free transaction、既存real fail consumer 8件、
+  exact `8/0/1/1/1/2/13/11` aggregate、Task-252 `16/0/16`、
+  Task-253 `1/1/1/2/2`、Task-255 `2/0/0/0/4/2`、conditional
+  Task-253/254/255 fingerprint、unresolved input request 11件としてfreeze済み。
+  producer/test/trace increment/implementation commitはopenである。
 - [ ] **Task 257:** composite/quantified formula/binder producer。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。

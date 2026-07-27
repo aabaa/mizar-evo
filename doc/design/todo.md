@@ -2128,3 +2128,32 @@ Task 256 is next in the dependency-ready checker queue. Task 257 retains
 comprehension binding/capture, Tasks 256-257 retain condition formula
 ownership, and semantic set/choice/`qua`, accepted facts/proofs, Steps 6/7,
 and global Step-5 completion remain deferred.
+
+## Step 5 Checker Task 256 Frozen-Contract Addendum
+
+Checker Task 256 now has a documentation-only frozen contract for atomic
+formula source transport. It fixes eight syntax-free tables; eight unchanged
+real fail consumers; Task-256 `8/0/1/1/1/2/13/11`; Task-252
+`16/0/16`; Task-253 `1/1/1/2/2`; Task-255 `2/0/0/0/4/2`;
+no real Task-254 target; and exactly eleven unresolved input requests.
+
+The contract freezes exact predicate/attribute resolver provenance,
+formula-owned bare asserted types and simple attributes, direct nearest-family
+term ownership, canonical spelling, conditional fingerprints, later-installer
+revalidation, subtree exclusions, tests, trace impact, and exit criteria.
+Existing semantic routes and all eight sidecar outcome/detail fields remain
+unchanged.
+
+This prerequisite closes only `design_drift`; bounded `source_drift` and
+`test_gap` remain for implementation. It changes no production source,
+fixture, `.miz`, sidecar, expectation, trace row/status/count, executable
+coverage, count, or hash. Baseline remains 414/378, 244/232, 224/190,
+101/5/193/1, 320 tests, and 26 paths / 29,138 lines. The separate
+implementation projects 414/379 and 245/233 with unchanged case count.
+
+Task 257 retains predicate chains, formula negation/connectives/quantifiers,
+and conditioned-comprehension composition; Task 270 retains inline closure;
+Task 277 templates; Task 278 overload selection. General assertion type
+graphs, qualified/argument-bearing attributes, semantic facts/truth, theorem
+acceptance, Steps 6/7, and global Step-5 completion remain deferred. The
+origin discrepancy remains report-only `repo_metadata_conflict`.

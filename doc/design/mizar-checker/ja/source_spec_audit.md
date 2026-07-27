@@ -3069,3 +3069,40 @@ closedである。blocking `spec_gap`、`source_undocumented_behavior`、
 MC-G017/MC-G020はpartialのままである。generator binding/captureはTask 257、
 condition formulaはTasks 256-257に残し、semantic sethood/choice/`qua`、
 accepted fact/proof、Core/CFG/VC、Steps 6/7へcreditを与えない。
+
+## Step 5 Checker Task 256 frozen-contract audit
+
+committed Task-255 producer直後のfresh inventoryはTask 256をselectする。
+canonical Chapters 9/14はatomic predicate/equality/inequality/membership/
+type-assertion/attribute-assertionのsource identityを要求するが、truth、theorem
+acceptance、overload winnerをauthorizeしない。Chapters 3/6/13/19とTasks
+248/252-255がbounded type/attribute/term/resolver ownershipを与える。
+
+review targetはpublic syntax-free 8-table transaction 1個である。既存active fail
+fixture 8件のreal aggregateは`8/0/1/1/1/2/13/11`、Task-252
+`16/0/16`、Task-253 `1/1/1/2/2`、Task-255 `2/0/0/0/4/2`で、
+Task-254 targetはない。exact row schema、request association、arena key、
+canonical spelling、nearest-family term ownership、conditional fingerprint、
+later installer revalidation、immutable final AST preservationをfreezeする。
+
+formula-owned bare type/simple attributeはTask-249/250 declaration-linked rowの
+aliasではない。predicate candidateはexhaustive/selected overload setではなく
+individually authenticated referenceである。requestはoperand/signature/
+reachability/admissibilityのunresolved input intentだけを保持する。predicate
+chain、formula negation/composition、inline/template、general type graph、
+qualified/argument-bearing attribute、semantic fact/truth、conditioned
+comprehensionをexplicitly excludeする。
+
+missing contractはrepaired `design_drift`、absent producer/final handoffはbounded
+`source_drift`、producer/corruption/install-order/exclusion/final ownership
+coverageは`test_gap`のままである。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、current
+`boundary_violation`はない。origin差はreport-only
+`repo_metadata_conflict`のままである。
+
+本prerequisiteはproduction source、fixture、`.miz`、sidecar/expectation、
+trace row/status/count、coverage、count/hashを変更しない。baselineは
+414/378、244/232、224/190、101/5/193/1、320 tests、26 paths /
+29,138 linesである。separate implementationは既存sidecar 8件にbounded
+covered row 1件を追加でき、case/outcome/detail不変のまま414/379、
+245/233をprojectする。

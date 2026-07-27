@@ -1709,3 +1709,31 @@ promoted by this increment.
   reviewed synthetic/exclusion/corruption/install-order coverage. Preserve
   the external dependency gap and leave binder/formula/semantic ownership
   deferred as frozen.
+
+## Checker Task 256 Frozen Consumer Prerequisite
+
+- [x] Freeze the exact eight existing active fail consumers without adding or
+  changing a `.miz` source or any current outcome/detail field.
+- [x] Freeze the private raw-syntax owner and public eight-table boundary at
+  Task-256 `8/0/1/1/1/2/13/11`, Task-252 `16/0/16`,
+  Task-253 `1/1/1/2/2`, and Task-255 `2/0/0/0/4/2`, with no real
+  Task-254 target.
+- [x] Freeze imported predicate/attribute provenance, bare formula-owned
+  asserted types, source-anchored attribute polarity, nearest-family term
+  ownership, conditional fingerprints, and eleven unresolved requests.
+- [x] Freeze the Task-256-owned combined composition order: complete Task-252
+  union first, Task-253/255 dependencies in the same handoff/arena next, with
+  existing lower-family exact selectors and allowlists unchanged.
+- [x] Require exact ordered positive vectors for all thirteen edges and
+  eleven requests, including the Task-253 outer wrapper range and attribute
+  target/`non` anchors, plus unchanged standalone selector-isolation oracles.
+- [x] Keep predicate chains/negation, inline/templates, general asserted type
+  graphs, qualified/argument-bearing attributes, semantic facts/truth, and
+  conditioned comprehensions explicitly outside this bounded increment.
+- [x] Keep this prerequisite documentation-only, preserving 414/378,
+  244/232, 224/190, 101/5/193/1, 320 tests, 26 paths / 29,138 lines, and
+  all hashes. The separate implementation projects 414/379 and 245/233 with
+  unchanged case count, subject to fresh preflight.
+- [ ] Implement the separate Task-256 consumer, producer, final handoff,
+  bounded reciprocal trace increment, and reviewed
+  real/synthetic/exclusion/corruption/install-order matrix.

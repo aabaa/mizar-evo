@@ -2804,3 +2804,36 @@ atomicity、deterministic replay、final ownership、全他active type caseか�
 isolationをauthenticateする。active corpusは414/378、244/232、224/190、
 101/5/193/1、warnings 23/errors 0である。later binder/formula/semantic ownerは
 deferredのままである。
+
+## Checker Task 256 frozen runner boundary
+
+future private `source_atomic_formula` routeは既存active fail 8件をreuseし、
+source caseを追加しない。current semantic bridgeとexact external-gap outcomeを
+維持する前に、sourceごとのsyntax-free public Task-256 transactionをvalidateする。
+
+real aggregateはTask-256 formula/wrapper/head/candidate/type-site/attribute/
+edge/request `8/0/1/1/1/2/13/11`、Task-252 `16/0/16`、Task-253
+`1/1/1/2/2`、Task-255 `2/0/0/0/4/2`で、Task-254 targetはない。
+raw syntax/selectionはprivateに留め、checkerにはdense row、resolver identity、
+cross-family ID、unresolved requestだけを渡す。
+
+routeはcomplete Task-252 primary unionをsingle shared handoff/arenaへ先に
+形成し、同じobjectに対してTask-253/255 dependencyをbuildした後Task 256を
+buildする。narrow private helper reuseは許すが、既存lower-family standalone
+selector/allowlistを拡張・変更しない。
+
+runnerはexact-source selection、all-active isolation、candidate/attribute
+provenance、bare assertion-type ownership、direct-child exhaustiveness、
+request association、dependency fingerprint、両install順、corruption atomicity、
+deterministic replay、immutable final preservationを証明する。implementation時の
+frozen reciprocal trace reference/transport note以外は既存sidecarを変更しない。
+positive oracleはedge 13件とrequest 11件すべてのID、ordinal、role/kind、
+target/association、effective range、Task-253 outer parenthesized range、
+positive/negative attribute targetと`non` anchorのexact ordered vectorである。
+既存Task-252/253/255 standalone-selector isolation oracleも不変で証明する。
+
+predicate chain/negation、inline/template、general type graph、qualified/
+argument-bearing attribute、semantic fact/truth、theorem acceptance、
+conditioned comprehensionはexcludedのままである。本documentation prerequisiteは
+runner、fixture、sidecar、trace、count、test list、production manifest、hashを
+変更しない。

@@ -491,3 +491,41 @@ fixture/trace row, and reviewed test matrix close the bounded
 `source_drift` and `test_gap`. Task 257 still owns generator binding/capture,
 Tasks 256-257 still own condition formulas, and no semantic set/choice/`qua`
 credit is added.
+
+## Task 256 Frozen Atomic-Formula Family
+
+Task 256 is frozen as the next source-transport graph node after Tasks
+248/252-255. Its future `source_atomic_formula` handoff contains eight dense
+tables for formula occurrences, transparent wrappers, ordinary predicate
+heads, individually authenticated predicate candidates, formula-owned bare
+asserted-type sites, formula-owned simple attributes, direct term edges, and
+unresolved expected-input requests.
+
+The exact real selector reuses eight existing active fail fixtures and adds no
+new `.miz`. Across those independent transactions the Task-256
+formula/wrapper/head/candidate/type-site/attribute/edge/request aggregate is
+`8/0/1/1/1/2/13/11`. Direct edges target ten Task-252 primaries, one
+Task-253 root application, and two Task-255 root set terms. The complete
+dependency aggregate is Task-252 `16/0/16`, Task-253 `1/1/1/2/2`, and
+Task-255 `2/0/0/0/4/2`; there is no real Task-254 target.
+
+The bounded assertion type and attributes are occurrence-specific Task-256
+rows, not fabricated Task-249 declaration applications or Task-250 chains.
+The initial slice admits only bare builtin `set`/`object` and simple
+unqualified argument-free attributes. Requests transport operand expected
+types, candidate signatures, type reachability, and attribute admissibility
+as unresolved intent; they do not extend Task 251 or provide an answer, fact,
+winner, truth, or accepted formula.
+
+Single-segment ordinary predicates are admitted without chain conjunction,
+segment negation, inline substitution, or template arguments. Task 257 owns
+predicate chains and formula operators/binders, Task 270 owns inline closure
+and substitution, Task 277 owns template roles, and Task 278 owns overload
+collection and selection. Conditioned comprehensions remain a joint
+Task-255/256/257 follow-up rather than reopening Task 255.
+
+This documentation-only prerequisite closes Task-256 `design_drift`.
+The public producer/final handoff remains bounded `source_drift`, and the
+real/synthetic/corruption/install/exclusion matrix remains `test_gap`.
+It changes no source, fixture, expectation, trace row/status/count, count, or
+hash.

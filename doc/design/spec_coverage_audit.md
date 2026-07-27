@@ -3001,3 +3001,40 @@ semantic sethood, choice, `qua`, cluster, or ATP credit. Comprehension
 binding/capture remains Task 257, condition formula ownership remains Tasks
 256-257, and accepted facts/proofs, downstream IR, Steps 6/7, and global
 Step-5 completion remain deferred.
+
+## Step 5 Checker Task 256 Frozen-Contract Addendum
+
+Task 256 now has a reviewed documentation target for source-only atomic
+formula transport under canonical Chapters 9 and 14, with Chapters
+3/6/13/19 providing type, attribute, term, and resolver boundaries. The
+future public checker handoff has eight dense tables and an exact real
+aggregate of `8/0/1/1/1/2/13/11` across eight unchanged active fail
+fixtures.
+
+The mapped dependency aggregate is Task-252 `16/0/16`, Task-253
+`1/1/1/2/2`, and Task-255 `2/0/0/0/4/2`; no real Task-254 target exists.
+The contract freezes individually authenticated predicate candidates,
+formula-owned bare asserted types, formula-owned simple attributes, direct
+nearest-family term edges, eleven unresolved input requests, conditional
+fingerprints, both install orders, and final immutable AST ownership.
+
+The bounded type/attribute rows do not change Task-249/250 declaration-linked
+coverage or Task-251 evidence origins. Predicate chains, formula operators
+and binders, inline/template applications, general asserted type graphs,
+qualified/argument-bearing attributes, conditioned comprehensions, semantic
+facts/truth, theorem acceptance, and overload selection receive no credit.
+
+This prerequisite closes only Task-256 `design_drift`. The producer/final
+handoff remains bounded `source_drift`; real/synthetic/corruption/install/
+exclusion coverage remains `test_gap`. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or current
+`boundary_violation` was found. The origin discrepancy remains a report-only
+`repo_metadata_conflict`.
+
+No trace row, mapping, status, fixture, expectation, source, count, hash, or
+executable coverage changes in this prerequisite. Baseline plan 414/378,
+type 244/232, pass/fail 224/190, active 101/5/193/1, warnings/errors 23/0,
+320 tests, and 26 paths / 29,138 lines remain exact. The separate
+implementation may add one bounded covered diagnostic row over the eight
+existing sidecars, projecting 414/379 and 245/233 without changing the 414
+cases or any sidecar outcome/detail.

@@ -1520,3 +1520,31 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   4/0/4 oracle、active-case isolation、review済みsynthetic/exclusion/
   corruption/install-order coverageとともに実装する。external dependency gapを
   維持し、binder/formula/semantic ownershipはfrozenどおりdeferredに残す。
+
+## Checker Task 256 frozen consumer prerequisite
+
+- [x] 既存active fail consumer 8件をfreezeし、新規/既存`.miz`とcurrent
+  outcome/detailを変更しない。
+- [x] private raw-syntax ownerとpublic 8-table boundaryをTask-256
+  `8/0/1/1/1/2/13/11`、Task-252 `16/0/16`、Task-253
+  `1/1/1/2/2`、Task-255 `2/0/0/0/4/2`、real Task-254 targetなしで
+  freezeする。
+- [x] imported predicate/attribute provenance、formula-owned bare asserted
+  type、source-anchored attribute polarity、nearest-family term ownership、
+  conditional fingerprint、unresolved request 11件をfreezeする。
+- [x] Task-256-owned combined composition順をcomplete Task-252 union、
+  same handoff/arena上のTask-253/255 dependencyの順でfreezeし、既存
+  lower-family exact selector/allowlistを変更しない。
+- [x] edge 13件/request 11件のexact ordered positive vectorにTask-253 outer
+  wrapper rangeとattribute target/`non` anchorを含め、standalone selector
+  isolation oracle不変も要求する。
+- [x] predicate chain/negation、inline/template、general asserted-type graph、
+  qualified/argument-bearing attribute、semantic fact/truth、conditioned
+  comprehensionをbounded increment外に明記する。
+- [x] 本prerequisiteをdocumentation-onlyとし、414/378、244/232、
+  224/190、101/5/193/1、320 tests、26 paths / 29,138 lines、全hashを
+  保持する。separate implementationはfresh preflight条件でcase count不変の
+  414/379、245/233をprojectする。
+- [ ] separate Task-256 consumer/producer/final handoff、bounded reciprocal
+  trace increment、review済みreal/synthetic/exclusion/corruption/install-order
+  matrixを実装する。

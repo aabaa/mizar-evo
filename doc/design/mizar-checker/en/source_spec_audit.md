@@ -3207,3 +3207,44 @@ No blocking `spec_gap`, `source_undocumented_behavior`,
 MC-G017/MC-G020 remain partial. Task 257 retains generator binding/capture,
 Tasks 256-257 retain condition formulas, and semantic sethood, choice,
 `qua`, accepted fact/proof, Core/CFG/VC, and Steps 6/7 receive no credit.
+
+## Step 5 Checker Task 256 Frozen-Contract Audit
+
+Fresh inventory selects Task 256 after the committed Task-255 producer.
+Canonical Chapters 9 and 14 require atomic predicate, equality, inequality,
+membership, type-assertion, and attribute-assertion source identity, but do
+not authorize truth, theorem acceptance, or an overload winner. Chapters
+3/6/13/19 and Tasks 248/252-255 supply the bounded type, attribute, term, and
+resolver ownership rules.
+
+The reviewed target is one public syntax-free eight-table transaction. Its
+real aggregate across eight unchanged active fail fixtures is
+`8/0/1/1/1/2/13/11`, with Task-252 `16/0/16`, Task-253
+`1/1/1/2/2`, Task-255 `2/0/0/0/4/2`, and no Task-254 target. The contract
+freezes exact row schemas, request associations, arena keys, canonical
+spelling, nearest-family term ownership, conditional fingerprints, later
+installer revalidation, and final immutable AST preservation.
+
+Formula-owned bare type and simple attribute sites are not aliases for
+Task-249/250 declaration-linked rows. Predicate candidates are individually
+authenticated references rather than an exhaustive or selected overload set.
+Requests preserve only unresolved operand, signature, reachability, and
+admissibility input intent. Predicate chains, formula negation/composition,
+inline/template applications, general type graphs, qualified/argument-bearing
+attributes, semantic facts/truth, and conditioned comprehensions remain
+explicitly excluded.
+
+The missing contract is repaired `design_drift`; the absent producer and
+final handoff remain bounded `source_drift`; exact producer, corruption,
+install-order, exclusion, and final-ownership coverage remain `test_gap`.
+No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or current `boundary_violation` was found. The
+origin discrepancy remains report-only `repo_metadata_conflict`.
+
+This prerequisite changes no production source, fixture, `.miz`, sidecar,
+expectation, trace row/status/count, executable coverage, count, or hash.
+Baseline plan/type/pass-fail/active counts remain 414/378, 244/232, 224/190,
+and 101/5/193/1, with 320 tests and 26 paths / 29,138 lines. The separate
+implementation may add one bounded covered row over the eight existing
+sidecars, projecting 414/379 and 245/233 without changing case count or any
+outcome/detail field.
