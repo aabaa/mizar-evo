@@ -1,0 +1,25 @@
+schema_version = 1
+id = "fail_type_elaboration_conditioned_comprehension_source_payload_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_conditioned_comprehension_source_payload_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "definition_declaration_payload_extraction_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.10.functor_definitions.type_elaboration_payload_gap",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.type_elaboration_payload_gap",
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.predicate_functor_definition_gap",
+  "spec.en.checker.type_elaboration.source_conditioned_comprehension_payload",
+]
+notes = "Active type_elaboration runner boundary coverage for checker Task 255C1: the runner validates the exact independent conditioned-comprehension definiens, composes the four Task-252 numeral primaries, imported Task-253 `1 ++ 2` mapper application, and Task-255 comprehension/generator/type/condition transport in one typed arena, and authenticates the direct condition wrapper while retaining the unchanged definition-declaration payload extraction boundary. It does not claim generator binding/capture, inner condition-formula ownership or composition, sethood/result typing, equality truth, definition acceptance, facts, theorem acceptance, proof, CoreIr/ControlFlowIr/VC, or broader conditioned/multiple/nested comprehensions."

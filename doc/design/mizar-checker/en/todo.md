@@ -4596,5 +4596,9 @@ implementation commit does not satisfy a producer task.
   `repo_metadata_conflict`; no blocking `spec_gap` remains.
 - [x] Preserve production, fixtures, sidecars, trace metadata/count,
   executable coverage, counts, and hashes at the Task-257C1 baseline.
-- [ ] Implement Task 255C1 as the next separate logical task after fresh
-  parser/resolver/API and count/hash preflight.
+- [x] Implement Task 255C1 as a separate logical task after fresh
+  parser/resolver/API and count/hash preflight. The exact route publishes the
+  frozen `4/0/4 -> 1/0/1/2/2 -> 1/0/1/1/1/1/2` chain, recursive condition
+  boundary, one fixture/sidecar/trace row, `419/385`, `251/239`, `228/191`,
+  active `101/5/198/1`, and `326/357` checker/runner tests without semantic
+  promotion.

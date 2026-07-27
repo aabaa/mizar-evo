@@ -574,30 +574,32 @@ later owners.
 Generated public newtypes:
 
 - `SourceSetTermId`, `SourceSetWrapperId`, `SourceSetGeneratorId`,
-  `SourceSetTypeSiteId`, `SourceSetEdgeId`, `SourceSetRequestId`
+  `SourceSetTypeSiteId`, `SourceSetConditionId`, `SourceSetEdgeId`,
+  `SourceSetRequestId`
 
 Literal top-level public items:
 
 - `SourceSetTermHandoffInput`, `SourceSetTermInput`,
   `SourceSetWrapperInput`, `SourceSetGeneratorInput`,
-  `SourceSetTypeSiteInput`, `SourceSetEdgeInput`,
+  `SourceSetTypeSiteInput`, `SourceSetConditionInput`, `SourceSetEdgeInput`,
   `SourceSetRequestInput`, `SourceSetTermKind`,
   `SourceSetTermRecovery`, `SourceSetTypeOwner`, `SourceSetTypeRole`,
   `SourceSetTypeHead`, `SourceSetEdgeRole`, `SourceSetTarget`,
   `SourceSetRequestKind`, `SourceSetTermHandoff`, `SourceSetTermTable`,
   `SourceSetWrapperTable`, `SourceSetGeneratorTable`,
-  `SourceSetTypeSiteTable`, `SourceSetEdgeTable`, `SourceSetRequestTable`,
+  `SourceSetTypeSiteTable`, `SourceSetConditionTable`, `SourceSetEdgeTable`,
+  `SourceSetRequestTable`,
   `SourceSetTerm`, `SourceSetWrapper`, `SourceSetGenerator`,
-  `SourceSetTypeSite`, `SourceSetEdge`, `SourceSetRequest`,
+  `SourceSetTypeSite`, `SourceSetCondition`, `SourceSetEdge`, `SourceSetRequest`,
   `SourceSetTermProducer`, `SourceSetTermError`
 
 Correspondence:
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Six syntax-free dense tables retain set/choice/`qua` terms, wrappers, written generators, bare target sites, ordered children, and unresolved requests. | `SourceSetTermHandoffInput`, six dense IDs/tables, and read-only rows in `src/source_set_term.rs`. | Exact real 4/0/1/3/4/7 plus Task-252 4/0/4 oracle and synthetic shape matrix. | Implemented for Task 255. |
+| Seven syntax-free dense tables retain set/choice/`qua` terms, wrappers, written generators, bare target sites, written comprehension conditions, ordered children, and unresolved requests. | `SourceSetTermHandoffInput`, seven dense IDs/tables, and read-only rows in `src/source_set_term.rs`. | Exact legacy 4/0/1/3/0/4/7 and Task-255C1 1/0/1/1/1/1/2 transactions plus Task-252/253 dependency oracles and synthetic shape matrices. | Implemented for Tasks 255 and 255C1. |
 | Task-252/253/254/255 nearest-family ownership and conditional dependency fingerprints are authenticated atomically. | `SourceSetTermProducer::build`, private installation validation, and immutable fingerprints. | Cross-family root, unrelated/targeted/missing/mismatch, overlap, and install-order tests. | Implemented transactionally. |
-| Canonical spelling, arena keys, recovery, contexts, row association/cardinality/order, and request ownership fail closed. | Producer validation and `SourceSetTermError`. | Producer/extractor corruption and degraded-transport matrices. | Implemented without partial publication. |
+| Canonical spelling, arena keys, recovery, contexts, row association/cardinality/order, condition-subtree exclusion, and request ownership fail closed. | Producer validation and `SourceSetTermError`. | Producer/extractor corruption, copied/out-of-range condition dependency, and degraded-transport matrices. | Implemented without partial publication. |
 | `TypedAst` owns one handoff and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_set_term`, later Task-253/254 revalidation, and resolved assembly. | One-shot installation, later-owner rejection, final clone equality, and deterministic replay. | Implemented. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on all public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
@@ -3588,3 +3590,9 @@ inner atomic formula node remains deferred to Task 256. No blocking
 `spec_gap`, `source_undocumented_behavior`,
 `test_expectation_drift`, or accepted `boundary_violation` remains. The
 external origin difference is report-only `repo_metadata_conflict`.
+
+Implementation closes the classified Task-255C1 `source_drift` and
+`test_gap`: the seventh public table, recursive condition boundary, reusable
+Task-253 seam, exact fixture/sidecar/trace row, and full matrices are present.
+The prerequisite already closed `design_drift`. The semantic deferrals and
+report-only `repo_metadata_conflict` remain unchanged.

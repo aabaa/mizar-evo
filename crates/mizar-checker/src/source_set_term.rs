@@ -38,6 +38,7 @@ dense_id!(SourceSetTermId);
 dense_id!(SourceSetWrapperId);
 dense_id!(SourceSetGeneratorId);
 dense_id!(SourceSetTypeSiteId);
+dense_id!(SourceSetConditionId);
 dense_id!(SourceSetEdgeId);
 dense_id!(SourceSetRequestId);
 
@@ -50,6 +51,7 @@ pub struct SourceSetTermHandoffInput {
     pub wrappers: Vec<SourceSetWrapperInput>,
     pub generators: Vec<SourceSetGeneratorInput>,
     pub type_sites: Vec<SourceSetTypeSiteInput>,
+    pub conditions: Vec<SourceSetConditionInput>,
     pub edges: Vec<SourceSetEdgeInput>,
     pub requests: Vec<SourceSetRequestInput>,
 }
@@ -104,6 +106,20 @@ pub struct SourceSetTypeSiteInput {
     pub context: BindingContextId,
     pub recovery: SourceSetTermRecovery,
     pub head: SourceSetTypeHead,
+}
+
+/// One written condition on a source comprehension.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceSetConditionInput {
+    pub term: SourceSetTermId,
+    pub ordinal: usize,
+    pub colon_site: TypedSiteRef,
+    pub colon_range: SourceRange,
+    pub colon_spelling: String,
+    pub condition_site: TypedSiteRef,
+    pub source_range: SourceRange,
+    pub spelling: String,
+    pub recovery: SourceSetTermRecovery,
 }
 
 /// One ordered child association.
@@ -211,6 +227,7 @@ pub struct SourceSetTermHandoff {
     wrappers: SourceSetWrapperTable,
     generators: SourceSetGeneratorTable,
     type_sites: SourceSetTypeSiteTable,
+    conditions: SourceSetConditionTable,
     edges: SourceSetEdgeTable,
     requests: SourceSetRequestTable,
 }
@@ -250,6 +267,10 @@ impl SourceSetTermHandoff {
 
     pub const fn type_sites(&self) -> &SourceSetTypeSiteTable {
         &self.type_sites
+    }
+
+    pub const fn conditions(&self) -> &SourceSetConditionTable {
+        &self.conditions
     }
 
     pub const fn edges(&self) -> &SourceSetEdgeTable {
@@ -342,6 +363,24 @@ impl SourceSetTermHandoff {
                 type_site.context.index(),
                 recovery_key(type_site.recovery),
                 type_head_key(type_site.head),
+            );
+        }
+        for (id, condition) in self.conditions.iter() {
+            let _ = writeln!(
+                output,
+                "condition#{} term={} ordinal={} colon_range={}..{} colon_site={} colon_spelling={:?} condition_site={} range={}..{} spelling={:?} recovery={}",
+                id.index(),
+                condition.term.index(),
+                condition.ordinal,
+                condition.colon_range.start,
+                condition.colon_range.end,
+                condition.colon_site.node().index(),
+                condition.colon_spelling,
+                condition.condition_site.node().index(),
+                condition.source_range.start,
+                condition.source_range.end,
+                condition.spelling,
+                recovery_key(condition.recovery),
             );
         }
         for (id, edge) in self.edges.iter() {
@@ -490,6 +529,21 @@ impl SourceSetTermHandoff {
                     head: row.head,
                 })
                 .collect(),
+            conditions: self
+                .conditions
+                .iter()
+                .map(|(_, row)| SourceSetConditionInput {
+                    term: row.term,
+                    ordinal: row.ordinal,
+                    colon_site: row.colon_site.clone(),
+                    colon_range: row.colon_range,
+                    colon_spelling: row.colon_spelling.clone(),
+                    condition_site: row.condition_site.clone(),
+                    source_range: row.source_range,
+                    spelling: row.spelling.clone(),
+                    recovery: row.recovery,
+                })
+                .collect(),
             edges: self
                 .edges
                 .iter()
@@ -556,6 +610,11 @@ table!(
     SourceSetTypeSiteTable,
     SourceSetTypeSite,
     SourceSetTypeSiteId
+);
+table!(
+    SourceSetConditionTable,
+    SourceSetCondition,
+    SourceSetConditionId
 );
 table!(SourceSetEdgeTable, SourceSetEdge, SourceSetEdgeId);
 table!(SourceSetRequestTable, SourceSetRequest, SourceSetRequestId);
@@ -720,6 +779,50 @@ impl SourceSetTypeSite {
     }
 }
 
+/// One validated written comprehension condition.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceSetCondition {
+    term: SourceSetTermId,
+    ordinal: usize,
+    colon_site: TypedSiteRef,
+    colon_range: SourceRange,
+    colon_spelling: String,
+    condition_site: TypedSiteRef,
+    source_range: SourceRange,
+    spelling: String,
+    recovery: SourceSetTermRecovery,
+}
+
+impl SourceSetCondition {
+    pub const fn term(&self) -> SourceSetTermId {
+        self.term
+    }
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+    pub const fn colon_site(&self) -> &TypedSiteRef {
+        &self.colon_site
+    }
+    pub const fn colon_range(&self) -> SourceRange {
+        self.colon_range
+    }
+    pub fn colon_spelling(&self) -> &str {
+        &self.colon_spelling
+    }
+    pub const fn condition_site(&self) -> &TypedSiteRef {
+        &self.condition_site
+    }
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+    pub const fn recovery(&self) -> SourceSetTermRecovery {
+        self.recovery
+    }
+}
+
 /// One validated ordered child edge.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceSetEdge {
@@ -877,6 +980,23 @@ impl SourceSetTermProducer {
                     })
                     .collect(),
             },
+            conditions: SourceSetConditionTable {
+                rows: input
+                    .conditions
+                    .into_iter()
+                    .map(|row| SourceSetCondition {
+                        term: row.term,
+                        ordinal: row.ordinal,
+                        colon_site: row.colon_site,
+                        colon_range: row.colon_range,
+                        colon_spelling: row.colon_spelling,
+                        condition_site: row.condition_site,
+                        source_range: row.source_range,
+                        spelling: row.spelling,
+                        recovery: row.recovery,
+                    })
+                    .collect(),
+            },
             edges: SourceSetEdgeTable {
                 rows: input
                     .edges
@@ -918,6 +1038,7 @@ pub enum SourceSetTermError {
     InvalidWrapper { wrapper: SourceSetWrapperId },
     InvalidGenerator { generator: SourceSetGeneratorId },
     InvalidTypeSite { type_site: SourceSetTypeSiteId },
+    InvalidCondition { condition: SourceSetConditionId },
     InvalidEdge { edge: SourceSetEdgeId },
     InvalidRequest { request: SourceSetRequestId },
     DuplicateSite,
@@ -925,6 +1046,7 @@ pub enum SourceSetTermError {
     ReorderedWrapper { wrapper: SourceSetWrapperId },
     ReorderedGenerator { generator: SourceSetGeneratorId },
     ReorderedTypeSite { type_site: SourceSetTypeSiteId },
+    ReorderedCondition { condition: SourceSetConditionId },
     ReorderedEdge { edge: SourceSetEdgeId },
     ReorderedRequest { request: SourceSetRequestId },
     MultipleParents { term: SourceSetTermId },
@@ -967,6 +1089,11 @@ impl fmt::Display for SourceSetTermError {
                 "source set type site {} is invalid",
                 type_site.index()
             ),
+            Self::InvalidCondition { condition } => write!(
+                formatter,
+                "source set condition {} is invalid",
+                condition.index()
+            ),
             Self::InvalidEdge { edge } => {
                 write!(formatter, "source set edge {} is invalid", edge.index())
             }
@@ -995,6 +1122,11 @@ impl fmt::Display for SourceSetTermError {
                 formatter,
                 "source set type site {} is out of source order",
                 type_site.index()
+            ),
+            Self::ReorderedCondition { condition } => write!(
+                formatter,
+                "source set condition {} is out of source order",
+                condition.index()
             ),
             Self::ReorderedEdge { edge } => {
                 write!(
@@ -1051,6 +1183,7 @@ fn validate_input(
         && (!input.wrappers.is_empty()
             || !input.generators.is_empty()
             || !input.type_sites.is_empty()
+            || !input.conditions.is_empty()
             || !input.edges.is_empty()
             || !input.requests.is_empty())
     {
@@ -1141,6 +1274,16 @@ fn validate_payload(
     validate_term_preorder(input, &effective)?;
     let generator_groups = validate_generators(input, arena, &mut sites)?;
     validate_type_sites(input, &generator_groups, arena, &mut sites)?;
+    let condition_groups = validate_conditions(
+        input,
+        primary_terms,
+        applications,
+        structures,
+        &effective,
+        &generator_groups,
+        arena,
+        &mut sites,
+    )?;
     validate_cross_family_relationships(
         input,
         primary_terms,
@@ -1164,6 +1307,7 @@ fn validate_payload(
         structures,
         &effective,
         &generator_groups,
+        &condition_groups,
         &edge_groups,
     )?;
     validate_requests(input, &generator_groups)?;
@@ -1453,6 +1597,198 @@ fn validate_type_sites(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: the condition boundary authenticates every lower-family dependency explicitly.
+fn validate_conditions(
+    input: &SourceSetTermHandoffInput,
+    primary_terms: &SourcePrimaryTermHandoff,
+    applications: Option<&SourceFunctorApplicationHandoff>,
+    structures: Option<&SourceStructureHandoff>,
+    effective: &[EffectiveOccurrence],
+    generator_groups: &[Vec<usize>],
+    arena: &TypedArena,
+    sites: &mut BTreeSet<TypedSiteRef>,
+) -> Result<Vec<Vec<usize>>, SourceSetTermError> {
+    let groups = grouped_rows(
+        input.terms.len(),
+        &input.conditions,
+        |row| row.term,
+        |row| row.ordinal,
+        |index| SourceSetTermError::ReorderedCondition {
+            condition: SourceSetConditionId::new(index),
+        },
+    )?;
+    let primary_sites = primary_terms
+        .terms()
+        .iter()
+        .map(|(_, primary)| primary.site().clone())
+        .collect::<BTreeSet<_>>();
+    let mut previous_range = None;
+
+    for (term_index, group) in groups.iter().enumerate() {
+        let term_id = SourceSetTermId::new(term_index);
+        let term = &input.terms[term_index];
+        if group.len() > 1 || (!group.is_empty() && term.kind != SourceSetTermKind::Comprehension) {
+            return Err(SourceSetTermError::InvalidTerm { term: term_id });
+        }
+        let Some(condition_index) = group.first().copied() else {
+            continue;
+        };
+        let condition_id = SourceSetConditionId::new(condition_index);
+        let condition = &input.conditions[condition_index];
+        let Some(final_generator_index) = generator_groups[term_index].last().copied() else {
+            return Err(SourceSetTermError::InvalidCondition {
+                condition: condition_id,
+            });
+        };
+        let final_generator = &input.generators[final_generator_index];
+        let Some(final_type) = input.type_sites.get(final_generator.type_site.index()) else {
+            return Err(SourceSetTermError::InvalidCondition {
+                condition: condition_id,
+            });
+        };
+        if condition.term != term_id
+            || condition.recovery != term.recovery
+            || condition.colon_spelling != ":"
+            || !canonical_spelling(&condition.spelling)
+            || !valid_range(input.source_id, condition.colon_range)
+            || !valid_range(input.source_id, condition.source_range)
+            || !properly_contains(term.source_range, condition.colon_range)
+            || !properly_contains(term.source_range, condition.source_range)
+            || final_type.source_range.end > condition.colon_range.start
+            || condition.colon_range.end > condition.source_range.start
+        {
+            return Err(SourceSetTermError::InvalidCondition {
+                condition: condition_id,
+            });
+        }
+        if previous_range
+            .is_some_and(|previous: SourceRange| previous.end > condition.source_range.start)
+        {
+            return Err(SourceSetTermError::ReorderedCondition {
+                condition: condition_id,
+            });
+        }
+        validate_arena_site(
+            &condition.colon_site,
+            condition.colon_range,
+            "source.term.set.comprehension-condition-colon",
+            condition.recovery,
+            arena,
+        )
+        .map_err(|()| SourceSetTermError::InvalidCondition {
+            condition: condition_id,
+        })?;
+        validate_arena_site(
+            &condition.condition_site,
+            condition.source_range,
+            "source.term.set.comprehension-condition",
+            condition.recovery,
+            arena,
+        )
+        .map_err(|()| SourceSetTermError::InvalidCondition {
+            condition: condition_id,
+        })?;
+        let term_node =
+            arena
+                .node(term.site.node())
+                .ok_or(SourceSetTermError::InvalidCondition {
+                    condition: condition_id,
+                })?;
+        if !term_node.children.contains(&condition.colon_site.node())
+            || !term_node
+                .children
+                .contains(&condition.condition_site.node())
+            || !condition_subtree_within_range(
+                arena,
+                condition.condition_site.node(),
+                condition.source_range,
+            )
+            || !sites.insert(condition.colon_site.clone())
+            || !sites.insert(condition.condition_site.clone())
+        {
+            return Err(SourceSetTermError::InvalidCondition {
+                condition: condition_id,
+            });
+        }
+
+        for (node_id, node) in arena.iter() {
+            let SourceAnchor::Range(range) = node.anchor else {
+                continue;
+            };
+            if range_contains(condition.source_range, range)
+                && primary_node_kind(node.kind.as_str())
+                && !primary_sites.contains(&TypedSiteRef::Node(node_id))
+            {
+                return Err(SourceSetTermError::InvalidCondition {
+                    condition: condition_id,
+                });
+            }
+        }
+        if let Some(applications) = applications {
+            for (id, _) in applications.applications().iter() {
+                let occurrence = application_effective_occurrence(applications, id).ok_or(
+                    SourceSetTermError::InvalidCondition {
+                        condition: condition_id,
+                    },
+                )?;
+                if range_contains(condition.source_range, occurrence.range) {
+                    return Err(SourceSetTermError::InvalidCondition {
+                        condition: condition_id,
+                    });
+                }
+            }
+        }
+        if let Some(structures) = structures {
+            for (id, _) in structures.terms().iter() {
+                let occurrence = structure_effective_occurrence(structures, id).ok_or(
+                    SourceSetTermError::InvalidCondition {
+                        condition: condition_id,
+                    },
+                )?;
+                if range_contains(condition.source_range, occurrence.range) {
+                    return Err(SourceSetTermError::InvalidCondition {
+                        condition: condition_id,
+                    });
+                }
+            }
+        }
+        if input.terms.iter().enumerate().any(|(index, _)| {
+            index != term_index && range_contains(condition.source_range, effective[index].range)
+        }) {
+            return Err(SourceSetTermError::InvalidCondition {
+                condition: condition_id,
+            });
+        }
+        previous_range = Some(condition.source_range);
+    }
+    Ok(groups)
+}
+
+fn condition_subtree_within_range(
+    arena: &TypedArena,
+    root: crate::typed_ast::TypedNodeId,
+    boundary: SourceRange,
+) -> bool {
+    let mut pending = vec![root];
+    let mut visited = BTreeSet::new();
+    while let Some(node_id) = pending.pop() {
+        if !visited.insert(node_id) {
+            continue;
+        }
+        let Some(node) = arena.node(node_id) else {
+            return false;
+        };
+        let SourceAnchor::Range(range) = node.anchor else {
+            return false;
+        };
+        if !range_contains(boundary, range) {
+            return false;
+        }
+        pending.extend(node.children.iter().copied());
+    }
+    true
+}
+
 #[derive(Debug, Clone)]
 struct EffectiveOccurrence {
     range: SourceRange,
@@ -1707,6 +2043,12 @@ fn direct_targets(
         });
     }
 
+    candidates.retain(|candidate| {
+        !input.conditions.iter().any(|condition| {
+            condition.term == SourceSetTermId::new(term_index)
+                && range_contains(condition.source_range, candidate.range)
+        })
+    });
     let all = candidates.clone();
     candidates.retain(|candidate| {
         !all.iter().any(|container| {
@@ -1767,6 +2109,7 @@ fn validate_shapes_and_spelling(
     structures: Option<&SourceStructureHandoff>,
     effective: &[EffectiveOccurrence],
     generator_groups: &[Vec<usize>],
+    condition_groups: &[Vec<usize>],
     edge_groups: &[Vec<usize>],
 ) -> Result<(), SourceSetTermError> {
     for (term_index, term) in input.terms.iter().enumerate() {
@@ -1789,9 +2132,13 @@ fn validate_shapes_and_spelling(
             })
             .collect::<Result<Vec<_>, _>>()?;
         let generators = &generator_groups[term_index];
+        let condition = condition_groups[term_index]
+            .first()
+            .map(|index| &input.conditions[*index]);
         let (expected_spelling, positions_valid) = match term.kind {
             SourceSetTermKind::Enumeration => {
                 if !generators.is_empty()
+                    || condition.is_some()
                     || edges.iter().any(|edge| {
                         input.edges[*edge].role != SourceSetEdgeRole::EnumerationElement
                     })
@@ -1845,19 +2192,40 @@ fn validate_shapes_and_spelling(
                     .ok_or(SourceSetTermError::InvalidGenerator {
                         generator: SourceSetGeneratorId::new(*generators.last().expect("nonempty")),
                     })?;
+                let spelling = condition.map_or_else(
+                    || {
+                        format!(
+                            "{{ {} where {} }}",
+                            targets[0].spelling,
+                            fragments.join(" , ")
+                        )
+                    },
+                    |condition| {
+                        format!(
+                            "{{ {} where {} : {} }}",
+                            targets[0].spelling,
+                            fragments.join(" , "),
+                            condition.spelling
+                        )
+                    },
+                );
+                let tail_valid = condition.map_or(
+                    final_type.source_range.end < term.source_range.end,
+                    |condition| {
+                        final_type.source_range.end <= condition.colon_range.start
+                            && condition.colon_range.end <= condition.source_range.start
+                            && condition.source_range.end < term.source_range.end
+                    },
+                );
                 (
-                    format!(
-                        "{{ {} where {} }}",
-                        targets[0].spelling,
-                        fragments.join(" , ")
-                    ),
+                    spelling,
                     term.source_range.start < targets[0].range.start
                         && targets[0].range.end <= first_generator.source_range.start
-                        && final_type.source_range.end < term.source_range.end,
+                        && tail_valid,
                 )
             }
             SourceSetTermKind::Choice => {
-                if !edges.is_empty() || !generators.is_empty() {
+                if !edges.is_empty() || !generators.is_empty() || condition.is_some() {
                     return Err(SourceSetTermError::InvalidTerm { term: term_id });
                 }
                 let type_site = term_type_site(input, term_id, SourceSetTypeRole::ChoiceTarget)
@@ -1872,6 +2240,7 @@ fn validate_shapes_and_spelling(
                 if edges.len() != 1
                     || input.edges[edges[0]].role != SourceSetEdgeRole::QuaBase
                     || !generators.is_empty()
+                    || condition.is_some()
                 {
                     return Err(SourceSetTermError::InvalidTerm { term: term_id });
                 }
@@ -2316,6 +2685,17 @@ fn term_kind_node_key(kind: SourceSetTermKind) -> &'static str {
     }
 }
 
+fn primary_node_kind(kind: &str) -> bool {
+    matches!(
+        kind,
+        "source.term.variable-reference"
+            | "source.term.constant-reference"
+            | "source.term.it"
+            | "source.term.numeral"
+            | "source.term.parenthesized"
+    )
+}
+
 fn term_kind_key(kind: SourceSetTermKind) -> &'static str {
     match kind {
         SourceSetTermKind::Enumeration => "enumeration",
@@ -2411,6 +2791,14 @@ mod tests {
             BindingContextDraft, BindingContextLayer, BindingContextOwner, BindingContextRecovery,
             BindingContextTable, BindingDiagnosticTable, BindingEnvParts, BindingTable,
         },
+        cluster_trace::ClusterFactTable,
+        overload_resolution::{
+            CandidateViabilityInput, CandidateViabilityOutput, OverloadCandidateInput,
+            OverloadCollectionOutput, OverloadSelectionOutput, OverloadSiteInput,
+            OverloadSiteResolutionInput, SpecificityComparisonInput, SpecificityGraphOutput,
+            TemplateExpansionOutput,
+        },
+        resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
         source_application::{
             SourceFunctorApplicationForm, SourceFunctorApplicationHandoff,
             SourceFunctorApplicationHandoffInput, SourceFunctorApplicationInput,
@@ -2461,6 +2849,312 @@ mod tests {
                 None,
                 &self.arena,
             )
+        }
+    }
+
+    #[derive(Clone)]
+    struct ConditionFixture {
+        source: SourceId,
+        module: ModuleId,
+        input: SourceSetTermHandoffInput,
+        bindings: BindingEnv,
+        primary: SourcePrimaryTermHandoff,
+        arena: TypedArena,
+    }
+
+    impl ConditionFixture {
+        fn build(
+            &self,
+            applications: Option<&SourceFunctorApplicationHandoff>,
+            structures: Option<&SourceStructureHandoff>,
+        ) -> Result<SourceSetTermHandoff, SourceSetTermError> {
+            SourceSetTermProducer::build(
+                self.input.clone(),
+                &self.bindings,
+                &self.primary,
+                applications,
+                structures,
+                &self.arena,
+            )
+        }
+    }
+
+    fn condition_fixture_with_extra_nodes(extra: Vec<TypedNode>) -> ConditionFixture {
+        condition_fixture_with_extra_nodes_and_children(extra, false)
+    }
+
+    fn condition_fixture_with_condition_descendants(extra: Vec<TypedNode>) -> ConditionFixture {
+        condition_fixture_with_extra_nodes_and_children(extra, true)
+    }
+
+    fn condition_fixture_with_extra_nodes_and_children(
+        extra: Vec<TypedNode>,
+        attach_to_condition: bool,
+    ) -> ConditionFixture {
+        let source = source_id();
+        let module = module_id();
+        let bindings = binding_env(source, &module);
+        let mut nodes = vec![
+            TypedNode::new(
+                "source.term.numeral",
+                SourceAnchor::Range(range(source, 12, 13)),
+            ),
+            TypedNode::new(
+                "source.term.numeral",
+                SourceAnchor::Range(range(source, 42, 43)),
+            ),
+            TypedNode::new(
+                "source.term.numeral",
+                SourceAnchor::Range(range(source, 47, 48)),
+            ),
+            TypedNode::new(
+                "source.term.set.comprehension",
+                SourceAnchor::Range(range(source, 10, 52)),
+            )
+            .with_children(vec![
+                node(0).node(),
+                node(4).node(),
+                node(7).node(),
+                node(8).node(),
+            ]),
+            TypedNode::new(
+                "source.term.set.comprehension-generator",
+                SourceAnchor::Range(range(source, 20, 29)),
+            ),
+            TypedNode::new(
+                "source.term.set.target-type",
+                SourceAnchor::Range(range(source, 34, 37)),
+            ),
+            TypedNode::new(
+                "source.term.set.target-type-head",
+                SourceAnchor::Range(range(source, 34, 37)),
+            ),
+            TypedNode::new(
+                "source.term.set.comprehension-condition-colon",
+                SourceAnchor::Range(range(source, 38, 39)),
+            ),
+            TypedNode::new(
+                "source.term.set.comprehension-condition",
+                SourceAnchor::Range(range(source, 40, 49)),
+            )
+            .with_children(vec![node(9).node()]),
+            TypedNode::new(
+                "source.surface.unowned",
+                SourceAnchor::Range(range(source, 40, 49)),
+            )
+            .with_children(vec![node(1).node(), node(2).node()]),
+        ];
+        if attach_to_condition {
+            let extra_start = nodes.len();
+            let extra_end = extra_start + extra.len();
+            nodes[9]
+                .children
+                .extend((extra_start..extra_end).map(TypedNodeId::new));
+        }
+        nodes.extend(extra);
+        let arena = TypedArena::try_new(None, nodes).expect("condition arena");
+        let primary = primary_handoff_from(
+            source,
+            &module,
+            &bindings,
+            &arena,
+            &[(0, 12, 13, "1"), (1, 42, 43, "2"), (2, 47, 48, "3")],
+        );
+        let input = SourceSetTermHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            terms: vec![SourceSetTermInput {
+                site: node(3),
+                source_range: range(source, 10, 52),
+                source_ordinal: 0,
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                spelling: "{ 1 where candidate is set : 2 = 3 }".to_owned(),
+                kind: SourceSetTermKind::Comprehension,
+            }],
+            wrappers: Vec::new(),
+            generators: vec![SourceSetGeneratorInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                site: node(4),
+                source_range: range(source, 20, 29),
+                spelling: "candidate".to_owned(),
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                type_site: SourceSetTypeSiteId::new(0),
+            }],
+            type_sites: vec![SourceSetTypeSiteInput {
+                owner: SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(0)),
+                site: node(5),
+                source_range: range(source, 34, 37),
+                spelling: "set".to_owned(),
+                head_site: node(6),
+                head_range: range(source, 34, 37),
+                head_spelling: "set".to_owned(),
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                head: SourceSetTypeHead::BuiltinSet,
+            }],
+            conditions: vec![SourceSetConditionInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                colon_site: node(7),
+                colon_range: range(source, 38, 39),
+                colon_spelling: ":".to_owned(),
+                condition_site: node(8),
+                source_range: range(source, 40, 49),
+                spelling: "2 = 3".to_owned(),
+                recovery: SourceSetTermRecovery::Normal,
+            }],
+            edges: vec![SourceSetEdgeInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                role: SourceSetEdgeRole::ComprehensionMapper,
+                target: SourceSetTarget::Primary(SourcePrimaryTermId::new(0)),
+            }],
+            requests: vec![
+                SourceSetRequestInput {
+                    term: SourceSetTermId::new(0),
+                    ordinal: 0,
+                    kind: SourceSetRequestKind::GeneratorSethood,
+                    generator: Some(SourceSetGeneratorId::new(0)),
+                    type_site: Some(SourceSetTypeSiteId::new(0)),
+                },
+                SourceSetRequestInput {
+                    term: SourceSetTermId::new(0),
+                    ordinal: 1,
+                    kind: SourceSetRequestKind::ResultType,
+                    generator: None,
+                    type_site: None,
+                },
+            ],
+        };
+        ConditionFixture {
+            source,
+            module,
+            input,
+            bindings,
+            primary,
+            arena,
+        }
+    }
+
+    fn condition_fixture() -> ConditionFixture {
+        condition_fixture_with_extra_nodes(Vec::new())
+    }
+
+    fn two_condition_fixture() -> ConditionFixture {
+        let first = condition_fixture();
+        let mut nodes = first
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        let second = nodes
+            .iter()
+            .cloned()
+            .map(|mut node| {
+                if let SourceAnchor::Range(mut source_range) = node.anchor {
+                    source_range.start += 60;
+                    source_range.end += 60;
+                    node.anchor = SourceAnchor::Range(source_range);
+                }
+                node.children = node
+                    .children
+                    .into_iter()
+                    .map(|child| TypedNodeId::new(child.index() + 10))
+                    .collect();
+                node
+            })
+            .collect::<Vec<_>>();
+        nodes.extend(second);
+        let arena = TypedArena::try_new(None, nodes).expect("two-condition arena");
+        let primary = primary_handoff_from(
+            first.source,
+            &first.module,
+            &first.bindings,
+            &arena,
+            &[
+                (0, 12, 13, "1"),
+                (1, 42, 43, "2"),
+                (2, 47, 48, "3"),
+                (10, 72, 73, "4"),
+                (11, 102, 103, "5"),
+                (12, 107, 108, "6"),
+            ],
+        );
+        let mut input = first.input;
+        input.terms.push(SourceSetTermInput {
+            site: node(13),
+            source_range: range(first.source, 70, 112),
+            source_ordinal: 1,
+            context: BindingContextId::new(0),
+            recovery: SourceSetTermRecovery::Normal,
+            spelling: "{ 4 where second is set : 5 = 6 }".to_owned(),
+            kind: SourceSetTermKind::Comprehension,
+        });
+        input.generators.push(SourceSetGeneratorInput {
+            term: SourceSetTermId::new(1),
+            ordinal: 0,
+            site: node(14),
+            source_range: range(first.source, 80, 89),
+            spelling: "second".to_owned(),
+            context: BindingContextId::new(0),
+            recovery: SourceSetTermRecovery::Normal,
+            type_site: SourceSetTypeSiteId::new(1),
+        });
+        input.type_sites.push(SourceSetTypeSiteInput {
+            owner: SourceSetTypeOwner::Generator(SourceSetGeneratorId::new(1)),
+            site: node(15),
+            source_range: range(first.source, 94, 97),
+            spelling: "set".to_owned(),
+            head_site: node(16),
+            head_range: range(first.source, 94, 97),
+            head_spelling: "set".to_owned(),
+            context: BindingContextId::new(0),
+            recovery: SourceSetTermRecovery::Normal,
+            head: SourceSetTypeHead::BuiltinSet,
+        });
+        input.conditions.push(SourceSetConditionInput {
+            term: SourceSetTermId::new(1),
+            ordinal: 0,
+            colon_site: node(17),
+            colon_range: range(first.source, 98, 99),
+            colon_spelling: ":".to_owned(),
+            condition_site: node(18),
+            source_range: range(first.source, 100, 109),
+            spelling: "5 = 6".to_owned(),
+            recovery: SourceSetTermRecovery::Normal,
+        });
+        input.edges.push(SourceSetEdgeInput {
+            term: SourceSetTermId::new(1),
+            ordinal: 0,
+            role: SourceSetEdgeRole::ComprehensionMapper,
+            target: SourceSetTarget::Primary(SourcePrimaryTermId::new(3)),
+        });
+        input.requests.extend([
+            SourceSetRequestInput {
+                term: SourceSetTermId::new(1),
+                ordinal: 0,
+                kind: SourceSetRequestKind::GeneratorSethood,
+                generator: Some(SourceSetGeneratorId::new(1)),
+                type_site: Some(SourceSetTypeSiteId::new(1)),
+            },
+            SourceSetRequestInput {
+                term: SourceSetTermId::new(1),
+                ordinal: 1,
+                kind: SourceSetRequestKind::ResultType,
+                generator: None,
+                type_site: None,
+            },
+        ]);
+        ConditionFixture {
+            source: first.source,
+            module: first.module,
+            input,
+            bindings: first.bindings,
+            primary,
+            arena,
         }
     }
 
@@ -2740,6 +3434,37 @@ mod tests {
         typed_ast_for(fixture.source, &fixture.module, &fixture.arena)
     }
 
+    fn assemble_empty(typed_ast: &TypedAst) -> ResolvedTypedAst {
+        let cluster_facts = ClusterFactTable::new();
+        let collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability =
+            CandidateViabilityOutput::filter(&expansion, Vec::<CandidateViabilityInput>::new());
+        let specificity =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let selection = OverloadSelectionOutput::resolve(
+            &specificity,
+            Vec::<OverloadSiteResolutionInput>::new(),
+        );
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast,
+            cluster_facts: &cluster_facts,
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &selection,
+            expressions: Vec::new(),
+            node_hints: Vec::new(),
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+        .expect("empty resolved handoff")
+    }
+
     fn empty_application(fixture: &Fixture) -> SourceFunctorApplicationHandoff {
         SourceFunctorApplicationProducer::build(
             SourceFunctorApplicationHandoffInput {
@@ -2991,6 +3716,7 @@ mod tests {
                     head: SourceSetTypeHead::BuiltinSet,
                 },
             ],
+            conditions: Vec::new(),
             edges: vec![
                 SourceSetEdgeInput {
                     term: SourceSetTermId::new(0),
@@ -3080,6 +3806,504 @@ mod tests {
     }
 
     #[test]
+    fn conditioned_comprehension_is_dense_debug_stable_and_installable() {
+        let fixture = condition_fixture();
+        let first = fixture
+            .build(None, None)
+            .expect("valid condition transaction");
+        let second = fixture.build(None, None).expect("deterministic condition");
+        assert_eq!(first, second);
+        assert_eq!(first.terms().len(), 1);
+        assert_eq!(first.generators().len(), 1);
+        assert_eq!(first.type_sites().len(), 1);
+        assert_eq!(first.conditions().len(), 1);
+        assert_eq!(first.edges().len(), 1);
+        assert_eq!(first.requests().len(), 2);
+        let condition = first
+            .conditions()
+            .get(SourceSetConditionId::new(0))
+            .expect("dense condition");
+        assert_eq!(condition.term(), SourceSetTermId::new(0));
+        assert_eq!(condition.ordinal(), 0);
+        assert_eq!(condition.colon_site(), &node(7));
+        assert_eq!(condition.colon_range(), range(fixture.source, 38, 39));
+        assert_eq!(condition.colon_spelling(), ":");
+        assert_eq!(condition.condition_site(), &node(8));
+        assert_eq!(condition.source_range(), range(fixture.source, 40, 49));
+        assert_eq!(condition.spelling(), "2 = 3");
+        assert_eq!(condition.recovery(), SourceSetTermRecovery::Normal);
+        let expected_debug = format!(
+            concat!(
+                "source-set-term-debug-v1\n",
+                "module: source.set.term\n",
+                "primary-term-fingerprint: {:?}\n",
+                "application-fingerprint: None\n",
+                "structure-fingerprint: None\n",
+                "term#0 ordinal=0 kind=comprehension range=10..52 site=3 context=0 recovery=normal spelling=\"{{ 1 where candidate is set : 2 = 3 }}\"\n",
+                "generator#0 term=0 ordinal=0 range=20..29 site=4 context=0 recovery=normal spelling=\"candidate\" type_site=0\n",
+                "type-site#0 owner=generator(0) range=34..37 site=5 spelling=\"set\" head_range=34..37 head_site=6 head_spelling=\"set\" context=0 recovery=normal head=builtin-set\n",
+                "condition#0 term=0 ordinal=0 colon_range=38..39 colon_site=7 colon_spelling=\":\" condition_site=8 range=40..49 spelling=\"2 = 3\" recovery=normal\n",
+                "edge#0 term=0 ordinal=0 role=comprehension-mapper target=primary(0)\n",
+                "request#0 term=0 ordinal=0 kind=generator-sethood generator=0 type_site=0\n",
+                "request#1 term=0 ordinal=1 kind=result-type generator=- type_site=-\n",
+            ),
+            fixture.primary.debug_text()
+        );
+        assert_eq!(first.debug_text(), expected_debug);
+
+        let base = typed_ast_for(fixture.source, &fixture.module, &fixture.arena)
+            .with_source_term(fixture.primary.clone())
+            .expect("condition primary");
+        let mut invalid = first.clone();
+        invalid.conditions.rows[0].colon_site = node(999);
+        assert_eq!(
+            base.clone()
+                .with_source_set_term(invalid)
+                .expect_err("invalid condition installation must roll back"),
+            TypedAstError::InvalidSourceSetTerm
+        );
+        let installed = base
+            .with_source_set_term(first.clone())
+            .expect("condition set handoff after failed clone");
+        assert_eq!(installed.source_set_term(), Some(&first));
+
+        let mut substituted = first.clone();
+        substituted.primary_term_fingerprint = "substituted-primary-dependency".to_owned();
+        assert_eq!(
+            substituted.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                None,
+                None,
+                &fixture.arena,
+            ),
+            Err(SourceSetTermError::PrimaryDependencyMismatch)
+        );
+
+        let resolved = assemble_empty(&installed);
+        assert_eq!(resolved.source_set_term(), Some(&first));
+        assert_eq!(resolved.clone().debug_text(), resolved.debug_text());
+    }
+
+    #[test]
+    fn conditioned_comprehension_association_matrix_rejects_atomically() {
+        let baseline = condition_fixture();
+        let corruptions: [fn(&mut SourceSetTermHandoffInput); 11] = [
+            |input| input.conditions.clear(),
+            |input| input.conditions[0].ordinal = 1,
+            |input| input.conditions[0].term = SourceSetTermId::new(1),
+            |input| input.conditions[0].colon_site = node(8),
+            |input| input.conditions[0].condition_site = node(9),
+            |input| input.conditions[0].colon_range = range(input.source_id, 37, 39),
+            |input| input.conditions[0].source_range = range(input.source_id, 40, 50),
+            |input| input.conditions[0].colon_spelling = ";".to_owned(),
+            |input| input.conditions[0].spelling = "3 = 2".to_owned(),
+            |input| input.conditions[0].recovery = SourceSetTermRecovery::Degraded,
+            |input| {
+                let mut copied = input.conditions[0].clone();
+                copied.ordinal = 1;
+                input.conditions.push(copied);
+            },
+        ];
+        for corrupt in corruptions {
+            let mut fixture = baseline.clone();
+            corrupt(&mut fixture.input);
+            assert!(fixture.build(None, None).is_err());
+        }
+
+        for corrupt in [
+            |input: &mut SourceSetTermHandoffInput| input.conditions[0].colon_site = node(999),
+            |input: &mut SourceSetTermHandoffInput| input.conditions[0].condition_site = node(999),
+        ] {
+            let mut fixture = baseline.clone();
+            corrupt(&mut fixture.input);
+            assert!(matches!(
+                fixture.build(None, None),
+                Err(SourceSetTermError::InvalidCondition { .. })
+            ));
+        }
+
+        let copied_sites = condition_fixture_with_extra_nodes(vec![
+            TypedNode::new(
+                "source.term.set.comprehension-condition-colon",
+                SourceAnchor::Range(range(source_id(), 38, 39)),
+            ),
+            TypedNode::new(
+                "source.term.set.comprehension-condition",
+                SourceAnchor::Range(range(source_id(), 40, 49)),
+            ),
+        ]);
+        for copied in [node(10), node(11)] {
+            let mut fixture = copied_sites.clone();
+            if copied == node(10) {
+                fixture.input.conditions[0].colon_site = copied;
+            } else {
+                fixture.input.conditions[0].condition_site = copied;
+            }
+            assert!(matches!(
+                fixture.build(None, None),
+                Err(SourceSetTermError::InvalidCondition { .. })
+            ));
+        }
+
+        let two = two_condition_fixture();
+        let two_handoff = two.build(None, None).expect("two ordered conditions");
+        assert_eq!(
+            two_handoff
+                .conditions()
+                .iter()
+                .map(|(id, row)| {
+                    (
+                        id.index(),
+                        row.term().index(),
+                        row.ordinal(),
+                        row.source_range().start,
+                    )
+                })
+                .collect::<Vec<_>>(),
+            [(0, 0, 0, 40), (1, 1, 0, 100)]
+        );
+        assert!(!two_handoff.conditions().is_empty());
+
+        let mut swapped = two.clone();
+        swapped.input.conditions.swap(0, 1);
+        assert!(matches!(
+            swapped.build(None, None),
+            Err(SourceSetTermError::ReorderedCondition { .. })
+        ));
+
+        let mut overlapping = two.input.clone();
+        overlapping.terms[1].source_range = range(two.source, 0, 112);
+        overlapping.type_sites[1].source_range = range(two.source, 26, 29);
+        overlapping.type_sites[1].head_range = range(two.source, 26, 29);
+        overlapping.conditions[1].colon_range = range(two.source, 30, 31);
+        overlapping.conditions[1].source_range = range(two.source, 32, 41);
+        let effective = overlapping
+            .terms
+            .iter()
+            .map(|term| EffectiveOccurrence {
+                range: term.source_range,
+                site: term.site.clone(),
+                spelling: term.spelling.clone(),
+            })
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            validate_conditions(
+                &overlapping,
+                &two.primary,
+                None,
+                None,
+                &effective,
+                &[vec![0], vec![1]],
+                &two.arena,
+                &mut BTreeSet::new(),
+            ),
+            Err(SourceSetTermError::ReorderedCondition { condition })
+                if condition == SourceSetConditionId::new(1)
+        ));
+
+        let mut non_comprehension = baseline.clone();
+        non_comprehension.input.terms[0].kind = SourceSetTermKind::Enumeration;
+        non_comprehension.input.terms[0].spelling = "{ 1 }".to_owned();
+        non_comprehension.input.generators.clear();
+        non_comprehension.input.type_sites.clear();
+        non_comprehension.input.edges[0].role = SourceSetEdgeRole::EnumerationElement;
+        non_comprehension.input.requests = vec![SourceSetRequestInput {
+            term: SourceSetTermId::new(0),
+            ordinal: 0,
+            kind: SourceSetRequestKind::ResultType,
+            generator: None,
+            type_site: None,
+        }];
+        assert!(matches!(
+            non_comprehension.build(None, None),
+            Err(SourceSetTermError::InvalidTerm { .. })
+        ));
+        assert!(baseline.build(None, None).is_ok());
+    }
+
+    #[test]
+    fn conditioned_comprehension_excludes_primaries_and_edges_inside_condition() {
+        let baseline = condition_fixture();
+        let handoff = baseline.build(None, None).expect("condition transaction");
+        assert_eq!(
+            handoff
+                .edges()
+                .iter()
+                .map(|(_, edge)| edge.target())
+                .collect::<Vec<_>>(),
+            [SourceSetTarget::Primary(SourcePrimaryTermId::new(0))]
+        );
+
+        let incomplete_primary = primary_handoff_from(
+            baseline.source,
+            &baseline.module,
+            &baseline.bindings,
+            &baseline.arena,
+            &[(0, 12, 13, "1"), (1, 42, 43, "2")],
+        );
+        assert!(matches!(
+            SourceSetTermProducer::build(
+                baseline.input.clone(),
+                &baseline.bindings,
+                &incomplete_primary,
+                None,
+                None,
+                &baseline.arena,
+            ),
+            Err(SourceSetTermError::InvalidCondition { .. })
+        ));
+
+        let copied_fixture = condition_fixture_with_extra_nodes(vec![TypedNode::new(
+            "source.term.numeral",
+            SourceAnchor::Range(range(source_id(), 42, 43)),
+        )]);
+        let copied_primary = primary_handoff_from(
+            copied_fixture.source,
+            &copied_fixture.module,
+            &copied_fixture.bindings,
+            &copied_fixture.arena,
+            &[(0, 12, 13, "1"), (10, 42, 43, "2"), (2, 47, 48, "3")],
+        );
+        assert!(matches!(
+            SourceSetTermProducer::build(
+                copied_fixture.input.clone(),
+                &copied_fixture.bindings,
+                &copied_primary,
+                None,
+                None,
+                &copied_fixture.arena,
+            ),
+            Err(SourceSetTermError::InvalidCondition { .. })
+        ));
+
+        let out_of_range_fixture = condition_fixture_with_extra_nodes(vec![TypedNode::new(
+            "source.term.numeral",
+            SourceAnchor::Range(range(source_id(), 50, 51)),
+        )]);
+        let substituted_primary = primary_handoff_from(
+            out_of_range_fixture.source,
+            &out_of_range_fixture.module,
+            &out_of_range_fixture.bindings,
+            &out_of_range_fixture.arena,
+            &[(0, 12, 13, "1"), (2, 47, 48, "3"), (10, 50, 51, "4")],
+        );
+        assert!(matches!(
+            SourceSetTermProducer::build(
+                out_of_range_fixture.input.clone(),
+                &out_of_range_fixture.bindings,
+                &substituted_primary,
+                None,
+                None,
+                &out_of_range_fixture.arena,
+            ),
+            Err(SourceSetTermError::InvalidCondition { .. })
+        ));
+
+        let outside_primary = primary_handoff_from(
+            out_of_range_fixture.source,
+            &out_of_range_fixture.module,
+            &out_of_range_fixture.bindings,
+            &out_of_range_fixture.arena,
+            &[
+                (0, 12, 13, "1"),
+                (1, 42, 43, "2"),
+                (2, 47, 48, "3"),
+                (10, 50, 51, "4"),
+            ],
+        );
+        assert!(matches!(
+            SourceSetTermProducer::build(
+                out_of_range_fixture.input.clone(),
+                &out_of_range_fixture.bindings,
+                &outside_primary,
+                None,
+                None,
+                &out_of_range_fixture.arena,
+            ),
+            Err(SourceSetTermError::InvalidTerm { .. })
+        ));
+
+        let escaped_subtree = condition_fixture_with_condition_descendants(vec![TypedNode::new(
+            "source.term.numeral",
+            SourceAnchor::Range(range(source_id(), 50, 51)),
+        )]);
+        assert!(matches!(
+            escaped_subtree.build(None, None),
+            Err(SourceSetTermError::InvalidCondition { .. })
+        ));
+
+        let mut edge_into_condition = baseline.clone();
+        edge_into_condition.input.edges.push(SourceSetEdgeInput {
+            term: SourceSetTermId::new(0),
+            ordinal: 1,
+            role: SourceSetEdgeRole::ComprehensionMapper,
+            target: SourceSetTarget::Primary(SourcePrimaryTermId::new(1)),
+        });
+        assert!(edge_into_condition.build(None, None).is_err());
+    }
+
+    #[test]
+    fn conditioned_comprehension_rejects_task253_task254_and_task255_descendants() {
+        let application_fixture = condition_fixture_with_extra_nodes(vec![
+            TypedNode::new(
+                "source.term.functor-application.inline",
+                SourceAnchor::Range(range(source_id(), 41, 46)),
+            ),
+            TypedNode::new(
+                "source.term.functor-head.single",
+                SourceAnchor::Range(range(source_id(), 41, 42)),
+            ),
+        ]);
+        let application = SourceFunctorApplicationProducer::build(
+            SourceFunctorApplicationHandoffInput {
+                source_id: application_fixture.source,
+                module_id: application_fixture.module.clone(),
+                applications: vec![SourceFunctorApplicationInput {
+                    site: node(10),
+                    source_range: range(application_fixture.source, 41, 46),
+                    source_ordinal: 0,
+                    context: BindingContextId::new(0),
+                    recovery: SourceFunctorApplicationRecovery::Normal,
+                    spelling: "f ( 2 )".to_owned(),
+                    kind: SourceFunctorApplicationKind::Inline,
+                    form: SourceFunctorApplicationForm::Functional,
+                    head_ordinal: 0,
+                    head: SourceFunctorHeadSite::Single {
+                        site: node(11),
+                        source_range: range(application_fixture.source, 41, 42),
+                        spelling: "f".to_owned(),
+                    },
+                }],
+                wrappers: Vec::new(),
+                candidates: Vec::new(),
+                arguments: vec![SourceFunctorArgumentInput {
+                    application: SourceFunctorApplicationId::new(0),
+                    ordinal: 0,
+                    target: SourceFunctorArgumentTarget::Primary(SourcePrimaryTermId::new(1)),
+                }],
+                type_requests: Vec::new(),
+            },
+            &SymbolEnv::new(
+                application_fixture.module.clone(),
+                SymbolEnvIndexes::default(),
+            ),
+            &application_fixture.bindings,
+            &application_fixture.primary,
+            &application_fixture.arena,
+        )
+        .expect("condition-contained application dependency");
+        assert!(matches!(
+            application_fixture.build(Some(&application), None),
+            Err(SourceSetTermError::InvalidCondition { .. })
+        ));
+
+        let structure_fixture = condition_fixture_with_extra_nodes(vec![
+            TypedNode::new(
+                "source.term.structure.selector",
+                SourceAnchor::Range(range(source_id(), 41, 46)),
+            ),
+            TypedNode::new(
+                "source.term.structure.member.selector",
+                SourceAnchor::Range(range(source_id(), 44, 46)),
+            ),
+        ]);
+        let structure = SourceStructureProducer::build(
+            SourceStructureHandoffInput {
+                source_id: structure_fixture.source,
+                module_id: structure_fixture.module.clone(),
+                terms: vec![SourceStructureTermInput {
+                    site: node(10),
+                    source_range: range(structure_fixture.source, 41, 46),
+                    source_ordinal: 0,
+                    context: BindingContextId::new(0),
+                    recovery: SourceStructureRecovery::Normal,
+                    spelling: "2 . x".to_owned(),
+                    kind: SourceStructureTermKind::SelectorAccess,
+                }],
+                wrappers: Vec::new(),
+                roots: Vec::new(),
+                members: vec![SourceStructureMemberInput {
+                    term: SourceStructureTermId::new(0),
+                    ordinal: 0,
+                    site: node(11),
+                    source_range: range(structure_fixture.source, 44, 46),
+                    spelling: "x".to_owned(),
+                    role: SourceStructureMemberRole::Selector,
+                    parent: None,
+                }],
+                field_updates: Vec::new(),
+                edges: vec![SourceStructureEdgeInput {
+                    term: SourceStructureTermId::new(0),
+                    ordinal: 0,
+                    role: SourceStructureEdgeRole::SelectorBase,
+                    member: None,
+                    target: SourceStructureTarget::Primary(SourcePrimaryTermId::new(1)),
+                }],
+                requests: vec![
+                    SourceStructureRequestInput {
+                        term: SourceStructureTermId::new(0),
+                        member: Some(SourceStructureMemberId::new(0)),
+                        request_ordinal: 0,
+                        kind: SourceStructureRequestKind::MemberIdentity,
+                    },
+                    SourceStructureRequestInput {
+                        term: SourceStructureTermId::new(0),
+                        member: Some(SourceStructureMemberId::new(0)),
+                        request_ordinal: 1,
+                        kind: SourceStructureRequestKind::InheritancePath,
+                    },
+                    SourceStructureRequestInput {
+                        term: SourceStructureTermId::new(0),
+                        member: None,
+                        request_ordinal: 2,
+                        kind: SourceStructureRequestKind::ResultType,
+                    },
+                ],
+            },
+            &SymbolEnv::new(
+                structure_fixture.module.clone(),
+                SymbolEnvIndexes::default(),
+            ),
+            &structure_fixture.bindings,
+            &structure_fixture.primary,
+            None,
+            &structure_fixture.arena,
+        )
+        .expect("condition-contained structure dependency");
+        assert!(matches!(
+            structure_fixture.build(None, Some(&structure)),
+            Err(SourceSetTermError::InvalidCondition { .. })
+        ));
+
+        let mut nested = condition_fixture_with_extra_nodes(vec![TypedNode::new(
+            "source.term.set.enumeration",
+            SourceAnchor::Range(range(source_id(), 41, 46)),
+        )]);
+        nested.input.terms.push(SourceSetTermInput {
+            site: node(10),
+            source_range: range(nested.source, 41, 46),
+            source_ordinal: 1,
+            context: BindingContextId::new(0),
+            recovery: SourceSetTermRecovery::Normal,
+            spelling: "{ }".to_owned(),
+            kind: SourceSetTermKind::Enumeration,
+        });
+        nested.input.requests.push(SourceSetRequestInput {
+            term: SourceSetTermId::new(1),
+            ordinal: 0,
+            kind: SourceSetRequestKind::ResultType,
+            generator: None,
+            type_site: None,
+        });
+        assert!(matches!(
+            nested.build(None, None),
+            Err(SourceSetTermError::InvalidCondition { .. })
+        ));
+    }
+
+    #[test]
     fn exact_four_shape_transaction_is_dense_deterministic_and_installable() {
         let fixture = fixture();
         let first = fixture.build().expect("valid transaction");
@@ -3097,11 +4321,39 @@ mod tests {
             first.primary_term_fingerprint(),
             fixture.primary.debug_text()
         );
-        assert!(
-            first
-                .debug_text()
-                .contains("request#6 term=3 ordinal=1 kind=result-type")
+        let legacy_debug = format!(
+            concat!(
+                "source-set-term-debug-v1\n",
+                "module: source.set.term\n",
+                "primary-term-fingerprint: {:?}\n",
+                "application-fingerprint: None\n",
+                "structure-fingerprint: None\n",
+                "term#0 ordinal=0 kind=enumeration range=10..25 site=4 context=0 recovery=normal spelling=\"{{ 1 , 2 }}\"\n",
+                "term#1 ordinal=1 kind=comprehension range=30..70 site=5 context=0 recovery=normal spelling=\"{{ 3 where candidate255 is set }}\"\n",
+                "term#2 ordinal=2 kind=choice range=80..87 site=6 context=0 recovery=normal spelling=\"the set\"\n",
+                "term#3 ordinal=3 kind=qua range=90..99 site=7 context=0 recovery=normal spelling=\"4 qua set\"\n",
+                "generator#0 term=1 ordinal=0 range=40..52 site=8 context=0 recovery=normal spelling=\"candidate255\" type_site=0\n",
+                "type-site#0 owner=generator(0) range=56..59 site=9 spelling=\"set\" head_range=56..59 head_site=10 head_spelling=\"set\" context=0 recovery=normal head=builtin-set\n",
+                "type-site#1 owner=term(2,choice) range=84..87 site=11 spelling=\"set\" head_range=84..87 head_site=12 head_spelling=\"set\" context=0 recovery=normal head=builtin-set\n",
+                "type-site#2 owner=term(3,qua) range=96..99 site=13 spelling=\"set\" head_range=96..99 head_site=14 head_spelling=\"set\" context=0 recovery=normal head=builtin-set\n",
+                "edge#0 term=0 ordinal=0 role=enumeration-element target=primary(0)\n",
+                "edge#1 term=0 ordinal=1 role=enumeration-element target=primary(1)\n",
+                "edge#2 term=1 ordinal=0 role=comprehension-mapper target=primary(2)\n",
+                "edge#3 term=3 ordinal=0 role=qua-base target=primary(3)\n",
+                "request#0 term=0 ordinal=0 kind=result-type generator=- type_site=-\n",
+                "request#1 term=1 ordinal=0 kind=generator-sethood generator=0 type_site=0\n",
+                "request#2 term=1 ordinal=1 kind=result-type generator=- type_site=-\n",
+                "request#3 term=2 ordinal=0 kind=choice-nonempty generator=- type_site=1\n",
+                "request#4 term=2 ordinal=1 kind=result-type generator=- type_site=-\n",
+                "request#5 term=3 ordinal=0 kind=qua-widening generator=- type_site=2\n",
+                "request#6 term=3 ordinal=1 kind=result-type generator=- type_site=-\n",
+            ),
+            fixture.primary.debug_text()
         );
+        assert_eq!(first.debug_text(), legacy_debug);
+        assert!(!first.debug_text().contains("condition#"));
+        assert!(first.conditions().is_empty());
+        assert_eq!(first.conditions().iter().count(), 0);
         first
             .validate_installation(
                 fixture.source,
@@ -3280,6 +4532,7 @@ mod tests {
                 wrappers: Vec::new(),
                 generators: Vec::new(),
                 type_sites: Vec::new(),
+                conditions: Vec::new(),
                 edges: Vec::new(),
                 requests: vec![SourceSetRequestInput {
                     term: SourceSetTermId::new(0),
@@ -3409,6 +4662,7 @@ mod tests {
                     head: SourceSetTypeHead::BuiltinObject,
                 },
             ],
+            conditions: Vec::new(),
             edges: vec![SourceSetEdgeInput {
                 term: SourceSetTermId::new(0),
                 ordinal: 0,
@@ -3546,6 +4800,7 @@ mod tests {
                     recovery: SourceSetTermRecovery::Normal,
                     head: SourceSetTypeHead::BuiltinSet,
                 }],
+                conditions: Vec::new(),
                 edges: vec![
                     SourceSetEdgeInput {
                         term: SourceSetTermId::new(0),
@@ -3689,6 +4944,7 @@ mod tests {
                         head: SourceSetTypeHead::BuiltinObject,
                     },
                 ],
+                conditions: Vec::new(),
                 edges: vec![
                     SourceSetEdgeInput {
                         term: SourceSetTermId::new(0),
@@ -4452,6 +5708,7 @@ mod tests {
             wrappers: Vec::new(),
             generators: Vec::new(),
             type_sites: Vec::new(),
+            conditions: Vec::new(),
             edges: vec![SourceSetEdgeInput {
                 term: SourceSetTermId::new(0),
                 ordinal: 0,
@@ -5155,6 +6412,7 @@ mod tests {
                     recovery: SourceSetTermRecovery::Normal,
                     head: SourceSetTypeHead::BuiltinSet,
                 }],
+                conditions: Vec::new(),
                 edges: vec![SourceSetEdgeInput {
                     term: SourceSetTermId::new(0),
                     ordinal: 0,
@@ -5441,6 +6699,7 @@ mod tests {
             wrappers: Vec::new(),
             generators: Vec::new(),
             type_sites: Vec::new(),
+            conditions: Vec::new(),
             edges: vec![SourceSetEdgeInput {
                 term: SourceSetTermId::new(0),
                 ordinal: 0,

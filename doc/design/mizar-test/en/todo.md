@@ -1863,5 +1863,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   atomic install/clone, empty semantic output, and unchanged prior routes.
 - [x] Keep this prerequisite documentation-only at `418/384`, `250/238`,
   `228/190`, active `101/5/197/1`, 353 tests, and 29 paths / 33,184 lines.
-- [ ] Implement the exact route, fail sidecar, covered trace row, and tests
-  after the documentation commit and fresh preflight.
+- [x] Implement the exact route, fail sidecar, covered trace row, and tests
+  after the documentation commit and fresh preflight. The runner now measures
+  `419/385`, `251/239`, `228/191`, active `101/5/198/1`, 357 library tests,
+  and preserves empty semantic output and every prior route.

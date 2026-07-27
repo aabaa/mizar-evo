@@ -47,7 +47,7 @@ after this task.
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, exclusions, public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary, seven-table composite-formula/binder/type/edge/request transport, source-derived binding extension, exact consumer, exclusions, public enum policy | none |
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1 authority/boundary, explicit universal-to-atomic edge and bound-use transport, Task-252/256/257 dependency fingerprints, combined atomic installation, exact consumer, exclusions, public enum policy | none |
-| `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255 authority/boundary, six-table set/choice/qua/generator/type-site/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
+| `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary, seven-table set/choice/qua/generator/type-site/condition/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary, seven-table structure/member/FieldUpdate/edge/request transport, Task-252/253 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary, three-table primary-term transport, binding lookup and parent/request validation, ownership, exact consumers, exclusions, public enum policy | none |
@@ -217,3 +217,11 @@ tests, projection, and semantic deferrals.
 No production module, fixture, sidecar, trace metadata, count, or hash changes
 in this prerequisite; the paired module-boundary audit is intentionally
 unchanged. No bilingual debt remains.
+
+## Task 255C1 Implementation Pair Recheck
+
+The paired implementation-result, module-boundary, public-surface, ownership,
+runner, TODO, and coverage documents now record the same seven-table API,
+recursive condition boundary, exact dependency profiles, fixture/trace
+increment, measured counts/hashes, and unchanged semantic deferrals. No
+Task-255C1 bilingual drift remains.

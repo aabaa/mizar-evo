@@ -6,8 +6,9 @@ use mizar_checker::{
         ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
     },
     source_application::{
-        SourceFunctorApplicationForm, SourceFunctorApplicationHandoffInput,
-        SourceFunctorApplicationId, SourceFunctorApplicationInput, SourceFunctorApplicationKind,
+        SourceFunctorApplicationForm, SourceFunctorApplicationHandoff,
+        SourceFunctorApplicationHandoffInput, SourceFunctorApplicationId,
+        SourceFunctorApplicationInput, SourceFunctorApplicationKind,
         SourceFunctorApplicationProducer, SourceFunctorApplicationRecovery,
         SourceFunctorArgumentInput, SourceFunctorArgumentTarget, SourceFunctorCandidateId,
         SourceFunctorCandidateInput, SourceFunctorHeadSite, SourceFunctorTypeRequestInput,
@@ -38,7 +39,10 @@ use super::{
         direct_token_texts, exact_compilation_item_list, qualified_symbol_spelling,
         structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
     },
-    source_formula::extract_source_imported_predicate_functor_formula,
+    source_formula::{
+        extract_source_imported_predicate_functor_formula,
+        resolve_imported_fixture_term_formula_symbol,
+    },
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
     source_term::{SourceTermParts, source_term_parts_for_roots},
 };
@@ -771,6 +775,76 @@ fn extract_imported(
     })
 }
 
+fn extract_unwrapped_imported(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    application_index: usize,
+) -> Option<ExtractedApplication> {
+    let application_id = node_id(
+        ast,
+        TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(
+            application_index,
+        )),
+    )?;
+    let application = ast.node(application_id)?;
+    if application.recovered
+        || !matches!(
+            &application.kind,
+            SurfaceNodeKind::InfixExpression(operator) if operator.spelling.as_ref() == "++"
+        )
+        || direct_token_texts(ast, application).as_slice() != ["++"]
+        || subtree_tokens(ast, application) != ["1", "++", "2"]
+    {
+        return None;
+    }
+    let argument_roots = structural_child_ids(ast, application);
+    let [left_id, right_id] = argument_roots.as_slice() else {
+        return None;
+    };
+    let left = ast.node(*left_id)?;
+    let right = ast.node(*right_id)?;
+    if !matches!(left.kind, SurfaceNodeKind::NumeralTerm)
+        || !matches!(right.kind, SurfaceNodeKind::NumeralTerm)
+        || left.recovered
+        || right.recovered
+        || subtree_tokens(ast, left) != ["1"]
+        || subtree_tokens(ast, right) != ["2"]
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::ParenthesizedTerm)
+            .into_iter()
+            .any(|(_, wrapper)| structural_descendant(ast, wrapper, application_id))
+    {
+        return None;
+    }
+    let head_ids = application
+        .children
+        .iter()
+        .copied()
+        .filter(|child| ast.node(*child).and_then(SurfaceNode::token_text) == Some("++"))
+        .collect::<Vec<_>>();
+    let [head_id] = head_ids.as_slice() else {
+        return None;
+    };
+    let head = ast.node(*head_id)?;
+    let candidate =
+        resolve_imported_fixture_term_formula_symbol(symbols, module, "++", SymbolKind::Functor)
+            .ok()?;
+    Some(ExtractedApplication {
+        kind: SourceApplicationRouteKind::ImportedInfix,
+        context: BindingContextId::new(0),
+        application_id,
+        application_range: application.range,
+        application_spelling: "1 ++ 2".to_owned(),
+        form: SourceFunctorApplicationForm::Infix,
+        head_id: *head_id,
+        head_range: head.range,
+        head_spelling: "++".to_owned(),
+        wrapper: None,
+        argument_roots: vec![*left_id, *right_id],
+        candidate,
+    })
+}
+
 fn extract_local(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1151,6 +1225,42 @@ pub(super) fn imported_source_application_owned_node_kinds(
     Some(kinds)
 }
 
+pub(super) fn unwrapped_imported_source_application_owned_node_kinds(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    application: usize,
+) -> Option<BTreeMap<usize, &'static str>> {
+    let extracted = extract_unwrapped_imported(ast, module, symbols, application)?;
+    Some(BTreeMap::from([
+        (
+            extracted.application_id.index(),
+            "source.term.functor-application.symbolic",
+        ),
+        (extracted.head_id.index(), "source.term.functor-head.single"),
+    ]))
+}
+
+pub(super) fn unwrapped_imported_source_application_handoff(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+    application: usize,
+) -> Option<Result<SourceFunctorApplicationHandoff, String>> {
+    let extracted = extract_unwrapped_imported(ast, module, symbols, application)?;
+    Some(build_handoff_with_source_term(
+        ast,
+        module,
+        symbols,
+        binding_env,
+        &extracted,
+        source_term,
+        |_| {},
+    ))
+}
+
 fn build_output_with_source_term(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -1160,6 +1270,77 @@ fn build_output_with_source_term(
     source_term: SourceTermParts,
     mutate: impl FnOnce(&mut SourceFunctorApplicationHandoffInput),
 ) -> Result<SourceApplicationRouteOutput, String> {
+    let kind = extracted.kind;
+    let handoff = build_handoff_with_source_term(
+        ast,
+        &module,
+        symbols,
+        &binding_env,
+        &extracted,
+        &source_term,
+        mutate,
+    )?;
+    let typed_ast = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: source_term.arena,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())?
+    .with_source_term(source_term.handoff)
+    .map_err(|error| error.to_string())?
+    .with_source_application(handoff)
+    .map_err(|error| error.to_string())?;
+    let node_hints = typed_ast
+        .nodes()
+        .iter()
+        .map(|(typed_node, _)| ResolvedNodeKindHint {
+            typed_node,
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.term.surface"),
+            },
+        })
+        .collect();
+    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
+    if typed_ast.source_application().is_none()
+        || resolved.source_application() != typed_ast.source_application()
+        || resolved.source_term() != typed_ast.source_term()
+        || !typed_ast.types().is_empty()
+        || !typed_ast.facts().is_empty()
+        || !typed_ast.coercions().is_empty()
+        || !typed_ast.initial_obligations().is_empty()
+        || !typed_ast.diagnostics().is_empty()
+        || !resolved.expr_metadata().is_empty()
+        || !resolved.cluster_facts().is_empty()
+        || !resolved.diagnostics().is_empty()
+    {
+        return Err("source functor-application immutable final handoff mismatch".to_owned());
+    }
+    Ok(SourceApplicationRouteOutput {
+        kind,
+        typed_ast,
+        resolved,
+    })
+}
+
+fn build_handoff_with_source_term(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    extracted: &ExtractedApplication,
+    source_term: &SourceTermParts,
+    mutate: impl FnOnce(&mut SourceFunctorApplicationHandoffInput),
+) -> Result<SourceFunctorApplicationHandoff, String> {
     let candidate = symbols
         .symbols()
         .get(&extracted.candidate)
@@ -1178,23 +1359,24 @@ fn build_output_with_source_term(
             source_ordinal: 0,
             context: extracted.context,
             recovery: SourceFunctorApplicationRecovery::Normal,
-            spelling: extracted.application_spelling,
+            spelling: extracted.application_spelling.clone(),
             kind: SourceFunctorApplicationKind::Symbolic,
             form: extracted.form,
             head_ordinal: usize::from(extracted.form == SourceFunctorApplicationForm::Infix),
             head: SourceFunctorHeadSite::Single {
                 site: surface_site(extracted.head_id),
                 source_range: extracted.head_range,
-                spelling: extracted.head_spelling,
+                spelling: extracted.head_spelling.clone(),
             },
         }],
         wrappers: extracted
             .wrapper
+            .as_ref()
             .map(|(wrapper, range)| SourceFunctorWrapperInput {
                 application,
                 ordinal: 0,
-                site: surface_site(wrapper),
-                source_range: range,
+                site: surface_site(*wrapper),
+                source_range: *range,
                 context: extracted.context,
                 spelling: "( 1 ++ 2 )".to_owned(),
                 recovery: SourceFunctorApplicationRecovery::Normal,
@@ -1248,64 +1430,14 @@ fn build_output_with_source_term(
         ],
     };
     mutate(&mut input);
-    let handoff = SourceFunctorApplicationProducer::build(
+    SourceFunctorApplicationProducer::build(
         input,
         symbols,
-        &binding_env,
+        binding_env,
         &source_term.handoff,
         &source_term.arena,
     )
-    .map_err(|error| error.to_string())?;
-    let typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: source_term.arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(source_term.handoff)
-    .map_err(|error| error.to_string())?
-    .with_source_application(handoff)
-    .map_err(|error| error.to_string())?;
-    let node_hints = typed_ast
-        .nodes()
-        .iter()
-        .map(|(typed_node, _)| ResolvedNodeKindHint {
-            typed_node,
-            kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.term.surface"),
-            },
-        })
-        .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.source_application().is_none()
-        || resolved.source_application() != typed_ast.source_application()
-        || resolved.source_term() != typed_ast.source_term()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-    {
-        return Err("source functor-application immutable final handoff mismatch".to_owned());
-    }
-    Ok(SourceApplicationRouteOutput {
-        kind: extracted.kind,
-        typed_ast,
-        resolved,
-    })
+    .map_err(|error| error.to_string())
 }
 
 fn unique_shell(

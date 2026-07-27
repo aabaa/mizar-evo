@@ -141,3 +141,11 @@ imported candidate provenanceをvalidateし、supplied complete Task-252 parts�
 対してexisting public Task-253 `1/0/1/2/2` profileをbuildする。Task-255
 codeはこのseamを呼び、application rowをduplicateしない。existing wrapped
 theorem selectorとpublic checker APIは不変である。
+
+## Task 255C1 reuse-seam result
+
+private unwrapped imported-`++` extractor/builderを実装し、conditioned-
+comprehension routeが使うsole Task-253 producerとした。supplied shared
+Task-252 `4/0/4` handoffに対して`1/0/1/2/2`をbuildし、exact imported
+symbol/contributionを保持する。既存wrapped selector、public API、debug byte、
+全prior Task-253 testsは不変である。

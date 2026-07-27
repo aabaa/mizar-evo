@@ -3059,3 +3059,11 @@ colonはTask-255-owned、direct `FormulaExpression` wrapperは別のTask-255
 anchorを持ち、2 numeral operandsはTask-252-ownedでTask 255からuntargetedである。
 Task-256/257 handoff/semantic tableは作らない。future fail sidecarはsuccessful
 source transport後にdefinition-extraction detail keyを保持する。
+
+### Checker Task 255C1 runner status
+
+frozen routeを実装した。exact loaded byteとparser/resolver provenanceがone
+transactionだけをselectし、全named near missはpublication前にreturnする。
+runnerはshared `4/0/4`、`1/0/1/2/2`、`1/0/1/1/1/1/2` handoffをcomposeし、
+inner condition formulaをunownedに保ち、empty semantic outputと全prior
+routeを保持する。

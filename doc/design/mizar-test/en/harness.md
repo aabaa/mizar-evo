@@ -3227,3 +3227,11 @@ two numeral operands are Task-252-owned and untargeted by Task 255. No
 Task-256/257 handoff or semantic table is produced. The future fail sidecar
 retains the definition-extraction detail key after successful source
 transport.
+
+### Checker Task 255C1 Runner Status
+
+The frozen route is implemented. Exact loaded bytes and parser/resolver
+provenance select one transaction; every named near miss returns before
+publication. The runner composes the shared `4/0/4`, `1/0/1/2/2`, and
+`1/0/1/1/1/1/2` handoffs, leaves the inner condition formula unowned, and
+preserves empty semantic output and every prior route.

@@ -753,3 +753,10 @@ and direct condition-wrapper anchors, condition-contained lower-family
 exclusion, and both fingerprints. Condition operands stay in the immutable
 Task-252 handoff without a Task-255 edge. Failure publishes no condition row
 and preserves all previous fields and debug bytes.
+
+## Task 255C1 Installation Result
+
+`with_source_set_term` now installs the authenticated seven-table handoff
+after Task 252 and Task 253. Failed condition or dependency revalidation
+publishes nothing; a subsequent valid install succeeds from the unchanged
+base object. Legacy condition-empty objects remain byte-identical.

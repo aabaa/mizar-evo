@@ -6,13 +6,15 @@
 ## Scope
 
 Checker Task 255 owns a syntax-free immutable description of source set
-enumerations, condition-free independent set comprehensions, choice terms,
-and `qua` terms. It transports source shape, transparent wrappers, written
-comprehension generators, bare builtin target-type sites, ordered child
-edges, and unresolved request intent only. It does not bind comprehension
-variables, resolve capture or conditions, decide sethood or nonemptiness,
-select a choice witness, establish `qua` reachability, compute result types,
-publish facts, accept definitions, or lower proofs and IR.
+enumerations, independent set comprehensions with zero or one frozen source
+condition, choice terms, and `qua` terms. It transports source shape,
+transparent wrappers, written comprehension generators, bare builtin
+target-type sites, direct condition-wrapper provenance and spelling, ordered
+child edges, and unresolved request intent only. It does not bind
+comprehension variables, resolve capture or inner condition formulas, decide
+sethood or nonemptiness, select a choice witness, establish `qua`
+reachability, compute result types, publish facts, accept definitions, or
+lower proofs and IR.
 
 The canonical language requirements are Chapter 13 Sections 13.4-13.6,
 Chapter 7 Section 7.8.1, Chapter 8 Section 8.2.2, and their Chapter 17/21
@@ -27,17 +29,18 @@ ownership; later semantic owners retain all request resolution.
 `SourceSetTermProducer::build` consumes `SourceSetTermHandoffInput`,
 `BindingEnv`, `SourcePrimaryTermHandoff`, optional
 `SourceFunctorApplicationHandoff` and `SourceStructureHandoff` dependencies,
-and `TypedArena`. The input has six source-ordered vectors:
+and `TypedArena`. The input has seven source-ordered vectors:
 
 - set/choice/`qua` terms;
 - transparent set-term wrappers;
 - written comprehension generators;
 - term- or generator-owned bare target-type sites;
+- direct condition wrappers and their term-owned colon provenance;
 - ordered enumeration-element, comprehension-mapper, and `qua`-base edges;
 - unresolved result-type, generator-sethood, choice-nonempty, and
   `qua`-widening requests.
 
-The producer publishes six dense immutable tables only after the entire
+The producer publishes seven dense immutable tables only after the entire
 transaction validates. Public IDs expose zero-based `new` and `index`;
 tables expose `get`, source-ordered `iter`, `len`, and `is_empty`; validated
 rows expose only the read-only accessors frozen in the crate plan.
@@ -205,3 +208,14 @@ The exact future fail sidecar and covered trace row prove source transport
 only. Generator binding/capture, inner condition-formula ownership/composition,
 sethood/result answers, equality truth, definition acceptance, proof, and IR
 remain deferred.
+
+## Task 255C1 Implementation Result
+
+The seven-table extension is implemented exactly as frozen. Condition rows
+authenticate their direct term-owned colon and wrapper sites, recursively keep
+the wrapper subtree inside the recorded range, require every contained
+Task-252 primary, reject Task-253/254/255 descendants and condition-directed
+edges, and exclude only authenticated condition-contained lower-family rows
+from direct-child discovery. Full debug, legacy empty-table byte equality,
+group/order/cardinality, dependency substitution, rollback, and final clone
+tests pass.

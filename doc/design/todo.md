@@ -2348,5 +2348,8 @@ completion remain deferred. The origin discrepancy remains report-only
   `repo_metadata_conflict`; no blocking `spec_gap` remains.
 - [x] Preserve production, fixtures, sidecars, trace metadata/status/count,
   executable coverage, counts, and hashes at the Task-257C1 baseline.
-- [ ] Implement Task 255C1 as a separate logical task after mandatory fresh
-  parser/resolver/API and count/hash preflight.
+- [x] Implement Task 255C1 as a separate logical task after mandatory fresh
+  parser/resolver/API and count/hash preflight. The implementation closes the
+  bounded `source_drift`/`test_gap`, adds only its one fail
+  fixture/sidecar/covered trace row, and measures `419/385`, `251/239`,
+  `228/191`, active `101/5/198/1`, and `326/357` library tests.

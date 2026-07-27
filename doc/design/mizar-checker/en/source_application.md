@@ -151,3 +151,12 @@ existing public Task-253 `1/0/1/2/2` profile against supplied complete
 Task-252 parts. Task-255 code calls this seam and does not duplicate
 application rows. The existing wrapped theorem selector and public checker
 API remain unchanged.
+
+## Task 255C1 Reuse-Seam Result
+
+The private unwrapped imported-`++` extractor/builder is implemented and is
+the sole Task-253 producer used by the conditioned-comprehension route. It
+builds `1/0/1/2/2` against the supplied shared Task-252 `4/0/4` handoff and
+retains the exact imported symbol and contribution. The existing wrapped
+selector, public API, debug bytes, and all prior Task-253 tests remain
+unchanged.

@@ -183,3 +183,10 @@ primaries 2/3 are equality operands wholly inside the authenticated condition
 range. The latter remain ordinary Task-252 occurrence/numeric-request rows
 but have no Task-255 edge. This preserves the exact objects later Task 256
 must target without granting formula or numeric semantics here.
+
+## Task 255C1 Transport Result
+
+The exact route now publishes that single `4/0/4` handoff. Copied, omitted,
+or range-substituted condition primaries fail the complete Task-255
+transaction, while both authentic condition operands remain available to
+later Task-256 installation without a Task-255 edge.

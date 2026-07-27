@@ -726,3 +726,10 @@ Task-255C1 profileをadmitする。colon/direct condition-wrapper anchor、
 condition内lower-family exclusion、両fingerprintをrevalidateする。condition
 operandはTask-255 edgeなしでimmutable Task-252 handoffに残る。failureはcondition
 rowをpublishせず、既存field/debug byteをすべて保持する。
+
+## Task 255C1 installation result
+
+`with_source_set_term`はTask 252/253後にauthenticated seven-table handoffを
+installする。condition/dependency revalidation failureは何もpublishせず、
+unchanged base objectからlater valid installが成功する。legacy condition-empty
+objectはbyte-identicalのままである。

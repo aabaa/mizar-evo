@@ -1673,5 +1673,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   install/clone、empty semantic output、prior route不変をfreeze。
 - [x] prerequisiteをdocumentation-only `418/384`、`250/238`、
   `228/190`、active `101/5/197/1`、353 tests、29 paths / 33,184 linesに保つ。
-- [ ] documentation commit/fresh preflight後にexact route、fail sidecar、
-  covered trace row、testsをimplement。
+- [x] documentation commit/fresh preflight後にexact route、fail sidecar、
+  covered trace row、testsをimplement。runnerは`419/385`、`251/239`、
+  `228/191`、active `101/5/198/1`、library tests 357件を実測し、empty
+  semantic outputと全prior routeを保持する。

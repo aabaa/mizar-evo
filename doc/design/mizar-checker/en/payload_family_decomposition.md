@@ -678,3 +678,11 @@ Task 256 later owns the inner equality node/operand edges and Task 257C later
 owns condition composition. Generator binding/capture and every semantic
 result remain downstream. This prerequisite freezes the immutable objects
 those later nodes must consume.
+
+## Task 255C1 Implemented Boundary
+
+The frozen dependency chain is now executable:
+`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255C1
+1/0/1/1/1/1/2`. The condition wrapper is the recursive exclusion boundary;
+the inner equality remains a downstream Task-256/257 consumer. No semantic
+family was promoted.

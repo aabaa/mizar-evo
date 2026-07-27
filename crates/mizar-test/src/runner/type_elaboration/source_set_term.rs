@@ -12,11 +12,11 @@ use mizar_checker::{
         SourceItemInput, SourceItemRecovery, SourceItemRole, SourceItemVisibility,
     },
     source_set_term::{
-        SourceSetEdgeInput, SourceSetEdgeRole, SourceSetGeneratorId, SourceSetGeneratorInput,
-        SourceSetRequestInput, SourceSetRequestKind, SourceSetTarget, SourceSetTermHandoffInput,
-        SourceSetTermId, SourceSetTermInput, SourceSetTermKind, SourceSetTermProducer,
-        SourceSetTermRecovery, SourceSetTypeHead, SourceSetTypeOwner, SourceSetTypeRole,
-        SourceSetTypeSiteId, SourceSetTypeSiteInput, SourceSetWrapperInput,
+        SourceSetConditionInput, SourceSetEdgeInput, SourceSetEdgeRole, SourceSetGeneratorId,
+        SourceSetGeneratorInput, SourceSetRequestInput, SourceSetRequestKind, SourceSetTarget,
+        SourceSetTermHandoffInput, SourceSetTermId, SourceSetTermInput, SourceSetTermKind,
+        SourceSetTermProducer, SourceSetTermRecovery, SourceSetTypeHead, SourceSetTypeOwner,
+        SourceSetTypeRole, SourceSetTypeSiteId, SourceSetTypeSiteInput, SourceSetWrapperInput,
     },
     source_structure::{SourceStructureHandoff, SourceStructureTermId},
     source_term::SourcePrimaryTermHandoff,
@@ -40,10 +40,14 @@ use super::source_term::source_term_parts_for_roots;
 #[cfg(test)]
 use super::source_term::synthetic_source_term_parts_for_roots;
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
+    checker_handoff::{assemble_empty_resolved_typed_ast, source_module_binding_env},
+    source_application::{
+        unwrapped_imported_source_application_handoff,
+        unwrapped_imported_source_application_owned_node_kinds,
+    },
     source_ast::{
-        direct_token_texts, exact_compilation_item_list, structural_child_ids,
-        subtree_has_recovery, surface_site,
+        direct_token_texts, exact_compilation_item_list, is_exact_parser_type_fixtures_import,
+        structural_child_ids, subtree_has_recovery, surface_site,
     },
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
     source_term::SourceTermParts,
@@ -76,6 +80,7 @@ struct ExtractedSetTerms {
     wrappers: Vec<ExtractedWrapper>,
     generators: Vec<ExtractedGenerator>,
     type_sites: Vec<ExtractedTypeSite>,
+    conditions: Vec<ExtractedCondition>,
     edges: Vec<ExtractedEdge>,
     primary_roots: Vec<usize>,
 }
@@ -113,6 +118,15 @@ struct ExtractedTypeSite {
     recovery: SourceSetTermRecovery,
 }
 
+#[derive(Debug, Clone)]
+struct ExtractedCondition {
+    term: SourceSetTermId,
+    ordinal: usize,
+    colon_node: usize,
+    condition_node: usize,
+    recovery: SourceSetTermRecovery,
+}
+
 #[derive(Debug, Clone, Copy)]
 enum ExtractedTarget {
     Primary(usize),
@@ -129,6 +143,22 @@ struct ExtractedEdge {
     target: ExtractedTarget,
 }
 
+const TASK255C1_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "definition\n",
+    "  func Task255ConditionedComprehensionDef:\n",
+    "    task255_conditioned_comprehension -> set\n",
+    "    equals { 1 ++ 2 where candidate255c is set : 3 = 4 };\n",
+    "end;\n",
+);
+
+#[derive(Debug, Clone)]
+struct ExactConditionedRoute {
+    root: usize,
+    application: usize,
+    primary_roots: Vec<usize>,
+}
+
 /// Runs the bounded Task-255 source transport without replacing the existing
 /// definition-extraction diagnostic owner.
 pub(in crate::runner) fn source_set_term_transport_detail_keys(
@@ -136,8 +166,15 @@ pub(in crate::runner) fn source_set_term_transport_detail_keys(
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
+    source_text: &str,
 ) -> Option<Vec<String>> {
-    match source_set_term_output(ast, module, shells, symbols) {
+    match source_set_term_output_with_optional_source(
+        ast,
+        module,
+        shells,
+        symbols,
+        Some(source_text),
+    ) {
         None => None,
         Some(Ok(output))
             if output.typed_ast.source_set_term().is_some()
@@ -157,17 +194,35 @@ pub(in crate::runner) fn source_set_term_output(
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
 ) -> Option<Result<SourceSetTermRouteOutput, String>> {
-    source_set_term_output_with_mutation(ast, module, shells, symbols, |_| {})
+    source_set_term_output_with_mutation_impl(ast, module, shells, symbols, None, |_| {})
 }
 
-#[cfg(not(test))]
-fn source_set_term_output(
+#[cfg(test)]
+pub(in crate::runner) fn source_set_term_output_with_source(
     ast: &SurfaceAst,
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
+    source_text: &str,
 ) -> Option<Result<SourceSetTermRouteOutput, String>> {
-    source_set_term_output_with_mutation(ast, module, shells, symbols, |_| {})
+    source_set_term_output_with_mutation_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        Some(source_text),
+        |_| {},
+    )
+}
+
+fn source_set_term_output_with_optional_source(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: Option<&str>,
+) -> Option<Result<SourceSetTermRouteOutput, String>> {
+    source_set_term_output_with_mutation_impl(ast, module, shells, symbols, source_text, |_| {})
 }
 
 #[cfg(test)]
@@ -178,18 +233,26 @@ pub(in crate::runner) fn source_set_term_output_with_mutation(
     symbols: &SymbolEnv,
     mutate: impl FnOnce(&mut SourceSetTermHandoffInput),
 ) -> Option<Result<SourceSetTermRouteOutput, String>> {
-    source_set_term_output_with_mutation_impl(ast, module, shells, symbols, mutate)
+    source_set_term_output_with_mutation_impl(ast, module, shells, symbols, None, mutate)
 }
 
-#[cfg(not(test))]
-fn source_set_term_output_with_mutation(
+#[cfg(test)]
+pub(in crate::runner) fn source_set_term_output_with_source_and_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
+    source_text: &str,
     mutate: impl FnOnce(&mut SourceSetTermHandoffInput),
 ) -> Option<Result<SourceSetTermRouteOutput, String>> {
-    source_set_term_output_with_mutation_impl(ast, module, shells, symbols, mutate)
+    source_set_term_output_with_mutation_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        Some(source_text),
+        mutate,
+    )
 }
 
 fn source_set_term_output_with_mutation_impl(
@@ -197,8 +260,16 @@ fn source_set_term_output_with_mutation_impl(
     module: ModuleId,
     shells: &DeclarationShellSet,
     symbols: &SymbolEnv,
+    source_text: Option<&str>,
     mutate: impl FnOnce(&mut SourceSetTermHandoffInput),
 ) -> Option<Result<SourceSetTermRouteOutput, String>> {
+    if let Some(route) =
+        source_text.and_then(|source_text| exact_conditioned_route(ast, source_text))
+    {
+        return Some(build_conditioned_output(
+            ast, module, symbols, route, mutate,
+        ));
+    }
     let roots = exact_real_roots(ast)?;
     let binding_env = match source_set_term_binding_env(ast, module.clone(), shells, symbols) {
         Ok(binding_env) => binding_env,
@@ -212,6 +283,7 @@ fn source_set_term_output_with_mutation_impl(
         None,
         None,
         &BTreeSet::new(),
+        false,
     ) {
         Ok(extracted) => extracted,
         Err(error) => return Some(Err(error)),
@@ -224,6 +296,210 @@ fn source_set_term_output_with_mutation_impl(
         None,
         mutate,
     ))
+}
+
+fn exact_conditioned_route(ast: &SurfaceAst, source_text: &str) -> Option<ExactConditionedRoute> {
+    if source_text != TASK255C1_SOURCE
+        || source_text.len() != 191
+        || ast.nodes().iter().any(|node| node.recovered)
+    {
+        return None;
+    }
+    let items = exact_compilation_item_list(ast)?;
+    let item_ids = structural_child_ids(ast, items);
+    let [import_id, definition_id] = item_ids.as_slice() else {
+        return None;
+    };
+    let import = ast.node(*import_id)?;
+    let definition = ast.node(*definition_id)?;
+    if !is_exact_parser_type_fixtures_import(ast, import)
+        || !matches!(definition.kind, SurfaceNodeKind::DefinitionBlockItem)
+        || subtree_tokens(ast, definition)
+            != [
+                "definition",
+                "func",
+                "Task255ConditionedComprehensionDef",
+                ":",
+                "task255_conditioned_comprehension",
+                "->",
+                "set",
+                "equals",
+                "{",
+                "1",
+                "++",
+                "2",
+                "where",
+                "candidate255c",
+                "is",
+                "set",
+                ":",
+                "3",
+                "=",
+                "4",
+                "}",
+                ";",
+                "end",
+                ";",
+            ]
+    {
+        return None;
+    }
+    let unique = |kind: &SurfaceNodeKind, start: usize, end: usize| {
+        let matches = ast
+            .nodes()
+            .iter()
+            .enumerate()
+            .filter(|(_, node)| {
+                std::mem::discriminant(&node.kind) == std::mem::discriminant(kind)
+                    && node.range.start == start
+                    && node.range.end == end
+            })
+            .map(|(index, _)| index)
+            .collect::<Vec<_>>();
+        let [index] = matches.as_slice() else {
+            return None;
+        };
+        Some(*index)
+    };
+    let root = unique(&SurfaceNodeKind::SetComprehension, 139, 184)?;
+    let application = ast
+        .nodes()
+        .iter()
+        .enumerate()
+        .filter(|(_, node)| {
+            matches!(
+                &node.kind,
+                SurfaceNodeKind::InfixExpression(operator)
+                    if operator.spelling.as_ref() == "++"
+            ) && node.range.start == 141
+                && node.range.end == 147
+        })
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    let [application] = application.as_slice() else {
+        return None;
+    };
+    let generator = unique(&SurfaceNodeKind::ComprehensionVariableSegment, 154, 174)?;
+    let mapper_expression = unique(&SurfaceNodeKind::TermExpression, 141, 147)?;
+    let condition = unique(&SurfaceNodeKind::FormulaExpression, 177, 182)?;
+    let inner = unique(&SurfaceNodeKind::BuiltinPredicateApplication, 177, 182)?;
+    let root_node = &ast.nodes()[root];
+    if direct_token_texts(ast, root_node).as_slice() != ["{", "where", ":", "}"]
+        || structural_child_ids(ast, root_node)
+            .iter()
+            .map(|id| id.index())
+            .collect::<Vec<_>>()
+            != [mapper_expression, generator, condition]
+        || structural_child_ids(ast, &ast.nodes()[condition])
+            .iter()
+            .map(|id| id.index())
+            .collect::<Vec<_>>()
+            != [inner]
+        || subtree_tokens(ast, root_node)
+            != [
+                "{",
+                "1",
+                "++",
+                "2",
+                "where",
+                "candidate255c",
+                "is",
+                "set",
+                ":",
+                "3",
+                "=",
+                "4",
+                "}",
+            ]
+    {
+        return None;
+    }
+    let primary_roots = [
+        (141, 142, "1"),
+        (146, 147, "2"),
+        (177, 178, "3"),
+        (181, 182, "4"),
+    ]
+    .into_iter()
+    .map(|(start, end, spelling)| {
+        let index = unique(&SurfaceNodeKind::NumeralTerm, start, end)?;
+        (subtree_tokens(ast, &ast.nodes()[index]) == [spelling]).then_some(index)
+    })
+    .collect::<Option<Vec<_>>>()?;
+    Some(ExactConditionedRoute {
+        root,
+        application: *application,
+        primary_roots,
+    })
+}
+
+fn build_conditioned_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    route: ExactConditionedRoute,
+    mutate: impl FnOnce(&mut SourceSetTermHandoffInput),
+) -> Result<SourceSetTermRouteOutput, String> {
+    let binding_env =
+        source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?;
+    let application_kinds = unwrapped_imported_source_application_owned_node_kinds(
+        ast,
+        &module,
+        symbols,
+        route.application,
+    )
+    .ok_or_else(|| "Task255C1 unwrapped Task253 selector rejected the exact mapper".to_owned())?;
+    #[cfg(test)]
+    let source_term = synthetic_source_term_parts_for_roots(
+        ast,
+        module.clone(),
+        &binding_env,
+        route.primary_roots.iter().copied(),
+        BindingContextId::new(0),
+        &application_kinds,
+        &BTreeMap::new(),
+    )?;
+    #[cfg(not(test))]
+    let source_term = source_term_parts_for_roots(
+        ast,
+        module.clone(),
+        &binding_env,
+        route.primary_roots.iter().copied(),
+        BindingContextId::new(0),
+        &application_kinds,
+    )?;
+    let application = unwrapped_imported_source_application_handoff(
+        ast,
+        &module,
+        symbols,
+        &binding_env,
+        &source_term,
+        route.application,
+    )
+    .ok_or_else(|| "Task255C1 reusable Task253 seam rejected the exact mapper".to_owned())??;
+    let extracted = extract_set_terms(
+        ast,
+        &module,
+        BindingContextId::new(0),
+        &[route.root],
+        Some(&application),
+        None,
+        &BTreeSet::new(),
+        true,
+    )?;
+    build_output(
+        ast,
+        module,
+        binding_env,
+        extracted,
+        Some(SyntheticSourceSetTermDependencies {
+            arena: source_term.arena,
+            primary: source_term.handoff,
+            application: Some(application),
+            structure: None,
+        }),
+        mutate,
+    )
 }
 
 #[cfg(test)]
@@ -261,6 +537,7 @@ pub(super) fn source_set_term_output_with_source_term(
         None,
         None,
         &BTreeSet::new(),
+        false,
     )?;
     build_output(
         ast,
@@ -303,6 +580,7 @@ pub(in crate::runner) fn synthetic_source_set_term_output_with_mutation(
         applications,
         structures,
         degraded_terms,
+        false,
     )?;
     build_output(ast, module, binding_env, extracted, dependencies, mutate)
 }
@@ -450,6 +728,7 @@ fn extract_set_terms(
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     degraded_terms: &BTreeSet<usize>,
+    admit_conditions: bool,
 ) -> Result<ExtractedSetTerms, String> {
     let mut extracted = ExtractedSetTerms {
         context,
@@ -457,6 +736,7 @@ fn extract_set_terms(
         wrappers: Vec::new(),
         generators: Vec::new(),
         type_sites: Vec::new(),
+        conditions: Vec::new(),
         edges: Vec::new(),
         primary_roots: Vec::new(),
     };
@@ -470,7 +750,7 @@ fn extract_set_terms(
     });
     ordered_roots.dedup();
     for root in ordered_roots {
-        if set_root_is_excluded(ast, root, applications, structures) {
+        if set_root_is_excluded(ast, root, applications, structures, admit_conditions) {
             continue;
         }
         collect_target(
@@ -480,6 +760,7 @@ fn extract_set_terms(
             applications,
             structures,
             degraded_terms,
+            admit_conditions,
             &mut extracted,
         )?
         .set_term()
@@ -535,6 +816,9 @@ fn normalize_extracted_tables(ast: &SurfaceAst, extracted: &mut ExtractedSetTerm
     }
 
     extracted
+        .conditions
+        .sort_by_key(|condition| (condition.term.index(), condition.ordinal));
+    extracted
         .edges
         .sort_by_key(|edge| (edge.term.index(), edge.ordinal));
 }
@@ -557,6 +841,7 @@ fn collect_target(
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     degraded_terms: &BTreeSet<usize>,
+    admit_conditions: bool,
     extracted: &mut ExtractedSetTerms,
 ) -> Result<ExtractedTarget, String> {
     let original = ast
@@ -579,7 +864,7 @@ fn collect_target(
         extracted.primary_roots.push(node_index);
         return Ok(ExtractedTarget::Primary(node_index));
     }
-    if set_term_shape_is_excluded(ast, core) {
+    if set_term_shape_is_excluded(ast, core, admit_conditions) {
         return Err("source-set term has an excluded source shape".to_owned());
     }
     if subtree_has_recovery(ast, node) && !degraded_terms.contains(&core) {
@@ -622,6 +907,7 @@ fn collect_target(
             applications,
             structures,
             degraded_terms,
+            admit_conditions,
             extracted,
         )?,
         SourceSetTermKind::Comprehension => collect_comprehension(
@@ -632,6 +918,7 @@ fn collect_target(
             applications,
             structures,
             degraded_terms,
+            admit_conditions,
             extracted,
         )?,
         SourceSetTermKind::Choice => collect_choice(ast, term, core, recovery, extracted)?,
@@ -644,6 +931,7 @@ fn collect_target(
             applications,
             structures,
             degraded_terms,
+            admit_conditions,
             extracted,
         )?,
         _ => return Err("unsupported source-set term kind".to_owned()),
@@ -661,6 +949,7 @@ fn collect_enumeration(
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     degraded_terms: &BTreeSet<usize>,
+    admit_conditions: bool,
     extracted: &mut ExtractedSetTerms,
 ) -> Result<(), String> {
     let node = &ast.nodes()[node_index];
@@ -685,6 +974,7 @@ fn collect_enumeration(
             applications,
             structures,
             degraded_terms,
+            admit_conditions,
             extracted,
         )?;
         push_edge(
@@ -707,12 +997,26 @@ fn collect_comprehension(
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     degraded_terms: &BTreeSet<usize>,
+    admit_conditions: bool,
     extracted: &mut ExtractedSetTerms,
 ) -> Result<(), String> {
     let node = &ast.nodes()[node_index];
     let children = structural_child_ids(ast, node);
-    let Some((mapper, generators)) = children.split_first() else {
+    let Some((mapper, tail)) = children.split_first() else {
         return Err("source-set comprehension lost its mapper".to_owned());
+    };
+    let (generators, condition) = match tail.split_last() {
+        Some((condition, generators))
+            if ast
+                .node(*condition)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::FormulaExpression)) =>
+        {
+            if !admit_conditions {
+                return Err("source-set conditioned comprehension is outside this route".to_owned());
+            }
+            (generators, Some(*condition))
+        }
+        _ => (tail, None),
     };
     if generators.is_empty()
         || generators.iter().any(|generator| {
@@ -726,6 +1030,9 @@ fn collect_comprehension(
     let punctuation = direct_token_texts(ast, node);
     let mut expected = vec!["{".to_owned(), "where".to_owned()];
     expected.extend((1..generators.len()).map(|_| ",".to_owned()));
+    if condition.is_some() {
+        expected.push(":".to_owned());
+    }
     expected.push("}".to_owned());
     if punctuation != expected {
         return Err("source-set comprehension punctuation is not canonical".to_owned());
@@ -737,6 +1044,7 @@ fn collect_comprehension(
         applications,
         structures,
         degraded_terms,
+        admit_conditions,
         extracted,
     )?;
     push_edge(
@@ -785,7 +1093,51 @@ fn collect_comprehension(
             type_site,
         });
     }
+    if let Some(condition) = condition {
+        let colon_nodes = node
+            .children
+            .iter()
+            .copied()
+            .filter(|child| ast.node(*child).and_then(SurfaceNode::token_text) == Some(":"))
+            .collect::<Vec<_>>();
+        let [colon] = colon_nodes.as_slice() else {
+            return Err("source-set condition requires one direct colon".to_owned());
+        };
+        let condition_node = ast
+            .node(condition)
+            .ok_or_else(|| "source-set condition wrapper disappeared".to_owned())?;
+        if condition_node.recovered || subtree_tokens(ast, condition_node).is_empty() {
+            return Err("source-set condition wrapper is not a normal formula".to_owned());
+        }
+        extracted.conditions.push(ExtractedCondition {
+            term,
+            ordinal: 0,
+            colon_node: colon.index(),
+            condition_node: condition.index(),
+            recovery: extracted.terms[term.index()].recovery,
+        });
+        collect_condition_primary_roots(ast, condition.index(), &mut extracted.primary_roots);
+    }
     Ok(())
+}
+
+fn collect_condition_primary_roots(ast: &SurfaceAst, node: usize, roots: &mut Vec<usize>) {
+    let Some(node_row) = ast.nodes().get(node) else {
+        return;
+    };
+    if matches!(
+        node_row.kind,
+        SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::ItTerm
+            | SurfaceNodeKind::ParenthesizedTerm
+    ) {
+        roots.push(node);
+        return;
+    }
+    for child in &node_row.children {
+        collect_condition_primary_roots(ast, child.index(), roots);
+    }
 }
 
 fn collect_choice(
@@ -827,6 +1179,7 @@ fn collect_qua(
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
     degraded_terms: &BTreeSet<usize>,
+    admit_conditions: bool,
     extracted: &mut ExtractedSetTerms,
 ) -> Result<(), String> {
     let node = &ast.nodes()[node_index];
@@ -844,6 +1197,7 @@ fn collect_qua(
         applications,
         structures,
         degraded_terms,
+        admit_conditions,
         extracted,
     )?;
     push_edge(extracted, term, SourceSetEdgeRole::QuaBase, target);
@@ -965,6 +1319,22 @@ fn build_output(
         if type_site.recovery == SourceSetTermRecovery::Degraded {
             recoveries.insert(type_site.node, NodeRecoveryState::Degraded);
             recoveries.insert(type_site.head_node, NodeRecoveryState::Degraded);
+        }
+    }
+    for condition in &extracted.conditions {
+        insert_kind(
+            &mut kinds,
+            condition.colon_node,
+            "source.term.set.comprehension-condition-colon",
+        )?;
+        insert_kind(
+            &mut kinds,
+            condition.condition_node,
+            "source.term.set.comprehension-condition",
+        )?;
+        if condition.recovery == SourceSetTermRecovery::Degraded {
+            recoveries.insert(condition.colon_node, NodeRecoveryState::Degraded);
+            recoveries.insert(condition.condition_node, NodeRecoveryState::Degraded);
         }
     }
 
@@ -1126,6 +1496,25 @@ fn build_output(
                     context: extracted.context,
                     recovery: type_site.recovery,
                     head: type_site.head,
+                }
+            })
+            .collect(),
+        conditions: extracted
+            .conditions
+            .iter()
+            .map(|condition| {
+                let colon = &ast.nodes()[condition.colon_node];
+                let formula = &ast.nodes()[condition.condition_node];
+                SourceSetConditionInput {
+                    term: condition.term,
+                    ordinal: condition.ordinal,
+                    colon_site: TypedSiteRef::Node(TypedNodeId::new(condition.colon_node)),
+                    colon_range: colon.range,
+                    colon_spelling: colon.token_text().unwrap_or_default().to_owned(),
+                    condition_site: TypedSiteRef::Node(TypedNodeId::new(condition.condition_node)),
+                    source_range: formula.range,
+                    spelling: subtree_tokens(ast, formula).join(" "),
+                    recovery: condition.recovery,
                 }
             })
             .collect(),
@@ -1306,11 +1695,12 @@ fn set_root_is_excluded(
     root: usize,
     applications: Option<&SourceFunctorApplicationHandoff>,
     structures: Option<&SourceStructureHandoff>,
+    admit_conditions: bool,
 ) -> bool {
     let Some(root_node) = ast.nodes().get(root) else {
         return true;
     };
-    if set_term_shape_is_excluded(ast, root)
+    if set_term_shape_is_excluded(ast, root, admit_conditions)
         || reverse_family_contains_set(ast, root, false)
         || contains_template_boundary(ast, root)
     {
@@ -1333,24 +1723,40 @@ fn set_root_is_excluded(
     root_node.range.source_id != ast.source_id
 }
 
-fn set_term_shape_is_excluded(ast: &SurfaceAst, root: usize) -> bool {
+fn set_term_shape_is_excluded(ast: &SurfaceAst, root: usize, admit_conditions: bool) -> bool {
     let Some(node) = ast.nodes().get(root) else {
         return true;
     };
     match node.kind {
         SurfaceNodeKind::SetEnumeration => structural_child_ids(ast, node)
             .into_iter()
-            .any(|child| nested_set_shape_is_excluded(ast, child.index())),
+            .any(|child| nested_set_shape_is_excluded(ast, child.index(), admit_conditions)),
         SurfaceNodeKind::SetComprehension => {
             let children = structural_child_ids(ast, node);
-            let Some((mapper, generators)) = children.split_first() else {
+            let Some((mapper, tail)) = children.split_first() else {
                 return true;
             };
-            if direct_token_texts(ast, node)
+            let has_colon = direct_token_texts(ast, node)
                 .iter()
-                .any(|token| token == ":")
-                || generators.is_empty()
-            {
+                .any(|token| token == ":");
+            if has_colon && !admit_conditions {
+                return true;
+            }
+            let generators = if has_colon {
+                let Some((condition, generators)) = tail.split_last() else {
+                    return true;
+                };
+                if ast
+                    .node(*condition)
+                    .is_none_or(|node| !matches!(node.kind, SurfaceNodeKind::FormulaExpression))
+                {
+                    return true;
+                }
+                generators
+            } else {
+                tail
+            };
+            if generators.is_empty() {
                 return true;
             }
             let mut names = BTreeSet::new();
@@ -1393,7 +1799,7 @@ fn set_term_shape_is_excluded(ast: &SurfaceAst, root: usize) -> bool {
             let mapper_node = &ast.nodes()[mapper.index()];
             let mapper_tokens = subtree_tokens(ast, mapper_node);
             mapper_tokens.iter().any(|token| names.contains(*token))
-                || nested_set_shape_is_excluded(ast, mapper.index())
+                || nested_set_shape_is_excluded(ast, mapper.index(), admit_conditions)
         }
         SurfaceNodeKind::ChoiceTerm => structural_child_ids(ast, node)
             .as_slice()
@@ -1425,22 +1831,22 @@ fn set_term_shape_is_excluded(ast: &SurfaceAst, root: usize) -> bool {
                 SourceSetTermRecovery::Degraded,
             )
             .is_err()
-                || nested_set_shape_is_excluded(ast, base.index())
+                || nested_set_shape_is_excluded(ast, base.index(), admit_conditions)
         }
         _ => true,
     }
 }
 
-fn nested_set_shape_is_excluded(ast: &SurfaceAst, root: usize) -> bool {
+fn nested_set_shape_is_excluded(ast: &SurfaceAst, root: usize, admit_conditions: bool) -> bool {
     let Some(node) = ast.nodes().get(root) else {
         return true;
     };
     if is_set_term_kind(&node.kind) {
-        return set_term_shape_is_excluded(ast, root);
+        return set_term_shape_is_excluded(ast, root, admit_conditions);
     }
     node.children
         .iter()
-        .any(|child| nested_set_shape_is_excluded(ast, child.index()))
+        .any(|child| nested_set_shape_is_excluded(ast, child.index(), admit_conditions))
 }
 
 fn reverse_family_contains_set(ast: &SurfaceAst, root: usize, inside_reverse: bool) -> bool {

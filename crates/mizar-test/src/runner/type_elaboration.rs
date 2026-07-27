@@ -404,7 +404,8 @@ pub(super) use source_set_term::source_set_term_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_set_term::{
     SourceSetTermRouteOutput, SyntheticSourceSetTermDependencies, source_set_term_output,
-    source_set_term_output_with_mutation, synthetic_source_set_term_output,
+    source_set_term_output_with_mutation, source_set_term_output_with_source,
+    source_set_term_output_with_source_and_mutation, synthetic_source_set_term_output,
     synthetic_source_set_term_output_with_mutation,
 };
 pub(super) use source_structure::source_structure_transport_detail_keys;

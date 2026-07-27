@@ -800,3 +800,10 @@ final assemblyは7番目のTask-255 table、colon/direct condition-wrapper arena
 anchor、authenticated condition range、unchanged Task-252/253 fingerprintを
 revalidateしてclone-preserveする。Task-256 inner equality/Task-257
 compositionを構築せず、condition operandをretargetせず、dense IDをrebuildしない。
+
+## Task 255C1 resolution result
+
+final assemblyはrecursive condition boundaryを含むexact Task-252/253/255
+objectをrevalidateしてclone-preserveする。本task由来のexpression metadata、
+fact、diagnostic、Task-256 condition formula、Task-257 compositionはresolved
+objectに存在しない。

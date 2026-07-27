@@ -171,3 +171,10 @@ primaries 2/3はauthenticated condition range内のequality operandである。�
 ordinary Task-252 occurrence/numeric-request rowのままだがTask-255 edgeを
 持たない。formula/numeric semanticsをここへ与えず、later Task 256がtargetする
 exact objectを保持する。
+
+## Task 255C1 transport result
+
+exact routeはこのsingle `4/0/4` handoffをpublishする。copied、omitted、
+range-substituted condition primaryはcomplete Task-255 transactionをfailさせる。
+authentic condition operands 2件はTask-255 edgeを持たず、later Task-256
+installation向けに保持される。

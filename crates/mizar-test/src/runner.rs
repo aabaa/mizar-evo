@@ -411,7 +411,8 @@ use type_elaboration::{
     source_right_parenthesized_reserved_variable_membership_output,
     source_right_parenthesized_reserved_variable_membership_output_detail_keys,
     source_set_enumeration_formula_output, source_set_term_output,
-    source_set_term_output_with_mutation, source_structure_output,
+    source_set_term_output_with_mutation, source_set_term_output_with_source,
+    source_set_term_output_with_source_and_mutation, source_structure_output,
     source_structure_output_with_mutation, source_term_output, source_term_output_with_mutation,
     source_three_edge_local_mode_asserted_head_output,
     source_three_edge_local_mode_radix_asserted_head_output,
@@ -1531,6 +1532,7 @@ fn type_elaboration_detail_keys(
         resolver.module.clone(),
         &resolver.shells,
         &symbols,
+        &source_text,
     ) {
         return keys;
     }

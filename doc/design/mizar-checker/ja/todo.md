@@ -4368,5 +4368,9 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `repo_metadata_conflict`にclassifyし、blocking `spec_gap`なし。
 - [x] production、fixture、sidecar、trace metadata/count、executable
   coverage、count、hashをTask-257C1 baselineで保持。
-- [ ] fresh parser/resolver/APIとcount/hash preflight後、Task 255C1を次の
-  separate logical taskとしてimplement。
+- [x] fresh parser/resolver/APIとcount/hash preflight後、Task 255C1をseparate
+  logical taskとしてimplement。exact routeはfrozen
+  `4/0/4 -> 1/0/1/2/2 -> 1/0/1/1/1/1/2` chain、recursive condition
+  boundary、fixture/sidecar/trace row各1件、`419/385`、`251/239`、
+  `228/191`、active `101/5/198/1`、checker/runner tests `326/357`を
+  semantic promotionなしでpublishする。

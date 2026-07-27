@@ -622,3 +622,11 @@ Task 256がlater inner equality node/operand edge、Task 257Cがlater condition
 compositionをownする。generator binding/captureと全semantic resultはdownstream
 のままである。このprerequisiteはlater nodeがconsumeすべきimmutable objectを
 凍結する。
+
+## Task 255C1 implemented boundary
+
+frozen dependency chain
+`Task252 4/0/4 -> Task253 1/0/1/2/2 -> Task255C1
+1/0/1/1/1/1/2`はexecutableになった。condition wrapperをrecursive exclusion
+boundaryとし、inner equalityはdownstream Task-256/257 consumerに残す。semantic
+familyはpromoteしていない。

@@ -343,3 +343,11 @@ direct condition-wrapper anchor, future fail detail, tests, baseline,
 projection, and semantic deferrals. No
 runner module or executable artifact changes in this prerequisite, so the
 module-boundary audit is intentionally unchanged. No bilingual drift remains.
+
+## Checker Task 255C1 Implementation Pair
+
+Paired runner documents now synchronize the exact implemented selector,
+shared-arena profiles, imported provenance, named near misses, corruption and
+final-clone matrices, `419/385`, `251/239`, `228/191`, active
+`101/5/198/1`, 357 tests, and the 29-path/33,725-line manifest with identical
+test-list, production, and five CLI hashes. No bilingual drift remains.

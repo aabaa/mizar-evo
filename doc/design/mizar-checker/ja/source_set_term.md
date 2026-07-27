@@ -5,13 +5,14 @@
 
 ## スコープ
 
-Checker Task 255 は、source set enumeration、condition-free independent set
-comprehension、choice term、`qua` term の syntax-free immutable 記述を所有する。
-source shape、transparent wrapper、written comprehension generator、bare builtin
-target-type site、ordered child edge、unresolved request intent だけを運ぶ。
-comprehension variable の bind/capture/condition 解決、sethood/nonemptiness、
-choice witness、`qua` reachability、result type、fact、definition acceptance、
-proof/IR loweringは行わない。
+Checker Task 255 は、source set enumeration、0または1件のfrozen source
+conditionを持つindependent set comprehension、choice term、`qua` termの
+syntax-free immutable記述を所有する。source shape、transparent wrapper、
+written comprehension generator、bare builtin target-type site、direct
+condition-wrapper provenance/spelling、ordered child edge、unresolved request
+intentだけを運ぶ。comprehension variableのbind/capture、inner condition formula
+の解決、sethood/nonemptiness、choice witness、`qua` reachability、result type、
+fact、definition acceptance、proof/IR loweringは行わない。
 
 正本の言語要件は Chapter 13 §§13.4-13.6、Chapter 7 §7.8.1、Chapter 8
 §8.2.2 と Chapter 17/21 のsemantic dependencyである。Task 252はprimary child、
@@ -24,17 +25,18 @@ ownerに残る。
 
 `SourceSetTermProducer::build`は`SourceSetTermHandoffInput`、`BindingEnv`、
 `SourcePrimaryTermHandoff`、optional `SourceFunctorApplicationHandoff`/
-`SourceStructureHandoff`、`TypedArena`を受ける。入力は6個のsource-ordered
+`SourceStructureHandoff`、`TypedArena`を受ける。入力は7個のsource-ordered
 vectorを持つ。
 
 - set/choice/`qua` term
 - transparent set-term wrapper
 - written comprehension generator
 - term-ownedまたはgenerator-owned bare target-type site
+- direct condition wrapperとterm-owned colon provenance
 - ordered enumeration-element/comprehension-mapper/`qua`-base edge
 - unresolved result-type/generator-sethood/choice-nonempty/`qua`-widening request
 
-transaction全体をvalidateした後だけ6個のdense immutable tableをpublishする。
+transaction全体をvalidateした後だけ7個のdense immutable tableをpublishする。
 public IDはzero-based `new`/`index`、tableは`get`/source-ordered `iter`/`len`/
 `is_empty`、validated rowはcrate planでfreezeしたread-only accessorだけを持つ。
 
@@ -186,3 +188,13 @@ exact future fail sidecar/covered trace rowが証明するのはsource transport
 generator binding/capture、inner condition-formula ownership/composition、
 sethood/result answer、equality truth、definition acceptance、proof、IRはdeferredの
 ままである。
+
+## Task 255C1 implementation result
+
+seven-table extensionをfrozenどおり実装した。condition rowはdirect
+term-owned colon/wrapper siteをauthenticateし、wrapper subtree全体をrecorded
+range内へ再帰的に制限し、contained Task-252 primaryをすべて要求し、
+Task-253/254/255 descendantとcondition-directed edgeをrejectする。direct-child
+discoveryから除外するのはauthenticated condition内lower-family rowだけである。
+full debug、legacy empty-table byte equality、group/order/cardinality、
+dependency substitution、rollback、final clone testsはpassする。

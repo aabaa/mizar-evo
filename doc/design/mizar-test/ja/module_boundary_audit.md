@@ -10149,3 +10149,25 @@ production manifestは29 paths / 33,184 lines、path/content hashは
 libraryは353 tests、raw/normalized hashは
 `61f3ae8d76f3f3425d41abad07b095c44a632e3444449efd229681369cb72497` /
 `b729bc119ad536dbded0c2d41ffefe44fc40d78a7a2c05d20154349f76dac557`。
+
+## Checker Task 255C1 boundary recheck
+
+production pathは追加していない。public dispatcherは2,469 lines、private
+type-elaboration facadeは660、bounded reusable Task-253 owner
+`source_application.rs`は1,518、conditioned-comprehension owner
+`source_set_term.rs`は2,242 linesである。paired source-set test leafは
+test-only 1,772 lines。raw traversal、resolver selection、dependency
+composition、exact selector guardはこれらprivate owner内でcohesiveである。
+
+production manifestは29 pathsのまま33,725 linesとなる。path/content hashは
+`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
+`c039f32b8d4401feca775189573ffe8b965394eaf56570e93443f05ad4000fca`。
+libraryは357 tests、raw/normalized hashは
+`7565cbb0c853433363420a0ea825adca4cebd627c67396951dfb68c5ee84c132` /
+`d4af543f0f14fe274e89fc8f4d92e4b38f3d73d75057bcdaeb1ec868b6b01f9c`。
+plan/parse/declaration/type/proof CLI hashは
+`c38c1e4f4572702034b2600d60b6fa0efaf3fa92143ce164da04cfbe74bbb1a0`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。

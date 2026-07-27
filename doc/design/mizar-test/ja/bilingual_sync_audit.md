@@ -331,3 +331,11 @@ future fail detail、tests、baseline、projection、semantic deferralをfreeze�
 このprerequisiteではrunner
 module/executable artifactを変更しないためmodule-boundary auditは意図的に不変。
 bilingual driftは残らない。
+
+## Checker Task 255C1 implementation pair
+
+paired runner documentはexact implemented selector、shared-arena profile、
+imported provenance、全named near miss、corruption/final-clone matrix、
+`419/385`、`251/239`、`228/191`、active `101/5/198/1`、357 tests、
+29-path/33,725-line manifest、同一test-list/production/5 CLI hashを同期する。
+bilingual driftは残らない。

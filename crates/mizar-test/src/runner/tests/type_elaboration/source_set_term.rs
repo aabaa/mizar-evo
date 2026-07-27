@@ -4,7 +4,508 @@ use super::type_elaboration::{
 };
 use super::{
     SourceSetTermRouteOutput, source_set_term_output, source_set_term_output_with_mutation,
+    source_set_term_output_with_source, source_set_term_output_with_source_and_mutation,
 };
+
+const TASK255C1_SET_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "definition\n",
+    "  func Task255ConditionedComprehensionDef:\n",
+    "    task255_conditioned_comprehension -> set\n",
+    "    equals { 1 ++ 2 where candidate255c is set : 3 = 4 };\n",
+    "end;\n",
+);
+
+#[test]
+fn task255c1_real_route_publishes_the_exact_seven_table_transaction() {
+    let (ast, module, shells, symbols, source) = task255c1_real_ast();
+    assert_eq!(&*source, TASK255C1_SET_SOURCE);
+    assert_eq!(source.len(), 191);
+    let first = source_set_term_output_with_source(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        &source,
+    )
+    .expect("Task255C1 exact selector")
+    .unwrap_or_else(|error| panic!("Task255C1 real route failed: {error}"));
+    let second = source_set_term_output_with_source(&ast, module, &shells, &symbols, &source)
+        .expect("Task255C1 repeated selector")
+        .unwrap_or_else(|error| panic!("Task255C1 repeated route failed: {error}"));
+
+    let primary = first.typed_ast.source_term().expect("Task252 handoff");
+    let application = first
+        .typed_ast
+        .source_application()
+        .expect("Task253 handoff");
+    let set = first
+        .typed_ast
+        .source_set_term()
+        .expect("Task255 handoff");
+    assert_eq!(
+        (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ),
+        (4, 0, 4)
+    );
+    assert_eq!(
+        (
+            application.applications().len(),
+            application.wrappers().len(),
+            application.candidates().len(),
+            application.arguments().len(),
+            application.type_requests().len(),
+        ),
+        (1, 0, 1, 2, 2)
+    );
+    let candidate = application
+        .candidates()
+        .get(mizar_checker::source_application::SourceFunctorCandidateId::new(0))
+        .expect("imported mapper candidate");
+    let candidate_entry = symbols
+        .symbols()
+        .get(candidate.symbol())
+        .expect("candidate symbol entry");
+    let contribution = symbols
+        .contributions()
+        .get(candidate.contribution())
+        .expect("candidate contribution");
+    assert_eq!(candidate_entry.primary_spelling(), "++");
+    assert_eq!(
+        candidate.symbol().module().path().as_str(),
+        "parser.type_fixtures"
+    );
+    assert!(matches!(
+        contribution.kind(),
+        mizar_resolve::env::ContributionKind::ImportedSource { .. }
+    ));
+    assert_eq!(
+        application
+            .arguments()
+            .iter()
+            .map(|(_, argument)| argument.target())
+            .collect::<Vec<_>>(),
+        [
+            mizar_checker::source_application::SourceFunctorArgumentTarget::Primary(
+                mizar_checker::source_term::SourcePrimaryTermId::new(0)
+            ),
+            mizar_checker::source_application::SourceFunctorArgumentTarget::Primary(
+                mizar_checker::source_term::SourcePrimaryTermId::new(1)
+            ),
+        ]
+    );
+    assert_eq!(
+        (
+            set.terms().len(),
+            set.wrappers().len(),
+            set.generators().len(),
+            set.type_sites().len(),
+            set.conditions().len(),
+            set.edges().len(),
+            set.requests().len(),
+        ),
+        (1, 0, 1, 1, 1, 1, 2)
+    );
+    assert_eq!(
+        primary
+            .terms()
+            .iter()
+            .map(|(_, term)| (term.source_range().start, term.source_range().end))
+            .collect::<Vec<_>>(),
+        [(141, 142), (146, 147), (177, 178), (181, 182)]
+    );
+    let application_row = application
+        .applications()
+        .get(mizar_checker::source_application::SourceFunctorApplicationId::new(0))
+        .expect("mapper application");
+    assert_eq!(
+        (
+            application_row.source_range().start,
+            application_row.source_range().end,
+        ),
+        (141, 147)
+    );
+    match application_row.head() {
+        mizar_checker::source_application::SourceFunctorHeadSite::Single {
+            site,
+            source_range,
+            spelling,
+        } => {
+            assert_eq!((source_range.start, source_range.end), (143, 145));
+            assert_eq!(spelling, "++");
+            assert_eq!(
+                first
+                    .typed_ast
+                    .nodes()
+                    .node(site.node())
+                    .expect("mapper head arena site")
+                    .kind
+                    .as_str(),
+                "source.term.functor-head.single"
+            );
+        }
+        head => panic!("Task255C1 mapper head must be single, got {head:?}"),
+    }
+    let set_row = set
+        .terms()
+        .get(mizar_checker::source_set_term::SourceSetTermId::new(0))
+        .expect("conditioned comprehension");
+    assert_eq!(
+        (set_row.source_range().start, set_row.source_range().end),
+        (139, 184)
+    );
+    let generator = set
+        .generators()
+        .get(mizar_checker::source_set_term::SourceSetGeneratorId::new(0))
+        .expect("conditioned generator");
+    assert_eq!(
+        (generator.source_range().start, generator.source_range().end),
+        (154, 167)
+    );
+    let generator_segment = task255_node_with_kind_and_spelling(
+        &ast,
+        &SurfaceNodeKind::ComprehensionVariableSegment,
+        "candidate255c is set",
+    );
+    assert_eq!(
+        (
+            ast.nodes()[generator_segment].range.start,
+            ast.nodes()[generator_segment].range.end,
+        ),
+        (154, 174)
+    );
+    let type_site = set
+        .type_sites()
+        .get(mizar_checker::source_set_term::SourceSetTypeSiteId::new(0))
+        .expect("generator type site");
+    assert_eq!(
+        (type_site.source_range().start, type_site.source_range().end),
+        (171, 174)
+    );
+    let condition = set
+        .conditions()
+        .get(mizar_checker::source_set_term::SourceSetConditionId::new(0))
+        .expect("condition row");
+    assert_eq!(condition.term().index(), 0);
+    assert_eq!(condition.ordinal(), 0);
+    assert_eq!((condition.colon_range().start, condition.colon_range().end), (175, 176));
+    assert_eq!(condition.colon_spelling(), ":");
+    assert_eq!(
+        first
+            .typed_ast
+            .nodes()
+            .node(condition.colon_site().node())
+            .expect("condition colon site")
+            .kind
+            .as_str(),
+        "source.term.set.comprehension-condition-colon"
+    );
+    assert_eq!(
+        (condition.source_range().start, condition.source_range().end),
+        (177, 182)
+    );
+    assert_eq!(condition.spelling(), "3 = 4");
+    let condition_surface =
+        task255_node_with_kind_and_spelling(&ast, &SurfaceNodeKind::FormulaExpression, "3 = 4");
+    assert_eq!(condition.condition_site().node().index(), condition_surface);
+    assert_eq!(first.typed_ast.nodes().len(), ast.nodes().len());
+    assert_eq!(
+        first
+            .typed_ast
+            .nodes()
+            .node(application_row.site().node())
+            .expect("mapper same-arena site")
+            .anchor,
+        mizar_session::SourceAnchor::Range(application_row.source_range())
+    );
+    assert_eq!(
+        first
+            .typed_ast
+            .nodes()
+            .node(condition.condition_site().node())
+            .expect("condition wrapper site")
+            .kind
+            .as_str(),
+        "source.term.set.comprehension-condition"
+    );
+    let inner = task255_node_with_kind_and_spelling(
+        &ast,
+        &SurfaceNodeKind::BuiltinPredicateApplication,
+        "3 = 4",
+    );
+    assert_eq!(
+        first
+            .typed_ast
+            .nodes()
+            .node(mizar_checker::typed_ast::TypedNodeId::new(inner))
+            .expect("inner equality site")
+            .kind
+            .as_str(),
+        "source.surface.unowned"
+    );
+    assert_eq!(
+        set.edges()
+            .get(mizar_checker::source_set_term::SourceSetEdgeId::new(0))
+            .expect("mapper edge")
+            .target(),
+        mizar_checker::source_set_term::SourceSetTarget::Application(
+            mizar_checker::source_application::SourceFunctorApplicationId::new(0)
+        )
+    );
+    assert_eq!(first.typed_ast.source_set_term(), first.resolved.source_set_term());
+    assert_eq!(
+        first.typed_ast.source_application(),
+        first.resolved.source_application()
+    );
+    assert_eq!(first.typed_ast.source_term(), first.resolved.source_term());
+    assert_eq!(first.typed_ast.debug_text(), second.typed_ast.debug_text());
+    assert_eq!(first.resolved.debug_text(), second.resolved.debug_text());
+}
+
+#[test]
+fn task255c1_condition_association_mutations_fail_atomically() {
+    let (ast, module, shells, symbols, source) = task255c1_real_ast();
+    let mutations: [fn(&mut mizar_checker::source_set_term::SourceSetTermHandoffInput); 6] = [
+        |input| input.conditions.clear(),
+        |input| input.conditions[0].colon_site = input.conditions[0].condition_site.clone(),
+        |input| input.conditions[0].condition_site = input.conditions[0].colon_site.clone(),
+        |input| input.conditions[0].colon_range.start -= 1,
+        |input| input.conditions[0].source_range.end += 1,
+        |input| input.conditions[0].spelling = "4 = 3".to_owned(),
+    ];
+    for mutate in mutations {
+        assert!(
+            source_set_term_output_with_source_and_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                &source,
+                mutate,
+            )
+            .expect("mutation must retain the exact selector")
+            .is_err()
+        );
+    }
+    assert!(
+        source_set_term_output_with_source(&ast, module, &shells, &symbols, &source)
+            .expect("uncorrupted exact selector")
+            .is_ok()
+    );
+}
+
+#[test]
+fn task255c1_exact_selector_rejects_loaded_source_and_ast_near_misses() {
+    let (ast, module, shells, symbols, source) = task255c1_real_ast();
+    assert!(
+        source_set_term_output_with_source(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            source.trim_end_matches('\n'),
+        )
+        .is_none(),
+        "missing final LF must reject"
+    );
+    let whitespace_drift = source.replacen("equals {", "equals  {", 1);
+    assert!(
+        source_set_term_output_with_source(
+            &ast,
+            module,
+            &shells,
+            &symbols,
+            &whitespace_drift,
+        )
+        .is_none(),
+        "loaded-source whitespace drift must reject"
+    );
+
+    let extra_item = format!(
+        "{TASK255C1_SET_SOURCE}theorem Task255ConditionedExtraItem: thesis;\n"
+    );
+    let local_mapper = concat!(
+        "import parser.type_fixtures;\n",
+        "definition\n",
+        "  let x, y be set;\n",
+        "  func Task255ConditionedLocalMapperDef:\n",
+        "    task255_conditioned_local_mapper(x, y) -> set equals x;\n",
+        "  func Task255ConditionedComprehensionDef:\n",
+        "    task255_conditioned_comprehension -> set\n",
+        "    equals { task255_conditioned_local_mapper(1, 2) where candidate255c is set : 3 = 4 };\n",
+        "end;\n",
+    )
+    .to_owned();
+    let template_mapper = concat!(
+        "import parser.type_fixtures;\n",
+        "definition\n",
+        "  let T be type;\n",
+        "  let x be T;\n",
+        "  func Task255ConditionedTemplateMapperDef:\n",
+        "    task255_conditioned_template_mapper[T](x) -> T equals x;\n",
+        "  func Task255ConditionedComprehensionDef:\n",
+        "    task255_conditioned_comprehension -> set\n",
+        "    equals { task255_conditioned_template_mapper[set](1) where candidate255c is set : 3 = 4 };\n",
+        "end;\n",
+    )
+    .to_owned();
+    let inline_mapper = concat!(
+        "import parser.type_fixtures;\n",
+        "deffunc Task255ConditionedInlineMapper(x be set, y being set) -> set equals x;\n",
+        "definition\n",
+        "  func Task255ConditionedComprehensionDef:\n",
+        "    task255_conditioned_comprehension -> set\n",
+        "    equals { Task255ConditionedInlineMapper(1, 2) where candidate255c is set : 3 = 4 };\n",
+        "end;\n",
+    )
+    .to_owned();
+    let multiple_comprehensions = concat!(
+        "import parser.type_fixtures;\n",
+        "definition\n",
+        "  func Task255ConditionedComprehensionDef:\n",
+        "    task255_conditioned_comprehension -> set\n",
+        "    equals { 1 ++ 2 where candidate255c is set : 3 = 4 };\n",
+        "  func Task255ConditionedComprehensionSecondDef:\n",
+        "    task255_conditioned_comprehension_second -> set\n",
+        "    equals { 1 ++ 2 where candidate255c is set : 3 = 4 };\n",
+        "end;\n",
+    )
+    .to_owned();
+    let near_misses = vec![
+        TASK255C1_SET_SOURCE.replacen(
+            "import parser.type_fixtures;",
+            "import parser.other_type_fixtures;",
+            1,
+        ),
+        extra_item,
+        TASK255C1_SET_SOURCE.replacen(
+            "Task255ConditionedComprehensionDef",
+            "Task255ConditionedComprehensionNearMiss",
+            1,
+        ),
+        TASK255C1_SET_SOURCE.replacen(
+            "task255_conditioned_comprehension ->",
+            "task255_conditioned_comprehension() ->",
+            1,
+        ),
+        TASK255C1_SET_SOURCE.replacen("1 ++ 2", "2 ++ 1", 1),
+        TASK255C1_SET_SOURCE.replacen("1 ++ 2", "(1 ++ 2)", 1),
+        TASK255C1_SET_SOURCE.replacen("1 ++ 2", "1 + 2", 1),
+        local_mapper,
+        template_mapper,
+        inline_mapper,
+        TASK255C1_SET_SOURCE.replacen(
+            " where candidate255c is set",
+            "",
+            1,
+        ),
+        TASK255C1_SET_SOURCE.replacen(
+            "candidate255c is set",
+            "candidate255c is set, extra255c is object",
+            1,
+        ),
+        TASK255C1_SET_SOURCE.replacen(
+            "1 ++ 2 where candidate255c",
+            "candidate255c where candidate255c",
+            1,
+        ),
+        TASK255C1_SET_SOURCE.replacen(" : 3 = 4", "", 1),
+        TASK255C1_SET_SOURCE.replacen(": 3 = 4", ": 3 = 4 & 4 = 3", 1),
+        TASK255C1_SET_SOURCE.replacen(": 3 = 4", ": 3 <> 4", 1),
+        TASK255C1_SET_SOURCE.replacen(
+            "{ 1 ++ 2 where candidate255c is set : 3 = 4 }",
+            "{ { 1 ++ 2 where candidate255c is set : 3 = 4 } }",
+            1,
+        ),
+        multiple_comprehensions,
+    ];
+    for (ordinal, near_source) in near_misses.iter().enumerate() {
+        let (near_ast, near_module, near_symbols) =
+            task255_ast_from_source_text(near_source, 255_200 + ordinal);
+        let near_symbols =
+            augment_type_elaboration_import_summaries(&near_ast, &near_module, near_symbols);
+        let near_shells =
+            mizar_resolve::declarations::DeclarationShellCollector::new(&near_ast, &near_module)
+                .collect();
+        assert!(
+            source_set_term_output_with_source(
+                &near_ast,
+                near_module.clone(),
+                &near_shells,
+                &near_symbols,
+                TASK255C1_SET_SOURCE,
+            )
+            .is_none(),
+            "AST near miss {ordinal} must reject even under exact loaded bytes"
+        );
+        assert!(
+            source_set_term_output_with_source(
+                &near_ast,
+                near_module,
+                &near_shells,
+                &near_symbols,
+                near_source,
+            )
+            .is_none(),
+            "raw near miss {ordinal} must reject"
+        );
+    }
+}
+
+#[test]
+fn task255c1_conditioned_selector_isolated_to_one_active_case() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate should live below the workspace root")
+        .to_path_buf();
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: workspace_root.join("tests"),
+        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task255C1 isolation plan should build");
+    let mut selected = Vec::new();
+    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
+        let source = frontend.source_text;
+        let Some(ast) = frontend.ast else {
+            continue;
+        };
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        if !resolver.detail_keys.is_empty() {
+            continue;
+        }
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let Some(Ok(output)) = source_set_term_output_with_source(
+            &ast,
+            resolver.module,
+            &resolver.shells,
+            &symbols,
+            &source,
+        ) else {
+            continue;
+        };
+        if output
+            .typed_ast
+            .source_set_term()
+            .is_some_and(|handoff| !handoff.conditions().is_empty())
+        {
+            selected.push(case.id.0.clone());
+        }
+    }
+    assert_eq!(
+        selected,
+        ["fail_type_elaboration_conditioned_comprehension_source_payload_001"]
+    );
+}
 
 #[test]
 fn task255_real_route_publishes_exact_aggregate_and_preserves_final_ownership() {
@@ -1125,6 +1626,53 @@ fn task255_real_ast() -> (
     let shells = resolver.shells;
     let symbols = augment_type_elaboration_import_summaries(&ast, &module, resolver.env);
     (ast, module, shells, symbols)
+}
+
+fn task255c1_real_ast() -> (
+    SurfaceAst,
+    ResolverModuleId,
+    mizar_resolve::declarations::DeclarationShellSet,
+    SymbolEnv,
+    std::sync::Arc<str>,
+) {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate should live below the workspace root")
+        .to_path_buf();
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: workspace_root.join("tests"),
+        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task255C1 repository plan should build");
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| {
+            case.id.0 == "fail_type_elaboration_conditioned_comprehension_source_payload_001"
+        })
+        .expect("Task255C1 case should remain active");
+    let frontend = run_frontend(&workspace_root, case, ordinal)
+        .unwrap_or_else(|error| panic!("Task255C1 frontend failed: {error}"));
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let source = frontend.source_text.clone();
+    let ast = frontend.ast.expect("Task255C1 AST");
+    let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+    assert!(
+        resolver.detail_keys.is_empty(),
+        "{:?}",
+        resolver.detail_keys
+    );
+    let module = resolver.module;
+    let shells = resolver.shells;
+    let symbols = augment_type_elaboration_import_summaries(&ast, &module, resolver.env);
+    (ast, module, shells, symbols, source)
 }
 
 fn task255_node_with_kind_and_spelling(

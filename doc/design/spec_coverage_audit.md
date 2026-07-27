@@ -3363,3 +3363,22 @@ Generator binding/capture, inner condition-formula ownership/composition, sethoo
 and result answers, equality truth, definition acceptance, facts, proof,
 CoreIr/ControlFlowIr/VC, Steps 6/7, and global Step-5 completion receive no
 credit. The implementation remains a separate logical task.
+
+## Step 5 Checker Task 255C1 Implementation Result
+
+Task 255C1 closes the frozen bounded `source_drift` and `test_gap`. The public
+seven-table Task-255 transport, recursive condition-subtree boundary, shared
+Task-252/253 dependency identities, private imported-`++` reuse seam, exact
+191-byte fail fixture/sidecar, and full preservation matrices are executable.
+The covered row
+`spec.en.checker.type_elaboration.source_conditioned_comprehension_payload`
+is present exactly as projected and maps only to its new sidecar. No existing
+trace status, `.miz`, or expectation was rebaselined.
+
+Measured coverage is plan `419/385`, type `251/239`, pass/fail `228/191`,
+and active parse/declaration/type/proof `101/5/198/1`, with warnings/errors
+`23/0`. This increment credits only syntax-free source transport for the exact
+independent conditioned comprehension. Generator binding/capture, inner
+Task-256 equality ownership and truth, Task-257 composition, sethood/result
+answers, definition acceptance, facts, proof, CoreIr/ControlFlowIr/VC, Steps
+6/7, and global Step-5 completion remain deferred.

@@ -1,0 +1,6 @@
+import parser.type_fixtures;
+definition
+  func Task255ConditionedComprehensionDef:
+    task255_conditioned_comprehension -> set
+    equals { 1 ++ 2 where candidate255c is set : 3 = 4 };
+end;

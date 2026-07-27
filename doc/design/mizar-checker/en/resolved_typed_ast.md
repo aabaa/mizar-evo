@@ -842,3 +842,10 @@ colon and direct condition-wrapper arena anchors, authenticated condition
 range, and unchanged Task-252/253 fingerprints. It does not construct a
 Task-256 inner equality or Task-257 composition, retarget a condition
 operand, or rebuild any dense ID.
+
+## Task 255C1 Resolution Result
+
+Final assembly revalidates and clone-preserves the exact Task-252/253/255
+objects, including the recursive condition boundary. The resolved object has
+no expression metadata, fact, diagnostic, Task-256 condition formula, or
+Task-257 composition from this task.

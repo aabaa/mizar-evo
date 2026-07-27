@@ -545,30 +545,33 @@ proof、downstream IRはTasks 257B2/B3/258以降に残る。
 generated public newtype:
 
 - `SourceSetTermId`、`SourceSetWrapperId`、`SourceSetGeneratorId`、
-  `SourceSetTypeSiteId`、`SourceSetEdgeId`、`SourceSetRequestId`
+  `SourceSetTypeSiteId`、`SourceSetConditionId`、`SourceSetEdgeId`、
+  `SourceSetRequestId`
 
 literal top-level public item:
 
 - `SourceSetTermHandoffInput`、`SourceSetTermInput`、
   `SourceSetWrapperInput`、`SourceSetGeneratorInput`、
-  `SourceSetTypeSiteInput`、`SourceSetEdgeInput`、
+  `SourceSetTypeSiteInput`、`SourceSetConditionInput`、`SourceSetEdgeInput`、
   `SourceSetRequestInput`、`SourceSetTermKind`、
   `SourceSetTermRecovery`、`SourceSetTypeOwner`、`SourceSetTypeRole`、
   `SourceSetTypeHead`、`SourceSetEdgeRole`、`SourceSetTarget`、
   `SourceSetRequestKind`、`SourceSetTermHandoff`、`SourceSetTermTable`、
   `SourceSetWrapperTable`、`SourceSetGeneratorTable`、
-  `SourceSetTypeSiteTable`、`SourceSetEdgeTable`、`SourceSetRequestTable`、
+  `SourceSetTypeSiteTable`、`SourceSetConditionTable`、`SourceSetEdgeTable`、
+  `SourceSetRequestTable`、
   `SourceSetTerm`、`SourceSetWrapper`、`SourceSetGenerator`、
-  `SourceSetTypeSite`、`SourceSetEdge`、`SourceSetRequest`、
+  `SourceSetTypeSite`、`SourceSetCondition`、`SourceSetEdge`、
+  `SourceSetRequest`、
   `SourceSetTermProducer`、`SourceSetTermError`
 
 対応:
 
 | spec promise | source evidence | test evidence | status |
 |---|---|---|---|
-| syntax-free dense table 6個がset/choice/`qua` term、wrapper、written generator、bare target site、ordered child、unresolved requestを保持する。 | `SourceSetTermHandoffInput`、dense ID/table 6個、`src/source_set_term.rs`のread-only row。 | exact real 4/0/1/3/4/7 + Task-252 4/0/4 oracleとsynthetic shape matrix。 | Task 255でimplemented。 |
+| syntax-free dense table 7個がset/choice/`qua` term、wrapper、written generator、bare target site、written comprehension condition、ordered child、unresolved requestを保持する。 | `SourceSetTermHandoffInput`、dense ID/table 7個、`src/source_set_term.rs`のread-only row。 | exact legacy 4/0/1/3/0/4/7、Task-255C1 1/0/1/1/1/1/2 transaction、Task-252/253 dependency oracle、synthetic shape matrix。 | Tasks 255/255C1でimplemented。 |
 | Task-252/253/254/255 nearest-family ownershipとconditional dependency fingerprintをatomicにauthenticateする。 | `SourceSetTermProducer::build`、private install validation、immutable fingerprint。 | cross-family root、unrelated/targeted/missing/mismatch、overlap、install-order test。 | transactionalにimplemented。 |
-| canonical spelling、arena key、recovery、context、row association/cardinality/order、request ownershipをfail closedにする。 | producer validationと`SourceSetTermError`。 | producer/extractor corruptionとdegraded-transport matrix。 | partial publicationなしでimplemented。 |
+| canonical spelling、arena key、recovery、context、row association/cardinality/order、condition-subtree exclusion、request ownershipをfail closedにする。 | producer validationと`SourceSetTermError`。 | producer/extractor corruption、copied/out-of-range condition dependency、degraded-transport matrix。 | partial publicationなしでimplemented。 |
 | `TypedAst`がhandoff 1件をownし、`ResolvedTypedAst`がrevalidate後にclone-preserveする。 | `with_source_set_term`、later Task-253/254 revalidation、resolved assembly。 | one-shot install、later-owner reject、final clone equality、deterministic replay。 | Implemented。 |
 | public enumはforward-compatibleである。 | 全public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | guarded。exhaustive exceptionなし。 |
 
@@ -3430,3 +3433,9 @@ formula nodeはTask 256へdeferする。blockingな`spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、accepted
 `boundary_violation`は残らない。external origin差はreport-only
 `repo_metadata_conflict`である。
+
+implementationはclassified Task-255C1 `source_drift` / `test_gap`をcloseした。
+第7 public table、recursive condition boundary、reusable Task-253 seam、exact
+fixture/sidecar/trace row、full matrixが存在する。prerequisiteが既に
+`design_drift`をcloseしている。semantic deferralとreport-only
+`repo_metadata_conflict`は不変である。

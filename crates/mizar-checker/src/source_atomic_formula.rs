@@ -4990,6 +4990,7 @@ mod tests {
                 wrappers: Vec::new(),
                 generators: Vec::new(),
                 type_sites: Vec::new(),
+                conditions: Vec::new(),
                 edges: vec![SourceSetEdgeInput {
                     term: SourceSetTermId::new(0),
                     ordinal: 0,
@@ -5097,6 +5098,7 @@ mod tests {
                 wrappers: Vec::new(),
                 generators: Vec::new(),
                 type_sites: Vec::new(),
+                conditions: Vec::new(),
                 edges: Vec::new(),
                 requests: Vec::new(),
             },
@@ -5298,6 +5300,7 @@ mod tests {
                 wrappers: Vec::new(),
                 generators: Vec::new(),
                 type_sites: Vec::new(),
+                conditions: Vec::new(),
                 edges: vec![
                     SourceSetEdgeInput {
                         term: SourceSetTermId::new(0),
@@ -5571,6 +5574,7 @@ mod tests {
                 wrappers: Vec::new(),
                 generators: Vec::new(),
                 type_sites: Vec::new(),
+                conditions: Vec::new(),
                 edges: vec![SourceSetEdgeInput {
                     term: SourceSetTermId::new(0),
                     ordinal: 0,
@@ -5792,6 +5796,7 @@ mod tests {
                 wrappers: Vec::new(),
                 generators: Vec::new(),
                 type_sites: Vec::new(),
+                conditions: Vec::new(),
                 edges: vec![SourceSetEdgeInput {
                     term: SourceSetTermId::new(0),
                     ordinal: 0,
@@ -6068,6 +6073,7 @@ mod tests {
                 wrappers: Vec::new(),
                 generators: Vec::new(),
                 type_sites: Vec::new(),
+                conditions: Vec::new(),
                 edges: Vec::new(),
                 requests: vec![SourceSetRequestInput {
                     term: SourceSetTermId::new(0),
