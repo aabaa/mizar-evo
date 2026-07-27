@@ -2981,3 +2981,47 @@ selection, definition/formula semantics, inline closure/substitution,
 templates, other term families, accepted facts/declarations/proofs,
 downstream IR, Tasks 254+, and Steps 6/7 receive no Task-253 prerequisite
 credit.
+
+## Step 5 Checker Task 254 Frozen-Contract Audit
+
+Canonical Chapter 5 Sections 5.3-5.5 and 5.7, Chapter 13 Section 13.3, the
+existing constructor/selector/update parser fixtures, the declaration-symbol
+resolver fixture, and Tasks 248-253 public APIs support one bounded
+source-structure transport prerequisite. The paired crate plan freezes seven
+syntax-free tables and the exact future consumer
+5 terms / 0 wrappers / 3 roots / 9 members / 2 `FieldUpdate` containers /
+10 edges / 26 requests, with co-installed Task-252 8/0/8 and no Task-253
+row. The exact source has one local two-field structure and three functor
+definientia exercising construction, selector access, and functional update.
+
+Only the constructor root is authenticated against exact resolver
+symbol/contribution/definition or import provenance. Member spellings remain
+source occurrences because current resolver projections do not expose a
+complete root-to-member/inheritance-view association. Nested update paths are
+segment chains; each parser `FieldUpdate` is an association container without
+an independent semantic term. Repeated labels and paths are retained in
+source order without deciding their validity. Cross-family edges consume
+Task-252 roots, same-context Task-253 applications, or later same-context
+Task-254 rows. Reverse Task-253-to-structure composition remains
+whole-subtree excluded.
+
+This inventory classifies the missing frozen design as `design_drift`, the
+absent producer/final handoff as `source_drift`, and the absent exact consumer
+and corruption/final-ownership coverage as `test_gap`. No blocking
+`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`, or
+current `boundary_violation` was found. The measured 0/0 origin divergence
+from the supplied one-commit-ahead note is a report-only
+`repo_metadata_conflict`; the safe commit target remains unique and no
+metadata is repaired.
+
+This prerequisite changes follow-up ownership and deferred-coverage rationale,
+so the coverage audit is updated, but it changes no production source,
+fixture, sidecar, trace row/status/count, executable credit, test list, or
+production manifest. The baseline remains plan 412/376, type 242/230,
+pass/fail 224/188, active parse/declaration/type/proof 101/5/191/1,
+warnings/errors 23/0, 303 library tests, and 24 production paths /
+25,607 lines. Implementation alone may add one bounded requirement and one
+fail case, projecting 413/377, 243/231, 224/189, and active type 192, subject
+to fresh measurement. MC-G017/MC-G018 remain partial; Task 263 retains all
+structure member/view/coverage and semantic decisions, while Tasks 255+ and
+Steps 6/7 receive no prerequisite credit.

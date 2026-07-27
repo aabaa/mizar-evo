@@ -2858,3 +2858,42 @@ MC-G017/MC-G020はpartialのままである。semantic signature/result/type、o
 selection、definition/formula semantics、inline closure/substitution、template、
 other term family、accepted fact/declaration/proof、downstream IR、Tasks 254+、
 Steps 6/7はTask-253 prerequisite creditを受けない。
+
+## Step 5 Checker Task 254 frozen-contract audit
+
+canonical Chapter 5 §§5.3-5.5/5.7、Chapter 13 §13.3、existing
+constructor/selector/update parser fixture、declaration-symbol resolver fixture、
+Tasks 248-253 public APIは、bounded source-structure transport prerequisiteを
+supportする。paired crate planはseven syntax-free tableとfuture exact consumer
+term/wrapper/root/member/`FieldUpdate`/edge/request = 5/0/3/9/2/10/26、
+co-installed Task-252 8/0/8、Task-253 rowなしをfreezeする。exact sourceはlocal
+two-field structureと、construction/selector access/functional updateを使う
+functor definiens 3件である。
+
+constructor rootだけをexact resolver symbol/contribution/definitionまたはimport
+provenanceでauthenticateする。current resolver projectionはcompleteな
+root-to-member/inheritance-view associationを公開しないため、member spellingは
+source occurrenceのままである。nested update pathはsegment chainで、各parser
+`FieldUpdate`は独立semantic termを持たないassociation containerである。
+repeated label/pathはvalidityを決めずsource orderで保存する。cross-family edgeは
+Task-252 root、same-context Task-253 application、後続same-context Task-254 rowを
+consumeする。reverse Task-253-to-structure compositionはwhole-subtree excludedの
+ままである。
+
+inventoryはmissing frozen designを`design_drift`、producer/final handoff欠落を
+`source_drift`、exact consumer/corruption/final-ownership coverage欠落を
+`test_gap`と分類する。blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、current `boundary_violation`はない。supplied
+one-commit-ahead noteに対する実測origin差0/0はreport-only
+`repo_metadata_conflict`で、safe commit targetは一意、metadataを修復しない。
+
+本prerequisiteはfollow-up ownership/deferred-coverage rationaleを変更するため
+coverage auditを更新するが、production source、fixture、sidecar、trace
+row/status/count、executable credit、test list、production manifestは変更しない。
+baselineはplan 412/376、type 242/230、pass/fail 224/188、active
+parse/declaration/type/proof 101/5/191/1、warnings/errors 23/0、library test 303、
+production 24 paths / 25,607 linesである。implementationだけがbounded
+requirement 1件とfail case 1件を追加でき、413/377、243/231、224/189、active
+type 192をprojectするがfresh measurementを要求する。MC-G017/MC-G018はpartial、
+全structure member/view/coverage/semantic decisionはTask 263、Tasks 255+と
+Steps 6/7はprerequisite creditなしである。

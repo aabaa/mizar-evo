@@ -371,3 +371,29 @@ route exactly 2件だけをactivateし、Task-253 2/1/2/3/4とco-installed Task-
 subset、whole-template/mixed-family exclusionをcoverする。bounded
 `source_drift`/`test_gap`はclosedである。Tasks 254+、260、270、277、278は
 existing dependency edge/semantic ownerをretainし、Steps 6/7をpromoteしない。
+
+## Task 254 frozen-contract prerequisite
+
+paired crate planはpublic syntax-freeな`source_structure` handoffをfreezeする。
+seven dense immutable tableはstructure-family term、transparent wrapper、
+authenticated constructor root、written member segment、parser `FieldUpdate`
+container、ordered child edge、unresolved requestである。future exact real
+consumerはTask-254 term/wrapper/root/member/field-update/edge/request =
+5/0/3/9/2/10/26をpublishし、Task-252 primary/reference/numeric-request =
+8/0/8をcomposeする。Task-253 row/fingerprintはない。
+
+resolver `Structure` referenceとしてauthenticateするのはconstructor rootだけで
+ある。written constructor label、selector name、update-path segmentはunresolved
+member/path requestを伴うsource occurrenceのままで、repeated label/pathを判断・
+deduplicateせず保存する。parser `FieldUpdate`はpath 1件とreplacement association
+をownするが、独立term/type/factは持たない。Task-254 child edgeはone-wayに
+Task-252 root、same-context Task-253 application、後続same-context Task-254 rowを
+参照できる。structure childを含むTask-253 applicationはfrozen target vocabularyを
+reopenしないためwhole-subtree excludedのままである。
+
+authenticated structure definition、field/property kind、inheritance view、
+coverage/default decision、constructor acceptance、selector result、update-copy
+semantics、exact-instance evidenceはTask 263に残す。この独立prerequisiteがclose
+するのはselected Task-254 `design_drift`だけである。production source、fixture、
+sidecar、trace row/status/count、executable credit、measured 412/376・242/230
+baseline、Tasks 255+/263-264、Steps 6/7は不変である。

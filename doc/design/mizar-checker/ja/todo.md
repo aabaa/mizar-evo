@@ -4204,6 +4204,17 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   transportはTask 277、ordinary/template candidate collection/viability/
   winnerはTask 278に残り、Task 253はTask-252 primary termを複製しない。
 - [ ] **Task 254:** structure constructor/selector/update term producer。
+  frozen-contract documentation prerequisiteは完了した。seven dense
+  source-structure table、exact 5/0/3/9/2/10/26 + Task-252 8/0/8 real
+  oracle、constructor-root resolver authentication、written member/pathと
+  `FieldUpdate` ownership、one-way Task-252/253/254 child edge、Task-253 reverse
+  whole-subtree exclusion、Task-263 semantic deferral、corruption matrix、
+  unchanged 412/376 baselineを固定した。別のproducer/exact consumer/bounded
+  fixture/trace row/executable verificationはopenである。
+  implementationではexisting Chapter-5/13 payload-gap section/notesを
+  transport-only creditへrow status/count不変でwidenし、broad checker rowと
+  mode/structure-definition-gap rowを含むpre-existing 4 rowすべてへreciprocal
+  sidecar backlinkを追加する。
 - [ ] **Task 255:** set/comprehension/choice/`qua` term producer。
 - [ ] **Task 256:** atomic formula producer。
 - [ ] **Task 257:** composite/quantified formula/binder producer。

@@ -1651,3 +1651,38 @@ promoted by this increment.
   101/5/191/1 oracles with 303 library tests. The paired completion documents
   record the 24-path/25,607-line manifest and exact five-CLI, test-list, and
   production hashes. Tasks 254+ and Steps 6/7 remain unpromoted.
+
+## Checker Task 254 Frozen Consumer Prerequisite
+
+- [x] Freeze exactly one new spec-derived local structure-term fail source
+  with one `Task254Pair` declaration and three definientia for construction,
+  selector access, and functional update.
+- [x] Freeze the real Task-254
+  term/wrapper/root/member/field-update/edge/request oracle
+  5/0/3/9/2/10/26 and the composed Task-252
+  primary/reference/numeric-request slice 8/0/8, with no real Task-253 row.
+- [x] Confine raw constructor/selector/update, member, `FieldUpdate`, wrapper,
+  and edge extraction to one private runner leaf; keep the checker handoff
+  syntax-free.
+- [x] Preserve repeated labels and paths in source order, represent nested
+  paths as member chains, and assign no independent term/type/fact to a
+  `FieldUpdate`.
+- [x] Freeze one-way same-context Task-252/253/254 child composition and
+  whole-subtree exclusion for reverse Task-253 applications, Task-255 terms,
+  templates, and initial type-argument-bearing constructors.
+- [x] Freeze the sidecar at
+  `definition_declaration_payload_extraction_gap` /
+  `type_elaboration.external_dependency.ast_payload_extraction` with no
+  public diagnostic, leaving structure definition/member/view and all
+  semantic decisions to Task 263.
+- [x] Keep this prerequisite documentation-only: no fixture, sidecar, trace
+  row/status/count, runner route, test list, production source, or executable
+  credit changes; preserve the 412/376, 242/230, 224/188,
+  101/5/191/1, 303-test, and 24-path/25,607-line baselines.
+- [ ] Implement Checker Task 254 as a separate logical task, add exactly the
+  frozen fixture/sidecar and bounded requirement, widen the existing
+  Chapter-5/13 payload-gap rows to the frozen term sections with
+  transport-only notes, add reciprocal sidecar backlinks to all four named
+  pre-existing rows with unchanged status/count, prove the complete
+  real/synthetic/exclusion/corruption/final-ownership matrix, and reach fresh
+  413/377, 243/231, 224/189, and 101/5/192/1 oracles.

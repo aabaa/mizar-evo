@@ -2871,3 +2871,39 @@ This executable increment reaches plan 412/376, type 242/230, pass/fail
 MC-G020 remain partial because semantic signatures/results, definition and
 formula behavior, overload selection, later term families, accepted
 facts/proofs, downstream IR, and Steps 6/7 remain with their named owners.
+
+## Step 5 Checker Task 254 Frozen-Contract Addendum
+
+The Task-254 prerequisite changes design-to-spec ownership and deferred
+coverage rationale for Chapter 5 structure construction/selection/update and
+Chapter 13 structure-family terms. It therefore requires this audit update
+even though it adds no executable credit. The paired checker and mizar-test
+plans now map one future source-structure handoff and exact real consumer:
+seven dense tables with Task-254 5/0/3/9/2/10/26, composed Task-252 8/0/8,
+and no real Task-253 row.
+
+The bounded transport authenticates constructor roots and preserves written
+member/path occurrences, `FieldUpdate` associations, transparent wrappers,
+ordered one-way Task-252/253/254 child edges, and unresolved
+constructor/member/inheritance/result requests. It intentionally does not
+claim member identity, inheritance views, constructor coverage/default
+validity, selector results, functional-update copy semantics, facts, or
+acceptance; those remain with Task 263. Reverse Task-253 applications that
+contain structure children remain whole-subtree excluded.
+
+This documentation-only prerequisite closes `design_drift`. Its public
+producer/final handoff remains `source_drift`; its exact fixture, private
+consumer, corruption matrix, and final-ownership coverage remain `test_gap`.
+No trace row, test mapping, status, source, fixture, expectation, count, hash,
+or executable coverage changes. The baseline remains plan 412/376, type
+242/230, pass/fail 224/188, active parse/declaration/type/proof
+101/5/191/1, and warnings/errors 23/0. The separate implementation may add
+exactly one fail case and one bounded covered diagnostic row, with projected
+413/377, 243/231, 224/189, and active type 192, subject to fresh verification.
+
+No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or current `boundary_violation` was found. The
+measured origin divergence is a report-only `repo_metadata_conflict` and does
+not obscure the safe commit target. MC-G017/MC-G018 remain partial; Tasks
+255+/263-264, Steps 6/7, and global Step-5 completion receive no prerequisite
+credit.

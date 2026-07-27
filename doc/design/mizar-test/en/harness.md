@@ -2862,3 +2862,35 @@ The 303-test raw/normalized list hashes are `a81f44fb...` / `1a621c56...`;
 the 24-path/25,607-line production path/content hashes are `5cc36b8a...` /
 `b9b6c678...`. Exact values and all five CLI hashes are recorded in the paired
 module-boundary audit.
+
+## Checker Task 254 Frozen Runner Boundary
+
+The future private `type_elaboration::source_structure` leaf selects only the
+three definientia in the exact
+`fail_type_elaboration_local_structure_term_gap_001` source frozen by the
+paired checker plan. It composes the existing Task-252 producer and must
+publish Task-254 term/wrapper/root/member/field-update/edge/request
+5/0/3/9/2/10/26 plus Task-252 primary/reference/numeric-request 8/0/8.
+No Task-253 row or fingerprint occurs in the real route.
+
+The leaf alone inspects `StructureConstructor`, `SelectorAccess`,
+`StructureUpdate`, `FieldArgument`, and `FieldUpdate`. It preserves member
+segments, repeated written labels/paths, ordered children, and transparent
+wrappers, but does not classify fields/properties or compute a semantic
+result. Synthetic transactions cover constructor cardinalities and nesting,
+selector chains/calls, nested update paths, every Task-252/253/254 target
+kind, wrappers, degraded recovery, local/imported roots, signature-shell
+states, corruption, deterministic replay, dependency substitution, final AST
+ownership, and whole-subtree exclusions. Cross-family Task-253 application
+targets must share the owning Task-254 context. Reverse applications
+containing structure children remain excluded.
+
+The real case stays at
+`definition_declaration_payload_extraction_gap` /
+`type_elaboration.external_dependency.ast_payload_extraction`, with no public
+diagnostic. Existing parser/resolver guard fixtures and all other active
+cases keep their bytes, sidecars, stage, status, and credit. This prerequisite
+changes no route, test list, layout, or hash; current 303-test and
+24-path/25,607-line baselines remain exact. The separate implementation
+projects plan 413/377, type 243/231, pass/fail 224/189, admissions
+101/5/192/1, and warnings/errors 23/0, subject to fresh measurement.

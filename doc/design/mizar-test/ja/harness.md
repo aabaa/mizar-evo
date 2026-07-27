@@ -2725,3 +2725,32 @@ pass/fail 224/188、admission 101/5/191/1、warnings/errors 23/0である。
 24-path/25,607-line production path/content hashは`5cc36b8a...` /
 `b9b6c678...`である。exact値と5 CLI hashはpaired module-boundary auditに
 記録する。
+
+## Checker Task 254 frozen runner boundary
+
+future private `type_elaboration::source_structure` leafは、paired checker planが
+freezeするexact `fail_type_elaboration_local_structure_term_gap_001` sourceの
+3 definiensだけをselectする。existing Task-252 producerをcomposeし、Task-254
+term/wrapper/root/member/field-update/edge/request = 5/0/3/9/2/10/26と
+Task-252 primary/reference/numeric-request = 8/0/8をpublishする。real routeに
+Task-253 row/fingerprintはない。
+
+leafだけが`StructureConstructor`、`SelectorAccess`、`StructureUpdate`、
+`FieldArgument`、`FieldUpdate`をinspectする。member segment、repeated written
+label/path、ordered child、transparent wrapperを保存するが、field/propertyを
+classifyせずsemantic resultを計算しない。synthetic transactionはconstructor
+cardinality/nesting、selector chain/call、nested update path、全Task-252/253/254
+target kind、wrapper、degraded recovery、local/imported root、signature-shell
+state、corruption、deterministic replay、dependency substitution、final AST
+ownership、whole-subtree exclusionをcoverする。cross-family Task-253 application
+targetはowning Task-254 contextと一致しなければならない。structure childを含む
+reverse applicationはexcludedのままである。
+
+real caseはpublic diagnosticなしで
+`definition_declaration_payload_extraction_gap` /
+`type_elaboration.external_dependency.ast_payload_extraction`に留まる。existing
+parser/resolver guard fixtureと他の全active caseはbytes/sidecar/stage/status/credit
+不変である。本prerequisiteはroute/test list/layout/hashを変更せず、current
+303-test、24-path/25,607-line baselineはexactに不変である。別implementationは
+plan 413/377、type 243/231、pass/fail 224/189、admission 101/5/192/1、
+warnings/errors 23/0をprojectするがfresh measurementを要求する。

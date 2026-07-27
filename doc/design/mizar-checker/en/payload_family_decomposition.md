@@ -406,3 +406,32 @@ inline schema only, nesting, wrappers, degraded transport, candidate subsets,
 and whole-template/mixed-family exclusion. The bounded `source_drift` and
 `test_gap` are closed. Tasks 254+, 260, 270, 277, and 278 retain their
 existing dependency edges and semantic owners; Steps 6/7 are not promoted.
+
+## Task 254 Frozen-Contract Prerequisite
+
+The paired crate plan freezes a public syntax-free `source_structure`
+handoff with seven dense immutable tables: structure-family terms,
+transparent wrappers, authenticated constructor roots, written member
+segments, parser `FieldUpdate` containers, ordered child edges, and unresolved
+requests. The exact future real consumer publishes Task-254
+term/wrapper/root/member/field-update/edge/request counts
+5/0/3/9/2/10/26 and composes the Task-252 primary/reference/numeric-request
+slice 8/0/8. It has no Task-253 row or fingerprint.
+
+Only constructor roots are authenticated resolver `Structure` references.
+Written constructor labels, selector names, and update-path segments remain
+source occurrences with unresolved member/path requests; repeated labels and
+paths are preserved rather than decided or deduplicated. A parser
+`FieldUpdate` owns one path and replacement association but no independent
+term/type/fact. Task-254 child edges may point one-way to Task-252 roots,
+same-context Task-253 applications, or later same-context Task-254 rows.
+Task-253 applications containing structure children remain whole-subtree
+excluded because the frozen Task-253 target vocabulary is not reopened.
+
+Task 263 retains authenticated structure definitions, field/property kinds,
+inheritance views, coverage/default decisions, constructor acceptance,
+selector results, update-copy semantics, and exact-instance evidence. This
+independent prerequisite closes the selected Task-254 `design_drift` only.
+Production source, fixtures, sidecars, trace rows/status/counts, executable
+credit, the measured 412/376 and 242/230 baseline, Tasks 255+/263-264, and
+Steps 6/7 remain unchanged.

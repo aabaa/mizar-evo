@@ -2055,3 +2055,29 @@ CLI hashes, raw/normalized test-list hashes, and 24-path/25,607-line
 production path/content hashes. Task 253 closes its bounded `source_drift`
 and `test_gap`. Tasks 254+, 260, 270, 277-278, Steps 6/7, and global Step-5
 completion remain open.
+
+## Step 5 Checker Task 254 Frozen-Contract Addendum
+
+Checker Task 254 now has a reviewed documentation-only frozen contract for
+structure constructor, selector-access, and functional-update source
+transport. It fixes seven syntax-free tables; constructor-root provenance;
+written member chains and non-term `FieldUpdate` ownership; one-way
+Task-252/253/254 child composition; reverse Task-253 whole-subtree exclusion;
+Task-263 semantic deferrals; and the exact future real oracle
+5/0/3/9/2/10/26 plus Task-252 8/0/8.
+
+This prerequisite closes only Task-254 `design_drift`. The implementation
+`source_drift` and `test_gap` remain open. It changes no source, fixture,
+expectation, sidecar, trace row/status, executable coverage, count, or hash;
+the baseline remains plan 412/376, type 242/230, pass/fail 224/188, active
+parse/declaration/type/proof 101/5/191/1, warnings/errors 23/0, 303 tests,
+and 24 production paths / 25,607 lines. The separate implementation's
+projected oracle is plan 413/377, type 243/231, pass/fail 224/189, active
+type 192, subject to fresh measurement.
+
+No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or current `boundary_violation` was found. The
+measured 0/0 origin difference from the supplied one-commit-ahead note is a
+report-only `repo_metadata_conflict`; it does not prevent the unique safe
+commit. Tasks 255+/263-264, Steps 6/7, and global Step-5 completion remain
+deferred.

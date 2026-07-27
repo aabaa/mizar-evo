@@ -1466,3 +1466,36 @@ semantic Task 39は変更しない。このincrementはchecker taskもSteps 6/7 
   303件へ到達した。paired completion documentは24-path/25,607-line manifestと
   exact 5 CLI/test-list/production hashを記録する。Tasks 254+とSteps 6/7は
   unpromotedのままである。
+
+## Checker Task 254 frozen consumer prerequisite
+
+- [x] construction、selector access、functional updateを使う3 definiensと
+  `Task254Pair` declarationを持つexact new spec-derived local structure-term
+  fail source 1件をfreezeする。
+- [x] real Task-254 term/wrapper/root/member/field-update/edge/request oracle
+  5/0/3/9/2/10/26とcomposed Task-252
+  primary/reference/numeric-request slice 8/0/8を、real Task-253 rowなしで
+  freezeする。
+- [x] raw constructor/selector/update、member、`FieldUpdate`、wrapper、edge
+  extractionをprivate runner leaf 1個に限定し、checker handoffをsyntax-freeに
+  保つ。
+- [x] repeated label/pathをsource orderで保存し、nested pathをmember chainで
+  表現し、`FieldUpdate`へ独立term/type/factを割り当てない。
+- [x] one-way same-context Task-252/253/254 child compositionと、reverse
+  Task-253 application、Task-255 term、template、initial
+  type-argument-bearing constructorのwhole-subtree exclusionをfreezeする。
+- [x] sidecarをpublic diagnosticなしの
+  `definition_declaration_payload_extraction_gap` /
+  `type_elaboration.external_dependency.ast_payload_extraction`へfreezeし、
+  structure definition/member/viewと全semantic decisionをTask 263に残す。
+- [x] 本prerequisiteをdocumentation-onlyとする。fixture、sidecar、trace
+  row/status/count、runner route、test list、production source、executable
+  creditを変更せず、412/376、242/230、224/188、101/5/191/1、303-test、
+  24-path/25,607-line baselineを維持する。
+- [ ] Checker Task 254を別logical taskで実装し、exact frozen fixture/sidecarと
+  bounded requirementだけを追加し、existing Chapter-5/13 payload-gap rowを
+  frozen term sectionとtransport-only notesへstatus/count不変でwidenし、named
+  pre-existing 4 rowすべてへreciprocal sidecar backlinkを追加して、full
+  real/synthetic/exclusion/corruption/
+  final-ownership matrixを証明してfresh 413/377、243/231、224/189、
+  101/5/192/1 oracleへ到達する。

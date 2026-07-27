@@ -4427,6 +4427,16 @@ unchecked row below is one future nonempty logical task and one commit.
   278 ordinary/template candidate collection/viability/winner; Task 253 does
   not duplicate Task-252 primary terms.
 - [ ] **Task 254:** structure constructor/selector/update term producer.
+  The frozen-contract documentation prerequisite is complete: seven dense
+  source-structure tables, exact 5/0/3/9/2/10/26 plus Task-252 8/0/8 real
+  oracle, constructor-root resolver authentication, written member/path and
+  `FieldUpdate` ownership, one-way Task-252/253/254 child edges, Task-253
+  reverse whole-subtree exclusion, Task-263 semantic deferrals, corruption
+  matrix, and unchanged 412/376 baseline are fixed. The separate producer,
+  exact consumer, bounded fixture/trace row, Chapter-5/13 payload-gap section
+  and transport-only note widening, reciprocal backlinks in all four named
+  pre-existing rows with unchanged status/count, and executable verification
+  remain open.
 - [ ] **Task 255:** set/comprehension/choice/`qua` term producer.
 - [ ] **Task 256:** atomic formula producer.
 - [ ] **Task 257:** composite/quantified formula and binder producer.
