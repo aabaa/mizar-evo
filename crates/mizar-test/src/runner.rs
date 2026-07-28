@@ -119,7 +119,7 @@ use type_elaboration::{
     SOURCE_RESERVED_OBJECT_VARIABLE_TYPE_ASSERTION_CONFIG,
     SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG, SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG, SOURCE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
-    SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    SOURCE_RIGHT_PARENTHESIZED_RESERVED_VARIABLE_MEMBERSHIP_CONFIG, SOURCE_STATEMENT_TEXT,
     SOURCE_THREE_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_MODE_RADIX_ASSERTED_HEAD_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
@@ -158,7 +158,8 @@ use type_elaboration::{
     SourceParenthesizedReservedVariableBinaryFormulaOutput,
     SourcePredicateChainCompositionRouteInputs, SourceReservedVariableAssertedHeadRelation,
     SourceReservedVariableBinaryFormula, SourceReservedVariableBuiltinType,
-    SourceReservedVariableTypeAssertion, SourceSetTermRouteOutput, SourceStructureRouteOutput,
+    SourceReservedVariableTypeAssertion, SourceSetTermRouteOutput, SourceStatementExtraction,
+    SourceStatementRouteInputs, SourceStatementRouteOutput, SourceStructureRouteOutput,
     SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
     SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
     SyntheticSourceStructureDependencies, assemble_source_checker_handoff,
@@ -268,7 +269,9 @@ use type_elaboration::{
     extract_source_reserved_object_variable_inequality,
     extract_source_reserved_object_variable_type_assertion,
     extract_source_reserved_variable_equality, extract_source_reserved_variable_inequality,
-    extract_source_reserved_variable_membership, extract_source_reserved_variable_type_assertion,
+    extract_source_reserved_variable_membership,
+    extract_source_reserved_variable_theorem_statement,
+    extract_source_reserved_variable_type_assertion,
     extract_source_right_parenthesized_reserved_variable_membership,
     extract_source_set_enumeration_formula, extract_source_three_edge_local_mode_asserted_head,
     extract_source_three_edge_local_mode_radix_asserted_head,
@@ -418,9 +421,11 @@ use type_elaboration::{
     source_right_parenthesized_reserved_variable_membership_output_detail_keys,
     source_set_enumeration_formula_output, source_set_term_output,
     source_set_term_output_with_mutation, source_set_term_output_with_source,
-    source_set_term_output_with_source_and_mutation, source_structure_output,
-    source_structure_output_with_mutation, source_term_output, source_term_output_with_mutation,
-    source_three_edge_local_mode_asserted_head_output,
+    source_set_term_output_with_source_and_mutation,
+    source_statement_output_with_resolver_mutation, source_statement_output_with_source,
+    source_statement_output_with_source_and_mutation, source_statement_resolver_env_for_test,
+    source_structure_output, source_structure_output_with_mutation, source_term_output,
+    source_term_output_with_mutation, source_three_edge_local_mode_asserted_head_output,
     source_three_edge_local_mode_radix_asserted_head_output,
     source_three_edge_local_mode_reserved_variable_equality_output,
     source_three_edge_local_mode_reserved_variable_inequality_output,
@@ -558,7 +563,8 @@ use type_elaboration::{
     source_reserved_variable_type_assertion_detail_keys,
     source_right_parenthesized_reserved_variable_membership_detail_keys,
     source_set_enumeration_formula_detail_keys, source_set_term_transport_detail_keys,
-    source_structure_transport_detail_keys, source_term_transport_error_detail_keys,
+    source_statement_transport_detail_keys, source_structure_transport_detail_keys,
+    source_term_transport_error_detail_keys,
     source_three_edge_local_mode_asserted_head_detail_keys,
     source_three_edge_local_mode_radix_asserted_head_detail_keys,
     source_three_edge_local_mode_reserved_variable_equality_detail_keys,
@@ -1512,6 +1518,14 @@ fn type_elaboration_detail_keys(
     }
 
     let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    if let Some(keys) = source_statement_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &symbols,
+        &source_text,
+    ) {
+        return keys;
+    }
     if let Some(keys) = source_formula_composition_transport_detail_keys(
         &ast,
         resolver.module.clone(),

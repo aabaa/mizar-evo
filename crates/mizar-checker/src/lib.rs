@@ -33,6 +33,7 @@ pub mod source_context;
 pub mod source_evidence;
 pub mod source_formula_composition;
 pub mod source_set_term;
+pub mod source_statement;
 pub mod source_structure;
 pub mod source_term;
 pub mod source_type;

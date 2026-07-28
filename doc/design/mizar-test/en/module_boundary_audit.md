@@ -11473,3 +11473,20 @@ will own only raw statement selection and syntax-free input assembly; the
 checker owns validation and immutable publication. The planned leaf is
 cohesive, does not justify a pre-implementation split, and must not absorb
 proof, acceptance, trace, fixture, or active-corpus ownership.
+
+## Checker Task 258A Implementation Boundary Recheck
+
+The planned private production leaf is now 642 lines and its paired
+test-only leaf 883 lines. It cohesively owns exact loaded-source and AST
+selection, resolver label projection, Task-48/252/256 input assembly, and
+the dormant checker transaction. `runner.rs` remains the 2,489-line public
+facade and `type_elaboration.rs` the 674-line private facade. No proof,
+acceptance, fixture, sidecar, trace, or active-corpus ownership entered the
+leaf, so no further split is warranted.
+
+Production is 30 paths / 34,955 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`.
+The library has 369 tests with raw/normalized hashes
+`c5764bb1600242fe44db8c44b9c6bb18f39203a0de9ff60e301cbc6f172037f6` /
+`1fd27b9bff190f95ac23d6de714a919a192fb0b7830aa3c98f960d4224c084aa`.

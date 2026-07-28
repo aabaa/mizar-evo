@@ -16,6 +16,7 @@ mod source_formula;
 mod source_formula_composition;
 mod source_reserve;
 mod source_set_term;
+mod source_statement;
 mod source_structure;
 mod source_term;
 mod source_type;
@@ -412,6 +413,14 @@ pub(super) use source_set_term::{
     source_set_term_output_with_mutation, source_set_term_output_with_source,
     source_set_term_output_with_source_and_mutation, synthetic_source_set_term_output,
     synthetic_source_set_term_output_with_mutation,
+};
+pub(super) use source_statement::source_statement_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_statement::{
+    SOURCE_STATEMENT_TEXT, SourceStatementExtraction, SourceStatementRouteInputs,
+    SourceStatementRouteOutput, extract_source_reserved_variable_theorem_statement,
+    source_statement_output_with_resolver_mutation, source_statement_output_with_source,
+    source_statement_output_with_source_and_mutation, source_statement_resolver_env_for_test,
 };
 pub(super) use source_structure::source_structure_transport_detail_keys;
 #[cfg(test)]

@@ -3140,3 +3140,21 @@ selectしてはならない。successはtyped/resolved same source-statement han
 same owned binding environment/fingerprint、absent Task-248 source context、
 empty checked formula/statement/proof/fact/diagnosticを要求。本prerequisiteは
 executable harness artifactを変更しない。
+
+## Checker Task 258A harness result
+
+dedicated private leafはlower Task-257C1 routeより先に実行し、real frontend、
+declaration-shell symbol collection、label resolver、Task-48 binding bridge、
+Task-252/256 builderを使用する。exact `1/1/1/1/1` handoffを
+`source.statement.transport` source-preserved node hintだけとともにfresh
+typed/final ownerへinstallする。library tests 4件がreal provenance path、
+dependency/row corruption、loaded-source/subtree near miss、active-route
+isolation、ownership exclusion、atomic replayをcoverする。future corpus
+fixture/sidecarはabsentのまま。
+
+runner libraryは369 tests、raw/normalized test-list hashは
+`c5764bb1600242fe44db8c44b9c6bb18f39203a0de9ff60e301cbc6f172037f6` /
+`1fd27b9bff190f95ac23d6de714a919a192fb0b7830aa3c98f960d4224c084aa`。
+productionは30 paths / 34,955 lines、path/content hashは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`。

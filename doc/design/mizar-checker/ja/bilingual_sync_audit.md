@@ -285,7 +285,16 @@ viewによるtheorem provenance、asymmetric production plus named test-only
 Task-248 exclusion、exact future `MT10-FS` consumer、subtree exclusion、
 tests、unchanged baseline、semantic deferralをfreezeする。
 
-このdocumentation prerequisiteはproduction module、fixture、sidecar、
+prerequisite時点ではこのdocumentation commitはproduction module、fixture、sidecar、
 expectation、trace metadata/status/count、executable count/hashを変更しない。
-future `source_statement` APIはfully namedだが未実装で、broader statement
+then-future `source_statement` APIはfully namedだが未実装で、broader statement
 familyはTask 258Bに残る。Task-258A bilingual sync debtは認めない。
+
+## Task 258A implementation pair recheck
+
+paired EN/JA implementation resultは同じpublic five-table transaction、
+resolver/binding provenance、Task-252/256 revalidation、typed/final semantic
+exclusion、exact source-preserved hint、checker/runner test matrix `3/4`、
+libraries `338/369`、runner production 30 paths / 34,955 linesを記録する。
+fixture/sidecar/expectation/trace metadata/active countは不変。Task-258A
+bilingual driftは残らない。

@@ -878,3 +878,13 @@ Task-248 `source_context`とTask-258A `source_statement`を同時に含む
 test-injected typed inputはdeterministically `InvalidSourceStatement`。
 final outputをpublishせずoriginal typed debugをbyte-identicalに保ち、validな
 single-owner inputはいずれもreplayできる。
+
+### Task 258A implementation result
+
+final assemblyはowned binding environment、Task-252/256 fingerprint、arenaを
+再検証してhandoffをclone-preserveする。output construction前にnonempty
+typed semantic table、cluster fact、overload-stage output、expression input、
+statement semantics/proof、diagnosticをrejectする。empty node hintとexact
+complete `source.statement.transport` source-preserved hint setだけはsyntax
+nodeをpreserveするためadmitし、他のnonempty hint setは
+`InvalidSourceStatement`となる。

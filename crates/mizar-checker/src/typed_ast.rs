@@ -12,6 +12,7 @@ use crate::{
         SourcePredicateChainCompositionHandoff,
     },
     source_set_term::SourceSetTermHandoff,
+    source_statement::SourceStatementHandoff,
     source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff,
     source_type::SourceTypeApplicationHandoff,
@@ -108,6 +109,7 @@ pub struct TypedAst {
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
     source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
+    source_statement: Option<SourceStatementHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -137,6 +139,7 @@ impl TypedAst {
             source_formula_composition: None,
             source_condition_formula_composition: None,
             source_predicate_chain_composition: None,
+            source_statement: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -215,6 +218,43 @@ impl TypedAst {
         self.source_predicate_chain_composition.as_ref()
     }
 
+    pub const fn source_statement(&self) -> Option<&SourceStatementHandoff> {
+        self.source_statement.as_ref()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_source_context_for_test(
+        mut self,
+        source_context: SourceBindingContextHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_context.is_some() || self.source_statement.is_some() {
+            return Err(TypedAstError::InvalidSourceContext);
+        }
+        let parts = TypedAstParts {
+            source_id: self.source_id,
+            module_id: self.module_id.clone(),
+            resolved_root: self.resolved_root,
+            source_context: Some(source_context.clone()),
+            source_type: self.source_type.clone(),
+            source_attribute: self.source_attribute.clone(),
+            nodes: self.nodes.clone(),
+            contexts: self.contexts.clone(),
+            types: self.types.clone(),
+            facts: self.facts.clone(),
+            coercions: self.coercions.clone(),
+            initial_obligations: self.initial_obligations.clone(),
+            diagnostics: self.diagnostics.clone(),
+        };
+        validate_source_context(&parts)?;
+        self.source_context = Some(source_context);
+        Ok(self)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_statement_for_test(&mut self, statement: SourceStatementHandoff) {
+        self.source_statement = Some(statement);
+    }
+
     #[cfg(test)]
     pub(crate) fn remove_source_formula_composition_for_test(&mut self) {
         self.source_formula_composition = None;
@@ -271,7 +311,7 @@ impl TypedAst {
         mut self,
         handoff: SourceEvidenceHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_evidence.is_some() {
+        if self.source_evidence.is_some() || self.source_statement.is_some() {
             return Err(TypedAstError::InvalidSourceEvidence);
         }
         let source_type = self
@@ -309,7 +349,7 @@ impl TypedAst {
         mut self,
         handoff: SourceFunctorApplicationHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_application.is_some() {
+        if self.source_application.is_some() || self.source_statement.is_some() {
             return Err(TypedAstError::InvalidSourceApplication);
         }
         let source_term = self
@@ -363,7 +403,7 @@ impl TypedAst {
         mut self,
         handoff: SourceStructureHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_structure.is_some() {
+        if self.source_structure.is_some() || self.source_statement.is_some() {
             return Err(TypedAstError::InvalidSourceStructure);
         }
         let source_term = self
@@ -412,7 +452,7 @@ impl TypedAst {
         mut self,
         handoff: SourceSetTermHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_set_term.is_some() {
+        if self.source_set_term.is_some() || self.source_statement.is_some() {
             return Err(TypedAstError::InvalidSourceSetTerm);
         }
         let source_term = self
@@ -480,6 +520,7 @@ impl TypedAst {
             || self.source_formula_composition.is_some()
             || self.source_condition_formula_composition.is_some()
             || self.source_predicate_chain_composition.is_some()
+            || self.source_statement.is_some()
             || self.source_context.is_some()
             || !handoff.is_task_257a_profile()
         {
@@ -501,6 +542,7 @@ impl TypedAst {
             || self.source_formula_composition.is_some()
             || self.source_condition_formula_composition.is_some()
             || self.source_predicate_chain_composition.is_some()
+            || self.source_statement.is_some()
             || self.source_context.is_some()
             || !(composite.is_task_257b1_profile()
                 || composite.is_task_257b2_profile()
@@ -542,6 +584,7 @@ impl TypedAst {
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
             || self.source_predicate_chain_composition.is_some()
+            || self.source_statement.is_some()
         {
             return Err(TypedAstError::InvalidSourceConditionFormulaComposition);
         }
@@ -584,6 +627,7 @@ impl TypedAst {
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
             || self.source_condition_formula_composition.is_some()
+            || self.source_statement.is_some()
         {
             return Err(TypedAstError::InvalidSourcePredicateChainComposition);
         }
@@ -605,6 +649,53 @@ impl TypedAst {
             )
             .map_err(|_| TypedAstError::InvalidSourcePredicateChainComposition)?;
         self.source_predicate_chain_composition = Some(composition);
+        Ok(self)
+    }
+
+    pub fn with_source_statement(
+        mut self,
+        statement: SourceStatementHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_statement.is_some()
+            || self.resolved_root.is_some()
+            || self.source_context.is_some()
+            || self.source_type.is_some()
+            || self.source_attribute.is_some()
+            || self.source_evidence.is_some()
+            || self.source_application.is_some()
+            || self.source_structure.is_some()
+            || self.source_set_term.is_some()
+            || self.source_composite_formula.is_some()
+            || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
+            || !self.contexts.is_empty()
+            || !self.types.is_empty()
+            || !self.facts.is_empty()
+            || !self.coercions.is_empty()
+            || !self.initial_obligations.is_empty()
+            || !self.diagnostics.is_empty()
+        {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        statement
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_atomic_formula,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        self.source_statement = Some(statement);
         Ok(self)
     }
 
@@ -687,6 +778,9 @@ impl TypedAst {
         }
         if let Some(source_predicate_chain_composition) = &self.source_predicate_chain_composition {
             output.push_str(&source_predicate_chain_composition.debug_text());
+        }
+        if let Some(source_statement) = &self.source_statement {
+            output.push_str(&source_statement.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);
@@ -1575,6 +1669,7 @@ pub enum TypedAstError {
     InvalidSourceFormulaComposition,
     InvalidSourceConditionFormulaComposition,
     InvalidSourcePredicateChainComposition,
+    InvalidSourceStatement,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -1720,6 +1815,9 @@ impl fmt::Display for TypedAstError {
             ),
             Self::InvalidSourcePredicateChainComposition => formatter
                 .write_str("typed AST source predicate-chain-composition handoff is inconsistent"),
+            Self::InvalidSourceStatement => {
+                formatter.write_str("typed AST source statement handoff is inconsistent")
+            }
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
                 "typed node {} references missing context {}",

@@ -300,8 +300,17 @@ production plus named test-only Task-248 exclusion, exact future `MT10-FS`
 consumer, subtree exclusions, tests, unchanged baseline, and semantic
 deferrals.
 
-This documentation prerequisite changes no production module, fixture,
+At prerequisite time this documentation commit changed no production module, fixture,
 sidecar, expectation, trace metadata/status/count, executable count, or hash.
-The future `source_statement` API is fully named but remains unimplemented;
+The then-future `source_statement` API was fully named but unimplemented;
 Task 258B retains the broader statement family. No Task-258A bilingual sync
 debt is accepted.
+
+## Task 258A Implementation Pair Recheck
+
+The paired EN/JA implementation results now record the same public five-table
+transaction, resolver and binding provenance, Task-252/256 revalidation,
+typed/final semantic exclusions, exact source-preserved hints, checker/runner
+test matrices `3/4`, libraries `338/369`, and runner production
+30 paths / 34,955 lines. Fixture, sidecar, expectation, trace metadata, and
+active counts remain unchanged. No Task-258A bilingual drift remains.

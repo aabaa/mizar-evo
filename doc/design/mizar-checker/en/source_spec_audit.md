@@ -29,6 +29,7 @@ Module specifications audited:
 - [source_application.md](./source_application.md)
 - [source_set_term.md](./source_set_term.md)
 - [source_structure.md](./source_structure.md)
+- [source_statement.md](./source_statement.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -37,10 +38,9 @@ Module specifications audited:
 - [overload_resolution.md](./overload_resolution.md)
 - [resolved_typed_ast.md](./resolved_typed_ast.md)
 
-The Task 258A frozen contract in
-[source_statement.md](./source_statement.md) names a future public module.
-It is not included in the current module-export or public-surface inventory
-until the separate implementation task adds that source module.
+The implemented Task 258A contract in
+[source_statement.md](./source_statement.md) owns the bounded syntax-free
+theorem transaction; broader statement semantics remain deferred.
 
 Result: no blocking `source_drift`, `design_drift`, or
 `source_undocumented_behavior` is observed for implemented explicit-payload
@@ -163,6 +163,7 @@ rejection.
 - `source_evidence`
 - `source_application`
 - `source_set_term`
+- `source_statement`
 - `source_structure`
 - `source_term`
 - `source_type`
@@ -590,6 +591,41 @@ Correspondence:
 Bounded gaps: connective/quantifier/predicate truth, signature applicability,
 overload selection, formula facts/results, implicit theorem closure and
 acceptance, proofs, and downstream IR remain with Task 258 and later owners.
+
+### `source_statement`
+
+Generated public newtypes:
+
+- `SourceTheoremOwnerId`, `SourceStatementId`, `SourceStatementContextId`,
+  `SourceStatementInputFactId`, `SourceStatementCandidateFactId`
+
+Literal top-level public items:
+
+- `SourceStatementHandoffInput`, `SourceTheoremOwnerInput`,
+  `SourceStatementInput`, `SourceStatementContextInput`,
+  `SourceStatementInputFactInput`, `SourceStatementCandidateFactInput`
+- `SourceTheoremRole`, `SourceTheoremStatus`, `SourceStatementKind`,
+  `SourceStatementRecovery`, `SourceStatementFormulaTarget`,
+  `SourceStatementInputFactKind`, `SourceStatementCandidateFactKind`
+- `SourceStatementHandoff`, `SourceTheoremOwnerTable`,
+  `SourceStatementTable`, `SourceStatementContextTable`,
+  `SourceStatementInputFactTable`, `SourceStatementCandidateFactTable`,
+  `SourceTheoremOwner`, `SourceStatement`, `SourceStatementContext`,
+  `SourceStatementInputFact`, `SourceStatementCandidateFact`,
+  `SourceStatementProducer`, `SourceStatementError`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Five syntax-free dense tables retain the exact theorem owner, statement shell, visibility context, reserved-type-guard input, and unverified candidate. | Public input/row/table/handoff types in `src/source_statement.rs`. | Three exact checker tests plus four real frontend/resolver runner tests. | Implemented for Task 258A. |
+| Resolver, Task-48 binding, Task-252/256 fingerprints, arena topology, and direct formula wrapper are revalidated fail-closed. | `SourceStatementProducer::build`, immutable authenticated contribution/environment, and typed/final installers. | Resolver/lower/binding/ordinal/fingerprint/subtree/coexistence corruption and replay matrix. | Implemented transactionally. |
+| No theorem truth, accepted fact, proof, or existing semantic table is published. | Candidate kind remains unverified; typed/final semantic coexistence guards reject before output. | Empty-output and semantic-coexistence tests in checker and runner. | Implemented as transport only. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all seven public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+
+Bounded gaps: broader statements, local citations and nested contexts remain
+Task 258B; acceptance, proof-local behavior, and justification semantics
+remain Tasks 269–272.
 
 ### `source_set_term`
 
@@ -3717,25 +3753,37 @@ and provenance views without granting this task truth, proof, or acceptance
 semantics.
 
 The previously missing syntax-free owner/statement/context/input/candidate
-contract was `design_drift`, closed by this documentation prerequisite. The
-future `source_statement` module, producer, typed/final installation, and
-dormant exact-source bridge are bounded `source_drift`; their checker and
-runner matrices are `test_gap`. There is no blocking `spec_gap`,
+contract was `design_drift`, closed by this documentation prerequisite. At
+prerequisite time, the planned `source_statement` module, producer,
+typed/final installation, and dormant exact-source bridge were bounded
+`source_drift`; their checker and runner matrices were `test_gap`. The
+implementation audit below closes both classifications. There is no blocking `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`, or accepted
 `boundary_violation`. The current Task-248 exact handoff cannot represent the
 reserve-plus-theorem transaction and is explicitly excluded rather than
 extended or fabricated. The origin divergence remains report-only
 `repo_metadata_conflict`.
 
-The future public surface is fully named in `source_statement.md`, including
+The then-future public surface was fully named in `source_statement.md`, including
 five dense IDs/tables, immutable input and output rows, producer signature,
 seven non-exhaustive semantic-boundary enums, row-local failures, aggregate
 precedence, owned BindingEnv/fingerprint, Task-252/256 dependency
 fingerprints, asymmetric production plus named test-only Task-248 exclusion,
 and stable debug schema.
-It is intentionally absent from the current module-export and public-surface
-inventory until implementation. The existing deferred
+It was intentionally absent from the pre-implementation module-export and
+public-surface inventory; the current inventory above includes it. The existing deferred
 `spec.en.checker.formula_statement.source_payloads` row keeps an empty test
 list and receives no status, count, fixture, sidecar, expectation, or
 coverage change in this prerequisite. Broader statement forms remain owned
 by Task 258B and Tasks 269–272.
+
+### Task 258A Implementation Audit
+
+The public module, producer, typed/final ownership, and dormant real
+parser/resolver bridge now match the frozen contract. Three checker and four
+runner tests close the recorded `source_drift` and `test_gap`; the prior
+`design_drift` remains closed. The implementation adds no new language
+behavior, accepted theorem fact, proof meaning, fixture, expectation, or
+trace activation. No blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `boundary_violation` remains. Task 258B and
+Tasks 269–272 retain the broader and semantic statement families.

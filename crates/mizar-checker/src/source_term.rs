@@ -206,6 +206,17 @@ impl SourcePrimaryTermHandoff {
         }
         Ok(())
     }
+
+    #[cfg(test)]
+    pub(crate) fn set_reference_use_ordinal_for_test(
+        &mut self,
+        reference: SourcePrimaryTermReferenceId,
+        use_ordinal: usize,
+    ) {
+        if let Some(row) = self.references.rows.get_mut(reference.index()) {
+            row.use_ordinal = use_ordinal;
+        }
+    }
 }
 
 /// Dense immutable primary-term table.

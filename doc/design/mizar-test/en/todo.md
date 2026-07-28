@@ -1950,6 +1950,8 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   equality, empty semantic output, and active-route isolation.
 - [x] Preserve all fixtures, sidecars, trace metadata/status/count, CLI
   counts/hashes, 365-test list, and 29-path / 34,290-line production manifest.
-- [ ] After the checker documentation commit and fresh preflight, add only
+- [x] After the checker documentation commit and fresh preflight, add only
   the dormant production route and exactly four library tests; leave corpus
   activation to `MT10-FS`.
+- [x] Measure 369 runner tests and the 30-path / 34,955-line production
+  manifest; keep plan/type/active counts and trace metadata unchanged.

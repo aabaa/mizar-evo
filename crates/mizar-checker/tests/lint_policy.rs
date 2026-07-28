@@ -214,6 +214,7 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
             "source_formula_composition.md",
         ),
         ("src/source_set_term.rs", "source_set_term.md"),
+        ("src/source_statement.rs", "source_statement.md"),
         ("src/source_structure.rs", "source_structure.md"),
         ("src/type_checker.rs", "type_checker.md"),
         (
@@ -849,6 +850,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_composite_formula.rs")
             || path == Path::new("src/source_formula_composition.rs")
             || path == Path::new("src/source_set_term.rs")
+            || path == Path::new("src/source_statement.rs")
             || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
@@ -873,6 +875,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_composite_formula;"
                 | "pub mod source_formula_composition;"
                 | "pub mod source_set_term;"
+                | "pub mod source_statement;"
                 | "pub mod source_structure;"
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"

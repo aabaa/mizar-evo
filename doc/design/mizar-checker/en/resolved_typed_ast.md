@@ -930,3 +930,14 @@ fingerprint. A test-injected typed input that contains both Task-248
 with `InvalidSourceStatement`; no final output is published, the original
 typed debug remains byte-identical, and either valid single-owner input can
 be replayed.
+
+### Task 258A Implementation Result
+
+Final assembly clone-preserves the validated handoff after rechecking the
+owned binding environment, Task-252/256 fingerprints, and arena. It rejects
+nonempty typed semantic tables, cluster facts, overload-stage outputs,
+expression inputs, statement semantics/proofs, and diagnostics before
+output construction. Empty node hints and the exact complete
+`source.statement.transport` source-preserved hint set are admitted because
+they preserve syntax nodes only; every other nonempty hint set fails through
+`InvalidSourceStatement`.

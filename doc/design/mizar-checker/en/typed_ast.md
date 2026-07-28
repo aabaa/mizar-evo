@@ -909,3 +909,13 @@ production construction path. The debug chunk follows every Task-257 owner
 slot and precedes the node/table section. `facts` and all existing semantic
 tables remain empty. This documentation commit changes no `TypedAst` source
 or API.
+
+### Task 258A Implementation Result
+
+The optional handoff, read-only accessor, one-shot installer, debug chunk,
+and dedicated `InvalidSourceStatement` path are implemented. Installation
+requires an empty generic typed projection (`resolved_root`, contexts, types,
+facts, coercions, initial obligations, and diagnostics) in addition to the
+frozen source-family exclusions and Task-252/256 dependencies. Failed
+coexistence does not mutate the prior value and valid replay remains
+deterministic.

@@ -1758,6 +1758,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   equality、empty semantics、active-route isolationをfreeze。
 - [x] fixture/sidecar/trace metadata/status/count/CLI count/hash、365-test list、
   29-path / 34,290-line production manifestをpreserve。
-- [ ] checker documentation commit/fresh preflight後、dormant production
+- [x] checker documentation commit/fresh preflight後、dormant production
   routeとexactly library tests 4件だけを追加し、corpus activationは
   `MT10-FS`に残す。
+- [x] runner 369 tests、production 30 paths / 34,955 linesを測定し、
+  plan/type/active countとtrace metadataを不変に保つ。

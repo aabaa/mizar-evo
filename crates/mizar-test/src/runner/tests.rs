@@ -46,5 +46,6 @@ include!("tests/type_elaboration/source_structure.rs");
 include!("tests/type_elaboration/source_atomic_formula.rs");
 include!("tests/type_elaboration/source_composite_formula.rs");
 include!("tests/type_elaboration/source_formula_composition.rs");
+include!("tests/type_elaboration/source_statement.rs");
 include!("tests/type_elaboration/long_chain.rs");
 include!("tests/type_elaboration/remaining_bridges_and_nested_isolation.rs");

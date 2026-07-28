@@ -10254,3 +10254,19 @@ plan/parse/declaration/type/proof CLI hashは
 syntax-free input assemblyだけをownし、validation/immutable publicationは
 checkerがownする。planned leafはcohesiveでpre-implementation splitを要せず、
 proof/acceptance/trace/fixture/active-corpus ownershipを取り込んではならない。
+
+## Checker Task 258A implementation boundary recheck
+
+planned private production leafは642 lines、paired test-only leafは883 lines。
+exact loaded-source/AST selection、resolver label projection、Task-48/252/256
+input assembly、dormant checker transactionをcohesively ownする。
+`runner.rs`は2,489-line public facade、`type_elaboration.rs`は674-line
+private facadeのまま。proof/acceptance/fixture/sidecar/trace/active-corpus
+ownershipはleafへ入らず、追加splitは不要。
+
+productionは30 paths / 34,955 lines、path/content hashは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`。
+libraryは369 tests、raw/normalized hashは
+`c5764bb1600242fe44db8c44b9c6bb18f39203a0de9ff60e301cbc6f172037f6` /
+`1fd27b9bff190f95ac23d6de714a919a192fb0b7830aa3c98f960d4224c084aa`。

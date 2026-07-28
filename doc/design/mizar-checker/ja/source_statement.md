@@ -39,14 +39,16 @@ unparenthesized reserved-variable equalityを持つnormal unmodified theoremが
 1件だけある形を選択する。lower profileは次。
 
 - Task-48由来normal module `BindingEnv`: context 0、active/visibleな
-  `ReservedVariable` binding 0 (`x`)、declaration `0..18`、type site
-  `14..17`、first-use ordinal 1。
+  `ReservedVariable` binding 0 (`x`)、reserve item `0..18`内のidentifier
+  declaration `8..9`、type site `14..17`、first-use ordinal 1。
 - Task 252 `2/2/0`: 2件の`VariableReference`/`Value` primaryとbinding 0へ
   independentにauthenticateしたTask-252 stored use ordinal 1/1の
   reference 2件。
 - Task 256 `1/0/0/0/0/0/2/2`: normal `Equality` 1件、Task-252 primaries
   0/1へのoperand edge 2件、unresolved expected-type request 2件。
-- theoremがformulaを、formulaが両termをcontainするshared typed arena。
+- theoremがdirect `FormulaExpression` wrapperをcontainし、そのwrapperが
+  atomic formula occurrenceを、formula subtreeがleft-to-right orderで両term
+  occurrenceをcontainするshared typed arena。
 
 Task 248はcanonical binding/context modelを供給するが、現行exact
 `SourceBindingContextHandoff` profileはreserve-plus-theoremを表せないため、
@@ -55,10 +57,15 @@ atomicなのでTask 257 formula-owner handoffもabsent。
 
 ownerは全resolver viewでauthenticateする。current source/moduleのlocal
 source theorem symbolはexactly one。
-`CheckedStatementOwner::validate_exact_local_theorem`がacceptし、
-`SymbolEntry`/`DefinitionEntry`/`SourceContribution`/`LabelEntry`の
-source/module/contribution/normal origin/range/spelling/visibility/exportが
-一致する。kindは`SymbolKind::Theorem`/`DefinitionKind::Theorem`/
+`CheckedStatementOwner::validate_exact_local_theorem`がacceptする。
+`SymbolEntry`/`DefinitionEntry`/`LabelEntry`/checked ownerは
+source/module/contribution/normal theorem origin `19..80`/spelling/
+visibility/exportで一致する。runnerのexact label selector/projection rangeは
+`27..72`であり、published `LabelEntry`は別のdeclaration-range fieldではなく
+shared theorem originを保持する。
+module-wide `SourceContribution`はtheorem-local contributionをfabricateせず、
+real resolverのfirst declaration shellであるreserve `0..18`をanchorにする。
+kindは`SymbolKind::Theorem`/`DefinitionKind::Theorem`/
 `LabelKind::Theorem`、visibility/exportは`Public`/`Exported`、
 contributionは`LocalSource`でtheorem symbol/definition/label effectを含み
 import edgeを持たない。recovered/imported/summary/missing/duplicate/stale/
@@ -130,7 +137,8 @@ label。statement 0は`19..80`、normal、exact single-space token spelling、
 `TheoremProposition`、owner/context 0、
 `Atomic(SourceAtomicFormulaId::new(0))`。formulaはTask-256 equality
 `74..79`で、theorem arena nodeは別statement/proof/justification subtreeなしに
-formula occurrenceをdirect containする。
+direct formula-expression wrapperをcontainし、そのwrapperがatomic occurrenceと
+ordered term descendantをcontainする。
 
 context 0はtheorem range、binding context 0、visible bindings exact `[0]`。
 binding environmentはnormal、same source/module、diagnosticなし。input fact 0は
@@ -227,7 +235,7 @@ separate Task 258BまたはTasks 269–272。
 | `SourceStatementCandidateFactKind` | `#[non_exhaustive]`; Task 258Aは`UnverifiedProposition`だけをaccept。 |
 | `SourceStatementError` | `#[non_exhaustive]`; callerはproducer/installation failureをexhaustive matchしない。 |
 
-本moduleがownするexhaustive public-enum exceptionはない。
+この module が所有する exhaustive public enum exception はない。
 
 ### Tests、traceability、exit
 
@@ -258,3 +266,26 @@ typed/resolved ownership、exact empty-semantic boundary、reviews/verification�
 completeするが、Task 258 umbrellaはcloseしない。explicit assumption/
 conclusion/witness、local label/citation、composite root、nested context、
 broader visibilityはseparately frozen Task 258Bに残す。
+
+## Task 258A implementation result
+
+frozen language/test intentを拡張せずtransactionを実装した。
+`SourceStatementProducer`はexact five dense rowsだけをpublishし、validated
+binding environmentをownする。current module namespace、symbol、definition、
+label、contribution、checked-owner viewを横断してtheoremをauthenticateする。
+installationはTask-252/256 debug fingerprint、stored reference-use ordinal
+2件、arena topology、direct formula-expression wrapper、excluded descendantを
+再検証する。
+
+typed installationは全existing semantic tableをrejectする。final assemblyも
+output構築前にcluster/overload/expression/statement-semantic/proof/diagnostic
+coexistenceをrejectする。node hintはempty、またはsole role
+`source.statement.transport`のcomplete dense source-preserved setだけをaccept
+する。このhintはsyntax nodeをpreserveするだけでsemantic factを生成しない。
+Task-248-first、named reverse test-only、injected final coexistenceはいずれも
+atomicにfailし、valid replayを保持する。
+
+checkerはexactly Task-258A compound tests 3件、dormant real runner routeは
+exactly 4件。fixture/sidecar/expectation/trace row/status/active countは不変。
+broader statement shapeと全semantic acceptance/proof decisionはTask 258Bまたは
+Tasks 269–272に残る。

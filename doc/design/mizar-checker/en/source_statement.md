@@ -51,16 +51,19 @@ one normal, unmodified `theorem` with the exact label and direct,
 unparenthesized reserved-variable equality above. It reuses:
 
 - one Task-48-derived normal module `BindingEnv` with context 0 and active,
-  visible `ReservedVariable` binding 0 for `x`, declaration range `0..18`,
-  source type site `14..17`, and first-use ordinal 1;
+  visible `ReservedVariable` binding 0 for `x`, identifier declaration range
+  `8..9` within reserve item `0..18`, source type site `14..17`, and first-use
+  ordinal 1;
 - Task 252 profile `2/2/0`: two `VariableReference` / `Value` primaries and
   two independently authenticated references to binding 0, each with
   Task-252 stored use ordinal 1;
 - Task 256 profile `1/0/0/0/0/0/2/2`: one normal `Equality`, two built-in
   operand edges to Task-252 primaries 0 and 1, and two unresolved operand
   expected-type requests;
-- the shared typed arena in which the theorem node directly contains the
-  formula occurrence and the formula contains both term occurrences.
+- the shared typed arena in which the theorem node contains the direct
+  `FormulaExpression` wrapper, that wrapper contains the atomic formula
+  occurrence, and the formula subtree contains both term occurrences in
+  left-to-right order.
 
 Task 248 supplies the canonical binding/context model but its current exact
 `SourceBindingContextHandoff` profiles do not admit a reserve-plus-theorem
@@ -70,10 +73,15 @@ exact formula is atomic.
 
 The owner is authenticated against all resolver views. There must be exactly
 one local source theorem symbol for the current source/module.
-`CheckedStatementOwner::validate_exact_local_theorem` must accept it, and its
-`SymbolEntry`, `DefinitionEntry`, `SourceContribution`, and `LabelEntry` must
-agree on source/module, contribution, normal origin, range, spelling,
-visibility, and export status. The exact kinds are `SymbolKind::Theorem`,
+`CheckedStatementOwner::validate_exact_local_theorem` must accept it.
+`SymbolEntry`, `DefinitionEntry`, `LabelEntry`, and the checked owner agree
+on source/module, contribution, normal theorem origin `19..80`, spelling,
+visibility, and export status. The runner's exact label selector/projection
+range is `27..72`; the published `LabelEntry` carries the shared theorem
+origin rather than a separate declaration-range field.
+The module-wide `SourceContribution` retains the real resolver anchor at the
+first declaration shell, reserve `0..18`, rather than fabricating a
+theorem-local contribution. The exact kinds are `SymbolKind::Theorem`,
 `DefinitionKind::Theorem`, and `LabelKind::Theorem`; visibility/export are
 `Public` / `Exported`; the contribution is `LocalSource`, contains the
 theorem symbol, definition, and label effects, and has no import edge.
@@ -380,9 +388,10 @@ Owner 0 is the authenticated theorem label. Statement 0 spans `19..80`,
 uses the theorem site, normal recovery, exact single-space token spelling,
 kind `TheoremProposition`, owner 0, context 0, and
 `Atomic(SourceAtomicFormulaId::new(0))`. The statement formula is the exact
-Task-256 equality at `74..79`, and the theorem arena node directly contains
-its formula wrapper/occurrence without another statement, proof, or
-justification subtree.
+Task-256 equality at `74..79`; the theorem arena node contains the direct
+formula-expression wrapper, which contains the atomic occurrence and its
+ordered term descendants, without another statement, proof, or justification
+subtree.
 
 Context 0 spans the theorem, uses binding context 0, and has exact visible
 bindings `[BindingId::new(0)]`. Its binding environment must be normal,
@@ -527,7 +536,7 @@ statement families remain Task 258B or Tasks 269–272.
 | `SourceStatementCandidateFactKind` | `#[non_exhaustive]`; Task 258A accepts only `UnverifiedProposition`. |
 | `SourceStatementError` | `#[non_exhaustive]`; callers must not exhaustively match producer/installation failures. |
 
-No exhaustive public-enum exception is owned by this module.
+No exhaustive public enum exceptions are owned by this module.
 
 ### Tests, traceability, and exit
 
@@ -562,3 +571,26 @@ reviews, and verification pass. It does not complete the Task 258 umbrella:
 explicit assumption/conclusion/witness statements, local label/citation
 inputs, composite theorem roots, nested statement contexts, and broader
 visibility remain for a separately frozen Task 258B.
+
+## Task 258A Implementation Result
+
+The frozen transaction is implemented without extending its language or test
+intent. `SourceStatementProducer` publishes only the five exact dense rows,
+owns the validated binding environment, and authenticates the theorem across
+the current module namespace, symbol, definition, label, contribution, and
+checked-owner views. Installation rechecks the Task-252/256 debug
+fingerprints, both stored reference-use ordinals, arena topology, direct
+formula-expression wrapper, and excluded descendants.
+
+Typed installation rejects every existing semantic table. Final assembly
+also rejects cluster, overload, expression, statement-semantic, proof, and
+diagnostic coexistence before building output. It accepts either no node
+hints or the complete dense set of source-preserved hints whose sole role is
+`source.statement.transport`; those hints preserve syntax nodes and do not
+create semantic facts. Task-248-first, named reverse test-only, and injected
+final coexistence paths all fail atomically and retain valid replay.
+
+The checker has exactly three compound Task-258A tests and the dormant real
+runner route has exactly four. No fixture, sidecar, expectation, trace row,
+trace status, or active count changed. Broader statement shapes and every
+semantic acceptance/proof decision remain Task 258B or Tasks 269–272.

@@ -2464,6 +2464,10 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Preserve documentation-only baselines `419/387`, `253/241`,
   `228/191`, active `101/5/198/1`, libraries `335/365`, runner 29 paths /
   34,290 lines, and every test-list/CLI/production hash.
-- [ ] Implement Task 258A in a separate logical task/commit only after this
+- [x] Implement Task 258A in a separate logical task/commit only after this
   documentation commit and fresh parser/resolver/lower-API/count/hash
   preflight; keep Task 258B open.
+- [x] Close the bounded `source_drift` and `test_gap` with checker/runner
+  tests `3/4`, checker/runner libraries `338/369`, and runner production
+  30 paths / 34,955 lines; leave fixture/sidecar/trace activation to
+  `MT10-FS` and freeze Task 258B separately.

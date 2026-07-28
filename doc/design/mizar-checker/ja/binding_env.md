@@ -471,8 +471,9 @@ accepted fact、theorem ownerをpublishしない。
 ## Task 258A reserved-theorem consumer
 
 Task 258AはTask-48由来normal module environment 1件をconsumeする。context
-0にactive/visibleな`ReservedVariable` binding 0 (`x`)があり、declarationは
-`0..18`、written type siteは`14..17`、theoremでのfirst use ordinalは1。
+0にactive/visibleな`ReservedVariable` binding 0 (`x`)があり、identifier
+declarationはreserve item `0..18`内の`8..9`、written type siteは`14..17`、
+theoremでのfirst use ordinalは1。
 statement contextはauthenticated visible binding IDとreserved-type-guard
 associationだけをcopyし、environment mutation、theorem/proof context追加、
 fact publication、本module public API extensionは行わない。

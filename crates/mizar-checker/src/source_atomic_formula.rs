@@ -545,6 +545,11 @@ impl SourceAtomicFormulaHandoff {
         output
     }
 
+    #[cfg(test)]
+    pub(crate) fn set_primary_term_fingerprint_for_test(&mut self, fingerprint: String) {
+        self.primary_term_fingerprint = fingerprint;
+    }
+
     #[allow(clippy::too_many_arguments)] // Rationale: installation must reauthenticate every frozen lower-family dependency explicitly.
     pub(crate) fn validate_installation(
         &self,

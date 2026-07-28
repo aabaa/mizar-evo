@@ -3629,3 +3629,30 @@ warnings/errors `23/0`, and checker/runner libraries `335/365`. This audit
 update is required because the task refines Step-5 follow-up ownership and
 freezes the future consumer and traceability exit gate; no no-op trace
 metadata edit is permitted.
+
+## Step 5 Checker Task 258A Implementation Result
+
+The separately frozen implementation is complete. The checker now owns the
+syntax-free five-table `1/1/1/1/1` transaction, immutable binding/lower
+provenance, typed/final publication, Task-248 exclusion, and empty-semantic
+boundary. The private runner owns only the exact dormant real frontend,
+resolver-label, and Task-48/252/256 bridge. Three checker and four runner
+tests close the recorded Task-258A `source_drift` and `test_gap`, including
+resolver substitution, both stored reference ordinals, arena subtree
+exclusion, semantic coexistence, rollback, and replay.
+
+No `.miz`, sidecar, expectation, trace row, trace status, or active route was
+added or modified. Therefore
+`spec.en.checker.formula_statement.source_payloads` correctly remains
+deferred with an empty test list; its requirement/status/count cannot be
+changed until Task 258B, Tasks 269–272, and the separately authorized
+`MT10-FS` corpus task supply the remaining semantics and executable fixture.
+This audit update is required because Task-258A implementation ownership and
+its follow-up status changed, while `tests/coverage/spec_trace.toml` remains
+an intentional no-op.
+
+Measured plan/type/pass/fail/active/warning counts remain
+`419/387`, `253/241`, `228/191`, `101/5/198/1`, and `23/0`. Checker/runner
+libraries are now `338/369`; runner production is 30 paths / 34,955 lines.
+The next executable dependency is the separately frozen Task-258B contract,
+not trace activation or theorem acceptance.

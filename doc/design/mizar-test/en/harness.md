@@ -3313,3 +3313,21 @@ source-statement handoffs, the same owned binding environment/fingerprint,
 absent Task-248 source context, and empty checked formula/statement/proof/
 fact/diagnostic output. This prerequisite changes no executable harness
 artifact.
+
+## Checker Task 258A Harness Result
+
+The dedicated private leaf now runs before the lower Task-257C1 route and
+uses the real frontend, declaration-shell symbol collection, label resolver,
+Task-48 binding bridge, and Task-252/256 builders. The exact
+`1/1/1/1/1` handoff is installed into fresh typed/final owners with only
+`source.statement.transport` source-preserved node hints. Four library tests
+cover the real provenance path, dependency and row corruption, loaded-source
+and subtree near misses, active-route isolation, ownership exclusion, and
+atomic replay. The future corpus fixture and sidecar remain absent.
+
+The runner library now has 369 tests with raw/normalized test-list hashes
+`c5764bb1600242fe44db8c44b9c6bb18f39203a0de9ff60e301cbc6f172037f6` /
+`1fd27b9bff190f95ac23d6de714a919a192fb0b7830aa3c98f960d4224c084aa`.
+Production is 30 paths / 34,955 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`.

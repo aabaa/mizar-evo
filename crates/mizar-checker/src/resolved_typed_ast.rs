@@ -27,6 +27,7 @@ use crate::{
         SourcePredicateChainCompositionHandoff,
     },
     source_set_term::SourceSetTermHandoff,
+    source_statement::SourceStatementHandoff,
     source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff,
     source_type::SourceTypeApplicationHandoff,
@@ -125,6 +126,7 @@ pub struct ResolvedTypedAst {
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
     source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
+    source_statement: Option<SourceStatementHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -211,6 +213,10 @@ impl ResolvedTypedAst {
         &self,
     ) -> Option<&SourcePredicateChainCompositionHandoff> {
         self.source_predicate_chain_composition.as_ref()
+    }
+
+    pub const fn source_statement(&self) -> Option<&SourceStatementHandoff> {
+        self.source_statement.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -329,6 +335,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_predicate_chain_composition) = &self.source_predicate_chain_composition {
             output.push_str(&source_predicate_chain_composition.debug_text());
+        }
+        if let Some(source_statement) = &self.source_statement {
+            output.push_str(&source_statement.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1283,6 +1292,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceFormulaComposition,
     InvalidSourceConditionFormulaComposition,
     InvalidSourcePredicateChainComposition,
+    InvalidSourceStatement,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1381,6 +1391,9 @@ impl fmt::Display for ResolvedTypedAstError {
             Self::InvalidSourcePredicateChainComposition => formatter.write_str(
                 "resolved typed AST source predicate-chain-composition handoff is inconsistent",
             ),
+            Self::InvalidSourceStatement => {
+                formatter.write_str("resolved typed AST source statement handoff is inconsistent")
+            }
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
             ),
@@ -1530,6 +1543,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
     fn assemble(self) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
         let source_id = self.inputs.typed_ast.source_id();
         let module_id = self.inputs.typed_ast.module_id().clone();
+        if self.inputs.typed_ast.source_statement().is_some()
+            && !source_statement_inputs_are_syntax_only(&self.inputs)
+        {
+            return Err(ResolvedTypedAstError::InvalidSourceStatement);
+        }
         validate_statement_bundle_presence(&self.inputs)?;
         let (checked_formulas, statement_semantics) =
             build_statement_semantics(&self.inputs, source_id, &module_id)?;
@@ -1748,6 +1766,40 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourcePredicateChainComposition)?;
         }
+        let source_statement = self.inputs.typed_ast.source_statement().cloned();
+        if let Some(source_statement) = &source_statement {
+            if self.inputs.typed_ast.source_context().is_some()
+                || self.inputs.typed_ast.source_type().is_some()
+                || self.inputs.typed_ast.source_attribute().is_some()
+                || self.inputs.typed_ast.source_evidence().is_some()
+                || source_application.is_some()
+                || source_structure.is_some()
+                || source_set_term.is_some()
+                || source_composite_formula.is_some()
+                || source_formula_composition.is_some()
+                || source_condition_formula_composition.is_some()
+                || source_predicate_chain_composition.is_some()
+            {
+                return Err(ResolvedTypedAstError::InvalidSourceStatement);
+            }
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourceStatement)?;
+            let source_atomic_formula = source_atomic_formula
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourceStatement)?;
+            source_statement
+                .validate_installation(
+                    source_id,
+                    &module_id,
+                    source_term,
+                    source_atomic_formula,
+                    self.inputs.typed_ast.nodes(),
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
+        }
 
         Ok(ResolvedTypedAst {
             source_id,
@@ -1765,6 +1817,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_formula_composition,
             source_condition_formula_composition,
             source_predicate_chain_composition,
+            source_statement,
             nodes,
             expr_metadata,
             collection_candidates,
@@ -1784,6 +1837,49 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             checked_terminal_goals,
         })
     }
+}
+
+fn source_statement_inputs_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {
+    inputs.typed_ast.resolved_root().is_none()
+        && inputs.typed_ast.contexts().is_empty()
+        && inputs.typed_ast.types().is_empty()
+        && inputs.typed_ast.facts().is_empty()
+        && inputs.typed_ast.coercions().is_empty()
+        && inputs.typed_ast.initial_obligations().is_empty()
+        && inputs.typed_ast.diagnostics().is_empty()
+        && inputs.cluster_facts.is_empty()
+        && inputs.overload_collection.sites().is_empty()
+        && inputs.overload_collection.candidates().is_empty()
+        && inputs.overload_collection.diagnostics().is_empty()
+        && inputs.template_expansion.candidates().is_empty()
+        && inputs.template_expansion.expansions().is_empty()
+        && inputs.template_expansion.diagnostics().is_empty()
+        && inputs.viability.candidates().is_empty()
+        && inputs.viability.decisions().is_empty()
+        && inputs.viability.diagnostics().is_empty()
+        && inputs.specificity.candidates().is_empty()
+        && inputs.specificity.graphs().is_empty()
+        && inputs.specificity.diagnostics().is_empty()
+        && inputs.overload_selection.results().is_empty()
+        && inputs.overload_selection.inserted_views().is_empty()
+        && inputs.overload_selection.diagnostics().is_empty()
+        && inputs.expressions.is_empty()
+        && source_statement_node_hints_are_syntax_only(inputs)
+        && inputs.statement_semantics.is_none()
+        && inputs.statement_proofs.is_none()
+}
+
+fn source_statement_node_hints_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {
+    inputs.node_hints.is_empty()
+        || (inputs.node_hints.len() == inputs.typed_ast.nodes().len()
+            && inputs.node_hints.iter().enumerate().all(|(ordinal, hint)| {
+                hint.typed_node.index() == ordinal
+                    && matches!(
+                        &hint.kind,
+                        ResolvedNodeKindHintKind::SourcePreserved { role }
+                            if role.as_str() == "source.statement.transport"
+                    )
+            }))
 }
 
 fn validate_statement_bundle_presence(

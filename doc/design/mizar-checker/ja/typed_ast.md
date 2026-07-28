@@ -863,3 +863,12 @@ SourceStatementHandoff)` bypassはfinal-assembly coexistence rejectionの準備
 だけに使いproduction construction pathではない。debug chunkは全Task-257 owner
 slotの後、node/table sectionの前。`facts`/existing semantic tableはempty。
 本documentation commitは`TypedAst` source/APIを変更しない。
+
+### Task 258A implementation result
+
+optional handoff、read-only accessor、one-shot installer、debug chunk、
+dedicated `InvalidSourceStatement` pathを実装した。installationはfrozen
+source-family exclusionとTask-252/256 dependencyに加え、generic typed
+projection (`resolved_root`、context、type、fact、coercion、initial
+obligation、diagnostic)がemptyであることを要求する。coexistence failureは
+prior valueをmutateせず、valid replayはdeterministic。

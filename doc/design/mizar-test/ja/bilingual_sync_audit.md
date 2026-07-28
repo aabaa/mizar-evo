@@ -397,3 +397,11 @@ unchanged `419/387` / 365-test baseline、semantic deferralをfreezeする。
 本prerequisiteはrunner source、fixture、sidecar、
 trace metadata/status/count、executable count/hashを追加しない。Task-258A
 bilingual driftは認めない。
+
+## Checker Task 258A implementation synchronization
+
+paired runner plan/harness/TODO/boundary auditは同じdormant exact route、
+resolver import-provenance negative、4-test matrix、369-test list、
+30-path/34,955-line production manifestと同一hashを記録する。
+fixture/sidecar/trace metadata/active countは不変。Task-258A implementation
+bilingual driftは残らない。

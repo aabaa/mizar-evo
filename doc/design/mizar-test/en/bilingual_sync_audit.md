@@ -410,3 +410,11 @@ owner, named near-miss matrix, unchanged
 `419/387` and 365-test baseline, and semantic deferrals. This prerequisite
 adds no runner source, fixture, sidecar, trace metadata/status/count,
 executable count, or hash. No Task-258A bilingual drift is accepted.
+
+## Checker Task 258A Implementation Synchronization
+
+The paired runner plan, harness, TODO, and boundary audit record the same
+dormant exact route, resolver import-provenance negative, four-test matrix,
+369-test list, and 30-path/34,955-line production manifest with identical
+hashes. Fixture, sidecar, trace metadata, and active counts remain unchanged.
+No Task-258A implementation bilingual drift remains.

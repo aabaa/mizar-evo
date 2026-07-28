@@ -27,6 +27,7 @@ public method は、module spec が table、builder、output API として記述
 - [source_application.md](./source_application.md)
 - [source_set_term.md](./source_set_term.md)
 - [source_structure.md](./source_structure.md)
+- [source_statement.md](./source_statement.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -35,10 +36,9 @@ public method は、module spec が table、builder、output API として記述
 - [overload_resolution.md](./overload_resolution.md)
 - [resolved_typed_ast.md](./resolved_typed_ast.md)
 
-Task 258A frozen contract
-[source_statement.md](./source_statement.md)はfuture public moduleをfully
-nameする。separate implementation taskがsource moduleを追加するまではcurrent
-module-export/public-surface inventoryへ含めない。
+implemented Task 258A contract
+[source_statement.md](./source_statement.md)はbounded syntax-free theorem
+transactionをownし、broader statement semanticsはdeferredのまま。
 
 結果: 実装済み explicit-payload API について、blocking な `source_drift`、
 `design_drift`、`source_undocumented_behavior` は観測していない。残る
@@ -141,6 +141,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_evidence`
 - `source_application`
 - `source_set_term`
+- `source_statement`
 - `source_structure`
 - `source_term`
 - `source_type`
@@ -562,6 +563,40 @@ literal top-level public item:
 bounded gap: connective/quantifier/predicate truth、signature applicability、
 overload selection、formula fact/result、implicit theorem closure/acceptance、
 proof、downstream IRはTask 258以降に残る。
+
+### `source_statement`
+
+generated public newtype:
+
+- `SourceTheoremOwnerId`、`SourceStatementId`、`SourceStatementContextId`、
+  `SourceStatementInputFactId`、`SourceStatementCandidateFactId`
+
+literal top-level public item:
+
+- `SourceStatementHandoffInput`、`SourceTheoremOwnerInput`、
+  `SourceStatementInput`、`SourceStatementContextInput`、
+  `SourceStatementInputFactInput`、`SourceStatementCandidateFactInput`
+- `SourceTheoremRole`、`SourceTheoremStatus`、`SourceStatementKind`、
+  `SourceStatementRecovery`、`SourceStatementFormulaTarget`、
+  `SourceStatementInputFactKind`、`SourceStatementCandidateFactKind`
+- `SourceStatementHandoff`、`SourceTheoremOwnerTable`、
+  `SourceStatementTable`、`SourceStatementContextTable`、
+  `SourceStatementInputFactTable`、`SourceStatementCandidateFactTable`、
+  `SourceTheoremOwner`、`SourceStatement`、`SourceStatementContext`、
+  `SourceStatementInputFact`、`SourceStatementCandidateFact`、
+  `SourceStatementProducer`、`SourceStatementError`
+
+対応:
+
+| specification promise | source evidence | test evidence | status |
+|---|---|---|---|
+| syntax-free dense table 5件がexact theorem owner、statement shell、visibility context、reserved-type-guard input、unverified candidateを保持する。 | `src/source_statement.rs`のpublic input/row/table/handoff type。 | checker exact tests 3件とreal frontend/resolver runner tests 4件。 | Task 258Aとしてimplemented。 |
+| resolver、Task-48 binding、Task-252/256 fingerprint、arena topology、direct formula wrapperをfail-closedにrevalidateする。 | `SourceStatementProducer::build`、immutable authenticated contribution/environment、typed/final installer。 | resolver/lower/binding/ordinal/fingerprint/subtree/coexistence corruption/replay matrix。 | transactionalにimplemented。 |
+| theorem truth、accepted fact、proof、existing semantic tableをpublishしない。 | candidate kindはunverified、typed/final semantic coexistence guardはoutput前にreject。 | checker/runnerのempty-output/semantic-coexistence test。 | transportだけとしてimplemented。 |
+| public enumはforward-compatible。 | public enum 7件の`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+
+bounded gap: broader statement/local citation/nested contextはTask 258B、
+acceptance/proof-local behavior/justification semanticsはTasks 269–272。
 
 ### `source_set_term`
 
@@ -3554,22 +3589,35 @@ semanticsを付与せず、executable lower input/provenance viewを確立する
 
 不足していたsyntax-free owner/statement/context/input/candidate contractは
 `design_drift`で、本documentation prerequisiteによりclosed。
-future `source_statement` module/producer、typed/final installation、dormant
-exact-source bridgeはbounded `source_drift`、checker/runner matrixは
-`test_gap`。blocking `spec_gap`、`source_undocumented_behavior`、
+prerequisite時点ではplanned `source_statement` module/producer、typed/final
+installation、dormant exact-source bridgeがbounded `source_drift`、
+checker/runner matrixが`test_gap`だった。下記implementation auditで両分類を
+closeした。blocking `spec_gap`、`source_undocumented_behavior`、
 `test_expectation_drift`、accepted `boundary_violation`はない。現行Task-248
 exact handoffはreserve-plus-theorem transactionを表せず、extend/fabricateせず
 明示的にexcludeする。origin divergenceはreport-only
 `repo_metadata_conflict`のまま。
 
-future public surfaceは`source_statement.md`でfully namedされ、five dense
+then-future public surfaceは`source_statement.md`でfully namedされ、five dense
 ID/table、immutable input/output row、producer signature、semantic boundary用
 non-exhaustive enum 7件、row-local failure、aggregate precedence、
 owned BindingEnv/fingerprint、Task-252/256 dependency fingerprint、
 asymmetric production plus named test-only Task-248 exclusion、stable debug
 schemaを含む。
-implementationまではcurrent module-export/public-surface inventoryに含めない。
+pre-implementation module-export/public-surface inventoryではabsentだったが、
+current inventoryは上記に含める。
 既存deferred `spec.en.checker.formula_statement.source_payloads` rowはempty
 test listを保ち、本prerequisiteではstatus/count/fixture/sidecar/expectation/
 coverageを変更しない。broader statement formはTask 258BとTasks 269–272が
 所有する。
+
+### Task 258A implementation audit
+
+public module/producer、typed/final ownership、dormant real parser/resolver
+bridgeはfrozen contractと一致した。checker 3 tests/runner 4 testsがrecorded
+`source_drift`/`test_gap`をcloseし、prior `design_drift`もclosedのまま。
+new language behavior、accepted theorem fact、proof meaning、fixture、
+expectation、trace activationは追加しない。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`は残らない。broader/semantic statement familyは
+Task 258BとTasks 269–272が保持する。
