@@ -511,3 +511,12 @@ EN/JA runner plan/TODO/harness/module auditはsame 113-byte/hash、exact
 tests 5本、unchanged 399-test / 30-path baseline、no
 public/active/trace/semantic change、B3M2B2-before-B4をfreezeする。
 authority-invalid theorem-proof `take it;`はexclude。bilingual debtなし。
+
+## Task 258B3M2B1 runner implementation synchronization
+
+EN/JA runner plan/TODO/harness/boundary auditはcompleted exact selector、
+explicit diagnostics 0、five-root/six-primary、parent/child ownership、
+passing tests 5本、Tasks 253–255 bidirectional isolation、404-test /
+30-path measured oracles、不変のpublic/active/trace/semantic boundary、
+lower-producer fail-close、B3M2B2-before-B4を同一に記録する。bilingual
+debtは残らない。

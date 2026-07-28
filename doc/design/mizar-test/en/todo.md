@@ -2037,7 +2037,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Decompose B3M2B into exact parenthesized B3M2B1 and remaining
   authority-valid B3M2B2.
 - [x] Freeze B3M2B1 only; keep implementation and B3M2B2 separate.
-- [ ] Implement frozen B3M2B1 after its documentation commit and fresh
+- [x] Implement frozen B3M2B1 after its documentation commit and fresh
   parser/resolver/lower/count/hash preflight.
 - [ ] Freeze/implement B3M2B2 before Task 258B4.
 
@@ -2088,5 +2088,18 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   binding, active case, fixture, trace credit, or semantic output.
 - [x] Freeze exactly five compound tests, unchanged 399-test and
   30-path/38,571-line baselines, and B3M2B2-before-B4.
-- [ ] After the docs commit/fresh preflight, implement only B3M2B1 and
-  measure projected 404 runner tests.
+- [x] After the docs commit/fresh preflight, implement only B3M2B1 and
+  measure 404 runner tests.
+
+## Checker Task 258B3M2B1 Runner Implementation Ledger
+
+- [x] Add only the exact dormant 113-byte/53-node selector and assert zero
+  frontend diagnostics.
+- [x] Separate five roots from six Task-252 primaries and keep wrapper term
+  2 / child term 3 out of Task-256 equalities.
+- [x] Publish only paired base plus `1 witness / 0 names`, with no detail
+  key, active route, binding, or semantic output.
+- [x] Keep exactly five tests and cover Tasks 253–255 in both ownership
+  orders without weakening lower-producer fail-close.
+- [x] Measure 404 tests, sizes `4676/695/2508/9902`, and 30 production
+  paths / 39,069 lines; retain B3M2B2 before B4.

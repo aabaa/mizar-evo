@@ -2599,6 +2599,6 @@ completion remain deferred. The origin discrepancy remains report-only
   Task-252 `6/5/0`, parent/child and reference ownership, atomic exclusion,
   witness/name `1/0`, no API/semantics, four/five future tests, and
   unchanged baselines/audit credit.
-- [ ] Implement only B3M2B1 after its documentation commit and fresh
+- [x] Implement only B3M2B1 after its documentation commit and fresh
   parser/resolver/lower/count/hash preflight.
 - [ ] Freeze/implement B3M2B2 before selecting Task 258B4.

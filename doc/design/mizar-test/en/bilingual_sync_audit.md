@@ -530,3 +530,12 @@ six-primary profile, wrapper/child ownership, five future compound tests,
 unchanged 399-test / 30-path baseline, no public/active/trace/semantic
 change, and B3M2B2-before-B4 order. Authority-invalid theorem-proof
 `take it;` is excluded. No bilingual debt is accepted.
+
+## Task 258B3M2B1 Runner Implementation Synchronization
+
+The EN/JA runner plan, TODO, harness, and boundary audit now record the
+same completed exact selector, explicit zero-diagnostic assertion,
+five-root/six-primary handoff, parent/child ownership, five passing tests,
+Tasks 253–255 bidirectional isolation, 404-test and 30-path measured
+oracles, unchanged public/active/trace/semantic boundary, lower-producer
+fail-close, and B3M2B2-before-B4 order. No bilingual debt remains.

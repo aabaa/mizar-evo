@@ -3842,3 +3842,12 @@ review-only writerによるdocs duplicateは`repo_metadata_conflict`ではなく
 operational `boundary_violation`であり、parentがrepository metadataを
 変更せずtask-owned documentationをreconcileした。formula-statement rowは
 `deferred`, `tests = []`、creditなし。
+
+## Task 258B3M2B1 implementation audit
+
+private checker/runner implementationはfrozen `source_drift`/`test_gap`だけを
+closeした。public API、canonical specification、existing `.miz`、
+expectation、sidecar、trace metadata/status/count、active route、semantic
+ownerは不変。checker 4本 / runner 5本がexact transportをexerciseするが、
+formula-statement rowは`deferred`, `tests = []`でcreditなし。B3M2B2が
+remaining authority-valid witness termsを保持する。

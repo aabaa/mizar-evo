@@ -423,3 +423,12 @@ witness/name `1/0`、source partition `[0,1,2]`、public-API no-op、
 semantic deferral、future tests `4/5`、unchanged `362/399` baseline、
 B3M2B2-before-B4 orderをfreezeする。`it`はauthority-validな`means`
 definition/property contextだけへdeferする。bilingual debtはacceptしない。
+
+## Task 258B3M2B1 implementation synchronization
+
+canonical EN/JA checker/runner companionsはcompleted private
+parenthesized-witness profile、53-node/lower-table authentication、
+five-root/six-primary mapping、parent/child ownership、`1 witness / 0 names`、
+tests 4/5、libraries `366/404`、measured sizes/hashes、不変の
+public/active/trace/semantic boundary、B3M2B2-before-B4を同一logical
+contractとして記録する。implementation bilingual debtは残らない。

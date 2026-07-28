@@ -1842,7 +1842,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] B3M2Bをexact parenthesized B3M2B1 / remaining authority-valid
   B3M2B2へdecompose。
 - [x] B3M2B1だけをfreezeし、implementation/B3M2B2をseparateに維持。
-- [ ] docs commit/fresh parser/resolver/lower/count/hash preflight後に
+- [x] docs commit/fresh parser/resolver/lower/count/hash preflight後に
   frozen B3M2B1だけをimplement。
 - [ ] Task 258B4前にB3M2B2をfreeze/implement。
 
@@ -1891,5 +1891,18 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   fixture/trace credit/semantic outputをfreeze。
 - [x] future tests exactly 5本、unchanged 399 tests、30 paths /
   38,571 lines、B3M2B2-before-B4をfreeze。
-- [ ] docs commit/fresh preflight後にB3M2B1だけをimplementし、
-  projected 404 runner testsを実測。
+- [x] docs commit/fresh preflight後にB3M2B1だけをimplementし、
+  404 runner testsを実測。
+
+## Checker Task 258B3M2B1 runner implementation ledger
+
+- [x] exact dormant 113-byte/53-node selectorだけを追加し、frontend
+  diagnostics 0をassert。
+- [x] five roots / six Task-252 primariesを分離し、wrapper term 2 /
+  child 3をTask-256 equalitiesからexclude。
+- [x] paired base + `1 witness / 0 names`だけをpublishし、detail key、
+  active route、binding、semantic outputなし。
+- [x] exactly five testsを維持し、lower fail-closeを弱めずTasks 253–255
+  both ownership ordersをcover。
+- [x] 404 tests、sizes `4676/695/2508/9902`、30 production paths /
+  39,069 linesを実測し、B3M2B2をB4前に保持。

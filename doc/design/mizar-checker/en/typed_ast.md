@@ -1082,3 +1082,14 @@ prior-profile, B3M2A, Tasks-248/253–257/other-258, corrupted dependency,
 reference/parent-corrupt, semantic-coexisting, and reverse-order attempts
 must fail without partial ownership. No public method, field, enum, or debug
 grammar is added.
+
+## Task 258B3M2B1 Implementation Result
+
+The existing paired installer now accepts the exact B3M2B1 base and
+`1 witness / 0 names` transaction and publishes both tables atomically.
+It revalidates the 53-node arena, five-root/six-primary map,
+parenthesized-wrapper/child edge, all five references, both equality
+exclusions, fingerprints, and `[0,1,2]` source order. Standalone, repeated,
+cross-profile, corrupted-dependency, semantic-coexisting, and reversed-order
+attempts still fail without partial ownership. No public typed-AST API or
+debug grammar changed.

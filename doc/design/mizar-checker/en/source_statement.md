@@ -2447,11 +2447,13 @@ The runner test contract is exactly five compound tests:
 4. `task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders`;
 5. `task258b3m2b1_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`.
 
-Runner test 2 repeats each wrapper-reference, child-reference, and
-term-2/term-3 Task-256 contamination mutation through the real paired
-consumer. Runner test 3 additionally proves that selector and subtree near
-misses cannot publish partial wrapper/child ownership or a detached child
-reference.
+Runner test 2 attempts each wrapper-reference, child-reference, and
+term-2/term-3 Task-256 contamination mutation through real route
+construction. When a malformed row cannot form a valid Task-252 or Task-256
+handoff, that owning public producer rejects first; the paired statement
+consumer is exercised whenever lower construction succeeds. Runner test 3
+additionally proves that selector and subtree near misses cannot publish
+partial wrapper/child ownership or a detached child reference.
 
 Together they freeze exact source/resolver/lower/base/witness identity,
 five-root/six-primary separation, parent/child and reference ownership,
@@ -2514,3 +2516,38 @@ documents, independent no-findings reviews, all protocol hard gates,
 read-only quality at least 90/100, task-only staging, and one dedicated
 documentation commit. Implementation may begin only after that commit and
 a fresh parser/resolver/lower/count/hash preflight.
+
+## Task 258B3M2B1 Implementation Result
+
+The checker now recognizes one private syntax-free `Task258B3M2B1`
+profile. It authenticates the complete 53-node arena, exact module/proof
+binding contexts, Task-48 `2/1/0`, Task-252 `6/5/0` with parenthesized term
+2 / child term 3 and dense references `0/1/2/3/4 -> 0/1/3/4/5`,
+Task-256 pairs `[0,1]` / `[4,5]`, base `1/2/2/2/2`, and one unnamed
+outer-term witness/no names with source partition `[0,1,2]`. The paired
+typed/final path publishes both halves atomically; every byte, node,
+parent/reference, resolver, dependency, subtree, family, replay, and
+semantic-coexistence near miss fails without partial ownership.
+
+All four checker and five runner compound tests pass. Libraries are
+`366/404`; checker module sizes are `17569/4661/7203/3156`; runner
+statement leaf/facade/root/test sizes are `4676/695/2508/9902`; runner
+production is 30 paths / 39,069 lines. Checker raw/normalized test-list
+hashes are
+`0e43763c92ee171b18b5a2f80b92cd278b49ac9895d95410ca52ca787bcac3c8` /
+`7685e21bc0d76bb8d824dd821e800707d251e8c025682ef69b2db798d6888e5d`;
+runner hashes are
+`a28c33e517d8efdd635e23e6f2273c29b966aa6102efb321eed73335ab11483c` /
+`f8e8dc6ef605cbd8f8ad722983793434339b3cad21bf53703ab6c21f0b8742a5`.
+Runner path/content hashes are
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`04bf563fcc99ccbc3b789a8596d953ade05453b2267639ef0ce3d8d54cbd6b45`.
+All five CLI counts and hashes remain unchanged.
+
+No canonical artifact, fixture, expectation, sidecar, trace status/count,
+active route, public API, binding, or semantic/proof/goal owner changed.
+The formula-statement row remains `deferred`, `tests = []`, with no credit.
+The bounded B3M2B1 `source_drift` and `test_gap` are closed; B3M2B2 is next
+before B4. Public Task-252/256 fail-close remains stronger than the
+statement boundary: malformed lower rows reject before paired consumption,
+and no test-only seam or public API was added to bypass that invariant.

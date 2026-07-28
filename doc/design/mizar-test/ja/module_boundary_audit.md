@@ -10394,3 +10394,14 @@ base/witnessだけcheckerへ渡す。private consumerはfive roots/six primary�
 分離。topology 30 paths / 38,571 lines、sizes
 `4185/691/2505/8611`を維持。public route/key/mutation API/module split/
 dependency direction/binding/semantic ownerなし。
+
+## Task 258B3M2B1 implemented runner boundary
+
+implementationはprivate statement leaf、type-elaboration facade、root
+dispatch imports、statement/application test support内。raw parser/resolverは
+runner-privateで、exact syntax-free handoffだけcheckerへ渡す。
+five-root/six-primary、diagnostics 0、Tasks 253–255 bidirectional isolationは
+test-owned。statement leaf/facade/root/test sizesは
+`4676/695/2508/9902`、productionは30 paths / 39,069 lines。public
+route/key/mutation API、module split、crate edge、dependency direction、
+binding、active route、semantic ownerは不変。

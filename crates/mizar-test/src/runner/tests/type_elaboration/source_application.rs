@@ -562,6 +562,21 @@ fn task253_ast_from_source_text(
     mizar_resolve::declarations::DeclarationShellSet,
     SymbolEnv,
 ) {
+    let (ast, module, shells, symbols, _) =
+        task253_ast_from_source_text_with_diagnostic_count(source, ordinal);
+    (ast, module, shells, symbols)
+}
+
+fn task253_ast_from_source_text_with_diagnostic_count(
+    source: &str,
+    ordinal: usize,
+) -> (
+    SurfaceAst,
+    ResolverModuleId,
+    mizar_resolve::declarations::DeclarationShellSet,
+    SymbolEnv,
+    usize,
+) {
     let unique = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |duration| duration.as_nanos());
@@ -602,6 +617,7 @@ fn task253_ast_from_source_text(
         )
         .expect("Task 253 selector frontend should run");
     std::fs::remove_dir_all(&package_root).expect("clean Task 253 selector package");
+    let diagnostic_count = output.diagnostics.len();
     let ast = output.ast.expect("Task 253 selector AST");
     let module = ResolverModuleId::new(package, module_path);
     let shells =
@@ -616,7 +632,7 @@ fn task253_ast_from_source_text(
         mizar_resolve::symbols::SymbolCollector::new(ast.source_id, &module, &shells, &projections)
             .collect()
             .into_env();
-    (ast, module, shells, symbols)
+    (ast, module, shells, symbols, diagnostic_count)
 }
 
 #[derive(Debug, Clone, Copy)]

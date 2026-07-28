@@ -892,3 +892,13 @@ retains nested parentheses, application, structure constructor/selector/
 update, set, choice, and every other authority-valid witness term. `it`
 remains eligible only in a Chapter-13-valid `means` definition or property
 context. B3M2B2 is next before B4/B5.
+
+### Task 258B3M2B1 Implementation Closure
+
+The private B3M2B1 profile now realizes exactly this syntax-only edge.
+Task-252 keeps the parenthesized wrapper, child reference, and parent link;
+Task-256 keeps only equality pairs `[0,1]` / `[4,5]`; Task 258 publishes
+one unnamed outer-term witness/no names atomically with the base statement.
+No application, structure, selector, update, set, choice, binding, semantic
+edge, active route, public schema, or neighboring family changed. B3M2B2
+remains the next unimplemented edge before B4/B5.

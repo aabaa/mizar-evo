@@ -1035,3 +1035,13 @@ exclusion、fingerprints、all lower dependencies、53-node arenaをrevalidate
 する。successはexpression/candidate/coercion/cluster/diagnostic/
 statement-semantic/proof/goal tablesをemptyにし、type/existential match/
 substitution/goal/proof effectをinferしない。public final APIなし。
+
+## Task 258B3M2B1 implementation result
+
+final assemblyはauthenticated B3M2B1 base/witness pairだけを
+clone-preserveする。exact 53-node arena、five-root/six-primary mapping、
+wrapper/child edge、one unnamed outer-term witness、complete subtree
+exclusions、dependency fingerprints、all lower tablesをrevalidateする。
+standalone、hybrid、stale、parent/reference-corrupt、semantic-coexisting
+stateは`InvalidSourceStatement`のまま。success時もsemantic/proof/goal
+tablesはempty。

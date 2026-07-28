@@ -618,3 +618,12 @@ exact parenthesized witnessはmodule/proof contexts `0/1`、reserved binding
 resolver symbol/context transitionを作らず、Task 269はno-op。witness
 typing、existential matching/substitution、remaining-goal、proof effectは
 Task 272が保持し、binding API/fingerprint grammarを変更しない。
+
+## Task 258B3M2B1 implementation result
+
+implemented profileはmodule/proof contexts `0/1`、reserved binding 0、
+visible proof scope `[0]`、diagnostics 0をrevalidateする。outer
+parenthesized term 2はreferenceを作らず、child term 3だけがbinding 0を
+use ordinal 1でresolveする。unnamed witnessはbinding、resolver symbol、
+capture、abbreviation、context transitionを追加しない。Task 269はno-opで、
+binding API/fingerprintは不変。

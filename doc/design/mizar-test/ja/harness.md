@@ -3399,3 +3399,19 @@ application/structure/selector/update/set/choice、recovery、changed theorem、
 composite/existentialはnear miss。authority-invalid theorem-proof
 `take it;`もnear miss。exact outputは`Some(Vec::new())`、lookups `1/1`、
 uses `[1; 5]`、empty semantics。route/key/artifact/count/hash変更なし。
+
+## Task 258B3M2B1 dormant consumer implementation
+
+exact selectorはprior statement profiles前に実装され、final-LF 113-byte
+source、53 unrecovered nodes/root 52、frontend diagnostics 0だけをaccept
+する。five rootsからsix primariesを作り、wrapper term 2はchild/reference
+term 3をownし、equalitiesは`[0,1]` / `[4,5]`だけ、one unnamed witnessは
+outer term 2をtargetする。resultは`Some(Vec::new())`、lookups `1/1`、
+uses `[1; 5]`、empty semanticsを維持する。
+
+five testsはexact identity、independent lower mutations、selector/subtree
+near miss、prior statement + Tasks 253–255 + active isolationのboth
+orders、rollback/replay、typed/final clone/debugをcoverする。valid
+Task-252/256 handoffを作れないmalformed rowはowning public producerで
+rejectし、constructible handoffだけpaired consumerへ進む。public
+route/key/fixture/sidecar/trace/active/binding/semantic ownerは不変。

@@ -4069,3 +4069,29 @@ same-task documentation despite an explicit no-write scope are operational
 `boundary_violation` incidents. The task paths and commit base remain
 unambiguous, same-task content is independently reconciled, and no metadata
 repair is performed.
+
+## Step 5 Checker Task 258B3M2B1 Implementation Completion
+
+The frozen private parenthesized-witness transport is implemented and
+verified with four checker and five runner compound tests. The exact
+53-node source path preserves five surface roots versus six Task-252
+primaries, wrapper term 2 / child term 3 provenance, Task-256 exclusion of
+both `2/3`, base `1/2/2/2/2`, and one unnamed outer-term witness/no names.
+Zero frontend diagnostics and Tasks 253–255 in both installation orders are
+now explicit test invariants. Public Task-252/256 producers retain first
+fail-close ownership when malformed lower rows cannot form handoffs.
+
+Measured completion is checker/runner libraries `366/404`, checker sizes
+`17569/4661/7203/3156`, runner statement sizes
+`4676/695/2508/9902`, and 30 production paths / 39,069 lines. The bounded
+B3M2B1 `source_drift` and `test_gap` are closed. This does not add
+executable specification coverage: the
+`spec.en.checker.formula_statement.source_payloads` row remains
+`deferred`, `tests = []`, with no backlink, status/count change, or credit.
+B3M2B2 retains the next follow-up before B4.
+
+The concurrent review-only writes during implementation review are an
+operational `boundary_violation`, not a `repo_metadata_conflict`. The parent
+reconciled only task-owned source/documentation, preserved the unambiguous
+commit target, and did not change repository metadata or the protected
+stash.

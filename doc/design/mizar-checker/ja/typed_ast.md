@@ -1028,3 +1028,13 @@ repeated、prior-profile、B3M2A、Tasks248/253–257/other-258、corrupted
 dependency、reference/parent corruption、semantic coexistence、reverse
 orderはpartial ownershipなしでfail。public method/field/enum/debug
 grammarを追加しない。
+
+## Task 258B3M2B1 implementation result
+
+existing paired installerはexact B3M2B1 baseと`1 witness / 0 names`をaccept
+し、両tablesをatomic publishする。53-node arena、five-root/six-primary
+map、parenthesized wrapper/child edge、five references、both equality
+exclusions、fingerprints、`[0,1,2]` source orderをrevalidateする。
+standalone、repeated、cross-profile、Tasks 253–255 occupied/reverse-order、
+corrupted dependency、semantic-coexisting attemptはpartial ownershipなしで
+failする。public typed-AST API/debug grammarは不変。

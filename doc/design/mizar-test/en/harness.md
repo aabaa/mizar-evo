@@ -3581,3 +3581,20 @@ theorem-proof `take it;` is also a near miss. The exact output keeps
 `Some(Vec::new())`, lookups `1/1`, reference uses `[1; 5]`, and empty
 semantics. The prerequisite changes no route, key, source/test artifact,
 count, or hash.
+
+## Task 258B3M2B1 Dormant Consumer Implementation
+
+The exact selector is implemented before prior statement profiles and
+accepts only the final-LF 113-byte source, all 53 unrecovered nodes/root 52,
+and zero frontend diagnostics. Five roots become six primaries; wrapper
+term 2 owns child/reference term 3, equalities use only `[0,1]` and
+`[4,5]`, and the one unnamed witness targets outer term 2. The result keeps
+`Some(Vec::new())`, lookups `1/1`, uses `[1; 5]`, and empty semantics.
+
+Five tests cover exact identity, independent lower mutations,
+selector/subtree near misses, prior statement plus Tasks 253–255 and active
+isolation in both orders, rollback/replay, and typed/final clone/debug.
+Malformed lower rows that cannot form Task-252/256 handoffs reject at their
+owning public producer; constructible lower handoffs reach the paired
+consumer. No public route/key/fixture/sidecar/trace/active/binding/semantic
+owner changed.

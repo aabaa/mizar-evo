@@ -4020,3 +4020,13 @@ documents was an operational `boundary_violation`, not a
 without changing repository metadata.
 The formula-statement row remains `deferred` with `tests = []` and receives
 no coverage credit.
+
+## Task 258B3M2B1 Implementation Audit
+
+The private checker/runner implementation closes only the frozen
+`source_drift` and `test_gap`. It adds no public API and changes no
+canonical specification, existing `.miz`, expectation, sidecar, trace
+metadata/status/count, active route, or semantic owner. Four checker and
+five runner tests exercise the exact authenticated transport; the
+formula-statement row remains `deferred`, `tests = []`, with no coverage
+credit. B3M2B2 retains every remaining authority-valid witness term.

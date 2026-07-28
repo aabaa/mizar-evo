@@ -4619,7 +4619,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   authority-valid B3M2B2へdecompose。
 - [x] B3M2B1 documentation prerequisiteをfreezeし、implementationと
   B3M2B2をseparate taskに維持。
-- [ ] frozen B3M2B1をdocs commit/fresh preflight後にimplement。
+- [x] frozen B3M2B1をdocs commit/fresh preflight後にimplement。
 - [ ] B3M2B2 remaining witness-term shapesをfreeze/implementしてから
   Task 258B4を選ぶ。
 
@@ -4704,5 +4704,19 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   source partition `[0,1,2]`。
 - [x] no public API/binding/semantics、tests 4/5、unchanged `362/399`、
   coverage deferred/empty、B3M2B2-before-B4をfreeze。
-- [ ] dedicated docs commit/fresh preflight後にB3M2B1だけをimplementし、
-  projected `366/404`を実測してB3M2B2を保持。
+- [x] dedicated docs commit/fresh preflight後にB3M2B1だけをimplementし、
+  `366/404`を実測してB3M2B2を保持。
+
+## Checker Task 258B3M2B1 implementation ledger
+
+- [x] private exact B3M2B1 dependency/base/witness profileだけを追加し、
+  public API/prior debug grammarを維持。
+- [x] five roots / six primaries、wrapper/child edge、dense references、
+  subtree exclusions、complete 53-node arenaをrevalidate。
+- [x] paired `1 witness / 0 names`だけをatomic installし、bindingと全
+  semantic/proof/goal tablesを維持。
+- [x] exactly checker 4 / runner 5 testsでidentity、precedence、mutation、
+  Tasks 253–255/family order、replay、cloneをcover。
+- [x] libraries `366/404`、checker `17569/4661/7203/3156`、runner
+  `4676/695/2508/9902`、production 30 paths / 39,069 linesを実測し、
+  B3M2B2をB4前に保持。

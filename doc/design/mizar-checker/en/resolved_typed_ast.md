@@ -1094,3 +1094,13 @@ witness-subtree exclusion, fingerprints, all lower dependencies, and the
 coercion, cluster, diagnostic, statement-semantic, proof, and goal tables
 empty and infers no type, existential match, substitution, goal, or proof
 effect. No final public field or accessor changes.
+
+## Task 258B3M2B1 Implementation Result
+
+Final assembly now clone-preserves only the authenticated B3M2B1
+base/witness pair. It revalidates the exact 53-node arena,
+five-root/six-primary mapping, wrapper/child edge, one unnamed outer-term
+witness, complete subtree exclusions, dependency fingerprints, and all
+lower tables. Standalone, hybrid, stale, parent/reference-corrupt, and
+semantic-coexisting states remain `InvalidSourceStatement`; successful
+final semantic, proof, and goal tables remain empty.

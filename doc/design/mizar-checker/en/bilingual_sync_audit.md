@@ -445,3 +445,13 @@ no-op, semantic deferrals, four/five future tests, unchanged `362/399`
 baselines, and B3M2B2-before-B4 order. `it` remains deferred only to an
 authority-valid `means` definition or property context. No bilingual debt
 is accepted.
+
+## Task 258B3M2B1 Implementation Synchronization
+
+Canonical EN and JA checker/runner companions now record the same completed
+private parenthesized-witness profile, exact 53-node and lower-table
+authentication, five-root/six-primary mapping, parent/child ownership,
+`1 witness / 0 names`, four/five passing tests, `366/404` library counts,
+measured module/production sizes and hashes, unchanged public/active/trace/
+semantic boundary, and B3M2B2-before-B4 order. No implementation bilingual
+debt remains.

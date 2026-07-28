@@ -4857,7 +4857,7 @@ implementation commit does not satisfy a producer task.
 - [x] Decompose Task 258B3M2B into exact single-level parenthesized
   reserved-variable B3M2B1 and remaining other-term B3M2B2.
 - [x] Freeze Task 258B3M2B1 only; keep implementation separate.
-- [ ] Implement frozen Task 258B3M2B1 after its documentation commit and
+- [x] Implement frozen Task 258B3M2B1 after its documentation commit and
   fresh preflight.
 - [ ] Freeze and implement Task 258B3M2B2 before selecting Task 258B4.
 
@@ -4945,5 +4945,19 @@ implementation commit does not satisfy a producer task.
 - [x] Freeze no public API/binding/semantics, checker/runner tests 4/5,
   unchanged `362/399` baseline, coverage `deferred`/`tests = []`, and
   B3M2B2-before-B4.
-- [ ] After the dedicated docs commit and fresh preflight, implement only
-  B3M2B1, measure projected libraries `366/404`, then retain B3M2B2.
+- [x] After the dedicated docs commit and fresh preflight, implement only
+  B3M2B1, measure libraries `366/404`, then retain B3M2B2.
+
+## Checker Task 258B3M2B1 Implementation Ledger
+
+- [x] Add only the private exact B3M2B1 dependency/base/witness profile and
+  preserve public APIs and prior debug grammar.
+- [x] Revalidate five roots versus six primaries, the wrapper/child edge,
+  dense references, subtree exclusions, and the complete 53-node arena.
+- [x] Install only the paired `1 witness / 0 names` handoff atomically and
+  preserve binding plus all semantic/proof/goal tables.
+- [x] Add exactly four checker and five runner compound tests covering all
+  frozen identity, precedence, mutation, family, replay, and clone cases.
+- [x] Measure libraries `366/404`, checker modules
+  `17569/4661/7203/3156`, runner sizes `4676/695/2508/9902`, and 30
+  production paths / 39,069 lines; retain B3M2B2 before B4.

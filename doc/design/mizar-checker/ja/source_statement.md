@@ -2001,9 +2001,11 @@ runner test contractはexactly 5本：
 5. `task258b3m2b1_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`。
 
 runner test 2は各wrapper-reference、child-reference、term-2/term-3
-Task-256 contamination mutationをreal paired consumer経由で反復する。
-runner test 3はselector/subtree near missがpartial wrapper/child ownershipや
-detached child referenceをpublishできないことも固定する。
+Task-256 contamination mutationをreal route constructionで試行する。
+malformed rowがvalid Task-252/256 handoffを構築できない場合はowning public
+lower producerが先にrejectし、lower construction成功時にはpaired statement
+consumerをexerciseする。runner test 3はselector/subtree near missがpartial
+wrapper/child ownershipやdetached child referenceをpublishできないことも固定する。
 
 exact identity、5-root/6-primary separation、parent/child/reference、
 precedence、all 53 nodes/bytes/subtrees、B3M2A/Tasks253–255 isolation、
@@ -2058,3 +2060,32 @@ coverage auditはfollow-up ownershipだけ変更し、
 `tests = []`、creditなし。exitはEN/JA sync、no-findings reviews、all hard
 gates、read-only quality >=90、task-only staging、dedicated docs commit。
 implementationはcommit直後のfresh preflight後だけ開始する。
+
+## Task 258B3M2B1 implementation result
+
+checkerはone private syntax-free `Task258B3M2B1` profileを実装した。
+complete 53-node arena、module/proof binding contexts、Task-48 `2/1/0`、
+Task-252 `6/5/0`のterm 2 / child 3とrefs
+`0/1/2/3/4 -> 0/1/3/4/5`、Task-256 `[0,1]` / `[4,5]`、base
+`1/2/2/2/2`、one unnamed outer-term witness / zero namesをauthenticateする。
+paired typed/final pathは両halvesをatomic publishし、near missはpartial
+ownershipを残さない。
+
+tests 4/5がpass。libraries `366/404`、checker sizes
+`17569/4661/7203/3156`、runner statement leaf/facade/root/test
+`4676/695/2508/9902`、production 30 paths / 39,069 lines。checker
+raw/normalized hashesは
+`0e43763c92ee171b18b5a2f80b92cd278b49ac9895d95410ca52ca787bcac3c8` /
+`7685e21bc0d76bb8d824dd821e800707d251e8c025682ef69b2db798d6888e5d`、
+runnerは
+`a28c33e517d8efdd635e23e6f2273c29b966aa6102efb321eed73335ab11483c` /
+`f8e8dc6ef605cbd8f8ad722983793434339b3cad21bf53703ab6c21f0b8742a5`。
+production path/contentは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`04bf563fcc99ccbc3b789a8596d953ade05453b2267639ef0ce3d8d54cbd6b45`。
+five CLI counts/hashesは不変。
+
+canonical/fixture/expectation/trace/active/public/binding/semantic ownershipは
+不変。coverageは`deferred`, `tests = []`でcreditなし。public Task-252/256
+fail-closeをbypassするtest seam/APIは追加せず、malformed lower rowsはpaired
+consumer前にrejectする。B3M2B2がB4前のnext。

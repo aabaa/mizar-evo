@@ -827,3 +827,12 @@ effect。B3M2B2はnested parentheses、application、structure
 constructor/selector/update、set、choice、その他のauthority-valid witness
 termを保持し、`it`はChapter-13-valid `means` definition/property
 contextだけでeligible。B3M2B2がB4/B5前のnext。
+
+### Task 258B3M2B1 implementation closure
+
+private B3M2B1 profileはこのsyntax-only edgeだけを実装した。Task-252は
+parenthesized wrapper、child reference、parent linkを保持し、Task-256は
+`[0,1]` / `[4,5]`だけを保持する。Task 258はone unnamed outer-term
+witness / zero namesをbase statementとatomicにpublishする。application、
+structure、selector、update、set、choice、binding、semantic edge、active
+route、public schema、neighbor familyは不変。B3M2B2がB4/B5前のnext。

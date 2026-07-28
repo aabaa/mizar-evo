@@ -11623,3 +11623,15 @@ from six primary rows. Topology remains 30 production paths and 38,571
 lines; sizes remain `4185/691/2505/8611`. No public route, key, mutation
 API, module split, dependency direction, binding, or semantic owner is
 planned.
+
+## Task 258B3M2B1 Implemented Runner Boundary
+
+The implementation remains inside the private statement leaf, private
+type-elaboration facade, root dispatch imports, and statement/application
+test support. Raw parser/resolver values remain runner-private; only exact
+syntax-free handoffs enter the checker. The five-root/six-primary split,
+zero-diagnostic assertion, and Tasks 253–255 bidirectional isolation are
+test-owned. Statement leaf/facade/root/test sizes are
+`4676/695/2508/9902`; production is 30 paths / 39,069 lines. No public
+route/key/mutation API, module split, crate edge, dependency direction,
+binding, active route, or semantic owner changed.
