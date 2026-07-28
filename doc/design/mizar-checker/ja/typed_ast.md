@@ -872,3 +872,37 @@ source-family exclusionとTask-252/256 dependencyに加え、generic typed
 projection (`resolved_root`、context、type、fact、coercion、initial
 obligation、diagnostic)がemptyであることを要求する。coexistence failureは
 prior valueをmutateせず、valid replayはdeterministic。
+
+## Task 258B1 frozen combined statement ownership
+
+Task 258B1はTask-258A field/accessor/installerを不変に保ち、second optional
+fieldと次のexact public APIを追加する。
+
+```rust
+pub const fn source_statement_references(
+    &self,
+) -> Option<&SourceStatementReferenceHandoff>;
+
+pub fn with_source_statement_references(
+    self,
+    statements: SourceStatementHandoff,
+    references: SourceStatementReferenceHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+existing `with_source_statement`はTask-258A-onlyのまま。combined installer
+だけがB1 `1/4/4/4/4 + 1/1` pairをadmitする。fresh statement/reference
+slot、exact installed Task-252/256 handoff、handoff-owned `3/1/0`
+environment、arena 1件、matching statement fingerprint、replay-
+authenticated resolver projection/reference/result、sole resolved
+`Label(0)` node 68/table-site parityを持つretained 77-node/root-76 resolver
+ASTを要求する。全failureは`TypedAstError::InvalidSourceStatement`で、
+両fieldはvalidation完了後だけpublishされる。
+
+Task-248、全Task-257 owner、Task-258A、generic typed semantic table、
+referencesなしbase、matching baseなしreferences、duplicate installation、
+全opposite install orderはatomic failする。debugはbase statement chunkの直後、
+node/table前にreference chunkを出す。Task-258Aにはsecond chunkがなくbyteは
+identical。checked formula、fact、statement semantic、proof、goal、
+diagnostic、accepted theoremを作らない。本prerequisiteは`TypedAst` sourceを
+変更しない。

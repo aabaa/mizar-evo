@@ -3621,3 +3621,44 @@ expectation、trace activationは追加しない。blocking `spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`は残らない。broader/semantic statement familyは
 Task 258BとTasks 269–272が保持する。
+
+## Task 258B1 frozen surface audit
+
+fresh inventoryはproof semanticsを1 transport taskへ割り当てず、old Task-258B
+umbrellaを分解する。Chapter 4 §§4.3/4.6/4.7.1、Chapter 14 §14.5.2、
+Chapter 15 §§15.4.1/15.8.1–15.8.2/15.10/15.12、Chapter 16
+§§16.1–16.2/16.4.1–16.4.2/16.5.1/16.7.1–16.7.3/16.8/16.9はexact
+nested equality statement、proof-block nesting、conclusion shell、
+proof-step label、backward local citationをauthorizeする。existing parser
+theorem/proof fixture、Task-89 proof-gap fixture、resolver label tests、
+Tasks 48/252/256/258A APIがexecutable provenanceを提供するが、proposition
+acceptance、justification meaning、proof goal、theorem publicationは
+authorizeしない。
+
+exact 139-byte source/hash、parser range、`3/1/0 -> 8/8/0 ->
+4/0/0/0/0/0/0/8/8 -> 1/4/4/4/4 + 1/1` transaction、4 row/contextに
+わたるstatement-kind variant 3件、proof-step label 1件、simple local
+citation 1件、public reference-handoff API、retained 77-node/root-76
+`ResolvedAst`とprojection/reference/result replay、typed/final
+installation、subtree exclusion、semantic deferralは
+`source_statement.md`でfully namedされる。`LabelResolutionResult`がproof
+scope/visibility-source ordinalをintentionalにomitするためresolver input保持は
+必須で、label node 12/reference node 68はsame-index typed arenaに対して
+authenticateされ、unauthenticated rowはchecker boundaryをcrossしない。
+
+不足していたdecomposition/contractは`design_drift`で、本documentation
+prerequisiteによりclosed。absent extended base profile、reference handoff、
+combined installer、exact dormant runner bridgeはbounded `source_drift`、
+absent checker/runner matrixは`test_gap`。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`はなく、upstream metadataにもunresolved
+`repo_metadata_conflict`はない。
+
+Task 258B2+はassumption、witness、composite root、broader label visibilityを
+保持する。Tasks 269–272はlocal-binding meaning、closure/capture/
+substitution、`reconsider`、skeleton、justification、goal、acceptanceを保持。
+したがってdeferred
+`spec.en.checker.formula_statement.source_payloads` trace rowは`tests = []`を
+保つ。本prerequisiteはcoverage auditのfollow-up ownershipだけを変更し、trace
+metadata、coverage credit、fixture、sidecar、expectation、executable source、
+count、hashは変更しない。

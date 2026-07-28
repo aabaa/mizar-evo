@@ -289,3 +289,535 @@ checkerはexactly Task-258A compound tests 3件、dormant real runner routeは
 exactly 4件。fixture/sidecar/expectation/trace row/status/active countは不変。
 broader statement shapeと全semantic acceptance/proof decisionはTask 258Bまたは
 Tasks 269–272に残る。
+
+## Task 258B decomposition
+
+fresh post-Task-258A inventoryでは、original Task 258B umbrellaは安全な1
+logical taskではない。explicit assumption/witnessにはnew statement payloadと
+後続proof-local binding ownerが必要で、composite theorem rootはTask-257
+cross-family composition、imported/nested visibilityは別resolver profileを
+必要とする。全部を結合するとsource transportとTasks 269–272 semanticsが
+混在する。
+
+そこでTask 258Bを次のように分割する。
+
+1. **Task 258B1**は下でfreezeするexact theoremについてnested proof
+   context、labeled local proposition、explicit conclusion shell 2件、
+   resolver-authenticated local citation 1件だけをtransportする。accepted
+   factをpublishせずproof/justification semanticsを実行しない。
+2. **Task 258B2+**はexplicit assumption/witness、composite theorem root、
+   broader imported/outer/inner visibility profileを保持し、それぞれlater
+   separate frozen contractを要求する。
+3. Tasks 269–272はproof-local declaration/binding、closure/capture/
+   substitution、`reconsider` intent、proof skeleton decomposition、
+   justification selection、proof resultを引き続きownする。
+
+このdecompositionは`design_drift` closureでありlanguage changeではない。
+
+## Task 258B1 frozen nested-conclusion/local-citation slice
+
+### Authority、exact source、lower-stage evidence
+
+canonical authorityはreserved variable/type guardについてChapter 4
+§§4.3, 4.6, 4.7.1、equalityについてChapter 14 §14.5.2、direct
+conclusion/full statement proof/label/citation/scopeについてChapter 15
+§§15.4.1, 15.8.1–15.8.2, 15.10, 15.12、theorem owner/proof block/
+proof-step visibility/later proof semanticsについてChapter 16
+§§16.1–16.2, 16.4.1–16.4.2, 16.5.1, 16.7.1–16.7.3, 16.8, 16.9。
+existing `pass_parser_theorems_proofs_001.miz`、
+`fail_type_elaboration_statement_proof_gap_001.miz`、parser tests、
+resolver `labels` testsはunchanged lower-stage oracle。
+
+private dormant consumerはexact 139-byte final-LF sourceだけをacceptする。
+
+```mizar
+reserve x for set;
+theorem FormulaStatementNestedContextSmoke: x = x proof
+  A: x = x proof
+    thus x = x;
+  end;
+  thus x = x by A;
+end;
+```
+
+SHA-256は
+`e5b87121e97e4ec4160b0189eff598d05f3ed5193698238226461f00593a907b`。
+fresh real-frontend inventoryはnormal root `0..138`と次のhalf-open rangeを
+測定した。
+
+| Occurrence | Range |
+|---|---:|
+| reserve item / type | `0..18` / `14..17` |
+| theorem owner / label / theorem equality | `19..138` / `27..61` / `63..68` |
+| outer proof block | `69..137` |
+| labeled compact statement / label / equality | `77..114` / `77..78` / `80..85` |
+| nested proof block | `86..113` |
+| nested conclusion / equality | `96..107` / `101..106` |
+| outer conclusion / equality | `117..133` / `122..127` |
+| simple justification / citation `A` | `128..132` / `131..132` |
+| outer `end;` | `134..138` |
+
+equality operand pair 4件は`63..64`/`67..68`、`80..81`/`84..85`、
+`101..102`/`105..106`、`122..123`/`126..127`。parser shapeはreserve
+1件、unmodified theorem 1件、direct theorem `FormulaExpression` 1件、
+outer `ProofBlock` 1件、direct formulaとnested `ProofBlock`各1件を持つ
+labeled `CompactStatement`、nested `ConclusionStatement` 1件、後続outer
+`ConclusionStatement` 1件（`JustificationClause`とsimple `Reference`各1件）。
+全nodeはnormal。
+
+ordinary declaration/symbol collectionはpublic/exported local theorem
+symbol/definition各1件と、source anchorがreserve `0..18`の`LocalSource`
+contributionを提供する。Task 258Aと同様にprivate runnerがtheorem label
+projectionを構築・authenticateする。normal symbol environmentがproof-step
+label indexを持たないのはintentional。Task 258B1はexisting public resolver
+boundary、すなわちexact parser-backed `ResolvedAst` 1件、
+`LabelProjection::proof_step` 1件、
+`LabelReferenceCandidate::unqualified_citation` 1件、
+`LabelResolver::resolve`を使用する。label `A`は`Private`/`LocalOnly`、
+`LabelKind::ProofStep`、outer proof scope `[0]`でstatement ordinal 1より
+後だけvisible。citationはsame scopeのstatement ordinal 3でそのoriginへ
+resolveする。nested proof scopeは`[0, 0]`。missing/ambiguous/forward/
+sibling/inner-to-outer substitution/theorem-kind/imported/recovered/
+cross-source/module/contribution/wrong-range/spelling provenanceをrejectする。
+
+### Frozen lower profileとbase statement transaction
+
+lower dependency graphは次のとおり。
+
+```text
+Task 48 reserve x:set base 1 context / 1 binding / 0 diagnostics
+  -> Task 258B1 proof-context extension 3 contexts / 1 binding / 0 diagnostics
+  -> Task 252 primary/reference/numeric 8/8/0
+  -> Task 256 atomic/wrapper/segment/head/candidate/type/attribute/edge/request
+     4/0/0/0/0/0/0/8/8
+  -> Task 258 base owner/statement/context/input/candidate 1/4/4/4/4
+  -> Task 258B1 label/citation composition 1/1
+```
+
+`BindingContextOwner`へnon-exhaustive
+`SourceStatement { source_range: SourceRange }` variant 1件を追加する。
+context 0はreserved binding 0を持つunchanged module context。context 1は
+`SourceStatement { 69..137 }`、parent 0、layer `Proof`。context 2は
+`SourceStatement { 86..113 }`、parent 1、layer `Proof`。両方ともbindingを
+ownせずvisible bindings `[0]`を保持する。context 1のlexical scopeは`[0]`、
+context 2は`[0,0]`、module context 0は`None`を保持し、3件ともnormal
+recovery。environmentはexact `3/1/0`で、proof-local variable/capture/
+diagnosticを追加しない。
+`BindingEnv::try_new`は各`SourceStatement` rangeがnonemptyかつenvironment
+source由来であることを要求し、exact
+`source-statement(<start>..<end>)`としてrenderする。pre-B1 binding-
+environment debug byteはすべて不変。
+
+Task 252はsource orderの`VariableReference`/`Value` 8 rowsとreserved
+binding 0へのreference 8件をownする。binding contextは
+`0,0,1,1,2,2,1,1`、producer-stored reference use ordinalはすべて1。
+Task 256はcontext `0,1,2,1`のnormal `Equality` 4 rows、rowごとのbuiltin
+operand edge 2件とunresolved operand-expected-type request 2件をownする。
+Task-248 context handoff、Task-249/253–257 handoffはinstallしない。
+
+existing five input vector/public APIはsource-compatibleのまま。
+`SourceStatementProducer::build`はvalidated row/dependencyからTask-258A
+`1/1/1/1/1`とTask-258B1 `1/4/4/4/4`をrecognizeし、caller profile flagを
+追加しない。Task 258B1が追加するpublic enum variantは次だけ。
+
+```rust
+pub enum BindingContextOwner {
+    SourceStatement { source_range: SourceRange },
+    // existing variants remain unchanged
+}
+
+pub enum SourceStatementKind {
+    TheoremProposition,
+    ProofStepProposition,
+    Conclusion,
+}
+```
+
+existing base-producer/installation precedenceは両profileで不変。source/
+module、binding environment、Task-252/256 fingerprint、shared arena、
+required lower installationが最初に`DependencyMismatch`、profile
+cardinality/dense aggregate orderが次に`InvalidAggregate`、その後first
+invalid owner、statement、context、input-fact、candidate-fact rowの順でfail
+する。mixed dependency/cardinality corruptionはdependency-first、mixed
+aggregate/row corruptionはaggregate-first。
+
+statement 4 rowsはsource preorder。`Spelling`はbase handoffがstore/
+validate/printするexact single-space token rendering。
+
+| Row | Kind | Context row / binding context | Range | Formula | Spelling |
+|---:|---|---:|---:|---:|---|
+| 0 | `TheoremProposition` | `0 / 0` | `19..138` | atomic 0 | `theorem FormulaStatementNestedContextSmoke : x = x proof A : x = x proof thus x = x ; end ; thus x = x by A ; end ;` |
+| 1 | `ProofStepProposition` | `1 / 1` | `77..114` | atomic 1 | `A : x = x proof thus x = x ; end ;` |
+| 2 | `Conclusion` | `2 / 2` | `96..107` | atomic 2 | `thus x = x ;` |
+| 3 | `Conclusion` | `3 / 1` | `117..133` | atomic 3 | `thus x = x by A ;` |
+
+全rowはowner 0、normal recovery、exact source ordinal `0..3`、direct parser
+formula pathを使用する。context rowはsame statement rangeとvisible binding
+`[0]`。input fact row `i`はstatement/context `i`、binding 0、ordinal 0、
+Task-252 reference pair `[2i, 2i+1]`の`ReservedTypeGuard`。candidate row
+`i`はstatement/context `i`、ordinal 0、atomic formula `i`の
+`UnverifiedProposition`。source label/citationがあってもcandidateはvisible/
+acceptedにならない。
+
+owner 0はexact theorem site/range `19..138`、label range `27..61`、
+spelling `FormulaStatementNestedContextSmoke`、role `Theorem`、status
+`Unmodified`、normal recovery。symbol/contributionはordinary Task-258A
+owner pathのsole authenticated current-module public/exported theorem
+declarationであり、B1 branchはsecond owner/contribution/theorem label/
+source anchorをinvent/substituteしない。
+
+### Frozen local-label/citation composition API
+
+Task 258B1はTask-258A debug byteを変更せず、existing public
+`source_statement` moduleへdense table 2件を追加する。
+
+```rust
+pub struct SourceStatementLabelId(usize);
+pub struct SourceStatementCitationId(usize);
+
+pub struct SourceStatementReferenceHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub labels: Vec<SourceStatementLabelInput>,
+    pub citations: Vec<SourceStatementCitationInput>,
+}
+
+pub struct SourceStatementLabelInput {
+    pub statement: SourceStatementId,
+    pub context: SourceStatementContextId,
+    pub candidate: SourceStatementCandidateFactId,
+    pub origin_path: LabelOriginPath,
+    pub proof_scope: LabelScopePath,
+    pub source_range: SourceRange,
+    pub source_ordinal: usize,
+    pub visible_after_ordinal: usize,
+    pub spelling: String,
+    pub kind: SourceStatementLabelKind,
+    pub recovery: SourceStatementRecovery,
+}
+
+pub struct SourceStatementCitationInput {
+    pub statement: SourceStatementId,
+    pub context: SourceStatementContextId,
+    pub label: SourceStatementLabelId,
+    pub label_ref: LabelRefId,
+    pub proof_scope: LabelScopePath,
+    pub source_range: SourceRange,
+    pub ordinal: usize,
+    pub kind: SourceStatementCitationKind,
+    pub recovery: SourceStatementRecovery,
+}
+
+pub struct SourceStatementLabel { /* immutable validated label fields */ }
+impl SourceStatementLabel {
+    pub const fn statement(&self) -> SourceStatementId;
+    pub const fn context(&self) -> SourceStatementContextId;
+    pub const fn candidate(&self) -> SourceStatementCandidateFactId;
+    pub const fn origin_path(&self) -> &LabelOriginPath;
+    pub const fn proof_scope(&self) -> &LabelScopePath;
+    pub const fn source_range(&self) -> SourceRange;
+    pub const fn source_ordinal(&self) -> usize;
+    pub const fn visible_after_ordinal(&self) -> usize;
+    pub fn spelling(&self) -> &str;
+    pub const fn kind(&self) -> SourceStatementLabelKind;
+    pub const fn recovery(&self) -> SourceStatementRecovery;
+}
+
+pub struct SourceStatementCitation { /* immutable validated citation fields */ }
+impl SourceStatementCitation {
+    pub const fn statement(&self) -> SourceStatementId;
+    pub const fn context(&self) -> SourceStatementContextId;
+    pub const fn label(&self) -> SourceStatementLabelId;
+    pub const fn label_ref(&self) -> LabelRefId;
+    pub const fn proof_scope(&self) -> &LabelScopePath;
+    pub const fn source_range(&self) -> SourceRange;
+    pub const fn ordinal(&self) -> usize;
+    pub const fn kind(&self) -> SourceStatementCitationKind;
+    pub const fn recovery(&self) -> SourceStatementRecovery;
+}
+
+pub struct SourceStatementLabelTable { /* dense source-order rows */ }
+impl SourceStatementLabelTable {
+    pub fn get(&self, id: SourceStatementLabelId) -> Option<&SourceStatementLabel>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceStatementLabelId, &SourceStatementLabel)>;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+pub struct SourceStatementCitationTable { /* dense source-order rows */ }
+impl SourceStatementCitationTable {
+    pub fn get(
+        &self,
+        id: SourceStatementCitationId,
+    ) -> Option<&SourceStatementCitation>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceStatementCitationId, &SourceStatementCitation)>;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+#[non_exhaustive]
+pub enum SourceStatementLabelKind {
+    ProofStep,
+}
+
+#[non_exhaustive]
+pub enum SourceStatementCitationKind {
+    SimpleLocal,
+}
+```
+
+両IDはexisting dense-ID deriveと`new`/`index` accessorを持つ。input/
+immutable row/table/handoffは`Debug, Clone, PartialEq, Eq`、enum 2件はexisting
+public data-enum deriveと`#[non_exhaustive]`を持つ。
+`SourceStatementLabel`/`SourceStatementCitation`は対応する全input fieldの
+read-only accessorを公開し、`SourceStatementLabelTable`/
+`SourceStatementCitationTable`はtyped `get`、source-ordered `iter`、
+`len`、`is_empty`だけを公開する。
+
+`SourceStatementReferenceProducer::build`のexact syntax-free signatureは:
+
+```rust
+pub fn build(
+    input: SourceStatementReferenceHandoffInput,
+    statements: &SourceStatementHandoff,
+    resolver_ast: &ResolvedAst,
+    projection: &LabelProjection,
+    reference: &LabelReferenceCandidate,
+    resolution: &LabelResolutionResult,
+    arena: &TypedArena,
+) -> Result<SourceStatementReferenceHandoff, SourceStatementReferenceError>;
+```
+
+immutable handoffはvalidated `ResolvedAst`、`LabelProjection`、
+`LabelReferenceCandidate`、`LabelResolutionResult`のexact cloneとTask-258
+base debug fingerprintをownし、mutable/unchecked constructorを持たない。
+exact arena/table accessorは:
+
+```rust
+pub const fn source_id(&self) -> SourceId;
+pub const fn module_id(&self) -> &ModuleId;
+pub fn statement_fingerprint(&self) -> &str;
+pub const fn resolver_ast(&self) -> &ResolvedAst;
+pub const fn label_projection(&self) -> &LabelProjection;
+pub const fn reference_candidate(&self) -> &LabelReferenceCandidate;
+pub const fn label_resolution(&self) -> &LabelResolutionResult;
+pub const fn labels(&self) -> &SourceStatementLabelTable;
+pub const fn citations(&self) -> &SourceStatementCitationTable;
+pub fn debug_text(&self) -> String;
+```
+
+errorは:
+
+```rust
+#[non_exhaustive]
+pub enum SourceStatementReferenceError {
+    DependencyMismatch,
+    InvalidLabel { label: SourceStatementLabelId },
+    InvalidCitation { citation: SourceStatementCitationId },
+    InvalidAggregate,
+}
+```
+
+reference production、typed installation、final assemblyは1つのtotal
+precedenceを使用する。source/module、statement fingerprint、resolver-AST
+identity、resolver replay result、shared typed arenaがproducerで最初に
+`DependencyMismatch`。typed/final installationはstatement handoffの
+binding/lower fingerprintと実際にinstallされたTask-252/256 valueへ同じ
+dependency-first classを適用する。exact `1/1` cardinality、dense ID、source-order
+aggregate structureが次に`InvalidAggregate`。続いてfirst invalid
+projection/label pairが`InvalidLabel`、first invalid reference/citation pairが
+`InvalidCitation`。mixed dependency/cardinality corruptionはdependency-
+first、mixed aggregate/row corruptionはaggregate-first。later entry pointは
+stored resolver object 4件をrevalidateし、replacement provenanceを構築
+しない。
+
+admitするprofileは`1/1`だけ。label 0はstatement/context 1、candidate 1、
+range `77..78`、ordinal 0、visible-after statement ordinal 1、scope `[0]`、
+spelling `A`、kind `ProofStep`、normal。exact origin pathは
+`<package>::<module>::proof::A`。citation 0はstatement/context 3、label 0、
+resolver reference 0、range `131..132`、ordinal 0、scope `[0]`、kind
+`SimpleLocal`、normal。
+
+projectionは同じorigin path、spelling/range、owner-0 source/module/
+contribution、`Private`/`LocalOnly`、visible-after ordinal 1、proof scope
+`[0]`を持つcurrent-module proof-step projection。trusted namespaceは
+`NamespacePath::new(statements.module_id().path().as_str())`だけからderiveし、
+projection module/namespaceはauthenticated statement module/derived
+namespaceと一致しなければならない。さらにproof-step semantic originは
+normal/non-imported、anchor `77..78`、structural path `[12]`で、real label
+token resolver node 12のoriginとexactly同じであり、owner 0と
+source/module/contributionをshareするがanchor/pathはshareしない。reference
+candidateはsite spelling/range、current-source semantic origin、source
+ordinal 3、scope `[0]`がcitation 0と一致するunqualified `ProofOrTheorem`
+citation。そのsemantic originはnormal/non-imported、anchor `131..132`、
+structural path `[68]`で、`ReferenceSite` nodeであるresolver node 68
+（real `SurfaceNodeKind::Reference`、`131..132`）のoriginとexactly同じ。
+
+runnerは`ResolvedNodeId`をexpose/inventせず、deterministic two-pass
+`ResolvedArenaBuilder` adapterを使用する。各passはparser arena orderでreal
+surface node 77件をexactly once insertし、returned resolver idと
+corresponding surface indexの一致を要求し、全node kind/range/child list/
+recoveryをpreserveする。current source/module range originとdeterministic
+structural path `[index]`を使いreal root 76でfinishする。nodeのomit/
+generate/reorder、id生成だけのdummy nodeを禁止する。preliminary passは全node
+を`NotApplicable`/no reference keyに保ち、candidate構築に必要なgenuine
+node-68 idを供給する。`LabelResolver::resolve`後、final passはnode 68だけを
+`NodeResolutionState::Resolved` /
+`NodeReferenceKey::Label(resolution.ids()[0])`へ変更し、他nodeはすべて
+`NotApplicable`/no keyのままにする。
+
+checkerはresolver/typed node各77件、root 76、all-index anchor/child/
+recovery parity、no-import current source/module origin、sole resolved/keyed
+node 68、resolver node 12とproof-step projection originの一致、resolver
+node 68とcandidate origin/same-range typed citation nodeの一致を要求する。
+node 68が`Reference`であることを含むexact `SurfaceNodeKind` parityはrunnerの
+real-parser selector/testだけがenforceする。checker production boundaryは
+`SurfaceNodeKind`をname/match/stringify/interpretせず、normal/runtime
+`mizar-syntax` dependencyを追加しない。下でfreezeするchecker test matrix
+だけがtest-only dev-dependencyを追加できる。runnerは続いて、final arena、
+empty name-reference/import/export table、resolver-produced
+label-reference tableのexact cloneを`ResolvedAst::try_new`へ渡す。
+resulting `ResolvedAst`はcurrent source/module、root 76、77 nodes、
+name reference 0、label reference exactly 1、import/export 0で、
+label tableが`resolution.table()`と等しく、node-68 label keyがそのsame
+table entryを指さなければならない。これはfull
+driver label lowering/synthetic arenaではなくbounded B1 parser-to-public-
+resolver adapterである。
+
+producerはexactly
+`LabelResolver::new(&[projection.clone()]).resolve(statements.module_id(),
+&derived_namespace, &[reference.clone()])`をreplayし、supplied resolutionとの
+structural equalityを要求する。runnerは`LabelRefTable`/result/replacement
+reference outcomeをpopulate/mutateせず、resolver-produced tableを
+`ResolvedAst::try_new`へcloneするだけ。trusted namespaceをprojectionから
+deriveしない。
+resultはproof-step index entry 1件、resolved reference 1件、ids `[0]`、
+diagnosticなし、unresolved/ambiguousなしで、result/indexはtheorem owner
+projectionを含まずproof-step `A`だけを含む。したがってmutually altered
+scope/ordinal inputをlossy result tableで隠せない。
+
+stable new debug schema:
+
+```text
+source-statement-reference-debug-v1
+module: <package>::<module>
+statement-fingerprint: <quoted source-statement debug>
+resolver-ast root=76 nodes=77 name_refs=0 label_refs=1 imports=0 exports=0 label_node=12 reference_node=68 reference_state=resolved reference_key=label#0
+resolver-projection origin=<package>::<module>::proof::A namespace=<module> range=77..78 visible_after=1 scope=[0] kind=proof-step visibility=private export=local-only spelling="A"
+resolver-reference node=68 range=131..132 source_ordinal=3 scope=[0] expectation=proof-or-theorem spelling="A"
+resolver-result index=1 references=1 ids=[0] diagnostics=0
+label#0 statement=1 context=1 candidate=1 origin=<package>::<module>::proof::A scope=[0] range=77..78 source_ordinal=0 visible_after=1 kind=proof-step recovery=normal spelling="A"
+citation#0 statement=3 context=3 label=0 label_ref=0 scope=[0] range=131..132 ordinal=0 kind=simple-local recovery=normal
+```
+
+### Installation、exclusion、semantics、tests、audit
+
+`TypedAst`はexact field/accessor/combined one-shot installerを追加する。
+
+```rust
+source_statement_references: Option<SourceStatementReferenceHandoff>,
+
+pub const fn source_statement_references(
+    &self,
+) -> Option<&SourceStatementReferenceHandoff>;
+
+pub fn with_source_statement_references(
+    self,
+    statements: SourceStatementHandoff,
+    references: SourceStatementReferenceHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+installerはfresh statement slot、exact Task-252/256 dependency、B1
+base/reference pair、`3/1/0` binding environment、shared arenaを要求する。
+全failureは`TypedAstError::InvalidSourceStatement`で、complete validation後
+だけ両handoffをpublishする。existing
+`with_source_statement(self, statement) -> Result<Self, TypedAstError>`は
+Task-258A-only installerのままでdebug byte/validationは不変。
+
+`ResolvedTypedAst`はsame optional fieldとexact
+`source_statement_references(&self) ->
+Option<&SourceStatementReferenceHandoff>` accessorを追加する。`assemble`はB1
+pairをtogether revalidate/cloneし、全failureを
+`ResolvedTypedAstError::InvalidSourceStatement`とする。typed/resolved両debug
+textでbase `source_statement.debug_text()`の直後、node/table output前に
+`source_statement_references.debug_text()`を出す。Task-258Aはreference
+chunkを持たずbyte-identical。
+
+Task-248 source context、全Task-257 family、preinstalled statement profile、
+referencesなしB1 base、matching baseなしreferences、mixed A/B1 row、
+他source ownerとの両install orderはpartial mutationなしでfail。
+
+typed arenaはexact theorem/proof-block/compact-statement/conclusion/
+proposition-formula-wrapper/equality/term/justification/reference topologyを
+preserveする。owned statement siteはtheorem `19..138`、compact
+`77..114`、conclusion `96..107`/`117..133`で、formula targetはそのdirect
+structural descendant。compact statementがcontainできるのはfrozen nested
+proof/conclusion subtreeだけ。exact admitted statement containment treeは
+row 0がrows 1/3をcontainし、row 1がrow 2をcontainする形で、statement
+site/formula target 4件はすべてdistinct。これ以外のancestor/descendant/
+sibling crossing、duplicate site reuse、citationのnested proof移動、
+assumption/witness/second label/reference追加、proof/justification node
+substitutionはfail closed。
+
+exact selectorはmissing final LF、byte/name/status/role/reserve change、
+missing/extra item、direct以外・parenthesized/composite/non-equality formula、
+proof block/statementのmissing/extra/reorder、`hence`、`then`、assumption、
+witness、`given`、`consider`、`now`、`hereby`、case/suppose、iterative
+equality、theorem citation、imported label、forward citation、local-label
+shadow、recovery、byteを変えるcomment、全active corpus/Task-258A near missを
+rejectする。
+
+Task 258B1は`TypedAst::facts`、checked formula、statement semantics、
+checked proof/node/goal、cluster/overload/expression output、diagnostic、
+CoreIr、ControlFlowIr、VC、cache、artifact、proof acceptance、theorem
+publicationをemptyのままにする。`ProofStepProposition`はunverified candidate
+のまま、`SimpleLocal` citationはresolver-resolvedだがsemantically
+unacceptedなproof intentであり、input fact/accepted premiseではない。
+semantic interpretationはTasks 269–272が保持。
+
+checker tests 4件はB1 base/reference API/debug、complete dependency/
+aggregate/row/subtree error precedence、resolver scope/ordinal/origin
+corruption（independently stale resultは`DependencyMismatch`、coherently
+replayed projection/reference mutationは`InvalidLabel`/`InvalidCitation`）、
+full resolver/typed-arena parityとnode/origin corruption、exact binding-
+owner range/debug validation、Task-258A byte compatibility、typed/final
+ownership、semantic coexistence rejection、rollback/clone/replayをfreezeする。
+mizar-test library tests 5件はreal frontend range、theorem/local label
+resolver provenance、two-pass/final-keyed 77-node resolver AST、replay
+bundle、binding context、8 references/4 atomics、2 handoff、selector
+isolation、mutation、empty final outputをfreezeする。
+
+checker test moduleはfrozen resolver ASTをconstructする必要がある一方、
+production checker codeは`SurfaceNodeKind`をnameしてはならない。そのため
+implementationは`mizar-syntax`を`crates/mizar-checker/Cargo.toml`の
+`[dev-dependencies]`にだけ追加し、対応する`Cargo.lock` dependency edgeは
+mechanicalとする。production dependency/runtime syntax accessは追加しない。
+このbounded test-construction gapはB1 `source_drift`/`test_gap`の一部で、
+independent resolver changeではない。
+
+本documentation prerequisiteはproduction source、fixture、sidecar、
+expectation、trace TOML/status/count、executable route、test list、hashを
+変更しない。baselineはplan `419/387`、type `253/241`、pass/fail
+`228/191`、active parse/declaration/type/proof `101/5/198/1`、
+warnings/errors `23/0`、checker/runner libraries `338/369`、runner
+production 30 paths / 34,955 lines、path/content hash
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`。
+test-list/five CLI hashはTask-258A completion valueのまま。
+
+missing contractは`design_drift`、absent B1 profile/reference handoff/
+installer/dormant route/matrixはbounded `source_drift`/`test_gap`。
+blocking `spec_gap`、`test_expectation_drift`、
+`source_undocumented_behavior`、`boundary_violation`、unresolved
+`repo_metadata_conflict`はない。
+`spec.en.checker.formula_statement.source_payloads`は`tests = []`/
+deferredのまま。coverage auditはfollow-up ownershipだけを変更する。
+documentation exitはEN/JA sync、independent no-findings review、measured
+artifact不変、全hard gate、quality 90/100以上、task-only staging、
+dedicated documentation commitを要求。そのcommitとfresh preflight後だけ
+Task-258B1 implementationへ進む。

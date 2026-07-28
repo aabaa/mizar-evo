@@ -2471,3 +2471,32 @@ completion remain deferred. The origin discrepancy remains report-only
   tests `3/4`, checker/runner libraries `338/369`, and runner production
   30 paths / 34,955 lines; leave fixture/sidecar/trace activation to
   `MT10-FS` and freeze Task 258B separately.
+
+## Checker Task 258B1 Frozen-Contract Ledger
+
+- [x] Decompose Task 258B and select only the exact 139-byte nested equality
+  proposition, inner/outer conclusions, proof-step label, and backward local
+  citation; defer assumptions, witnesses, composite roots, broader
+  visibility, and all proof semantics.
+- [x] Freeze the authority, hash/ranges/provenance, Task-48 `3/1/0`,
+  Task-252 `8/8/0`, Task-256 `4/0/0/0/0/0/0/8/8`, statement
+  `1/4/4/4/4`, and reference `1/1` profiles.
+- [x] Freeze the extended source-statement kinds/rows, separate public
+  label/citation handoff/API/debug, exact binding-context owner validation/
+  debug, retained two-pass 77-node/root-76 resolver AST with sole keyed node
+  68 plus resolver projection/reference/result replay, combined typed/final
+  installation, Task-248/257/258A exclusion, error precedence, subtree
+  mutations, checker tests 4, and runner tests 5.
+- [x] Record closed `design_drift`, bounded `source_drift`/`test_gap`,
+  current 0/0 upstream relation with no unresolved
+  `repo_metadata_conflict`, and no blocking `spec_gap`, expectation drift,
+  undocumented behavior, or boundary violation.
+- [x] Keep `spec.en.checker.formula_statement.source_payloads` deferred with
+  `tests = []`; preserve all fixture/sidecar/expectation/trace
+  metadata/status/count and executable artifacts.
+- [x] Preserve documentation-only baselines `419/387`, `253/241`,
+  `228/191`, active `101/5/198/1`, libraries `338/369`, runner 30 paths /
+  34,955 lines, and every Task-258A completion hash.
+- [ ] Implement Task 258B1 in a separate logical task/commit only after this
+  documentation commit and fresh parser/resolver/lower-API/count/hash
+  preflight; keep Task 258B2+ and Tasks 269–272 open.

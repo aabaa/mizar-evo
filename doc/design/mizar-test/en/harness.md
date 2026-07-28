@@ -3331,3 +3331,34 @@ The runner library now has 369 tests with raw/normalized test-list hashes
 Production is 30 paths / 34,955 lines with path/content hashes
 `98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
 `dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`.
+
+## Checker Task 258B1 Frozen Harness Boundary
+
+The later exact private leaf recognizes only the 139-byte final-LF
+`FormulaStatementNestedContextSmoke` source and remains dormant outside
+library tests. It uses the real parser and resolver, extends the reserve
+binding base with outer/nested proof contexts, and composes Task-252
+`8/8/0`, Task-256 `4/0/0/0/0/0/0/8/8`, Task-258B1 base
+`1/4/4/4/4`, and local-reference `1/1` in one shared arena. The public
+resolver result must contain exactly one proof-step label and one resolved
+local citation; the runner cannot synthesize either row. A preliminary real
+77-node/root-76 resolver arena supplies genuine node 68, then a second
+same-index pass attaches the resolver-produced `Label(0)` key and resolved
+state only to that node before `ResolvedAst::try_new`. The exact projection
+uses label-token node 12, the reference candidate uses node 68, and the
+validated `ResolvedAst`, projection, candidate, and result cross as one
+replayable syntax-free bundle rather than relying on the lossy result table
+alone. Exact `SurfaceNodeKind` parity remains runner-validated.
+
+The leaf runs before Task 258A and lower Task-257 selectors, copies no syntax
+or resolver object into checker-owned rows, and publishes only equal
+typed/resolved syntax-free handoffs. Exactly five future library tests cover
+real ranges and provenance, two-pass/final keyed resolver-AST identity,
+contexts/visibility, dependency and arena corruption, exact selector/subtree
+near misses, Task-258A and active-route isolation, rollback/replay, and empty
+semantic output.
+
+This prerequisite changes no runner source/test, fixture, sidecar,
+expectation, trace metadata/status/count, route, production manifest, test
+list, or hash. Assumptions, witnesses, composite formulas, broader label
+visibility, proof meaning, and acceptance remain outside Task 258B1.

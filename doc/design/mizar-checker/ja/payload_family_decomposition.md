@@ -678,7 +678,7 @@ rowを保持し、Task 257C3はsyntax-free association 2件だけを追加する
 typed/resolved ownershipはA/B/C2とmutually exclusiveで、semantic formula
 nodeは導入しない。
 
-## Task 258A frozen statement edge
+## Tasks 258A/258B1 frozen statement edges
 
 Task 258はumbrella。Task 258Aはexact 81-byte
 `FormulaStatementReservedVariableEqualitySmoke` transactionだけをownする。
@@ -692,7 +692,16 @@ final assemblyでmutually exclusive。
 checked formula、`statement_semantics` row、proof intent、accepted fact、
 runner coverageは生成しない。
 
-Task 258Bがexplicit assumption/conclusion/witness/citation、composite root、
-nested context、broader visibilityを保持する。Tasks 269-272がproof-local
+old Task-258B umbrellaはdecompose済み。Task 258B1はexact 139-byte nested
+equality sliceだけをownする: Task-48 `3/1/0` proof-context extension、
+Task-252 `8/8/0`、Task-256 `4/0/0/0/0/0/0/8/8`、statement/context/
+guard/candidate 4 rows (`1/4/4/4/4`)、replay-authenticated proof-step
+label/local citation association 1件 (`1/1`)をownし、node 68だけが
+resolved/keyed reference siteとなるtwo-pass 77-node/root-76 resolver ASTで
+backする。inner/outer conclusion shellとnested contextをtransportするが
+fact/proof resultはpublishしない。
+
+Task 258B2+はexplicit assumption/witness、composite root、broader
+imported/outer/inner visibilityを保持する。Tasks 269-272がproof-local
 declarationとproof/justification ownershipを保持する。complete dependency
 chain/runnerがexecutableになるまでdeferred `MT10-FS` rowはdeferredのまま。

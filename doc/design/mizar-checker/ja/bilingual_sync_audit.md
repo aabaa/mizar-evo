@@ -29,7 +29,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | Pair | EN companion | JA companion | Comparison basis | Sync debt |
 |---|---|---|---|---|
 | `00.crate_plan.md` | `../ja/00.crate_plan.md` | `../en/00.crate_plan.md` | crate status、responsibility、authority refs、test coverage、design/source inventory、MC-G tables、task decomposition、forbidden behavior、exit criteria | none |
-| `binding_env.md` | `../ja/binding_env.md` | `../en/binding_env.md` | purpose/boundary、context and binding tables、lookup/reserve/closure behavior、Task-258A reserved-theorem consumer、diagnostics、public enum policy、task classification | none |
+| `binding_env.md` | `../ja/binding_env.md` | `../en/binding_env.md` | purpose/boundary、context and binding tables、lookup/reserve/closure behavior、Task-258A reserved-theorem / Task-258B1 proof-context consumer、diagnostics、public enum policy、task classification | none |
 | `bilingual_sync_audit.md` | `../ja/bilingual_sync_audit.md` | `../en/bilingual_sync_audit.md` | pair inventory、synchronization definition、task classification、completion decision | none |
 | `cluster_trace.md` | `../ja/cluster_trace.md` | `../en/cluster_trace.md` | authority/scope、trace model、cluster/reduction steps、determinism、bounds/failures、public enum policy、deferred inputs | none |
 | `crate_exit_report.md` | `../ja/crate_exit_report.md` | `../en/crate_exit_report.md` | result、scope、task commit、hard gate、score breakdown、deferred item、verification、handoff | none |
@@ -37,7 +37,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `overload_resolution.md` | `../ja/overload_resolution.md` | `../en/overload_resolution.md` | phase-8 boundary、site/candidate collection、template expansion、viability、specificity、selection/views、diagnostics、public enum policy、deferred gaps | none |
 | `payload_family_decomposition.md` | `../ja/payload_family_decomposition.md` | `../en/payload_family_decomposition.md` | Task-247 authority/baseline、Tasks 248-264/269-279 scope/dependency/gate/consumer、Task-10 runner increment、literal Task-49 24-fixture reconciliation mapping、disagreement class、exit criteria | none |
 | `registration_resolution.md` | `../ja/registration_resolution.md` | `../en/registration_resolution.md` | registration model、pending/activated database、validation、existential gates、cluster/reduction handoff、diagnostics、public enum policy、gap table | none |
-| `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility、inputs、data shape、metadata/summaries、overload/coercion/cluster tables、failure/recovery、public enum policy、deferred gaps | none |
+| `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility、inputs、data shape、metadata/summaries、overload/coercion/cluster tables、Task-258B1 paired final projection、failure/recovery、public enum policy、deferred gaps | none |
 | `semantic_spec_audit.md` | `../ja/semantic_spec_audit.md` | `../en/semantic_spec_audit.md` | audit scope、severity legend、findings index/details、adversarial corpus table、traceability requirement ids、TODO impact | none |
 | `source_spec_audit.md` | `../ja/source_spec_audit.md` | `../en/source_spec_audit.md` | public surface inventory、behavior/test correspondence、MC-G reconciliation、task classification | none |
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary、projection model、validation/recovery/atomicity、Task-258A bidirectional exclusion、determinism、coverage、public enum policy | none |
@@ -48,12 +48,12 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3とfrozen Task-257C2 authority/boundary、composite-to-atomic/bound-use transport、dedicated condition-to-atomic transport、dependency fingerprint、atomic installation、exact consumer、exclusion、public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary、seven-table set/choice/qua/generator/type-site/condition/edge/request transport、Task-252/253/254 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
-| `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Task-258A authority/boundary、five-table theorem-owner/statement/context/input/candidate transport、owned BindingEnvとTask-252/256 fingerprint、asymmetric production plus named test-only Task-248 exclusion、exact future MT10-FS consumer、semantic-table exclusion、public enum policy | none |
+| `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Tasks 258A/258B1 authority/boundary、five-table theorem/statement transportとlocal-label/citation composition、BindingEnv/Task-252/256 fingerprint、replay-authenticated resolver input、ownership exclusion、exact dormant consumer、semantic deferral、public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary、three-table primary-term transport、binding lookup/parent/request validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary、flat application/expression/argument model、environment/arena/graph/provenance validation、ownership、consumer、exclusion、public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table、prerequisites、resolved decisions、ordered task list、task statuses、verification、notes | none |
-| `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary、top-level shape、arena/context/type/fact/coercion/obligation/diagnostic tables、public enum policy、task classification | none |
+| `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary、top-level shape、arena/context/type/fact/coercion/obligation/diagnostic tables、Task-258B1 combined ownership、public enum policy、task classification | none |
 | `type_checker.md` | `../ja/type_checker.md` | `../en/type_checker.md` | phase-6 boundary、normalization、declaration checking、inference、coercions/obligations、fact queries、diagnostics、determinism、public enum policy、task classification | none |
 
 ## Task 33 Classification
@@ -298,3 +298,22 @@ exclusion、exact source-preserved hint、checker/runner test matrix `3/4`、
 libraries `338/369`、runner production 30 paths / 34,955 linesを記録する。
 fixture/sidecar/expectation/trace metadata/active countは不変。Task-258A
 bilingual driftは残らない。
+
+## Task 258B1 frozen-contract pair
+
+paired checker plan、payload graph、binding/statement/typed/final contract、
+TODO、source audit、global ledger、runner contract、coverage auditは、同じ
+Task-258B decomposition、139-byte source/hash、parser/resolver range、`3/1/0`、
+`8/8/0`、`4/0/0/0/0/0/0/8/8`、`1/4/4/4/4`、`1/1` profile、
+exact lexical scope/binding debug、source statement row 4件、proof-step
+label/local citation 1件、sole keyed node 68を持つtwo-pass 77-node/root-76
+resolver arena、replay-authenticated `ResolvedAst`とprojection/reference/
+result、public reference-handoff API/debug、combined installation/exclusion
+rule、future checker/runner tests 4/5件、unchanged baseline、semantic
+deferralをfreezeする。
+
+本documentation prerequisiteはproduction topology/public sourceを変更しない
+ため、paired checker/runner module-boundary auditは意図的に不変。
+fixture、sidecar、expectation、trace metadata/status/count、executable route、
+test list、hashも変更しない。Task 258B2+とTasks 269–272は両言語で同じ
+deferred ownershipを持つ。Task-258B1 bilingual debtは認めない。

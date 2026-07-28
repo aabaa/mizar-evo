@@ -1955,3 +1955,22 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   activation to `MT10-FS`.
 - [x] Measure 369 runner tests and the 30-path / 34,955-line production
   manifest; keep plan/type/active counts and trace metadata unchanged.
+
+## Checker Task 258B1 Frozen Consumer Checklist
+
+- [x] Decompose the old Task-258B runner umbrella and select only the
+  139-byte nested equality/conclusion/local-citation source; freeze its final
+  LF, hash, parser ranges, and resolver theorem/local-label provenance.
+- [x] Freeze the exact shared Task-48 `3/1/0`, Task-252 `8/8/0`, Task-256
+  `4/0/0/0/0/0/0/8/8`, Task-258B1 `1/4/4/4/4`, and reference `1/1`
+  transaction without accepted facts or proof semantics.
+- [x] Freeze private raw-syntax ownership, corpus-dormant precedence,
+  the two-pass 77-node/root-76 resolver AST with sole resolved/keyed node 68,
+  replayable resolver projection/reference/result, selector/subtree/
+  provenance mutations, active-route isolation, final clone/replay, and
+  exactly five future library tests.
+- [x] Preserve every fixture, sidecar, expectation, trace row/status/count,
+  active route, executable count, and Task-258A hash in this prerequisite.
+- [ ] After the checker documentation commit and fresh parser/resolver/lower
+  preflight, implement only the dormant Task-258B1 route and five tests;
+  leave Task 258B2+ and Tasks 269–272 deferred.

@@ -418,3 +418,21 @@ dormant exact route, resolver import-provenance negative, four-test matrix,
 369-test list, and 30-path/34,955-line production manifest with identical
 hashes. Fixture, sidecar, trace metadata, and active counts remain unchanged.
 No Task-258A implementation bilingual drift remains.
+
+## Checker Task 258B1 Frozen-Contract Synchronization
+
+The paired runner plan, harness, and TODO freeze the same 139-byte
+final-LF source/hash, real parser/resolver provenance, Task-48 `3/1/0`,
+Task-252 `8/8/0`, Task-256 `4/0/0/0/0/0/0/8/8`, statement
+`1/4/4/4/4`, and reference `1/1` profiles, private raw-syntax ownership,
+corpus-dormant precedence, the two-pass 77-node/root-76 resolver AST with
+sole resolved/keyed node 68, replayable resolver projection/reference/result,
+exact five-test matrix, active-route isolation, empty semantic result,
+unchanged 369-test/30-path baseline, and deferral of Task 258B2+ and Tasks
+269–272.
+
+This prerequisite adds no runner source, fixture, sidecar, expectation, trace
+metadata/status/count, executable route, test list, or hash. The runner
+module-boundary audit is intentionally unchanged because no production path
+or ownership direction changes. No Task-258B1 runner bilingual drift is
+accepted.

@@ -3158,3 +3158,32 @@ runner libraryは369 tests、raw/normalized test-list hashは
 productionは30 paths / 34,955 lines、path/content hashは
 `98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
 `dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`。
+
+## Checker Task 258B1 frozen harness boundary
+
+later exact private leafは139-byte final-LF
+`FormulaStatementNestedContextSmoke` sourceだけをrecognizeし、library test外
+ではdormantのまま。real parser/resolverを使用し、reserve binding baseへ
+outer/nested proof contextをextendし、shared arena 1件でTask-252 `8/8/0`、
+Task-256 `4/0/0/0/0/0/0/8/8`、Task-258B1 base `1/4/4/4/4`、
+local-reference `1/1`をcomposeする。public resolver resultはexactly
+proof-step label 1件/resolved local citation 1件を含み、runnerはどちらの
+rowもsynthesizeできない。preliminary real 77-node/root-76 resolver arenaが
+genuine node 68を供給し、second same-index passがresolver-produced
+`Label(0)` key/resolved stateをそのnodeだけへattachしてから
+`ResolvedAst::try_new`を呼ぶ。exact projectionはlabel-token node 12、
+reference candidateはnode 68を使い、validated `ResolvedAst`/projection/
+candidate/resultをreplayable syntax-free bundleとしてpassし、lossy result
+tableだけに依存しない。exact `SurfaceNodeKind` parityはrunnerがvalidateする。
+
+leafはTask 258A/lower Task-257 selectorより先に実行し、syntax/resolver
+objectをchecker-owned rowへcopyせず、equal typed/resolved syntax-free
+handoffだけをpublishする。future library tests exactly 5件がreal range/
+provenance、two-pass/final keyed resolver-AST identity、context/visibility、
+dependency/arena corruption、exact selector/subtree near miss、Task-258A/
+active-route isolation、rollback/replay、empty semantic outputをcoverする。
+
+本prerequisiteはrunner source/test、fixture、sidecar、expectation、trace
+metadata/status/count、route、production manifest、test list、hashを変更しない。
+assumption、witness、composite formula、broader label visibility、proof
+meaning、acceptanceはTask 258B1外に残る。

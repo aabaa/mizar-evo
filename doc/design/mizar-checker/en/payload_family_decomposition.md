@@ -737,7 +737,7 @@ candidate/edge/request and resolver-provenance rows, and Task 257C3 adds only
 the two syntax-free associations. Typed/resolved ownership is mutually
 exclusive with A/B/C2, and no semantic formula node is introduced.
 
-## Task 258A Frozen Statement Edge
+## Tasks 258A/258B1 Frozen Statement Edges
 
 Task 258 is an umbrella. Task 258A owns only the exact 81-byte
 `FormulaStatementReservedVariableEqualitySmoke` transaction:
@@ -751,8 +751,17 @@ Task-248-first path, named reverse checker-test seam, and final assembly. It
 creates no checked formula,
 `statement_semantics` row, proof intent, accepted fact, or runner coverage.
 
-Task 258B retains explicit assumptions, conclusions, witnesses, citations,
-composite roots, nested contexts, and broader visibility. Tasks 269-272
-retain proof-local declaration and proof/justification ownership. The
-deferred `MT10-FS` row stays deferred until the complete dependency chain and
-runner are executable.
+The old Task-258B umbrella is now decomposed. Task 258B1 owns only the exact
+139-byte nested equality slice: the Task-48 `3/1/0` proof-context extension,
+Task-252 `8/8/0`, Task-256 `4/0/0/0/0/0/0/8/8`, four statement/context/
+guard/candidate rows (`1/4/4/4/4`), and one replay-authenticated proof-step
+label/local citation association (`1/1`) backed by a two-pass
+77-node/root-76 resolver AST whose node 68 is the sole resolved/keyed
+reference site. It transports the inner/outer conclusion shells and nested
+contexts without publishing a fact or proof result.
+
+Task 258B2+ retains explicit assumptions and witnesses, composite roots, and
+broader imported/outer/inner visibility. Tasks 269-272 retain proof-local
+declaration and proof/justification ownership. The deferred `MT10-FS` row
+stays deferred until the complete dependency chain and runner are
+executable.

@@ -477,3 +477,31 @@ theoremでのfirst use ordinalは1。
 statement contextはauthenticated visible binding IDとreserved-type-guard
 associationだけをcopyし、environment mutation、theorem/proof context追加、
 fact publication、本module public API extensionは行わない。
+
+## Task 258B1 source-statement proof contexts
+
+Task 258B1はexact non-exhaustive owner variantを追加する。
+
+```rust
+BindingContextOwner::SourceStatement { source_range: SourceRange }
+```
+
+`BindingEnv::try_new`は各rangeがnonemptyかつenvironment sourceに属することを
+要求する。deterministic debugはexact
+`source-statement(<start>..<end>)`としてrenderし、existing owner/pre-B1
+environmentのdebug byteは不変。
+
+sole admitted Task-258B1 environmentは`3/1/0`。context 0はunchanged normal
+module context、lexical scopeなし、reserved binding 0をownし`[0]`をexpose。
+context 1はcontext 0のnormal proof child、owner range `69..137`、lexical
+scope `[0]`、bindingをownせず`[0]`をexpose。context 2はcontext 1のnormal
+proof child、owner range `86..113`、lexical scope `[0,0]`、bindingをownせず
+`[0]`をexpose。binding 0と全Task-48 reserve identity/range/type/visibility
+fieldは不変。
+
+variantはsource topologyだけを記録し、proof-local binding、capture、
+substitution、fact、diagnostic、goal、proof meaningを追加しない。
+Task-258B1 checker matrixはexact owner/range/scope/debug、wrong-source/
+empty range、parent/layer/scope/visibility mutation、Tasks 252/258への
+fingerprint propagation、rollback、Task-258A byte compatibilityをcoverする。
+本documentation prerequisiteはsource/testを変更しない。

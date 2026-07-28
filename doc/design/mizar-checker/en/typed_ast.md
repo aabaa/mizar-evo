@@ -919,3 +919,38 @@ facts, coercions, initial obligations, and diagnostics) in addition to the
 frozen source-family exclusions and Task-252/256 dependencies. Failed
 coexistence does not mutate the prior value and valid replay remains
 deterministic.
+
+## Task 258B1 Frozen Combined Statement Ownership
+
+Task 258B1 keeps the Task-258A field/accessor/installer unchanged and adds a
+second optional field plus these exact public APIs:
+
+```rust
+pub const fn source_statement_references(
+    &self,
+) -> Option<&SourceStatementReferenceHandoff>;
+
+pub fn with_source_statement_references(
+    self,
+    statements: SourceStatementHandoff,
+    references: SourceStatementReferenceHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+The existing `with_source_statement` remains Task-258A-only. The combined
+installer alone admits the B1 `1/4/4/4/4 + 1/1` pair. It requires fresh
+statement/reference slots, exact installed Task-252/256 handoffs, the
+handoff-owned `3/1/0` environment, one arena, matching statement
+fingerprint, retained 77-node/root-76 resolver AST with sole resolved
+`Label(0)` node 68 and table/site parity, and replay-authenticated resolver
+projection/reference/result. Any failure is
+`TypedAstError::InvalidSourceStatement`; validation completes before either
+field is published.
+
+Task-248, every Task-257 owner, Task-258A, any generic typed semantic table,
+a base without references, references without the matching base, duplicate
+installation, and every opposite install order fail atomically. In debug,
+the base statement chunk is followed immediately by the reference chunk
+before nodes/tables. Task-258A has no second chunk and keeps identical bytes.
+No checked formula, fact, statement semantic, proof, goal, diagnostic, or
+accepted theorem is created. This prerequisite changes no `TypedAst` source.

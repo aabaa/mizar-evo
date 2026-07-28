@@ -3787,3 +3787,45 @@ behavior, accepted theorem fact, proof meaning, fixture, expectation, or
 trace activation. No blocking `spec_gap`, `source_undocumented_behavior`,
 `test_expectation_drift`, or `boundary_violation` remains. Task 258B and
 Tasks 269–272 retain the broader and semantic statement families.
+
+## Task 258B1 Frozen Surface Audit
+
+Fresh inventory decomposes the old Task-258B umbrella rather than assigning
+proof semantics to one transport task. Chapter 4 §§4.3, 4.6, and 4.7.1,
+Chapter 14 §14.5.2, Chapter 15 §§15.4.1, 15.8.1–15.8.2, 15.10, and 15.12,
+and Chapter 16 §§16.1–16.2, 16.4.1–16.4.2, 16.5.1, 16.7.1–16.7.3, 16.8,
+and 16.9 authorize the exact nested equality statements, proof-block
+nesting, conclusion shells, proof-step label, and backward local citation.
+Existing parser theorem/proof fixtures, the Task-89 proof-gap fixture,
+resolver label tests, and Tasks 48/252/256/258A APIs supply the executable
+provenance. They do not authorize proposition acceptance, justification
+meaning, proof goals, or theorem publication.
+
+The exact 139-byte source and hash, parser ranges, `3/1/0 -> 8/8/0 ->
+4/0/0/0/0/0/0/8/8 -> 1/4/4/4/4 + 1/1` transaction, three statement-kind
+variants across four rows/contexts, one proof-step label, one simple local
+citation, public reference-handoff API, retained 77-node/root-76
+`ResolvedAst` plus projection/reference/result replay, typed/final
+installation, subtree exclusions, and semantic deferrals are fully named in
+`source_statement.md`. Retaining the resolver inputs is required because
+`LabelResolutionResult` intentionally omits proof scope and
+visibility/source ordinals; label node 12 and reference node 68 are
+authenticated against the same-index typed arena, so no unauthenticated row
+crosses the checker boundary.
+
+The missing decomposition and contract were `design_drift`, closed by this
+documentation prerequisite. The absent extended base profile, reference
+handoff, combined installers, and exact dormant runner bridge are bounded
+`source_drift`; the absent checker/runner matrices are `test_gap`. No
+blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `boundary_violation` exists. The upstream
+metadata now leaves no unresolved `repo_metadata_conflict`.
+
+Task 258B2+ retains assumptions, witnesses, composite roots, and broader
+label visibility. Tasks 269–272 retain local-binding meaning,
+closure/capture/substitution, `reconsider`, skeleton, justification, goals,
+and acceptance. The deferred
+`spec.en.checker.formula_statement.source_payloads` trace row therefore
+keeps `tests = []`; this prerequisite changes only follow-up ownership in the
+coverage audit, not trace metadata, coverage credit, fixture, sidecar,
+expectation, executable source, count, or hash.

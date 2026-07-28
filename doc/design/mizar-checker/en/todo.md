@@ -4509,9 +4509,24 @@ unchecked row below is one future nonempty logical task and one commit.
       preflight.
   - [ ] **Task 258B:** explicit assumptions, conclusions, witnesses, local
     label/citation inputs, composite theorem roots, nested statement contexts,
-    and broader visibility. Freeze this slice separately after Task 258A;
-    Tasks 269-272 retain proof-local bindings, closures, reconsider intent,
-    proof skeletons, and justification semantics.
+    and broader visibility. Tasks 269-272 retain proof-local bindings,
+    closures, reconsider intent, proof skeletons, and justification
+    semantics.
+    - [x] **Task 258B1 prerequisite:** freeze the exact 139-byte nested
+      equality-statement source, one theorem owner, four statement/context/
+      guard/candidate rows, three proof binding contexts, one local
+      proof-step label, one resolved citation, replayable resolver projection/
+      reference/result, the two-pass 77-node/root-76 resolver AST with sole
+      keyed node 68, Task-252/256 dependencies, typed/resolved ownership,
+      test-only syntax dev-dependency, empty-semantic boundary, tests, and
+      non-activation.
+    - [ ] **Task 258B1 implementation:** implement only that frozen nested
+      conclusion/local-label transport after the dedicated documentation
+      commit and fresh parser/resolver/lower-API/count/hash preflight.
+    - [ ] **Task 258B2+:** separately freeze explicit assumptions and
+      witnesses, composite theorem roots, and broader imported/outer/inner
+      visibility profiles after Task 258B1. Do not absorb Tasks 269-272
+      semantics.
 - [ ] **Task 259:** predicate-definition and initial-obligation intake producer.
 - [ ] **Task 260:** functor-definition and initial-obligation intake producer.
 - [ ] **Task 261:** attribute-definition producer.

@@ -494,3 +494,32 @@ statement context copies only the authenticated
 visible binding ID and reserved-type-guard association; it does not mutate
 the environment, add a theorem/proof context, publish a fact, or extend this
 module's public API.
+
+## Task 258B1 Source-Statement Proof Contexts
+
+Task 258B1 adds the exact non-exhaustive owner variant:
+
+```rust
+BindingContextOwner::SourceStatement { source_range: SourceRange }
+```
+
+`BindingEnv::try_new` requires every such range to be nonempty and to belong
+to the environment source. Deterministic debug renders it exactly as
+`source-statement(<start>..<end>)`; every existing owner and pre-B1
+environment retains byte-identical debug.
+
+The only admitted Task-258B1 environment is `3/1/0`. Context 0 is the
+unchanged normal module context, has no lexical scope, owns reserved binding
+0, and exposes `[0]`. Context 1 is the normal proof child of context 0,
+owner range `69..137`, lexical scope `[0]`, owns no binding, and exposes
+`[0]`. Context 2 is the normal proof child of context 1, owner range
+`86..113`, lexical scope `[0,0]`, owns no binding, and exposes `[0]`.
+Binding 0 and every Task-48 reserve identity/range/type/visibility field
+remain unchanged.
+
+The variant records source topology only. It adds no proof-local binding,
+capture, substitution, fact, diagnostic, goal, or proof meaning. The
+Task-258B1 checker matrix covers exact owner/range/scope/debug, wrong-source
+and empty ranges, parent/layer/scope/visibility mutation, fingerprint
+propagation into Tasks 252/258, rollback, and Task-258A byte compatibility.
+This documentation prerequisite changes no source or test.

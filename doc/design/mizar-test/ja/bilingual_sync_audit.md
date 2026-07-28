@@ -12,6 +12,22 @@ test 303件、path/content hash `5cc36b8a...` / `b9b6c678...`の
 254+/260/270/277-278とSteps 6/7は両言語でunpromotedのままである。Task 253に
 bilingual driftは残らない。
 
+## Checker Task 258B1 frozen-contract synchronization
+
+paired runner plan/harness/TODOは同じ139-byte final-LF source/hash、real
+parser/resolver provenance、Task-48 `3/1/0`、Task-252 `8/8/0`、Task-256
+`4/0/0/0/0/0/0/8/8`、statement `1/4/4/4/4`、reference `1/1`
+profile、private raw-syntax ownership、corpus-dormant precedence、replayable
+resolver projection/reference/result、sole resolved/keyed node 68を持つ
+two-pass 77-node/root-76 resolver AST、exact 5-test matrix、active-route
+isolation、empty semantic result、unchanged 369-test/30-path baseline、
+Task 258B2+/Tasks 269–272 deferralをfreezeする。
+
+本prerequisiteはrunner source、fixture、sidecar、expectation、trace
+metadata/status/count、executable route、test list、hashを追加しない。
+production path/ownership directionが変わらないためrunner module-boundary
+auditは意図的に不変。Task-258B1 runner bilingual driftは認めない。
+
 ## Checker Task 257C3 frozen-contract synchronization
 
 EN/JAはunchanged 107-byte consumer、

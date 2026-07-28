@@ -941,3 +941,30 @@ output construction. Empty node hints and the exact complete
 `source.statement.transport` source-preserved hint set are admitted because
 they preserve syntax nodes only; every other nonempty hint set fails through
 `InvalidSourceStatement`.
+
+## Task 258B1 Frozen Final Statement Projection
+
+`ResolvedTypedAst` adds the optional
+`SourceStatementReferenceHandoff` clone and exact accessor:
+
+```rust
+pub const fn source_statement_references(
+    &self,
+) -> Option<&SourceStatementReferenceHandoff>;
+```
+
+Assembly admits only the complete B1 base/reference pair after typed
+ownership. It revalidates source/module, the `3/1/0` environment,
+Task-252/256 fingerprints, shared arena and statement topology, the stored
+77-node/root-76 `ResolvedAst` with sole resolved `Label(0)` node 68,
+projection/reference/result replay, both handoff fingerprints, and every
+row. Missing one half, stale or substituted provenance, Task-248/257/258A
+coexistence, or any nonempty semantic-stage input fails as
+`ResolvedTypedAstError::InvalidSourceStatement` before publication.
+
+The final debug places the reference chunk immediately after the base
+statement chunk and before resolved nodes/tables. Clone preserves both exact
+handoffs. Task-258A output remains byte-identical because its reference field
+is absent. No name resolution is inferred at final assembly, and no fact,
+checked formula, statement semantic, proof, goal, diagnostic, or downstream
+IR/VC output is created. This prerequisite changes no resolved source.

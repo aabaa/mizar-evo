@@ -4282,9 +4282,21 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       count/hash preflight後にfrozen Task-258A transportだけを実装。
   - [ ] **Task 258B:** explicit assumption/conclusion/witness、local
     label/citation input、composite theorem root、nested statement context、
-    broader visibility。Task 258A後にseparately freezeする。Tasks 269-272が
-    proof-local binding/closure/reconsider intent/proof skeleton/
-    justification semanticsを保持する。
+    broader visibility。Tasks 269-272はproof-local binding/closure/
+    reconsider intent/proof skeleton/justification semanticsを保持する。
+    - [x] **Task 258B1 prerequisite:** exact 139-byte nested
+      equality-statement source、theorem owner 1件、statement/context/guard/
+      candidate各4件、proof binding context 3件、local proof-step label 1件、
+      resolved citation 1件、replayable resolver projection/reference/result、
+      sole keyed node 68を持つtwo-pass 77-node/root-76 resolver AST、
+      Task-252/256 dependency、typed/resolved ownership、test-only syntax
+      dev-dependency、empty-semantic boundary、tests、non-activationをfreeze。
+    - [ ] **Task 258B1 implementation:** dedicated documentation commitと
+      fresh parser/resolver/lower-API/count/hash preflight後にfrozen nested
+      conclusion/local-label transportだけを実装。
+    - [ ] **Task 258B2+:** Task 258B1後にexplicit assumption/witness、
+      composite theorem root、broader imported/outer/inner visibility
+      profileをseparately freezeする。Tasks 269-272 semanticsを吸収しない。
 - [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
 - [ ] **Task 260:** functor-definition/initial-obligation intake producer。
 - [ ] **Task 261:** attribute-definition producer。

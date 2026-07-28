@@ -30,7 +30,7 @@ after this task.
 | Pair | EN companion | JA companion | Comparison basis | Sync debt |
 |---|---|---|---|---|
 | `00.crate_plan.md` | `../ja/00.crate_plan.md` | `../en/00.crate_plan.md` | crate status, responsibility, authority refs, test coverage, design/source inventory, MC-G tables, task decomposition, forbidden behavior, exit criteria | none |
-| `binding_env.md` | `../ja/binding_env.md` | `../en/binding_env.md` | purpose/boundary, context and binding tables, lookup/reserve/closure behavior, Task-258A reserved-theorem consumer, diagnostics, public enum policy, task classification | none |
+| `binding_env.md` | `../ja/binding_env.md` | `../en/binding_env.md` | purpose/boundary, context and binding tables, lookup/reserve/closure behavior, Task-258A reserved-theorem and Task-258B1 proof-context consumers, diagnostics, public enum policy, task classification | none |
 | `bilingual_sync_audit.md` | `../ja/bilingual_sync_audit.md` | `../en/bilingual_sync_audit.md` | pair inventory, synchronization definition, task classification, completion decision | none |
 | `cluster_trace.md` | `../ja/cluster_trace.md` | `../en/cluster_trace.md` | authority/scope, trace model, cluster/reduction steps, determinism, bounds/failures, public enum policy, deferred inputs | none |
 | `crate_exit_report.md` | `../ja/crate_exit_report.md` | `../en/crate_exit_report.md` | result, scope, task commits, hard gates, score breakdown, deferred items, verification, handoff | none |
@@ -38,7 +38,7 @@ after this task.
 | `overload_resolution.md` | `../ja/overload_resolution.md` | `../en/overload_resolution.md` | phase-8 boundary, site/candidate collection, template expansion, viability, specificity, selection/views, diagnostics, public enum policy, deferred gaps | none |
 | `payload_family_decomposition.md` | `../ja/payload_family_decomposition.md` | `../en/payload_family_decomposition.md` | Task-247 authority/baseline, Tasks 248-264/269-279 scopes/dependencies/gates/consumers, Task-10 runner increments, literal Task-49 24-fixture reconciliation mapping, disagreement classes, exit criteria | none |
 | `registration_resolution.md` | `../ja/registration_resolution.md` | `../en/registration_resolution.md` | registration model, pending/activated database, validation, existential gates, cluster/reduction handoff, diagnostics, public enum policy, gap table | none |
-| `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility, inputs, data shape, metadata/summaries, overload/coercion/cluster tables, failure/recovery, public enum policy, deferred gaps | none |
+| `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility, inputs, data shape, metadata/summaries, overload/coercion/cluster tables, Task-258B1 paired final projection, failure/recovery, public enum policy, deferred gaps | none |
 | `semantic_spec_audit.md` | `../ja/semantic_spec_audit.md` | `../en/semantic_spec_audit.md` | audit scope, severity legend, findings index/details, adversarial corpus table, traceability requirement ids, TODO impact | none |
 | `source_spec_audit.md` | `../ja/source_spec_audit.md` | `../en/source_spec_audit.md` | public surface inventory, behavior/test correspondence, MC-G reconciliation, task classification | none |
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, Task-258A bidirectional exclusion, determinism, coverage, public enum policy | none |
@@ -49,12 +49,12 @@ after this task.
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3 plus frozen Task-257C2 authority/boundary, composite-to-atomic/bound-use transport, dedicated condition-to-atomic transport, dependency fingerprints, atomic installation, exact consumers, exclusions, public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary, seven-table set/choice/qua/generator/type-site/condition/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary, seven-table structure/member/FieldUpdate/edge/request transport, Task-252/253 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
-| `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Task-258A authority/boundary, five-table theorem-owner/statement/context/input/candidate transport, owned BindingEnv plus Task-252/256 fingerprints, asymmetric production plus named test-only Task-248 exclusion, exact future MT10-FS consumer, semantic-table exclusions, public enum policy | none |
+| `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Tasks 258A/258B1 authority/boundary, five-table theorem/statement transport plus local-label/citation composition, BindingEnv and Task-252/256 fingerprints, replay-authenticated resolver inputs, ownership exclusions, exact dormant consumers, semantic deferrals, public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary, three-table primary-term transport, binding lookup and parent/request validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary, flat application/expression/argument model, environment/arena/graph/provenance validation, ownership, consumers, exclusions, public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table, prerequisites, resolved decisions, ordered task list, task statuses, verification, notes | none |
-| `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary, top-level shape, arena/context/type/fact/coercion/obligation/diagnostic tables, public enum policy, task classification | none |
+| `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary, top-level shape, arena/context/type/fact/coercion/obligation/diagnostic tables, Task-258B1 combined ownership, public enum policy, task classification | none |
 | `type_checker.md` | `../ja/type_checker.md` | `../en/type_checker.md` | phase-6 boundary, normalization, declaration checking, inference, coercions/obligations, fact queries, diagnostics, determinism, public enum policy, task classification | none |
 
 ## Task 33 Classification
@@ -314,3 +314,24 @@ typed/final semantic exclusions, exact source-preserved hints, checker/runner
 test matrices `3/4`, libraries `338/369`, and runner production
 30 paths / 34,955 lines. Fixture, sidecar, expectation, trace metadata, and
 active counts remain unchanged. No Task-258A bilingual drift remains.
+
+## Task 258B1 Frozen-Contract Pair
+
+The paired checker plans, payload graph, binding/statement/typed/final
+contracts, TODOs, source audit, global ledger, runner contracts, and coverage
+audit freeze the same Task-258B decomposition, 139-byte source/hash,
+parser/resolver ranges,
+`3/1/0`, `8/8/0`, `4/0/0/0/0/0/0/8/8`, `1/4/4/4/4`, and `1/1`
+profiles, exact lexical scopes and binding debug, four source statement rows,
+one proof-step label and local citation, two-pass 77-node/root-76 resolver
+arena with sole keyed node 68, replay-authenticated `ResolvedAst` plus
+projection/reference/result, public reference-handoff API/debug, combined
+installation and exclusion rules, four/five future tests, unchanged
+baselines, and semantic deferrals.
+
+This documentation prerequisite changes no production topology or public
+source, so the paired checker and runner module-boundary audits are
+intentionally unchanged. It changes no fixture, sidecar, expectation, trace
+metadata/status/count, executable route, test list, or hash. Task 258B2+ and
+Tasks 269–272 have the same deferred ownership in both languages. No
+Task-258B1 bilingual debt is accepted.

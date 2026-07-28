@@ -3656,3 +3656,47 @@ Measured plan/type/pass/fail/active/warning counts remain
 libraries are now `338/369`; runner production is 30 paths / 34,955 lines.
 The next executable dependency is the separately frozen Task-258B contract,
 not trace activation or theorem acceptance.
+
+## Step 5 Checker Task 258B1 Frozen-Contract Addendum
+
+Fresh post-Task-258A inventory decomposes Task 258B. Task 258B1 now owns only
+the exact 139-byte nested equality proposition/conclusion transport and one
+resolver-authenticated proof-step local citation. Its frozen dependency path
+is Task-48 `3/1/0`, Task-252 `8/8/0`, Task-256
+`4/0/0/0/0/0/0/8/8`, source-statement `1/4/4/4/4`, and local-reference
+`1/1`. Task 258B2+ retains assumptions, witnesses, composite roots, and
+broader visibility. Tasks 269–272 retain binding/proof semantics,
+closure/capture/substitution, `reconsider`, skeletons, justifications, goals,
+and acceptance.
+
+The missing decomposition and frozen contract were `design_drift`, closed by
+this prerequisite. The later checker handoffs/installers and dormant exact
+runner route remain bounded `source_drift`; their four/five test matrices
+remain `test_gap`. There is no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation`; the current 0/0 upstream relation leaves no unresolved
+`repo_metadata_conflict`.
+
+The frozen checker boundary retains the exact parser-backed
+77-node/root-76 `ResolvedAst`, `LabelProjection`, and
+`LabelReferenceCandidate` beside `LabelResolutionResult` and replays the
+resolver. A two-pass real arena keeps node 68 as the only resolved/keyed
+`Label(0)` reference site, authenticates projection node 12 and candidate
+node 68 against the same-index typed arena, and requires resolver table/key
+parity. This is required because the result table does not retain proof scope
+or visibility/source ordinals; it prevents a lossy result from receiving
+unsupported provenance credit without changing resolver source.
+
+The existing
+`spec.en.checker.formula_statement.source_payloads` trace row remains
+deferred with `tests = []`. Task 258B1 carries no accepted fact, checked
+formula, proof, diagnostic, or theorem result, and the later Task-258B2+,
+Tasks 269–272, and `MT10-FS` gates remain open. Therefore no trace TOML row,
+status, coverage credit, fixture, sidecar, expectation, count, or hash may
+change in this prerequisite. This audit edit is required only to make the
+refined follow-up ownership explicit.
+
+Measured plan/type/pass/fail/active/warning counts remain
+`419/387`, `253/241`, `228/191`, `101/5/198/1`, and `23/0`.
+Checker/runner libraries remain `338/369`; runner production remains
+30 paths / 34,955 lines. All Task-258A completion hashes remain unchanged.

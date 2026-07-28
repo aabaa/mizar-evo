@@ -1763,3 +1763,22 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   `MT10-FS`に残す。
 - [x] runner 369 tests、production 30 paths / 34,955 linesを測定し、
   plan/type/active countとtrace metadataを不変に保つ。
+
+## Checker Task 258B1 frozen consumer checklist
+
+- [x] old Task-258B runner umbrellaを分解し、139-byte nested equality/
+  conclusion/local-citation sourceだけをselectしてfinal LF/hash/parser
+  range/resolver theorem-local-label provenanceをfreeze。
+- [x] accepted fact/proof semanticsなしで、exact shared Task-48 `3/1/0`、
+  Task-252 `8/8/0`、Task-256 `4/0/0/0/0/0/0/8/8`、Task-258B1
+  `1/4/4/4/4`、reference `1/1` transactionをfreeze。
+- [x] private raw-syntax ownership、corpus-dormant precedence、replayable
+  resolver projection/reference/result、sole resolved/keyed node 68を持つ
+  two-pass 77-node/root-76 resolver AST、selector/subtree/provenance
+  mutation、active-route isolation、final clone/replay、exactly future
+  library tests 5件をfreeze。
+- [x] 本prerequisiteでは全fixture/sidecar/expectation/trace
+  row/status/count/active route/executable count/Task-258A hashをpreserve。
+- [ ] checker documentation commitとfresh parser/resolver/lower preflight後、
+  dormant Task-258B1 route/tests 5件だけをimplementし、Task 258B2+と
+  Tasks 269–272をdefer。

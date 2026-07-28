@@ -888,3 +888,29 @@ statement semantics/proof、diagnosticをrejectする。empty node hintとexact
 complete `source.statement.transport` source-preserved hint setだけはsyntax
 nodeをpreserveするためadmitし、他のnonempty hint setは
 `InvalidSourceStatement`となる。
+
+## Task 258B1 frozen final statement projection
+
+`ResolvedTypedAst`はoptional `SourceStatementReferenceHandoff` cloneとexact
+accessorを追加する。
+
+```rust
+pub const fn source_statement_references(
+    &self,
+) -> Option<&SourceStatementReferenceHandoff>;
+```
+
+assemblyはtyped ownership後のcomplete B1 base/reference pairだけをadmit。
+source/module、`3/1/0` environment、Task-252/256 fingerprint、shared
+arena/statement topology、sole resolved `Label(0)` node 68を持つstored
+77-node/root-76 `ResolvedAst`、projection/reference/result replay、
+両handoff fingerprint、全rowをrevalidateする。片方欠落、stale/substituted
+provenance、Task-248/257/258A coexistence、nonempty semantic-stage inputは
+publication前に`ResolvedTypedAstError::InvalidSourceStatement`。
+
+final debugはbase statement chunk直後、resolved node/table前にreference
+chunkを置く。Cloneは両exact handoffとretained resolver ASTをpreserve。
+Task-258Aはreference fieldが
+absentなのでoutput byte-identical。final assemblyでname resolutionをinfer
+せず、fact、checked formula、statement semantic、proof、goal、diagnostic、
+downstream IR/VC outputを作らない。本prerequisiteはresolved sourceを変更しない。
