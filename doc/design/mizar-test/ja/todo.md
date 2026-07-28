@@ -1798,6 +1798,6 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 本documentation prerequisiteでは全fixture、sidecar、expectation、
   trace row/status/count、active route、source、374-test list、30-path /
   35,854-line manifest、既存count/hash baselineをpreserve。
-- [ ] checker documentation commitとfresh parser/resolver/lower/API/count/
-  hash preflight後、dormant Task-258B2 route/tests 5本だけをimplementする。
+- [x] checker documentation commitとfresh parser/resolver/lower/API/count/
+  hash preflight後、dormant Task-258B2 route/tests 5本だけをimplementした。
   B3–B5とTasks 269–272はdeferを維持。

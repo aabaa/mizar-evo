@@ -3397,3 +3397,11 @@ This documentation prerequisite changes no runner source, executable route,
 test, corpus artifact, trace metadata, production manifest, test list, or
 hash. Witnesses, composite roots, broader visibility, and proof meaning stay
 with Tasks 258B3–B5 and 269–272.
+
+### Task 258B2 Implemented Harness Boundary
+
+The private leaf and facade are implemented at 2,120 and 678 lines;
+`runner.rs` is 2,491 lines and the statement test leaf is 2,884. The route
+stays corpus-dormant and precedes the prior statement/lower selectors.
+All-index parity and the complete resolver mutation matrix prevent raw-syntax
+or provenance drift from crossing the syntax-free checker boundary.

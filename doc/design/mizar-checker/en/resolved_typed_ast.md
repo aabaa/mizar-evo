@@ -992,3 +992,11 @@ preserve the base handoff exactly. Final assembly infers no new resolution
 and publishes no accepted premise, fact, checked formula, statement
 semantic, proof, goal, diagnostic, theorem result, or downstream IR/VC
 output. This prerequisite changes no resolved source or test.
+
+### Task 258B2 Implementation Closure
+
+Final assembly revalidates and clone-preserves the exact base-only B2
+handoff with no reference association. Any cluster fact, statement-proof
+input, foreign source family, checked formula, statement semantic, proof,
+goal, diagnostic, or other semantic output remains rejected; the successful
+result keeps every such table empty.

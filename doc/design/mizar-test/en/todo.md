@@ -1991,6 +1991,6 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Preserve all fixture, sidecar, expectation, trace row/status/count,
   active route, source, 374-test list, 30-path / 35,854-line manifest, and
   existing count/hash baselines in this documentation prerequisite.
-- [ ] After the checker documentation commit and a fresh parser/resolver/
-  lower/API/count/hash preflight, implement only the dormant Task-258B2
-  route and five tests. Keep B3–B5 and Tasks 269–272 deferred.
+- [x] After the checker documentation commit and a fresh parser/resolver/
+  lower/API/count/hash preflight, implemented only the dormant Task-258B2
+  route and five tests. B3–B5 and Tasks 269–272 remain deferred.

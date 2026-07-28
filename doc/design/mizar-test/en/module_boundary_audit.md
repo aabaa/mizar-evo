@@ -11519,3 +11519,12 @@ it shares source selection, resolver authentication, lower-stage assembly,
 and immutable statement publication. Raw syntax remains private and checker
 modules retain syntax-free ownership. No new dependency direction or
 semantic owner is introduced, so no split is justified before implementation.
+
+## Checker Task 258B2 Implemented Boundary
+
+The existing boundary is preserved: `runner.rs` 2,491 lines and the
+678-line facade expose a private 2,120-line statement leaf; the 2,884-line
+test leaf owns raw parser/resolver assertions. The 30-path production
+topology is unchanged. The checker receives only syntax-free handoffs and
+authenticated provenance, so no new module, dependency direction, or
+semantic owner is justified.

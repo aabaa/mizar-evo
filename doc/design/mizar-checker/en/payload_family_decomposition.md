@@ -790,3 +790,11 @@ proof-local declarations and proof/justification semantics. The deferred
 `MT10-FS` row therefore remains deferred; this documentation prerequisite
 earns no executable coverage credit and changes no source, fixture,
 sidecar, expectation, trace status/count, or existing test list/hash.
+
+### Task 258B2 Implemented Family Edge
+
+The frozen single-assumption edge is now executable but remains
+transport-only: one direct equality theorem, one unlabeled assumption, one
+direct conclusion, and no reference or semantic handoff. This closes the B2
+source/test gaps without consuming B3 witness, B4 composite-root, B5 broader
+visibility, or Tasks 269–272 proof-semantic ownership.

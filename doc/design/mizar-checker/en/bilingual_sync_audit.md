@@ -354,3 +354,11 @@ four/five future tests, deferred ownership, and unchanged baselines in both
 languages. The paired runner documents freeze the same dormant consumer.
 This prerequisite changes no source or executable metadata, and no Task-258B2
 bilingual debt is accepted.
+
+## Task 258B2 Implementation Pair
+
+The implemented source-statement, binding, typed, final, plan, TODO,
+family, module, and source-audit updates are synchronized with their Japanese
+companions in this logical task. Both languages record the same four/five
+tests, 346/379 library counts, no-credit trace status, semantic deferrals,
+and Task-258B3 handoff. No bilingual debt remains.

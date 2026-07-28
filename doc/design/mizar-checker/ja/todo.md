@@ -4303,9 +4303,11 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       conclusion `1/3/3/3/3` profile、Task-48 `2/1/0`、Task-252
       `6/6/0`、Task-256 `3/0/0/0/0/0/0/6/6`、base-only typed/final
       ownership、empty-semantic boundary、tests、non-activationをfreeze。
-    - [ ] **Task 258B2 implementation:** dedicated documentation commitと
+    - [x] **Task 258B2 implementation:** dedicated documentation commitと
       fresh parser/resolver/lower-API/count/hash preflight後にfrozen
-      single-assumption transportだけをimplementする。
+      single-assumption transportだけをimplementした。checker 4本/runner
+      5本がbounded `source_drift`/`test_gap`をcloseし、semantic/corpus
+      activationは追加していない。
     - [ ] **Tasks 258B3-B5:** witness transport、composite theorem root、
       broader imported/outer/inner visibility profileをseparately freezeする。
       Tasks 269-272 semanticsを吸収しない。

@@ -228,7 +228,7 @@ separate Task 258BまたはTasks 269–272。
 |---|---|
 | `SourceTheoremRole` | `#[non_exhaustive]`; Task 258Aは`Theorem`だけをaccept。 |
 | `SourceTheoremStatus` | `#[non_exhaustive]`; Task 258Aは`Unmodified`だけをaccept。 |
-| `SourceStatementKind` | `#[non_exhaustive]`; Task 258Aは`TheoremProposition`、Task 258B1はexactな`ProofStepProposition`と`Conclusion` rowもaccept。 |
+| `SourceStatementKind` | `#[non_exhaustive]`; Task 258Aは`TheoremProposition`、Task 258B1はexactな`ProofStepProposition`と`Conclusion` row、Task 258B2はexactなunlabeled `Assumption` row 1件もaccept。 |
 | `SourceStatementRecovery` | `#[non_exhaustive]`; callerは`Degraded`を許容し、exact routeは`Normal`だけをaccept。 |
 | `SourceStatementFormulaTarget` | `#[non_exhaustive]`; Task 258AはTask-256 `Atomic` target 1件だけをaccept。 |
 | `SourceStatementInputFactKind` | `#[non_exhaustive]`; Task 258Aは`ReservedTypeGuard`だけをaccept。 |
@@ -955,3 +955,23 @@ documentation sync、independent no-findings review、全hard gate、read-only
 quality 90/100以上、task-only staging、dedicated documentation commitを要求。
 implementationはそのcommitとfresh parser/resolver/lower-API/count/hash
 preflight後だけ開始できる。
+
+## Task 258B2 implementation closure
+
+frozen 113-byte profileをlanguage meaningのwideningなしに実装した。
+`SourceStatementKind::Assumption`、exact syntax-free `1/3/3/3/3` producer
+profile、base-only typed/final installation、dormant runner leafが、
+Task-48 `2/1/0`、Task-252 `6/6/0`、Task-256
+`3/0/0/0/0/0/0/6/6`上でtheorem/assumption/conclusionをtransportする。
+resolver authenticationはexact local public/exported theorem label 1件、
+contribution 0、origin path `[2,1]`、import/citation/reference handoffなしを
+requireする。
+
+checker 4本とrunner 5本がbounded `source_drift`/`test_gap`をcloseし、
+all-index arena parity、lower/resolver mutation replay、subtree exclusion、
+Task-248/257/258 cross-family ownership、clone/debug、empty semanticsをcover
+する。`Assumption`は`UnverifiedProposition`とのpairだけであり、premise、
+fact、checked formula、statement semantic、proof、goal、diagnostic、
+accepted theoremを作らない。Task 258B3はwitness、Task 258B4はcomposite
+root、Task 258B5はbroader visibility、Tasks 269–272はproof semanticsを
+保持する。

@@ -982,3 +982,11 @@ the syntax-free source table and its lower-stage provenance. It creates no
 fact, accepted premise, checked formula, statement semantic, proof, goal,
 diagnostic, or theorem result. This prerequisite changes no `TypedAst`
 source, tests, or existing debug bytes.
+
+### Task 258B2 Implementation Closure
+
+`TypedAst::with_source_statement` now admits only the exact Task-258A or
+Task-258B2 base profile. Task-258B1 remains pair-only, and Task-248,
+Task-257A/B/C2/C3, Task-258 cross-profile hybrids, occupied semantic tables,
+and either foreign-first or statement-first ownership order fail without
+partial mutation. Clone and debug order remain stable.

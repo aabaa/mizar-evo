@@ -730,3 +730,11 @@ proof-local declarationとproof/justification semanticsを保持する。した�
 deferred `MT10-FS` rowはdeferredのまま。本documentation prerequisiteは
 executable coverage creditを得ず、source、fixture、sidecar、expectation、
 trace status/count、既存test list/hashを変更しない。
+
+### Task 258B2 implemented family edge
+
+frozen single-assumption edgeはexecutableになったがtransport-onlyのまま。
+direct equality theorem 1件、unlabeled assumption 1件、direct conclusion
+1件だけで、reference/semantic handoffはない。B2 source/test gapをcloseするが、
+B3 witness、B4 composite root、B5 broader visibility、Tasks 269–272
+proof-semantic ownershipを消費しない。

@@ -437,3 +437,10 @@ exact lower/statement profile、dormant precedence、future test 5本、
 exclusion、unchanged 374-test/30-path baseline、B3–B5/269–272 deferralを
 freezeする。runner source/executable metadataは変更せず、Task-258B2
 bilingual driftを認めない。
+
+## Checker Task 258B2 implementation synchronization
+
+EN canonical runner plan、checklist、harness、module-boundary resultをJA
+companionと同期した。両言語はdormant tests 5本、library 379 tests、
+30 paths / 36,479 lines、同一hash、active/trace変更なし、同じB3–B5 /
+Tasks 269–272 deferralを記録する。

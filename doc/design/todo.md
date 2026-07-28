@@ -2526,6 +2526,7 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Keep `spec.en.checker.formula_statement.source_payloads` deferred with
   `tests = []` and preserve all corpus, trace, source, test-list, production,
   count, and hash baselines in this documentation-only prerequisite.
-- [ ] After this dedicated documentation commit and fresh preflight,
-  implement only Task 258B2 with four checker and five runner tests, then
-  fresh-inventory Task 258B3.
+- [x] After this dedicated documentation commit and fresh preflight,
+  implemented only Task 258B2 with four checker and five runner tests.
+  Bounded `source_drift`/`test_gap` are closed without semantic, corpus, or
+  trace activation; fresh-inventory Task 258B3 next.

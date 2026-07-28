@@ -335,3 +335,10 @@ future checker/runner test 4/5本、deferred ownership、unchanged baselineを
 両言語でfreezeする。paired runner文書も同じdormant consumerをfreezeする。
 本prerequisiteはsource/executable metadataを変更せず、Task-258B2 bilingual
 debtを認めない。
+
+## Task 258B2 implementation pair
+
+implemented source-statement、binding、typed、final、plan、TODO、family、
+module、source-audit updateを本logical taskで英語正本と同期した。両言語は
+同じchecker 4本/runner 5本、library 346/379、no-credit trace status、
+semantic deferral、Task-258B3 handoffを記録する。bilingual debtは残らない。

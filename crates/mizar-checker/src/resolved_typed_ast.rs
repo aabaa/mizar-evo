@@ -1818,7 +1818,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         self.inputs.typed_ast.nodes(),
                     )
                     .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?,
-                None if source_statement.is_task_258a_profile() => {}
+                None if source_statement.is_task_258a_profile()
+                    || source_statement.is_task_258b2_profile() => {}
                 _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
             }
         } else if source_statement_references.is_some() {

@@ -3864,3 +3864,13 @@ transports source intent only; it does not accept the assumption as a premise
 or establish truth. The trace row remains deferred with `tests = []`, so this
 documentation prerequisite earns no coverage credit and changes no
 fixture, sidecar, expectation, trace status/count, source, test list, or hash.
+
+## Task 258B2 Implementation Audit
+
+The implementation closes only the bounded `source_drift` and `test_gap`
+identified by the frozen contract. It transports an assumption occurrence
+as `UnverifiedProposition` and does not implement the Chapter-15 proof
+effect. No `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or
+`repo_metadata_conflict` is present. B3–B5 and Tasks 269–272 remain the
+classified owners of the deferred behavior.

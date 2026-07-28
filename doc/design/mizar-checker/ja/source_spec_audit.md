@@ -3694,3 +3694,12 @@ assumptionをpremiseとしてacceptせずtruthも確立しない。trace rowは
 `tests = []`でdeferredを維持するため、本documentation prerequisiteはcoverage
 creditを得ず、fixture、sidecar、expectation、trace status/count、source、
 test list/hashを変更しない。
+
+## Task 258B2 implementation audit
+
+implementationはfrozen contractが特定したbounded `source_drift`/`test_gap`
+だけをcloseする。assumption occurrenceを`UnverifiedProposition`として
+transportし、Chapter-15 proof effectは実装しない。`spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`はない。B3–B5とTasks
+269–272がdeferred behaviorのclassified ownerであり続ける。

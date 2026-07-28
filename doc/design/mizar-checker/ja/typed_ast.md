@@ -933,3 +933,11 @@ successful installはsyntax-free source tableとlower-stage provenanceだけを
 ownし、fact、accepted premise、checked formula、statement semantic、proof、
 goal、diagnostic、theorem resultを作らない。本prerequisiteは`TypedAst`
 source/test/existing debug byteを変更しない。
+
+### Task 258B2 implementation closure
+
+`TypedAst::with_source_statement`はexact Task-258AまたはTask-258B2 base
+profileだけをadmitする。Task-258B1はpair-onlyのまま。Task-248、
+Task-257A/B/C2/C3、Task-258 cross-profile hybrid、occupied semantic table、
+foreign-first/statement-firstの両ownership orderはpartial mutationなしで
+failする。clone/debug orderもstableである。

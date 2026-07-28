@@ -453,3 +453,10 @@ provenance, exact lower/statement profiles, dormant precedence, five future
 tests, exclusions, unchanged 374-test/30-path baseline, and B3–B5/269–272
 deferrals. No runner source or executable metadata changes, and no Task-258B2
 bilingual drift is accepted.
+
+## Checker Task 258B2 Implementation Synchronization
+
+The EN canonical runner plan, checklist, harness, and module-boundary result
+are synchronized with their JA companions. Both record five dormant tests,
+379 library tests, 30 paths / 36,479 lines, identical hashes, no active or
+trace change, and the same B3–B5 / Tasks 269–272 deferrals.

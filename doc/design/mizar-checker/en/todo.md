@@ -4533,9 +4533,11 @@ unchecked row below is one future nonempty logical task and one commit.
       Task-252 `6/6/0`, Task-256 `3/0/0/0/0/0/0/6/6`, base-only
       typed/final ownership, empty-semantic boundary, tests, and
       non-activation.
-    - [ ] **Task 258B2 implementation:** implement only the frozen
+    - [x] **Task 258B2 implementation:** implemented only the frozen
       single-assumption transport after its dedicated documentation commit
-      and fresh parser/resolver/lower-API/count/hash preflight.
+      and fresh parser/resolver/lower-API/count/hash preflight. Four checker
+      and five runner tests close the bounded `source_drift` and `test_gap`;
+      no semantic or corpus activation was added.
     - [ ] **Tasks 258B3-B5:** separately freeze witness transport, composite
       theorem roots, and broader imported/outer/inner visibility profiles.
       Do not absorb Tasks 269-272 semantics.

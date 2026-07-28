@@ -529,7 +529,7 @@ statement families remain Task 258B or Tasks 269–272.
 |---|---|
 | `SourceTheoremRole` | `#[non_exhaustive]`; Task 258A accepts only `Theorem`. |
 | `SourceTheoremStatus` | `#[non_exhaustive]`; Task 258A accepts only `Unmodified`. |
-| `SourceStatementKind` | `#[non_exhaustive]`; Task 258A accepts `TheoremProposition`, while Task 258B1 additionally accepts exact `ProofStepProposition` and `Conclusion` rows. |
+| `SourceStatementKind` | `#[non_exhaustive]`; Task 258A accepts `TheoremProposition`, Task 258B1 additionally accepts exact `ProofStepProposition` and `Conclusion` rows, and Task 258B2 additionally accepts one exact unlabeled `Assumption` row. |
 | `SourceStatementRecovery` | `#[non_exhaustive]`; callers tolerate `Degraded`, while this exact route accepts only `Normal`. |
 | `SourceStatementFormulaTarget` | `#[non_exhaustive]`; Task 258A accepts only one Task-256 `Atomic` target. |
 | `SourceStatementInputFactKind` | `#[non_exhaustive]`; Task 258A accepts only `ReservedTypeGuard`. |
@@ -1293,3 +1293,23 @@ reviews, every hard gate, read-only quality at least 90/100, task-only
 staging, and one dedicated documentation commit. Implementation may begin
 only after that commit and a fresh parser/resolver/lower-API/count/hash
 preflight.
+
+## Task 258B2 Implementation Closure
+
+The frozen 113-byte profile is implemented without widening its language
+meaning. `SourceStatementKind::Assumption`, the exact syntax-free
+`1/3/3/3/3` producer profile, base-only typed/final installation, and the
+dormant runner leaf now transport the theorem, assumption, and conclusion
+over Task-48 `2/1/0`, Task-252 `6/6/0`, and Task-256
+`3/0/0/0/0/0/0/6/6`. Resolver authentication requires the one exact local
+public/exported theorem label, contribution 0, origin path `[2,1]`, and no
+import, citation, or reference handoff.
+
+Four checker and five runner tests close the bounded `source_drift` and
+`test_gap`, including all-index arena parity, lower/resolver mutation replay,
+subtree exclusion, Task-248/257/258 cross-family ownership, clone/debug, and
+empty semantics. `Assumption` remains paired only with
+`UnverifiedProposition`; it creates no premise, fact, checked formula,
+statement semantic, proof, goal, diagnostic, or accepted theorem. Task
+258B3 retains witnesses, Task 258B4 composite roots, Task 258B5 broader
+visibility, and Tasks 269–272 proof semantics.

@@ -3748,3 +3748,20 @@ accept it as a premise or establish truth, proof validity, goals, or theorem
 acceptance. Task 258B3 retains witnesses, B4 composite roots, B5 broader
 visibility, and Tasks 269–272 proof semantics. The audit update records
 frozen ownership only and earns no coverage credit.
+
+## Step 5 Checker Task 258B2 Implementation Addendum
+
+The frozen single-assumption route and its four checker/five runner tests are
+implemented. This closes only the recorded bounded `source_drift` and
+`test_gap`: the route preserves the occurrence, exact lower/resolver
+provenance, and `UnverifiedProposition` candidate, but accepts no premise,
+establishes no truth, validates no proof, and produces no semantic or theorem
+result.
+
+Accordingly,
+`spec.en.checker.formula_statement.source_payloads` remains deferred with
+`tests = []`. No trace row/status/count or coverage credit changes. Task
+258B3 retains witness transport, B4 composite roots, B5 broader visibility,
+and Tasks 269–272 proof semantics. Library inventory is now checker/runner
+`346/379`; runner production remains 30 paths and is 36,479 lines. This
+addendum records implementation progress and follow-up ownership only.

@@ -549,3 +549,12 @@ proof result. Empty/foreign ranges, a non-proof owner, a different parent or
 scope, another binding count, or any profile other than `2/1/0` must fail
 before publication. The documentation prerequisite changes no source or test;
 the existing Task-258A and Task-258B1 profiles and bytes remain unchanged.
+
+### Task 258B2 Implementation Closure
+
+The implementation reuses the existing `SourceStatement` owner exactly:
+module context 0 plus proof context 1 at `72..111`, parent 0, proof layer,
+scope `[0]`, no local bindings, and visible reserved binding `[0]`.
+`binding_env.rs` remains byte-for-byte outside this task; mutation tests
+authenticate the exact `2/1/0` fingerprint and reject cross-profile lower
+environments atomically.

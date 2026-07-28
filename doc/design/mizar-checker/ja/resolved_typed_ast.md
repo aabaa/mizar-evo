@@ -938,3 +938,11 @@ handoffをexactに保持する。final assemblyはnew resolutionをinferせず�
 accepted premise、fact、checked formula、statement semantic、proof、goal、
 diagnostic、theorem result、downstream IR/VC outputをpublishしない。本prerequisite
 はresolved source/testを変更しない。
+
+### Task 258B2 implementation closure
+
+final assemblyはreference associationなしのexact base-only B2 handoffを
+revalidateしてclone-preserveする。cluster fact、statement-proof input、
+foreign source family、checked formula、statement semantic、proof、goal、
+diagnostic、その他semantic outputはrejectしたままで、successful resultは
+全該当tableをemptyに保つ。

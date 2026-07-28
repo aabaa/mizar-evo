@@ -3222,3 +3222,11 @@ statement-semantic/proof/goal/diagnostic output不変をcoverする。
 corpus artifact、trace metadata、production manifest、test list/hashを
 変更しない。witness、composite root、broader visibility、proof meaningは
 Tasks 258B3–B5と269–272に残る。
+
+### Task 258B2 implemented harness boundary
+
+private leaf/facadeは2,120/678 lines、`runner.rs`は2,491 lines、statement
+test leafは2,884 linesで実装済み。routeはcorpus-dormantのままprior
+statement/lower selectorより先に実行する。all-index parityとcomplete
+resolver mutation matrixがraw-syntax/provenance driftのsyntax-free checker
+boundary越えを防ぐ。

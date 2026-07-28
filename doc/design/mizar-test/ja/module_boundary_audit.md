@@ -10296,3 +10296,11 @@ statement publicationをTask 258A/B1と共有するため、既存private
 `type_elaboration/source_statement.rs` leafがownする。raw syntaxはprivateに
 留まりchecker moduleはsyntax-free ownershipを保持する。new dependency
 direction/semantic ownerは導入しないため、implementation前のsplitは不要。
+
+## Checker Task 258B2 implemented boundary
+
+existing boundaryを保持する。`runner.rs` 2,491 linesと678-line facadeが
+private 2,120-line statement leafをexposeし、2,884-line test leafがraw
+parser/resolver assertionをownする。30-path production topologyは不変。
+checkerはsyntax-free handoffとauthenticated provenanceだけを受けるため、
+new module、dependency direction、semantic ownerは不要である。

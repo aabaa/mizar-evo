@@ -529,3 +529,11 @@ fact、checked formula、goal、accepted theorem、proof resultにはしない�
 empty/foreign range、non-proof owner、異なるparent/scope、別binding count、
 `2/1/0`以外のprofileはpublication前にfailする。本documentation prerequisiteは
 source/testを変更せず、既存Task-258A/Task-258B1 profileとbyteも不変。
+
+### Task 258B2 implementation closure
+
+implementationはexisting `SourceStatement` ownerをexactにreuseする。module
+context 0とproof context 1 (`72..111`)、parent 0、proof layer、scope `[0]`、
+local bindingなし、visible reserved binding `[0]`である。`binding_env.rs`は
+本task外でbyte-for-byte不変。mutation testはexact `2/1/0` fingerprintを
+authenticateし、cross-profile lower environmentをatomicにrejectする。
