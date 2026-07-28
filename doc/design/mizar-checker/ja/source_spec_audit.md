@@ -3769,3 +3769,22 @@ authorizeしない。broad B3Mをexact B3M1とfuture B3M2へsplitして
 `source_drift`/`test_gap`。`spec_gap`、undocumented behavior、expectation
 drift、boundary violation、metadata conflict、lower-stage prerequisiteは
 ない。formula-statement rowは`deferred` / `tests = []`を維持する。
+
+## Task 258B3M2A authority audit
+
+canonical Chapter 15 §15.4.4はunnamed `take 101;`を明示し、Chapter 13
+§§13.1/13.1.4/13.9は`101`をprimary numeral termとし、Chapter 4 §4.4.3は
+unnamed witnessがlocal nameを導入しないとする。Chapter 16 §16.3.3 item 5
+は後続existential skeletonだけを与える。existing parser fixtureはwitness
+syntaxを確立し、completed lexer prerequisite後のreal frontendは
+zero-diagnostic 49-node arenaを生成する。これらはtype selection、
+existential matching、substitution、remaining goal、proof acceptance、
+B3M2B term shapeをauthorizeしない。
+
+exact syntax tableのfreezeで`design_drift`を解消し、future private
+code/testsはbounded `source_drift`/`test_gap`。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`はない。外部`origin/main`移動はreport-only
+`repo_metadata_conflict`でtask ownershipを曖昧にしない。
+formula-statement rowは`deferred` / `tests = []`を維持してcoverage creditを
+得ない。

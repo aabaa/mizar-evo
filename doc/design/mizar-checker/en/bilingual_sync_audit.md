@@ -412,3 +412,14 @@ profile, raw/typed 56-node authentication, resolver-owned-`y` exclusion,
 `2 witnesses / 1 name`, four/five passing tests, `358/394` counts, module
 and production sizes/hashes, unchanged semantic boundary, and
 B3M2-before-B4 order. No bilingual debt remains.
+
+## Task 258B3M2A Frozen-Contract Synchronization
+
+Canonical EN and JA checker/runner plans, source/binding/typed/final
+designs, family decomposition, harness/module/source audits, TODOs, and
+coverage ownership freeze the same final-LF 107-byte/hash source,
+49-node/root-48 unrecovered arena, lower `2/1/0` + `5/4/1` +
+`2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, witness/name `1/0`,
+Task-252 numeric-request ownership, public-API no-op, no-semantic boundary,
+four/five future tests, unchanged `358/394` baselines, and B3M2B-before-B4
+order. No bilingual debt is accepted.

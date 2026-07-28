@@ -1058,3 +1058,15 @@ the full lower/base/witness/name dependency graph. Orphan, stale,
 reference-hybrid, B3/B3N/B3M1 cross-family, nonempty overload pipeline,
 semantic, proof, and goal inputs all fail as `InvalidSourceStatement`.
 Successful output keeps every semantic/proof/goal table empty.
+
+## Task 258B3M2A Planned Final Ownership
+
+Final assembly may clone-preserve only an already authenticated B3M2A
+base/witness pair with one unnamed primary-numeral witness, no names, exact
+Task-252 numeric request, fingerprints, and the complete 49-node arena. It
+revalidates the row, source partition `[0,1,2]`, subtree exclusions, and
+all lower dependencies. Standalone halves, B3/B3N/B3M1/B3M2A hybrids,
+reference or numeric-request corruption, stale dependencies, and nonempty
+semantic/proof/goal tables fail as `InvalidSourceStatement`. Successful
+output infers no type, existential match, substitution, goal, or proof
+effect.

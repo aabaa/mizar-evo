@@ -504,3 +504,12 @@ exact dormant route, private-fingerprint ownership split, five compound
 tests, 394-test library, 30-path / 38,103-line production manifest, module
 sizes `3724/688/2501/7246`, unchanged active/trace ownership, and
 B3M2-before-B4 order. No implementation bilingual debt remains.
+
+## Task 258B3M2A Runner Prerequisite Synchronization
+
+EN/JA runner plans, TODOs, harnesses, and module audits freeze the same
+107-byte/hash exact selector, 49-node/root-48 unrecovered arena, zero
+frontend diagnostics, Task-252 `5/4/1` with numeral request 0,
+witness/name `1/0`, five-test matrix, unchanged 394-test / 30-path
+baseline, no public/active/semantic route, and B3M2B-before-B4 order. No
+bilingual debt is accepted.

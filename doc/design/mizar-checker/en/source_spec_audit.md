@@ -3943,3 +3943,23 @@ coverage credit. There is no remaining `spec_gap`, `design_drift`,
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict`; the formula-statement
 row remains deferred with `tests = []`.
+
+## Task 258B3M2A Authority Audit
+
+Canonical Chapter 15 §15.4.4 explicitly gives unnamed `take 101;`;
+Chapter 13 §§13.1/13.1.4/13.9 makes `101` a primary numeral term; Chapter
+4 §4.4.3 says an unnamed witness introduces no local name; and Chapter 16
+§16.3.3 item 5 supplies only the later existential skeleton. The existing
+parser fixture establishes witness syntax. The completed lexer
+prerequisite now yields a zero-diagnostic 49-node real frontend arena.
+These authorities do not authorize type selection, existential matching,
+substitution, remaining-goal construction, proof acceptance, or any B3M2B
+term shape.
+
+Freezing the exact syntax table resolves `design_drift`; future private
+code/tests are bounded `source_drift`/`test_gap`. There is no blocking
+`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation`. The external `origin/main` movement is classified as
+report-only `repo_metadata_conflict` and does not obscure task ownership.
+The formula-statement row remains `deferred` with `tests = []` and gains no
+coverage credit.

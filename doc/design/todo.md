@@ -2585,4 +2585,12 @@ completion remain deferred. The origin discrepancy remains report-only
   four/five tests, unchanged baselines, and updated ownership audit.
 - [x] Implement only frozen B3M1 after its documentation commit and fresh
   preflight.
-- [ ] Freeze/implement B3M2 before selecting Task 258B4.
+- [x] Decompose B3M2 into exact unnamed-numeral B3M2A and remaining
+  other-term B3M2B.
+- [x] Freeze only B3M2A: final-LF 107-byte/49-node source, lower/base
+  provenance, Task-252 numeric request, witness/name `1/0`, no API or
+  semantics, four/five tests, unchanged baselines, and ownership-only
+  coverage audit.
+- [ ] Implement only frozen B3M2A after its documentation commit and fresh
+  parser/resolver/lower/count/hash preflight.
+- [ ] Freeze/implement B3M2B before selecting Task 258B4.

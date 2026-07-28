@@ -2027,7 +2027,14 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   matrix, no semantics, and unchanged runner baselines.
 - [x] Implement only B3M1 after its docs commit and fresh preflight,
   projecting 394 runner tests.
-- [ ] Freeze/implement B3M2 before Task 258B4.
+- [x] Decompose B3M2 into exact unnamed-numeral B3M2A and remaining
+  other-term B3M2B.
+- [x] Freeze only the 107-byte/49-node B3M2A dormant consumer, Task-252
+  `5/4/1` with numeric request 0, witness/name `1/0`, exact five-test
+  matrix, no public/active/semantic route, and unchanged runner baselines.
+- [ ] Implement only B3M2A after its docs commit and fresh preflight,
+  projecting 399 runner tests.
+- [ ] Freeze/implement B3M2B before Task 258B4.
 
 ## Checker Task 258B3M1 Runner Implementation Ledger
 
@@ -2039,3 +2046,15 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   empty final semantics.
 - [x] Remeasure 394 tests, leaf/facade/root/test sizes
   `3724/688/2501/7246`, and 30 production paths / 38,103 lines.
+
+## Checker Task 258B3M2A Runner Documentation Ledger
+
+- [x] Freeze the exact 107-byte/hash selector, 49-node/root-48 arena,
+  zero-diagnostic frontend, theorem-only resolver provenance, and
+  B3M1/B3N/B3/B2/B1/A precedence.
+- [x] Freeze Task-48/252/256/base plus witness/name `1/0`, numeric request
+  ownership, complete mutation/replay, all near misses, both ownership
+  orders, final clone/debug/rollback, and empty semantics.
+- [x] Freeze exactly five future runner tests while preserving 394 tests,
+  sizes `3724/688/2501/7246`, 30 production paths / 38,103 lines, and all
+  corpus/expectation/sidecar/trace/active/list/hash baselines.

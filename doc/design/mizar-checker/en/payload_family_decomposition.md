@@ -855,3 +855,15 @@ The exact reserved-variable mixed edge is complete: named witness 0,
 unnamed witness 1, and name row 0 are syntax-only and dense. Resolver-owned
 `y`, binding, abbreviation, ordered goal effect, and every other witness
 term shape remain excluded. B3M2 is now the next dependency before B4.
+
+### Task 258B3M2A Numeral-Witness Edge
+
+B3M2 is split into B3M2A and B3M2B. B3M2A owns only one unnamed witness
+whose existing primary term 2 has kind `Numeral`, spelling `101`, and
+Task-252 numeric request 0. It adds one syntax-only witness row and no name
+row, binding, atomic edge, or semantic edge. Task 252 retains the numeral
+and request; Task 256 excludes term 2; Task 269 receives no binding; Task
+272 retains typing, existential matching, substitution, goal, and proof
+effects. B3M2B retains compound, application, selector, update, set,
+choice, `it`, parenthesized, and every other non-reserved-variable witness
+shape. B4/B5 remain blocked behind B3M2B.

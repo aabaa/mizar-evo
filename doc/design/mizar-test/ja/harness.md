@@ -3329,3 +3329,29 @@ runner libraryは394 tests。productionは30 paths / 38,103 lines、
 statement leaf/facade/root/test sizesは`3724/688/2501/7246`。fixture、
 sidecar、trace row/status/count、external detail key、active route、
 semantic resultは変更していない。
+
+## Checker Task 258B3M2A planned dormant harness contract
+
+private statement selectorはSHA-256
+`7b424949e98761b0179758065db5d164ad7d0a640f082801986683a54c43a2d1`
+のfinal-LF 107-byte numeral-witness sourceだけをrecognizeする。dispatch前に
+49 unrecovered parser nodes全部、exact theorem-only resolver provenance、
+frontend diagnostics 0、Task-48/252/256/base profileをauthenticateする。
+その後Task-252 primary numeral term 2 / numeric request 0をtargetするone
+unnamed witness rowをpublishし、name、binding、atomic edge、active route、
+semantic outputは追加しない。
+
+selectorはB3M1/B3N/B3/B2/B1/Aより先で、byte、node、subtree、resolver、
+lower table、numeral、numeric request、recovery、statement shape、
+cross-familyの全near missをfail closedにする。exact five tests:
+
+1. `task258b3m2a_real_frontend_freezes_numeral_witness_contract`;
+2. `task258b3m2a_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2a_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders`;
+5. `task258b3m2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`。
+
+本documentation taskはfixture、sidecar、trace row/status/count、external
+detail key、active dispatch、public mutation APIを追加しない。runner
+baselineは394 tests / production 30 paths / 38,103 lines、
+implementationは399 testsをprojectする。

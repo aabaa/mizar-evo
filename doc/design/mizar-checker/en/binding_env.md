@@ -610,3 +610,13 @@ The implementation keeps exactly module/proof contexts `0/1`, reserved
 binding 0, visible `[0]`, and no diagnostic. Token `y` and the second
 unnamed witness create no binding or resolver-owned symbol. Task 269 still
 owns future witness-name binding and abbreviation replay.
+
+## Task 258B3M2A Unnamed-Numeral Boundary
+
+B3M2A retains exactly module/proof contexts `0/1`, reserved binding 0,
+visible scope `[0]`, and no diagnostic. Numeral primary term 2 has no
+reference row and witness row 0 has no name row, owned binding, or
+resolver symbol. It creates no binding, abbreviation, capture, or context
+transition. Task 269 therefore receives no B3M2A work; Task 272 retains
+later witness typing and existential effects. No binding API or fingerprint
+grammar changes.

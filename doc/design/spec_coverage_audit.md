@@ -3975,3 +3975,35 @@ canonical requirement, existing `.miz`, expectation metadata, sidecar, trace
 row/status/count, active manifest count, CLI/hash baseline, or coverage credit.
 Broader mixed-list binding, Checker Task 258B3M2 transport, witness semantics,
 and proof effects remain deferred to their named owners.
+
+## Step 5 Checker Task 258B3M2A Frozen-Ownership Addendum
+
+Fresh post-lexer inventory splits broad Checker Task 258B3M2 into exact
+unnamed-numeral B3M2A and remaining other-term B3M2B. Canonical Chapter 15
+§15.4.4 supplies `take 101;`; Chapter 13 §§13.1/13.1.4/13.9 makes it a
+primary numeral; Chapter 4 §4.4.3 excludes a local name. The frozen
+final-LF 107-byte source has SHA-256
+`7b424949e98761b0179758065db5d164ad7d0a640f082801986683a54c43a2d1`
+and yields 49 unrecovered nodes/root 48 with zero frontend diagnostics.
+
+B3M2A owns syntax transport only: Task-48 `2/1/0`, Task-252 `5/4/1` with
+numeric request 0 on numeral primary term 2, Task-256
+`2/0/0/0/0/0/0/4/4` excluding term 2, base `1/2/2/2/2`, and one unnamed
+witness/no names with combined source order `[0,1,2]`. Existing public
+tables and paired typed/final ownership suffice. Four checker and five
+runner compound tests are frozen; libraries remain `358/394` in this
+documentation prerequisite and project `362/399` after implementation.
+Task 252 retains the numeral/request, Task 269 receives no binding, and Task
+272 retains typing, existential matching, substitution, goals, and proof
+acceptance. B3M2B retains all other witness terms and remains before B4.
+
+This addendum changes follow-up ownership only. The
+`spec.en.checker.formula_statement.source_payloads` row stays `deferred`
+with `tests = []`; no trace row/status/count, active manifest, corpus,
+expectation, or coverage credit changes. The frozen contract resolves
+`design_drift`; future source/tests are bounded `source_drift`/`test_gap`.
+There is no blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `boundary_violation`. The externally advanced
+`origin/main` remote-tracking ref is recorded as nonblocking report-only
+`repo_metadata_conflict`; task ownership and the commit base remain
+unambiguous.

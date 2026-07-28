@@ -3507,3 +3507,30 @@ The runner library now has 394 tests. Production remains 30 paths / 38,103
 lines with statement leaf/facade/root/test sizes `3724/688/2501/7246`.
 No fixture, sidecar, trace row/status/count, external detail key, active
 route, or semantic result changed.
+
+## Checker Task 258B3M2A Planned Dormant Harness Contract
+
+The private statement selector will recognize only the final-LF 107-byte
+numeral-witness source with SHA-256
+`7b424949e98761b0179758065db5d164ad7d0a640f082801986683a54c43a2d1`.
+Before dispatch it authenticates all 49 unrecovered parser nodes, exact
+theorem-only resolver provenance, zero frontend diagnostics, and the
+Task-48/252/256/base profiles. It then publishes one unnamed witness row
+targeting Task-252 primary numeral term 2 and numeric request 0, with no
+name, binding, atomic edge, active route, or semantic output.
+
+The selector precedes B3M1/B3N/B3/B2/B1/A and fails closed for every
+byte, node, subtree, resolver, lower-table, numeral, numeric-request,
+recovery, statement-shape, or cross-family near miss. The exact five tests
+are:
+
+1. `task258b3m2a_real_frontend_freezes_numeral_witness_contract`;
+2. `task258b3m2a_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2a_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders`;
+5. `task258b3m2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`.
+
+This documentation task adds no fixture, sidecar, trace row/status/count,
+external detail key, active dispatch, or public mutation API. The runner
+baseline remains 394 tests and 30 production paths / 38,103 lines;
+implementation projects 399 tests.

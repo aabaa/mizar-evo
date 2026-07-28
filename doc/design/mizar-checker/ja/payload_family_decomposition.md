@@ -792,3 +792,15 @@ exact reserved-variable mixed edgeはcomplete: named witness 0、unnamed
 witness 1、name row 0はsyntax-only/dense。resolver-owned `y`、binding、
 abbreviation、ordered goal effect、other witness-term shapesはすべてexclude
 する。B3M2がB4前のnext dependencyとなる。
+
+### Task 258B3M2A numeral-witness edge
+
+B3M2をB3M2A/B3M2Bへsplitする。B3M2Aはexisting primary term 2がkind
+`Numeral`、spelling `101`、Task-252 numeric request 0を持つone unnamed
+witnessだけをownする。syntax-only witness row 1件を追加し、name row、
+binding、atomic edge、semantic edgeは追加しない。numeral/requestはTask 252、
+term 2 exclusionはTask 256、bindingなしはTask 269、typing/existential
+matching/substitution/goal/proof effectはTask 272が保持する。B3M2Bはcompound、
+application、selector、update、set、choice、`it`、parenthesized、および
+その他のnon-reserved-variable witness shapeを保持する。B4/B5はB3M2Bまで
+blocked。

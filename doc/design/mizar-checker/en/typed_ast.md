@@ -1049,3 +1049,14 @@ B3M1 base plus `2 witnesses / 1 name`. It revalidates the six-term lower
 profile, 56-node arena, statement/primary fingerprints, dense ordinals, and
 name link before publishing both halves. Every cross-family or repeated
 order still returns `InvalidSourceStatement` without partial ownership.
+
+## Task 258B3M2A Planned Paired Ownership
+
+The existing paired installer remains the sole publication path. It may
+accept only the exact B3M2A base plus `1 witness / 0 names`, authenticate
+the 49-node arena, five Task-252 terms, four references, numeric request 0,
+both equality exclusions, fingerprints, and `[0,1,2]` source order, then
+publish both halves atomically. B3/B3N/B3M1 bytes remain unchanged.
+Standalone/repeated installation, profile hybrids, reference or numeric
+request corruption, Task-248/257/other-258 families in either order, and
+semantic coexistence roll back without partial ownership.

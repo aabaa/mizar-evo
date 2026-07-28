@@ -391,3 +391,15 @@ authentication、resolver-owned `y` exclusion、`2 witnesses / 1 name`、
 passing tests 4/5本、`358/394` counts、module/production sizes/hashes、
 unchanged semantic boundary、B3M2-before-B4 orderを同一に記録する。
 bilingual debtは残らない。
+
+## Task 258B3M2A frozen-contract synchronization
+
+canonical EN/JA checker/runner plan、source/binding/typed/final design、
+family decomposition、harness/module/source audit、TODO、coverage
+ownershipは、同じfinal-LF 107-byte/hash source、49-node/root-48
+unrecovered arena、lower `2/1/0` + `5/4/1` +
+`2/0/0/0/0/0/0/4/4`、base `1/2/2/2/2`、witness/name
+`1/0`、Task-252 numeric-request ownership、public-API no-op、
+no-semantic boundary、future checker/runner tests 4/5本、unchanged
+`358/394` baseline、B3M2B-before-B4 orderをfreezeする。bilingual debtは
+acceptしない。

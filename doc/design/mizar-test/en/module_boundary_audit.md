@@ -11588,3 +11588,16 @@ production manifest is 38,103 lines. Raw parser/resolver objects remain
 runner-private, the checker receives only syntax-free authenticated tables,
 and no public route, mutation API, external key, module split, dependency
 direction, or semantic owner was added.
+
+## Task 258B3M2A Planned Consumer Boundary
+
+The exact numeral selector, raw parser/resolver authentication, lower-table
+assembly, and five tests stay in the existing
+`type_elaboration/source_statement.rs` production/test leaves and existing
+facades/root. The checker receives only syntax-free authenticated tables;
+Task-252 numeral/numeric-request ownership is reused rather than duplicated.
+Production topology remains 30 paths. This documentation task leaves
+statement leaf/facade/root/test sizes `3724/688/2501/7246` and the
+38,103-line production manifest unchanged. No public route, external key,
+mutation API, module split, dependency direction, binding, or semantic
+owner is authorized.

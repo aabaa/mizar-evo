@@ -380,3 +380,15 @@ consumers、dormant runner statement leaf/facades、compound testsだけを
 dependency directionは追加しない。checker module sizesは
 `14045/4659/7201/3156`、runner statement leaf/facade/root/test sizesは
 `3724/688/2501/7246`で、documented statement-leaf exception内。
+
+## Task 258B3M2A planned boundary
+
+exact numeral-witness profileはexisting `source_statement.rs`、
+`typed_ast.rs`、`resolved_typed_ast.rs`内でcohesiveに保つ。syntax-free
+Task-48/252/256/base handoffsと`TypedArena`をconsumeし、raw parser/resolver
+traversalはprivate `mizar-test` statement leafに残す。runner selector /
+future testsもexisting statement production/test leavesとfacadesに置く。
+new module、crate edge、public schema、active route、semantic owner、
+dependency direction、module splitはauthorizeしない。本docs prerequisiteは
+checker sizes `14045/4659/7201/3156`、runner sizes
+`3724/688/2501/7246`、production 30 paths / 38,103 linesを維持する。

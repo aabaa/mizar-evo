@@ -589,3 +589,13 @@ implementationはmodule/proof contexts `0/1`、reserved binding 0、visible
 `[0]`、no diagnosticをexactに維持する。token `y`とsecond unnamed witnessは
 binding/resolver-owned symbolを作らない。future witness-name bindingと
 abbreviation replayは引き続きTask 269が所有する。
+
+## Task 258B3M2A unnamed-numeral boundary
+
+B3M2Aはmodule/proof contexts `0/1`、reserved binding 0、visible scope
+`[0]`、no diagnosticをexactに維持する。numeral primary term 2には
+reference rowがなく、witness row 0にはname row、owned binding、
+resolver symbolがない。binding、abbreviation、capture、context transitionは
+作らない。したがってTask 269にB3M2A workはなく、後続witness typing /
+existential effectはTask 272が保持する。binding API/fingerprint grammarは
+変更しない。

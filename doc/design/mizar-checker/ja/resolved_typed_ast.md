@@ -1001,3 +1001,14 @@ lower/base/witness/name dependency graphをrevalidateする。orphan、stale、
 reference hybrid、B3/B3N/B3M1 cross-family、nonempty overload pipeline、
 semantic、proof、goal inputsはすべて`InvalidSourceStatement`でfailする。
 successful outputの全semantic/proof/goal tablesはempty。
+
+## Task 258B3M2A planned final ownership
+
+final assemblyはalready authenticated B3M2A base/witness pair、one
+unnamed primary-numeral witness、0 names、exact Task-252 numeric request、
+fingerprints、complete 49-node arenaだけをclone-preserveできる。row、
+source partition `[0,1,2]`、subtree exclusions、全lower dependenciesを
+revalidateする。standalone half、B3/B3N/B3M1/B3M2A hybrid、reference /
+numeric-request corruption、stale dependency、nonempty semantic/proof/goal
+tableは`InvalidSourceStatement`でfailする。successでもtype、existential
+match、substitution、goal、proof effectはinferしない。

@@ -400,3 +400,16 @@ compound tests. No module, crate edge, public schema, active route,
 semantic owner, or dependency direction is added. Checker module sizes are
 `14045/4659/7201/3156`; runner statement leaf/facade/root/test sizes are
 `3724/688/2501/7246`, within the documented statement-leaf exception.
+
+## Task 258B3M2A Planned Boundary
+
+The exact numeral-witness profile remains cohesive in existing
+`source_statement.rs`, `typed_ast.rs`, and `resolved_typed_ast.rs`. It
+consumes syntax-free Task-48/252/256/base handoffs and `TypedArena`; raw
+parser/resolver traversal stays in the private `mizar-test` statement leaf.
+The runner selector and future tests stay in their existing statement
+production/test leaves and facades. No new module, crate edge, public
+schema, active route, semantic owner, dependency direction, or module split
+is authorized. This documentation prerequisite preserves checker sizes
+`14045/4659/7201/3156`, runner sizes `3724/688/2501/7246`, and 30
+production paths / 38,103 lines.

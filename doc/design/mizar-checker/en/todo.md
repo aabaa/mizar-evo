@@ -4846,8 +4846,16 @@ implementation commit does not satisfy a producer task.
   four/five tests, and unchanged baselines.
 - [x] Implement only frozen Task 258B3M1 after its documentation commit and
   fresh parser/resolver/lower/count/hash preflight.
-- [ ] Freeze and implement Task 258B3M2 other witness-term shapes before
-  selecting Task 258B4.
+- [x] Decompose Task 258B3M2 into exact unnamed-numeral B3M2A and remaining
+  other-term B3M2B before selecting Task 258B4.
+- [x] Freeze Task 258B3M2A only: final-LF 107-byte/49-node source,
+  Task-252 `5/4/1`, base/witness/name `1/2/2/2/2` + `1/0`, numeric request
+  ownership, no new API or semantics, four/five tests, and unchanged
+  baselines.
+- [ ] Implement only frozen Task 258B3M2A after its documentation commit
+  and fresh parser/resolver/lower/count/hash preflight.
+- [ ] Freeze and implement Task 258B3M2B remaining other witness-term
+  shapes before selecting Task 258B4.
 
 ## Checker Task 258B3N Implementation Ledger
 
@@ -4889,3 +4897,18 @@ implementation commit does not satisfy a producer task.
 - [x] Add exactly four checker and five runner compound tests and remeasure
   `358/394` library tests, checker modules `14045/4659/7201/3156`, and the
   runner 30-path / 38,103-line production manifest.
+
+## Checker Task 258B3M2A Documentation Ledger
+
+- [x] Freeze canonical authority, the exact 107-byte source/hash, complete
+  49-node/root-48 unrecovered arena, theorem resolver provenance, and zero
+  frontend diagnostics after the lexer prerequisite.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `5/4/1`, Task-256
+  `2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, witness/name `1/0`, numeral
+  request ownership, source partition `[0,1,2]`, and subtree exclusions.
+- [x] Freeze public-API no-op, prior debug compatibility, validation
+  precedence, paired typed/final ownership, exact four/five compound tests,
+  replay/rollback, and empty semantics.
+- [x] Preserve canonical specs, existing `.miz`, fixtures, expectations,
+  sidecars, trace status/count, active routes, source/tests, lists, counts,
+  and hashes; retain B3M2B before B4.

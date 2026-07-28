@@ -4607,8 +4607,16 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   no new API/semantics、tests 4/5本、unchanged baseline。
 - [x] documentation commitとfresh parser/resolver/lower/count/hash
   preflight後にfrozen Task 258B3M1だけをimplement。
-- [ ] Task 258B4 selection前にTask 258B3M2 other witness-term shapeを
-  freeze/implement。
+- [x] Task 258B3M2をexact unnamed-numeral B3M2Aとremaining other-term
+  B3M2BへdecomposeしてからTask 258B4を選ぶ。
+- [x] Task 258B3M2Aだけをfreeze: final-LF 107-byte/49-node source、
+  Task-252 `5/4/1`、base/witness/name `1/2/2/2/2` + `1/0`、numeric
+  request ownership、new API/semanticsなし、tests 4/5本、unchanged
+  baselines。
+- [ ] documentation commitとfresh parser/resolver/lower/count/hash
+  preflight後にfrozen Task 258B3M2Aだけをimplement。
+- [ ] Task 258B3M2B remaining other witness-term shapesをfreeze/implement
+  してからTask 258B4を選ぶ。
 
 ## Checker Task 258B3N 実装ledger
 
@@ -4648,3 +4656,19 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] checker exactly 4本 / runner exactly 5本のcompound testsを追加し、
   library `358/394`、checker modules `14045/4659/7201/3156`、runner
   production 30 paths / 38,103 linesを再測定。
+
+## Checker Task 258B3M2A documentation ledger
+
+- [x] canonical authority、exact 107-byte source/hash、complete
+  49-node/root-48 unrecovered arena、theorem resolver provenance、lexer
+  prerequisite後frontend diagnostics 0をfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `5/4/1`、Task-256
+  `2/0/0/0/0/0/0/4/4`、base `1/2/2/2/2`、witness/name `1/0`、
+  numeral request ownership、source partition `[0,1,2]`、subtree
+  exclusionsをfreeze。
+- [x] public-API no-op、prior debug compatibility、validation precedence、
+  paired typed/final ownership、exact 4/5 compound tests、replay/rollback、
+  empty semanticsをfreeze。
+- [x] canonical spec、existing `.miz`、fixture、expectation、sidecar、trace
+  status/count、active route、source/test、list、count、hashを維持し、
+  B3M2B-before-B4を保持。

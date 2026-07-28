@@ -997,3 +997,13 @@ existing paired installerはexact authenticated B3M1 base +
 6-term lower profile、56-node arena、statement/primary fingerprints、
 dense ordinals、name linkをrevalidateする。全cross-family/repeated orderは
 partial ownershipなしで`InvalidSourceStatement`を返す。
+
+## Task 258B3M2A planned paired ownership
+
+existing paired installerだけをpublication pathとする。exact B3M2A base +
+`1 witness / 0 names`だけをacceptし、49-node arena、Task-252 terms 5件 /
+references 4件 / numeric request 0、両equality exclusion、fingerprints、
+source order `[0,1,2]`をauthenticateしてboth halvesをatomicにpublishする。
+B3/B3N/B3M1 bytesは不変。standalone/repeated install、profile hybrid、
+reference/numeric-request corruption、Task-248/257/other-258 familyのboth
+order、semantic coexistenceはpartial ownershipなしでrollbackする。

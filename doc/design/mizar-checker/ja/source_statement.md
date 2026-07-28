@@ -1640,3 +1640,190 @@ mutation、exhaustive base/witness/name/resolver replay、全ownership order、
 libraryは`358/394`、module sizesは`14045/4659/7201/3156`、runner sizesは
 `3724/688/2501/7246`、runner productionは30 paths / 38,103 lines。
 binding/semantic ownershipはTasks 269/272へdeferし、B3M2がB4前のnext。
+
+## Task 258B3M2A frozen numeral-witness slice
+
+Lexer Task 258B3M2P1後のfresh inventoryで、broad B3M2
+“other witness-term shapes” umbrellaを依存順のB3M2A/B3M2Bへ分解する。
+B3M2Aはunnamed numeral witness 1件だけを所有する。B3M2Bはcompound、
+application、selector、update、set、choice、`it`、parenthesizedを含む残りの
+non-reserved-variable witness shapeを保持する。Task 258B4はB3M2Bまでblocked。
+
+canonical authorityは`doc/spec/en/15.statements.md` §15.4.4
+（unnamed exampleを`term_expression`とし`take 101;`を明示）、
+`doc/spec/en/13.term_expression.md` §§13.1/13.1.4/13.9
+（numeralはprimary term）、`doc/spec/en/04.variables_and_constants.md`
+§4.4.3（unnamed witnessはlocal nameを導入しない）、
+`doc/spec/en/16.theorems_and_proofs.md` §16.3.3 item 5。
+Chapter 15 §15.11.5は後続witness type obligation/existential substitutionを
+所有する。本taskはsyntax transportだけをfreezeする。Task 252はnumeral
+occurrence/unresolved numeric-type request、Task 272はtype inference、
+existential matching、substitution、remaining goal、proof acceptanceを保持する。
+unnamedなのでTask 269にはbinding workを追加しない。
+
+exact future corpus-dormant consumerは次のfinal-LF 107-byte sourceで、
+SHA-256は
+`7b424949e98761b0179758065db5d164ad7d0a640f082801986683a54c43a2d1`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementNumeralWitnessSmoke: x = x proof
+  take 101;
+  thus x = x;
+end;
+```
+
+equality goalはexistentialではないためvalid proofではなく、active accepted
+corpus caseにしてはならない。dedicated lexer prerequisiteは完了し、fresh real
+frontend runはdiagnostic 0件。
+
+fresh frontend inventoryはone source、49 unrecovered nodes、root 48をfreeze。
+token nodesはexactに
+`0:reserve@0..7, 1:x@8..9, 2:for@10..13, 3:set@14..17,
+4:;@17..18, 5:theorem@19..26,
+6:FormulaStatementNumeralWitnessSmoke@27..62, 7::@62..63,
+8:x@64..65, 9:=@66..67, 10:x@68..69, 11:proof@70..75,
+12:take@78..82, 13:101@83..86, 14:;@86..87, 15:thus@90..94,
+16:x@95..96, 17:=@97..98, 18:x@99..100, 19:;@100..101,
+20:end@102..105, 21:;@105..106`で、各childはない。structural nodes:
+
+| IDs | Exact kind, range, ordered children |
+| --- | --- |
+| 22–25 | `TypeHead 14..17 [3]`; `TypeExpression 14..17 [22]`; `ReserveSegment 8..17 [1,2,23]`; `ReserveItem 0..18 [0,24,4]` |
+| 26–31 | `TermReference 64..65 [8]`; `TermExpression 64..65 [26]`; `TermReference 68..69 [10]`; `TermExpression 68..69 [28]`; `BuiltinPredicateApplication 64..69 [27,9,29]`; `FormulaExpression 64..69 [30]` |
+| 32–35 | `NumeralTerm 83..86 [13]`; `TermExpression 83..86 [32]`; `Witness 83..86 [33]`; `TakeStatement 78..87 [12,34,14]` |
+| 36–43 | `TermReference 95..96 [16]`; `TermExpression 95..96 [36]`; `TermReference 99..100 [18]`; `TermExpression 99..100 [38]`; `BuiltinPredicateApplication 95..100 [37,17,39]`; `FormulaExpression 95..100 [40]`; `Proposition 95..100 [41]`; `ConclusionStatement 90..101 [15,42,19]` |
+| 44–48 | `ProofBlock 70..105 [11,35,43,20]`; `TheoremItem 19..106 [5,6,7,31,44,21]`; `ItemList 0..106 [25,45]`; `CompilationUnit 0..106 [46]`; `Root 0..106 [0..21,47]` |
+
+resolver provenanceはlocal public/exported theorem owner/label各1件、
+contribution 0、owner range `19..106`、label `27..62`、structural origin
+`[2,1]`、normal recovery。import、proof-step label、citation、label-reference
+key、witness-name symbol、companion resolver handoffはない。private runnerは
+既存exact theorem-owner enrichmentを再利用してよいが、新resolver APIは公開しない。
+
+syntax-free lower composition:
+
+- Task 48 `2/1/0`: module/proof contexts 0/1、proof owner `70..105`、
+  reserved binding 0、visible `[0]`、proof-owned binding/diagnosticなし;
+- Task 252 `5/4/1`: nodes `26/28/32/36/38`、ranges `64..65`,
+  `68..69`, `83..86`, `95..96`, `99..100`、source ordinals `0..4`、
+  contexts `0/0/1/1/1`。dense reference IDs `0/1/2/3`はそれぞれterms
+  `0/1/3/4`をtargetし、binding 0、exact lexical-scope vector
+  `[]/[]/[0]/[0]`、use ordinal 1。numeral term 2はkind `Numeral`、
+  spelling `101`、normal `Value`、referenceなし、numeric request 0は
+  node/range `32`/`83..86`、request ordinal 0;
+- Task 256 `2/0/0/0/0/0/0/4/4`: equality nodes 30/40はprimary
+  `[0,1]` / `[3,4]`をtargetし、numeral witness term 2を全atomic
+  edge/requestからexclude;
+- base statement `1/2/2/2/2`: theorem node 45 / conclusion node 43、
+  source ordinals 0/2、contexts 0/1。theorem input-fact rowはdense
+  references `[0,1]`からterms `[0,1]`、conclusion rowはreferences
+  `[2,3]`からterms `[3,4]`をuseする。numeral holeを跨いでterm IDを
+  reference IDとしてreuseしてはならない。
+
+witness companionはexact `1 witness / 0 names`。witness 0はowner 0、
+context 1、primary term 2、take node/range `35`/`78..87`、item
+`34`/`83..86`、source ordinal 1、within-`take` ordinal 0、spelling
+`101`、`Unnamed`、normal、nameなし。combined source-item partitionはexact
+`[0,1,2]`で、syntax orderだけを表しexistential goal effectを主張しない。
+
+public type/variant/field/error/table/accessor/producer/installerは追加しない。
+既存`SourcePrimaryTermKind::Numeral`、`SourceNumericTypeRequestTable`、
+`SourceStatementWitnessTermTarget::Primary`、witness/name tables、
+`SourceStatementWitnessProducer`、
+`TypedAst::with_source_statement_witnesses`、final `ResolvedTypedAst`
+ownershipで十分。private base/witness selectorにB3M2A exact profileだけを
+追加する。validation precedenceはdependency/fingerprint + complete arena、
+aggregate、witness 0、empty name rowsで、`DependencyMismatch` →
+`InvalidAggregate` → `InvalidWitness { witness: 0 }`。empty name tableでは
+`InvalidName`は到達しない。numeral/numeric requestはTask-252-ownedで、
+witness tableはtype semanticsをduplicateしない。
+
+typed arenaはnode 32を`source.term.numeral`、34を
+`source.statement-witness.item`、35を`source.statement-witness.take`、
+30/40をequality、43をconclusion、45をtheoremとして所有する。wrapper 33は
+unowned。witness subtreeはtheorem/proof/take descendantで、両equality/
+conclusion subtreeからdisjoint。Task 256はprimary term 2をexcludeし続ける。
+
+`source-statement-witness-debug-v1`とB3/B3N/B3M1 bytesは不変。paired
+typed/final ownerはstandalone half、B3/B3N/B3M1/B3M2A hybrid、
+reference hybrid、全Task-248/257/other-258 family order、stale fingerprint、
+numeric-request corruption、nonempty semantic/proof/goal tableをreject。
+successはpairをclone-preserveし全semantic outputをemptyにする。
+
+checker compound testsはexact 4本:
+
+1. `task258b3m2a_exact_numeral_witness_api_debug_and_compatibility_are_stable`;
+2. `task258b3m2a_dependencies_numeric_request_witness_precedence_and_all_nodes_fail_closed`;
+3. `task258b3m2a_paired_ownership_hybrids_and_all_family_orders_are_atomic`;
+4. `task258b3m2a_final_clone_revalidation_and_semantic_deferrals_are_stable`。
+
+runner compound testsはexact 5本:
+
+1. `task258b3m2a_real_frontend_freezes_numeral_witness_contract`;
+2. `task258b3m2a_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2a_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2a_family_and_active_route_isolation_is_atomic_in_both_orders`;
+5. `task258b3m2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`。
+
+testsはexact lower/base/witness、public API no-op、prior debug bytes、
+dense reference-to-term mapping、両input-fact `uses` rows、
+dependency/aggregate/witness precedence、numeric request、全49 node
+mutation/replay、paired/final order、empty semanticsをfreezeする。near missは
+別numeral、sign/token差、named/multiple、identifier/`it`/parenthesized/
+application/selector/update/set/choice RHS、recovery、theorem shape差、
+existential/composite roots。dormant selectorはB3M1/B3N/B3/B2/B1/Aより先で、
+public route/detail keyは追加しない。exact authenticated B3M2A outputでは
+existing private detail projectionは`Some(Vec::new())`を返し、paired witness
+handoff、base statements 2件、lookup ordinals `1/1`、reference use ordinals
+exact `[1; 4]`を要求する。`None`はselector missのまま、owned invalid
+outputはexisting `type_elaboration.checker.typed_ast_invalid` detailを維持する。
+real-frontend/final compound testsはdense reference-to-term mapping、両
+input-fact `uses` rows、このexact detail projectionをassertする。
+
+本documentation prerequisiteはproduction/test source、canonical spec、既存
+`.miz`、fixture、expectation、sidecar、trace row/status/count、active route、
+test list/count/hashを変更しない。fresh baselineはlibraries `358/394`、
+checker modules `14045/4659/7201/3156`、runner statement
+leaf/facade/root/test `3724/688/2501/7246`、production 30 paths /
+38,103 lines。checker raw/normalized hashesは
+`39c9d84a4fe990f3a74d69554aeb5be6d41349bd8dfe40d0bc269eacab5355d5` /
+`cd4e902f325c08226c10deeec64c3b8de1d11f346d82a81f1008687f009c372f`、
+runnerは
+`e729eaf60f00a53a9767375d8718ea8179c27bf3c660c5a936eaeeea2ef8d00a` /
+`af7e5ed68cec3e3feda6fb2264471b359443e849cf0f67ed4d111207e008bb12`。
+production path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`b5b3523f13bd5b0ef5da10bd003db75fc89fd98d9d23300071f468ec22746c19`。
+plan/type `419/387` / `253/241`、pass/fail `228/191`、active
+`101/5/198/1`、warnings/errors `23/0`。five CLI hashesはexactに
+plan
+`4cc13ea6bee6c1a6458d4a7d027a7eea685b711eda8410edafad8faa01809d54`、
+parse
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+declaration
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+type
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`、
+proof
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+
+implementationはchecker/runner tests exactly 4/5本、libraries `362/399`を
+projectするが、changed size/hashはtargetではなく実測する。B3M2分解とB3M2A
+freezeは`design_drift`をcloseし、future private codeはbounded
+`source_drift`、future testsは`test_gap`。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`はない。contract draft後にreport-only
+`repo_metadata_conflict`が発生した。local HEADは
+`076555b7ba61788e30c4266c0a9fd0375004c4de`のまま、remote-tracking
+`origin/main`が2026-07-28 19:46:29 +0900に外部から`1e81db7a`から同commitへ
+移動し、measured ahead countが12から0へ変わった。task-owned paths、clean
+committed base、untouched `stash@{0}`は一意なのでnonblockingであり、本taskでは
+修復しない。completed lexer prerequisiteがsole lower-stage defectをcloseした。
+
+coverage auditはfollow-up ownershipだけを変更し、
+`spec.en.checker.formula_statement.source_payloads`は`deferred` /
+`tests = []`でcreditなし。exitはEN/JA同期、independent no-findings
+reviews、全hard gates、read-only quality 90/100以上、task-only staging、
+dedicated documentation commit。そのcommit後のfresh
+parser/resolver/lower/count/hash preflight後だけimplementationを開始できる。

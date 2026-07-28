@@ -10361,3 +10361,15 @@ leaf/facade/root/test sizesは`3724/688/2501/7246`、production manifestは
 checkerにはsyntax-free authenticated tableだけを渡す。public route、
 mutation API、external key、module split、dependency direction、semantic
 ownerは追加していない。
+
+## Task 258B3M2A planned consumer boundary
+
+exact numeral selector、raw parser/resolver authentication、lower-table
+assembly、five testsはexisting
+`type_elaboration/source_statement.rs` production/test leafとexisting
+facade/root内に留める。checkerにはsyntax-free authenticated tableだけを
+渡し、Task-252 numeral/numeric-request ownershipをduplicateせずreuseする。
+production topologyは30 paths。本documentation taskはstatement
+leaf/facade/root/test sizes `3724/688/2501/7246`と38,103-line production
+manifestを維持する。public route、external key、mutation API、module
+split、dependency direction、binding、semantic ownerはauthorizeしない。

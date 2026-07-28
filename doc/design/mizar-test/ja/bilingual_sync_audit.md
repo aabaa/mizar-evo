@@ -487,3 +487,11 @@ private-fingerprint ownership split、compound tests 5本、394-test library、
 30-path / 38,103-line production manifest、module sizes
 `3724/688/2501/7246`、unchanged active/trace ownership、
 B3M2-before-B4 orderを記録する。implementation bilingual debtは残らない。
+
+## Task 258B3M2A runner prerequisite同期
+
+EN/JA runner plan、TODO、harness、module auditは同じ107-byte/hash exact
+selector、49-node/root-48 unrecovered arena、frontend diagnostics 0、
+Task-252 `5/4/1` + numeral request 0、witness/name `1/0`、five-test
+matrix、unchanged 394-test / 30-path baseline、no public/active/semantic
+route、B3M2B-before-B4 orderをfreezeする。bilingual debtはacceptしない。
