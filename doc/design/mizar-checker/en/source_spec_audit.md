@@ -4082,3 +4082,16 @@ The audit row `spec.en.checker.formula_statement.source_payloads` remains
 `deferred`, `tests = []`, without backlink or coverage credit. B1P changes
 no specification, `.miz`, fixture, expectation, sidecar, trace
 row/status/count, active route, public API, or semantic owner.
+
+## Task 258B3M2B2B1P Implementation Audit
+
+The documented private seam and exactly two tests are implemented, closing
+the bounded `source_drift` and `test_gap`. Review found no `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`. No canonical
+specification, `.miz`, fixture, expectation, sidecar, active route, public
+API, or semantic owner changed.
+
+The formula-statement audit row therefore remains `deferred`, `tests = []`,
+without backlink or coverage credit. B1P is lower-stage infrastructure
+only; the exact Task-258 application-witness consumer remains B1A.

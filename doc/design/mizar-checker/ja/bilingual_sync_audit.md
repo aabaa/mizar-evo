@@ -457,3 +457,11 @@ EN canonical/JA companionは同じlower-owner split、143-byte motivating
 source identity、proof-context-1 Task-253 `1/0/1/2/2` target、private API
 boundary、future runner tests 2件、unchanged `370/409` baseline、
 B1P-before-B1A orderをfreezeする。prerequisite bilingual debtなし。
+
+## Task 258B3M2B2B1P implementation synchronization
+
+EN canonical/JA companionは、completed private context-aware helper、legacy
+context-0 delegation/hash、proof-context-1 `1/0/1/2/2` result、passing
+tests 2件、library inventory `370/411`、unchanged checker/public/statement/
+semantic/trace boundariesを同じ内容で記録する。implementation bilingual
+debtなし。次はB1A documentation。

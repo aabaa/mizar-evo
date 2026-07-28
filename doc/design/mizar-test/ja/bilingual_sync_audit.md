@@ -545,3 +545,11 @@ EN canonical/JA companionは同じprivate helper signature、context-1
 compatibility、statement/active/trace/semantic changeなし、unchanged
 409-test baseline、separate B1P-before-B1A commitsをfreezeする。bilingual
 debtなし。
+
+## Task 258B3M2B2B1P runner implementation synchronization
+
+EN canonical/JA companionは同じprivate implementation、legacy context-0
+fixed hash、proof-context-1 lower profiles、passing testsちょうど2件、
+runner-test inventory `411`、sizes `1782/701/2514/2799`、unchanged
+public/active/fixture/trace/semantic boundariesを記録する。implementation
+bilingual debtなし。次はB1A documentation。

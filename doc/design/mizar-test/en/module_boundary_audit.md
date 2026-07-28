@@ -11667,3 +11667,19 @@ context-aware Task-253 reuse entry point and two tests. No new module,
 public re-export, checker dependency, statement-leaf extraction duplicate,
 or crate edge is authorized. The legacy context-0 entry point remains the
 compatibility owner for existing consumers.
+
+## Checker Task 258B3M2B2B1P Implemented Module Boundary
+
+Implementation stays in the existing private
+`type_elaboration/source_application.rs` leaf, its private facade/root
+imports, and the paired test leaf. No module or production path was added.
+The Task-253 leaf/facade/root/test sizes are
+`1782/701/2514/2799`; the 30-path production manifest totals 39,857
+lines. Its sorted path/content hashes are
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`.
+Raw/normalized 411-test hashes are
+`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
+`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`.
+No public re-export, checker dependency, statement extraction, active
+route, binding, or semantic owner changed.

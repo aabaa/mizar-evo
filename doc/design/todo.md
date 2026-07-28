@@ -2630,5 +2630,8 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Preserve canonical artifacts, active routes, public APIs, fixtures,
   expectations, sidecars, trace status/count, semantic owners, libraries
   `370/409`, all counts/hashes, and coverage `deferred`/`tests = []`.
-- [ ] After this dedicated docs commit and fresh preflight, implement B1P
-  alone, commit it separately, and fresh-inventory B1A.
+- [x] After the dedicated docs commit and fresh preflight, implement B1P
+  alone with exactly two tests; measure libraries `370/411`, runner
+  Task-253 sizes `1782/701/2514/2799`, and 30 paths / 39,857 lines.
+- [ ] Fresh-inventory and freeze B3M2B2B1A's exact application-witness
+  contract in a separate EN/JA documentation commit before implementation.

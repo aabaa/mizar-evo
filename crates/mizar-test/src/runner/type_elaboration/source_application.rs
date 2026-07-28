@@ -48,7 +48,9 @@ use super::{
 };
 
 #[cfg(test)]
-use super::source_term::synthetic_source_term_parts_for_roots;
+use super::source_term::{
+    source_term_parts_for_context_roots, synthetic_source_term_parts_for_roots,
+};
 #[cfg(test)]
 use mizar_checker::typed_ast::NodeRecoveryState;
 #[cfg(test)]
@@ -1249,7 +1251,28 @@ pub(super) fn unwrapped_imported_source_application_handoff(
     source_term: &SourceTermParts,
     application: usize,
 ) -> Option<Result<SourceFunctorApplicationHandoff, String>> {
-    let extracted = extract_unwrapped_imported(ast, module, symbols, application)?;
+    unwrapped_imported_source_application_handoff_in_context(
+        ast,
+        module,
+        symbols,
+        binding_env,
+        source_term,
+        application,
+        BindingContextId::new(0),
+    )
+}
+
+pub(super) fn unwrapped_imported_source_application_handoff_in_context(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+    application: usize,
+    context: BindingContextId,
+) -> Option<Result<SourceFunctorApplicationHandoff, String>> {
+    let mut extracted = extract_unwrapped_imported(ast, module, symbols, application)?;
+    extracted.context = context;
     Some(build_handoff_with_source_term(
         ast,
         module,
@@ -1259,6 +1282,247 @@ pub(super) fn unwrapped_imported_source_application_handoff(
         source_term,
         |_| {},
     ))
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum UnwrappedImportedApplicationTestMutation {
+    None,
+    ApplicationRange,
+    HeadRange,
+    ArgumentTarget,
+    Form,
+    CandidateSymbol,
+    CandidateContribution,
+    StalePrimaryReplay,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy)]
+pub(in crate::runner) struct UnwrappedImportedApplicationTestOptions {
+    pub(in crate::runner) application: usize,
+    pub(in crate::runner) context: BindingContextId,
+    pub(in crate::runner) legacy_context_zero: bool,
+    pub(in crate::runner) mutation: UnwrappedImportedApplicationTestMutation,
+}
+
+#[cfg(test)]
+#[derive(Debug)]
+pub(in crate::runner) struct UnwrappedImportedApplicationTestOutput {
+    pub(in crate::runner) handoff: SourceFunctorApplicationHandoff,
+    pub(in crate::runner) primary_counts: (usize, usize, usize),
+    pub(in crate::runner) typed_ast: TypedAst,
+    pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn unwrapped_imported_source_application_handoff_for_test(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    roots: &[(usize, BindingContextId)],
+    options: UnwrappedImportedApplicationTestOptions,
+) -> Option<Result<UnwrappedImportedApplicationTestOutput, String>> {
+    let UnwrappedImportedApplicationTestOptions {
+        application,
+        context,
+        legacy_context_zero,
+        mutation,
+    } = options;
+    let owned_node_kinds =
+        unwrapped_imported_source_application_owned_node_kinds(ast, module, symbols, application)?;
+    let source_term = match source_term_parts_for_context_roots(
+        ast,
+        module.clone(),
+        binding_env,
+        roots.iter().copied(),
+        &owned_node_kinds,
+    ) {
+        Ok(source_term) => source_term,
+        Err(error) => return Some(Err(error)),
+    };
+    let handoff = if legacy_context_zero {
+        if context != BindingContextId::new(0) {
+            return Some(Err(
+                "legacy unwrapped Task253 test route requires context 0".to_owned(),
+            ));
+        }
+        if mutation != UnwrappedImportedApplicationTestMutation::None {
+            return Some(Err(
+                "legacy unwrapped Task253 test route cannot mutate input".to_owned(),
+            ));
+        }
+        match unwrapped_imported_source_application_handoff(
+            ast,
+            module,
+            symbols,
+            binding_env,
+            &source_term,
+            application,
+        )? {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(error)),
+        }
+    } else if matches!(
+        mutation,
+        UnwrappedImportedApplicationTestMutation::None
+            | UnwrappedImportedApplicationTestMutation::StalePrimaryReplay
+    ) {
+        match unwrapped_imported_source_application_handoff_in_context(
+            ast,
+            module,
+            symbols,
+            binding_env,
+            &source_term,
+            application,
+            context,
+        )? {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(error)),
+        }
+    } else {
+        let mut extracted = extract_unwrapped_imported(ast, module, symbols, application)?;
+        extracted.context = context;
+        let selected_contribution = symbols
+            .symbols()
+            .get(&extracted.candidate)
+            .expect("B1P extracted candidate remains in the symbol environment")
+            .contribution();
+        let substitute_contribution = symbols
+            .symbols()
+            .iter()
+            .map(|entry| entry.contribution())
+            .find(|candidate| *candidate != selected_contribution)
+            .unwrap_or(selected_contribution);
+        match build_handoff_with_source_term(
+            ast,
+            module,
+            symbols,
+            binding_env,
+            &extracted,
+            &source_term,
+            |input| match mutation {
+                UnwrappedImportedApplicationTestMutation::None
+                | UnwrappedImportedApplicationTestMutation::StalePrimaryReplay => {
+                    unreachable!("unmutated B1P test routes use the production helper")
+                }
+                UnwrappedImportedApplicationTestMutation::ApplicationRange => {
+                    input.applications[0].source_range.start += 1;
+                }
+                UnwrappedImportedApplicationTestMutation::HeadRange => {
+                    if let SourceFunctorHeadSite::Single { source_range, .. } =
+                        &mut input.applications[0].head
+                    {
+                        source_range.start += 1;
+                    }
+                }
+                UnwrappedImportedApplicationTestMutation::ArgumentTarget => {
+                    input.arguments[0].target = SourceFunctorArgumentTarget::Primary(
+                        mizar_checker::source_term::SourcePrimaryTermId::new(4),
+                    );
+                }
+                UnwrappedImportedApplicationTestMutation::Form => {
+                    input.applications[0].form = SourceFunctorApplicationForm::Prefix;
+                }
+                UnwrappedImportedApplicationTestMutation::CandidateSymbol => {
+                    input.candidates[0].symbol = SymbolId::new(
+                        module.clone(),
+                        mizar_resolve::resolved_ast::LocalSymbolId::new("B1P/substitute"),
+                        mizar_resolve::resolved_ast::FullyQualifiedName::new("b1p::substitute::++"),
+                    );
+                }
+                UnwrappedImportedApplicationTestMutation::CandidateContribution => {
+                    input.candidates[0].contribution = substitute_contribution;
+                }
+            },
+        ) {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(error)),
+        }
+    };
+
+    if mutation == UnwrappedImportedApplicationTestMutation::StalePrimaryReplay {
+        let stale_source_term = match source_term_parts_for_context_roots(
+            ast,
+            module.clone(),
+            binding_env,
+            [(44, context), (45, context)],
+            &owned_node_kinds,
+        ) {
+            Ok(source_term) => source_term,
+            Err(error) => return Some(Err(error)),
+        };
+        let stale_typed = match task258b3m2b2b1p_typed_ast(ast, module, stale_source_term) {
+            Ok(typed) => typed,
+            Err(error) => return Some(Err(error)),
+        };
+        return Some(match stale_typed.with_source_application(handoff) {
+            Ok(_) => Err("accepted stale Task252 fingerprint during replay".to_owned()),
+            Err(error) => Err(format!(
+                "rejected stale Task252 fingerprint during replay: {error}"
+            )),
+        });
+    }
+
+    let primary_counts = (
+        source_term.handoff.terms().len(),
+        source_term.handoff.references().len(),
+        source_term.handoff.numeric_type_requests().len(),
+    );
+    let typed_ast = match task258b3m2b2b1p_typed_ast(ast, module, source_term) {
+        Ok(typed) => match typed.with_source_application(handoff.clone()) {
+            Ok(typed) => typed,
+            Err(error) => return Some(Err(error.to_string())),
+        },
+        Err(error) => return Some(Err(error)),
+    };
+    let node_hints = typed_ast
+        .nodes()
+        .iter()
+        .map(|(typed_node, _)| ResolvedNodeKindHint {
+            typed_node,
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.term.surface"),
+            },
+        })
+        .collect();
+    let resolved = match assemble_empty_resolved_typed_ast(&typed_ast, node_hints) {
+        Ok(resolved) => resolved,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(Ok(UnwrappedImportedApplicationTestOutput {
+        handoff,
+        primary_counts,
+        typed_ast,
+        resolved,
+    }))
+}
+
+#[cfg(test)]
+fn task258b3m2b2b1p_typed_ast(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    source_term: SourceTermParts,
+) -> Result<TypedAst, String> {
+    TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: source_term.arena,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())?
+    .with_source_term(source_term.handoff)
+    .map_err(|error| error.to_string())
 }
 
 fn build_output_with_source_term(

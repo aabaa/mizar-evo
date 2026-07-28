@@ -2145,3 +2145,16 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Preserve 409 tests, sizes `5188/699/2513/11234`, 30 production
   paths / 39,590 lines, every active/fixture/expectation/sidecar/trace
   artifact, and B1P-before-B1A order.
+
+## Checker Task 258B3M2B2B1P Runner Implementation Ledger
+
+- [x] Add the private explicit-context helper and retain context-0
+  compatibility by delegation to it.
+- [x] Reuse exact Task-252 roots and the public Task-253 producer in proof
+  context 1 without a statement consumer or duplicated lower rows.
+- [x] Pass exactly two compound tests for identity, complete fail-close,
+  replay/rollback, fixed legacy bytes, and empty downstream ownership.
+- [x] Measure 411 tests, Task-253 sizes `1782/701/2514/2799`, and 30
+  production paths / 39,857 lines.
+- [ ] Fresh-inventory and freeze the exact B3M2B2B1A application-witness
+  contract in a separate documentation commit.

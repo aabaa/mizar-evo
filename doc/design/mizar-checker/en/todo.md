@@ -5012,3 +5012,17 @@ implementation commit does not satisfy a producer task.
 - [x] Preserve canonical artifacts, active routes, fixtures, expectations,
   sidecars, trace status/count, coverage credit, tests, counts, and hashes;
   retain B1P implementation before B1A.
+
+## Checker Task 258B3M2B2B1P Implementation Ledger
+
+- [x] Add only the private explicit-context Task-253 reuse sibling and
+  preserve the legacy helper through context-0 delegation.
+- [x] Reuse the exact extractor/public producer for proof context 1 and
+  publish only Task-253 `1/0/1/2/2`.
+- [x] Pass exactly two compound tests covering identity, lower profiles,
+  context/provenance/range/form corruption, stale replay, fixed legacy
+  debug bytes, and empty statement/semantic/proof/goal output.
+- [x] Measure libraries `370/411`, runner Task-253 sizes
+  `1782/701/2514/2799`, and 30 production paths / 39,857 lines.
+- [ ] Fresh-inventory and freeze B3M2B2B1A before implementing its exact
+  application-witness consumer.

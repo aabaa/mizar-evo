@@ -178,3 +178,15 @@ argument-context disagreement、wrapper、wrong application/head/argument
 range/form、non-unique/substituted candidate provenance、stale replayは
 publicationなしでrejectする。public Task-253 checker API、fingerprint
 grammar、result semantics、既存context-0 behaviorは変更しない。
+
+## Task 258B3M2B2B1P implementation result
+
+runner-private siblingはexplicit existing contextを受け、その他を変更しない
+exact extractionを既存public producerへ渡す。legacy entry pointはcontext
+0でdelegateし、debug SHA-256
+`9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d`
+を維持。proof-context-1 constructionはordered `Primary(2/3)` argumentsと
+imported `parser.type_fixtures::++` provenanceを保存する。独立したcontext、
+range、form、target、candidate/contribution、stale-fingerprint、replay
+corruptionはrejectする。checker source、public table、fingerprint grammar、
+semantic result、active consumerは不変。

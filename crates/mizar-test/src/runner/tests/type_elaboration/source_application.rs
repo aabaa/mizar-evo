@@ -1,9 +1,40 @@
 use super::{
     SyntheticSourceFunctorApplication, SyntheticSourceFunctorArgument,
-    SyntheticSourceFunctorHead, source_application_output,
+    SyntheticSourceFunctorHead, UnwrappedImportedApplicationTestMutation,
+    UnwrappedImportedApplicationTestOptions,
+    extract_builtin_source_reserve_declarations_after_node_guard, source_application_output,
     source_application_output_with_mutation, synthetic_functional_actual_count,
     synthetic_source_application_output,
+    unwrapped_imported_source_application_handoff_for_test,
 };
+
+macro_rules! b1p_application_handoff {
+    (
+        $ast:expr,
+        $module:expr,
+        $symbols:expr,
+        $binding_env:expr,
+        $roots:expr,
+        $application:expr,
+        $context:expr,
+        $legacy_context_zero:expr,
+        $mutation:expr $(,)?
+    ) => {
+        unwrapped_imported_source_application_handoff_for_test(
+            $ast,
+            $module,
+            $symbols,
+            $binding_env,
+            $roots,
+            UnwrappedImportedApplicationTestOptions {
+                application: $application,
+                context: $context,
+                legacy_context_zero: $legacy_context_zero,
+                mutation: $mutation,
+            },
+        )
+    };
+}
 
 #[test]
 fn task253_real_routes_publish_exact_aggregate_and_preserve_final_ownership() {
@@ -2286,4 +2317,483 @@ fn task253_counts(
         handoff.arguments().len(),
         handoff.type_requests().len(),
     )
+}
+
+const TASK258B3M2B2B1P_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementApplicationWitnessSmoke: x = x proof\n",
+    "  take 1 ++ 2;\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
+#[test]
+fn task258b3m2b2b1p_proof_context_reuses_exact_unwrapped_imported_application() {
+    assert_eq!(TASK258B3M2B2B1P_SOURCE.len(), 143);
+    assert_eq!(
+        sha256_text(TASK258B3M2B2B1P_SOURCE),
+        "22ce235030bc56720bfe7f52830182144ca6e4eee4414b7f8c2823e3d0f82c1b"
+    );
+    let (ast, module, shells, base_symbols, diagnostic_count) =
+        task253_ast_from_source_text_with_diagnostic_count(TASK258B3M2B2B1P_SOURCE, 20_001);
+    assert_eq!(diagnostic_count, 0);
+    assert_eq!(ast.nodes().len(), 63);
+    assert_eq!(
+        ast.root_view().expect("B1P source root").id().index(),
+        62
+    );
+    assert_eq!(ast.nodes()[46].range, range(ast.source_id, 116, 122));
+    assert_eq!(ast.nodes()[19].range, range(ast.source_id, 118, 120));
+    assert_eq!(ast.nodes()[58].range, range(ast.source_id, 103, 141));
+    let symbols = augment_type_elaboration_import_summaries(&ast, &module, base_symbols);
+    let bindings = task258b3m2b2b1p_binding_env(&ast, &module, &symbols);
+    assert_eq!(
+        (
+            bindings.contexts().len(),
+            bindings.bindings().len(),
+            bindings.diagnostics().len(),
+        ),
+        (2, 1, 0)
+    );
+    assert!(
+        source_application_output(&ast, module.clone(), &shells, &symbols).is_none(),
+        "B1P must not activate the existing Task253 runner route"
+    );
+    let roots = task258b3m2b2b1p_roots();
+
+    let first = b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        &roots,
+        46,
+        mizar_checker::binding_env::BindingContextId::new(1),
+        false,
+        UnwrappedImportedApplicationTestMutation::None,
+    )
+    .expect("B1P selector")
+    .expect("B1P context-1 handoff");
+    let second = b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        &roots,
+        46,
+        mizar_checker::binding_env::BindingContextId::new(1),
+        false,
+        UnwrappedImportedApplicationTestMutation::None,
+    )
+    .expect("B1P replay selector")
+    .expect("B1P replay handoff");
+    assert_eq!(first.handoff, second.handoff);
+    assert_eq!(first.primary_counts, (6, 4, 2));
+    assert_eq!(second.primary_counts, (6, 4, 2));
+    assert_eq!(
+        format!("{:?}", first.handoff),
+        format!("{:?}", second.handoff)
+    );
+    assert_eq!(
+        (
+            first.handoff.applications().len(),
+            first.handoff.wrappers().len(),
+            first.handoff.candidates().len(),
+            first.handoff.arguments().len(),
+            first.handoff.type_requests().len(),
+        ),
+        (1, 0, 1, 2, 2)
+    );
+    let application = first
+        .handoff
+        .applications()
+        .get(mizar_checker::source_application::SourceFunctorApplicationId::new(0))
+        .expect("B1P application");
+    assert_eq!(
+        application.context(),
+        mizar_checker::binding_env::BindingContextId::new(1)
+    );
+    assert_eq!(application.source_range(), range(ast.source_id, 116, 122));
+    assert_eq!(application.spelling(), "1 ++ 2");
+    assert_eq!(
+        application.form(),
+        mizar_checker::source_application::SourceFunctorApplicationForm::Infix
+    );
+    assert_eq!(
+        first
+            .handoff
+            .arguments()
+            .iter()
+            .map(|(_, argument)| (argument.ordinal(), argument.target()))
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                mizar_checker::source_application::SourceFunctorArgumentTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(2),
+                ),
+            ),
+            (
+                1,
+                mizar_checker::source_application::SourceFunctorArgumentTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(3),
+                ),
+            ),
+        ]
+    );
+    assert_eq!(
+        first
+            .handoff
+            .type_requests()
+            .iter()
+            .map(|(_, request)| request.kind())
+            .collect::<Vec<_>>(),
+        [
+            mizar_checker::source_application::SourceFunctorTypeRequestKind::CandidateSignature,
+            mizar_checker::source_application::SourceFunctorTypeRequestKind::ApplicationResultType,
+        ]
+    );
+    let candidate = first
+        .handoff
+        .candidates()
+        .get(mizar_checker::source_application::SourceFunctorCandidateId::new(0))
+        .expect("B1P imported candidate");
+    assert_eq!(candidate.contribution().index(), 2);
+    assert_eq!(
+        candidate.origin().module_id().path().as_str(),
+        "parser.type_fixtures"
+    );
+    assert_eq!(candidate.origin().structural_path(), [12]);
+    assert!(first.typed_ast.source_statement().is_none());
+    assert!(first.typed_ast.source_statement_witnesses().is_none());
+    assert!(first.typed_ast.types().is_empty());
+    assert!(first.typed_ast.facts().is_empty());
+    assert!(first.typed_ast.coercions().is_empty());
+    assert!(first.typed_ast.initial_obligations().is_empty());
+    assert!(first.typed_ast.diagnostics().is_empty());
+    assert!(first.resolved.source_statement().is_none());
+    assert!(first.resolved.source_statement_witnesses().is_none());
+    assert!(first.resolved.checked_formulas().is_empty());
+    assert!(first.resolved.checked_proofs().is_empty());
+    assert!(first.resolved.checked_proof_nodes().is_empty());
+    assert!(first.resolved.checked_terminal_goals().is_empty());
+    assert!(first.resolved.expr_metadata().is_empty());
+    assert!(first.resolved.cluster_facts().is_empty());
+    assert!(first.resolved.diagnostics().is_empty());
+
+    let context_zero_roots = [
+        (44, mizar_checker::binding_env::BindingContextId::new(0)),
+        (45, mizar_checker::binding_env::BindingContextId::new(0)),
+    ];
+    let legacy = b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        &context_zero_roots,
+        46,
+        mizar_checker::binding_env::BindingContextId::new(0),
+        true,
+        UnwrappedImportedApplicationTestMutation::None,
+    )
+    .expect("legacy context-0 selector")
+    .expect("legacy context-0 handoff");
+    let explicit = b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        &context_zero_roots,
+        46,
+        mizar_checker::binding_env::BindingContextId::new(0),
+        false,
+        UnwrappedImportedApplicationTestMutation::None,
+    )
+    .expect("explicit context-0 selector")
+    .expect("explicit context-0 handoff");
+    assert_eq!(legacy.handoff, explicit.handoff);
+    assert_eq!(
+        legacy.handoff.debug_text(),
+        explicit.handoff.debug_text()
+    );
+    assert_eq!(
+        sha256_text(&legacy.handoff.debug_text()),
+        "9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d"
+    );
+}
+
+#[test]
+fn task258b3m2b2b1p_context_provenance_and_legacy_replay_fail_closed() {
+    let (ast, module, _, base_symbols, diagnostic_count) =
+        task253_ast_from_source_text_with_diagnostic_count(TASK258B3M2B2B1P_SOURCE, 20_002);
+    assert_eq!(diagnostic_count, 0);
+    let symbols = augment_type_elaboration_import_summaries(&ast, &module, base_symbols);
+    let bindings = task258b3m2b2b1p_binding_env(&ast, &module, &symbols);
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    let module_context = mizar_checker::binding_env::BindingContextId::new(0);
+
+    for (label, roots, context) in [
+        (
+            "nonexistent context",
+            task258b3m2b2b1p_roots(),
+            mizar_checker::binding_env::BindingContextId::new(2),
+        ),
+        (
+            "both arguments in module context",
+            [
+                (38, module_context),
+                (40, module_context),
+                (44, module_context),
+                (45, module_context),
+                (50, proof),
+                (52, proof),
+            ],
+            proof,
+        ),
+        (
+            "mixed argument contexts",
+            [
+                (38, module_context),
+                (40, module_context),
+                (44, proof),
+                (45, module_context),
+                (50, proof),
+                (52, proof),
+            ],
+            proof,
+        ),
+    ] {
+        let result = b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            &roots,
+            46,
+            context,
+            false,
+            UnwrappedImportedApplicationTestMutation::None,
+        )
+        .unwrap_or_else(|| panic!("{label} should reach the Task253 producer"));
+        assert!(result.is_err(), "{label}: {result:?}");
+    }
+
+    let empty_symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    assert!(
+        b1p_application_handoff!(
+            &ast,
+            &module,
+            &empty_symbols,
+            &bindings,
+            &task258b3m2b2b1p_roots(),
+            46,
+            proof,
+            false,
+            UnwrappedImportedApplicationTestMutation::None,
+        )
+        .is_none(),
+        "missing imported provenance must reject in the private selector"
+    );
+    assert!(
+        b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            &task258b3m2b2b1p_roots(),
+            47,
+            proof,
+            false,
+            UnwrappedImportedApplicationTestMutation::None,
+        )
+        .is_none(),
+        "a transparent expression node cannot replace the application"
+    );
+
+    for (ordinal, source) in [
+        TASK258B3M2B2B1P_SOURCE.replace("take 1 ++ 2;", "take (1 ++ 2);"),
+        TASK258B3M2B2B1P_SOURCE.replace("take 1 ++ 2;", "take 2 ++ 1;"),
+        TASK258B3M2B2B1P_SOURCE.replace("take 1 ++ 2;", "take 1 + 2;"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (near_ast, near_module, _, near_base_symbols, _) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 20_100 + ordinal);
+        let near_symbols =
+            augment_type_elaboration_import_summaries(&near_ast, &near_module, near_base_symbols);
+        let application = near_ast
+            .nodes()
+            .iter()
+            .position(|node| matches!(node.kind, SurfaceNodeKind::InfixExpression(_)))
+            .unwrap_or(usize::MAX);
+        let near_bindings =
+            task258b3m2b2b1p_binding_env(&near_ast, &near_module, &near_symbols);
+        assert!(
+            b1p_application_handoff!(
+                &near_ast,
+                &near_module,
+                &near_symbols,
+                &near_bindings,
+                &[],
+                application,
+                proof,
+                false,
+                UnwrappedImportedApplicationTestMutation::None,
+            )
+            .is_none(),
+            "near-miss source must not select: {source}"
+        );
+    }
+
+    let missing_right_argument = [
+        (38, module_context),
+        (40, module_context),
+        (44, proof),
+        (50, proof),
+        (52, proof),
+    ];
+    assert!(
+        b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            &missing_right_argument,
+            46,
+            proof,
+            false,
+            UnwrappedImportedApplicationTestMutation::None,
+        )
+        .expect("missing argument reaches Task253")
+        .is_err()
+    );
+
+    for mutation in [
+        UnwrappedImportedApplicationTestMutation::ApplicationRange,
+        UnwrappedImportedApplicationTestMutation::HeadRange,
+        UnwrappedImportedApplicationTestMutation::ArgumentTarget,
+        UnwrappedImportedApplicationTestMutation::Form,
+        UnwrappedImportedApplicationTestMutation::CandidateSymbol,
+        UnwrappedImportedApplicationTestMutation::CandidateContribution,
+        UnwrappedImportedApplicationTestMutation::StalePrimaryReplay,
+    ] {
+        let rejected = b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            &task258b3m2b2b1p_roots(),
+            46,
+            proof,
+            false,
+            mutation,
+        )
+        .unwrap_or_else(|| panic!("{mutation:?} must reach validation"));
+        let rejection = match rejected {
+            Ok(accepted) => panic!("{mutation:?} was accepted: {accepted:?}"),
+            Err(rejection) => rejection,
+        };
+        if mutation == UnwrappedImportedApplicationTestMutation::StalePrimaryReplay {
+            assert!(
+                rejection.starts_with("rejected stale Task252 fingerprint during replay:"),
+                "stale fingerprint acceptance and rejection must remain distinguishable: {rejection}"
+            );
+        }
+        let replay = b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            &task258b3m2b2b1p_roots(),
+            46,
+            proof,
+            false,
+            UnwrappedImportedApplicationTestMutation::None,
+        )
+        .expect("valid replay selector")
+        .unwrap_or_else(|error| panic!("{mutation:?} poisoned replay: {error}"));
+        assert_eq!(replay.primary_counts, (6, 4, 2));
+    }
+
+    for substituted in [
+        imported_predicate_functor_symbol_env(module.clone()),
+        imported_predicate_functor_local_contribution_env(module.clone()),
+        ambiguous_imported_predicate_functor_env(module.clone(), "++"),
+    ] {
+        let result = b1p_application_handoff!(
+            &ast,
+            &module,
+            &substituted,
+            &bindings,
+            &task258b3m2b2b1p_roots(),
+            46,
+            proof,
+            false,
+            UnwrappedImportedApplicationTestMutation::None,
+        );
+        assert!(
+            !matches!(result, Some(Ok(_))),
+            "same-spelling substituted or ambiguous imported provenance must fail closed"
+        );
+    }
+}
+
+fn task258b3m2b2b1p_roots() -> [(usize, mizar_checker::binding_env::BindingContextId); 6] {
+    let module = mizar_checker::binding_env::BindingContextId::new(0);
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    [
+        (38, module),
+        (40, module),
+        (44, proof),
+        (45, proof),
+        (50, proof),
+        (52, proof),
+    ]
+}
+
+fn task258b3m2b2b1p_binding_env(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> mizar_checker::binding_env::BindingEnv {
+    let reserve =
+        extract_builtin_source_reserve_declarations_after_node_guard(ast, module.clone(), symbols)
+            .expect("B1P reserve extraction");
+    let base = reserve
+        .bridge
+        .prepare_binding_env(symbols)
+        .expect("B1P module binding environment");
+    let proof_nodes = surface_nodes_with_kind(ast, SurfaceNodeKind::ProofBlock);
+    let [(proof_id, proof_node)] = proof_nodes.as_slice() else {
+        panic!("B1P exact source must have one proof block");
+    };
+    let _ = proof_id;
+    let mut contexts = base.contexts().clone();
+    let proof = contexts.insert(mizar_checker::binding_env::BindingContextDraft {
+        owner: mizar_checker::binding_env::BindingContextOwner::SourceStatement {
+            source_range: proof_node.range,
+        },
+        parent: Some(mizar_checker::binding_env::BindingContextId::new(0)),
+        layer: mizar_checker::binding_env::BindingContextLayer::Proof,
+        lexical_scope: Some(mizar_resolve::names::LocalTermScope::new(vec![0])),
+        bindings: Vec::new(),
+        visible_bindings: vec![mizar_checker::binding_env::BindingId::new(0)],
+        recovery: mizar_checker::binding_env::BindingContextRecovery::Normal,
+    });
+    assert_eq!(
+        proof,
+        mizar_checker::binding_env::BindingContextId::new(1)
+    );
+    mizar_checker::binding_env::BindingEnv::try_new(
+        mizar_checker::binding_env::BindingEnvParts {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            contexts,
+            bindings: base.bindings().clone(),
+            diagnostics: base.diagnostics().clone(),
+        },
+    )
+    .expect("B1P two-context binding environment")
 }

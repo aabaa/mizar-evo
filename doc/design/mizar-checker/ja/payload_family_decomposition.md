@@ -867,3 +867,10 @@ capabilityだけをownする。Task-258 witness row、新payload family、public
 schema、semantic edgeはownしない。B1Aはexact application-witness
 cross-family edge、B1B+は他Task-253 forms、B2+/B3+はそれぞれTask-254/
 Task-255 witness formsを保持する。
+
+### Task 258B3M2B2B1P completion boundary
+
+B1Pはprivate proof-context Task-253 reuse seamだけを提供する。new checker
+family、Task-258 row、cross-family edgeはpublishしない。application-to-
+witness edgeは次のB1A frozen contract/implementationが全てownし、B1B+/
+B2+/B3+ ownershipはdeferredのまま。

@@ -4770,3 +4770,17 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] canonical artifacts、active routes、fixtures、expectations、sidecars、
   trace status/count、coverage credit、tests、counts、hashesを維持し、
   B1A前にB1P implementationを保持。
+
+## Checker Task 258B3M2B2B1P implementation ledger
+
+- [x] private explicit-context Task-253 reuse siblingだけを追加し、legacy
+  helperをcontext-0 delegationで維持。
+- [x] exact extractor/public producerをproof context 1でreuseし、Task-253
+  `1/0/1/2/2`だけをpublish。
+- [x] identity、lower profiles、context/provenance/range/form corruption、
+  stale replay、fixed legacy debug bytes、empty statement/semantic/proof/
+  goal outputをcoverするcompound testsちょうど2件をpass。
+- [x] libraries `370/411`、runner Task-253 sizes
+  `1782/701/2514/2799`、production 30 paths / 39,857 linesを実測。
+- [ ] B3M2B2B1Aのexact application-witness consumerを実装する前にfresh
+  inventory/frozen contractを作成。

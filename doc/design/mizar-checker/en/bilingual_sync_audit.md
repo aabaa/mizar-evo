@@ -481,3 +481,11 @@ The EN canonical and JA companion freeze the same lower-owner split,
 `1/0/1/2/2` target, private API boundary, two future runner tests,
 unchanged `370/409` baselines, and B1P-before-B1A order. No prerequisite
 bilingual debt remains.
+
+## Task 258B3M2B2B1P Implementation Synchronization
+
+The EN canonical and JA companion now record the same completed private
+context-aware helper, legacy context-0 delegation/hash, proof-context-1
+`1/0/1/2/2` result, two passing tests, `370/411` library inventory, and
+unchanged checker/public/statement/semantic/trace boundaries. No
+implementation bilingual debt remains; B1A documentation is next.

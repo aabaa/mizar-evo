@@ -330,9 +330,11 @@ pub(super) use source_application::source_application_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_application::{
     SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
-    SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead, source_application_output,
-    source_application_output_with_mutation, synthetic_functional_actual_count,
-    synthetic_source_application_output,
+    SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
+    UnwrappedImportedApplicationTestMutation, UnwrappedImportedApplicationTestOptions,
+    source_application_output, source_application_output_with_mutation,
+    synthetic_functional_actual_count, synthetic_source_application_output,
+    unwrapped_imported_source_application_handoff_for_test,
 };
 #[cfg(test)]
 pub(super) use source_ast::{

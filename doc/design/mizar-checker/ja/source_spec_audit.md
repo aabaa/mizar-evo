@@ -3900,3 +3900,16 @@ audit row `spec.en.checker.formula_statement.source_payloads`は
 `deferred`, `tests = []`、backlink/coverage creditなし。B1Pはspecification、
 `.miz`、fixture、expectation、sidecar、trace row/status/count、active route、
 public API、semantic ownerを変更しない。
+
+## Task 258B3M2B2B1P implementation audit
+
+documented private seamとtestsちょうど2件を実装し、bounded
+`source_drift`/`test_gap`をcloseした。reviewでは`spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`なし。canonical
+specification、`.miz`、fixture、expectation、sidecar、active route、
+public API、semantic ownerは変更しない。
+
+formula-statement audit rowは引き続き`deferred`, `tests = []`で、
+backlink/coverage creditなし。B1Pはlower-stage infrastructureだけで、
+exact Task-258 application-witness consumerはB1Aに残る。

@@ -190,3 +190,16 @@ wrong application/head/argument range or form, non-unique or substituted
 candidate provenance, and stale replay reject without publication. No
 public Task-253 checker API, fingerprint grammar, result semantics, or
 existing context-0 behavior changes.
+
+## Task 258B3M2B2B1P Implementation Result
+
+The runner-private sibling now accepts an explicit existing context and
+passes the otherwise unchanged exact extraction to the existing public
+producer. The legacy entry point delegates with context 0 and retains fixed
+debug SHA-256
+`9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d`.
+Proof-context-1 construction preserves ordered `Primary(2/3)` arguments
+and imported `parser.type_fixtures::++` provenance. Independent context,
+range, form, target, candidate/contribution, stale-fingerprint, and replay
+corruptions reject. No checker source, public table, fingerprint grammar,
+semantic result, or active consumer changed.

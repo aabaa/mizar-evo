@@ -4199,3 +4199,25 @@ context-1 reuse route and two tests are bounded `source_drift`/`test_gap`.
 There is no blocking `spec_gap`, unsafe test intent,
 `source_undocumented_behavior`, `test_expectation_drift`, current
 `boundary_violation`, or `repo_metadata_conflict`.
+
+### Task 258B3M2B2B1P Implementation Result
+
+The private lower-owner seam and its two compound tests are implemented,
+closing the bounded `source_drift` and `test_gap`. Libraries are
+`370/411`; runner Task-253 leaf/facade/root/test sizes are
+`1782/701/2514/2799`; production is 30 paths / 39,857 lines. Runner
+raw/normalized test-list hashes are
+`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
+`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`;
+the production path/content hashes are
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`.
+
+This lower-stage implementation does not cover the formula-statement
+requirement, so its row remains `deferred`, `tests = []`, with no backlink
+or credit. Canonical specs, `.miz`, fixtures, expectations, sidecars, trace
+status/count, active cases, and public/semantic owners remain unchanged.
+Plan/count is `419/387`, type coverage `253/241`, pass/fail `228/191`,
+active parse/declaration/type/proof counts are `101/5/198/1`, and the five
+CLI hashes remain unchanged. B1A documentation is the next coverage-neutral
+dependency step.

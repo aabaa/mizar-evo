@@ -2308,3 +2308,11 @@ inventory後、B3M2B2B1Aがexact imported-infix application-witness contractを
 freezeできる。他のTask-253 forms、Task-254 structure
 constructor/selector/update、Task-255 set/choice/qualification、remaining
 compound termsはdeferする。
+
+## Task 258B3M2B2B1P dependency completion
+
+private Task-253 proof-context prerequisiteはcomplete/verifiedだが、
+statement/witness tableはinstallしない。Task-258 behaviorと
+application-to-witness ownership edgeは未実装のまま。fresh inventory後、
+B3M2B2B1Aをseparate documentation taskとしてfreezeできる。他の
+Task-253/254/255/compound shapesはdeferred。

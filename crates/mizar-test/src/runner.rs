@@ -170,7 +170,8 @@ use type_elaboration::{
     SourceStatementB3RouteInputs, SourceStatementExtraction, SourceStatementRouteInputs,
     SourceStatementRouteOutput, SourceStructureRouteOutput, SyntheticSourceApplicationOutput,
     SyntheticSourceFunctorApplication, SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
-    SyntheticSourceStructureDependencies, assemble_source_checker_handoff,
+    SyntheticSourceStructureDependencies, UnwrappedImportedApplicationTestMutation,
+    UnwrappedImportedApplicationTestOptions, assemble_source_checker_handoff,
     assemble_source_contradiction_checker_handoff, assert_source_contradiction_handoff,
     assert_source_parenthesized_heterogeneous_reserve_membership_output,
     assert_source_parenthesized_reserved_object_variable_equality_output,
@@ -482,7 +483,7 @@ use type_elaboration::{
     structural_child_ids, surface_nodes_with_kind, surface_site, synthetic_functional_actual_count,
     synthetic_source_application_output, synthetic_source_attribute_output,
     synthetic_source_structure_output, synthetic_source_structure_output_with_mutation,
-    synthetic_source_term_output,
+    synthetic_source_term_output, unwrapped_imported_source_application_handoff_for_test,
 };
 use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,

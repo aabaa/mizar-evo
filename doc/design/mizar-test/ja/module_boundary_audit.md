@@ -10434,3 +10434,18 @@ context-aware Task-253 reuse entry pointとtests 2件をownする。new module�
 public re-export、checker dependency、statement-leaf extraction duplicate、
 crate edgeはauthorizeしない。legacy context-0 entry pointは既存consumersの
 compatibility ownerのまま。
+
+## Checker Task 258B3M2B2B1P implemented module boundary
+
+implementationは既存private `type_elaboration/source_application.rs` leaf、
+private facade/root imports、paired test leaf内に留まり、module/production
+pathを追加しない。Task-253 leaf/facade/root/test sizesは
+`1782/701/2514/2799`、30-path production manifestは39,857 lines。
+sorted path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`。
+raw/normalized 411-test hashesは
+`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
+`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`。
+public re-export、checker dependency、statement extraction、active route、
+binding、semantic ownerは不変。

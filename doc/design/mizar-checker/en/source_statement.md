@@ -2794,3 +2794,11 @@ and freshly inventoried, B3M2B2B1A may freeze the exact imported-infix
 application-witness contract. Other Task-253 forms, Task-254 structure
 constructor/selector/update forms, Task-255 set/choice/qualification forms,
 and remaining compound terms stay deferred.
+
+## Task 258B3M2B2B1P Dependency Completion
+
+The private Task-253 proof-context prerequisite is complete and verified,
+but no statement or witness table is installed. Task 258 behavior and the
+application-to-witness ownership edge remain absent. Fresh inventory may
+now freeze B3M2B2B1A as a separate documentation task; all other
+Task-253/254/255 and compound shapes remain deferred.

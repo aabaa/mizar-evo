@@ -565,3 +565,11 @@ context-1 `1/0/1/2/2` profile, two test names and corruption matrix,
 legacy context-0 compatibility, no statement/active/trace/semantic change,
 unchanged 409-test baseline, and separate B1P-before-B1A commits. No
 bilingual debt remains.
+
+## Task 258B3M2B2B1P Runner Implementation Synchronization
+
+The EN canonical and JA companion record the same private implementation,
+legacy context-0 fixed hash, proof-context-1 lower profiles, exactly two
+passing tests, `411` runner-test inventory, `1782/701/2514/2799` sizes,
+and unchanged public/active/fixture/trace/semantic boundaries. No
+implementation bilingual debt remains; B1A documentation is next.

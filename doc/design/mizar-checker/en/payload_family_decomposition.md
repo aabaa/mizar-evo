@@ -934,3 +934,11 @@ in an explicitly supplied proof context. It owns no Task-258 witness row,
 new payload family, public schema, or semantic edge. B1A retains the exact
 application-witness cross-family edge; B1B+ retains other Task-253 forms;
 B2+ and B3+ retain Task-254 and Task-255 witness forms respectively.
+
+### Task 258B3M2B2B1P Completion Boundary
+
+B1P now supplies only the private proof-context Task-253 reuse seam. It
+publishes no new checker family or Task-258 row and adds no cross-family
+edge. The application-to-witness edge remains wholly owned by the next
+B1A frozen contract and implementation; all B1B+/B2+/B3+ ownership remains
+deferred.

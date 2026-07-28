@@ -1948,3 +1948,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 409 tests、sizes `5188/699/2513/11234`、production 30 paths /
   39,590 lines、全active/fixture/expectation/sidecar/trace artifacts、
   B1P-before-B1A orderを維持。
+
+## Checker Task 258B3M2B2B1P runner implementation ledger
+
+- [x] private explicit-context helperを追加し、context-0 delegationで
+  compatibilityを維持。
+- [x] exact Task-252 roots/public Task-253 producerをproof context 1でreuse
+  し、statement consumer/lower row duplicateを追加しない。
+- [x] identity、complete fail-close、replay/rollback、fixed legacy bytes、
+  empty downstream ownershipのcompound testsちょうど2件をpass。
+- [x] 411 tests、Task-253 sizes `1782/701/2514/2799`、production
+  30 paths / 39,857 linesを実測。
+- [ ] exact B3M2B2B1A application-witness contractをseparate
+  documentation commitでfresh-inventory/freeze。

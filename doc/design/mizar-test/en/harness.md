@@ -3655,3 +3655,15 @@ form/argument order, wrappers, import/candidate/provenance substitution,
 stale Task-252 fingerprints, and replay, while retaining byte-identical
 context-0 outputs. B1P publishes no statement, typed/final statement
 coexistence, diagnostic detail, semantic, proof, or goal output.
+
+## Task 258B3M2B2B1P Harness Result
+
+Both frozen compound tests are implemented and pass. The first fixes the
+143-byte source SHA-256, Task-48 `2/1/0`, Task-252 `6/4/2`, Task-253
+`1/0/1/2/2`, ordered targets/provenance, empty downstream tables, and
+legacy context-0 debug SHA-256
+`9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d`.
+The second rejects every frozen context/root, wrapper/shape, range, form,
+target, candidate/contribution, ambiguous provenance, and stale replay
+case, then proves clean replay. No fixture, expectation, sidecar, trace
+row, active case, or public diagnostic detail was added.
