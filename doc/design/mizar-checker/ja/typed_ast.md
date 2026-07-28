@@ -958,3 +958,11 @@ resultとしてexistできるがstandalone install不可。orphan/stale/
 cross-profile、Task-248/257、B1-reference、両order ownership conflictは
 mutationなしでrollbackする。debugはstable witness chunkをbase chunk直後に
 appendし、prior profile bytesは不変。
+
+### Task 258B3 paired installation result
+
+`source_statement_witnesses()`と
+`with_source_statement_witnesses(statements, witnesses)`をimplementした。
+base-only/reference-paired installerはB3をrejectし、B3 installerは両halfを
+validate後にatomic publishする。cross-family/両order rollback testはPASSし、
+debugはbase、witness、nodes順。

@@ -815,3 +815,7 @@ Tasks 269–272 still own existential matching, obligations, substitution,
 abbreviation, and proof state. Tasks 258B3N/M retain named, multiple, and
 other witness-term transport before B4; B4/B5 retain composite-root and
 visibility families.
+
+Task 258B3 now implements only the frozen unnamed-primary witness companion.
+The family partition and all B3N/M, B4/B5, and 269–272 ownership remain
+unchanged after implementation.

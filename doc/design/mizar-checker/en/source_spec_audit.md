@@ -3896,3 +3896,7 @@ The remaining §15.4.4 transport shapes have explicit follow-up ownership:
 Tasks 258B3N/M retain named, multiple, and other witness-term transport
 after B3 and before Task 258B4. Their abbreviation/substitution and
 left-to-right goal effects remain with Tasks 269–272.
+
+Task 258B3 implementation closes only the classified bounded
+`source_drift`/`test_gap`. It changes no canonical requirement or trace
+credit, so the existing `deferred`, `tests = []` row remains correct.

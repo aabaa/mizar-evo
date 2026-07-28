@@ -552,3 +552,7 @@ Task-252 termsはcontexts `0,0,1,1,1`を使い、witness rowはdirect
 primary term/reference 2を介してbinding 0、scope `[0]`、stored use ordinal
 1をreauthenticateする。foreign context/scope/bindingまたはB1/B2 binding
 fingerprintはwitness-row validation前にdependency failureとなる。
+
+implemented B3 routeはexact two-context environmentをconstructし、checkerは
+witness primary term 2を介してdirect proof contextをrevalidateする。
+binding row/binding-environment APIは変更しない。

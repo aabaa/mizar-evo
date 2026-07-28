@@ -373,3 +373,10 @@ final, family, source-audit, module-audit, and TODO documents freeze the same
 four/five future tests, exclusions, and semantic deferrals. Both languages
 record unchanged `346/379` libraries and 30-path / 36,479-line production.
 No Task-258B3 bilingual debt is accepted.
+
+## Task 258B3 Implementation Synchronization
+
+Canonical EN and JA companions now record the implemented witness producer,
+paired typed/final ownership, four checker/five runner tests, final module
+sizes, and measured hashes. No implementation-era bilingual debt is
+accepted.

@@ -2554,6 +2554,21 @@ completion remain deferred. The origin discrepancy remains report-only
   and award no coverage credit.
 - [x] Preserve documentation-only libraries `346/379`, runner 30 paths /
   36,479 lines, module sizes, all metadata counts, test lists, and hashes.
-- [ ] After this dedicated documentation commit and fresh preflight,
-  implement only Task 258B3, project libraries `350/384`, remeasure every
-  changed baseline, then fresh-inventory Tasks 258B3N/M before Task 258B4.
+- [x] After this dedicated documentation commit and fresh preflight,
+  implemented only Task 258B3. Libraries are `350/384`; every changed
+  baseline is remeasured below. Fresh-inventory Tasks 258B3N/M before
+  Task 258B4.
+
+## Checker Task 258B3 implementation result
+
+- [x] Implement the syntax-free one-row witness producer and exact B3 base
+  profile without changing lower-stage ownership.
+- [x] Install/revalidate only the paired base/witness handoffs in typed and
+  final ownership; reject standalone, orphan, stale, reference-hybrid, and
+  cross-family orders atomically.
+- [x] Add exactly four checker and five runner compound tests.
+- [x] Preserve every canonical spec, `.miz`, expectation, sidecar, trace
+  row/status/count, active route, and semantic output.
+- [x] Measure libraries `350/384`, checker module sizes
+  `9812/4644/7195/3156`, and runner production 30 paths / 37,172 lines.
+- [ ] Fresh-inventory and freeze Tasks 258B3N/M before selecting Task 258B4.

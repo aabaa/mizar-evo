@@ -1016,3 +1016,10 @@ semantic output is `InvalidSourceStatement`. Final assembly infers no
 resolver or witness semantics and leaves checked formulas, facts, statement
 semantics, proofs, goals, and diagnostics empty. This prerequisite changes
 no resolved source or test.
+
+### Task 258B3 Final Ownership Result
+
+Final assembly clone-preserves and revalidates the exact base/witness pair.
+Standalone base, orphan witness, stale fingerprint, reference hybrid, and
+nonempty semantic coexistence fail as `InvalidSourceStatement`. Successful
+assembly keeps every semantic, proof, goal, and diagnostic table empty.

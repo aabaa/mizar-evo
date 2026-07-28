@@ -3723,3 +3723,7 @@ remaining §15.4.4 transport shapeにはexplicit follow-up ownerがある。
 Tasks 258B3N/MがB3後/B4前のnamed/multiple/other witness-term transportを
 保持し、abbreviation/substitution/left-to-right goal effectはTasks
 269–272が保持する。
+
+Task 258B3 implementationはclassified bounded `source_drift`/`test_gap`
+だけをcloseする。canonical requirement/trace creditを変更しないため、既存
+`deferred` / `tests = []` rowが引き続きcorrect。

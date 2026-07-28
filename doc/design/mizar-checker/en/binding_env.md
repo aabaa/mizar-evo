@@ -573,3 +573,7 @@ Task-252 terms use contexts `0,0,1,1,1`; the witness row stores direct
 scope `[0]`, and stored use ordinal 1 through primary term/reference 2.
 Foreign context, scope, binding, or B1/B2 binding fingerprint fails as a
 dependency before witness-row validation.
+
+The implemented B3 route constructs exactly this two-context environment and
+the checker revalidates the direct proof context through witness primary term
+2. No binding row or binding-environment API changed.

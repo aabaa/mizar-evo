@@ -534,10 +534,13 @@ statement families remain Task 258B or Tasks 269–272.
 | `SourceStatementFormulaTarget` | `#[non_exhaustive]`; Task 258A accepts only one Task-256 `Atomic` target. |
 | `SourceStatementInputFactKind` | `#[non_exhaustive]`; Task 258A accepts only `ReservedTypeGuard`. |
 | `SourceStatementCandidateFactKind` | `#[non_exhaustive]`; Task 258A accepts only `UnverifiedProposition`. |
+| `SourceStatementWitnessTermTarget` | `#[non_exhaustive]`; Task 258B3 accepts only exact Task-252 `Primary` term 2. |
+| `SourceStatementWitnessKind` | `#[non_exhaustive]`; Task 258B3 accepts only one `Unnamed` witness. |
 | `SourceStatementLabelKind` | `#[non_exhaustive]`; Task 258B1 accepts only one resolver-authenticated `ProofStep` label. |
 | `SourceStatementCitationKind` | `#[non_exhaustive]`; Task 258B1 accepts only one `SimpleLocal` backward citation. |
 | `SourceStatementError` | `#[non_exhaustive]`; callers must not exhaustively match producer/installation failures. |
 | `SourceStatementReferenceError` | `#[non_exhaustive]`; callers must not exhaustively match reference dependency, aggregate, label, or citation failures. |
+| `SourceStatementWitnessError` | `#[non_exhaustive]`; callers must not exhaustively match witness dependency, aggregate, or row failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -1626,3 +1629,13 @@ reviews, every hard gate, read-only quality at least 90/100, task-only
 staging, and one dedicated documentation commit. Implementation may begin
 only after that commit and a fresh parser/resolver/lower-API/count/hash
 preflight.
+
+## Task 258B3 Implementation Result
+
+The frozen producer, row/table/handoff/error API, exact B3 base profile,
+fingerprints, containment checks, combined `[0,1,2]` order, and deterministic
+debug text are implemented. Four checker tests exercise publication,
+dependency/aggregate/row/provenance corruption, paired ownership, final
+revalidation, replay, and empty semantics. Bounded `source_drift` and
+`test_gap` are closed; all semantic deferrals and the deferred trace row
+remain unchanged.

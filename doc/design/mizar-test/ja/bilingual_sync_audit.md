@@ -453,3 +453,9 @@ identity、exact lower/base/witness profile、`[0,1,2]` order、future tests
 5本、corpus dormancy、exclusion、semantic deferralをfreezeする。379 tests、
 30 paths / 36,479 lines、全hashをpreserveし、Task-258B3 runner bilingual
 debtをacceptしない。
+
+## Task 258B3 consumer implementation synchronization
+
+EN/JA runner plan、checklist、harness、boundary auditはexact dormant route、
+tests 5本、384-test list、30-path / 37,172-line manifestを同期した。
+consumer implementation bilingual debtは残らない。

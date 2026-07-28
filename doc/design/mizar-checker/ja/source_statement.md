@@ -233,10 +233,13 @@ separate Task 258BまたはTasks 269–272。
 | `SourceStatementFormulaTarget` | `#[non_exhaustive]`; Task 258AはTask-256 `Atomic` target 1件だけをaccept。 |
 | `SourceStatementInputFactKind` | `#[non_exhaustive]`; Task 258Aは`ReservedTypeGuard`だけをaccept。 |
 | `SourceStatementCandidateFactKind` | `#[non_exhaustive]`; Task 258Aは`UnverifiedProposition`だけをaccept。 |
+| `SourceStatementWitnessTermTarget` | `#[non_exhaustive]`; Task 258B3はexactなTask-252 `Primary` term 2だけをaccept。 |
+| `SourceStatementWitnessKind` | `#[non_exhaustive]`; Task 258B3は`Unnamed` witness 1件だけをaccept。 |
 | `SourceStatementLabelKind` | `#[non_exhaustive]`; Task 258B1はresolver-authenticatedな`ProofStep` label 1件だけをaccept。 |
 | `SourceStatementCitationKind` | `#[non_exhaustive]`; Task 258B1は`SimpleLocal` backward citation 1件だけをaccept。 |
 | `SourceStatementError` | `#[non_exhaustive]`; callerはproducer/installation failureをexhaustive matchしない。 |
 | `SourceStatementReferenceError` | `#[non_exhaustive]`; callerはreference dependency、aggregate、label、citation failureをexhaustive matchしない。 |
+| `SourceStatementWitnessError` | `#[non_exhaustive]`; callerはwitness dependency、aggregate、row failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -1232,3 +1235,12 @@ exitはEN/JA documentation sync、independent no-findings review、全hard
 gate、read-only quality 90/100以上、task-only staging、dedicated
 documentation commitをrequireする。implementationはそのcommitとfresh
 parser/resolver/lower-API/count/hash preflight後だけ開始できる。
+
+## Task 258B3 implementation result
+
+frozen producer、row/table/handoff/error API、exact B3 base profile、
+fingerprint、containment check、combined `[0,1,2]` order、deterministic debugを
+implementした。checker tests 4本がpublication、dependency/aggregate/row/
+provenance corruption、paired ownership、final revalidation、replay、empty
+semanticsをcoverする。bounded `source_drift`/`test_gap`はcloseし、全semantic
+deferralとdeferred trace rowは不変。

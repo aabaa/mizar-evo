@@ -12,7 +12,9 @@ use crate::{
         SourcePredicateChainCompositionHandoff,
     },
     source_set_term::SourceSetTermHandoff,
-    source_statement::{SourceStatementHandoff, SourceStatementReferenceHandoff},
+    source_statement::{
+        SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
+    },
     source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff,
     source_type::SourceTypeApplicationHandoff,
@@ -111,6 +113,7 @@ pub struct TypedAst {
     source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
     source_statement: Option<SourceStatementHandoff>,
     source_statement_references: Option<SourceStatementReferenceHandoff>,
+    source_statement_witnesses: Option<SourceStatementWitnessHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -152,6 +155,7 @@ impl TypedAst {
             source_predicate_chain_composition: None,
             source_statement: None,
             source_statement_references: None,
+            source_statement_witnesses: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -238,6 +242,10 @@ impl TypedAst {
         self.source_statement_references.as_ref()
     }
 
+    pub const fn source_statement_witnesses(&self) -> Option<&SourceStatementWitnessHandoff> {
+        self.source_statement_witnesses.as_ref()
+    }
+
     #[cfg(test)]
     pub(crate) fn with_source_context_for_test(
         mut self,
@@ -287,6 +295,24 @@ impl TypedAst {
         references: SourceStatementReferenceHandoff,
     ) {
         self.source_statement_references = Some(references);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_statement_witnesses_for_test(
+        &mut self,
+        witnesses: SourceStatementWitnessHandoff,
+    ) {
+        self.source_statement_witnesses = Some(witnesses);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_statement_witness_bundle_for_test(
+        &mut self,
+        statement: SourceStatementHandoff,
+        witnesses: SourceStatementWitnessHandoff,
+    ) {
+        self.source_statement = Some(statement);
+        self.source_statement_witnesses = Some(witnesses);
     }
 
     #[cfg(test)]
@@ -767,6 +793,7 @@ impl TypedAst {
     ) -> Result<Self, TypedAstError> {
         if self.source_statement.is_some()
             || self.source_statement_references.is_some()
+            || self.source_statement_witnesses.is_some()
             || self.resolved_root.is_some()
             || self.source_context.is_some()
             || self.source_type.is_some()
@@ -819,6 +846,7 @@ impl TypedAst {
     ) -> Result<Self, TypedAstError> {
         if self.source_statement.is_some()
             || self.source_statement_references.is_some()
+            || self.source_statement_witnesses.is_some()
             || self.resolved_root.is_some()
             || self.source_context.is_some()
             || self.source_type.is_some()
@@ -865,6 +893,69 @@ impl TypedAst {
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
         self.source_statement = Some(statements);
         self.source_statement_references = Some(references);
+        Ok(self)
+    }
+
+    pub fn with_source_statement_witnesses(
+        mut self,
+        statements: SourceStatementHandoff,
+        witnesses: SourceStatementWitnessHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_statement.is_some()
+            || self.source_statement_references.is_some()
+            || self.source_statement_witnesses.is_some()
+            || self.resolved_root.is_some()
+            || self.source_context.is_some()
+            || self.source_type.is_some()
+            || self.source_attribute.is_some()
+            || self.source_evidence.is_some()
+            || self.source_application.is_some()
+            || self.source_structure.is_some()
+            || self.source_set_term.is_some()
+            || self.source_composite_formula.is_some()
+            || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
+            || !self.contexts.is_empty()
+            || !self.types.is_empty()
+            || !self.facts.is_empty()
+            || !self.coercions.is_empty()
+            || !self.initial_obligations.is_empty()
+            || !self.diagnostics.is_empty()
+        {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        statements
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_atomic_formula,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        if !statements.is_task_258b3_profile() {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        witnesses
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                &statements,
+                source_term,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        self.source_statement = Some(statements);
+        self.source_statement_witnesses = Some(witnesses);
         Ok(self)
     }
 
@@ -950,6 +1041,9 @@ impl TypedAst {
         }
         if let Some(source_statement) = &self.source_statement {
             output.push_str(&source_statement.debug_text());
+        }
+        if let Some(source_statement_witnesses) = &self.source_statement_witnesses {
+            output.push_str(&source_statement_witnesses.debug_text());
         }
         if let Some(source_statement_references) = &self.source_statement_references {
             output.push_str(&source_statement_references.debug_text());

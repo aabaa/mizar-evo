@@ -27,7 +27,9 @@ use crate::{
         SourcePredicateChainCompositionHandoff,
     },
     source_set_term::SourceSetTermHandoff,
-    source_statement::{SourceStatementHandoff, SourceStatementReferenceHandoff},
+    source_statement::{
+        SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
+    },
     source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff,
     source_type::SourceTypeApplicationHandoff,
@@ -128,6 +130,7 @@ pub struct ResolvedTypedAst {
     source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
     source_statement: Option<SourceStatementHandoff>,
     source_statement_references: Option<SourceStatementReferenceHandoff>,
+    source_statement_witnesses: Option<SourceStatementWitnessHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -222,6 +225,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_statement_references(&self) -> Option<&SourceStatementReferenceHandoff> {
         self.source_statement_references.as_ref()
+    }
+
+    pub const fn source_statement_witnesses(&self) -> Option<&SourceStatementWitnessHandoff> {
+        self.source_statement_witnesses.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -343,6 +350,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_statement) = &self.source_statement {
             output.push_str(&source_statement.debug_text());
+        }
+        if let Some(source_statement_witnesses) = &self.source_statement_witnesses {
+            output.push_str(&source_statement_witnesses.debug_text());
         }
         if let Some(source_statement_references) = &self.source_statement_references {
             output.push_str(&source_statement_references.debug_text());
@@ -1777,6 +1787,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         let source_statement = self.inputs.typed_ast.source_statement().cloned();
         let source_statement_references =
             self.inputs.typed_ast.source_statement_references().cloned();
+        let source_statement_witnesses =
+            self.inputs.typed_ast.source_statement_witnesses().cloned();
         if let Some(source_statement) = &source_statement {
             if self.inputs.typed_ast.source_context().is_some()
                 || self.inputs.typed_ast.source_type().is_some()
@@ -1809,8 +1821,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     self.inputs.typed_ast.nodes(),
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
-            match &source_statement_references {
-                Some(references) if source_statement.is_task_258b1_profile() => references
+            match (&source_statement_references, &source_statement_witnesses) {
+                (Some(references), None) if source_statement.is_task_258b1_profile() => references
                     .validate_installation(
                         source_id,
                         &module_id,
@@ -1818,11 +1830,21 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         self.inputs.typed_ast.nodes(),
                     )
                     .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?,
-                None if source_statement.is_task_258a_profile()
-                    || source_statement.is_task_258b2_profile() => {}
+                (None, Some(witnesses)) if source_statement.is_task_258b3_profile() => witnesses
+                    .validate_installation(
+                        source_id,
+                        &module_id,
+                        source_statement,
+                        source_term,
+                        self.inputs.typed_ast.nodes(),
+                    )
+                    .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?,
+                (None, None)
+                    if source_statement.is_task_258a_profile()
+                        || source_statement.is_task_258b2_profile() => {}
                 _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
             }
-        } else if source_statement_references.is_some() {
+        } else if source_statement_references.is_some() || source_statement_witnesses.is_some() {
             return Err(ResolvedTypedAstError::InvalidSourceStatement);
         }
 
@@ -1844,6 +1866,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_predicate_chain_composition,
             source_statement,
             source_statement_references,
+            source_statement_witnesses,
             nodes,
             expr_metadata,
             collection_candidates,

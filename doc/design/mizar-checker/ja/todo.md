@@ -4314,9 +4314,10 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       `2/0/0/0/0/0/0/4/4`、formula-only base `1/2/2/2/2`、one-row
       witness companion、paired typed/final ownership、tests、
       non-activationをfreeze。
-    - [ ] **Task 258B3 implementation:** documentation commit/fresh
-      preflight後にfrozen paired witness transportだけをchecker 4本/runner
-      5本でimplement。
+    - [x] **Task 258B3 implementation:** documentation commit/fresh
+      preflight後にfrozen paired witness transportだけをimplementした。
+      checker 4本/runner 5本がbounded `source_drift`/`test_gap`をcloseし、
+      semantics/corpus activationは追加していない。
     - [ ] **Tasks 258B3N/M:** B3後/B4前にnamed-witness transportと
       multiple/other witness-term transportをseparately freezeする。
       abbreviation/substitution/type-obligation/goal semanticsをinferしない。
@@ -4587,8 +4588,8 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] closed contractを`design_drift`、future codeをbounded
   `source_drift`、testsを`test_gap`と分類し、blocking protocol
   disagreementなし。
-- [ ] 本dedicated documentation commitとfresh parser/resolver/lower-API/
-  count/hash preflight後にTask 258B3だけをimplementし、projected libraries
-  `350/384`後に全changed hash/lineを再測定。
+- [x] 本dedicated documentation commitとfresh parser/resolver/lower-API/
+  count/hash preflight後にTask 258B3だけをimplementした。librariesは
+  `350/384`、changed hash/lineはimplementation resultで再測定済み。
 - [ ] 次にTasks 258B3N/Mをfresh-inventoryし、named/multiple/other
   witness-term transportをTask 258B4 selection前にfreeze。

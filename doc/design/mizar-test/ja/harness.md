@@ -3273,3 +3273,10 @@ manifest、全hashを不変に保つ。
 
 Tasks 258B3N/MがB3後/B4前のnamed/multiple/other witness-term consumer、
 Tasks 269–272がsemantic effectを保持する。
+
+B3 consumerをexact private dormant selector/tests 5本としてimplementした。
+runnerは384 library tests、productionは30 paths / 37,172 linesで、
+path/content hashは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`。
+corpus artifact/active routeは変更しない。

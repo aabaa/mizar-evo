@@ -4543,9 +4543,10 @@ unchecked row below is one future nonempty logical task and one commit.
       provenance, Task-48 `2/1/0`, Task-252 `5/5/0`, Task-256
       `2/0/0/0/0/0/0/4/4`, formula-only base `1/2/2/2/2`, one-row witness
       companion, paired typed/final ownership, tests, and non-activation.
-    - [ ] **Task 258B3 implementation:** implement only the frozen paired
-      witness transport after its documentation commit and fresh preflight;
-      add four checker and five runner tests.
+    - [x] **Task 258B3 implementation:** implemented only the frozen paired
+      witness transport after its documentation commit and fresh preflight.
+      Four checker and five runner tests close bounded `source_drift` and
+      `test_gap`; no semantics or corpus activation was added.
     - [ ] **Tasks 258B3N/M:** after B3, separately freeze named-witness
       transport and multiple/other witness-term transport before B4. Do not
       infer abbreviation, substitution, type-obligation, or goal semantics.
@@ -4825,8 +4826,9 @@ implementation commit does not satisfy a producer task.
 - [x] Classify the closed contract as `design_drift`, future code as bounded
   `source_drift`, tests as `test_gap`, and find no blocking protocol
   disagreement.
-- [ ] Implement only Task 258B3 after this dedicated documentation commit
-  and fresh parser/resolver/lower-API/count/hash preflight; project
-  libraries `350/384`, then remeasure all changed hashes and lines.
+- [x] Implement only Task 258B3 after this dedicated documentation commit
+  and fresh parser/resolver/lower-API/count/hash preflight. Libraries are
+  `350/384`; changed hashes and lines are remeasured in the implementation
+  result.
 - [ ] Fresh-inventory Tasks 258B3N/M next and freeze named, multiple, and
   other witness-term transport before selecting Task 258B4.

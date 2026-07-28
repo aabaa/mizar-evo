@@ -1008,3 +1008,11 @@ producer result but cannot install alone. Orphan, stale, cross-profile,
 Task-248/257, B1-reference, and both-order ownership conflicts roll back
 without mutation. Debug appends the stable witness chunk immediately after
 the base chunk; prior profiles remain byte-identical.
+
+### Task 258B3 Paired Installation Result
+
+`source_statement_witnesses()` and
+`with_source_statement_witnesses(statements, witnesses)` are implemented.
+The base-only and reference-paired installers reject B3, while the B3
+installer validates both halves before atomic publication. Cross-family and
+both-order rollback tests pass; debug emits base then witness then nodes.

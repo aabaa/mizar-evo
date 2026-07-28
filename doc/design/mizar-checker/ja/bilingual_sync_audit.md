@@ -353,3 +353,9 @@ companion、`[0,1,2]` ordinal partition、future tests 4/5本、exclusion、
 semantic deferralをfreezeする。両言語はunchanged libraries `346/379`、
 production 30 paths / 36,479 linesを記録し、Task-258B3 bilingual debtを
 acceptしない。
+
+## Task 258B3 implementation synchronization
+
+canonical EN/JA companionはimplemented witness producer、paired typed/final
+ownership、checker 4本/runner 5本、final module size、measured hashを同期した。
+implementation-era bilingual debtはacceptしない。

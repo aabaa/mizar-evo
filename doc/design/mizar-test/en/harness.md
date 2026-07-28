@@ -3450,3 +3450,10 @@ line statement/facade/runner/test modules, 379-test list, 30-path /
 
 Tasks 258B3N/M retain named, multiple, and other witness-term consumers
 after B3 and before B4; Tasks 269–272 retain their semantic effects.
+
+The B3 consumer is implemented as the exact private dormant selector and
+five-test matrix. The runner now has 384 library tests; production remains
+30 paths / 37,172 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`.
+No corpus artifact or active route changed.

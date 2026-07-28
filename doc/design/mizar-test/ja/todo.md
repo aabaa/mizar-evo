@@ -1816,8 +1816,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 本prerequisiteでは全corpus artifact、trace row/status/count、active
   route、source、379-test list、30-path / 36,479-line manifest、hashを
   preserve。
-- [ ] documentation commit/fresh preflight後、exactly runner tests 5本で
-  dormant B3 routeだけをimplementし、384 testsをprojectしてproduction/
-  test hashを再測定。
+- [x] documentation commit/fresh preflight後、exactly runner tests 5本で
+  dormant B3 routeだけをimplementした。runnerは384 tests、production/
+  test hashはimplementation resultで再測定済み。
 - [ ] B3後、Task 258B4前にnamed/multiple/other witness-term transport用
   Tasks 258B3N/M runner consumerをseparately freeze。

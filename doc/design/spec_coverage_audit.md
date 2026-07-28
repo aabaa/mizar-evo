@@ -3799,3 +3799,21 @@ checker/runner libraries remain `346/379`, runner production remains 30
 paths / 36,479 lines, and all CLI/count/hash baselines remain unchanged.
 This audit edit is required only to record the newly frozen producer/
 consumer ownership and later semantic owners.
+
+## Step 5 Checker Task 258B3 Implementation Addendum
+
+The exact frozen checker producer, paired typed/final ownership, private
+runner selector/assembly, and checker/runner test matrices `4/5` are now
+implemented. This closes the classified bounded `source_drift` and
+`test_gap` for the unnamed single-witness transport only. It does not accept
+the equality-root proof, perform witness semantics, or change any canonical
+specification, `.miz`, expectation, sidecar, trace status/count, or active
+route.
+
+`spec.en.checker.formula_statement.source_payloads` therefore remains
+`deferred` with `tests = []`, and no coverage credit changes. The checker and
+runner libraries now contain `350/384` tests. Runner production remains 30
+paths / 37,172 lines. Tasks 258B3N/M still own named, multiple, and other
+witness-term transport before B4; Tasks 269–272 still own all semantic
+effects. This audit update is required because implementation/test ownership
+changed even though traceability status and coverage did not.

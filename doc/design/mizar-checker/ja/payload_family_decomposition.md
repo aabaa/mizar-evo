@@ -754,3 +754,6 @@ witness term/referenceをownし、Task 256は明示的にexcludeする。Tasks
 269–272はexistential matching、obligation、substitution、abbreviation、
 proof stateを保持する。Tasks 258B3N/MはB4前のnamed/multiple/other
 witness-term transport、B4/B5はcomposite-root/visibility familyを保持する。
+
+Task 258B3はfrozen unnamed-primary witness companionだけをimplementした。
+family partitionとB3N/M、B4/B5、269–272 ownershipはimplementation後も不変。

@@ -11541,3 +11541,14 @@ The checker receives only source/module IDs, syntax-free typed sites,
 fingerprinted base/primary handoffs, dense witness data, and authenticated
 theorem/binding provenance. This prerequisite leaves production topology at
 30 paths / 36,479 lines and line baselines `2120/678/2491/2884` unchanged.
+
+### Task 258B3 Implemented Boundary
+
+The planned boundary is preserved. The existing statement production leaf
+is 2,806 lines, the private facade 681, `runner.rs` 2,495, and the paired
+test leaf 4,291. Production remains 30 paths / 37,172 lines with unchanged
+path hash
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`
+and content hash
+`adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`.
+No new module, dependency direction, or semantic owner was introduced.

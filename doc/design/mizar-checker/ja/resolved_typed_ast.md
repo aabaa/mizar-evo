@@ -961,3 +961,10 @@ foreign source owner、cluster fact、statement-proof input、nonempty semantic
 outputは`InvalidSourceStatement`。final assemblyはresolver/witness semanticsを
 inferせず、checked formula、fact、statement semantic、proof、goal、
 diagnosticをemptyに保つ。本prerequisiteはresolved source/testを変更しない。
+
+### Task 258B3 final ownership result
+
+final assemblyはexact base/witness pairをclone-preserve/revalidateする。
+standalone base、orphan witness、stale fingerprint、reference hybrid、
+nonempty semantic coexistenceは`InvalidSourceStatement`。successful
+assemblyは全semantic/proof/goal/diagnostic tableをemptyに保つ。

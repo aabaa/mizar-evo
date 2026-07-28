@@ -469,3 +469,9 @@ synchronized with their Japanese companions. Both freeze the same
 `[0,1,2]` order, five future tests, corpus dormancy, exclusions, and semantic
 deferrals. Both preserve 379 tests, 30 paths / 36,479 lines, and all hashes.
 No Task-258B3 runner bilingual debt is accepted.
+
+## Task 258B3 Consumer Implementation Synchronization
+
+EN and JA runner plans, checklists, harnesses, and boundary audits now record
+the exact dormant route, five tests, 384-test list, and 30-path /
+37,172-line manifest. No consumer implementation bilingual debt remains.

@@ -10317,3 +10317,13 @@ checkerはsource/module ID、syntax-free typed site、fingerprinted
 base/primary handoff、dense witness data、authenticated theorem/binding
 provenanceだけを受ける。本prerequisiteはproduction topology 30 paths /
 36,479 lines、line baselines `2120/678/2491/2884`を不変に保つ。
+
+### Task 258B3 implemented boundary
+
+planned boundaryを維持した。existing statement production leafは2,806
+lines、private facade 681、`runner.rs` 2,495、paired test leaf 4,291。
+productionは30 paths / 37,172 lines、path hash
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`
+は不変、content hashは
+`adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`。
+new module/dependency direction/semantic ownerは導入していない。

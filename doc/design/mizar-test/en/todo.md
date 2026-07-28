@@ -2010,8 +2010,9 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Preserve every corpus artifact, trace row/status/count, active route,
   source, 379-test list, 30-path / 36,479-line manifest, and hash in this
   prerequisite.
-- [ ] After the documentation commit and fresh preflight, implement only
-  the dormant B3 route with exactly five runner tests, project 384 tests,
-  and remeasure production/test hashes.
+- [x] After the documentation commit and fresh preflight, implemented only
+  the dormant B3 route with exactly five runner tests. The runner has 384
+  tests and production/test hashes are remeasured in the implementation
+  result.
 - [ ] After B3, freeze separate Tasks 258B3N/M runner consumers for named,
   multiple, and other witness-term transport before Task 258B4.
