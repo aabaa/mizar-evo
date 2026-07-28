@@ -529,12 +529,15 @@ statement families remain Task 258B or Tasks 269–272.
 |---|---|
 | `SourceTheoremRole` | `#[non_exhaustive]`; Task 258A accepts only `Theorem`. |
 | `SourceTheoremStatus` | `#[non_exhaustive]`; Task 258A accepts only `Unmodified`. |
-| `SourceStatementKind` | `#[non_exhaustive]`; Task 258A accepts only `TheoremProposition`. |
+| `SourceStatementKind` | `#[non_exhaustive]`; Task 258A accepts `TheoremProposition`, while Task 258B1 additionally accepts exact `ProofStepProposition` and `Conclusion` rows. |
 | `SourceStatementRecovery` | `#[non_exhaustive]`; callers tolerate `Degraded`, while this exact route accepts only `Normal`. |
 | `SourceStatementFormulaTarget` | `#[non_exhaustive]`; Task 258A accepts only one Task-256 `Atomic` target. |
 | `SourceStatementInputFactKind` | `#[non_exhaustive]`; Task 258A accepts only `ReservedTypeGuard`. |
 | `SourceStatementCandidateFactKind` | `#[non_exhaustive]`; Task 258A accepts only `UnverifiedProposition`. |
+| `SourceStatementLabelKind` | `#[non_exhaustive]`; Task 258B1 accepts only one resolver-authenticated `ProofStep` label. |
+| `SourceStatementCitationKind` | `#[non_exhaustive]`; Task 258B1 accepts only one `SimpleLocal` backward citation. |
 | `SourceStatementError` | `#[non_exhaustive]`; callers must not exhaustively match producer/installation failures. |
+| `SourceStatementReferenceError` | `#[non_exhaustive]`; callers must not exhaustively match reference dependency, aggregate, label, or citation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -1149,3 +1152,20 @@ independent no-findings review, unchanged measured artifacts, all hard gates,
 quality at least 90/100, task-only staging, and one dedicated documentation
 commit. Only after that commit and fresh preflight may Task-258B1
 implementation begin.
+
+### Task 258B1 Implementation Status
+
+The frozen base and reference transactions are implemented exactly. The base
+producer selects the Task-258A or Task-258B1 profile from authenticated
+dependencies rather than a caller flag. The reference producer publishes one
+proof-step label and one simple local citation only after replaying the exact
+resolver projection/reference/result and comparing every resolver node to
+the same-index typed node. Dependency, aggregate, label, and citation error
+precedence is fail-closed and replay-safe.
+
+The combined `TypedAst`/`ResolvedTypedAst` owner publishes the base/reference
+pair atomically. Four checker tests cover the complete API/debug surface,
+dependency/row/provenance corruptions, owner exclusion/rollback, final
+revalidation/clone, and the empty semantic boundary. Task-258A installer and
+debug bytes remain unchanged. Broader statement shapes and every proof
+semantic remain outside this implementation.

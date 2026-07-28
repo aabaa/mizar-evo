@@ -705,3 +705,11 @@ Task 258B2+はexplicit assumption/witness、composite root、broader
 imported/outer/inner visibilityを保持する。Tasks 269-272がproof-local
 declarationとproof/justification ownershipを保持する。complete dependency
 chain/runnerがexecutableになるまでdeferred `MT10-FS` rowはdeferredのまま。
+
+### Task 258B1 implementation closure
+
+B1 statement/reference edgeはfrozenどおりtransport-only familyとして実装した。
+次のstatement workはfresh contract review後のTask 258B2+であり、Tasks
+269–272がlocal declaration、closure、coercion intent、proof skeleton、
+justification meaning、goal、acceptanceを所有し続ける。本implementationで
+family edgeをreclassifyしない。

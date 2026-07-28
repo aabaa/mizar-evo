@@ -914,3 +914,11 @@ Task-258Aはreference fieldが
 absentなのでoutput byte-identical。final assemblyでname resolutionをinfer
 せず、fact、checked formula、statement semantic、proof、goal、diagnostic、
 downstream IR/VC outputを作らない。本prerequisiteはresolved sourceを変更しない。
+
+### Task 258B1 implementation status
+
+final assemblyはB1 base/reference pairを一緒にclone/revalidateし、orphan、
+missing、stale、cross-profile halfを`InvalidSourceStatement`としてrejectする。
+reference debug chunkはbase chunk直後、resolved node前に出る。statement
+semantic、checked-formula、proof、goal、diagnostic、downstream tableはすべて
+emptyのまま。

@@ -44,11 +44,13 @@ committed autonomously without holding the rest of the crate in flight.
 
 ## Crate Prerequisites
 
-The crate depends on `mizar-session` and `mizar-resolve` (and on
-`mizar-syntax` transitively). Wave 1 needs `mizar-resolve` tasks 14 and 20
-(name resolution, `SymbolEnv` skeleton); waves grow with `mizar-resolve`
-task 21 signature increments and the corresponding `mizar-parser` definition
-grammar tasks (23-31). Architecture:
+The production crate depends on `mizar-session` and `mizar-resolve` and reaches
+`mizar-syntax` only transitively. Task 258B1 adds a direct test-only
+`mizar-syntax` dev-dependency for parser-shaped corruption fixtures; production
+source remains syntax-free. Wave 1 needs `mizar-resolve` tasks 14 and 20 (name
+resolution, `SymbolEnv` skeleton); waves grow with `mizar-resolve` task 21
+signature increments and the corresponding `mizar-parser` definition grammar
+tasks (23-31). Architecture:
 [04.type_and_registration_resolution.md](../../architecture/en/04.type_and_registration_resolution.md),
 [05.overload_resolution.md](../../architecture/en/05.overload_resolution.md),
 [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md),
@@ -4520,9 +4522,11 @@ unchecked row below is one future nonempty logical task and one commit.
       keyed node 68, Task-252/256 dependencies, typed/resolved ownership,
       test-only syntax dev-dependency, empty-semantic boundary, tests, and
       non-activation.
-    - [ ] **Task 258B1 implementation:** implement only that frozen nested
+    - [x] **Task 258B1 implementation:** implemented only the frozen nested
       conclusion/local-label transport after the dedicated documentation
-      commit and fresh parser/resolver/lower-API/count/hash preflight.
+      commit and fresh parser/resolver/lower-API/count/hash preflight. Four
+      checker and five runner tests close the bounded `source_drift` and
+      `test_gap`; all semantic and corpus activation gates remain deferred.
     - [ ] **Task 258B2+:** separately freeze explicit assumptions and
       witnesses, composite theorem roots, and broader imported/outer/inner
       visibility profiles after Task 258B1. Do not absorb Tasks 269-272

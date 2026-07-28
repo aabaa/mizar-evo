@@ -211,13 +211,7 @@ fn build_output(
     terms: Vec<ExtractedTerm>,
     mutate: impl FnOnce(&mut SourcePrimaryTermHandoffInput),
 ) -> Result<SourceTermRouteOutput, String> {
-    let mut input = handoff_input(
-        ast,
-        module.clone(),
-        &binding_env,
-        &terms,
-        BindingContextId::new(0),
-    )?;
+    let mut input = handoff_input(ast, module.clone(), &binding_env, &terms)?;
     mutate(&mut input);
     let arena = surface_indexed_arena(ast, &terms, &BTreeMap::new(), &BTreeMap::new())?;
     let handoff = SourcePrimaryTermProducer::build(input, &binding_env, &arena)
@@ -315,7 +309,49 @@ fn source_term_parts_for_roots_with_recovery(
         ReferenceClassification::FromBindingKind,
     )?;
     let arena = surface_indexed_arena(ast, &terms, owned_node_kinds, owned_node_recoveries)?;
-    let input = handoff_input(ast, module, binding_env, &terms, context)?;
+    let input = handoff_input(ast, module, binding_env, &terms)?;
+    let handoff = SourcePrimaryTermProducer::build(input, binding_env, &arena)
+        .map_err(|error| error.to_string())?;
+    Ok(SourceTermParts { arena, handoff })
+}
+
+pub(super) fn source_term_parts_for_context_roots(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    binding_env: &BindingEnv,
+    roots: impl IntoIterator<Item = (usize, BindingContextId)>,
+    owned_node_kinds: &BTreeMap<usize, &'static str>,
+) -> Result<SourceTermParts, String> {
+    if binding_env.source_id() != ast.source_id || binding_env.module_id() != &module {
+        return Err("source primary-term binding environment identity mismatch".to_owned());
+    }
+    let mut roots = roots.into_iter().collect::<Vec<_>>();
+    roots.sort_by_key(|(root, _)| {
+        ast.nodes()
+            .get(*root)
+            .map(|node| (node.range.start, node.range.end))
+            .unwrap_or((usize::MAX, usize::MAX))
+    });
+    if roots.windows(2).any(|pair| pair[0].0 == pair[1].0) {
+        return Err("source primary-term contextual roots are duplicated".to_owned());
+    }
+    let mut terms = Vec::new();
+    for (root, context) in roots {
+        let checkpoint = terms.len();
+        if !collect_eligible_term(
+            ast,
+            root,
+            None,
+            binding_env,
+            context,
+            ReferenceClassification::FromBindingKind,
+            &mut terms,
+        )? {
+            terms.truncate(checkpoint);
+        }
+    }
+    let arena = surface_indexed_arena(ast, &terms, owned_node_kinds, &BTreeMap::new())?;
+    let input = handoff_input(ast, module, binding_env, &terms)?;
     let handoff = SourcePrimaryTermProducer::build(input, binding_env, &arena)
         .map_err(|error| error.to_string())?;
     Ok(SourceTermParts { arena, handoff })
@@ -346,6 +382,7 @@ pub(super) fn synthetic_source_term_parts_for_roots(
 struct ExtractedTerm {
     node: TypedNodeId,
     source_range: mizar_session::SourceRange,
+    context: BindingContextId,
     spelling: String,
     kind: SourcePrimaryTermKind,
     role: SourcePrimaryTermRole,
@@ -436,6 +473,7 @@ fn collect_eligible_term(
             terms.push(ExtractedTerm {
                 node: TypedNodeId::new(id),
                 source_range: node.range,
+                context,
                 spelling: spelling.clone(),
                 kind,
                 role: SourcePrimaryTermRole::Value,
@@ -452,6 +490,7 @@ fn collect_eligible_term(
             terms.push(ExtractedTerm {
                 node: TypedNodeId::new(id),
                 source_range: node.range,
+                context,
                 spelling: "it".to_owned(),
                 kind: SourcePrimaryTermKind::It,
                 role: SourcePrimaryTermRole::CurrentDefinitionResult,
@@ -473,6 +512,7 @@ fn collect_eligible_term(
             terms.push(ExtractedTerm {
                 node: TypedNodeId::new(id),
                 source_range: node.range,
+                context,
                 spelling: spelling.clone(),
                 kind: SourcePrimaryTermKind::Numeral,
                 role: SourcePrimaryTermRole::Value,
@@ -493,6 +533,7 @@ fn collect_eligible_term(
             terms.push(ExtractedTerm {
                 node: TypedNodeId::new(id),
                 source_range: node.range,
+                context,
                 spelling: String::new(),
                 kind: SourcePrimaryTermKind::Parenthesized,
                 role: SourcePrimaryTermRole::Value,
@@ -564,7 +605,6 @@ fn handoff_input(
     module: ModuleId,
     binding_env: &BindingEnv,
     extracted: &[ExtractedTerm],
-    context: BindingContextId,
 ) -> Result<SourcePrimaryTermHandoffInput, String> {
     let terms = extracted
         .iter()
@@ -573,7 +613,7 @@ fn handoff_input(
             site: TypedSiteRef::Node(term.node),
             source_range: term.source_range,
             source_ordinal,
-            context,
+            context: term.context,
             recovery: SourcePrimaryTermRecovery::Normal,
             spelling: term.spelling.clone(),
             kind: term.kind,
@@ -597,7 +637,7 @@ fn handoff_input(
                         binding_env,
                         &term.spelling,
                         role,
-                        context,
+                        term.context,
                         term.source_range,
                     )?,
                     role,

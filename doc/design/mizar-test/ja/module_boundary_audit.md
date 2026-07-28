@@ -10270,3 +10270,19 @@ productionは30 paths / 34,955 lines、path/content hashは
 libraryは369 tests、raw/normalized hashは
 `c5764bb1600242fe44db8c44b9c6bb18f39203a0de9ff60e301cbc6f172037f6` /
 `1fd27b9bff190f95ac23d6de714a919a192fb0b7830aa3c98f960d4224c084aa`。
+
+## Checker Task 258B1 implementation boundary recheck
+
+既存private `type_elaboration/source_statement.rs` ownerは1,499 linesとなり、
+exact Task-258A/B1 source selection、resolver projection/replay、binding/lower
+assembly、immutable statement publicationだけをcohesively所有する。
+`source_term.rs`はper-context root helper追加後817 lines、private facadeは
+676 lines、`runner.rs`は2,489 linesのまま、paired statement test leafは
+2,145 lines。frozen one-source transactionはnew module/splitを正当化しない。
+
+production topologyは30 paths / 35,854 linesのまま。path/content hashは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`f2d133e6fc42bd62058e95c274944aa03d80e9f8f2b5a0394a4d11e58ec3a66e`。
+libraryは374 tests、raw/normalized hashは
+`e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
+`99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`。

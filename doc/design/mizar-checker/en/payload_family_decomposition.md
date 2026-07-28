@@ -765,3 +765,11 @@ broader imported/outer/inner visibility. Tasks 269-272 retain proof-local
 declaration and proof/justification ownership. The deferred `MT10-FS` row
 stays deferred until the complete dependency chain and runner are
 executable.
+
+### Task 258B1 Implementation Closure
+
+The B1 statement/reference edge is implemented as frozen and remains a
+transport-only family. The next statement work is Task 258B2+ after fresh
+contract review; Tasks 269–272 still own local declarations, closures,
+coercion intent, proof skeletons, justification meaning, goals, and
+acceptance. No family edge is reclassified by the implementation.

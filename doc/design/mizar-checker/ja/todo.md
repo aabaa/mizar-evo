@@ -43,11 +43,13 @@ trace を伴う cluster/registration 解決（phase 7）、オーバーロード
 
 ## crate の前提条件
 
-この crate は `mizar-session` と `mizar-resolve` に依存する（`mizar-syntax`
-には推移的に依存）。第 1 波は `mizar-resolve` task 14 と 20（名前解決、
-`SymbolEnv` 骨格）を必要とし、以後の波は `mizar-resolve` task 21 の
-シグネチャ増分と、対応する `mizar-parser` の定義文法タスク（23-31）と
-ともに成長する。アーキテクチャ:
+production crate は `mizar-session` と `mizar-resolve` に依存し、
+`mizar-syntax` へは推移的にだけ到達する。Task 258B1 は parser-shaped
+corruption fixture 用に direct な test-only `mizar-syntax` dev-dependency を
+追加するが、production source は syntax-free のままである。第 1 波は
+`mizar-resolve` task 14 と 20（名前解決、`SymbolEnv` 骨格）を必要とし、
+以後の波は `mizar-resolve` task 21 のシグネチャ増分と、対応する
+`mizar-parser` の定義文法タスク（23-31）とともに成長する。アーキテクチャ:
 [04.type_and_registration_resolution.md](../../architecture/ja/04.type_and_registration_resolution.md)、
 [05.overload_resolution.md](../../architecture/ja/05.overload_resolution.md)、
 [16.substitution_and_binding.md](../../architecture/ja/16.substitution_and_binding.md)、
@@ -4291,9 +4293,11 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       sole keyed node 68を持つtwo-pass 77-node/root-76 resolver AST、
       Task-252/256 dependency、typed/resolved ownership、test-only syntax
       dev-dependency、empty-semantic boundary、tests、non-activationをfreeze。
-    - [ ] **Task 258B1 implementation:** dedicated documentation commitと
+    - [x] **Task 258B1 implementation:** dedicated documentation commitと
       fresh parser/resolver/lower-API/count/hash preflight後にfrozen nested
-      conclusion/local-label transportだけを実装。
+      conclusion/local-label transportだけを実装した。checker 4本とrunner 5本で
+      bounded `source_drift`/`test_gap`を閉じ、semantic/corpus activation
+      gateはすべてdeferredのままとした。
     - [ ] **Task 258B2+:** Task 258B1後にexplicit assumption/witness、
       composite theorem root、broader imported/outer/inner visibility
       profileをseparately freezeする。Tasks 269-272 semanticsを吸収しない。

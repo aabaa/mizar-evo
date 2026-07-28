@@ -417,10 +417,12 @@ pub(super) use source_set_term::{
 pub(super) use source_statement::source_statement_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_statement::{
-    SOURCE_STATEMENT_TEXT, SourceStatementExtraction, SourceStatementRouteInputs,
-    SourceStatementRouteOutput, extract_source_reserved_variable_theorem_statement,
-    source_statement_output_with_resolver_mutation, source_statement_output_with_source,
-    source_statement_output_with_source_and_mutation, source_statement_resolver_env_for_test,
+    SOURCE_STATEMENT_B1_TEXT, SOURCE_STATEMENT_TEXT, SourceStatementB1Extraction,
+    SourceStatementExtraction, SourceStatementRouteInputs, SourceStatementRouteOutput,
+    extract_nested_source_statement, extract_source_reserved_variable_theorem_statement,
+    source_statement_b1_output_with_mutation, source_statement_output_with_resolver_mutation,
+    source_statement_output_with_source, source_statement_output_with_source_and_mutation,
+    source_statement_resolver_env_for_test,
 };
 pub(super) use source_structure::source_structure_transport_detail_keys;
 #[cfg(test)]

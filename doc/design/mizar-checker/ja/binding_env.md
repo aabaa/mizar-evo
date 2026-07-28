@@ -505,3 +505,11 @@ Task-258B1 checker matrixはexact owner/range/scope/debug、wrong-source/
 empty range、parent/layer/scope/visibility mutation、Tasks 252/258への
 fingerprint propagation、rollback、Task-258A byte compatibilityをcoverする。
 本documentation prerequisiteはsource/testを変更しない。
+
+### Task 258B1 implementation status
+
+frozen `BindingContextOwner::SourceStatement { source_range }` variantを
+実装した。exact outer/nested proof context `69..137` / `86..113`がmodule
+baseを`3/1/0`へ拡張し、reserved binding、scope `[0]` / `[0, 0]`、
+deterministic debug/fingerprint byteを保持する。empty/foreign rangeやprofile
+substitutionはpublication前にfailする。Task-258Aのone-context byteは不変。

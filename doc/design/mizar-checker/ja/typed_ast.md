@@ -906,3 +906,11 @@ node/table前にreference chunkを出す。Task-258Aにはsecond chunkがなくb
 identical。checked formula、fact、statement semantic、proof、goal、
 diagnostic、accepted theoremを作らない。本prerequisiteは`TypedAst` sourceを
 変更しない。
+
+### Task 258B1 implementation status
+
+`TypedAst::with_source_statement_references`はexact B1 base/reference pairを
+validateしてatomicにinstallする。legacy statement installerはTask 258Aだけを
+acceptし、既存payload ownerはpairをrejectし、validation failure後もoriginal
+valueをreuseできる。accessor、clone、debug orderはsemantic outputなしで
+frozen contractを保持する。

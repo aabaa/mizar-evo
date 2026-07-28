@@ -968,3 +968,11 @@ handoffs. Task-258A output remains byte-identical because its reference field
 is absent. No name resolution is inferred at final assembly, and no fact,
 checked formula, statement semantic, proof, goal, diagnostic, or downstream
 IR/VC output is created. This prerequisite changes no resolved source.
+
+### Task 258B1 Implementation Status
+
+Final assembly clones and revalidates the B1 base/reference pair together and
+rejects an orphan, missing, stale, or cross-profile half as
+`InvalidSourceStatement`. The reference debug chunk follows the base chunk
+before resolved nodes. All statement semantic, checked-formula, proof, goal,
+diagnostic, and downstream tables remain empty.

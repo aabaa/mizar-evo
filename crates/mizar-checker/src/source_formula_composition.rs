@@ -2389,7 +2389,7 @@ fn atomic_edge_role_key(role: SourceFormulaAtomicEdgeRole) -> &'static str {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::{
         binding_env::{
@@ -3212,6 +3212,23 @@ mod tests {
             &fixture.composite,
             &fixture.arena,
         )
+    }
+
+    pub(crate) fn task_257b_installed_typed_ast() -> TypedAst {
+        let fixture = task_257b2_fixture();
+        let composition =
+            build_task_257b2(&fixture, fixture.input.clone()).expect("Task 257B composition");
+        empty_typed_ast(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.arena.clone(),
+        )
+        .with_source_term(fixture.primary.clone())
+        .expect("Task 257B Task 252")
+        .with_source_atomic_formula(fixture.atomic.clone())
+        .expect("Task 257B Task 256")
+        .with_source_formula_composition(fixture.composite.clone(), composition)
+        .expect("Task 257B combined install")
     }
 
     fn debug_oracle(value: &str) -> (usize, u64, u64) {
@@ -4341,6 +4358,21 @@ mod tests {
         )
     }
 
+    pub(crate) fn task_257c2_installed_typed_ast() -> TypedAst {
+        let fixture = task_257c2_fixture();
+        let composition =
+            build_task_257c2(&fixture, fixture.input.clone()).expect("Task 257C2 composition");
+        fixture
+            .lower
+            .typed_ast()
+            .with_source_set_term(fixture.set.clone())
+            .expect("Task 257C2 Task 255")
+            .with_source_atomic_formula(fixture.atomic.clone())
+            .expect("Task 257C2 Task 256")
+            .with_source_condition_formula_composition(composition)
+            .expect("Task 257C2 install")
+    }
+
     #[test]
     fn task_257c2_exact_association_dependencies_accessors_and_debug_publish() {
         let fixture = task_257c2_fixture();
@@ -4727,6 +4759,23 @@ mod tests {
             &fixture.atomic,
             &fixture.lower.arena,
         )
+    }
+
+    pub(crate) fn task_257c3_installed_typed_ast() -> TypedAst {
+        let fixture = task_257c3_fixture();
+        let composition =
+            build_task_257c3(&fixture, fixture.input.clone()).expect("Task 257C3 composition");
+        empty_typed_ast(
+            fixture.lower.source,
+            fixture.lower.module.clone(),
+            fixture.lower.arena.clone(),
+        )
+        .with_source_term(fixture.lower.primary.clone())
+        .expect("Task 257C3 Task 252")
+        .with_source_atomic_formula(fixture.atomic.clone())
+        .expect("Task 257C3 Task 256")
+        .with_source_predicate_chain_composition(composition)
+        .expect("Task 257C3 install")
     }
 
     fn assemble_empty_resolved(

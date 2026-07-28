@@ -1971,6 +1971,8 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   exactly five future library tests.
 - [x] Preserve every fixture, sidecar, expectation, trace row/status/count,
   active route, executable count, and Task-258A hash in this prerequisite.
-- [ ] After the checker documentation commit and fresh parser/resolver/lower
+- [x] After the checker documentation commit and fresh parser/resolver/lower
   preflight, implement only the dormant Task-258B1 route and five tests;
   leave Task 258B2+ and Tasks 269–272 deferred.
+- [x] Measure 374 runner tests and the unchanged 30-path production topology
+  at 35,854 lines; preserve all corpus/trace/CLI counts and hashes.

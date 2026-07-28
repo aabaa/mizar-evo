@@ -12,7 +12,7 @@ use crate::{
         SourcePredicateChainCompositionHandoff,
     },
     source_set_term::SourceSetTermHandoff,
-    source_statement::SourceStatementHandoff,
+    source_statement::{SourceStatementHandoff, SourceStatementReferenceHandoff},
     source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff,
     source_type::SourceTypeApplicationHandoff,
@@ -110,6 +110,7 @@ pub struct TypedAst {
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
     source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
     source_statement: Option<SourceStatementHandoff>,
+    source_statement_references: Option<SourceStatementReferenceHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -117,6 +118,16 @@ pub struct TypedAst {
     coercions: CoercionTable,
     initial_obligations: InitialObligationTable,
     diagnostics: TypeDiagnosticTable,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StatementTransportTableForTest {
+    Context,
+    Type,
+    Coercion,
+    InitialObligation,
+    Diagnostic,
 }
 
 impl TypedAst {
@@ -140,6 +151,7 @@ impl TypedAst {
             source_condition_formula_composition: None,
             source_predicate_chain_composition: None,
             source_statement: None,
+            source_statement_references: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -222,6 +234,10 @@ impl TypedAst {
         self.source_statement.as_ref()
     }
 
+    pub const fn source_statement_references(&self) -> Option<&SourceStatementReferenceHandoff> {
+        self.source_statement_references.as_ref()
+    }
+
     #[cfg(test)]
     pub(crate) fn with_source_context_for_test(
         mut self,
@@ -253,6 +269,99 @@ impl TypedAst {
     #[cfg(test)]
     pub(crate) fn inject_source_statement_for_test(&mut self, statement: SourceStatementHandoff) {
         self.source_statement = Some(statement);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_statement_bundle_for_test(
+        &mut self,
+        statement: SourceStatementHandoff,
+        references: SourceStatementReferenceHandoff,
+    ) {
+        self.source_statement = Some(statement);
+        self.source_statement_references = Some(references);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_statement_references_for_test(
+        &mut self,
+        references: SourceStatementReferenceHandoff,
+    ) {
+        self.source_statement_references = Some(references);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn occupy_statement_transport_table_for_test(
+        &mut self,
+        table: StatementTransportTableForTest,
+    ) {
+        let owner = TypedSiteRef::Node(TypedNodeId::new(0));
+        match table {
+            StatementTransportTableForTest::Context => {
+                self.contexts.insert(LocalTypeContextDraft {
+                    owner,
+                    parent: None,
+                    layer: TypeContextLayer::Module,
+                    bindings: Vec::new(),
+                    introduced_assumptions: Vec::new(),
+                    visible_facts: Vec::new(),
+                    recovery: ContextRecoveryState::Normal,
+                });
+            }
+            StatementTransportTableForTest::Type => {
+                self.types.insert(TypeEntryDraft {
+                    owner,
+                    expected: None,
+                    actual: TypeEntryActual::Absent,
+                    status: TypeStatus::Unknown,
+                    provenance: TypeProvenance::Inferred(TypeRuleId::new(
+                        "statement-transport-guard",
+                    )),
+                });
+            }
+            StatementTransportTableForTest::Coercion => {
+                self.coercions.insert(CoercionDraft {
+                    site: owner,
+                    from: None,
+                    to: NormalizedTypeId::new(0),
+                    kind: CoercionKind::Widening,
+                    status: CoercionStatus::Candidate,
+                    supporting_facts: Vec::new(),
+                    obligation: None,
+                    provenance: CoercionProvenance::WideningRule(TypeRuleId::new(
+                        "statement-transport-guard",
+                    )),
+                });
+            }
+            StatementTransportTableForTest::InitialObligation => {
+                self.initial_obligations.insert(InitialObligationDraft {
+                    kind: InitialObligationKind::Sethood,
+                    owner,
+                    source_range: SourceRange {
+                        source_id: self.source_id,
+                        start: 0,
+                        end: 0,
+                    },
+                    assumptions: Vec::new(),
+                    goal: InitialObligationGoal::new("statement transport guard"),
+                    provenance: InitialObligationProvenance::new("statement transport guard"),
+                    status: InitialObligationStatus::Pending,
+                });
+            }
+            StatementTransportTableForTest::Diagnostic => {
+                self.diagnostics.insert(TypeDiagnosticDraft {
+                    owner: Some(owner),
+                    source_range: SourceRange {
+                        source_id: self.source_id,
+                        start: 0,
+                        end: 0,
+                    },
+                    class: TypeDiagnosticClass::Recovery,
+                    severity: TypeDiagnosticSeverity::Note,
+                    message_key: "statement.transport.guard".to_owned(),
+                    recovery: DiagnosticRecoveryState::Normal,
+                });
+            }
+        }
     }
 
     #[cfg(test)]
@@ -657,6 +766,7 @@ impl TypedAst {
         statement: SourceStatementHandoff,
     ) -> Result<Self, TypedAstError> {
         if self.source_statement.is_some()
+            || self.source_statement_references.is_some()
             || self.resolved_root.is_some()
             || self.source_context.is_some()
             || self.source_type.is_some()
@@ -695,7 +805,66 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        if !statement.is_task_258a_profile() {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
         self.source_statement = Some(statement);
+        Ok(self)
+    }
+
+    pub fn with_source_statement_references(
+        mut self,
+        statements: SourceStatementHandoff,
+        references: SourceStatementReferenceHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_statement.is_some()
+            || self.source_statement_references.is_some()
+            || self.resolved_root.is_some()
+            || self.source_context.is_some()
+            || self.source_type.is_some()
+            || self.source_attribute.is_some()
+            || self.source_evidence.is_some()
+            || self.source_application.is_some()
+            || self.source_structure.is_some()
+            || self.source_set_term.is_some()
+            || self.source_composite_formula.is_some()
+            || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
+            || !self.contexts.is_empty()
+            || !self.types.is_empty()
+            || !self.facts.is_empty()
+            || !self.coercions.is_empty()
+            || !self.initial_obligations.is_empty()
+            || !self.diagnostics.is_empty()
+        {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        statements
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_atomic_formula,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        if !statements.is_task_258b1_profile() {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        references
+            .validate_installation(self.source_id, &self.module_id, &statements, &self.nodes)
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        self.source_statement = Some(statements);
+        self.source_statement_references = Some(references);
         Ok(self)
     }
 
@@ -781,6 +950,9 @@ impl TypedAst {
         }
         if let Some(source_statement) = &self.source_statement {
             output.push_str(&source_statement.debug_text());
+        }
+        if let Some(source_statement_references) = &self.source_statement_references {
+            output.push_str(&source_statement_references.debug_text());
         }
         write_nodes(&mut output, &self.nodes);
         write_contexts(&mut output, &self.contexts);

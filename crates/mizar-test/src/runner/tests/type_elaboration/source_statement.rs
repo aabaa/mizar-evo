@@ -1,8 +1,10 @@
 use super::{
-    SOURCE_STATEMENT_TEXT, SourceStatementExtraction, SourceStatementRouteInputs,
-    SourceStatementRouteOutput, extract_source_reserved_variable_theorem_statement,
-    source_statement_output_with_source, source_statement_output_with_source_and_mutation,
-    source_statement_output_with_resolver_mutation, source_statement_resolver_env_for_test,
+    SOURCE_STATEMENT_B1_TEXT, SOURCE_STATEMENT_TEXT, SourceStatementB1Extraction,
+    SourceStatementExtraction, SourceStatementRouteInputs, SourceStatementRouteOutput,
+    extract_nested_source_statement, extract_source_reserved_variable_theorem_statement,
+    source_statement_b1_output_with_mutation, source_statement_output_with_source,
+    source_statement_output_with_source_and_mutation, source_statement_output_with_resolver_mutation,
+    source_statement_resolver_env_for_test,
 };
 
 const TASK258A_SOURCE: &str = concat!(
@@ -17,6 +19,1266 @@ const TASK258A_LOWER_SOURCE: &str = concat!(
     "theorem FormulaPredicateChainPayloadBoundary: ",
     "1 divides 2 does not divides 3;\n",
 );
+
+#[test]
+fn task258b1_real_frontend_freezes_nested_statement_and_resolver_bundle() {
+    assert_eq!(SOURCE_STATEMENT_B1_TEXT.len(), 139);
+    assert!(SOURCE_STATEMENT_B1_TEXT.ends_with('\n'));
+    let (ast, module, _, symbols) =
+        task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_400);
+    let extracted: SourceStatementB1Extraction =
+        extract_nested_source_statement(&ast, SOURCE_STATEMENT_B1_TEXT)
+            .expect("Task258B1 exact parser shape");
+    assert_eq!(ast.nodes().len(), 77);
+    assert_eq!(ast.root().expect("root").index(), 76);
+    assert_eq!(extracted.theorem_site.node().index(), 73);
+    assert_eq!(
+        extracted
+            .statement_sites
+            .iter()
+            .map(|site| site.node().index())
+            .collect::<Vec<_>>(),
+        [73, 60, 58, 71]
+    );
+    assert_eq!(
+        extracted
+            .statement_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [(19, 138), (77, 114), (96, 107), (117, 133)]
+    );
+    assert_eq!(
+        extracted
+            .formula_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [(63, 68), (80, 85), (101, 106), (122, 127)]
+    );
+    assert_eq!((extracted.theorem_range.start, extracted.theorem_range.end), (19, 138));
+    assert_eq!((extracted.label_range.start, extracted.label_range.end), (27, 61));
+    assert_eq!(
+        extracted
+            .formula_sites
+            .iter()
+            .map(|site| site.node().index())
+            .collect::<Vec<_>>(),
+        [42, 48, 55, 65]
+    );
+    assert_eq!(
+        extracted
+            .term_sites
+            .iter()
+            .map(|site| site.node().index())
+            .collect::<Vec<_>>(),
+        [38, 40, 44, 46, 51, 53, 61, 63]
+    );
+    assert_eq!(
+        extracted
+            .term_ranges
+            .iter()
+            .map(|range| (range.start, range.end))
+            .collect::<Vec<_>>(),
+        [
+            (63, 64),
+            (67, 68),
+            (80, 81),
+            (84, 85),
+            (101, 102),
+            (105, 106),
+            (122, 123),
+            (126, 127),
+        ]
+    );
+    assert_eq!(
+        extracted
+            .proof_ranges
+            .map(|range| (range.start, range.end)),
+        [(69, 137), (86, 113)]
+    );
+    let output =
+        source_statement_output_with_source(&ast, module, &symbols, SOURCE_STATEMENT_B1_TEXT)
+            .expect("Task258B1 selector")
+            .unwrap_or_else(|error| panic!("Task258B1 route failed: {error}"));
+    let statement = output
+        .typed_ast
+        .source_statement()
+        .expect("Task258B1 statement");
+    let references = output
+        .typed_ast
+        .source_statement_references()
+        .expect("Task258B1 references");
+    assert_eq!(
+        (
+            statement.owners().len(),
+            statement.statements().len(),
+            statement.contexts().len(),
+            statement.input_facts().len(),
+            statement.candidate_facts().len(),
+            references.labels().len(),
+            references.citations().len(),
+        ),
+        (1, 4, 4, 4, 4, 1, 1)
+    );
+    let owner = statement
+        .owners()
+        .get(mizar_checker::source_statement::SourceTheoremOwnerId::new(0))
+        .expect("theorem owner");
+    assert_eq!(owner.site().node().index(), 73);
+    assert_eq!((owner.source_range().start, owner.source_range().end), (19, 138));
+    assert_eq!(owner.spelling(), "FormulaStatementNestedContextSmoke");
+    assert_eq!(
+        (
+            owner.role(),
+            owner.status(),
+            owner.recovery(),
+        ),
+        (
+            mizar_checker::source_statement::SourceTheoremRole::Theorem,
+            mizar_checker::source_statement::SourceTheoremStatus::Unmodified,
+            mizar_checker::source_statement::SourceStatementRecovery::Normal,
+        )
+    );
+    assert_eq!(
+        statement
+            .statements()
+            .iter()
+            .map(|(id, row)| (
+                id.index(),
+                row.owner().index(),
+                row.context().index(),
+                row.formula(),
+                row.site().node().index(),
+                row.source_range().start,
+                row.source_range().end,
+                row.source_ordinal(),
+                row.spelling(),
+                row.kind(),
+                row.recovery(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                0,
+                mizar_checker::source_statement::SourceStatementFormulaTarget::Atomic(
+                    mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(0),
+                ),
+                73,
+                19,
+                138,
+                0,
+                "theorem FormulaStatementNestedContextSmoke : x = x proof A : x = x proof thus x = x ; end ; thus x = x by A ; end ;",
+                mizar_checker::source_statement::SourceStatementKind::TheoremProposition,
+                mizar_checker::source_statement::SourceStatementRecovery::Normal,
+            ),
+            (
+                1,
+                0,
+                1,
+                mizar_checker::source_statement::SourceStatementFormulaTarget::Atomic(
+                    mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(1),
+                ),
+                60,
+                77,
+                114,
+                1,
+                "A : x = x proof thus x = x ; end ;",
+                mizar_checker::source_statement::SourceStatementKind::ProofStepProposition,
+                mizar_checker::source_statement::SourceStatementRecovery::Normal,
+            ),
+            (
+                2,
+                0,
+                2,
+                mizar_checker::source_statement::SourceStatementFormulaTarget::Atomic(
+                    mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(2),
+                ),
+                58,
+                96,
+                107,
+                2,
+                "thus x = x ;",
+                mizar_checker::source_statement::SourceStatementKind::Conclusion,
+                mizar_checker::source_statement::SourceStatementRecovery::Normal,
+            ),
+            (
+                3,
+                0,
+                3,
+                mizar_checker::source_statement::SourceStatementFormulaTarget::Atomic(
+                    mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(3),
+                ),
+                71,
+                117,
+                133,
+                3,
+                "thus x = x by A ;",
+                mizar_checker::source_statement::SourceStatementKind::Conclusion,
+                mizar_checker::source_statement::SourceStatementRecovery::Normal,
+            ),
+        ]
+    );
+    assert_eq!(
+        statement
+            .contexts()
+            .iter()
+            .map(|(id, row)| (
+                id.index(),
+                row.statement().index(),
+                row.binding_context().index(),
+                row.source_range().start,
+                row.source_range().end,
+                row.visible_bindings()
+                    .iter()
+                    .map(|binding| binding.index())
+                    .collect::<Vec<_>>(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (0, 0, 0, 19, 138, vec![0]),
+            (1, 1, 1, 77, 114, vec![0]),
+            (2, 2, 2, 96, 107, vec![0]),
+            (3, 3, 1, 117, 133, vec![0]),
+        ]
+    );
+    assert_eq!(
+        statement
+            .input_facts()
+            .iter()
+            .map(|(id, row)| (
+                id.index(),
+                row.statement().index(),
+                row.context().index(),
+                row.ordinal(),
+                row.kind(),
+                row.binding().index(),
+                row.uses()
+                    .iter()
+                    .map(|reference| reference.index())
+                    .collect::<Vec<_>>(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                0,
+                0,
+                mizar_checker::source_statement::SourceStatementInputFactKind::ReservedTypeGuard,
+                0,
+                vec![0, 1],
+            ),
+            (
+                1,
+                1,
+                1,
+                0,
+                mizar_checker::source_statement::SourceStatementInputFactKind::ReservedTypeGuard,
+                0,
+                vec![2, 3],
+            ),
+            (
+                2,
+                2,
+                2,
+                0,
+                mizar_checker::source_statement::SourceStatementInputFactKind::ReservedTypeGuard,
+                0,
+                vec![4, 5],
+            ),
+            (
+                3,
+                3,
+                3,
+                0,
+                mizar_checker::source_statement::SourceStatementInputFactKind::ReservedTypeGuard,
+                0,
+                vec![6, 7],
+            ),
+        ]
+    );
+    assert_eq!(
+        statement
+            .candidate_facts()
+            .iter()
+            .map(|(id, row)| (
+                id.index(),
+                row.statement().index(),
+                row.context().index(),
+                row.ordinal(),
+                row.kind(),
+                row.formula(),
+            ))
+            .collect::<Vec<_>>(),
+        (0..4)
+            .map(|index| (
+                index,
+                index,
+                index,
+                0,
+                mizar_checker::source_statement::SourceStatementCandidateFactKind::UnverifiedProposition,
+                mizar_checker::source_statement::SourceStatementFormulaTarget::Atomic(
+                    mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(index),
+                ),
+            ))
+            .collect::<Vec<_>>()
+    );
+    let binding_contexts = statement.binding_env().contexts();
+    assert_eq!(binding_contexts.len(), 3);
+    let module_context = binding_contexts
+        .get(mizar_checker::binding_env::BindingContextId::new(0))
+        .expect("module context");
+    assert_eq!(module_context.owner, mizar_checker::binding_env::BindingContextOwner::Module);
+    assert_eq!(module_context.parent, None);
+    assert_eq!(
+        module_context.layer,
+        mizar_checker::binding_env::BindingContextLayer::Module
+    );
+    assert_eq!(module_context.bindings, [mizar_checker::binding_env::BindingId::new(0)]);
+    assert_eq!(
+        module_context.visible_bindings,
+        [mizar_checker::binding_env::BindingId::new(0)]
+    );
+    assert_eq!(
+        module_context.recovery,
+        mizar_checker::binding_env::BindingContextRecovery::Normal
+    );
+    for (id, parent, scope, range) in [
+        (1, 0, &[0][..], (69, 137)),
+        (2, 1, &[0, 0][..], (86, 113)),
+    ] {
+        let context = binding_contexts
+            .get(mizar_checker::binding_env::BindingContextId::new(id))
+            .expect("proof context");
+        assert_eq!(
+            context.parent.map(|parent| parent.index()),
+            Some(parent)
+        );
+        assert_eq!(
+            context.layer,
+            mizar_checker::binding_env::BindingContextLayer::Proof
+        );
+        assert_eq!(
+            context
+                .lexical_scope
+                .as_ref()
+                .expect("proof scope")
+                .path(),
+            scope
+        );
+        assert_eq!(
+            context.owner,
+            mizar_checker::binding_env::BindingContextOwner::SourceStatement {
+                source_range: mizar_session::SourceRange {
+                    source_id: ast.source_id,
+                    start: range.0,
+                    end: range.1,
+                },
+            }
+        );
+        assert_eq!(context.visible_bindings, [mizar_checker::binding_env::BindingId::new(0)]);
+        assert!(context.bindings.is_empty());
+        assert_eq!(
+            context.recovery,
+            mizar_checker::binding_env::BindingContextRecovery::Normal
+        );
+    }
+    assert_eq!(statement.binding_env().bindings().len(), 1);
+    assert!(statement.binding_env().diagnostics().is_empty());
+    let binding = statement
+        .binding_env()
+        .bindings()
+        .get(mizar_checker::binding_env::BindingId::new(0))
+        .expect("reserved binding");
+    assert_eq!(
+        (
+            binding.id.index(),
+            binding.spelling.as_str(),
+            binding.kind,
+            binding.owner_context.index(),
+            binding.declaration_range.start,
+            binding.declaration_range.end,
+            binding.visible_after_ordinal,
+            binding.status,
+            binding.recovery,
+        ),
+        (
+            0,
+            "x",
+            mizar_checker::binding_env::BindingKind::ReservedVariable,
+            0,
+            8,
+            9,
+            0,
+            mizar_checker::binding_env::BindingStatus::Reserved,
+            mizar_checker::binding_env::BindingRecoveryState::Normal,
+        )
+    );
+    assert!(matches!(
+        binding.identity,
+        mizar_checker::binding_env::BinderIdentity::ReservedVariable { .. }
+    ));
+    assert!(matches!(
+        binding.type_site,
+        mizar_checker::binding_env::BindingTypeSite::Source(range)
+            if (range.start, range.end) == (14, 17)
+    ));
+    assert!(binding.captured.identities().is_empty());
+    assert!(binding.diagnostics.is_empty());
+    assert_eq!(
+        statement.binding_fingerprint(),
+        statement.binding_env().debug_text()
+    );
+    let primary = output.typed_ast.source_term().expect("Task252 terms");
+    assert_eq!(
+        primary
+            .terms()
+            .iter()
+            .map(|(id, term)| (
+                id.index(),
+                term.site().node().index(),
+                term.context().index(),
+                term.source_range().start,
+                term.source_range().end,
+                term.source_ordinal(),
+                term.recovery(),
+                term.spelling(),
+                term.kind(),
+                term.role(),
+                term.parent().map(|parent| parent.index()),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (0, 38, 0, 63, 64, 0, mizar_checker::source_term::SourcePrimaryTermRecovery::Normal, "x", mizar_checker::source_term::SourcePrimaryTermKind::VariableReference, mizar_checker::source_term::SourcePrimaryTermRole::Value, None),
+            (1, 40, 0, 67, 68, 1, mizar_checker::source_term::SourcePrimaryTermRecovery::Normal, "x", mizar_checker::source_term::SourcePrimaryTermKind::VariableReference, mizar_checker::source_term::SourcePrimaryTermRole::Value, None),
+            (2, 44, 1, 80, 81, 2, mizar_checker::source_term::SourcePrimaryTermRecovery::Normal, "x", mizar_checker::source_term::SourcePrimaryTermKind::VariableReference, mizar_checker::source_term::SourcePrimaryTermRole::Value, None),
+            (3, 46, 1, 84, 85, 3, mizar_checker::source_term::SourcePrimaryTermRecovery::Normal, "x", mizar_checker::source_term::SourcePrimaryTermKind::VariableReference, mizar_checker::source_term::SourcePrimaryTermRole::Value, None),
+            (4, 51, 2, 101, 102, 4, mizar_checker::source_term::SourcePrimaryTermRecovery::Normal, "x", mizar_checker::source_term::SourcePrimaryTermKind::VariableReference, mizar_checker::source_term::SourcePrimaryTermRole::Value, None),
+            (5, 53, 2, 105, 106, 5, mizar_checker::source_term::SourcePrimaryTermRecovery::Normal, "x", mizar_checker::source_term::SourcePrimaryTermKind::VariableReference, mizar_checker::source_term::SourcePrimaryTermRole::Value, None),
+            (6, 61, 1, 122, 123, 6, mizar_checker::source_term::SourcePrimaryTermRecovery::Normal, "x", mizar_checker::source_term::SourcePrimaryTermKind::VariableReference, mizar_checker::source_term::SourcePrimaryTermRole::Value, None),
+            (7, 63, 1, 126, 127, 7, mizar_checker::source_term::SourcePrimaryTermRecovery::Normal, "x", mizar_checker::source_term::SourcePrimaryTermKind::VariableReference, mizar_checker::source_term::SourcePrimaryTermRole::Value, None),
+        ]
+    );
+    assert_eq!(
+        primary
+            .references()
+            .iter()
+            .map(|(id, reference)| (
+                id.index(),
+                reference.term().index(),
+                reference.binding().index(),
+                reference
+                    .lexical_scope()
+                    .map(|scope| scope.path().to_vec()),
+                reference.use_ordinal(),
+                reference.role(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (0, 0, 0, None, 1, mizar_checker::source_term::SourcePrimaryTermReferenceRole::Variable),
+            (1, 1, 0, None, 1, mizar_checker::source_term::SourcePrimaryTermReferenceRole::Variable),
+            (2, 2, 0, Some(vec![0]), 1, mizar_checker::source_term::SourcePrimaryTermReferenceRole::Variable),
+            (3, 3, 0, Some(vec![0]), 1, mizar_checker::source_term::SourcePrimaryTermReferenceRole::Variable),
+            (4, 4, 0, Some(vec![0, 0]), 1, mizar_checker::source_term::SourcePrimaryTermReferenceRole::Variable),
+            (5, 5, 0, Some(vec![0, 0]), 1, mizar_checker::source_term::SourcePrimaryTermReferenceRole::Variable),
+            (6, 6, 0, Some(vec![0]), 1, mizar_checker::source_term::SourcePrimaryTermReferenceRole::Variable),
+            (7, 7, 0, Some(vec![0]), 1, mizar_checker::source_term::SourcePrimaryTermReferenceRole::Variable),
+        ]
+    );
+    let atomic = output
+        .typed_ast
+        .source_atomic_formula()
+        .expect("Task256 atomics");
+    assert_eq!((atomic.formulas().len(), atomic.edges().len(), atomic.requests().len()), (4, 8, 8));
+    assert_eq!(
+        atomic
+            .formulas()
+            .iter()
+            .map(|(id, formula)| (
+                id.index(),
+                formula.site().node().index(),
+                formula.context().index(),
+                formula.source_range().start,
+                formula.source_range().end,
+                formula.source_ordinal(),
+                formula.recovery(),
+                formula.spelling(),
+                formula.kind(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (0, 42, 0, 63, 68, 0, mizar_checker::source_atomic_formula::SourceAtomicFormulaRecovery::Normal, "x = x", mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality),
+            (1, 48, 1, 80, 85, 1, mizar_checker::source_atomic_formula::SourceAtomicFormulaRecovery::Normal, "x = x", mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality),
+            (2, 55, 2, 101, 106, 2, mizar_checker::source_atomic_formula::SourceAtomicFormulaRecovery::Normal, "x = x", mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality),
+            (3, 65, 1, 122, 127, 3, mizar_checker::source_atomic_formula::SourceAtomicFormulaRecovery::Normal, "x = x", mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality),
+        ]
+    );
+    for (id, edge) in atomic.edges().iter() {
+        assert_eq!(edge.formula().index(), id.index() / 2);
+        assert_eq!(edge.ordinal(), id.index() % 2);
+        assert_eq!(
+            edge.role(),
+            if id.index() % 2 == 0 {
+                mizar_checker::source_atomic_formula::SourceAtomicEdgeRole::BuiltinLeftOperand
+            } else {
+                mizar_checker::source_atomic_formula::SourceAtomicEdgeRole::BuiltinRightOperand
+            }
+        );
+        assert!(matches!(
+            edge.target(),
+            mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term)
+                if term.index() == id.index()
+        ));
+    }
+    for (id, request) in atomic.requests().iter() {
+        assert_eq!(request.formula().index(), id.index() / 2);
+        assert_eq!(request.ordinal(), id.index() % 2);
+        assert_eq!(
+            request.kind(),
+            mizar_checker::source_atomic_formula::SourceAtomicRequestKind::OperandExpectedType
+        );
+        assert_eq!(request.edge().map(|edge| edge.index()), Some(id.index()));
+        assert_eq!(request.candidate(), None);
+        assert_eq!(request.type_site(), None);
+        assert_eq!(request.attribute(), None);
+    }
+    assert_eq!(output.reference_use_ordinals, [1; 8]);
+    assert_eq!(output.typed_ast.nodes().len(), 77);
+    assert_eq!(
+        output.typed_ast.nodes().root().map(|root| root.index()),
+        Some(76)
+    );
+    for (id, node) in output.typed_ast.nodes().iter() {
+        assert_eq!(
+            node.anchor,
+            mizar_session::SourceAnchor::Range(ast.nodes()[id.index()].range)
+        );
+        assert_eq!(
+            node.children
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>(),
+            ast.nodes()[id.index()]
+                .children
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            node.recovery,
+            mizar_checker::typed_ast::NodeRecoveryState::Normal
+        );
+    }
+    assert_eq!(references.resolver_ast().nodes().len(), 77);
+    assert_eq!(references.resolver_ast().nodes().root().index(), 76);
+    for (id, node) in references.resolver_ast().nodes().iter() {
+        assert_eq!(node.kind(), &ast.nodes()[id.index()].kind);
+        assert_eq!(
+            node.children()
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>(),
+            ast.nodes()[id.index()]
+                .children
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(node.origin().source_id(), ast.source_id);
+        assert_eq!(node.origin().module_id(), output.typed_ast.module_id());
+        assert_eq!(node.origin().import_edge(), None);
+        assert_eq!(node.origin().structural_path(), [id.index() as u32]);
+        assert_eq!(
+            node.origin().anchor(),
+            &mizar_session::SourceAnchor::Range(ast.nodes()[id.index()].range)
+        );
+        assert!(!node.origin().is_recovered());
+        assert_eq!(
+            node.recovery(),
+            mizar_resolve::resolved_ast::RecoveryState::Normal
+        );
+        if id.index() == 68 {
+            assert_eq!(
+                node.resolution(),
+                mizar_resolve::resolved_ast::NodeResolutionState::Resolved
+            );
+            assert!(matches!(
+                node.reference_key(),
+                Some(mizar_resolve::resolved_ast::NodeReferenceKey::Label(id))
+                    if id.index() == 0
+            ));
+        } else {
+            assert_eq!(
+                node.resolution(),
+                mizar_resolve::resolved_ast::NodeResolutionState::NotApplicable
+            );
+            assert_eq!(node.reference_key(), None);
+        }
+    }
+    let projection = references.label_projection();
+    assert_eq!(projection.origin().structural_path(), [12]);
+    assert_eq!((projection.declaration_range().start, projection.declaration_range().end), (77, 78));
+    assert_eq!(projection.primary_spelling(), "A");
+    assert_eq!(projection.module(), output.typed_ast.module_id());
+    assert_eq!(projection.namespace().as_str(), output.typed_ast.module_id().path().as_str());
+    assert_eq!(
+        projection.kind(),
+        mizar_resolve::resolved_ast::LabelKind::ProofStep
+    );
+    assert_eq!(
+        projection.visibility(),
+        mizar_resolve::env::Visibility::Private
+    );
+    assert_eq!(
+        projection.export_status(),
+        mizar_resolve::env::ExportStatus::LocalOnly
+    );
+    assert_eq!(projection.contribution(), owner.contribution());
+    assert_eq!(projection.origin().source_id(), ast.source_id);
+    assert_eq!(projection.origin().module_id(), output.typed_ast.module_id());
+    assert_eq!(projection.origin().import_edge(), None);
+    assert_eq!(
+        projection.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+            source_id: ast.source_id,
+            start: 77,
+            end: 78,
+        })
+    );
+    assert!(!projection.origin().is_recovered());
+    assert!(matches!(
+        projection.source(),
+        mizar_resolve::labels::LabelProjectionSource::CurrentModule {
+            visible_after_ordinal: 1,
+            proof_scope: Some(scope),
+        } if scope.path() == [0]
+    ));
+    assert_eq!(references.reference_candidate().site().node().index(), 68);
+    assert_eq!(
+        (
+            references.reference_candidate().site().range().start,
+            references.reference_candidate().site().range().end,
+            references.reference_candidate().site().spelling(),
+            references.reference_candidate().ordinal(),
+            references.reference_candidate().expectation(),
+        ),
+        (
+            131,
+            132,
+            "A",
+            3,
+            mizar_resolve::resolved_ast::LabelExpectation::ProofOrTheorem,
+        )
+    );
+    assert_eq!(references.reference_candidate().origin().source_id(), ast.source_id);
+    assert_eq!(
+        references.reference_candidate().origin().module_id(),
+        output.typed_ast.module_id()
+    );
+    assert_eq!(references.reference_candidate().origin().import_edge(), None);
+    assert_eq!(
+        references.reference_candidate().origin().structural_path(),
+        [68]
+    );
+    assert_eq!(
+        references.reference_candidate().origin().anchor(),
+        &mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+            source_id: ast.source_id,
+            start: 131,
+            end: 132,
+        })
+    );
+    assert!(!references.reference_candidate().origin().is_recovered());
+    assert!(matches!(
+        references.reference_candidate().scope(),
+        mizar_resolve::labels::LabelReferenceScope::Unqualified {
+            proof_scope: Some(scope),
+        } if scope.path() == [0]
+    ));
+    assert_eq!(references.label_resolution().ids().len(), 1);
+    assert!(references.label_resolution().diagnostics().is_empty());
+    assert_eq!(
+        references.resolver_ast().label_refs(),
+        references.label_resolution().table()
+    );
+    let label_ref = references
+        .label_resolution()
+        .table()
+        .get(references.label_resolution().ids()[0])
+        .expect("resolved local label");
+    assert_eq!(
+        (
+            label_ref.site().node().index(),
+            label_ref.site().range().start,
+            label_ref.site().range().end,
+            label_ref.site().spelling(),
+            label_ref.origin().source_id(),
+            label_ref.origin().structural_path(),
+            label_ref.recovery(),
+        ),
+        (
+            68,
+            131,
+            132,
+            "A",
+            ast.source_id,
+            &[68][..],
+            mizar_resolve::resolved_ast::RecoveryState::Normal,
+        )
+    );
+    assert_eq!(label_ref.origin().module_id(), output.typed_ast.module_id());
+    assert_eq!(label_ref.origin().import_edge(), None);
+    assert!(!label_ref.origin().is_recovered());
+    assert!(matches!(
+        label_ref.resolution(),
+        mizar_resolve::resolved_ast::LabelResolution::Resolved(row)
+            if row.origin() == projection.origin_path()
+                && row.kind() == mizar_resolve::resolved_ast::LabelKind::ProofStep
+                && (row.range().start, row.range().end) == (131, 132)
+    ));
+    let label = references
+        .labels()
+        .get(mizar_checker::source_statement::SourceStatementLabelId::new(0))
+        .expect("statement label");
+    assert_eq!(
+        (
+            label.statement().index(),
+            label.context().index(),
+            label.candidate().index(),
+            label.origin_path(),
+            label.proof_scope().path(),
+            label.source_range().start,
+            label.source_range().end,
+            label.source_ordinal(),
+            label.visible_after_ordinal(),
+            label.spelling(),
+            label.kind(),
+            label.recovery(),
+        ),
+        (
+            1,
+            1,
+            1,
+            projection.origin_path(),
+            &[0][..],
+            77,
+            78,
+            0,
+            1,
+            "A",
+            mizar_checker::source_statement::SourceStatementLabelKind::ProofStep,
+            mizar_checker::source_statement::SourceStatementRecovery::Normal,
+        )
+    );
+    let citation = references
+        .citations()
+        .get(mizar_checker::source_statement::SourceStatementCitationId::new(0))
+        .expect("statement citation");
+    assert_eq!(
+        (
+            citation.statement().index(),
+            citation.context().index(),
+            citation.label().index(),
+            citation.label_ref().index(),
+            citation.proof_scope().path(),
+            citation.source_range().start,
+            citation.source_range().end,
+            citation.ordinal(),
+            citation.kind(),
+            citation.recovery(),
+        ),
+        (
+            3,
+            3,
+            0,
+            0,
+            &[0][..],
+            131,
+            132,
+            0,
+            mizar_checker::source_statement::SourceStatementCitationKind::SimpleLocal,
+            mizar_checker::source_statement::SourceStatementRecovery::Normal,
+        )
+    );
+    assert_eq!(
+        output.typed_ast.source_statement_references(),
+        output.resolved.source_statement_references()
+    );
+    assert!(references
+        .debug_text()
+        .contains("resolver-ast root=76 nodes=77 name_refs=0 label_refs=1"));
+}
+
+#[test]
+fn task258b1_lower_resolver_and_row_mutations_fail_closed_then_replay() {
+    let (ast, module, _, symbols) =
+        task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_410);
+    let baseline =
+        source_statement_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B1_TEXT)
+            .expect("Task258B1 selector")
+            .expect("Task258B1 baseline");
+    let baseline_typed = baseline.typed_ast.debug_text();
+    for (label, expected, mutate) in [
+        ("statement aggregate", "aggregate", 0usize),
+        ("statement row", "statement", 1usize),
+        ("stale projection", "dependency", 2usize),
+        ("citation row", "citation", 3usize),
+        ("owner row", "owner", 4usize),
+        ("context row", "context", 5usize),
+        ("input row", "input fact", 6usize),
+        ("candidate row", "candidate", 7usize),
+        ("label row", "label", 8usize),
+        ("stale reference expectation", "dependency", 9usize),
+        ("typed recovery", "statement", 10usize),
+    ] {
+        let error = source_statement_b1_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B1_TEXT,
+            |inputs| match mutate {
+                0 => inputs.statement.contexts.clear(),
+                1 => inputs.statement.statements[2].source_ordinal = 9,
+                2 => {
+                    inputs.projection = inputs
+                        .projection
+                        .clone()
+                        .with_visibility(mizar_resolve::env::Visibility::Public);
+                }
+                3 => inputs.reference_input.citations[0].ordinal = 1,
+                4 => inputs.statement.owners[0].spelling.push_str("Drift"),
+                5 => {
+                    inputs.statement.contexts[2].binding_context =
+                        mizar_checker::binding_env::BindingContextId::new(1);
+                }
+                6 => inputs.statement.input_facts[2].uses.swap(0, 1),
+                7 => inputs.statement.candidate_facts[2].ordinal = 1,
+                8 => inputs.reference_input.labels[0].source_ordinal = 1,
+                9 => {
+                    inputs.reference = inputs
+                        .reference
+                        .clone()
+                        .with_expectation(
+                            mizar_resolve::resolved_ast::LabelExpectation::Theorem,
+                        );
+                }
+                10 => {
+                    inputs.arena = mizar_checker::typed_ast::TypedArena::try_new(
+                        inputs.arena.root(),
+                        inputs
+                            .arena
+                            .iter()
+                            .map(|(id, row)| {
+                                let mut row = row.clone();
+                                if id.index() == 50 {
+                                    row.recovery =
+                                        mizar_checker::typed_ast::NodeRecoveryState::Degraded;
+                                }
+                                row
+                            })
+                            .collect(),
+                    )
+                    .expect("recovered arena remains structurally valid");
+                }
+                _ => unreachable!(),
+            },
+        )
+        .unwrap_or_else(|| panic!("{label} selector"))
+        .expect_err(label);
+        assert!(
+            error.to_ascii_lowercase().contains(expected),
+            "{label}: {error}"
+        );
+        let replay = source_statement_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B1_TEXT,
+        )
+        .expect("replay selector")
+        .expect("replay output");
+        assert_eq!(replay.typed_ast.debug_text(), baseline_typed, "{label}");
+    }
+}
+
+#[test]
+fn task258b1_selector_rejects_exact_nested_statement_near_misses() {
+    let (exact_ast, exact_module, _, exact_symbols) =
+        task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_420);
+    for (label, loaded) in [
+        (
+            "missing final LF",
+            SOURCE_STATEMENT_B1_TEXT.trim_end_matches('\n').to_owned(),
+        ),
+        (
+            "extra final LF",
+            format!("{SOURCE_STATEMENT_B1_TEXT}\n"),
+        ),
+        (
+            "whitespace byte drift",
+            SOURCE_STATEMENT_B1_TEXT.replacen("  A:", " A:", 1),
+        ),
+        (
+            "comment byte drift",
+            SOURCE_STATEMENT_B1_TEXT.replacen("reserve x for set;", "reserve x for set; :: drift", 1),
+        ),
+        (
+            "theorem name drift",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "FormulaStatementNestedContextSmoke",
+                "FormulaStatementNestedContextOther",
+                1,
+            ),
+        ),
+        (
+            "theorem role change",
+            SOURCE_STATEMENT_B1_TEXT.replacen("theorem ", "scheme ", 1),
+        ),
+        (
+            "theorem status change",
+            SOURCE_STATEMENT_B1_TEXT.replacen("theorem ", "canceled theorem ", 1),
+        ),
+        (
+            "reserve drift",
+            SOURCE_STATEMENT_B1_TEXT.replacen("reserve x for set", "reserve y for set", 1),
+        ),
+        (
+            "omitted reserve item",
+            SOURCE_STATEMENT_B1_TEXT.replacen("reserve x for set;\n", "", 1),
+        ),
+        (
+            "reordered top-level items",
+            format!(
+                "{}{}",
+                &SOURCE_STATEMENT_B1_TEXT[19..],
+                &SOURCE_STATEMENT_B1_TEXT[..19]
+            ),
+        ),
+        (
+            "omitted nested statement",
+            SOURCE_STATEMENT_B1_TEXT.replacen("    thus x = x;\n", "", 1),
+        ),
+        (
+            "reordered proof statements",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof\n    thus x = x;\n  end;\n  thus x = x by A;",
+                "  thus x = x by A;\n  A: x = x proof\n    thus x = x;\n  end;",
+                1,
+            ),
+        ),
+        (
+            "omitted outer proof block",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                " proof\n  A: x = x proof\n    thus x = x;\n  end;\n  thus x = x by A;\nend;",
+                ";",
+                1,
+            ),
+        ),
+        (
+            "reordered proof blocks",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof\n    thus x = x;\n  end;\n  thus x = x by A;",
+                "  thus x = x by A;\n  A: x = x proof\n    thus x = x;\n  end;",
+                1,
+            ),
+        ),
+        (
+            "then statement",
+            SOURCE_STATEMENT_B1_TEXT.replacen("  thus x = x by A;", "  then thus x = x by A;", 1),
+        ),
+        (
+            "given statement",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof",
+                "  given y being set such that x = x;\n  A: x = x proof",
+                1,
+            ),
+        ),
+        (
+            "consider statement",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof",
+                "  consider y being set such that x = x;\n  A: x = x proof",
+                1,
+            ),
+        ),
+        (
+            "now block",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof",
+                "  now\n    thus x = x;\n  end;\n  A: x = x proof",
+                1,
+            ),
+        ),
+        (
+            "hereby block",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof",
+                "  hereby\n    thus x = x;\n  end;\n  A: x = x proof",
+                1,
+            ),
+        ),
+        (
+            "case block",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof",
+                "  per cases;\n  suppose x = x;\n    thus x = x;\n  end;\n  A: x = x proof",
+                1,
+            ),
+        ),
+        (
+            "suppose block",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof",
+                "  suppose x = x;\n    thus x = x;\n  end;\n  A: x = x proof",
+                1,
+            ),
+        ),
+        (
+            "iterative equality",
+            SOURCE_STATEMENT_B1_TEXT.replacen("thus x = x;", "thus x = x = x;", 1),
+        ),
+        (
+            "imported label citation",
+            SOURCE_STATEMENT_B1_TEXT.replacen("by A", "by Other.A", 1),
+        ),
+        (
+            "local label shadowing",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "    thus x = x;",
+                "    A: x = x;\n    thus x = x;",
+                1,
+            ),
+        ),
+        (
+            "missing nested proof",
+            SOURCE_STATEMENT_B1_TEXT.replacen("  A: x = x proof", "  A: x = x", 1),
+        ),
+        (
+            "recovered missing semicolon",
+            SOURCE_STATEMENT_B1_TEXT.replacen("    thus x = x;", "    thus x = x", 1),
+        ),
+    ] {
+        assert!(
+            source_statement_output_with_source(
+                &exact_ast,
+                exact_module.clone(),
+                &exact_symbols,
+                &loaded,
+            )
+            .is_none(),
+            "{label}"
+        );
+    }
+    for (ordinal, (label, source)) in [
+        (
+            "forward citation",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof",
+                "  x = x by A;\n  A: x = x proof",
+                1,
+            ),
+        ),
+        (
+            "theorem citation",
+            SOURCE_STATEMENT_B1_TEXT.replacen("by A", "by FormulaStatementNestedContextSmoke", 1),
+        ),
+        (
+            "hence",
+            SOURCE_STATEMENT_B1_TEXT.replacen("thus x = x by A", "hence x = x by A", 1),
+        ),
+        (
+            "parenthesized equality",
+            SOURCE_STATEMENT_B1_TEXT.replacen("thus x = x;", "thus (x = x);", 1),
+        ),
+        (
+            "second label",
+            SOURCE_STATEMENT_B1_TEXT.replacen("thus x = x;", "B: thus x = x;", 1),
+        ),
+        (
+            "extra theorem",
+            format!("{SOURCE_STATEMENT_B1_TEXT}theorem Extra: x = x;\n"),
+        ),
+        (
+            "assumption",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "  A: x = x proof",
+                "  A: x = x proof\n    assume x = x;",
+                1,
+            ),
+        ),
+        (
+            "witness",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "    thus x = x;",
+                "    take x;\n    thus x = x;",
+                1,
+            ),
+        ),
+        (
+            "non-equality",
+            SOURCE_STATEMENT_B1_TEXT.replacen("thus x = x;", "thus x <> x;", 1),
+        ),
+        (
+            "composite formula",
+            SOURCE_STATEMENT_B1_TEXT.replacen("thus x = x;", "thus x = x & x = x;", 1),
+        ),
+        (
+            "qualified citation",
+            SOURCE_STATEMENT_B1_TEXT.replacen("by A", "by Other.A", 1),
+        ),
+        (
+            "citation moved inward",
+            SOURCE_STATEMENT_B1_TEXT.replacen(
+                "    thus x = x;",
+                "    thus x = x by A;",
+                1,
+            ),
+        ),
+        (
+            "explicit justification",
+            SOURCE_STATEMENT_B1_TEXT.replacen("thus x = x;", "thus x = x by A;", 1),
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, _, symbols) =
+            task253_ast_from_source_text(&source, 258_421 + ordinal);
+        assert!(
+            source_statement_output_with_source(&ast, module.clone(), &symbols, &source).is_none(),
+            "{label}"
+        );
+        assert!(
+            source_statement_output_with_source(
+                &ast,
+                module,
+                &symbols,
+                SOURCE_STATEMENT_B1_TEXT,
+            )
+            .is_none(),
+            "{label} exact guard with wrong AST"
+        );
+    }
+}
+
+#[test]
+fn task258b1_keeps_task258a_and_active_corpus_routes_isolated() {
+    let (a_ast, a_module, _, a_symbols) =
+        task253_ast_from_source_text(TASK258A_SOURCE, 258_430);
+    let task_a =
+        source_statement_output_with_source(&a_ast, a_module, &a_symbols, TASK258A_SOURCE)
+            .expect("Task258A selector")
+            .expect("Task258A output");
+    assert!(task_a.typed_ast.source_statement_references().is_none());
+    assert_eq!(task_a.reference_use_ordinals, [1, 2]);
+
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate below workspace")
+        .to_path_buf();
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: workspace_root.join("tests"),
+        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task258B1 isolation plan");
+    let mut selected = Vec::new();
+    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
+        let source = frontend.source_text;
+        let Some(ast) = frontend.ast else {
+            continue;
+        };
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        if !resolver.detail_keys.is_empty() {
+            continue;
+        }
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        if source_statement_output_with_source(&ast, resolver.module, &symbols, &source)
+            .is_some_and(|result| {
+                result.is_ok_and(|output| {
+                    output
+                        .typed_ast
+                        .source_statement_references()
+                        .is_some()
+                })
+            })
+        {
+            selected.push(case.id.0.clone());
+        }
+    }
+    assert!(selected.is_empty(), "Task258B1 selected active cases: {selected:?}");
+}
+
+#[test]
+fn task258b1_typed_final_ownership_clone_debug_and_empty_semantics_are_atomic() {
+    let (ast, module, _, symbols) =
+        task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_440);
+    let first =
+        source_statement_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B1_TEXT)
+            .expect("Task258B1 selector")
+            .expect("Task258B1 output");
+    let second =
+        source_statement_output_with_source(&ast, module, &symbols, SOURCE_STATEMENT_B1_TEXT)
+            .expect("Task258B1 replay selector")
+            .expect("Task258B1 replay output");
+    assert_eq!(first.typed_ast, first.typed_ast.clone());
+    assert_eq!(first.resolved, first.resolved.clone());
+    assert_eq!(first.typed_ast.debug_text(), second.typed_ast.debug_text());
+    assert_eq!(first.resolved.debug_text(), second.resolved.debug_text());
+    let debug = first.typed_ast.debug_text();
+    let base = debug.find("source-statement-debug-v1").expect("base debug");
+    let references = debug
+        .find("source-statement-reference-debug-v1")
+        .expect("reference debug");
+    let nodes = debug.find("nodes:").expect("node debug");
+    assert!(base < references && references < nodes);
+    assert!(first.typed_ast.facts().is_empty());
+    assert!(first.typed_ast.diagnostics().is_empty());
+    assert!(first.resolved.checked_formulas().is_empty());
+    assert!(first.resolved.statement_semantics().is_empty());
+    assert!(first.resolved.checked_proofs().is_empty());
+    assert!(first.resolved.checked_proof_nodes().is_empty());
+    assert!(first.resolved.checked_terminal_goals().is_empty());
+    let task248 = task248_real_output();
+    let before = task248.typed_ast.debug_text();
+    let statement = first
+        .typed_ast
+        .source_statement()
+        .expect("statement")
+        .clone();
+    let statement_references = first
+        .typed_ast
+        .source_statement_references()
+        .expect("statement references")
+        .clone();
+    assert_eq!(
+        task248
+            .typed_ast
+            .clone()
+            .with_source_statement(statement.clone())
+            .expect_err("Task258B1 base must not use legacy installer"),
+        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
+    );
+    assert_eq!(
+        task248
+            .typed_ast
+            .clone()
+            .with_source_statement_references(statement, statement_references)
+            .expect_err("Task248 and Task258B1 owners must not coexist"),
+        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
+    );
+    assert_eq!(task248.typed_ast.debug_text(), before);
+}
 
 #[test]
 fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semantics() {

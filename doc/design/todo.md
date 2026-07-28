@@ -2497,6 +2497,12 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Preserve documentation-only baselines `419/387`, `253/241`,
   `228/191`, active `101/5/198/1`, libraries `338/369`, runner 30 paths /
   34,955 lines, and every Task-258A completion hash.
-- [ ] Implement Task 258B1 in a separate logical task/commit only after this
+- [x] Implement Task 258B1 in a separate logical task/commit only after this
   documentation commit and fresh parser/resolver/lower-API/count/hash
-  preflight; keep Task 258B2+ and Tasks 269–272 open.
+  preflight; four checker and five runner tests close the bounded
+  `source_drift`/`test_gap`.
+- [x] Preserve the deferred trace row with `tests = []`, all corpus artifacts,
+  and the `419/387`, `253/241`, `228/191`, `101/5/198/1`, `23/0` metadata
+  counts while raising the checker/runner libraries to `342/374`.
+- [ ] Fresh-inventory and freeze Task 258B2+ separately; keep Tasks 269–272
+  open and do not infer proof or justification semantics from Task 258B1.

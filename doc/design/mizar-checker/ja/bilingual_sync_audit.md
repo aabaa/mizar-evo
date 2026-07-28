@@ -317,3 +317,11 @@ deferralをfreezeする。
 fixture、sidecar、expectation、trace metadata/status/count、executable route、
 test list、hashも変更しない。Task 258B2+とTasks 269–272は両言語で同じ
 deferred ownershipを持つ。Task-258B1 bilingual debtは認めない。
+
+## Task 258B1 implementation pair
+
+paired checker plan、statement/binding/typed/final contract、TODO、
+source/module/coverage audit、runner plan/harness/TODO/boundary audit、
+global ledgerは、同じexact implemented transaction、checker/runner 4/5 test
+matrix、library `342/374`、runner 30-path/35,854-line manifest、corpus/trace/
+CLI count不変を記録する。Task-258B1 implementation bilingual debtは残らない。

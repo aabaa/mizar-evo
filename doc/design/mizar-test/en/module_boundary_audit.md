@@ -11490,3 +11490,21 @@ Production is 30 paths / 34,955 lines with path/content hashes
 The library has 369 tests with raw/normalized hashes
 `c5764bb1600242fe44db8c44b9c6bb18f39203a0de9ff60e301cbc6f172037f6` /
 `1fd27b9bff190f95ac23d6de714a919a192fb0b7830aa3c98f960d4224c084aa`.
+
+## Checker Task 258B1 Implementation Boundary Recheck
+
+The existing private `type_elaboration/source_statement.rs` owner grows to
+1,499 lines and remains cohesive: it owns only the exact Task-258A/B1 source
+selection, resolver projection/replay, binding/lower assembly, and immutable
+statement publication. `source_term.rs` is 817 lines after adding the
+per-context root helper, the private facade is 676 lines, `runner.rs` remains
+2,489 lines, and the paired statement test leaf is 2,145 lines. No new module
+or split is justified by the frozen one-source transaction.
+
+Production topology remains 30 paths / 35,854 lines. Its path/content hashes
+are
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`f2d133e6fc42bd62058e95c274944aa03d80e9f8f2b5a0394a4d11e58ec3a66e`.
+The library has 374 tests with raw/normalized hashes
+`e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
+`99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`.

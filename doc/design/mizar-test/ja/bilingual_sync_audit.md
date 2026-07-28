@@ -12,6 +12,13 @@ test 303件、path/content hash `5cc36b8a...` / `b9b6c678...`の
 254+/260/270/277-278とSteps 6/7は両言語でunpromotedのままである。Task 253に
 bilingual driftは残らない。
 
+## Checker Task 258B1 implementation synchronization
+
+paired runner plan、harness、TODO、module-boundary auditは同じexact dormant
+implementation、5-test matrix、374-test list、30-path/35,854-line production
+manifest、corpus/trace/CLI count不変、Task 258B2+/Tasks 269–272 deferralを
+記録する。implementation bilingual driftは残らない。
+
 ## Checker Task 258B1 frozen-contract synchronization
 
 paired runner plan/harness/TODOは同じ139-byte final-LF source/hash、real

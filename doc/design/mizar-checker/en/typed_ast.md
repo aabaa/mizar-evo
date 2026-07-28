@@ -954,3 +954,11 @@ the base statement chunk is followed immediately by the reference chunk
 before nodes/tables. Task-258A has no second chunk and keeps identical bytes.
 No checked formula, fact, statement semantic, proof, goal, diagnostic, or
 accepted theorem is created. This prerequisite changes no `TypedAst` source.
+
+### Task 258B1 Implementation Status
+
+`TypedAst::with_source_statement_references` now validates and installs the
+exact B1 base/reference pair atomically. The legacy statement installer still
+accepts only Task 258A, all existing payload owners reject the pair, and
+failed validation leaves the original value reusable. Accessors, cloning,
+and debug ordering preserve the frozen contract without semantic output.

@@ -27,7 +27,7 @@ use crate::{
         SourcePredicateChainCompositionHandoff,
     },
     source_set_term::SourceSetTermHandoff,
-    source_statement::SourceStatementHandoff,
+    source_statement::{SourceStatementHandoff, SourceStatementReferenceHandoff},
     source_structure::SourceStructureHandoff,
     source_term::SourcePrimaryTermHandoff,
     source_type::SourceTypeApplicationHandoff,
@@ -127,6 +127,7 @@ pub struct ResolvedTypedAst {
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
     source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
     source_statement: Option<SourceStatementHandoff>,
+    source_statement_references: Option<SourceStatementReferenceHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -217,6 +218,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_statement(&self) -> Option<&SourceStatementHandoff> {
         self.source_statement.as_ref()
+    }
+
+    pub const fn source_statement_references(&self) -> Option<&SourceStatementReferenceHandoff> {
+        self.source_statement_references.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -338,6 +343,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_statement) = &self.source_statement {
             output.push_str(&source_statement.debug_text());
+        }
+        if let Some(source_statement_references) = &self.source_statement_references {
+            output.push_str(&source_statement_references.debug_text());
         }
         write_resolved_nodes(&mut output, &self.nodes);
         write_expression_metadata(&mut output, &self.expr_metadata);
@@ -1767,6 +1775,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 .map_err(|_| ResolvedTypedAstError::InvalidSourcePredicateChainComposition)?;
         }
         let source_statement = self.inputs.typed_ast.source_statement().cloned();
+        let source_statement_references =
+            self.inputs.typed_ast.source_statement_references().cloned();
         if let Some(source_statement) = &source_statement {
             if self.inputs.typed_ast.source_context().is_some()
                 || self.inputs.typed_ast.source_type().is_some()
@@ -1799,6 +1809,20 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     self.inputs.typed_ast.nodes(),
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
+            match &source_statement_references {
+                Some(references) if source_statement.is_task_258b1_profile() => references
+                    .validate_installation(
+                        source_id,
+                        &module_id,
+                        source_statement,
+                        self.inputs.typed_ast.nodes(),
+                    )
+                    .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?,
+                None if source_statement.is_task_258a_profile() => {}
+                _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
+            }
+        } else if source_statement_references.is_some() {
+            return Err(ResolvedTypedAstError::InvalidSourceStatement);
         }
 
         Ok(ResolvedTypedAst {
@@ -1818,6 +1842,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_condition_formula_composition,
             source_predicate_chain_composition,
             source_statement,
+            source_statement_references,
             nodes,
             expr_metadata,
             collection_candidates,

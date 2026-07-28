@@ -1779,6 +1779,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   library tests 5件をfreeze。
 - [x] 本prerequisiteでは全fixture/sidecar/expectation/trace
   row/status/count/active route/executable count/Task-258A hashをpreserve。
-- [ ] checker documentation commitとfresh parser/resolver/lower preflight後、
+- [x] checker documentation commitとfresh parser/resolver/lower preflight後、
   dormant Task-258B1 route/tests 5件だけをimplementし、Task 258B2+と
   Tasks 269–272をdefer。
+- [x] runner 374 testsと、topology不変のproduction 30 paths /
+  35,854 linesを測定し、corpus/trace/CLI count/hashをすべてpreserve。

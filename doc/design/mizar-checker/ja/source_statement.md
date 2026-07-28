@@ -228,12 +228,15 @@ separate Task 258BまたはTasks 269–272。
 |---|---|
 | `SourceTheoremRole` | `#[non_exhaustive]`; Task 258Aは`Theorem`だけをaccept。 |
 | `SourceTheoremStatus` | `#[non_exhaustive]`; Task 258Aは`Unmodified`だけをaccept。 |
-| `SourceStatementKind` | `#[non_exhaustive]`; Task 258Aは`TheoremProposition`だけをaccept。 |
+| `SourceStatementKind` | `#[non_exhaustive]`; Task 258Aは`TheoremProposition`、Task 258B1はexactな`ProofStepProposition`と`Conclusion` rowもaccept。 |
 | `SourceStatementRecovery` | `#[non_exhaustive]`; callerは`Degraded`を許容し、exact routeは`Normal`だけをaccept。 |
 | `SourceStatementFormulaTarget` | `#[non_exhaustive]`; Task 258AはTask-256 `Atomic` target 1件だけをaccept。 |
 | `SourceStatementInputFactKind` | `#[non_exhaustive]`; Task 258Aは`ReservedTypeGuard`だけをaccept。 |
 | `SourceStatementCandidateFactKind` | `#[non_exhaustive]`; Task 258Aは`UnverifiedProposition`だけをaccept。 |
+| `SourceStatementLabelKind` | `#[non_exhaustive]`; Task 258B1はresolver-authenticatedな`ProofStep` label 1件だけをaccept。 |
+| `SourceStatementCitationKind` | `#[non_exhaustive]`; Task 258B1は`SimpleLocal` backward citation 1件だけをaccept。 |
 | `SourceStatementError` | `#[non_exhaustive]`; callerはproducer/installation failureをexhaustive matchしない。 |
+| `SourceStatementReferenceError` | `#[non_exhaustive]`; callerはreference dependency、aggregate、label、citation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -821,3 +824,18 @@ documentation exitはEN/JA sync、independent no-findings review、measured
 artifact不変、全hard gate、quality 90/100以上、task-only staging、
 dedicated documentation commitを要求。そのcommitとfresh preflight後だけ
 Task-258B1 implementationへ進む。
+
+### Task 258B1 implementation status
+
+frozen base/reference transactionをexactに実装した。base producerはcaller
+flagではなくauthenticated dependencyからTask-258A/Task-258B1 profileを
+selectする。reference producerはexact resolver projection/reference/resultを
+replayし、全resolver nodeをsame-index typed nodeと比較してからproof-step
+label 1件とsimple local citation 1件だけをpublishする。dependency、
+aggregate、label、citation error precedenceはfail-closedかつreplay-safe。
+
+combined `TypedAst`/`ResolvedTypedAst` ownerはbase/reference pairをatomicに
+publishする。checker 4本がcomplete API/debug、dependency/row/provenance
+corruption、owner exclusion/rollback、final revalidation/clone、empty semantic
+boundaryをcoverする。Task-258A installer/debug byteは不変。broader statement
+shapeと全proof semanticは本implementation外に残る。

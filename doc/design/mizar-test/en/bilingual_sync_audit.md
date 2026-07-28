@@ -436,3 +436,11 @@ metadata/status/count, executable route, test list, or hash. The runner
 module-boundary audit is intentionally unchanged because no production path
 or ownership direction changes. No Task-258B1 runner bilingual drift is
 accepted.
+
+## Checker Task 258B1 Implementation Synchronization
+
+The paired runner plan, harness, TODO, and module-boundary audit record the
+same exact dormant implementation, five-test matrix, 374-test list,
+30-path/35,854-line production manifest, unchanged corpus/trace/CLI counts,
+and Task 258B2+/Tasks 269–272 deferrals. No implementation bilingual drift
+remains.

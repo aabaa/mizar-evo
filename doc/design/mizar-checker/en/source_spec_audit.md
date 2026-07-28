@@ -171,9 +171,10 @@ rejection.
 - `typed_ast`
 
 Evidence: `tests/lint_policy.rs` checks this list through
-`checker_public_semantic_api_matches_documented_modules`, keeps the crate off
-direct `mizar-syntax` imports, and preserves resolver/session dependency
-boundaries.
+`checker_public_semantic_api_matches_documented_modules`, keeps production
+source off direct `mizar-syntax` imports, permits only the Task-258B1
+`#[cfg(test)]` parser-fixture import plus test-only dev-dependency, and
+preserves resolver/session dependency boundaries.
 
 ## Public Surface Inventory
 
@@ -3829,3 +3830,17 @@ and acceptance. The deferred
 keeps `tests = []`; this prerequisite changes only follow-up ownership in the
 coverage audit, not trace metadata, coverage credit, fixture, sidecar,
 expectation, executable source, count, or hash.
+
+## Task 258B1 Implementation Audit
+
+The frozen Task-258B1 source and test gaps are closed by the syntax-free
+statement/reference handoffs, atomic typed/final ownership, the exact dormant
+real-frontend runner bridge, four checker tests, and five runner tests. The
+implementation does not change language or test intent: no `doc/spec`,
+existing `.miz`, expectation, sidecar, or trace TOML row/status was edited.
+
+`spec.en.checker.formula_statement.source_payloads` remains deferred with
+`tests = []` because this slice publishes no accepted fact, proof,
+justification meaning, or theorem result. Coverage ownership now points to
+Task 258B2+ and Tasks 269–272. This is an intentional
+`spec_coverage_audit.md` update with no traceability-count change.

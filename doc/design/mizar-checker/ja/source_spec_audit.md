@@ -150,8 +150,9 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 
 根拠: `tests/lint_policy.rs` の
 `checker_public_semantic_api_matches_documented_modules` がこの list を検査し、
-crate が direct `mizar-syntax` import を持たないこと、resolver/session dependency
-boundary を保つことも guard している。
+production source が direct `mizar-syntax` import を持たないこと、Task-258B1
+の `#[cfg(test)]` parser-fixture import と test-only dev-dependency だけを
+許可すること、resolver/session dependency boundary を保つことも guard している。
 
 ## Public Surface Inventory
 
@@ -3662,3 +3663,15 @@ substitution、`reconsider`、skeleton、justification、goal、acceptanceを保
 保つ。本prerequisiteはcoverage auditのfollow-up ownershipだけを変更し、trace
 metadata、coverage credit、fixture、sidecar、expectation、executable source、
 count、hashは変更しない。
+
+## Task 258B1 implementation audit
+
+frozen Task-258B1 `source_drift`/`test_gap`はsyntax-free statement/reference
+handoff、atomic typed/final ownership、exact dormant real-frontend runner
+bridge、checker 4本、runner 5本でclosedとなった。language/test intentは変更せず、
+`doc/spec`、既存`.miz`、expectation、sidecar、trace TOML row/statusを編集しない。
+
+`spec.en.checker.formula_statement.source_payloads`はaccepted fact、proof、
+justification meaning、theorem resultをpublishしないため`tests = []`でdeferred
+のまま。coverage ownershipはTask 258B2+とTasks 269–272を指す。これは
+traceability count変更なしの意図的な`spec_coverage_audit.md` updateである。

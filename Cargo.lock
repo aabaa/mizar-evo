@@ -479,6 +479,7 @@ dependencies = [
  "mizar-lexer",
  "mizar-resolve",
  "mizar-session",
+ "mizar-syntax",
 ]
 
 [[package]]

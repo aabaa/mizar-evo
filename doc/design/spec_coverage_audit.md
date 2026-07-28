@@ -3700,3 +3700,28 @@ Measured plan/type/pass/fail/active/warning counts remain
 `419/387`, `253/241`, `228/191`, `101/5/198/1`, and `23/0`.
 Checker/runner libraries remain `338/369`; runner production remains
 30 paths / 34,955 lines. All Task-258A completion hashes remain unchanged.
+
+## Step 5 Checker Task 258B1 Implementation Addendum
+
+Task 258B1 closes the previously classified bounded `source_drift` and
+`test_gap`. The checker now owns the exact syntax-free nested-statement and
+local-reference handoffs, atomic typed/final publication, and four-test
+matrix; the runner owns the exact corpus-dormant real parser/resolver/lower
+bridge and five-test matrix. No `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or unresolved
+`repo_metadata_conflict` is introduced.
+
+The implementation changes no `doc/spec`, `.miz`, sidecar, expectation, or
+`tests/coverage/spec_trace.toml` row/status. In particular,
+`spec.en.checker.formula_statement.source_payloads` remains deferred with
+`tests = []`: Task 258B1 transports source identity and local-citation
+provenance but does not establish truth, accepted facts, justification
+meaning, proof validity, goals, or theorem acceptance. Follow-up ownership
+now advances to Task 258B2+ for broader statement forms/visibility and Tasks
+269–272 for local-binding and proof semantics.
+
+Plan/type/pass/fail/active/warning counts remain `419/387`, `253/241`,
+`228/191`, `101/5/198/1`, and `23/0`. Checker/runner libraries are
+`342/374`; runner production is 30 paths / 35,854 lines. The audit change is
+therefore required for completed/follow-up ownership only, with no coverage
+credit or traceability-count change.

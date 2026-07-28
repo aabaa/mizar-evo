@@ -316,6 +316,7 @@ pub enum BindingContextOwner {
     Module,
     DeclarationShell(DeclarationShellId),
     SourceFormula { source_range: SourceRange },
+    SourceStatement { source_range: SourceRange },
     Generated(String),
 }
 
@@ -960,12 +961,17 @@ fn validate_module_root(contexts: &BindingContextTable) -> Result<(), BindingEnv
 fn validate_contexts(parts: &BindingEnvParts) -> Result<(), BindingEnvError> {
     let mut states = vec![None; parts.contexts.len()];
     for (context_id, context) in parts.contexts.iter() {
-        if let BindingContextOwner::SourceFormula { source_range } = context.owner
-            && (source_range.source_id != parts.source_id || source_range.start >= source_range.end)
-        {
-            return Err(BindingEnvError::InvalidContextSourceRange {
-                context: context_id,
-            });
+        match context.owner {
+            BindingContextOwner::SourceFormula { source_range }
+            | BindingContextOwner::SourceStatement { source_range }
+                if source_range.source_id != parts.source_id
+                    || source_range.start >= source_range.end =>
+            {
+                return Err(BindingEnvError::InvalidContextSourceRange {
+                    context: context_id,
+                });
+            }
+            _ => {}
         }
         if let Some(parent) = context.parent
             && parts.contexts.get(parent).is_none()
@@ -1427,6 +1433,13 @@ fn write_context_owner(output: &mut String, owner: &BindingContextOwner) {
             let _ = write!(
                 output,
                 "source-formula({}..{})",
+                source_range.start, source_range.end
+            );
+        }
+        BindingContextOwner::SourceStatement { source_range } => {
+            let _ = write!(
+                output,
+                "source-statement({}..{})",
                 source_range.start, source_range.end
             );
         }

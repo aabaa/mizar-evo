@@ -335,3 +335,12 @@ intentionally unchanged. It changes no fixture, sidecar, expectation, trace
 metadata/status/count, executable route, test list, or hash. Task 258B2+ and
 Tasks 269–272 have the same deferred ownership in both languages. No
 Task-258B1 bilingual debt is accepted.
+
+## Task 258B1 Implementation Pair
+
+The paired checker plan, statement/binding/typed/final contracts, TODO,
+source/module/coverage audits, runner plan/harness/TODO/boundary audit, and
+global ledger now record the same exact implemented transaction, four/five
+test matrices, `342/374` library counts, 30-path/35,854-line runner manifest,
+and unchanged corpus/trace/CLI counts. No Task-258B1 implementation
+bilingual debt remains.

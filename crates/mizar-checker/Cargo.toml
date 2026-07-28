@@ -16,3 +16,6 @@ workspace = true
 mizar-lexer = { path = "../mizar-lexer" }
 mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
+
+[dev-dependencies]
+mizar-syntax = { path = "../mizar-syntax" }

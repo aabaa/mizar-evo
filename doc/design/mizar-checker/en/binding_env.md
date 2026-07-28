@@ -523,3 +523,12 @@ Task-258B1 checker matrix covers exact owner/range/scope/debug, wrong-source
 and empty ranges, parent/layer/scope/visibility mutation, fingerprint
 propagation into Tasks 252/258, rollback, and Task-258A byte compatibility.
 This documentation prerequisite changes no source or test.
+
+### Task 258B1 Implementation Status
+
+The frozen `BindingContextOwner::SourceStatement { source_range }` variant is
+implemented. Exact outer/nested proof contexts at `69..137` and `86..113`
+extend the module base to `3/1/0`, preserve the reserved binding, scope paths
+`[0]` and `[0, 0]`, and deterministic debug/fingerprint bytes. Invalid empty
+or foreign ranges and profile substitutions fail before publication.
+Task-258A retains its original one-context bytes.
