@@ -11635,3 +11635,15 @@ test-owned. Statement leaf/facade/root/test sizes are
 `4676/695/2508/9902`; production is 30 paths / 39,069 lines. No public
 route/key/mutation API, module split, crate edge, dependency direction,
 binding, active route, or semantic owner changed.
+
+## Task 258B3M2B2A Frozen Runner Boundary
+
+The future dormant selector stays in the existing statement leaf and
+facades/root, with tests in the paired statement/application support leaf.
+Raw parser/resolver values remain private; only exact Task-48/252/256/base/
+witness handoffs cross to the checker. The five-root/seven-primary split,
+zero-diagnostic assertion, both wrapper links, and bidirectional family
+isolation are test-owned. This prerequisite changes no source, module,
+public route/key, crate edge, dependency direction, binding, active route,
+or semantic owner; measured runner sizes and 30-path/39,069-line production
+baseline remain unchanged.

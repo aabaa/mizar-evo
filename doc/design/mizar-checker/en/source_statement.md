@@ -2551,3 +2551,205 @@ The bounded B3M2B1 `source_drift` and `test_gap` are closed; B3M2B2 is next
 before B4. Public Task-252/256 fail-close remains stronger than the
 statement boundary: malformed lower rows reject before paired consumption,
 and no test-only seam or public API was added to bypass that invariant.
+
+## Task 258B3M2B2A Frozen Nested-Parenthesized-Witness Slice
+
+Fresh post-B3M2B1 inventory decomposes broad B3M2B2 into dependency-ordered
+B3M2B2A and B3M2B2B. B3M2B2A owns only one unnamed, exactly two-level
+parenthesized reserved-variable witness, `take ((x));`. It depends only on
+the existing Task-252 nested-primary graph. B3M2B2B retains triple/deeper
+parentheses, application, structure constructor/selector/update, set,
+choice, compound, and every other authority-valid witness term. Its future
+cross-family work must be decomposed in lower-owner order Task 253, then
+Task 254, then Task 255 before B4/B5.
+
+Canonical authority is `doc/spec/en/15.statements.md` §15.4.4, where an
+unnamed example is any `term_expression`;
+`doc/spec/en/13.term_expression.md` §§13.1, 13.1.3, 13.8.8, and 13.9,
+where parenthesization is arbitrarily nestable, type preserving, and
+FOL-transparent; and `doc/spec/en/16.theorems_and_proofs.md` §§16.3.3 and
+16.7.3, which retain the later existential-introduction effect. Existing
+`pass_parser_simple_statements_001.miz` authenticates unnamed `take`.
+`pass_parser_primary_terms_001.miz`, Task-252's
+`task252_nested_parentheses_exclude_mixed_subtrees_and_keep_siblings`, and
+the covered `source_primary_term_payload` trace row authenticate nested
+primary transport. No existing source, expectation, or trace metadata
+changes or receives formula-statement credit.
+
+The exact future corpus-dormant consumer is this final-LF 121-byte source,
+SHA-256
+`35396db1f7e22abfbe94861709b2ab9bca38d4464712dfbce114533d2ab4d71d`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementNestedParenthesizedWitnessSmoke: x = x proof
+  take ((x));
+  thus x = x;
+end;
+```
+
+The equality goal deliberately does not authorize existential introduction,
+so this source must not become an active accepted corpus case. A fresh
+frontend run yields zero diagnostics, 57 unrecovered nodes, root 56, and 26
+tokens:
+`0:reserve@0..7, 1:x@8..9, 2:for@10..13, 3:set@14..17,
+4:;@17..18, 5:theorem@19..26,
+6:FormulaStatementNestedParenthesizedWitnessSmoke@27..74,
+7::@74..75, 8:x@76..77, 9:=@78..79, 10:x@80..81,
+11:proof@82..87, 12:take@90..94, 13:(@95..96, 14:(@96..97,
+15:x@97..98, 16:)@98..99, 17:)@99..100, 18:;@100..101,
+19:thus@104..108, 20:x@109..110, 21:=@111..112,
+22:x@113..114, 23:;@114..115, 24:end@116..119,
+25:;@119..120`; every token has no child. Structural nodes are:
+
+| IDs | Exact kind, range, ordered children |
+| --- | --- |
+| 26–29 | `TypeHead 14..17 [3]`; `TypeExpression 14..17 [26]`; `ReserveSegment 8..17 [1,2,27]`; `ReserveItem 0..18 [0,28,4]` |
+| 30–35 | `TermReference 76..77 [8]`; `TermExpression 76..77 [30]`; `TermReference 80..81 [10]`; `TermExpression 80..81 [32]`; `BuiltinPredicateApplication 76..81 [31,9,33]`; `FormulaExpression 76..81 [34]` |
+| 36–43 | `TermReference 97..98 [15]`; `TermExpression 97..98 [36]`; `ParenthesizedTerm 96..99 [14,37,16]`; `TermExpression 96..99 [38]`; `ParenthesizedTerm 95..100 [13,39,17]`; `TermExpression 95..100 [40]`; `Witness 95..100 [41]`; `TakeStatement 90..101 [12,42,18]` |
+| 44–51 | `TermReference 109..110 [20]`; `TermExpression 109..110 [44]`; `TermReference 113..114 [22]`; `TermExpression 113..114 [46]`; `BuiltinPredicateApplication 109..114 [45,21,47]`; `FormulaExpression 109..114 [48]`; `Proposition 109..114 [49]`; `ConclusionStatement 104..115 [19,50,23]` |
+| 52–56 | `ProofBlock 82..119 [11,43,51,24]`; `TheoremItem 19..120 [5,6,7,35,52,25]`; `ItemList 0..120 [29,53]`; `CompilationUnit 0..120 [54]`; `Root 0..120 [0..25,55]` |
+
+Resolver provenance is exactly one local public/exported theorem owner and
+label, contribution 0, owner range `19..120`, label range `27..74`,
+structural origin `[2,1]`, and normal recovery. There is no import,
+proof-step label, citation, witness-name symbol, or new resolver handoff.
+The distinct theorem label is mandatory: the existing B3M2B1 same-label
+mutation from `(x)` to `((x))` remains a selector near miss.
+
+The syntax-free composition is:
+
+- Task 48 `2/1/0`: module context 0 and proof context 1, proof owner
+  `82..119`, reserved binding 0 visible in lexical scope `[0]`, no
+  proof-owned binding, and no diagnostic;
+- Task 252 `7/5/0`: five surface roots at nodes `30/32/40/44/46` expand
+  to seven dense primary rows. Terms 0/1 are variable `x` at
+  `30/76..77` and `32/80..81` in context 0. Term 2 is outer
+  parenthesized `40/95..100`, spelling `( ( x ) )`, with no parent.
+  Term 3 is inner parenthesized `38/96..99`, spelling `( x )`, parent
+  term 2. Term 4 is variable `36/97..98`, parent term 3. Terms 5/6 are
+  variable `44/109..110` and `46/113..114`. Terms 2–6 are in context 1.
+  Dense references
+  `0/1/2/3/4` target terms `0/1/4/5/6`; all select binding 0 at use
+  ordinal 1, with lexical scopes `[]/[]/[0]/[0]/[0]`. Terms 2/3 have no
+  reference, and there is no numeric request;
+- Task 256 `2/0/0/0/0/0/0/4/4`: equality nodes 34 and 48 target
+  primary pairs `[0,1]` and `[5,6]`. The complete witness chain
+  `2 -> 3 -> 4` is excluded from every atomic edge and request;
+- base statement `1/2/2/2/2`: theorem node/range `53/19..120` and
+  conclusion `51/104..115` have source ordinals 0 and 2 and contexts 0
+  and 1. Their input facts use references `[0,1]` and `[3,4]`.
+
+The five extraction roots must remain distinct from seven primary rows.
+Frozen atomic starts are `[0,5]`; input-fact reference starts are `[0,3]`.
+The witness companion is exactly `1 witness / 0 names`: witness 0 owns
+owner 0, context 1, `Primary(2)`, take `43/90..101`, item
+`42/95..100`, source ordinal 1, witness ordinal 0, normalized spelling
+`( ( x ) )`, normal recovery, and no name. Combined source order is
+`[0,1,2]`.
+
+Typed ownership assigns `source.term.variable-reference` to node 36,
+`source.term.parenthesized` to nodes 38/40,
+`source.statement-witness.item` to node 42,
+`source.statement-witness.take` to node 43,
+`source.formula.atomic.equality` to nodes 34/48,
+`source.statement.conclusion` to node 51, and
+`source.statement.theorem` to node 53. `TermExpression` and
+`FormulaExpression` surface wrappers remain unowned. Tasks 249–251,
+253–255, and 257 receive no row or ownership.
+
+No public type, variant, field, error, table, accessor, producer, installer,
+route, detail key, or debug grammar is added. Existing Task-248/252/256/base
+and witness/name tables, `SourcePrimaryTermKind::Parenthesized`, parent
+links, `Primary(2)` witness targets, and paired typed/final ownership are
+sufficient. Private profiles and the exact selector alone add B3M2B2A.
+Dependency/fingerprint/arena validation precedes aggregate cardinality,
+witness row 0, and empty name rows. The paired owner rejects standalone,
+hybrid, stale, parent-chain-corrupt, reference-corrupt, cross-family, or
+semantic-coexisting states without partial publication.
+
+The checker test contract is exactly four compound tests:
+
+1. `task258b3m2b2a_exact_nested_parenthesized_witness_api_debug_and_compatibility_are_stable`;
+2. `task258b3m2b2a_dependencies_parent_chain_witness_precedence_and_all_nodes_fail_closed`;
+3. `task258b3m2b2a_paired_ownership_hybrids_and_all_family_orders_are_atomic`;
+4. `task258b3m2b2a_final_clone_revalidation_and_semantic_deferrals_are_stable`.
+
+Checker test 2 independently adds a new reference row on outer wrapper term
+2 while the valid leaf reference 2 still targets term 4, then separately
+adds a new reference row on inner wrapper term 3 while that valid leaf row
+still remains. It also independently removes, remaps, duplicates, or
+detaches each `2 -> 3 -> 4` parent/reference association and contaminates
+Task-256 edge/request ownership separately with terms 2, 3, and 4. Checker
+test 3 covers prior statement profiles and Tasks 253–255 in both
+installation orders without weakening their own public fail-close.
+
+The runner test contract is exactly five compound tests:
+
+1. `task258b3m2b2a_real_frontend_freezes_nested_parenthesized_witness_contract`;
+2. `task258b3m2b2a_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders`;
+5. `task258b3m2b2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`.
+
+Together they freeze all 121 bytes and 57 nodes, resolver provenance,
+five-root/seven-primary separation, the complete two-parent chain,
+reference ownership, subtree exclusion, all independent corruptions,
+B3M2B1 same-label and exact-source isolation, every earlier family and
+active order, rollback/replay, debug stability, final cloning, and empty
+semantics. Near misses include `x`, `(x)`, `(((x)))`, `((101))`, named or
+multiple nested witnesses, application/structure/selector/update/set/choice
+terms, recovery, changed theorem or label, and composite/existential roots.
+The theorem-proof `take it;` remains authority-invalid.
+
+Runner test 2 attempts both extra-wrapper-reference mutations while the
+valid term-4 leaf reference remains, plus every parent/leaf-reference and
+term-2/3/4 Task-256 mutation, through real route construction. When an
+invalid row cannot form a Task-252/256 handoff, that owning lower producer
+rejects first; every constructible handoff reaches the paired statement
+consumer.
+
+The private detail projection remains `Some(Vec::new())`, requiring paired
+base/witness ownership, two statements, lookup ordinals `1/1`, and
+reference-use ordinals `[1; 5]`. `None` is a selector miss; an owned invalid
+output retains `type_elaboration.checker.typed_ast_invalid`.
+Task 269 remains a no-op. Task 272 retains witness typing, existential-goal
+matching, substitution, remaining-goal construction, and proof acceptance;
+all formula truth/fact, Core/ControlFlow/VC, and goal outputs remain empty.
+
+This documentation prerequisite changes no production/test source,
+canonical specification, existing `.miz`, fixture, expectation, sidecar,
+trace row/status/count, active route, test list, count, or hash. Baselines
+are checker/runner libraries `366/404`, checker sizes
+`17569/4661/7203/3156`, runner statement leaf/facade/root/test sizes
+`4676/695/2508/9902`, and runner production 30 paths / 39,069 lines.
+Checker raw/normalized test-list hashes are
+`0e43763c92ee171b18b5a2f80b92cd278b49ac9895d95410ca52ca787bcac3c8` /
+`7685e21bc0d76bb8d824dd821e800707d251e8c025682ef69b2db798d6888e5d`;
+runner hashes are
+`a28c33e517d8efdd635e23e6f2273c29b966aa6102efb321eed73335ab11483c` /
+`f8e8dc6ef605cbd8f8ad722983793434339b3cad21bf53703ab6c21f0b8742a5`.
+Runner path/content hashes remain
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`04bf563fcc99ccbc3b789a8596d953ade05453b2267639ef0ce3d8d54cbd6b45`.
+Plan/type remain `419/387` and `253/241`; pass/fail `228/191`; active
+parse/declaration/type/proof `101/5/198/1`; warnings/errors `23/0`; and all
+five CLI hashes remain unchanged.
+
+Implementation projects exactly four checker and five runner tests, hence
+libraries `370/409`; changed sizes and hashes must be measured. This
+prerequisite closes the broad-umbrella `design_drift`; future code is
+bounded `source_drift` and future tests are `test_gap`. There is no blocking
+`spec_gap`, unsafe test intent, lower-stage defect,
+`source_undocumented_behavior`, `test_expectation_drift`, or language/crate
+`boundary_violation`. The historical external-origin movement remains a
+report-only `repo_metadata_conflict`; the exact task and commit base remain
+unambiguous.
+
+The coverage audit changes follow-up ownership only.
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []` and no credit. Exit requires synchronized EN/JA documents,
+independent no-findings reviews, all hard gates, read-only quality at least
+90/100, task-only staging, and one dedicated documentation commit.
+Implementation may begin only after that commit and a fresh
+parser/resolver/lower/count/hash preflight.

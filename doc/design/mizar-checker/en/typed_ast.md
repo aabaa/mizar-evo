@@ -1093,3 +1093,14 @@ exclusions, fingerprints, and `[0,1,2]` source order. Standalone, repeated,
 cross-profile, corrupted-dependency, semantic-coexisting, and reversed-order
 attempts still fail without partial ownership. No public typed-AST API or
 debug grammar changed.
+
+## Task 258B3M2B2A Frozen Typed Ownership
+
+The future paired installer may accept only one authenticated B3M2B2A base
+plus `1 witness / 0 names` transaction. It must revalidate the 57-node
+arena, five-root/seven-primary mapping, parent chain `2 -> 3 -> 4`, five
+references, Task-256 exclusion of all three witness-subtree terms,
+fingerprints, and source order `[0,1,2]` before atomic publication.
+Standalone, hybrid, repeated, stale, cross-family, reversed-order, and
+semantic-coexisting states remain rejected. No public typed-AST API or
+debug grammar changes in the prerequisite.

@@ -449,3 +449,14 @@ syntax-free authenticated handoffs cross to the checker. Checker sizes are
 `4676/695/2508/9902`, with 30 production paths / 39,069 lines. No module,
 crate edge, public schema, active route, semantic owner, or dependency
 direction was added; no behavior-neutral split is warranted.
+
+## Task 258B3M2B2A Frozen Module Boundary
+
+The planned implementation remains in the existing checker statement
+producer, typed/final consumers, dormant runner statement leaf/facades/root,
+and paired test leaf. Raw parser/resolver state remains runner-private;
+only Task-48/252/256/base/witness syntax-free handoffs cross the crate
+boundary. This docs-only prerequisite leaves measured sizes
+`17569/4661/7203/3156` and `4676/695/2508/9902`, 30 production paths /
+39,069 lines, module layout, crate edges, public schema, active routes,
+semantic owners, and dependency direction unchanged. No split is warranted.

@@ -902,3 +902,17 @@ one unnamed outer-term witness/no names atomically with the base statement.
 No application, structure, selector, update, set, choice, binding, semantic
 edge, active route, public schema, or neighboring family changed. B3M2B2
 remains the next unimplemented edge before B4/B5.
+
+### Task 258B3M2B2A Nested-Parenthesized Witness Edge
+
+B3M2B2 is now split. B3M2B2A owns only one syntax-only witness target over
+a two-level Task-252 parenthesized chain: outer term 2 parents inner term 3,
+which parents reserved-variable term 4. Task 252 owns all three rows and
+the child-only reference; Task 256 excludes the complete `2/3/4` subtree
+and keeps equality pairs `[0,1]` / `[5,6]`. Task 258 owns only one unnamed
+outer-term witness/no names and the base statement rows. Tasks 253–255
+receive no application, structure, selector, update, set, choice, wrapper,
+or cross-family edge. Task 269 adds no binding and Task 272 retains every
+semantic effect. B3M2B2B retains application, structure constructor/
+selector/update, set, choice, compound, and every other authority-valid
+witness term. B4/B5 remain blocked behind B3M2B2B.

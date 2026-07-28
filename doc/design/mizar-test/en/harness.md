@@ -3598,3 +3598,22 @@ Malformed lower rows that cannot form Task-252/256 handoffs reject at their
 owning public producer; constructible lower handoffs reach the paired
 consumer. No public route/key/fixture/sidecar/trace/active/binding/semantic
 owner changed.
+
+### Checker Task 258B3M2B2A Dormant Nested-Parentheses Contract
+
+The future dormant selector accepts only the final-LF 121-byte/hash
+`FormulaStatementNestedParenthesizedWitnessSmoke` source and authenticates
+zero diagnostics plus 57 nodes/root 56. Five extraction roots expand to
+seven Task-252 primaries: outer wrapper 2 parents inner wrapper 3, which
+parents reserved-variable term 4. References target `0/1/4/5/6`;
+equalities target only `[0,1]` / `[5,6]`; one unnamed witness targets
+outer term 2. The complete `2/3/4` subtree remains outside Task-256.
+
+Five future tests cover exact frontend/resolver/lower identity, both
+parent links, reference and independent subtree contamination, selector
+and byte near misses, prior statement plus Tasks 253–255 and active
+isolation in both orders, replay/rollback, and typed/final clone/debug.
+Malformed Task-252/256 inputs retain lower-producer-first fail-close.
+Successful transport returns `Some(Vec::new())`, lookups `1/1`, uses
+`[1; 5]`, and no binding or semantic output. No active corpus, public
+route/key, fixture, sidecar, expectation, or trace metadata changes.

@@ -4095,3 +4095,54 @@ operational `boundary_violation`, not a `repo_metadata_conflict`. The parent
 reconciled only task-owned source/documentation, preserved the unambiguous
 commit target, and did not change repository metadata or the protected
 stash.
+
+## Step 5 Checker Task 258B3M2B2A Frozen-Ownership Addendum
+
+Fresh post-B3M2B1 inventory decomposes broad remaining B3M2B2 into exact
+nested-parenthesized B3M2B2A and remaining authority-valid B3M2B2B.
+Canonical Chapters 4 §4.4.3, 13 §§13.1.3/13.8.8/13.9, 15
+§§15.4.4/15.11.5, and 16 §§16.3.3/16.7.3 admit recursive type-preserving
+parentheses as one unnamed witness while retaining every typing,
+existential, substitution, goal, and proof effect downstream.
+
+The frozen final-LF source is 121 bytes with SHA-256
+`35396db1f7e22abfbe94861709b2ab9bca38d4464712dfbce114533d2ab4d71d`,
+57 unrecovered nodes/root 56, and zero diagnostics. Its syntax-free
+composition is Task-48 `2/1/0`, Task-252 `7/5/0`, Task-256
+`2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, and witness/name `1/0`.
+Five roots produce outer wrapper term 2, inner wrapper term 3, and
+reserved-variable child term 4 as a closed parent chain. References target
+`0/1/4/5/6`; equality pairs `[0,1]` / `[5,6]` exclude all of `2/3/4`;
+one unnamed witness targets outer `Primary(2)`.
+
+This documentation prerequisite changes follow-up ownership only. It
+changes no canonical specification, `.miz`, expectation, fixture, sidecar,
+trace row/status/count, active route, production/test source, public API,
+binding, or semantic owner. The
+`spec.en.checker.formula_statement.source_payloads` row remains
+`deferred`, `tests = []`, with no backlink or coverage credit. Baselines
+remain libraries `366/404`, checker sizes `17569/4661/7203/3156`,
+runner sizes `4676/695/2508/9902`, and 30 production paths / 39,069
+lines; all counts and hashes remain unchanged.
+
+The prerequisite closes broad-umbrella `design_drift`. Future private
+implementation and exactly four checker/five runner tests are bounded
+`source_drift`/`test_gap`; B3M2B2B retains application, structure,
+selector, update, set, choice, compound, and other authority-valid witness
+terms before B4/B5. There is no blocking `spec_gap`, unsafe test intent,
+lower-stage defect, `source_undocumented_behavior`,
+`test_expectation_drift`, or language `boundary_violation`.
+
+The external process that committed the fully reviewed and explicitly
+staged B3M2B1 40-file target before the parent issued `git commit` is a
+report-only `repo_metadata_conflict`. Its parent, file set, content, clean
+post-state, origin divergence, and protected stash were unambiguous, so no
+metadata repair was performed and B3M2B2A selection remained safe.
+
+During the B3M2B2A prerequisite review, review-only agents again wrote
+nine same-task authority-reference lines across six paired checker EN/JA
+documents despite explicit no-write scopes. This is an operational
+`boundary_violation`, not a repository metadata conflict. The parent
+interrupted both agents, retained only task-owned authority clarifications
+after independent reconciliation, and changed no metadata or protected
+stash state.

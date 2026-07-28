@@ -2039,7 +2039,12 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Freeze B3M2B1 only; keep implementation and B3M2B2 separate.
 - [x] Implement frozen B3M2B1 after its documentation commit and fresh
   parser/resolver/lower/count/hash preflight.
-- [ ] Freeze/implement B3M2B2 before Task 258B4.
+- [x] Decompose B3M2B2 into exact nested-parenthesized B3M2B2A and
+  remaining authority-valid B3M2B2B.
+- [x] Freeze only B3M2B2A; keep implementation and B3M2B2B separate.
+- [ ] Implement B3M2B2A after its documentation commit and fresh
+  parser/resolver/lower/count/hash preflight.
+- [ ] Freeze/implement B3M2B2B before Task 258B4.
 
 ## Checker Task 258B3M1 Runner Implementation Ledger
 
@@ -2103,3 +2108,15 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   orders without weakening lower-producer fail-close.
 - [x] Measure 404 tests, sizes `4676/695/2508/9902`, and 30 production
   paths / 39,069 lines; retain B3M2B2 before B4.
+
+## Checker Task 258B3M2B2A Runner Prerequisite Ledger
+
+- [x] Freeze only final-LF 121-byte `take ((x));`, SHA-256
+  `35396db1f7e22abfbe94861709b2ab9bca38d4464712dfbce114533d2ab4d71d`,
+  57 nodes/root 56, and zero frontend diagnostics.
+- [x] Freeze five roots / seven primaries, wrapper chain `2 -> 3 -> 4`,
+  refs to `0/1/4/5/6`, and equalities over `[0,1]` / `[5,6]`.
+- [x] Freeze paired base plus `1 witness / 0 names`, no detail key,
+  active route, binding, semantics, fixture, sidecar, or trace change.
+- [x] Freeze exactly five future compound tests, unchanged 404-test and
+  30-path/39,069-line baselines, and B3M2B2B-before-B4.

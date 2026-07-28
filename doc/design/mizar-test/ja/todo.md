@@ -1844,7 +1844,12 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] B3M2B1だけをfreezeし、implementation/B3M2B2をseparateに維持。
 - [x] docs commit/fresh parser/resolver/lower/count/hash preflight後に
   frozen B3M2B1だけをimplement。
-- [ ] Task 258B4前にB3M2B2をfreeze/implement。
+- [x] B3M2B2をexact nested-parenthesized B3M2B2Aとremaining
+  authority-valid B3M2B2Bへdecompose。
+- [x] B3M2B2Aだけをfreezeし、implementation/B3M2B2Bをseparateに維持。
+- [ ] docs commit/fresh parser/resolver/lower/count/hash preflight後に
+  B3M2B2Aをimplement。
+- [ ] Task 258B4前にB3M2B2Bをfreeze/implement。
 
 ## Checker Task 258B3M1 runner implementation ledger
 
@@ -1906,3 +1911,15 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   both ownership ordersをcover。
 - [x] 404 tests、sizes `4676/695/2508/9902`、30 production paths /
   39,069 linesを実測し、B3M2B2をB4前に保持。
+
+## Checker Task 258B3M2B2A runner prerequisite ledger
+
+- [x] final-LF 121-byte `take ((x));`、SHA-256
+  `35396db1f7e22abfbe94861709b2ab9bca38d4464712dfbce114533d2ab4d71d`、
+  57 nodes/root 56、frontend diagnostics 0だけをfreeze。
+- [x] five roots / seven primaries、wrapper chain `2 -> 3 -> 4`、
+  refs `0/1/4/5/6`、equalities `[0,1]` / `[5,6]`をfreeze。
+- [x] paired base + `1 witness / 0 names`、detail key/active/binding/
+  semantics/fixture/sidecar/trace changeなしをfreeze。
+- [x] exactly five future compound tests、unchanged 404-test /
+  30-path/39,069-line baseline、B3M2B2B-before-B4をfreeze。

@@ -649,3 +649,12 @@ parenthesized term 2 creates no reference; child term 3 alone resolves
 binding 0 at use ordinal 1. The unnamed witness creates no binding,
 resolver-owned symbol, capture, abbreviation, or context transition. Task
 269 therefore remains a no-op, and no binding API or fingerprint changed.
+
+## Task 258B3M2B2A Frozen Binding Boundary
+
+The nested-parentheses prerequisite reuses exactly module/proof contexts
+`0/1`, reserved binding 0, proof scope `[0]`, and zero diagnostics. Outer
+wrapper term 2 and inner wrapper term 3 create no references; only variable
+term 4 resolves binding 0 at use ordinal 1. The unnamed outer witness adds
+no binding, capture, abbreviation, symbol, or context transition. Task 269
+remains a no-op; no binding API, table, or fingerprint may change.

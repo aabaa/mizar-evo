@@ -520,3 +520,12 @@ passing tests 5本、Tasks 253–255 bidirectional isolation、404-test /
 30-path measured oracles、不変のpublic/active/trace/semantic boundary、
 lower-producer fail-close、B3M2B2-before-B4を同一に記録する。bilingual
 debtは残らない。
+
+## Task 258B3M2B2A runner prerequisite synchronization
+
+EN/JA runner plan/TODO/harness/boundary auditはsame exact
+121-byte/57-node selector contract、diagnostics 0、five-root/seven-primary
+chain、complete witness-subtree exclusion、future tests 5本、unchanged
+404-test/30-path oracle、lower-producer fail-close、no
+public/active/trace/semantic change、B3M2B2B-before-B4を記録する。
+prerequisite bilingual debtなし。

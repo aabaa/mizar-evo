@@ -10405,3 +10405,13 @@ test-owned。statement leaf/facade/root/test sizesは
 `4676/695/2508/9902`、productionは30 paths / 39,069 lines。public
 route/key/mutation API、module split、crate edge、dependency direction、
 binding、active route、semantic ownerは不変。
+
+## Task 258B3M2B2A frozen runner boundary
+
+future dormant selectorはexisting statement leaf/facades/root内、testsは
+paired statement/application support leaf内。raw parser/resolverはprivateで、
+exact Task-48/252/256/base/witness handoffだけcheckerへ渡す。
+five-root/seven-primary、diagnostics 0、both wrapper links、bidirectional
+family isolationはtest-owned。prerequisiteはsource/module/public route/key/
+crate edge/dependency direction/binding/active/semantic ownerを変更せず、
+runner sizesと30-path/39,069-line baselineも不変。

@@ -2089,3 +2089,181 @@ canonical/fixture/expectation/trace/active/public/binding/semantic ownershipは
 不変。coverageは`deferred`, `tests = []`でcreditなし。public Task-252/256
 fail-closeをbypassするtest seam/APIは追加せず、malformed lower rowsはpaired
 consumer前にrejectする。B3M2B2がB4前のnext。
+
+## Task 258B3M2B2A frozen nested-parenthesized-witness slice
+
+post-B3M2B1 fresh inventoryはbroad B3M2B2をdependency-ordered
+B3M2B2A/B3M2B2Bへdecomposeする。B3M2B2AはTask-252 nested-primary graph
+だけに依存するexact one unnamed two-level parenthesized witness
+`take ((x));`を所有する。B3M2B2Bはtriple/deeper parentheses、
+application、structure constructor/selector/update、set、choice、compound、
+other authority-valid witness termsを保持し、future cross-family workは
+Task 253 → 254 → 255のlower-owner orderで再分解してからB4/B5へ進む。
+
+canonical authorityは`doc/spec/en/15.statements.md` §15.4.4、
+`doc/spec/en/13.term_expression.md` §§13.1/13.1.3/13.8.8/13.9、
+`doc/spec/en/16.theorems_and_proofs.md` §§16.3.3/16.7.3。
+parenthesesはarbitrary nesting、type preserving、FOL-transparentで、
+unnamed exampleは任意の`term_expression`。existing
+`pass_parser_simple_statements_001.miz`、`pass_parser_primary_terms_001.miz`、
+Task-252 `task252_nested_parentheses_exclude_mixed_subtrees_and_keep_siblings`、
+covered `source_primary_term_payload` rowがsyntax/lower transportを
+authenticateする。existing source/expectation/traceは変更せず、
+formula-statement creditを追加しない。
+
+exact future corpus-dormant consumerはfinal-LF 121-byte、SHA-256
+`35396db1f7e22abfbe94861709b2ab9bca38d4464712dfbce114533d2ab4d71d`：
+
+```mizar
+reserve x for set;
+theorem FormulaStatementNestedParenthesizedWitnessSmoke: x = x proof
+  take ((x));
+  thus x = x;
+end;
+```
+
+equality goalはexistential introductionをauthorizeしないためactive
+accepted corpus caseにしない。fresh frontendはdiagnostics 0、57
+unrecovered nodes、root 56、26 tokens：
+`0:reserve@0..7, 1:x@8..9, 2:for@10..13, 3:set@14..17,
+4:;@17..18, 5:theorem@19..26,
+6:FormulaStatementNestedParenthesizedWitnessSmoke@27..74,
+7::@74..75, 8:x@76..77, 9:=@78..79, 10:x@80..81,
+11:proof@82..87, 12:take@90..94, 13:(@95..96, 14:(@96..97,
+15:x@97..98, 16:)@98..99, 17:)@99..100, 18:;@100..101,
+19:thus@104..108, 20:x@109..110, 21:=@111..112,
+22:x@113..114, 23:;@114..115, 24:end@116..119,
+25:;@119..120`。全tokenはchildrenなし。structural nodes：
+
+| IDs | exact kind, range, ordered children |
+| --- | --- |
+| 26–29 | `TypeHead 14..17 [3]`; `TypeExpression 14..17 [26]`; `ReserveSegment 8..17 [1,2,27]`; `ReserveItem 0..18 [0,28,4]` |
+| 30–35 | `TermReference 76..77 [8]`; `TermExpression 76..77 [30]`; `TermReference 80..81 [10]`; `TermExpression 80..81 [32]`; `BuiltinPredicateApplication 76..81 [31,9,33]`; `FormulaExpression 76..81 [34]` |
+| 36–43 | `TermReference 97..98 [15]`; `TermExpression 97..98 [36]`; `ParenthesizedTerm 96..99 [14,37,16]`; `TermExpression 96..99 [38]`; `ParenthesizedTerm 95..100 [13,39,17]`; `TermExpression 95..100 [40]`; `Witness 95..100 [41]`; `TakeStatement 90..101 [12,42,18]` |
+| 44–51 | `TermReference 109..110 [20]`; `TermExpression 109..110 [44]`; `TermReference 113..114 [22]`; `TermExpression 113..114 [46]`; `BuiltinPredicateApplication 109..114 [45,21,47]`; `FormulaExpression 109..114 [48]`; `Proposition 109..114 [49]`; `ConclusionStatement 104..115 [19,50,23]` |
+| 52–56 | `ProofBlock 82..119 [11,43,51,24]`; `TheoremItem 19..120 [5,6,7,35,52,25]`; `ItemList 0..120 [29,53]`; `CompilationUnit 0..120 [54]`; `Root 0..120 [0..25,55]` |
+
+resolver provenanceはone local public/exported theorem owner/label、
+contribution 0、owner `19..120`、label `27..74`、structural origin
+`[2,1]`、normal recovery。import、proof-step label、citation、
+witness-name symbol、新resolver handoffなし。distinct theorem labelは必須で、
+existing B3M2B1のsame-label `(x)`→`((x))` mutationはselector near missの
+まま維持する。
+
+syntax-free composition：
+
+- Task 48 `2/1/0`：module context 0 / proof context 1、proof owner
+  `82..119`、reserved binding 0はscope `[0]`でvisible、proof binding /
+  diagnosticなし。
+- Task 252 `7/5/0`：five roots `30/32/40/44/46`からseven rows。
+  terms 0/1は`30/76..77`,`32/80..81`の`x`。term 2はouter
+  `40/95..100`, `( ( x ) )`, parentなし。term 3はinner
+  `38/96..99`, `( x )`, parent 2。term 4はvariable
+  `36/97..98`, parent 3。terms 5/6は`44/109..110`,
+  `46/113..114`。terms 2–6はcontext 1。refs
+  `0/1/2/3/4 -> terms 0/1/4/5/6`、全て
+  binding 0 / use ordinal 1、scopes `[]/[]/[0]/[0]/[0]`。terms 2/3に
+  referenceなし、numeric request 0。
+- Task 256 `2/0/0/0/0/0/0/4/4`：equality nodes 34/48はpairs
+  `[0,1]` / `[5,6]`。complete witness chain `2 -> 3 -> 4`を全
+  edge/requestからexclude。
+- base `1/2/2/2/2`：theorem `53/19..120`、conclusion
+  `51/104..115`、source ordinals 0/2、contexts 0/1。input factsは
+  refs `[0,1]` / `[3,4]`。
+
+five extraction rootsとseven primary rowsを分離し、atomic starts
+`[0,5]`、input-fact reference starts `[0,3]`を固定する。witness/nameは
+`1/0`。witness 0はowner 0、context 1、`Primary(2)`、take
+`43/90..101`、item `42/95..100`、source ordinal 1、witness ordinal 0、
+spelling `( ( x ) )`、normal recovery、nameなし。combined source order
+`[0,1,2]`。
+
+typed ownershipはnode 36 `source.term.variable-reference`、nodes 38/40
+`source.term.parenthesized`、node 42 witness item、node 43 take、nodes
+34/48 atomic equality、node 51 conclusion、node 53 theorem。
+`TermExpression`/`FormulaExpression` surface wrappersはunowned。
+Tasks 249–251/253–255/257はrows/ownershipなし。
+
+public type/variant/field/error/table/accessor/producer/installer/route/detail
+key/debug grammarを追加しない。existing Task-248/252/256/base、
+witness/name tables、parent links、`Primary(2)`、paired typed/final ownershipで
+十分。private profiles/exact selectorだけを追加する。dependency/
+fingerprint/arena validationをaggregate cardinality、witness row 0、empty
+name rowsより先に行う。standalone、hybrid、
+stale、parent-chain/reference corruption、cross-family、
+semantic-coexisting stateはpartial publicationなしでrejectする。
+
+checker test contractはexactly 4本：
+
+1. `task258b3m2b2a_exact_nested_parenthesized_witness_api_debug_and_compatibility_are_stable`;
+2. `task258b3m2b2a_dependencies_parent_chain_witness_precedence_and_all_nodes_fail_closed`;
+3. `task258b3m2b2a_paired_ownership_hybrids_and_all_family_orders_are_atomic`;
+4. `task258b3m2b2a_final_clone_revalidation_and_semantic_deferrals_are_stable`.
+
+test 2はvalid leaf reference 2がterm 4をtargetしたままouter wrapper
+term 2へのextra reference rowを追加するmutationと、同じvalid leaf rowを
+保持したままinner wrapper term 3へextra reference rowを追加するmutationを
+separately rejectする。さらに`2 -> 3 -> 4` parent/referenceの
+removal/remap/duplicate/detachとterms 2/3/4のTask-256 edge/request
+contaminationを独立にrejectする。
+test 3はprior statement profilesとTasks 253–255のboth ordersをcoverする。
+
+runner test contractはexactly 5本：
+
+1. `task258b3m2b2a_real_frontend_freezes_nested_parenthesized_witness_contract`;
+2. `task258b3m2b2a_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders`;
+5. `task258b3m2b2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`.
+
+121 bytes/57 nodes、resolver、five-root/seven-primary、two-parent chain、
+reference/subtree ownership、独立corruptions、B3M2B1 same-label/exact-source
+isolation、all prior family/active orders、rollback/replay/debug/final clone、
+empty semanticsを固定する。near missesは`x`、`(x)`、`(((x)))`、
+`((101))`、named/multiple、application/structure/selector/update/set/choice、
+recovery、changed theorem/label、composite/existential roots。
+theorem-proof `take it;`はauthority-invalid。
+
+runner test 2はvalid term-4 leaf referenceを保持したboth extra-wrapper-
+reference mutations、全parent/leaf-reference mutations、terms 2/3/4の
+Task-256 mutationsをreal route constructionで試す。invalid rowから
+Task-252/256 handoffを作れない場合はowning lower producerがfirst rejectし、
+constructible handoffはpaired statement consumerまで到達する。
+
+detail projectionは`Some(Vec::new())`、statements 2、lookups `1/1`、
+reference uses `[1; 5]`。selector missは`None`、owned invalidは
+`type_elaboration.checker.typed_ast_invalid`。Task 269はno-op、Task 272が
+typing/existential matching/substitution/remaining goal/proof acceptanceを
+保持し、formula truth/fact、Core/ControlFlow/VC/goal outputsはempty。
+
+documentation prerequisiteはproduction/test source、canonical spec、
+existing `.miz`、fixture、expectation、sidecar、trace row/status/count、
+active route、test list/count/hashを変更しない。baselinesはlibraries
+`366/404`、checker `17569/4661/7203/3156`、runner
+`4676/695/2508/9902`、production 30 paths / 39,069 lines。checker
+raw/normalized hashes
+`0e43763c92ee171b18b5a2f80b92cd278b49ac9895d95410ca52ca787bcac3c8` /
+`7685e21bc0d76bb8d824dd821e800707d251e8c025682ef69b2db798d6888e5d`、
+runner
+`a28c33e517d8efdd635e23e6f2273c29b966aa6102efb321eed73335ab11483c` /
+`f8e8dc6ef605cbd8f8ad722983793434339b3cad21bf53703ab6c21f0b8742a5`、
+production path/content
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`04bf563fcc99ccbc3b789a8596d953ade05453b2267639ef0ce3d8d54cbd6b45`。
+plan/type `419/387`,`253/241`、pass/fail `228/191`、active
+`101/5/198/1`、warnings/errors `23/0`、five CLI hashesは不変。
+
+implementationはchecker/runner exactly `4/5`、libraries `370/409`をproject。
+このprerequisiteはbroad-umbrella `design_drift`をcloseし、future codeは
+bounded `source_drift`、future testsは`test_gap`。blocking `spec_gap`、
+unsafe intent、lower-stage defect、`source_undocumented_behavior`、
+`test_expectation_drift`、language/crate `boundary_violation`なし。
+historical external-origin movementはreport-only `repo_metadata_conflict`で、
+task/commit baseはunambiguous。
+
+coverage auditはfollow-up ownershipだけ更新し、
+`spec.en.checker.formula_statement.source_payloads`は`deferred`,
+`tests = []`、creditなし。exitはEN/JA sync、independent no-findings
+reviews、all hard gates、read-only quality >=90、task-only staging、
+dedicated docs commit。implementationはcommit後のfresh
+parser/resolver/lower/count/hash preflight後だけ開始する。

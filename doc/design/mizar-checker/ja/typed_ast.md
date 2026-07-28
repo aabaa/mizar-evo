@@ -1038,3 +1038,13 @@ exclusions、fingerprints、`[0,1,2]` source orderをrevalidateする。
 standalone、repeated、cross-profile、Tasks 253–255 occupied/reverse-order、
 corrupted dependency、semantic-coexisting attemptはpartial ownershipなしで
 failする。public typed-AST API/debug grammarは不変。
+
+## Task 258B3M2B2A frozen typed ownership
+
+future paired installerはauthenticated B3M2B2A base + `1 witness / 0
+names`だけをacceptできる。57-node arena、five-root/seven-primary、
+parent chain `2 -> 3 -> 4`、five refs、Task-256からthree witness-subtree
+termsのexclusion、fingerprints、source order `[0,1,2]`をatomic publish前に
+revalidateする。standalone、hybrid、repeated、stale、cross-family、
+reverse-order、semantic-coexisting stateはreject。prerequisiteではpublic
+typed-AST API/debug grammarを変更しない。

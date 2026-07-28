@@ -539,3 +539,12 @@ five-root/six-primary handoff, parent/child ownership, five passing tests,
 Tasks 253–255 bidirectional isolation, 404-test and 30-path measured
 oracles, unchanged public/active/trace/semantic boundary, lower-producer
 fail-close, and B3M2B2-before-B4 order. No bilingual debt remains.
+
+## Task 258B3M2B2A Runner Prerequisite Synchronization
+
+The EN/JA runner plan, TODO, harness, and boundary audit record the same
+exact 121-byte/57-node selector contract, diagnostics 0,
+five-root/seven-primary chain, complete witness-subtree exclusion, five
+future tests, unchanged 404-test/30-path oracle, lower-producer fail-close,
+no public/active/trace/semantic change, and B3M2B2B-before-B4 order. No
+prerequisite bilingual debt remains.

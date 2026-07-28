@@ -836,3 +836,17 @@ parenthesized wrapper、child reference、parent linkを保持し、Task-256は
 witness / zero namesをbase statementとatomicにpublishする。application、
 structure、selector、update、set、choice、binding、semantic edge、active
 route、public schema、neighbor familyは不変。B3M2B2がB4/B5前のnext。
+
+### Task 258B3M2B2A nested-parenthesized witness edge
+
+B3M2B2をsplitする。B3M2B2Aはtwo-level Task-252 parenthesized chain上の
+one syntax-only witness targetだけをownする: outer term 2がinner term 3を
+parentし、term 3がreserved-variable term 4をparentする。Task 252は三rowsと
+child-only reference、Task 256はcomplete `2/3/4` subtreeをexcludeして
+equalities `[0,1]` / `[5,6]`をownする。Task 258はone unnamed outer-term
+witness/no namesとbase rowsだけをownする。Tasks 253–255にapplication、
+structure、selector、update、set、choice、wrapper、cross-family edgeを
+追加しない。Task 269はbindingなし、Task 272が全semantic effectを保持。
+B3M2B2Bはapplication、structure constructor/selector/update、set、
+choice、compound、other authority-valid witness termsを保持し、B4/B5は
+B3M2B2B後。

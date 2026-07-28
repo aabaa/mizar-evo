@@ -2601,4 +2601,11 @@ completion remain deferred. The origin discrepancy remains report-only
   unchanged baselines/audit credit.
 - [x] Implement only B3M2B1 after its documentation commit and fresh
   parser/resolver/lower/count/hash preflight.
-- [ ] Freeze/implement B3M2B2 before selecting Task 258B4.
+- [x] Decompose B3M2B2 into exact nested-parenthesized B3M2B2A and
+  remaining authority-valid B3M2B2B.
+- [x] Freeze only B3M2B2A: final-LF 121-byte/57-node source, five roots /
+  Task-252 `7/5/0`, wrapper chain `2 -> 3 -> 4`, Task-256 subtree
+  exclusion, witness/name `1/0`, no API/semantics, four/five future tests,
+  and unchanged baselines/audit credit.
+- [ ] Implement B3M2B2A after its documentation commit and fresh preflight.
+- [ ] Freeze/implement B3M2B2B before selecting Task 258B4.

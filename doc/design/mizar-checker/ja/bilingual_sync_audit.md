@@ -432,3 +432,12 @@ five-root/six-primary mapping、parent/child ownership、`1 witness / 0 names`�
 tests 4/5、libraries `366/404`、measured sizes/hashes、不変の
 public/active/trace/semantic boundary、B3M2B2-before-B4を同一logical
 contractとして記録する。implementation bilingual debtは残らない。
+
+## Task 258B3M2B2A frozen-contract synchronization
+
+canonical EN/JA checker/runner companionsはsame 121-byte/57-node
+nested-parentheses source、Task-252 seven-primary chain `2 -> 3 -> 4`、
+Task-256 subtree exclusion、`1 witness / 0 names`、future tests 4/5、
+unchanged `366/404`とmodule/production/hash baseline、deferred/empty
+trace credit、no public/active/binding/semantic change、
+B3M2B2B-before-B4を同一に記録する。prerequisite bilingual debtなし。

@@ -427,3 +427,13 @@ handoffだけがcheckerへ渡る。checker sizesは
 `4676/695/2508/9902`、productionは30 paths / 39,069 lines。module、
 crate edge、public schema、active route、semantic owner、dependency directionは
 不変で、behavior-neutral splitは不要。
+
+## Task 258B3M2B2A frozen module boundary
+
+planned implementationはexisting checker statement producer、typed/final
+consumers、dormant runner statement leaf/facades/root、paired test leaf内。
+raw parser/resolverはrunner-privateで、Task-48/252/256/base/witnessの
+syntax-free handoffだけがcrate boundaryを越える。docs prerequisiteは
+sizes `17569/4661/7203/3156` / `4676/695/2508/9902`、production
+30 paths / 39,069 lines、module layout、crate edges、public schema、
+active routes、semantic owners、dependency directionを変更しない。split不要。

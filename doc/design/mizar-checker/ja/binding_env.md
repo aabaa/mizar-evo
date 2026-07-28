@@ -627,3 +627,12 @@ parenthesized term 2はreferenceを作らず、child term 3だけがbinding 0を
 use ordinal 1でresolveする。unnamed witnessはbinding、resolver symbol、
 capture、abbreviation、context transitionを追加しない。Task 269はno-opで、
 binding API/fingerprintは不変。
+
+## Task 258B3M2B2A frozen binding boundary
+
+nested-parentheses prerequisiteはmodule/proof contexts `0/1`、reserved
+binding 0、proof scope `[0]`、diagnostics 0をreuseする。outer wrapper
+term 2とinner wrapper term 3はreferenceを作らず、variable term 4だけが
+binding 0をuse ordinal 1でresolveする。unnamed outer witnessはbinding、
+capture、abbreviation、symbol、context transitionを追加しない。Task 269は
+no-opで、binding API/table/fingerprintは変更しない。

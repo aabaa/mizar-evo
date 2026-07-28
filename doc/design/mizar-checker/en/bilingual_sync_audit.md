@@ -455,3 +455,12 @@ authentication, five-root/six-primary mapping, parent/child ownership,
 measured module/production sizes and hashes, unchanged public/active/trace/
 semantic boundary, and B3M2B2-before-B4 order. No implementation bilingual
 debt remains.
+
+## Task 258B3M2B2A Frozen-Contract Synchronization
+
+Canonical EN and JA checker/runner companions record the same 121-byte/
+57-node nested-parentheses source, Task-252 seven-primary chain
+`2 -> 3 -> 4`, Task-256 subtree exclusion, `1 witness / 0 names`, exact
+four/five future tests, unchanged `366/404` and module/production/hash
+baselines, deferred/empty trace credit, no public/active/binding/semantic
+change, and B3M2B2B-before-B4 order. No prerequisite bilingual debt remains.

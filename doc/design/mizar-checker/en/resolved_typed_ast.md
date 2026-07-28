@@ -1104,3 +1104,14 @@ witness, complete subtree exclusions, dependency fingerprints, and all
 lower tables. Standalone, hybrid, stale, parent/reference-corrupt, and
 semantic-coexisting states remain `InvalidSourceStatement`; successful
 final semantic, proof, and goal tables remain empty.
+
+## Task 258B3M2B2A Frozen Final Ownership
+
+Future final assembly clone-preserves only the authenticated B3M2B2A
+base/witness pair and revalidates the complete 57-node arena,
+five-root/seven-primary mapping, two wrapper links, one unnamed outer
+witness, subtree exclusions, fingerprints, and every lower table.
+Standalone, hybrid, stale, parent/reference-corrupt, family-coexisting, or
+semantic-coexisting states remain `InvalidSourceStatement`; success keeps
+all semantic, proof, and goal tables empty. No final public API changes in
+this documentation prerequisite.

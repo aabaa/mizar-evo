@@ -3415,3 +3415,22 @@ orders、rollback/replay、typed/final clone/debugをcoverする。valid
 Task-252/256 handoffを作れないmalformed rowはowning public producerで
 rejectし、constructible handoffだけpaired consumerへ進む。public
 route/key/fixture/sidecar/trace/active/binding/semantic ownerは不変。
+
+### Checker Task 258B3M2B2A dormant nested-parentheses contract
+
+future dormant selectorはfinal-LF 121-byte/hash
+`FormulaStatementNestedParenthesizedWitnessSmoke`だけをacceptし、
+diagnostics 0と57 nodes/root 56をauthenticateする。five rootsからseven
+Task-252 primariesを作り、outer wrapper 2 -> inner wrapper 3 -> reserved
+variable term 4。refsは`0/1/4/5/6`、equalitiesは`[0,1]` / `[5,6]`だけ、
+one unnamed witnessはouter term 2。complete `2/3/4` subtreeをTask-256外に
+維持する。
+
+future five testsはfrontend/resolver/lower identity、both parent links、
+ref/independent subtree contamination、selector/byte near miss、prior
+statement + Tasks 253–255 + active isolationのboth orders、replay/
+rollback、typed/final clone/debugをcover。malformed Task-252/256は
+lower-producer-first fail-closeを維持する。successは
+`Some(Vec::new())`、lookups `1/1`、uses `[1;5]`、binding/semantic output
+なし。active corpus/public route/key/fixture/sidecar/expectation/traceは
+変更しない。

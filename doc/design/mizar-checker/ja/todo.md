@@ -4620,7 +4620,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] B3M2B1 documentation prerequisiteをfreezeし、implementationと
   B3M2B2をseparate taskに維持。
 - [x] frozen B3M2B1をdocs commit/fresh preflight後にimplement。
-- [ ] B3M2B2 remaining witness-term shapesをfreeze/implementしてから
+- [x] Task 258B3M2B2をexact nested-parenthesized B3M2B2Aとremaining
+  authority-valid B3M2B2Bへdecompose。
+- [x] Task 258B3M2B2Aだけをfreezeし、implementationをseparateに維持。
+- [ ] documentation commitとfresh parser/resolver/lower/count/hash
+  preflight後にfrozen Task 258B3M2B2Aをimplement。
+- [ ] B3M2B2B remaining witness-term shapesをfreeze/implementしてから
   Task 258B4を選ぶ。
 
 ## Checker Task 258B3N 実装ledger
@@ -4720,3 +4725,17 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] libraries `366/404`、checker `17569/4661/7203/3156`、runner
   `4676/695/2508/9902`、production 30 paths / 39,069 linesを実測し、
   B3M2B2をB4前に保持。
+
+## Checker Task 258B3M2B2A frozen-contract ledger
+
+- [x] broad B3M2B2をexact `take ((x));` B3M2B2Aとremaining
+  application/structure/selector/update/set/choice/other B3M2B2Bへ分割。
+- [x] final-LF 121-byte/hash identity、diagnostics 0、57 nodes/root 56、
+  exact theorem-only resolver provenanceをfreeze。
+- [x] Task-48 `2/1/0`、five roots / Task-252 `7/5/0`、
+  outer/inner/variable chain `2 -> 3 -> 4`、refs `0/1/4/5/6`をfreeze。
+- [x] Task-256 `[0,1]` / `[5,6]`、complete witness subtree `2/3/4`
+  exclusion、base `1/2/2/2/2`、witness/name `1/0`をfreeze。
+- [x] public API/binding/semantics/active/trace changeなし、future checker
+  4 / runner 5 tests、unchanged `366/404` baseline、
+  B3M2B2B-before-B4をfreeze。

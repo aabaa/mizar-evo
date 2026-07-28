@@ -3851,3 +3851,27 @@ expectation、sidecar、trace metadata/status/count、active route、semantic
 ownerは不変。checker 4本 / runner 5本がexact transportをexerciseするが、
 formula-statement rowは`deferred`, `tests = []`でcreditなし。B3M2B2が
 remaining authority-valid witness termsを保持する。
+
+## Task 258B3M2B2A frozen-ownership audit
+
+canonical Chapters 4/13/15/16はrecursive/type-preserving nested
+parenthesesをone unnamed `take` witnessとしてauthorizeし、existential
+introductionをdownstreamに保持して、このsyntax transport boundaryでは
+name/semantic effectを追加しない。fresh inventoryはbroad
+B3M2B2をexact `take ((x));` B3M2B2Aとremaining B3M2B2Bへresolveする。
+121-byte/57-node contract、Task-252 `7/5/0` chain `2 -> 3 -> 4`、
+Task-256 complete-chain exclusion、base `1/2/2/2/2`、witness/name
+`1/0`はexisting public APIを使う。
+
+docs prerequisiteはbroad umbrellaの`design_drift`をcloseする。future
+private code/testsはbounded `source_drift`/`test_gap`。`spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+language/crate `boundary_violation`、lower-stage defectなし。separateな
+operational `boundary_violation`として、review-only agentsがno-write
+scopeに反してoverlapping same-task authority referencesを書いた。parentは
+task-owned contentだけをindependently reconcileし、commit targetは
+unambiguousで、`repo_metadata_conflict`ではない。spec、`.miz`、
+expectation、fixture、sidecar、trace metadata/status/count、active、
+production/test sourceは変更しない。formula-statement rowは`deferred`,
+`tests = []`、creditなし。follow-up ownershipだけをB3M2B2から
+B3M2B2A/Bへ変更する。

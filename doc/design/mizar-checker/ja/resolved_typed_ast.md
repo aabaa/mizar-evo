@@ -1045,3 +1045,13 @@ exclusions、dependency fingerprints、all lower tablesをrevalidateする。
 standalone、hybrid、stale、parent/reference-corrupt、semantic-coexisting
 stateは`InvalidSourceStatement`のまま。success時もsemantic/proof/goal
 tablesはempty。
+
+## Task 258B3M2B2A frozen final ownership
+
+future final assemblyはauthenticated B3M2B2A base/witness pairだけを
+clone-preserveし、57-node arena、five-root/seven-primary、two wrapper
+links、one unnamed outer witness、subtree exclusions、fingerprints、全lower
+tablesをrevalidateする。standalone、hybrid、stale、parent/reference
+corrupt、family/semantic-coexisting stateは`InvalidSourceStatement`。
+success時もsemantic/proof/goal tablesはempty。docs prerequisiteではfinal
+public APIを変更しない。
