@@ -441,3 +441,12 @@ Task-256 subtree exclusion、`1 witness / 0 names`、future tests 4/5、
 unchanged `366/404`とmodule/production/hash baseline、deferred/empty
 trace credit、no public/active/binding/semantic change、
 B3M2B2B-before-B4を同一に記録する。prerequisite bilingual debtなし。
+
+## Task 258B3M2B2A implementation synchronization
+
+canonical ENとJA companionはprivate 57-node selector/profile、Task-252
+chain `2 -> 3 -> 4`、Task-256 subtree exclusion、paired
+`1 witness / 0 names` publication、passing tests 4/5、libraries
+`370/409`、measured module/manifest hashes、unchanged
+public/active/binding/semantic/trace boundary、B3M2B2B-before-B4を同期した。
+implementation bilingual debtなし。

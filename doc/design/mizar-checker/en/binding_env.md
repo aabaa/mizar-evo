@@ -658,3 +658,11 @@ wrapper term 2 and inner wrapper term 3 create no references; only variable
 term 4 resolves binding 0 at use ordinal 1. The unnamed outer witness adds
 no binding, capture, abbreviation, symbol, or context transition. Task 269
 remains a no-op; no binding API, table, or fingerprint may change.
+
+## Task 258B3M2B2A Implementation Result
+
+The implemented profile reuses the frozen `2/1/0` environment byte-for-byte:
+module context 0, proof context 1 over `82..119`, one reserved binding 0,
+proof scope `[0]`, and no diagnostic. Only leaf term 4 has the proof-local
+reference; both wrappers remain reference-free, and the unnamed witness adds
+no binding or symbol. No binding source or public API changed.

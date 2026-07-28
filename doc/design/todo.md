@@ -2607,5 +2607,12 @@ completion remain deferred. The origin discrepancy remains report-only
   Task-252 `7/5/0`, wrapper chain `2 -> 3 -> 4`, Task-256 subtree
   exclusion, witness/name `1/0`, no API/semantics, four/five future tests,
   and unchanged baselines/audit credit.
-- [ ] Implement B3M2B2A after its documentation commit and fresh preflight.
+- [x] Implement B3M2B2A after its documentation commit and fresh preflight.
 - [ ] Freeze/implement B3M2B2B before selecting Task 258B4.
+
+Task 258B3M2B2A implementation completion: the private 57-node nested
+parentheses selector/profile, paired base plus `1 witness / 0 names`, exact
+checker/runner tests `4/5`, and lower/family/replay/clone fail-close are
+implemented. Libraries measure `370/409`; no canonical artifact, active
+case, public API, fixture, expectation, sidecar, trace status/count, binding,
+or semantic owner changed. B3M2B2B remains next before B4.

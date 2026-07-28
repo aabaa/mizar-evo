@@ -2042,7 +2042,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Decompose B3M2B2 into exact nested-parenthesized B3M2B2A and
   remaining authority-valid B3M2B2B.
 - [x] Freeze only B3M2B2A; keep implementation and B3M2B2B separate.
-- [ ] Implement B3M2B2A after its documentation commit and fresh
+- [x] Implement B3M2B2A after its documentation commit and fresh
   parser/resolver/lower/count/hash preflight.
 - [ ] Freeze/implement B3M2B2B before Task 258B4.
 
@@ -2120,3 +2120,16 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   active route, binding, semantics, fixture, sidecar, or trace change.
 - [x] Freeze exactly five future compound tests, unchanged 404-test and
   30-path/39,069-line baselines, and B3M2B2B-before-B4.
+
+## Checker Task 258B3M2B2A Runner Implementation Ledger
+
+- [x] Add only the exact dormant 121-byte/57-node selector and require zero
+  frontend diagnostics.
+- [x] Compose five roots/seven primaries, chain `2 -> 3 -> 4`, five
+  references, two equalities, and paired base plus `1 witness / 0 names`.
+- [x] Preserve lower-producer-first failure, `Some(Vec::new())`, lookups
+  `1/1`, uses `[1; 5]`, and empty binding/semantic output.
+- [x] Add exactly five compound tests covering identity, corruption,
+  near-miss, family/active isolation, replay, rollback, and final clone.
+- [x] Measure 409 tests, sizes `5188/699/2513/11234`, and 30 production
+  paths / 39,590 lines; retain B3M2B2B before B4.

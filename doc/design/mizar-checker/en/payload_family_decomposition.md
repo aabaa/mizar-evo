@@ -916,3 +916,12 @@ or cross-family edge. Task 269 adds no binding and Task 272 retains every
 semantic effect. B3M2B2B retains application, structure constructor/
 selector/update, set, choice, compound, and every other authority-valid
 witness term. B4/B5 remain blocked behind B3M2B2B.
+
+### Task 258B3M2B2A Implementation Closure
+
+The private statement family now owns only the exact two-level
+parenthesized witness. Its outer/inner/leaf primary chain is authenticated
+as one witness subtree and excluded from every atomic edge/request.
+Application, structure constructor/selector/update, set, choice, compound,
+and deeper-parentheses families remain in B3M2B2B; no cross-family edge or
+semantic owner was added.

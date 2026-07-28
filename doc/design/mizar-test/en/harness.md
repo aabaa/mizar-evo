@@ -3617,3 +3617,18 @@ Malformed Task-252/256 inputs retain lower-producer-first fail-close.
 Successful transport returns `Some(Vec::new())`, lookups `1/1`, uses
 `[1; 5]`, and no binding or semantic output. No active corpus, public
 route/key, fixture, sidecar, expectation, or trace metadata changes.
+
+## Checker Task 258B3M2B2A Dormant Consumer Implementation
+
+The exact selector is implemented before prior statement profiles and
+accepts only the 121-byte source, all 57 unrecovered nodes/root 56, and zero
+frontend diagnostics. Five roots expand to seven primaries with the complete
+`2 -> 3 -> 4` chain; references target `0/1/4/5/6`, equalities only
+`[0,1]` / `[5,6]`, and the unnamed witness targets outer term 2.
+
+All five frozen tests pass. Successful transport remains
+`Some(Vec::new())`, lookups `1/1`, uses `[1; 5]`, and empty binding and
+semantic output. Invalid Task-252/256 rows reject at their lower producer
+when no handoff can form; constructible corruptions reach the paired
+statement consumer. No active corpus, public route/key, fixture, sidecar,
+expectation, or trace metadata changed.

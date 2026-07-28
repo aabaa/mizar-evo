@@ -1923,3 +1923,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   semantics/fixture/sidecar/trace changeなしをfreeze。
 - [x] exactly five future compound tests、unchanged 404-test /
   30-path/39,069-line baseline、B3M2B2B-before-B4をfreeze。
+
+## Checker Task 258B3M2B2A runner implementation ledger
+
+- [x] exact dormant 121-byte/57-node selectorだけを追加し、frontend
+  diagnostics 0をrequire。
+- [x] five roots/seven primaries、chain `2 -> 3 -> 4`、five refs、two
+  equalities、paired base + `1 witness / 0 names`をcompose。
+- [x] lower-producer-first failure、`Some(Vec::new())`、lookups `1/1`、
+  uses `[1; 5]`、empty binding/semantic outputをpreserve。
+- [x] exactly five compound testsでidentity、corruption、near miss、
+  family/active isolation、replay、rollback、final cloneをcover。
+- [x] 409 tests、sizes `5188/699/2513/11234`、30 production paths /
+  39,590 linesを実測し、B3M2B2BをB4前に保持。

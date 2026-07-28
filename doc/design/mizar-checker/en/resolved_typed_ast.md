@@ -1115,3 +1115,12 @@ Standalone, hybrid, stale, parent/reference-corrupt, family-coexisting, or
 semantic-coexisting states remain `InvalidSourceStatement`; success keeps
 all semantic, proof, and goal tables empty. No final public API changes in
 this documentation prerequisite.
+
+## Task 258B3M2B2A Implementation Result
+
+Final assembly now clone-preserves the authenticated paired base/witness
+handoff only after revalidating the 57-node arena, Task-252 parent/reference
+chain, Task-256 subtree exclusion, fingerprints, and source order. Every
+standalone, hybrid, stale, corrupt, reversed, family-coexisting, or
+semantic-coexisting state remains `InvalidSourceStatement`; semantic,
+proof, and goal tables stay empty. No public final-AST API changed.

@@ -4862,7 +4862,7 @@ implementation commit does not satisfy a producer task.
 - [x] Decompose Task 258B3M2B2 into exact nested-parenthesized B3M2B2A
   and remaining authority-valid B3M2B2B.
 - [x] Freeze only Task 258B3M2B2A; keep implementation separate.
-- [ ] Implement frozen Task 258B3M2B2A after its documentation commit and
+- [x] Implement frozen Task 258B3M2B2A after its documentation commit and
   fresh parser/resolver/lower/count/hash preflight.
 - [ ] Freeze and implement Task 258B3M2B2B before selecting Task 258B4.
 
@@ -4981,3 +4981,17 @@ implementation commit does not satisfy a producer task.
 - [x] Freeze no public API/binding/semantics/active/trace change, exactly
   four checker and five runner future tests, unchanged `366/404`
   baselines, and B3M2B2B-before-B4.
+
+## Checker Task 258B3M2B2A Implementation Ledger
+
+- [x] Add only the private exact nested-parentheses dependency/base/witness
+  profile; preserve public APIs and debug grammar.
+- [x] Revalidate all 57 nodes, five roots/seven primaries, chain
+  `2 -> 3 -> 4`, five references, and Task-256 subtree exclusion.
+- [x] Publish paired base plus `1 witness / 0 names` atomically while
+  preserving all binding and semantic/proof/goal tables.
+- [x] Add exactly four checker and five runner compound tests and pass all
+  identity, corruption, family, replay, and clone cases.
+- [x] Measure libraries `370/409`, checker modules
+  `19571/4662/7204/3156`, runner sizes `5188/699/2513/11234`, and 30
+  production paths / 39,590 lines; retain B3M2B2B before B4.

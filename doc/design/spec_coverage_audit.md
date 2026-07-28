@@ -4146,3 +4146,28 @@ documents despite explicit no-write scopes. This is an operational
 interrupted both agents, retained only task-owned authority clarifications
 after independent reconciliation, and changed no metadata or protected
 stash state.
+
+## Step 5 Checker Task 258B3M2B2A Implementation Completion
+
+The exact nested-parenthesized witness transport is implemented and verified
+with four checker and five runner compound tests. The 57-node path preserves
+five roots versus seven Task-252 primaries, complete chain `2 -> 3 -> 4`,
+references to `0/1/4/5/6`, Task-256 exclusion of the whole witness subtree,
+base `1/2/2/2/2`, and one unnamed outer-term witness/no names. Public
+Task-252/256 producers retain first ownership of malformed lower rows.
+
+Measured completion is libraries `370/409`, checker sizes
+`19571/4662/7204/3156`, runner statement sizes
+`5188/699/2513/11234`, and 30 production paths / 39,590 lines. The bounded
+B3M2B2A `source_drift` and `test_gap` are closed. This adds no executable
+specification coverage: `spec.en.checker.formula_statement.source_payloads`
+remains `deferred`, `tests = []`, without backlink, status/count change, or
+credit. B3M2B2B remains the next follow-up before B4.
+
+During implementation preflight, the five CLI commands observed a
+concurrently edited, intentionally incomplete checker file and failed to
+compile. This was a local task-scope concurrency race, not a lower-stage
+defect or authority conflict; the commands are rerun only after integrated
+source completion. Broad direct-rustfmt churn in one existing runner test
+leaf was also reduced to the task-owned imports and five new tests before
+review, so no unrelated prior-test formatting remains.

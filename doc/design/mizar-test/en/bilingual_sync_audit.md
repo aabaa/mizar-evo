@@ -548,3 +548,12 @@ five-root/seven-primary chain, complete witness-subtree exclusion, five
 future tests, unchanged 404-test/30-path oracle, lower-producer fail-close,
 no public/active/trace/semantic change, and B3M2B2B-before-B4 order. No
 prerequisite bilingual debt remains.
+
+## Task 258B3M2B2A Runner Implementation Synchronization
+
+EN/JA runner documents now agree on the exact private selector and lower
+composition, five passing tests, 409-test library, sizes
+`5188/699/2513/11234`, 30-path/39,590-line production manifest and hashes,
+lower-producer-first rejection, empty detail/semantics, unchanged
+public/active/fixture/trace ownership, and B3M2B2B-before-B4 order. No
+implementation bilingual debt remains.

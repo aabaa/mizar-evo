@@ -529,3 +529,11 @@ chain、complete witness-subtree exclusion、future tests 5本、unchanged
 404-test/30-path oracle、lower-producer fail-close、no
 public/active/trace/semantic change、B3M2B2B-before-B4を記録する。
 prerequisite bilingual debtなし。
+
+## Task 258B3M2B2A runner implementation synchronization
+
+EN/JA runner docsはexact private selector/lower composition、passing tests
+5本、409-test library、sizes `5188/699/2513/11234`、30-path /
+39,590-line production manifest/hashes、lower-producer-first rejection、
+empty detail/semantics、unchanged public/active/fixture/trace ownership、
+B3M2B2B-before-B4を同期した。implementation bilingual debtなし。

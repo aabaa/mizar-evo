@@ -636,3 +636,11 @@ term 2とinner wrapper term 3はreferenceを作らず、variable term 4だけが
 binding 0をuse ordinal 1でresolveする。unnamed outer witnessはbinding、
 capture、abbreviation、symbol、context transitionを追加しない。Task 269は
 no-opで、binding API/table/fingerprintは変更しない。
+
+## Task 258B3M2B2A implementation result
+
+implemented profileはfrozen `2/1/0` environmentをbyte-for-byte reuseする。
+module context 0、proof context 1 `82..119`、reserved binding 0、proof
+scope `[0]`、diagnostic 0。proof-local referenceはleaf term 4だけで、
+both wrappersはreference-free、unnamed witnessはbinding/symbolを追加しない。
+binding source/public API changeなし。

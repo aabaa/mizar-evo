@@ -1104,3 +1104,12 @@ fingerprints, and source order `[0,1,2]` before atomic publication.
 Standalone, hybrid, repeated, stale, cross-family, reversed-order, and
 semantic-coexisting states remain rejected. No public typed-AST API or
 debug grammar changes in the prerequisite.
+
+## Task 258B3M2B2A Implementation Result
+
+The paired installer now accepts the exact B3M2B2A base/witness profile and
+atomically revalidates all dependencies, both wrapper links, five
+references, complete Task-256 subtree exclusion, fingerprints, and source
+order `[0,1,2]`. Standalone, hybrid, repeated, stale, cross-family,
+reversed-order, and semantic-coexisting states remain rejected. No public
+typed-AST API or debug grammar changed.

@@ -11647,3 +11647,14 @@ isolation are test-owned. This prerequisite changes no source, module,
 public route/key, crate edge, dependency direction, binding, active route,
 or semantic owner; measured runner sizes and 30-path/39,069-line production
 baseline remain unchanged.
+
+## Task 258B3M2B2A Implemented Runner Boundary
+
+The implementation remains inside the private statement leaf, the existing
+type-elaboration facade/root dispatch, and the statement test leaf. The
+leaf/facade/root/test sizes are `5188/699/2513/11234`; the unchanged
+30-path production manifest totals 39,590 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`291da8a26e90f75e7f54e221314c1fcb9ebba375c238a07b02a161f7af6dfe66`.
+No public route/key, module split, crate edge, dependency direction, active
+route, binding, or semantic owner changed.

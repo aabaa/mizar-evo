@@ -3875,3 +3875,13 @@ expectation、fixture、sidecar、trace metadata/status/count、active、
 production/test sourceは変更しない。formula-statement rowは`deferred`,
 `tests = []`、creditなし。follow-up ownershipだけをB3M2B2から
 B3M2B2A/Bへ変更する。
+
+## Task 258B3M2B2A implementation audit
+
+frozen source-derived ownershipをchecker 4 / runner 5 testsでexecutableに
+した。bounded B3M2B2A `source_drift`/`test_gap`だけをcloseし、
+`spec_gap`、test-intent change、lower-stage repair、新規boundary
+violationはない。spec、existing `.miz`、fixture、expectation、sidecar、
+trace row/status/count、active routeは変更しない。
+`spec.en.checker.formula_statement.source_payloads`は`deferred`,
+`tests = []`、coverage creditなし。

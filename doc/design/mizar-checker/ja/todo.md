@@ -4623,7 +4623,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] Task 258B3M2B2をexact nested-parenthesized B3M2B2Aとremaining
   authority-valid B3M2B2Bへdecompose。
 - [x] Task 258B3M2B2Aだけをfreezeし、implementationをseparateに維持。
-- [ ] documentation commitとfresh parser/resolver/lower/count/hash
+- [x] documentation commitとfresh parser/resolver/lower/count/hash
   preflight後にfrozen Task 258B3M2B2Aをimplement。
 - [ ] B3M2B2B remaining witness-term shapesをfreeze/implementしてから
   Task 258B4を選ぶ。
@@ -4739,3 +4739,17 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] public API/binding/semantics/active/trace changeなし、future checker
   4 / runner 5 tests、unchanged `366/404` baseline、
   B3M2B2B-before-B4をfreeze。
+
+## Checker Task 258B3M2B2A implementation ledger
+
+- [x] private exact nested-parentheses dependency/base/witness profileだけを
+  追加し、public API/debug grammarを維持。
+- [x] 全57 nodes、five roots/seven primaries、chain `2 -> 3 -> 4`、
+  five refs、Task-256 subtree exclusionをrevalidate。
+- [x] paired base + `1 witness / 0 names`だけをatomic publishし、binding
+  とsemantic/proof/goal tablesを維持。
+- [x] exactly checker 4 / runner 5 compound testsを追加し、identity、
+  corruption、family、replay、clone casesを全pass。
+- [x] libraries `370/409`、checker `19571/4662/7204/3156`、runner
+  `5188/699/2513/11234`、production 30 paths / 39,590 linesを実測し、
+  B3M2B2BをB4前に保持。

@@ -850,3 +850,11 @@ structure、selector、update、set、choice、wrapper、cross-family edgeを
 B3M2B2Bはapplication、structure constructor/selector/update、set、
 choice、compound、other authority-valid witness termsを保持し、B4/B5は
 B3M2B2B後。
+
+### Task 258B3M2B2A implementation closure
+
+private statement familyはexact two-level parenthesized witnessだけをownする。
+outer/inner/leaf primary chainをone witness subtreeとしてauthenticateし、
+全atomic edge/requestからexcludeする。application、structure constructor/
+selector/update、set、choice、compound、deeper parenthesesはB3M2B2Bに
+残り、cross-family edge/semantic ownerを追加しない。

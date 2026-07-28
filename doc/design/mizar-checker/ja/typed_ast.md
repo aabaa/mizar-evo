@@ -1048,3 +1048,12 @@ termsのexclusion、fingerprints、source order `[0,1,2]`をatomic publish前に
 revalidateする。standalone、hybrid、repeated、stale、cross-family、
 reverse-order、semantic-coexisting stateはreject。prerequisiteではpublic
 typed-AST API/debug grammarを変更しない。
+
+## Task 258B3M2B2A implementation result
+
+paired installerはexact B3M2B2A base/witness profileをacceptし、
+dependencies、both wrapper links、five refs、complete Task-256 subtree
+exclusion、fingerprints、source order `[0,1,2]`をatomic publication前に
+revalidateする。standalone、hybrid、repeated、stale、cross-family、
+reversed-order、semantic-coexisting statesはreject。public typed-AST
+API/debug grammar changeなし。

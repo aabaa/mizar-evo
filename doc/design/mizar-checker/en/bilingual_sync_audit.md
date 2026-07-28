@@ -464,3 +464,12 @@ Canonical EN and JA checker/runner companions record the same 121-byte/
 four/five future tests, unchanged `366/404` and module/production/hash
 baselines, deferred/empty trace credit, no public/active/binding/semantic
 change, and B3M2B2B-before-B4 order. No prerequisite bilingual debt remains.
+
+## Task 258B3M2B2A Implementation Synchronization
+
+The canonical English implementation result and Japanese companion both
+record the private 57-node selector/profile, Task-252 chain `2 -> 3 -> 4`,
+Task-256 subtree exclusion, paired `1 witness / 0 names` publication,
+passing checker/runner tests `4/5`, libraries `370/409`, measured module and
+manifest hashes, unchanged public/active/binding/semantic/trace boundaries,
+and B3M2B2B-before-B4 order. No implementation bilingual debt remains.

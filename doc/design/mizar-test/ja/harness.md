@@ -2838,6 +2838,20 @@ conditioned comprehensionはexcludedのままである。本documentation prereq
 runner、fixture、sidecar、trace、count、test list、production manifest、hashを
 変更しない。
 
+## Checker Task 258B3M2B2A dormant consumer implementation
+
+exact selectorはprior statement profilesより先に実装し、121-byte source、
+all 57 unrecovered nodes/root 56、frontend diagnostics 0だけをacceptする。
+five rootsはcomplete `2 -> 3 -> 4` chainを持つseven primariesへexpandし、
+refsは`0/1/4/5/6`、equalitiesは`[0,1]` / `[5,6]`だけ、unnamed
+witnessはouter term 2をtargetする。
+
+frozen tests 5本は全pass。successは`Some(Vec::new())`、lookups `1/1`、
+uses `[1; 5]`、binding/semantic output emptyを維持する。invalid
+Task-252/256 rowがhandoffを形成できなければlower producerでrejectし、
+constructible corruptionはpaired statement consumerへ到達する。active
+corpus/public route/key/fixture/sidecar/expectation/trace changeなし。
+
 ## Checker Task 256 runner completion
 
 private `source_atomic_formula` routeはこのfrozen boundaryを実装した。exact

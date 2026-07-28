@@ -1055,3 +1055,12 @@ tablesをrevalidateする。standalone、hybrid、stale、parent/reference
 corrupt、family/semantic-coexisting stateは`InvalidSourceStatement`。
 success時もsemantic/proof/goal tablesはempty。docs prerequisiteではfinal
 public APIを変更しない。
+
+## Task 258B3M2B2A implementation result
+
+final assemblyは57-node arena、Task-252 parent/reference chain、Task-256
+subtree exclusion、fingerprints、source orderを再検証後だけauthenticated
+paired base/witness handoffをclone-preserveする。standalone、hybrid、
+stale、corrupt、reversed、family/semantic coexistenceは
+`InvalidSourceStatement`で、semantic/proof/goal tablesはempty。final public
+API changeなし。

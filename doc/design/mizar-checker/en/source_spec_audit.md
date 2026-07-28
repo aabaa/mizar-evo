@@ -4056,3 +4056,13 @@ trace metadata/status/count, active route, or production/test source
 changes. The formula-statement row remains `deferred`, `tests = []`, with
 no coverage credit; only follow-up ownership changes from B3M2B2 to
 B3M2B2A/B.
+
+## Task 258B3M2B2A Implementation Audit
+
+The frozen source-derived ownership is now executable through four checker
+and five runner tests. They close only the bounded B3M2B2A `source_drift`
+and `test_gap`; no `spec_gap`, test-intent change, lower-stage repair, or
+new boundary violation was required. No specification, existing `.miz`,
+fixture, expectation, sidecar, trace row/status/count, or active route
+changed. `spec.en.checker.formula_statement.source_payloads` therefore
+remains `deferred`, `tests = []`, with no coverage credit.

@@ -2267,3 +2267,33 @@ coverage auditはfollow-up ownershipだけ更新し、
 reviews、all hard gates、read-only quality >=90、task-only staging、
 dedicated docs commit。implementationはcommit後のfresh
 parser/resolver/lower/count/hash preflight後だけ開始する。
+
+## Task 258B3M2B2A implementation result
+
+checkerはone private `Task258B3M2B2A` profileをrecognizeする。exact
+57-node arena、Task-48 `2/1/0`、Task-252 `7/5/0`とparent chain
+`2 -> 3 -> 4` / refs `0/1/4/5/6`、Task-256 equality pairs
+`[0,1]` / `[5,6]`、base `1/2/2/2/2`、one unnamed outer-term
+witness/no names、source partition `[0,1,2]`をauthenticateする。
+dependency/fingerprint/arena validationはaggregate、witness 0、empty-name
+validationより先。wrapper refsとterms 2/3/4のindependent Task-256
+contaminationはfail-closeする。
+
+checker/runner tests 4/5がpass。libraries `370/409`、checker sizes
+`19571/4662/7204/3156`、runner statement sizes
+`5188/699/2513/11234`、production 30 paths / 39,590 lines。
+raw/normalized test-list hashesは
+`18cae89ddf8a5a21cca3741fd2c3e19a6d23b53c9ffe8e482dca63310445245c` /
+`a1c328b0a1fef79df97b3fc5cb353dac8ac1ecc7a8477f27c11124de9f390d84`
+および
+`7e76d1de5b01b7a6fbe7fa8c88a8bffc3f957ec35a7d8a27cd456031d70d9299` /
+`8eae5a5a084f0feeaba678c3b0aa11f47956c7f98946d7205b82984a8b5eb23a`。
+production path hashは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`、
+contentは
+`291da8a26e90f75e7f54e221314c1fcb9ebba375c238a07b02a161f7af6dfe66`。
+
+canonical artifact、fixture、expectation、sidecar、trace status/count、
+active route、public API、binding、semantic/proof/goal ownerは変更しない。
+formula-statement rowは`deferred`, `tests = []`、creditなし。
+B3M2B2BがB4前のnext witness-term slice。
