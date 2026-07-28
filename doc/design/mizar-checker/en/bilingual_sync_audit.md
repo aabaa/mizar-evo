@@ -344,3 +344,13 @@ global ledger now record the same exact implemented transaction, four/five
 test matrices, `342/374` library counts, 30-path/35,854-line runner manifest,
 and unchanged corpus/trace/CLI counts. No Task-258B1 implementation
 bilingual debt remains.
+
+## Task 258B2 Frozen-Contract Pair
+
+The paired checker plan, TODO, source-statement, binding, typed/final,
+payload-family, source-spec, module-boundary, and coverage-audit text freezes
+the same 113-byte single-assumption transport contract, profiles, exclusions,
+four/five future tests, deferred ownership, and unchanged baselines in both
+languages. The paired runner documents freeze the same dormant consumer.
+This prerequisite changes no source or executable metadata, and no Task-258B2
+bilingual debt is accepted.

@@ -106,6 +106,17 @@ exact dependency fingerprint、rendering、corruption testはbehavior-coupledで
 private checker splitは不要である。`TypedAst`がone-shot immutable handoffをownし、
 `ResolvedTypedAst`はrevalidate後にclone-preserveする。
 
+## Task 258B2 planned-boundary addendum
+
+本documentation prerequisiteではTask 258B2はmoduleを追加せず、current
+line-count tableも変更しない。planned implementationは既存のcohesive
+`source_statement.rs` ownerへassumption source kind 1件とexact base-only
+profile 1件を追加する。`binding_env.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs`は既存validation/publication roleを保持し、raw
+parser/resolver syntaxはprivate runner leafに残る。semantic-stage owner/
+dependency directionは変わらないため、implementation前のsplit/boundary
+moveは不要。
+
 ## Checker Task 257C3 implementation boundary recheck
 
 checker moduleは追加していない。`source_formula_composition.rs`は5,317 linesで、

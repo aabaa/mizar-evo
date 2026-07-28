@@ -444,3 +444,12 @@ same exact dormant implementation, five-test matrix, 374-test list,
 30-path/35,854-line production manifest, unchanged corpus/trace/CLI counts,
 and Task 258B2+/Tasks 269–272 deferrals. No implementation bilingual drift
 remains.
+
+## Checker Task 258B2 Frozen-Contract Synchronization
+
+The paired runner plan, harness, TODO, and boundary audit freeze the same
+113-byte source/hash, 55-node parser identity, theorem-only resolver
+provenance, exact lower/statement profiles, dormant precedence, five future
+tests, exclusions, unchanged 374-test/30-path baseline, and B3–B5/269–272
+deferrals. No runner source or executable metadata changes, and no Task-258B2
+bilingual drift is accepted.

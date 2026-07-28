@@ -773,3 +773,20 @@ transport-only family. The next statement work is Task 258B2+ after fresh
 contract review; Tasks 269–272 still own local declarations, closures,
 coercion intent, proof skeletons, justification meaning, goals, and
 acceptance. No family edge is reclassified by the implementation.
+
+### Task 258B2 Frozen Family Edge
+
+Task 258B2 is the next minimal transport-only edge:
+Task 48 `2/1/0` → Task 252 `6/6/0` → Task 256
+`3/0/0/0/0/0/0/6/6` → one source-statement handoff with profile
+`1/3/3/3/3`. It carries one unlabeled single assumption and the direct
+conclusion under one proof context. There is deliberately no Task-258B1
+reference edge and no fact, premise-acceptance, checked-formula, statement
+semantic, proof, goal, or theorem-result edge.
+
+Task 258B3 retains witness transport, Task 258B4 composite theorem roots,
+and Task 258B5 broader imported/outer/inner visibility. Tasks 269–272 retain
+proof-local declarations and proof/justification semantics. The deferred
+`MT10-FS` row therefore remains deferred; this documentation prerequisite
+earns no executable coverage credit and changes no source, fixture,
+sidecar, expectation, trace status/count, or existing test list/hash.

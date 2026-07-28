@@ -3844,3 +3844,23 @@ existing `.miz`, expectation, sidecar, or trace TOML row/status was edited.
 justification meaning, or theorem result. Coverage ownership now points to
 Task 258B2+ and Tasks 269–272. This is an intentional
 `spec_coverage_audit.md` update with no traceability-count change.
+
+## Task 258B2 Frozen-Contract Audit
+
+The next dependency-ready slice is narrowed from Task 258B2+ to the exact
+113-byte single-assumption theorem frozen in `source_statement.md`. Chapters
+15.3.1, 15.4.1, 15.8.2, and 15.10 authorize the theorem, unlabeled
+assumption, direct conclusion, and proof shell; Chapters 13–14 and the
+reserve rules authorize the equality terms and visible `x`. Existing
+parser/resolver fixtures establish the measured ranges and provenance
+without changing language or test intent.
+
+The missing frozen contract was `design_drift`. The not-yet-implemented
+syntax-free producer/consumer route is bounded `source_drift`, and its four
+checker plus five runner tests are a bounded `test_gap`. There is no blocking
+`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or unresolved `repo_metadata_conflict`. Task 258B2
+transports source intent only; it does not accept the assumption as a premise
+or establish truth. The trace row remains deferred with `tests = []`, so this
+documentation prerequisite earns no coverage credit and changes no
+fixture, sidecar, expectation, trace status/count, source, test list, or hash.

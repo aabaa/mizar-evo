@@ -3675,3 +3675,22 @@ bridge、checker 4本、runner 5本でclosedとなった。language/test intent�
 justification meaning、theorem resultをpublishしないため`tests = []`でdeferred
 のまま。coverage ownershipはTask 258B2+とTasks 269–272を指す。これは
 traceability count変更なしの意図的な`spec_coverage_audit.md` updateである。
+
+## Task 258B2 frozen-contract audit
+
+次のdependency-ready sliceはTask 258B2+から、`source_statement.md`でfreeze
+したexact 113-byte single-assumption theoremへ狭める。Chapters 15.3.1、
+15.4.1、15.8.2、15.10がtheorem、unlabeled assumption、direct conclusion、
+proof shellをauthoriseし、Chapters 13–14とreserve ruleがequality termと
+visible `x`をauthoriseする。既存parser/resolver fixtureはlanguage/test intentを
+変えず、measured range/provenanceを確立する。
+
+missing frozen contractは`design_drift`。未実装のsyntax-free producer/
+consumer routeはbounded `source_drift`、checker 4本/runner 5本のtestは
+bounded `test_gap`。blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`、unresolved
+`repo_metadata_conflict`はない。Task 258B2はsource intentだけをtransportし、
+assumptionをpremiseとしてacceptせずtruthも確立しない。trace rowは
+`tests = []`でdeferredを維持するため、本documentation prerequisiteはcoverage
+creditを得ず、fixture、sidecar、expectation、trace status/count、source、
+test list/hashを変更しない。

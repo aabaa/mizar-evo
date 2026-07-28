@@ -3725,3 +3725,26 @@ Plan/type/pass/fail/active/warning counts remain `419/387`, `253/241`,
 `342/374`; runner production is 30 paths / 35,854 lines. The audit change is
 therefore required for completed/follow-up ownership only, with no coverage
 credit or traceability-count change.
+
+## Step 5 Checker Task 258B2 Frozen-Contract Addendum
+
+Fresh inventory decomposes the former Task 258B2+ umbrella and freezes only
+the exact 113-byte theorem with one unlabeled assumption and direct
+conclusion. The authoritative Chapters 15.3.1, 15.4.1, 15.8.2, and 15.10,
+the equality-term/formula chapters, reserve visibility rules, existing
+parser/resolver fixtures, and Tasks 48/252/256/258A/258B1 APIs support this
+transport-only slice. The missing contract is closed `design_drift`; its
+future syntax-free checker/runner route is bounded `source_drift` and the
+four/five future test matrices are bounded `test_gap`. No blocking
+`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or unresolved `repo_metadata_conflict` is present.
+
+This prerequisite changes no `doc/spec`, `.miz`, fixture, sidecar,
+expectation, trace row/status/count, executable source, test list, or hash.
+In particular,
+`spec.en.checker.formula_statement.source_payloads` remains deferred with
+`tests = []`: B2 records that an assumption statement occurred but does not
+accept it as a premise or establish truth, proof validity, goals, or theorem
+acceptance. Task 258B3 retains witnesses, B4 composite roots, B5 broader
+visibility, and Tasks 269–272 proof semantics. The audit update records
+frozen ownership only and earns no coverage credit.

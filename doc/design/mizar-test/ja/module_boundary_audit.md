@@ -10286,3 +10286,13 @@ production topologyは30 paths / 35,854 linesのまま。path/content hashは
 libraryは374 tests、raw/normalized hashは
 `e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
 `99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`。
+
+## Checker Task 258B2 planned boundary
+
+本documentation prerequisiteはproduction moduleを追加せず、30-path /
+35,854-line manifestとhashを不変に保つ。planned exact B2 routeはsource
+selection、resolver authentication、lower-stage assembly、immutable
+statement publicationをTask 258A/B1と共有するため、既存private
+`type_elaboration/source_statement.rs` leafがownする。raw syntaxはprivateに
+留まりchecker moduleはsyntax-free ownershipを保持する。new dependency
+direction/semantic ownerは導入しないため、implementation前のsplitは不要。

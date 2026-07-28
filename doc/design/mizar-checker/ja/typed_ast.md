@@ -914,3 +914,22 @@ validateしてatomicにinstallする。legacy statement installerはTask 258Aだ
 acceptし、既存payload ownerはpairをrejectし、validation failure後もoriginal
 valueをreuseできる。accessor、clone、debug orderはsemantic outputなしで
 frozen contractを保持する。
+
+### Task 258B2 frozen typed ownership
+
+Task 258B2はbase-only
+`TypedAst::with_source_statement(SourceStatementHandoff)` pathを再利用する。
+このinstallerはexact Task-258A profileまたはexact Task-258B2 profileをadmit
+でき、Task 258B1は引き続き`with_source_statement_references`を必要とする。
+B2ではfrozen 113-byte source identity、Task-48 `2/1/0`、Task-252
+`6/6/0`、Task-256 `3/0/0/0/0/0/0/6/6`、statement profile
+`1/3/3/3/3`を、sole proof contextとtheorem/assumption/conclusion rowを含めて
+revalidateする。
+
+B2 handoffはreference associationを持たない。reference handoff、Task-248/
+Task-257 payload、duplicate install、source/profile mismatch、semantic-stage
+inputは`TypedAstError::InvalidSourceStatement`としてatomicにfailする。
+successful installはsyntax-free source tableとlower-stage provenanceだけを
+ownし、fact、accepted premise、checked formula、statement semantic、proof、
+goal、diagnostic、theorem resultを作らない。本prerequisiteは`TypedAst`
+source/test/existing debug byteを変更しない。

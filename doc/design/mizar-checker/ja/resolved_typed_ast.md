@@ -922,3 +922,19 @@ missing、stale、cross-profile halfを`InvalidSourceStatement`としてreject�
 reference debug chunkはbase chunk直後、resolved node前に出る。statement
 semantic、checked-formula、proof、goal、diagnostic、downstream tableはすべて
 emptyのまま。
+
+### Task 258B2 frozen final ownership
+
+final assemblyはtyped ownership後のTask-258B2 base-only handoffをadmitする。
+exact 113-byte sourceと、frozen Task-48 `2/1/0`、Task-252 `6/6/0`、
+Task-256 `3/0/0/0/0/0/0/6/6`、statement `1/3/3/3/3` profileを
+revalidateする。retained resolver provenanceはorigin path `[2, 1]`、
+contribution 0のpublic/exported theorem 1件を持ち、proof-step label、
+citation、reference keyを持たない。
+
+source/profile substitution、reference half、competing payload owner、
+nonempty semantic-stage inputはpublication前にfailする。Clone/debugはbase
+handoffをexactに保持する。final assemblyはnew resolutionをinferせず、
+accepted premise、fact、checked formula、statement semantic、proof、goal、
+diagnostic、theorem result、downstream IR/VC outputをpublishしない。本prerequisite
+はresolved source/testを変更しない。

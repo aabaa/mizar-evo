@@ -428,3 +428,12 @@ resolver import-provenance negative、4-test matrix、369-test list、
 30-path/34,955-line production manifestと同一hashを記録する。
 fixture/sidecar/trace metadata/active countは不変。Task-258A implementation
 bilingual driftは残らない。
+
+## Checker Task 258B2 frozen-contract synchronization
+
+paired runner plan、harness、TODO、boundary auditは、同じ113-byte
+source/hash、55-node parser identity、theorem-only resolver provenance、
+exact lower/statement profile、dormant precedence、future test 5本、
+exclusion、unchanged 374-test/30-path baseline、B3–B5/269–272 deferralを
+freezeする。runner source/executable metadataは変更せず、Task-258B2
+bilingual driftを認めない。

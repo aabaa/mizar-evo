@@ -1169,3 +1169,127 @@ dependency/row/provenance corruptions, owner exclusion/rollback, final
 revalidation/clone, and the empty semantic boundary. Task-258A installer and
 debug bytes remain unchanged. Broader statement shapes and every proof
 semantic remain outside this implementation.
+
+## Task 258B2 Frozen Single-Assumption Slice
+
+Task 258B2 is the next dependency-ready transport slice after Task 258B1.
+Its authority is `doc/spec/en/15.statements.md` §§15.3.1, 15.4.1, 15.8.2,
+and 15.10, the equality formula/term rules in Chapters 13–14, the reserve
+visibility rules in Chapter 4, existing
+`pass_parser_simple_statements_001.miz`, the Task-88/89 parser/resolver
+fixtures, and the public Task-48/252/256/258A/258B1 APIs. Those authorities
+support an unlabeled single assumption as source intent; they do not
+authorize accepting it as a fact or interpreting its proof effect.
+
+The exact future corpus-dormant consumer is this 113-byte final-LF source,
+SHA-256
+`c9d77d864ab899865bac77c29c57ff5785d553f8b119ef2274e4e9caf031a125`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementSingleAssumptionSmoke: x = x proof
+  assume x = x;
+  thus x = x;
+end;
+```
+
+Fresh parser/resolver inventory freezes the following identity:
+
+| Object | Exact identity |
+| --- | --- |
+| surface arena | 55 nodes, root 54, all unrecovered |
+| reserve/theorem | reserve `0..18`; theorem item node 51, `19..112`; label `27..64` |
+| theorem owner | one local public/exported theorem, contribution 0, origin path `[2,1]` |
+| proof | node 50, `72..111` |
+| statement rows | theorem node 51 `19..112`; assumption node 41 `80..93`; conclusion node 49 `96..107` |
+| atomic targets | nodes 32/38/46 at `66..71`, `87..92`, `101..106` |
+| primary terms | nodes 28/30/34/36/42/44 at `66..67`, `70..71`, `87..88`, `91..92`, `101..102`, `105..106` |
+| resolver labels | no proof-step label, citation, or label-reference key |
+
+The syntax-free lower composition is exactly Task-48 `2/1/0`: module context
+0 and one `BindingContextOwner::SourceStatement` proof context 1 over
+`72..111`, both exposing reserved binding 0. Task-252 is `6/6/0` with context
+sequence `0,0,1,1,1,1` and stored use ordinal 1. Task-256 is
+`3/0/0/0/0/0/0/6/6` with formula contexts `0,1,1`. The source-statement base
+is `1/3/3/3/3`; no `SourceStatementReferenceHandoff` is installed.
+
+`SourceStatementKind` adds only `Assumption`. The exact statement kinds are
+`TheoremProposition`, `Assumption`, and `Conclusion`; their normalized
+spellings are respectively
+`theorem FormulaStatementSingleAssumptionSmoke : x = x proof assume x = x ;
+thus x = x ; end ;`, `assume x = x ;`, and `thus x = x ;`.
+Every row has one direct atomic formula target, one context, one
+`ReservedTypeGuard` input over its two Task-252 references, and one
+`UnverifiedProposition` candidate. The assumption kind records source intent
+only. `SourceStatementProducer::build` keeps its signature and selects this
+profile from exact authenticated rows and dependencies, never from a caller
+flag.
+
+The existing base-only `TypedAst::with_source_statement` installer is widened
+from Task-258A-only to the exact Task-258A or Task-258B2 base profiles.
+Task-258B1 still requires the paired reference installer. Installation and
+final `ResolvedTypedAst` assembly revalidate the same shared arena and clone
+the base atomically. Task-248, every Task-257 family, Task-258A/B1/B2
+cross-profile hybrids, preinstalled statement/reference payloads, all
+semantic tables, and both ownership orders with any foreign source owner
+remain rejected without partial mutation. Task-258A and Task-258B1 debug
+bytes remain unchanged.
+
+The statement containment graph is theorem row 0 containing sibling rows 1
+and 2; neither proof statement contains the other. Formula targets must be
+the direct proposition/formula descendants of their owning statement and
+must stay distinct. Proof-block, proposition, formula-wrapper, punctuation,
+and unrelated surface nodes remain unowned validation context. Duplicate
+sites, row crossing, ancestor/descendant substitution, a formula from the
+other statement, recovered/degraded nodes, extra labels/citations,
+assumption labels, collective `assume that`, `given`, `consider`, `take`,
+`then`, `hence`, `now`, `hereby`, case/suppose, iterative equality,
+composite/non-equality formulas, extra/reordered statements, or any source
+byte change fail closed.
+
+Task 258B2 publishes no accepted premise, fact, checked formula, statement
+semantic, proof node/goal, diagnostic, theorem status, IR, VC, cache, or
+artifact. In particular, `Assumption` plus
+`UnverifiedProposition` is not authorization to add the formula to a proof
+context. Task 272 retains assumption/proof-skeleton/justification meaning;
+Tasks 269–271 retain local declarations, closure/capture/substitution, and
+reconsider intent. Task 258B3 retains witness transport, Task 258B4
+composite theorem roots, and Task 258B5 broader imported/outer/inner
+visibility.
+
+The future implementation is limited to the existing checker
+`source_statement.rs`, typed/final profile validation, lint-policy tests, the
+existing private runner statement leaf/facades, four checker tests, and five
+runner tests. It must reuse the existing
+`BindingContextOwner::SourceStatement` contract; a `binding_env.rs` source
+change is forbidden and any newly discovered lower-stage defect requires a
+separate prerequisite. The tests must cover
+every exact row/accessor/debug field, Task-48/252/256 fingerprints, parser and
+resolver provenance, all-index typed/surface parity, profile and semantic
+ownership in both orders, complete mutation/replay, exact selector near
+misses, active-corpus isolation, clone, rollback, and empty semantics. No
+production syntax dependency, fixture, sidecar, expectation, trace edit,
+active route, or corpus credit is permitted.
+
+The missing Task-258B2 contract is `design_drift`. The absent exact profile
+and dormant route are bounded `source_drift`, and the absent four/five test
+matrices are `test_gap`. There is no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or unresolved `repo_metadata_conflict`.
+`spec.en.checker.formula_statement.source_payloads` remains deferred with
+`tests = []`; the coverage audit changes follow-up ownership only.
+
+This documentation prerequisite changes no source, fixture, sidecar,
+expectation, trace row/status/count, route, test list, or hash. Baselines
+remain plan/type `419/387` and `253/241`, pass/fail `228/191`, active
+parse/declaration/type/proof `101/5/198/1`, warnings/errors `23/0`,
+checker/runner libraries `342/374`, and runner production 30 paths /
+35,854 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`f2d133e6fc42bd62058e95c274944aa03d80e9f8f2b5a0394a4d11e58ec3a66e`.
+All four test-list hashes and five CLI hashes remain the Task-258B1 values.
+Exit requires synchronized EN/JA documentation, independent no-findings
+reviews, every hard gate, read-only quality at least 90/100, task-only
+staging, and one dedicated documentation commit. Implementation may begin
+only after that commit and a fresh parser/resolver/lower-API/count/hash
+preflight.

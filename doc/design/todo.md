@@ -2504,5 +2504,28 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Preserve the deferred trace row with `tests = []`, all corpus artifacts,
   and the `419/387`, `253/241`, `228/191`, `101/5/198/1`, `23/0` metadata
   counts while raising the checker/runner libraries to `342/374`.
-- [ ] Fresh-inventory and freeze Task 258B2+ separately; keep Tasks 269–272
-  open and do not infer proof or justification semantics from Task 258B1.
+- [x] Fresh-inventory and decompose Task 258B2+; freeze only Task 258B2's
+  exact single-assumption transport contract, keep B3–B5 and Tasks 269–272
+  open, and do not infer proof or justification semantics.
+
+## Checker Task 258B2 frozen-contract prerequisite
+
+- [x] Freeze the exact final-LF 113-byte source and SHA-256
+  `c9d77d864ab899865bac77c29c57ff5785d553f8b119ef2274e4e9caf031a125`,
+  measured 55-node/root-54 parser tree and ranges, and theorem-only resolver
+  provenance with no proof-step reference.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/6/0`, Task-256
+  `3/0/0/0/0/0/0/6/6`, and source-statement `1/3/3/3/3`; add only the
+  planned `Assumption` source kind and reuse the base-only typed/final path.
+- [x] Freeze exact checker/runner consumers, subtree and ownership
+  exclusions, four/five future tests, rollback/clone behavior, and empty
+  fact/premise/checked-formula/statement-semantic/proof/goal output.
+- [x] Classify the closed contract gap as `design_drift`, future producer
+  and route as bounded `source_drift`, and future tests as bounded
+  `test_gap`; record no blocking `spec_gap` or other protocol disagreement.
+- [x] Keep `spec.en.checker.formula_statement.source_payloads` deferred with
+  `tests = []` and preserve all corpus, trace, source, test-list, production,
+  count, and hash baselines in this documentation-only prerequisite.
+- [ ] After this dedicated documentation commit and fresh preflight,
+  implement only Task 258B2 with four checker and five runner tests, then
+  fresh-inventory Task 258B3.

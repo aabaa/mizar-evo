@@ -1976,3 +1976,21 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   leave Task 258B2+ and Tasks 269–272 deferred.
 - [x] Measure 374 runner tests and the unchanged 30-path production topology
   at 35,854 lines; preserve all corpus/trace/CLI counts and hashes.
+
+## Checker Task 258B2 Frozen Consumer Checklist
+
+- [x] Decompose Task 258B2+ and freeze only the final-LF 113-byte
+  single-assumption theorem, its hash, exact parser ranges, and theorem-only
+  resolver provenance.
+- [x] Freeze the Task-48 `2/1/0`, Task-252 `6/6/0`, Task-256
+  `3/0/0/0/0/0/0/6/6`, and Task-258B2 `1/3/3/3/3` transaction with no
+  reference association or semantic output.
+- [x] Freeze private raw-syntax ownership, corpus-dormant precedence,
+  selector/subtree and provenance mutations, Task-258A/B1 and active-route
+  isolation, typed/final cloning, and exactly five future runner tests.
+- [x] Preserve all fixture, sidecar, expectation, trace row/status/count,
+  active route, source, 374-test list, 30-path / 35,854-line manifest, and
+  existing count/hash baselines in this documentation prerequisite.
+- [ ] After the checker documentation commit and a fresh parser/resolver/
+  lower/API/count/hash preflight, implement only the dormant Task-258B2
+  route and five tests. Keep B3–B5 and Tasks 269–272 deferred.

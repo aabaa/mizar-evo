@@ -532,3 +532,20 @@ extend the module base to `3/1/0`, preserve the reserved binding, scope paths
 `[0]` and `[0, 0]`, and deterministic debug/fingerprint bytes. Invalid empty
 or foreign ranges and profile substitutions fail before publication.
 Task-258A retains its original one-context bytes.
+
+### Task 258B2 Frozen Assumption-Context Extension
+
+Task 258B2 is limited to the exact 113-byte source frozen in
+`source_statement.md`: one module reserve and one theorem whose proof contains
+the unlabeled assumption `assume x = x;` followed by `thus x = x;`. Its
+Task-48 environment profile is exactly `2/1/0`. Context 0 is the unchanged
+module context and owns reserved binding 0. Context 1 is its normal proof
+child, has owner `SourceStatement { source_range: 72..111 }`, lexical scope
+`[0]`, owns no binding, and exposes `[0]`. There is no nested proof context.
+
+The extension records source topology only. It does not turn the assumption
+into a binding, premise, fact, checked formula, goal, accepted theorem, or
+proof result. Empty/foreign ranges, a non-proof owner, a different parent or
+scope, another binding count, or any profile other than `2/1/0` must fail
+before publication. The documentation prerequisite changes no source or test;
+the existing Task-258A and Task-258B1 profiles and bytes remain unchanged.

@@ -962,3 +962,23 @@ exact B1 base/reference pair atomically. The legacy statement installer still
 accepts only Task 258A, all existing payload owners reject the pair, and
 failed validation leaves the original value reusable. Accessors, cloning,
 and debug ordering preserve the frozen contract without semantic output.
+
+### Task 258B2 Frozen Typed Ownership
+
+Task 258B2 reuses the base-only
+`TypedAst::with_source_statement(SourceStatementHandoff)` path. That
+installer may admit either the exact Task-258A profile or the exact Task-258B2
+profile; Task 258B1 continues to require
+`with_source_statement_references`. For B2 it must revalidate the frozen
+113-byte source identity, Task-48 `2/1/0`, Task-252 `6/6/0`, Task-256
+`3/0/0/0/0/0/0/6/6`, and statement profile `1/3/3/3/3`, including the sole
+proof context and the theorem, assumption, and conclusion rows.
+
+The B2 handoff contains no reference association. A reference handoff, a
+Task-248 or Task-257 payload, duplicate installation, a mismatched source or
+profile, or any semantic-stage input must fail atomically as
+`TypedAstError::InvalidSourceStatement`. Successful installation owns only
+the syntax-free source table and its lower-stage provenance. It creates no
+fact, accepted premise, checked formula, statement semantic, proof, goal,
+diagnostic, or theorem result. This prerequisite changes no `TypedAst`
+source, tests, or existing debug bytes.

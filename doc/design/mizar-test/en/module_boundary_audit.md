@@ -11508,3 +11508,14 @@ are
 The library has 374 tests with raw/normalized hashes
 `e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
 `99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`.
+
+## Checker Task 258B2 Planned Boundary
+
+This documentation prerequisite adds no production module and leaves the
+30-path / 35,854-line manifest and hashes unchanged. The planned exact B2
+route belongs in the existing private
+`type_elaboration/source_statement.rs` leaf alongside Task 258A/B1 because
+it shares source selection, resolver authentication, lower-stage assembly,
+and immutable statement publication. Raw syntax remains private and checker
+modules retain syntax-free ownership. No new dependency direction or
+semantic owner is introduced, so no split is justified before implementation.

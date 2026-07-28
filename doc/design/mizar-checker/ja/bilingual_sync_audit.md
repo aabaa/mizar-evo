@@ -325,3 +325,13 @@ source/module/coverage audit、runner plan/harness/TODO/boundary audit、
 global ledgerは、同じexact implemented transaction、checker/runner 4/5 test
 matrix、library `342/374`、runner 30-path/35,854-line manifest、corpus/trace/
 CLI count不変を記録する。Task-258B1 implementation bilingual debtは残らない。
+
+## Task 258B2 frozen-contract pair
+
+paired checker plan、TODO、source-statement、binding、typed/final、
+payload-family、source-spec、module-boundary、coverage-audit textは、同じ
+113-byte single-assumption transport contract、profile、exclusion、
+future checker/runner test 4/5本、deferred ownership、unchanged baselineを
+両言語でfreezeする。paired runner文書も同じdormant consumerをfreezeする。
+本prerequisiteはsource/executable metadataを変更せず、Task-258B2 bilingual
+debtを認めない。

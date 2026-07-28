@@ -277,6 +277,17 @@ matrix remain behavior-coupled, so no private checker split is required.
 `TypedAst` owns the one-shot immutable handoff and `ResolvedTypedAst`
 revalidates then clone-preserves it.
 
+## Task 258B2 Planned-Boundary Addendum
+
+Task 258B2 adds no module during this documentation prerequisite and does not
+change the current line-count table. The planned implementation extends the
+existing cohesive `source_statement.rs` owner with one assumption source
+kind and one exact base-only profile. `binding_env.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs` retain their existing validation and publication
+roles; raw parser/resolver syntax remains in the private runner leaf. No
+semantic-stage owner or dependency direction changes, so no split or
+boundary move is warranted before implementation.
+
 ## Checker Task 257C3 Implementation Boundary Recheck
 
 No checker module was added. `source_formula_composition.rs` is 5,317 lines

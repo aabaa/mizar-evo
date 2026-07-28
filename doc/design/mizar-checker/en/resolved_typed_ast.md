@@ -976,3 +976,19 @@ rejects an orphan, missing, stale, or cross-profile half as
 `InvalidSourceStatement`. The reference debug chunk follows the base chunk
 before resolved nodes. All statement semantic, checked-formula, proof, goal,
 diagnostic, and downstream tables remain empty.
+
+### Task 258B2 Frozen Final Ownership
+
+Final assembly admits the Task-258B2 base-only handoff after typed ownership.
+It revalidates the exact 113-byte source and the frozen Task-48 `2/1/0`,
+Task-252 `6/6/0`, Task-256 `3/0/0/0/0/0/0/6/6`, and statement
+`1/3/3/3/3` profiles. The retained resolver provenance must contain the one
+public/exported theorem at origin path `[2, 1]`, contribution 0, and no
+proof-step label, citation, or reference key.
+
+Any source/profile substitution, reference half, competing payload owner, or
+nonempty semantic-stage input fails before publication. Clone and debug
+preserve the base handoff exactly. Final assembly infers no new resolution
+and publishes no accepted premise, fact, checked formula, statement
+semantic, proof, goal, diagnostic, theorem result, or downstream IR/VC
+output. This prerequisite changes no resolved source or test.

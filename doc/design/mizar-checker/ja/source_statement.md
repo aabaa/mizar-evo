@@ -839,3 +839,119 @@ publishする。checker 4本がcomplete API/debug、dependency/row/provenance
 corruption、owner exclusion/rollback、final revalidation/clone、empty semantic
 boundaryをcoverする。Task-258A installer/debug byteは不変。broader statement
 shapeと全proof semanticは本implementation外に残る。
+
+## Task 258B2 frozen single-assumption slice
+
+Task 258B2はTask 258B1後のnext dependency-ready transport sliceである。
+authorityは`doc/spec/en/15.statements.md` §§15.3.1、15.4.1、15.8.2、
+15.10、Chapters 13–14のequality formula/term rules、Chapter 4のreserve
+visibility、existing `pass_parser_simple_statements_001.miz`、Task-88/89
+parser/resolver fixtures、public Task-48/252/256/258A/258B1 APIである。
+これらはunlabeled single assumptionをsource intentとしてsupportするが、
+factとしてacceptすることやproof effectのinterpretationはauthorizeしない。
+
+future corpus-dormant exact consumerは次の113-byte final-LF source、
+SHA-256
+`c9d77d864ab899865bac77c29c57ff5785d553f8b119ef2274e4e9caf031a125`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementSingleAssumptionSmoke: x = x proof
+  assume x = x;
+  thus x = x;
+end;
+```
+
+fresh parser/resolver inventoryは次のidentityをfreezeする。
+
+| object | exact identity |
+| --- | --- |
+| surface arena | 55 nodes、root 54、全node unrecovered |
+| reserve/theorem | reserve `0..18`; theorem item node 51、`19..112`; label `27..64` |
+| theorem owner | local public/exported theorem 1件、contribution 0、origin path `[2,1]` |
+| proof | node 50、`72..111` |
+| statement rows | theorem node 51 `19..112`; assumption node 41 `80..93`; conclusion node 49 `96..107` |
+| atomic targets | nodes 32/38/46、range `66..71`、`87..92`、`101..106` |
+| primary terms | nodes 28/30/34/36/42/44、range `66..67`、`70..71`、`87..88`、`91..92`、`101..102`、`105..106` |
+| resolver labels | proof-step label、citation、label-reference keyはいずれも0件 |
+
+syntax-free lower compositionはexact Task-48 `2/1/0`である。context 0はmodule、
+context 1は`72..111`の`BindingContextOwner::SourceStatement` proof contextで、
+両方がreserved binding 0をexposeする。Task-252は`6/6/0`、context sequence
+`0,0,1,1,1,1`、stored use ordinal 1。Task-256は
+`3/0/0/0/0/0/0/6/6`、formula contexts `0,1,1`。source-statement baseは
+`1/3/3/3/3`で、`SourceStatementReferenceHandoff`はinstallしない。
+
+`SourceStatementKind`が追加するのは`Assumption`だけ。exact statement kindは
+`TheoremProposition`、`Assumption`、`Conclusion`で、normalized spellingは順に
+`theorem FormulaStatementSingleAssumptionSmoke : x = x proof assume x = x ;
+thus x = x ; end ;`、`assume x = x ;`、`thus x = x ;`。
+各rowはdirect atomic formula target 1件、context 1件、2つのTask-252
+referenceに対する`ReservedTypeGuard` input 1件、
+`UnverifiedProposition` candidate 1件を持つ。assumption kindはsource intent
+だけをrecordする。`SourceStatementProducer::build` signatureは不変で、
+caller flagではなくexact authenticated row/dependencyからprofileをselectする。
+
+existing base-only `TypedAst::with_source_statement` installerはTask-258A-only
+からexact Task-258AまたはTask-258B2 base profileへwidenする。Task-258B1は
+paired reference installerを引き続きrequireする。installationとfinal
+`ResolvedTypedAst` assemblyはsame shared arenaをrevalidateしbaseをatomicに
+cloneする。Task-248、全Task-257 family、Task-258A/B1/B2 cross-profile
+hybrid、preinstalled statement/reference payload、全semantic table、foreign
+source ownerとの両ownership orderはpartial mutationなしでrejectする。
+Task-258A/B1 debug byteは不変。
+
+statement containment graphはtheorem row 0がsibling rows 1/2をcontainし、
+proof statement同士はcontainしない。formula targetはowning statementの
+direct proposition/formula descendantで、相互にdistinctでなければならない。
+proof-block、proposition、formula-wrapper、punctuation、unrelated surface
+nodeはunowned validation contextのまま。duplicate site、row crossing、
+ancestor/descendant substitution、other statementのformula、
+recovered/degraded node、extra label/citation、labeled/collective
+assumption、`given`、`consider`、`take`、`then`、`hence`、`now`、
+`hereby`、case/suppose、iterative equality、composite/non-equality formula、
+extra/reordered statement、source byte changeはfail closed。
+
+Task 258B2はaccepted premise、fact、checked formula、statement semantic、
+proof node/goal、diagnostic、theorem status、IR、VC、cache、artifactをpublish
+しない。特に`Assumption`と`UnverifiedProposition`はformulaをproof contextへ
+追加するauthorityではない。assumption/proof-skeleton/justification meaningは
+Task 272、local declaration/closure-capture-substitution/reconsider intentは
+Tasks 269–271が保持する。Task 258B3はwitness transport、Task 258B4は
+composite theorem root、Task 258B5はbroader imported/outer/inner visibilityを
+保持する。
+
+future implementation scopeはexisting checker `source_statement.rs`、
+typed/final profile validation、lint-policy tests、existing private runner
+statement leaf/facade、checker tests 4本、runner tests 5本に限定する。既存
+`BindingContextOwner::SourceStatement` contractをreuseしなければならず、
+`binding_env.rs` source changeは禁止する。new lower-stage defectを発見した場合は
+separate prerequisiteを必要とする。testsは全exact row/accessor/debug field、
+Task-48/252/256
+fingerprint、parser/resolver provenance、all-index typed/surface parity、
+profile/semantic ownership両order、complete mutation/replay、exact selector
+near miss、active-corpus isolation、clone/rollback/empty semanticsをcoverする。
+production syntax dependency、fixture、sidecar、expectation、trace edit、
+active route、corpus creditは禁止。
+
+missing Task-258B2 contractは`design_drift`。absent exact profile/dormant routeは
+bounded `source_drift`、absent checker/runner 4/5 test matrixは`test_gap`。
+blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`、unresolved
+`repo_metadata_conflict`はない。
+`spec.en.checker.formula_statement.source_payloads`は`tests = []`/deferredの
+ままで、coverage auditはfollow-up ownershipだけを変更する。
+
+本documentation prerequisiteはsource、fixture、sidecar、expectation、trace
+row/status/count、route、test list、hashを変更しない。baselineはplan/type
+`419/387` / `253/241`、pass/fail `228/191`、active
+parse/declaration/type/proof `101/5/198/1`、warnings/errors `23/0`、
+checker/runner libraries `342/374`、runner production 30 paths /
+35,854 lines、path/content hash
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`f2d133e6fc42bd62058e95c274944aa03d80e9f8f2b5a0394a4d11e58ec3a66e`。
+4 test-list hashと5 CLI hashもTask-258B1 valueのまま。exitはEN/JA
+documentation sync、independent no-findings review、全hard gate、read-only
+quality 90/100以上、task-only staging、dedicated documentation commitを要求。
+implementationはそのcommitとfresh parser/resolver/lower-API/count/hash
+preflight後だけ開始できる。

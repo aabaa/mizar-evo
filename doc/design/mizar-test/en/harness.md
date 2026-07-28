@@ -3375,3 +3375,25 @@ Five library tests raise the runner list to 374. Raw/normalized hashes are
 `e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
 `99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`.
 Production remains 30 paths / 35,854 lines.
+
+### Task 258B2 Frozen Harness Boundary
+
+The Task-258B2 leaf recognizes only the exact 113-byte final-LF source and
+the measured 55-node/root-54 unrecovered parser tree. It validates the
+reserve, theorem label, theorem/proof/assumption/conclusion ranges, all six
+primary `x` term sites, and the one public/exported resolver theorem at
+origin `[2, 1]`, contribution 0. Any label/citation/reference key, witness,
+nested proof, composite root, selector, or extra statement is a near miss.
+
+The leaf runs before Task 258A/B1 and lower Task-257 selectors. It privately
+translates raw syntax into Task-48 `2/1/0`, Task-252 `6/6/0`, Task-256
+`3/0/0/0/0/0/0/6/6`, and the base-only Task-258B2 `1/3/3/3/3` handoff,
+without copying raw syntax into checker rows. Exactly five future tests cover
+the exact route, lower/resolver/table mutation and rollback, near misses,
+route isolation, typed/final clone, and invariant empty fact/premise/
+checked-formula/statement-semantic/proof/goal/diagnostic output.
+
+This documentation prerequisite changes no runner source, executable route,
+test, corpus artifact, trace metadata, production manifest, test list, or
+hash. Witnesses, composite roots, broader visibility, and proof meaning stay
+with Tasks 258B3–B5 and 269–272.

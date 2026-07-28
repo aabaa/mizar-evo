@@ -3200,3 +3200,25 @@ library test 5本でrunner listは374となった。raw/normalized hashは
 `e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
 `99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`。
 productionは30 paths / 35,854 lines。
+
+### Task 258B2 frozen harness boundary
+
+Task-258B2 leafはexact 113-byte final-LF sourceとmeasured
+55-node/root-54 unrecovered parser treeだけをrecognizeする。reserve、theorem
+label、theorem/proof/assumption/conclusion range、全primary `x` term site
+6件、origin `[2, 1]` / contribution 0のpublic/exported resolver theorem
+1件をvalidateする。label/citation/reference key、witness、nested proof、
+composite root、selector、extra statementはすべてnear miss。
+
+leafはTask 258A/B1とlower Task-257 selectorより前に動く。raw syntaxをprivateに
+Task-48 `2/1/0`、Task-252 `6/6/0`、Task-256
+`3/0/0/0/0/0/0/6/6`、base-only Task-258B2 `1/3/3/3/3` handoffへ
+translateし、raw syntaxをchecker rowへcopyしない。future test exactly 5本が
+exact route、lower/resolver/table mutationとrollback、near miss、route
+isolation、typed/final clone、empty fact/premise/checked-formula/
+statement-semantic/proof/goal/diagnostic output不変をcoverする。
+
+本documentation prerequisiteはrunner source、executable route、test、
+corpus artifact、trace metadata、production manifest、test list/hashを
+変更しない。witness、composite root、broader visibility、proof meaningは
+Tasks 258B3–B5と269–272に残る。

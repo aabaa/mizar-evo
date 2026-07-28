@@ -513,3 +513,19 @@ frozen `BindingContextOwner::SourceStatement { source_range }` variantを
 baseを`3/1/0`へ拡張し、reserved binding、scope `[0]` / `[0, 0]`、
 deterministic debug/fingerprint byteを保持する。empty/foreign rangeやprofile
 substitutionはpublication前にfailする。Task-258Aのone-context byteは不変。
+
+### Task 258B2 frozen assumption-context extension
+
+Task 258B2は`source_statement.md`でfreezeしたexact 113-byte source、すなわち
+module reserve 1件と、proof内にunlabeled assumption `assume x = x;`、続いて
+`thus x = x;`を持つtheorem 1件だけを対象とする。Task-48 environment profileは
+exact `2/1/0`。context 0はunchanged module contextでreserved binding 0をownする。
+context 1はそのnormal proof childで、owner
+`SourceStatement { source_range: 72..111 }`、lexical scope `[0]`、bindingを
+ownせず`[0]`をexposeする。nested proof contextはない。
+
+extensionはsource topologyだけを記録する。assumptionをbinding、premise、
+fact、checked formula、goal、accepted theorem、proof resultにはしない。
+empty/foreign range、non-proof owner、異なるparent/scope、別binding count、
+`2/1/0`以外のprofileはpublication前にfailする。本documentation prerequisiteは
+source/testを変更せず、既存Task-258A/Task-258B1 profileとbyteも不変。

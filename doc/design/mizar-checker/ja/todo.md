@@ -4298,9 +4298,17 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       conclusion/local-label transportだけを実装した。checker 4本とrunner 5本で
       bounded `source_drift`/`test_gap`を閉じ、semantic/corpus activation
       gateはすべてdeferredのままとした。
-    - [ ] **Task 258B2+:** Task 258B1後にexplicit assumption/witness、
-      composite theorem root、broader imported/outer/inner visibility
-      profileをseparately freezeする。Tasks 269-272 semanticsを吸収しない。
+    - [x] **Task 258B2 prerequisite:** exact 113-byte unlabeled single-
+      assumption source、55-node/root-54 parser shape、theorem/assumption/
+      conclusion `1/3/3/3/3` profile、Task-48 `2/1/0`、Task-252
+      `6/6/0`、Task-256 `3/0/0/0/0/0/0/6/6`、base-only typed/final
+      ownership、empty-semantic boundary、tests、non-activationをfreeze。
+    - [ ] **Task 258B2 implementation:** dedicated documentation commitと
+      fresh parser/resolver/lower-API/count/hash preflight後にfrozen
+      single-assumption transportだけをimplementする。
+    - [ ] **Tasks 258B3-B5:** witness transport、composite theorem root、
+      broader imported/outer/inner visibility profileをseparately freezeする。
+      Tasks 269-272 semanticsを吸収しない。
 - [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
 - [ ] **Task 260:** functor-definition/initial-obligation intake producer。
 - [ ] **Task 261:** attribute-definition producer。

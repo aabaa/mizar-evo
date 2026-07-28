@@ -713,3 +713,20 @@ B1 statement/reference edgeはfrozenどおりtransport-only familyとして実�
 269–272がlocal declaration、closure、coercion intent、proof skeleton、
 justification meaning、goal、acceptanceを所有し続ける。本implementationで
 family edgeをreclassifyしない。
+
+### Task 258B2 frozen family edge
+
+Task 258B2は次のminimal transport-only edgeである:
+Task 48 `2/1/0` → Task 252 `6/6/0` → Task 256
+`3/0/0/0/0/0/0/6/6` → profile `1/3/3/3/3`のsource-statement handoff
+1件。single proof context下のunlabeled single assumptionとdirect conclusionを
+transportする。Task-258B1 reference edge、およびfact、premise acceptance、
+checked formula、statement semantic、proof、goal、theorem-result edgeは
+意図的に存在しない。
+
+Task 258B3はwitness transport、Task 258B4はcomposite theorem root、Task
+258B5はbroader imported/outer/inner visibilityを保持する。Tasks 269–272は
+proof-local declarationとproof/justification semanticsを保持する。したがって
+deferred `MT10-FS` rowはdeferredのまま。本documentation prerequisiteは
+executable coverage creditを得ず、source、fixture、sidecar、expectation、
+trace status/count、既存test list/hashを変更しない。

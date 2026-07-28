@@ -1784,3 +1784,20 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   Tasks 269–272をdefer。
 - [x] runner 374 testsと、topology不変のproduction 30 paths /
   35,854 linesを測定し、corpus/trace/CLI count/hashをすべてpreserve。
+
+## Checker Task 258B2 frozen consumer checklist
+
+- [x] Task 258B2+をdecomposeし、final-LF 113-byte single-assumption theorem、
+  hash、exact parser range、theorem-only resolver provenanceだけをfreeze。
+- [x] reference association/semantic outputなしのTask-48 `2/1/0`、
+  Task-252 `6/6/0`、Task-256 `3/0/0/0/0/0/0/6/6`、Task-258B2
+  `1/3/3/3/3` transactionをfreeze。
+- [x] private raw-syntax ownership、corpus-dormant precedence、
+  selector/subtree/provenance mutation、Task-258A/B1/active-route isolation、
+  typed/final clone、future runner tests exactly 5本をfreeze。
+- [x] 本documentation prerequisiteでは全fixture、sidecar、expectation、
+  trace row/status/count、active route、source、374-test list、30-path /
+  35,854-line manifest、既存count/hash baselineをpreserve。
+- [ ] checker documentation commitとfresh parser/resolver/lower/API/count/
+  hash preflight後、dormant Task-258B2 route/tests 5本だけをimplementする。
+  B3–B5とTasks 269–272はdeferを維持。
