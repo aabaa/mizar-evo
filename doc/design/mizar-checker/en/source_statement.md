@@ -2802,3 +2802,96 @@ but no statement or witness table is installed. Task 258 behavior and the
 application-to-witness ownership edge remain absent. Fresh inventory may
 now freeze B3M2B2B1A as a separate documentation task; all other
 Task-253/254/255 and compound shapes remain deferred.
+
+## Task 258B3M2B2B1A Application-Witness Ownership
+
+B1A consumes exactly the B1P `take 1 ++ 2;` source. The syntax-free witness
+row is:
+
+| Field | Value |
+|---|---|
+| owner / binding context | theorem owner 0 / proof context 1 |
+| source ordering | witness source ordinal 1, witness ordinal 0 |
+| take occurrence | node 49, range `111..123` |
+| witness occurrence | witness-container node 48, range/spelling `116..122` / `1 ++ 2` |
+| target | `SourceStatementWitnessTermTarget::Application(SourceFunctorApplicationId(0))` |
+| kind / recovery / name | `Unnamed` / `Normal` / `None` |
+
+Parser containment is node 49 -> 48 -> 47 -> 46, but ownership crosses only
+from witness row 0 to Task-253 application row 0. Node 48 is the owned witness
+site, node 47 is an unowned transparent traversal node, and node 46 is the
+application target. Node 47 does not create a Task-253 wrapper or Task-252 primary.
+Task 252 owns the two numeral arguments as primaries 2/3; Task 253 owns the
+application, head, candidate, arguments, and requests; Task 256 excludes the
+whole subtree. The witness consumer must not copy or retarget any lower row.
+
+`SourceStatementWitnessTermTarget`, already `#[non_exhaustive]`, adds the
+`Application(SourceFunctorApplicationId)` variant. The immutable handoff adds
+`application_fingerprint: Option<String>` and the read-only
+`application_fingerprint()` accessor. Legacy primary-target handoffs retain
+`None`. `SourceStatementWitnessProducer::build(...)` remains unchanged for
+legacy callers and rejects an application target without the new dependency.
+`build_with_application(...)` takes the same input and base/primary/arena
+dependencies plus the exact `SourceFunctorApplicationHandoff`; only B1A may
+produce `Some(application.debug_text())`.
+
+The additive public signatures are frozen as:
+
+```rust
+pub fn application_fingerprint(&self) -> Option<&str>;
+
+pub fn build_with_application(
+    input: SourceStatementWitnessHandoffInput,
+    statements: &SourceStatementHandoff,
+    primary_terms: &SourcePrimaryTermHandoff,
+    application: &SourceFunctorApplicationHandoff,
+    arena: &TypedArena,
+) -> Result<SourceStatementWitnessHandoff, SourceStatementWitnessError>;
+
+pub fn with_source_application_statement_witnesses(
+    self,
+    application: SourceFunctorApplicationHandoff,
+    statements: SourceStatementHandoff,
+    witnesses: SourceStatementWitnessHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+Installation accepts exactly two dependency shapes:
+
+1. legacy statement-witness profiles with no source application and no
+   application fingerprint;
+2. B1A with the exact source application, a matching fingerprint, and witness
+   target `Application(0)`.
+
+Every `Some/None`, missing/orphan, wrong-ID, wrong-context, wrong-range,
+stale-fingerprint, substituted-candidate, or cross-profile hybrid rejects.
+Dependency/source/module/fingerprint and all lower handoffs validate before
+aggregate `1/0`, witness row 0, and the empty name table. The existing
+`source-statement-witness-debug-v1` bytes remain identical for every legacy
+profile. A B1A rendering alone inserts
+`application-fingerprint: Some(...)` after the primary fingerprint and uses
+`term=application#0`.
+
+The sole TypedAst entry point is
+`with_source_application_statement_witnesses(application, statements,
+witnesses)`. It publishes all three handoffs only after complete validation.
+`with_source_application` and `with_source_statement_witnesses` continue to
+reject the opposite family, including partial B1A installation.
+`ResolvedTypedAst` revalidates and clone-preserves the same exact bundle.
+Although Task 256 sees the Task-253 handoff during combined revalidation, its
+two equality formulas use only primaries `[0,1]` and `[4,5]` and retain no
+application fingerprint. Only the witness handoff consumes Task 253.
+
+The contract ends at source provenance and ownership. Witness type checking,
+goal matching, existential substitution, remaining-goal construction,
+formula truth, proof acceptance, Core/ControlFlow/VC, and all diagnostic or
+active-route behavior remain Task 272 or later. Other application forms,
+parentheses around the application, Tasks 254/255 terms, named/multiple
+witnesses, and broader proof shapes remain later B1B+ slices.
+
+The exact checker tests are:
+
+1. `task258b3m2b2b1a_exact_application_witness_api_debug_and_legacy_compatibility_are_stable`;
+2. `task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fail_closed`;
+3. `task258b3m2b2b1a_combined_ownership_hybrids_and_all_family_orders_are_atomic`;
+4. `task258b3m2b2b1a_final_clone_revalidation_and_semantic_deferrals_are_stable`.

@@ -489,3 +489,13 @@ context-aware helper, legacy context-0 delegation/hash, proof-context-1
 `1/0/1/2/2` result, two passing tests, `370/411` library inventory, and
 unchanged checker/public/statement/semantic/trace boundaries. No
 implementation bilingual debt remains; B1A documentation is next.
+
+## Task 258B3M2B2B1A Frozen-Contract Synchronization
+
+The EN canonical and JA companion freeze the same 143-byte/63-node source,
+Task-48/252/253/256/base/witness tables, owned nodes 49/48, unowned traversal
+node 47, Task-253 target node 46, additive application target/fingerprint,
+legacy-compatible
+builder/debug bytes, atomic typed/final installer, `4/5` future tests,
+semantic deferrals, unchanged `370/411` baselines, and coverage-neutral
+audit result. No documentation bilingual debt remains.

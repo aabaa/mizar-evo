@@ -4782,5 +4782,23 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   goal outputをcoverするcompound testsちょうど2件をpass。
 - [x] libraries `370/411`、runner Task-253 sizes
   `1782/701/2514/2799`、production 30 paths / 39,857 linesを実測。
-- [ ] B3M2B2B1Aのexact application-witness consumerを実装する前にfresh
+- [x] B3M2B2B1Aのexact application-witness consumerを実装する前にfresh
   inventory/frozen contractを作成。
+
+## Checker Task 258B3M2B2B1A frozen-contract ledger
+
+- [x] Chapter 13/15/16 authority、final-LF 143-byte/hash source、diagnostics
+  0、63 nodes/root 62、theorem owner、imported `++` provenanceをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、Task-253 `1/0/1/2/2`、
+  Task-256 equality-only exclusion、base `1/2/2/2/2`、unnamed
+  `Application(0)` witness 1/names 0をfreeze。
+- [x] node `48 -> 47 -> 46` containmentをwrapper/primary duplicateなしで
+  freezeし、witness handoffだけをTask-253 consumerとする。
+- [x] `Application` target、optional fingerprint、legacy-compatible
+  builder/debug、application-aware producer、atomic typed/final installを
+  freeze。
+- [x] checker 4/runner 5 tests、unchanged `370/411`、30 paths/39,857
+  lines、no active/canonical/fixture/expectation/sidecar/trace/semantic
+  change、coverage `deferred`/`tests = []`をfreeze。
+- [ ] dedicated docs commit/fresh preflight後、B3M2B2B1Aだけを実装し、
+  projected libraries `374/416`を実測。

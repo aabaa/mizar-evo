@@ -4221,3 +4221,21 @@ Plan/count is `419/387`, type coverage `253/241`, pass/fail `228/191`,
 active parse/declaration/type/proof counts are `101/5/198/1`, and the five
 CLI hashes remain unchanged. B1A documentation is the next coverage-neutral
 dependency step.
+
+## Task 258B3M2B2B1A Frozen Application-Witness Follow-Up
+
+The design now freezes the exact dormant `take 1 ++ 2;` ownership chain:
+Task 252 owns numeral arguments, Task 253 owns the imported infix
+application, Task 256 owns only the theorem/conclusion equalities, and
+Task 258 owns one witness targeting `Application(0)`. This is a follow-up
+ownership clarification derived from Chapters 13, 15, and 16 and the existing
+parser/resolver fixture; it adds no executable specification coverage.
+
+Accordingly `spec.en.checker.formula_statement.source_payloads` remains
+`deferred`, `tests = []`, with no backlink or credit. No canonical
+specification, `.miz`, fixture, expectation, sidecar, trace row/status/count,
+active route, or semantic/proof/goal owner changes. Baseline plan/requirements
+remain `419/387`, type `253/241`, pass/fail `228/191`, active
+parse/declaration/type/proof `101/5/198/1`, warnings/errors `23/0`, libraries
+`370/411`, and production 30 paths / 39,857 lines. Implementation is the next
+separate logical task and projects libraries `374/416`.

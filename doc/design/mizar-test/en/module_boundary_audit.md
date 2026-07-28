@@ -11683,3 +11683,22 @@ Raw/normalized 411-test hashes are
 `eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`.
 No public re-export, checker dependency, statement extraction, active
 route, binding, or semantic owner changed.
+
+## Task 258B3M2B2B1A Frozen Module Boundary
+
+The future write scope is restricted to the existing private
+`type_elaboration::source_statement` consumer and its test module plus the
+facade/root registration needed for five library tests. It calls the existing
+private B1P context-aware helper in `source_application`; no extractor,
+candidate, argument, or request logic moves or duplicates. The checker owns
+the additive public witness target/fingerprint and atomic installation.
+
+The docs task itself changes no Rust module. Baselines remain 30 production
+paths / 39,857 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`
+and 411-test hashes
+`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
+`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`.
+No public route, active dispatch, fixture, expectation, sidecar, trace,
+binding, or semantic owner changes.

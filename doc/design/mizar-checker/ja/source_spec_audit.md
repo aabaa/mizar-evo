@@ -3913,3 +3913,18 @@ public API、semantic ownerは変更しない。
 formula-statement audit rowは引き続き`deferred`, `tests = []`で、
 backlink/coverage creditなし。B1Pはlower-stage infrastructureだけで、
 exact Task-258 application-witness consumerはB1Aに残る。
+
+## Task 258B3M2B2B1A frozen-contract audit
+
+Chapters 13/15/16は`1 ++ 2`がsymbolic infix termで、`take`が
+`term_expression` witnessを受けることを既に規定する。既存parser/
+resolver fixtureが`parser.type_fixtures::++`をauthenticateし、B1Pがexact
+proof-context Task-253 handoffをauthenticateする。従って`spec_gap`/
+unsafe test-intent decisionなし。
+
+missing exact ownership descriptionは`design_drift`。future production/
+testsはbounded `source_drift`/`test_gap`。`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`、blocking
+`repo_metadata_conflict`なし。このdocs taskはfollow-up ownershipだけを
+変更し、formula-statement rowはsemantic/proof result/active `.miz`を
+追加しないため`deferred`, `tests = []`、backlink/creditなし。

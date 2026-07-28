@@ -2633,5 +2633,22 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] After the dedicated docs commit and fresh preflight, implement B1P
   alone with exactly two tests; measure libraries `370/411`, runner
   Task-253 sizes `1782/701/2514/2799`, and 30 paths / 39,857 lines.
-- [ ] Fresh-inventory and freeze B3M2B2B1A's exact application-witness
+- [x] Fresh-inventory and freeze B3M2B2B1A's exact application-witness
   contract in a separate EN/JA documentation commit before implementation.
+
+## Checker Task 258B3M2B2B1A Frozen Application-Witness Ledger
+
+- [x] Freeze Chapters 13/15/16 plus existing parser/resolver authority and
+  the exact 143-byte/63-node imported-infix witness source.
+- [x] Freeze dependency outputs Task-48 `2/1/0`, Task-252 `6/4/2`,
+  Task-253 `1/0/1/2/2`, Task-256 equality-only exclusion, Task-258 base
+  `1/2/2/2/2`, and witness `1/0`.
+- [x] Freeze the additive application target/fingerprint API, legacy byte
+  compatibility, atomic typed/final installation, and sole directed
+  witness-to-application ownership edge.
+- [x] Freeze checker/runner tests `4/5`, unchanged canonical/fixture/
+  expectation/sidecar/trace/active/semantic boundaries, libraries `370/411`,
+  production 30 paths / 39,857 lines, and no coverage credit.
+- [ ] Commit this documentation prerequisite alone, fresh-inventory all
+  authorities/counts/hashes, then implement only B3M2B2B1A and measure
+  projected libraries `374/416`.

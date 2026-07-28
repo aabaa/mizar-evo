@@ -553,3 +553,11 @@ fixed hash、proof-context-1 lower profiles、passing testsちょうど2件、
 runner-test inventory `411`、sizes `1782/701/2514/2799`、unchanged
 public/active/fixture/trace/semantic boundariesを記録する。implementation
 bilingual debtなし。次はB1A documentation。
+
+## Task 258B3M2B2B1A runner contract synchronization
+
+EN canonical/JA companionは同じexact source identity、63-node selector、
+lower `2/1/0`, `6/4/2`, `1/0/1/2/2`, `1/2/2/2/2`, witness `1/0`、
+node ownership、B1P helper reuse、future tests 5件、empty semantics、
+unchanged 411-test/39,857-line baseline、no active/fixture/expectation/
+sidecar/trace changeを記録する。bilingual debtなし。

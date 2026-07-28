@@ -3667,3 +3667,56 @@ The second rejects every frozen context/root, wrapper/shape, range, form,
 target, candidate/contribution, ambiguous provenance, and stale replay
 case, then proves clean replay. No fixture, expectation, sidecar, trace
 row, active case, or public diagnostic detail was added.
+
+## Checker Task 258B3M2B2B1A Dormant Harness Contract
+
+The private selector recognizes only:
+
+```mizar
+import parser.type_fixtures;
+reserve x for set;
+theorem FormulaStatementApplicationWitnessSmoke: x = x proof
+  take 1 ++ 2;
+  thus x = x;
+end;
+```
+
+The final LF is part of the 143-byte identity; SHA-256 is
+`22ce235030bc56720bfe7f52830182144ca6e4eee4414b7f8c2823e3d0f82c1b`.
+Before publication it authenticates zero diagnostics, all 63 nodes/root 62,
+the theorem node/range/path `59/48..142/[2,1]`, proof context 1 at
+`103..141`, imported `++` contribution/path `2/[12]`, Task-252 `6/4/2`,
+Task-253 `1/0/1/2/2`, Task-256 equalities over `[0,1]` and `[4,5]`, base
+statement `1/2/2/2/2`, and witness `1/0`.
+
+The extractor owns take/witness nodes 49/48, authenticates and traverses
+unowned transparent node 47, and targets Task-253 application node/row
+`46/0`. Node 47 is not a wrapper or primary. Task-252 owns numeral nodes
+44/45 as terms 2/3; Task-253
+owns the infix application/head/candidate/arguments/requests; Task-256 owns
+only the theorem/conclusion equality terms. The existing context-aware B1P
+helper is the sole application producer.
+
+The exact five tests are:
+
+1. `task258b3m2b2b1a_real_frontend_freezes_application_witness_contract`;
+2. `task258b3m2b2b1a_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2b2b1a_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2b2b1a_family_and_active_route_isolation_is_atomic`;
+5. `task258b3m2b2b1a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`.
+
+They freeze every node and lower fingerprint; target/context/range/form,
+candidate/contribution/provenance, numeric request, equality-subtree, base
+statement, and witness precedence; application/statement installation in
+both directions; prior Task-258 profiles and Tasks 253-255; every byte
+mutation; operand/operator/name/cardinality/parenthesis/theorem/import/
+recovery near misses; replay, rollback, and final clone. Malformed lower rows
+reject at their owning producer. Constructible wrong bundles reach the
+combined consumer and fail without partial publication.
+
+Success returns `Some(Vec::new())`, statement lookups `1/1`, reference-use
+ordinals `[1; 4]`, and equal typed/final handoffs. All semantic term types,
+witness obligations, goal matching/substitution, formula truth, proofs,
+terminal goals, Core/ControlFlow/VC, cluster facts, diagnostics, and active
+outputs stay empty. The harness adds no fixture, sidecar, expectation, trace,
+detail key, public route, or active case.

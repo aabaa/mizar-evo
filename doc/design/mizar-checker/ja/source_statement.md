@@ -2316,3 +2316,81 @@ statement/witness tableはinstallしない。Task-258 behaviorと
 application-to-witness ownership edgeは未実装のまま。fresh inventory後、
 B3M2B2B1Aをseparate documentation taskとしてfreezeできる。他の
 Task-253/254/255/compound shapesはdeferred。
+
+## Task 258B3M2B2B1A application-witness ownership
+
+B1AはB1Pのexact `take 1 ++ 2;` sourceだけをconsumeする。witness rowは
+owner 0、proof context 1、source ordinal 1/witness ordinal 0、take
+node/range `49/111..123`、witness-container node/range
+`48/116..122`、spelling `1 ++ 2`、unnamed/normal/no-name、
+`SourceStatementWitnessTermTarget::Application(SourceFunctorApplicationId(0))`
+である。
+
+parser containmentは`49 -> 48 -> 47 -> 46`だが、ownership edgeは
+witness row 0からTask-253 application row 0だけ。node 48はowned witness
+site、node 47はunowned transparent traversal node、node 46がapplication
+target。
+node 47はTask-253 wrapper/Task-252 primaryを作らない。Task 252はnumeral
+arguments `Primary(2/3)`、Task 253はapplication/head/candidate/arguments/
+requests、Task 256はsubtree全体をexcludeする。consumerはlower rowを
+copy/retargetしない。
+
+既存`#[non_exhaustive] SourceStatementWitnessTermTarget`へ
+`Application(SourceFunctorApplicationId)` variantを追加する。immutable
+handoffは`application_fingerprint: Option<String>`とread-only accessorを
+追加し、legacy primary targetは`None`。既存`build(...)`はlegacy caller
+について不変で、new dependencyなしのapplication targetをrejectする。
+`build_with_application(...)`だけがsame input/base/primary/arenaに加えて
+exact Task-253 handoffを受け、B1Aだけ`Some(application.debug_text())`を
+produceする。
+
+additive public signaturesは次でfreezeする。
+
+```rust
+pub fn application_fingerprint(&self) -> Option<&str>;
+
+pub fn build_with_application(
+    input: SourceStatementWitnessHandoffInput,
+    statements: &SourceStatementHandoff,
+    primary_terms: &SourcePrimaryTermHandoff,
+    application: &SourceFunctorApplicationHandoff,
+    arena: &TypedArena,
+) -> Result<SourceStatementWitnessHandoff, SourceStatementWitnessError>;
+
+pub fn with_source_application_statement_witnesses(
+    self,
+    application: SourceFunctorApplicationHandoff,
+    statements: SourceStatementHandoff,
+    witnesses: SourceStatementWitnessHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+installationは(1) source application/fingerprintなしのlegacy profiles、
+(2) exact application/matching fingerprint/`Application(0)`のB1Aだけ。
+全Some/None、missing/orphan、wrong ID/context/range、stale fingerprint、
+substituted candidate、cross-profile hybridをrejectする。dependency/
+source/module/fingerprint/lower handoffをaggregate `1/0`、witness row 0、
+empty namesより先にvalidateする。legacy
+`source-statement-witness-debug-v1` bytesは不変。B1Aだけ
+`application-fingerprint: Some(...)`と`term=application#0`を追加する。
+
+sole TypedAst entry pointは
+`with_source_application_statement_witnesses(application, statements,
+witnesses)`で、complete validation後だけ3 handoffsをpublishする。既存
+individual installersはpartial B1Aをrejectし続け、ResolvedTypedAstも同じ
+bundleをrevalidate/clone-preserveする。Task 256はcombined validation時に
+Task-253を見るが、equalities `[0,1]`/`[4,5]`だけを使いapplication
+fingerprintは持たない。Task-253 consumerはwitness handoffだけ。
+
+contractはsource provenance/ownershipで終了する。witness type、goal
+matching、existential substitution、remaining goal、formula truth、proof
+acceptance、Core/ControlFlow/VC、diagnostic/active behaviorはTask 272以降。
+other application forms、application parentheses、Tasks 254/255、
+named/multiple witnesses、broader proof shapesはlater B1B+。
+
+exact checker testsは
+`task258b3m2b2b1a_exact_application_witness_api_debug_and_legacy_compatibility_are_stable`、
+`task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fail_closed`、
+`task258b3m2b2b1a_combined_ownership_hybrids_and_all_family_orders_are_atomic`、
+`task258b3m2b2b1a_final_clone_revalidation_and_semantic_deferrals_are_stable`
+の4件。

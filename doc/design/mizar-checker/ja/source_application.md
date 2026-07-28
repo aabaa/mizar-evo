@@ -190,3 +190,18 @@ imported `parser.type_fixtures::++` provenanceを保存する。独立したcont
 range、form、target、candidate/contribution、stale-fingerprint、replay
 corruptionはrejectする。checker source、public table、fingerprint grammar、
 semantic result、active consumerは不変。
+
+## Task 258B3M2B2B1A exact statement consumer
+
+Task 253の最初のTask-258 consumerはB1P sourceのsingle unwrapped imported
+infix applicationだけ。Task-253 handoffはapplication 0 `116..122`/
+proof context 1、wrappers 0、exported imported
+`parser.type_fixtures::++` candidate 1、ordered `Primary(2/3)` arguments、
+unresolved requests 2のまま。public table/validation/debug bytesは不変。
+
+new cross-family edgeはTask 253ではなくwitness handoffのoptional
+application fingerprintと`Application(0)` targetがownする。transparent
+node 47はwrapperではなく、node 46がtarget。Task 256 equalitiesは
+application-independentでfingerprint `None`を維持する。missing/stale/
+substituted/wrapped/unrelated Task-253はstatement-witness consumerで
+rejectする。other Task-253 formsとTask-254/255 witness termsはdeferred。

@@ -203,3 +203,21 @@ and imported `parser.type_fixtures::++` provenance. Independent context,
 range, form, target, candidate/contribution, stale-fingerprint, and replay
 corruptions reject. No checker source, public table, fingerprint grammar,
 semantic result, or active consumer changed.
+
+## Task 258B3M2B2B1A Exact Statement Consumer
+
+The first Task-258 consumer of Task 253 is the one unwrapped imported infix
+application from the B1P source. The Task-253 handoff remains unchanged:
+application 0 at `116..122` in proof context 1, no wrappers, one exported
+imported `parser.type_fixtures::++` candidate, ordered arguments
+`Primary(2/3)`, and two unresolved requests. No Task-253 public table,
+validation rule, or debug byte changes.
+
+The new cross-family edge is owned by
+`SourceStatementWitnessHandoff::application_fingerprint` and witness target
+`Application(0)`, not by Task 253. The containing transparent expression
+node 47 is not a Task-253 wrapper; application node 46 remains the exact
+target. Task 256 equality rows remain application-independent and keep
+`application_fingerprint == None`. Missing, stale, substituted, wrapped, or
+otherwise unrelated Task-253 handoffs fail in the statement-witness consumer.
+All other Task-253 forms and all Task-254/255 witness terms remain deferred.

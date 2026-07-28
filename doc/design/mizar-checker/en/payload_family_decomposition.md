@@ -942,3 +942,14 @@ publishes no new checker family or Task-258 row and adds no cross-family
 edge. The application-to-witness edge remains wholly owned by the next
 B1A frozen contract and implementation; all B1B+/B2+/B3+ ownership remains
 deferred.
+
+### Task 258B3M2B2B1A Frozen Cross-Family Edge
+
+B1A adds one directed ownership edge only:
+`SourceStatementWitness(0) -> SourceFunctorApplication(0)`. Task 252 owns
+the two numeral argument primaries, Task 253 owns the imported infix
+application, and Task 258 owns the take/witness association. Task 256 owns
+only the theorem and conclusion equality formulas and remains independent
+of the application fingerprint. The atomic TypedAst bundle prevents any
+partially published or reverse edge. Structure, set/choice/qualification,
+semantic term, formula, proof, and goal families are excluded.

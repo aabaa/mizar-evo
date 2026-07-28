@@ -874,3 +874,13 @@ B1Pはprivate proof-context Task-253 reuse seamだけを提供する。new check
 family、Task-258 row、cross-family edgeはpublishしない。application-to-
 witness edgeは次のB1A frozen contract/implementationが全てownし、B1B+/
 B2+/B3+ ownershipはdeferredのまま。
+
+### Task 258B3M2B2B1A frozen cross-family edge
+
+B1Aは`SourceStatementWitness(0) -> SourceFunctorApplication(0)`のdirected
+edge 1件だけを追加する。Task 252はnumeral argument primaries、Task 253は
+imported infix application、Task 258はtake/witness associationをownする。
+Task 256はtheorem/conclusion equalitiesだけをownしapplication fingerprint
+から独立する。atomic TypedAst bundleがpartial/reverse edgeを防ぐ。
+structure、set/choice/qualification、semantic term/formula/proof/goal
+familiesは除外する。

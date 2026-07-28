@@ -3483,3 +3483,42 @@ legacy context-0 debug SHA-256
 target、candidate/contribution、ambiguous provenance、stale replayを
 rejectし、その後clean replayを証明する。fixture、expectation、sidecar、
 trace row、active case、public diagnostic detailは追加しない。
+
+## Checker Task 258B3M2B2B1A dormant harness contract
+
+private selectorはfinal-LF 143-byte/hash
+`FormulaStatementApplicationWitnessSmoke` sourceだけを認識する。SHA-256は
+`22ce235030bc56720bfe7f52830182144ca6e4eee4414b7f8c2823e3d0f82c1b`。
+publish前にdiagnostics 0、全63 nodes/root 62、theorem
+node/range/path `59/48..142/[2,1]`、proof context 1 `103..141`、imported
+`++` contribution/path `2/[12]`、Task-252 `6/4/2`、Task-253
+`1/0/1/2/2`、Task-256 equalities `[0,1]`/`[4,5]`、base
+`1/2/2/2/2`、witness `1/0`をauthenticateする。
+
+extractorはtake/witness nodes 49/48をownし、unowned transparent node 47を
+authenticate/traverseしてTask-253 application node/row `46/0`をtargetする。
+node 47はwrapper/primaryではない。Task-252はnumerals 44/45をterms 2/3として、
+Task-253はapplication/head/candidate/arguments/requests、Task-256は
+theorem/conclusion equality termsだけをownする。B1P context-aware helperが
+sole application producer。
+
+exact five testsは
+`task258b3m2b2b1a_real_frontend_freezes_application_witness_contract`、
+`task258b3m2b2b1a_validation_precedence_mutation_and_replay_fail_closed`、
+`task258b3m2b2b1a_selector_and_byte_subtree_near_misses_are_exact`、
+`task258b3m2b2b1a_family_and_active_route_isolation_is_atomic`、
+`task258b3m2b2b1a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`。
+全node/lower fingerprint、target/context/range/form、candidate/provenance、
+numeric request、equality exclusion、base/witness precedence、both install
+directions、prior Tasks 258/253-255、every byte、operand/operator/name/
+cardinality/parenthesis/theorem/import/recovery near miss、replay/rollback/
+final cloneをfreezeする。malformed lower rowsはowning producerでrejectし、
+constructible wrong bundleはcombined consumerでpartial publicationなしに
+rejectする。
+
+successは`Some(Vec::new())`、lookups `1/1`、uses `[1; 4]`、equal
+typed/final handoff。semantic term types、witness obligations、goal
+matching/substitution、formula truth、proofs、terminal goals、
+Core/ControlFlow/VC、cluster facts、diagnostics、active outputsは空。
+fixture、sidecar、expectation、trace、detail key、public route、active caseは
+追加しない。

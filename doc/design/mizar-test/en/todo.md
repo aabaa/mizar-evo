@@ -2156,5 +2156,21 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   replay/rollback, fixed legacy bytes, and empty downstream ownership.
 - [x] Measure 411 tests, Task-253 sizes `1782/701/2514/2799`, and 30
   production paths / 39,857 lines.
-- [ ] Fresh-inventory and freeze the exact B3M2B2B1A application-witness
+- [x] Fresh-inventory and freeze the exact B3M2B2B1A application-witness
   contract in a separate documentation commit.
+
+## Checker Task 258B3M2B2B1A Runner Prerequisite Ledger
+
+- [x] Freeze the final-LF 143-byte/hash source, diagnostics 0, 63 nodes/root
+  62, theorem/import resolver provenance, and proof context 1.
+- [x] Freeze reuse of Task-252 `6/4/2` and Task-253 `1/0/1/2/2`, equality
+  exclusion, base `1/2/2/2/2`, and one unnamed `Application(0)` witness.
+- [x] Freeze owned take/witness nodes 49/48, unowned traversal node 47, and
+  Task-253 target node 46 without lower-row duplication; require the atomic
+  checker three-handoff installer.
+- [x] Freeze exactly five compound tests and empty semantic/proof/goal
+  output with no active/fixture/expectation/sidecar/trace change.
+- [x] Preserve 411 tests, sizes `5188/701/2514/11234`, and 30 production
+  paths / 39,857 lines; project 416 tests for implementation.
+- [ ] After the docs commit and fresh preflight, implement only the exact
+  B1A dormant consumer.

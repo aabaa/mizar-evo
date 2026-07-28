@@ -4095,3 +4095,20 @@ API, or semantic owner changed.
 The formula-statement audit row therefore remains `deferred`, `tests = []`,
 without backlink or coverage credit. B1P is lower-stage infrastructure
 only; the exact Task-258 application-witness consumer remains B1A.
+
+## Task 258B3M2B2B1A Frozen-Contract Audit
+
+Chapters 13, 15, and 16 already specify that `1 ++ 2` is a symbolic infix
+term and that `take` accepts a `term_expression` witness. The existing
+parser/resolver fixture authenticates `parser.type_fixtures::++`; B1P
+authenticates the exact proof-context Task-253 handoff. Therefore no
+`spec_gap` or unsafe test-intent decision exists.
+
+The missing exact application-witness ownership description was
+`design_drift`. Future production and compound-test work is bounded
+`source_drift` and `test_gap`. No `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or blocking
+`repo_metadata_conflict` is present. This docs task changes follow-up
+ownership only. The formula-statement row remains `deferred`, `tests = []`,
+with no backlink or coverage credit because no semantic formula/proof result
+or active `.miz` test is added.

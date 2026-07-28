@@ -1959,5 +1959,20 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   empty downstream ownershipのcompound testsちょうど2件をpass。
 - [x] 411 tests、Task-253 sizes `1782/701/2514/2799`、production
   30 paths / 39,857 linesを実測。
-- [ ] exact B3M2B2B1A application-witness contractをseparate
+- [x] exact B3M2B2B1A application-witness contractをseparate
   documentation commitでfresh-inventory/freeze。
+
+## Checker Task 258B3M2B2B1A runner prerequisite ledger
+
+- [x] final-LF 143-byte/hash、diagnostics 0、63 nodes/root 62、
+  theorem/import provenance、proof context 1をfreeze。
+- [x] Task-252 `6/4/2`、Task-253 `1/0/1/2/2` reuse、equality exclusion、
+  base `1/2/2/2/2`、unnamed `Application(0)` witnessをfreeze。
+- [x] owned take/witness nodes 49/48、unowned traversal node 47、
+  Task-253 target node 46をlower-row duplicateなしでfreezeし、atomic
+  checker three-handoff installerをrequire。
+- [x] compound tests 5件、empty semantic/proof/goal output、no active/
+  fixture/expectation/sidecar/trace changeをfreeze。
+- [x] 411 tests、sizes `5188/701/2514/11234`、30 paths/39,857 linesを
+  preserveし、implementation 416 testsをproject。
+- [ ] docs commit/fresh preflight後、exact B1A dormant consumerだけを実装。

@@ -573,3 +573,12 @@ legacy context-0 fixed hash, proof-context-1 lower profiles, exactly two
 passing tests, `411` runner-test inventory, `1782/701/2514/2799` sizes,
 and unchanged public/active/fixture/trace/semantic boundaries. No
 implementation bilingual debt remains; B1A documentation is next.
+
+## Task 258B3M2B2B1A Runner Contract Synchronization
+
+The EN canonical and JA companion record the same exact source identity,
+63-node selector, lower `2/1/0`, `6/4/2`, `1/0/1/2/2`,
+`1/2/2/2/2`, and witness `1/0` outputs, node ownership, B1P helper reuse,
+five future tests, empty semantics, unchanged 411-test/39,857-line baseline,
+and no active/fixture/expectation/sidecar/trace change. No bilingual debt
+remains.

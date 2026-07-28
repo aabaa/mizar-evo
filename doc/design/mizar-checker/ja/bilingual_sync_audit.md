@@ -465,3 +465,13 @@ context-0 delegation/hash、proof-context-1 `1/0/1/2/2` result、passing
 tests 2件、library inventory `370/411`、unchanged checker/public/statement/
 semantic/trace boundariesを同じ内容で記録する。implementation bilingual
 debtなし。次はB1A documentation。
+
+## Task 258B3M2B2B1A frozen-contract synchronization
+
+EN canonical/JA companionは同じ143-byte/63-node source、Task-48/252/253/
+256/base/witness tables、owned nodes 49/48、unowned traversal node 47、
+Task-253 target node 46、additive application target/optional fingerprint、
+legacy-compatible builder/debug、
+atomic typed/final installer、future tests `4/5`、semantic deferrals、
+unchanged `370/411` baseline、coverage-neutral audit resultをfreezeする。
+documentation bilingual debtなし。

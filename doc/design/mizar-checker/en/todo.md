@@ -5024,5 +5024,25 @@ implementation commit does not satisfy a producer task.
   debug bytes, and empty statement/semantic/proof/goal output.
 - [x] Measure libraries `370/411`, runner Task-253 sizes
   `1782/701/2514/2799`, and 30 production paths / 39,857 lines.
-- [ ] Fresh-inventory and freeze B3M2B2B1A before implementing its exact
+- [x] Fresh-inventory and freeze B3M2B2B1A before implementing its exact
   application-witness consumer.
+
+## Checker Task 258B3M2B2B1A Frozen-Contract Ledger
+
+- [x] Freeze the canonical Chapter 13/15/16 authority and exact final-LF
+  143-byte/hash source, zero diagnostics, 63 nodes/root 62, resolver theorem
+  owner, and imported `parser.type_fixtures::++` provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, Task-253 `1/0/1/2/2`,
+  Task-256 equality-only exclusion, base statement `1/2/2/2/2`, and one
+  unnamed `Application(0)` witness/no names.
+- [x] Freeze node `48 -> 47 -> 46` containment without a wrapper/primary
+  duplicate and make the witness handoff the sole Task-253 consumer.
+- [x] Freeze the `Application` target, optional application fingerprint,
+  legacy-compatible builder/debug bytes, dedicated application-aware
+  producer, and atomic typed/final three-handoff installation.
+- [x] Freeze exactly four checker and five runner compound tests, unchanged
+  `370/411` and 30-path/39,857-line baselines, no active/canonical/fixture/
+  expectation/sidecar/trace/semantic change, and coverage
+  `deferred`/`tests = []`.
+- [ ] After the dedicated documentation commit and fresh preflight,
+  implement only B3M2B2B1A and measure projected libraries `374/416`.

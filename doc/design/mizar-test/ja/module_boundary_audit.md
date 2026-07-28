@@ -10449,3 +10449,21 @@ raw/normalized 411-test hashesは
 `eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`。
 public re-export、checker dependency、statement extraction、active route、
 binding、semantic ownerは不変。
+
+## Task 258B3M2B2B1A frozen module boundary
+
+future write scopeは既存private `type_elaboration::source_statement`
+consumer/test moduleと、tests 5件のfacade/root registrationだけ。existing
+private B1P context-aware helperを`source_application`からcallし、
+extractor/candidate/argument/request logicをmove/duplicateしない。checkerが
+additive public witness target/fingerprintとatomic installationをownする。
+
+docs taskはRust moduleを変更しない。baselineは30 production paths /
+39,857 lines、path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`、
+411-test hashes
+`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
+`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`。
+public route、active dispatch、fixture、expectation、sidecar、trace、
+binding、semantic ownerは不変。
