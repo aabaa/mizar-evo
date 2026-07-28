@@ -1012,3 +1012,13 @@ revalidateする。standalone half、B3/B3N/B3M1/B3M2A hybrid、reference /
 numeric-request corruption、stale dependency、nonempty semantic/proof/goal
 tableは`InvalidSourceStatement`でfailする。successでもtype、existential
 match、substitution、goal、proof effectはinferしない。
+
+## Task 258B3M2A implementation result
+
+final assemblyはauthenticated B3M2A base/witness pairだけを
+clone-preserveする。exact one unnamed numeral witness、dependency
+fingerprints、49-node arena、lower tablesをrevalidateし、standalone、
+hybrid、stale、reference/numeric-request corruption、semantic coexistenceは
+`InvalidSourceStatement`のまま。successful final handoffではexpression、
+candidate、coercion、cluster、diagnostic、statement-semantic、proof、goal
+tablesがempty。

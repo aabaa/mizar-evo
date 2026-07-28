@@ -403,3 +403,12 @@ unrecovered arena、lower `2/1/0` + `5/4/1` +
 no-semantic boundary、future checker/runner tests 4/5本、unchanged
 `358/394` baseline、B3M2B-before-B4 orderをfreezeする。bilingual debtは
 acceptしない。
+
+## Task 258B3M2A implementation synchronization
+
+canonical EN/JA checker/runner companionsはcompleted private
+numeral-witness profile、exact 49-node/lower-table authentication、dense
+reference partition、`1 witness / 0 names`、passing tests 4/5本、
+library `362/399`、measured module/production sizes/hashes、unchanged
+public/active/semantic boundary、B3M2B-before-B4 orderを同一に記録する。
+bilingual debtは残らない。

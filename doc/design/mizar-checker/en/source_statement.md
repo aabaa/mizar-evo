@@ -2257,3 +2257,31 @@ documents, independent no-findings reviews, all protocol hard gates,
 read-only quality at least 90/100, task-only staging, and one dedicated
 documentation commit. Implementation may begin only after that commit and a
 fresh parser/resolver/lower/count/hash preflight.
+
+## Task 258B3M2A Implementation Result
+
+The checker now recognizes one private `Task258B3M2A` syntax-free profile.
+The runner authenticates the final-LF 107-byte source before dispatch; the
+checker fail-closed authenticates its 49-node arena projection/root 48, exact
+module/proof binding contexts, five primary terms,
+dense references `0/1/2/3 -> 0/1/3/4` with scopes `[]/[]/[0]/[0]`, numeric
+request 0 on numeral term 2, both Task-256 equalities over only
+`[0,1,3,4]`, and the `1/2/2/2/2` base. The witness validator then publishes
+exactly one unnamed witness targeting term 2, no names, and source partition
+`[0,1,2]`; dependency, aggregate, and witness validation precedence remains
+explicit.
+
+The paired typed/final consumers accept only this base/witness pair.
+Standalone, stale, reordered, cross-family, subtree, resolver, lower-table,
+numeric-request, and every node/byte mutation fail without partial
+ownership. Four checker and five runner compound tests pass. The private
+detail projection remains `Some(Vec::new())` with lookup ordinals `1/1` and
+reference use ordinals `[1;4]`; all semantic/proof/goal tables remain empty.
+
+Libraries are `362/399`. Checker module sizes are
+`15746/4660/7202/3156`; runner statement leaf/facade/root/test sizes are
+`4185/691/2505/8611`, and runner production is 30 paths / 38,571 lines.
+No canonical specification, `.miz`, fixture, expectation, sidecar, trace
+row/status/count, active route, public API, binding, or semantic owner
+changed. This closes the bounded `source_drift`/`test_gap`; B3M2B remains
+next before B4.

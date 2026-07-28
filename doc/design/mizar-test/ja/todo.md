@@ -1837,7 +1837,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 107-byte/49-node B3M2A dormant consumer、Task-252 `5/4/1` +
   numeric request 0、witness/name `1/0`、exact tests 5本、
   no public/active/semantic route、unchanged runner baselineだけをfreeze。
-- [ ] docs commitとfresh preflight後にB3M2Aだけをimplementし、runner
+- [x] docs commitとfresh preflight後にB3M2Aだけをimplementし、runner
   399 testsをproject。
 - [ ] Task 258B4前にB3M2Bをfreeze/implement。
 
@@ -1863,3 +1863,15 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] future runner tests exactly 5本をfreezeし、394 tests、sizes
   `3724/688/2501/7246`、production 30 paths / 38,103 lines、全
   corpus/expectation/sidecar/trace/active/list/hash baselineを維持。
+
+## Checker Task 258B3M2A runner implementation ledger
+
+- [x] exact 107-byte/49-node sourceだけをB3M1/B3N/B3/B2/B1/Aより先に
+  selectし、全near missをdormantに維持。
+- [x] authenticated lower/base handoffとone unnamed numeral witness/no
+  namesをassembleし、public/active/binding/semantic ownershipを追加しない。
+- [x] identity、precedence、mutation/replay、全near miss、both
+  family/active order、rollback、detail projection、empty final semanticsの
+  compound testsをexactly 5本追加。
+- [x] 399 tests、sizes `4185/691/2505/8611`、production 30 paths /
+  38,571 linesを実測し、B3M2B-before-B4を保持。

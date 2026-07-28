@@ -1827,3 +1827,29 @@ coverage auditはfollow-up ownershipだけを変更し、
 reviews、全hard gates、read-only quality 90/100以上、task-only staging、
 dedicated documentation commit。そのcommit後のfresh
 parser/resolver/lower/count/hash preflight後だけimplementationを開始できる。
+
+## Task 258B3M2A implementation result
+
+checkerはone private `Task258B3M2A` syntax-free profileをrecognizeする。
+runnerがdispatch前にfinal-LF 107-byte sourceをauthenticateし、checkerは
+その49-node arena projection全部/root 48、exact module/proof binding
+contexts、primary terms 5件、scopes `[]/[]/[0]/[0]`を持つdense
+references `0/1/2/3 -> 0/1/3/4`、numeral term 2のnumeric request 0、
+`[0,1,3,4]`だけを使うTask-256 equality 2件、base `1/2/2/2/2`を
+fail-closed authenticateする。witness validatorはterm 2をtargetするone
+unnamed witness、0 names、source partition `[0,1,2]`だけをpublishし、
+dependency/aggregate/witness validation precedenceを明示する。
+
+paired typed/final consumerはこのbase/witness pairだけをacceptする。
+standalone、stale、reordered、cross-family、subtree、resolver、lower-table、
+numeric-request、全node/byte mutationはpartial ownershipなしでfailする。
+checker 4本 / runner 5本のcompound testsがpassした。private detail
+projectionはlookup ordinals `1/1`、reference use ordinals `[1;4]`を持つ
+`Some(Vec::new())`のままで、全semantic/proof/goal tablesはempty。
+
+librariesは`362/399`。checker module sizesは
+`15746/4660/7202/3156`、runner statement leaf/facade/root/test sizesは
+`4185/691/2505/8611`、runner productionは30 paths / 38,571 lines。
+canonical spec、`.miz`、fixture、expectation、sidecar、trace
+row/status/count、active route、public API、binding、semantic ownerは変更して
+いない。bounded `source_drift`/`test_gap`を閉じ、B3M2BがB4前のnext。

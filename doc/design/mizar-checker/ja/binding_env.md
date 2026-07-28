@@ -599,3 +599,11 @@ resolver symbolがない。binding、abbreviation、capture、context transition
 作らない。したがってTask 269にB3M2A workはなく、後続witness typing /
 existential effectはTask 272が保持する。binding API/fingerprint grammarは
 変更しない。
+
+## Task 258B3M2A implementation result
+
+implemented profileはmodule/proof contexts `0/1`、reserved binding 0、
+visible `[0]`、diagnostics 0をexactにrevalidateする。numeral term 2と
+unnamed witnessはreference、binding、resolver-owned symbol、capture、
+abbreviation、context transitionを作らない。したがって本sliceではTask
+269はno-opのままで、binding API/fingerprintは変更していない。

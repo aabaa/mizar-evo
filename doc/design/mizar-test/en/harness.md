@@ -3534,3 +3534,19 @@ This documentation task adds no fixture, sidecar, trace row/status/count,
 external detail key, active dispatch, or public mutation API. The runner
 baseline remains 394 tests and 30 production paths / 38,103 lines;
 implementation projects 399 tests.
+
+## Checker Task 258B3M2A Dormant Harness Result
+
+The private selector and five compound tests now implement the frozen
+contract. The route authenticates the exact raw 49-node parser tree,
+theorem-only resolver provenance, Task-48/252/256/base dependencies, dense
+reference/numeric-request partition, and `1 witness / 0 names` before
+publishing equal typed/final handoffs. Precedence, mutation/replay, every
+byte/node/subtree near miss, family and active-route isolation in both
+orders, rollback, debug compatibility, `Some(Vec::new())`, and empty
+semantics pass.
+
+The runner has 399 tests and 30 production paths / 38,571 lines, with
+statement leaf/facade/root/test sizes `4185/691/2505/8611`. No fixture,
+sidecar, trace row/status/count, external key, public mutation API, active
+route, or semantic result changed.

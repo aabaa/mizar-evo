@@ -2591,6 +2591,6 @@ completion remain deferred. The origin discrepancy remains report-only
   provenance, Task-252 numeric request, witness/name `1/0`, no API or
   semantics, four/five tests, unchanged baselines, and ownership-only
   coverage audit.
-- [ ] Implement only frozen B3M2A after its documentation commit and fresh
+- [x] Implement only frozen B3M2A after its documentation commit and fresh
   parser/resolver/lower/count/hash preflight.
 - [ ] Freeze/implement B3M2B before selecting Task 258B4.

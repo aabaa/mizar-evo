@@ -1070,3 +1070,13 @@ reference or numeric-request corruption, stale dependencies, and nonempty
 semantic/proof/goal tables fail as `InvalidSourceStatement`. Successful
 output infers no type, existential match, substitution, goal, or proof
 effect.
+
+## Task 258B3M2A Implementation Result
+
+Final assembly now clone-preserves the authenticated B3M2A base/witness pair
+only. It revalidates the exact one unnamed numeral witness, dependency
+fingerprints, 49-node arena, and lower tables; standalone, hybrid, stale,
+reference/numeric-request-corrupt, and semantic-coexisting states remain
+`InvalidSourceStatement`. The successful final handoff has empty expression,
+candidate, coercion, cluster, diagnostic, statement-semantic, proof, and goal
+tables.

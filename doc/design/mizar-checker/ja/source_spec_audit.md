@@ -3788,3 +3788,16 @@ code/testsはbounded `source_drift`/`test_gap`。blocking `spec_gap`、
 `repo_metadata_conflict`でtask ownershipを曖昧にしない。
 formula-statement rowは`deferred` / `tests = []`を維持してcoverage creditを
 得ない。
+
+## Task 258B3M2A implementation audit
+
+implementationはauthority-derived unnamed-numeral syntax transportだけを
+realizeする。runnerはexact raw source/resolver provenanceをauthenticateし、
+private checker profileはその49-node arenaとsyntax-free
+Task-48/252/256/base tables、dense reference mapping、
+Task-252 numeric request、`1 witness / 0 names`をauthenticateし、checker
+4本 / runner 5本のtestsでbounded `source_drift`/`test_gap`を閉じた。
+canonical spec、existing `.miz`、expectation、fixture、sidecar、trace
+metadata、public API、binding、semantic ownerは変更していない。したがって
+formula-statement rowは`deferred` / `tests = []`、coverage creditなしを
+維持する。B3M2Bがnext authority slice。

@@ -1007,3 +1007,11 @@ source order `[0,1,2]`をauthenticateしてboth halvesをatomicにpublishする�
 B3/B3N/B3M1 bytesは不変。standalone/repeated install、profile hybrid、
 reference/numeric-request corruption、Task-248/257/other-258 familyのboth
 order、semantic coexistenceはpartial ownershipなしでrollbackする。
+
+## Task 258B3M2A implementation result
+
+existing paired installerはexact B3M2A baseと`1 witness / 0 names`
+transactionをacceptし、both tablesをatomicにpublishする。standalone、
+repeated、cross-profile、Task-248/257/other-258、corrupted dependency、
+reverse-order attemptはpartial ownershipなしでfailする。public typed-AST
+method、field、debug grammarは変更していない。

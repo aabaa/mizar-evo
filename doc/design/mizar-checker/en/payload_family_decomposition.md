@@ -867,3 +867,12 @@ and request; Task 256 excludes term 2; Task 269 receives no binding; Task
 effects. B3M2B retains compound, application, selector, update, set,
 choice, `it`, parenthesized, and every other non-reserved-variable witness
 shape. B4/B5 remain blocked behind B3M2B.
+
+### Task 258B3M2A Implementation Closure
+
+The private B3M2A profile now realizes exactly this syntax-only edge:
+Task-252 numeral term 2 and numeric request 0 are reused, Task-256 edges and
+requests cover only terms `0/1/3/4`, and one unnamed witness/no names is
+published atomically with the base statement handoff. No binding, semantic
+edge, active route, public schema, or neighboring family changed. B3M2B
+remains the next unimplemented edge before B4/B5.

@@ -423,3 +423,12 @@ coverage ownership freeze the same final-LF 107-byte/hash source,
 Task-252 numeric-request ownership, public-API no-op, no-semantic boundary,
 four/five future tests, unchanged `358/394` baselines, and B3M2B-before-B4
 order. No bilingual debt is accepted.
+
+## Task 258B3M2A Implementation Synchronization
+
+Canonical EN and JA checker/runner companions now record the same completed
+private numeral-witness profile, exact 49-node and lower-table
+authentication, dense reference partition, `1 witness / 0 names`, four/five
+passing tests, `362/399` library counts, measured module/production sizes
+and hashes, unchanged public/active/semantic boundary, and B3M2B-before-B4
+order. No bilingual debt remains.

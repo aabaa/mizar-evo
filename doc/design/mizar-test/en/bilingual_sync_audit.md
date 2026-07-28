@@ -513,3 +513,11 @@ frontend diagnostics, Task-252 `5/4/1` with numeral request 0,
 witness/name `1/0`, five-test matrix, unchanged 394-test / 30-path
 baseline, no public/active/semantic route, and B3M2B-before-B4 order. No
 bilingual debt is accepted.
+
+## Task 258B3M2A Runner Implementation Synchronization
+
+EN/JA runner plans, TODOs, harnesses, and module audits now record the same
+completed exact dormant selector, five passing tests, 399-test library,
+30-path / 38,571-line production manifest, sizes
+`4185/691/2505/8611`, unchanged public/active/trace/semantic ownership, and
+B3M2B-before-B4 order. No implementation bilingual debt remains.

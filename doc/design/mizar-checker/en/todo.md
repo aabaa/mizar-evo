@@ -4852,7 +4852,7 @@ implementation commit does not satisfy a producer task.
   Task-252 `5/4/1`, base/witness/name `1/2/2/2/2` + `1/0`, numeric request
   ownership, no new API or semantics, four/five tests, and unchanged
   baselines.
-- [ ] Implement only frozen Task 258B3M2A after its documentation commit
+- [x] Implement only frozen Task 258B3M2A after its documentation commit
   and fresh parser/resolver/lower/count/hash preflight.
 - [ ] Freeze and implement Task 258B3M2B remaining other witness-term
   shapes before selecting Task 258B4.
@@ -4912,3 +4912,16 @@ implementation commit does not satisfy a producer task.
 - [x] Preserve canonical specs, existing `.miz`, fixtures, expectations,
   sidecars, trace status/count, active routes, source/tests, lists, counts,
   and hashes; retain B3M2B before B4.
+
+## Checker Task 258B3M2A Implementation Ledger
+
+- [x] Add only the private exact B3M2A dependency/base/witness profile and
+  preserve the public API and prior debug grammar.
+- [x] Install/revalidate only the paired `1 witness / 0 names` handoff in
+  typed/final ownership; preserve binding and all semantic/proof/goal tables.
+- [x] Add exactly four checker and five runner compound tests covering
+  identity, precedence, all dependency/node/byte/subtree mutations,
+  cross-family orders, replay/rollback, and empty semantics.
+- [x] Measure libraries `362/399`, checker modules
+  `15746/4660/7202/3156`, runner sizes `4185/691/2505/8611`, and 30
+  production paths / 38,571 lines; retain B3M2B before B4.

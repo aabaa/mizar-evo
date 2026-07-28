@@ -4613,7 +4613,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   Task-252 `5/4/1`、base/witness/name `1/2/2/2/2` + `1/0`、numeric
   request ownership、new API/semanticsなし、tests 4/5本、unchanged
   baselines。
-- [ ] documentation commitとfresh parser/resolver/lower/count/hash
+- [x] documentation commitとfresh parser/resolver/lower/count/hash
   preflight後にfrozen Task 258B3M2Aだけをimplement。
 - [ ] Task 258B3M2B remaining other witness-term shapesをfreeze/implement
   してからTask 258B4を選ぶ。
@@ -4672,3 +4672,16 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] canonical spec、existing `.miz`、fixture、expectation、sidecar、trace
   status/count、active route、source/test、list、count、hashを維持し、
   B3M2B-before-B4を保持。
+
+## Checker Task 258B3M2A implementation ledger
+
+- [x] private exact B3M2A dependency/base/witness profileだけを追加し、
+  public APIとprior debug grammarを維持。
+- [x] paired `1 witness / 0 names` handoffだけをtyped/final ownershipで
+  install/revalidateし、bindingと全semantic/proof/goal tablesを維持。
+- [x] identity、precedence、全dependency/node/byte/subtree mutation、
+  cross-family order、replay/rollback、empty semanticsをcoverするchecker
+  exactly 4本 / runner exactly 5本のcompound testsを追加。
+- [x] libraries `362/399`、checker modules
+  `15746/4660/7202/3156`、runner sizes `4185/691/2505/8611`、production
+  30 paths / 38,571 linesを実測し、B3M2B-before-B4を保持。

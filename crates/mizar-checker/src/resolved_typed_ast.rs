@@ -1833,7 +1833,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 (None, Some(witnesses))
                     if source_statement.is_task_258b3_profile()
                         || source_statement.is_task_258b3n_profile()
-                        || source_statement.is_task_258b3m1_profile() =>
+                        || source_statement.is_task_258b3m1_profile()
+                        || source_statement.is_task_258b3m2a_profile() =>
                 {
                     witnesses
                         .validate_installation(

@@ -4007,3 +4007,25 @@ There is no blocking `spec_gap`, `source_undocumented_behavior`,
 `origin/main` remote-tracking ref is recorded as nonblocking report-only
 `repo_metadata_conflict`; task ownership and the commit base remain
 unambiguous.
+
+## Step 5 Checker Task 258B3M2A Implementation Addendum
+
+Task 258B3M2A closes the frozen bounded `source_drift`/`test_gap` with the
+exact unnamed numeral-witness syntax transport and checker/runner compound
+matrices `4/5`. Dense references remain `0/1/2/3 -> 0/1/3/4`; primary
+term 2 and numeric request 0 remain Task-252-owned, and Tasks 269/272 retain
+all binding/semantic effects.
+
+This implementation changes design/test ownership, so the audit update is
+required. It changes no canonical requirement, existing `.miz`,
+expectation, sidecar, trace row/status/count, active route, or coverage
+credit. `spec.en.checker.formula_statement.source_payloads` remains
+`deferred` with `tests = []`. Libraries are `362/399`; runner production is
+30 paths / 38,571 lines. B3M2B retains every other witness-term shape and
+remains before B4.
+
+The earlier unauthorized rewrite of documentation commit `f13fe02a` to
+`0847727f` is an operational `boundary_violation`, reported without another
+metadata rewrite. It is distinct from the nonblocking
+`repo_metadata_conflict` for external `origin/main` movement and does not
+change canonical ownership.

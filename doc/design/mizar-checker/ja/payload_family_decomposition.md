@@ -804,3 +804,12 @@ matching/substitution/goal/proof effectはTask 272が保持する。B3M2Bはcomp
 application、selector、update、set、choice、`it`、parenthesized、および
 その他のnon-reserved-variable witness shapeを保持する。B4/B5はB3M2Bまで
 blocked。
+
+### Task 258B3M2A implementation closure
+
+private B3M2A profileはこのsyntax-only edgeだけをrealizeした。Task-252
+numeral term 2 / numeric request 0をreuseし、Task-256 edges/requestsは
+terms `0/1/3/4`だけをcoverし、one unnamed witness/no namesをbase
+statement handoffとatomicにpublishする。binding、semantic edge、active
+route、public schema、neighbor familyは変更していない。B3M2BがB4/B5前の
+next unimplemented edge。

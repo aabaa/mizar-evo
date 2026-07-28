@@ -495,3 +495,11 @@ selector、49-node/root-48 unrecovered arena、frontend diagnostics 0、
 Task-252 `5/4/1` + numeral request 0、witness/name `1/0`、five-test
 matrix、unchanged 394-test / 30-path baseline、no public/active/semantic
 route、B3M2B-before-B4 orderをfreezeする。bilingual debtはacceptしない。
+
+## Task 258B3M2A runner implementation同期
+
+EN/JA runner plan、TODO、harness、module auditはcompleted exact dormant
+selector、passing tests 5本、399-test library、production 30 paths /
+38,571 lines、sizes `4185/691/2505/8611`、unchanged
+public/active/trace/semantic ownership、B3M2B-before-B4 orderを同一に記録する。
+implementation bilingual debtは残らない。

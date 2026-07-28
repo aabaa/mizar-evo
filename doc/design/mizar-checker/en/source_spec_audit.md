@@ -3963,3 +3963,16 @@ code/tests are bounded `source_drift`/`test_gap`. There is no blocking
 report-only `repo_metadata_conflict` and does not obscure task ownership.
 The formula-statement row remains `deferred` with `tests = []` and gains no
 coverage credit.
+
+## Task 258B3M2A Implementation Audit
+
+Implementation now realizes only the authority-derived unnamed-numeral
+syntax transport. The runner authenticates the exact raw source and resolver
+provenance; the private checker profile authenticates the resulting 49-node
+arena and syntax-free Task-48/252/256/base tables, dense
+reference mapping, Task-252 numeric request, and `1 witness / 0 names`;
+four checker and five runner tests close the bounded `source_drift` and
+`test_gap`. No canonical specification, existing `.miz`, expectation,
+fixture, sidecar, trace metadata, public API, binding, or semantic owner
+changed. The formula-statement row therefore remains `deferred` with
+`tests = []` and no coverage credit. B3M2B remains the next authority slice.

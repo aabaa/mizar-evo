@@ -3355,3 +3355,18 @@ cross-familyの全near missをfail closedにする。exact five tests:
 detail key、active dispatch、public mutation APIを追加しない。runner
 baselineは394 tests / production 30 paths / 38,103 lines、
 implementationは399 testsをprojectする。
+
+## Checker Task 258B3M2A dormant harness result
+
+private selectorとcompound tests 5本でfrozen contractを実装した。routeは
+exact raw 49-node parser tree、theorem-only resolver provenance、
+Task-48/252/256/base dependencies、dense reference/numeric-request
+partition、`1 witness / 0 names`をauthenticateしてからequal typed/final
+handoffをpublishする。precedence、mutation/replay、全byte/node/subtree
+near miss、family/active-route isolationのboth order、rollback、debug
+compatibility、`Some(Vec::new())`、empty semanticsがpassする。
+
+runnerは399 tests、production 30 paths / 38,571 lines、statement
+leaf/facade/root/test sizesは`4185/691/2505/8611`。fixture、sidecar、
+trace row/status/count、external key、public mutation API、active route、
+semantic resultは変更していない。

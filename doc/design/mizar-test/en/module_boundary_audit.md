@@ -11601,3 +11601,13 @@ statement leaf/facade/root/test sizes `3724/688/2501/7246` and the
 38,103-line production manifest unchanged. No public route, external key,
 mutation API, module split, dependency direction, binding, or semantic
 owner is authorized.
+
+## Task 258B3M2A Consumer Boundary Result
+
+The implementation remains in the existing statement production/test leaves,
+facades, and runner root. Raw parser/resolver objects remain runner-private;
+the checker receives only syntax-free authenticated tables and reuses the
+Task-252 numeral/request ownership. Production topology remains 30 paths;
+statement leaf/facade/root/test sizes are `4185/691/2505/8611`, and the
+production manifest is 38,571 lines. No public route, external key, mutation
+API, module split, dependency direction, binding, or semantic owner was added.

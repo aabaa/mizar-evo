@@ -1060,3 +1060,11 @@ publish both halves atomically. B3/B3N/B3M1 bytes remain unchanged.
 Standalone/repeated installation, profile hybrids, reference or numeric
 request corruption, Task-248/257/other-258 families in either order, and
 semantic coexistence roll back without partial ownership.
+
+## Task 258B3M2A Implementation Result
+
+The existing paired installer now accepts the exact B3M2A base and
+`1 witness / 0 names` transaction, then publishes both tables atomically.
+All standalone, repeated, cross-profile, Task-248/257/other-258, corrupted
+dependency, and reversed-order attempts still fail without partial ownership.
+No public typed-AST method, field, or debug grammar changed.
