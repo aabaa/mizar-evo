@@ -387,3 +387,11 @@ EN/JA documents now freeze the same 107-byte named-witness source, 51-node
 identity, `1 witness / 1 name` syntax-only table extension, no-binding/no-
 semantic boundary, four/five future tests, unchanged baselines, and B3M/B4
 follow-up order. No bilingual debt is accepted before implementation.
+
+## Task 258B3N Implementation Synchronization
+
+The paired EN/JA checker and runner plans, TODO/ledger, source/binding,
+typed/final ownership, module/source audits, harness, and coverage audit now
+record the same implemented `1 witness / 1 name` transaction, exact
+four/five tests, `354/389` library counts, 30-path runner topology, semantic
+deferrals, and B3M-before-B4 follow-up. No bilingual debt remains.

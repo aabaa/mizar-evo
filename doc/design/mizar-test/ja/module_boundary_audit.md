@@ -10335,3 +10335,10 @@ named-witness selector、assembly、compound tests 5本はexisting
 production topologyは30 pathsのまま。本documentation prerequisiteは全
 37,172 production linesとhashを変更しない。new semantic routeや
 dependency directionはauthorizeしない。
+
+## Task 258B3N consumer boundary結果
+
+implementationは既存statement leaf、facade 2件、runner root、statement test
+leafに留まる。production topologyは30 paths、sizeはproduction
+`3183/684/2498` lines、test leaf 5,799 lines。new module、public harness route、
+external detail key、dependency direction、semantic ownerは追加しない。

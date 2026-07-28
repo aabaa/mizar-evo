@@ -566,3 +566,10 @@ witness-name tableでtransportし、`BindingId`ではない。Task 269だけがl
 local binding、RHS link、capture-by-resolved-binding abbreviation replay、
 context transitionを保持する。Task 270は`deffunc`/`defpred` closureに
 限定したまま。
+
+## Task 258B3N 実装結果
+
+implemented routeはexactly two contextsとsole reserved bindingをrevalidate
+する。token `y`は`SourceStatementWitnessNameTable`だけに存在し、新しい
+`BindingId`、owned/visible binding、capture、context transitionをpublish
+しない。これらのeffectはTask 269が保持する。

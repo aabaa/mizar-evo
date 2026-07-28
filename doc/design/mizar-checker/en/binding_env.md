@@ -587,3 +587,10 @@ the new witness-name table and is not a `BindingId`. Task 269 alone retains
 the later local binding, RHS link, capture-by-resolved-binding abbreviation
 replay, and context transition. Task 270 remains limited to
 `deffunc`/`defpred` closure.
+
+## Task 258B3N Implementation Result
+
+The implemented route revalidates exactly two contexts and the sole reserved
+binding. The `y` token exists only in `SourceStatementWitnessNameTable`; no
+new `BindingId`, owned binding, visible binding, capture, or context
+transition is published. Task 269 retains those effects.

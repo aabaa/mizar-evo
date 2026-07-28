@@ -768,3 +768,10 @@ existential-binder matching、witness type obligation、capture-avoiding goal
 substitution、remaining goalを所有する。Task 270は`deffunc`/`defpred`
 closure、Task 271は`reconsider`のまま。B3Mはmultiple/other witness term、
 B4/B5はroot/visibilityを保持する。
+
+### Task 258B3N named-witness結果
+
+named-primary edgeを1 witness row / 1 name rowのsyntax-only transportとして
+実装した。binding/semantic edgeを追加せず、B3M、B4/B5、Tasks 269–272の
+ownershipをconsumeしない。Task 258B3Mがnext dependency-ready documentation
+prerequisiteである。

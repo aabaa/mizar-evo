@@ -974,3 +974,10 @@ base、witness、dense name table、exact 51-node arena、B3N profileをvalidate
 してからatomicにinstallする。existing B3はempty name tableでvalidなまま。
 B3/B3N hybrid、repeated install、cross-family order、semantic coexistenceは
 partial publicationなしでrollbackしなければならない。
+
+## Task 258B3N 実装結果
+
+paired installerはauthenticated B3またはB3N bundleをacceptし、exact B3N
+dense name tableと51-node arenaを含めてvalidateする。base-only、
+repeated、B3/B3N hybrid、reference、Task-248/257、semantic-table orderは
+atomicにfailし、successful debug orderはbase、witness/name、nodesを維持する。

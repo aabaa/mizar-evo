@@ -1024,3 +1024,11 @@ validate base, witness, dense name table, exact 51-node arena, and B3N
 profile before atomic installation. Existing B3 remains valid with an empty
 name table; every B3/B3N hybrid, repeated install, cross-family order, and
 semantic coexistence must roll back without partial publication.
+
+## Task 258B3N Implementation Result
+
+The paired installer now accepts authenticated B3 or B3N bundles, including
+the exact B3N dense name table and 51-node arena. Base-only, repeated,
+B3/B3N hybrid, reference, Task-248/257, and semantic-table orders fail
+atomically; successful debug ordering remains base, witness/name, then
+nodes.

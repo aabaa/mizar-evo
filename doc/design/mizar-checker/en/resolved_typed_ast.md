@@ -1031,3 +1031,12 @@ bundle already owned by `TypedAst`. B3/B3N hybrids, standalone halves,
 reference hybrids, stale name links/fingerprints, and any semantic/proof/goal
 coexistence fail as `InvalidSourceStatement`. Successful B3N assembly remains
 transport-only and clone-preserves the dense name table.
+
+## Task 258B3N Implementation Result
+
+Final assembly revalidates and clone-preserves the B3N base plus
+witness/name bundle. Orphan or standalone halves, stale statement/primary
+fingerprints, reference hybrids, nonempty typed tables, expression/cluster
+metadata, proof input, and statement semantics fail as
+`InvalidSourceStatement`; every semantic, proof, goal, and diagnostic table
+remains empty on success.

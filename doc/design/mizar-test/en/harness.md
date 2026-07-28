@@ -3467,3 +3467,12 @@ Task-48/252/256/base, one named witness and one name row, then install only
 the authenticated pair. Five compound tests cover real identity, exhaustive
 mutation/replay, byte/subtree near misses, route/ownership isolation, and
 final empty semantics. No active corpus or external detail key is added.
+
+## Checker Task 258B3N Dormant Harness Result
+
+The private exact selector and five-test matrix are implemented. B3N runs
+before B3/B2/B1/A, accepts only the frozen bytes and 51-node identity, and
+publishes syntax-only witness/name tables. Exhaustive lower/base/name,
+resolver, all-node, near-miss, cross-family, active-corpus, replay, rollback,
+and final-empty-semantic checks pass. The library contains 389 tests;
+production stays 30 paths / 37,555 lines.

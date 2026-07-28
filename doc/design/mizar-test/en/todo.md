@@ -2017,7 +2017,8 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Freeze Task 258B3N's exact named-primary dormant runner consumer,
   51-node identity, witness/name `1/1`, five-test matrix, no semantics, and
   unchanged runner baselines.
-- [ ] Implement only the frozen B3N consumer after its documentation commit
-  and fresh preflight.
+- [x] Implement only the frozen B3N consumer after its documentation commit
+  and fresh preflight. Five compound tests pass; the runner has 389 tests
+  and 30 production paths / 37,555 lines, with no active-corpus change.
 - [ ] Freeze/implement Task 258B3M multiple/other witness-term consumers
   before Task 258B4.

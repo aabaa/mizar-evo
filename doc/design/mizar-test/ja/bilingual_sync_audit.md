@@ -465,3 +465,9 @@ consumer implementation bilingual debtは残らない。
 EN/JA runner文書は同じ107-byte/51-node dormant consumer、five-test
 contract、name-table/no-semantic boundary、unchanged 384-test/30-path
 baseline、B3M-before-B4 orderをfreezeする。
+
+## Checker Task 258B3N runner同期結果
+
+EN/JA runner文書はimplemented exact selector、compound tests 5本、389-test
+library、30-path / 37,555-line production manifest、unchanged active/trace
+ownership、B3M-before-B4 orderを記録する。bilingual debtは残らない。

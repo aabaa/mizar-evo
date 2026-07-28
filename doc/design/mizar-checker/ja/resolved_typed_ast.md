@@ -976,3 +976,11 @@ witness/name bundleだけをacceptする。B3/B3N hybrid、standalone half、
 reference hybrid、stale name link/fingerprint、semantic/proof/goalとの
 coexistenceは`InvalidSourceStatement`。successful B3N assemblyは
 transport-onlyのままdense name tableをclone-preserveする。
+
+## Task 258B3N 実装結果
+
+final assemblyはB3N baseとwitness/name bundleをrevalidateして
+clone-preserveする。orphan/standalone half、stale statement/primary
+fingerprint、reference hybrid、nonempty typed table、expression/cluster
+metadata、proof input、statement semanticsは`InvalidSourceStatement`でfail
+し、success時は全semantic/proof/goal/diagnostic tableがemptyである。

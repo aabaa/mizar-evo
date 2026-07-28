@@ -1434,3 +1434,14 @@ review、全hard gate、read-only quality 90/100以上、task-only staging、
 dedicated documentation commit。そのcommitとfresh parser/resolver/lower/
 count/hash preflight後だけB3N implementationへ進む。Task 258B3Mはnext
 documentation prerequisite、Task 258B4はB3Mまでblocked。
+
+## Task 258B3N 実装結果
+
+syntax-only named witnessをfrozen contractどおり実装した。1 `Named` witness
+rowがtoken `y`のdense name row 1件を指し、B3はname row 0件の`Unnamed`と
+byte-identical v1 debugを維持する。validationはexact base/lower
+fingerprint、51-node arena、forward/reverse name link、subtree boundary、
+dependency/aggregate/witness/name error precedenceをauthenticateする。
+binding、abbreviation、obligation、fact、proof result、goal transition、
+accepted theoremは作成しない。checker 4本/runner 5本のcompound testsが
+bounded `source_drift`/`test_gap`をcloseし、Task 258B3Mがnextである。

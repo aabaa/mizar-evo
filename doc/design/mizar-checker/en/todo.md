@@ -4834,7 +4834,20 @@ implementation commit does not satisfy a producer task.
   only: exact 107-byte/51-node source, `1 witness / 1 name` table, B3
   compatibility, no binding/semantics, four/five tests, and unchanged
   baselines.
-- [ ] Implement only Task 258B3N after its dedicated documentation commit
-  and fresh parser/resolver/lower/count/hash preflight.
+- [x] Implement only Task 258B3N after its dedicated documentation commit
+  and fresh parser/resolver/lower/count/hash preflight. The exact dense
+  witness-name transport, four checker tests, and five runner tests pass;
+  libraries are `354/389`, with no semantic or corpus activation.
 - [ ] Freeze and implement Task 258B3M multiple/other witness-term transport
   before selecting Task 258B4.
+
+## Checker Task 258B3N Implementation Ledger
+
+- [x] Preserve B3 v1 debug bytes while adding the exact B3N name row and
+  dependency/aggregate/witness/name validation precedence.
+- [x] Authenticate the complete 51-node arena, resolver/lower provenance,
+  forward/reverse links, subtree exclusions, replay, and rollback.
+- [x] Keep binding, semantic, proof, goal, fixture, expectation, sidecar,
+  trace status/count, and active-corpus ownership unchanged.
+- [x] Remeasure `354/389` tests, checker modules
+  `12114/4644/7200/3156`, and runner production 30 paths / 37,555 lines.

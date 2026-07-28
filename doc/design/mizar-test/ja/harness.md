@@ -3290,3 +3290,12 @@ Task-48/252/256/base、named witness 1件、name row 1件をbuildし、
 authenticated pairだけをinstallする。compound tests 5本がreal identity、
 exhaustive mutation/replay、byte/subtree near miss、route/ownership isolation、
 final empty semanticsをcoverする。active corpusやexternal detail keyは追加しない。
+
+## Checker Task 258B3N dormant harness結果
+
+private exact selectorとfive-test matrixを実装した。B3NはB3/B2/B1/Aより先に
+走り、frozen bytesと51-node identityだけをacceptし、syntax-only
+witness/name tableをpublishする。exhaustive lower/base/name、resolver、
+all-node、near-miss、cross-family、active-corpus、replay、rollback、
+final-empty-semantic checkがpassする。libraryは389 tests、productionは
+30 paths / 37,555 lines。

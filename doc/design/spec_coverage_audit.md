@@ -3837,3 +3837,15 @@ retains named-witness local binding/RHS/abbreviation replay, Task 272
 retains existential matching/type obligations/goal substitution, Tasks
 270/271 remain deffunc/defpred and reconsider-only, Task 258B3M retains
 multiple/other witness terms, and B4 remains behind B3M.
+
+## Step 5 Checker Task 258B3N Implementation Addendum
+
+Task 258B3N closes the frozen bounded `source_drift`/`test_gap` with one
+syntax-only named-witness row and one dense name row. Four checker and five
+runner compound tests now own exact transport validation, 51-node parity,
+resolver/lower provenance, and paired typed/final preservation. This
+implementation changes design/test ownership, so this audit update is
+required; it changes no canonical requirement, trace row/status/count, or
+coverage credit. `spec.en.checker.formula_statement.source_payloads`
+remains `deferred` with `tests = []`. Tasks 269/272 retain all named-witness
+binding and semantic effects; Task 258B3M remains next before B4.

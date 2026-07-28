@@ -481,3 +481,10 @@ the exact dormant route, five tests, 384-test list, and 30-path /
 EN/JA runner documents freeze the same 107-byte/51-node dormant consumer,
 five-test contract, name-table/no-semantic boundary, unchanged 384-test and
 30-path baselines, and B3M-before-B4 order.
+
+## Checker Task 258B3N Runner Synchronization Result
+
+EN/JA runner documents now record the implemented exact selector, five
+compound tests, 389-test library, 30-path / 37,555-line production manifest,
+unchanged active/trace ownership, and B3M-before-B4 order. No bilingual debt
+remains.

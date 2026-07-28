@@ -831,3 +831,10 @@ obligations, capture-avoiding goal substitution, and the remaining goal;
 Task 270 remains `deffunc`/`defpred` closure and Task 271 remains
 `reconsider`. B3M retains multiple/other witness terms, and B4/B5 retain
 roots and visibility.
+
+### Task 258B3N Named-Witness Result
+
+The named-primary edge is now implemented as syntax-only transport with one
+witness row and one name row. It adds no binding or semantic edge and does
+not consume B3M, B4/B5, or Tasks 269–272 ownership. Task 258B3M is the next
+dependency-ready documentation prerequisite.

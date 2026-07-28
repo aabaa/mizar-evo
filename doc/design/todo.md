@@ -2575,7 +2575,8 @@ completion remain deferred. The origin discrepancy remains report-only
   primary witness, 51-node/root-50 parser identity, witness/name `1/1`
   syntax-free tables, B3 compatibility, no binding/semantics, and unchanged
   baseline counts/hashes.
-- [ ] Implement Task 258B3N after its dedicated documentation commit and
-  fresh parser/resolver/lower/count/hash preflight.
+- [x] Implement Task 258B3N after its dedicated documentation commit and
+  fresh parser/resolver/lower/count/hash preflight. Exact syntax-only name
+  transport and four/five compound tests pass; libraries are `354/389`.
 - [ ] Freeze/implement Task 258B3M multiple/other witness-term transport
   before selecting Task 258B4.

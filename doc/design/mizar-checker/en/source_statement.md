@@ -1835,3 +1835,15 @@ independent no-findings reviews, all hard gates, read-only quality at least
 after that commit and a fresh parser/resolver/lower/count/hash preflight may
 B3N implementation begin. Task 258B3M remains the next documentation
 prerequisite; Task 258B4 remains blocked behind B3M.
+
+## Task 258B3N Implementation Result
+
+The syntax-only named witness is implemented exactly as frozen: one
+`Named` witness row points to one dense name row for token `y`; B3 remains
+`Unnamed` with no name rows and byte-identical v1 debug output. Validation
+authenticates the exact base/lower fingerprints, 51-node arena, forward and
+reverse name links, subtree boundaries, and
+dependency/aggregate/witness/name error precedence. It creates no binding,
+abbreviation, obligation, fact, proof result, goal transition, or accepted
+theorem. Four checker and five runner compound tests close the bounded
+`source_drift`/`test_gap`; Task 258B3M is next.

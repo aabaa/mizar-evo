@@ -3737,3 +3737,12 @@ substitution、proof acceptanceはauthorizeしない。missing exact table
 contractはresolved `design_drift`、future source/testsはbounded
 `source_drift`/`test_gap`である。blocking protocol disagreementはなく、
 formula-statement rowは`deferred` / `tests = []`を維持する。
+
+## Task 258B3N 実装監査
+
+classified bounded `source_drift` / `test_gap`はcanonical semantic changeなしで
+closeした。implementationはmeasured name occurrenceだけをtransportし、
+binding、abbreviation、existential、obligation、substitution、proof、
+theorem-status deferralを全て維持する。`spec_gap`、expectation drift、
+boundary violation、undocumented behavior、metadata conflictは導入せず、
+formula-statement rowは`deferred` / `tests = []`のままである。

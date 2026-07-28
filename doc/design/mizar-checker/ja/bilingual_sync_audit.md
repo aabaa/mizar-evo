@@ -366,3 +366,11 @@ EN/JA文書は同じ107-byte named-witness source、51-node identity、
 `1 witness / 1 name` syntax-only table extension、no-binding/no-semantic
 boundary、将来のtests 4/5本、unchanged baseline、B3M/B4 follow-up orderを
 freezeする。implementation前のbilingual debtはacceptしない。
+
+## Task 258B3N 実装同期
+
+paired EN/JA checker/runner plan、TODO/ledger、source/binding、typed/final
+ownership、module/source audit、harness、coverage auditは、同じimplemented
+`1 witness / 1 name` transaction、exact tests 4/5本、library `354/389`、
+runner 30-path topology、semantic deferral、B3M-before-B4 follow-upを記録する。
+bilingual debtは残らない。

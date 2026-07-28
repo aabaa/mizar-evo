@@ -39,14 +39,14 @@ remain aligned with their owning specifications.
 | `src/source_term.rs` | 2218 | syntax-free source primary-term producer | `source_term.md` | no | no | Cohesive Task-252 term/reference/request tables, binding and parent validation, deterministic rendering, and corruption tests including Task-258A dependency revalidation; no split required. |
 | `src/source_application.rs` | 4001 | syntax-free source functor-application producer | `source_application.md` | no | no | Cohesive Task-253 application/wrapper/candidate/argument/request tables, dependency and provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | Cohesive Task-255/255C1 seven-table association, condition-subtree exclusion, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
-| `src/source_statement.rs` | 9812 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258A/258B1/258B2/258B3 statement, local-reference, and witness transactions, resolver/binding/lower provenance, subtree validation, rendering, paired typed/final installation, and corruption matrices; no split required. |
+| `src/source_statement.rs` | 12114 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258A/258B1/258B2/258B3/258B3N statement, local-reference, witness, and witness-name transactions, resolver/binding/lower provenance, subtree validation, rendering, paired typed/final installation, and corruption matrices; no split required. |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | Cohesive Task-254 term/wrapper/root/member/field-update/edge/request tables, written-partition and cross-family dependency/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_type.rs` | 3294 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables, environment/arena/form/graph/provenance validation, deterministic rendering, and exhaustive corruption tests; no split required. |
 | `src/type_checker.rs` | 13235 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | Largest file but still within the phase-6 spec boundary; normalization, reserve and authenticated exact theorem-owner handoff validation, declaration checking, inference, coercions, fact queries, diagnostics, rendering, and tests remain behavior-coupled. |
 | `src/registration_resolution.rs` | 5888 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer and gate logic; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
-| `src/resolved_typed_ast.rs` | 7195 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including Task-251/252/253/254/255/256/257/258A/258B1/258B2/258B3 clone-preserving handoffs and semantic coexistence guards; no behavior-neutral split required. |
+| `src/resolved_typed_ast.rs` | 7200 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including Task-251/252/253/254/255/256/257/258A/258B1/258B2/258B3/258B3N clone-preserving handoffs and semantic coexistence guards; no behavior-neutral split required. |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
 | `tests/lint_policy.rs` | 1877 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Large support test but intentionally centralizes repository-policy guardrails, including Task-258A/258B1/258B2 public-surface and test-only syntax dependency policy; no split required for task 34. |
 
@@ -130,6 +130,15 @@ member/`FieldUpdate` geometry, cross-family root ownership, conditional
 fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
+
+## Task 258B3N Boundary Result
+
+Implementation stayed within the planned owners:
+`source_statement.rs` owns the table, producer, validation, rendering, and
+four checker tests; `typed_ast.rs` and `resolved_typed_ast.rs` own paired
+publication/revalidation; the existing mizar-test statement leaf and
+facades own the dormant consumer and five runner tests. No module,
+dependency direction, binding owner, or semantic owner was introduced.
 
 ## Task 258B3N Planned Boundary
 

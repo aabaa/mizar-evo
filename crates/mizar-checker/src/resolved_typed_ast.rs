@@ -1830,15 +1830,20 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         self.inputs.typed_ast.nodes(),
                     )
                     .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?,
-                (None, Some(witnesses)) if source_statement.is_task_258b3_profile() => witnesses
-                    .validate_installation(
-                        source_id,
-                        &module_id,
-                        source_statement,
-                        source_term,
-                        self.inputs.typed_ast.nodes(),
-                    )
-                    .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?,
+                (None, Some(witnesses))
+                    if source_statement.is_task_258b3_profile()
+                        || source_statement.is_task_258b3n_profile() =>
+                {
+                    witnesses
+                        .validate_installation(
+                            source_id,
+                            &module_id,
+                            source_statement,
+                            source_term,
+                            self.inputs.typed_ast.nodes(),
+                        )
+                        .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
+                }
                 (None, None)
                     if source_statement.is_task_258a_profile()
                         || source_statement.is_task_258b2_profile() => {}

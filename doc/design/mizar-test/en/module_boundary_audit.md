@@ -11560,3 +11560,11 @@ existing `type_elaboration/source_statement.rs` production/test owners.
 Production topology stays 30 paths; this documentation prerequisite leaves
 all 37,172 production lines and hashes unchanged. No new semantic route or
 dependency direction is authorized.
+
+## Task 258B3N Consumer Boundary Result
+
+The implementation remains in the existing statement leaf, its two
+facades, runner root, and statement test leaf. Production topology remains
+30 paths; sizes are `3183/684/2498` production lines and 5,799 test-leaf
+lines. No new module, public harness route, external detail key, dependency
+direction, or semantic owner was added.
