@@ -1041,3 +1041,11 @@ accept only the exact B3M1 base plus `2 witnesses / 1 name`, verify the
 atomically. B3/B3N bytes remain unchanged. Repeated installation,
 cross-profile halves, reference/Task-248/257/other-258 families in either
 order, and semantic coexistence roll back without partial ownership.
+
+## Task 258B3M1 Implementation Result
+
+The existing paired installer now recognizes only the exact authenticated
+B3M1 base plus `2 witnesses / 1 name`. It revalidates the six-term lower
+profile, 56-node arena, statement/primary fingerprints, dense ordinals, and
+name link before publishing both halves. Every cross-family or repeated
+order still returns `InvalidSourceStatement` without partial ownership.

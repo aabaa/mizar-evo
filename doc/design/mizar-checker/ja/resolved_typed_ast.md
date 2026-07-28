@@ -993,3 +993,11 @@ rows、1 name row、exact fingerprint、56-node arenaだけをclone-preserve
 subtree ownershipをrevalidateする。B3/B3N/B3M1 hybrid、orphan half、
 reference hybrid、stale dependency、nonempty semantic/proof/goal tableは
 `InvalidSourceStatement`でfailする。semanticsはinferしない。
+
+## Task 258B3M1 implementation result
+
+final assemblyはauthenticated B3M1 pairをclone-preserveし、full
+lower/base/witness/name dependency graphをrevalidateする。orphan、stale、
+reference hybrid、B3/B3N/B3M1 cross-family、nonempty overload pipeline、
+semantic、proof、goal inputsはすべて`InvalidSourceStatement`でfailする。
+successful outputの全semantic/proof/goal tablesはempty。

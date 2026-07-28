@@ -10351,3 +10351,13 @@ facade/rootに留める。production topologyは30 paths。本documentation task
 statement leaf/facade/root/test sizes `3183/684/2498/5799`と37,555-line
 production manifestを不変に保つ。public route、external key、module
 split、dependency direction、semantic ownerはauthorizeしない。
+
+## Task 258B3M1 consumer boundary結果
+
+implementationはplanned statement production/test leafとexisting
+facade/root内に維持した。production topologyは30 paths、statement
+leaf/facade/root/test sizesは`3724/688/2501/7246`、production manifestは
+38,103 linesである。raw parser/resolver objectはrunner-privateのまま、
+checkerにはsyntax-free authenticated tableだけを渡す。public route、
+mutation API、external key、module split、dependency direction、semantic
+ownerは追加していない。

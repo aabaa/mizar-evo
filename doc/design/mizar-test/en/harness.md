@@ -3491,3 +3491,19 @@ identity, exhaustive mutation/replay, all byte/subtree near misses,
 active/cross-route isolation in both orders, and typed/final empty
 semantics. No fixture, sidecar, trace row, external detail key, or active
 dispatch will be added.
+
+## Checker Task 258B3M1 Dormant Harness Result
+
+The private selector and five compound tests are implemented. The route
+authenticates the exact raw 56-node parser tree, theorem-only resolver
+provenance, Task-48/252/256/base dependencies, and the dense `2/1`
+witness/name transaction before publishing equal typed/final handoffs.
+Mutation, near-miss, cross-family, active-route, replay, rollback, and
+empty-semantic checks pass. Private stale fingerprints remain checker-test
+owned; the runner proves their public equality and copied cross-profile
+rejection without adding a mutation API.
+
+The runner library now has 394 tests. Production remains 30 paths / 38,103
+lines with statement leaf/facade/root/test sizes `3724/688/2501/7246`.
+No fixture, sidecar, trace row/status/count, external detail key, active
+route, or semantic result changed.

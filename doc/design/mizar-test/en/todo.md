@@ -2025,6 +2025,17 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Freeze only the 113-byte/56-node B3M1 dormant consumer, lower/base
   profiles, witness/name `2/1`, shared/dense ordinals, exact five-test
   matrix, no semantics, and unchanged runner baselines.
-- [ ] Implement only B3M1 after its docs commit and fresh preflight,
+- [x] Implement only B3M1 after its docs commit and fresh preflight,
   projecting 394 runner tests.
 - [ ] Freeze/implement B3M2 before Task 258B4.
+
+## Checker Task 258B3M1 Runner Implementation Ledger
+
+- [x] Select only the exact 113-byte/56-node source before B3N/B3/B2/B1/A.
+- [x] Assemble six terms, two atomic formulas, two statements, two witnesses,
+  and one name without activating a corpus or semantic route.
+- [x] Add exactly five compound tests for identity, mutation/replay,
+  byte/subtree near misses, both ownership orders, active isolation, and
+  empty final semantics.
+- [x] Remeasure 394 tests, leaf/facade/root/test sizes
+  `3724/688/2501/7246`, and 30 production paths / 38,103 lines.

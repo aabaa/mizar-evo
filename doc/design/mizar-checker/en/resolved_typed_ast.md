@@ -1050,3 +1050,11 @@ dense within-`take` order, name links, and subtree ownership. B3/B3N/B3M1
 hybrids, orphan halves, reference hybrids, stale dependencies, and nonempty
 semantic/proof/goal tables fail as `InvalidSourceStatement`. No semantics
 are inferred.
+
+## Task 258B3M1 Implementation Result
+
+Final assembly clone-preserves the authenticated B3M1 pair and revalidates
+the full lower/base/witness/name dependency graph. Orphan, stale,
+reference-hybrid, B3/B3N/B3M1 cross-family, nonempty overload pipeline,
+semantic, proof, and goal inputs all fail as `InvalidSourceStatement`.
+Successful output keeps every semantic/proof/goal table empty.

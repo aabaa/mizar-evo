@@ -1832,7 +1832,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?,
                 (None, Some(witnesses))
                     if source_statement.is_task_258b3_profile()
-                        || source_statement.is_task_258b3n_profile() =>
+                        || source_statement.is_task_258b3n_profile()
+                        || source_statement.is_task_258b3m1_profile() =>
                 {
                     witnesses
                         .validate_installation(

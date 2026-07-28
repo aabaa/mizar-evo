@@ -496,3 +496,11 @@ EN/JA runner plans, TODOs, harnesses, and module audits freeze the same
 shared/dense ordinal contract, five-test matrix, unchanged 389-test /
 30-path baseline, no active or semantic route, and B3M2-before-B4 order.
 No bilingual debt is accepted.
+
+## Task 258B3M1 Runner Implementation Synchronization
+
+EN/JA runner plans, TODOs, harnesses, and module audits now record the same
+exact dormant route, private-fingerprint ownership split, five compound
+tests, 394-test library, 30-path / 38,103-line production manifest, module
+sizes `3724/688/2501/7246`, unchanged active/trace ownership, and
+B3M2-before-B4 order. No implementation bilingual debt remains.

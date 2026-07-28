@@ -4844,7 +4844,7 @@ implementation commit does not satisfy a producer task.
   source, Task-252 `6/6/0`, base/witness/name `1/2/2/2/2` + `2/1`,
   shared source ordinal 1, dense ordinals 0/1, no new API or semantics,
   four/five tests, and unchanged baselines.
-- [ ] Implement only frozen Task 258B3M1 after its documentation commit and
+- [x] Implement only frozen Task 258B3M1 after its documentation commit and
   fresh parser/resolver/lower/count/hash preflight.
 - [ ] Freeze and implement Task 258B3M2 other witness-term shapes before
   selecting Task 258B4.
@@ -4874,3 +4874,18 @@ implementation commit does not satisfy a producer task.
   and hashes.
 - [x] Update follow-up ownership in EN/JA plans/audits: B3M2 is next after
   B3M1 implementation and remains before B4.
+
+## Checker Task 258B3M1 Implementation Ledger
+
+- [x] Publish only the exact 113-byte/56-node mixed reserved-variable
+  profile with Task-252 `6/6/0`, Task-256 `2/0/0/0/0/0/0/4/4`, base
+  `1/2/2/2/2`, and witness/name `2/1`.
+- [x] Preserve B3/B3N v1 bytes while validating dependency/fingerprint,
+  aggregate, witness 0, witness 1, and name precedence over the complete
+  shared arena.
+- [x] Install the paired handoff atomically in typed and final ownership;
+  keep binding, semantic, proof, goal, corpus, trace, and public API
+  ownership unchanged.
+- [x] Add exactly four checker and five runner compound tests and remeasure
+  `358/394` library tests, checker modules `14045/4659/7201/3156`, and the
+  runner 30-path / 38,103-line production manifest.

@@ -3314,3 +3314,18 @@ future compound tests 5本はsource/hash/parser/resolver/lower identity、
 exhaustive mutation/replay、全byte/subtree near miss、active/cross-route
 isolationのboth order、typed/final empty semanticsをcoverする予定である。
 fixture、sidecar、trace row、external detail key、active dispatchは追加しない。
+
+## Checker Task 258B3M1 dormant harness結果
+
+private selectorとcompound tests 5本を実装した。routeはexact raw 56-node
+parser tree、theorem-only resolver provenance、Task-48/252/256/base
+dependency、dense `2/1` witness/name transactionをauthenticateしてから、
+equalなtyped/final handoffをpublishする。mutation、near-miss、
+cross-family、active-route、replay、rollback、empty-semantic checkがpassする。
+private stale fingerprintはchecker test ownerに残し、runnerはmutation APIを
+追加せずpublic equalityとcopied cross-profile rejectionを実証する。
+
+runner libraryは394 tests。productionは30 paths / 38,103 lines、
+statement leaf/facade/root/test sizesは`3724/688/2501/7246`。fixture、
+sidecar、trace row/status/count、external detail key、active route、
+semantic resultは変更していない。

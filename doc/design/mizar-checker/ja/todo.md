@@ -4605,7 +4605,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   two-witness source、Task-252 `6/6/0`、base/witness/name
   `1/2/2/2/2` + `2/1`、shared source ordinal 1、dense ordinals 0/1、
   no new API/semantics、tests 4/5本、unchanged baseline。
-- [ ] documentation commitとfresh parser/resolver/lower/count/hash
+- [x] documentation commitとfresh parser/resolver/lower/count/hash
   preflight後にfrozen Task 258B3M1だけをimplement。
 - [ ] Task 258B4 selection前にTask 258B3M2 other witness-term shapeを
   freeze/implement。
@@ -4634,3 +4634,17 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   status/count、active route、source/tests、list/count/hashを維持。
 - [x] EN/JA plan/auditのfollow-up ownershipを更新し、B3M1 implementation
   後はB3M2がnextでB4前であることを記録。
+
+## Checker Task 258B3M1 implementation ledger
+
+- [x] exact 113-byte/56-node mixed reserved-variable profileだけをpublishし、
+  Task-252 `6/6/0`、Task-256 `2/0/0/0/0/0/0/4/4`、base
+  `1/2/2/2/2`、witness/name `2/1`を維持。
+- [x] B3/B3N v1 bytesを維持し、complete shared arenaに対する
+  dependency/fingerprint、aggregate、witness 0、witness 1、name precedenceを
+  validate。
+- [x] typed/final ownershipでpaired handoffをatomically installし、binding、
+  semantic、proof、goal、corpus、trace、public API ownershipを不変に維持。
+- [x] checker exactly 4本 / runner exactly 5本のcompound testsを追加し、
+  library `358/394`、checker modules `14045/4659/7201/3156`、runner
+  production 30 paths / 38,103 linesを再測定。

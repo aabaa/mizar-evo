@@ -2583,6 +2583,6 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Freeze only B3M1: exact 113-byte/56-node source, lower/base
   provenance, witness/name `2/1`, shared/dense ordinals, no API/semantics,
   four/five tests, unchanged baselines, and updated ownership audit.
-- [ ] Implement only frozen B3M1 after its documentation commit and fresh
+- [x] Implement only frozen B3M1 after its documentation commit and fresh
   preflight.
 - [ ] Freeze/implement B3M2 before selecting Task 258B4.

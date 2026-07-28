@@ -3870,3 +3870,22 @@ hash. `spec.en.checker.formula_statement.source_payloads` remains
 retains named binding/abbreviation, Task 272 retains ordered existential
 goal effects, B3M2 retains every other witness-term shape, and B4 remains
 blocked behind B3M2.
+
+## Step 5 Checker Task 258B3M1 Implementation Addendum
+
+Task 258B3M1 closes the frozen bounded `source_drift`/`test_gap` with the
+exact mixed named/unnamed two-witness transport, syntax-free lower/base
+dependencies, and checker/runner compound matrices `4/5`. The implementation
+also resolves a derived test-ownership `design_drift`: checker tests own
+independent mutation of the two private fingerprints, while the runner owns
+their public equality and copied cross-profile rejection. No public mutation
+API was introduced.
+
+This changes design/test ownership, so the audit update is required. It
+changes no canonical requirement, `.miz`, expectation, sidecar, trace
+row/status/count, active route, or coverage credit.
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`. Checker/runner libraries now contain `358/394` tests; runner
+production remains 30 paths / 38,103 lines. Tasks 269/272 retain all
+binding/semantic effects, B3M2 retains other witness-term shapes, and B4
+remains blocked behind B3M2.

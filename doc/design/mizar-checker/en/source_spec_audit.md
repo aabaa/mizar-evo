@@ -3933,3 +3933,13 @@ in B3M1. Splitting broad B3M into exact B3M1 plus future B3M2 resolves
 There is no `spec_gap`, undocumented behavior, expectation drift, boundary
 violation, metadata conflict, or lower-stage prerequisite. The
 formula-statement row remains deferred with `tests = []`.
+
+## Task 258B3M1 Implementation Audit
+
+The frozen `source_drift` and `test_gap` are closed by exact syntax transport
+and four/five compound tests. The implementation changes no canonical
+language behavior, existing `.miz`, expectation, trace status/count, or
+coverage credit. There is no remaining `spec_gap`, `design_drift`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`; the formula-statement
+row remains deferred with `tests = []`.

@@ -3738,6 +3738,16 @@ contractはresolved `design_drift`、future source/testsはbounded
 `source_drift`/`test_gap`である。blocking protocol disagreementはなく、
 formula-statement rowは`deferred` / `tests = []`を維持する。
 
+## Task 258B3M1 implementation audit
+
+frozen `source_drift`/`test_gap`はexact syntax transportとchecker/runner
+tests 4/5本でcloseした。canonical language behavior、既存`.miz`、
+expectation、trace status/count、coverage creditは変更しない。remaining
+`spec_gap`、`design_drift`、`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`、
+`repo_metadata_conflict`はなく、formula-statement rowは
+`deferred` / `tests = []`を維持する。
+
 ## Task 258B3N 実装監査
 
 classified bounded `source_drift` / `test_gap`はcanonical semantic changeなしで

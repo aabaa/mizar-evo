@@ -582,3 +582,10 @@ B3M1はmodule/proof contexts `0/1`、reserved binding 0、no diagnosticを
 second unnamed rowもbindingを作らない。将来の`y` binding、RHS link、
 abbreviation replay、context transitionはTask 269が保持する。binding API /
 fingerprint grammarは変更しない。
+
+## Task 258B3M1 implementation result
+
+implementationはmodule/proof contexts `0/1`、reserved binding 0、visible
+`[0]`、no diagnosticをexactに維持する。token `y`とsecond unnamed witnessは
+binding/resolver-owned symbolを作らない。future witness-name bindingと
+abbreviation replayは引き続きTask 269が所有する。

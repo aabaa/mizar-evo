@@ -404,3 +404,11 @@ freeze the same 113-byte/56-node mixed two-witness source, `6/6/0` primary
 terms, `2 witnesses / 1 name`, shared source ordinal 1 with dense ordinals
 0/1, no-public-API/no-semantic boundary, four/five future tests, unchanged
 baselines, and B3M2-before-B4 order. No bilingual debt is accepted.
+
+## Task 258B3M1 Implementation Synchronization
+
+Canonical EN and JA companions now record the same completed private
+profile, raw/typed 56-node authentication, resolver-owned-`y` exclusion,
+`2 witnesses / 1 name`, four/five passing tests, `358/394` counts, module
+and production sizes/hashes, unchanged semantic boundary, and
+B3M2-before-B4 order. No bilingual debt remains.

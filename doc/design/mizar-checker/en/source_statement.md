@@ -1297,6 +1297,23 @@ staging, and one dedicated documentation commit. Implementation may begin
 only after that commit and a fresh parser/resolver/lower-API/count/hash
 preflight.
 
+## Task 258B3M1 Implementation Result
+
+The frozen mixed row is implemented without widening semantics or API.
+The private profile authenticates all 56 raw parser tuples and typed nodes,
+the exact resolver owner with no resolver-owned `y`, six primary terms,
+two atomic formulas, two base statements, two dense witnesses, and one
+name. Validation preserves dependency/fingerprint, aggregate, witness 0,
+witness 1, then name precedence; B3/B3N v1 bytes remain unchanged.
+
+Exactly four checker and five runner compound tests pass, including every
+node mutation, exhaustive base/witness/name/resolver replay, all ownership
+orders, all final coexistence stages, near misses, and active isolation.
+Libraries are `358/394`; module sizes are `14045/4659/7201/3156`, runner
+sizes `3724/688/2501/7246`, and runner production is 30 paths / 38,103
+lines. Binding and semantic ownership remain deferred to Tasks 269/272;
+B3M2 remains next before B4.
+
 ## Task 258B2 Implementation Closure
 
 The frozen 113-byte profile is implemented without widening its language
@@ -1976,7 +1993,8 @@ The checker test contract is exactly four compound tests:
    and `Degraded`, all with deterministic replay;
 3. paired typed ownership, B3M1/B3N/B3 hybrids, and every existing
    Task-248/257/258 ownership order with rollback;
-4. final clone/revalidation plus orphan, stale, reference-hybrid, and every
+4. final clone/revalidation plus orphan, independently stale private
+   statement and primary fingerprints, reference-hybrid, and every
    semantic/proof/goal coexistence rejection.
 
 The runner test contract is exactly five compound tests:
@@ -1984,9 +2002,10 @@ The runner test contract is exactly five compound tests:
 1. exact bytes/hash, parser/resolver identity, Task-48/252/256/base,
    both witness rows, name row, ordinals, shared arena, and paired output;
 2. exhaustive lower/base/witness/name/resolver/all-index mutation,
-   statement/primary fingerprint and aggregate/cardinality corruption,
-   mixed-fault dependency/aggregate/witness-0/witness-1/name precedence,
-   and deterministic replay;
+   positive public statement/primary fingerprint equality, copied
+   cross-profile handoff and aggregate/cardinality corruption, mixed-fault
+   dependency/aggregate/witness-0/witness-1/name precedence, and
+   deterministic replay;
 3. selector/byte/subtree near misses including reversed named/unnamed,
    both named, both unnamed, missing/extra/reordered witnesses, changed
    comma/name/`=`, non-primary RHS, recovery, and composite/existential roots;

@@ -383,3 +383,11 @@ decomposition、harness/module/source audit、TODO、coverage ownershipは、同
 `2 witnesses / 1 name`、shared source ordinal 1 / dense ordinals 0/1、
 no-public-API/no-semantic boundary、future tests 4/5本、unchanged
 baseline、B3M2-before-B4 orderをfreezeする。bilingual debtはacceptしない。
+
+## Task 258B3M1 implementation synchronization
+
+canonical EN/JA companionsはcompleted private profile、raw/typed 56-node
+authentication、resolver-owned `y` exclusion、`2 witnesses / 1 name`、
+passing tests 4/5本、`358/394` counts、module/production sizes/hashes、
+unchanged semantic boundary、B3M2-before-B4 orderを同一に記録する。
+bilingual debtは残らない。

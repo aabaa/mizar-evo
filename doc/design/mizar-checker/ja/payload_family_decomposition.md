@@ -785,3 +785,10 @@ Task 252は両reserved-variable referenceをownし、Task 256は両方をexclude
 する。Task 269はname binding/abbreviation、Task 272はordered existential
 goal effect、B3M2はnon-reserved-variable/other witness-term shapeを保持する。
 B4/B5はcomposite root/visibilityを保持する。
+
+### Task 258B3M1 implementation closure
+
+exact reserved-variable mixed edgeはcomplete: named witness 0、unnamed
+witness 1、name row 0はsyntax-only/dense。resolver-owned `y`、binding、
+abbreviation、ordered goal effect、other witness-term shapesはすべてexclude
+する。B3M2がB4前のnext dependencyとなる。

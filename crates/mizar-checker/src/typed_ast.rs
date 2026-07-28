@@ -128,6 +128,7 @@ pub struct TypedAst {
 pub(crate) enum StatementTransportTableForTest {
     Context,
     Type,
+    Fact,
     Coercion,
     InitialObligation,
     Diagnostic,
@@ -342,6 +343,17 @@ impl TypedAst {
                     provenance: TypeProvenance::Inferred(TypeRuleId::new(
                         "statement-transport-guard",
                     )),
+                });
+            }
+            StatementTransportTableForTest::Fact => {
+                self.facts.insert(TypeFactDraft {
+                    subject: owner,
+                    predicate: TypePredicateRef::new("set"),
+                    polarity: Polarity::Positive,
+                    provenance: FactProvenance::Inferred(TypeRuleId::new(
+                        "statement-transport-guard",
+                    )),
+                    status: FactStatus::Known,
                 });
             }
             StatementTransportTableForTest::Coercion => {
@@ -942,7 +954,10 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        if !statements.is_task_258b3_profile() && !statements.is_task_258b3n_profile() {
+        if !statements.is_task_258b3_profile()
+            && !statements.is_task_258b3n_profile()
+            && !statements.is_task_258b3m1_profile()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         witnesses

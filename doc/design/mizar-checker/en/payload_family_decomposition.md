@@ -848,3 +848,10 @@ Task 252 owns both reserved-variable references; Task 256 excludes them.
 Task 269 retains name binding/abbreviation, Task 272 retains ordered
 existential goal effects, and B3M2 retains every non-reserved-variable or
 other witness-term shape. B4/B5 still own composite roots and visibility.
+
+### Task 258B3M1 Implementation Closure
+
+The exact reserved-variable mixed edge is complete: named witness 0,
+unnamed witness 1, and name row 0 are syntax-only and dense. Resolver-owned
+`y`, binding, abbreviation, ordered goal effect, and every other witness
+term shape remain excluded. B3M2 is now the next dependency before B4.

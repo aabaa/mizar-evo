@@ -603,3 +603,10 @@ diagnostic. Both witness primary terms resolve to binding 0 in proof scope
 binding environment. The second unnamed row creates no binding either.
 Task 269 retains the future `y` binding, RHS link, abbreviation replay, and
 context transition. No binding API or fingerprint grammar changes.
+
+## Task 258B3M1 Implementation Result
+
+The implementation keeps exactly module/proof contexts `0/1`, reserved
+binding 0, visible `[0]`, and no diagnostic. Token `y` and the second
+unnamed witness create no binding or resolver-owned symbol. Task 269 still
+owns future witness-name binding and abbreviation replay.

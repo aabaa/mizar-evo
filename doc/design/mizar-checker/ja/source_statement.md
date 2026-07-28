@@ -1572,7 +1572,8 @@ checker test contractはexact 4 compound tests:
    `NodeRecoveryState::Recovered`/`Degraded`両状態、deterministic replay;
 3. paired typed ownership、B3M1/B3N/B3 hybrid、全existing
    Task-248/257/258 ownership orderとrollback;
-4. final clone/revalidation、orphan、stale、reference-hybrid、全
+4. final clone/revalidation、orphan、privateなstatement/primary
+   fingerprintそれぞれの独立stale、reference-hybrid、全
    semantic/proof/goal coexistence rejection。
 
 runner test contractはexact 5 compound tests:
@@ -1580,8 +1581,9 @@ runner test contractはexact 5 compound tests:
 1. exact bytes/hash、parser/resolver identity、Task-48/252/256/base、
    both witness rows、name row、ordinals、shared arena、paired output;
 2. exhaustive lower/base/witness/name/resolver/all-index mutation、
-   statement/primary fingerprint、aggregate/cardinality corruption、
-   mixed-fault dependency/aggregate/witness-0/witness-1/name precedence、
+   publicなstatement/primary fingerprintのpositive equality、copied
+   cross-profile handoffとaggregate/cardinality corruption、mixed-fault
+   dependency/aggregate/witness-0/witness-1/name precedence、
    deterministic replay;
 3. reversed named/unnamed、both named、both unnamed、missing/extra/reordered
    witness、changed comma/name/`=`、non-primary RHS、recovery、
@@ -1622,3 +1624,19 @@ exitにはEN/JA同期、independent no-findings reviews、全protocol hard gates
 read-only quality 90/100以上、task-only staging、dedicated documentation
 commitが必要。implementationはそのcommit後のfresh
 parser/resolver/lower/count/hash preflightを経てから開始できる。
+
+## Task 258B3M1 implementation result
+
+frozen mixed rowをsemantic/API拡張なしでimplementした。private profileは
+raw parser tuples / typed nodes全56件、resolver-owned `y`のないexact
+resolver owner、6 primary terms、2 atomic formulas、2 base statements、
+2 dense witnesses、1 nameをauthenticateする。validationは
+dependency/fingerprint、aggregate、witness 0、witness 1、nameのprecedenceを
+維持し、B3/B3N v1 bytesは不変。
+
+checker exactly 4本 / runner exactly 5本のcompound testsがpassし、全node
+mutation、exhaustive base/witness/name/resolver replay、全ownership order、
+全final coexistence stages、near miss、active isolationをcoverする。
+libraryは`358/394`、module sizesは`14045/4659/7201/3156`、runner sizesは
+`3724/688/2501/7246`、runner productionは30 paths / 38,103 lines。
+binding/semantic ownershipはTasks 269/272へdeferし、B3M2がB4前のnext。

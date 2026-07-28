@@ -1830,6 +1830,17 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 113-byte/56-node B3M1 dormant consumer、lower/base profile、
   witness/name `2/1`、shared/dense ordinals、exact tests 5本、
   no semantics、unchanged runner baselineだけをfreeze。
-- [ ] docs commitとfresh preflight後にB3M1だけをimplementし、runner
+- [x] docs commitとfresh preflight後にB3M1だけをimplementし、runner
   394 testsをproject。
 - [ ] Task 258B4前にB3M2をfreeze/implement。
+
+## Checker Task 258B3M1 runner implementation ledger
+
+- [x] exact 113-byte/56-node sourceだけをB3N/B3/B2/B1/Aより先にselect。
+- [x] corpus/semantic routeをactivateせず、6 terms、2 atomic formulas、
+  2 statements、2 witnesses、1 nameをassemble。
+- [x] identity、mutation/replay、byte/subtree near miss、both ownership
+  orders、active isolation、empty final semanticsのcompound testsをexactly
+  5本追加。
+- [x] 394 tests、leaf/facade/root/test sizes
+  `3724/688/2501/7246`、production 30 paths / 38,103 linesを再測定。

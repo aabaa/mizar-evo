@@ -989,3 +989,11 @@ existing paired installerだけをpublication pathとする。exact B3M1 base +
 verifyしてboth halvesをatomicにpublishする。B3/B3N bytesは不変。repeated
 install、cross-profile halves、reference/Task-248/257/other-258 familyの
 both order、semantic coexistenceはpartial ownershipなしでrollbackする。
+
+## Task 258B3M1 implementation result
+
+existing paired installerはexact authenticated B3M1 base +
+`2 witnesses / 1 name`だけをrecognizeする。both halvesのpublish前に
+6-term lower profile、56-node arena、statement/primary fingerprints、
+dense ordinals、name linkをrevalidateする。全cross-family/repeated orderは
+partial ownershipなしで`InvalidSourceStatement`を返す。
