@@ -2095,6 +2095,43 @@ x;";
     }
 
     #[test]
+    fn scope_skeleton_unnamed_take_term_is_not_a_frontend_diagnostic() {
+        const TEXT: &str = "proof\ntake 101;\nend;\n";
+        let (source, preprocessed, bridge) = preprocessed_source(TEXT);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(TEXT.len(), 21);
+        assert_eq!(
+            stream.scope_view.blocks,
+            vec![ScopeBlock {
+                kind: LexicalBlockKind::Proof,
+                range: range(source.source_id, 0, 19),
+            }]
+        );
+        assert_eq!(
+            stream.scope_view.frames,
+            vec![ScopeFrame {
+                range: range(source.source_id, 0, 19),
+                bindings: Vec::new(),
+            }]
+        );
+        assert!(stream.scope_view.statements.is_empty());
+        assert!(
+            stream.diagnostics.iter().all(|diagnostic| !matches!(
+                diagnostic.kind,
+                LexingDiagnosticKind::ScopeSkeleton(_)
+            ))
+        );
+        assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
     fn scope_skeleton_diagnostics_are_mapped_to_frontend_diagnostics() {
         let text = "end;\ndefinition\nlet x be set;";
         let (source, preprocessed, bridge) = preprocessed_source(text);

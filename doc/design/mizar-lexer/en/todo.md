@@ -7,35 +7,39 @@ language-spec synchronization.
 
 ## Ordered Task List
 
-1. **Lexer Task 258B3M2P1 — repair unnamed `take` scope recovery.**
-   - Status: frozen-contract documentation prerequisite complete;
-     implementation is the next executable logical task.
+All non-deferred lexer-owned tasks are complete.
+
+## Completed Tasks
+
+29. **Lexer Task 258B3M2P1 — repaired unnamed `take` scope recovery.**
+   - Status: implementation complete; Checker Task 258B3M2 may resume after
+     the standalone lexer prerequisite commit.
    - Authority: Chapter 15 §15.4.4 permits
      `take term_expression` and explicitly shows `take 101;`; Chapter 13
      §§13.1/13.1.4 makes numerals primary terms. The existing parser fixture
      already covers a named/unnamed witness list.
-   - Exact drift: the scope skeleton currently treats every `take` as a
-     named-equals binder and the frontend maps the resulting
-     `UnsupportedBinderShape`.
+   - Closed drift: the scope skeleton had treated every `take` as a
+     named-equals binder and the frontend mapped the resulting
+     `UnsupportedBinderShape`; the implementation now distinguishes the
+     initial named-equals form from plausible unnamed term starts without
+     parsing terms in the lexer.
    - Exact source: final-LF-terminated `proof\ntake 101;\nend;\n`, 21 bytes,
      SHA-256
      `60cb34c7ca79ec289319c61198965a4d0a9918b5aaca34957ee1df9f8a2c3648`.
-   - Owned implementation: `take` dispatch/recovery in
-     `scope_skeleton.rs`, focused lexer/frontend unit tests, and replacement
-     of the contradictory derived lexical negative source row `take 42;` with
-     malformed `take = 42;`.
-   - Add exactly one named compound lexer test and one named compound frontend
-     test as frozen in `00.crate_plan.md`; library counts move from `146/132`
-     to `147/133`.
+   - Owned implementation changed `take` dispatch/recovery in
+     `scope_skeleton.rs`, added the exact compound lexer/frontend unit tests,
+     and replaced the contradictory derived lexical negative source row
+     `take 42;` with malformed `take = 42;`.
+   - Library counts moved from `146/132` to `147/133`; the exact 21-byte
+     frontend source is diagnostic-free and a 107-byte complete source remains
+     a 49-node unrecovered parser tree with zero frontend diagnostics.
    - Preserve canonical spec, existing `.miz`, expectation metadata,
      sidecars, trace status/counts, parser/resolver behavior, checker
      statement transport, and witness/proof semantics.
-   - Exit: exact unnamed numeral/identifier inputs are non-binding and
-     diagnostic-free at the scope layer, named and malformed controls retain
-     their frozen behavior, all reviews/verification pass, and the task lands
-     as its own commit before Checker Task 258B3M2 resumes.
-
-## Completed Tasks
+   - Exit evidence: exact unnamed numeral/identifier inputs are non-binding
+     and diagnostic-free at the scope layer, named and malformed controls
+     retain their frozen behavior, and the lexical corpus plus lexer/frontend
+     crate tests pass.
 
 1. Made parser-facing operator metadata source-position aware.
    - Added lexer queries that combine imported operator metadata with

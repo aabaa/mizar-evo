@@ -3936,3 +3936,42 @@ row/status/count, active manifest count, CLI/hash baseline, or coverage credit.
 Implementation remains a separate logical task and commit; broader mixed-list
 named-binding under-approximation, Checker Task 258B3M2 transport, witness
 semantics, and proof effects remain deferred.
+
+## Step 5 Lexer Task 258B3M2P1 Implementation Addendum
+
+Lexer Task 258B3M2P1 implements the separately frozen lower-stage prerequisite.
+`take` scope recovery now preserves the initial `identifier "="` named branch
+and treats other plausible nonempty term starts as unnamed witnesses without
+creating a scope binding, binder statement, or scope diagnostic. Empty,
+separator-led, block-boundary, and leading-`=` controls retain recoverable
+`UnsupportedBinderShape` diagnostics. This deliberately remains a lexical
+under-approximation: the lexer does not parse term grammar or record later
+named examples after an initial unnamed witness.
+
+The exact compound lexer/frontend tests named in the frozen contract were
+added, moving library counts from `146/132` to `147/133`. Sorted raw
+test-entry hashes are
+`d55916e3165613154b586d00d44a29d893d8e902e03ae3ff1975361bb61f27c9` /
+`d9ed6e8c151187eeaa6a1969b05619f75108f33482d49c0b56d6830f468d1623`;
+normalized name hashes are
+`0cb403b4c9390daecfe6f7c5bf44c2fadaa76f6fc8c5f05cba04bbab898b96aa`
+/
+`a309083b7fbdd769f8bd59860a8772e67ad69935658d56beb7c6cee53dea2034`.
+Final scope production/test and frontend lexing sizes are `1330/485/2489`
+lines with SHA-256
+`255637acee19828211d7ff840844ada715feb7f812bf30c4b2b84377193d7cef`,
+`88c755c1c5c990863135aae03a951562f1241a76482e9e7fa892e3b2ed5ebe18`,
+and
+`3c2dba2c3e3ab29a89e41014adeb58a0b5929b71c93d97cffe0481d44cbc2bca`.
+The corrected 16-line derived fail source has SHA-256
+`d661a81f1d79f760af43aab0c904a7c5400a90e003435d80fc298145ec56d1e5`.
+A 107-byte complete-source preflight still yields 49 unrecovered parser nodes
+and now yields zero frontend diagnostics, confirming that no parser or
+resolver change is required.
+
+This closes the bounded `source_drift`, `design_drift`, `test_gap`, and
+`test_expectation_drift` classified by the prerequisite. It changes no
+canonical requirement, existing `.miz`, expectation metadata, sidecar, trace
+row/status/count, active manifest count, CLI/hash baseline, or coverage credit.
+Broader mixed-list binding, Checker Task 258B3M2 transport, witness semantics,
+and proof effects remain deferred to their named owners.

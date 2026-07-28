@@ -5,7 +5,7 @@ let dup be set;
 now
 let inner, inner be set;
 reserve Bad for set;
-take 42;
+take = 42;
 reconsider dup as object;
 ghost foo;
 dup;

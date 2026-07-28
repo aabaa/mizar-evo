@@ -70,7 +70,13 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 字句上の有効範囲(lifetime)は保守的に扱います。
 
 - `reserve` は記事(article)全体のトップレベルスコープを持ち、宣言地点以降でのみ有効です。入れ子のブロック内の `reserve` は、回復可能な診断とともに過小近似します。
-- `let`, `consider`, `set`, `reconsider type_change_list as ...`, `take name = ...`, `deffunc`, `defpred`、アルゴリズムの `var` / `const` は、現在の字句ブロックに束縛します。開いているブロックがない場合は文範囲にフォールバックします。
+- `let`, `consider`, `set`, `reconsider type_change_list as ...`、名前付きの
+  `take name = ...` example、`deffunc`, `defpred`、アルゴリズムの `var` /
+  `const` は、現在の字句ブロックに束縛します。開いているブロックがない場合は
+  文範囲にフォールバックします。
+- 名前なしの `take term_expression` example は witness term の使用であり、字句上の
+  束縛宣言ではありません。そのため scope frame への binding contribution と
+  binder statement range のいずれも追加しません。
 - `for`, `ex`, `given` は、復元した文範囲にだけ束縛します。
 - `algorithm ... do ... end` は 1 つの algorithm lexical block です。header の `do` は別の `Do` frame を開きません。
 - アルゴリズムの `for ... do` の束縛子と、省略可能な `processed name` は、後続の `Do` ブロックに束縛します。それ以外の header ではない `do` token も、保守的な `Do` ブロックを開きます。
@@ -85,7 +91,17 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 1. `RawTokenStream` を、スコープスケルトン専用のトークンに変換します。レイアウト(空白類)は無視します。`LexemeRun` は、識別子の形をした `Word`、カンマ、セミコロン、括弧、角括弧、波括弧、`Other` のランに分割します。それ以外の生トークンの種別は `Other` として扱います。
 2. バイト `0` から始まる合成のルートフレーム、空のブロックスタック、空の `pending_do_bindings` を初期化します。`pending_do_bindings` は、アルゴリズムの `for ... do` 形式の束縛子を後続の `do` ブロックに渡すための一時バッファです。
 3. トークンを左から右へ走査します。`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, `struct` は、ブロックを開く語として開いたフレームをプッシュします。`do` token は、pending loop binding がなく開いている algorithm body を始める header `do` でない限り `Do` frame を開きます。その header `do` は `Algorithm` frame に付着します。`inherit` は、statement semicolon または block `end` より前に `where` が現れる場合だけフレームをプッシュし、explicit inheritance block を表しつつ shorthand `inherit ...;` は statement 形の declaration として扱います。`case` は、その文の残りに `do` が含まれない場合だけ証明の分岐としてフレームを開きます。これにより、アルゴリズムの `case ... do` を証明の分岐と誤認しません。`otherwise` は completed algorithm match case（`end; otherwise`）の後に現れる場合だけ conservative な `Do` frame を開き、definition 側の conditional definiens では開きません。`end` はフレームを 1 つポップし、ブロック範囲と字句スコープフレームの両方を記録します。
-4. 束縛子の語は、形状ごとのパーサーに委譲します。`let x, y be ...` のような単純な束縛子リストは、カンマ・セミコロン・停止語までの識別子の形をした名前を読みます。`set x = ...` と `take x = ...` のような名前付き等号の束縛子は、`name =` の形状を要求します。`reconsider` は `type_change_list` を保守的に走査し、各 item 先頭の識別子を記録し、任意の等号右辺を括弧・角括弧・波括弧の深さを追跡しながらトップレベルのカンマまたは `as` まで読み飛ばします。アルゴリズムの `var` / `const` は、括弧の深さを追跡しながらカンマ区切りの宣言ヘッドを読むため、初期化子のタプルが余計な束縛子を作ることはありません。
+4. 束縛子の語は、形状ごとのパーサーに委譲します。`let x, y be ...` の
+   ような単純な束縛子リストは、カンマ・セミコロン・停止語までの識別子の形をした
+   名前を読みます。`set x = ...` は `name =` の形状を要求します。`take` では、
+   先頭の識別子の直後に `=` がある場合だけ名前付き witness binding の候補とします。
+   名前なし term になり得る空でない先頭形状は、束縛を捏造せず scope-skeleton
+   diagnostic も出さずに文末まで回復します。authoritative term syntax は引き続き
+   parser の所有です。`reconsider` は `type_change_list` を保守的に走査し、各 item
+   先頭の識別子を記録し、任意の等号右辺を括弧・角括弧・波括弧の深さを追跡しながら
+   トップレベルのカンマまたは `as` まで読み飛ばします。アルゴリズムの `var` /
+   `const` は、括弧の深さを追跡しながらカンマ区切りの宣言ヘッドを読むため、
+   初期化子のタプルが余計な束縛子を作ることはありません。
 5. `ghost var` と `ghost const` はアルゴリズムの束縛子として扱います。`ghost target := term;` は束縛しない assignment として扱い、scope diagnostic なしで読み飛ばします。それ以外の `ghost` 形式は、回復可能な診断を出し、束縛を捏造しません。
 6. 束縛の有効範囲は形状ごとに決めます。`reserve` は、入れ子のブロックの外でのみルートフレームに入ります。`for`, `ex`, `given` は文単位のフレームを作ります。`consider`、`reconsider`、ブロック内の `let`、名前付き等号の束縛子、`deffunc`、`defpred`、`var`、`const`、`processed` は、開いているブロックがあれば現在のブロックフレームを拡張し、なければ文単位のフレームにフォールバックします。アルゴリズムの `for ... do` は、束縛子と省略可能な `processed name` を、`pending_do_bindings` 経由で次の `do` ブロックに移します。
 7. 束縛をフレームに入れる前に、同じ字句スコープ内の既存の名前と重複しないか確認します。重複は診断を出して無視します。これにより、同じ綴り/範囲に対して競合する上書きがスケルトン内に作られないようにします。
@@ -201,6 +217,34 @@ assertion がすべて通ること、parser acceptance が不変であること�
 relevant crate/workspace/fmt/Clippy/CLI verification が通ること、final read-only
 quality review が 90/100 以上かつ protocol hard gates がすべて PASS であることを
 要求します。
+
+## Lexer Task 258B3M2P1 Implementation Result
+
+implementation は frozen `source_drift`, `design_drift`, `test_gap`,
+`test_expectation_drift` を close します。`take` dispatch は既存の initial
+`name =` binding path を維持し、plausible な unnamed term start を scope
+diagnostic なしの non-binding statement recovery として扱い、empty/separator-led
+shape には recoverable diagnostic を維持します。lexer は引き続き term
+expression を parse しません。
+
+exact two-test matrix は指定どおり追加されました。library counts は
+lexer/frontend `147/133`、sorted raw test-entry hashes は
+`d55916e3165613154b586d00d44a29d893d8e902e03ae3ff1975361bb61f27c9`
+と
+`d9ed6e8c151187eeaa6a1969b05619f75108f33482d49c0b56d6830f468d1623`、
+normalized test-name hashes は
+`0cb403b4c9390daecfe6f7c5bf44c2fadaa76f6fc8c5f05cba04bbab898b96aa`
+と
+`a309083b7fbdd769f8bd59860a8772e67ad69935658d56beb7c6cee53dea2034`
+です。post-implementation module sizes は lexer scope production / lexer scope
+tests / frontend lexing の順に `1330/485/2489` lines です。
+
+derived lexical fail source は 16 lines のままで、SHA-256 は
+`d661a81f1d79f760af43aab0c904a7c5400a90e003435d80fc298145ec56d1e5`
+です。expectation file、diagnostic count/order、line-based probes は不変です。
+real 107-byte theorem preflight は 49 unrecovered parser nodes を維持しつつ、
+frontend diagnostics が false scope diagnostic 1 件から 0 件になりました。
+active manifest counts と 5 個の CLI hashes はすべて不変です。
 
 ## Tests
 

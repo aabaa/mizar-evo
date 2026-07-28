@@ -1,5 +1,8 @@
 use super::common::*;
-use crate::BindingShapeKind;
+use crate::{
+    BindingShapeKind, LexicalBlockRange, LexicalScopeFrame, LexicalStatementKind,
+    LexicalStatementRange,
+};
 
 #[test]
 fn scope_skeleton_handles_empty_stream() {
@@ -331,6 +334,88 @@ end;";
     assert!(skeleton.binding_overrides_symbol("Seen", nth_index(source, "consumed", 0)));
     assert!(!skeleton.binding_overrides_symbol("Seen", source.len()));
     assert!(skeleton.diagnostics.is_empty());
+}
+
+#[test]
+fn scope_skeleton_distinguishes_unnamed_and_named_take_shapes() {
+    const NUMERAL_SOURCE: &str = "proof\ntake 101;\nend;\n";
+    let raw = scan_raw(NUMERAL_SOURCE).expect("unnamed numeral witness should raw scan");
+    let numeral = build_scope_skeleton(&raw);
+
+    assert_eq!(
+        numeral.blocks,
+        vec![LexicalBlockRange {
+            kind: LexicalBlockKind::Proof,
+            range: SourceSpan { start: 0, end: 19 },
+        }]
+    );
+    assert_eq!(
+        numeral.frames,
+        vec![LexicalScopeFrame {
+            range: SourceSpan { start: 0, end: 19 },
+            bindings: Vec::new(),
+        }]
+    );
+    assert!(numeral.statements.is_empty());
+    assert!(numeral.diagnostics.is_empty());
+
+    let identifier_source = "proof\ntake x;\nend;\n";
+    let raw = scan_raw(identifier_source).expect("unnamed identifier witness should raw scan");
+    let identifier = build_scope_skeleton(&raw);
+
+    assert_eq!(identifier.blocks.len(), 1);
+    assert_eq!(identifier.frames.len(), 1);
+    assert!(identifier.frames[0].bindings.is_empty());
+    assert!(identifier.statements.is_empty());
+    assert!(identifier.diagnostics.is_empty());
+    assert!(!identifier.binding_overrides_symbol("x", nth_index(identifier_source, "end", 0)));
+
+    let named_source = "proof\ntake k = 101;\nend;\n";
+    let raw = scan_raw(named_source).expect("named witness should raw scan");
+    let named = build_scope_skeleton(&raw);
+
+    assert_eq!(named.blocks.len(), 1);
+    assert_eq!(named.frames.len(), 1);
+    assert_eq!(
+        named.frames[0]
+            .bindings
+            .iter()
+            .map(|binding| (binding.spelling.as_str(), binding.kind))
+            .collect::<Vec<_>>(),
+        vec![("k", BindingShapeKind::Take)]
+    );
+    assert_eq!(
+        named.statements,
+        vec![LexicalStatementRange {
+            kind: LexicalStatementKind::Binder,
+            range: SourceSpan {
+                start: nth_index(named_source, "take", 0),
+                end: nth_index(named_source, ";", 0) + 1,
+            },
+        }]
+    );
+    assert!(named.binding_overrides_symbol("k", nth_index(named_source, "end", 0)));
+    assert!(named.diagnostics.is_empty());
+
+    let malformed_source = "proof\ntake;\ntake = 101;\nend;\n";
+    let raw = scan_raw(malformed_source).expect("malformed witnesses should raw scan");
+    let malformed = build_scope_skeleton(&raw);
+
+    assert_eq!(malformed.blocks.len(), 1);
+    assert_eq!(malformed.frames.len(), 1);
+    assert!(malformed.frames[0].bindings.is_empty());
+    assert!(malformed.statements.is_empty());
+    assert_eq!(
+        malformed
+            .diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.code)
+            .collect::<Vec<_>>(),
+        vec![
+            ScopeSkeletonDiagnosticCode::UnsupportedBinderShape,
+            ScopeSkeletonDiagnosticCode::UnsupportedBinderShape,
+        ]
+    );
 }
 
 #[test]

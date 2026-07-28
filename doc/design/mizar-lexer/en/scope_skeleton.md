@@ -71,7 +71,13 @@ The skeleton is suitable as a pre-parser handoff object: the parser may consume 
 Lexical lifetimes are conservative:
 
 - `reserve` is top-level/article scoped from the declaration point onward and is ignored with a recoverable diagnostic inside nested blocks;
-- `let`, `consider`, `set`, `reconsider type_change_list as ...`, `take name = ...`, `deffunc`, `defpred`, and algorithm `var` / `const` bind in the current lexical block, or fall back to a statement range when no block is open;
+- `let`, `consider`, `set`, `reconsider type_change_list as ...`, named
+  `take name = ...` examples, `deffunc`, `defpred`, and algorithm `var` /
+  `const` bind in the current lexical block, or fall back to a statement range
+  when no block is open;
+- an unnamed `take term_expression` example is a witness term use, not a
+  lexical binding declaration, and therefore contributes no binding to a
+  scope frame and no binder statement range;
 - `for`, `ex`, and `given` bind only for the recovered statement range;
 - `algorithm ... do ... end` is one lexical algorithm block; the header `do` does not open a separate `Do` frame.
 - algorithm `for ... do` binders, including optional `processed name`, bind in the following `Do` block. Other non-header `do` tokens also open a conservative `Do` block.
@@ -86,7 +92,19 @@ The implementation is a conservative single pass over a reduced token stream.
 1. Convert `RawTokenStream` into scope-skeleton tokens. Layout is ignored. `LexemeRun` values are split into identifier-shaped `Word` pieces, comma, semicolon, parentheses, brackets, braces, and `Other` runs. Other raw token kinds become `Other`.
 2. Initialize a synthetic root frame starting at byte `0`, an empty block stack, and an empty `pending_do_bindings` buffer used by algorithm `for ... do` forms.
 3. Walk tokens from left to right. Recognized block-opening words (`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, and `struct`) push an open frame. A `do` token opens a `Do` frame unless it is the header `do` that begins an open algorithm body without pending loop bindings; that header `do` attaches to the `Algorithm` frame instead. `inherit` pushes a frame only when a `where` appears before the statement semicolon or a block `end`, matching the explicit inheritance-block surface while leaving shorthand `inherit ...;` as a statement-shaped declaration. `case` opens a frame only when the rest of the statement does not contain `do`, so algorithm `case ... do` does not look like a proof branch. `otherwise` opens a conservative `Do` frame only when it follows a completed algorithm match case (`end; otherwise`), not for definition-side conditional definiens. `end` pops one frame and records both a block range and a lexical scope frame.
-4. Recognized binder words delegate to shape-specific parsers. Plain binder lists such as `let x, y be ...` accept identifier-shaped names until a comma, semicolon, or stop word. Named-equals binders such as `set x = ...` and `take x = ...` require the `name =` shape. `reconsider` scans the `type_change_list` conservatively, records each item-head identifier, and skips optional equated right-hand sides until a top-level comma or `as` while tracking parenthesis, bracket, and brace depth. Algorithm `var` and `const` binders scan comma-separated declaration heads while tracking parenthesis depth so initializer tuples do not create extra binders.
+4. Recognized binder words delegate to shape-specific parsers. Plain binder
+   lists such as `let x, y be ...` accept identifier-shaped names until a
+   comma, semicolon, or stop word. `set x = ...` requires the `name =` shape.
+   For `take`, only an initial identifier immediately followed by `=` is
+   eligible for named-witness binding; any nonempty initial shape that can be
+   an unnamed term is recovered to the statement end without inventing a
+   binding or emitting a scope-skeleton diagnostic. Authoritative term syntax
+   remains parser-owned. `reconsider` scans the `type_change_list`
+   conservatively, records each item-head identifier, and skips optional
+   equated right-hand sides until a top-level comma or `as` while tracking
+   parenthesis, bracket, and brace depth. Algorithm `var` and `const` binders
+   scan comma-separated declaration heads while tracking parenthesis depth so
+   initializer tuples do not create extra binders.
 5. `ghost var` and `ghost const` are treated as algorithm binders. `ghost target := term;` is treated as a non-binding assignment and skipped without a scope diagnostic. Other `ghost` forms produce a recoverable diagnostic and do not invent bindings.
 6. Binder lifetimes are assigned by shape. `reserve` contributes to the root frame only outside nested blocks. `for`, `ex`, and `given` create statement-local frames. `consider`, `reconsider`, `let` inside a block, named-equals binders, `deffunc`, `defpred`, `var`, `const`, and `processed` extend the current block frame when one exists, otherwise fall back to a statement-local frame. Algorithm `for ... do` moves its binders, plus optional `processed name`, into the following `do` block via `pending_do_bindings`.
 7. Before bindings enter a frame, names are deduplicated against existing names in that same lexical scope. Duplicates are ignored with a diagnostic so the skeleton cannot create two competing overrides for the same spelling and range.
@@ -203,6 +221,34 @@ to pass, parser acceptance to remain unchanged, EN/JA documentation to agree,
 the source/expectation correction to follow the authority order, relevant
 crate/workspace/fmt/Clippy/CLI verification to pass, and final read-only
 quality review to score at least 90/100 with every protocol hard gate passing.
+
+## Lexer Task 258B3M2P1 Implementation Result
+
+The implementation closes the frozen `source_drift`, `design_drift`,
+`test_gap`, and `test_expectation_drift`. `take` dispatch now preserves the
+existing initial `name =` binding path, treats plausible unnamed term starts as
+non-binding statement recovery without a scope diagnostic, and retains
+recoverable diagnostics for empty/separator-led shapes. The lexer still does
+not parse term expressions.
+
+The exact two-test matrix landed as specified. Library counts are
+lexer/frontend `147/133`; sorted raw test-entry hashes are
+`d55916e3165613154b586d00d44a29d893d8e902e03ae3ff1975361bb61f27c9`
+and
+`d9ed6e8c151187eeaa6a1969b05619f75108f33482d49c0b56d6830f468d1623`;
+normalized test-name hashes are
+`0cb403b4c9390daecfe6f7c5bf44c2fadaa76f6fc8c5f05cba04bbab898b96aa`
+and
+`a309083b7fbdd769f8bd59860a8772e67ad69935658d56beb7c6cee53dea2034`.
+Post-implementation module sizes are `1330/485/2489` lines for lexer scope
+production, lexer scope tests, and frontend lexing.
+
+The derived lexical fail source is still 16 lines and now has SHA-256
+`d661a81f1d79f760af43aab0c904a7c5400a90e003435d80fc298145ec56d1e5`;
+its expectation file, diagnostic count/order, and line-based probes are
+unchanged. A real 107-byte theorem preflight keeps 49 unrecovered parser nodes
+while frontend diagnostics change from the false single scope diagnostic to
+zero. Active manifest counts and all five CLI hashes remain unchanged.
 
 ## Tests
 

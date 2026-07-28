@@ -18,16 +18,20 @@ lexer-owned implementation scope 外である。`MLX-GAP-007` と `MLX-GAP-008` 
 上記の result と score は、完了した `b9f2482` milestone の historical result です。
 その後の Checker Task 258B3M2 fresh preflight で `MLX-GAP-009` が見つかりました。
 canonical unnamed `take term_expression` syntax は parser に到達しますが、scope
-skeleton が false named-binder-shape diagnostic を出し、frontend がそれを公開します。
-そのため crate は、`00.crate_plan.md` と `scope_skeleton.md` で凍結した bounded
-Lexer Task 258B3M2P1 prerequisite に限って reopen されています。
+skeleton が false named-binder-shape diagnostic を出し、frontend がそれを公開して
+いました。
 
-documentation prerequisite は open `source_drift`, `design_drift`, `test_gap`,
-`test_expectation_drift` を記録しますが、historical milestone score を改訂せず、
-implementation completion も主張しません。別の implementation commit で
-`MLX-GAP-009` を close し、applicable hard gates を再実行してから crate を
-post-exit complete state に戻す必要があります。`MLX-GAP-001` と `MLX-GAP-005` は、
-historical milestone の deferred gaps のままです。
+`00.crate_plan.md` と `scope_skeleton.md` で凍結した bounded Lexer Task
+258B3M2P1 implementation は `MLX-GAP-009` を close しました。scope recovery は
+initial named-equals branch と plausible unnamed term start を区別し、exact
+lexer/frontend tests は `147/133` library tests で pass し、contradictory な
+derived fail-source row は malformed `take = 42;` を使います。107-byte
+complete-source preflight は 49-node unrecovered parser tree のまま、frontend
+diagnostic は 0 件になりました。parser、resolver、checker、canonical spec、既存
+`.miz`、expectation、sidecar、trace status/count の変更は不要でした。applicable hard
+gates の pass 後、crate は再び post-exit complete state です。historical 94/100
+milestone score は不変で、`MLX-GAP-001` と `MLX-GAP-005` は historical milestone の
+deferred gaps のままです。
 
 ## Scope
 

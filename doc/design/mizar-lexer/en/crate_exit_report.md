@@ -20,17 +20,21 @@ scope. `MLX-GAP-007` and `MLX-GAP-008` are resolved.
 The result and score above are the historical result of the completed
 `b9f2482` milestone. Fresh Checker Task 258B3M2 preflight later discovered
 `MLX-GAP-009`: canonical unnamed `take term_expression` syntax reaches the
-parser, but the scope skeleton emits a false named-binder-shape diagnostic that
-the frontend exposes. The crate is therefore reopened only for the bounded
-Lexer Task 258B3M2P1 prerequisite frozen in `00.crate_plan.md` and
-`scope_skeleton.md`.
+parser, but the scope skeleton emitted a false named-binder-shape diagnostic
+that the frontend exposed.
 
-The documentation prerequisite records the open `source_drift`,
-`design_drift`, `test_gap`, and `test_expectation_drift` without revising the
-historical milestone score or claiming implementation completion. A separate
-implementation commit must close `MLX-GAP-009` and repeat the applicable hard
-gates before the crate returns to its post-exit complete state. `MLX-GAP-001`
-and `MLX-GAP-005` remain the historical milestone's only deferred gaps.
+The bounded Lexer Task 258B3M2P1 implementation frozen in `00.crate_plan.md`
+and `scope_skeleton.md` now closes `MLX-GAP-009`: scope recovery distinguishes
+the initial named-equals branch from plausible unnamed term starts, the exact
+lexer/frontend tests pass at `147/133` library tests, and the contradictory
+derived fail-source row now uses malformed `take = 42;`. A 107-byte
+complete-source preflight remains a 49-node unrecovered parser tree and now
+has zero frontend diagnostics. No parser, resolver, checker, canonical-spec,
+existing `.miz`, expectation, sidecar, or trace-status/count change was
+needed. After the applicable hard gates pass, the crate is again in its
+post-exit complete state; the historical 94/100 milestone score is unchanged.
+`MLX-GAP-001` and `MLX-GAP-005` remain the historical milestone's only
+deferred gaps.
 
 ## Scope
 

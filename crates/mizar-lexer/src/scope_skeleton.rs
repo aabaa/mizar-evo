@@ -302,7 +302,7 @@ impl ScopeSkeletonBuilder {
                     }
                     "take" => {
                         self.advance();
-                        self.parse_named_equals_binder(BindingShapeKind::Take, token.span);
+                        self.parse_take_statement(token.span);
                         continue;
                     }
                     "deffunc" => {
@@ -731,6 +731,42 @@ impl ScopeSkeletonBuilder {
             });
             self.extend_current_or_statement(keyword_span.start, statement_end, vec![binding]);
         }
+    }
+
+    fn parse_take_statement(&mut self, keyword_span: SourceSpan) {
+        let Some(first) = self.peek().cloned() else {
+            self.diagnostic(
+                ScopeSkeletonDiagnosticCode::UnsupportedBinderShape,
+                "`take` is not followed by a witness term",
+                keyword_span,
+            );
+            return;
+        };
+
+        let starts_named_witness = first.kind == ScopeSkeletonTokenKind::Word
+            && is_identifier(&first.lexeme)
+            && self.tokens.get(self.cursor + 1).is_some_and(|token| {
+                token.kind == ScopeSkeletonTokenKind::Other && token.lexeme == "="
+            });
+        if starts_named_witness {
+            self.parse_named_equals_binder(BindingShapeKind::Take, keyword_span);
+            return;
+        }
+
+        let starts_unsupported_shape = matches!(
+            first.kind,
+            ScopeSkeletonTokenKind::Comma | ScopeSkeletonTokenKind::Semicolon
+        ) || token_is_block_boundary(&first)
+            || (first.kind == ScopeSkeletonTokenKind::Other && first.lexeme == "=");
+        if starts_unsupported_shape {
+            self.diagnostic(
+                ScopeSkeletonDiagnosticCode::UnsupportedBinderShape,
+                "`take` is not followed by a supported witness term shape",
+                first.span,
+            );
+        }
+
+        self.recover_to_binder_statement_end();
     }
 
     fn parse_reconsider_binders(&mut self, keyword_span: SourceSpan) {
