@@ -459,3 +459,9 @@ debtをacceptしない。
 EN/JA runner plan、checklist、harness、boundary auditはexact dormant route、
 tests 5本、384-test list、30-path / 37,172-line manifestを同期した。
 consumer implementation bilingual debtは残らない。
+
+## Task 258B3N prerequisite synchronization
+
+EN/JA runner文書は同じ107-byte/51-node dormant consumer、five-test
+contract、name-table/no-semantic boundary、unchanged 384-test/30-path
+baseline、B3M-before-B4 orderをfreezeする。

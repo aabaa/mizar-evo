@@ -3727,3 +3727,13 @@ Tasks 258B3N/MがB3後/B4前のnamed/multiple/other witness-term transportを
 Task 258B3 implementationはclassified bounded `source_drift`/`test_gap`
 だけをcloseする。canonical requirement/trace creditを変更しないため、既存
 `deferred` / `tests = []` rowが引き続きcorrect。
+
+## Task 258B3N authority audit
+
+§§15.4.4/15.11.5と§4.4.3およびexisting parser fixtureはmeasured
+`take y = x;` syntaxとname occurrenceをauthorizeする。B3Nでのbinding
+publication、abbreviation application、existential matching、obligation、
+substitution、proof acceptanceはauthorizeしない。missing exact table
+contractはresolved `design_drift`、future source/testsはbounded
+`source_drift`/`test_gap`である。blocking protocol disagreementはなく、
+formula-statement rowは`deferred` / `tests = []`を維持する。

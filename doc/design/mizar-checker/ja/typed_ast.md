@@ -966,3 +966,11 @@ appendし、prior profile bytesは不変。
 base-only/reference-paired installerはB3をrejectし、B3 installerは両halfを
 validate後にatomic publishする。cross-family/両order rollback testはPASSし、
 debugはbase、witness、nodes順。
+
+## Task 258B3N planned paired ownership
+
+existing paired installerをB3Nのsole publication pathとして維持する。
+base、witness、dense name table、exact 51-node arena、B3N profileをvalidate
+してからatomicにinstallする。existing B3はempty name tableでvalidなまま。
+B3/B3N hybrid、repeated install、cross-family order、semantic coexistenceは
+partial publicationなしでrollbackしなければならない。

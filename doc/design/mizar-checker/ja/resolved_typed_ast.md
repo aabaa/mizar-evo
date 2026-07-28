@@ -968,3 +968,11 @@ final assemblyはexact base/witness pairをclone-preserve/revalidateする。
 standalone base、orphan witness、stale fingerprint、reference hybrid、
 nonempty semantic coexistenceは`InvalidSourceStatement`。successful
 assemblyは全semantic/proof/goal/diagnostic tableをemptyに保つ。
+
+## Task 258B3N planned final ownership
+
+final assemblyは`TypedAst`が既にownするauthenticated B3N base +
+witness/name bundleだけをacceptする。B3/B3N hybrid、standalone half、
+reference hybrid、stale name link/fingerprint、semantic/proof/goalとの
+coexistenceは`InvalidSourceStatement`。successful B3N assemblyは
+transport-onlyのままdense name tableをclone-preserveする。

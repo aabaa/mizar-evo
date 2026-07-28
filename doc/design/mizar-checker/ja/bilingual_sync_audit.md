@@ -359,3 +359,10 @@ acceptしない。
 canonical EN/JA companionはimplemented witness producer、paired typed/final
 ownership、checker 4本/runner 5本、final module size、measured hashを同期した。
 implementation-era bilingual debtはacceptしない。
+
+## Task 258B3N frozen-contract synchronization
+
+EN/JA文書は同じ107-byte named-witness source、51-node identity、
+`1 witness / 1 name` syntax-only table extension、no-binding/no-semantic
+boundary、将来のtests 4/5本、unchanged baseline、B3M/B4 follow-up orderを
+freezeする。implementation前のbilingual debtはacceptしない。

@@ -2014,5 +2014,10 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   the dormant B3 route with exactly five runner tests. The runner has 384
   tests and production/test hashes are remeasured in the implementation
   result.
-- [ ] After B3, freeze separate Tasks 258B3N/M runner consumers for named,
-  multiple, and other witness-term transport before Task 258B4.
+- [x] Freeze Task 258B3N's exact named-primary dormant runner consumer,
+  51-node identity, witness/name `1/1`, five-test matrix, no semantics, and
+  unchanged runner baselines.
+- [ ] Implement only the frozen B3N consumer after its documentation commit
+  and fresh preflight.
+- [ ] Freeze/implement Task 258B3M multiple/other witness-term consumers
+  before Task 258B4.

@@ -1819,5 +1819,10 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] documentation commit/fresh preflight後、exactly runner tests 5本で
   dormant B3 routeだけをimplementした。runnerは384 tests、production/
   test hashはimplementation resultで再測定済み。
-- [ ] B3後、Task 258B4前にnamed/multiple/other witness-term transport用
-  Tasks 258B3N/M runner consumerをseparately freeze。
+- [x] Task 258B3N exact named-primary dormant runner consumer、51-node
+  identity、witness/name `1/1`、five-test matrix、no semantics、unchanged
+  runner baselineをfreeze。
+- [ ] documentation commitとfresh preflight後、frozen B3N consumerだけを
+  implement。
+- [ ] Task 258B4前にTask 258B3M multiple/other witness-term consumerを
+  freeze/implement。

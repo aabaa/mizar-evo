@@ -1016,3 +1016,11 @@ the base chunk; prior profiles remain byte-identical.
 The base-only and reference-paired installers reject B3, while the B3
 installer validates both halves before atomic publication. Cross-family and
 both-order rollback tests pass; debug emits base then witness then nodes.
+
+## Task 258B3N Planned Paired Ownership
+
+The existing paired installer remains the only B3N publication path. It will
+validate base, witness, dense name table, exact 51-node arena, and B3N
+profile before atomic installation. Existing B3 remains valid with an empty
+name table; every B3/B3N hybrid, repeated install, cross-family order, and
+semantic coexistence must roll back without partial publication.

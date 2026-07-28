@@ -1244,3 +1244,193 @@ implementした。checker tests 4本がpublication、dependency/aggregate/row/
 provenance corruption、paired ownership、final revalidation、replay、empty
 semanticsをcoverする。bounded `source_drift`/`test_gap`はcloseし、全semantic
 deferralとdeferred trace rowは不変。
+
+## Task 258B3N frozen named-witness slice
+
+Task 258B3NはTask 258B3 implementation後のnext dependency-ready slice。
+旧B3N/M umbrellaを分解し、B3NはRHSが既存reserved-variable termである
+named witness 1件だけを所有する。Task 258B3Mはmultiple witnessとその他の
+witness-term shapeを保持し、Task 258B4は両方の完了までblocked。
+
+canonical authorityは`doc/spec/en/15.statements.md` §§15.4.4、15.11.5、
+`doc/spec/en/04.variables_and_constants.md` §4.4.3、Chapters 13、14、
+existing `pass_parser_simple_statements_001.miz`、parser/resolver fixture、
+public Tasks 48/252/256/258A/B1/B2/B3 API。grammarは`take y = x;`を
+authorizeし、Chapter 4は`y`をlocal nameと分類する。§15.11.5の
+local-name useとexistential-witness effectはlater semanticsに属する。
+B3Nはexact name occurrenceだけを記録し、`BindingId`、local
+abbreviation、substitution、fact、obligation、proof result、accepted
+theoremを作らない。Task 269がnamed `take`のfuture local `BindingId`、RHS
+link、capture-by-resolved-binding abbreviation replay、context transitionを
+所有する。Task 272がordered existential-binder matching、witness
+type-obligation request、capture-avoiding goal substitution、remaining
+goalを所有する。Task 270は`deffunc`/`defpred` closureだけ、Task 271は
+`reconsider`だけを引き続き所有する。
+
+exact future corpus-dormant consumerは次のfinal-LF 107-byte source、
+SHA-256
+`a57022c4b75991dd4308943477e03819f5bfe2c0d23ea1030730256252d7d329`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementNamedWitnessSmoke: x = x proof
+  take y = x;
+  thus x = x;
+end;
+```
+
+equality rootによりcomposite-root behaviorはTask 258B4に残る。`take`は
+existential goalを必要とするため、本sourceをvalid proofまたはactive
+corpus caseとして扱わない。
+
+fresh real parser/resolver inventory:
+
+| object | exact identity |
+| --- | --- |
+| surface arena | 51 nodes、root 50、同一source、全unrecovered |
+| reserve/theorem | reserve node 27 `0..18`; theorem node 47 `19..106`; label token 6 `27..60` |
+| theorem owner | local public/exported theorem 1件、contribution 0、range `19..106`、origin `[2,1]`; importなし |
+| proof | node 46 `68..105`、lexical scope `[0]` |
+| formula statements | theorem node 47 + wrapper 33 + atomic node 32 `62..67`; conclusion node 45 + wrapper 43 + atomic node 42 `95..100` |
+| named witness | `TakeStatement` node 37 `76..87`; `Witness` node 36 `81..86`; name token 13 `81..82` spelling `y`; `=` token 14 `83..84`; RHS wrapper 35 + term/reference node 34 `85..86` spelling `x` |
+| formula terms | wrappers 29/31 + Task-252 nodes 28/30 `62..63`/`66..67`; wrappers 39/41 + nodes 38/40 `95..96`/`99..100` |
+| resolver labels | theorem owner projectionのみ。proof-step label、citation、label-reference key、新resolver companionなし |
+
+exact syntax-free lower compositionはTask-48 `2/1/0`: module context 0、
+`BindingContextOwner::SourceStatement { source_range: 68..105 }`所有のproof
+context 1、reserved binding 0が1件、diagnosticなし、proof-context bindings
+empty、visible bindings `[0]`。name token `y`はB3NでTask-48 bindingに
+しない。Task 252は`5/5/0`で、term/reference nodes
+`28/30/34/38/40`、ranges `62..63`、`66..67`、`85..86`、`95..96`、
+`99..100`、source ordinals `0..4`、contexts `0/0/1/1/1`、use ordinal 1。
+name tokenはprimary termではない。Task 256は
+`2/0/0/0/0/0/0/4/4`のまま。equality formulasはnodes 32/42、edgesは
+primary terms `[0,1,3,4]`をtargetとし、witness RHS term 2をexclude。
+
+base statement profileは`1/2/2/2/2`: owner 47、source ordinals 0/2の
+theorem/conclusion、contexts 0/1、reserved guards、unverified candidates。
+witness companionは`1 witness / 1 name`。witness 0はowner 0、proof binding
+context 1、primary term 2、take node/range `37`/`76..87`、witness
+node/range `36`/`81..86`、spelling `y = x`、source ordinal 1、within-take
+ordinal 0、kind `Named`、normal recovery、`name = Some(name#0)`。
+name row 0はwitness 0へlinkし、token node/range `13`/`81..82`、spelling
+`y`、normal recoveryを所有する。base+witness partitionはexact
+`[0,1,2]`。
+
+frozen public-table extension:
+
+- `SourceStatementWitnessNameId`はexisting dense-ID contract
+  `Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash`と、
+  public `const fn new(usize) -> Self` /
+  `const fn index(self) -> usize`を持つ;
+- public `SourceStatementWitnessNameInput`は
+  `Debug + Clone + PartialEq + Eq`をderiveし、exact public fields
+  `witness: SourceStatementWitnessId`、`site: TypedSiteRef`、
+  `source_range: SourceRange`、`spelling: String`、
+  `recovery: SourceStatementRecovery`だけを持つ;
+- immutable public row `SourceStatementWitnessName`は
+  `Debug + Clone + PartialEq + Eq`をderiveし、同じ5 fieldsをprivateに保持。
+  `pub const fn witness(&self) -> SourceStatementWitnessId`、
+  `pub const fn site(&self) -> &TypedSiteRef`、
+  `pub const fn source_range(&self) -> SourceRange`、
+  `pub fn spelling(&self) -> &str`、
+  `pub const fn recovery(&self) -> SourceStatementRecovery`を公開;
+- immutable public `SourceStatementWitnessNameTable`は
+  `Debug + Clone + PartialEq + Eq`をderiveし、standard dense
+  `pub fn get(&self, SourceStatementWitnessNameId)
+  -> Option<&SourceStatementWitnessName>`、
+  `pub fn iter(&self)
+  -> impl Iterator<Item = (SourceStatementWitnessNameId,
+  &SourceStatementWitnessName)>`、`pub const fn len(&self) -> usize`、
+  `pub const fn is_empty(&self) -> bool`を公開;
+- `SourceStatementWitnessHandoffInput`へexact
+  `pub names: Vec<SourceStatementWitnessNameInput>`を追加し、handoffはtableを
+  storeして
+  `pub const fn names(&self) -> &SourceStatementWitnessNameTable`を公開;
+- `SourceStatementWitnessInput`へ
+  `pub name: Option<SourceStatementWitnessNameId>`を追加し、immutable witness
+  rowは
+  `pub const fn name(&self) -> Option<SourceStatementWitnessNameId>`を公開。
+  `SourceStatementWitnessKind`は`Named`だけを追加;
+- name rowはresolver symbol、`BindingId`、type、substitution、semantic
+  statusを持たない。Task 258B3は`name = None`、empty name tableの
+  `Unnamed` witness 1件として維持;
+- valid aggregateはexact B3 `(1 witness, 0 names)`またはB3N
+  `(1 witness, 1 name)`だけ。dependencyとshared arena全体、aggregate
+  cardinality、witness rows、name rowsの順でvalidateする。bad profile/countは
+  `InvalidAggregate`、wrong witness kind/name option/forward linkは
+  `InvalidWitness { witness }`、bad name row/reverse witness linkはnew
+  `InvalidName { name: SourceStatementWitnessNameId }`。display textは
+  `source statement witness name {index} is invalid`。
+
+`debug_text()`は`source-statement-witness-debug-v1` headerを維持し、既存
+Task-258B3 bytesを全て不変にする。named witnessだけがexisting witness
+lineの末尾に` name={name.index()}`をappendする。dense name rowは全witness
+rowの後にexact
+`witness-name#{id} witness={witness} range={start}..{end} site={site} recovery={recovery} spelling={spelling:?}`
+で出力する。したがってempty B3 namesはnew bytesを出さず、B3N name
+identity/orderはdeterministic。hybrid/orphan/duplicate/sparse/reordered/
+stale-fingerprint/cross-profile tableは上記precedenceでfailする。
+
+`SourceStatementWitnessProducer`、`TypedAst`、`ResolvedTypedAst`はpaired
+base/witness install APIを維持する。B3Nはauthenticated
+base/witness/name bundleだけをinstallできる。standalone half、B3/B3N
+hybrid、reference hybrid、Task-248/257/other-258 ownership、semantic
+coexistenceはatomicにfailする。51 nodesすべてでfrozen range/kind/normal
+recovery/ordered childrenを一致させる。
+
+checker testはexact 4 compound tests:
+
+1. complete API/debug、B3 compatibility、B3N lower/base/witness/name、
+   resolver owner、全accessor、empty semantics;
+2. exhaustive dependency/aggregate/row/name/fingerprint/provenance、
+   all-51-node range/kind/Recovered/Degraded/child mutation + replay;
+3. paired typed ownership、B3/B3N hybrid rejection、existing
+   Task-248/257/258全order + rollback;
+4. final clone/revalidation、orphan/stale-half/reference-hybrid、全
+   semantic-table/proof/goal coexistence rejection。
+
+runner testはexact 5 compound tests:
+
+1. real bytes/hash、parser/resolver、Task-48/252/256/base、witness/name row、
+   combined ordinal、arena parity、paired output;
+2. exhaustive lower/base/witness/name/fingerprint/resolver/all-index mutation
+   + deterministic replay;
+3. unnamed、changed/missing name、missing `=`、multiple witness、
+   non-primary RHS、reordered/extra statement、composite/existential root、
+   recoveryを含むselector/byte/subtree near miss;
+4. B3N/B3/B2/B1/A/active route isolationのboth ownership order;
+5. typed/final clone/debug、rollback、empty semantic output。
+
+本prerequisiteはproduction/test source、`doc/spec`、`.miz`、fixture、
+sidecar、expectation、trace row/status/count、active route、test list、count、
+hashを変更しない。baselineはchecker/runner libraries `350/384`、checker
+modules `9812/4644/7195/3156`、runner production
+leaf/facade/root/test leaf `2806/681/2495/4291`、30 paths / 37,172 lines、
+plan/type `419/387` / `253/241`、pass/fail `228/191`、active
+parse/declaration/type/proof `101/5/198/1`、warnings/errors `23/0`。
+test-list hashは
+`67b97e6594a4208aa0e0413c072b7f21809e9f88c7ab97671d6a9dea16c831a7` /
+`cef91e5ce85dde5101147206de5c066b229651b7d4d4a99a3543c09e618e4651`
+および
+`4a077d6ab1fa4d881ae4d8d46afd003e785be573d8438772e9fbffe37374cd2f` /
+`9d0c11fe6e48f136525ef4b0ca61235d8b4d0a16b703b12ba2c378d1f947b2ae`。
+production path/content hashは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`、
+5 CLI hashはTask-258B3 valueのまま。
+
+implementationはchecker 4/runner 5 compound tests追加、libraries
+`354/389`をprojectする。changed module sizeとcontent/test hashは予測せず
+実測する。missing named-witness contractはresolved `design_drift`、future
+producer/routeはbounded `source_drift`、future matrixは`test_gap`。blocking
+`spec_gap`、`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`はない。
+
+`spec.en.checker.formula_statement.source_payloads`は`tests = []`の
+deferredを維持し、coverage auditはfrozen B3N ownershipだけを記録する。
+semantic creditは付与しない。exitはEN/JA同期、independent no-findings
+review、全hard gate、read-only quality 90/100以上、task-only staging、
+dedicated documentation commit。そのcommitとfresh parser/resolver/lower/
+count/hash preflight後だけB3N implementationへ進む。Task 258B3Mはnext
+documentation prerequisite、Task 258B4はB3Mまでblocked。

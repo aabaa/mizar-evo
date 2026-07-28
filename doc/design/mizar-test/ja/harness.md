@@ -3280,3 +3280,13 @@ path/content hashは
 `98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
 `adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`。
 corpus artifact/active routeは変更しない。
+
+## Checker Task 258B3N dormant harness contract
+
+future private selectorはexact 107-byte
+`FormulaStatementNamedWitnessSmoke` sourceだけをmatchし、B3/B2/B1/Aとlower
+formula routeより先にrunする。measured 51-node shared arena、
+Task-48/252/256/base、named witness 1件、name row 1件をbuildし、
+authenticated pairだけをinstallする。compound tests 5本がreal identity、
+exhaustive mutation/replay、byte/subtree near miss、route/ownership isolation、
+final empty semanticsをcoverする。active corpusやexternal detail keyは追加しない。

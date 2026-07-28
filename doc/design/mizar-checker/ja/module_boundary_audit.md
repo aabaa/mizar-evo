@@ -167,7 +167,15 @@ cross-family root ownership、conditional fingerprint、rendering、corruption t
 behavior-coupledでありprivate checker splitは不要である。`TypedAst`がone-shot
 immutable handoffをownし、`ResolvedTypedAst`はrevalidate後にclone-preserveする。
 
-### Task 258B3 frozen boundary result
+## Task 258B3N planned boundary
+
+named-witness extensionは`source_statement.rs`内でcohesiveなままにする。
+dense name table 1件、B3/B3N profile validation、shared-arena authentication、
+paired typed/final ownership、checker tests 4本を同じownerが保持する。
+runner consumerはexisting statement leafにtests 5本とともに残す。module
+split、dependency-direction change、semantic ownerはauthorizeしない。
+
+## Task 258B3 frozen boundary result
 
 future witness transactionはexisting `source_statement.rs` owner内で
 base/reference transactionと並ぶ。`typed_ast.rs`がatomic paired

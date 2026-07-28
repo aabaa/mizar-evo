@@ -11552,3 +11552,11 @@ path hash
 and content hash
 `adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`.
 No new module, dependency direction, or semantic owner was introduced.
+
+## Task 258B3N Planned Consumer Boundary
+
+The named-witness selector, assembly, and five compound tests remain in the
+existing `type_elaboration/source_statement.rs` production/test owners.
+Production topology stays 30 paths; this documentation prerequisite leaves
+all 37,172 production lines and hashes unchanged. No new semantic route or
+dependency direction is authorized.

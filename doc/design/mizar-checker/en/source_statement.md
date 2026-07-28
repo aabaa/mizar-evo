@@ -1639,3 +1639,199 @@ dependency/aggregate/row/provenance corruption, paired ownership, final
 revalidation, replay, and empty semantics. Bounded `source_drift` and
 `test_gap` are closed; all semantic deferrals and the deferred trace row
 remain unchanged.
+
+## Task 258B3N Frozen Named-Witness Slice
+
+Task 258B3N is the next dependency-ready slice after the Task 258B3
+implementation. It is narrower than the former B3N/M umbrella: B3N owns one
+named witness whose right-hand side is the already supported
+reserved-variable term, while Task 258B3M retains multiple witnesses and
+all other witness-term shapes. Task 258B4 remains blocked behind both.
+
+Canonical authority is `doc/spec/en/15.statements.md` §§15.4.4 and 15.11.5,
+`doc/spec/en/04.variables_and_constants.md` §4.4.3, Chapters 13 and 14 for
+the reserved-variable/equality shells, the existing
+`pass_parser_simple_statements_001.miz` parser fixture, the parser/resolver
+fixtures, and the public Tasks 48/252/256/258A/B1/B2/B3 APIs. The grammar
+authorizes `take y = x;` and Chapter 4 classifies `y` as a local name.
+Section 15.11.5 assigns local-name use and existential-witness effects to
+later semantics. B3N records the exact name occurrence but creates no
+`BindingId`, local abbreviation, substitution, fact, obligation, proof
+result, or accepted theorem. Task 269 owns the future local `BindingId`,
+RHS link, capture-by-resolved-binding abbreviation replay, and context
+transition for named `take`; Task 272 owns ordered existential-binder
+matching, witness type-obligation requests, capture-avoiding goal
+substitution, and the remaining goal. Task 270 remains only the
+`deffunc`/`defpred` closure owner, and Task 271 remains only the
+`reconsider` owner.
+
+The exact future corpus-dormant consumer is this 107-byte final-LF source,
+SHA-256
+`a57022c4b75991dd4308943477e03819f5bfe2c0d23ea1030730256252d7d329`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementNamedWitnessSmoke: x = x proof
+  take y = x;
+  thus x = x;
+end;
+```
+
+The equality root keeps composite-root behavior in Task 258B4. Because
+`take` requires an existential goal, this source is not a valid proof and
+must not become an active corpus case.
+
+Fresh real parser/resolver inventory freezes:
+
+| Object | Exact identity |
+| --- | --- |
+| surface arena | 51 nodes, root 50, one source, all unrecovered |
+| reserve/theorem | reserve node 27 `0..18`; theorem node 47 `19..106`; label token 6 `27..60` |
+| theorem owner | one local public/exported theorem, contribution 0, range `19..106`, origin path `[2,1]`; no import |
+| proof | node 46 `68..105`, lexical scope `[0]` |
+| formula statements | theorem node 47 with wrapper 33 and atomic node 32 `62..67`; conclusion node 45 with wrapper 43 and atomic node 42 `95..100` |
+| named witness | `TakeStatement` node 37 `76..87`; `Witness` node 36 `81..86`; name token 13 `81..82` spelling `y`; `=` token 14 `83..84`; RHS wrapper 35 and term/reference node 34 `85..86` spelling `x` |
+| formula terms | wrappers 29/31 and Task-252 nodes 28/30 `62..63`/`66..67`; wrappers 39/41 and nodes 38/40 `95..96`/`99..100` |
+| resolver labels | theorem owner projection only; no proof-step label, citation, label-reference key, or new resolver companion |
+
+The exact syntax-free lower composition remains Task-48 `2/1/0`: module
+context 0, proof context 1 owned by
+`BindingContextOwner::SourceStatement { source_range: 68..105 }`, one
+reserved binding 0, no diagnostic, empty proof-context binding list, and
+visible binding `[0]`. The name token `y` is not a Task-48 binding in B3N.
+Task 252 is `5/5/0`, with term/reference nodes
+`28/30/34/38/40`, ranges `62..63`, `66..67`, `85..86`, `95..96`,
+`99..100`, source ordinals `0..4`, contexts `0/0/1/1/1`, and use ordinal
+1. The name token is not a primary term. Task 256 remains
+`2/0/0/0/0/0/0/4/4`; its equality formulas are nodes 32/42 and its edges
+target primary terms `[0,1,3,4]`, excluding witness RHS term 2.
+
+The base statement profile remains `1/2/2/2/2`: owner 47, theorem and
+conclusion statements at source ordinals 0/2, contexts 0/1, reserved guards,
+and unverified candidates. The witness companion becomes `1 witness /
+1 name`. Witness 0 has owner 0, proof binding context 1, primary term 2,
+take node/range `37`/`76..87`, witness node/range `36`/`81..86`, spelling
+`y = x`, source ordinal 1, within-take ordinal 0, kind `Named`, normal
+recovery, and `name = Some(name#0)`. Name row 0 links to witness 0 and owns
+token node/range `13`/`81..82`, spelling `y`, and normal recovery. The base
+plus witness partition is exactly `[0,1,2]`.
+
+The frozen public-table extension is:
+
+- `SourceStatementWitnessNameId` has the existing dense-ID contract:
+  `Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash`, with
+  public `const fn new(usize) -> Self` and `const fn index(self) -> usize`;
+- public `SourceStatementWitnessNameInput` derives
+  `Debug + Clone + PartialEq + Eq` and has exactly the public fields
+  `witness: SourceStatementWitnessId`, `site: TypedSiteRef`,
+  `source_range: SourceRange`, `spelling: String`, and
+  `recovery: SourceStatementRecovery`;
+- immutable public row `SourceStatementWitnessName` derives
+  `Debug + Clone + PartialEq + Eq`, keeps the same five fields private, and
+  exposes `pub const fn witness(&self) -> SourceStatementWitnessId`,
+  `pub const fn site(&self) -> &TypedSiteRef`,
+  `pub const fn source_range(&self) -> SourceRange`,
+  `pub fn spelling(&self) -> &str`, and
+  `pub const fn recovery(&self) -> SourceStatementRecovery`;
+- immutable public `SourceStatementWitnessNameTable` derives
+  `Debug + Clone + PartialEq + Eq` and has the standard dense
+  `pub fn get(&self, SourceStatementWitnessNameId)
+  -> Option<&SourceStatementWitnessName>`,
+  `pub fn iter(&self)
+  -> impl Iterator<Item = (SourceStatementWitnessNameId,
+  &SourceStatementWitnessName)>`, `pub const fn len(&self) -> usize`, and
+  `pub const fn is_empty(&self) -> bool` accessors;
+- `SourceStatementWitnessHandoffInput` adds exactly
+  `pub names: Vec<SourceStatementWitnessNameInput>`;
+  `SourceStatementWitnessHandoff` stores the table and exposes
+  `pub const fn names(&self) -> &SourceStatementWitnessNameTable`;
+- `SourceStatementWitnessInput` adds
+  `pub name: Option<SourceStatementWitnessNameId>`;
+  `SourceStatementWitness` stores it and exposes
+  `pub const fn name(&self) -> Option<SourceStatementWitnessNameId>`;
+  `SourceStatementWitnessKind` adds only `Named`;
+- a name row contains no resolver symbol, `BindingId`, type, substitution,
+  or semantic status. Task 258B3 remains one `Unnamed` witness with
+  `name = None` and an empty name table;
+- only exact B3 `(1 witness, 0 names)` or B3N `(1 witness, 1 name)`
+  aggregates are valid. Dependencies and the complete shared arena are
+  authenticated first, then aggregate cardinality, witness rows, and name
+  rows in that order. A bad profile/count is `InvalidAggregate`; a wrong
+  witness kind/name option or forward link is
+  `InvalidWitness { witness }`; a bad name row or reverse witness link is
+  the new `InvalidName { name: SourceStatementWitnessNameId }`. Its display
+  text is `source statement witness name {index} is invalid`.
+
+`debug_text()` retains the `source-statement-witness-debug-v1` header and
+keeps every Task-258B3 byte unchanged. A named witness appends
+` name={name.index()}` to its existing witness line. Dense name rows follow
+all witness rows, each exactly
+`witness-name#{id} witness={witness} range={start}..{end} site={site} recovery={recovery} spelling={spelling:?}`.
+Thus empty B3 names emit no new bytes, while B3N name identity and ordering
+are deterministic. Every hybrid, orphan, duplicate, sparse, reordered,
+stale-fingerprint, or cross-profile table fails under the precedence above.
+
+`SourceStatementWitnessProducer`, `TypedAst`, and `ResolvedTypedAst` retain
+the paired base/witness installation API. B3N may install only the
+authenticated B3N base/witness/name bundle; standalone halves, B3/B3N
+hybrids, reference hybrids, Task-248/257/other-258 ownership, and semantic
+coexistence fail atomically. All 51 nodes must match the frozen range, kind,
+normal recovery, and ordered child list.
+
+The checker test contract is exactly four compound tests:
+
+1. complete API/debug, B3 compatibility, B3N lower/base/witness/name
+   publication, resolver owner, all accessors, and empty semantics;
+2. exhaustive dependency/aggregate/row/name/fingerprint/provenance and
+   all-51-node range/kind/Recovered/Degraded/child mutation with replay;
+3. paired typed ownership, B3/B3N hybrid rejection, and every existing
+   Task-248/257/258 order with rollback;
+4. final clone/revalidation, orphan/stale-half/reference-hybrid and every
+   semantic-table/proof/goal coexistence rejection.
+
+The runner test contract is exactly five compound tests:
+
+1. real bytes/hash, parser/resolver identity, Task-48/252/256/base,
+   witness/name rows, combined ordinals, arena parity, and paired output;
+2. exhaustive lower/base/witness/name/fingerprint/resolver/all-index mutation
+   with deterministic replay;
+3. selector and byte/subtree near misses including unnamed, changed/missing
+   name, missing `=`, multiple witnesses, non-primary RHS, reordered/extra
+   statements, composite/existential roots, and recovery;
+4. B3N/B3/B2/B1/A and active-route isolation in both ownership orders;
+5. typed/final clone/debug, rollback, and empty semantic output.
+
+This prerequisite changes no production or test source, `doc/spec`, `.miz`,
+fixture, sidecar, expectation, trace row/status/count, active route, test
+list, count, or hash. Current baselines are checker/runner libraries
+`350/384`, checker modules `9812/4644/7195/3156`, runner
+production leaf/facade/root/test leaf `2806/681/2495/4291`, production 30
+paths / 37,172 lines, plan/type `419/387` and `253/241`, pass/fail
+`228/191`, active parse/declaration/type/proof `101/5/198/1`, and
+warnings/errors `23/0`. Test-list hashes remain
+`67b97e6594a4208aa0e0413c072b7f21809e9f88c7ab97671d6a9dea16c831a7` /
+`cef91e5ce85dde5101147206de5c066b229651b7d4d4a99a3543c09e618e4651`
+and
+`4a077d6ab1fa4d881ae4d8d46afd003e785be573d8438772e9fbffe37374cd2f` /
+`9d0c11fe6e48f136525ef4b0ca61235d8b4d0a16b703b12ba2c378d1f947b2ae`.
+Production path/content hashes remain
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`;
+the five CLI hashes remain the Task-258B3 values.
+
+Implementation projects exactly four checker and five runner compound tests,
+hence libraries `354/389`; changed module sizes and content/test hashes must
+be measured, not predicted. The missing exact named-witness contract is
+resolved `design_drift`; future producer/route work is bounded
+`source_drift`, and the future matrices are `test_gap`. There is no blocking
+`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`.
+
+`spec.en.checker.formula_statement.source_payloads` remains deferred with
+`tests = []`. The coverage audit records only frozen B3N ownership; no
+semantic credit is awarded. Exit requires synchronized EN/JA documents,
+independent no-findings reviews, all hard gates, read-only quality at least
+90/100, task-only staging, and one dedicated documentation commit. Only
+after that commit and a fresh parser/resolver/lower/count/hash preflight may
+B3N implementation begin. Task 258B3M remains the next documentation
+prerequisite; Task 258B4 remains blocked behind B3M.

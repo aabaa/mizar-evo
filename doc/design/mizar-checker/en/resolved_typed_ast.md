@@ -1023,3 +1023,11 @@ Final assembly clone-preserves and revalidates the exact base/witness pair.
 Standalone base, orphan witness, stale fingerprint, reference hybrid, and
 nonempty semantic coexistence fail as `InvalidSourceStatement`. Successful
 assembly keeps every semantic, proof, goal, and diagnostic table empty.
+
+## Task 258B3N Planned Final Ownership
+
+Final assembly will accept only an authenticated B3N base plus witness/name
+bundle already owned by `TypedAst`. B3/B3N hybrids, standalone halves,
+reference hybrids, stale name links/fingerprints, and any semantic/proof/goal
+coexistence fail as `InvalidSourceStatement`. Successful B3N assembly remains
+transport-only and clone-preserves the dense name table.

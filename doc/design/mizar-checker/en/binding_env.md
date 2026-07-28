@@ -577,3 +577,13 @@ dependency before witness-row validation.
 The implemented B3 route constructs exactly this two-context environment and
 the checker revalidates the direct proof context through witness primary term
 2. No binding row or binding-environment API changed.
+
+## Task 258B3N Named-Witness Boundary
+
+B3N retains exactly two contexts, one reserved binding, and no diagnostic.
+Proof context 1 covers `68..105`, has lexical scope `[0]`, an empty owned
+binding list, and visible binding `[0]`. Named token `y` is transported by
+the new witness-name table and is not a `BindingId`. Task 269 alone retains
+the later local binding, RHS link, capture-by-resolved-binding abbreviation
+replay, and context transition. Task 270 remains limited to
+`deffunc`/`defpred` closure.

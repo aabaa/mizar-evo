@@ -131,7 +131,15 @@ fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
 
-### Task 258B3 Frozen Boundary Result
+## Task 258B3N Planned Boundary
+
+The named-witness extension remains cohesive in `source_statement.rs`: one
+dense name table, B3/B3N profile validation, shared-arena authentication,
+paired typed/final ownership, and the four-test matrix. The runner consumer
+stays in the existing statement leaf with five tests. No module split,
+dependency-direction change, or semantic owner is authorized.
+
+## Task 258B3 Frozen Boundary Result
 
 The future witness transaction stays in the existing
 `source_statement.rs` owner beside the base/reference transactions.

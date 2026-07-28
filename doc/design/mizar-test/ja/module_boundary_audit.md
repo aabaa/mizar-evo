@@ -10327,3 +10327,11 @@ productionは30 paths / 37,172 lines、path hash
 は不変、content hashは
 `adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`。
 new module/dependency direction/semantic ownerは導入していない。
+
+## Task 258B3N planned consumer boundary
+
+named-witness selector、assembly、compound tests 5本はexisting
+`type_elaboration/source_statement.rs` production/test ownerに残す。
+production topologyは30 pathsのまま。本documentation prerequisiteは全
+37,172 production linesとhashを変更しない。new semantic routeや
+dependency directionはauthorizeしない。

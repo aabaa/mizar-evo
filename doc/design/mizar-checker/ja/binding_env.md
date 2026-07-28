@@ -556,3 +556,13 @@ fingerprintはwitness-row validation前にdependency failureとなる。
 implemented B3 routeはexact two-context environmentをconstructし、checkerは
 witness primary term 2を介してdirect proof contextをrevalidateする。
 binding row/binding-environment APIは変更しない。
+
+## Task 258B3N named-witness boundary
+
+B3Nはexactly two contexts、reserved binding 1件、diagnostic 0件を維持する。
+proof context 1は`68..105`をcoverし、lexical scope `[0]`、empty owned
+binding list、visible binding `[0]`を持つ。named token `y`はnew
+witness-name tableでtransportし、`BindingId`ではない。Task 269だけがlater
+local binding、RHS link、capture-by-resolved-binding abbreviation replay、
+context transitionを保持する。Task 270は`deffunc`/`defpred` closureに
+限定したまま。

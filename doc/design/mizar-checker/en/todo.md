@@ -4830,5 +4830,11 @@ implementation commit does not satisfy a producer task.
   and fresh parser/resolver/lower-API/count/hash preflight. Libraries are
   `350/384`; changed hashes and lines are remeasured in the implementation
   result.
-- [ ] Fresh-inventory Tasks 258B3N/M next and freeze named, multiple, and
-  other witness-term transport before selecting Task 258B4.
+- [x] Fresh-inventory and freeze Task 258B3N named-primary witness transport
+  only: exact 107-byte/51-node source, `1 witness / 1 name` table, B3
+  compatibility, no binding/semantics, four/five tests, and unchanged
+  baselines.
+- [ ] Implement only Task 258B3N after its dedicated documentation commit
+  and fresh parser/resolver/lower/count/hash preflight.
+- [ ] Freeze and implement Task 258B3M multiple/other witness-term transport
+  before selecting Task 258B4.

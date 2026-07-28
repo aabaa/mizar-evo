@@ -4591,5 +4591,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] 本dedicated documentation commitとfresh parser/resolver/lower-API/
   count/hash preflight後にTask 258B3だけをimplementした。librariesは
   `350/384`、changed hash/lineはimplementation resultで再測定済み。
-- [ ] 次にTasks 258B3N/Mをfresh-inventoryし、named/multiple/other
-  witness-term transportをTask 258B4 selection前にfreeze。
+- [x] fresh-inventoryし、Task 258B3N named-primary witness transportだけを
+  freeze。exact 107-byte/51-node source、`1 witness / 1 name` table、B3
+  compatibility、no binding/semantics、checker/runner tests 4/5本、
+  unchanged baselineを確定。
+- [ ] dedicated documentation commitとfresh parser/resolver/lower/count/hash
+  preflight後、Task 258B3Nだけをimplement。
+- [ ] Task 258B4 selection前にTask 258B3M multiple/other witness-term
+  transportをfreeze/implement。

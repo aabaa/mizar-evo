@@ -3457,3 +3457,13 @@ five-test matrix. The runner now has 384 library tests; production remains
 `98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
 `adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`.
 No corpus artifact or active route changed.
+
+## Checker Task 258B3N Dormant Harness Contract
+
+The future private selector matches only the exact 107-byte
+`FormulaStatementNamedWitnessSmoke` source and runs before B3/B2/B1/A and
+lower formula routes. It must build the measured 51-node shared arena,
+Task-48/252/256/base, one named witness and one name row, then install only
+the authenticated pair. Five compound tests cover real identity, exhaustive
+mutation/replay, byte/subtree near misses, route/ownership isolation, and
+final empty semantics. No active corpus or external detail key is added.

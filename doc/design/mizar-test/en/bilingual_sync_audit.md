@@ -475,3 +475,9 @@ No Task-258B3 runner bilingual debt is accepted.
 EN and JA runner plans, checklists, harnesses, and boundary audits now record
 the exact dormant route, five tests, 384-test list, and 30-path /
 37,172-line manifest. No consumer implementation bilingual debt remains.
+
+## Task 258B3N Prerequisite Synchronization
+
+EN/JA runner documents freeze the same 107-byte/51-node dormant consumer,
+five-test contract, name-table/no-semantic boundary, unchanged 384-test and
+30-path baselines, and B3M-before-B4 order.

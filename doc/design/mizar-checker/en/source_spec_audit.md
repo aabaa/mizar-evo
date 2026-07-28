@@ -3900,3 +3900,13 @@ left-to-right goal effects remain with Tasks 269–272.
 Task 258B3 implementation closes only the classified bounded
 `source_drift`/`test_gap`. It changes no canonical requirement or trace
 credit, so the existing `deferred`, `tests = []` row remains correct.
+
+## Task 258B3N Authority Audit
+
+Sections 15.4.4/15.11.5 and 4.4.3 plus the existing parser fixture authorize
+the measured `take y = x;` syntax and name occurrence. They do not authorize
+binding publication, abbreviation application, existential matching,
+obligations, substitution, or proof acceptance in B3N. The missing exact
+table contract is resolved `design_drift`; future source and tests are
+bounded `source_drift`/`test_gap`. No blocking protocol disagreement exists,
+and the formula-statement row remains deferred with `tests = []`.

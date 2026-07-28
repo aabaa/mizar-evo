@@ -2571,4 +2571,11 @@ completion remain deferred. The origin discrepancy remains report-only
   row/status/count, active route, and semantic output.
 - [x] Measure libraries `350/384`, checker module sizes
   `9812/4644/7195/3156`, and runner production 30 paths / 37,172 lines.
-- [ ] Fresh-inventory and freeze Tasks 258B3N/M before selecting Task 258B4.
+- [x] Fresh-inventory and freeze only Task 258B3N: exact 107-byte named
+  primary witness, 51-node/root-50 parser identity, witness/name `1/1`
+  syntax-free tables, B3 compatibility, no binding/semantics, and unchanged
+  baseline counts/hashes.
+- [ ] Implement Task 258B3N after its dedicated documentation commit and
+  fresh parser/resolver/lower/count/hash preflight.
+- [ ] Freeze/implement Task 258B3M multiple/other witness-term transport
+  before selecting Task 258B4.

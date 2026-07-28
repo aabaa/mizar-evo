@@ -380,3 +380,10 @@ Canonical EN and JA companions now record the implemented witness producer,
 paired typed/final ownership, four checker/five runner tests, final module
 sizes, and measured hashes. No implementation-era bilingual debt is
 accepted.
+
+## Task 258B3N Frozen-Contract Synchronization
+
+EN/JA documents now freeze the same 107-byte named-witness source, 51-node
+identity, `1 witness / 1 name` syntax-only table extension, no-binding/no-
+semantic boundary, four/five future tests, unchanged baselines, and B3M/B4
+follow-up order. No bilingual debt is accepted before implementation.

@@ -3817,3 +3817,23 @@ paths / 37,172 lines. Tasks 258B3N/M still own named, multiple, and other
 witness-term transport before B4; Tasks 269–272 still own all semantic
 effects. This audit update is required because implementation/test ownership
 changed even though traceability status and coverage did not.
+
+## Step 5 Checker Task 258B3N Frozen-Contract Addendum
+
+Fresh post-B3 inventory decomposes the B3N/M umbrella and freezes only the
+107-byte named-primary witness source, its 51-node/root-50 parser identity,
+theorem-only resolver provenance, Task-48 `2/1/0`, Task-252 `5/5/0`,
+Task-256 `2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, and witness/name `1/1`.
+The dense name table records token `y` but publishes no binding,
+abbreviation, substitution, obligation, semantic fact, proof result, or
+accepted theorem.
+
+This closes a documentation `design_drift`; future code/tests are bounded
+`source_drift`/`test_gap`. No canonical spec, `.miz`, expectation, sidecar,
+trace row/status/count, executable source, active route, list, count, or
+hash changes. `spec.en.checker.formula_statement.source_payloads` remains
+deferred with `tests = []`, so no coverage credit is awarded. Task 269
+retains named-witness local binding/RHS/abbreviation replay, Task 272
+retains existential matching/type obligations/goal substitution, Tasks
+270/271 remain deffunc/defpred and reconsider-only, Task 258B3M retains
+multiple/other witness terms, and B4 remains behind B3M.
