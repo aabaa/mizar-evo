@@ -3550,3 +3550,34 @@ The runner has 399 tests and 30 production paths / 38,571 lines, with
 statement leaf/facade/root/test sizes `4185/691/2505/8611`. No fixture,
 sidecar, trace row/status/count, external key, public mutation API, active
 route, or semantic result changed.
+
+## Task 258B3M2B1 Dormant Consumer Contract
+
+The private runner will select only the final-LF 113-byte/hash
+`FormulaStatementParenthesizedWitnessSmoke` source and authenticate all 53
+nodes/root 52 plus theorem-owner provenance. It lowers five roots to six
+primary rows: wrapper term 2 contains child variable term 3, while refs
+`0..4` target `0/1/3/4/5`. Atomic equalities use only `[0,1]` and `[4,5]`;
+one unnamed witness targets term 2 and adds no name or binding.
+
+Exactly five compound tests are frozen:
+
+1. `task258b3m2b1_real_frontend_freezes_parenthesized_witness_contract`;
+2. `task258b3m2b1_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2b1_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders`;
+5. `task258b3m2b1_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`.
+
+Test 2 independently mutates a new wrapper-term-2 reference while retaining
+the child reference, removes/remaps/duplicates child reference 2, and
+contaminates a Task-256 edge/request first with term 2 and then with term 3.
+Test 3 confirms selector/subtree near misses cannot publish either partial
+wrapper/child ownership or a detached child reference.
+
+Near misses include unparenthesized/nested/numeral/other-child, named or
+multiple, application/structure/selector/update/set/choice, recovered,
+changed theorem, and composite/existential shapes. Authority-invalid
+theorem-proof `take it;` is also a near miss. The exact output keeps
+`Some(Vec::new())`, lookups `1/1`, reference uses `[1; 5]`, and empty
+semantics. The prerequisite changes no route, key, source/test artifact,
+count, or hash.

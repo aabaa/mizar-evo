@@ -628,3 +628,15 @@ reserved binding 0, visible `[0]`, and zero diagnostics. Numeral term 2 and
 its unnamed witness create no reference, binding, resolver-owned symbol,
 capture, abbreviation, or context transition. Task 269 therefore remains a
 no-op for this slice, and no binding API or fingerprint changed.
+
+## Task 258B3M2B1 Frozen Binding Boundary
+
+The exact parenthesized witness reuses module/proof contexts `0/1`,
+reserved binding 0, proof lexical scope `[0]`, and zero diagnostics. Outer
+term 2 has no reference; only child term 3 resolves binding 0. Dense
+reference IDs `0/1/2/3/4` target terms `0/1/3/4/5`, all with use ordinal
+1 and scopes `[]/[]/[0]/[0]/[0]`. The unnamed witness introduces no
+binding, capture, abbreviation, resolver symbol, or context transition, so
+Task 269 remains a no-op. Task 272 retains witness typing, existential
+matching/substitution, remaining-goal, and proof effects. No binding API or
+fingerprint grammar changes.

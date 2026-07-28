@@ -864,9 +864,11 @@ Task-252 numeric request 0. It adds one syntax-only witness row and no name
 row, binding, atomic edge, or semantic edge. Task 252 retains the numeral
 and request; Task 256 excludes term 2; Task 269 receives no binding; Task
 272 retains typing, existential matching, substitution, goal, and proof
-effects. B3M2B retains compound, application, selector, update, set,
-choice, `it`, parenthesized, and every other non-reserved-variable witness
-shape. B4/B5 remain blocked behind B3M2B.
+effects. B3M2B1 retains the exact parenthesized wrapper plus
+reserved-variable child; B3M2B2 retains compound, application, selector,
+update, set, choice, and other authority-valid witness shapes. `it` remains
+eligible only in a Chapter-13-valid `means` context. B4/B5 remain blocked
+behind B3M2B2.
 
 ### Task 258B3M2A Implementation Closure
 
@@ -876,3 +878,17 @@ requests cover only terms `0/1/3/4`, and one unnamed witness/no names is
 published atomically with the base statement handoff. No binding, semantic
 edge, active route, public schema, or neighboring family changed. B3M2B
 remains the next unimplemented edge before B4/B5.
+
+### Task 258B3M2B1 Parenthesized-Witness Edge
+
+B3M2B1 owns one syntax-only witness target over Task-252 parenthesized term
+2 and its child variable term 3. Task 252 owns the parent edge and the
+child-only reference; Task 256 excludes both terms from atomic edges and
+uses only `[0,1]` / `[4,5]`. Task 258 owns only the witness/take and base
+statement rows, with `1 witness / 0 names`. Tasks 253–255 receive no
+application, structure, selector, update, set, choice, wrapper, or edge.
+Task 269 adds no binding; Task 272 retains every semantic effect. B3M2B2
+retains nested parentheses, application, structure constructor/selector/
+update, set, choice, and every other authority-valid witness term. `it`
+remains eligible only in a Chapter-13-valid `means` definition or property
+context. B3M2B2 is next before B4/B5.

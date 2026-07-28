@@ -3976,3 +3976,47 @@ four checker and five runner tests close the bounded `source_drift` and
 fixture, sidecar, trace metadata, public API, binding, or semantic owner
 changed. The formula-statement row therefore remains `deferred` with
 `tests = []` and no coverage credit. B3M2B remains the next authority slice.
+
+## Task 258B3M2B1 Authority Audit
+
+Canonical Chapter 15 §15.4.4 permits `take term_expression`; Chapter 4
+§4.4.3 says an unnamed witness introduces no local name; Chapter 13
+§§13.1.3, 13.8.8, and 13.9 make parentheses a primary-term wrapper that
+preserves the inner type and adds no FOL node. Chapter 15 §15.11.5 retains
+the later witness obligation and substitution. Exact existing consumers are
+`tests/miz/pass/parser/pass_parser_simple_statements_001.miz` and its
+expectation, plus
+`tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.miz`,
+its existing expectation, and the covered
+`spec.en.checker.type_elaboration.source_primary_term_payload` trace row.
+They jointly authorize the exact dormant cross-family transport without
+changing those artifacts, but not proof acceptance or any B3M2B2 shape.
+
+The public lower consumers remain
+`SourceBindingContextHandoff` (Task 248),
+`SourceTypeApplicationHandoff` (Task 249),
+`SourceAttributeHandoff` (Task 250),
+`SourceEvidenceHandoff` (Task 251),
+`SourcePrimaryTermHandoff` with
+`SourcePrimaryTermKind::Parenthesized` and
+`SourcePrimaryTermInput::parent` (Task 252), and
+`SourceFunctorApplicationHandoff` (Task 253). Task 254's
+`SourceStructureHandoff` is the next excluded family. B3M2B1 reuses the
+Task-248 context and Task-252 wrapper/inner/reference/parent edge; Tasks
+249–251 and 253–254 remain empty or excluded. The fresh frontend yields the
+final-LF 113-byte source,
+SHA-256
+`f09815b49d1b4598218f656a366ef73ec0dffd1f581a1018f07aa2ebcf410bf2`,
+53 unrecovered nodes/root 52, and zero diagnostics.
+
+The broad B3M2B umbrella was `design_drift`; this prerequisite resolves it
+as exact B3M2B1 plus remaining B3M2B2. Future private wrapper-aware
+production is bounded `source_drift`, and the four/five compound matrices
+close the `test_gap`. There is no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or language/crate
+`boundary_violation`. A review-only writer concurrently duplicating these
+documents was an operational `boundary_violation`, not a
+`repo_metadata_conflict`; the parent reconciled the task-owned documentation
+without changing repository metadata.
+The formula-statement row remains `deferred` with `tests = []` and receives
+no coverage credit.

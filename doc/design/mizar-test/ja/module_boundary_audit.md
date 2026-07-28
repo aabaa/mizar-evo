@@ -10384,3 +10384,13 @@ statement leaf/facade/root/test sizesは`4185/691/2505/8611`、
 production manifestは38,571 lines。public route、external key、mutation
 API、module split、dependency direction、binding、semantic ownerは追加して
 いない。
+
+## Task 258B3M2B1 planned runner boundary
+
+docs prerequisiteはsource moduleなし。future private workはexisting
+`type_elaboration/source_statement.rs`、facade/root dispatch、statement test
+leaf内。raw parser/resolverはrunner-private、syntax-free Task-48/252/256/
+base/witnessだけcheckerへ渡す。private consumerはfive roots/six primaryを
+分離。topology 30 paths / 38,571 lines、sizes
+`4185/691/2505/8611`を維持。public route/key/mutation API/module split/
+dependency direction/binding/semantic ownerなし。

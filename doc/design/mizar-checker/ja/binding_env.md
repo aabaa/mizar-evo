@@ -607,3 +607,14 @@ visible `[0]`、diagnostics 0をexactにrevalidateする。numeral term 2と
 unnamed witnessはreference、binding、resolver-owned symbol、capture、
 abbreviation、context transitionを作らない。したがって本sliceではTask
 269はno-opのままで、binding API/fingerprintは変更していない。
+
+## Task 258B3M2B1 frozen binding boundary
+
+exact parenthesized witnessはmodule/proof contexts `0/1`、reserved binding
+0、proof scope `[0]`、diagnostics 0をreuseする。outer term 2にreferenceは
+なく、child term 3だけがbinding 0をresolveする。references
+`0/1/2/3/4`はterms `0/1/3/4/5`、use ordinal 1、scopes
+`[]/[]/[0]/[0]/[0]`。unnamed witnessはbinding/capture/abbreviation/
+resolver symbol/context transitionを作らず、Task 269はno-op。witness
+typing、existential matching/substitution、remaining-goal、proof effectは
+Task 272が保持し、binding API/fingerprint grammarを変更しない。

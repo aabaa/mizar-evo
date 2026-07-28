@@ -411,4 +411,15 @@ numeral-witness profile、exact 49-node/lower-table authentication、dense
 reference partition、`1 witness / 0 names`、passing tests 4/5本、
 library `362/399`、measured module/production sizes/hashes、unchanged
 public/active/semantic boundary、B3M2B-before-B4 orderを同一に記録する。
-bilingual debtは残らない。
+
+## Task 258B3M2B1 frozen-contract synchronization
+
+canonical ENとJAのchecker/runner plan、source/binding/typed/final
+design、family decomposition、harness/module/source audit、TODO、coverage
+ownershipは、同じfinal-LF 113-byte/hash source、53-node/root-52
+unrecovered arena、Task-48 `2/1/0`、outer/inner parent edgeを持つTask-252
+`6/5/0`、Task-256 `2/0/0/0/0/0/0/4/4`、base `1/2/2/2/2`、
+witness/name `1/0`、source partition `[0,1,2]`、public-API no-op、
+semantic deferral、future tests `4/5`、unchanged `362/399` baseline、
+B3M2B2-before-B4 orderをfreezeする。`it`はauthority-validな`means`
+definition/property contextだけへdeferする。bilingual debtはacceptしない。

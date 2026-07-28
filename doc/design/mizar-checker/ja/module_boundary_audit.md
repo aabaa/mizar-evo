@@ -403,3 +403,16 @@ directionは追加していない。checker sizesは
 `4185/691/2505/8611`、productionは30 paths / 38,571 lines。拡大した
 private statement leavesはdocumented exception内でcohesiveであり、
 behavior-neutral splitは不要。
+
+## Task 258B3M2B1 planned boundary
+
+documentation prerequisiteはmoduleを変更しない。future workはexisting
+checker statement producer/typed/final consumersとrunner statement
+leaf/facades/root/test leaf内。Task-252はwrapper/child、Task-256はtwo
+equality pairs、Task-258はprivate five-root/six-primary mapをownする。raw
+source/parser/resolver authenticationはprivate runner statement leafに
+留まり、checkerはsyntax-free Task-48/252/256/base handoffsと
+`TypedArena`だけをconsumeする。crate edge、public schema、active route、
+semantic owner、dependency direction、behavior-neutral splitなし。baselineは
+checker `15746/4660/7202/3156`、runner `4185/691/2505/8611`、30 paths /
+38,571 lines。

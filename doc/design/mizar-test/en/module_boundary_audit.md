@@ -11611,3 +11611,15 @@ Task-252 numeral/request ownership. Production topology remains 30 paths;
 statement leaf/facade/root/test sizes are `4185/691/2505/8611`, and the
 production manifest is 38,571 lines. No public route, external key, mutation
 API, module split, dependency direction, binding, or semantic owner was added.
+
+## Task 258B3M2B1 Planned Runner Boundary
+
+The docs-only prerequisite adds no source module. Future private work stays
+in `type_elaboration/source_statement.rs`, its facade/root dispatch, and the
+existing statement test leaf. Raw parser/resolver identities remain
+runner-private; only syntax-free Task-48/252/256/base/witness tables cross
+to the checker. The private consumer must separate five extraction roots
+from six primary rows. Topology remains 30 production paths and 38,571
+lines; sizes remain `4185/691/2505/8611`. No public route, key, mutation
+API, module split, dependency direction, binding, or semantic owner is
+planned.

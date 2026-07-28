@@ -1015,3 +1015,16 @@ transactionをacceptし、both tablesをatomicにpublishする。standalone、
 repeated、cross-profile、Task-248/257/other-258、corrupted dependency、
 reverse-order attemptはpartial ownershipなしでfailする。public typed-AST
 method、field、debug grammarは変更していない。
+
+## Task 258B3M2B1 frozen typed ownership
+
+existing paired installerはone exact B3M2B1 base + `1 witness / 0 names`
+transactionに十分。53-node arena、five-root/six-primary、parenthesized term
+2 / child 3、child-only referenceをrevalidateしてatomic publishする。
+Task-252 terms 6件、references 5件、outer/inner parent edge、both equality
+exclusions、fingerprints、source order `[0,1,2]`をauthenticateし、witness
+0はouter term 2、reference 2はinner term 3をtargetする。standalone、
+repeated、prior-profile、B3M2A、Tasks248/253–257/other-258、corrupted
+dependency、reference/parent corruption、semantic coexistence、reverse
+orderはpartial ownershipなしでfail。public method/field/enum/debug
+grammarを追加しない。

@@ -1068,3 +1068,17 @@ The existing paired installer now accepts the exact B3M2A base and
 All standalone, repeated, cross-profile, Task-248/257/other-258, corrupted
 dependency, and reversed-order attempts still fail without partial ownership.
 No public typed-AST method, field, or debug grammar changed.
+
+## Task 258B3M2B1 Frozen Typed Ownership
+
+The existing paired installer is sufficient for one exact B3M2B1 base and
+`1 witness / 0 names` transaction. It must revalidate the 53-node arena,
+five-root/six-primary mapping, parenthesized term 2 with child 3, and
+child-only reference before atomic publication. It authenticates all six
+Task-252 terms, five references, the outer/inner parent edge, both equality
+exclusions, fingerprints, and source order `[0,1,2]`; witness 0 targets
+outer term 2 while reference 2 targets inner term 3. Standalone, repeated,
+prior-profile, B3M2A, Tasks-248/253–257/other-258, corrupted dependency,
+reference/parent-corrupt, semantic-coexisting, and reverse-order attempts
+must fail without partial ownership. No public method, field, enum, or debug
+grammar is added.

@@ -800,10 +800,11 @@ B3M2をB3M2A/B3M2Bへsplitする。B3M2Aはexisting primary term 2がkind
 witnessだけをownする。syntax-only witness row 1件を追加し、name row、
 binding、atomic edge、semantic edgeは追加しない。numeral/requestはTask 252、
 term 2 exclusionはTask 256、bindingなしはTask 269、typing/existential
-matching/substitution/goal/proof effectはTask 272が保持する。B3M2Bはcompound、
-application、selector、update、set、choice、`it`、parenthesized、および
-その他のnon-reserved-variable witness shapeを保持する。B4/B5はB3M2Bまで
-blocked。
+matching/substitution/goal/proof effectはTask 272が保持する。B3M2B1は
+exact parenthesized wrapperとreserved-variable childを保持し、B3M2B2は
+compound、application、selector、update、set、choice、other
+authority-valid witness shapeを保持する。`it`はChapter-13-valid `means`
+contextだけ。B4/B5はB3M2B2までblocked。
 
 ### Task 258B3M2A implementation closure
 
@@ -813,3 +814,16 @@ terms `0/1/3/4`だけをcoverし、one unnamed witness/no namesをbase
 statement handoffとatomicにpublishする。binding、semantic edge、active
 route、public schema、neighbor familyは変更していない。B3M2BがB4/B5前の
 next unimplemented edge。
+
+### Task 258B3M2B1 parenthesized-witness edge
+
+B3M2B1はTask-252 parenthesized term 2 / child variable term 3上のone
+syntax-only witness targetをownする。Task 252はparent edge/child-only
+reference、Task 256はterms 2/3をexcludeして`[0,1]` / `[4,5]`だけ、
+Task 258はwitness/take/base rows `1 witness / 0 names`だけをown。
+Tasks 253–255にapplication/structure/selector/update/set/choice
+payload/wrapper/edgeなし。Task 269はbindingなし、Task 272がall semantic
+effect。B3M2B2はnested parentheses、application、structure
+constructor/selector/update、set、choice、その他のauthority-valid witness
+termを保持し、`it`はChapter-13-valid `means` definition/property
+contextだけでeligible。B3M2B2がB4/B5前のnext。

@@ -1080,3 +1080,17 @@ reference/numeric-request-corrupt, and semantic-coexisting states remain
 `InvalidSourceStatement`. The successful final handoff has empty expression,
 candidate, coercion, cluster, diagnostic, statement-semantic, proof, and goal
 tables.
+
+## Task 258B3M2B1 Frozen Final Ownership
+
+Final assembly must clone-preserve only the authenticated 53-node
+B3M2B1 base/witness pair with five roots, six primary rows, and one
+parenthesized witness/no names. Standalone, hybrid, stale, parent/child,
+reference-map, B3M2A, Tasks-253–255, or semantic-coexisting states remain
+`InvalidSourceStatement`. It revalidates source partition `[0,1,2]`,
+outer-wrapper witness targeting, the inner reference/parent edge, complete
+witness-subtree exclusion, fingerprints, all lower dependencies, and the
+53-node arena. Successful final output keeps expression, candidate,
+coercion, cluster, diagnostic, statement-semantic, proof, and goal tables
+empty and infers no type, existential match, substitution, goal, or proof
+effect. No final public field or accessor changes.

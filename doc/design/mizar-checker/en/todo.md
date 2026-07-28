@@ -4854,8 +4854,12 @@ implementation commit does not satisfy a producer task.
   baselines.
 - [x] Implement only frozen Task 258B3M2A after its documentation commit
   and fresh parser/resolver/lower/count/hash preflight.
-- [ ] Freeze and implement Task 258B3M2B remaining other witness-term
-  shapes before selecting Task 258B4.
+- [x] Decompose Task 258B3M2B into exact single-level parenthesized
+  reserved-variable B3M2B1 and remaining other-term B3M2B2.
+- [x] Freeze Task 258B3M2B1 only; keep implementation separate.
+- [ ] Implement frozen Task 258B3M2B1 after its documentation commit and
+  fresh preflight.
+- [ ] Freeze and implement Task 258B3M2B2 before selecting Task 258B4.
 
 ## Checker Task 258B3N Implementation Ledger
 
@@ -4925,3 +4929,21 @@ implementation commit does not satisfy a producer task.
 - [x] Measure libraries `362/399`, checker modules
   `15746/4660/7202/3156`, runner sizes `4185/691/2505/8611`, and 30
   production paths / 38,571 lines; retain B3M2B before B4.
+
+## Checker Task 258B3M2B1 Frozen-Contract Ledger
+
+- [x] Split broad B3M2B into exact parenthesized B3M2B1 and remaining
+  authority-valid B3M2B2; restrict future `it` to valid `means` contexts.
+- [x] Freeze the final-LF 113-byte/hash source, 53-node/root-52 arena, exact
+  theorem/resolver provenance, and zero frontend diagnostics.
+- [x] Freeze Task-48 `2/1/0`, five roots versus Task-252 `6/5/0`,
+  parenthesized term 2 / child term 3, refs `0/1/2/3/4 ->
+  0/1/3/4/5`, and scopes `[]/[]/[0]/[0]/[0]`.
+- [x] Freeze Task-256 pairs `[0,1]` / `[4,5]`, exclusion of `2/3`, base
+  `1/2/2/2/2`, input-fact refs `[0,1]` / `[3,4]`, witness/name `1/0`, and
+  source partition `[0,1,2]`.
+- [x] Freeze no public API/binding/semantics, checker/runner tests 4/5,
+  unchanged `362/399` baseline, coverage `deferred`/`tests = []`, and
+  B3M2B2-before-B4.
+- [ ] After the dedicated docs commit and fresh preflight, implement only
+  B3M2B1, measure projected libraries `366/404`, then retain B3M2B2.

@@ -1022,3 +1022,16 @@ hybrid、stale、reference/numeric-request corruption、semantic coexistenceは
 `InvalidSourceStatement`のまま。successful final handoffではexpression、
 candidate、coercion、cluster、diagnostic、statement-semantic、proof、goal
 tablesがempty。
+
+## Task 258B3M2B1 frozen final ownership
+
+final assemblyはauthenticated 53-node B3M2B1 base/witness pair、
+five roots、six primary rows、one parenthesized witness/no namesだけを
+clone-preserveする。standalone、hybrid、stale、parent/child/reference-map、
+B3M2A、Tasks253–255、semantic coexistenceは
+`InvalidSourceStatement`。source partition `[0,1,2]`、outer-wrapperへの
+witness target、inner reference/parent edge、complete witness-subtree
+exclusion、fingerprints、all lower dependencies、53-node arenaをrevalidate
+する。successはexpression/candidate/coercion/cluster/diagnostic/
+statement-semantic/proof/goal tablesをemptyにし、type/existential match/
+substitution/goal/proof effectをinferしない。public final APIなし。

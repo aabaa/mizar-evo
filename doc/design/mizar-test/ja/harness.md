@@ -3370,3 +3370,32 @@ runnerは399 tests、production 30 paths / 38,571 lines、statement
 leaf/facade/root/test sizesは`4185/691/2505/8611`。fixture、sidecar、
 trace row/status/count、external key、public mutation API、active route、
 semantic resultは変更していない。
+
+## Task 258B3M2B1 dormant consumer contract
+
+private runnerはonly final-LF 113-byte/hash
+`FormulaStatementParenthesizedWitnessSmoke`をselectし、53 nodes/root 52と
+theorem-owner provenanceをauthenticateする。five rootsからsix primary
+rows：wrapper term 2はchild term 3をcontainし、refs `0..4`は
+`0/1/3/4/5`。atomicは`[0,1]` / `[4,5]`だけ、one unnamed witnessは
+term 2をtargetしname/bindingなし。
+
+exactly five compound tests：
+
+1. `task258b3m2b1_real_frontend_freezes_parenthesized_witness_contract`;
+2. `task258b3m2b1_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2b1_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders`;
+5. `task258b3m2b1_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`。
+
+test 2はchild referenceを保持したwrapper term 2 reference追加、child
+reference 2のremove/remap/duplicate、Task-256 edge/requestへのterm 2と
+term 3の個別contaminationを独立にmutateする。test 3は
+selector/subtree near missがpartial wrapper/child ownershipまたはdetached
+child referenceをpublishできないことを確認する。
+
+unparenthesized/nested/numeral/other-child、named/multiple、
+application/structure/selector/update/set/choice、recovery、changed theorem、
+composite/existentialはnear miss。authority-invalid theorem-proof
+`take it;`もnear miss。exact outputは`Some(Vec::new())`、lookups `1/1`、
+uses `[1; 5]`、empty semantics。route/key/artifact/count/hash変更なし。

@@ -503,3 +503,11 @@ selector、passing tests 5本、399-test library、production 30 paths /
 38,571 lines、sizes `4185/691/2505/8611`、unchanged
 public/active/trace/semantic ownership、B3M2B-before-B4 orderを同一に記録する。
 implementation bilingual debtは残らない。
+
+## Task 258B3M2B1 runner prerequisite同期
+
+EN/JA runner plan/TODO/harness/module auditはsame 113-byte/hash、exact
+53-node/root-52 selector、five-root/six-primary、wrapper/child、future
+tests 5本、unchanged 399-test / 30-path baseline、no
+public/active/trace/semantic change、B3M2B2-before-B4をfreezeする。
+authority-invalid theorem-proof `take it;`はexclude。bilingual debtなし。

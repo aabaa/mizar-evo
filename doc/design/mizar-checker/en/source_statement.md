@@ -2050,12 +2050,13 @@ preflight.
 
 ## Task 258B3M2A Frozen Numeral-Witness Slice
 
-Fresh post-Lexer-Task-258B3M2P1 inventory decomposes the broad B3M2
-“other witness-term shapes” umbrella into dependency-ordered B3M2A and
-B3M2B. B3M2A owns only one unnamed numeral witness. B3M2B retains every
-remaining non-reserved-variable witness shape, including compound,
-application, selector, update, set, choice, `it`, and parenthesized terms.
-Task 258B4 remains blocked behind B3M2B.
+Fresh post-Lexer-Task-258B3M2P1 inventory first decomposed the broad B3M2
+“other witness-term shapes” umbrella into B3M2A and B3M2B. B3M2A owns only
+one unnamed numeral witness. The later B3M2B1 contract owns a parenthesized
+wrapper with its reserved-variable child, while B3M2B2 retains compound,
+application, selector, update, set, choice, and other authority-valid terms.
+It retains `it` only in a Chapter-13-valid `means` context. Task 258B4
+remains blocked behind B3M2B2.
 
 Canonical authority is `doc/spec/en/15.statements.md` §15.4.4, which defines
 an unnamed example as `term_expression` and gives `take 101;` verbatim;
@@ -2285,3 +2286,231 @@ No canonical specification, `.miz`, fixture, expectation, sidecar, trace
 row/status/count, active route, public API, binding, or semantic owner
 changed. This closes the bounded `source_drift`/`test_gap`; B3M2B remains
 next before B4.
+
+## Task 258B3M2B1 Frozen Parenthesized-Witness Slice
+
+Fresh post-B3M2A inventory decomposes the remaining B3M2B umbrella into
+dependency-ordered B3M2B1 and B3M2B2. B3M2B1 owns only one unnamed
+parenthesized reserved-variable witness, `take (x);`. B3M2B2 retains
+application, structure, selector, update, set, choice, compound, and other
+authority-valid witness terms. It also retains `it` only where Chapter 13
+§13.1.2 permits `it` in a valid `means` definition or property context;
+this theorem-proof slice does not authorize `take it;`. B4 remains blocked
+behind B3M2B2.
+
+Canonical authority is `doc/spec/en/15.statements.md` §15.4.4, where an
+unnamed example is any `term_expression`, and
+`doc/spec/en/13.term_expression.md` §§13.1, 13.1.3, 13.8.8, and 13.9,
+where `( term_expression )` is a type-preserving primary term. Existing
+`tests/miz/pass/parser/pass_parser_simple_statements_001.miz` and its
+expectation authenticate unnamed `take` syntax. The active
+`tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.miz`,
+its existing expectation, and the covered
+`spec.en.checker.type_elaboration.source_primary_term_payload` trace row
+authenticate the real wrapper/child and reserved-binding provenance.
+The earlier B3/B3M1 contracts authenticate `x` in proof scope. Chapter 15
+§15.11.5 and Task 272 retain type obligations, existential matching,
+substitution, remaining-goal construction, and proof acceptance. None of
+these existing consumers or trace artifacts changes.
+
+The exact future corpus-dormant consumer is this final-LF 113-byte source,
+SHA-256
+`f09815b49d1b4598218f656a366ef73ec0dffd1f581a1018f07aa2ebcf410bf2`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementParenthesizedWitnessSmoke: x = x proof
+  take (x);
+  thus x = x;
+end;
+```
+
+Its equality goal is deliberately not existential, so it is not a valid
+proof and must not become an active accepted corpus case. A fresh frontend
+run yields zero diagnostics, 53 unrecovered nodes, and root 52. Token nodes
+are exactly
+`0:reserve@0..7, 1:x@8..9, 2:for@10..13, 3:set@14..17,
+4:;@17..18, 5:theorem@19..26,
+6:FormulaStatementParenthesizedWitnessSmoke@27..68, 7::@68..69,
+8:x@70..71, 9:=@72..73, 10:x@74..75, 11:proof@76..81,
+12:take@84..88, 13:(@89..90, 14:x@90..91, 15:)@91..92,
+16:;@92..93, 17:thus@96..100, 18:x@101..102, 19:=@103..104,
+20:x@105..106, 21:;@106..107, 22:end@108..111,
+23:;@111..112`; each has no child. Structural nodes are:
+
+| IDs | Exact kind, range, ordered children |
+| --- | --- |
+| 24–27 | `TypeHead 14..17 [3]`; `TypeExpression 14..17 [24]`; `ReserveSegment 8..17 [1,2,25]`; `ReserveItem 0..18 [0,26,4]` |
+| 28–33 | `TermReference 70..71 [8]`; `TermExpression 70..71 [28]`; `TermReference 74..75 [10]`; `TermExpression 74..75 [30]`; `BuiltinPredicateApplication 70..75 [29,9,31]`; `FormulaExpression 70..75 [32]` |
+| 34–39 | `TermReference 90..91 [14]`; `TermExpression 90..91 [34]`; `ParenthesizedTerm 89..92 [13,35,15]`; `TermExpression 89..92 [36]`; `Witness 89..92 [37]`; `TakeStatement 84..93 [12,38,16]` |
+| 40–47 | `TermReference 101..102 [18]`; `TermExpression 101..102 [40]`; `TermReference 105..106 [20]`; `TermExpression 105..106 [42]`; `BuiltinPredicateApplication 101..106 [41,19,43]`; `FormulaExpression 101..106 [44]`; `Proposition 101..106 [45]`; `ConclusionStatement 96..107 [17,46,21]` |
+| 48–52 | `ProofBlock 76..111 [11,39,47,22]`; `TheoremItem 19..112 [5,6,7,33,48,23]`; `ItemList 0..112 [27,49]`; `CompilationUnit 0..112 [50]`; `Root 0..112 [0..23,51]` |
+
+Resolver provenance is exactly one local public/exported theorem owner and
+label, contribution 0, owner range `19..112`, label range `27..68`,
+structural origin `[2,1]`, and normal recovery. There is no import,
+proof-step label, citation, witness-name symbol, or added resolver handoff.
+The existing private theorem-owner enrichment is sufficient.
+
+The syntax-free lower composition is:
+
+- Task 48 `2/1/0`: module context 0 and proof context 1, proof owner
+  `76..111`, reserved binding 0 visible in lexical scope `[0]`, no
+  proof-owned binding, and no diagnostic;
+- Task 252 `6/5/0`: five surface roots at nodes `28/30/36/40/42` expand to
+  six dense primary rows. Terms 0/1 are variable `x` at `28/70..71` and
+  `30/74..75` in context 0. Term 2 is the parenthesized wrapper at
+  `36/89..92`, spelling `( x )`, context 1, and no parent. Term 3 is its
+  variable child at `34/90..91`, context 1, parent term 2. Terms 4/5 are
+  variable `x` at `40/101..102` and `42/105..106` in context 1. Dense
+  reference IDs `0/1/2/3/4` target terms `0/1/3/4/5`; all select binding 0
+  with use ordinal 1 and lexical scopes `[]/[]/[0]/[0]/[0]`. Term 2 has no
+  reference, and there is no numeric request;
+- Task 256 `2/0/0/0/0/0/0/4/4`: equality nodes 32 and 44 target primary
+  pairs `[0,1]` and `[4,5]`. Both witness wrapper term 2 and child term 3
+  are excluded from every atomic edge and request;
+- base statement `1/2/2/2/2`: theorem node/range `49/19..112` and
+  conclusion `47/96..107` have source ordinals 0 and 2 and contexts 0 and
+  1. Their input facts use references `[0,1]` and `[3,4]`.
+
+The runner must represent the five extraction roots separately from the six
+expected primary rows. It must not reuse root count as primary count or
+derive the conclusion atomic start as `root_count - 2`; the frozen atomic
+starts are `[0,4]`, and the input-fact reference starts are `[0,3]`. This is
+a private Task-258 consumer adjustment, not a Task-252 or Task-256 defect.
+
+The witness companion is exactly `1 witness / 0 names`. Witness 0 owns
+owner 0, binding context 1, `Primary(2)`, take node/range `39/84..93`,
+item node/range `38/89..92`, source ordinal 1, within-`take` ordinal 0,
+token-normalized spelling `( x )`, kind `Unnamed`, normal recovery, and no
+name. Combined source order is `[0,1,2]`. The wrapper is the witness target;
+the inner variable remains only the Task-252 child/reference.
+
+Typed ownership assigns `source.term.parenthesized` to node 36,
+`source.term.variable-reference` to node 34,
+`source.statement-witness.item` to node 38,
+`source.statement-witness.take` to node 39,
+`source.formula.atomic.equality` to nodes 32/44,
+`source.statement.conclusion` to node 47, and
+`source.statement.theorem` to node 49. Nodes 35 and 37 remain unowned
+surface wrappers. The wrapper/child subtree is inside take/proof/theorem and
+disjoint from both equality subtrees and the conclusion. Tasks 253–255
+receive no application, structure, selector, update, set, choice, wrapper,
+or cross-family edge.
+
+No public type, variant, field, error, table, accessor, producer, installer,
+route, or detail key is added. Existing
+`SourceBindingContextHandoff`, `SourceTypeApplicationHandoff`,
+`SourceAttributeHandoff`, `SourceEvidenceHandoff`,
+`SourcePrimaryTermHandoff`, and `SourceFunctorApplicationHandoff` are the
+public Task-248–253 lower families. Task 254's
+`SourceStructureHandoff` is the next excluded family. B3M2B1 reuses the
+Task-248 context and Task-252 projection; Tasks 249–251 and 253–254 remain
+empty or excluded. Existing
+`SourcePrimaryTermKind::Parenthesized`, `SourcePrimaryTermInput::parent`,
+reference tables, `SourceStatementWitnessTermTarget::Primary`, witness/name
+tables, `SourceStatementWitnessProducer`,
+`TypedAst::with_source_statement_witnesses`, and final ownership are
+sufficient. Private base/witness selectors add only B3M2B1. Validation
+precedence remains complete dependency/fingerprint/arena authentication,
+aggregate cardinality, witness row 0, then empty name rows:
+`DependencyMismatch` before `InvalidAggregate` before
+`InvalidWitness { witness: 0 }`; `InvalidName` is unreachable.
+
+The paired typed/final owner rejects base-only or witness-only installation,
+B3/B3N/B3M1/B3M2A/B3M2B1 hybrids, Task-252 parent/child corruption,
+reference remapping, every Task-248/253–257/other-258 family in either
+order, stale fingerprints, and nonempty semantic/proof/goal tables.
+Successful assembly clone-preserves the pair and leaves all semantic outputs
+empty. B3M2A remains isolated by exact bytes, 49-versus-53-node arena,
+term count/kind, numeric-request presence, fingerprints, and final
+revalidation.
+
+The checker test contract is exactly four compound tests:
+
+1. `task258b3m2b1_exact_parenthesized_witness_api_debug_and_compatibility_are_stable`;
+2. `task258b3m2b1_dependencies_parent_child_witness_precedence_and_all_nodes_fail_closed`;
+3. `task258b3m2b1_paired_ownership_hybrids_and_all_family_orders_are_atomic`;
+4. `task258b3m2b1_final_clone_revalidation_and_semantic_deferrals_are_stable`.
+
+Checker test 2 must independently reject a new reference row on wrapper
+term 2 while the child reference remains, removal/remapping/duplication of
+child reference 2, and Task-256 edge/request contamination by term 2 and by
+term 3. These are separate mutations; no one rejection stands in for
+another.
+
+The runner test contract is exactly five compound tests:
+
+1. `task258b3m2b1_real_frontend_freezes_parenthesized_witness_contract`;
+2. `task258b3m2b1_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2b1_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2b1_family_and_active_route_isolation_is_atomic_in_both_orders`;
+5. `task258b3m2b1_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`.
+
+Runner test 2 repeats each wrapper-reference, child-reference, and
+term-2/term-3 Task-256 contamination mutation through the real paired
+consumer. Runner test 3 additionally proves that selector and subtree near
+misses cannot publish partial wrapper/child ownership or a detached child
+reference.
+
+Together they freeze exact source/resolver/lower/base/witness identity,
+five-root/six-primary separation, parent/child and reference ownership,
+dependency/aggregate/witness precedence, all 53 node and byte/subtree
+mutations, B3M2A and Tasks 253–255 isolation, family/active order,
+rollback/replay, debug compatibility, final cloning, and empty semantics.
+Near misses include `x`, `101`, `(101)`, `((x))`, named/multiple
+parenthesized witnesses, application/structure/selector/update/set/choice
+terms, recovery, changed theorem shape, and existential/composite roots.
+An authority-invalid `take it;` in this theorem proof is a near miss, not a
+future promise.
+
+The exact private detail projection remains `Some(Vec::new())`, requiring
+the paired witness handoff, two base statements, lookup ordinals `1/1`, and
+five reference-use ordinals `[1; 5]`. `None` remains a selector miss, and an
+owned invalid output retains
+`type_elaboration.checker.typed_ast_invalid`.
+
+This documentation prerequisite changes no production/test source,
+canonical specification, existing `.miz`, fixture, expectation, sidecar,
+trace row/status/count, active route, test list, count, or hash. Fresh
+baselines are checker/runner libraries `362/399`, checker module sizes
+`15746/4660/7202/3156`, runner statement leaf/facade/root/test sizes
+`4185/691/2505/8611`, and runner production 30 paths / 38,571 lines.
+Checker raw/normalized test-list hashes are
+`af5f3c7030167087367ebbf534b9ebde03fcfcb3b406dcacbd4eccd1841a25e7` /
+`4b95f5557e65e4d9ec4e9df90f3f61e77318570a0498996a7929b29500f127d7`;
+runner hashes are
+`a9557e877ad59d5d5da47861f41beaecd2e6a28b9a7a090381bb966096ecea13` /
+`88a2d2e70f04c7606a78630c42ae66b7506a15df2f0cd91b4dbb3945181ad847`.
+Runner path/content hashes remain
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`30640df237d236a980cd0daf013996e3d37dc36fbabd0e9badadac8a0e57c4c2`.
+Plan/type remain `419/387` and `253/241`; pass/fail `228/191`; active
+parse/declaration/type/proof `101/5/198/1`; warnings/errors `23/0`; and
+plan/parse/declaration/type/proof CLI hashes remain
+`4cc13ea6bee6c1a6458d4a7d027a7eea685b711eda8410edafad8faa01809d54`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+
+Implementation projects exactly four checker and five runner tests, hence
+libraries `366/404`; changed sizes and hashes must be measured rather than
+treated as targets. This prerequisite resolves the two bounded
+`design_drift` findings: the broad umbrella and the root/primary conflation.
+Future private code is bounded `source_drift`, and future tests are
+`test_gap`. There is no blocking `spec_gap`, unsafe test intent,
+lower-stage defect, `source_undocumented_behavior`,
+`test_expectation_drift`, or language/crate `boundary_violation`.
+A review-only writer concurrently duplicating the B3M2B1 documentation was
+an operational `boundary_violation`, not a `repo_metadata_conflict`; the
+parent reconciled the task-owned documentation without changing repository
+metadata.
+
+The coverage audit changes follow-up ownership only.
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []` and receives no credit. Exit requires synchronized EN/JA
+documents, independent no-findings reviews, all protocol hard gates,
+read-only quality at least 90/100, task-only staging, and one dedicated
+documentation commit. Implementation may begin only after that commit and
+a fresh parser/resolver/lower/count/hash preflight.

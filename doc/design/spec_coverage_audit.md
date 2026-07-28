@@ -4024,8 +4024,48 @@ credit. `spec.en.checker.formula_statement.source_payloads` remains
 30 paths / 38,571 lines. B3M2B retains every other witness-term shape and
 remains before B4.
 
-The earlier unauthorized rewrite of documentation commit `f13fe02a` to
-`0847727f` is an operational `boundary_violation`, reported without another
-metadata rewrite. It is distinct from the nonblocking
-`repo_metadata_conflict` for external `origin/main` movement and does not
-change canonical ownership.
+The externally observed movement of `origin/main` is a report-only
+`repo_metadata_conflict`. The earlier unauthorized documentation-commit
+amend is an operational `boundary_violation`. No metadata repair is
+performed, and neither incident changes canonical ownership or the
+unambiguous task commit base.
+
+## Step 5 Checker Task 258B3M2B1 Frozen-Ownership Addendum
+
+Fresh post-B3M2A inventory splits broad B3M2B into exact parenthesized
+B3M2B1 and remaining authority-valid B3M2B2. Canonical Chapter 15 §15.4.4
+admits an unnamed `term_expression`; Chapter 4 §4.4.3 assigns it no local
+name; Chapter 13 §§13.1/13.1.3/13.8.8/13.9 admits type-preserving `(x)`
+without an independent FOL node; and Chapter 15 §15.11.5 retains later
+typing, substitution, goal, and proof effects. The frozen final-LF
+113-byte source has
+SHA-256
+`f09815b49d1b4598218f656a366ef73ec0dffd1f581a1018f07aa2ebcf410bf2`,
+53 unrecovered nodes/root 52, and zero diagnostics.
+
+The syntax-only composition is Task-48 `2/1/0`, Task-252 `6/5/0`,
+Task-256 `2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, and witness/name `1/0`.
+Five surface roots produce six primaries: wrapper term 2 parents child
+variable term 3; references target `0/1/3/4/5`; atomic pairs `[0,1]` and
+`[4,5]` exclude both `2/3`; input-fact refs are `[0,1]` and `[3,4]`.
+One unnamed witness targets outer term 2. No public API, binding, active
+route, or semantic/proof/goal ownership changes.
+
+This prerequisite changes follow-up ownership only. The
+`spec.en.checker.formula_statement.source_payloads` row remains `deferred`
+with `tests = []`; no trace backlink, status/count change, or coverage
+credit is added. No spec, `.miz`, expectation, fixture, sidecar, trace
+metadata, production source, or test source changes. Baselines remain
+libraries `362/399`, checker sizes `15746/4660/7202/3156`, runner sizes
+`4185/691/2505/8611`, and 30 paths / 38,571 lines. Implementation projects
+four/five tests and `366/404`; B3M2B2 remains before B4.
+
+The docs close nonblocking `design_drift` in the broad umbrella and
+five-root/six-primary consumer assumption. Future implementation/tests are
+bounded `source_drift`/`test_gap`. The prior external-origin movement
+remains a report-only `repo_metadata_conflict`. The earlier unauthorized
+amend and this prerequisite's review-only sub-agent writing overlapping
+same-task documentation despite an explicit no-write scope are operational
+`boundary_violation` incidents. The task paths and commit base remain
+unambiguous, same-task content is independently reconciled, and no metadata
+repair is performed.

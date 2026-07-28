@@ -2034,7 +2034,12 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   matrix, no public/active/semantic route, and unchanged runner baselines.
 - [x] Implement only B3M2A after its docs commit and fresh preflight,
   projecting 399 runner tests.
-- [ ] Freeze/implement B3M2B before Task 258B4.
+- [x] Decompose B3M2B into exact parenthesized B3M2B1 and remaining
+  authority-valid B3M2B2.
+- [x] Freeze B3M2B1 only; keep implementation and B3M2B2 separate.
+- [ ] Implement frozen B3M2B1 after its documentation commit and fresh
+  parser/resolver/lower/count/hash preflight.
+- [ ] Freeze/implement B3M2B2 before Task 258B4.
 
 ## Checker Task 258B3M1 Runner Implementation Ledger
 
@@ -2071,3 +2076,17 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   detail projection, and empty final semantics.
 - [x] Measure 399 tests, sizes `4185/691/2505/8611`, and 30 production
   paths / 38,571 lines; retain B3M2B before B4.
+
+## Checker Task 258B3M2B1 Runner Prerequisite Ledger
+
+- [x] Freeze the final-LF 113-byte/hash exact source, 53 nodes/root 52,
+  zero diagnostics, and one local exported theorem owner/label.
+- [x] Freeze five roots versus Task-252 `6/5/0`, wrapper term 2 / child
+  term 3, refs `0/1/2/3/4 -> 0/1/3/4/5`, atomic starts `[0,4]`, and
+  input-fact starts `[0,3]`.
+- [x] Freeze one unnamed outer-term witness/no names, no public route/key,
+  binding, active case, fixture, trace credit, or semantic output.
+- [x] Freeze exactly five compound tests, unchanged 399-test and
+  30-path/38,571-line baselines, and B3M2B2-before-B4.
+- [ ] After the docs commit/fresh preflight, implement only B3M2B1 and
+  measure projected 404 runner tests.

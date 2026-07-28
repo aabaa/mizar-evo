@@ -2593,4 +2593,12 @@ completion remain deferred. The origin discrepancy remains report-only
   coverage audit.
 - [x] Implement only frozen B3M2A after its documentation commit and fresh
   parser/resolver/lower/count/hash preflight.
-- [ ] Freeze/implement B3M2B before selecting Task 258B4.
+- [x] Decompose B3M2B into exact parenthesized B3M2B1 and remaining
+  authority-valid B3M2B2.
+- [x] Freeze B3M2B1 only: final-LF 113-byte/53-node source, five roots /
+  Task-252 `6/5/0`, parent/child and reference ownership, atomic exclusion,
+  witness/name `1/0`, no API/semantics, four/five future tests, and
+  unchanged baselines/audit credit.
+- [ ] Implement only B3M2B1 after its documentation commit and fresh
+  parser/resolver/lower/count/hash preflight.
+- [ ] Freeze/implement B3M2B2 before selecting Task 258B4.

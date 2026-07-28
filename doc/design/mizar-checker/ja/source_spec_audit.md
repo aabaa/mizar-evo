@@ -3801,3 +3801,44 @@ canonical spec、existing `.miz`、expectation、fixture、sidecar、trace
 metadata、public API、binding、semantic ownerは変更していない。したがって
 formula-statement rowは`deferred` / `tests = []`、coverage creditなしを
 維持する。B3M2Bがnext authority slice。
+
+## Task 258B3M2B1 authority audit
+
+Chapter 15 §15.4.4は`take term_expression`、Chapter 4 §4.4.3はunnamed
+witnessがlocal nameを導入しないこと、Chapter 13
+§§13.1.3/13.8.8/13.9はtype-preservingで独立FOL nodeを追加しない
+parenthesized primaryをauthorizeする。Chapter 15 §15.11.5はlater witness
+obligation/substitutionを保持する。exact existing consumersは
+`tests/miz/pass/parser/pass_parser_simple_statements_001.miz`とその
+expectation、および
+`tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.miz`、
+そのexisting expectation、covered
+`spec.en.checker.type_elaboration.source_primary_term_payload` trace row。
+これらはartifactを変更せずexact dormant cross-family transportをauthorize
+するが、proof acceptance/B3M2B2 shapeはauthorizeしない。
+
+public lower consumersはTask 248
+`SourceBindingContextHandoff`、Task 249
+`SourceTypeApplicationHandoff`、Task 250
+`SourceAttributeHandoff`、Task 251
+`SourceEvidenceHandoff`、Task 252
+`SourcePrimaryTermHandoff` /
+`SourcePrimaryTermKind::Parenthesized` /
+`SourcePrimaryTermInput::parent`、Task 253
+`SourceFunctorApplicationHandoff`。Task 254
+`SourceStructureHandoff`はnext excluded family。B3M2B1はTask-248 contextと
+Task-252 wrapper/inner/reference/parent edgeをreuseし、Tasks
+249–251/253–254はempty/excluded。fresh frontendはfinal-LF 113-byte
+source、SHA-256
+`f09815b49d1b4598218f656a366ef73ec0dffd1f581a1018f07aa2ebcf410bf2`、
+53 unrecovered nodes/root 52、diagnostics 0。
+
+broad B3M2B umbrellaは`design_drift`で、本prerequisiteがexact B3M2B1 /
+remaining B3M2B2へresolveする。future private wrapper-aware productionは
+bounded `source_drift`、four/five compound matricesは`test_gap`。
+blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、language/crate `boundary_violation`なし。
+review-only writerによるdocs duplicateは`repo_metadata_conflict`ではなく
+operational `boundary_violation`であり、parentがrepository metadataを
+変更せずtask-owned documentationをreconcileした。formula-statement rowは
+`deferred`, `tests = []`、creditなし。

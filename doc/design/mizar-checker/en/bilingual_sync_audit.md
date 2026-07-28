@@ -432,3 +432,16 @@ authentication, dense reference partition, `1 witness / 0 names`, four/five
 passing tests, `362/399` library counts, measured module/production sizes
 and hashes, unchanged public/active/semantic boundary, and B3M2B-before-B4
 order. No bilingual debt remains.
+
+## Task 258B3M2B1 Frozen-Contract Synchronization
+
+Canonical EN and JA checker/runner plans, source/binding/typed/final
+designs, family decomposition, harness/module/source audits, TODOs, and
+coverage ownership freeze the same final-LF 113-byte/hash source,
+53-node/root-52 unrecovered arena, Task-48 `2/1/0`, Task-252 `6/5/0` with
+outer/inner parent edge, Task-256 `2/0/0/0/0/0/0/4/4`, base
+`1/2/2/2/2`, witness/name `1/0`, source partition `[0,1,2]`, public-API
+no-op, semantic deferrals, four/five future tests, unchanged `362/399`
+baselines, and B3M2B2-before-B4 order. `it` remains deferred only to an
+authority-valid `means` definition or property context. No bilingual debt
+is accepted.

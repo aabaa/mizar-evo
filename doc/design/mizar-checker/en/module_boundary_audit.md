@@ -424,3 +424,17 @@ dependency direction was added. Checker sizes are
 `4185/691/2505/8611`, with 30 production paths / 38,571 lines. The enlarged
 private statement leaves remain cohesive under the documented exception; no
 behavior-neutral split is warranted.
+
+## Task 258B3M2B1 Planned Boundary
+
+The documentation prerequisite changes no module. Future work is confined
+to the existing checker statement producer/typed/final consumers and the
+runner statement leaf/facades/root/test leaf. Task-252 retains the
+parenthesized wrapper/child, Task-256 retains only the two equality pairs,
+and Task-258 privately maps five roots to six primary rows. Raw source,
+parser, and resolver authentication stays in the private runner statement
+leaf; the checker consumes only syntax-free Task-48/252/256/base handoffs
+and `TypedArena`. No crate edge, public schema, active route, semantic
+owner, dependency direction, or behavior-neutral split is authorized.
+Baselines remain checker `15746/4660/7202/3156`, runner
+`4185/691/2505/8611`, and 30 paths / 38,571 lines.

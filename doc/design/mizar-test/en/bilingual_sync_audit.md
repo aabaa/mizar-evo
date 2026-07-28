@@ -521,3 +521,12 @@ completed exact dormant selector, five passing tests, 399-test library,
 30-path / 38,571-line production manifest, sizes
 `4185/691/2505/8611`, unchanged public/active/trace/semantic ownership, and
 B3M2B-before-B4 order. No implementation bilingual debt remains.
+
+## Task 258B3M2B1 Runner Prerequisite Synchronization
+
+EN/JA runner plans, TODOs, harnesses, and module audits freeze the same
+113-byte/hash exact dormant selector, 53-node/root-52 arena, five-root/
+six-primary profile, wrapper/child ownership, five future compound tests,
+unchanged 399-test / 30-path baseline, no public/active/trace/semantic
+change, and B3M2B2-before-B4 order. Authority-invalid theorem-proof
+`take it;` is excluded. No bilingual debt is accepted.

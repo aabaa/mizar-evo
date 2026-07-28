@@ -1839,7 +1839,12 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   no public/active/semantic route、unchanged runner baselineだけをfreeze。
 - [x] docs commitとfresh preflight後にB3M2Aだけをimplementし、runner
   399 testsをproject。
-- [ ] Task 258B4前にB3M2Bをfreeze/implement。
+- [x] B3M2Bをexact parenthesized B3M2B1 / remaining authority-valid
+  B3M2B2へdecompose。
+- [x] B3M2B1だけをfreezeし、implementation/B3M2B2をseparateに維持。
+- [ ] docs commit/fresh parser/resolver/lower/count/hash preflight後に
+  frozen B3M2B1だけをimplement。
+- [ ] Task 258B4前にB3M2B2をfreeze/implement。
 
 ## Checker Task 258B3M1 runner implementation ledger
 
@@ -1875,3 +1880,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   compound testsをexactly 5本追加。
 - [x] 399 tests、sizes `4185/691/2505/8611`、production 30 paths /
   38,571 linesを実測し、B3M2B-before-B4を保持。
+
+## Checker Task 258B3M2B1 runner prerequisite ledger
+
+- [x] final-LF 113-byte/hash、53 nodes/root 52、diagnostics 0、one local
+  exported theorem owner/labelをfreeze。
+- [x] five roots / Task-252 `6/5/0`、wrapper term 2 / child 3、refs
+  `0/1/2/3/4 -> 0/1/3/4/5`、atomic `[0,4]`、input refs `[0,3]`。
+- [x] one unnamed outer-term witness/no names、no public/active/binding/
+  fixture/trace credit/semantic outputをfreeze。
+- [x] future tests exactly 5本、unchanged 399 tests、30 paths /
+  38,571 lines、B3M2B2-before-B4をfreeze。
+- [ ] docs commit/fresh preflight後にB3M2B1だけをimplementし、
+  projected 404 runner testsを実測。
