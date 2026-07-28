@@ -4823,3 +4823,24 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `5618/706/2520/11945`、production 30 paths / 40,298 linesを実測し、
   canonical artifacts、active routes、fixtures、sidecars、expectations、
   trace status/count、coverage `deferred` / `tests = []`を維持。
+
+## Checker Task 258B3M2B2B1B1P frozen-prerequisite ledger
+
+- [x] 全Task-254/255 witness shapesより前に、exact final-LF
+  158-byte/67-node `take (1 ++ 2);` sourceをselect。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、wrapped Task-253
+  `1/1/1/2/2`をproof context 1、exact imported `++` provenanceと共に
+  freeze。
+- [x] application node 48を囲むwrapper node 50をTask-253 containment
+  onlyとしてfreezeし、later witness targetを`Application(0)`のまま維持。
+- [x] private wrapper-aware reuse sibling 1件、legacy unwrapped byte
+  compatibility、future runner compound testsちょうど2件をfreeze。
+- [x] exhaustive 158-byte/67-node selector isolation、全successful lower
+  row fields、dormant-route exclusion、empty upper tablesをfreeze。
+- [x] selector/Task-252/Task-253/typed-install failure precedence、atomic
+  rollback/replay、separate legacy context-0/context-1 hashesをfreeze。
+- [x] production/tests、canonical artifacts、active routes、fixtures、
+  expectations、sidecars、trace status/count、public APIs、semantic
+  ownership、libraries `374/416`、全measured hashesをpreserve。
+- [ ] このdocumentation prerequisiteだけをcommitし、fresh-inventory後、
+  B1B1 statement consumerをfreezeする前にB1B1Pだけをimplement。

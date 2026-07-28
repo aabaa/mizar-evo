@@ -234,3 +234,35 @@ witnesses remain application-independent with `None` and unchanged debug
 bytes. Missing, stale, substituted, wrapped, orphaned, or partially installed
 applications fail without publication. Other Task-253 shapes and all
 Task-254/255 witness targets remain deferred.
+
+## Task 258B3M2B2B1B1P Wrapped Proof-Context Reuse Contract
+
+The next Task-253-owned prerequisite is only the private reuse seam for the
+exact parenthesized `1 ++ 2` application at node 48, wrapper node 50, and
+proof context 1 in the 158-byte/67-node B1B1 source. Public Task-253 already
+represents the exact `1 application / 1 wrapper / 1 candidate / 2 arguments /
+2 requests` shape. The new private sibling must reuse that producer against
+shared Task-252 `6/4/2`; it must not turn wrapper 50 into a Task-252 primary
+or future Task-258 witness target.
+
+The existing unwrapped context-0 and context-1 helper outputs remain
+byte-identical. Exactly one normal `ParenthesizedTerm 129..137` directly
+enclosing `InfixExpression 130..136` is admitted. Missing, extra, nested,
+recovered, detached, reordered, wrong-range, stale, substituted, or
+context-mismatched wrappers and applications fail without a handoff. The
+seam owns no statement, witness, semantic type, proof, substitution, or goal
+effect.
+
+The two future runner tests exhaust all 158 source-byte offsets, all 67
+arena-node kind/range/recovery/ordered-child identities and root identity,
+and keep the dormant public route unselected. Success freezes every
+application, wrapper, candidate, argument, request, and imported-origin
+field plus typed/final parity and empty upper tables. Failures distinguish
+selector, Task-252, Task-253, and typed-install fingerprint layers in that
+precedence and prove atomic rollback/replay. Legacy context-0 and context-1
+unwrapped hashes remain
+`9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d`
+and
+`0fd83f61a40d3fd43816a52b70fca4fa4cf7f1d6e9172d3c5fe558c5d4add80d`.
+Exactly two future runner tests own this lower prerequisite; the B1B1
+statement consumer remains a later logical task.

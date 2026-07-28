@@ -4129,3 +4129,20 @@ This remains a dormant transport-only implementation. Canonical specs,
 `spec.en.checker.formula_statement.source_payloads` remains `deferred`,
 `tests = []`, with no backlink or executable coverage credit. Semantic
 typing, proof, substitution, and goal ownership remain deferred.
+
+## Task 258B3M2B2B1B1P Frozen-Prerequisite Audit
+
+Chapters 13, 15, and 16, the parser operator-term fixture, the parser `take`
+fixture, and the imported `++` resolver summary already authorize the exact
+parenthesized application shape. No `spec_gap` or unsafe test-intent decision
+exists. The missing B1B1 decomposition and private wrapped proof-context seam
+were `design_drift`; the future seam and exactly two runner tests are bounded
+`source_drift` and `test_gap`.
+
+B1B1P adds no Task-258 row and no active coverage. Canonical specs, `.miz`,
+fixtures, expectations, sidecars, active routes, public checker APIs, and
+trace metadata remain unchanged. The
+`spec.en.checker.formula_statement.source_payloads` row therefore stays
+`deferred`, `tests = []`, without backlink or credit. No
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` is present.

@@ -4285,3 +4285,34 @@ and proof
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 Fresh inventory must next select an authority-valid Task-258 B1B+ witness
 shape.
+
+## Task 258B3M2B2B1B1P Frozen Wrapped-Application Prerequisite
+
+Fresh inventory selects the next Task-253-owned witness shape,
+`take (1 ++ 2);`, before Task-254/255 families. The exact 158-byte/67-node
+source projects Task-252 `6/4/2` and Task-253 `1/1/1/2/2` in proof context
+1. B1B1P freezes only the missing runner-private wrapper-aware reuse seam and
+two future lower-stage tests; the Task-258 B1B1 statement consumer remains a
+later logical task.
+
+This is follow-up ownership/dependency documentation, not executable
+coverage. `spec.en.checker.formula_statement.source_payloads` remains
+`deferred`, `tests = []`, without backlink or credit.
+`tests/coverage/spec_trace.toml`, canonical specs, `.miz`, fixtures,
+expectations, sidecars, active routes, public APIs, and semantic/proof/goal
+owners remain unchanged.
+
+Baselines remain checker/runner libraries `374/416`, checker modules
+`21664/4742/7224/3156`, runner Task-253 sizes
+`1782/706/2520/2799`, and 30 production paths / 40,298 lines. Production
+path/content and checker/runner raw/normalized test-list hashes remain the
+B1A implementation values recorded above. Plan/requirements, type
+coverage, pass/fail, active parse/declaration/type/proof, and warnings/errors
+remain `419/387`, `253/241`, `228/191`, `101/5/198/1`, and `23/0`; all
+five CLI hashes remain unchanged.
+
+The missing concrete decomposition and frozen seam were `design_drift`.
+Future private code and exactly two runner tests are bounded `source_drift`
+and `test_gap`. There is no blocking `spec_gap`, unsafe test intent,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`.

@@ -467,3 +467,13 @@ manifestは40,298 linesで、path/content hashesは
 `201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`。
 module split、crate edge、active route、fixture、trace status/count、
 semantic owner、dependency directionは変更なし。
+
+## Task 258B3M2B2B1B1P frozen boundary
+
+B1B1Pはchecker moduleもpublic APIも変更しない。後続implementationは
+existing Task-253 source-application leaf内のrunner-private implementationと
+runner tests 2件に限定する。checkerはunchanged Task-252/253 public
+handoffsのsyntax-free consumerのまま。statement、witness、typed/final
+installer、semantic/proof/goal owner、crate edge、dependency directionを
+authorizeしない。baseline checker modulesは
+`21664/4742/7224/3156`のまま。

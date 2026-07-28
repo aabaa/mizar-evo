@@ -512,3 +512,13 @@ record the exact `4/5` compound tests, libraries `374/416`, checker sizes
 `21664/4742/7224/3156`, runner sizes `5618/706/2520/11945`, and 30 paths /
 40,298 lines. Canonical artifacts, active routes, fixtures, expectations,
 sidecars, and trace metadata remain unchanged. No bilingual debt remains.
+
+## Task 258B3M2B2B1B1P Frozen-Prerequisite Synchronization
+
+The EN canonical and JA companion freeze the same 158-byte/67-node
+parenthesized-application source, proof-context Task-252 `6/4/2` and
+Task-253 `1/1/1/2/2` projection, exact wrapper/application containment,
+private wrapper-aware reuse boundary, two future runner tests, legacy
+unwrapped byte compatibility, unchanged `374/416` baseline, and
+B1B1P-before-B1B1 order. No public/active/canonical/fixture/trace/semantic
+change or bilingual debt is accepted.

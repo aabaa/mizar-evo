@@ -2190,3 +2190,21 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Measure 416 runner tests, sizes `5618/706/2520/11945`, and 30
   production paths / 40,298 lines; leave active cases, fixtures,
   expectations, sidecars, and trace metadata unchanged.
+
+## Checker Task 258B3M2B2B1B1P Runner Prerequisite Ledger
+
+- [x] Freeze the exact final-LF 158-byte/67-node parenthesized imported
+  application source with zero diagnostics.
+- [x] Freeze shared Task-252 `6/4/2`, Task-253 `1/1/1/2/2`, proof context
+  1, wrapper node 50, application node 48, and imported `++` provenance.
+- [x] Restrict implementation to one private wrapper-aware Task-253 reuse
+  sibling and preserve all unwrapped context-0/context-1 bytes.
+- [x] Freeze exactly two runner compound tests for wrapper/context/
+  provenance corruption, stale replay, clean replay, and compatibility.
+- [x] Freeze all 158 source-byte and 67-node mutations, every success field,
+  dormant-route exclusion, lower-stage precedence, atomic rollback, and
+  separate context-0/context-1 debug hashes.
+- [x] Preserve 416 tests, Task-253 sizes `1782/706/2520/2799`, 30 paths /
+  40,298 lines, and every active/fixture/expectation/sidecar/trace artifact.
+- [ ] After the docs commit and fresh preflight, implement only B1B1P;
+  freeze the B1B1 statement consumer in a later logical task.

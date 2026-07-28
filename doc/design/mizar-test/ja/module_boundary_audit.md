@@ -10481,3 +10481,20 @@ checkerへcrossする。statement leaf/facade/root/test sizesは
 `201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`。
 module split、dependency direction、public/active route、fixture、
 expectation、sidecar、trace、binding、semantic ownerは不変。
+
+## Checker Task 258B3M2B2B1B1P frozen module boundary
+
+後続implementationのwrite scopeは、existing private
+`runner/type_elaboration/source_application.rs` leaf、必要ならそのprivate
+facade/root imports、`runner/tests/type_elaboration/source_application.rs`
+に限定する。new module/production pathを追加してはならない。statement
+leafはlater B1B1 frozen contract後に限りconsumerとなり、B1B1Pでは
+unchangedでなければならない。
+
+docs taskはRust moduleを変更しない。baselinesはTask-253
+leaf/facade/root/test `1782/706/2520/2799`、runner tests 416、
+production 30 paths / 40,298 lines、path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`。
+public re-export、checker dependency、active route、fixture、trace、
+binding、semantic ownerを変更しない。

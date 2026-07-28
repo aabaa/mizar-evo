@@ -2666,3 +2666,18 @@ or semantic owner changed. B3M2B2B remains next before B4.
   sidecars, active routes, trace row/status/count, and semantic/proof/goal
   ownership; retain `deferred`, `tests = []`, without coverage credit.
 - [ ] Fresh-inventory the next authority-valid Task-258 B1B+ witness shape.
+
+## Checker Task 258B3M2B2B1B1P Frozen Lower-Prerequisite
+
+- [x] Select exact `take (1 ++ 2);` before Task-254/255 witness families and
+  measure final-LF 158 bytes, SHA-256, zero diagnostics, 67 nodes/root 66.
+- [x] Freeze proof-context Task-252 `6/4/2`, wrapped Task-253
+  `1/1/1/2/2`, wrapper/application containment, and imported `++`
+  provenance.
+- [x] Freeze only one runner-private wrapper-aware Task-253 reuse seam and
+  exactly two future tests; retain the B1B1 statement consumer separately.
+- [x] Preserve canonical artifacts, production/tests, active routes,
+  fixtures, expectations, sidecars, trace metadata, public APIs, semantic
+  ownership, libraries `374/416`, and all count/hash baselines.
+- [ ] Commit the B1B1P documentation prerequisite, fresh-inventory, and
+  implement B1B1P alone before freezing B1B1.

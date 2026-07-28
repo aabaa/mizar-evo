@@ -571,3 +571,12 @@ install、all-byte/reparsed near-miss coverage、exact tests 5件、empty
 semantic/proof/goal outputについて同期した。runner tests 416、sizes
 `5618/706/2520/11945`、30 paths / 40,298 linesも一致する。active routes、
 fixtures、expectations、sidecars、trace metadataは不変。bilingual debtなし。
+
+## Task 258B3M2B2B1B1P runner prerequisite synchronization
+
+EN canonicalとJA companionは、同じ158-byte/67-node source、Task-252
+`6/4/2`、wrapped Task-253 `1/1/1/2/2`、exact imported provenance、
+private source-application leaf ownership、future tests 2件、legacy
+unwrapped compatibility、unchanged 416-test/40,298-line baseline、
+B1B1P-before-B1B1 orderをfreezeする。public/active/fixture/trace/semantic
+changeもbilingual debtも許容しない。

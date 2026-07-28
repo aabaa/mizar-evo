@@ -2415,3 +2415,19 @@ passした。librariesは`374/416`、checker modulesは
 `21664/4742/7224/3156`。semantic、proof、type、substitution、goal meaningを
 inferせず、canonical、fixture、active、expectation、sidecar、trace
 artifactは不変。
+
+## Task 258B3M2B2B1B1P lower-owner deferral
+
+fresh inventoryは`take (1 ++ 2);`を次のB1B1 statement shapeとして選ぶが、
+B1B1Pがfreezeするのはmissing runner-private wrapped Task-253 reuse seam
+だけ。158-byte/67-node motivating sourceはTask-252 `6/4/2`とTask-253
+`1/1/1/2/2`を持つ。wrapper node 50は`129..137`、inner application
+node 48は`130..136`をownし、future witnessは引き続き
+`Application(0)`をtargetする。B1B1Pはnew statement/witness profile、
+checker API、atomic installer、test、semantic behaviorをauthorizeしない。
+
+documentation commitとlower-seam implementation commitの後、B1B1を
+separateにfresh-inventoryしてfreezeしなければならない。他operator/
+operandのparenthesized applications、nested wrappers/applications、
+named/multiple witnesses、Task-254/255 witness terms、goal matching、
+type obligations、substitution、proof acceptanceはdeferredのまま。

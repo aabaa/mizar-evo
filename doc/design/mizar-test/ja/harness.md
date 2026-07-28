@@ -3539,3 +3539,35 @@ exact runner tests 5件はpass。expression semantics、inferred types、
 substitutions、obligations、proof steps、terminal goals、Core/ControlFlow/VC、
 cluster facts、diagnostics、active outputsはempty。fixture、sidecar、
 expectation、trace、detail key、public route、active caseは追加していない。
+
+## Checker Task 258B3M2B2B1B1P dormant lower harness contract
+
+motivating 158-byte sourceが含むnew lower shapeは1件だけ:
+`ParenthesizedTerm 129..137 -> InfixExpression 130..136`。private B1B1P
+harnessは、same imported `++` candidateとwrapper/application containmentを
+authenticateしながら、proof context 1でshared Task-252 `6/4/2`とTask-253
+`1/1/1/2/2`をcomposeする。Task-258 witness、statement、semantic term、
+proof step、substitution、goalをbuildする前に停止する。
+
+future compound tests 2件:
+`task258b3m2b2b1b1p_wrapped_imported_application_proof_context_reuse_is_exact`
+と
+`task258b3m2b2b1b1p_wrapper_corruption_replay_and_legacy_outputs_fail_closed`。
+共同で、final LFを含むloaded-source byte positions 158件全て、全67
+nodesのkind/range/recovery/ordered childrenとroot identity、parsed
+operator/name/import/parenthesis/recovery near missesをmutateする。
+public/active Task-253 routeは全体を通じてunselectedのまま。
+
+successは全application/wrapper/candidate/argument/request fields、complete
+imported symbol/origin identity、typed/final clone parity、empty
+semantic/proof/goal/diagnostic tablesをassertする。failure precedenceは
+selector、Task-252、Task-253、stale-fingerprint typed installationの順。
+combined corruptionがこの順序をproveし、全failureはclean replay前の
+typed/resolved publicationがatomicにabsent/unchangedであることをprove
+する。pre-change unwrapped context-0/context-1 row hashesはそれぞれ
+`9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d`
+と
+`0fd83f61a40d3fd43816a52b70fca4fa4cf7f1d6e9172d3c5fe558c5d4add80d`。
+separateな`Primary(0/1)`付き`2/0/2`と`Primary(2/3)`付き`6/4/2` rowsは
+exactのまま。active case、fixture、sidecar、expectation、trace row、
+detail key、public dispatchは追加しない。

@@ -217,3 +217,35 @@ legacy statement witnessesは`None`、unchanged debug bytesの
 application-independentなまま。missing、stale、substituted、wrapped、
 orphan、partial installはpublishなしでfailする。other Task-253 shapesと
 全Task-254/255 witness targetsはdeferred。
+
+## Task 258B3M2B2B1B1P wrapped proof-context reuse contract
+
+次のTask-253-owned prerequisiteは、158-byte/67-node B1B1 sourceにある
+node 48のexact parenthesized `1 ++ 2` application、wrapper node 50、
+proof context 1のprivate reuse seamだけである。public Task-253はexact
+`1 application / 1 wrapper / 1 candidate / 2 arguments / 2 requests`
+shapeを既にrepresentする。new private siblingはshared Task-252 `6/4/2`に
+対してそのproducerをreuseしなければならず、wrapper 50をTask-252
+primaryやfuture Task-258 witness targetに変えてはならない。
+
+existing unwrapped context-0/context-1 helper outputsはbyte-identicalの
+まま。`InfixExpression 130..136`をdirectに囲むnormal
+`ParenthesizedTerm 129..137`ちょうど1件だけをadmitする。missing、
+extra、nested、recovered、detached、reordered、wrong-range、stale、
+substituted、context-mismatched wrapper/applicationはhandoffなしでfail
+する。このseamはstatement、witness、semantic type、proof、
+substitution、goal effectをownしない。
+
+future runner tests 2件は全158 source-byte offsets、全67 arena-nodeの
+kind/range/recovery/ordered-child identitiesとroot identityをexhaustし、
+dormant public routeをunselectedに保つ。successは全application、
+wrapper、candidate、argument、request、imported-origin fieldsに加え、
+typed/final parityとempty upper tablesをfreezeする。failuresは
+selector、Task-252、Task-253、typed-install fingerprint layersをこの
+precedenceでdistinguishし、atomic rollback/replayをproveする。legacy
+context-0/context-1 unwrapped hashesはそれぞれ
+`9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d`
+と
+`0fd83f61a40d3fd43816a52b70fca4fa4cf7f1d6e9172d3c5fe558c5d4add80d`
+のまま。future runner testsちょうど2件がこのlower prerequisiteをownし、
+B1B1 statement consumerはlater logical taskのまま。

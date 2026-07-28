@@ -593,3 +593,12 @@ near-miss coverage, five exact tests, and empty semantic/proof/goal output.
 They record runner tests 416, sizes `5618/706/2520/11945`, and 30 paths /
 40,298 lines. Active routes, fixtures, expectations, sidecars, and trace
 metadata remain unchanged. No bilingual debt remains.
+
+## Task 258B3M2B2B1B1P Runner Prerequisite Synchronization
+
+The EN canonical and JA companion freeze the same 158-byte/67-node source,
+Task-252 `6/4/2`, wrapped Task-253 `1/1/1/2/2`, exact imported provenance,
+private source-application leaf ownership, two future tests, legacy
+unwrapped compatibility, unchanged 416-test/40,298-line baseline, and
+B1B1P-before-B1B1 order. No public/active/fixture/trace/semantic change or
+bilingual debt is accepted.

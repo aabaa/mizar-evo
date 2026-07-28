@@ -5067,3 +5067,24 @@ implementation commit does not satisfy a producer task.
   `5618/706/2520/11945`, and 30 production paths / 40,298 lines; preserve
   canonical artifacts, active routes, fixtures, sidecars, expectations,
   trace status/count, and coverage `deferred` / `tests = []`.
+
+## Checker Task 258B3M2B2B1B1P Frozen-Prerequisite Ledger
+
+- [x] Select the exact final-LF 158-byte/67-node `take (1 ++ 2);` source
+  before every Task-254/255 witness shape.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and wrapped Task-253
+  `1/1/1/2/2` in proof context 1 with exact imported `++` provenance.
+- [x] Freeze wrapper node 50 around application node 48 as Task-253
+  containment only; keep `Application(0)` as the later witness target.
+- [x] Freeze one private wrapper-aware reuse sibling, legacy unwrapped byte
+  compatibility, and exactly two future runner compound tests.
+- [x] Freeze exhaustive 158-byte and 67-node selector isolation, every
+  successful lower row field, dormant-route exclusion, and empty upper
+  tables.
+- [x] Freeze selector/Task-252/Task-253/typed-install failure precedence,
+  atomic rollback/replay, and separate legacy context-0/context-1 hashes.
+- [x] Preserve production/tests, canonical artifacts, active routes,
+  fixtures, expectations, sidecars, trace status/count, public APIs,
+  semantic ownership, libraries `374/416`, and all measured hashes.
+- [ ] Commit this documentation prerequisite alone, fresh-inventory, then
+  implement only B1B1P before freezing the B1B1 statement consumer.

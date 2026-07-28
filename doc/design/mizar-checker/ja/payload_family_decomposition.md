@@ -896,3 +896,13 @@ publishするか何もpublishせず、final assemblyも同じvalidationをrepeat
 する。reverse edge、lower row duplicate、wrapper ownership、Task-254/255
 ownership、structure/set/choice/qualification edge、semantic/proof/goal
 familyは追加していない。
+
+### Task 258B3M2B2B1B1P wrapped Task-253 seam
+
+B1B1Pは完全にTask-253 runner producer boundary内に留まる。payload familyも
+cross-family edgeも追加しない。Task 252はnumeral primaries 2/3、Task
+253はapplication 0とwrapper 0、Task 258はまだ何もownしない。future
+B1B1 edgeは引き続き
+`SourceStatementWitness(0) -> SourceFunctorApplication(0)`。wrapper 0は
+authenticated containment metadataでありwitness targetではない。
+Task-254/255と全semantic/proof/goal familiesは除外したまま。

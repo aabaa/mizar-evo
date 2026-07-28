@@ -11716,3 +11716,20 @@ sizes are `5618/706/2520/11945`; the unchanged production manifest is
 `201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`.
 No module split, dependency direction, public/active route, fixture,
 expectation, sidecar, trace, binding, or semantic owner changed.
+
+## Checker Task 258B3M2B2B1B1P Frozen Module Boundary
+
+The later implementation write scope is restricted to the existing private
+`runner/type_elaboration/source_application.rs` leaf, its private
+facade/root imports if required, and
+`runner/tests/type_elaboration/source_application.rs`. No module or
+production path may be added. The statement leaf is a consumer only after a
+later B1B1 frozen contract and must remain unchanged in B1B1P.
+
+The docs task changes no Rust module. Baselines are Task-253
+leaf/facade/root/test `1782/706/2520/2799`, 416 runner tests, and 30
+production paths / 40,298 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`.
+No public re-export, checker dependency, active route, fixture, trace,
+binding, or semantic owner changes.

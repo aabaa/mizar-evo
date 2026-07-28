@@ -1991,3 +1991,22 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] runner 416 tests、sizes `5618/706/2520/11945`、production
   30 paths / 40,298 linesを実測し、active cases、fixtures、expectations、
   sidecars、trace metadataを不変に維持。
+
+## Checker Task 258B3M2B2B1B1P runner prerequisite ledger
+
+- [x] diagnostics 0のexact final-LF 158-byte/67-node parenthesized
+  imported application sourceをfreeze。
+- [x] shared Task-252 `6/4/2`、Task-253 `1/1/1/2/2`、proof context 1、
+  wrapper node 50、application node 48、imported `++` provenanceをfreeze。
+- [x] implementationをprivate wrapper-aware Task-253 reuse sibling 1件に
+  限定し、全unwrapped context-0/context-1 bytesをpreserve。
+- [x] wrapper/context/provenance corruption、stale replay、clean replay、
+  compatibilityのrunner compound testsちょうど2件をfreeze。
+- [x] 全158 source-byte/67-node mutations、全success fields、
+  dormant-route exclusion、lower-stage precedence、atomic rollback、
+  separate context-0/context-1 debug hashesをfreeze。
+- [x] 416 tests、Task-253 sizes `1782/706/2520/2799`、30 paths /
+  40,298 lines、全active/fixture/expectation/sidecar/trace artifactsを
+  preserve。
+- [ ] docs commitとfresh preflight後、B1B1Pだけをimplementし、B1B1
+  statement consumerはlater logical taskでfreeze。

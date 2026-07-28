@@ -487,3 +487,13 @@ compound tests、libraries `374/416`、checker sizes
 `21664/4742/7224/3156`、runner sizes `5618/706/2520/11945`、30 paths /
 40,298 linesも一致する。canonical artifacts、active routes、fixtures、
 expectations、sidecars、trace metadataは不変。bilingual debtなし。
+
+## Task 258B3M2B2B1B1P frozen-prerequisite synchronization
+
+EN canonicalとJA companionは、同じ158-byte/67-node
+parenthesized-application source、proof-context Task-252 `6/4/2`とTask-253
+`1/1/1/2/2` projection、exact wrapper/application containment、private
+wrapper-aware reuse boundary、future runner tests 2件、legacy unwrapped
+byte compatibility、unchanged `374/416` baseline、B1B1P-before-B1B1 orderを
+freezeする。public/active/canonical/fixture/trace/semantic changeも
+bilingual debtも許容しない。

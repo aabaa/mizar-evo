@@ -3739,3 +3739,36 @@ substitutions, obligations, proof steps, terminal goals, Core/ControlFlow/VC,
 cluster facts, diagnostics, and active outputs remain empty. No fixture,
 sidecar, expectation, trace, detail key, public route, or active case was
 added.
+
+## Checker Task 258B3M2B2B1B1P Dormant Lower Harness Contract
+
+The motivating 158-byte source contains only one new lower shape:
+`ParenthesizedTerm 129..137 -> InfixExpression 130..136`. The private
+B1B1P harness composes shared Task-252 `6/4/2` with Task-253
+`1/1/1/2/2` in proof context 1, authenticating the same imported `++`
+candidate and wrapper/application containment. It stops before building a
+Task-258 witness, statement, semantic term, proof step, substitution, or
+goal.
+
+The two future compound tests are
+`task258b3m2b2b1b1p_wrapped_imported_application_proof_context_reuse_is_exact`
+and
+`task258b3m2b2b1b1p_wrapper_corruption_replay_and_legacy_outputs_fail_closed`.
+Together they mutate all 158 loaded-source byte positions including final
+LF, all 67 nodes' kind/range/recovery/ordered children and root identity,
+and parsed operator/name/import/parenthesis/recovery near misses. The
+public/active Task-253 route remains unselected throughout.
+
+Success asserts every application/wrapper/candidate/argument/request field,
+the complete imported symbol and origin identity, typed/final clone parity,
+and empty semantic/proof/goal/diagnostic tables. Failure precedence is
+selector before Task-252 before Task-253 before stale-fingerprint typed
+installation; combined corruption proves that order and every failure proves
+atomic absent/unchanged typed and resolved publication before clean replay.
+The pre-change unwrapped context-0 and context-1 row hashes are respectively
+`9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d`
+and
+`0fd83f61a40d3fd43816a52b70fca4fa4cf7f1d6e9172d3c5fe558c5d4add80d`;
+their separate `2/0/2` with `Primary(0/1)` and `6/4/2` with
+`Primary(2/3)` rows remain exact. No active case, fixture, sidecar,
+expectation, trace row, detail key, or public dispatch is added.

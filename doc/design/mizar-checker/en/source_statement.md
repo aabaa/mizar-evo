@@ -2916,3 +2916,19 @@ rollback/replay/clone matrices. Libraries are `374/416`; checker modules are
 `21664/4742/7224/3156`. No semantic, proof, type, substitution, or goal
 meaning is inferred, and no canonical, fixture, active, expectation,
 sidecar, or trace artifact changed.
+
+## Task 258B3M2B2B1B1P Lower-Owner Deferral
+
+Fresh inventory selects `take (1 ++ 2);` as the next B1B1 statement shape,
+but B1B1P freezes only its missing runner-private wrapped Task-253 reuse seam.
+The 158-byte/67-node motivating source has Task-252 `6/4/2` and Task-253
+`1/1/1/2/2`; wrapper node 50 owns `129..137`, inner application node 48 owns
+`130..136`, and the future witness will continue to target
+`Application(0)`. No new statement/witness profile, checker API, atomic
+installer, test, or semantic behavior is authorized by B1B1P.
+
+After the documentation and lower-seam implementation commits, B1B1 must be
+fresh-inventoried and frozen separately. Parenthesized applications with
+other operators/operands, nested wrappers/applications, named or multiple
+witnesses, Task-254/255 witness terms, goal matching, type obligations,
+substitution, and proof acceptance remain deferred.

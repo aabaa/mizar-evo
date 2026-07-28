@@ -491,3 +491,12 @@ leaf/facade/root/test sizes are `5618/706/2520/11945`. The unchanged
 `201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`.
 No module split, crate edge, active route, fixture, trace status/count,
 semantic owner, or dependency direction changed.
+
+## Task 258B3M2B2B1B1P Frozen Boundary
+
+B1B1P changes no checker module or public API. Its later implementation is
+runner-private inside the existing Task-253 source-application leaf and two
+runner tests. The checker remains the syntax-free consumer of the unchanged
+Task-252/253 public handoffs. No statement, witness, typed/final installer,
+semantic/proof/goal owner, crate edge, or dependency direction is authorized.
+Baseline checker modules remain `21664/4742/7224/3156`.

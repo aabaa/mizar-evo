@@ -3945,3 +3945,20 @@ spec、`.miz`、fixtures、expectations、sidecars、active routes、
 `spec.en.checker.formula_statement.source_payloads`は`deferred`,
 `tests = []`、backlink/executable creditなし。semantic typing、proof、
 substitution、goal ownershipはdeferred。
+
+## Task 258B3M2B2B1B1P frozen-prerequisite audit
+
+Chapters 13, 15, 16、parser operator-term fixture、parser `take` fixture、
+imported `++` resolver summaryは、exact parenthesized application shapeを
+既にauthorizeする。`spec_gap`もunsafe test-intent decisionもない。
+missing B1B1 decompositionとprivate wrapped proof-context seamは
+`design_drift`。future seamとrunner testsちょうど2件はbounded
+`source_drift`と`test_gap`。
+
+B1B1PはTask-258 rowもactive coverageも追加しない。canonical specs、
+`.miz`、fixtures、expectations、sidecars、active routes、public checker
+APIs、trace metadataは不変。従って
+`spec.en.checker.formula_statement.source_payloads` rowは`deferred`、
+`tests = []`、backlink/creditなしのまま。
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`はない。

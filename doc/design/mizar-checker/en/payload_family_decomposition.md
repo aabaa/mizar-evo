@@ -965,3 +965,13 @@ and witness bundle or publishes nothing, while final assembly repeats the
 same validation. No reverse edge, duplicate lower row, wrapper ownership,
 Task-254/255 ownership, structure/set/choice/qualification edge, or
 semantic/proof/goal family was added.
+
+### Task 258B3M2B2B1B1P Wrapped Task-253 Seam
+
+B1B1P remains wholly inside the Task-253 runner producer boundary. It adds no
+payload family or cross-family edge: Task 252 owns numeral primaries 2/3,
+Task 253 owns application 0 plus wrapper 0, and Task 258 owns nothing yet.
+The future B1B1 edge will still be
+`SourceStatementWitness(0) -> SourceFunctorApplication(0)`; wrapper 0 is
+authenticated containment metadata, not a witness target. Task-254/255 and
+all semantic/proof/goal families remain excluded.
