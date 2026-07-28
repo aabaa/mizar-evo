@@ -11568,3 +11568,13 @@ facades, runner root, and statement test leaf. Production topology remains
 30 paths; sizes are `3183/684/2498` production lines and 5,799 test-leaf
 lines. No new module, public harness route, external detail key, dependency
 direction, or semantic owner was added.
+
+## Task 258B3M1 Planned Consumer Boundary
+
+The exact selector, extraction, lower assembly, and five tests remain in
+the existing `type_elaboration/source_statement.rs` production/test leaves
+and existing facades/root. Production topology stays 30 paths. This
+documentation task leaves statement leaf/facade/root/test sizes
+`3183/684/2498/5799` and the 37,555-line production manifest unchanged.
+No public route, external key, module split, dependency direction, or
+semantic owner is authorized.

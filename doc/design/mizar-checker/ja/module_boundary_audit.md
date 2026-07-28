@@ -361,3 +361,13 @@ nearest-family cross-family edge、conditional fingerprint、install
 revalidation、rendering、real/synthetic/corruption/exclusion matrixは
 behavior-coupledでありprivate checker splitは不要である。`TypedAst`がone-shot
 immutable handoffをownし、`ResolvedTypedAst`はrevalidate後にclone-preserveする。
+
+## Task 258B3M1 boundary addendum
+
+exact multiple-witness profileはexisting `source_statement.rs`、
+`typed_ast.rs`、`resolved_typed_ast.rs` owners内でcohesiveに維持する。
+syntax-free Task-48/252/256/base handoffsと`TypedArena`だけをconsumeし、raw
+parser/resolver traversalはexisting private `mizar-test` statement leafに
+残す。new module/crate edge/public schema/semantic owner/dependency
+directionはauthorizeしない。本docs prerequisiteのcurrent sizesは
+`12114/4644/7200/3156`。

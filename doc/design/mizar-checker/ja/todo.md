@@ -4599,8 +4599,16 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   preflight後、Task 258B3Nだけをimplement。exact dense witness-name
   transport、checker tests 4本、runner tests 5本がpassし、libraryは
   `354/389`。semantic/corpus activationはない。
-- [ ] Task 258B4 selection前にTask 258B3M multiple/other witness-term
-  transportをfreeze/implement。
+- [x] broad Task 258B3Mをexact reserved-variable B3M1と
+  non-reserved-variable/other-term B3M2へ分解。
+- [x] Task 258B3M1だけをfreeze: exact 113-byte/56-node mixed
+  two-witness source、Task-252 `6/6/0`、base/witness/name
+  `1/2/2/2/2` + `2/1`、shared source ordinal 1、dense ordinals 0/1、
+  no new API/semantics、tests 4/5本、unchanged baseline。
+- [ ] documentation commitとfresh parser/resolver/lower/count/hash
+  preflight後にfrozen Task 258B3M1だけをimplement。
+- [ ] Task 258B4 selection前にTask 258B3M2 other witness-term shapeを
+  freeze/implement。
 
 ## Checker Task 258B3N 実装ledger
 
@@ -4612,3 +4620,17 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   status/count、active-corpus ownershipを変更しない。
 - [x] `354/389` tests、checker modules `12114/4644/7200/3156`、runner
   production 30 paths / 37,555 linesを再測定。
+
+## Checker Task 258B3M1 documentation ledger
+
+- [x] canonical authority、exact consumer bytes/hash、complete 56-node
+  parser identity、theorem-only resolver provenance、subtree exclusionを
+  freeze。
+- [x] Task-48/252/256/base profileとexact two-witness/one-name syntax
+  tableを、`BindingId`/semantic effectなしでfreeze。
+- [x] public-API no-op、debug compatibility、fail-closed validation
+  precedence、paired typed/final ownership、exact tests 4/5本をfreeze。
+- [x] canonical spec、既存`.miz`、fixture、expectation、sidecar、trace
+  status/count、active route、source/tests、list/count/hashを維持。
+- [x] EN/JA plan/auditのfollow-up ownershipを更新し、B3M1 implementation
+  後はB3M2がnextでB4前であることを記録。

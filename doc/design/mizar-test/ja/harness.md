@@ -3299,3 +3299,18 @@ witness/name tableをpublishする。exhaustive lower/base/name、resolver、
 all-node、near-miss、cross-family、active-corpus、replay、rollback、
 final-empty-semantic checkがpassする。libraryは389 tests、productionは
 30 paths / 37,555 lines。
+
+## Checker Task 258B3M1 planned dormant harness contract
+
+future private selectorはfinal-LF 113-byte
+`FormulaStatementMultipleWitnessSmoke` sourceとcomplete 56-node arenaだけを
+matchし、B3N/B3/B2/B1/Aより先にdispatchする予定である。existing
+lower/base handoffをreconstructし、named witness 0、unnamed witness 1、
+name row 0だけをbinding/semantic effectなしでpublishする予定である。両
+witness rowsはone `take` source ordinalを共有し、dense ordinals 0/1を
+保持する。
+
+future compound tests 5本はsource/hash/parser/resolver/lower identity、
+exhaustive mutation/replay、全byte/subtree near miss、active/cross-route
+isolationのboth order、typed/final empty semanticsをcoverする予定である。
+fixture、sidecar、trace row、external detail key、active dispatchは追加しない。

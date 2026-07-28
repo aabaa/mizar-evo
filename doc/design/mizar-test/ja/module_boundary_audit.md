@@ -10342,3 +10342,12 @@ implementationは既存statement leaf、facade 2件、runner root、statement te
 leafに留まる。production topologyは30 paths、sizeはproduction
 `3183/684/2498` lines、test leaf 5,799 lines。new module、public harness route、
 external detail key、dependency direction、semantic ownerは追加しない。
+
+## Task 258B3M1 planned consumer boundary
+
+exact selector、extraction、lower assembly、tests 5本はexisting
+`type_elaboration/source_statement.rs` production/test leavesとexisting
+facade/rootに留める。production topologyは30 paths。本documentation taskは
+statement leaf/facade/root/test sizes `3183/684/2498/5799`と37,555-line
+production manifestを不変に保つ。public route、external key、module
+split、dependency direction、semantic ownerはauthorizeしない。

@@ -981,3 +981,11 @@ paired installerはauthenticated B3またはB3N bundleをacceptし、exact B3N
 dense name tableと51-node arenaを含めてvalidateする。base-only、
 repeated、B3/B3N hybrid、reference、Task-248/257、semantic-table orderは
 atomicにfailし、successful debug orderはbase、witness/name、nodesを維持する。
+
+## Task 258B3M1 planned paired ownership
+
+existing paired installerだけをpublication pathとする。exact B3M1 base +
+`2 witnesses / 1 name`をacceptし、56-node arenaと両witness/name linkを
+verifyしてboth halvesをatomicにpublishする。B3/B3N bytesは不変。repeated
+install、cross-profile halves、reference/Task-248/257/other-258 familyの
+both order、semantic coexistenceはpartial ownershipなしでrollbackする。

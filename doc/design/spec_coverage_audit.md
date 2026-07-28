@@ -3849,3 +3849,24 @@ required; it changes no canonical requirement, trace row/status/count, or
 coverage credit. `spec.en.checker.formula_statement.source_payloads`
 remains `deferred` with `tests = []`. Tasks 269/272 retain all named-witness
 binding and semantic effects; Task 258B3M remains next before B4.
+
+## Step 5 Checker Task 258B3M1 Frozen-Ownership Addendum
+
+Fresh inventory decomposes the former Task 258B3M follow-up into exact B3M1
+and future B3M2. B3M1 freezes the 113-byte/56-node mixed two-witness
+dormant source, theorem-only resolver provenance, Task-48 `2/1/0`,
+Task-252 `6/6/0`, Task-256 `2/0/0/0/0/0/0/4/4`, base
+`1/2/2/2/2`, and witness/name `2/1`. Both witness rows share source ordinal
+1 and use dense within-`take` ordinals 0/1. It publishes no name binding,
+abbreviation, ordered goal effect, obligation, substitution, semantic fact,
+proof result, or accepted theorem.
+
+This ownership-only update resolves documentation `design_drift`; future
+B3M1 code/tests are bounded `source_drift`/`test_gap`. It changes no
+canonical specification, `.miz`, expectation, sidecar, trace
+row/status/count, executable source/test, active route, list, count, or
+hash. `spec.en.checker.formula_statement.source_payloads` remains
+`deferred` with `tests = []`, so no coverage credit is awarded. Task 269
+retains named binding/abbreviation, Task 272 retains ordered existential
+goal effects, B3M2 retains every other witness-term shape, and B4 remains
+blocked behind B3M2.

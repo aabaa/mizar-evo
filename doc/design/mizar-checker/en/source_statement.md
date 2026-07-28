@@ -1847,3 +1847,184 @@ dependency/aggregate/witness/name error precedence. It creates no binding,
 abbreviation, obligation, fact, proof result, goal transition, or accepted
 theorem. Four checker and five runner compound tests close the bounded
 `source_drift`/`test_gap`; Task 258B3M is next.
+
+## Task 258B3M1 Frozen Mixed Multiple-Witness Slice
+
+Fresh inventory decomposes the former open-ended Task 258B3M into two
+dependency-ordered slices. Task 258B3M1 owns only two reserved-variable
+witness rows in one `take`: a named row followed by an unnamed row. Task
+258B3M2 retains every non-reserved-variable and other witness-term shape.
+Task 258B4 remains blocked behind B3M2.
+
+Canonical authority is `doc/spec/en/15.statements.md` §§15.4.4 and 15.11.5,
+`doc/spec/en/16.theorems_and_proofs.md` §16.3.3 item 5, and
+`doc/spec/en/04.variables_and_constants.md` §4.4.3. The existing
+`pass_parser_simple_statements_001.miz` fixture already contains the mixed
+shape `take a = x, y;`; its parser test requires one `TakeStatement` and two
+`Witness` nodes. The parser consumes comma-separated witnesses in source
+order and accepts either `identifier = term_expression` or
+`term_expression`. This authority freezes syntax transport only. Task 269
+still owns a future binding for `y`, its RHS link, abbreviation replay, and
+context transition. Task 272 still owns ordered existential-binder
+matching, witness type obligations, capture-avoiding substitution, and the
+remaining goal. Tasks 270/271 remain limited to `deffunc`/`defpred` closure
+and `reconsider`.
+
+The exact future corpus-dormant consumer is this 113-byte final-LF source,
+SHA-256
+`412a6a7f8fddebd67418f3482855ea89a1e7da922b42ebb93463971d8e49c186`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementMultipleWitnessSmoke: x = x proof
+  take y = x, x;
+  thus x = x;
+end;
+```
+
+Its equality goal is not an existential claim, so the source is not a valid
+proof and must never become an active accepted corpus case.
+
+Fresh real frontend inventory freezes 56 unrecovered nodes with root 55 and
+one source. Token nodes are exactly
+`0:reserve@0..7, 1:x@8..9, 2:for@10..13, 3:set@14..17,
+4:;@17..18, 5:theorem@19..26,
+6:FormulaStatementMultipleWitnessSmoke@27..63, 7::@63..64,
+8:x@65..66, 9:=@67..68, 10:x@69..70, 11:proof@71..76,
+12:take@79..83, 13:y@84..85, 14:=@86..87, 15:x@88..89,
+16:,@89..90, 17:x@91..92, 18:;@92..93, 19:thus@96..100,
+20:x@101..102, 21:=@103..104, 22:x@105..106, 23:;@106..107,
+24:end@108..111, 25:;@111..112`; each has no child. Structural nodes are:
+
+| IDs | Exact kind, range, ordered children |
+| --- | --- |
+| 26–29 | `TypeHead 14..17 [3]`; `TypeExpression 14..17 [26]`; `ReserveSegment 8..17 [1,2,27]`; `ReserveItem 0..18 [0,28,4]` |
+| 30–35 | `TermReference 65..66 [8]`; `TermExpression 65..66 [30]`; `TermReference 69..70 [10]`; `TermExpression 69..70 [32]`; `BuiltinPredicateApplication 65..70 [31,9,33]`; `FormulaExpression 65..70 [34]` |
+| 36–42 | `TermReference 88..89 [15]`; `TermExpression 88..89 [36]`; `Witness 84..89 [13,14,37]`; `TermReference 91..92 [17]`; `TermExpression 91..92 [39]`; `Witness 91..92 [40]`; `TakeStatement 79..93 [12,38,16,41,18]` |
+| 43–50 | `TermReference 101..102 [20]`; `TermExpression 101..102 [43]`; `TermReference 105..106 [22]`; `TermExpression 105..106 [45]`; `BuiltinPredicateApplication 101..106 [44,21,46]`; `FormulaExpression 101..106 [47]`; `Proposition 101..106 [48]`; `ConclusionStatement 96..107 [19,49,23]` |
+| 51–55 | `ProofBlock 71..111 [11,42,50,24]`; `TheoremItem 19..112 [5,6,7,35,51,25]`; `ItemList 0..112 [29,52]`; `CompilationUnit 0..112 [53]`; `Root 0..112 [0..25,54]` |
+
+Resolver provenance is exactly one local public/exported theorem owner and
+label, contribution 0, owner range `19..112`, label range `27..63`,
+structural origin `[2,1]`, normal recovery, and no import, proof-step label,
+citation, label-reference key, witness-name symbol, or companion resolver
+bundle.
+
+The syntax-free lower composition is Task-48 `2/1/0`: module context 0,
+proof context 1 owned by source range `71..111`, one reserved binding 0,
+visible binding `[0]`, empty proof-owned binding list, and no diagnostic.
+Token `y` is not a `BindingId`. Task 252 is `6/6/0`, with term/reference
+nodes `30/32/36/39/43/45`, ranges `65..66`, `69..70`, `88..89`,
+`91..92`, `101..102`, `105..106`, source ordinals `0..5`, contexts
+`0/0/1/1/1/1`, binding 0, scope `[0]`, and use ordinal 1. Task 256 remains
+`2/0/0/0/0/0/0/4/4`; its equality nodes 34/47 target primary terms
+`[0,1,4,5]` and exclude both witness terms 2/3.
+
+The base statement profile remains `1/2/2/2/2`: owner/theorem node 52 and
+conclusion node 50 have source ordinals 0/2 and contexts 0/1. The witness
+companion becomes exactly `2 witnesses / 1 name`:
+
+| Row | Frozen syntax-only identity |
+| --- | --- |
+| witness 0 | owner 0; context 1; primary term 2; take node/range `42`/`79..93`; item node/range `38`/`84..89`; source ordinal 1; within-`take` ordinal 0; spelling `y = x`; `Named`; normal; `Some(name#0)` |
+| witness 1 | owner 0; context 1; primary term 3; take node/range `42`/`79..93`; item node/range `41`/`91..92`; source ordinal 1; within-`take` ordinal 1; spelling `x`; `Unnamed`; normal; no name |
+| name 0 | links only witness 0; token node/range `13`/`84..85`; spelling `y`; normal |
+
+The two rows share source ordinal 1 because they belong to one source
+`take` item; their dense within-`take` ordinals preserve syntax order only.
+The combined source-item order is theorem 0, both witness rows at 1, and
+conclusion 2. It does not assert left-to-right goal effect.
+
+No public type, enum variant, field, or installer is added. The existing
+dense witness/name tables, `Named`/`Unnamed` kinds, primary-term target,
+`SourceStatementWitnessProducer`,
+`TypedAst::with_source_statement_witnesses`, and final
+`ResolvedTypedAst` ownership are sufficient. The private validator adds
+only an exact B3M1 profile. Dependency/fingerprint/complete shared-arena
+validation precedes aggregate cardinality; witness rows are then validated
+in dense order before name rows. Reordered kind/name/term/ordinal links,
+orphan or duplicate names, B3/B3N/B3M1 hybrids, sparse rows, and copied
+dependencies fail atomically under the existing
+`DependencyMismatch` / `InvalidAggregate` /
+`InvalidWitness { witness }` / `InvalidName { name }` precedence.
+
+The typed arena assigns `source.statement-witness.take` to node 42,
+`source.statement-witness.item` to nodes 38/41, and
+`source.statement-witness.name` only to token 13. Term-expression wrappers
+37/40 remain unowned and Task 252 owns references 36/39. The take contains
+exactly named witness 0, comma, unnamed witness 1 in order. The name is a
+descendant only of witness 0; the two RHS wrapper/reference subtrees are
+distinct siblings. Both witnesses are descendants of theorem/proof/take
+and excluded from the conclusion subtree; Task 256 excludes both.
+
+`source-statement-witness-debug-v1` stays unchanged. B3 and B3N debug bytes
+remain byte-identical. B3M1 emits witness rows 0 then 1 using the existing
+line grammar, followed by name row 0. The paired typed/final owner rejects
+standalone halves, reference hybrids, every Task-248/257/other-258 family
+in either order, and any nonempty semantic/proof/goal table. Successful
+assembly clone-preserves the pair and leaves every semantic output empty.
+
+The checker test contract is exactly four compound tests:
+
+1. complete API/debug, B3/B3N compatibility, exact B3M1 lower/base/
+   witness/name publication, resolver provenance, and empty semantics;
+2. dependency/cardinality, statement/primary fingerprints, each
+   witness/name/order/link/provenance field, mixed-fault precedence
+   `DependencyMismatch` before `InvalidAggregate`, then witness 0 before
+   witness 1 before the name row, and every one of the 56 nodes with
+   range/kind/child corruption plus both `NodeRecoveryState::Recovered`
+   and `Degraded`, all with deterministic replay;
+3. paired typed ownership, B3M1/B3N/B3 hybrids, and every existing
+   Task-248/257/258 ownership order with rollback;
+4. final clone/revalidation plus orphan, stale, reference-hybrid, and every
+   semantic/proof/goal coexistence rejection.
+
+The runner test contract is exactly five compound tests:
+
+1. exact bytes/hash, parser/resolver identity, Task-48/252/256/base,
+   both witness rows, name row, ordinals, shared arena, and paired output;
+2. exhaustive lower/base/witness/name/resolver/all-index mutation,
+   statement/primary fingerprint and aggregate/cardinality corruption,
+   mixed-fault dependency/aggregate/witness-0/witness-1/name precedence,
+   and deterministic replay;
+3. selector/byte/subtree near misses including reversed named/unnamed,
+   both named, both unnamed, missing/extra/reordered witnesses, changed
+   comma/name/`=`, non-primary RHS, recovery, and composite/existential roots;
+4. B3M1/B3N/B3/B2/B1/A and active-route isolation in both ownership orders;
+5. typed/final debug clone, rollback, and empty semantic output.
+
+This documentation prerequisite changes no production or test source,
+`doc/spec`, existing `.miz`, fixture, sidecar, expectation, trace
+row/status/count, active route, test list, count, or hash. Current baselines
+remain checker/runner libraries `354/389`, checker modules
+`12114/4644/7200/3156`, runner statement leaf/facade/root/test leaf
+`3183/684/2498/5799`, production 30 paths / 37,555 lines, plan/type
+`419/387` and `253/241`, pass/fail `228/191`, active
+parse/declaration/type/proof `101/5/198/1`, and warnings/errors `23/0`.
+Test-list hashes remain
+`3b4eb710711061fed2c008e7e7f10e3c433398c5ddca050464d8e0d2dc9fc3af` /
+`3be45d9cbe826df9fc4562feda0350c751fbcfeb776296ffba676f8cc0d54cae`
+and
+`bb6cbbad01b281ac0e55b2944ddc83bee73903ededa2501f4343a4b4ffb645ce` /
+`65e097ba6f86648b45cf3b7bcf5a888a7e3b0498ea30ee88277960d49af60ccf`.
+Runner production path/content hashes remain
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`2289634cb6126854e1382093f1adedd6d0608d0e1d241ff33b1eedd48a4716eb`;
+the five CLI hashes remain the Task-258B3N values.
+
+Implementation projects exactly four checker and five runner tests, hence
+libraries `358/394`; changed sizes and hashes must be measured afterward.
+Decomposing the broad B3M wording and freezing B3M1 resolves
+`design_drift`; future code is bounded `source_drift` and future tests are
+`test_gap`. There is no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`, and no lower-stage
+prerequisite. The coverage audit changes follow-up ownership only;
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []` and gains no credit.
+
+Exit requires synchronized EN/JA documentation, independent no-findings
+reviews, all protocol hard gates, read-only quality at least 90/100,
+task-only staging, and one dedicated documentation commit. Implementation
+may begin only after that commit and a fresh parser/resolver/lower/count/hash
+preflight.

@@ -471,3 +471,11 @@ baseline、B3M-before-B4 orderをfreezeする。
 EN/JA runner文書はimplemented exact selector、compound tests 5本、389-test
 library、30-path / 37,555-line production manifest、unchanged active/trace
 ownership、B3M-before-B4 orderを記録する。bilingual debtは残らない。
+
+## Task 258B3M1 runner prerequisite同期
+
+EN/JA runner plan、TODO、harness、module auditは同じ113-byte/56-node exact
+selector、Task-252 `6/6/0`、witness/name `2/1`、shared/dense ordinal
+contract、five-test matrix、unchanged 389-test / 30-path baseline、no
+active/semantic route、B3M2-before-B4 orderをfreezeする。bilingual debtは
+acceptしない。

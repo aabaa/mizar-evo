@@ -3476,3 +3476,18 @@ publishes syntax-only witness/name tables. Exhaustive lower/base/name,
 resolver, all-node, near-miss, cross-family, active-corpus, replay, rollback,
 and final-empty-semantic checks pass. The library contains 389 tests;
 production stays 30 paths / 37,555 lines.
+
+## Checker Task 258B3M1 Planned Dormant Harness Contract
+
+The future private selector will match only the final-LF 113-byte
+`FormulaStatementMultipleWitnessSmoke` source and complete 56-node arena,
+then dispatch ahead of B3N/B3/B2/B1/A. It will reconstruct the existing
+lower/base handoffs and publish exactly named witness 0, unnamed witness 1,
+and name row 0 without binding or semantic effects. Both witness rows will
+share the one `take` source ordinal and retain dense ordinals 0/1.
+
+Five future compound tests will cover source/hash/parser/resolver/lower
+identity, exhaustive mutation/replay, all byte/subtree near misses,
+active/cross-route isolation in both orders, and typed/final empty
+semantics. No fixture, sidecar, trace row, external detail key, or active
+dispatch will be added.

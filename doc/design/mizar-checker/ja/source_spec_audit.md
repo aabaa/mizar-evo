@@ -3746,3 +3746,16 @@ binding、abbreviation、existential、obligation、substitution、proof、
 theorem-status deferralを全て維持する。`spec_gap`、expectation drift、
 boundary violation、undocumented behavior、metadata conflictは導入せず、
 formula-statement rowは`deferred` / `tests = []`のままである。
+
+## Task 258B3M1 authority audit
+
+Chapter 15はordered comma-separated named/unnamed witness syntaxを
+authorizeし、Chapter 16は`take`のlater existential skeletonを定め、既存
+parser fixture/testsはmixed two-witness shapeを既に確立する。これらは
+B3M1でのbinding publication、abbreviation replay、binder matching、
+obligation、substitution、proof acceptance、non-primary term shapeを
+authorizeしない。broad B3Mをexact B3M1とfuture B3M2へsplitして
+`design_drift`を解消し、future code/testsはbounded
+`source_drift`/`test_gap`。`spec_gap`、undocumented behavior、expectation
+drift、boundary violation、metadata conflict、lower-stage prerequisiteは
+ない。formula-statement rowは`deferred` / `tests = []`を維持する。

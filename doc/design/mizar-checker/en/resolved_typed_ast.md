@@ -1040,3 +1040,13 @@ fingerprints, reference hybrids, nonempty typed tables, expression/cluster
 metadata, proof input, and statement semantics fail as
 `InvalidSourceStatement`; every semantic, proof, goal, and diagnostic table
 remains empty on success.
+
+## Task 258B3M1 Planned Final Ownership
+
+Final assembly may clone-preserve only an already authenticated B3M1
+base/witness pair with two witness rows, one name row, exact fingerprints,
+and the 56-node arena. It revalidates both rows, their shared source ordinal,
+dense within-`take` order, name links, and subtree ownership. B3/B3N/B3M1
+hybrids, orphan halves, reference hybrids, stale dependencies, and nonempty
+semantic/proof/goal tables fail as `InvalidSourceStatement`. No semantics
+are inferred.

@@ -4838,8 +4838,16 @@ implementation commit does not satisfy a producer task.
   and fresh parser/resolver/lower/count/hash preflight. The exact dense
   witness-name transport, four checker tests, and five runner tests pass;
   libraries are `354/389`, with no semantic or corpus activation.
-- [ ] Freeze and implement Task 258B3M multiple/other witness-term transport
-  before selecting Task 258B4.
+- [x] Decompose broad Task 258B3M into exact reserved-variable B3M1 and
+  non-reserved-variable/other-term B3M2 before selecting Task 258B4.
+- [x] Freeze Task 258B3M1 only: exact 113-byte/56-node mixed two-witness
+  source, Task-252 `6/6/0`, base/witness/name `1/2/2/2/2` + `2/1`,
+  shared source ordinal 1, dense ordinals 0/1, no new API or semantics,
+  four/five tests, and unchanged baselines.
+- [ ] Implement only frozen Task 258B3M1 after its documentation commit and
+  fresh parser/resolver/lower/count/hash preflight.
+- [ ] Freeze and implement Task 258B3M2 other witness-term shapes before
+  selecting Task 258B4.
 
 ## Checker Task 258B3N Implementation Ledger
 
@@ -4851,3 +4859,18 @@ implementation commit does not satisfy a producer task.
   trace status/count, and active-corpus ownership unchanged.
 - [x] Remeasure `354/389` tests, checker modules
   `12114/4644/7200/3156`, and runner production 30 paths / 37,555 lines.
+
+## Checker Task 258B3M1 Documentation Ledger
+
+- [x] Freeze canonical authority, exact consumer bytes/hash, complete
+  56-node parser identity, theorem-only resolver provenance, and subtree
+  exclusions.
+- [x] Freeze Task-48/252/256/base profiles and exact two-witness/one-name
+  syntax table without publishing a `BindingId` or semantic effect.
+- [x] Freeze public-API no-op, debug compatibility, fail-closed validation
+  precedence, paired typed/final ownership, and exact four/five tests.
+- [x] Preserve canonical specs, existing `.miz`, fixtures, expectations,
+  sidecars, trace status/count, active routes, source/tests, lists, counts,
+  and hashes.
+- [x] Update follow-up ownership in EN/JA plans/audits: B3M2 is next after
+  B3M1 implementation and remains before B4.

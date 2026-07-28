@@ -374,3 +374,12 @@ ownership、module/source audit、harness、coverage auditは、同じimplemente
 `1 witness / 1 name` transaction、exact tests 4/5本、library `354/389`、
 runner 30-path topology、semantic deferral、B3M-before-B4 follow-upを記録する。
 bilingual debtは残らない。
+
+## Task 258B3M1 frozen-contract同期
+
+EN/JA checker/runner plan、source/binding/typed/final design、family
+decomposition、harness/module/source audit、TODO、coverage ownershipは、同じ
+113-byte/56-node mixed two-witness source、Task-252 `6/6/0`、
+`2 witnesses / 1 name`、shared source ordinal 1 / dense ordinals 0/1、
+no-public-API/no-semantic boundary、future tests 4/5本、unchanged
+baseline、B3M2-before-B4 orderをfreezeする。bilingual debtはacceptしない。

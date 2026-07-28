@@ -1825,5 +1825,11 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] documentation commitとfresh preflight後、frozen B3N consumerだけを
   implement。compound tests 5本がpassし、runnerは389 tests、
   production 30 paths / 37,555 lines。active-corpus changeはない。
-- [ ] Task 258B4前にTask 258B3M multiple/other witness-term consumerを
-  freeze/implement。
+- [x] broad Task 258B3Mをexact B3M1 reserved-variable mixed
+  multiple-witness transportとB3M2 other witness-term shapeへ分解。
+- [x] 113-byte/56-node B3M1 dormant consumer、lower/base profile、
+  witness/name `2/1`、shared/dense ordinals、exact tests 5本、
+  no semantics、unchanged runner baselineだけをfreeze。
+- [ ] docs commitとfresh preflight後にB3M1だけをimplementし、runner
+  394 testsをproject。
+- [ ] Task 258B4前にB3M2をfreeze/implement。

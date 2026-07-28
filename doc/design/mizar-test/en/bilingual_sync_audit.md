@@ -488,3 +488,11 @@ EN/JA runner documents now record the implemented exact selector, five
 compound tests, 389-test library, 30-path / 37,555-line production manifest,
 unchanged active/trace ownership, and B3M-before-B4 order. No bilingual debt
 remains.
+
+## Task 258B3M1 Runner Prerequisite Synchronization
+
+EN/JA runner plans, TODOs, harnesses, and module audits freeze the same
+113-byte/56-node exact selector, Task-252 `6/6/0`, witness/name `2/1`,
+shared/dense ordinal contract, five-test matrix, unchanged 389-test /
+30-path baseline, no active or semantic route, and B3M2-before-B4 order.
+No bilingual debt is accepted.

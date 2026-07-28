@@ -838,3 +838,13 @@ The named-primary edge is now implemented as syntax-only transport with one
 witness row and one name row. It adds no binding or semantic edge and does
 not consume B3M, B4/B5, or Tasks 269–272 ownership. Task 258B3M is the next
 dependency-ready documentation prerequisite.
+
+### Task 258B3M1 Mixed Multiple-Witness Edge
+
+The former B3M umbrella is split. B3M1 owns only a two-row syntax edge:
+named primary term 2 then unnamed primary term 3, one shared `take`, one
+dense name row, shared source ordinal 1, and within-`take` ordinals 0/1.
+Task 252 owns both reserved-variable references; Task 256 excludes them.
+Task 269 retains name binding/abbreviation, Task 272 retains ordered
+existential goal effects, and B3M2 retains every non-reserved-variable or
+other witness-term shape. B4/B5 still own composite roots and visibility.

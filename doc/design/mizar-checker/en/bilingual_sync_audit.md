@@ -395,3 +395,12 @@ typed/final ownership, module/source audits, harness, and coverage audit now
 record the same implemented `1 witness / 1 name` transaction, exact
 four/five tests, `354/389` library counts, 30-path runner topology, semantic
 deferrals, and B3M-before-B4 follow-up. No bilingual debt remains.
+
+## Task 258B3M1 Frozen-Contract Synchronization
+
+EN/JA checker and runner plans, source/binding/typed/final designs, family
+decomposition, harness/module/source audits, TODOs, and coverage ownership
+freeze the same 113-byte/56-node mixed two-witness source, `6/6/0` primary
+terms, `2 witnesses / 1 name`, shared source ordinal 1 with dense ordinals
+0/1, no-public-API/no-semantic boundary, four/five future tests, unchanged
+baselines, and B3M2-before-B4 order. No bilingual debt is accepted.

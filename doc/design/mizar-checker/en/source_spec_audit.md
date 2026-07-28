@@ -3920,3 +3920,16 @@ obligation, substitution, proof, and theorem-status deferral. No
 `spec_gap`, expectation drift, boundary violation, undocumented behavior,
 or metadata conflict was introduced; the formula-statement row remains
 deferred with `tests = []`.
+
+## Task 258B3M1 Authority Audit
+
+Chapter 15 authorizes ordered comma-separated named/unnamed witness syntax,
+Chapter 16 assigns `take` its later existential skeleton, and the existing
+parser fixture/tests already establish the mixed two-witness shape. They do
+not authorize binding publication, abbreviation replay, binder matching,
+obligations, substitution, proof acceptance, or any non-primary term shape
+in B3M1. Splitting broad B3M into exact B3M1 plus future B3M2 resolves
+`design_drift`; future code/tests are bounded `source_drift`/`test_gap`.
+There is no `spec_gap`, undocumented behavior, expectation drift, boundary
+violation, metadata conflict, or lower-stage prerequisite. The
+formula-statement row remains deferred with `tests = []`.

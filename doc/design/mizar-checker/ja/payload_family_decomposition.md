@@ -775,3 +775,13 @@ named-primary edgeを1 witness row / 1 name rowのsyntax-only transportとして
 実装した。binding/semantic edgeを追加せず、B3M、B4/B5、Tasks 269–272の
 ownershipをconsumeしない。Task 258B3Mがnext dependency-ready documentation
 prerequisiteである。
+
+### Task 258B3M1 mixed multiple-witness edge
+
+former B3M umbrellaをsplitする。B3M1はnamed primary term 2の後にunnamed
+primary term 3が続くtwo-row syntax edge、one shared `take`、one dense name
+row、shared source ordinal 1、within-`take` ordinals 0/1だけをownする。
+Task 252は両reserved-variable referenceをownし、Task 256は両方をexclude
+する。Task 269はname binding/abbreviation、Task 272はordered existential
+goal effect、B3M2はnon-reserved-variable/other witness-term shapeを保持する。
+B4/B5はcomposite root/visibilityを保持する。

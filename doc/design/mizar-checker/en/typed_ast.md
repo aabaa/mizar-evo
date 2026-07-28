@@ -1032,3 +1032,12 @@ the exact B3N dense name table and 51-node arena. Base-only, repeated,
 B3/B3N hybrid, reference, Task-248/257, and semantic-table orders fail
 atomically; successful debug ordering remains base, witness/name, then
 nodes.
+
+## Task 258B3M1 Planned Paired Ownership
+
+The existing paired installer remains the only publication path. It will
+accept only the exact B3M1 base plus `2 witnesses / 1 name`, verify the
+56-node arena and both witness/name links, and publish both halves
+atomically. B3/B3N bytes remain unchanged. Repeated installation,
+cross-profile halves, reference/Task-248/257/other-258 families in either
+order, and semantic coexistence roll back without partial ownership.

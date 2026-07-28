@@ -573,3 +573,12 @@ implemented routeはexactly two contextsとsole reserved bindingをrevalidate
 する。token `y`は`SourceStatementWitnessNameTable`だけに存在し、新しい
 `BindingId`、owned/visible binding、capture、context transitionをpublish
 しない。これらのeffectはTask 269が保持する。
+
+## Task 258B3M1 mixed-witness boundary
+
+B3M1はmodule/proof contexts `0/1`、reserved binding 0、no diagnosticを
+維持する。両witness primary termsはproof scope `[0]`のbinding 0をresolve
+する。token `y`はwitness-name syntaxだけでbinding environmentへ入らず、
+second unnamed rowもbindingを作らない。将来の`y` binding、RHS link、
+abbreviation replay、context transitionはTask 269が保持する。binding API /
+fingerprint grammarは変更しない。

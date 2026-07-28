@@ -2578,5 +2578,11 @@ completion remain deferred. The origin discrepancy remains report-only
 - [x] Implement Task 258B3N after its dedicated documentation commit and
   fresh parser/resolver/lower/count/hash preflight. Exact syntax-only name
   transport and four/five compound tests pass; libraries are `354/389`.
-- [ ] Freeze/implement Task 258B3M multiple/other witness-term transport
-  before selecting Task 258B4.
+- [x] Decompose broad Task 258B3M into exact B3M1 reserved-variable mixed
+  multiple-witness transport and B3M2 other witness-term shapes.
+- [x] Freeze only B3M1: exact 113-byte/56-node source, lower/base
+  provenance, witness/name `2/1`, shared/dense ordinals, no API/semantics,
+  four/five tests, unchanged baselines, and updated ownership audit.
+- [ ] Implement only frozen B3M1 after its documentation commit and fresh
+  preflight.
+- [ ] Freeze/implement B3M2 before selecting Task 258B4.

@@ -594,3 +594,12 @@ The implemented route revalidates exactly two contexts and the sole reserved
 binding. The `y` token exists only in `SourceStatementWitnessNameTable`; no
 new `BindingId`, owned binding, visible binding, capture, or context
 transition is published. Task 269 retains those effects.
+
+## Task 258B3M1 Mixed-Witness Boundary
+
+B3M1 keeps exactly module/proof contexts `0/1`, reserved binding 0, and no
+diagnostic. Both witness primary terms resolve to binding 0 in proof scope
+`[0]`; token `y` remains only witness-name syntax and never enters the
+binding environment. The second unnamed row creates no binding either.
+Task 269 retains the future `y` binding, RHS link, abbreviation replay, and
+context transition. No binding API or fingerprint grammar changes.

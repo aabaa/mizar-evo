@@ -2020,5 +2020,11 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Implement only the frozen B3N consumer after its documentation commit
   and fresh preflight. Five compound tests pass; the runner has 389 tests
   and 30 production paths / 37,555 lines, with no active-corpus change.
-- [ ] Freeze/implement Task 258B3M multiple/other witness-term consumers
-  before Task 258B4.
+- [x] Decompose broad Task 258B3M into exact B3M1 reserved-variable mixed
+  multiple-witness transport and B3M2 other witness-term shapes.
+- [x] Freeze only the 113-byte/56-node B3M1 dormant consumer, lower/base
+  profiles, witness/name `2/1`, shared/dense ordinals, exact five-test
+  matrix, no semantics, and unchanged runner baselines.
+- [ ] Implement only B3M1 after its docs commit and fresh preflight,
+  projecting 394 runner tests.
+- [ ] Freeze/implement B3M2 before Task 258B4.

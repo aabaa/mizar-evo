@@ -381,3 +381,13 @@ conditional fingerprints, installation revalidation, rendering, and the
 real/synthetic/corruption/exclusion matrix remain behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
+
+## Task 258B3M1 Boundary Addendum
+
+The exact multiple-witness profile remains cohesive in the existing
+`source_statement.rs`, `typed_ast.rs`, and `resolved_typed_ast.rs` owners.
+It consumes only syntax-free Task-48/252/256/base handoffs plus
+`TypedArena`; raw parser/resolver traversal stays in the existing private
+`mizar-test` statement leaf. No new module, crate edge, public schema,
+semantic owner, or dependency direction is authorized. Current sizes remain
+`12114/4644/7200/3156` for this documentation prerequisite.

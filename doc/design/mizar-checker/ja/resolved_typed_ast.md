@@ -984,3 +984,12 @@ clone-preserveする。orphan/standalone half、stale statement/primary
 fingerprint、reference hybrid、nonempty typed table、expression/cluster
 metadata、proof input、statement semanticsは`InvalidSourceStatement`でfail
 し、success時は全semantic/proof/goal/diagnostic tableがemptyである。
+
+## Task 258B3M1 planned final ownership
+
+final assemblyはalready authenticated B3M1 base/witness pair、2 witness
+rows、1 name row、exact fingerprint、56-node arenaだけをclone-preserve
+できる。両row、shared source ordinal、dense within-`take` order、name link、
+subtree ownershipをrevalidateする。B3/B3N/B3M1 hybrid、orphan half、
+reference hybrid、stale dependency、nonempty semantic/proof/goal tableは
+`InvalidSourceStatement`でfailする。semanticsはinferしない。
