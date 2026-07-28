@@ -3885,3 +3885,18 @@ violationはない。spec、existing `.miz`、fixture、expectation、sidecar、
 trace row/status/count、active routeは変更しない。
 `spec.en.checker.formula_statement.source_payloads`は`deferred`,
 `tests = []`、coverage creditなし。
+
+## Task 258B3M2B2B1P frozen lower-prerequisite audit
+
+authorityは`take` statement内のdormant imported-infix termを認めるが、B1Pは
+private Task-253 proof-context reuse seamだけをclaimする。143-byte sourceと
+projected Task-48/252/253 profileはreal consumerを確立するが、Task-258
+outputはimplementしない。missing decompositionは`design_drift`、missing
+context-1 private routeはbounded `source_drift`、不足するcompound tests
+2件は`test_gap`。blocking `spec_gap`、undocumented semantic behavior、
+expectation drift、crate boundary violationなし。
+
+audit row `spec.en.checker.formula_statement.source_payloads`は
+`deferred`, `tests = []`、backlink/coverage creditなし。B1Pはspecification、
+`.miz`、fixture、expectation、sidecar、trace row/status/count、active route、
+public API、semantic ownerを変更しない。

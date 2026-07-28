@@ -1936,3 +1936,15 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   family/active isolation、replay、rollback、final cloneをcover。
 - [x] 409 tests、sizes `5188/699/2513/11234`、30 production paths /
   39,590 linesを実測し、B3M2B2BをB4前に保持。
+
+## Checker Task 258B3M2B2B1P runner prerequisite ledger
+
+- [x] private explicit-context Task-253 unwrapped imported application seamを
+  freezeし、legacy context-0 entry pointを維持。
+- [x] 143-byte/63-node motivating sourceとproof-context-1 Task-253
+  `1/0/1/2/2` profileをstatement consumer追加なしでfreeze。
+- [x] identity、context/provenance/form corruption、replay、legacy byte
+  compatibilityのcompound testsちょうど2件をfreeze。
+- [x] 409 tests、sizes `5188/699/2513/11234`、production 30 paths /
+  39,590 lines、全active/fixture/expectation/sidecar/trace artifacts、
+  B1P-before-B1A orderを維持。

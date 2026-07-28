@@ -2838,6 +2838,29 @@ conditioned comprehensionはexcludedのままである。本documentation prereq
 runner、fixture、sidecar、trace、count、test list、production manifest、hashを
 変更しない。
 
+## Checker Task 258B3M2B2B1P private Task-253 seam contract
+
+future private helper
+`unwrapped_imported_source_application_handoff_in_context`はsurface AST、
+module、symbol/binding environments、shared Task-252 source terms、
+application node、explicit `BindingContextId`を受ける。既存unwrapped
+imported extraction/handoff builderをreuseし、legacy helperはcontext 0で
+delegateする。
+
+143-byte `take 1 ++ 2;` probeではcontext 1がsymbolic infix application
+1/wrapper 0、imported `parser.type_fixtures::++`、arguments
+`Primary(2)`/`Primary(3)`、requests 2をexactにproduceする。freezeする
+compound testsはちょうど2件:
+
+1. `task258b3m2b2b1p_proof_context_reuses_exact_unwrapped_imported_application`;
+2. `task258b3m2b2b1p_context_provenance_and_legacy_replay_fail_closed`.
+
+missing/nonexistent/mixed contexts、wrong node/range/head/form/argument
+order、wrapper、import/candidate/provenance substitution、stale Task-252
+fingerprint、replayをrejectし、context-0 outputsをbyte-identicalに維持する。
+B1Pはstatement、typed/final statement coexistence、diagnostic detail、
+semantic/proof/goal outputをpublishしない。
+
 ## Checker Task 258B3M2B2A dormant consumer implementation
 
 exact selectorはprior statement profilesより先に実装し、121-byte source、

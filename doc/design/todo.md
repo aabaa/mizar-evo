@@ -2616,3 +2616,19 @@ checker/runner tests `4/5`, and lower/family/replay/clone fail-close are
 implemented. Libraries measure `370/409`; no canonical artifact, active
 case, public API, fixture, expectation, sidecar, trace status/count, binding,
 or semantic owner changed. B3M2B2B remains next before B4.
+
+## Checker Task 258B3M2B2B1P frozen lower prerequisite
+
+- [x] Decompose B3M2B2B into the private Task-253 proof-context reuse seam
+  B1P, exact application-witness B1A, and later Task-253/254/255/compound
+  slices.
+- [x] Freeze the final-LF 143-byte/hash motivating source, zero
+  diagnostics, 63-node/root-62 identity, and projected Task-48 `2/1/0`,
+  Task-252 `6/4/2`, Task-253 `1/0/1/2/2` in proof context 1.
+- [x] Freeze only a private explicit-context reuse entry point, legacy
+  context-0 compatibility, and exactly two runner compound tests.
+- [x] Preserve canonical artifacts, active routes, public APIs, fixtures,
+  expectations, sidecars, trace status/count, semantic owners, libraries
+  `370/409`, all counts/hashes, and coverage `deferred`/`tests = []`.
+- [ ] After this dedicated docs commit and fresh preflight, implement B1P
+  alone, commit it separately, and fresh-inventory B1A.

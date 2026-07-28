@@ -4171,3 +4171,31 @@ defect or authority conflict; the commands are rerun only after integrated
 source completion. Broad direct-rustfmt churn in one existing runner test
 leaf was also reduced to the task-owned imports and five new tests before
 review, so no unrelated prior-test formatting remains.
+
+## Step 5 Checker Task 258B3M2B2B1P Frozen Lower-Prerequisite Addendum
+
+Fresh inventory decomposes B3M2B2B dependency-first. B1P is only a private
+Task-253 runner reuse seam for an explicitly supplied proof binding context;
+B1A retains the statement application-witness edge, and later slices retain
+other Task-253/254/255 and compound terms.
+
+The motivating final-LF source is 143 bytes, SHA-256
+`22ce235030bc56720bfe7f52830182144ca6e4eee4414b7f8c2823e3d0f82c1b`,
+with zero diagnostics and 63 nodes/root 62. It projects Task-48 `2/1/0`,
+Task-252 `6/4/2`, and Task-253 `1/0/1/2/2` in proof context 1. B1P
+preserves the existing context-0 helper/output, adds no public checker or
+statement API, and freezes exactly two future runner compound tests.
+
+This documentation prerequisite changes ownership records only. Libraries
+remain `370/409`; checker sizes remain `19571/4662/7204/3156`; runner
+statement sizes remain `5188/699/2513/11234`; production remains 30 paths
+/ 39,590 lines; every list/count/hash remains unchanged. The formula
+statement row remains `deferred`, `tests = []`, without backlink or credit.
+No canonical specification, `.miz`, fixture, expectation, sidecar, active
+route, trace status/count, or semantic owner changes.
+
+The missing lower decomposition is `design_drift`; the absent private
+context-1 reuse route and two tests are bounded `source_drift`/`test_gap`.
+There is no blocking `spec_gap`, unsafe test intent,
+`source_undocumented_behavior`, `test_expectation_drift`, current
+`boundary_violation`, or `repo_metadata_conflict`.

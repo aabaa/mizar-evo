@@ -172,3 +172,21 @@ start only after that separate lower task made the condition-container graph
 executable. Task 256C1 now passes both installation orders; Task 253 itself
 does not change, and the completed Task-257C2 route now reuses the exact
 handoff and fingerprint.
+
+## Task 258B3M2B2B1P Proof-Context Reuse Contract
+
+Task 253 already accepts any authenticated binding context and requires
+both Task-252 arguments to use the application context. The private runner
+reuse helper is narrower: it currently supplies context 0 for the frozen
+Task-255/257 consumers. B1P preserves that helper and its output bytes, and
+adds a private sibling that receives an existing `BindingContextId`.
+
+For the future `take 1 ++ 2;` consumer, the sibling must reuse the existing
+unwrapped-imported extractor and builder and produce exactly one symbolic
+infix application, zero wrappers, one imported functor candidate, two
+ordered numeral arguments, and two unresolved type requests in proof
+context 1. Missing contexts, argument-context disagreement, a wrapper,
+wrong application/head/argument range or form, non-unique or substituted
+candidate provenance, and stale replay reject without publication. No
+public Task-253 checker API, fingerprint grammar, result semantics, or
+existing context-0 behavior changes.

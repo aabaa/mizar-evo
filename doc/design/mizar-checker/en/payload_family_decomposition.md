@@ -925,3 +925,12 @@ as one witness subtree and excluded from every atomic edge/request.
 Application, structure constructor/selector/update, set, choice, compound,
 and deeper-parentheses families remain in B3M2B2B; no cross-family edge or
 semantic owner was added.
+
+### Task 258B3M2B2B1P Lower Application Seam
+
+B3M2B2B is split dependency-first. B1P owns only the private runner
+capability to rebuild the existing Task-253 unwrapped imported application
+in an explicitly supplied proof context. It owns no Task-258 witness row,
+new payload family, public schema, or semantic edge. B1A retains the exact
+application-witness cross-family edge; B1B+ retains other Task-253 forms;
+B2+ and B3+ retain Task-254 and Task-255 witness forms respectively.

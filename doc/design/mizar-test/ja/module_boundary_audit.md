@@ -10426,3 +10426,11 @@ lines、path/content hashesは
 `291da8a26e90f75e7f54e221314c1fcb9ebba375c238a07b02a161f7af6dfe66`。
 public route/key、module split、crate edge、dependency direction、active
 route、binding、semantic owner changeなし。
+
+## Checker Task 258B3M2B2B1P frozen module boundary
+
+既存cohesive `runner/type_elaboration/source_application.rs` leafがprivate
+context-aware Task-253 reuse entry pointとtests 2件をownする。new module、
+public re-export、checker dependency、statement-leaf extraction duplicate、
+crate edgeはauthorizeしない。legacy context-0 entry pointは既存consumersの
+compatibility ownerのまま。

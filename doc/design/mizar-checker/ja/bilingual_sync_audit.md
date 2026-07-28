@@ -450,3 +450,10 @@ chain `2 -> 3 -> 4`、Task-256 subtree exclusion、paired
 `370/409`、measured module/manifest hashes、unchanged
 public/active/binding/semantic/trace boundary、B3M2B2B-before-B4を同期した。
 implementation bilingual debtなし。
+
+## Task 258B3M2B2B1P prerequisite synchronization
+
+EN canonical/JA companionは同じlower-owner split、143-byte motivating
+source identity、proof-context-1 Task-253 `1/0/1/2/2` target、private API
+boundary、future runner tests 2件、unchanged `370/409` baseline、
+B1P-before-B1A orderをfreezeする。prerequisite bilingual debtなし。

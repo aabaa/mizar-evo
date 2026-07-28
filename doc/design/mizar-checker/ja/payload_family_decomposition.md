@@ -858,3 +858,12 @@ outer/inner/leaf primary chainをone witness subtreeとしてauthenticateし、
 全atomic edge/requestからexcludeする。application、structure constructor/
 selector/update、set、choice、compound、deeper parenthesesはB3M2B2Bに
 残り、cross-family edge/semantic ownerを追加しない。
+
+### Task 258B3M2B2B1P lower application seam
+
+B3M2B2Bをdependency-firstでsplitする。B1Pは既存Task-253 unwrapped
+imported applicationを明示的proof contextでrebuildするprivate runner
+capabilityだけをownする。Task-258 witness row、新payload family、public
+schema、semantic edgeはownしない。B1Aはexact application-witness
+cross-family edge、B1B+は他Task-253 forms、B2+/B3+はそれぞれTask-254/
+Task-255 witness formsを保持する。

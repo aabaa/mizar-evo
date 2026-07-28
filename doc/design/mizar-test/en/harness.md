@@ -3632,3 +3632,26 @@ semantic output. Invalid Task-252/256 rows reject at their lower producer
 when no handoff can form; constructible corruptions reach the paired
 statement consumer. No active corpus, public route/key, fixture, sidecar,
 expectation, or trace metadata changed.
+
+## Checker Task 258B3M2B2B1P Private Task-253 Seam Contract
+
+The future private helper
+`unwrapped_imported_source_application_handoff_in_context` receives the
+surface AST, module, symbol/binding environments, shared Task-252 source
+terms, application node, and explicit `BindingContextId`. It reuses the
+existing unwrapped imported extraction and handoff builder. The legacy
+helper delegates with context 0.
+
+For the 143-byte `take 1 ++ 2;` probe, context 1 produces exactly one
+symbolic infix application/no wrappers, imported
+`parser.type_fixtures::++`, arguments `Primary(2)` then `Primary(3)`, and
+two requests. Exactly two compound tests are frozen:
+
+1. `task258b3m2b2b1p_proof_context_reuses_exact_unwrapped_imported_application`;
+2. `task258b3m2b2b1p_context_provenance_and_legacy_replay_fail_closed`.
+
+They reject missing/nonexistent or mixed contexts, wrong node/range/head/
+form/argument order, wrappers, import/candidate/provenance substitution,
+stale Task-252 fingerprints, and replay, while retaining byte-identical
+context-0 outputs. B1P publishes no statement, typed/final statement
+coexistence, diagnostic detail, semantic, proof, or goal output.

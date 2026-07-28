@@ -11658,3 +11658,12 @@ leaf/facade/root/test sizes are `5188/699/2513/11234`; the unchanged
 `291da8a26e90f75e7f54e221314c1fcb9ebba375c238a07b02a161f7af6dfe66`.
 No public route/key, module split, crate edge, dependency direction, active
 route, binding, or semantic owner changed.
+
+## Checker Task 258B3M2B2B1P Frozen Module Boundary
+
+The existing cohesive
+`runner/type_elaboration/source_application.rs` leaf owns the private
+context-aware Task-253 reuse entry point and two tests. No new module,
+public re-export, checker dependency, statement-leaf extraction duplicate,
+or crate edge is authorized. The legacy context-0 entry point remains the
+compatibility owner for existing consumers.

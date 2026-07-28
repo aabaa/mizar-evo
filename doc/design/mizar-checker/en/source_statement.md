@@ -2783,3 +2783,14 @@ No canonical artifact, fixture, expectation, sidecar, trace status/count,
 active route, public API, binding, or semantic/proof/goal owner changed.
 The formula-statement row remains `deferred`, `tests = []`, with no credit.
 B3M2B2B remains the next witness-term slice before B4.
+
+## Task 258B3M2B2B Lower-Owner Decomposition
+
+Broad B3M2B2B first depends on Task 258B3M2B2B1P, a private Task-253
+proof-context reuse seam. The seam is a separate lower-stage logical task:
+it does not add `Application` to the witness target, install statement
+tables, or permit application/statement coexistence. After B1P is committed
+and freshly inventoried, B3M2B2B1A may freeze the exact imported-infix
+application-witness contract. Other Task-253 forms, Task-254 structure
+constructor/selector/update forms, Task-255 set/choice/qualification forms,
+and remaining compound terms stay deferred.

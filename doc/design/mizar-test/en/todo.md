@@ -2133,3 +2133,15 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   near-miss, family/active isolation, replay, rollback, and final clone.
 - [x] Measure 409 tests, sizes `5188/699/2513/11234`, and 30 production
   paths / 39,590 lines; retain B3M2B2B before B4.
+
+## Checker Task 258B3M2B2B1P Runner Prerequisite Ledger
+
+- [x] Freeze the private explicit-context Task-253 unwrapped imported
+  application seam and preserve the legacy context-0 entry point.
+- [x] Freeze the 143-byte/63-node motivating source and proof-context-1
+  Task-253 `1/0/1/2/2` profile without adding a statement consumer.
+- [x] Freeze exactly two compound tests for identity, context/provenance/
+  form corruption, replay, and legacy byte compatibility.
+- [x] Preserve 409 tests, sizes `5188/699/2513/11234`, 30 production
+  paths / 39,590 lines, every active/fixture/expectation/sidecar/trace
+  artifact, and B1P-before-B1A order.

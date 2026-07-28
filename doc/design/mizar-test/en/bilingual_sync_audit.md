@@ -557,3 +557,11 @@ composition, five passing tests, 409-test library, sizes
 lower-producer-first rejection, empty detail/semantics, unchanged
 public/active/fixture/trace ownership, and B3M2B2B-before-B4 order. No
 implementation bilingual debt remains.
+
+## Task 258B3M2B2B1P Runner Prerequisite Synchronization
+
+The EN canonical and JA companion freeze the same private helper signature,
+context-1 `1/0/1/2/2` profile, two test names and corruption matrix,
+legacy context-0 compatibility, no statement/active/trace/semantic change,
+unchanged 409-test baseline, and separate B1P-before-B1A commits. No
+bilingual debt remains.

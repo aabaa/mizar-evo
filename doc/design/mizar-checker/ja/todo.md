@@ -4753,3 +4753,20 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] libraries `370/409`、checker `19571/4662/7204/3156`、runner
   `5188/699/2513/11234`、production 30 paths / 39,590 linesを実測し、
   B3M2B2BをB4前に保持。
+
+## Checker Task 258B3M2B2B1P frozen lower-prerequisite ledger
+
+- [x] broad B3M2B2Bをdependency-firstでprivate Task-253 proof-context seam
+  B1P、exact application-witness B1A、後続Task-253/254/255/other slicesへ
+  decompose。
+- [x] motivating final-LF 143-byte/hash source、diagnostic 0、63-node/root-62
+  identity、projected proof-context-1 Task-48 `2/1/0`、Task-252 `6/4/2`、
+  Task-253 `1/0/1/2/2`をfreeze。
+- [x] legacy context-0 helper/outputを維持し、checker API/statement consumer
+  changeなしでprivate explicit-context Task-253 reuse entry pointだけを追加
+  する契約をfreeze。
+- [x] context/provenance/form fail-close、replay、legacy byte compatibilityの
+  runner compound testsちょうど2件をfreeze。
+- [x] canonical artifacts、active routes、fixtures、expectations、sidecars、
+  trace status/count、coverage credit、tests、counts、hashesを維持し、
+  B1A前にB1P implementationを保持。

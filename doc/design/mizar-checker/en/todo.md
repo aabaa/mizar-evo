@@ -4995,3 +4995,20 @@ implementation commit does not satisfy a producer task.
 - [x] Measure libraries `370/409`, checker modules
   `19571/4662/7204/3156`, runner sizes `5188/699/2513/11234`, and 30
   production paths / 39,590 lines; retain B3M2B2B before B4.
+
+## Checker Task 258B3M2B2B1P Frozen Lower-Prerequisite Ledger
+
+- [x] Decompose broad B3M2B2B dependency-first into private Task-253
+  proof-context seam B1P, exact application-witness B1A, and later
+  Task-253/254/255/other slices.
+- [x] Freeze the motivating final-LF 143-byte/hash source, zero
+  diagnostics, 63-node/root-62 identity, and projected proof-context-1
+  Task-48 `2/1/0`, Task-252 `6/4/2`, Task-253 `1/0/1/2/2`.
+- [x] Preserve the legacy context-0 helper/output; add only a private
+  explicit-context Task-253 reuse entry point with no checker API or
+  statement consumer change.
+- [x] Freeze exactly two runner compound tests for context/provenance/form
+  fail-close, replay, and legacy byte compatibility.
+- [x] Preserve canonical artifacts, active routes, fixtures, expectations,
+  sidecars, trace status/count, coverage credit, tests, counts, and hashes;
+  retain B1P implementation before B1A.

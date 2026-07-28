@@ -537,3 +537,11 @@ EN/JA runner docsはexact private selector/lower composition、passing tests
 39,590-line production manifest/hashes、lower-producer-first rejection、
 empty detail/semantics、unchanged public/active/fixture/trace ownership、
 B3M2B2B-before-B4を同期した。implementation bilingual debtなし。
+
+## Task 258B3M2B2B1P runner prerequisite synchronization
+
+EN canonical/JA companionは同じprivate helper signature、context-1
+`1/0/1/2/2` profile、test names 2件/corruption matrix、legacy context-0
+compatibility、statement/active/trace/semantic changeなし、unchanged
+409-test baseline、separate B1P-before-B1A commitsをfreezeする。bilingual
+debtなし。

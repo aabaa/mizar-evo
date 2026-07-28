@@ -4066,3 +4066,19 @@ new boundary violation was required. No specification, existing `.miz`,
 fixture, expectation, sidecar, trace row/status/count, or active route
 changed. `spec.en.checker.formula_statement.source_payloads` therefore
 remains `deferred`, `tests = []`, with no coverage credit.
+
+## Task 258B3M2B2B1P Frozen Lower-Prerequisite Audit
+
+Authority admits the dormant imported-infix term in a `take` statement, but
+B1P deliberately claims only a private Task-253 proof-context reuse seam.
+The 143-byte source and projected Task-48/252/253 profile establish the real
+consumer; no Task-258 output is implemented. The missing decomposition is
+`design_drift`, the missing context-1 private route is bounded
+`source_drift`, and its absent two compound tests are `test_gap`. There is
+no blocking `spec_gap`, undocumented semantic behavior, expectation drift,
+or crate boundary violation.
+
+The audit row `spec.en.checker.formula_statement.source_payloads` remains
+`deferred`, `tests = []`, without backlink or coverage credit. B1P changes
+no specification, `.miz`, fixture, expectation, sidecar, trace
+row/status/count, active route, public API, or semantic owner.

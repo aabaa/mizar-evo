@@ -2297,3 +2297,14 @@ canonical artifact、fixture、expectation、sidecar、trace status/count、
 active route、public API、binding、semantic/proof/goal ownerは変更しない。
 formula-statement rowは`deferred`, `tests = []`、creditなし。
 B3M2B2BがB4前のnext witness-term slice。
+
+## Task 258B3M2B2B lower-owner decomposition
+
+broad B3M2B2Bは最初にprivate Task-253 proof-context reuse seamである
+Task 258B3M2B2B1Pへ依存する。seamは独立lower-stage logical taskであり、
+witness targetへの`Application`追加、statement table install、
+application/statement coexistence許可を行わない。B1P commitとfresh
+inventory後、B3M2B2B1Aがexact imported-infix application-witness contractを
+freezeできる。他のTask-253 forms、Task-254 structure
+constructor/selector/update、Task-255 set/choice/qualification、remaining
+compound termsはdeferする。

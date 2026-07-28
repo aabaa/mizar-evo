@@ -161,3 +161,20 @@ separate lower taskがcondition-container graphをexecutableにした後だけ�
 できた。Task 256C1は両installation orderをpassし、Task 253自体は変更
 しないまま、completed Task-257C2 routeはexact handoff/fingerprintをreuse
 する。
+
+## Task 258B3M2B2B1P proof-context reuse contract
+
+Task 253は既に任意のauthenticated binding contextをacceptし、両Task-252
+argumentsがapplication contextを使うことを要求する。private runner reuse
+helperはより狭く、frozen Task-255/257 consumersへcontext 0を供給する。
+B1Pはそのhelper/output bytesを維持し、存在する`BindingContextId`を受ける
+private siblingを追加する。
+
+future `take 1 ++ 2;` consumerでは、siblingは既存unwrapped-imported
+extractor/builderをreuseし、proof context 1上でsymbolic infix application
+1、wrapper 0、imported functor candidate 1、ordered numeral arguments 2、
+unresolved type requests 2をexactにproduceする。missing context、
+argument-context disagreement、wrapper、wrong application/head/argument
+range/form、non-unique/substituted candidate provenance、stale replayは
+publicationなしでrejectする。public Task-253 checker API、fingerprint
+grammar、result semantics、既存context-0 behaviorは変更しない。
