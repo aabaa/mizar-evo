@@ -167,6 +167,20 @@ cross-family root ownership、conditional fingerprint、rendering、corruption t
 behavior-coupledでありprivate checker splitは不要である。`TypedAst`がone-shot
 immutable handoffをownし、`ResolvedTypedAst`はrevalidate後にclone-preserveする。
 
+### Task 258B3 frozen boundary result
+
+future witness transactionはexisting `source_statement.rs` owner内で
+base/reference transactionと並ぶ。`typed_ast.rs`がatomic paired
+installation、`resolved_typed_ast.rs`がfinal revalidation/cloneをownし、
+`binding_env.rs`は不変。raw `SurfaceNodeKind`、source hash、
+parser/resolver selection、all-index parityはprivate runner responsibilityを
+維持し、normal checkerの`mizar-syntax` dependencyは禁止。
+
+one-row companion、fingerprint 2件、`[0,1,2]` cross-table order、
+take/witness containmentはbase validationとbehavior-coupledで、new checker
+moduleは不要。本docs-only prerequisiteはmodule topologyとmeasured
+`7334/4550/7172/3156` line baselineを変更しない。
+
 ## Task 258B2 implemented-boundary addendum
 
 module/dependency edgeは追加していない。final affected sizeは

@@ -3703,3 +3703,23 @@ transportし、Chapter-15 proof effectは実装しない。`spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`はない。B3–B5とTasks
 269–272がdeferred behaviorのclassified ownerであり続ける。
+
+## Task 258B3 authority audit
+
+canonical §15.4.4はunnamed `take x;` syntax、§15.11.5はlater
+existential/type/substitution effectをauthorizeする。Chapters 4、13、14と
+active parser fixtureはreserved `x` term/equality shellをauthorizeする。
+measured witness occurrenceのtransportはsupportするが、equality goalへの
+application、theorem acceptance、obligation publicationはauthorizeしない。
+
+formula-only base + direct-`BindingContextId` witness companionが最小の
+syntax-free contractである。dense base conclusionのsource ordinal 2は
+global orderに必要で、`[0,1,2]` paired validationがinformation lossを防ぐ。
+absent contractは`design_drift`、future codeはbounded `source_drift`、
+testsは`test_gap`。blocking `spec_gap`、undocumented behavior、
+expectation drift、boundary violation、metadata conflictはない。
+
+remaining §15.4.4 transport shapeにはexplicit follow-up ownerがある。
+Tasks 258B3N/MがB3後/B4前のnamed/multiple/other witness-term transportを
+保持し、abbreviation/substitution/left-to-right goal effectはTasks
+269–272が保持する。

@@ -975,3 +975,260 @@ fact、checked formula、statement semantic、proof、goal、diagnostic、
 accepted theoremを作らない。Task 258B3はwitness、Task 258B4はcomposite
 root、Task 258B5はbroader visibility、Tasks 269–272はproof semanticsを
 保持する。
+
+## Task 258B3 frozen single-witness slice
+
+Task 258B3はTask 258B2後のnext dependency-ready transport sliceである。
+canonical authorityは`doc/spec/en/15.statements.md` §§15.4.4、15.11.5、
+reserve/term/equality shellのChapters 4、13、14、existing
+`pass_parser_simple_statements_001.miz`のnamed/unnamed `take` syntax、
+parser/resolver fixture、public Task-48/252/256/258A/258B1/258B2 APIである。
+grammarはunnamed `take x;` source shapeとleft-to-right witness orderを
+authorizeする。§15.11.5のexistential-goal matching、type obligation、
+substitution、named abbreviation effectはlater semanticsに属し、ここでは
+実行しない。
+
+exact future corpus-dormant consumerは次のfinal-LF 104-byte source、
+SHA-256
+`76fb48354fc0dfb17047900a047a5b28b806df60d139a3133e606f0ef12a3f82`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementSingleWitnessSmoke: x = x proof
+  take x;
+  thus x = x;
+end;
+```
+
+equality theorem rootはwitness transportをTask-258B4 composite-root slice
+から意図的に分離する。そのためこのdormant sourceをsemantically validな
+proofとは主張しない。`take`にはexistential goalが必要であり、Task
+258B3でactive corpus caseやaccepted theoremにはできない。
+
+fresh parser/resolver inventoryは次のidentityをfreezeする:
+
+| object | exact identity |
+| --- | --- |
+| surface arena | 49 nodes、root 48、すべてunrecovered |
+| reserve/theorem | reserve node 25 `0..18`; theorem node 45 `19..103`; label `27..61` |
+| theorem owner | local public/exported theorem 1件、contribution 0、range `19..103`、origin path `[2,1]`; importなし |
+| proof | node 44、`69..102`、lexical scope `[0]` |
+| formula statements | theorem node 45 + transparent `FormulaExpression` wrapper 31 + Task-256 atomic site 30 `63..68`; conclusion node 43 + wrapper 41 + atomic site 40 `92..97` |
+| witness | `TakeStatement` node 35 `77..84`; `Witness` node 34 `82..83`; transparent `TermExpression` wrapper 33とTask-252 term/reference site 32 `82..83` |
+| formula terms | transparent wrappers 27/29とTask-252 sites 26/28 `63..64`/`67..68`; wrappers 37/39とsites 36/38 `92..93`/`96..97` |
+| resolver labels | proof-step label、citation、label-reference key、resolver companionなし |
+
+syntax-free lower compositionはexactである。Task 48は`2/1/0`: module
+context 0と
+`BindingContextOwner::SourceStatement { source_range: 69..102 }`がownする
+proof context 1を持ち、parent 0、proof layer、scope `[0]`、local binding
+なし、visible reserved binding 0、normal recoveryである。binding 0は
+`8..9`のreserved `x`、`14..17`の`set` typeを保持する。
+
+Task 252は`5/5/0`。dense term/reference ID 0–4はtransparent wrappers
+27/29/33/37/39配下のactual owned sites 26/28/32/36/38でranges
+`63..64`、`67..68`、`82..83`、`92..93`、`96..97`をcoverし、binding
+contexts `0,0,1,1,1`、scopes `[],[],[0],[0],[0]`、source ordinal 0–4、
+stored use ordinalはすべて1。全termはnormal spelling `x`、kind
+`VariableReference`、role `Value`、parentなし、全referenceはbinding 0への
+normal `Variable` referenceである。Task 256は
+`2/0/0/0/0/0/0/4/4`: equality formulas 0/1は`63..68`/`92..97`、contexts
+0/1でordered left/right primary targetを持つ。formula 0はterms 0/1、
+formula 1はterms 3/4をtargetにする。primary term 2は全atomic
+edge/requestからexcludeされ、witness transactionだけがownする。Task-256
+formula IDs 0/1はtransparent `FormulaExpression` wrappers 31/41配下の
+`BuiltinPredicateApplication` sites 30/40をownする。
+application/structure/set-term fingerprintはすべてabsent。
+
+base `SourceStatementHandoff`はformula-onlyを維持し、exact cardinality
+`1/2/2/2/2`:
+
+| table row | exact contract |
+| --- | --- |
+| owner 0 | authenticated theorem symbol/contribution; node 45; `19..103`; spelling `FormulaStatementSingleWitnessSmoke`; `Theorem` / `Unmodified` / normal |
+| statement 0 | owner/context 0; atomic formula 0; node 45; `19..103`; source ordinal 0; `TheoremProposition`; normalized complete-theorem spelling |
+| statement 1 | owner 0/context 1; atomic formula 1; node 43; `87..98`; source ordinal 2; `Conclusion`; spelling `thus x = x ;` |
+| context 0/1 | statement 0/1; binding context 0/1; ranges `19..103`/`87..98`; visible bindings `[0]` |
+| input fact 0/1 | statement/context 0/1; ordinal 0; `ReservedTypeGuard`; binding 0; uses `[0,1]`/`[3,4]` |
+| candidate 0/1 | statement/context 0/1; ordinal 0; `UnverifiedProposition`; atomic formula 0/1 |
+
+normalized theorem spellingは
+`theorem FormulaStatementSingleWitnessSmoke : x = x proof take x ; thus x
+= x ; end ;`。dense base table IDはglobal proof-source orderを消さない:
+base source ordinalはexactly 0/2、companion witness source ordinalは1。
+combined partitionはgap/duplicate/reorderなしのexact `[0,1,2]`。
+
+witnessを`SourceStatementKind`へ追加してはならない。全base rowはformula、
+formula-statement context、input fact、candidate factをrequireするが、
+`take x;`はtermを持ちpropositionを持たない。Task 258B3は次のseparate
+syntax-free transactionを追加する:
+
+- dense `SourceStatementWitnessId`;
+- `SourceStatementWitnessHandoffInput`と
+  `SourceStatementWitnessInput`;
+- non-exhaustive `SourceStatementWitnessKind::Unnamed`と
+  `SourceStatementWitnessTermTarget::Primary`;
+- immutable `SourceStatementWitnessHandoff`、`SourceStatementWitness`、
+  `SourceStatementWitnessTable`;
+- `SourceStatementWitnessProducer`とnon-exhaustive
+  `SourceStatementWitnessError`。
+
+exact public construction surfaceはcanonical EnglishのRust blockと同一で、
+`SourceStatementWitnessHandoffInput { source_id, module_id, witnesses }`、
+`SourceStatementWitnessInput { owner, binding_context, term, take_site,
+take_range, site, source_range, source_ordinal, ordinal, spelling, kind,
+recovery }`、`SourceStatementWitnessProducer::build(input, statements,
+primary_terms, arena)`を公開する。
+
+`SourceStatementWitnessId`は
+`Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash`。
+input/row/table/handoffは`Debug + Clone + PartialEq + Eq`。kind/targetは
+`Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash`、
+producerは`Debug + Clone + Copy + Default`、errorは
+`Debug + Clone + PartialEq + Eq`かつ`Display`/`Error`をimplementする。
+`SourceStatementWitnessHandoffInput`は`source_id`、`module_id`、
+`witnesses`を持つ。immutable handoffはsource/module identity、derived exact
+`statement_fingerprint`/`primary_term_fingerprint`、witness row exactly
+1件を持つ。handoff accessorは`source_id`、`module_id`、両fingerprint、
+`witnesses`、deterministic `debug_text`、table accessorは`get`、`iter`、
+`len`、`is_empty`を公開する。
+
+witness row 0はowner 0、direct `BindingContextId(1)`、primary target 2、
+take site/range node 35/`77..84`、witness site/range node 34/`82..83`、
+source ordinal 1、within-`take` ordinal 0、spelling `x`、kind `Unnamed`、
+normal recovery。accessorはsyntax typeなしで全fieldを公開する。typed
+arenaはnode 35だけに`source.statement-witness.take`、node 34だけに
+`source.statement-witness.item`を割り当て、transparent
+`TermExpression` wrapper 33は`source.surface.unowned`、Task 252は
+`TermReference` node 32をownする。companionはordered containment
+35 → 34 → 33 → 32、exact term/reference range、binding 0、context 1、
+scope `[0]`、use ordinal 1、Task-256 edgeからのabsenceをvalidateする。
+tokenをcopyせず、formula/binding/resolver node/projection/reference/resultを
+inventしない。
+
+`SourceStatementWitness`は`owner`、`binding_context`、`term`、`take_site`、
+`take_range`、`site`、`source_range`、`source_ordinal`、`ordinal`、
+`spelling`、`kind`、`recovery` accessorをexisting statement rowと同じ
+borrowed/value return styleで公開する。
+
+`SourceStatementWitnessProducer::build(input, statements, primary_terms,
+arena)`はexact Task-258B3 base profileをauthenticateし、両debug
+fingerprintをstoreする。failure precedenceはsource/module/base/lower/
+fingerprint/shared-arena dependency firstの`DependencyMismatch`、exact
+one-row cardinality secondの`InvalidAggregate`、その後first invalid
+field/ordinal/site/containment/target/context/binding/scope/recoveryの
+`InvalidWitness { witness }`。revalidationも同じprecedence。new resolver
+bundleなしでprovenanceは十分である。base transactionが
+`SymbolEnv`-authenticated theorem ownerを保持し、Task 252がwitnessで使う
+authenticated reserved-variable referenceを保持する。
+
+exact debug grammar:
+
+```text
+source-statement-witness-debug-v1
+module: <package>::<module>
+statement-fingerprint: <quoted source-statement debug>
+primary-term-fingerprint: <quoted source-primary-term debug>
+witness#0 owner=0 binding_context=1 term=primary#2 take_range=77..84 take_site=35 range=82..83 site=34 source_ordinal=1 ordinal=0 kind=unnamed recovery=normal spelling="x"
+```
+
+`SourceStatementWitnessError`はexactly `DependencyMismatch`、
+`InvalidWitness { witness: SourceStatementWitnessId }`、
+`InvalidAggregate`を持つ。textはdependency mismatch、invalid dense
+witness ID、invalid witness aggregateをそれぞれnameする。
+
+`TypedAst`はoptional field/accessor
+`source_statement_witnesses: Option<SourceStatementWitnessHandoff>` /
+`source_statement_witnesses()`を追加し、
+`with_source_statement_witnesses(statements, witnesses)`だけがB3 pairを
+publishできる。existing base-only installerはTask-258A/258B2-only、
+reference-paired installerはTask-258B1-onlyを維持する。final
+`ResolvedTypedAst`もsame field/accessorを追加し、same pairを
+revalidate/clone-preserveする。orphan half、standalone B3 base、stale/
+cross-profile fingerprint、B1 references+witness、Task-248、全Task-257
+family、他source family、全semantic table、いずれのownership orderも
+atomicにfailする。debug orderはlower handoffs、base
+`source-statement-debug-v1`、witness
+`source-statement-witness-debug-v1`、nodes。earlier debug bytesは不変。
+B3 productionはproducer validation用にformula-only baseをindependentに
+buildできるが、matching witness handoffなしでtyped/final ownerへinstall
+してはならない。
+
+exact containment graphではtheorem row 0がconclusion/take/witnessとlower
+descendantをcontainし、conclusion row 1は自身のformula/termsだけをcontain
+する。baseはformula row 2件だけ、companionはtake/witness wrapperだけを
+ownする。duplicate site、crossing row、別rowのformula/term substitution、
+witness termのatomic edge接続、recovered/degraded node、wrong child order、
+named/multiple witness、他term、missing/extra/reordered statement、
+assumption、citation/label、composite theorem root、broader visibility、
+全source byte changeはfail closed。
+
+future checker matrixはexactly compound tests 4本: complete API/debug/lower
+profile publication、exhaustive dependency/aggregate/base/witness/all-index/
+provenance mutation+replay、typed ownershipと全Task-248/257/258
+cross-family order+rollback、final clone/orphan/stale-half rejection+empty
+semantics。mutationはbase ordinals `0/2`、witness source/within-take
+ordinals `1/0`、combined partition、term 2の0/1/3/4へのsubstitution、
+binding context 0/foreign proof scope、take/witness site swap、
+wrapper/reference substitution、全range/spelling/kind/recovery field、
+independently stale statement/primary fingerprint、coherent replayを
+explicitにcoverする。complete API testはRust type/public-surface levelで
+witness inputが`BindingContextId`をexposeし`SourceStatementContextId`
+fieldを持たないこともfreezeする。これはruntime mutationではない。
+runner matrixはexactly
+compound tests 5本: real frontend/resolver/lower identity、complete
+mutation/replay、named/multiple/missing/extra witness、`take y`、
+reordered/extra statement、composite/existential rootを含むselector/
+subtree/byte near miss、active route/全A/B1/B2 family isolation両order、
+typed/final debug clone+empty semantic output。testはexisting syntax
+dev-dependencyを使えるが、checker production codeはsyntax-freeを維持。
+
+Task 258B3はaccepted witness、existential match、type obligation、
+substitution、local abbreviation、fact、premise、checked formula、
+statement semantic、proof node/goal、diagnostic、theorem status、IR、VC、
+cache、artifactをpublishしない。Tasks 258B3N/Mがnamed/multiple/other
+witness-term transportを明示的に保持し、B3後/B4前にseparately freezeする。
+Task 258B4はcomposite theorem root、Task 258B5はbroader
+imported/outer/inner visibility、Tasks 269–272は
+binding、closure/substitution、reconsider、proof-skeleton、justification、
+goal semanticsを保持する。
+
+missing B3 contractはresolved `design_drift`。absent exact producer/paired
+ownership/dormant routeはbounded `source_drift`、absent checker/runner
+4/5 matrixは`test_gap`。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、unresolved `repo_metadata_conflict`はない。
+`spec.en.checker.formula_statement.source_payloads`はdeferred
+`tests = []`を維持し、coverage auditはownershipだけを記録してcreditを
+与えない。
+
+本documentation prerequisiteはsource、fixture、sidecar、expectation、
+trace row/status/count、active route、test list、hashを変更しない。current
+baselineはplan/type `419/387` / `253/241`、pass/fail `228/191`、active
+parse/declaration/type/proof `101/5/198/1`、warnings/errors `23/0`、
+checker/runner libraries `346/379`、runner production 30 paths /
+36,479 lines。checker test-list hashesは
+`83fbd231030ff57c3c2c152c9374ca10579eb50797bd0b455a22a576b9f6edd5` /
+`aa34d2780713de5b89ff75e24cc152797260daefdac064410120358980555119`、
+runner hashesは
+`3642d5057d7dc2f47c1b739b61f9c4272b823fe200bc72270e9345386df59586` /
+`467fe747add608900943eaee02e333c8d672a3a4a433f9a4efa3fea4f4b21e5a`。
+runner path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`a0553883c61b5a113b3af509f58296cc97a7b1dfd31b6f82b1d71b95ff0f8bcb`。
+current checker module sizesは`source_statement.rs` 7,334 lines、
+`typed_ast.rs` 4,550、`resolved_typed_ast.rs` 7,172、unchanged
+`binding_env.rs` 3,156。5 CLI hashesは
+`4cc13ea6bee6c1a6458d4a7d027a7eea685b711eda8410edafad8faa01809d54`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
+を維持。
+implementationはlibraries `350/384`、production paths 30をprojectし、
+exact line countとchanged test/content hashは予測せず実測する。
+
+exitはEN/JA documentation sync、independent no-findings review、全hard
+gate、read-only quality 90/100以上、task-only staging、dedicated
+documentation commitをrequireする。implementationはそのcommitとfresh
+parser/resolver/lower-API/count/hash preflight後だけ開始できる。

@@ -2530,3 +2530,30 @@ completion remain deferred. The origin discrepancy remains report-only
   implemented only Task 258B2 with four checker and five runner tests.
   Bounded `source_drift`/`test_gap` are closed without semantic, corpus, or
   trace activation; fresh-inventory Task 258B3 next.
+
+## Checker Task 258B3 frozen-contract prerequisite
+
+- [x] Freeze the exact final-LF 104-byte source, SHA-256
+  `76fb48354fc0dfb17047900a047a5b28b806df60d139a3133e606f0ef12a3f82`,
+  49-node/root-48 parser identity/ranges, and theorem-only resolver
+  provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `5/5/0`, Task-256
+  `2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, one witness row, term-2 atomic
+  exclusion, and the combined ordinal partition `[0,1,2]`.
+- [x] Freeze the complete public witness API/error/debug/fingerprint
+  contract, pair-only typed/final ownership, all cross-family exclusions,
+  rollback/replay, and empty semantics.
+- [x] Freeze checker/runner compound tests `4/5`, exact mutation/near-miss
+  matrices, real frontend/resolver provenance, all-index parity, active
+  isolation, and final clone.
+- [x] Classify closed `design_drift`, bounded `source_drift`/`test_gap`, and
+  no blocking protocol disagreement; retain B3N/M, B4/B5, and Tasks
+  269–272.
+- [x] Keep the source semantically dormant because its equality goal does
+  not authorize `take`; preserve the deferred trace row with `tests = []`
+  and award no coverage credit.
+- [x] Preserve documentation-only libraries `346/379`, runner 30 paths /
+  36,479 lines, module sizes, all metadata counts, test lists, and hashes.
+- [ ] After this dedicated documentation commit and fresh preflight,
+  implement only Task 258B3, project libraries `350/384`, remeasure every
+  changed baseline, then fresh-inventory Tasks 258B3N/M before Task 258B4.

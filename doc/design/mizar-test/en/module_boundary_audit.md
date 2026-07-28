@@ -11528,3 +11528,16 @@ test leaf owns raw parser/resolver assertions. The 30-path production
 topology is unchanged. The checker receives only syntax-free handoffs and
 authenticated provenance, so no new module, dependency direction, or
 semantic owner is justified.
+
+### Task 258B3 Frozen Boundary Result
+
+The existing private statement leaf remains the sole raw-parser/resolver
+owner and may add the exact B3 selector, lower bridge, and paired assembly.
+The existing facade and `runner.rs` only preserve selector precedence; the
+existing statement test leaf owns all raw kind/parity and mutation checks.
+No new runner module or production path is justified.
+
+The checker receives only source/module IDs, syntax-free typed sites,
+fingerprinted base/primary handoffs, dense witness data, and authenticated
+theorem/binding provenance. This prerequisite leaves production topology at
+30 paths / 36,479 lines and line baselines `2120/678/2491/2884` unchanged.

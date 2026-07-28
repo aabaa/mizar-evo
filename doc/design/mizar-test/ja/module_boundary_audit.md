@@ -10304,3 +10304,16 @@ private 2,120-line statement leafをexposeし、2,884-line test leafがraw
 parser/resolver assertionをownする。30-path production topologyは不変。
 checkerはsyntax-free handoffとauthenticated provenanceだけを受けるため、
 new module、dependency direction、semantic ownerは不要である。
+
+### Task 258B3 frozen boundary result
+
+existing private statement leafがsole raw-parser/resolver ownerを維持し、
+exact B3 selector、lower bridge、paired assemblyを追加できる。existing
+facade/`runner.rs`はselector precedenceだけ、existing statement test leafは
+全raw kind/parity/mutation checkをownする。new runner module/production
+pathは不要。
+
+checkerはsource/module ID、syntax-free typed site、fingerprinted
+base/primary handoff、dense witness data、authenticated theorem/binding
+provenanceだけを受ける。本prerequisiteはproduction topology 30 paths /
+36,479 lines、line baselines `2120/678/2491/2884`を不変に保つ。

@@ -798,3 +798,20 @@ transport-only: one direct equality theorem, one unlabeled assumption, one
 direct conclusion, and no reference or semantic handoff. This closes the B2
 source/test gaps without consuming B3 witness, B4 composite-root, B5 broader
 visibility, or Tasks 269–272 proof-semantic ownership.
+
+### Task 258B3 Witness Companion
+
+The Task-258B3 family remains statement transport but separates unlike
+payloads. The existing base owns one theorem formula and one conclusion
+formula at source ordinals 0/2. The new
+`SourceStatementWitnessHandoff` owns only the unnamed primary-term witness
+between them at source ordinal 1 and within-take ordinal 0. It depends on the
+base and Task-252 fingerprints and installs only as their authenticated pair.
+
+This split prevents a term-only `take` item from gaining a fabricated
+formula, statement context, guard, candidate fact, or resolver bundle.
+Task 252 owns the witness term/reference; Task 256 explicitly excludes it.
+Tasks 269–272 still own existential matching, obligations, substitution,
+abbreviation, and proof state. Tasks 258B3N/M retain named, multiple, and
+other witness-term transport before B4; B4/B5 retain composite-root and
+visibility families.

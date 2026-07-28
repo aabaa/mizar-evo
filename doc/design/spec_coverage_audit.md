@@ -3765,3 +3765,37 @@ Accordingly,
 and Tasks 269–272 proof semantics. Library inventory is now checker/runner
 `346/379`; runner production remains 30 paths and is 36,479 lines. This
 addendum records implementation progress and follow-up ownership only.
+
+## Step 5 Checker Task 258B3 Frozen-Contract Addendum
+
+Fresh post-Task-258B2 inventory freezes only the 104-byte unnamed-witness
+transport source and its 49-node/root-48 parser identity. Canonical
+`doc/spec/en/15.statements.md` §§15.4.4 and 15.11.5, the reserved-variable/
+term/equality chapters, the existing named/unnamed `take` parser fixture,
+resolver provenance, and Tasks 48/252/256/258A/B1/B2 support the syntax-free
+occurrence. They do not authorize applying `take` to the equality theorem
+goal or publishing existential matching, type obligations, substitution,
+proof validity, or theorem acceptance.
+
+The frozen graph is Task-48 `2/1/0`, Task-252 `5/5/0`, Task-256
+`2/0/0/0/0/0/0/4/4`, formula-only base `1/2/2/2/2`, and one paired unnamed
+primary-term-2 witness row. Dense base source ordinals 0/2 and witness source
+ordinal 1 form the exact unique partition `[0,1,2]`. Tasks 258B3N/M retain
+named, multiple, and other witness-term transport and must be frozen before
+B4. B4 retains composite theorem roots, B5 broader visibility, and Tasks
+269–272 all semantic effects.
+
+The closed missing contract is `design_drift`; future checker/runner code is
+bounded `source_drift`, and the four/five future matrices are `test_gap`.
+There is no blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or
+`repo_metadata_conflict`.
+
+This prerequisite changes no `doc/spec`, `.miz`, fixture, sidecar,
+expectation, trace row/status/count, executable source, active route, test
+list, or hash. `spec.en.checker.formula_statement.source_payloads` remains
+deferred with `tests = []`; no coverage credit is awarded. Current
+checker/runner libraries remain `346/379`, runner production remains 30
+paths / 36,479 lines, and all CLI/count/hash baselines remain unchanged.
+This audit edit is required only to record the newly frozen producer/
+consumer ownership and later semantic owners.

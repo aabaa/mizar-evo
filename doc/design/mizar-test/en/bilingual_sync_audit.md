@@ -460,3 +460,12 @@ The EN canonical runner plan, checklist, harness, and module-boundary result
 are synchronized with their JA companions. Both record five dormant tests,
 379 library tests, 30 paths / 36,479 lines, identical hashes, no active or
 trace change, and the same B3–B5 / Tasks 269–272 deferrals.
+
+## Checker Task 258B3 Frozen-Contract Synchronization
+
+The canonical runner plan, checklist, harness, and module audit are
+synchronized with their Japanese companions. Both freeze the same
+104-byte/hash selector, 49-node identity, exact lower/base/witness profiles,
+`[0,1,2]` order, five future tests, corpus dormancy, exclusions, and semantic
+deferrals. Both preserve 379 tests, 30 paths / 36,479 lines, and all hashes.
+No Task-258B3 runner bilingual debt is accepted.

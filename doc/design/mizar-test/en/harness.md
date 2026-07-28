@@ -3405,3 +3405,48 @@ The private leaf and facade are implemented at 2,120 and 678 lines;
 stays corpus-dormant and precedes the prior statement/lower selectors.
 All-index parity and the complete resolver mutation matrix prevent raw-syntax
 or provenance drift from crossing the syntax-free checker boundary.
+
+### Task 258B3 Frozen Harness Boundary
+
+The future leaf accepts only:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementSingleWitnessSmoke: x = x proof
+  take x;
+  thus x = x;
+end;
+```
+
+It checks exactly 104 bytes, final LF, SHA-256
+`76fb48354fc0dfb17047900a047a5b28b806df60d139a3133e606f0ef12a3f82`,
+49 real unrecovered nodes/root 48, theorem node 45, proof 44, take 35,
+witness 34, transparent term wrapper 33, Task-252 term/reference site 32,
+the complete Task-252 site sequence 26/28/32/36/38, transparent wrappers
+27/29/33/37/39, Task-256 atomic sites 30/40 under wrappers 31/41, conclusion
+43, and the one
+public/exported theorem owner. There is no resolver label/reference bundle.
+Every surface node must retain same-index range/children/recovery parity in
+the typed arena.
+
+The leaf precedes B2/B1/A and lower selectors. It assigns distinct typed
+ownership to base theorem/conclusion, witness take/item, Task-252 term 2,
+and the two Task-256 formulas, then publishes the exact paired
+`1/2/2/2/2` + one-row handoff. Source ordinals must partition `[0,1,2]`.
+Raw syntax and resolver objects never enter checker rows.
+
+Five compound tests freeze exact output; every lower/base/witness/
+fingerprint/arena mutation and replay; source/hash/subtree near misses
+including named/multiple/missing/extra witnesses, `take y`, reordered
+statements, and composite roots; both-order family/active-route isolation;
+and typed/final clone/debug with empty facts, obligations, checked formulas,
+statement semantics, proofs, goals, and diagnostics.
+
+The source's equality goal means it is not a valid semantic `take` proof.
+The route stays corpus-dormant and cannot claim formula-statement coverage.
+This documentation prerequisite leaves the existing 2,120/678/2,491/2,884
+line statement/facade/runner/test modules, 379-test list, 30-path /
+36,479-line manifest, and every hash unchanged.
+
+Tasks 258B3N/M retain named, multiple, and other witness-term consumers
+after B3 and before B4; Tasks 269–272 retain their semantic effects.

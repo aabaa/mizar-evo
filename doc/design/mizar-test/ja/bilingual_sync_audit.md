@@ -444,3 +444,12 @@ EN canonical runner plan、checklist、harness、module-boundary resultをJA
 companionと同期した。両言語はdormant tests 5本、library 379 tests、
 30 paths / 36,479 lines、同一hash、active/trace変更なし、同じB3–B5 /
 Tasks 269–272 deferralを記録する。
+
+## Checker Task 258B3 frozen-contract synchronization
+
+canonical runner plan、checklist、harness、module auditをJapanese
+companionと同期した。両言語は同じ104-byte/hash selector、49-node
+identity、exact lower/base/witness profile、`[0,1,2]` order、future tests
+5本、corpus dormancy、exclusion、semantic deferralをfreezeする。379 tests、
+30 paths / 36,479 lines、全hashをpreserveし、Task-258B3 runner bilingual
+debtをacceptしない。

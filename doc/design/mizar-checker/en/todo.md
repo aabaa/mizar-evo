@@ -4538,9 +4538,20 @@ unchecked row below is one future nonempty logical task and one commit.
       and fresh parser/resolver/lower-API/count/hash preflight. Four checker
       and five runner tests close the bounded `source_drift` and `test_gap`;
       no semantic or corpus activation was added.
-    - [ ] **Tasks 258B3-B5:** separately freeze witness transport, composite
-      theorem roots, and broader imported/outer/inner visibility profiles.
-      Do not absorb Tasks 269-272 semantics.
+    - [x] **Task 258B3 prerequisite:** freeze the exact 104-byte unnamed
+      witness source, 49-node/root-48 parser identity, theorem-only resolver
+      provenance, Task-48 `2/1/0`, Task-252 `5/5/0`, Task-256
+      `2/0/0/0/0/0/0/4/4`, formula-only base `1/2/2/2/2`, one-row witness
+      companion, paired typed/final ownership, tests, and non-activation.
+    - [ ] **Task 258B3 implementation:** implement only the frozen paired
+      witness transport after its documentation commit and fresh preflight;
+      add four checker and five runner tests.
+    - [ ] **Tasks 258B3N/M:** after B3, separately freeze named-witness
+      transport and multiple/other witness-term transport before B4. Do not
+      infer abbreviation, substitution, type-obligation, or goal semantics.
+    - [ ] **Tasks 258B4-B5:** separately freeze composite theorem roots and
+      broader imported/outer/inner visibility profiles. Do not absorb Tasks
+      269-272 semantics.
 - [ ] **Task 259:** predicate-definition and initial-obligation intake producer.
 - [ ] **Task 260:** functor-definition and initial-obligation intake producer.
 - [ ] **Task 261:** attribute-definition producer.
@@ -4791,3 +4802,31 @@ implementation commit does not satisfy a producer task.
   and only the ordered reciprocal reference/note in the existing sidecar.
 - [x] Measure plan/type `419/387` / `253/241`, libraries `335/365`, and the
   29-path / 34,290-line runner manifest; preserve all frozen CLI outcomes.
+
+## Checker Task 258B3 Frozen-Contract Ledger
+
+- [x] Freeze the final-LF 104-byte source/hash, 49-node/root-48 parser
+  ranges, public/exported theorem provenance `[2,1]`, and no resolver
+  companion.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `5/5/0`, Task-256
+  `2/0/0/0/0/0/0/4/4`, formula-only base `1/2/2/2/2`, and exact term-2
+  exclusion from atomic edges.
+- [x] Freeze the public witness ID/input/row/table/handoff/producer/error,
+  both fingerprints, deterministic debug, direct binding context, and one
+  unnamed primary target.
+- [x] Freeze dense base IDs 0/1 with global ordinals 0/2, witness
+  source/within-take ordinals 1/0, and paired unique `[0,1,2]` validation.
+- [x] Freeze typed/final pair-only ownership, all profile/source-family
+  exclusions, rollback/replay, checker tests 4, runner tests 5, and empty
+  semantics.
+- [x] Keep every fixture, sidecar, expectation, trace row/status/count,
+  active route, source, test list, and hash unchanged at libraries
+  `346/379` and runner 30 paths / 36,479 lines.
+- [x] Classify the closed contract as `design_drift`, future code as bounded
+  `source_drift`, tests as `test_gap`, and find no blocking protocol
+  disagreement.
+- [ ] Implement only Task 258B3 after this dedicated documentation commit
+  and fresh parser/resolver/lower-API/count/hash preflight; project
+  libraries `350/384`, then remeasure all changed hashes and lines.
+- [ ] Fresh-inventory Tasks 258B3N/M next and freeze named, multiple, and
+  other witness-term transport before selecting Task 258B4.

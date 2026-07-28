@@ -946,3 +946,18 @@ revalidateしてclone-preserveする。cluster fact、statement-proof input、
 foreign source family、checked formula、statement semantic、proof、goal、
 diagnostic、その他semantic outputはrejectしたままで、successful resultは
 全該当tableをemptyに保つ。
+
+### Task 258B3 frozen final ownership
+
+final assemblyはtyped ownership後だけTask-258B3 statement/witness pairを
+admitする。source/module identity、base/lower fingerprint、exact
+`1/2/2/2/2` + one-row profile、shared 49-node arena、atomic edgeからのterm
+2 exclusion、combined source order `[0,1,2]`をrevalidateする。resultはequal
+`source_statement()`/`source_statement_witnesses()` cloneを公開し、
+reference handoffはない。
+
+orphan witness、standalone B3 base、stale fingerprint、B1/B2 hybrid、
+foreign source owner、cluster fact、statement-proof input、nonempty semantic
+outputは`InvalidSourceStatement`。final assemblyはresolver/witness semanticsを
+inferせず、checked formula、fact、statement semantic、proof、goal、
+diagnosticをemptyに保つ。本prerequisiteはresolved source/testを変更しない。

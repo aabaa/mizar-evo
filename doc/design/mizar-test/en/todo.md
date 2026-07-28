@@ -1994,3 +1994,24 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] After the checker documentation commit and a fresh parser/resolver/
   lower/API/count/hash preflight, implemented only the dormant Task-258B2
   route and five tests. B3–B5 and Tasks 269–272 remain deferred.
+
+## Checker Task 258B3 Frozen Consumer Checklist
+
+- [x] Freeze the exact 104-byte final-LF source/hash, 49-node/root-48 tree,
+  all ranges, theorem-only resolver provenance, and no label-reference
+  bundle.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `5/5/0`, Task-256
+  `2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, one witness row, and `[0,1,2]`
+  order in one arena.
+- [x] Freeze private selector precedence, all-index parity, complete
+  mutation/replay, named/multiple/missing/extra and subtree near misses, all
+  A/B1/B2/active isolation orders, clone/debug, rollback, and empty
+  semantics.
+- [x] Preserve every corpus artifact, trace row/status/count, active route,
+  source, 379-test list, 30-path / 36,479-line manifest, and hash in this
+  prerequisite.
+- [ ] After the documentation commit and fresh preflight, implement only
+  the dormant B3 route with exactly five runner tests, project 384 tests,
+  and remeasure production/test hashes.
+- [ ] After B3, freeze separate Tasks 258B3N/M runner consumers for named,
+  multiple, and other witness-term transport before Task 258B4.

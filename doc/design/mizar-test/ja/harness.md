@@ -3230,3 +3230,46 @@ test leafは2,884 linesで実装済み。routeはcorpus-dormantのままprior
 statement/lower selectorより先に実行する。all-index parityとcomplete
 resolver mutation matrixがraw-syntax/provenance driftのsyntax-free checker
 boundary越えを防ぐ。
+
+### Task 258B3 frozen harness boundary
+
+future leafは次だけをacceptする:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementSingleWitnessSmoke: x = x proof
+  take x;
+  thus x = x;
+end;
+```
+
+exact 104 bytes、final LF、SHA-256
+`76fb48354fc0dfb17047900a047a5b28b806df60d139a3133e606f0ef12a3f82`、
+real unrecovered 49 nodes/root 48、theorem node 45、proof 44、take 35、
+witness 34、transparent term wrapper 33、Task-252 term/reference site 32、
+complete Task-252 sites 26/28/32/36/38、transparent wrappers
+27/29/33/37/39、wrappers 31/41配下のTask-256 atomic sites 30/40、
+conclusion 43、public/exported
+theorem owner 1件をcheckする。resolver label/reference bundleはない。全
+surface nodeはtyped arenaでsame-index range/children/recovery parityを保持。
+
+leafはB2/B1/A/lower selectorより先に実行する。base
+theorem/conclusion、witness take/item、Task-252 term 2、Task-256 formula
+2件へdistinct typed ownershipを割り当て、exact paired
+`1/2/2/2/2` + one-row handoffをpublishする。source ordinalsは
+`[0,1,2]`をpartitionし、raw syntax/resolver objectはchecker rowへ渡さない。
+
+compound tests 5本がexact output、全lower/base/witness/fingerprint/arena
+mutation+replay、named/multiple/missing/extra witness、`take y`、reordered
+statement、composite rootを含むsource/hash/subtree near miss、両order
+family/active-route isolation、typed/final clone/debug、empty fact/
+obligation/checked formula/statement semantic/proof/goal/diagnosticをfreeze。
+
+sourceのequality goalによりvalid semantic `take` proofではない。routeは
+corpus-dormantでformula-statement coverageをclaimできない。本docs
+prerequisiteはexisting statement/facade/runner/test module
+2,120/678/2,491/2,884 lines、379-test list、30-path / 36,479-line
+manifest、全hashを不変に保つ。
+
+Tasks 258B3N/MがB3後/B4前のnamed/multiple/other witness-term consumer、
+Tasks 269–272がsemantic effectを保持する。

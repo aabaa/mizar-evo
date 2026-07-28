@@ -1313,3 +1313,316 @@ empty semantics. `Assumption` remains paired only with
 statement semantic, proof, goal, diagnostic, or accepted theorem. Task
 258B3 retains witnesses, Task 258B4 composite roots, Task 258B5 broader
 visibility, and Tasks 269–272 proof semantics.
+
+## Task 258B3 Frozen Single-Witness Slice
+
+Task 258B3 is the next dependency-ready transport slice after Task 258B2.
+Its canonical authority is `doc/spec/en/15.statements.md` §§15.4.4 and
+15.11.5, Chapters 4, 13, and 14 for the reserved variable, term, and equality
+shells, existing `pass_parser_simple_statements_001.miz` named/unnamed
+`take` syntax, the parser/resolver fixtures, and the public
+Task-48/252/256/258A/258B1/258B2 APIs. The grammar authorizes the unnamed
+`take x;` source shape and left-to-right witness order. Section 15.11.5
+assigns existential-goal matching, type obligations, substitution, and
+named-abbreviation effects to later semantics; none is executed here.
+
+The exact future corpus-dormant consumer is this 104-byte final-LF source,
+SHA-256
+`76fb48354fc0dfb17047900a047a5b28b806df60d139a3133e606f0ef12a3f82`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementSingleWitnessSmoke: x = x proof
+  take x;
+  thus x = x;
+end;
+```
+
+The equality theorem root intentionally isolates witness transport from the
+Task-258B4 composite-root slice. Consequently this dormant source is not
+claimed to be a semantically valid proof: `take` would require an
+existential goal. It cannot become an active corpus case or an accepted
+theorem in Task 258B3.
+
+Fresh parser/resolver inventory freezes the following identity:
+
+| Object | Exact identity |
+| --- | --- |
+| surface arena | 49 nodes, root 48, all unrecovered |
+| reserve/theorem | reserve node 25 `0..18`; theorem node 45 `19..103`; label `27..61` |
+| theorem owner | one local public/exported theorem, contribution 0, range `19..103`, origin path `[2,1]`; no import |
+| proof | node 44, `69..102`, lexical scope `[0]` |
+| formula statements | theorem node 45 with transparent `FormulaExpression` wrapper 31 and Task-256 atomic site 30 at `63..68`; conclusion node 43 with wrapper 41 and atomic site 40 at `92..97` |
+| witness | `TakeStatement` node 35 `77..84`; `Witness` node 34 `82..83`; transparent `TermExpression` wrapper 33 and Task-252 term/reference site 32 at `82..83` |
+| formula terms | transparent wrappers 27/29 and Task-252 sites 26/28 at `63..64`/`67..68`; wrappers 37/39 and sites 36/38 at `92..93`/`96..97` |
+| resolver labels | no proof-step label, citation, label-reference key, or resolver companion |
+
+The syntax-free lower composition is exact. Task 48 is `2/1/0`: module
+context 0 and proof context 1 owned by
+`BindingContextOwner::SourceStatement { source_range: 69..102 }`, with
+parent 0, proof layer, scope `[0]`, no local binding, visible reserved
+binding 0, and normal recovery. Binding 0 remains reserved `x` at `8..9`,
+typed by `set` at `14..17`.
+
+Task 252 is `5/5/0`. Dense term/reference IDs 0–4 have actual owned sites
+26/28/32/36/38 under transparent wrappers 27/29/33/37/39 and cover ranges
+`63..64`, `67..68`, `82..83`, `92..93`, and `96..97`; their binding contexts
+are `0,0,1,1,1`, scopes are `[],[],[0],[0],[0]`, source ordinals are 0–4,
+and every stored use ordinal is 1. Every term is the normal spelling `x`,
+kind `VariableReference`, role `Value`, no parent, and every reference is
+the normal `Variable` reference to binding 0. Task 256 is
+`2/0/0/0/0/0/0/4/4`: equality formulas 0/1 at `63..68`/`92..97`, contexts
+0/1, each with ordered left/right primary targets. Formula 0 targets terms
+0/1 and formula 1 targets terms 3/4. Primary term 2 is excluded from every
+atomic edge/request and is owned only by the witness transaction. Task-256
+formula IDs 0/1 own `BuiltinPredicateApplication` sites 30/40 under
+transparent `FormulaExpression` wrappers 31/41. All application, structure,
+and set-term fingerprints remain absent.
+
+The base `SourceStatementHandoff` remains formula-only and has exact
+cardinality `1/2/2/2/2`:
+
+| Table row | Exact contract |
+| --- | --- |
+| owner 0 | authenticated theorem symbol/contribution; node 45; `19..103`; spelling `FormulaStatementSingleWitnessSmoke`; `Theorem` / `Unmodified` / normal |
+| statement 0 | owner/context 0; atomic formula 0; node 45; `19..103`; source ordinal 0; `TheoremProposition`; normalized complete-theorem spelling |
+| statement 1 | owner 0/context 1; atomic formula 1; node 43; `87..98`; source ordinal 2; `Conclusion`; spelling `thus x = x ;` |
+| context 0/1 | statement 0/1; binding context 0/1; ranges `19..103`/`87..98`; visible bindings `[0]` |
+| input fact 0/1 | statement/context 0/1; ordinal 0; `ReservedTypeGuard`; binding 0; uses `[0,1]`/`[3,4]` |
+| candidate 0/1 | statement/context 0/1; ordinal 0; `UnverifiedProposition`; atomic formula 0/1 |
+
+The normalized theorem spelling is
+`theorem FormulaStatementSingleWitnessSmoke : x = x proof take x ; thus x
+= x ; end ;`. Dense base table IDs do not erase global proof-source order:
+base source ordinals are exactly 0 and 2, while the companion witness source
+ordinal is 1. The combined partition must be exactly `[0,1,2]`, with no
+duplicate, gap, or reorder.
+
+Witnesses cannot be added to `SourceStatementKind`: every base row requires
+a formula, formula-statement context, input fact, and candidate fact, while
+`take x;` contains a term and no proposition. Task 258B3 therefore adds one
+separate syntax-free transaction:
+
+- dense `SourceStatementWitnessId`;
+- `SourceStatementWitnessHandoffInput` and
+  `SourceStatementWitnessInput`;
+- non-exhaustive `SourceStatementWitnessKind::Unnamed` and
+  `SourceStatementWitnessTermTarget::Primary`;
+- immutable `SourceStatementWitnessHandoff`, `SourceStatementWitness`,
+  and `SourceStatementWitnessTable`;
+- `SourceStatementWitnessProducer` and non-exhaustive
+  `SourceStatementWitnessError`.
+
+The exact public construction surface is:
+
+```rust
+pub struct SourceStatementWitnessHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub witnesses: Vec<SourceStatementWitnessInput>,
+}
+
+pub struct SourceStatementWitnessInput {
+    pub owner: SourceTheoremOwnerId,
+    pub binding_context: BindingContextId,
+    pub term: SourceStatementWitnessTermTarget,
+    pub take_site: TypedSiteRef,
+    pub take_range: SourceRange,
+    pub site: TypedSiteRef,
+    pub source_range: SourceRange,
+    pub source_ordinal: usize,
+    pub ordinal: usize,
+    pub spelling: String,
+    pub kind: SourceStatementWitnessKind,
+    pub recovery: SourceStatementRecovery,
+}
+
+#[non_exhaustive]
+pub enum SourceStatementWitnessTermTarget {
+    Primary(SourcePrimaryTermId),
+}
+
+#[non_exhaustive]
+pub enum SourceStatementWitnessKind {
+    Unnamed,
+}
+
+pub struct SourceStatementWitnessHandoff { /* private validated fields */ }
+pub struct SourceStatementWitness { /* private validated fields */ }
+pub struct SourceStatementWitnessTable { /* private dense rows */ }
+pub struct SourceStatementWitnessProducer;
+
+#[non_exhaustive]
+pub enum SourceStatementWitnessError {
+    DependencyMismatch,
+    InvalidWitness { witness: SourceStatementWitnessId },
+    InvalidAggregate,
+}
+
+impl SourceStatementWitnessProducer {
+    pub fn build(
+        input: SourceStatementWitnessHandoffInput,
+        statements: &SourceStatementHandoff,
+        primary_terms: &SourcePrimaryTermHandoff,
+        arena: &TypedArena,
+    ) -> Result<SourceStatementWitnessHandoff, SourceStatementWitnessError>;
+}
+```
+
+`SourceStatementWitnessId` is
+`Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash`. Inputs,
+rows, tables, and handoffs are `Debug + Clone + PartialEq + Eq`.
+Kinds/targets are
+`Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash`; the
+producer is `Debug + Clone + Copy + Default`; the error is
+`Debug + Clone + PartialEq + Eq` and implements `Display` and `Error`.
+`SourceStatementWitnessHandoffInput` contains `source_id`,
+`module_id`, and `witnesses`. The immutable handoff contains source/module
+identity, derived exact `statement_fingerprint` and
+`primary_term_fingerprint`, and exactly one witness row. Handoff accessors
+expose `source_id`, `module_id`, both fingerprints, `witnesses`, and
+deterministic `debug_text`; table accessors expose `get`, `iter`, `len`, and
+`is_empty`.
+
+Witness row 0 has owner 0, direct `BindingContextId(1)`, primary target 2,
+take site/range node 35/`77..84`, witness site/range node 34/`82..83`,
+source ordinal 1, within-`take` ordinal 0, spelling `x`, kind `Unnamed`, and
+normal recovery. Its accessors expose every field without syntax types. The
+typed arena assigns only `source.statement-witness.take` to node 35 and
+`source.statement-witness.item` to node 34; transparent
+`TermExpression` wrapper 33 stays `source.surface.unowned`, and Task 252
+owns `TermReference` node 32. The companion validates ordered containment
+35 → 34 → 33 → 32, the exact term/reference range, binding 0, context 1,
+scope `[0]`, use ordinal 1, and absence from Task-256 edges. It neither
+copies tokens nor invents a formula, binding, resolver node, projection,
+reference, or result.
+
+`SourceStatementWitness` exposes `owner`, `binding_context`, `term`,
+`take_site`, `take_range`, `site`, `source_range`, `source_ordinal`,
+`ordinal`, `spelling`, `kind`, and `recovery` accessors with the matching
+borrowed/value return style used by existing statement rows.
+
+`SourceStatementWitnessProducer::build(input, statements, primary_terms,
+arena)` authenticates the exact Task-258B3 base profile and stores both
+debug fingerprints. Failure precedence is source/module/base/lower/
+fingerprint/shared-arena dependency first as `DependencyMismatch`, exact
+one-row cardinality second as `InvalidAggregate`, then the first field,
+ordinal, site, containment, target, context, binding, scope, or recovery
+failure as `InvalidWitness { witness }`. Revalidation applies the same
+precedence. Resolver provenance is sufficient without a new resolver
+bundle: the base transaction retains the `SymbolEnv`-authenticated theorem
+owner, while Task 252 retains the authenticated reserved-variable reference
+used by the witness.
+
+The exact debug grammar is:
+
+```text
+source-statement-witness-debug-v1
+module: <package>::<module>
+statement-fingerprint: <quoted source-statement debug>
+primary-term-fingerprint: <quoted source-primary-term debug>
+witness#0 owner=0 binding_context=1 term=primary#2 take_range=77..84 take_site=35 range=82..83 site=34 source_ordinal=1 ordinal=0 kind=unnamed recovery=normal spelling="x"
+```
+
+`SourceStatementWitnessError` has exactly `DependencyMismatch`,
+`InvalidWitness { witness: SourceStatementWitnessId }`, and
+`InvalidAggregate`. Its text names dependency mismatch, the invalid dense
+witness ID, or invalid witness aggregate respectively.
+
+`TypedAst` adds optional field/accessor
+`source_statement_witnesses: Option<SourceStatementWitnessHandoff>` /
+`source_statement_witnesses()`, and only
+`with_source_statement_witnesses(statements, witnesses)` may publish the B3
+pair. The existing base-only installer remains Task-258A/258B2-only and the
+reference-paired installer remains Task-258B1-only. Final
+`ResolvedTypedAst` adds the same field/accessor, revalidates, and
+clone-preserves the same pair. An orphan half, standalone B3 base,
+stale/cross-profile fingerprint, B1 references plus witnesses, Task-248,
+any Task-257 family, any other source family, any semantic table, or either
+ownership order fails atomically. Debug order is lower handoffs, base
+`source-statement-debug-v1`, witness
+`source-statement-witness-debug-v1`, then nodes; all earlier debug bytes stay
+unchanged. B3 production may build the formula-only base independently for
+producer validation, but no typed or final owner may install it without the
+matching witness handoff.
+
+The exact containment graph has theorem row 0 containing the conclusion,
+take, witness, and their lower descendants; conclusion row 1 contains only
+its own formula/terms. The base owns only its two formula rows, and the
+companion owns only the take/witness wrappers. Duplicate sites, crossing
+rows, a formula or term substituted from another row, witness term attached
+to an atomic edge, recovered/degraded nodes, wrong child order, named or
+multiple witnesses, any other term, missing/extra/reordered statements,
+assumption, citation/label, composite theorem root, broader visibility, or
+any byte change fails closed.
+
+The future checker matrix is exactly four compound tests: complete
+API/debug/lower-profile publication; exhaustive dependency/aggregate/base/
+witness/all-index/provenance mutation with replay; typed ownership and all
+Task-248/257/258 cross-family orders with rollback; and final
+clone/orphan/stale-half rejection plus empty semantics. Mutations explicitly
+cover base ordinals `0/2`, witness source/within-take ordinals `1/0`, the
+combined partition, term-2 substitution by 0/1/3/4, binding context 0 or a
+foreign proof scope, swapped take/witness sites, wrapper/reference
+substitution, every range/spelling/kind/recovery field, independently stale
+statement/primary fingerprints, and coherent replay. The complete API test
+also freezes at the Rust type/public-surface level that witness input exposes
+`BindingContextId` and no `SourceStatementContextId` field; this is not a
+runtime mutation. The runner matrix is exactly five
+compound tests: real frontend/resolver/lower identity; complete mutation/
+replay; selector/subtree/byte near misses including named/multiple/missing/
+extra witnesses, `take y`, reordered/extra statements, and composite/
+existential roots; active-route and every A/B1/B2 family isolation in both
+orders; and typed/final debug clone with empty semantic output. Tests may
+use the existing syntax dev-dependency; production checker code remains
+syntax-free.
+
+Task 258B3 publishes no accepted witness, existential match, type obligation,
+substitution, local abbreviation, fact, premise, checked formula, statement
+semantic, proof node/goal, diagnostic, theorem status, IR, VC, cache, or
+artifact. Tasks 258B3N/M explicitly retain named, multiple, and other
+witness-term transport and must be separately frozen after B3 and before B4.
+Task 258B4 retains composite theorem roots, Task 258B5 broader
+imported/outer/inner visibility, and Tasks 269–272 binding,
+closure/substitution, reconsider, proof-skeleton, justification, and goal
+semantics.
+
+The missing B3 contract is resolved `design_drift`. The absent exact
+producer/paired ownership/dormant route is bounded `source_drift`; the absent
+four/five matrices are `test_gap`. There is no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or unresolved `repo_metadata_conflict`.
+`spec.en.checker.formula_statement.source_payloads` remains deferred with
+`tests = []`; the coverage audit records ownership only and awards no credit.
+
+This documentation prerequisite changes no source, fixture, sidecar,
+expectation, trace row/status/count, active route, test list, or hash.
+Current baselines remain plan/type `419/387` and `253/241`, pass/fail
+`228/191`, active parse/declaration/type/proof `101/5/198/1`,
+warnings/errors `23/0`, checker/runner libraries `346/379`, and runner
+production 30 paths / 36,479 lines. Checker test-list hashes are
+`83fbd231030ff57c3c2c152c9374ca10579eb50797bd0b455a22a576b9f6edd5` /
+`aa34d2780713de5b89ff75e24cc152797260daefdac064410120358980555119`;
+runner hashes are
+`3642d5057d7dc2f47c1b739b61f9c4272b823fe200bc72270e9345386df59586` /
+`467fe747add608900943eaee02e333c8d672a3a4a433f9a4efa3fea4f4b21e5a`.
+Runner path/content hashes remain
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`a0553883c61b5a113b3af509f58296cc97a7b1dfd31b6f82b1d71b95ff0f8bcb`.
+Current checker module sizes are `source_statement.rs` 7,334 lines,
+`typed_ast.rs` 4,550, `resolved_typed_ast.rs` 7,172, and unchanged
+`binding_env.rs` 3,156. The five CLI hashes remain
+`4cc13ea6bee6c1a6458d4a7d027a7eea685b711eda8410edafad8faa01809d54`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Implementation projects libraries `350/384` and keeps 30 production paths;
+its exact line counts and changed test/content hashes must be measured, not
+predicted.
+
+Exit requires synchronized EN/JA documentation, independent no-findings
+reviews, every hard gate, read-only quality at least 90/100, task-only
+staging, and one dedicated documentation commit. Implementation may begin
+only after that commit and a fresh parser/resolver/lower-API/count/hash
+preflight.

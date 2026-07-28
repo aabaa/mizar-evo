@@ -537,3 +537,18 @@ context 0とproof context 1 (`72..111`)、parent 0、proof layer、scope `[0]`�
 local bindingなし、visible reserved binding `[0]`である。`binding_env.rs`は
 本task外でbyte-for-byte不変。mutation testはexact `2/1/0` fingerprintを
 authenticateし、cross-profile lower environmentをatomicにrejectする。
+
+## Task 258B3 frozen proof context
+
+witness profileは`binding_env.rs`を変更せずpublic Task-48 modelをreuseする。
+module context 0とsource range `69..102`がownするproof context 1をrequireし、
+parent 0、proof layer、scope `[0]`、local bindingなし、visible binding
+`[0]`、normal recovery。reserved binding 0は`8..9`の`x`、source type site
+`14..17`を保持する。
+
+Task-252 termsはcontexts `0,0,1,1,1`を使い、witness rowはdirect
+`BindingContextId(1)`をstoreする。theorem/conclusion
+`SourceStatementContextId`とはassociationしない。witness validationは
+primary term/reference 2を介してbinding 0、scope `[0]`、stored use ordinal
+1をreauthenticateする。foreign context/scope/bindingまたはB1/B2 binding
+fingerprintはwitness-row validation前にdependency failureとなる。

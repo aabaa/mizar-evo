@@ -738,3 +738,19 @@ direct equality theorem 1件、unlabeled assumption 1件、direct conclusion
 1件だけで、reference/semantic handoffはない。B2 source/test gapをcloseするが、
 B3 witness、B4 composite root、B5 broader visibility、Tasks 269–272
 proof-semantic ownershipを消費しない。
+
+### Task 258B3 witness companion
+
+Task-258B3 familyはstatement transportを維持するが、異種payloadを分離する。
+existing baseはsource ordinals 0/2のtheorem formula 1件/conclusion formula
+1件をownする。new `SourceStatementWitnessHandoff`はその間のunnamed
+primary-term witnessだけをsource ordinal 1/within-take ordinal 0でownする。
+base/Task-252 fingerprintにdependし、authenticated pairとしてだけinstall
+する。
+
+このsplitによりterm-only `take` itemへfabricated formula、statement
+context、guard、candidate fact、resolver bundleを与えない。Task 252が
+witness term/referenceをownし、Task 256は明示的にexcludeする。Tasks
+269–272はexistential matching、obligation、substitution、abbreviation、
+proof stateを保持する。Tasks 258B3N/MはB4前のnamed/multiple/other
+witness-term transport、B4/B5はcomposite-root/visibility familyを保持する。

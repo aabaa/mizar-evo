@@ -3874,3 +3874,25 @@ effect. No `spec_gap`, `source_undocumented_behavior`,
 `test_expectation_drift`, `boundary_violation`, or
 `repo_metadata_conflict` is present. B3–B5 and Tasks 269–272 remain the
 classified owners of the deferred behavior.
+
+## Task 258B3 Authority Audit
+
+Canonical §15.4.4 authorizes unnamed `take x;` syntax and §15.11.5 specifies
+its later existential/type/substitution effect. Chapters 4, 13, and 14 plus
+the active parser fixture authorize the reserved `x` term and equality
+shells. They support transport of the measured witness occurrence but do
+not authorize applying it to the equality goal, accepting a theorem, or
+publishing obligations.
+
+The formula-only base plus direct-`BindingContextId` witness companion is
+therefore the smallest syntax-free contract. Source ordinal 2 for the dense
+base conclusion is required by global order; `[0,1,2]` paired validation
+prevents information loss. The absent contract is `design_drift`, future
+code is bounded `source_drift`, and tests are `test_gap`. There is no
+blocking `spec_gap`, undocumented behavior, expectation drift, boundary
+violation, or metadata conflict.
+
+The remaining §15.4.4 transport shapes have explicit follow-up ownership:
+Tasks 258B3N/M retain named, multiple, and other witness-term transport
+after B3 and before Task 258B4. Their abbreviation/substitution and
+left-to-right goal effects remain with Tasks 269–272.

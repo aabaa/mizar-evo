@@ -342,3 +342,14 @@ implemented source-statement、binding、typed、final、plan、TODO、family、
 module、source-audit updateを本logical taskで英語正本と同期した。両言語は
 同じchecker 4本/runner 5本、library 346/379、no-credit trace status、
 semantic deferral、Task-258B3 handoffを記録する。bilingual debtは残らない。
+
+## Task 258B3 frozen-contract synchronization
+
+canonical EnglishとJapanese checker plan、statement、binding、typed、final、
+family、source-audit、module-audit、TODOは同じ104-byte source/hash、
+49-node parser identity、theorem provenance、`2/1/0` + `5/5/0` +
+`2/0/0/0/0/0/0/4/4` lower path、`1/2/2/2/2` base、one-row witness
+companion、`[0,1,2]` ordinal partition、future tests 4/5本、exclusion、
+semantic deferralをfreezeする。両言語はunchanged libraries `346/379`、
+production 30 paths / 36,479 linesを記録し、Task-258B3 bilingual debtを
+acceptしない。

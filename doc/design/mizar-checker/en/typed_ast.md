@@ -990,3 +990,21 @@ Task-258B2 base profile. Task-258B1 remains pair-only, and Task-248,
 Task-257A/B/C2/C3, Task-258 cross-profile hybrids, occupied semantic tables,
 and either foreign-first or statement-first ownership order fail without
 partial mutation. Clone and debug order remain stable.
+
+### Task 258B3 Frozen Paired Installation
+
+`TypedAst` adds
+`source_statement_witnesses: Option<SourceStatementWitnessHandoff>`,
+`source_statement_witnesses()`, and
+`with_source_statement_witnesses(statements, witnesses)`. The paired
+installer requires installed Task-252/256 lower values, exact B3 base and
+witness fingerprints, the shared 49-node arena, and empty references,
+foreign source families, and semantic tables. It publishes both halves only
+after all validation succeeds.
+
+`with_source_statement` remains A/B2-only and
+`with_source_statement_references` remains B1-only. A B3 base may exist as a
+producer result but cannot install alone. Orphan, stale, cross-profile,
+Task-248/257, B1-reference, and both-order ownership conflicts roll back
+without mutation. Debug appends the stable witness chunk immediately after
+the base chunk; prior profiles remain byte-identical.

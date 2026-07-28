@@ -1801,3 +1801,23 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] checker documentation commitとfresh parser/resolver/lower/API/count/
   hash preflight後、dormant Task-258B2 route/tests 5本だけをimplementした。
   B3–B5とTasks 269–272はdeferを維持。
+
+## Checker Task 258B3 frozen consumer checklist
+
+- [x] exact 104-byte final-LF source/hash、49-node/root-48 tree、全range、
+  theorem-only resolver provenance、label-reference bundleなしをfreeze。
+- [x] one arenaでTask-48 `2/1/0`、Task-252 `5/5/0`、Task-256
+  `2/0/0/0/0/0/0/4/4`、base `1/2/2/2/2`、witness row 1件、
+  `[0,1,2]` orderをfreeze。
+- [x] private selector precedence、all-index parity、complete
+  mutation/replay、named/multiple/missing/extra/subtree near miss、全
+  A/B1/B2/active isolation order、clone/debug、rollback、empty semanticsを
+  freeze。
+- [x] 本prerequisiteでは全corpus artifact、trace row/status/count、active
+  route、source、379-test list、30-path / 36,479-line manifest、hashを
+  preserve。
+- [ ] documentation commit/fresh preflight後、exactly runner tests 5本で
+  dormant B3 routeだけをimplementし、384 testsをprojectしてproduction/
+  test hashを再測定。
+- [ ] B3後、Task 258B4前にnamed/multiple/other witness-term transport用
+  Tasks 258B3N/M runner consumerをseparately freeze。

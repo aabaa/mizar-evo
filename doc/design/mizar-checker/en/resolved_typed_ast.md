@@ -1000,3 +1000,19 @@ handoff with no reference association. Any cluster fact, statement-proof
 input, foreign source family, checked formula, statement semantic, proof,
 goal, diagnostic, or other semantic output remains rejected; the successful
 result keeps every such table empty.
+
+### Task 258B3 Frozen Final Ownership
+
+Final assembly admits the Task-258B3 statement/witness pair only after typed
+ownership. It revalidates source/module identity, the base/lower
+fingerprints, exact `1/2/2/2/2` + one-row profiles, shared 49-node arena,
+term-2 exclusion from atomic edges, and combined source order `[0,1,2]`.
+The result exposes equal `source_statement()` and
+`source_statement_witnesses()` clones; no reference handoff is present.
+
+An orphan witness, standalone B3 base, stale fingerprint, B1/B2 hybrid,
+foreign source owner, cluster fact, statement-proof input, or nonempty
+semantic output is `InvalidSourceStatement`. Final assembly infers no
+resolver or witness semantics and leaves checked formulas, facts, statement
+semantics, proofs, goals, and diagnostics empty. This prerequisite changes
+no resolved source or test.

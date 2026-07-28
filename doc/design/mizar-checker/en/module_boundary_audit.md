@@ -131,6 +131,21 @@ fingerprints, rendering, and corruption tests are behavior-coupled, so no
 private checker split is required. `TypedAst` owns the one-shot immutable
 handoff and `ResolvedTypedAst` revalidates then clone-preserves it.
 
+### Task 258B3 Frozen Boundary Result
+
+The future witness transaction stays in the existing
+`source_statement.rs` owner beside the base/reference transactions.
+`typed_ast.rs` owns atomic paired installation and
+`resolved_typed_ast.rs` owns final revalidation/clone. `binding_env.rs`
+remains unchanged. Raw `SurfaceNodeKind`, source hashing, parser/resolver
+selection, and all-index parity remain private runner responsibilities; no
+normal checker dependency on `mizar-syntax` is permitted.
+
+The one-row companion, two fingerprints, `[0,1,2]` cross-table order, and
+take/witness containment are behavior-coupled with base validation, so no new
+checker module is justified. This docs-only prerequisite changes neither
+module topology nor the measured `7334/4550/7172/3156` line baseline.
+
 ## Task 258B2 Implemented-Boundary Addendum
 
 No module or dependency edge was added. Final affected sizes are

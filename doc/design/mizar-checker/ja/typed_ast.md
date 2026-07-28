@@ -941,3 +941,20 @@ profileだけをadmitする。Task-258B1はpair-onlyのまま。Task-248、
 Task-257A/B/C2/C3、Task-258 cross-profile hybrid、occupied semantic table、
 foreign-first/statement-firstの両ownership orderはpartial mutationなしで
 failする。clone/debug orderもstableである。
+
+### Task 258B3 frozen paired installation
+
+`TypedAst`は
+`source_statement_witnesses: Option<SourceStatementWitnessHandoff>`、
+`source_statement_witnesses()`、
+`with_source_statement_witnesses(statements, witnesses)`を追加する。paired
+installerはinstalled Task-252/256 lower value、exact B3 base/witness
+fingerprint、shared 49-node arena、empty reference/foreign source
+family/semantic tableをrequireし、全validation success後だけ両halfをpublish。
+
+`with_source_statement`はA/B2-only、
+`with_source_statement_references`はB1-onlyを維持する。B3 baseはproducer
+resultとしてexistできるがstandalone install不可。orphan/stale/
+cross-profile、Task-248/257、B1-reference、両order ownership conflictは
+mutationなしでrollbackする。debugはstable witness chunkをbase chunk直後に
+appendし、prior profile bytesは不変。

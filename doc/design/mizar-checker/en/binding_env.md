@@ -558,3 +558,18 @@ scope `[0]`, no local bindings, and visible reserved binding `[0]`.
 `binding_env.rs` remains byte-for-byte outside this task; mutation tests
 authenticate the exact `2/1/0` fingerprint and reject cross-profile lower
 environments atomically.
+
+## Task 258B3 Frozen Proof Context
+
+The witness profile reuses the public Task-48 model without changing
+`binding_env.rs`. It requires module context 0 plus proof context 1 owned by
+source range `69..102`, parent 0, proof layer, scope `[0]`, no local binding,
+visible binding `[0]`, and normal recovery. Reserved binding 0 remains `x`
+at `8..9` with source type site `14..17`.
+
+Task-252 terms use contexts `0,0,1,1,1`; the witness row stores direct
+`BindingContextId(1)`, never a theorem/conclusion
+`SourceStatementContextId`. Witness validation reauthenticates binding 0,
+scope `[0]`, and stored use ordinal 1 through primary term/reference 2.
+Foreign context, scope, binding, or B1/B2 binding fingerprint fails as a
+dependency before witness-row validation.

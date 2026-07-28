@@ -362,3 +362,14 @@ family, module, and source-audit updates are synchronized with their Japanese
 companions in this logical task. Both languages record the same four/five
 tests, 346/379 library counts, no-credit trace status, semantic deferrals,
 and Task-258B3 handoff. No bilingual debt remains.
+
+## Task 258B3 Frozen-Contract Synchronization
+
+The canonical English and Japanese checker plan, statement, binding, typed,
+final, family, source-audit, module-audit, and TODO documents freeze the same
+104-byte source/hash, 49-node parser identity, theorem provenance,
+`2/1/0` + `5/5/0` + `2/0/0/0/0/0/0/4/4` lower path,
+`1/2/2/2/2` base, one-row witness companion, `[0,1,2]` ordinal partition,
+four/five future tests, exclusions, and semantic deferrals. Both languages
+record unchanged `346/379` libraries and 30-path / 36,479-line production.
+No Task-258B3 bilingual debt is accepted.

@@ -4308,9 +4308,21 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       single-assumption transportだけをimplementした。checker 4本/runner
       5本がbounded `source_drift`/`test_gap`をcloseし、semantic/corpus
       activationは追加していない。
-    - [ ] **Tasks 258B3-B5:** witness transport、composite theorem root、
-      broader imported/outer/inner visibility profileをseparately freezeする。
-      Tasks 269-272 semanticsを吸収しない。
+    - [x] **Task 258B3 prerequisite:** exact 104-byte unnamed witness
+      source、49-node/root-48 parser identity、theorem-only resolver
+      provenance、Task-48 `2/1/0`、Task-252 `5/5/0`、Task-256
+      `2/0/0/0/0/0/0/4/4`、formula-only base `1/2/2/2/2`、one-row
+      witness companion、paired typed/final ownership、tests、
+      non-activationをfreeze。
+    - [ ] **Task 258B3 implementation:** documentation commit/fresh
+      preflight後にfrozen paired witness transportだけをchecker 4本/runner
+      5本でimplement。
+    - [ ] **Tasks 258B3N/M:** B3後/B4前にnamed-witness transportと
+      multiple/other witness-term transportをseparately freezeする。
+      abbreviation/substitution/type-obligation/goal semanticsをinferしない。
+    - [ ] **Tasks 258B4-B5:** composite theorem rootとbroader
+      imported/outer/inner visibility profileをseparately freezeし、Tasks
+      269-272 semanticsを吸収しない。
 - [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
 - [ ] **Task 260:** functor-definition/initial-obligation intake producer。
 - [ ] **Task 261:** attribute-definition producer。
@@ -4553,3 +4565,30 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   existing sidecar ordered reciprocal reference/noteだけを追加。
 - [x] plan/type `419/387` / `253/241`、libraries `335/365`、runner
   29 paths / 34,290 linesを測定し、全frozen CLI outcomeを保持。
+
+## Checker Task 258B3 frozen-contract ledger
+
+- [x] final-LF 104-byte source/hash、49-node/root-48 parser range、
+  public/exported theorem provenance `[2,1]`、resolver companionなしをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `5/5/0`、Task-256
+  `2/0/0/0/0/0/0/4/4`、formula-only base `1/2/2/2/2`、atomic edgeからの
+  exact term-2 exclusionをfreeze。
+- [x] public witness ID/input/row/table/handoff/producer/error、
+  fingerprint 2件、deterministic debug、direct binding context、unnamed
+  primary target 1件をfreeze。
+- [x] dense base IDs 0/1 + global ordinals 0/2、witness
+  source/within-take ordinals 1/0、paired unique `[0,1,2]` validationをfreeze。
+- [x] typed/final pair-only ownership、全profile/source-family exclusion、
+  rollback/replay、checker tests 4本、runner tests 5本、empty semanticsを
+  freeze。
+- [x] 全fixture、sidecar、expectation、trace row/status/count、active route、
+  source、test list、hashをlibraries `346/379`、runner 30 paths /
+  36,479 linesで不変に保持。
+- [x] closed contractを`design_drift`、future codeをbounded
+  `source_drift`、testsを`test_gap`と分類し、blocking protocol
+  disagreementなし。
+- [ ] 本dedicated documentation commitとfresh parser/resolver/lower-API/
+  count/hash preflight後にTask 258B3だけをimplementし、projected libraries
+  `350/384`後に全changed hash/lineを再測定。
+- [ ] 次にTasks 258B3N/Mをfresh-inventoryし、named/multiple/other
+  witness-term transportをTask 258B4 selection前にfreeze。
