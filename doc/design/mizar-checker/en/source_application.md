@@ -221,3 +221,16 @@ target. Task 256 equality rows remain application-independent and keep
 `application_fingerprint == None`. Missing, stale, substituted, wrapped, or
 otherwise unrelated Task-253 handoffs fail in the statement-witness consumer.
 All other Task-253 forms and all Task-254/255 witness terms remain deferred.
+
+## Task 258B3M2B2B1A Consumer Implementation Result
+
+The exact imported-infix handoff is now consumed only by the B1A statement
+witness. The consumer authenticates application 0, the
+`parser.type_fixtures::++` local/FQN resolution and complete candidate
+contribution/path/export provenance, argument targets and numeric requests,
+source/module/ranges/form, and the Task-252 primary fingerprint. A matching
+application fingerprint is retained only on B1A; all legacy statement
+witnesses remain application-independent with `None` and unchanged debug
+bytes. Missing, stale, substituted, wrapped, orphaned, or partially installed
+applications fail without publication. Other Task-253 shapes and all
+Task-254/255 witness targets remain deferred.

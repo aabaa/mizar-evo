@@ -5044,5 +5044,26 @@ implementation commit does not satisfy a producer task.
   `370/411` and 30-path/39,857-line baselines, no active/canonical/fixture/
   expectation/sidecar/trace/semantic change, and coverage
   `deferred`/`tests = []`.
-- [ ] After the dedicated documentation commit and fresh preflight,
-  implement only B3M2B2B1A and measure projected libraries `374/416`.
+- [x] After the dedicated documentation commit and fresh preflight,
+  implement only B3M2B2B1A and measure libraries `374/416`.
+
+## Checker Task 258B3M2B2B1A Implementation Ledger
+
+- [x] Add `Application(0)` witness ownership, an optional B1A-only
+  application fingerprint, and the application-aware builder while keeping
+  legacy application-free bytes stable.
+- [x] Authenticate the exact real `parser.type_fixtures::++` symbol,
+  local/FQN lookup, contribution/path/export provenance, Task-252 arguments,
+  Task-253 application, Task-256 exclusion, and all 63 nodes.
+- [x] Install the application, statement, and witness handoffs atomically;
+  reject stale, orphan, hybrid, reversed, repeated, and semantic-coexisting
+  states without partial publication, including final clone revalidation.
+- [x] Pass the exact checker/runner compound tests `4/5`, including all
+  143 loaded-source byte mutations, reparsed near misses, dependency and
+  provenance corruption, validation precedence, family order, rollback,
+  replay, and empty semantic/proof/goal ownership.
+- [x] Measure libraries `374/416`, checker modules
+  `21664/4742/7224/3156`, runner statement sizes
+  `5618/706/2520/11945`, and 30 production paths / 40,298 lines; preserve
+  canonical artifacts, active routes, fixtures, sidecars, expectations,
+  trace status/count, and coverage `deferred` / `tests = []`.

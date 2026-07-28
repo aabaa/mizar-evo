@@ -2394,3 +2394,24 @@ exact checker testsは
 `task258b3m2b2b1a_combined_ownership_hybrids_and_all_family_orders_are_atomic`、
 `task258b3m2b2b1a_final_clone_revalidation_and_semantic_deferrals_are_stable`
 の4件。
+
+## Task 258B3M2B2B1A implementation result
+
+`SourceStatementWitnessTermTarget::Application(SourceFunctorApplicationId)`
+とoptional application fingerprintをadditiveに実装した。
+`SourceStatementWitnessProducer::build_with_application`はexact B1A
+statement/application pairだけを受け、legacy builderは
+application-free profilesだけを受けてdebug bytesを維持する。exact
+143-byte/63-node profileはwitness node 48からtraversal node 47を経て
+node 46のTask-253 applicationをtargetし、wrapper/primary duplicateを
+追加しない。producerはreal imported symbol、local/FQN lookup、complete
+contribution/path/export provenance、Task-252 arguments/requests、Task-256
+equality-only exclusion、base `1/2/2/2/2`、unnamed witness 1/names 0、
+dependency fingerprints 2件をauthenticateする。
+
+上記checker tests 4件とrunner tests 5件はexhaustive byte/subtree/
+provenance/dependency/precedence/family/rollback/replay/clone matricesを
+passした。librariesは`374/416`、checker modulesは
+`21664/4742/7224/3156`。semantic、proof、type、substitution、goal meaningを
+inferせず、canonical、fixture、active、expectation、sidecar、trace
+artifactは不変。

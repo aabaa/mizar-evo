@@ -572,7 +572,8 @@ The EN canonical and JA companion record the same private implementation,
 legacy context-0 fixed hash, proof-context-1 lower profiles, exactly two
 passing tests, `411` runner-test inventory, `1782/701/2514/2799` sizes,
 and unchanged public/active/fixture/trace/semantic boundaries. No
-implementation bilingual debt remains; B1A documentation is next.
+implementation bilingual debt remains. B1A documentation and runner
+implementation were subsequently completed and synchronized below.
 
 ## Task 258B3M2B2B1A Runner Contract Synchronization
 
@@ -582,3 +583,13 @@ The EN canonical and JA companion record the same exact source identity,
 five future tests, empty semantics, unchanged 411-test/39,857-line baseline,
 and no active/fixture/expectation/sidecar/trace change. No bilingual debt
 remains.
+
+## Task 258B3M2B2B1A Runner Implementation Synchronization
+
+The English canonical runner result and Japanese companion agree on the
+exact 143-byte/63-node selector, imported-functor resolver provenance,
+Task-252/253/256 reuse, atomic checker installation, all-byte and reparsed
+near-miss coverage, five exact tests, and empty semantic/proof/goal output.
+They record runner tests 416, sizes `5618/706/2520/11945`, and 30 paths /
+40,298 lines. Active routes, fixtures, expectations, sidecars, and trace
+metadata remain unchanged. No bilingual debt remains.

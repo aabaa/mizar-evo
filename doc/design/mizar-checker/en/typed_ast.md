@@ -1113,3 +1113,22 @@ references, complete Task-256 subtree exclusion, fingerprints, and source
 order `[0,1,2]`. Standalone, hybrid, repeated, stale, cross-family,
 reversed-order, and semantic-coexisting states remain rejected. No public
 typed-AST API or debug grammar changed.
+
+## Task 258B3M2B2B1A Atomic Typed Ownership Result
+
+`TypedAst::with_source_application_statement_witnesses` is the sole B1A
+publication path. It accepts the exact authenticated Task-253 application,
+Task-258 base statement, and one unnamed `Application(0)` witness as one
+three-handoff transaction. The installer revalidates the complete 63-node
+arena, Task-252 `6/4/2`, Task-253 `1/0/1/2/2`, Task-256 equality-only
+exclusion, resolver-owner fingerprints, statement/witness source order, and
+the witness-to-application fingerprint before publishing any table.
+
+The pre-existing standalone Task-253 application remains valid. An
+application-first state followed by a separate B1A statement-witness
+installer, application plus only a statement or witness, statement-first,
+witness-only, hybrid, stale, substituted, repeated, reverse-order,
+Tasks-253/254/255 coexisting, and semantic-coexisting B1A publication attempts
+all fail with the original `TypedAst` unchanged. Legacy application-free
+statement profiles and debug bytes remain valid. The successful B1A
+installation adds no type, expression-semantic, proof, or goal ownership.

@@ -884,3 +884,15 @@ Task 256はtheorem/conclusion equalitiesだけをownしapplication fingerprint
 から独立する。atomic TypedAst bundleがpartial/reverse edgeを防ぐ。
 structure、set/choice/qualification、semantic term/formula/proof/goal
 familiesは除外する。
+
+### Task 258B3M2B2B1A implemented cross-family edge
+
+frozen directed edge
+`SourceStatementWitness(0) -> SourceFunctorApplication(0)`だけを実装した。
+witnessは`Application(0)`とmatching optional application fingerprintを
+保持し、applicationはTask 253、numeral argumentsはTask 252 ownershipの
+まま。one atomic installerがapplication/statement/witness bundleを全て
+publishするか何もpublishせず、final assemblyも同じvalidationをrepeat
+する。reverse edge、lower row duplicate、wrapper ownership、Task-254/255
+ownership、structure/set/choice/qualification edge、semantic/proof/goal
+familyは追加していない。

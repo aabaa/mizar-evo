@@ -1064,3 +1064,22 @@ paired base/witness handoffをclone-preserveする。standalone、hybrid、
 stale、corrupt、reversed、family/semantic coexistenceは
 `InvalidSourceStatement`で、semantic/proof/goal tablesはempty。final public
 API changeなし。
+
+## Task 258B3M2B2B1A final bundle revalidation result
+
+final assemblyはexact B1A application/statement/witness bundleをtyped-stage
+authentication全体の独立repeat後だけclone-preserveする。63-node arena、
+imported `parser.type_fixtures::++` application/resolver provenance、
+Task-252 arguments/numeric requests、Task-256 equality-only exclusion、
+base/witness profiles、lower fingerprints 2件、optional B1A application
+fingerprintをrevalidateする。
+
+既存のstandalone Task-253 applicationはvalidなfinal bundleのままである。
+B1A application + statementのみ、B1A application + witnessのみ、orphan
+statement/witness pair、application-free B1A hybrid、stale primary/
+application fingerprint、substituted provenance、partial/reverse B1A family
+install、semantic coexistenceは`InvalidSourceStatement`となり、cloneは
+invalid stateをrepairしない。successful cloneはexpression-semantic、
+candidate、coercion、cluster、diagnostic、statement-semantic、proof、goal
+outputsをemptyに維持し、type、proof step、substitution、goal effectを
+inferしない。

@@ -4219,8 +4219,8 @@ or credit. Canonical specs, `.miz`, fixtures, expectations, sidecars, trace
 status/count, active cases, and public/semantic owners remain unchanged.
 Plan/count is `419/387`, type coverage `253/241`, pass/fail `228/191`,
 active parse/declaration/type/proof counts are `101/5/198/1`, and the five
-CLI hashes remain unchanged. B1A documentation is the next coverage-neutral
-dependency step.
+CLI hashes remain unchanged. The coverage-neutral B1A documentation and
+implementation steps were subsequently completed below.
 
 ## Task 258B3M2B2B1A Frozen Application-Witness Follow-Up
 
@@ -4237,5 +4237,51 @@ specification, `.miz`, fixture, expectation, sidecar, trace row/status/count,
 active route, or semantic/proof/goal owner changes. Baseline plan/requirements
 remain `419/387`, type `253/241`, pass/fail `228/191`, active
 parse/declaration/type/proof `101/5/198/1`, warnings/errors `23/0`, libraries
-`370/411`, and production 30 paths / 39,857 lines. Implementation is the next
-separate logical task and projects libraries `374/416`.
+`370/411`, and production 30 paths / 39,857 lines. The separate
+implementation logical task is now complete.
+
+### Task 258B3M2B2B1A Implementation Result
+
+The exact dormant application-witness transport is implemented and verified
+by four checker and five runner compound tests. It authenticates the
+143-byte/63-node source, imported `parser.type_fixtures::++` resolver
+provenance, Task-48/252/253/256 lower handoffs, one
+`Application(0)` witness, atomic typed installation, and final clone
+revalidation. Every loaded-source byte mutation, reparsed near miss,
+dependency/provenance/precedence/family/rollback/replay/clone corruption
+fails closed. Semantic, proof, and goal outputs remain empty.
+
+This closes the bounded B1A `source_drift` and `test_gap` but adds no active
+specification coverage. The
+`spec.en.checker.formula_statement.source_payloads` trace row remains
+`deferred`, `tests = []`, without backlink or credit; the trace file,
+canonical specs, `.miz`, fixtures, expectations, sidecars, and active cases
+are unchanged.
+
+Libraries measure checker/runner `374/416`; checker modules measure
+`21664/4742/7224/3156`; runner statement sizes are
+`5618/706/2520/11945`; production is 30 paths / 40,298 lines. Production
+path/content hashes are
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`.
+Checker raw/normalized test-list hashes are
+`264a604f3ed0e00e25b2b7b09cf329520e44dfd5e5ac58ef8e4a966d085831c4` /
+`f5d62a3e892eb61c070992929d57f46333d7617dd9b934ef1a711d42d98ba7a3`;
+runner raw/normalized hashes are
+`9f819d97a5b343d1bacef2f156165fc9c887ee4b4990d3f3cb4933cf6a71d6e0` /
+`5b6c6a99bde50b661d925afc58292903cb0a88b13be78d753b5cedc5c70fd710`.
+
+Plan/requirements remain `419/387`, warnings/errors `23/0`, active
+parse/declaration/type/proof `101/5/198/1`, type coverage `253/241`, and
+pass/fail `228/191`. The unchanged CLI hashes are plan
+`4cc13ea6bee6c1a6458d4a7d027a7eea685b711eda8410edafad8faa01809d54`,
+parse
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+declaration
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+type
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
+and proof
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Fresh inventory must next select an authority-valid Task-258 B1B+ witness
+shape.

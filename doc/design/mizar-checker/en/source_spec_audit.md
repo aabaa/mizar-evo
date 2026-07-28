@@ -4112,3 +4112,20 @@ The missing exact application-witness ownership description was
 ownership only. The formula-statement row remains `deferred`, `tests = []`,
 with no backlink or coverage credit because no semantic formula/proof result
 or active `.miz` test is added.
+
+## Task 258B3M2B2B1A Implementation Audit Result
+
+The bounded `source_drift` and `test_gap` are closed: the exact 143-byte,
+63-node imported-infix source now reaches one syntax-free
+`Application(0)` witness through fully authenticated Task-48/252/253/256
+dependencies, atomic typed publication, and final clone revalidation. Four
+checker and five runner compound tests cover exact identity, every loaded
+source byte, reparsed near misses, resolver/lower provenance, validation
+precedence, family order, rollback, replay, and empty semantic outputs.
+
+This remains a dormant transport-only implementation. Canonical specs,
+`.miz`, fixtures, expectations, sidecars, active routes, and
+`tests/coverage/spec_trace.toml` are unchanged. Therefore
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, with no backlink or executable coverage credit. Semantic
+typing, proof, substitution, and goal ownership remain deferred.

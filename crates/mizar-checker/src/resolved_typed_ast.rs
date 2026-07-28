@@ -1794,7 +1794,6 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 || self.inputs.typed_ast.source_type().is_some()
                 || self.inputs.typed_ast.source_attribute().is_some()
                 || self.inputs.typed_ast.source_evidence().is_some()
-                || source_application.is_some()
                 || source_structure.is_some()
                 || source_set_term.is_some()
                 || source_composite_formula.is_some()
@@ -1822,21 +1821,26 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
             match (&source_statement_references, &source_statement_witnesses) {
-                (Some(references), None) if source_statement.is_task_258b1_profile() => references
-                    .validate_installation(
-                        source_id,
-                        &module_id,
-                        source_statement,
-                        self.inputs.typed_ast.nodes(),
-                    )
-                    .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?,
+                (Some(references), None)
+                    if source_application.is_none() && source_statement.is_task_258b1_profile() =>
+                {
+                    references
+                        .validate_installation(
+                            source_id,
+                            &module_id,
+                            source_statement,
+                            self.inputs.typed_ast.nodes(),
+                        )
+                        .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
+                }
                 (None, Some(witnesses))
-                    if source_statement.is_task_258b3_profile()
-                        || source_statement.is_task_258b3n_profile()
-                        || source_statement.is_task_258b3m1_profile()
-                        || source_statement.is_task_258b3m2a_profile()
-                        || source_statement.is_task_258b3m2b1_profile()
-                        || source_statement.is_task_258b3m2b2a_profile() =>
+                    if source_application.is_none()
+                        && (source_statement.is_task_258b3_profile()
+                            || source_statement.is_task_258b3n_profile()
+                            || source_statement.is_task_258b3m1_profile()
+                            || source_statement.is_task_258b3m2a_profile()
+                            || source_statement.is_task_258b3m2b1_profile()
+                            || source_statement.is_task_258b3m2b2a_profile()) =>
                 {
                     witnesses
                         .validate_installation(
@@ -1848,9 +1852,25 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         )
                         .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
                 }
+                (None, Some(witnesses))
+                    if source_statement.is_task_258b3m2b2b1a_profile()
+                        && source_application.is_some() =>
+                {
+                    witnesses
+                        .validate_installation_with_application(
+                            source_id,
+                            &module_id,
+                            source_statement,
+                            source_term,
+                            source_application.as_ref(),
+                            self.inputs.typed_ast.nodes(),
+                        )
+                        .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
+                }
                 (None, None)
-                    if source_statement.is_task_258a_profile()
-                        || source_statement.is_task_258b2_profile() => {}
+                    if source_application.is_none()
+                        && (source_statement.is_task_258a_profile()
+                            || source_statement.is_task_258b2_profile()) => {}
                 _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
             }
         } else if source_statement_references.is_some() || source_statement_witnesses.is_some() {

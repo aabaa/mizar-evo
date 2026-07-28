@@ -464,7 +464,7 @@ EN canonical/JA companionは、completed private context-aware helper、legacy
 context-0 delegation/hash、proof-context-1 `1/0/1/2/2` result、passing
 tests 2件、library inventory `370/411`、unchanged checker/public/statement/
 semantic/trace boundariesを同じ内容で記録する。implementation bilingual
-debtなし。次はB1A documentation。
+debtなし。B1A documentation/implementationは後続sectionで完了・同期済み。
 
 ## Task 258B3M2B2B1A frozen-contract synchronization
 
@@ -475,3 +475,15 @@ legacy-compatible builder/debug、
 atomic typed/final installer、future tests `4/5`、semantic deferrals、
 unchanged `370/411` baseline、coverage-neutral audit resultをfreezeする。
 documentation bilingual debtなし。
+
+## Task 258B3M2B2B1A implementation synchronization
+
+canonical EN implementation resultとJA companionは、additive
+`Application(0)` witness target、B1Aだけのoptional fingerprint、
+legacy-compatible application-aware builder、exact imported functor
+provenance authentication、atomic application/statement/witness install、
+final clone revalidation、semantic deferralsについて同期した。exact `4/5`
+compound tests、libraries `374/416`、checker sizes
+`21664/4742/7224/3156`、runner sizes `5618/706/2520/11945`、30 paths /
+40,298 linesも一致する。canonical artifacts、active routes、fixtures、
+expectations、sidecars、trace metadataは不変。bilingual debtなし。

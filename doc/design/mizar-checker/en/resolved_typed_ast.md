@@ -1124,3 +1124,23 @@ chain, Task-256 subtree exclusion, fingerprints, and source order. Every
 standalone, hybrid, stale, corrupt, reversed, family-coexisting, or
 semantic-coexisting state remains `InvalidSourceStatement`; semantic,
 proof, and goal tables stay empty. No public final-AST API changed.
+
+## Task 258B3M2B2B1A Final Bundle Revalidation Result
+
+Final assembly clone-preserves the exact B1A application/statement/witness
+bundle only after independently repeating its complete typed-stage
+authentication. It revalidates the 63-node arena, imported
+`parser.type_fixtures::++` application and resolver provenance, Task-252
+arguments and numeric requests, Task-256 equality-only exclusion, base and
+witness profiles, both lower fingerprints, and the optional B1A application
+fingerprint.
+
+The pre-existing standalone Task-253 application remains a valid final
+bundle. A B1A application plus only a statement or witness, an orphan
+statement/witness pair, an application-free B1A hybrid, a stale primary or
+application fingerprint, substituted provenance, partial/reversed B1A family
+installation, or semantic coexistence is rejected as
+`InvalidSourceStatement`; cloning never repairs an invalid state. A successful
+clone retains empty expression-semantic, candidate, coercion, cluster,
+diagnostic, statement-semantic, proof, and goal outputs and infers no type,
+proof step, substitution, or goal effect.

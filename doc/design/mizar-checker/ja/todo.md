@@ -4800,5 +4800,26 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] checker 4/runner 5 tests、unchanged `370/411`、30 paths/39,857
   lines、no active/canonical/fixture/expectation/sidecar/trace/semantic
   change、coverage `deferred`/`tests = []`をfreeze。
-- [ ] dedicated docs commit/fresh preflight後、B3M2B2B1Aだけを実装し、
-  projected libraries `374/416`を実測。
+- [x] dedicated docs commit/fresh preflight後、B3M2B2B1Aだけを実装し、
+  libraries `374/416`を実測。
+
+## Checker Task 258B3M2B2B1A implementation ledger
+
+- [x] `Application(0)` witness ownership、B1Aだけのoptional application
+  fingerprint、application-aware builderを追加し、legacy
+  application-free bytesを維持。
+- [x] exact real `parser.type_fixtures::++` symbol、local/FQN lookup、
+  contribution/path/export provenance、Task-252 arguments、Task-253
+  application、Task-256 exclusion、全63 nodesをauthenticate。
+- [x] application/statement/witness handoffsをatomic installし、stale、
+  orphan、hybrid、reverse、repeat、semantic coexistenceをpartial publish
+  なしでrejectし、final cloneでもrevalidate。
+- [x] checker/runner compound tests `4/5`をpassし、143 loaded-source
+  bytes全mutation、reparsed near miss、dependency/provenance corruption、
+  validation precedence、family order、rollback/replay、empty semantic/
+  proof/goal ownershipをcover。
+- [x] libraries `374/416`、checker modules
+  `21664/4742/7224/3156`、runner statement sizes
+  `5618/706/2520/11945`、production 30 paths / 40,298 linesを実測し、
+  canonical artifacts、active routes、fixtures、sidecars、expectations、
+  trace status/count、coverage `deferred` / `tests = []`を維持。

@@ -552,7 +552,8 @@ EN canonical/JA companionは同じprivate implementation、legacy context-0
 fixed hash、proof-context-1 lower profiles、passing testsちょうど2件、
 runner-test inventory `411`、sizes `1782/701/2514/2799`、unchanged
 public/active/fixture/trace/semantic boundariesを記録する。implementation
-bilingual debtなし。次はB1A documentation。
+bilingual debtなし。B1A documentation/runner implementationは後続sectionで
+完了・同期済み。
 
 ## Task 258B3M2B2B1A runner contract synchronization
 
@@ -561,3 +562,12 @@ lower `2/1/0`, `6/4/2`, `1/0/1/2/2`, `1/2/2/2/2`, witness `1/0`、
 node ownership、B1P helper reuse、future tests 5件、empty semantics、
 unchanged 411-test/39,857-line baseline、no active/fixture/expectation/
 sidecar/trace changeを記録する。bilingual debtなし。
+
+## Task 258B3M2B2B1A runner implementation synchronization
+
+canonical EN runner resultとJA companionはexact 143-byte/63-node selector、
+imported-functor resolver provenance、Task-252/253/256 reuse、atomic checker
+install、all-byte/reparsed near-miss coverage、exact tests 5件、empty
+semantic/proof/goal outputについて同期した。runner tests 416、sizes
+`5618/706/2520/11945`、30 paths / 40,298 linesも一致する。active routes、
+fixtures、expectations、sidecars、trace metadataは不変。bilingual debtなし。

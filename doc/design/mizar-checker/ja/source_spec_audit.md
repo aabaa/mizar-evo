@@ -3928,3 +3928,20 @@ testsはbounded `source_drift`/`test_gap`。`source_undocumented_behavior`、
 `repo_metadata_conflict`なし。このdocs taskはfollow-up ownershipだけを
 変更し、formula-statement rowはsemantic/proof result/active `.miz`を
 追加しないため`deferred`, `tests = []`、backlink/creditなし。
+
+## Task 258B3M2B2B1A implementation audit result
+
+bounded `source_drift`/`test_gap`はcloseした。exact 143-byte/63-node
+imported-infix sourceはfully authenticated Task-48/252/253/256
+dependencies、atomic typed publication、final clone revalidationを通じて
+syntax-free `Application(0)` witness 1件へ到達する。checker 4/runner 5
+compound testsがexact identity、全loaded-source byte、reparsed near miss、
+resolver/lower provenance、validation precedence、family order、rollback、
+replay、empty semantic outputsをcoverする。
+
+これはdormant transport-only implementationのままである。canonical
+spec、`.miz`、fixtures、expectations、sidecars、active routes、
+`tests/coverage/spec_trace.toml`は不変。従って
+`spec.en.checker.formula_statement.source_payloads`は`deferred`,
+`tests = []`、backlink/executable creditなし。semantic typing、proof、
+substitution、goal ownershipはdeferred。

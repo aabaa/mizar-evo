@@ -488,7 +488,8 @@ The EN canonical and JA companion now record the same completed private
 context-aware helper, legacy context-0 delegation/hash, proof-context-1
 `1/0/1/2/2` result, two passing tests, `370/411` library inventory, and
 unchanged checker/public/statement/semantic/trace boundaries. No
-implementation bilingual debt remains; B1A documentation is next.
+implementation bilingual debt remains. B1A documentation and implementation
+were subsequently completed and synchronized below.
 
 ## Task 258B3M2B2B1A Frozen-Contract Synchronization
 
@@ -499,3 +500,15 @@ legacy-compatible
 builder/debug bytes, atomic typed/final installer, `4/5` future tests,
 semantic deferrals, unchanged `370/411` baselines, and coverage-neutral
 audit result. No documentation bilingual debt remains.
+
+## Task 258B3M2B2B1A Implementation Synchronization
+
+The canonical English implementation result and Japanese companion now
+agree on the additive `Application(0)` witness target, B1A-only optional
+fingerprint, legacy-compatible application-aware builder, exact imported
+functor provenance authentication, atomic application/statement/witness
+installation, final clone revalidation, and semantic deferrals. They also
+record the exact `4/5` compound tests, libraries `374/416`, checker sizes
+`21664/4742/7224/3156`, runner sizes `5618/706/2520/11945`, and 30 paths /
+40,298 lines. Canonical artifacts, active routes, fixtures, expectations,
+sidecars, and trace metadata remain unchanged. No bilingual debt remains.

@@ -2895,3 +2895,24 @@ The exact checker tests are:
 2. `task258b3m2b2b1a_dependencies_application_witness_precedence_and_all_nodes_fail_closed`;
 3. `task258b3m2b2b1a_combined_ownership_hybrids_and_all_family_orders_are_atomic`;
 4. `task258b3m2b2b1a_final_clone_revalidation_and_semantic_deferrals_are_stable`.
+
+## Task 258B3M2B2B1A Implementation Result
+
+`SourceStatementWitnessTermTarget::Application(SourceFunctorApplicationId)`
+and the optional application fingerprint are implemented additively.
+`SourceStatementWitnessProducer::build_with_application` accepts only the
+exact B1A statement/application pair; the legacy builder still accepts only
+application-free profiles and preserves their debug bytes. The exact
+143-byte/63-node profile maps witness node 48 through traversal node 47 to
+the Task-253 application at node 46 without adding a wrapper or primary
+duplicate. The producer authenticates the real imported symbol, local/FQN
+lookups and complete contribution/path/export provenance, Task-252 arguments
+and requests, Task-256 equality-only exclusion, base `1/2/2/2/2`, one
+unnamed witness/no names, and both dependency fingerprints.
+
+The four named checker tests above and five corresponding runner tests pass
+their exhaustive byte/subtree/provenance/dependency/precedence/family/
+rollback/replay/clone matrices. Libraries are `374/416`; checker modules are
+`21664/4742/7224/3156`. No semantic, proof, type, substitution, or goal
+meaning is inferred, and no canonical, fixture, active, expectation,
+sidecar, or trace artifact changed.

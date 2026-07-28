@@ -2172,5 +2172,21 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   output with no active/fixture/expectation/sidecar/trace change.
 - [x] Preserve 411 tests, sizes `5188/701/2514/11234`, and 30 production
   paths / 39,857 lines; project 416 tests for implementation.
-- [ ] After the docs commit and fresh preflight, implement only the exact
+- [x] After the docs commit and fresh preflight, implement only the exact
   B1A dormant consumer.
+
+## Checker Task 258B3M2B2B1A Runner Implementation Ledger
+
+- [x] Select only the exact 143-byte/63-node source and authenticate the
+  theorem plus imported `parser.type_fixtures::++` local/FQN resolver
+  provenance.
+- [x] Reuse Task-252 `6/4/2`, Task-253 `1/0/1/2/2`, Task-256 equality
+  exclusion, and publish base `1/2/2/2/2` plus one unnamed
+  `Application(0)` witness through the atomic checker installer.
+- [x] Pass exactly five compound tests covering every loaded-source byte
+  mutation, reparsed near misses, provenance/dependency/precedence
+  corruption, family and active-route isolation, rollback, replay, final
+  clone, and empty semantic/proof/goal tables.
+- [x] Measure 416 runner tests, sizes `5618/706/2520/11945`, and 30
+  production paths / 40,298 lines; leave active cases, fixtures,
+  expectations, sidecars, and trace metadata unchanged.

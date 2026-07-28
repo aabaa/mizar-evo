@@ -2649,6 +2649,20 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Freeze checker/runner tests `4/5`, unchanged canonical/fixture/
   expectation/sidecar/trace/active/semantic boundaries, libraries `370/411`,
   production 30 paths / 39,857 lines, and no coverage credit.
-- [ ] Commit this documentation prerequisite alone, fresh-inventory all
+- [x] Commit this documentation prerequisite alone, fresh-inventory all
   authorities/counts/hashes, then implement only B3M2B2B1A and measure
-  projected libraries `374/416`.
+  libraries `374/416`.
+
+## Checker Task 258B3M2B2B1A Implementation Completion
+
+- [x] Implement only the exact application-witness slice with the
+  application-aware checker producer and atomic three-handoff installation.
+- [x] Authenticate all source/resolver/lower dependencies and reject every
+  byte/subtree/provenance/dependency/precedence/family/replay/clone near miss
+  without partial publication.
+- [x] Pass exact checker/runner tests `4/5` and measure checker/runner
+  libraries `374/416`.
+- [x] Preserve canonical specs and `.miz`, fixtures, expectations,
+  sidecars, active routes, trace row/status/count, and semantic/proof/goal
+  ownership; retain `deferred`, `tests = []`, without coverage credit.
+- [ ] Fresh-inventory the next authority-valid Task-258 B1B+ witness shape.

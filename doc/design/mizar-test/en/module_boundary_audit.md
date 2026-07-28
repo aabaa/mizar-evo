@@ -11702,3 +11702,17 @@ and 411-test hashes
 `eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`.
 No public route, active dispatch, fixture, expectation, sidecar, trace,
 binding, or semantic owner changes.
+
+## Task 258B3M2B2B1A Implementation Boundary
+
+The implementation remains in the existing private
+`type_elaboration/source_statement.rs` leaf, its facade/root dispatch, and
+the paired statement test leaf. Raw parser/resolver objects remain
+runner-private; only authenticated syntax-free Task-48/252/253/256/base/
+witness handoffs cross into the checker. Statement leaf/facade/root/test
+sizes are `5618/706/2520/11945`; the unchanged production manifest is
+30 paths / 40,298 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`.
+No module split, dependency direction, public/active route, fixture,
+expectation, sidecar, trace, binding, or semantic owner changed.

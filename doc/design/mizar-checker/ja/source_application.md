@@ -205,3 +205,15 @@ node 47はwrapperではなく、node 46がtarget。Task 256 equalitiesは
 application-independentでfingerprint `None`を維持する。missing/stale/
 substituted/wrapped/unrelated Task-253はstatement-witness consumerで
 rejectする。other Task-253 formsとTask-254/255 witness termsはdeferred。
+
+## Task 258B3M2B2B1A consumer implementation result
+
+exact imported-infix handoffはB1A statement witnessだけがconsumeする。
+consumerはapplication 0、`parser.type_fixtures::++` local/FQN resolution、
+complete candidate contribution/path/export provenance、argument targets/
+numeric requests、source/module/ranges/form、Task-252 primary fingerprintを
+authenticateする。matching application fingerprintはB1Aだけが保持し、
+legacy statement witnessesは`None`、unchanged debug bytesの
+application-independentなまま。missing、stale、substituted、wrapped、
+orphan、partial installはpublishなしでfailする。other Task-253 shapesと
+全Task-254/255 witness targetsはdeferred。

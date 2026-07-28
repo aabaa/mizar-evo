@@ -10467,3 +10467,17 @@ docs taskはRust moduleを変更しない。baselineは30 production paths /
 `eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`。
 public route、active dispatch、fixture、expectation、sidecar、trace、
 binding、semantic ownerは不変。
+
+## Task 258B3M2B2B1A implementation boundary
+
+implementationはexisting private
+`type_elaboration/source_statement.rs` leaf、facade/root dispatch、paired
+statement test leaf内に留まる。raw parser/resolver objectsはrunner-privateで、
+authenticated syntax-free Task-48/252/253/256/base/witness handoffsだけが
+checkerへcrossする。statement leaf/facade/root/test sizesは
+`5618/706/2520/11945`、unchanged production manifestは30 paths /
+40,298 lines。path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`。
+module split、dependency direction、public/active route、fixture、
+expectation、sidecar、trace、binding、semantic ownerは不変。

@@ -1057,3 +1057,22 @@ exclusion、fingerprints、source order `[0,1,2]`をatomic publication前に
 revalidateする。standalone、hybrid、repeated、stale、cross-family、
 reversed-order、semantic-coexisting statesはreject。public typed-AST
 API/debug grammar changeなし。
+
+## Task 258B3M2B2B1A atomic typed ownership result
+
+`TypedAst::with_source_application_statement_witnesses`だけがB1A publish
+pathである。exact authenticated Task-253 application、Task-258 base
+statement、unnamed `Application(0)` witness 1件をone three-handoff
+transactionとして受ける。全63-node arena、Task-252 `6/4/2`、Task-253
+`1/0/1/2/2`、Task-256 equality-only exclusion、resolver-owner
+fingerprints、statement/witness source order、witness-to-application
+fingerprintを全table publish前にrevalidateする。
+
+既存のstandalone Task-253 applicationは引き続きvalidである。
+application-first stateにseparate B1A statement-witness installerを続ける
+場合、application + statementのみ、application + witnessのみ、
+statement-first、witness-only、hybrid、stale、substituted、repeat、
+reverse-order、Tasks-253/254/255 coexistence、semantic coexistenceのB1A
+publication attemptは全てoriginal `TypedAst`を変更せずfailする。legacy
+application-free statement profile/debug bytesは維持する。successful B1A
+installはtype、expression-semantic、proof、goal ownershipを追加しない。

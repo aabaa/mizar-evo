@@ -1975,4 +1975,19 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   fixture/expectation/sidecar/trace changeをfreeze。
 - [x] 411 tests、sizes `5188/701/2514/11234`、30 paths/39,857 linesを
   preserveし、implementation 416 testsをproject。
-- [ ] docs commit/fresh preflight後、exact B1A dormant consumerだけを実装。
+- [x] docs commit/fresh preflight後、exact B1A dormant consumerだけを実装。
+
+## Checker Task 258B3M2B2B1A runner implementation ledger
+
+- [x] exact 143-byte/63-node sourceだけをselectし、theoremとimported
+  `parser.type_fixtures::++` local/FQN resolver provenanceをauthenticate。
+- [x] Task-252 `6/4/2`、Task-253 `1/0/1/2/2`、Task-256 equality exclusionを
+  reuseし、base `1/2/2/2/2` + unnamed `Application(0)` witness 1件を
+  atomic checker installerでpublish。
+- [x] exactly five compound testsで全loaded-source byte mutation、reparsed
+  near miss、provenance/dependency/precedence corruption、family/active-route
+  isolation、rollback/replay、final clone、empty semantic/proof/goal tablesを
+  cover。
+- [x] runner 416 tests、sizes `5618/706/2520/11945`、production
+  30 paths / 40,298 linesを実測し、active cases、fixtures、expectations、
+  sidecars、trace metadataを不変に維持。

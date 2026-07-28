@@ -3720,3 +3720,22 @@ witness obligations, goal matching/substitution, formula truth, proofs,
 terminal goals, Core/ControlFlow/VC, cluster facts, diagnostics, and active
 outputs stay empty. The harness adds no fixture, sidecar, expectation, trace,
 detail key, public route, or active case.
+
+## Checker Task 258B3M2B2B1A Dormant Harness Implementation
+
+The dormant statement route now composes the exact real frontend/resolver
+outputs with the Task-48 binding environment and Task-252/253/256 public
+handoffs, then calls the atomic checker application/statement/witness
+installer. Its successful profile retains contexts/bindings/diagnostics
+`2/1/0`, imported candidate/application/argument/request provenance, equality
+edge pairs, lookups `1/1`, and `Some(Vec::new())` transport details. Every
+one of the 143 loaded-source bytes and reparsed operator/name/import/recovery
+near misses fails selector and route admission; dependency, provenance,
+precedence, family-order, replay, rollback, and final-clone corruptions also
+fail closed.
+
+The five exact runner tests pass. Expression semantics, inferred types,
+substitutions, obligations, proof steps, terminal goals, Core/ControlFlow/VC,
+cluster facts, diagnostics, and active outputs remain empty. No fixture,
+sidecar, expectation, trace, detail key, public route, or active case was
+added.

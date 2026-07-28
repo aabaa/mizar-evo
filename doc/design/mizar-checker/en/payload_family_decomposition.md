@@ -953,3 +953,15 @@ only the theorem and conclusion equality formulas and remains independent
 of the application fingerprint. The atomic TypedAst bundle prevents any
 partially published or reverse edge. Structure, set/choice/qualification,
 semantic term, formula, proof, and goal families are excluded.
+
+### Task 258B3M2B2B1A Implemented Cross-Family Edge
+
+The frozen directed edge is now implemented exactly:
+`SourceStatementWitness(0) -> SourceFunctorApplication(0)`. The witness
+stores `Application(0)` and a matching optional application fingerprint;
+the application remains owned by Task 253 and its numeral arguments remain
+owned by Task 252. One atomic installer publishes the application, statement,
+and witness bundle or publishes nothing, while final assembly repeats the
+same validation. No reverse edge, duplicate lower row, wrapper ownership,
+Task-254/255 ownership, structure/set/choice/qualification edge, or
+semantic/proof/goal family was added.

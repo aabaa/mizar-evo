@@ -3522,3 +3522,20 @@ matching/substitution、formula truth、proofs、terminal goals、
 Core/ControlFlow/VC、cluster facts、diagnostics、active outputsは空。
 fixture、sidecar、expectation、trace、detail key、public route、active caseは
 追加しない。
+
+## Checker Task 258B3M2B2B1A dormant harness implementation
+
+dormant statement routeはexact real frontend/resolver outputs、Task-48
+binding environment、Task-252/253/256 public handoffsをcomposeし、atomic
+checker application/statement/witness installerをcallする。success profileは
+contexts/bindings/diagnostics `2/1/0`、imported candidate/application/
+argument/request provenance、equality edge pairs、lookups `1/1`、
+`Some(Vec::new())` transport detailsを維持する。143 loaded-source bytes
+全てとreparsed operator/name/import/recovery near missはselector/route
+admissionにfailし、dependency/provenance/precedence/family-order/replay/
+rollback/final-clone corruptionもfail-closeする。
+
+exact runner tests 5件はpass。expression semantics、inferred types、
+substitutions、obligations、proof steps、terminal goals、Core/ControlFlow/VC、
+cluster facts、diagnostics、active outputsはempty。fixture、sidecar、
+expectation、trace、detail key、public route、active caseは追加していない。
