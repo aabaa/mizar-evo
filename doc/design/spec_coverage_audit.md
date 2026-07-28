@@ -3889,3 +3889,50 @@ row/status/count, active route, or coverage credit.
 production remains 30 paths / 38,103 lines. Tasks 269/272 retain all
 binding/semantic effects, B3M2 retains other witness-term shapes, and B4
 remains blocked behind B3M2.
+
+## Step 5 Lexer Task 258B3M2P1 Frozen-Contract Addendum
+
+Fresh Checker Task 258B3M2 preflight exposed an authority-backed lower-stage
+prerequisite. Chapter 15 §15.4.4 defines an exemplification example as either
+an unnamed `term_expression` or `identifier "=" term_expression` and gives
+`take 101;` as the exact unnamed numeral example; Chapter 13 §§13.1/13.1.4
+makes that numeral a primary term. The parser produces an unrecovered AST, but
+the scope skeleton routes every `take` through named-equals recovery and the
+real frontend maps its `UnsupportedBinderShape` diagnostic.
+
+The frozen final-LF-terminated frontend source is
+`proof\ntake 101;\nend;\n`, 21 bytes, SHA-256
+`60cb34c7ca79ec289319c61198965a4d0a9918b5aaca34957ee1df9f8a2c3648`.
+Lexer Task 258B3M2P1 freezes only the scope-layer correction: unnamed
+numeral/identifier witness terms are recovered without a binding, binder
+statement, or scope diagnostic and do not contribute to the enclosing scope
+frame; the initial named-equals witness keeps its current `Take` binding;
+empty/separator-led malformed controls retain recoverable under-approximation.
+It also classifies the derived lexical fail source's `take 42;` negative row as
+`test_expectation_drift`; the later
+implementation may replace that source row with malformed `take = 42;` while
+leaving its expectation metadata and diagnostic count/order unchanged.
+
+The exact test matrix is lexer
+`scope_skeleton_distinguishes_unnamed_and_named_take_shapes` plus frontend
+`scope_skeleton_unnamed_take_term_is_not_a_frontend_diagnostic`, moving current
+library counts `146/132` to `147/133`. Current raw test-entry hashes are
+lexer/frontend
+`cef872d7c7597f09dea32163b3c1f27d7cf5f4bf34e250bae019941af956869e` /
+`749cc61010d94a45fe9d5fddff306e419fa245463205769f848539826958169c`;
+normalized name hashes are
+`d9e6e8960d9f1be2d23b5b546f7a3390dc156ae8437946f6eac22f47438eef55`
+/
+`143e2385e210b356da817b2662b80caa7515fe8dfa0c5c114171745b78ce4d52`.
+Current lexer scope production/test and frontend lexing sizes are
+`1294/400/2452` lines. Post-implementation hashes and sizes remain measured
+results rather than pre-authorized targets.
+
+The frozen task classifies bounded `source_drift`, `design_drift`, `test_gap`,
+and `test_expectation_drift`. There is no blocking `spec_gap`,
+`boundary_violation`, or `repo_metadata_conflict`. This documentation
+prerequisite changes no production source, fixture, sidecar, trace
+row/status/count, active manifest count, CLI/hash baseline, or coverage credit.
+Implementation remains a separate logical task and commit; broader mixed-list
+named-binding under-approximation, Checker Task 258B3M2 transport, witness
+semantics, and proof effects remain deferred.

@@ -7,7 +7,30 @@
 
 ## Ordered Task List
 
-deferred と明記されていない ordered task はすべて完了しています。
+1. **Lexer Task 258B3M2P1 — unnamed `take` scope recovery を修正する。**
+   - Status: frozen-contract documentation prerequisite は完了し、
+     implementation が次の executable logical task。
+   - Authority: Chapter 15 §15.4.4 は `take term_expression` を許し、
+     `take 101;` を明示する。Chapter 13 §§13.1/13.1.4 は numeral を primary
+     term とする。既存 parser fixture は named/unnamed witness list をカバー済み。
+   - Exact drift: scope skeleton は現在すべての `take` を named-equals binder
+     として扱い、frontend がその `UnsupportedBinderShape` を写像する。
+   - Exact source: final LF を持つ `proof\ntake 101;\nend;\n`、21 bytes、
+     SHA-256
+     `60cb34c7ca79ec289319c61198965a4d0a9918b5aaca34957ee1df9f8a2c3648`。
+   - Owned implementation: `scope_skeleton.rs` の `take` dispatch/recovery、
+     focused lexer/frontend unit tests、contradictory な derived lexical negative
+     source row `take 42;` の malformed `take = 42;` への置換。
+   - `00.crate_plan.md` で凍結した named compound lexer test 1 件と named
+     compound frontend test 1 件だけを追加し、library counts は `146/132` から
+     `147/133` になる。
+   - canonical spec、既存 `.miz`、expectation metadata、sidecar、trace
+     status/count、parser/resolver behavior、checker statement transport、
+     witness/proof semantics を維持する。
+   - Exit: exact unnamed numeral/identifier input は scope layer で non-binding
+     かつ diagnostic-free、named/malformed control は frozen behavior を維持し、
+     reviews/verification がすべて pass し、Checker Task 258B3M2 の再開前に
+     standalone commit になる。
 
 ## Completed Tasks
 

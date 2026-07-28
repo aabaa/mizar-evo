@@ -123,6 +123,85 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 
 これらの診断はプログラムを意味論的に受理/拒否しません。後続のパーサーとリゾルバが、正規の構文/名前の診断を生成します。
 
+## Lexer Task 258B3M2P1 Frozen Contract
+
+Checker Task 258B3M2 の fresh preflight で、real frontend consumer の
+lower-stage disagreement が見つかりました。canonical Chapter 15 §15.4.4 は
+`example ::= term_expression | identifier "=" term_expression` と定義し、
+名前なし example として `take 101;` を示します。Chapter 13 §§13.1 と 13.1.4 は
+numeral を primary term expression と定義します。parser はこの exact shape から
+unrecovered AST を生成しますが、現在の scope skeleton はすべての `take` を
+named-equals binder parser に送るため `UnsupportedBinderShape` を報告します。
+`mizar-frontend::lexing::token_stream_from_raw` はこの recoverable scope
+diagnostic を real frontend stream に写像するため、checker statement transport
+より前に disagreement が観測されます。
+
+凍結する implementation slice は次のとおりです。
+
+| Surface | Scope-skeleton result |
+|---|---|
+| Exact authority witness | final LF を持つ `proof\ntake 101;\nend;\n` は 21 bytes、SHA-256 `60cb34c7ca79ec289319c61198965a4d0a9918b5aaca34957ee1df9f8a2c3648`。`Take` binding contribution、binder statement range、scope diagnostic のいずれも作らず `take` statement を回復する。enclosing proof frame は不変。 |
+| 名前なし identifier witness `take x;` | 同じ non-binding recovery を適用する。`x` は term use であり lexical override にしてはならない。 |
+| 既存の名前付き witness `take k = 101;` | 既存の先頭 1 件の `BindingShapeKind::Take` binding と現在の lexical lifetime を維持する。 |
+| `take;` や `take = 101;` のような空または separator-led の malformed shape | 束縛を捏造せず under-approximate し、recoverable unsupported-shape diagnostic を維持する。rejection の authority は parser に残る。 |
+
+これは `crates/mizar-lexer/src/scope_skeleton.rs` の bounded
+`source_drift`、従来の named-only 文言の `design_drift`、lexer/frontend
+unit suite の `test_gap` です。
+`tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.src` の
+negative `take 42;` row は `test_expectation_drift` です。その expectation は、
+より上位 authority の Chapter 15 rule と、既存の named/unnamed parser pass
+fixture に矛盾します。implementation task では、その derived negative source row
+だけを実際に malformed な `take = 42;` row に置き換えてよく、expectation file と
+diagnostic count/order は維持します。canonical specification、既存 `.miz`
+source、expectation を変更する authority はなく、`spec_gap`,
+`boundary_violation`, `repo_metadata_conflict` もありません。
+
+implementation ownership は次に限定します。
+
+- `crates/mizar-lexer/src/scope_skeleton.rs` の `take` dispatch/recovery;
+- unnamed numeral/identifier、named-witness、malformed-shape controls に対する
+  `scope_skeleton_distinguishes_unnamed_and_named_take_shapes` という exact 1 件の
+  compound scope-skeleton library test;
+- exact 21-byte numeral witness が mapped scope-skeleton diagnostic を生成しないことを
+  示す `scope_skeleton_unnamed_take_term_is_not_a_frontend_diagnostic` という exact
+  1 件の compound frontend library test;
+- 上記の derived lexical fail-fixture source correction 1 件。
+
+lexer で term expression を parse すること、witness term を resolve すること、
+semantic witness binding を作ること、parser AST または resolver provenance を
+変更すること、mixed witness list の後続 named example を実装すること、checker
+statement transport または proof semantics を変更することは禁止します。
+後続 named-example の lexical under-approximation と Task 258B3M2 checker
+transport の全 concern は別 follow-up に残します。
+
+documentation prerequisite は production source、fixture、sidecar、trace
+row/status/count、test list、CLI/count/hash baseline を変更しません。
+implementation でも active manifest counts と CLI hashes は不変の見込みであり、
+変更してよいのは owned lexer/frontend source と unit-test inventories、および
+derived lexical fixture content だけです。
+
+fresh library baseline は lexer/frontend tests `146/132`、exact matrix による
+projected counts は `147/133` です。sorted raw test-entry hashes は
+`cef872d7c7597f09dea32163b3c1f27d7cf5f4bf34e250bae019941af956869e`
+と
+`749cc61010d94a45fe9d5fddff306e419fa245463205769f848539826958169c`、
+normalized test-name hashes は
+`d9e6e8960d9f1be2d23b5b546f7a3390dc156ae8437946f6eac22f47438eef55`
+と
+`143e2385e210b356da817b2662b80caa7515fe8dfa0c5c114171745b78ce4d52`
+です。current module sizes は lexer scope production / lexer scope tests /
+frontend lexing の順に `1294/400/2452` lines です。post-implementation
+hashes/sizes は pre-authorized target にせず実測します。
+
+exit には、exact frontend source に
+`ScopeSkeleton(UnsupportedBinderShape)` がないこと、凍結した compatibility
+assertion がすべて通ること、parser acceptance が不変であること、EN/JA docs が
+一致すること、source/expectation correction が authority order に従うこと、
+relevant crate/workspace/fmt/Clippy/CLI verification が通ること、final read-only
+quality review が 90/100 以上かつ protocol hard gates がすべて PASS であることを
+要求します。
+
 ## Tests
 
 テストでは以下を確認します。
@@ -134,6 +213,9 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 - 文単位の束縛子に対する文範囲;
 - `case`, `suppose`, `hereby`、algorithm block、algorithm `for ... do` 範囲、algorithm match `otherwise` branch、nested `struct` / explicit `inherit ... where` 範囲;
 - `take`, `deffunc`, `defpred`、アルゴリズムの束縛子に由来する局所名;
+- unnamed `take` term は binding も scope diagnostic も生成せず、先頭の named
+  witness は binding を維持し、malformed separator-led shape は recoverable
+  under-approximation を維持すること;
 - 不正な束縛子では名前を捏造せず過小近似すること;
 - `ScopeLexView` が束縛範囲の内側でだけ真を返すこと;
 - 繰り返し実行で出力が決定的であること。

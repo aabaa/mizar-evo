@@ -124,6 +124,86 @@ Diagnostics are structural and recoverable:
 
 These diagnostics do not accept or reject the program semantically; the parser and resolver later produce authoritative syntax/name diagnostics.
 
+## Lexer Task 258B3M2P1 Frozen Contract
+
+Fresh Checker Task 258B3M2 preflight exposed a lower-stage disagreement in the
+real frontend consumer. The canonical Chapter 15 §15.4.4 grammar defines
+`example ::= term_expression | identifier "=" term_expression` and gives
+`take 101;` as its unnamed example. Chapter 13 §§13.1 and 13.1.4 define a
+numeral as a primary term expression. The parser produces an unrecovered AST
+for that exact shape, while the current scope skeleton reports
+`UnsupportedBinderShape` because it routes every `take` through the
+named-equals binder parser. `mizar-frontend::lexing::token_stream_from_raw`
+maps that recoverable scope diagnostic into the real frontend stream, making
+the disagreement observable before checker statement transport.
+
+The frozen implementation slice is:
+
+| Surface | Scope-skeleton result |
+|---|---|
+| Exact authority witness | The final-LF-terminated `proof\ntake 101;\nend;\n` is 21 bytes with SHA-256 `60cb34c7ca79ec289319c61198965a4d0a9918b5aaca34957ee1df9f8a2c3648`. Recover its `take` statement without a `Take` binding contribution, binder statement range, or scope diagnostic; the enclosing proof frame is unchanged. |
+| Unnamed identifier witness `take x;` | Apply the same non-binding recovery; `x` is a term use and must not become a lexical override. |
+| Existing named witness `take k = 101;` | Preserve the existing single initial `BindingShapeKind::Take` binding and its current lexical lifetime. |
+| Empty or separator-led malformed shape such as `take;` or `take = 101;` | Continue to under-approximate without inventing a binding and retain the recoverable unsupported-shape diagnostic; the parser remains authoritative for rejection. |
+
+This is a bounded `source_drift` in
+`crates/mizar-lexer/src/scope_skeleton.rs`, a `design_drift` in the prior
+named-only wording above, and a `test_gap` in the lexer/frontend unit suites.
+The `take 42;` negative row in
+`tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.src` is
+`test_expectation_drift`: its expectation contradicts the higher-authority
+Chapter 15 rule and the existing named/unnamed parser pass fixture. The
+implementation task may replace only that derived negative source row with a
+genuinely malformed `take = 42;` row while preserving the expectation file and
+its diagnostic count/order. There is no `spec_gap`, `boundary_violation`,
+`repo_metadata_conflict`, or authority for changing canonical specification,
+existing `.miz` sources, or expectations.
+
+Implementation ownership is restricted to:
+
+- dispatch/recovery for `take` in
+  `crates/mizar-lexer/src/scope_skeleton.rs`;
+- exactly one compound scope-skeleton library test,
+  `scope_skeleton_distinguishes_unnamed_and_named_take_shapes`, for unnamed
+  numeral/identifier, named-witness, and malformed-shape controls;
+- exactly one compound frontend library test,
+  `scope_skeleton_unnamed_take_term_is_not_a_frontend_diagnostic`, proving the
+  exact 21-byte numeral witness produces no mapped scope-skeleton diagnostic;
+- the single derived lexical fail-fixture source correction described above.
+
+The task must not parse term expressions in the lexer, resolve witness terms,
+create semantic witness bindings, change parser ASTs or resolver provenance,
+implement later named examples in a mixed witness list, or change checker
+statement transport and proof semantics. Later named-example lexical
+under-approximation and every Task 258B3M2 checker transport concern remain
+separate follow-ups.
+
+The documentation prerequisite changes no production source, fixture,
+sidecar, trace row/status/count, test list, or CLI/count/hash baseline. The
+implementation is expected to leave active manifest counts and CLI hashes
+unchanged; only the owned lexer/frontend source and unit-test inventories plus
+the derived lexical fixture content may change.
+
+The fresh library baseline is lexer/frontend tests `146/132`, projected by the
+exact matrix to `147/133`. Sorted raw test-entry hashes are
+`cef872d7c7597f09dea32163b3c1f27d7cf5f4bf34e250bae019941af956869e`
+and
+`749cc61010d94a45fe9d5fddff306e419fa245463205769f848539826958169c`;
+normalized test-name hashes are
+`d9e6e8960d9f1be2d23b5b546f7a3390dc156ae8437946f6eac22f47438eef55`
+and
+`143e2385e210b356da817b2662b80caa7515fe8dfa0c5c114171745b78ce4d52`.
+Current module sizes are `1294/400/2452` lines for lexer scope production,
+lexer scope tests, and frontend lexing. Post-implementation hashes and sizes
+must be measured rather than treated as pre-authorized targets.
+
+Exit requires the exact frontend source to be free of
+`ScopeSkeleton(UnsupportedBinderShape)`, all frozen compatibility assertions
+to pass, parser acceptance to remain unchanged, EN/JA documentation to agree,
+the source/expectation correction to follow the authority order, relevant
+crate/workspace/fmt/Clippy/CLI verification to pass, and final read-only
+quality review to score at least 90/100 with every protocol hard gate passing.
+
 ## Tests
 
 Tests should cover:
@@ -135,6 +215,9 @@ Tests should cover:
 - statement ranges for statement-local binders;
 - proof branches (`case`, `suppose`, `hereby`), algorithm blocks, algorithm `for ... do` ranges, algorithm match `otherwise` branches, and nested `struct` / explicit `inherit ... where` ranges;
 - local names from `take`, `deffunc`, `defpred`, and algorithm binders;
+- unnamed `take` terms produce no binding or scope diagnostic while named
+  initial witnesses retain their binding and malformed separator-led shapes
+  retain recoverable under-approximation;
 - malformed binders under-approximate rather than inventing names;
 - `ScopeLexView` returns true only inside the binding range;
 - deterministic output for repeated runs.

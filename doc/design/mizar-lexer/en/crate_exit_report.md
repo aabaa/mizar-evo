@@ -15,6 +15,23 @@ that all Crate Exit Gates pass. The only remaining gaps, `MLX-GAP-001` and
 `MLX-GAP-005`, are explicitly deferred and outside lexer-owned implementation
 scope. `MLX-GAP-007` and `MLX-GAP-008` are resolved.
 
+### Post-exit Lexer Task 258B3M2P1 status
+
+The result and score above are the historical result of the completed
+`b9f2482` milestone. Fresh Checker Task 258B3M2 preflight later discovered
+`MLX-GAP-009`: canonical unnamed `take term_expression` syntax reaches the
+parser, but the scope skeleton emits a false named-binder-shape diagnostic that
+the frontend exposes. The crate is therefore reopened only for the bounded
+Lexer Task 258B3M2P1 prerequisite frozen in `00.crate_plan.md` and
+`scope_skeleton.md`.
+
+The documentation prerequisite records the open `source_drift`,
+`design_drift`, `test_gap`, and `test_expectation_drift` without revising the
+historical milestone score or claiming implementation completion. A separate
+implementation commit must close `MLX-GAP-009` and repeat the applicable hard
+gates before the crate returns to its post-exit complete state. `MLX-GAP-001`
+and `MLX-GAP-005` remain the historical milestone's only deferred gaps.
+
 ## Scope
 
 Milestone scope:
