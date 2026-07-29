@@ -1229,3 +1229,21 @@ fingerprints, swapped targets, partial/repeated installation, and
 application coexistence remain `InvalidSourceStatement`. All semantic,
 proof, goal, overload, and theorem-acceptance outputs remain empty.
 `resolved_typed_ast.rs` is 7,244 lines; no public final-AST API changed.
+
+## Task 258B3M2B2B2C Frozen Final-AST Sibling
+
+ResolvedTypedAst gains no API. Final assembly must enumerate B2C as a third
+exact structure-statement sibling beside B2A/B2B, selected by the complete
+181-byte/86-node profile rather than the common
+`application = None` / `structure = Some` shape. It revalidates Task-252
+`7/4/3`, Task-254 `2/0/1/3/1/4/9`, Task-256 equality pairs
+`Primary(0/1)` and `Primary(5/6)`, Task-258 base `1/2/2/2/2`, and witness
+`1/0` targeting update `Structure(0)`.
+
+The final clone must preserve structure, statement, and witness handoffs
+byte-for-byte only after every source, arena, provenance, ownership, row,
+and fingerprint check succeeds. B2A/B2B/B2C or application hybrids, stale
+fingerprints, swapped targets, partial/reverse/repeated installation, and
+subtree ownership substitution reject atomically. All semantic, proof,
+goal, overload, coercion, obligation, and theorem-acceptance outputs remain
+empty. Implementation and its final-clone tests remain open.

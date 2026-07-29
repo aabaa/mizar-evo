@@ -4118,4 +4118,107 @@ remain unchanged. Concurrent ownership remains report-only
 `repo_metadata_conflict` with no metadata repair. Broad formatting, Clippy,
 tests, and all count/hash gates pass. The final source/documentation
 re-review has no findings. Independent final quality has no findings, all
-nine hard gates PASS, and valid `98/100`. The commit remains pending.
+nine hard gates PASS, and valid `98/100`. B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227` and clean B2C fresh inventory
+are complete.
+
+## Checker Task 258B3M2B2B2C Frozen Runner Harness
+
+B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227` is complete. B2C uses the
+exact final-LF 181-byte SHA-256
+`03f14a98bffb557ea4dda4f879bf504d241aaebae0552a97f0f2417ef4b43560`
+source:
+
+```text
+import parser.type_fixtures;
+reserve x for set;
+theorem FormulaStatementStructureUpdateWitnessSmoke: x = x proof
+  take TypeCaseStruct(x: 1, y: 2) with (x := 3);
+  thus x = x;
+end;
+```
+
+It has zero diagnostics, 86 unrecovered nodes, root 85.
+Theorem/label/proof/take/witness/transparent/update/constructor/root are
+`82/11/81/72/71/70/69/65/58`; `FieldUpdate`/update member/constructor
+members are `68/30/20/24`; numerals are `59/62/66`; conclusion/equalities/
+containers are `80/55,77/56,78`. Their exact ranges are
+`48..180`, `56..99`, `107..179`, `115..161`, `120..160`,
+`120..160`, `120..160`, `120..146`, `120..134`, `153..159`,
+`153..154`, `135..136`/`141..142`,
+`138..139`/`144..145`/`158..159`, `164..175`,
+`101..106`/`169..174`, and the same two formula ranges.
+
+The missing-value source is exactly 180 bytes, SHA-256
+`8310de3b172cea98e4e85ebc6021c85c4e1bd7c2a74f8cd99413ae5a80569d67`,
+with one `malformed_term_expression` at `158..159`, 84 nodes/root 83, and
+`recovered = [65]`. Five zero-diagnostic excluded profiles remain outside
+the exact route:
+
+- base-only: 167 bytes, SHA-256
+  `bb26a425d2bc16e6518d6366128de138862c4525af6eb82b748e4cb28f1b8bc9`,
+  `76/root75/[]`;
+- selector: 169 bytes, SHA-256
+  `64039fca35d6199fea281d43df6dafdfeff78f1d97139d6286a3082115552747`,
+  `79/root78/[]`;
+- wrapped: 183 bytes, SHA-256
+  `e1a2b79cb03a4aebc5e0e29150cde382da457aa31cb8e66643eecce6e8296ae6`,
+  `90/root89/[]`;
+- multi-update: 189 bytes, SHA-256
+  `a95336dc08b9534d7c5c16ca5070384e2610f0db31841187878b68b4403666b6`,
+  `93/root92/[]`;
+- nested-path: 183 bytes, SHA-256
+  `92440b4b3814d7b8a738bf71b2e89b9056fbb382301e12b5f4a4ccab17e0f082`,
+  `88/root87/[]`.
+
+The harness compares Task 48 `2/1/0`, Task 252 `7/4/3`, Task 254
+`2/0/1/3/1/4/9`, Task 256 `2/0/0/0/0/0/0/4/4`, Task-258 base
+`1/2/2/2/2`, and witness `1/0`. Task-258 base has two
+`ReservedTypeGuard` rows with reference uses `[0,1]`/`[2,3]`; the latter
+resolve to primary terms `5/6`. It verifies LocalSource contribution 0
+anchor `29..47`, owner origin
+`48..180/[2,1]`, public/exported label `56..99`, statements
+`82/48..180/Atomic(0)/ordinal 0` and
+`80/164..175/Atomic(1)/ordinal 2`, and two unverified candidates. The
+unnamed witness at take 72/item 71 uses proof context 1 and targets only
+update `Structure(0)`.
+
+The runner consumes existing B2CP `ImportedStructureUpdateSite`,
+`imported_structure_update_owned_node_kinds`, and
+`imported_structure_update_handoff_in_context` unchanged. It verifies
+update edges to `Structure(1)`/`Primary(4)`, constructor edges to
+`Primary(2/3)`, imported `TypeCaseStruct#5` contribution 2 origin
+`7..27/[5]`, Task-256 operands `Primary(0/1)`/`Primary(5/6)`, local
+theorem/label provenance, fingerprints, and disjoint ownership.
+
+Exactly five runner tests are frozen:
+
+- `task258b3m2b2b2c_real_frontend_freezes_structure_update_witness_contract`
+- `task258b3m2b2b2c_validation_precedence_mutation_and_replay_fail_closed`
+- `task258b3m2b2b2c_update_and_byte_subtree_near_misses_are_exact`
+- `task258b3m2b2b2c_family_and_active_route_isolation_is_atomic`
+- `task258b3m2b2b2c_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`
+
+The paired checker transaction freezes exactly four tests:
+
+- `task258b3m2b2b2c_exact_structure_update_witness_api_debug_and_legacy_compatibility_are_stable`
+- `task258b3m2b2b2c_dependencies_structure_update_witness_precedence_and_all_nodes_fail_closed`
+- `task258b3m2b2b2c_combined_ownership_hybrids_and_all_family_orders_are_atomic`
+- `task258b3m2b2b2c_final_clone_revalidation_and_semantic_deferrals_are_stable`
+
+Together, the exact nine tests exhaust bytes, nodes, lower
+and upper rows, provenance, ownership, malformed/excluded profiles,
+B2A/B2B/B2CP/legacy isolation, mutations, order, fingerprints, hybrids,
+rollback/replay/final clone, and empty semantic/proof/goal/IR surfaces.
+
+No active case, fixture, expectation, sidecar, trace entry/credit,
+diagnostic contract, public route, or semantic behavior changes. Section
+13.3.3 and complete postfix grammar authorize the source without a
+normative `spec_gap`; `take` under `x = x` is source transport only.
+Baseline is `386/439`, projection `390/444`; sizes and all
+production/test-list/corpus/CLI hashes remain unchanged. All four independent
+reviews have no findings and complete documentation/count/hash verification
+passes. Independent final quality has no findings, all nine hard gates PASS,
+and the valid score is `98/100`. The commit and implementation inventory
+remain open.

@@ -1150,5 +1150,33 @@ impact is narrative-only. Concurrent ownership is report-only
 `repo_metadata_conflict` with no metadata repair. Broad formatting, Clippy,
 tests, and all count/hash gates pass. The final source/documentation
 re-review has no findings. Independent final quality has no findings, all
-nine hard gates PASS, and valid `98/100`. The dedicated B2CP commit remains
-pending; B2C fresh inventory follows that commit.
+nine hard gates PASS, and valid `98/100`. Dedicated B2CP commit
+`b146f0f72dceac2233c9d679b7820e264974b227` is complete; the frozen B2C
+edge below is the post-commit next owner.
+
+### Task 258B3M2B2B2C Frozen Witness-to-Update Edge
+
+B2C adds exactly one upper edge to the completed lower graph:
+
+```text
+formula(0) -> Primary(0/1)
+formula(1) -> Primary(5/6)
+witness(0) -> Structure(0 functional-update)
+Structure(0) -> Structure(1 constructor)
+Structure(0) -> Primary(4)
+Structure(1) -> Primary(2/3)
+```
+
+Task 252 retains sites `51/53/59/62/66/73/75`; Task 254 retains update 69,
+constructor 65, members 30/20/24, `FieldUpdate` 68, and all lower
+edges/requests; Task 256 owns only equality nodes 55/77; Task-258 base owns
+theorem/conclusion 82/80. B2C owns only take/witness 72/71 and the directed
+witness edge. Root 58, private roots 60/63/67, containers 56/78,
+transparent 70, and all other containers remain unowned.
+
+The structure fingerprint authenticates the lower dependency but is not a
+semantic edge. There is no reverse edge, update/member identity, replacement
+or result type, functional-copy meaning, witness obligation, proof, goal,
+theorem acceptance, active-route credit, or IR edge. The four checker and
+five runner tests are a future `test_gap`; implementation remains open while
+all four documentation-prerequisite reviews have no findings.

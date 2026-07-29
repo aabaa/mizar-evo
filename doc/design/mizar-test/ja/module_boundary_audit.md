@@ -10765,5 +10765,48 @@ B2C/public/activeとsemantic/proof/goal/IR deferralはunchanged。
 concurrent ownershipはreport-only `repo_metadata_conflict`でmetadata
 repairなし。fmt、Clippy、tests、全count/hash gatesはPASS。
 final source/documentation re-reviewはfindingsなし。independent final
-qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。B2CP commitは
-pendingで、その後B2C fresh inventoryがnext step。
+qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。B2CP
+implementation commit `b146f0f72dceac2233c9d679b7820e264974b227`は
+complete、clean B2C fresh inventoryがnext step。
+
+## Checker Task 258B3M2B2B2C frozen runner boundary
+
+B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。clean fresh
+inventoryはB2Cをselect。future implementationはexisting 8 filesに限定。
+
+checker ownersは`crates/mizar-checker/src/source_statement.rs`、
+`typed_ast.rs`、`resolved_typed_ast.rs`。runner ownersは
+`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`、
+`source_structure.rs`（obsolete B2CP allowance cleanup only）、
+`type_elaboration.rs`、`runner.rs`、
+`tests/type_elaboration/source_statement.rs`。
+
+statement leafはexisting private B2CP site/owned-kind/proof-context
+handoffをunchanged consume。checker filesはexisting API内のprivate B2C
+profile enumerationとtyped/final validationだけをadd。checker tests
+exactly 4、runner tests exactly 5。
+
+module/production path/dependency/public API/re-export/active dispatch/
+fixture/expectation/sidecar/trace/debug grammar/semantic ownerは追加なし。
+Task 252/254/256はexisting ownership、Task-258 baseは82/80、B2Cは72/71
+とwitness-to-`Structure(0)`だけ。
+
+checker/runner librariesは`386/439`、projection `390/444`。runner sizes
+`6826/6065/730/2546/17120/5848`、30 paths / 46,788 lines、hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`、
+test-list hashes
+`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
+`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`。
+
+checker sizes `29941/4830/7244/5036`、23-path/124,016-line hashes
+`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
+`df0c806d8adf6283b2ac3341e11bab62a0f11ef216d48729852e98c40079d7d1`、
+test-list hashes
+`c95eabdba15da88712434600fa5a855d1f0d5e356381608d65395d0502ca2920` /
+`48e755cf92b832f0f516c27fecdc41e6812784ab2946b4a10932756d71de482e`
+はdocs-only taskでunchanged。4 independent reviewsはfindingsなしで、
+complete documentation/count/hash verificationもPASS。independent final
+qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。docs commitと
+implementation inventoryはopen。

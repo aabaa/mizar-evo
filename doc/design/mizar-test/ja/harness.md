@@ -3903,4 +3903,69 @@ proof/goal/IR deferralはunchanged。concurrent ownershipはreport-only
 `repo_metadata_conflict`でmetadata repairなし。fmt、Clippy、tests、
 全count/hash gatesはPASS。final source/documentation re-reviewは
 findingsなし。independent final qualityはfindingsなし、全9 hard gates
-PASS、valid `98/100`。commitはpending。
+PASS、valid `98/100`。B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227`とclean B2C fresh inventoryは
+complete。
+
+## Checker Task 258B3M2B2B2C frozen runner harness
+
+B2CP commit `b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。B2Cは
+exact final-LF 181-byte SHA-256
+`03f14a98bffb557ea4dda4f879bf504d241aaebae0552a97f0f2417ef4b43560`
+source、diagnostics 0、86 unrecovered nodes/root 85を使う。
+
+theorem/label/proof/take/witness/transparent/update/constructor/rootは
+`82/11/81/72/71/70/69/65/58`、`FieldUpdate`/update member/constructor
+membersは`68/30/20/24`、numeralsは`59/62/66`、conclusion/equalities/
+containersは`80/55,77/56,78`。exact rangesはcanonical EN planと同一。
+
+missing-valueは180 bytes、SHA-256
+`8310de3b172cea98e4e85ebc6021c85c4e1bd7c2a74f8cd99413ae5a80569d67`、
+sole malformed `158..159`、84/root83、recovered `[65]`。valid excluded
+profilesはbase-only 167/
+`bb26a425d2bc16e6518d6366128de138862c4525af6eb82b748e4cb28f1b8bc9`/
+`76/75/[]`、selector 169/
+`64039fca35d6199fea281d43df6dafdfeff78f1d97139d6286a3082115552747`/
+`79/78/[]`、wrapped 183/
+`e1a2b79cb03a4aebc5e0e29150cde382da457aa31cb8e66643eecce6e8296ae6`/
+`90/89/[]`、multi 189/
+`a95336dc08b9534d7c5c16ca5070384e2610f0db31841187878b68b4403666b6`/
+`93/92/[]`、nested 183/
+`92440b4b3814d7b8a738bf71b2e89b9056fbb382301e12b5f4a4ccab17e0f082`/
+`88/87/[]`で全てdiagnostics 0。
+
+harnessはTask 48 `2/1/0`、Task 252 `7/4/3`、Task 254
+`2/0/1/3/1/4/9`、Task 256 `2/0/0/0/0/0/0/4/4`、Task-258 base
+`1/2/2/2/2`、witness `1/0`をcompare。base input factsは2件でreference
+uses `[0,1]`/`[2,3]`、後者はprimary terms `5/6`をresolveする。
+LocalSource contribution anchor `29..47`、owner origin
+`48..180/[2,1]`、label `56..99`、statements
+`82/48..180/Atomic(0)/ordinal 0`と
+`80/164..175/Atomic(1)/ordinal 2`、two candidatesもverify。unnamed
+witness at 72/71はproof context 1でonly `Structure(0)` target。
+existing B2CP three private seamsはunchanged consume。
+
+runner tests exactly 5:
+
+- `task258b3m2b2b2c_real_frontend_freezes_structure_update_witness_contract`
+- `task258b3m2b2b2c_validation_precedence_mutation_and_replay_fail_closed`
+- `task258b3m2b2b2c_update_and_byte_subtree_near_misses_are_exact`
+- `task258b3m2b2b2c_family_and_active_route_isolation_is_atomic`
+- `task258b3m2b2b2c_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`
+
+paired checker tests exactly 4:
+
+- `task258b3m2b2b2c_exact_structure_update_witness_api_debug_and_legacy_compatibility_are_stable`
+- `task258b3m2b2b2c_dependencies_structure_update_witness_precedence_and_all_nodes_fail_closed`
+- `task258b3m2b2b2c_combined_ownership_hybrids_and_all_family_orders_are_atomic`
+- `task258b3m2b2b2c_final_clone_revalidation_and_semantic_deferrals_are_stable`
+
+exact nine testsで全byte/node/table/provenance/ownership/
+excluded/malformed/family/mutation/order/fingerprint/hybrid/rollback/
+replay/final clone/empty semantic surfacesをcoverする。public/active/
+fixture/expectation/sidecar/trace/semantic changeなし。§13.3.3 authority
+から`spec_gap`なし。`x = x`下の`take`はsource transport only。
+baseline/projection `386/439` -> `390/444`、all hashes unchanged。
+4 independent reviewsはfindingsなしで、complete documentation/count/hash
+verificationもPASS。independent final qualityはfindingsなし、全9 hard
+gates PASS、valid `98/100`。commitとimplementation inventoryはopen。

@@ -4773,6 +4773,70 @@ Concurrent write ownership remains a report-only
 Broad formatting, workspace Clippy, workspace tests, focused B2CP `2/2`,
 and every count/hash gate pass. The final source/documentation re-review has
 no findings. Independent final quality has no findings, all nine hard gates
-PASS, and valid `98/100`. Staging and the dedicated B2CP implementation
-commit remain pending. B2C fresh inventory is the next owner only after
-that commit.
+PASS, and valid `98/100`. Dedicated B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227` is complete. Its post-commit
+inventory found a clean worktree, `main` ahead six and behind zero,
+unchanged `origin/main`, and untouched `stash@{0}`. B2C is therefore the
+next owner.
+
+## Task 258B3M2B2B2C Frozen Functional-Update Witness Contract
+
+Fresh post-B2CP inventory selects Task `258B3M2B2B2C` as a separate
+documentation prerequisite before implementation. The final-LF source is
+the already authenticated 181-byte,
+SHA-256
+`03f14a98bffb557ea4dda4f879bf504d241aaebae0552a97f0f2417ef4b43560`
+functional-update theorem. It has zero diagnostics, 86 unrecovered nodes,
+and root 85. B2C composes the existing Task-48 `2/1/0`, Task-252 `7/4/3`,
+Task-254 `2/0/1/3/1/4/9`, and equality-only Task-256
+`2/0/0/0/0/0/0/4/4` lower tables with the Task-258 base
+`1 owner / 2 statements / 2 contexts / 2 input facts / 2 candidate facts`
+and one unnamed witness/no names.
+
+Task 256 owns only equality nodes `55/77`, with primary operand pairs
+`[0,1]` and `[5,6]`, and excludes the complete functional-update subtree.
+Task-258 base owns theorem/conclusion nodes `82/80`. B2C owns only
+take/witness nodes `72/71` and the directed
+`SourceStatementWitness(0) -> Structure(0)` edge. Task 254 retains
+functional update 69, constructor 65, update member 30, constructor members
+20/24, `FieldUpdate` 68, imported `TypeCaseStruct#5` provenance, and the
+update-base/update-value/constructor-value graph. Qualified root 58,
+private numeric roots `60/63/67`, formula containers `56/78`, transparent
+term 70, and every other container remain unowned.
+
+The source graph is exact: formula 0 points to primaries 0/1; formula 1
+points to primaries 5/6; the witness points to functional-update
+`Structure(0)`; `Structure(0)` points to constructor `Structure(1)` and
+replacement `Primary(4)`; and `Structure(1)` points to constructor values
+`Primary(2/3)`. No reverse or semantic edge is credited. Existing public
+structure-witness target, fingerprint, builder, atomic TypedAst installer,
+and final-clone APIs are reused unchanged. The B2CP private site,
+owned-kind, and proof-context handoff seams are the sole lower consumer
+boundary; B2C adds no public schema or active corpus route.
+
+This addendum records follow-up ownership only. The missing frozen B2C
+contract and stale B2CP-pending status are `design_drift`; the later bounded
+eight-file implementation is `source_drift`; and its exact four checker plus
+five runner tests are `test_gap`. There is no `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation`. The earlier concurrent-write history remains a
+report-only `repo_metadata_conflict`; the safe task target is identifiable
+and no repository metadata is repaired.
+
+The theorem goal is `x = x`, whereas canonical `take` semantics is
+existential introduction. B2C therefore authenticates syntax-free source
+occurrence, resolver provenance, ownership, and the directed witness target
+only. Functional-copy meaning, replacement/member/result typing,
+immutability enforcement, witness type guards or substitution, goal
+progress, proof validity, theorem acceptance, facts, overload resolution,
+Core IR, Control-Flow IR, and verification conditions remain deferred.
+
+`spec.en.checker.formula_statement.source_payloads` consequently remains
+`deferred`, `tests = []`, with no backlink, status, count, test-list, or
+coverage-credit change. Existing Task-254 diagnostic credit is unchanged,
+and `tests/coverage/spec_trace.toml` remains a deliberate no-op. Canonical
+specifications, existing `.miz`, fixtures, expectations, sidecars, active
+routes, and diagnostics are unchanged. Checker/runner libraries remain
+`386/439`; implementation projects `390/444`. Current production and
+test-list hashes, corpus counts, and five CLI hashes remain exactly at the
+B2CP completion baseline.

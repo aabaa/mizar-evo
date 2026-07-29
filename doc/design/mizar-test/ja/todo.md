@@ -2257,5 +2257,37 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] final source/documentation reviewをfindingsなしでcomplete。
 - [x] independent final qualityをfindingsなし、全9 hard gates PASS、
   valid `98/100`でcomplete。
-- [ ] staged-diff auditとdedicated B2CP implementation commitをcomplete。
-- [ ] B2CP commit後B2Cをfresh-inventory。
+- [x] staged-diff auditとdedicated B2CP implementation commit
+  `b146f0f72dceac2233c9d679b7820e264974b227`をcomplete。
+- [x] B2CP commit後B2Cをfresh-inventory。
+
+## Checker Task 258B3M2B2B2C runner frozen-contract ledger
+
+- [x] B2CP commit `b146f0f72dceac2233c9d679b7820e264974b227`
+  completeとclean fresh B2C selectionをrecord。
+- [x] exact 181-byte/86-node source、180-byte malformed profile、five
+  valid-excluded byte/hash/node profilesをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `7/4/3`、Task-254
+  `2/0/1/3/1/4/9`、Task-256 `2/0/0/0/0/0/0/4/4`、Task-258 base
+  `1/2/2/2/2`、witness `1/0`をfreeze。
+- [x] resolver provenance、cross-family edges、ownership/exclusions、
+  B2C only `72/71` plus witness-to-`Structure(0)`をfreeze。
+- [x] existing eight files、unchanged B2CP seam、no-public/no-active、
+  checker tests 4/runner tests 5 exact namesをfreeze。
+- [x] baseline/projection `386/439` -> `390/444`、sizes/manifests/hashes、
+  unchanged corpus/CLI gates、narrative audit impactをfreeze。
+- [x] stale selectionを`design_drift`、future codeを`source_drift`、
+  nine testsを`test_gap`にclassifyし、normative `spec_gap`、
+  expectation drift、current boundary violationなしをrecord。
+- [x] executable/canonical artifactsをimmutableとし、`x = x`下の`take`
+  はsource transport onlyとrecord。
+- [x] specification reviewをfindingsなしでcomplete。
+- [x] test-sufficiency reviewをfindingsなしでcomplete。
+- [x] implementation-boundary reviewをfindingsなしでcomplete。
+- [x] source/documentation consistency reviewをfindingsなしでcomplete。
+- [x] documentation verificationと全required count/hash gatesをPASS。
+- [x] 全hard gates PASSかつvalid score `98/100`のfinal read-only quality
+  reviewをcomplete。
+- [ ] cached-diff auditをPASSし、dedicated B2C frozen-contract
+  documentation commitを作成。
+- [ ] fresh-inventory後scoped B2C eight-file transactionだけをimplement。

@@ -619,3 +619,29 @@ checker statement/typed/final/structure sizesは
 をretainし、content hashは
 `df0c806d8adf6283b2ac3341e11bab62a0f11ef216d48729852e98c40079d7d1`。
 librariesは`386/437`。
+
+## Task 258B3M2B2B2C frozen module boundary
+
+B2CP commit `b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。
+B2Cはmodule、dependency、production path、table、ID、schema、error、
+accessor、builder、installer、public re-exportを追加しない。existing
+`SourceStatementWitnessTermTarget::Structure`、structure fingerprint、
+structure-aware producer、combined TypedAst installer、ResolvedTypedAst
+final cloneをunchanged reuseする。
+
+implementationはexisting 8 filesだけ: checker
+`source_statement.rs`/`typed_ast.rs`/`resolved_typed_ast.rs`、runner
+source-statement leaf、source-structure allowance cleanup、private
+`type_elaboration.rs` facade、`runner.rs` test registration、statement test
+leaf。B2CP update extractor/producer/owned-kind logicはprivate seam経由で
+unchanged consumeする。new active root dispatch、fixture、expectation、
+sidecar、trace、semantic/proof/goal、Core/CFG/VC ownerは禁止。
+
+docs baseline checker/runner `386/439`、implementation projection
+`390/444`。checker sizes `29941/4830/7244/5036`、23 paths/124,016 lines、
+hashes `c2ee...`/`df0c...`; runner sizes
+`6826/6065/730/2546/17120/5848`、30 paths/46,788 lines、hashes
+`98f3...`/`bbcc...`。4 independent reviewsはfindingsなしで、complete
+documentation/count/hash verificationもPASS。independent final qualityは
+findingsなし、全9 hard gates PASS、valid `98/100`。commitとfresh
+implementation inventoryはopen。

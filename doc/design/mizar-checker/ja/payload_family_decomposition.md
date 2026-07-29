@@ -1080,5 +1080,29 @@ trace status/count/backlink/creditは変更せず、formula rowは`deferred`、
 report-only `repo_metadata_conflict`でmetadata repairなし。
 fmt、Clippy、tests、全count/hash gatesはPASS。final source/documentation
 re-reviewはfindingsなし。independent final qualityはfindingsなし、
-全9 hard gates PASS、valid `98/100`。dedicated B2CP commitはpendingで、
-そのcommit後にB2C fresh inventory。
+全9 hard gates PASS、valid `98/100`。dedicated B2CP commit
+`b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。以下のB2C edgeが
+post-commit next owner。
+
+### Task 258B3M2B2B2C frozen witness-to-update edge
+
+```text
+formula(0) -> Primary(0/1)
+formula(1) -> Primary(5/6)
+witness(0) -> Structure(0 functional-update)
+Structure(0) -> Structure(1 constructor)
+Structure(0) -> Primary(4)
+Structure(1) -> Primary(2/3)
+```
+
+Task252はsites `51/53/59/62/66/73/75`、Task254はupdate69、
+constructor65、members30/20/24、`FieldUpdate`68と全lower edges/requests、
+Task256はequalities55/77、Task-258 baseは82/80をretain。B2Cは72/71と
+directed witness edgeのみをown。root58、private roots60/63/67、
+containers56/78、transparent70、その他containersはunowned。
+
+structure fingerprintはlower dependency authenticationでsemantic edgeでは
+ない。reverse、identity/type、functional-copy、witness obligation、
+proof/goal/theorem、active credit、IR edgeなし。checker tests 4件/runner
+tests 5件はfuture `test_gap`; implementationはopenだが、4つの
+documentation-prerequisite reviewsはすべてfindingsなし。

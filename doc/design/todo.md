@@ -2954,6 +2954,36 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete final source/documentation review with no findings.
 - [x] Pass independent final quality with no findings, all nine hard gates,
   and a valid `98/100`.
-- [ ] Pass the staged-diff audit and create the dedicated B2CP
-  implementation commit.
-- [ ] Fresh-inventory B2C after the B2CP commit.
+- [x] Pass the staged-diff audit and create the dedicated B2CP
+  implementation commit `b146f0f7`.
+- [x] Fresh-inventory B2C after the B2CP commit.
+
+## Checker Task 258B3M2B2B2C Frozen-Contract Prerequisite
+
+- [x] Select B2C only after B2CP commit `b146f0f7` and correct the stale
+  B2CP-pending completion status without repairing repository metadata.
+- [x] Freeze the exact 181-byte/hash, zero-diagnostic 86-node/root-85
+  parser profile, 180-byte missing-value recovery, local theorem/label
+  provenance, and imported `TypeCaseStruct#5` provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `7/4/3`, Task-254
+  `2/0/1/3/1/4/9`, equality-only Task-256
+  `2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and witness/name
+  `1/0`.
+- [x] Freeze exact arena ownership, subtree exclusions, the
+  `SourceStatementWitness(0) -> Structure(0)` edge, and all
+  Task-252/254/256 cross-family edges without adding semantic edges.
+- [x] Freeze reuse of the existing checker structure-witness APIs and
+  private B2CP handoff, the exact eight implementation files, four checker
+  tests, five runner tests, validation precedence, rollback/replay/final
+  clone, family isolation, and empty semantic outputs.
+- [x] Preserve canonical specs, `.miz`, fixtures, expectations, sidecars,
+  trace `deferred` / `tests = []`, Task-254 credit, public/active routes,
+  and all executable counts/hashes in this docs-only task.
+- [x] Complete specification/dependency, test-sufficiency,
+  implementation-boundary, and source/documentation reviews with no
+  findings; pass all documentation verification and count/hash gates.
+- [x] Pass all nine final-quality hard gates with a valid score of
+  `98/100`.
+- [ ] Commit this B2C frozen-contract documentation prerequisite alone,
+  and verify clean metadata/stash invariants.
+- [ ] Fresh-inventory and implement only the frozen B2C contract.

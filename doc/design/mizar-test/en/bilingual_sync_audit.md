@@ -831,5 +831,52 @@ repair. Both record passing formatting, workspace Clippy, workspace tests,
 focused `2/2`, and unchanged count/hash gates. The final
 source/documentation re-review has no findings. Both record independent
 final quality with no findings, all nine hard gates PASS, and valid
-`98/100`. The implementation commit remains pending; B2C fresh inventory
-follows it.
+`98/100`. B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227` and clean B2C fresh inventory
+are complete.
+
+## Checker Task 258B3M2B2B2C Frozen-Contract Synchronization
+
+English canonical documents and Japanese companions synchronously record
+B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227` complete and select B2C after
+clean fresh inventory. Old B2CP-pending text is historical; metadata
+history remains report-only `repo_metadata_conflict`.
+
+Both languages freeze the same 181-byte SHA-256
+`03f14a98bffb557ea4dda4f879bf504d241aaebae0552a97f0f2417ef4b43560`,
+zero-diagnostic 86-node/root-85 source; the 180-byte SHA-256
+`8310de3b172cea98e4e85ebc6021c85c4e1bd7c2a74f8cd99413ae5a80569d67`
+missing-value recovery; five zero-diagnostic valid exclusions; the exact
+node/range map; and Tasks 48/252/254/256/258 tables. Task-258 base is
+`1/2/2/2/2`, with two reserved type guards; its witness extension is
+`1/0`, unnamed, and targets only `Structure(0)`.
+
+Both companions preserve disjoint ownership: Task 252 sites
+`51/53/59/62/66/73/75`, Task 254 nodes
+`69/65/30/20/24/68`, Task 256 nodes `55/77`, Task-258 base nodes `82/80`,
+and B2C nodes `72/71` plus the witness edge. Roots `58/60/63/67`,
+containers `56/78`, transparent node 70, proof 81, and other containers
+remain unowned. The existing B2CP private site/owned-kind/context handoff
+is consumed unchanged.
+
+Both languages name the same three checker and five runner implementation
+owners and the same exact four checker/five runner test names. They record
+baseline/projection `386/439` -> `390/444`, current checker/runner sizes,
+manifests and hashes, unchanged corpus/CLI counts and hashes, and
+narrative-only audit impact.
+
+Both classify stale task selection as `design_drift`, the future
+transaction as `source_drift`, and the nine-test absence as `test_gap`,
+with no normative `spec_gap`, expectation drift, or current boundary
+violation. Section 13.3.3 and the complete postfix grammar authorize the
+update; the narrower helper summary is not contradictory authority.
+
+No source, specification, `.miz`, fixture, expectation, sidecar, trace,
+public/active route, semantic, proof, goal, or IR artifact changes in this
+prerequisite. In both languages, `take` under goal `x = x` is source
+transport only and never proof acceptance. All four independent reviews have
+no findings and complete documentation/count/hash verification passes.
+Independent final quality has no findings, all nine hard gates PASS, and the
+valid score is `98/100`. The dedicated documentation commit and fresh
+implementation inventory remain open.

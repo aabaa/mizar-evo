@@ -5108,5 +5108,36 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] final source/documentation reviewをfindingsなしでcomplete。
 - [x] independent final qualityをfindingsなし、全9 hard gates PASS、
   valid `98/100`でcomplete。
-- [ ] staged-diff auditとdedicated B2CP implementation commitをcomplete。
-- [ ] B2CP commit後B2Cをfresh-inventory。
+- [x] staged-diff auditをPASSし、dedicated B2CP implementation commit
+  `b146f0f72dceac2233c9d679b7820e264974b227`を作成。clean worktree、
+  ahead-six branch、unchanged stashをverify。
+- [x] B2CP commit後B2Cをfresh-inventory。
+
+## Checker Task 258B3M2B2B2C frozen-contract ledger
+
+- [x] exact 181-byte/hash、zero-diagnostic 86-node/root-85 sourceと
+  180-byte malformed missing-value profileをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `7/4/3`、Task-254
+  `2/0/1/3/1/4/9`、Task-256 `2/0/0/0/0/0/0/4/4`、Task-258 base
+  `1/2/2/2/2`、witness `1/0`をfreeze。
+- [x] local theorem/label、imported `TypeCaseStruct#5` provenance、
+  exact ownership、unowned containers、directed cross-family graphを
+  freeze。
+- [x] unchanged public structure-witness APIsとprivate B2CP seamのreuse、
+  implementation files exactly 8件、checker tests 4件、runner tests
+  5件をfreeze。
+- [x] documentation-only scope、baseline `386/439`、implementation
+  projection `390/444`、全production/test-list/CLI hashes/counts、
+  narrative-only `deferred`, `tests = []` trace statusをpreserve。
+- [x] missing contract/stale statusを`design_drift`、future
+  implementationをbounded `source_drift`、9 testsを`test_gap`とclassify。
+  `spec_gap`、boundary、expectation、semantic issueはない。
+- [x] specification/dependency reviewをfindingsなしでcomplete。
+- [x] test-sufficiency reviewをfindingsなしでcomplete。
+- [x] implementation-boundary reviewをfindingsなしでcomplete。
+- [x] source/documentation consistency reviewをfindingsなしでcomplete。
+- [x] documentation verificationとrequired count/hash gatesを実行。
+- [x] 全hard gates PASSかつvalid score `98/100`のfinal read-only quality
+  reviewをcomplete。
+- [ ] B2C documentation prerequisiteをseparate commit。
+- [ ] fresh-inventoryしてfrozen B2C contractだけをimplement。

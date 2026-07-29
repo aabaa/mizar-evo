@@ -646,3 +646,30 @@ Checker statement/typed/final/structure sizes are
 and has content hash
 `df0c806d8adf6283b2ac3341e11bab62a0f11ef216d48729852e98c40079d7d1`.
 Libraries are `386/437`.
+
+## Task 258B3M2B2B2C Frozen Module Boundary
+
+B2CP commit `b146f0f72dceac2233c9d679b7820e264974b227` is complete.
+B2C adds no module, dependency, production path, table, ID, schema, error,
+accessor, builder, installer, or public re-export. It reuses unchanged
+`SourceStatementWitnessTermTarget::Structure`, the structure fingerprint,
+the structure-aware witness producer, the combined TypedAst installer, and
+ResolvedTypedAst final-clone validation.
+
+Implementation is restricted to eight existing files: checker
+`source_statement.rs`, `typed_ast.rs`, and `resolved_typed_ast.rs`; runner
+source-statement leaf, source-structure allowance cleanup, private
+`type_elaboration.rs` facade, `runner.rs` test registration, and the
+statement test leaf. The B2CP update extractor/producer and owned-kind logic
+are consumed unchanged through their private seam. No new active root
+dispatch, fixture, expectation, sidecar, trace, semantic/proof/goal, Core,
+CFG, or VC owner is authorized.
+
+Documentation baseline is checker/runner `386/439`; implementation projects
+`390/444`. Checker sizes remain `29941/4830/7244/5036` and 23 paths /
+124,016 lines with hashes `c2ee...` / `df0c...`. Runner sizes remain
+`6826/6065/730/2546/17120/5848` and 30 paths / 46,788 lines with hashes
+`98f3...` / `bbcc...`. All four independent reviews have no findings and
+complete documentation/count/hash verification passes. Independent final
+quality has no findings, all nine hard gates PASS, and the valid score is
+`98/100`. The commit and fresh implementation inventory remain open.

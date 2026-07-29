@@ -803,5 +803,42 @@ report-only `repo_metadata_conflict`でmetadata repairなし。
 両sideはfmt、workspace Clippy/tests、focused `2/2`、全count/hash gatesの
 PASSもrecordする。final source/documentation re-reviewはfindingsなし。
 両sideはindependent final quality findingsなし、全9 hard gates PASS、
-valid `98/100`もrecordする。implementation commitはpendingで、その後B2C
-fresh inventory。
+valid `98/100`もrecordする。B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227`とclean B2C fresh inventoryは
+complete。
+
+## Checker Task 258B3M2B2B2C frozen-contract synchronization
+
+English canonical docsとJA companionsはB2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227` complete、clean fresh
+inventory後のB2C selectionを同期する。old pending textはhistorical、
+metadata historyはreport-only `repo_metadata_conflict`。
+
+両languageはsame 181-byte SHA-256
+`03f14a98bffb557ea4dda4f879bf504d241aaebae0552a97f0f2417ef4b43560`
+zero-diagnostic 86-node/root-85 source、180-byte SHA-256
+`8310de3b172cea98e4e85ebc6021c85c4e1bd7c2a74f8cd99413ae5a80569d67`
+missing-value recovery、five valid-excluded profiles、exact node/ranges、
+Tasks 48/252/254/256/258 tablesをfreeze。Task-258 baseはtwo reserved
+type guardsを含む`1/2/2/2/2`、witnessは`1/0`でonly `Structure(0)`。
+
+ownershipもTask 252 sites `51/53/59/62/66/73/75`、Task 254
+`69/65/30/20/24/68`、Task 256 `55/77`、base `82/80`、B2C `72/71`
+plus edgeとして同期。roots `58/60/63/67`、containers `56/78`、
+transparent 70、proof 81、other containersはunowned。existing B2CP
+private site/owned-kind/context handoffはunchanged consume。
+
+両sideはsame checker owners 3/runner owners 5、exact checker tests 4/
+runner tests 5 names、baseline/projection `386/439` -> `390/444`、
+current sizes/manifests/hashes、unchanged corpus/CLI gates、narrative-only
+audit impactを同期する。
+
+stale selectionは`design_drift`、future transactionは`source_drift`、
+nine tests absenceは`test_gap`。§13.3.3とcomplete postfix grammarが
+updateをauthorizeするためnormative `spec_gap`なし。expectation drift/
+current boundary violationもなし。source/spec/`.miz`/fixture/expectation/
+sidecar/trace/public/active/semantic/proof/goal/IR changeなし。`x = x`
+goal下の`take`はsource transportのみ。4 independent reviewsはfindings
+なしで、complete documentation/count/hash verificationもPASS。
+independent final qualityはfindingsなし、全9 hard gates PASS、valid
+`98/100`。docs commitとfresh implementation inventoryはopen。

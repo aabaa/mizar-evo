@@ -1164,3 +1164,17 @@ fingerprint/target、application coexistence、partial/reverse/repeated
 installationはoriginal AST unchanged。`typed_ast.rs`は4,830 lines。
 public installer、debug surface、semantic/type/proof/goal owner、corpus
 active route、coverage creditは変更していない。
+
+## Task 258B3M2B2B2C frozen atomic sibling
+
+`with_source_structure_statement_witnesses`がsole atomic entry pointのまま。
+full exact source/arena/provenance/profileでB2CをB2A/B2B besideにenumerate。
+publication前にTask252 `7/4/3`、Task254 `2/0/1/3/1/4/9`、Task256
+`Primary(0/1)`/`Primary(5/6)` equalities、Task258 base `1/2/2/2/2`、
+witness `1/0`、structure fingerprint、target `Structure(0)`をrevalidate。
+
+all checks後だけ3 handoffsをtogether publish。B2A/B2B/B2C row/ownership/
+fingerprint/target hybrids、application coexistence、stale/reverse/partial/
+repeated、container substitutionはoriginal AST unchangedでreject。
+public installer/debug schema/type/semantic/proof/goal/fixture/trace/active
+root dispatch追加なし。implementation/atomicity testsはopen。

@@ -5354,6 +5354,35 @@ implementation commit does not satisfy a producer task.
 - [x] Complete final source/documentation review with no findings.
 - [x] Pass independent final quality with no findings, all nine hard gates,
   and a valid `98/100`.
-- [ ] Pass the staged-diff audit and create the dedicated B2CP
-  implementation commit.
-- [ ] Fresh-inventory B2C after the B2CP commit.
+- [x] Pass the staged-diff audit and create dedicated B2CP implementation
+  commit `b146f0f72dceac2233c9d679b7820e264974b227`; verify clean worktree,
+  ahead-six branch, and unchanged stash.
+- [x] Fresh-inventory B2C after the B2CP commit.
+
+## Checker Task 258B3M2B2B2C Frozen-Contract Ledger
+
+- [x] Freeze the exact 181-byte/hash, zero-diagnostic 86-node/root-85 source
+  and 180-byte malformed missing-value profile.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `7/4/3`, Task-254
+  `2/0/1/3/1/4/9`, Task-256 `2/0/0/0/0/0/0/4/4`, Task-258 base
+  `1/2/2/2/2`, and witness `1/0`.
+- [x] Freeze local theorem/label and imported `TypeCaseStruct#5` provenance,
+  exact ownership, unowned containers, and the directed cross-family graph.
+- [x] Freeze reuse of unchanged public structure-witness APIs and private
+  B2CP seam, exactly eight implementation files, four checker tests, and five
+  runner tests.
+- [x] Preserve documentation-only scope, baseline `386/439`, implementation
+  projection `390/444`, all production/test-list/CLI hashes and counts, and
+  narrative-only `deferred`, `tests = []` trace status.
+- [x] Classify the missing contract/stale status as `design_drift`, future
+  implementation as bounded `source_drift`, and nine tests as `test_gap`;
+  record no `spec_gap`, boundary, expectation, or semantic issue.
+- [x] Complete specification/dependency review with no findings.
+- [x] Complete test-sufficiency review with no findings.
+- [x] Complete implementation-boundary review with no findings.
+- [x] Complete source/documentation consistency review with no findings.
+- [x] Run documentation verification and all required count/hash gates.
+- [x] Complete final read-only quality review with every hard gate passing
+  and a valid score of `98/100`.
+- [ ] Commit the B2C documentation prerequisite separately.
+- [ ] Fresh-inventory and implement only the frozen B2C contract.

@@ -4222,12 +4222,37 @@ exactly 2件がPASS。skipped-prerequisite `design_drift`、bounded private
 implementation re-reviewsはfindingsなし。fmt、workspace Clippy/tests、
 全count/hash gatesはPASS。final source/documentation re-reviewは
 findingsなし。independent final qualityはfindingsなし、全9 hard gates
-PASS、valid `98/100`。stagingとimplementation commitはpending。
+PASS、valid `98/100`。implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。
 
 `doc/spec`、`.miz`、fixture、expectation、sidecar、trace status/count/
 backlink/credit、checker/public API、active route、B2C owner、semantic
 behaviorは変更なし。formula-statement rowは`deferred`、`tests = []`、
 audit updateはnarrative-only。checker/corpus/CLI hashesはunchanged。
 concurrent-writer historyはreport-only `repo_metadata_conflict`で、
-repository metadataはrepairしない。B2Cはseparate B2CP commit後だけ
-fresh-inventoryする。
+repository metadataはrepairしない。
+
+## Task 258B3M2B2B2C specification audit
+
+post-commit inventoryはChapters 5 §§5.5/5.7、13
+§§13.3/13.3.1/13.3.3/13.9 complete postfix grammar、Chapter14 equality、
+15 §§15.4.1/15.4.4/15.11.5、16 §§16.2/16.3.3/16.7.3、existing
+parser/resolver/Task254 fixtures、completed Tasks48/252/254/256/
+B2A/B2B/B2CPからB2C source-only witness contractをderiveする。
+§13.3.3/complete postfix grammarがexact functional-update surface
+shapeを明確にauthorizeし、narrower local helperはnormative gapではない。
+
+authorityはoccurrence/provenance/ownership/one witness targetだけ。
+goal `x = x`の`take`はexistential matching、obligation、substitution、
+proof/goal/theorem acceptanceをestablishしない。blocking/nonblocking
+`spec_gap`、`boundary_violation`、expectation drift、unsafe intent、
+undocumented behaviorなし。missing contract/stale post-B2CP ledgerは
+`design_drift`、future codeはbounded `source_drift`、4+5 testsは
+`test_gap`。
+
+design docsのみ変更。canonical spec、`.miz`、fixture、expectation、
+sidecar、trace、public/active、semanticはunchanged。formula rowは
+`deferred`、`tests = []`、audit impactはnarrative-only。4 independent
+reviewsはfindingsなしで、complete documentation/count/hash verificationも
+PASS。independent final qualityはfindingsなし、全9 hard gates PASS、valid
+`98/100`。commitとfresh implementation inventoryはopen。

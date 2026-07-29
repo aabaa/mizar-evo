@@ -3220,5 +3220,56 @@ proof/goal/theorem acceptance, and IR remain deferred. Concurrent ownership
 is report-only `repo_metadata_conflict` with no metadata repair.
 Broad formatting, Clippy, tests, and all count/hash gates pass. The final
 source/documentation re-review has no findings. Independent final quality
-has no findings, all nine hard gates PASS, and valid `98/100`. The B2CP
-commit remains pending; B2C fresh inventory follows that commit.
+has no findings, all nine hard gates PASS, and valid `98/100`. B2CP
+implementation commit `b146f0f72dceac2233c9d679b7820e264974b227` is
+complete.
+
+## Task 258B3M2B2B2C Frozen Statement and Witness Contract
+
+The exact 181-byte/86-node B2C source publishes Task-258 base
+`1 owner / 2 statements / 2 contexts / 2 input facts / 2 candidate facts`
+plus `1 witness / 0 names`. Local contribution 0 has `LocalSource` reserve
+anchor `29..47`; checked owner origin is `48..180/[2,1]`; label `56..99`
+is public/exported/normal. Owner 0 is theorem site 82, spelling
+`FormulaStatementStructureUpdateWitnessSmoke`, role/status
+`Theorem/Unmodified`, and normal recovery.
+
+Statement 0 is owner/context `0/0`, `Atomic(0)`, site 82/range `48..180`,
+ordinal 0, kind `TheoremProposition`, normal, and spells
+`theorem FormulaStatementStructureUpdateWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 ) ; thus x = x ; end ;`.
+Statement 1 is owner/context `0/1`, `Atomic(1)`, conclusion site 80/range
+`164..175`, ordinal 2, kind `Conclusion`, normal, and spells
+`thus x = x ;`. Context rows 0/1 name statements 0/1, use binding contexts
+0/1, copy ranges `48..180` / `164..175`, and expose `[0]`. Input facts 0/1
+are ordinal-0 `ReservedTypeGuard` rows for binding 0 using references
+`[0,1]` / `[2,3]`; candidate facts 0/1 are ordinal-0
+`UnverifiedProposition` rows targeting `Atomic(0/1)`.
+
+Witness 0 is owner 0/context 1, source/within-take ordinals `1/0`, unnamed,
+normal, and nameless. Take is `72/115..161`; item is `71/120..160`;
+spelling is
+`TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 )`; its sole target is
+functional-update `Structure(0)`. It records the exact B2CP structure debug
+fingerprint, has no application fingerprint, and renders
+`term=structure#0`. Transparent 70, constructor `Structure(1)`,
+root/member/`FieldUpdate`, primary, application, formula, and container rows
+are not witness targets.
+
+Task-256 formula 0 is node/range `55/101..106`, ordinal/context `0/0`;
+formula 1 is `77/169..174`, ordinal/context `1/1`. Both are normal
+equalities spelling `x = x`; their edges/requests target exactly
+`Primary(0/1)` / `Primary(5/6)`, with no direct structure target or
+structure fingerprint and with the update subtree excluded.
+
+The existing public `Structure` target, structure fingerprint,
+structure-aware producer, combined TypedAst installer, and final clone are
+reused unchanged. Exactly four future checker tests freeze API/debug/legacy
+compatibility, dependency precedence/all-node failure, combined ownership/
+family-order atomicity, and final-clone/semantic deferrals. Exactly five
+future runner tests freeze the real frontend, corruption/replay,
+update/byte/subtree near misses, family/active-route isolation, and
+typed/final/debug/empty-semantics behavior. Validation proceeds through
+exact source/arena, local and imported provenance, Tasks 48/252/254/256,
+Task-258 base, witness, atomic publication, and final clone. The `x = x`
+goal makes this source transport only; all statement semantics remain
+deferred.

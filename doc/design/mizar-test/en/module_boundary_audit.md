@@ -12007,6 +12007,55 @@ unchanged. Concurrent ownership remains a report-only
 `repo_metadata_conflict`; no metadata repair is made. Broad formatting,
 Clippy, tests, and every count/hash gate pass. The final
 source/documentation re-review has no findings. Independent final quality
-has no findings, all nine hard gates PASS, and valid `98/100`. The B2CP
-commit remains pending; B2C fresh inventory owns the next step after the
-commit.
+has no findings, all nine hard gates PASS, and valid `98/100`. B2CP
+implementation commit `b146f0f72dceac2233c9d679b7820e264974b227` is
+complete; clean B2C fresh inventory owns the next step.
+
+## Checker Task 258B3M2B2B2C Frozen Runner Boundary
+
+B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227` is complete; clean fresh
+inventory selects B2C. The future implementation is frozen to eight
+existing files.
+
+Checker-owned files are `crates/mizar-checker/src/source_statement.rs`,
+`crates/mizar-checker/src/typed_ast.rs`, and
+`crates/mizar-checker/src/resolved_typed_ast.rs`. Runner-owned files are
+`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`,
+`type_elaboration/source_structure.rs` for obsolete B2CP allowance cleanup
+only, `type_elaboration.rs`, `runner.rs`, and
+`tests/type_elaboration/source_statement.rs`.
+
+The statement leaf consumes existing private B2CP
+`ImportedStructureUpdateSite`, owned-kind, and proof-context handoff seams
+unchanged. Checker files add only the private B2C profile enumeration and
+typed/final validation authorized by existing APIs. Checker files own
+exactly four tests and the runner test leaf owns exactly five.
+
+No module, production path, dependency, public re-export/API, active
+dispatch, fixture, expectation, sidecar, trace metadata, debug grammar, or
+semantic owner is added. Task 252/254/256 stay with existing owners;
+Task-258 base owns theorem/conclusion 82/80 and B2C owns only
+take/witness 72/71 plus witness-to-`Structure(0)`.
+
+Checker/runner libraries are `386/439`, projected as `390/444`. Runner
+statement/structure/facade/root/statement-test/structure-test sizes remain
+`6826/6065/730/2546/17120/5848`; production stays 30 paths / 46,788 lines
+with hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`
+and test-list hashes
+`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
+`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`.
+
+Checker statement/typed/final/structure sizes remain
+`29941/4830/7244/5036`; its 23-path / 124,016-line production hashes stay
+`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
+`df0c806d8adf6283b2ac3341e11bab62a0f11ef216d48729852e98c40079d7d1`
+and test-list hashes stay
+`c95eabdba15da88712434600fa5a855d1f0d5e356381608d65395d0502ca2920` /
+`48e755cf92b832f0f516c27fecdc41e6812784ab2946b4a10932756d71de482e`.
+All four independent reviews have no findings and complete
+documentation/count/hash verification passes. Independent final quality has
+no findings, all nine hard gates PASS, and the valid score is `98/100`. The
+dedicated documentation commit and implementation inventory remain open.

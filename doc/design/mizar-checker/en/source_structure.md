@@ -365,5 +365,27 @@ status/count/backlink/credit changed; the formula row remains `deferred`,
 report-only `repo_metadata_conflict`; no metadata repair is performed.
 Broad formatting, Clippy, tests, and all count/hash gates pass. The final
 source/documentation re-review has no findings. Independent final quality
-has no findings, all nine hard gates PASS, and valid `98/100`. The B2CP
-commit remains pending, followed by B2C fresh inventory.
+has no findings, all nine hard gates PASS, and valid `98/100`. B2CP
+implementation commit `b146f0f72dceac2233c9d679b7820e264974b227` is
+complete.
+
+## Task 258B3M2B2B2C Frozen Update Consumer
+
+B2C consumes the private B2CP
+`ImportedStructureUpdateSite`,
+`imported_structure_update_owned_node_kinds`, and
+`imported_structure_update_handoff_in_context` seams unchanged. Task-254
+remains `2/0/1/3/1/4/9`: update `Structure(0)` is node 69, constructor
+`Structure(1)` is node 65, members are 30/20/24, and `FieldUpdate(0)` is
+node/range `68/153..159`. Edges remain update base to `Structure(1)`,
+update value/member 0 to `Primary(4)`, and constructor values to
+`Primary(2/3)`. Imported `TypeCaseStruct#5` provenance remains contribution
+2, origin `7..27/[5]`, public/exported/normal and signature-free.
+
+B2C adds no structure row and no public structure API. It adds only the
+statement witness edge to existing `Structure(0)`. Task-256 equality nodes
+55/77 exclude the full update subtree; containers 56/78, transparent 70,
+root 58, and private roots 60/63/67 stay unowned. Functional-copy,
+member/replacement/result typing, proof, goal, and theorem semantics remain
+deferred. Only obsolete B2C-future dead-code allowances may be removed when
+the consumer is implemented.

@@ -708,5 +708,30 @@ report-only `repo_metadata_conflict`でmetadata repairなし。
 両sideはfmt、workspace Clippy/tests、focused `2/2`、全count/hash gatesの
 PASSもrecordする。final source/documentation re-reviewはfindingsなし。
 両sideはindependent final quality findingsなし、全9 hard gates PASS、
-valid `98/100`もrecordする。implementation commitはpendingで、そのcommit
-後にB2C fresh inventory。
+valid `98/100`もrecordする。implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227`はclean worktree、
+ahead-six branch、unchanged stashでcomplete。
+
+## Task 258B3M2B2B2C frozen-contract synchronization
+
+EN canonicalとJA companionはcompleted B2CP commit `b146f0f7`後のsame B2C
+statement-witness contractをfreezeする。両sideは181-byte/hash、
+zero-diagnostic 86-node/root85 source、180-byte missing-value profile、
+local theorem/imported `TypeCaseStruct#5` provenance、Tasks
+48/252/254/256/258 tablesをsameにrecordする。
+
+ownershipはTask252 `51/53/59/62/66/73/75`、Task254
+`69/65/30/20/24/68`、Task256 `55/77`、Task-258 base `82/80`、B2C
+`72/71` + witness-to-`Structure(0)`のみ。equality pairs
+`Primary(0/1)`/`Primary(5/6)`、unowned roots/containers、unchanged public
+structure-witness APIs/private B2CP seam、8 implementation files、checker
+tests 4件/runner tests 5件を同期する。
+
+docs-only scope、baseline `386/439`、projection `390/444`、current
+production/test-list/CLI hashes/counts、narrative-only `deferred`,
+`tests = []`もsame。missing contract/stale statusは`design_drift`、future
+codeはbounded `source_drift`、9 testsは`test_gap`。`spec_gap`、boundary、
+expectation、semantic claimなし。4 independent reviewsはfindingsなしで、
+complete documentation/count/hash verificationもPASS。independent final
+qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。commitと
+fresh implementation inventoryはopen。

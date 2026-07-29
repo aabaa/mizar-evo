@@ -4419,7 +4419,8 @@ closed. Final test-sufficiency and implementation re-reviews have no
 findings. Broad formatting, Clippy, tests, and every count/hash gate pass.
 The final source/documentation re-review has no findings. Independent final
 quality has no findings, all nine hard gates PASS, and valid `98/100`.
-Staging and the implementation commit remain pending.
+Implementation commit `b146f0f72dceac2233c9d679b7820e264974b227` is
+complete.
 
 No `doc/spec`, `.miz`, fixture, expectation, sidecar, trace
 status/count/backlink/credit, checker/public API, active route, B2C owner,
@@ -4427,4 +4428,33 @@ or semantic behavior changed. The formula-statement row remains
 `deferred`, `tests = []`, and the audit update is narrative-only. Checker,
 corpus, and CLI hashes remain unchanged. The concurrent-writer history
 remains report-only `repo_metadata_conflict`; repository metadata is not
-repaired. B2C must fresh-inventory only after the separate B2CP commit.
+repaired.
+
+## Task 258B3M2B2B2C Specification Audit
+
+Fresh post-commit inventory derives the B2C source-only witness contract from
+Chapters 5 §§5.5/5.7, 13 §§13.3/13.3.1/13.3.3/13.9 complete postfix
+grammar, Chapter 14 equality, 15 §§15.4.1/15.4.4/15.11.5, and 16
+§§16.2/16.3.3/16.7.3, together with existing parser/resolver/Task-254
+fixtures and completed Tasks 48/252/254/256/B2A/B2B/B2CP surfaces.
+§13.3.3 and the complete postfix grammar unambiguously authorize the exact
+functional-update shape; the narrower local `structure_expression` summary
+does not override them.
+
+The authority supports occurrence, provenance, exact ownership, and one
+witness-to-update target only. The goal is `x = x`, so `take` establishes no
+existential matching, obligation, substitution, proof, goal, or theorem
+acceptance. There is no blocking or nonblocking `spec_gap`,
+`boundary_violation`, expectation drift, unsafe test intent, or undocumented
+behavior. The absent frozen B2C contract and stale post-B2CP ledger were
+`design_drift`; future implementation is bounded `source_drift`; four
+checker and five runner tests are `test_gap`.
+
+This prerequisite edits design documents only. Canonical specification,
+`.miz`, fixtures, expectations, sidecars, trace data, public/active surfaces,
+and semantics remain unchanged. The formula row stays `deferred`,
+`tests = []`, with narrative-only audit impact. All four independent reviews
+have no findings and complete documentation/count/hash verification passes.
+Independent final quality has no findings, all nine hard gates PASS, and the
+valid score is `98/100`. The commit and fresh implementation inventory remain
+open.

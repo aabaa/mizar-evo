@@ -744,5 +744,34 @@ is narrative-only. Concurrent ownership remains report-only
 formatting, workspace Clippy, workspace tests, focused `2/2`, and unchanged
 count/hash gates. The final source/documentation re-review has no findings.
 Both record independent final quality with no findings, all nine hard gates
-PASS, and valid `98/100`. The implementation commit remains pending; B2C
-fresh inventory follows that commit.
+PASS, and valid `98/100`. Implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227` is complete with a clean
+worktree, ahead-six branch, and unchanged stash.
+
+## Task 258B3M2B2B2C Frozen-Contract Synchronization
+
+The English canonical documents and Japanese companions freeze the same
+B2C statement-witness contract after completed B2CP commit `b146f0f7`.
+Both record the exact 181-byte/hash, zero-diagnostic 86-node/root-85 source,
+the 180-byte missing-value recovery profile, local theorem and imported
+`TypeCaseStruct#5` provenance, and Tasks 48/252/254/256/258 tables.
+
+Both assign Task 252 ownership to `51/53/59/62/66/73/75`, Task 254 to
+`69/65/30/20/24/68`, Task 256 to `55/77`, Task-258 base to `82/80`, and
+B2C only to `72/71` plus witness-to-`Structure(0)`. They freeze equality
+pairs `Primary(0/1)` and `Primary(5/6)`, preserve unowned roots/containers,
+reuse the existing public structure-witness APIs and private B2CP seam, and
+authorize exactly eight implementation files, four checker tests, and five
+runner tests.
+
+Both companions preserve documentation-only scope, checker/runner baseline
+`386/439` with implementation projection `390/444`, current production and
+test-list hashes, corpus/CLI counts and hashes, and the narrative-only
+`deferred`, `tests = []` trace status. They classify the missing contract and
+stale B2CP-pending status as `design_drift`, future code as bounded
+`source_drift`, and nine tests as `test_gap`; no `spec_gap`, boundary,
+expectation, or semantic claim is accepted. All four independent reviews have
+no findings and complete documentation/count/hash verification passes.
+Independent final quality has no findings, all nine hard gates PASS, and the
+valid score is `98/100`. The prerequisite commit and fresh implementation
+inventory remain open.

@@ -2695,5 +2695,54 @@ IRはdeferred。concurrent ownershipはreport-only
 `repo_metadata_conflict`でmetadata repairなし。fmt、Clippy、tests、
 全count/hash gatesはPASS。final source/documentation re-reviewは
 findingsなし。independent final qualityはfindingsなし、全9 hard gates
-PASS、valid `98/100`。B2CP commitはpendingで、そのcommit後にB2C fresh
-inventory。
+PASS、valid `98/100`。B2CP implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。
+
+## Task 258B3M2B2B2C frozen statement/witness contract
+
+exact 181-byte/86-node B2C sourceはTask-258 base
+`1 owner / 2 statements / 2 contexts / 2 input facts / 2 candidate facts`
+と`1 witness / 0 names`をpublishする。local contribution 0は
+`LocalSource` reserve anchor `29..47`、checked owner originは
+`48..180/[2,1]`、label `56..99`はpublic/exported/normal。owner 0は
+theorem site 82、spelling
+`FormulaStatementStructureUpdateWitnessSmoke`、role/status
+`Theorem/Unmodified`、normal recovery。
+
+statement 0はowner/context `0/0`、`Atomic(0)`、site/range
+`82/48..180`、ordinal 0、kind `TheoremProposition`、normalで、
+`theorem FormulaStatementStructureUpdateWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 ) ; thus x = x ; end ;`
+とspellする。statement 1はowner/context `0/1`、`Atomic(1)`、conclusion
+site/range `80/164..175`、ordinal 2、kind `Conclusion`、normalで、
+`thus x = x ;`とspellする。context rows 0/1はstatements 0/1をnameし、
+binding contexts 0/1、copy ranges `48..180` / `164..175`、visible `[0]`。
+input facts 0/1はbinding 0、references `[0,1]` / `[2,3]`のordinal-0
+`ReservedTypeGuard` rows。candidate facts 0/1は`Atomic(0/1)`をtargetする
+ordinal-0 `UnverifiedProposition` rows。
+
+witness 0はowner 0/context 1、source/within-take ordinals `1/0`、
+unnamed/normal/nameless。takeは`72/115..161`、itemは`71/120..160`、
+spellingは`TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 )`で、sole
+targetはfunctional-update `Structure(0)`。exact B2CP structure debug
+fingerprintをrecordし、application fingerprintはなく、
+`term=structure#0`とrenderする。transparent 70、constructor
+`Structure(1)`、root/member/`FieldUpdate`、primary、application、
+formula、container rowsはwitness targetではない。
+
+Task-256 formula 0はnode/range `55/101..106`、ordinal/context `0/0`、
+formula 1は`77/169..174`、ordinal/context `1/1`。両方ともnormal equality
+`x = x`で、edges/requestsはexactに`Primary(0/1)` / `Primary(5/6)`を
+targetする。direct structure targetもstructure fingerprintもなく、
+update subtree全体をexcludeする。
+
+existing public `Structure` target、structure fingerprint、structure-aware
+producer、combined TypedAst installer、final cloneをunchangedでreuseする。
+future checker tests exactly 4件はAPI/debug/legacy compatibility、
+dependency precedence/all-node failure、combined ownership/family-order
+atomicity、final-clone/semantic deferralsをfreezeする。future runner tests
+exactly 5件はreal frontend、corruption/replay、update/byte/subtree
+near-miss、family/active-route isolation、typed/final/debug/empty-semantics
+behaviorをfreezeする。validation順序はexact source/arena、local/imported
+provenance、Tasks 48/252/254/256、Task-258 base、witness、atomic
+publication、final clone。goal `x = x`のため、このsourceはtransport
+onlyであり、statement semanticsはすべてdeferred。

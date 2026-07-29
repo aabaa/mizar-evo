@@ -2456,6 +2456,39 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete final source/documentation review with no findings.
 - [x] Pass independent final quality with no findings, all nine hard gates,
   and a valid `98/100`.
-- [ ] Pass the staged-diff audit and create the dedicated B2CP
-  implementation commit.
-- [ ] Fresh-inventory B2C after the B2CP commit.
+- [x] Pass the staged-diff audit and create the dedicated B2CP
+  implementation commit `b146f0f72dceac2233c9d679b7820e264974b227`.
+- [x] Fresh-inventory B2C after the B2CP commit.
+
+## Checker Task 258B3M2B2B2C Runner Frozen-Contract Ledger
+
+- [x] Record B2CP commit `b146f0f72dceac2233c9d679b7820e264974b227`
+  complete and select B2C from clean fresh inventory.
+- [x] Freeze exact 181-byte/86-node source, 180-byte missing-value profile,
+  and five valid-excluded byte/hash/node profiles.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `7/4/3`, Task-254
+  `2/0/1/3/1/4/9`, Task-256 `2/0/0/0/0/0/0/4/4`, Task-258 base
+  `1/2/2/2/2`, and witness `1/0`.
+- [x] Freeze resolver provenance, cross-family edges, ownership/exclusions,
+  and B2C ownership only of `72/71` plus witness-to-`Structure(0)`.
+- [x] Freeze the eight existing implementation files, unchanged private
+  B2CP seam, no-public/no-active boundary, and exact four checker/five
+  runner test names.
+- [x] Freeze `386/439` baseline, `390/444` projection, sizes/manifests/
+  hashes, unchanged corpus/CLI gates, and narrative-only audit impact.
+- [x] Classify stale task selection as `design_drift`, future code as
+  `source_drift`, and nine missing tests as `test_gap`; record no normative
+  `spec_gap`, expectation drift, or current boundary violation.
+- [x] Preserve all executable/canonical artifacts and state that `take`
+  under `x = x` is source transport only.
+- [x] Complete specification review with no findings.
+- [x] Complete test-sufficiency review with no findings.
+- [x] Complete implementation-boundary review with no findings.
+- [x] Complete source/documentation consistency review with no findings.
+- [x] Pass documentation verification and all required count/hash gates.
+- [x] Complete final read-only quality review with every hard gate passing
+  and a valid score of `98/100`.
+- [ ] Pass the cached-diff audit and create the dedicated B2C
+  frozen-contract documentation commit.
+- [ ] Fresh-inventory and implement only the scoped B2C eight-file
+  transaction.

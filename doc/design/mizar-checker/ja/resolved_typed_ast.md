@@ -1167,3 +1167,20 @@ coexistenceは`InvalidSourceStatement`のまま。semantic、proof、goal、
 overload、theorem-acceptance outputsはすべてempty。
 `resolved_typed_ast.rs`は7,244 linesで、public final-AST APIは変更して
 いない。
+
+## Task 258B3M2B2B2C frozen final-AST sibling
+
+ResolvedTypedAst API追加なし。final assemblyはB2CをB2A/B2B besideのthird
+exact structure-statement siblingとしてenumerateし、common
+`application = None`/`structure = Some` shapeではなくcomplete
+181-byte/86-node profileでselectする。Task252 `7/4/3`、Task254
+`2/0/1/3/1/4/9`、Task256 equality pairs `Primary(0/1)`/
+`Primary(5/6)`、Task258 base `1/2/2/2/2`、witness `1/0` target
+`Structure(0)`をrevalidateする。
+
+source/arena/provenance/ownership/rows/fingerprintsが全てPASSした後だけ
+structure/statement/witness handoffsをbyte-for-byte cloneする。
+B2A/B2B/B2C/application hybrids、stale fingerprints、swapped targets、
+partial/reverse/repeated、subtree ownership substitutionはatomic reject。
+semantic/proof/goal/overload/coercion/obligation/theorem outputsはempty。
+implementation/final-clone testsはopen。

@@ -353,5 +353,28 @@ formula rowは`deferred`、`tests = []`、audit impactはnarrative-only。
 concurrent ownershipはreport-only `repo_metadata_conflict`でmetadata
 repairなし。fmt、Clippy、tests、全count/hash gatesはPASS。
 final source/documentation re-reviewはfindingsなし。independent final
-qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。B2CP commitは
-pendingで、その後B2C fresh inventory。
+qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。B2CP
+implementation commit
+`b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。
+
+## Task 258B3M2B2B2C frozen update consumer
+
+B2Cはprivate B2CP
+`ImportedStructureUpdateSite`、
+`imported_structure_update_owned_node_kinds`、
+`imported_structure_update_handoff_in_context` seamsをunchangedでconsume
+する。Task-254は`2/0/1/3/1/4/9`のまま。update `Structure(0)`はnode
+69、constructor `Structure(1)`はnode 65、membersは30/20/24、
+`FieldUpdate(0)`はnode/range `68/153..159`。edgesはupdate baseから
+`Structure(1)`、update value/member 0から`Primary(4)`、constructor
+valuesから`Primary(2/3)`のまま。imported `TypeCaseStruct#5` provenanceは
+contribution 2、origin `7..27/[5]`、public/exported/normal、
+signature-freeのまま。
+
+B2Cはstructure rowもpublic structure APIも追加しない。existing
+`Structure(0)`へのstatement witness edgeだけを追加する。Task-256
+equality nodes 55/77はupdate subtree全体をexcludeし、containers
+56/78、transparent 70、root 58、private roots 60/63/67はunownedの
+まま。functional-copy、member/replacement/result typing、proof、goal、
+theorem semanticsはdeferred。consumer implementation時にobsoleteな
+B2C-future `dead_code` allowancesだけをremoveしてよい。

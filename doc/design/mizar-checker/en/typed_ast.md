@@ -1221,3 +1221,21 @@ fingerprints/targets, application coexistence, and partial/reverse/repeated
 installation leave the original AST unchanged. `typed_ast.rs` is 4,830
 lines. No public installer, debug surface, semantic/type/proof/goal owner,
 corpus active route, or coverage credit changed.
+
+## Task 258B3M2B2B2C Frozen Atomic Sibling
+
+`with_source_structure_statement_witnesses` remains the sole atomic entry
+point. It must enumerate B2C beside B2A/B2B, selected by the full exact
+source/arena/provenance/profile rather than the shared option shape. Before
+publication it revalidates Task-252 `7/4/3`, Task-254
+`2/0/1/3/1/4/9`, Task-256 equality operands `Primary(0/1)` and
+`Primary(5/6)`, Task-258 base `1/2/2/2/2`, witness `1/0`, structure
+fingerprint, and target `Structure(0)`.
+
+Structure, statement, and witness handoffs publish together only after all
+checks pass. B2A/B2B/B2C row, ownership, fingerprint, or target hybrids,
+application coexistence, stale/reverse/partial/repeated installation, and
+subtree-container substitution leave the original AST unchanged. No public
+installer, debug schema, type/semantic/proof/goal owner, fixture, trace
+credit, or active root dispatch is added. Implementation and atomicity tests
+remain open.
