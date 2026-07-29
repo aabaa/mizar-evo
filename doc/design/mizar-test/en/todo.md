@@ -2347,7 +2347,14 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   corruption/replay and constructor-seam compatibility.
 - [x] Preserve fixtures, expectations, sidecars, trace/credit, diagnostics,
   active cases, baseline `382/430`, sizes, manifests, and hashes.
-- [x] Complete no-findings specification/source-documentation reviews, all
-  verification, and final quality `98/100`.
-- [ ] Commit B2BP docs and fresh-inventory B2BP implementation only.
+- [x] Complete no-findings specification/source-documentation reviews and
+  all verification.
+- [x] Record external docs commit `6f84d4eb` as a report-only metadata
+  conflict and freeze docs-only BPC1 imported-provenance correction.
+- [x] Repeat test, implementation-boundary, and source/documentation reviews
+  after BPC1 with no findings.
+- [x] Pass BPC1 final quality with no findings, all nine hard gates, and a
+  valid `98/100`.
+- [ ] Commit the correction only and fresh-inventory B2BP implementation
+  only.
 - [ ] After separate implementation, return to B2B frozen consumer docs.

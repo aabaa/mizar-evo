@@ -688,7 +688,10 @@ tests、unchanged `382/430` baseline、runner sizes
 
 B2B witness consumption、checker/public APIs、Task-256/258 outputs、active
 routes、diagnostics、trace credit、semanticsを両言語でexcludeする。B2A
-commit inventoryはclosed。repeated specification/source-documentation
-consistency reviewsはfindingsなし、全verification gatesはPASS、final
-read-only reviewは全9 hard gates PASS、valid `98/100`。openなのはB2BP
-docs commitとimplementation inventoryだけ。
+commit inventoryはclosed。concurrent commit `6f84d4eb`はreport-only
+metadata conflict。BPC1はrunner contractをimported constructor/root
+provenanceだけに限定しlocal theorem owner/label provenanceをB2Bへdefer
+して両言語を同期する。repeated test/implementation-boundary/
+source-documentation reviewsはfindingsなし。BPC1 final qualityは
+findingsなし、全9 hard gates PASS、valid `98/100`。openなのは
+correction commitとimplementation inventoryだけ。

@@ -629,8 +629,10 @@ future runner tests, unchanged `382/430` baseline, and exact hashes.
 
 Both languages exclude checker/public APIs, Task-256/258 rows, active
 routes, diagnostics, coverage credit, and semantics. B2A commit and
-post-commit inventory are closed. Repeated specification and
-source/documentation consistency reviews have no findings; every
-verification gate passes; the final read-only review passes all nine hard
-gates with a valid `98/100`. Only the dedicated docs commit and
-implementation inventory remain open.
+post-commit inventory are closed. Concurrent commit `6f84d4eb` is a
+report-only metadata conflict. BPC1 synchronously limits both languages to
+imported constructor/root provenance and defers local theorem owner/label
+provenance to B2B. Repeated test, implementation-boundary, and
+source/documentation reviews now have no findings. BPC1 final quality has
+no findings, passes all nine hard gates, and scores a valid `98/100`; only
+the correction commit and implementation inventory remain open.

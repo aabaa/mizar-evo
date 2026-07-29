@@ -4990,8 +4990,15 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `deferred`/`tests = []`、Task-254 credit、baselines/hashesをpreserve。
 - [x] no-findings specification/source-documentation reviewsと全docs
   verificationをcomplete。
-- [x] 全9 hard gates、valid score `98/100`でfinal quality reviewをPASS。
-- [ ] B2BP docsをcommitし、clean/stash invariants verify後にB2BP
+- [x] externally created docs commit `6f84d4eb`をreport-only
+  `repo_metadata_conflict`としてrecordし、amend/revert/fetch/push/stash
+  actionを行わない。
+- [x] Task `258B3M2B2B2BPC1`をB2BPをimported constructor/root provenance
+  だけに限定しlocal theorem owner/label provenanceをB2Bへdeferする
+  docs-only correctionとしてfreezeし、3 reviewsをfindingsなしまでrepeat。
+- [x] BPC1 final read-only quality reviewをfindingsなし、全9 hard gates、
+  valid score `98/100`でPASS。
+- [ ] correctionだけをcommit、clean/stash invariants verify後にB2BP
   implementationだけをfresh-inventory。
 - [ ] separate B2BP implementation commit後にB2B frozen consumer docsへ
   戻る。

@@ -713,8 +713,10 @@ sizes `6414/2843/720/2537/15058/2991`, and matching hashes.
 
 Both languages exclude B2B witness consumption, checker/public APIs,
 Task-256/258 outputs, active routes, diagnostics, trace credit, and
-semantics. B2A commit inventory is closed. Repeated specification and
-source/documentation consistency reviews have no findings, every
-verification gate passes, and the final read-only review passes all nine
-hard gates with a valid `98/100`. Only the B2BP docs commit and
-implementation inventory remain open.
+semantics. B2A commit inventory is closed. Concurrent commit `6f84d4eb` is
+a report-only metadata conflict. BPC1 synchronously limits the runner
+contract to imported constructor/root provenance and defers local theorem
+owner/label provenance to B2B. Repeated test, implementation-boundary, and
+source/documentation reviews have no findings. BPC1 final quality has no
+findings, passes all nine hard gates, and scores a valid `98/100`; only the
+correction commit and implementation inventory remain open.

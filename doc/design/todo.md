@@ -2845,9 +2845,15 @@ or semantic owner changed. B3M2B2B remains next before B4.
   constructor compatibility, and empty upper tables.
 - [x] Preserve trace `deferred` / `tests = []`, Task-254 credit, canonical
   specs/tests/fixtures/expectations/sidecars, and exact baselines/hashes.
-- [x] Complete no-findings specification/source-documentation reviews,
-  verification, all nine hard gates, and valid final quality `98/100`.
-- [ ] Make one dedicated B2BP docs commit, then fresh-inventory and
+- [x] Complete no-findings specification/source-documentation reviews and
+  all verification.
+- [x] Record external B2BP docs commit `6f84d4eb` as report-only
+  `repo_metadata_conflict`; do not repair repository metadata.
+- [x] Freeze docs-only Task `258B3M2B2B2BPC1`, correct the provenance
+  boundary, and repeat test/implementation/source-doc reviews to no findings.
+- [x] Pass BPC1 final quality with no findings, all nine hard gates, and a
+  valid score of `98/100`.
+- [ ] Make one dedicated correction commit, then fresh-inventory and
   implement only the B2BP seam and two tests in a separate commit.
 - [ ] After B2BP implementation, fresh-inventory and return to B2B
   frozen-contract documentation; keep B2C/semantics deferred.

@@ -598,7 +598,9 @@ constructor ownership/edge chain、future runner tests 2件、unchanged
 
 checker/public APIs、Task-256/258 rows、active routes、diagnostics、
 coverage credit、semanticsを両言語でexcludeする。B2A commit/post-commit
-inventoryはclosed。repeated specification/source-documentation consistency
-reviewsはfindingsなし、全verification gatesはPASS、final read-only
-reviewは全9 hard gates PASS、valid `98/100`。openなのはdedicated docs
-commitとimplementation inventoryだけ。
+inventoryはclosed。concurrent commit `6f84d4eb`はreport-only metadata
+conflict。BPC1は両言語をimported constructor/root provenanceだけに限定し、
+local theorem owner/label provenanceをB2Bへdeferして同期する。repeated
+test/implementation-boundary/source-documentation reviewsはfindingsなし。
+BPC1 final qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。
+openなのはcorrection commitとimplementation inventoryだけ。

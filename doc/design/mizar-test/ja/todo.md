@@ -2149,7 +2149,14 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   compatibilityをfreeze。
 - [x] fixtures、expectations、sidecars、trace/credit、diagnostics、active
   cases、baseline `382/430`、sizes/manifests/hashesをpreserve。
-- [x] no-findings specification/source-documentation reviews、全verification、
-  final quality `98/100`をcomplete。
-- [ ] B2BP docs commit後にB2BP implementationだけをfresh-inventory。
+- [x] no-findings specification/source-documentation reviewsと全verification
+  をcomplete。
+- [x] external docs commit `6f84d4eb`をreport-only metadata conflictとして
+  recordし、docs-only BPC1 imported-provenance correctionをfreeze。
+- [x] BPC1後のtest/implementation-boundary/source-documentation reviewsを
+  findingsなしまでrepeat。
+- [x] BPC1 final qualityをfindingsなし、全9 hard gates、valid `98/100`
+  でPASS。
+- [ ] correctionだけをcommit後、B2BP implementationだけを
+  fresh-inventory。
 - [ ] separate implementation後にB2B frozen consumer docsへ戻る。

@@ -5236,9 +5236,15 @@ implementation commit does not satisfy a producer task.
   `deferred` / `tests = []`, Task-254 credit, and all baselines/hashes.
 - [x] Complete no-findings specification and source/documentation reviews
   plus all documentation verification.
-- [x] Pass final read-only quality review with all nine hard gates and a
-  valid score of `98/100`.
-- [ ] Commit B2BP docs, verify clean/stash invariants, and fresh-inventory
-  B2BP implementation only.
+- [x] Record externally created docs commit `6f84d4eb` as a report-only
+  `repo_metadata_conflict`; do not amend, revert, fetch, push, or touch the
+  stash.
+- [x] Freeze Task `258B3M2B2B2BPC1` as the docs-only correction that limits
+  B2BP to imported constructor/root provenance and defers local theorem
+  owner/label provenance to B2B; repeat all three reviews to no findings.
+- [x] Pass the BPC1 final read-only quality review with no findings, all nine
+  hard gates, and a valid score of `98/100`.
+- [ ] Commit only the correction, verify clean/stash invariants, and
+  fresh-inventory B2BP implementation only.
 - [ ] After the separate B2BP implementation commit, return to B2B frozen
   consumer documentation.
