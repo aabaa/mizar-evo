@@ -958,3 +958,16 @@ edgeは追加しない。Task 254はconstructor 59/members 20/24だけ、Task 25
 published numeral sites 53/56だけをownし、Task 258は何もownしない。
 B2A witness-to-structure edgeが次で、B2B/B2Cと全semantic/proof/goal
 edgesはdeferred。
+
+### Task 258B3M2B2B2A frozen witness-to-structure edge
+
+B2Aがfutureに追加するdirected edgeは
+`SourceStatementWitness(0) -> SourceStructureTerm(0)`だけ。Task-258 base
+transactionはtheorem/conclusion statement rows、B2A extensionは
+take/witness occurrenceとedgeだけをownする。Task 254はconstructor/member/
+request rowsをretainし、structure-root row 0はarena-unowned traversal
+node 52をauthenticateする。Task 252はprimary children、Task 256はdirect
+`Structure` target/structure fingerprintなしのequality formulas 2件だけを
+retainする。reverse edge、wrapper target、field/member identity、
+selector/update family、semantic/proof/goal edge、coverage creditは
+authorizeしない。B2B/B2Cはseparate。

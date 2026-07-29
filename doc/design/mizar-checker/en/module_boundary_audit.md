@@ -560,3 +560,21 @@ raw/normalized runner-test hashes are
 `b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
 `97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`.
 B2A statement/witness documentation remains the next separate logical task.
+
+## Task 258B3M2B2B2A Frozen Module Boundary
+
+Future checker writes are restricted to existing `source_statement.rs`,
+`typed_ast.rs`, and `resolved_typed_ast.rs`; runner writes stay in the
+existing source-statement leaf, private facades/root, and statement test
+leaf. The completed B2P source-structure seam is reused unchanged; a
+source-structure edit is permitted only if required to remove its B2P
+dead-code expectation when the existing private seam becomes live. Its
+visibility, extractor, and row construction remain unchanged. No module,
+crate dependency, production path, active route, fixture, sidecar,
+expectation, trace owner, or semantic dependency is added.
+
+The only public surface growth is the `Structure(SourceStructureTermId)`
+target, optional structure fingerprint accessor, exact structure-aware
+producer entry point, and atomic TypedAst installer. ResolvedTypedAst needs
+no new accessor. Raw parser/resolver inputs remain runner-private; only
+syntax-free Task-48/252/254/256/258 handoffs cross the boundary.

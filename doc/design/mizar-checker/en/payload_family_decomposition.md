@@ -1027,3 +1027,16 @@ family or cross-family edge: Task 254 still owns only constructor 59 and
 members 20/24, Task 252 owns published numeral sites 53/56, and Task 258
 owns nothing. The B2A witness-to-structure edge remains next; B2B/B2C and
 all semantic/proof/goal edges remain deferred.
+
+### Task 258B3M2B2B2A Frozen Witness-to-Structure Edge
+
+B2A adds exactly one future directed edge:
+`SourceStatementWitness(0) -> SourceStructureTerm(0)`. The Task-258 base
+transaction owns its theorem/conclusion statement rows; the B2A extension
+owns only the take/witness occurrence and edge. Task 254 retains its
+constructor/member/request rows; structure-root row 0 authenticates the
+arena-unowned traversal node 52. Task 252 retains primary children. Task 256
+retains only the two equality formulas, with zero direct `Structure` targets
+and no structure fingerprint. No reverse edge, wrapper target, field/member
+identity, selector/update family, semantic/proof/goal edge, or coverage
+credit is authorized. B2B/B2C remain separate.

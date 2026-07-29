@@ -659,3 +659,30 @@ Both languages also pin exact profiles `2/1/0`, `6/4/2`,
 complete `TypeCaseStruct#5` provenance, and malformed recovery
 `1/74/root 73/[52]`. The final read-only quality review passed every hard
 gate with no findings and a valid score of `98/100`.
+
+## Checker Task 258B3M2B2B2A Runner Contract Synchronization
+
+The English canonical runner plan, harness, boundary audit, and ledger and
+their Japanese companions distinguish `258B3M2B2B2A` from historical
+`258B3M2B2A` and freeze the same 172-byte/76-node source, current/imported
+resolver provenance, Task-48/252/254/256 lower tables, Task-258 base
+`1/2/2/2/2`, one unnamed `Structure(0)` witness, ownership exclusions,
+the checker-owned full structure-aware builder and full atomic installer,
+validation precedence, and exact five runner/four checker tests. The source
+hash is
+`24e2ee2332ead5c0d46025df6044450eeab3ebb5733ebe83587ceae3ba129eb6`.
+Both languages preserve `378/425` baselines, runner sizes
+`5962/2857/715/2531/13381/2991`, 30 paths / 42,686 lines, production hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`,
+and raw/normalized runner-test hashes
+`b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
+`97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`.
+They also preserve active/fixture/expectation/sidecar/trace boundaries and
+empty semantic/proof/goal/overload/Core/CFG/VC outputs. No B2A prerequisite
+bilingual debt is accepted.
+
+The independent specification review ended with no findings after three
+documentation-only `design_drift` corrections. The final read-only review
+passed every hard gate with no score cap and a valid `98/100`; the runner
+contract remains synchronized.

@@ -1107,3 +1107,16 @@ application/statement/witness bundleをatomically publishする。frozen
 partial、hybrid、substituted、stale、reverse、repeated、coexistence
 failuresはoriginal ASTを不変に保つ。`typed_ast.rs`は4,743 lines。
 public installer/semantic/type ownerは変更していない。
+
+## Task 258B3M2B2B2A frozen atomic installer
+
+`with_source_structure_statement_witnesses`だけがこのprofileのfuture
+atomic entry point。already-installed Task-252/256 dataに対してexact
+structure/statement/witness transactionsをvalidateし、Task 256をdirect
+Structure target/fingerprintなしのまま`Some(&structure)`でrevalidateして
+threeをtogether publishする。existing `with_source_structure`はauthorized
+pre-statement structure/atomic coexistenceを維持するが、
+`with_source_statement_witnesses`とともにexact B2A statement bundleを
+partially assembleできない。application installersはstructure targetを、
+new installerはapplication/legacy targetsをrejectする。全failureは
+original ASTをunchangedに保つ。

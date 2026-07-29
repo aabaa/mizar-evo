@@ -4931,5 +4931,21 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] runner sizes/manifests/test-list hashesを再測定し、B2Aを次に維持。
 - [x] final read-only quality reviewはfindingsなし、全hard gate PASS、
   valid score `98/100`。
-- [ ] commit/fresh inventory後、B2Aをseparate documentation taskとして
+- [x] commit/fresh inventory後、B2Aをseparate documentation taskとして
   freeze。
+
+## Checker Task 258B3M2B2B2A frozen-contract ledger
+
+- [x] Task `258B3M2B2B2A`をhistorical `258B3M2B2A`と区別し、exact
+  172-byte/76-node constructor-witness sourceをfreeze。
+- [x] Task-48/252/254/256 lower rows、Task-258 base `1/2/2/2/2`、
+  witness/name `1/0`、ownership/subtree exclusions、両resolver rootsをfreeze。
+- [x] additive structure target/fingerprint/builder/atomic installer APIsを
+  freezeし、全legacy/application debug/installer pathsをpreserve。
+- [x] checker tests 4件/runner tests 5件、validation precedence、
+  rollback/replay/final clone、family/active isolation、empty semanticsをfreeze。
+- [x] canonical/test/fixture/expectation/sidecar/trace/active artifacts、
+  formula trace `deferred` / `tests = []`、全counts/hashesをpreserve。
+- [x] no-findings specification reviewと全documentation hard gatesを
+  valid final quality `98/100`で完了。
+- [ ] dedicated docs commit後、fresh-inventoryしてB2Aだけをimplement。

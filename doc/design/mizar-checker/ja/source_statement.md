@@ -2528,3 +2528,43 @@ take 62、witness 61、transparent term 60はB2P-unownedのまま。fresh
 inventoryでは、directed
 `SourceStatementWitness(0) -> SourceStructureTerm(0)` edgeのsole next
 ownerをB2Aとする。
+
+## Task 258B3M2B2B2A frozen structure-witness ownership
+
+B2Aは172-byte sourceのexact Task-258 theorem owner/base rowsとunnamed
+witness 1件をcomposeする。base countsは`1/2/2/2/2`、witness/nameは
+`1/0`。owner row 0はtheorem node/range `72/48..171`、spelling
+`FormulaStatementStructureConstructorWitnessSmoke`、role/status
+`Theorem/Unmodified`、normal recovery。statement 0はowner/context
+`0/0`、`Atomic(0)`、`72/48..171`、ordinal 0、
+`TheoremProposition`、normal recovery、literal normalized spelling
+`theorem FormulaStatementStructureConstructorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) ; thus x = x ; end ;`。
+statement 1はowner/context `0/1`、`Atomic(1)`、`70/155..166`、
+ordinal 2、`Conclusion`、normal recovery、literal spelling
+`thus x = x ;`。contexts 0/1はstatements/binding contexts 0/1、
+corresponding ranges、visible `[0]`。input facts 0/1はcorresponding
+statement/context、ordinal 0、`ReservedTypeGuard`、binding 0、exact
+reference uses `[0,1]` / `[2,3]`。candidate factsはordinal 0、
+`UnverifiedProposition`、`Atomic(0/1)`。
+
+witness 0はcontext 1、ordinal `1/0`、take `62/120..152`、item
+`61/125..151`、normalized spelling
+`TypeCaseStruct ( x : 1 , y : 2 )`、unnamed/no nameで、`Structure(0)`
+だけをtarget。base transactionはtheorem/conclusion rows 72/70、B2A
+extensionはtake/witness 62/61とdirected edgeをownする。
+
+frozen additive schemaは
+`SourceStatementWitnessTermTarget::Structure(SourceStructureTermId)`、
+`structure_fingerprint(&self) -> Option<&str>`、canonical checker planの
+full `build_with_structure`/`with_source_structure_statement_witnesses`
+signatures。fingerprint pairsはlegacy `(None,None)`、application
+`(Some,None)`、B2A `(None,Some)`、`(Some,Some)`はinvalid。
+conditional structure fingerprint lineはexisting application positionの後、
+B2Aだけ`term=structure#0`。legacy primary/application
+builders/fingerprints/debug/installersはexact。Task 256は`Structure` edge/
+fingerprintなしで、combined typed/final pathsだけが`Some(&structure)`で
+revalidateする。
+
+contractはsource provenance/ownershipで終了し、existential matching、
+type obligation、substitution、remaining goal、formula truth、proof fact、
+theorem acceptanceはpublishしない。

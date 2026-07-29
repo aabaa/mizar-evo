@@ -1164,3 +1164,17 @@ publishes the exact application/statement/witness bundle. The frozen partial,
 hybrid, substituted, stale, reverse, repeated, and coexistence failures leave
 the original AST unchanged. `typed_ast.rs` is 4,743 lines; no public installer
 or semantic/type owner changed.
+
+## Task 258B3M2B2B2A Frozen Atomic Installer
+
+`with_source_structure_statement_witnesses` is the sole future atomic entry
+point for this profile. It validates exact structure, statement, and witness
+transactions against already installed Task-252/256 data, including
+Task-256 revalidation with `Some(&structure)` while its direct Structure
+target and structure fingerprint remain absent, before publishing all three
+together. Existing `with_source_structure` continues to support its
+already-authorized pre-statement structure/atomic coexistence; it and
+`with_source_statement_witnesses` cannot partially assemble the exact B2A
+statement bundle. Application installers reject structure targets and the
+new installer rejects application/legacy targets. Every failure leaves the
+original AST unchanged.

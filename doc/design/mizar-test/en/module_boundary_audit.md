@@ -11813,3 +11813,38 @@ statement consumer, checker API/test, or semantic boundary was added.
 Final sizes are `2857/715/2531/2991`; production remains 30 paths and is
 42,686 lines with unchanged path hash and content hash
 `d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`.
+
+## Checker Task 258B3M2B2B2A Frozen Runner Boundary
+
+The future implementation is confined to the existing private
+`runner/type_elaboration/source_statement.rs` leaf, its private facade/root
+registration, and `runner/tests/type_elaboration/source_statement.rs`, plus
+the mechanically limited `source_structure.rs` allowance below.
+It consumes the existing B2P `source_structure` seam and Task-48/252/254/256
+and Task-258 base producers; it does not duplicate or move them. Raw parser
+and resolver projections remain runner-private. Only authenticated syntax-free
+handoffs cross into the checker.
+
+The `source_structure.rs` extractor and row construction remain unchanged;
+the only permitted edit in that leaf is removal of its B2P-only dead-code
+allowance if the new consumer makes the existing private seam live. It may
+not gain public visibility or a second extractor.
+
+The checker alone owns the additive `Structure` witness target, structure
+fingerprint, full structure-aware builder, full atomic
+structure/statement/witness installer, validation, debug rendering, and
+final projection; exact API names/signatures remain those frozen in the
+canonical checker plan. No new runner module, production path, crate
+dependency, public re-export, active route, fixture, sidecar, expectation,
+trace owner, binding owner, or semantic dependency is authorized.
+Documentation baselines remain tests `378/425`; statement/structure/facade/
+root/statement-test/structure-test sizes are
+`5962/2857/715/2531/13381/2991`. Production remains 30 paths / 42,686 lines
+with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`;
+raw/normalized runner-test hashes are
+`b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
+`97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`.
+Implementation projects `382/430` tests and must remeasure every changed
+size/count/hash.

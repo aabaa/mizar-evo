@@ -3680,3 +3680,52 @@ pinする。current Task-254 source-structure/typed/final hashes
 `8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599`,
 `118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40`
 は不変。
+
+## Checker Task 258B3M2B2B2A frozen dormant harness
+
+future private statement harnessはhash
+`24e2ee2332ead5c0d46025df6044450eeab3ebb5733ebe83587ceae3ba129eb6`
+のunchanged final-LF 172-byte/76-node/root-75 zero-diagnostic
+constructor-witness sourceだけをselectする。B2P exact owned-kind selector/
+proof-context Task-254 seamを先にreuseし、Task-48 `2/1/0`、Task-252
+`6/4/2`、Task-254 `1/0/1/2/0/2/6`、equality-only Task-256
+`2/0/0/0/0/0/0/4/4`、Task-258 base `1/2/2/2/2`、one unnamed
+`Structure(0)` witness/no namesをauthenticateする。
+
+Task-258 base transactionはtheorem/conclusion statement rows 72/70をown。
+B2A extensionはtake/witness nodes 62/61とwitness-to-structure edgeだけを
+ownする。constructor/member 59/20/24はTask 254、term/numeral sites
+45/47/53/56/63/65はTask 252、equality 49/67はTask 256、
+root/extraction/transparent/container nodesはunowned。current theorem
+provenanceはlocal anchor `29..47`、checked owner `48..171/[2,1]`、
+owner/contribution 0、public/exported/normal label、no import edge/recovery。
+imported `parser.type_fixtures::TypeCaseStruct#5` provenanceはcontribution
+2、origin `7..27/[5]`、public/exported/signature-free/normal。両方exact
+selector。Task 256はdirect structure edge/fingerprintを持たず、
+combined typed/final boundaryだけがexact structure handoffでrevalidateする。
+
+runnerはauthenticated syntax-free lower handoffsをnew checker
+canonical planでfreezeしたchecker-owned full structure-aware builder/full
+atomic structure-statement-witness installerへ渡し、parser/resolver valuesを
+exportせずB2P extractionをduplicateしない。lower installation、
+aggregate/base rows、witness、typed publication、final cloneの順でvalidate
+する。failureはpartial stateを残さずfresh replayはsuccess。
+
+frozen tests 5件は
+`task258b3m2b2b2a_real_frontend_freezes_structure_constructor_witness_contract`、
+`task258b3m2b2b2a_validation_precedence_mutation_and_replay_fail_closed`、
+`task258b3m2b2b2a_selector_and_byte_subtree_near_misses_are_exact`、
+`task258b3m2b2b2a_family_and_active_route_isolation_is_atomic`、
+`task258b3m2b2b2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`。
+
+全172 bytes/76 nodes fields、local/imported resolver substitutions、全lower/
+base/witness rows/fingerprints、dependency order/family hybrids、全ownership/
+active orders、rollback/replay/final clone、legacy/application compatibility、
+malformed recovery `1/74/root 73/[52]`をcoverする。semantic/proof/goal/
+overload/Core/CFG/VC outputsはempty。active case、fixture、expectation、
+sidecar、trace row/credit、diagnostic detail、public runner routeは変更しない。
+
+documentation baselinesはchecker/runner tests `378/425`、runner
+statement/structure/facade/root/statement-test/structure-test sizesは
+`5962/2857/715/2531/13381/2991`。implementationはrunner 430 testsを
+projectする。

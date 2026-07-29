@@ -4029,3 +4029,17 @@ expectations、sidecars、active routes、全semantic/proof/goal behaviorは
 これはimplementation evidenceだけで、trace/audit status/count、
 backlink、executable creditは変更しない。final read-only quality reviewは
 全hard gate PASS、findingsなし、valid score `98/100`。
+
+## Task 258B3M2B2B2A frozen-contract audit
+
+Chapters 5 §5.5、13 §§13.3/13.3.1、15 §§15.4.4/15.11.5、16
+§§16.3.3/16.7.3とexisting parser/resolver/structure-gap artifactsはexact
+constructor-witness occurrence/provenanceをauthorizeするが、structure
+semantics/proof acceptanceはauthorizeしない。missing contractは
+`design_drift`、future source/testsはbounded `source_drift`/`test_gap`で、
+blocking `spec_gap`/unsafe intentなし。
+
+formula-statement trace rowは`deferred`、`tests = []`、backlink/creditなし。
+canonical specs、`.miz`、fixtures、expectations、sidecars、trace metadata/
+counts、active routes、Task-254 diagnostic credit、semantic/proof/goal
+behaviorはunchanged。

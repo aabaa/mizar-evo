@@ -216,3 +216,16 @@ remain
 `8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599`,
 and
 `118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40`.
+
+## Task 258B3M2B2B2A Frozen Structure Consumer
+
+B2A consumes, but does not broaden, the exact completed B2P Task-254
+handoff. Structure term 0 remains constructor 59 in proof context 1 with
+root 0, members 20/24, edges to `Primary(2/3)`, six unresolved requests,
+and no application fingerprint. The new statement witness targets term 0;
+it does not target the resolver root, either member, or a field value.
+
+The existing Task-254 public producer, tables, validation, debug bytes, and
+legacy route remain unchanged. Field/property identity, coverage/defaults,
+value/result typing, inheritance, selector, update, and `FieldUpdate`
+semantics remain Task 263/B2B/B2C work.

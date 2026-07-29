@@ -585,3 +585,19 @@ Both companions also pin profiles `2/1/0`, `6/4/2`, and
 exact `TypeCaseStruct#5` provenance; and malformed recovery
 `1/74/root 73/[52]`. The final read-only quality review passed every hard
 gate with no findings and a valid score of `98/100`.
+
+## Task 258B3M2B2B2A Frozen-Contract Synchronization
+
+The EN canonical and JA companion distinguish the new full task ID from
+historical `258B3M2B2A` and agree on the 172-byte/76-node source, both
+resolver roots, Task-48/252/254/256 and Task-258 tables, ownership,
+`Witness(0) -> Structure(0)`, additive public APIs, validation precedence,
+four checker/five runner tests, semantic deferrals, and `378/425` baselines.
+They also agree that this prerequisite changes design documents only,
+retains the deferred empty trace row, and preserves all executable artifacts
+and hashes. No B2A bilingual debt is accepted.
+
+The independent specification review ended with no findings after three
+documentation-only `design_drift` corrections. The final read-only review
+passed every hard gate with no score cap and a valid `98/100`; EN/JA remain
+synchronized.

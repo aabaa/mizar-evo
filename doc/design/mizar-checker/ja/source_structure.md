@@ -208,3 +208,15 @@ source-structure/typed/final debug hashes
 `8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599`,
 `118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40`
 は不変。
+
+## Task 258B3M2B2B2A frozen structure consumer
+
+B2Aはcompleted B2Pのexact Task-254 handoffをconsumeするがbroadenしない。
+structure term 0はproof context 1のconstructor 59、root 0、members 20/24、
+`Primary(2/3)` edges、unresolved requests 6件、application fingerprint
+なし。new statement witnessはterm 0をtargetし、resolver root/member/
+field valueはtargetしない。
+
+existing Task-254 public producer/tables/validation/debug bytes/legacy routeは
+unchanged。field/property identity、coverage/defaults、value/result typing、
+inheritance、selector、update、`FieldUpdate` semanticsはTask 263/B2B/B2C。

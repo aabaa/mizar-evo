@@ -2788,5 +2788,22 @@ or semantic owner changed. B3M2B2B remains next before B4.
   fresh-inventory B2A next.
 - [x] Complete the final read-only quality review with no findings, every
   hard gate passing, and a valid score of `98/100`.
-- [ ] After commit and fresh inventory, freeze B2A documentation as a
+- [x] After commit and fresh inventory, freeze B2A documentation as a
   separate logical task.
+
+## Checker Task 258B3M2B2B2A Frozen Structure-Witness Prerequisite
+
+- [x] Freeze the exact final-LF 172-byte/hash, 76-node/root identity,
+  local theorem owner, imported `TypeCaseStruct#5`, and ownership map.
+- [x] Freeze Task-48/252/254/256 and Task-258 base/witness syntax-free
+  tables, with the sole `Witness(0) -> Structure(0)` cross-family edge.
+- [x] Freeze the additive public target/fingerprint/builder/atomic installer
+  contract and byte-identical legacy/application compatibility.
+- [x] Freeze exactly four checker/five runner tests, validation precedence,
+  corruption/rollback/replay/clone coverage, and all semantic deferrals.
+- [x] Preserve canonical specs, `.miz`, fixtures, expectations, sidecars,
+  trace `deferred` / `tests = []`, active routes, and all counts/hashes.
+- [x] Complete no-findings specification review and every documentation hard
+  gate with a valid final quality score of `98/100`.
+- [ ] Make one dedicated docs commit, then fresh-inventory and implement only
+  B2A.

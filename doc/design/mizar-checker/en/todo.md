@@ -5176,5 +5176,22 @@ implementation commit does not satisfy a producer task.
 - [x] Remeasure runner sizes, manifests, and test-list hashes; keep B2A next.
 - [x] Complete the final read-only quality review with no findings, every
   hard gate passing, and a valid score of `98/100`.
-- [ ] After commit and fresh inventory, freeze B2A as a separate
+- [x] After commit and fresh inventory, freeze B2A as a separate
   documentation task.
+
+## Checker Task 258B3M2B2B2A Frozen-Contract Ledger
+
+- [x] Distinguish Task `258B3M2B2B2A` from historical `258B3M2B2A` and
+  freeze the exact 172-byte/76-node constructor-witness source.
+- [x] Freeze Task-48/252/254/256 lower rows, Task-258 base `1/2/2/2/2`,
+  witness/name `1/0`, ownership, subtree exclusions, and both resolver roots.
+- [x] Freeze additive structure target/fingerprint/builder/atomic installer
+  APIs while preserving every legacy/application debug and installer path.
+- [x] Freeze four checker and five runner tests, exact validation precedence,
+  rollback/replay/final clone, family/active isolation, and empty semantics.
+- [x] Preserve canonical/test/fixture/expectation/sidecar/trace/active
+  artifacts, formula trace `deferred` / `tests = []`, and all counts/hashes.
+- [x] Complete no-findings specification review and every documentation hard
+  gate with a valid final quality score of `98/100`.
+- [ ] After the dedicated docs commit, fresh-inventory and implement B2A
+  only.

@@ -10576,3 +10576,36 @@ consumer、checker API/test、semantic boundaryは追加していない。final
 sizesは`2857/715/2531/2991`、productionは30 paths / 42,686 lines、
 path hashは不変、content hashは
 `d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`。
+
+## Checker Task 258B3M2B2B2A frozen runner boundary
+
+future implementationはexisting private
+`runner/type_elaboration/source_statement.rs` leaf、private facade/root
+registration、`runner/tests/type_elaboration/source_statement.rs`と、下記の
+mechanically limited `source_structure.rs` allowanceに限定する。
+existing B2P `source_structure` seamとTask-48/252/254/256/Task-258 base
+producersをconsumeし、duplicate/moveしない。raw parser/resolver
+projectionsはrunner-privateで、authenticated syntax-free handoffsだけが
+checkerへcrossする。
+
+`source_structure.rs` extractor/row constructionはunchanged。new consumerが
+existing private seamをliveにする場合のB2P-only dead-code allowance removal
+だけをこのleafに許可し、public visibilityやsecond extractorは追加しない。
+
+checkerだけがadditive `Structure` witness target、structure fingerprint、
+full structure-aware builder、full atomic structure/statement/witness
+installer、validation、debug、final projectionをownする。exact API
+names/signaturesはcanonical checker planでfreezeしたもの。new runner
+module/production path/crate dependency/public re-export/active route/
+fixture/sidecar/expectation/trace owner/binding owner/semantic dependencyは
+authorizeしない。documentation baselinesはtests `378/425`、
+statement/structure/facade/root/statement-test/structure-test sizesは
+`5962/2857/715/2531/13381/2991`。productionは30 paths / 42,686 lines、
+path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`、
+raw/normalized runner-test hashesは
+`b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
+`97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`。
+implementationは`382/430` testsをprojectし、全changed size/count/hashを
+remeasureする。

@@ -3882,3 +3882,58 @@ source-structure/typed/final hashes remain
 `8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599`,
 and
 `118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40`.
+
+## Checker Task 258B3M2B2B2A Frozen Dormant Harness
+
+The future private statement harness selects only the unchanged
+final-LF 172-byte/76-node/root-75 zero-diagnostic constructor-witness source
+with hash
+`24e2ee2332ead5c0d46025df6044450eeab3ebb5733ebe83587ceae3ba129eb6`.
+It first reuses B2P's exact owned-kind selector and proof-context Task-254
+seam, then authenticates Task-48 `2/1/0`, Task-252 `6/4/2`, Task-254
+`1/0/1/2/0/2/6`, equality-only Task-256
+`2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and one unnamed
+`Structure(0)` witness/no names.
+
+The Task-258 base transaction owns theorem/conclusion statement rows 72/70.
+The B2A extension owns take/witness nodes 62/61 and the
+witness-to-structure edge only. Constructor/member nodes 59/20/24 stay
+Task 254, term/numeral sites 45/47/53/56/63/65 stay Task 252, equality nodes
+49/67 stay Task 256, and root/extraction/transparent/container nodes remain
+unowned. Current theorem provenance is local anchor `29..47`, checked owner
+`48..171/[2,1]`, owner
+and contribution 0, public/exported/normal label, and no import edge or
+recovery. Imported `parser.type_fixtures::TypeCaseStruct#5` provenance is
+contribution 2, origin `7..27/[5]`, public/exported, signature-free, and
+normal. Both are exact selectors. Task 256 has no direct structure edge or
+fingerprint and is structure-aware revalidated only at the combined
+typed/final boundary.
+
+The runner passes authenticated syntax-free lower handoffs into the new
+checker-owned full structure-aware builder and full atomic
+structure/statement/witness installer frozen in the canonical checker plan.
+It never exports parser or resolver values or duplicates B2P extraction.
+Lower installation
+precedes aggregate/base-row validation, which precedes witness publication,
+typed publication, and final clone. Failure leaves no partial state and a
+fresh replay succeeds.
+
+The five frozen tests are:
+
+1. `task258b3m2b2b2a_real_frontend_freezes_structure_constructor_witness_contract`;
+2. `task258b3m2b2b2a_validation_precedence_mutation_and_replay_fail_closed`;
+3. `task258b3m2b2b2a_selector_and_byte_subtree_near_misses_are_exact`;
+4. `task258b3m2b2b2a_family_and_active_route_isolation_is_atomic`;
+5. `task258b3m2b2b2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`.
+
+They mutate all 172 bytes and all fields of 76 nodes, exercise exact local
+and imported resolver substitutions, lower/base/witness rows and
+fingerprints, dependency order and family hybrids, all ownership/active
+orders, rollback/replay/final clone, legacy/application compatibility, and
+malformed recovery `1/74/root 73/[52]`. Semantic, proof, goal, overload,
+Core, CFG, and VC outputs remain empty. No active case, fixture, expectation,
+sidecar, trace row/credit, diagnostic detail, or public runner route changes.
+
+Documentation baselines remain checker/runner tests `378/425`; runner
+statement/structure/facade/root/statement-test/structure-test sizes are
+`5962/2857/715/2531/13381/2991`. Implementation projects 430 runner tests.

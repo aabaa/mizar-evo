@@ -4552,3 +4552,40 @@ and
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 There is no audit status/count change. The final read-only quality review
 passed every hard gate with no findings and a valid score of `98/100`.
+
+## Task 258B3M2B2B2A Frozen Structure-Witness Addendum
+
+Fresh post-B2P inventory freezes only the exact 172-byte/76-node
+`FormulaStatementStructureConstructorWitnessSmoke` consumer. It reuses
+Task-48 `2/1/0`, Task-252 `6/4/2`, Task-254 `1/0/1/2/0/2/6`, Task-256
+equality-only `2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and one
+unnamed `Structure(0)` witness/no names. The Task-258 base transaction owns
+the theorem/conclusion statement rows at nodes 72/70; the B2A witness
+extension owns take/witness nodes 62/61 and the directed witness edge.
+Task 254 retains constructor/member rows 59/20/24. Task 256 retains zero
+direct `Structure` targets and no structure fingerprint. Both local theorem
+and imported `TypeCaseStruct#5` provenance are exactly authenticated.
+
+The missing paired contract is `design_drift`; future checker/runner work is
+bounded `source_drift`, and its four/five matrices are `test_gap`. There is
+no blocking `spec_gap`, unsafe test intent, undocumented source behavior,
+expectation drift, or boundary violation. The prior-session expansion of the
+identifiable documentation diff is recorded as a nonblocking, report-only
+`repo_metadata_conflict`; the remote-tracking ref also advanced externally
+to this HEAD via push. This session performed no push or fetch, and no
+metadata repair was performed.
+
+This documentation prerequisite adds no executable credit. The row
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, without backlink; existing Task-254 diagnostic coverage is
+unchanged. Canonical specs, `.miz`, fixtures, expectations, sidecars,
+active routes, and `tests/coverage/spec_trace.toml` remain unchanged.
+Checker/runner libraries stay `378/425`, all CLI counts/hashes remain
+unchanged, and implementation projects `382/430`. The audit edit is required
+only to record the new structure-witness public-API/consumer ownership and
+B2B/B2C/semantic deferrals.
+
+The independent specification review ended with no findings after three
+documentation-only `design_drift` corrections. All documentation hard gates
+passed with a valid final quality score of `98/100`. This completion record
+changes no row status, test list, backlink, count, or coverage credit.

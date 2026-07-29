@@ -2089,4 +2089,28 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] sizes、production manifest、test-list hashesを再測定し、B2Aを次に維持。
 - [x] final read-only quality reviewはfindingsなし、全hard gate PASS、
   valid score `98/100`。
-- [ ] commit後にfresh-inventoryし、B2A documentationをseparately freeze。
+- [x] commit後にfresh-inventoryし、B2A documentationをseparately freeze。
+
+## Checker Task 258B3M2B2B2A runner frozen-contract ledger
+
+- [x] `258B3M2B2B2A`をhistorical `258B3M2B2A`と区別し、exact
+  final-LF 172-byte/76-node structure-constructor witnessだけをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、Task-254
+  `1/0/1/2/0/2/6`、direct structure edge/fingerprintなしのequality-only
+  Task-256 `2/0/0/0/0/0/0/4/4`、Task-258 base `1/2/2/2/2`、
+  witness/name `1/0`のreuseをfreeze。
+- [x] complete current/imported provenance、62/61だけのownership、retained
+  Task-254 59/20/24とTask-252 45/47/53/56/63/65 ownership、unowned
+  52/54/57/60をfreeze。
+- [x] sole target `Structure(0)`、additive checker target/fingerprint/
+  builder/atomic installer seams、lower rows/parser-resolver projectionsを
+  duplicateしないことをfreeze。
+- [x] runner 5/checker 4 testsで全bytes/nodes/dependencies/precedence/
+  isolation/rollback/replay/final clone/compatibility/malformed recovery/
+  empty semanticsをfreeze。
+- [x] source、fixtures、expectations、sidecars、trace status/count、active
+  routes、APIs、diagnostics、test baselines `378/425`、runner sizes
+  `5962/2857/715/2531/13381/2991`、counts/exact hashesをpreserve。
+- [x] no-findings specification reviewと全documentation hard gatesを
+  valid final quality `98/100`で完了。
+- [ ] dedicated commit後、fresh-inventoryしてB2Aだけをimplement。

@@ -4216,3 +4216,17 @@ behavior remain unchanged.
 This is implementation evidence only. No trace/audit status or count changes,
 backlinks, or executable credit are introduced. The final read-only quality
 review passed every hard gate with no findings and a valid score of `98/100`.
+
+## Task 258B3M2B2B2A Frozen-Contract Audit
+
+Chapters 5 §5.5, 13 §§13.3/13.3.1, 15 §§15.4.4/15.11.5, and 16
+§§16.3.3/16.7.3 plus existing parser/resolver/structure-gap artifacts
+authorize the exact constructor-witness occurrence and provenance. They do
+not authorize structure semantics or proof acceptance. The missing contract
+is `design_drift`; future source and tests are bounded `source_drift` /
+`test_gap`, with no blocking `spec_gap` or unsafe test intent.
+
+The formula-statement trace row remains `deferred`, `tests = []`, with no
+backlink or credit. Canonical specs, `.miz`, fixtures, expectations,
+sidecars, trace metadata/counts, active routes, Task-254 diagnostic credit,
+and semantic/proof/goal behavior are unchanged.

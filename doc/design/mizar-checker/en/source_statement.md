@@ -3033,3 +3033,63 @@ fact, witness, witness name, coexistence row, or final-statement profile.
 Take 62, witness 61, and transparent term 60 remain unowned by B2P.
 Fresh inventory therefore keeps B2A as the sole next owner of the directed
 `SourceStatementWitness(0) -> SourceStructureTerm(0)` edge.
+
+## Task 258B3M2B2B2A Frozen Structure-Witness Ownership
+
+B2A composes the exact Task-258 theorem owner/base rows and one unnamed
+witness for the 172-byte source. Base counts are `1/2/2/2/2`; witness/name
+counts are `1/0`. Owner row 0 is theorem node 72 at `48..171`, spelling
+`FormulaStatementStructureConstructorWitnessSmoke`, role/status
+`Theorem/Unmodified`, and normal recovery. Statement 0 uses owner/context
+`0/0`, `Atomic(0)`, node/range `72/48..171`, ordinal 0,
+`TheoremProposition`, normal recovery, and literal normalized spelling
+`theorem FormulaStatementStructureConstructorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) ; thus x = x ; end ;`.
+Statement 1 uses owner/context `0/1`, `Atomic(1)`, node/range
+`70/155..166`, ordinal 2, `Conclusion`, normal recovery, and literal
+spelling `thus x = x ;`. Contexts 0/1 use statements/binding contexts 0/1,
+the corresponding statement ranges, and visible binding `[0]`. Input facts
+0/1 use the corresponding statement/context, ordinal 0,
+`ReservedTypeGuard`, binding 0, and exact reference uses
+`[0,1]` / `[2,3]`; candidate facts use ordinal 0,
+`UnverifiedProposition`, and target `Atomic(0/1)`.
+
+Witness 0 is context 1, ordinal `1/0`, take `62/120..152`, item
+`61/125..151`, normalized spelling
+`TypeCaseStruct ( x : 1 , y : 2 )`, unnamed/no name, and targets only
+`Structure(0)`. The base transaction owns theorem/conclusion rows 72/70;
+the B2A extension owns take/witness 62/61 and the directed edge.
+
+The frozen additive schema is
+`SourceStatementWitnessTermTarget::Structure(SourceStructureTermId)`,
+`structure_fingerprint(&self) -> Option<&str>`, and the exact public
+signatures:
+
+```rust
+pub fn build_with_structure(
+    input: SourceStatementWitnessHandoffInput,
+    statements: &SourceStatementHandoff,
+    primary_terms: &SourcePrimaryTermHandoff,
+    structure: &SourceStructureHandoff,
+    arena: &TypedArena,
+) -> Result<SourceStatementWitnessHandoff, SourceStatementWitnessError>;
+
+pub fn with_source_structure_statement_witnesses(
+    self,
+    structure: SourceStructureHandoff,
+    statements: SourceStatementHandoff,
+    witnesses: SourceStatementWitnessHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+Legacy primary profiles use fingerprint pair `(None, None)`, application
+profiles `(Some, None)`, B2A `(None, Some)`, and `(Some, Some)` is invalid.
+The conditional structure fingerprint debug line follows the existing
+conditional application position; only B2A renders `term=structure#0`.
+Legacy primary/application builders, fingerprints, debug bytes, and
+installers remain exact. Task 256 has no `Structure` edge and retains
+`structure_fingerprint() == None`; only the combined typed/final paths
+reauthenticate it with `Some(&structure)`.
+
+The contract ends at source provenance/ownership. No existential matching,
+type obligation, substitution, remaining goal, formula truth, proof fact,
+or theorem acceptance is published.

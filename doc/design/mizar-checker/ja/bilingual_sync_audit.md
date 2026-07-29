@@ -557,3 +557,18 @@ ownership 59/20/24、numerals 53/56、unowned 52/54/57、exact
 `TypeCaseStruct#5` provenance、malformed recovery `1/74/root 73/[52]`
 でも一致する。final read-only quality reviewは全hard gate PASS、
 findingsなし、valid score `98/100`。
+
+## Task 258B3M2B2B2A frozen-contract synchronization
+
+EN canonical/JA companionはnew full task IDをhistorical `258B3M2B2A`と
+区別し、172-byte/76-node source、両resolver roots、
+Task-48/252/254/256・Task-258 tables、ownership、
+`Witness(0) -> Structure(0)`、additive public APIs、validation precedence、
+checker tests 4件/runner tests 5件、semantic deferrals、`378/425`
+baselinesで一致する。このprerequisiteはdesign docsだけを変更し、
+deferred empty trace rowと全executable artifacts/hashesをpreserveする。
+B2A bilingual debtは認めない。
+
+independent specification reviewはdocumentation-only `design_drift` 3件の
+correction後findingsなし。final read-only reviewは全hard gate PASS、
+score capなし、valid `98/100`で、EN/JA syncを維持。

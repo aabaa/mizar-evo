@@ -637,3 +637,29 @@ ownership 59/20/24、numerals 53/56、unowned 52/54/57、complete
 `TypeCaseStruct#5` provenance、malformed recovery `1/74/root 73/[52]`
 でも一致する。final read-only quality reviewは全hard gate PASS、
 findingsなし、valid score `98/100`。
+
+## Checker Task 258B3M2B2B2A runner contract synchronization
+
+English canonical runner plan/harness/boundary audit/ledgerとJA companionは、
+`258B3M2B2B2A`をhistorical `258B3M2B2A`と区別し、同じ172-byte/
+76-node source、current/imported resolver provenance、Task-48/252/254/256
+lower tables、Task-258 base `1/2/2/2/2`、one unnamed `Structure(0)`
+witness、ownership exclusions、checker-owned full structure-aware
+builder/full atomic installer、validation precedence、runner 5/checker 4
+exact testsをfreezeする。source hashは
+`24e2ee2332ead5c0d46025df6044450eeab3ebb5733ebe83587ceae3ba129eb6`。
+両言語は`378/425` baselines、runner sizes
+`5962/2857/715/2531/13381/2991`、30 paths / 42,686 lines、production
+hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`、
+raw/normalized runner-test hashes
+`b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
+`97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`
+をpreserveする。active/fixture/expectation/sidecar/trace boundariesとempty
+semantic/proof/goal/overload/Core/CFG/VC outputsも不変。B2A prerequisite
+bilingual debtはない。
+
+independent specification reviewはdocumentation-only `design_drift` 3件の
+correction後findingsなし。final read-only reviewは全hard gate PASS、
+score capなし、valid `98/100`で、runner contract syncを維持。

@@ -1170,3 +1170,15 @@ and rejects every frozen partial/hybrid/substitution case. Clone revalidation
 preserves the three handoffs byte-for-byte and all deferred upper tables
 remain empty. `resolved_typed_ast.rs` is 7,225 lines; no public final-AST or
 semantic/proof/goal API changed.
+
+## Task 258B3M2B2B2A Frozen Final-AST Contract
+
+ResolvedTypedAst gains no public accessor. Future assembly must require the
+exact coexisting source-structure, source-statement, and structure-target
+witness handoffs, revalidate the statement/primary/structure fingerprints
+and every lower installation, revalidate equality-only Task 256 with
+`Some(&structure)` and no direct structure fingerprint, and clone all three
+byte-for-byte. The current blanket structure-plus-statement rejection is
+relaxed only for this exact B2A triple. Missing, orphan, partial, stale,
+application/structure hybrid, reverse, or repeated bundles reject atomically.
+All semantic/proof/goal/overload tables remain empty.

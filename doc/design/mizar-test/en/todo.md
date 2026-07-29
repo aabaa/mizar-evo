@@ -2286,4 +2286,28 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   next.
 - [x] Complete the final read-only quality review with no findings, every
   hard gate passing, and a valid score of `98/100`.
-- [ ] Fresh-inventory and freeze B2A documentation separately after commit.
+- [x] Fresh-inventory and freeze B2A documentation separately after commit.
+
+## Checker Task 258B3M2B2B2A Runner Frozen-Contract Ledger
+
+- [x] Distinguish `258B3M2B2B2A` from historical `258B3M2B2A` and freeze
+  only the exact final-LF 172-byte/76-node structure-constructor witness.
+- [x] Freeze reuse of Task-48 `2/1/0`, Task-252 `6/4/2`, Task-254
+  `1/0/1/2/0/2/6`, equality-only Task-256 `2/0/0/0/0/0/0/4/4` with no
+  direct structure edge/fingerprint, Task-258 base `1/2/2/2/2`, and
+  witness/name `1/0`.
+- [x] Freeze complete current/imported provenance, ownership at 62/61 only,
+  retained Task-254 59/20/24 and Task-252 45/47/53/56/63/65 ownership, and
+  unowned 52/54/57/60.
+- [x] Freeze the sole witness target `Structure(0)`, additive checker
+  target/fingerprint/builder/atomic installer seams, and no duplicated lower
+  rows or parser/resolver projections.
+- [x] Freeze exactly five runner and four checker tests covering all bytes,
+  nodes, dependencies, precedence, isolation, rollback/replay/final clone,
+  compatibility, malformed recovery, and empty semantics.
+- [x] Preserve source, fixtures, expectations, sidecars, trace status/count,
+  active routes, APIs, diagnostics, test baselines `378/425`, runner sizes
+  `5962/2857/715/2531/13381/2991`, counts, and exact hashes.
+- [x] Complete no-findings specification review and every documentation hard
+  gate with a valid final quality score of `98/100`.
+- [ ] After the dedicated commit, fresh-inventory and implement only B2A.

@@ -1108,3 +1108,14 @@ frozen partial/hybrid/substitution casesを全てrejectする。clone
 revalidationはthree handoffsをbyte-for-byte preserveし、deferred upper
 tablesは全てempty。`resolved_typed_ast.rs`は7,225 lines。public final-AST/
 semantic/proof/goal APIは変更していない。
+
+## Task 258B3M2B2B2A frozen final-AST contract
+
+ResolvedTypedAst public accessorは追加しない。future assemblyはexact
+coexisting source-structure/source-statement/structure-target witness
+handoffsをrequireし、statement/primary/structure fingerprintsと全lower
+installations、equality-only Task 256をdirect structure fingerprintなしの
+`Some(&structure)`でrevalidateし、three handoffsをbyte-for-byte cloneする。
+current blanket structure+statement rejectionはexact B2A tripleだけrelax。
+missing/orphan/partial/stale/application-structure hybrid/reverse/repeated
+bundlesはatomically reject。全semantic/proof/goal/overload tablesはempty。
