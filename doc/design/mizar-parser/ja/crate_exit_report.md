@@ -181,3 +181,16 @@ string-position findingは独自authorityを要し、暗黙にparser follow-up�
 推奨reasoning setting: 次のcross-crate authority inventoryまたはcanonical
 grammar/semantic decisionは`xhigh`、bounded/authorized implementationは`high`、pure
 documentationは`medium`。
+
+## Post-closeout qualification: `PARSER-RECOVERY-B1B1P-P1`
+
+上記99/100 scoreはhistorical post-Task-46 milestone resultであり、arbitrary
+valid-UTF-8 recovery pathが現在すべてpanic-freeであるという証拠ではない。Checker
+B1B1P fresh preflightは[00.crate_plan.md](./00.crate_plan.md)でfreezeしたexact
+9-case fallback-ownership `source_drift`とRust `test_gap`を発見した。本bounded
+prerequisiteだけがchecker taskへ戻る前のauthorized parser workである。
+
+historical hard-gate resultは記録として保持するが、separate implementation commitが
+independent reviewと全gateをfresh score 90/100以上でpassするまでcurrent parser
+closeoutをqualifyする。parser Task 49を推定せず、specification coverageを変更せず、
+broader grammar/recovery workをauthorizeしない。

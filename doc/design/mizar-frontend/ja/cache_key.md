@@ -172,3 +172,13 @@ lexer 所有の non-exhaustive context enum の安定 encoding は、既知 vari
 - parser context / parser-assisted lexing plan の変更は token key を無効化する。
 - parser version、parser inputs、token stream hash、edition、operator-fixity activation offset の変更は AST key を無効化する。
 - crate-level determinism tests が、comment-equivalent な frontend 実行、および end-to-end import/dependency invalidation について `FrontendOutput.cache_keys` を検証する。
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` cache assessment
+
+`MIZAR_PARSER_CACHE_KEY_VERSION`は`mizar-parser/surface-ast-v2`のままである。
+bounded parser fixは、従来ASTまたは`FrontendOutput`生成前にpanicした9 inputだけに
+outputを作るため、v2で再利用され得るold AST artifactはない。以前からreturnしたinputは
+frozen contract外で明示的に不変である。new recovered AST keyはexact token stream、
+imported fixityを含むparser inputs、edition、parser versionで引き続き分離される。real
+frontend regressionは9 caseすべてのreplay keyを比較する。cache-key source、version
+constant、storage policy、public APIは変更しない。

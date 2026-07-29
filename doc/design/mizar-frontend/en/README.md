@@ -71,3 +71,9 @@ It must not:
 - own cache storage, cache-hit validation, or scheduler task-key composition;
 - perform semantic name resolution, type checking, overload selection, cluster
   registration, or proof-obligation generation.
+
+Current qualification: the parser-owned `PARSER-RECOVERY-B1B1P-P1` opens the
+bounded frontend `PARSER-RECOVERY-B1B1P-P1-FE` follow-through. Paired
+[00.crate_plan.md](./00.crate_plan.md) freezes unchanged production
+passthrough/merge/cache/fuzz ownership and one future real-provider
+determinism regression. This does not reopen grammar or semantics.

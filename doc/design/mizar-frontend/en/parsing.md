@@ -323,3 +323,13 @@ Key scenarios:
   them explicitly.
 - The `SurfaceAst` cache key is the token-stream hash plus parser version,
   parser inputs hash, and edition.
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` Passthrough Freeze
+
+The real seam needs no production change for the nine parser-owned fallback
+corrections: it already returns `SurfaceAst` and syntax diagnostics unchanged.
+A real-provider regression in `tests/determinism.rs` must observe recovered
+AST/recovery structure and diagnostics for every frozen byte mutation and
+compare two complete frontend runs. The five documented unmatched-`end`
+`ast = None` mutations remain outside the slice. No parser input, public seam
+API, grammar, or diagnostic contract changes.

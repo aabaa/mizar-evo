@@ -127,3 +127,19 @@ fuzz follow-up; the parser-owned counterpart is complete in `mizar-parser` task
 40. Future producer-backed tests should be added when non-exhaustive
 lexer/session/parser contracts expose new concrete producers for the currently
 reserved fallback variants.
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` Follow-Through Audit
+
+The parser prerequisite opens the Task-41/Task-28 checklist because nine exact
+inputs change from panic to recovered output. The follow-through closes the
+potential frontend `design_drift` in advance: passthrough and diagnostic merge
+algorithms need no source change; existing real-parser valid-UTF-8 fuzz targets
+already own arbitrary-input coverage; and the cache version remains v2 because
+no old AST/`FrontendOutput` existed for the panicking inputs. One real-provider
+determinism regression is the only frontend test addition.
+
+No frontend `source_drift`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `boundary_violation` is inferred. The bounded
+Rust regression closes the frontend side of the existing `test_gap`; no
+`.miz`, expectation, trace row/status/count, active admission, or coverage
+credit changes.

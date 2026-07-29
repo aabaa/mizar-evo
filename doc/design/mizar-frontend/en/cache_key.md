@@ -227,3 +227,15 @@ Key scenarios:
   activation offset changes invalidate AST keys;
 - crate-level determinism tests verify `FrontendOutput.cache_keys` for
   comment-equivalent frontend runs and end-to-end import/dependency invalidation.
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` Cache Assessment
+
+`MIZAR_PARSER_CACHE_KEY_VERSION` remains
+`mizar-parser/surface-ast-v2`. The bounded parser fix creates output only for
+nine inputs that previously panicked before producing an AST or
+`FrontendOutput`; there is therefore no old AST artifact that could be reused
+under v2. Previously returning inputs are explicitly outside and unchanged by
+the frozen contract. New recovered AST keys remain separated by exact token
+stream, imported fixity-bearing parser inputs, edition, and parser version.
+The real frontend regression must compare replay keys for all nine cases. No
+cache-key source, version constant, storage policy, or public API changes.

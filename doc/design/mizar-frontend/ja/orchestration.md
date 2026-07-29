@@ -191,3 +191,11 @@ Step 2〜5 は、回復可能な問題では中断しない。診断を記録し
 - `FrontendError` は回復不能な失敗のためのものであり、回復可能な問題は `FrontendOutput` 内の写像済み診断である。
 - ソース読み込み診断はソース範囲を捏造してはならず、`DiagnosticLocation::SourceLoad` を使う。
 - フロントエンド成果物は内部コンパイラデータであり、安定した公開ビルド出力ではない。
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` merge-order assessment
+
+parserはdiagnostic variantまたはfrontend classを追加しない。existing orchestration
+sortingはparser recovery shapeに依存しないため、production merge logicは変更しない。
+exact 9-case real-pipeline regressionは2 run間でfull diagnostic vectorと
+recovery-bearing AST outputを比較し、newly returning outputがexisting total orderへ
+deterministically入ることを証明する。

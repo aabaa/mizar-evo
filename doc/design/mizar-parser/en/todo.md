@@ -1121,3 +1121,18 @@ Check the task off here once tests pass.
   the production inventory transcribed into [grammar.md](./grammar.md) is each
   task's bounded contract, and fixes land in the owning chapter and appendix
   A, English and Japanese together.
+
+## Independently Authorized Lower-Stage Prerequisite
+
+- **`PARSER-RECOVERY-B1B1P-P1`: preserve fallback child ownership.** [ ]
+  - This identifier is a bounded Checker-B1B1P prerequisite, not the
+    previously unpromoted parser Task 49.
+  - Freeze and then correct only the nine imported-postfix recovery panics
+    recorded in [00.crate_plan.md](./00.crate_plan.md): all seven byte
+    positions of `theorem` and the theorem/conclusion equality bytes.
+  - Keep the five `proof`-byte unmatched-`end` `ast = None` cases excluded;
+    preserve the strict syntax-builder invariant, existing diagnostics,
+    public APIs, grammar, semantics, corpus, expectations, and trace status.
+  - Documentation and implementation are separate logical tasks and commits.
+    After both complete, return to Checker `258B3M2B2B1B1P`; do not infer a
+    successor grammar task.

@@ -91,8 +91,8 @@ is its task 1). "Next work" points into the
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | — | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] complete plus parser Tasks 48/46 post-exit vocabulary increments | parked task 21 | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] post-Task-46 milestone complete through Tasks 1-48; fresh independent score 99/100 | no authorized parser successor; human-owned P-265-47D | [todo](./mizar-parser/en/todo.md) |
-| mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [~] Tasks 1-48 complete; historical post-Task-46 milestone score 99/100; bounded `PARSER-RECOVERY-B1B1P-P1` open | implement P1, then fresh closeout; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
+| mizar-frontend | Source loading and phase 1-3 orchestration | [~] prior milestone complete; `PARSER-RECOVERY-B1B1P-P1-FE` regression open | add only the paired real-consumer determinism regression with P1 | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker Tasks 248-257C3 consumer increments complete | step 5 task 10, dependency-paced later consumers beginning with Checker Task 258, future `MT10-FS`/`MT10-AS`, and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, and Tasks 248-257C3 source-payload/composition producers complete | Checker Task 258, then Tasks 259-264/269-279 in dependency order; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
@@ -2681,3 +2681,18 @@ or semantic owner changed. B3M2B2B remains next before B4.
   ownership, libraries `374/416`, and all count/hash baselines.
 - [ ] Commit the B1B1P documentation prerequisite, fresh-inventory, and
   implement B1B1P alone before freezing B1B1.
+
+## `PARSER-RECOVERY-B1B1P-P1` Lower-Stage Prerequisite
+
+- [x] Classify the exact nine imported-postfix builder panics as parser
+  `source_drift`, the missing Rust matrix as `test_gap`, and stale closeout
+  claims as `design_drift`; exclude the five documented `ast = None` cases.
+- [x] Freeze canonical Chapter-22 authority, parser/frontend consumers,
+  fallback child ownership, same-position theorem recovery, immutable builder
+  invariant, Task-41/Task-28 passthrough/merge/fuzz/cache no-op assessments,
+  forbidden scope, unchanged coverage/count/hash baseline, and return to
+  Checker B1B1P.
+- [x] Commit the paired EN/JA documentation prerequisite alone.
+- [ ] Fresh-inventory, implement the bounded parser correction and Rust-only
+  regressions in a second commit, pass all reviews/gates at 90/100 or higher,
+  then resume the isolated Checker B1B1P implementation.

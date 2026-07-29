@@ -55,3 +55,9 @@
 - `SurfaceAst` ノード定義やパーサーの文法／回復ロジックの所有。
 - cache storage、cache hit 検証、scheduler task-key composition の所有。
 - 意味的な名前解決、型検査、オーバーロード選択、クラスタ登録、証明義務生成。
+
+current qualification: parser-owned `PARSER-RECOVERY-B1B1P-P1`はbounded frontend
+`PARSER-RECOVERY-B1B1P-P1-FE` follow-throughをopenする。paired
+[00.crate_plan.md](./00.crate_plan.md)はunchanged production
+passthrough/merge/cache/fuzz ownershipとfuture real-provider determinism regression
+1件をfreezeする。grammar/semanticsはreopenしない。

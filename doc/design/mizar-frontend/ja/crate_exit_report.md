@@ -192,3 +192,12 @@ Open questions:
   `.miz` seeds、diagnostics、cache-version behavior を横断するため。README や
   traceability の documentation-only cleanup なら `medium` へ下げてよく、canonical
   grammar または semantic language behavior を変更する場合は `high` より上げる。
+
+## Post-closeout qualification: `PARSER-RECOVERY-B1B1P-P1-FE`
+
+historical frontend closeoutは[00.crate_plan.md](./00.crate_plan.md)でfreezeしたbounded
+follow-upだけによりqualifyされる。frontend production bugまたはcache-version変更はopen
+でない。passthrough、merge ordering、real-parser fuzz ownershipはTask-28 checklistを
+すでに満たす。newly returning parser output 9件とv2 AST cache keyを検証する
+real-provider determinism regression 1件だけが残る。implementation commitは
+grammar/semanticまたはcoverage creditなしにfresh hard-gate score 90/100以上を回復する。

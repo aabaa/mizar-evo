@@ -199,3 +199,14 @@ Recommended reasoning setting for the next task:
   behavior. Lower to `medium` for documentation-only README or traceability
   cleanup, and raise above `high` if the task changes canonical grammar or
   semantic language behavior.
+
+## Post-Closeout Qualification: `PARSER-RECOVERY-B1B1P-P1-FE`
+
+The historical frontend closeout is qualified only by the bounded follow-up
+frozen in [00.crate_plan.md](./00.crate_plan.md). No frontend production bug or
+cache-version change is open: passthrough, merge ordering, and real-parser fuzz
+ownership already satisfy the Task-28 checklist. One real-provider
+determinism regression remains to verify the nine newly returning parser
+outputs and their v2 AST cache keys. The implementation commit must restore a
+fresh hard-gate score of at least 90/100 without grammar/semantic or coverage
+credit.

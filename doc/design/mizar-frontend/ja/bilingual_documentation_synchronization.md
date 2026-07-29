@@ -86,3 +86,11 @@ real-parser fuzz follow-up を完了した。parser-owned 側は `mizar-parser` 
 完了済みである。現在予約されている fallback variant に対する具体的 producer を
 将来の non-exhaustive lexer/session/parser contract が公開した場合は、producer-backed
 tests を追加する。
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` pair freeze
+
+paired README/plan/parsing/cache-key/orchestration/source-spec correspondence/
+TODO/closeout qualification、本auditは、exact 9/5 input split、unchanged production
+passthrough/merge order、existing fuzz ownership、v2 no-bump rationale、determinism
+test 1件追加、immutable public/corpus/trace/coverage boundary、parser/checker taskへの
+returnで一致する。本frozen follow-throughにbilingual findingは残らない。

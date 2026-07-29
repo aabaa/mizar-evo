@@ -123,3 +123,17 @@ task 29 は frontend-owned の real-parser fuzz follow-up を完了した。pars
 `mizar-parser` task 40 で完了済みである。現在予約されている fallback variant に対する
 具体的 producer を将来の non-exhaustive lexer/session/parser contract が公開した場合は、
 producer-backed tests を追加する。
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` follow-through audit
+
+parser prerequisiteはexact input 9件をpanicからrecovered outputへ変更するため、
+Task-41/Task-28 checklistをopenする。follow-throughはpotential frontend
+`design_drift`を事前にcloseする。passthrough/diagnostic merge algorithmはsource変更不要、
+existing real-parser valid-UTF-8 fuzz targetがarbitrary-input coverageをすでに所有し、
+panicking inputにはold AST/`FrontendOutput`が存在しないためcache versionはv2のまま。
+frontend test追加はreal-provider determinism regression 1件だけである。
+
+frontend `source_drift`、`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`は推定しない。bounded Rust regressionが
+existing `test_gap`のfrontend側を閉じる。`.miz`、expectation、trace row/status/count、
+active admission、coverage creditは変更しない。

@@ -11,15 +11,17 @@ diagnostic is introduced. Synchronization is declaration-local and preserves a
 following top-level or definition-local item, including the enclosing
 definition's real `end;`.
 
-Status: recovery is implemented and task-37 consolidated for the parser grammar
+Historical status: recovery was implemented and task-37 consolidated for the parser grammar
 surface through task 36: module/import/export, type/term/formula,
 statement/proof, S-015 definition and registration content, templates,
 algorithms/claims, algorithm control flow and verification clauses,
 annotations, and predicate redefinition label repair. Future grammar growth may
-add new category-local recovery cases, but no known implemented parser category
-falls through to an unintended abort. The documented stray unmatched `end`
-path remains intentionally unrecoverable and returns diagnostics with
-`ast = None`.
+add new category-local recovery cases. Fresh `PARSER-RECOVERY-B1B1P-P1`
+inventory subsequently found nine exact imported-postfix corruptions that
+reach an unintended builder abort; the fallback-ownership contract below
+reopens that bounded recovery slice until its separate implementation commit.
+The documented stray unmatched `end` path remains intentionally unrecoverable
+and returns diagnostics with `ast = None`.
 
 ## Purpose
 
@@ -255,3 +257,22 @@ unexpected trailing material are diagnosed without adding public codes.
 Malformed body/tail material synchronizes through nested blocks to the real
 outer `end`, next top-level item, or EOF. A missing outer `end` or final
 semicolon does not consume the following declaration.
+
+## `PARSER-RECOVERY-B1B1P-P1` Fallback Ownership Contract
+
+Chapter 22 requires recovery after syntax errors. For the exact imported
+postfix/infix 158-byte source frozen in [00.crate_plan.md](./00.crate_plan.md),
+seven corrupted `theorem` bytes and the two corrupted equality bytes must not
+cause a builder panic. Speculative partial syntax may retain already-produced
+children, but later placeholder and malformed-tail recovery must not claim
+those children a second time. Theorem-tail recovery must advance past its
+initiating malformed token when failed speculative syntax already owns that
+token before honoring a later statement/item boundary; unclaimed paths retain
+their current synchronization.
+
+The nine cases must return a recovered `SurfaceAst` plus syntax diagnostics;
+the strict one-non-root-parent tree invariant remains unchanged. Mutations of
+the five-byte `proof` keyword that reach the documented unmatched-`end`
+`ast = None` path are excluded and remain valid unrecoverable outcomes. This
+bounded correction adds no grammar, public diagnostic, public API, or
+semantic behavior and is not parser Task 49.

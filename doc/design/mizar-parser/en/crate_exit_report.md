@@ -191,3 +191,18 @@ must not be treated as a parser follow-up by implication.
 Recommended reasoning setting: `xhigh` for the next cross-crate authority
 inventory or canonical grammar/semantic decision; `high` for a bounded,
 already-authorized implementation; `medium` for pure documentation.
+
+## Post-Closeout Qualification: `PARSER-RECOVERY-B1B1P-P1`
+
+The 99/100 score above is a historical post-Task-46 milestone result, not
+current evidence that every arbitrary valid-UTF-8 recovery path is panic-free.
+Fresh Checker B1B1P preflight found the exact nine-case fallback-ownership
+`source_drift` and accompanying Rust `test_gap` frozen in
+[00.crate_plan.md](./00.crate_plan.md). This bounded prerequisite is now the
+only authorized parser work before returning to the checker task.
+
+The historical hard-gate result remains recorded, but current parser closeout
+is qualified until a separate implementation commit passes independent
+reviews and all gates with a fresh score of at least 90/100. This does not
+infer parser Task 49, change specification coverage, or authorize broader
+grammar/recovery work.

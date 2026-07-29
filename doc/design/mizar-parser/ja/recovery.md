@@ -12,13 +12,16 @@ new public diagnostic codeやsemantic diagnosticは追加しない。synchroniza
 declaration-localであり、enclosing definitionのreal `end;`を含むfollowing top-level
 またはdefinition-local itemを保存する。
 
-状態: parser task 36 までの grammar surface について、recovery は実装済みで
+履歴上の状態: parser task 36 までの grammar surface について、recovery は実装済みで
 task 37 により統合監査済みである。対象は module/import/export、type/term/formula、
 statement/proof、S-015 definition と registration content、template、
 algorithm/claim、algorithm control flow と verification clause、annotation、および
 predicate redefinition label repair である。今後の grammar growth では新しい
-category-local recovery が追加され得るが、既知の実装済み parser category が意図せず
-abort に落ちる箇所はない。対応する opener を持たない裸の `end` は、文書化された
+category-local recovery が追加され得る。fresh
+`PARSER-RECOVERY-B1B1P-P1` inventory は、imported postfix を含む exact 9 corruption
+が意図しない builder abort に到達することを後から検出した。下記
+fallback-ownership contract は、別 implementation commit が完了するまでこの bounded
+recovery slice を reopen する。対応する opener を持たない裸の `end` は、文書化された
 意図的な unrecoverable path のままであり、構文診断と `ast = None` を返す。
 
 ## 目的
@@ -229,3 +232,20 @@ vocabularyを使う。`equals`のexistence/uniqueness、reordered/duplicate corr
 malformed justification、unexpected trailing materialはpublic codeを追加せず診断する。
 malformed body/tailはnested blockを越えて実際のouter `end`、次のtop-level item、EOFへ
 同期する。outer `end`またはfinal semicolonが欠けてもfollowing declarationを消費しない。
+
+## `PARSER-RECOVERY-B1B1P-P1` fallback ownership contract
+
+Chapter 22はsyntax error後のrecoveryを要求する。[00.crate_plan.md](./00.crate_plan.md)で
+freezeしたexact imported postfix/infix 158-byte sourceでは、corrupted `theorem`
+7 bytesとcorrupted equality 2 bytesがbuilder panicを起こしてはならない。speculative
+partial syntaxはすでに生成したchildを保持してよいが、後続placeholder/malformed-tail
+recoveryは同じchildを二重claimしてはならない。theorem-tail recoveryは、後続
+statement/item boundaryを尊重する前に、failed speculative syntaxが開始malformed
+tokenをすでに所有する場合だけそれを越えてadvanceする。unclaimed pathはcurrent
+synchronizationを保持する。
+
+9 caseはrecovered `SurfaceAst`とsyntax diagnosticを返し、strict
+one-non-root-parent tree invariantは変更しない。5-byte `proof` keywordのmutationが
+documented unmatched-`end` `ast = None` pathへ到達する場合は除外し、valid
+unrecoverable outcomeのままとする。本bounded correctionはgrammar、public
+diagnostic、public API、semantic behaviorを追加せず、parser Task 49ではない。

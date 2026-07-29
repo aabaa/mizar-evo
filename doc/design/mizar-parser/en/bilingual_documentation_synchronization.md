@@ -142,3 +142,17 @@ verification counts/hashes, P-265-47D human ownership, external/uncredited
 frontend heuristic, global-Step-5 exclusion, and absence of an authorized
 successor parser task. Neither language infers Task 49 or promotes Steps 6/7.
 No bilingual drift remains after `PARSER-CRATE-POST-TASK46-CLOSEOUT`.
+
+## `PARSER-RECOVERY-B1B1P-P1` Pair Freeze
+
+The paired README, plan, recovery policy, source/spec audit, TODO, closeout
+qualification, and this audit now freeze the same nine production-panic
+positions, five excluded `ast = None` positions, exact parser/frontend
+consumers, immutable syntax-builder invariant, Rust-only regression scope,
+unchanged coverage/count/hash baseline, forbidden scope, and two-commit exit
+criteria. Both languages identify this as an independently authorized
+Checker-B1B1P lower-stage prerequisite rather than parser Task 49. No
+bilingual finding remains in the frozen documentation contract. The paired
+frontend follow-through documents freeze the same nine/five split, unchanged
+passthrough/merge production, existing fuzz ownership, v2 no-bump rationale,
+and one determinism regression.

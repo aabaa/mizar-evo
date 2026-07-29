@@ -204,3 +204,12 @@ parser seam により、フロントエンドは stubbed source-to-token pipelin
 - `ParserInputs` は文法に影響する設定のみを運び、解決器の状態は運ばない。
 - `SurfaceAst` は回復ノードを含みうる。後のフェーズは、それらを明示的に許容または拒否しなければならない。
 - `SurfaceAst` のキャッシュキーは、トークンストリームハッシュ、パーサーバージョン、parser inputs hash、エディションである。
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` passthrough freeze
+
+real seamは9件のparser-owned fallback correctionについてproduction変更を要しない。
+すでに`SurfaceAst`とsyntax diagnosticをunchangedに返す。`tests/determinism.rs`の
+real-provider regressionは全frozen byte mutationでrecovered AST/recovery structureと
+diagnosticを観測し、complete frontend run 2回を比較する。documented unmatched-`end`
+`ast = None` mutation 5件はslice外のままである。parser input、public seam API、
+grammar、diagnostic contractは変更しない。

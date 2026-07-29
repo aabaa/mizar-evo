@@ -673,3 +673,16 @@ Check off the task here once its tests pass.
 - Frontend artifacts (`SourceUnit`, `PreprocessedSource`, `TokenStream`,
   `SurfaceAst`, `FrontendOutput`) are internal compiler data, not stable external
   schemas.
+
+## Independently Authorized Parser-Recovery Follow-Through
+
+- **`PARSER-RECOVERY-B1B1P-P1-FE`.** [ ]
+  - [x] Freeze the Task-41/Task-28 assessment for the exact nine parser panic
+    inputs: unchanged passthrough/merge production, existing real-parser fuzz
+    ownership, and no cache-version bump because no old AST artifact exists.
+  - [ ] Add only the real-provider determinism regression in
+    `tests/determinism.rs`; compare recovered AST/diagnostics and cache keys
+    across replay for all nine cases.
+  - Preserve frontend production, public APIs, diagnostic vocabulary, cache
+    constants, fuzz targets, corpus/expectations/trace metadata, and coverage
+    credit. Return to the parser prerequisite, then Checker B1B1P.

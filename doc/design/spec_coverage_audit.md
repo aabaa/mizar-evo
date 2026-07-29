@@ -4316,3 +4316,38 @@ Future private code and exactly two runner tests are bounded `source_drift`
 and `test_gap`. There is no blocking `spec_gap`, unsafe test intent,
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict`.
+
+## `PARSER-RECOVERY-B1B1P-P1` Frozen Lower-Stage Addendum
+
+Checker B1B1P preflight exposed nine parser production panics in the exact
+158-byte imported-operator source: every byte of `theorem`, plus the theorem
+and conclusion equality bytes, when replaced by imported postfix `!`.
+Chapter 22 §§22.2.1-22.2.2 and the existing parser recovery/fuzz contracts
+authorize a separate `PARSER-RECOVERY-B1B1P-P1` prerequisite. Five mutations
+of `proof` that legitimately return the documented unmatched-`end`
+`ast = None` outcome are excluded.
+
+The open classifications are bounded `source_drift`, Rust `test_gap`, and
+paired-document `design_drift`. There is no blocking `spec_gap`, unsafe test
+intent, `source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation`.
+
+This is robustness evidence under already-covered recovery authority, not new
+executable specification coverage. No `doc/spec`, `.miz`, fixture,
+expectation, sidecar, or trace row/status/count changes; no backlink or credit
+is added. In particular
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`. Global counts and five CLI hashes remain unchanged. The
+documentation prerequisite must commit alone; the parser/frontend Rust
+regression and ownership correction follow in a separate commit before work
+returns to Checker `258B3M2B2B1B1P`.
+
+Parser Task 41 and frontend Task 28 also require a bounded frontend
+follow-through. Paired frontend documents freeze unchanged seam passthrough
+and diagnostic merge production, existing real-parser valid-UTF-8 fuzz
+ownership, and no `MIZAR_PARSER_CACHE_KEY_VERSION` bump: the old parser
+produced no reusable AST/`FrontendOutput` for the nine panicking inputs, while
+all previously returning inputs remain outside and unchanged by the contract.
+The single real-provider determinism regression will compare recovered
+AST/diagnostics and v2 cache keys across replay. This assessment adds no
+frontend source, trace, or coverage credit.

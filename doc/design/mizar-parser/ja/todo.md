@@ -1074,3 +1074,17 @@ cargo test -p mizar-test
   ではない。[grammar.md](./grammar.md) へ転記した生成規則インベントリが各
   タスクの有界な契約であり、修正は所有章と付録 A に、英語と日本語を一緒に
   着地させる。
+
+## Independently authorized lower-stage prerequisite
+
+- **`PARSER-RECOVERY-B1B1P-P1`: fallback child ownershipを保持する。** [ ]
+  - 本identifierはbounded Checker-B1B1P prerequisiteであり、従来unpromotedの
+    parser Task 49ではない。
+  - [00.crate_plan.md](./00.crate_plan.md)に記録したimported-postfix recovery
+    panic 9件、すなわち`theorem`全7 byte positionとtheorem/conclusion equality
+    byteだけをfreezeして修正する。
+  - `proof` byte 5件のunmatched-`end` `ast = None`は除外する。strict
+    syntax-builder invariant、existing diagnostic、public API、grammar、semantics、
+    corpus、expectation、trace statusを保持する。
+  - documentationとimplementationは別logical task / commitとする。両方の完了後は
+    Checker `258B3M2B2B1B1P`へ戻り、successor grammar taskを推定しない。

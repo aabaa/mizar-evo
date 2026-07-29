@@ -84,13 +84,16 @@ are companions when both are present.
   parsing, syntax recovery, and parse-only corpus execution; grammar coverage
   and parser-owned hardening are implemented through Tasks 1-48. Task 46 closes
   concrete operator-declaration syntax after its frontend trigger was found
-  already satisfied; the post-Task-46 milestone passes all nine hard gates and
-  its fresh independent read-only score is 99/100. One nonblocking human-owned
-  wording gap remains; the known overbroad frontend string-position heuristic
-  is external to parser scope.
+  already satisfied; the historical post-Task-46 milestone passed all nine hard
+  gates with a fresh independent read-only score of 99/100. Fresh Checker
+  B1B1P preflight has since opened the bounded
+  `PARSER-RECOVERY-B1B1P-P1` fallback-recovery prerequisite. One nonblocking
+  human-owned wording gap remains; the known overbroad frontend string-position
+  heuristic is external to parser scope.
 - [mizar-frontend](./mizar-frontend/README.md) - source loading and phase 1-3
-  orchestration across session, lexer, syntax, and parser services; current
-  milestone complete.
+  orchestration across session, lexer, syntax, and parser services; the prior
+  milestone is complete, while the paired `PARSER-RECOVERY-B1B1P-P1-FE`
+  real-consumer regression remains open with the parser prerequisite.
 - [mizar-test](./mizar-test/README.md) - corpus layout, expectation sidecars,
   staged model, traceability, snapshots, and harness behavior; implementation
   exists and the TODO tracks formal gap-closing work.

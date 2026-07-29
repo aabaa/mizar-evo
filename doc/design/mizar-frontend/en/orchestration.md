@@ -317,3 +317,12 @@ Key scenarios:
 - Source-load diagnostics must not fabricate source ranges; they use
   `DiagnosticLocation::SourceLoad`.
 - Frontend artifacts are internal compiler data, not stable public build outputs.
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` Merge-Order Assessment
+
+The parser adds no diagnostic variant or frontend class. Existing
+orchestration sorting is independent of the parser recovery shape, so no
+production merge logic changes. The exact nine-case real-pipeline regression
+must compare full diagnostic vectors and recovery-bearing AST output across
+two runs, proving the newly returning outputs enter the existing total order
+deterministically.

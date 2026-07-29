@@ -129,3 +129,15 @@ P-043-01/P-046がclosedで一致する。両言語は同じ9 passing hard gate�
 frontend heuristic、global Step-5 exclusion、authorized successor parser taskなしを記録する。
 Task 49を推定せず、Steps 6/7をpromoteしない。
 `PARSER-CRATE-POST-TASK46-CLOSEOUT`後にbilingual driftは残らない。
+
+## `PARSER-RECOVERY-B1B1P-P1` pair freeze
+
+paired README/plan、recovery policy、source-spec audit、TODO、closeout qualification、本auditは、
+production-panic 9 position、除外`ast = None` 5 position、exact parser/frontend
+consumer、immutable syntax-builder invariant、Rust-only regression scope、unchanged
+coverage/count/hash baseline、禁止範囲、2-commit exit criteriaを同一にfreezeする。両言語は
+これをparser Task 49ではなくindependently authorized Checker-B1B1P lower-stage
+prerequisiteとする。frozen documentation contractにbilingual findingは残らない。
+paired frontend follow-through docsも同じ9/5 split、unchanged passthrough/merge
+production、existing fuzz ownership、v2 no-bump rationale、determinism regression 1件を
+freezeする。

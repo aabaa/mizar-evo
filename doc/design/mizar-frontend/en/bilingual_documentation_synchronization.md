@@ -90,3 +90,13 @@ parser-owned counterpart is complete in `mizar-parser` task 40. Future
 producer-backed tests should be added when non-exhaustive lexer/session/parser
 contracts expose concrete producers for the currently reserved fallback
 variants.
+
+## `PARSER-RECOVERY-B1B1P-P1-FE` Pair Freeze
+
+The paired README, plan, parsing, cache-key, orchestration,
+source/spec-correspondence, TODO, closeout qualification, and this audit agree
+on the exact nine/five input split, unchanged production passthrough and merge
+order, existing fuzz ownership, v2 no-bump rationale, one determinism-test
+addition, immutable public/corpus/trace/coverage boundaries, and return to the
+parser/checker tasks. No bilingual finding remains in this frozen
+follow-through.
