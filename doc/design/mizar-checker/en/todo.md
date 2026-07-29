@@ -5162,5 +5162,19 @@ implementation commit does not satisfy a producer task.
 - [x] Preserve `378/423`, all counts/hashes, public/active/fixture/
   expectation/sidecar/trace artifacts, and classify the selected gap as
   `design_drift`.
-- [ ] After no-findings documentation review, hard gates, quality at least
+- [x] After no-findings documentation review, hard gates, quality at least
   90/100, and dedicated docs commit, fresh-inventory and implement B2P only.
+
+## Checker Task 258B3M2B2B2P Implementation Ledger
+
+- [x] Implement the exact production-private owned-kind selector and
+  existing-context/shared-Task-252 Task-254 reuse seam.
+- [x] Pass the two frozen runner tests; inventories are `378/425`.
+- [x] Close `source_drift`, `test_gap`, and completion `design_drift`.
+- [x] Preserve checker/public/active/fixture/expectation/sidecar/trace and
+  semantic boundaries; publish no Task-258 statement/witness row.
+- [x] Remeasure runner sizes, manifests, and test-list hashes; keep B2A next.
+- [x] Complete the final read-only quality review with no findings, every
+  hard gate passing, and a valid score of `98/100`.
+- [ ] After commit and fresh inventory, freeze B2A as a separate
+  documentation task.

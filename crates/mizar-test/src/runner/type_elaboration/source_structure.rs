@@ -1,7 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use mizar_checker::{
-    binding_env::{BindingContextId, BindingEnv},
+    binding_env::{
+        BinderIdentity, BindingContextId, BindingContextLayer, BindingContextOwner,
+        BindingContextRecovery, BindingEnv, BindingKind, BindingRecoveryState, BindingStatus,
+        BindingTypeSite,
+    },
     resolved_typed_ast::{
         ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
     },
@@ -13,32 +17,38 @@ use mizar_checker::{
     },
     source_structure::{
         SourceFieldUpdateInput, SourceStructureEdgeInput, SourceStructureEdgeRole,
-        SourceStructureHandoffInput, SourceStructureMemberId, SourceStructureMemberInput,
-        SourceStructureMemberRole, SourceStructureProducer, SourceStructureRecovery,
-        SourceStructureRequestInput, SourceStructureRequestKind, SourceStructureRootInput,
-        SourceStructureTarget, SourceStructureTermId, SourceStructureTermInput,
-        SourceStructureTermKind, SourceStructureWrapperInput,
+        SourceStructureHandoff, SourceStructureHandoffInput, SourceStructureMemberId,
+        SourceStructureMemberInput, SourceStructureMemberRole, SourceStructureProducer,
+        SourceStructureRecovery, SourceStructureRequestInput, SourceStructureRequestKind,
+        SourceStructureRootInput, SourceStructureTarget, SourceStructureTermId,
+        SourceStructureTermInput, SourceStructureTermKind, SourceStructureWrapperInput,
     },
-    source_term::SourcePrimaryTermHandoff,
+    source_term::{
+        SourcePrimaryTermHandoff, SourcePrimaryTermKind, SourcePrimaryTermRecovery,
+        SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
+    },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
         TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts,
-        TypedNodeId, TypedSiteRef,
+        TypedNodeId, TypedSiteRef, TypingState,
     },
 };
 use mizar_resolve::{
     declarations::{DeclarationShell, DeclarationShellKind, DeclarationShellSet},
-    env::{NamespacePath, SymbolEnv, SymbolKind},
+    env::{ContributionKind, ExportStatus, NamespacePath, SymbolEnv, SymbolKind, Visibility},
     names::{LocalTermBinding, LocalTermScope},
     resolved_ast::{ModuleId, SymbolId},
 };
-use mizar_session::SourceRange;
+use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 
+use super::source_term::SourceTermParts;
 #[cfg(not(test))]
 use super::source_term::source_term_parts_for_roots;
 #[cfg(test)]
-use super::source_term::synthetic_source_term_parts_for_roots;
+use super::source_term::{
+    source_term_parts_for_context_roots, synthetic_source_term_parts_for_roots,
+};
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
     source_ast::{
@@ -133,6 +143,314 @@ struct ExtractedEdge {
     role: SourceStructureEdgeRole,
     member: Option<SourceStructureMemberId>,
     target: ExtractedTarget,
+}
+
+const TASK258B3M2B2B2P_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementStructureConstructorWitnessSmoke: x = x proof\n",
+    "  take TypeCaseStruct(x: 1, y: 2);\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
+fn task258b3m2b2b2p_surface_contract(ast: &SurfaceAst, loaded_source: &str) -> bool {
+    task258b3m2b2b2p_surface_contract_impl(ast, loaded_source, |_, _, _, _, _| {})
+}
+
+fn task258b3m2b2b2p_surface_contract_impl(
+    ast: &SurfaceAst,
+    loaded_source: &str,
+    mutate: impl FnOnce(
+        &mut Vec<String>,
+        &mut Vec<(usize, usize)>,
+        &mut Vec<bool>,
+        &mut Vec<Vec<usize>>,
+        &mut Option<usize>,
+    ),
+) -> bool {
+    const KINDS: [&str; 76] = [
+        "Token(SurfaceToken { kind: ReservedWord, text: \"import\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"parser\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \".\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"type_fixtures\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"FormulaStatementStructureConstructorWitnessSmoke\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"proof\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"take\" })",
+        "Token(SurfaceToken { kind: UserSymbol, text: \"TypeCaseStruct\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"(\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"1\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \",\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"y\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"2\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \")\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"end\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "PathSegment",
+        "PathSegment",
+        "ModulePath",
+        "ImportAliasDecl",
+        "ImportItem",
+        "TypeHead",
+        "TypeExpression",
+        "ReserveSegment",
+        "ReserveItem",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "PathSegment",
+        "QualifiedSymbol",
+        "NumeralTerm",
+        "TermExpression",
+        "FieldArgument",
+        "NumeralTerm",
+        "TermExpression",
+        "FieldArgument",
+        "StructureConstructor",
+        "TermExpression",
+        "Witness",
+        "TakeStatement",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "Proposition",
+        "ConclusionStatement",
+        "ProofBlock",
+        "TheoremItem",
+        "ItemList",
+        "CompilationUnit",
+        "Root",
+    ];
+    const RANGES: [(usize, usize); 76] = [
+        (0, 6),
+        (7, 13),
+        (13, 14),
+        (14, 27),
+        (27, 28),
+        (29, 36),
+        (37, 38),
+        (39, 42),
+        (43, 46),
+        (46, 47),
+        (48, 55),
+        (56, 104),
+        (104, 105),
+        (106, 107),
+        (108, 109),
+        (110, 111),
+        (112, 117),
+        (120, 124),
+        (125, 139),
+        (139, 140),
+        (140, 141),
+        (141, 142),
+        (143, 144),
+        (144, 145),
+        (146, 147),
+        (147, 148),
+        (149, 150),
+        (150, 151),
+        (151, 152),
+        (155, 159),
+        (160, 161),
+        (162, 163),
+        (164, 165),
+        (165, 166),
+        (167, 170),
+        (170, 171),
+        (7, 13),
+        (14, 27),
+        (7, 27),
+        (7, 27),
+        (0, 28),
+        (43, 46),
+        (43, 46),
+        (37, 46),
+        (29, 47),
+        (106, 107),
+        (106, 107),
+        (110, 111),
+        (110, 111),
+        (106, 111),
+        (106, 111),
+        (125, 139),
+        (125, 139),
+        (143, 144),
+        (143, 144),
+        (140, 144),
+        (149, 150),
+        (149, 150),
+        (146, 150),
+        (125, 151),
+        (125, 151),
+        (125, 151),
+        (120, 152),
+        (160, 161),
+        (160, 161),
+        (164, 165),
+        (164, 165),
+        (160, 165),
+        (160, 165),
+        (160, 165),
+        (155, 166),
+        (112, 170),
+        (48, 171),
+        (0, 171),
+        (0, 171),
+        (0, 171),
+    ];
+    const CHILDREN: [&[usize]; 76] = [
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[1],
+        &[3],
+        &[36, 2, 37],
+        &[38],
+        &[0, 39, 4],
+        &[8],
+        &[41],
+        &[6, 7, 42],
+        &[5, 43, 9],
+        &[13],
+        &[45],
+        &[15],
+        &[47],
+        &[46, 14, 48],
+        &[49],
+        &[18],
+        &[51],
+        &[22],
+        &[53],
+        &[20, 21, 54],
+        &[26],
+        &[56],
+        &[24, 25, 57],
+        &[52, 19, 55, 23, 58, 27],
+        &[59],
+        &[60],
+        &[17, 61, 28],
+        &[30],
+        &[63],
+        &[32],
+        &[65],
+        &[64, 31, 66],
+        &[67],
+        &[68],
+        &[29, 69, 33],
+        &[16, 62, 70, 34],
+        &[10, 11, 12, 50, 71, 35],
+        &[40, 44, 72],
+        &[73],
+        &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 74,
+        ],
+    ];
+
+    if loaded_source != TASK258B3M2B2B2P_SOURCE || ast.nodes().len() != 76 {
+        return false;
+    }
+    let mut kinds = ast
+        .nodes()
+        .iter()
+        .map(|node| format!("{:?}", node.kind))
+        .collect::<Vec<_>>();
+    let mut ranges = ast
+        .nodes()
+        .iter()
+        .map(|node| (node.range.start, node.range.end))
+        .collect::<Vec<_>>();
+    let mut recoveries = ast
+        .nodes()
+        .iter()
+        .map(|node| node.recovered)
+        .collect::<Vec<_>>();
+    let mut children = ast
+        .nodes()
+        .iter()
+        .map(|node| {
+            node.children
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let mut root = ast.root().map(|root| root.index());
+    mutate(
+        &mut kinds,
+        &mut ranges,
+        &mut recoveries,
+        &mut children,
+        &mut root,
+    );
+    root == Some(75)
+        && kinds.iter().map(String::as_str).eq(KINDS.iter().copied())
+        && ranges == RANGES
+        && recoveries.iter().all(|recovered| !recovered)
+        && children
+            .iter()
+            .map(Vec::as_slice)
+            .eq(CHILDREN.iter().copied())
 }
 
 /// Runs the bounded Task-254 transport only for its frozen real consumer.
@@ -528,6 +846,442 @@ fn extract_structure(
     }
     normalize_extracted_tables(&mut extracted);
     Ok(extracted)
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(super) struct ImportedStructureConstructorSite {
+    pub(super) constructor: usize,
+}
+
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Task 258B3M2B2B2P freezes this production-private seam before B2A consumes it"
+    )
+)]
+pub(super) fn imported_structure_constructor_owned_node_kinds(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    loaded_source: &str,
+    site: ImportedStructureConstructorSite,
+) -> Option<BTreeMap<usize, &'static str>> {
+    let extracted =
+        extract_task258b3m2b2b2p_constructor(ast, module, symbols, loaded_source, site)?;
+    Some(BTreeMap::from([
+        (extracted.terms[0].node, "source.term.structure.constructor"),
+        (
+            extracted.members[0].node,
+            "source.term.structure.member.constructor-assignment",
+        ),
+        (
+            extracted.members[1].node,
+            "source.term.structure.member.constructor-assignment",
+        ),
+    ]))
+}
+
+#[allow(clippy::too_many_arguments)] // Rationale: keep every authenticated lower-stage authority explicit at the private reuse seam.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Task 258B3M2B2B2P freezes this production-private seam before B2A consumes it"
+    )
+)]
+pub(super) fn imported_structure_constructor_handoff_in_context(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+    loaded_source: &str,
+    site: ImportedStructureConstructorSite,
+    context: BindingContextId,
+) -> Option<Result<SourceStructureHandoff, String>> {
+    let mut extracted =
+        extract_task258b3m2b2b2p_constructor(ast, module, symbols, loaded_source, site)?;
+    if !task258b3m2b2b2p_lower_profile_is_exact(ast, module, binding_env, source_term, context) {
+        return Some(Err(
+            "exact Task-48/252 proof-context profile mismatch".to_owned()
+        ));
+    }
+    extracted.context = context;
+    Some(build_handoff_with_source_term(
+        ast,
+        module,
+        symbols,
+        binding_env,
+        &extracted,
+        source_term,
+        None,
+        |_| {},
+    ))
+}
+
+fn task258b3m2b2b2p_lower_profile_is_exact(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+    context: BindingContextId,
+) -> bool {
+    if context != BindingContextId::new(1)
+        || binding_env.source_id() != ast.source_id
+        || binding_env.module_id() != module
+        || source_term.handoff.source_id() != ast.source_id
+        || source_term.handoff.module_id() != module
+        || binding_env.contexts().len() != 2
+        || binding_env.bindings().len() != 1
+        || !binding_env.diagnostics().is_empty()
+    {
+        return false;
+    }
+
+    let Some(module_context) = binding_env.contexts().get(BindingContextId::new(0)) else {
+        return false;
+    };
+    let Some(proof_context) = binding_env.contexts().get(BindingContextId::new(1)) else {
+        return false;
+    };
+    if !matches!(module_context.owner, BindingContextOwner::Module)
+        || module_context.parent.is_some()
+        || module_context.layer != BindingContextLayer::Module
+        || module_context.lexical_scope.is_some()
+        || module_context
+            .bindings
+            .iter()
+            .map(|binding| binding.index())
+            .collect::<Vec<_>>()
+            != [0]
+        || module_context
+            .visible_bindings
+            .iter()
+            .map(|binding| binding.index())
+            .collect::<Vec<_>>()
+            != [0]
+        || module_context.recovery != BindingContextRecovery::Normal
+        || !matches!(
+            proof_context.owner,
+            BindingContextOwner::SourceStatement { source_range }
+                if source_range == task258b3m2b2b2p_range(ast, 112, 170)
+        )
+        || proof_context.parent != Some(BindingContextId::new(0))
+        || proof_context.layer != BindingContextLayer::Proof
+        || proof_context
+            .lexical_scope
+            .as_ref()
+            .is_none_or(|scope| scope.path() != [0])
+        || !proof_context.bindings.is_empty()
+        || proof_context
+            .visible_bindings
+            .iter()
+            .map(|binding| binding.index())
+            .collect::<Vec<_>>()
+            != [0]
+        || proof_context.recovery != BindingContextRecovery::Normal
+    {
+        return false;
+    }
+
+    let Some((binding_id, binding)) = binding_env.bindings().iter().next() else {
+        return false;
+    };
+    if binding_id.index() != 0
+        || binding.id != binding_id
+        || binding.spelling != "x"
+        || binding.kind != BindingKind::ReservedVariable
+        || !matches!(
+            &binding.identity,
+            BinderIdentity::ReservedVariable {
+                spelling,
+                declaration_range,
+            } if spelling == "x"
+                && *declaration_range == task258b3m2b2b2p_range(ast, 37, 38)
+        )
+        || binding.owner_context != BindingContextId::new(0)
+        || binding.declaration_range != task258b3m2b2b2p_range(ast, 37, 38)
+        || binding.visible_after_ordinal != 0
+        || !matches!(
+            binding.type_site,
+            BindingTypeSite::Source(source_range)
+                if source_range == task258b3m2b2b2p_range(ast, 43, 46)
+        )
+        || binding.status != BindingStatus::Reserved
+        || !binding.captured.identities().is_empty()
+        || !binding.diagnostics.is_empty()
+        || binding.recovery != BindingRecoveryState::Normal
+    {
+        return false;
+    }
+
+    let expected_terms = [
+        (
+            45,
+            106,
+            107,
+            BindingContextId::new(0),
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+        (
+            47,
+            110,
+            111,
+            BindingContextId::new(0),
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+        (
+            53,
+            143,
+            144,
+            BindingContextId::new(1),
+            "1",
+            SourcePrimaryTermKind::Numeral,
+        ),
+        (
+            56,
+            149,
+            150,
+            BindingContextId::new(1),
+            "2",
+            SourcePrimaryTermKind::Numeral,
+        ),
+        (
+            63,
+            160,
+            161,
+            BindingContextId::new(1),
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+        (
+            65,
+            164,
+            165,
+            BindingContextId::new(1),
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+    ];
+    if source_term.handoff.terms().len() != expected_terms.len()
+        || source_term.handoff.terms().iter().zip(expected_terms).any(
+            |((id, term), (site, start, end, expected_context, spelling, kind))| {
+                id.index() != term.source_ordinal()
+                    || term.site().node().index() != site
+                    || term.source_range() != task258b3m2b2b2p_range(ast, start, end)
+                    || term.context() != expected_context
+                    || term.recovery() != SourcePrimaryTermRecovery::Normal
+                    || term.spelling() != spelling
+                    || term.kind() != kind
+                    || term.role() != SourcePrimaryTermRole::Value
+                    || term.parent().is_some()
+            },
+        )
+    {
+        return false;
+    }
+
+    let expected_references = [(0, false), (1, false), (4, true), (5, true)];
+    if source_term.handoff.references().len() != expected_references.len()
+        || source_term
+            .handoff
+            .references()
+            .iter()
+            .zip(expected_references)
+            .any(|((id, reference), (term, scoped))| {
+                id.index() >= expected_references.len()
+                    || reference.term().index() != term
+                    || reference.binding().index() != 0
+                    || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                    || reference.use_ordinal() != 1
+                    || if scoped {
+                        reference
+                            .lexical_scope()
+                            .is_none_or(|scope| scope.path() != [0])
+                    } else {
+                        reference.lexical_scope().is_some()
+                    }
+            })
+    {
+        return false;
+    }
+
+    let expected_requests = [(2, 53, 143, 144, "1"), (3, 56, 149, 150, "2")];
+    if source_term.handoff.numeric_type_requests().len() != expected_requests.len()
+        || source_term
+            .handoff
+            .numeric_type_requests()
+            .iter()
+            .zip(expected_requests)
+            .any(|((id, request), (term, owner, start, end, spelling))| {
+                request.term().index() != term
+                    || request.owner().node().index() != owner
+                    || request.source_range() != task258b3m2b2b2p_range(ast, start, end)
+                    || request.spelling() != spelling
+                    || request.request_ordinal() != id.index()
+            })
+    {
+        return false;
+    }
+
+    if source_term.arena.len() != ast.nodes().len()
+        || source_term.arena.root().map(|root| root.index()) != ast.root().map(|root| root.index())
+    {
+        return false;
+    }
+    source_term.arena.iter().all(|(id, node)| {
+        let index = id.index();
+        let Some(surface) = ast.nodes().get(index) else {
+            return false;
+        };
+        let expected_kind = match index {
+            20 | 24 => "source.term.structure.member.constructor-assignment",
+            45 | 47 | 63 | 65 => "source.term.variable-reference",
+            53 | 56 => "source.term.numeral",
+            59 => "source.term.structure.constructor",
+            _ => "source.surface.unowned",
+        };
+        node.kind.as_str() == expected_kind
+            && node.resolved_node.is_none()
+            && node.anchor == SourceAnchor::Range(surface.range)
+            && node
+                .children
+                .iter()
+                .map(|child| child.index())
+                .eq(surface.children.iter().map(|child| child.index()))
+            && node.typing == TypingState::Unknown
+            && node.recovery == NodeRecoveryState::Normal
+            && node.links.context.is_none()
+            && node.links.type_entry.is_none()
+            && node.links.facts.is_empty()
+            && node.links.coercions.is_empty()
+            && node.links.initial_obligations.is_empty()
+            && node.links.diagnostics.is_empty()
+    })
+}
+
+fn task258b3m2b2b2p_range(ast: &SurfaceAst, start: usize, end: usize) -> SourceRange {
+    SourceRange {
+        source_id: ast.source_id,
+        start,
+        end,
+    }
+}
+
+fn extract_task258b3m2b2b2p_constructor(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    loaded_source: &str,
+    site: ImportedStructureConstructorSite,
+) -> Option<ExtractedStructure> {
+    if site.constructor != 59
+        || !task258b3m2b2b2p_surface_contract(ast, loaded_source)
+        || symbols.module_id() != module
+    {
+        return None;
+    }
+    let extracted = extract_structure(
+        ast,
+        module,
+        symbols,
+        BindingContextId::new(0),
+        &[site.constructor],
+        None,
+        &BTreeSet::new(),
+    )
+    .ok()?;
+    let [term] = extracted.terms.as_slice() else {
+        return None;
+    };
+    let [root] = extracted.roots.as_slice() else {
+        return None;
+    };
+    let [left, right] = extracted.members.as_slice() else {
+        return None;
+    };
+    let [left_edge, right_edge] = extracted.edges.as_slice() else {
+        return None;
+    };
+    if term.node != 59
+        || term.kind != SourceStructureTermKind::Constructor
+        || term.recovery != SourceStructureRecovery::Normal
+        || !extracted.wrappers.is_empty()
+        || root.term != SourceStructureTermId::new(0)
+        || left.term != SourceStructureTermId::new(0)
+        || left.ordinal != 0
+        || left.node != 20
+        || left.role != SourceStructureMemberRole::ConstructorAssignment
+        || left.parent.is_some()
+        || right.term != SourceStructureTermId::new(0)
+        || right.ordinal != 1
+        || right.node != 24
+        || right.role != SourceStructureMemberRole::ConstructorAssignment
+        || right.parent.is_some()
+        || !extracted.field_updates.is_empty()
+        || left_edge.term != SourceStructureTermId::new(0)
+        || left_edge.ordinal != 0
+        || left_edge.role != SourceStructureEdgeRole::ConstructorValue
+        || left_edge.member != Some(SourceStructureMemberId::new(0))
+        || !matches!(left_edge.target, ExtractedTarget::Primary(54))
+        || right_edge.term != SourceStructureTermId::new(0)
+        || right_edge.ordinal != 1
+        || right_edge.role != SourceStructureEdgeRole::ConstructorValue
+        || right_edge.member != Some(SourceStructureMemberId::new(1))
+        || !matches!(right_edge.target, ExtractedTarget::Primary(57))
+        || extracted.primary_roots != [54, 57]
+        || !task258b3m2b2b2p_root_is_exact(ast, module, symbols, &root.symbol)
+    {
+        return None;
+    }
+    Some(extracted)
+}
+
+fn task258b3m2b2b2p_root_is_exact(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    symbol: &SymbolId,
+) -> bool {
+    let Some(entry) = symbols.symbols().get(symbol) else {
+        return false;
+    };
+    let Some(contribution) = symbols.contributions().get(entry.contribution()) else {
+        return false;
+    };
+    let import_range = SourceRange {
+        source_id: ast.source_id,
+        start: 7,
+        end: 27,
+    };
+    symbol.module().package().as_str() == "mizar-test-task253-corruption"
+        && symbol.module().package() == module.package()
+        && symbol.module().path().as_str() == "parser.type_fixtures"
+        && symbol.local().as_str() == "summary:parser.type_fixtures#parse-only#TypeCaseStruct:5"
+        && symbol.fqn().as_str() == "parser.type_fixtures::TypeCaseStruct#5"
+        && entry.kind() == SymbolKind::Structure
+        && entry.namespace() == &NamespacePath::new(module.path().as_str())
+        && entry.primary_spelling() == "TypeCaseStruct"
+        && entry.visibility() == Visibility::Public
+        && entry.export_status() == ExportStatus::Exported
+        && entry.signature().is_none()
+        && entry.contribution().index() == 2
+        && entry.origin().source_id() == ast.source_id
+        && entry.origin().module_id() == symbol.module()
+        && entry.origin().anchor() == &SourceAnchor::Range(import_range)
+        && entry.origin().structural_path() == [5]
+        && entry.origin().import_edge().is_none()
+        && !entry.origin().is_recovered()
+        && contribution.id() == entry.contribution()
+        && contribution.module() == symbol.module()
+        && matches!(
+            contribution.kind(),
+            ContributionKind::ImportedSource { source_id } if *source_id == ast.source_id
+        )
+        && contribution.anchor() == &SourceAnchor::Range(import_range)
 }
 
 fn structure_root_is_excluded(
@@ -1138,9 +1892,15 @@ fn build_output(
         }
     }
 
-    let (arena, primary, application) = if let Some(dependencies) = dependencies {
+    let (source_term, application) = if let Some(dependencies) = dependencies {
         let arena = arena_with_overrides(ast, &dependencies.arena, &kinds, &recoveries)?;
-        (arena, dependencies.primary, dependencies.application)
+        (
+            SourceTermParts {
+                arena,
+                handoff: dependencies.primary,
+            },
+            dependencies.application,
+        )
     } else {
         #[cfg(test)]
         let parts = synthetic_source_term_parts_for_roots(
@@ -1161,11 +1921,103 @@ fn build_output(
             extracted.context,
             &kinds,
         )?;
-        (parts.arena, parts.handoff, None)
+        (parts, None)
     };
+    let handoff = build_handoff_with_source_term(
+        ast,
+        &module,
+        symbols,
+        &binding_env,
+        &extracted,
+        &source_term,
+        application.as_ref(),
+        mutate,
+    )?;
+    let SourceTermParts {
+        arena,
+        handoff: primary,
+    } = source_term;
+    let mut typed_ast = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: arena,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())?
+    .with_source_term(primary)
+    .map_err(|error| error.to_string())?;
+    if let Some(application) = application {
+        typed_ast = typed_ast
+            .with_source_application(application)
+            .map_err(|error| error.to_string())?;
+    }
+    let typed_ast = typed_ast
+        .with_source_structure(handoff)
+        .map_err(|error| error.to_string())?;
+    let node_hints = typed_ast
+        .nodes()
+        .iter()
+        .map(|(typed_node, _)| ResolvedNodeKindHint {
+            typed_node,
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.term.surface"),
+            },
+        })
+        .collect();
+    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
+    if typed_ast.source_structure().is_none()
+        || resolved.source_structure() != typed_ast.source_structure()
+        || resolved.source_application() != typed_ast.source_application()
+        || resolved.source_term() != typed_ast.source_term()
+        || !typed_ast.types().is_empty()
+        || !typed_ast.facts().is_empty()
+        || !typed_ast.coercions().is_empty()
+        || !typed_ast.initial_obligations().is_empty()
+        || !typed_ast.diagnostics().is_empty()
+        || !resolved.expr_metadata().is_empty()
+        || !resolved.cluster_facts().is_empty()
+        || !resolved.diagnostics().is_empty()
+    {
+        return Err("source-structure immutable final handoff mismatch".to_owned());
+    }
+    Ok(SourceStructureRouteOutput {
+        typed_ast,
+        resolved,
+        #[cfg(test)]
+        binding_env,
+    })
+}
+
+#[allow(clippy::too_many_arguments)] // Rationale: keep Task-48/252/253 validation authorities explicit at the shared Task-254 producer seam.
+fn build_handoff_with_source_term(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    extracted: &ExtractedStructure,
+    source_term: &SourceTermParts,
+    application: Option<&SourceFunctorApplicationHandoff>,
+    mutate: impl FnOnce(&mut SourceStructureHandoffInput),
+) -> Result<SourceStructureHandoff, String> {
+    if binding_env.source_id() != ast.source_id
+        || binding_env.module_id() != module
+        || symbols.module_id() != module
+    {
+        return Err("source-structure shared dependency identity mismatch".to_owned());
+    }
     let primary_id = |root: usize| {
         let range = ast.nodes().get(root)?.range;
-        primary
+        source_term
+            .handoff
             .terms()
             .iter()
             .find(|(_, term)| term.parent().is_none() && term.source_range() == range)
@@ -1324,41 +2176,343 @@ fn build_output(
         requests,
     };
     mutate(&mut input);
-    let handoff = SourceStructureProducer::build(
+    SourceStructureProducer::build(
         input,
         symbols,
-        &binding_env,
-        &primary,
-        application.as_ref(),
-        &arena,
+        binding_env,
+        &source_term.handoff,
+        application,
+        &source_term.arena,
     )
-    .map_err(|error| error.to_string())?;
-    let mut typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(primary)
-    .map_err(|error| error.to_string())?;
-    if let Some(application) = application {
-        typed_ast = typed_ast
-            .with_source_application(application)
-            .map_err(|error| error.to_string())?;
+    .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum ImportedStructureConstructorSurfaceMutation {
+    None,
+    NodeKind(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    RootIdentity,
+    DirectProductionSeam,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum ImportedStructureConstructorTestMutation {
+    None,
+    TermSite,
+    TermRange,
+    TermOrdinal,
+    TermContext,
+    TermRecovery,
+    TermSpelling,
+    TermKind,
+    RootTerm,
+    RootSymbol,
+    RootContribution,
+    MemberTerm,
+    MemberOrdinal,
+    MemberSite,
+    MemberRange,
+    MemberSpelling,
+    MemberRole,
+    MemberParent,
+    FieldUpdateExtra,
+    EdgeTerm,
+    EdgeOrdinal,
+    EdgeRole,
+    EdgeMember,
+    EdgeTarget,
+    RequestTerm,
+    RequestOrdinal,
+    RequestMember,
+    RequestKind,
+    StalePrimaryReplay,
+    TermRangeAndStalePrimaryReplay,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy)]
+pub(in crate::runner) struct ImportedStructureConstructorTestOptions {
+    pub(in crate::runner) constructor: usize,
+    pub(in crate::runner) context: BindingContextId,
+    pub(in crate::runner) surface_mutation: ImportedStructureConstructorSurfaceMutation,
+    pub(in crate::runner) handoff_mutation: ImportedStructureConstructorTestMutation,
+}
+
+#[cfg(test)]
+#[derive(Debug)]
+pub(in crate::runner) struct ImportedStructureConstructorTestOutput {
+    pub(in crate::runner) handoff: SourceStructureHandoff,
+    pub(in crate::runner) primary_counts: (usize, usize, usize),
+    pub(in crate::runner) typed_ast: TypedAst,
+    pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+#[cfg(test)]
+fn task258b3m2b2b2p_surface_contract_with_mutation(
+    ast: &SurfaceAst,
+    loaded_source: &str,
+    mutation: ImportedStructureConstructorSurfaceMutation,
+) -> bool {
+    task258b3m2b2b2p_surface_contract_impl(
+        ast,
+        loaded_source,
+        |kinds, ranges, recoveries, children, root| match mutation {
+            ImportedStructureConstructorSurfaceMutation::None
+            | ImportedStructureConstructorSurfaceMutation::DirectProductionSeam => {}
+            ImportedStructureConstructorSurfaceMutation::NodeKind(index) => {
+                if let Some(kind) = kinds.get_mut(index) {
+                    kind.push('!');
+                }
+            }
+            ImportedStructureConstructorSurfaceMutation::NodeRange(index) => {
+                if let Some(range) = ranges.get_mut(index) {
+                    range.1 = range.1.saturating_add(1);
+                }
+            }
+            ImportedStructureConstructorSurfaceMutation::NodeRecovery(index) => {
+                if let Some(recovered) = recoveries.get_mut(index) {
+                    *recovered = !*recovered;
+                }
+            }
+            ImportedStructureConstructorSurfaceMutation::NodeChildren(index) => {
+                if let Some(node_children) = children.get_mut(index) {
+                    if node_children.len() > 1 {
+                        node_children.rotate_left(1);
+                    } else {
+                        node_children.push(index);
+                    }
+                }
+            }
+            ImportedStructureConstructorSurfaceMutation::RootIdentity => *root = None,
+        },
+    )
+}
+
+#[cfg(test)]
+#[allow(clippy::too_many_arguments)] // Rationale: keep exact source, lower rows, context, and both corruption classes explicit.
+pub(in crate::runner) fn imported_structure_constructor_handoff_for_test(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    loaded_source: &str,
+    roots: &[(usize, BindingContextId)],
+    options: ImportedStructureConstructorTestOptions,
+) -> Option<Result<ImportedStructureConstructorTestOutput, String>> {
+    let ImportedStructureConstructorTestOptions {
+        constructor,
+        context,
+        surface_mutation,
+        handoff_mutation,
+    } = options;
+    let site = ImportedStructureConstructorSite { constructor };
+    if surface_mutation != ImportedStructureConstructorSurfaceMutation::DirectProductionSeam
+        && !task258b3m2b2b2p_surface_contract_with_mutation(ast, loaded_source, surface_mutation)
+    {
+        return None;
     }
-    let typed_ast = typed_ast
-        .with_source_structure(handoff)
-        .map_err(|error| error.to_string())?;
+    let owned_node_kinds =
+        imported_structure_constructor_owned_node_kinds(ast, module, symbols, loaded_source, site)?;
+    let source_term = match source_term_parts_for_context_roots(
+        ast,
+        module.clone(),
+        binding_env,
+        roots.iter().copied(),
+        &owned_node_kinds,
+    ) {
+        Ok(source_term) => source_term,
+        Err(error) => return Some(Err(format!("Task252: {error}"))),
+    };
+    let mut extracted =
+        extract_task258b3m2b2b2p_constructor(ast, module, symbols, loaded_source, site)?;
+    extracted.context = context;
+    let selected_contribution = extracted.roots[0].contribution;
+    let substitute_contribution = symbols
+        .contributions()
+        .iter()
+        .map(|entry| entry.id())
+        .find(|candidate| *candidate != selected_contribution)
+        .unwrap_or(selected_contribution);
+    let stale_replay = matches!(
+        handoff_mutation,
+        ImportedStructureConstructorTestMutation::StalePrimaryReplay
+            | ImportedStructureConstructorTestMutation::TermRangeAndStalePrimaryReplay
+    );
+    let handoff = if matches!(
+        handoff_mutation,
+        ImportedStructureConstructorTestMutation::None
+            | ImportedStructureConstructorTestMutation::StalePrimaryReplay
+    ) {
+        match imported_structure_constructor_handoff_in_context(
+            ast,
+            module,
+            symbols,
+            binding_env,
+            &source_term,
+            loaded_source,
+            site,
+            context,
+        )? {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(format!("Task254: {error}"))),
+        }
+    } else {
+        match build_handoff_with_source_term(
+            ast,
+            module,
+            symbols,
+            binding_env,
+            &extracted,
+            &source_term,
+            None,
+            |input| match handoff_mutation {
+                ImportedStructureConstructorTestMutation::None
+                | ImportedStructureConstructorTestMutation::StalePrimaryReplay => {}
+                ImportedStructureConstructorTestMutation::TermSite => {
+                    input.terms[0].site = TypedSiteRef::Node(TypedNodeId::new(60));
+                }
+                ImportedStructureConstructorTestMutation::TermRange
+                | ImportedStructureConstructorTestMutation::TermRangeAndStalePrimaryReplay => {
+                    input.terms[0].source_range.start += 1;
+                }
+                ImportedStructureConstructorTestMutation::TermOrdinal => {
+                    input.terms[0].source_ordinal = 1;
+                }
+                ImportedStructureConstructorTestMutation::TermContext => {
+                    input.terms[0].context = BindingContextId::new(0);
+                }
+                ImportedStructureConstructorTestMutation::TermRecovery => {
+                    input.terms[0].recovery = SourceStructureRecovery::Degraded;
+                }
+                ImportedStructureConstructorTestMutation::TermSpelling => {
+                    input.terms[0].spelling.push(' ');
+                }
+                ImportedStructureConstructorTestMutation::TermKind => {
+                    input.terms[0].kind = SourceStructureTermKind::SelectorAccess;
+                }
+                ImportedStructureConstructorTestMutation::RootTerm => {
+                    input.roots[0].term = SourceStructureTermId::new(1);
+                }
+                ImportedStructureConstructorTestMutation::RootSymbol => {
+                    input.roots[0].symbol = SymbolId::new(
+                        module.clone(),
+                        mizar_resolve::resolved_ast::LocalSymbolId::new("B2P/substitute"),
+                        mizar_resolve::resolved_ast::FullyQualifiedName::new(
+                            "b2p::substitute::TypeCaseStruct",
+                        ),
+                    );
+                }
+                ImportedStructureConstructorTestMutation::RootContribution => {
+                    input.roots[0].contribution = substitute_contribution;
+                }
+                ImportedStructureConstructorTestMutation::MemberTerm => {
+                    input.members[0].term = SourceStructureTermId::new(1);
+                }
+                ImportedStructureConstructorTestMutation::MemberOrdinal => {
+                    input.members[1].ordinal = 0;
+                }
+                ImportedStructureConstructorTestMutation::MemberSite => {
+                    input.members[0].site = TypedSiteRef::Node(TypedNodeId::new(24));
+                }
+                ImportedStructureConstructorTestMutation::MemberRange => {
+                    input.members[0].source_range.start += 1;
+                }
+                ImportedStructureConstructorTestMutation::MemberSpelling => {
+                    input.members[0].spelling.push('!');
+                }
+                ImportedStructureConstructorTestMutation::MemberRole => {
+                    input.members[0].role = SourceStructureMemberRole::Selector;
+                }
+                ImportedStructureConstructorTestMutation::MemberParent => {
+                    input.members[0].parent = Some(SourceStructureMemberId::new(1));
+                }
+                ImportedStructureConstructorTestMutation::FieldUpdateExtra => {
+                    input.field_updates.push(SourceFieldUpdateInput {
+                        term: SourceStructureTermId::new(0),
+                        ordinal: 0,
+                        site: TypedSiteRef::Node(TypedNodeId::new(55)),
+                        source_range: ast.nodes()[55].range,
+                        spelling: "x : 1".to_owned(),
+                        first_member: SourceStructureMemberId::new(0),
+                        final_member: SourceStructureMemberId::new(0),
+                    });
+                }
+                ImportedStructureConstructorTestMutation::EdgeTerm => {
+                    input.edges[0].term = SourceStructureTermId::new(1);
+                }
+                ImportedStructureConstructorTestMutation::EdgeOrdinal => {
+                    input.edges[1].ordinal = 0;
+                }
+                ImportedStructureConstructorTestMutation::EdgeRole => {
+                    input.edges[0].role = SourceStructureEdgeRole::SelectorBase;
+                }
+                ImportedStructureConstructorTestMutation::EdgeMember => {
+                    input.edges[0].member = None;
+                }
+                ImportedStructureConstructorTestMutation::EdgeTarget => {
+                    input.edges[0].target = SourceStructureTarget::Primary(
+                        mizar_checker::source_term::SourcePrimaryTermId::new(4),
+                    );
+                }
+                ImportedStructureConstructorTestMutation::RequestTerm => {
+                    input.requests[0].term = SourceStructureTermId::new(1);
+                }
+                ImportedStructureConstructorTestMutation::RequestOrdinal => {
+                    input.requests[1].request_ordinal = 0;
+                }
+                ImportedStructureConstructorTestMutation::RequestMember => {
+                    input.requests[0].member = Some(SourceStructureMemberId::new(0));
+                }
+                ImportedStructureConstructorTestMutation::RequestKind => {
+                    input.requests[0].kind = SourceStructureRequestKind::ResultType;
+                }
+            },
+        ) {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(format!("Task254: {error}"))),
+        }
+    };
+
+    if stale_replay {
+        let stale_source_term = match source_term_parts_for_context_roots(
+            ast,
+            module.clone(),
+            binding_env,
+            roots.iter().copied().filter(|(root, _)| *root != 57),
+            &owned_node_kinds,
+        ) {
+            Ok(source_term) => source_term,
+            Err(error) => return Some(Err(format!("Task252: {error}"))),
+        };
+        let stale_typed = match task258b3m2b2b2p_typed_ast(ast, module, stale_source_term) {
+            Ok(typed) => typed,
+            Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+        };
+        return Some(match stale_typed.with_source_structure(handoff) {
+            Ok(_) => Err("BUG: TypedAst accepted stale Task252 fingerprint".to_owned()),
+            Err(error) => Err(format!(
+                "TypedAst: rejected stale Task252 fingerprint: {error}"
+            )),
+        });
+    }
+
+    let primary_counts = (
+        source_term.handoff.terms().len(),
+        source_term.handoff.references().len(),
+        source_term.handoff.numeric_type_requests().len(),
+    );
+    let typed_ast = match task258b3m2b2b2p_typed_ast(ast, module, source_term) {
+        Ok(typed) => match typed.with_source_structure(handoff.clone()) {
+            Ok(typed) => typed,
+            Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+        },
+        Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+    };
     let node_hints = typed_ast
         .nodes()
         .iter()
@@ -1369,28 +2523,42 @@ fn build_output(
             },
         })
         .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.source_structure().is_none()
-        || resolved.source_structure() != typed_ast.source_structure()
-        || resolved.source_application() != typed_ast.source_application()
-        || resolved.source_term() != typed_ast.source_term()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-    {
-        return Err("source-structure immutable final handoff mismatch".to_owned());
-    }
-    Ok(SourceStructureRouteOutput {
+    let resolved = match assemble_empty_resolved_typed_ast(&typed_ast, node_hints) {
+        Ok(resolved) => resolved,
+        Err(error) => return Some(Err(format!("ResolvedTypedAst: {error}"))),
+    };
+    Some(Ok(ImportedStructureConstructorTestOutput {
+        handoff,
+        primary_counts,
         typed_ast,
         resolved,
-        #[cfg(test)]
-        binding_env,
+    }))
+}
+
+#[cfg(test)]
+fn task258b3m2b2b2p_typed_ast(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    source_term: SourceTermParts,
+) -> Result<TypedAst, String> {
+    TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: source_term.arena,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
     })
+    .map_err(|error| error.to_string())?
+    .with_source_term(source_term.handoff)
+    .map_err(|error| error.to_string())
 }
 
 fn arena_with_overrides(

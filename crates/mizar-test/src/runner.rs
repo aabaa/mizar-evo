@@ -35,7 +35,9 @@ use shared::{
 };
 #[cfg(test)]
 use type_elaboration::{
-    SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS, SOURCE_CHAINED_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
+    ImportedStructureConstructorSurfaceMutation, ImportedStructureConstructorTestMutation,
+    ImportedStructureConstructorTestOptions, SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS,
+    SOURCE_CHAINED_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
     SOURCE_CHAINED_LOCAL_MODE_RADIX_ASSERTED_HEAD_CONFIG,
     SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
@@ -322,7 +324,8 @@ use type_elaboration::{
     extract_source_two_edge_local_object_mode_reserved_variable_membership,
     extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
     extract_source_two_edge_local_object_mode_two_hop_asserted_head,
-    extract_wrapped_application_witness_source_statement, resolve_visible_attribute,
+    extract_wrapped_application_witness_source_statement,
+    imported_structure_constructor_handoff_for_test, resolve_visible_attribute,
     resolve_visible_type_head, source_application_output, source_application_output_with_mutation,
     source_atomic_formula_output, source_atomic_formula_output_with_mutation,
     source_atomic_formula_output_with_source,

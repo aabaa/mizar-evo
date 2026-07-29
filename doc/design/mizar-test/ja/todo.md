@@ -2074,6 +2074,19 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] documentation baselines `378/423`、sizes
   `1689/713/2528/1716`、30 paths / 41,513 lines、全measured hashesを
   preserve。
-- [ ] dedicated documentation commit/fresh preflight後、B2Pだけをimplementし、
+- [x] dedicated documentation commit/fresh preflight後、B2Pだけをimplementし、
   runner tests 425をproject、全changed counts/hashesを再実測してからB2A
   documentationをfresh-inventory。
+
+## Checker Task 258B3M2B2B2P runner implementation ledger
+
+- [x] frozen 4 files内でexact private owned-kind selectorと
+  existing-context/shared-Task-252 Task-254 seamをimplement。
+- [x] frozen compound tests 2件とrunner library 425 testsをpass。
+- [x] `source_drift`、`test_gap`、completion `design_drift`をclose。
+- [x] checker/public/active/fixture/expectation/sidecar/trace/semantic
+  boundariesをpreserveし、Task-258 rowはpublishしない。
+- [x] sizes、production manifest、test-list hashesを再測定し、B2Aを次に維持。
+- [x] final read-only quality reviewはfindingsなし、全hard gate PASS、
+  valid score `98/100`。
+- [ ] commit後にfresh-inventoryし、B2A documentationをseparately freeze。

@@ -3661,3 +3661,22 @@ active case、public dispatch、statement consumer、fixture、sidecar、
 expectation、trace row、detail key、checker testは追加しない。future B2A
 contractだけがwitnessを`Structure(0)`へattachできる。selectorおよび
 functional-update/`FieldUpdate` witnessesはB2B/B2Cのまま。
+
+## Checker Task 258B3M2B2B2P dormant harness result
+
+exact-source selector、owned-kind map、shared Task-252 parts、existing proof
+context、imported provenance、Task-254 handoff、mutation matrix、stale replay、
+legacy hashesをpassing runner tests 2件でimplementした。全upper source/
+semantic/proof/goal/IR tablesはempty。active case、fixture、sidecar、
+expectation、trace row、detail key、checker test、statement consumerは
+変更していない。
+
+completed pairはTask-48/252/254
+`2/1/0`/`6/4/2`/`1/0/1/2/0/2/6`、ownership 59/20/24、numerals
+53/56、unowned 52/54/57、exact `TypeCaseStruct#5` provenance、
+malformed recovery `diagnostics=1, nodes=74, root=73, recovered=[52]`を
+pinする。current Task-254 source-structure/typed/final hashes
+`0d6af57b89e6156d8e5de6831568c81ec110880bebf1e4aeb4ab00563f4da6c8`,
+`8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599`,
+`118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40`
+は不変。

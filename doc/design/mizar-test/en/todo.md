@@ -2270,6 +2270,20 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   proof, goal, and IR owners.
 - [x] Preserve documentation baselines `378/423`, sizes
   `1689/713/2528/1716`, 30 paths / 41,513 lines, and all measured hashes.
-- [ ] After the dedicated documentation commit and fresh preflight,
+- [x] After the dedicated documentation commit and fresh preflight,
   implement B2P only, project 425 runner tests, remeasure all changed
   counts/hashes, then fresh-inventory B2A documentation.
+
+## Checker Task 258B3M2B2B2P Runner Implementation Ledger
+
+- [x] Implement the exact private owned-kind selector and
+  existing-context/shared-Task-252 Task-254 seam in the frozen four files.
+- [x] Pass both frozen compound tests and the 425-test runner library.
+- [x] Close `source_drift`, `test_gap`, and completion `design_drift`.
+- [x] Preserve checker/public/active/fixture/expectation/sidecar/trace and
+  semantic boundaries; publish no Task-258 row.
+- [x] Remeasure sizes, production manifest, and test-list hashes; keep B2A
+  next.
+- [x] Complete the final read-only quality review with no findings, every
+  hard gate passing, and a valid score of `98/100`.
+- [ ] Fresh-inventory and freeze B2A documentation separately after commit.

@@ -2519,3 +2519,12 @@ witness name、typed coexistence row、final-statement profileをpublishしな�
 したがってtake node 62/witness node 61はB2Pではunowned、transparent node
 60はexcluded、constructor node 59はTask-254-ownedのまま。witness
 obligation、substitution、proof/fact acceptance、goal dischargeはdeferする。
+
+## Task 258B3M2B2B2P statement-owner result
+
+B2PはTask-258 owner、statement、context、fact、witness、witness name、
+coexistence row、final-statement profileをpublishせずにimplementした。
+take 62、witness 61、transparent term 60はB2P-unownedのまま。fresh
+inventoryでは、directed
+`SourceStatementWitness(0) -> SourceStructureTerm(0)` edgeのsole next
+ownerをB2Aとする。

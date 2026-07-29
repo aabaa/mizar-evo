@@ -4015,3 +4015,17 @@ trace rowは`deferred`、`tests = []`、backlink/creditなし、existing
 Task-254 diagnostic creditは不変。canonical specs、`.miz`、fixtures、
 expectations、sidecars、trace metadata/counts、active routes、semantic/
 proof/goal/type behaviorは変更しない。
+
+## Task 258B3M2B2B2P implementation audit
+
+implemented private lower seamとpassing runner tests 2件がbounded
+`source_drift`、`test_gap`、completion `design_drift`をcloseした。
+これはdormant design/test evidenceだけで、formula-statement trace rowは
+`deferred`、`tests = []`、backlink/coverage creditなし。existing Task-254
+diagnostic creditは不変。canonical specs、`.miz`、fixtures、
+expectations、sidecars、active routes、全semantic/proof/goal behaviorは
+変更していない。
+
+これはimplementation evidenceだけで、trace/audit status/count、
+backlink、executable creditは変更しない。final read-only quality reviewは
+全hard gate PASS、findingsなし、valid score `98/100`。

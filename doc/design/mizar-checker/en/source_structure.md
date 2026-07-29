@@ -195,3 +195,24 @@ current constructor semantics. `FieldUpdate` and functional update remain
 B2C. The two frozen runner tests exhaust bytes/nodes, ownership/provenance,
 corruption precedence, stale/clean replay, legacy output, and empty upper
 families; there is no checker test.
+
+## Task 258B3M2B2B2P Private Reuse Result
+
+The runner now implements the frozen exact-source owned-kind selector and
+the existing-context/shared-Task-252 call into the unchanged public Task-254
+producer. The two exact runner tests pass, including lower-profile,
+ownership, resolver-provenance, corruption-precedence, stale-replay, and
+legacy-output checks. No checker source or API changed, no selector/update
+semantics were introduced, and B2A remains the next consumer.
+
+The exact result preserves Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
+`1/0/1/2/0/2/6`; owned kinds 59/20/24; numeral sites 53/56; and unowned
+52/54/57. It authenticates the imported public/exported, signature-free
+`TypeCaseStruct#5` contribution 2 and current-source origin `7..27/[5]`.
+The malformed recovery near miss is `diagnostics=1, nodes=74, root=73,
+recovered=[52]`. Existing Task-254 source-structure/typed/final debug hashes
+remain
+`0d6af57b89e6156d8e5de6831568c81ec110880bebf1e4aeb4ab00563f4da6c8`,
+`8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599`,
+and
+`118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40`.

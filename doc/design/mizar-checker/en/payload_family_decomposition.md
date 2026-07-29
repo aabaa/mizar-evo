@@ -1018,3 +1018,12 @@ Task 258 owns nothing in B2P. The future B2A witness-to-structure edge,
 future B2B selector family under §5.7, and B2C update/`FieldUpdate` families
 remain separate. Semantic term, proof, fact, goal, Core/CFG/VC, inheritance,
 typing, defaults, and coverage edges remain absent.
+
+### Task 258B3M2B2B2P Implemented Lower-Family Boundary
+
+The private B2P selector and reuse seam now install the frozen Task-254
+constructor profile with shared Task-252 primaries. They add no payload
+family or cross-family edge: Task 254 still owns only constructor 59 and
+members 20/24, Task 252 owns published numeral sites 53/56, and Task 258
+owns nothing. The B2A witness-to-structure edge remains next; B2B/B2C and
+all semantic/proof/goal edges remain deferred.

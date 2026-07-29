@@ -2773,5 +2773,20 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Keep the formula-statement row `deferred`, `tests = []`, without
   backlink or executable credit; the existing Task-254 diagnostic coverage
   is unchanged.
-- [ ] After the dedicated documentation commit and fresh preflight,
+- [x] After the dedicated documentation commit and fresh preflight,
   implement B2P alone before freezing the B2A statement consumer.
+
+## Checker Task 258B3M2B2B2P Implementation Completion
+
+- [x] Implement the exact production-private owned-kind selector and
+  existing-context/shared-Task-252 Task-254 reuse seam in the frozen files.
+- [x] Pass both compound tests and the 425-test runner library.
+- [x] Close `source_drift`, `test_gap`, and completion `design_drift`.
+- [x] Preserve canonical, `.miz`, fixture, expectation, sidecar, trace,
+  active/public, checker, and semantic boundaries; add no coverage credit.
+- [x] Remeasure runner sizes, production manifest, and test-list hashes;
+  fresh-inventory B2A next.
+- [x] Complete the final read-only quality review with no findings, every
+  hard gate passing, and a valid score of `98/100`.
+- [ ] After commit and fresh inventory, freeze B2A documentation as a
+  separate logical task.

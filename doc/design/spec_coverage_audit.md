@@ -4512,3 +4512,43 @@ stay `419/387`, type coverage `253/241`, pass/fail `228/191`, active
 parse/declaration/type/proof `101/5/198/1`, and warnings/errors `23/0`.
 All five CLI hashes, both libraries' test-list hashes, and checker/runner
 production manifests remain the B1B1 implementation values recorded above.
+
+## Task 258B3M2B2B2P Implementation Result
+
+The frozen private owned-kind selector and existing-context/shared-Task-252
+Task-254 reuse seam are implemented with two passing runner tests. This
+closes the bounded `source_drift`, `test_gap`, and completion
+`design_drift`; checker/runner libraries are `378/425`.
+
+Runner source-structure leaf/facade/root/test sizes are
+`2857/715/2531/2991`. Production is 30 paths / 42,686 lines with unchanged
+path hash and content hash
+`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`;
+raw/normalized test-list hashes are
+`b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
+`97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`.
+
+This dormant implementation adds no coverage credit. The trace row
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, without backlink; existing Task-254 diagnostic coverage,
+trace counts, and all five CLI counts/hashes are unchanged.
+`tests/coverage/spec_trace.toml`, canonical specs, `.miz`, fixtures,
+expectations, sidecars, active routes, public APIs, and semantic/proof/goal
+owners are unchanged. B2A remains the next consumer.
+
+The exact unchanged runner path hash is
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`.
+Checker raw/normalized test hashes remain
+`6951374b14f4446f8e3b97a65fc35b7e6fd67b3782f906a98042f27e0122f1dc` /
+`ab769fa48b6283b7708863945abf44777aa9f0ca24c037a08adbb2b8f3749910`.
+Plan/requirements, type, pass/fail, active parse/declaration/type/proof, and
+warnings/errors remain `419/387`, `253/241`, `228/191`,
+`101/5/198/1`, and `23/0`. The five stdout hashes remain
+`4cc13ea6bee6c1a6458d4a7d027a7eea685b711eda8410edafad8faa01809d54`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
+`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
+and
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+There is no audit status/count change. The final read-only quality review
+passed every hard gate with no findings and a valid score of `98/100`.

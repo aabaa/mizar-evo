@@ -542,3 +542,18 @@ future runner tests 2件、checker testなし、unchanged `378/423`と全measure
 metrics/hashes、public/active/fixture/trace/semantic artifactなし、future
 B2A witness edge、B2C update boundaryも一致する。English canonicalで、
 B2P bilingual debtはない。
+
+## Task 258B3M2B2B2P implementation synchronization
+
+EN canonical/JA companionは、implemented private owned-kind selector、
+existing-context/shared-Task-252 Task-254 seam、passing runner tests 2件、
+libraries `378/425`、runner sizes `2857/715/2531/2991`、30 paths /
+42,686 lines、final production/test-list hashesで一致する。Task 258は
+statement/witness rowを取得せず、B2Aが次、public/active/checker/fixture/
+expectation/sidecar/trace/semantic boundariesは不変。B2P bilingual debtなし。
+
+両companionはprofiles `2/1/0`、`6/4/2`、`1/0/1/2/0/2/6`、
+ownership 59/20/24、numerals 53/56、unowned 52/54/57、exact
+`TypeCaseStruct#5` provenance、malformed recovery `1/74/root 73/[52]`
+でも一致する。final read-only quality reviewは全hard gate PASS、
+findingsなし、valid score `98/100`。

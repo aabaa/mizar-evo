@@ -622,3 +622,18 @@ shared Task-252 `6/4/2`、Task-254 `1/0/1/2/0/2/6`、exact imported
 B2P-before-B2A orderをfreezeする。両言語ともstatement consumer、
 checker API、active/fixture/trace changes、全semantic/proof/goal ownershipを
 excludeする。B2P bilingual debtなし。
+
+## Checker Task 258B3M2B2B2P runner implementation synchronization
+
+EN canonical/JA companionは、exact implemented private selector/reuse seam、
+passing tests 2件、libraries `378/425`、sizes `2857/715/2531/2991`、
+30 paths / 42,686 lines、final production/test-list hashesで一致する。
+Task-258 rowなし、public/active/checker/fixture/expectation/sidecar/trace/
+semantic boundaries不変、B2A-next orderでも一致し、implementation
+bilingual debtなし。
+
+両言語はexact profiles `2/1/0`、`6/4/2`、`1/0/1/2/0/2/6`、
+ownership 59/20/24、numerals 53/56、unowned 52/54/57、complete
+`TypeCaseStruct#5` provenance、malformed recovery `1/74/root 73/[52]`
+でも一致する。final read-only quality reviewは全hard gate PASS、
+findingsなし、valid score `98/100`。

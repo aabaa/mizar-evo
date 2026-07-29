@@ -187,3 +187,24 @@ byte-compatibleに保つ。Chapter 5 §5.7 selector authorityはexplicitにexclu
 functional updateはB2C。frozen runner tests 2件はbytes/nodes、ownership/
 provenance、corruption precedence、stale/clean replay、legacy output、
 empty upper familiesをexhaustし、checker testはない。
+
+## Task 258B3M2B2B2P private reuse result
+
+runnerはfrozen exact-source owned-kind selectorと
+existing-context/shared-Task-252からunchanged public Task-254 producerへの
+callをimplementした。exact runner tests 2件はlower profile、ownership、
+resolver provenance、corruption precedence、stale replay、legacy outputを
+含めpass。checker source/API、selector/update semanticsは変更せず、
+B2Aが次consumer。
+
+exact resultはTask-48 `2/1/0`、Task-252 `6/4/2`、Task-254
+`1/0/1/2/0/2/6`、owned kinds 59/20/24、numeral sites 53/56、
+unowned 52/54/57をpreserveする。imported public/exported、
+signature-free `TypeCaseStruct#5` contribution 2/current-source origin
+`7..27/[5]`をauthenticateする。malformed recovery near missは
+`diagnostics=1, nodes=74, root=73, recovered=[52]`。existing Task-254
+source-structure/typed/final debug hashes
+`0d6af57b89e6156d8e5de6831568c81ec110880bebf1e4aeb4ab00563f4da6c8`,
+`8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599`,
+`118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40`
+は不変。

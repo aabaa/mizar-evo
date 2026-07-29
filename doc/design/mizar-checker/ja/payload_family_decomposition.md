@@ -949,3 +949,12 @@ Task 258は何もownしない。future B2A witness-to-structure edge、§5.7配�
 future B2B selector family、B2C update/`FieldUpdate` familiesはseparate。
 semantic term、proof、fact、goal、Core/CFG/VC、inheritance、typing、
 defaults、coverage edgesはabsent。
+
+### Task 258B3M2B2B2P implemented lower-family boundary
+
+private B2P selector/reuse seamは、shared Task-252 primariesとfrozen
+Task-254 constructor profileをinstallするが、payload family/cross-family
+edgeは追加しない。Task 254はconstructor 59/members 20/24だけ、Task 252は
+published numeral sites 53/56だけをownし、Task 258は何もownしない。
+B2A witness-to-structure edgeが次で、B2B/B2Cと全semantic/proof/goal
+edgesはdeferred。

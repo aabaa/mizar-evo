@@ -644,3 +644,18 @@ owned-kind map, two future runner tests, legacy Task-254 compatibility,
 unchanged `378/423` baselines, and B2P-before-B2A order. Both languages
 exclude the statement consumer, checker API, active/fixture/trace changes,
 and all semantic/proof/goal ownership. No B2P bilingual debt remains.
+
+## Checker Task 258B3M2B2B2P Runner Implementation Synchronization
+
+The EN canonical and JA companion agree on the exact implemented private
+selector/reuse seam, two passing tests, `378/425` libraries, sizes
+`2857/715/2531/2991`, 30 paths / 42,686 lines, and final production/test-list
+hashes. They also agree on no Task-258 row, unchanged public/active/checker/
+fixture/expectation/sidecar/trace/semantic boundaries, and B2A-next order.
+No implementation bilingual debt remains.
+
+Both languages also pin exact profiles `2/1/0`, `6/4/2`,
+`1/0/1/2/0/2/6`, ownership 59/20/24, numerals 53/56, unowned 52/54/57,
+complete `TypeCaseStruct#5` provenance, and malformed recovery
+`1/74/root 73/[52]`. The final read-only quality review passed every hard
+gate with no findings and a valid score of `98/100`.

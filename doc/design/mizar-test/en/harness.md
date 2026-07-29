@@ -3863,3 +3863,22 @@ No active case, public dispatch, statement consumer, fixture, sidecar,
 expectation, trace row, detail key, or checker test is added. The future B2A
 contract alone may attach a witness to `Structure(0)`; selector and
 functional-update/`FieldUpdate` witnesses remain B2B and B2C.
+
+## Checker Task 258B3M2B2B2P Dormant Harness Result
+
+The exact-source selector, owned-kind map, shared Task-252 parts, existing
+proof context, imported provenance, Task-254 handoff, mutation matrix, stale
+replay, and legacy hashes are implemented in two passing runner tests.
+All upper source/semantic/proof/goal/IR tables remain empty. No active case,
+fixture, sidecar, expectation, trace row, detail key, checker test, or
+statement consumer changed.
+
+The completed pair specifically pins Task-48/252/254
+`2/1/0`/`6/4/2`/`1/0/1/2/0/2/6`, ownership 59/20/24, numerals 53/56,
+unowned 52/54/57, exact `TypeCaseStruct#5` provenance, and malformed recovery
+`diagnostics=1, nodes=74, root=73, recovered=[52]`. Current Task-254
+source-structure/typed/final hashes remain
+`0d6af57b89e6156d8e5de6831568c81ec110880bebf1e4aeb4ab00563f4da6c8`,
+`8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599`,
+and
+`118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40`.

@@ -11803,3 +11803,13 @@ size and hash.
 No crate dependency, public re-export, active route, fixture, expectation,
 sidecar, trace owner, semantic dependency, statement consumer, or checker
 test is authorized.
+
+## Checker Task 258B3M2B2B2P Implemented Module Boundary
+
+Implementation stayed within the four frozen files: the existing
+source-structure leaf, private facade/root imports, and source-structure test
+leaf. No production path, dependency, public re-export, active route,
+statement consumer, checker API/test, or semantic boundary was added.
+Final sizes are `2857/715/2531/2991`; production remains 30 paths and is
+42,686 lines with unchanged path hash and content hash
+`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`.

@@ -3025,3 +3025,11 @@ is implemented and fresh-inventoried. Take node 62 and witness node 61 are
 therefore unowned by B2P, while transparent node 60 remains excluded and
 constructor node 59 stays Task-254-owned. Witness obligation, substitution,
 proof/fact acceptance, and goal discharge remain deferred.
+
+## Task 258B3M2B2B2P Statement-Owner Result
+
+B2P is implemented without publishing a Task-258 owner, statement, context,
+fact, witness, witness name, coexistence row, or final-statement profile.
+Take 62, witness 61, and transparent term 60 remain unowned by B2P.
+Fresh inventory therefore keeps B2A as the sole next owner of the directed
+`SourceStatementWitness(0) -> SourceStructureTerm(0)` edge.

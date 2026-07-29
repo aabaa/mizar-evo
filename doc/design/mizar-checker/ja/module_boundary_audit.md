@@ -518,3 +518,21 @@ hashは不変、content hashは
 `a4656745edbba7e9b8c382c4d67ac691484d6a067e2b7a0f0f7b5d7a7fc5996e`。
 module、dependency、public API、active route、fixture、trace、semantic
 ownerはboundaryを越えていない。
+
+## Task 258B3M2B2B2P implemented boundary
+
+implementationはexisting private source-structure leaf、private facade/root
+imports、paired source-structure test leafに限定した。module、production
+path、checker dependency、public re-export、statement consumer、active
+route、fixture、expectation、sidecar、trace owner、semantic dependencyは
+追加していない。checker/runner librariesは`378/425`。
+
+runner source-structure leaf/facade/root/test sizesは
+`2857/715/2531/2991`。productionは30 pathsのまま42,686 lines、
+path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`、
+raw/normalized runner-test hashesは
+`b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
+`97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`。
+B2A statement/witness documentationは次のseparate logical task。

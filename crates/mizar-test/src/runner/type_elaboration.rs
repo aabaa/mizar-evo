@@ -464,9 +464,11 @@ pub(super) use source_statement::{
 pub(super) use source_structure::source_structure_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_structure::{
-    SourceStructureRouteOutput, SyntheticSourceStructureDependencies, source_structure_output,
-    source_structure_output_with_mutation, synthetic_source_structure_output,
-    synthetic_source_structure_output_with_mutation,
+    ImportedStructureConstructorSurfaceMutation, ImportedStructureConstructorTestMutation,
+    ImportedStructureConstructorTestOptions, SourceStructureRouteOutput,
+    SyntheticSourceStructureDependencies, imported_structure_constructor_handoff_for_test,
+    source_structure_output, source_structure_output_with_mutation,
+    synthetic_source_structure_output, synthetic_source_structure_output_with_mutation,
     synthetic_source_structure_output_with_validation_symbols,
 };
 pub(super) use source_term::source_term_transport_error_detail_keys;

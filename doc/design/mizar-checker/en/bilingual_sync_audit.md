@@ -569,3 +569,19 @@ boundaries, and continuing semantic/proof/goal/type-substitution deferrals.
 Test, implementation, and source/documentation reviews have no findings. The
 final quality review passed every hard gate at `98/100`; no B1B1 bilingual
 debt remains.
+
+## Task 258B3M2B2B2P Implementation Synchronization
+
+The EN canonical and JA companion record the same implemented private
+owned-kind selector and existing-context/shared-Task-252 Task-254 seam, two
+passing runner tests, `378/425` libraries, runner sizes
+`2857/715/2531/2991`, 30 paths / 42,686 lines, and final production/test-list
+hashes. They also agree that Task 258 gains no statement/witness row, B2A
+remains next, and public, active, checker, fixture, expectation, sidecar,
+trace, and semantic boundaries are unchanged. No B2P bilingual debt remains.
+
+Both companions also pin profiles `2/1/0`, `6/4/2`, and
+`1/0/1/2/0/2/6`; ownership 59/20/24, numerals 53/56, unowned 52/54/57;
+exact `TypeCaseStruct#5` provenance; and malformed recovery
+`1/74/root 73/[52]`. The final read-only quality review passed every hard
+gate with no findings and a valid score of `98/100`.

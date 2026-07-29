@@ -4917,5 +4917,19 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   existing Task-254 creditをpreserve。
 - [x] `378/423`、全counts/hashes、public/active/fixture/expectation/
   sidecar/trace artifactsをpreserveし、selected gapを`design_drift`に分類。
-- [ ] no-findings docs review、hard gates、quality 90/100以上、dedicated docs
+- [x] no-findings docs review、hard gates、quality 90/100以上、dedicated docs
   commit後、fresh-inventoryしてB2Pだけをimplement。
+
+## Checker Task 258B3M2B2B2P implementation ledger
+
+- [x] exact production-private owned-kind selectorと
+  existing-context/shared-Task-252 Task-254 reuse seamをimplement。
+- [x] frozen runner tests 2件をpass。inventoriesは`378/425`。
+- [x] `source_drift`、`test_gap`、completion `design_drift`をclose。
+- [x] checker/public/active/fixture/expectation/sidecar/trace/semantic
+  boundariesをpreserveし、Task-258 statement/witness rowはpublishしない。
+- [x] runner sizes/manifests/test-list hashesを再測定し、B2Aを次に維持。
+- [x] final read-only quality reviewはfindingsなし、全hard gate PASS、
+  valid score `98/100`。
+- [ ] commit/fresh inventory後、B2Aをseparate documentation taskとして
+  freeze。
