@@ -819,3 +819,25 @@ valid `98/100`、category scores `20/20/15/14/10/10/5/4`
 （specification/tests/traceability/implementation-readiness/documentation/
 boundary/verification/handoff）で一致。両言語pendingはstage/commit、
 post-commit、fresh implementation inventoryだけ。
+
+## Task 258B3M2B2B3P implementation-closure synchronization
+
+English canonical/JA companionはprerequisite
+`285a1f11c310bb313c4c6b4feae914eb11f74754`、exact 4 runner files、
+`pub(super)` explicit-context sibling/context-0 delegate、3 literal legacy
+hashes、exact 2 tests、resolver/binding `63/39`、fingerprint-only absence、
+stale precedence、immediate replay、clones/isolationで同期した。runner
+library `446`、sizes `7240/4517/740/2557/19275/2528`、production
+`30/49472`、production/test-list hashesも一致し、checker/5 CLI
+baselinesはunchanged。
+
+両言語ともtest-sufficiency/implementation/source-docs consistency repeat/
+documentation-boundary repeatは**NO FINDINGS**。lint-policy `15/14`、
+metadata `137`、focused `2/2`、library `446/446`、fmt、workspace
+Clippy/tests、5 CLI/current manifest/test-list hashes、diff check、exact
+30-file scopeはPASS。両言語ともindependent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
+（specification `20`、tests `20`、traceability `15`、implementation
+readiness `14`、documentation `10`、boundary discipline `10`、
+verification `5`、handoff `4`）で一致。両言語pendingはimplementation
+commit/post-commitとfresh upper-B3A inventoryだけ。

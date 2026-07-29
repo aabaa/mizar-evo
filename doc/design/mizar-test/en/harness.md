@@ -4324,3 +4324,31 @@ implementation inventory are pending.
 Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
 fresh implementation inventory remain pending.
+
+## Checker Task 258B3M2B2B3P Implemented Private Harness
+
+The prerequisite contract at
+`285a1f11c310bb313c4c6b4feae914eb11f74754` now has exactly two passing
+tests:
+
+- `task258b3m2b2b3p_set_enumeration_proof_context_reuse_is_exact`
+- `task258b3m2b2b3p_set_enumeration_corruption_replay_and_legacy_output_fail_closed`
+
+Together they cover every 117-byte/final-LF mutation, stripped/extra LF,
+all kind/range/recovery/children fields of 57 nodes and root identity, an
+independent 63-field resolver oracle, all 39 binding fields, every
+Task-252/255 row, real prior-binding use-ordinal substitution, and coherent
+application/structure dependencies. A shared fingerprint-only subprofile
+makes each absent dependency clause independently observable. Every rejected
+mutation is followed immediately by clean replay; stale and simultaneous
+precedence, typed/resolved clone rollback, exact owner partitions, semantic
+emptiness, legacy hashes, and active/adjacent isolation are fixed.
+
+Focused `2/2`, runner library `446/446`, formatting, package and workspace
+Clippy/tests, lint-policy `15/14`, metadata `137`, five CLI/current
+manifest/test-list hashes, diff check, and exact 30-file scope PASS.
+Test-sufficiency, implementation, source/documentation consistency repeat,
+and documentation/boundary repeat are **NO FINDINGS**. Independent final
+quality reports **NO FINDINGS**; all nine hard gates PASS with valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only commit/post-commit and fresh B3A
+inventory remain pending.

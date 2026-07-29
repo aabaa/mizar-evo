@@ -3044,6 +3044,35 @@ or semantic owner changed. B3M2B2B remains next before B4.
   exact-26-doc, diff-check, and trace-no-op verification.
 - [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
   and valid `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Audit/stage and commit this documentation prerequisite alone.
-- [ ] Verify post-commit invariants, then fresh-inventory and implement only
-  B3P.
+- [x] Audit/stage and commit this documentation prerequisite alone as
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`.
+- [x] Verify clean post-commit invariants and unchanged stash, then fresh-
+  inventory B3P implementation.
+
+## Checker Task 258B3M2B2B3P Implementation Closure
+
+- [x] Preserve prerequisite commit
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`.
+- [x] Implement exactly four runner files and exactly two B3P tests.
+- [x] Add the private explicit-context sibling/context-0 delegate and retain
+  literal legacy hashes without checker/public/active changes.
+- [x] Cover all bytes/LF, 57 nodes, resolver `63`, binding `39`,
+  Task-252/255, fingerprint-only absence, stale precedence, immediate
+  replay, clones, and isolation.
+- [x] Close B3P `source_drift`/`test_gap`; keep trace credit/status unchanged
+  and transfer next ownership to upper B3A.
+- [x] Complete test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused `2/2`, runner library `446/446`, formatting, package
+  Clippy, and diff check; record current counts/hashes.
+- [x] Complete repeated source/documentation consistency and
+  documentation/boundary reviews with **NO FINDINGS**.
+- [x] Pass lint-policy `15/14`, metadata `137`, focused `2/2`, runner
+  library `446/446`, formatting, workspace-wide warnings-denied Clippy and
+  tests, five CLI/count/hash, current manifest/test-list hash, exact-30-file
+  scope, and diff-check gates.
+- [x] Complete final read-only quality review with **NO FINDINGS**, all nine
+  hard gates PASS, and valid `98/100`
+  (`20/20/15/14/10/10/5/4`).
+- [ ] Audit/stage and create the dedicated implementation commit.
+- [ ] Verify post-commit invariants and fresh-inventory upper B3A.

@@ -910,3 +910,24 @@ final quality、commit、post-commit、fresh implementation inventoryは
 両言語はfinal quality **NO FINDINGS**、全9 hard gates PASS、valid
 `98/100`、category scores `20/20/15/14/10/10/5/4`で一致。
 pendingはstage/commit、post-commit、fresh implementation inventoryだけ。
+
+## Checker Task 258B3M2B2B3P implementation-closure synchronization
+
+EN canonical/JA companionはprerequisite
+`285a1f11c310bb313c4c6b4feae914eb11f74754`、exact 4 runner files、
+`pub(super)` sibling/context-0 delegate、exact 2 tests、resolver/binding
+`63/39`、fingerprint-only absence、precedence/replay/clones/isolation、
+unchanged literal legacy hashesで同期。runner `446`、sizes
+`7240/4517/740/2557/19275/2528`、production `30/49472`、
+production/test-list hashesも一致。
+
+両言語はtest-sufficiency/implementation/source-docs consistency repeat/
+documentation-boundary repeat **NO FINDINGS**をrecord。lint-policy
+`15/14`、metadata `137`、focused `2/2`、library `446/446`、fmt、
+workspace Clippy/tests、5 CLI/current manifest/test-list hashes、diff、
+exact30 scopeはPASS。両言語ともindependent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
+（specification `20`、tests `20`、traceability `15`、implementation
+readiness `14`、documentation `10`、boundary discipline `10`、
+verification `5`、handoff `4`）で一致。pendingはcommit/post-commit、
+fresh B3Aだけ。

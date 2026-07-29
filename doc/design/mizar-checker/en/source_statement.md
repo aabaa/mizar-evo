@@ -3334,3 +3334,23 @@ planned; final quality, commit, post-commit, and fresh inventory are pending.
 Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
 fresh implementation inventory remain pending.
+
+## Task 258B3M2B2B3P Implemented Statement-Owner Exclusion
+
+The private lower B3P implementation from prerequisite commit
+`285a1f11c310bb313c4c6b4feae914eb11f74754` publishes Task-252 and
+Task-255 set-enumeration transport only. Statement, witness, proof, theorem,
+and term-expression containers remain unowned, and no
+`SourceStatementWitness -> SetTerm(0)` edge or statement semantic row exists.
+The two passing tests explicitly preserve that exclusion and isolate all
+active and adjacent statement profiles.
+
+This closes lower B3P `source_drift`/`test_gap` without consuming upper B3A
+ownership. B3A is the next dependency-authorized task. Test-sufficiency and
+implementation, source/documentation consistency repeat, and documentation/
+boundary repeat reviews are **NO FINDINGS**. Lint-policy `15/14`, metadata
+`137`, focused/library/fmt, workspace Clippy/tests, CLI/manifests/test-list
+hashes, diff check, and exact 30-file scope PASS. Independent final quality
+reports **NO FINDINGS**; all nine hard gates PASS with valid `98/100`
+(`20/20/15/14/10/10/5/4`). Only commit/post-commit and fresh B3A inventory
+remain pending.

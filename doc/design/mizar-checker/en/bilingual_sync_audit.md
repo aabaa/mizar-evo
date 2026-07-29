@@ -864,3 +864,27 @@ PASS, and valid `98/100` with category scores
 implementation-readiness/documentation/boundary/verification/handoff.
 Only stage/commit, post-commit, and fresh implementation inventory remain
 pending in both languages.
+
+## Task 258B3M2B2B3P Implementation-Closure Synchronization
+
+The canonical English and Japanese companions now agree that prerequisite
+commit `285a1f11c310bb313c4c6b4feae914eb11f74754` has been implemented in
+exactly four existing runner files. Both record the `pub(super)`
+explicit-context sibling, the context-0 delegate and three literal legacy
+hashes, exactly two tests, resolver/binding field counts `63/39`,
+fingerprint-only absence checks, stale precedence, immediate replay, clones,
+and isolation. Both also record runner library `446`, sizes
+`7240/4517/740/2557/19275/2528`, production `30/49472`, and the synchronized
+production/test-list hashes; checker and five-CLI baselines remain unchanged.
+
+Test-sufficiency, implementation, source/documentation consistency repeat,
+and documentation/boundary repeat are **NO FINDINGS** in both languages.
+Both record lint-policy `15/14`, metadata `137`, focused `2/2`, library
+`446/446`, formatting, workspace Clippy/tests, five CLI and current
+manifest/test-list hashes, diff check, and exact 30-file scope PASS. Both
+record independent final quality **NO FINDINGS**, all nine hard gates PASS,
+and valid `98/100`: specification `20`, tests `20`, traceability `15`,
+implementation readiness `14`, documentation `10`, boundary discipline
+`10`, verification `5`, and handoff `4`. Only implementation
+commit/post-commit checks and fresh upper-B3A inventory remain pending in
+both.

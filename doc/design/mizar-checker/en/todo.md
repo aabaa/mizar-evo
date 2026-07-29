@@ -5454,5 +5454,37 @@ implementation commit does not satisfy a producer task.
   five-CLI-hash, exact-26-doc scope, diff-check, and trace-no-op verification.
 - [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
   and valid `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Audit the task-only docs diff and commit the B3P prerequisite.
-- [ ] Verify post-commit invariants and fresh-inventory B3P implementation.
+- [x] Audit the task-only docs diff and commit the B3P prerequisite as
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`.
+- [x] Verify clean post-commit invariants, unchanged stash, and fresh-
+  inventory B3P implementation.
+
+## Checker Task 258B3M2B2B3P Implementation-Closure Ledger
+
+- [x] Record frozen-contract prerequisite commit
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`.
+- [x] Implement exactly four existing runner files with the `pub(super)`
+  explicit-context sibling and context-0 delegate; preserve all three
+  literal Task-111 hashes.
+- [x] Add exactly two B3P tests covering 117 bytes/LF, 57 nodes, resolver
+  `63`, binding `39`, Task-252/255 rows, fingerprint-only dependency absence,
+  stale precedence, immediate replay, clones, and isolation.
+- [x] Close B3P `source_drift` and `test_gap`; keep checker/public/active,
+  canonical, fixture, expectation, sidecar, and trace artifacts unchanged.
+- [x] Complete test-sufficiency review with **NO FINDINGS**.
+- [x] Complete implementation review with **NO FINDINGS**.
+- [x] Pass focused `2/2`, runner library `446/446`, formatting, package
+  all-target/all-feature Clippy with `-D warnings`, and diff check.
+- [x] Record current checker/runner counts and production/test-list/CLI
+  hashes; keep the trace TOML a deliberate no-op.
+- [x] Complete repeated source/documentation consistency and
+  documentation/boundary reviews with **NO FINDINGS**.
+- [x] Pass lint-policy `15/14`, metadata `137`, focused `2/2`, runner
+  library `446/446`, formatting, workspace-wide warnings-denied Clippy and
+  tests, five CLI/count/hash, current manifest/test-list hash, exact-30-file
+  scope, and diff-check gates.
+- [x] Complete final read-only quality review with **NO FINDINGS**, all nine
+  hard gates PASS, and valid `98/100`
+  (`20/20/15/14/10/10/5/4`).
+- [ ] Audit/stage and create the dedicated B3P implementation commit.
+- [ ] Verify post-commit invariants and fresh-inventory upper B3A.

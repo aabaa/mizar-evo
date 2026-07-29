@@ -5203,5 +5203,34 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   5 CLI hashes、exact 26-doc scope、diff-check、trace no-op verificationをPASS。
 - [x] final qualityを**NO FINDINGS**、全9 hard gates PASS、valid
   `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] task-only docs diffをauditしB3P prerequisiteをcommit。
-- [ ] post-commit invariantsをverifyしB3P implementationをfresh inventory。
+- [x] task-only docs diffをauditしB3P prerequisiteを
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`としてcommit。
+- [x] clean post-commit invariants、unchanged stashをverifyしB3P
+  implementationをfresh inventory。
+
+## Checker Task 258B3M2B2B3P implementation-closure ledger
+
+- [x] prerequisite commit
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`をrecord。
+- [x] exact 4 existing runner filesに`pub(super)` explicit-context sibling/
+  context-0 delegateをimplementし、3 literal Task-111 hashesをpreserve。
+- [x] exact 2 testsで117 bytes/LF、57 nodes、resolver `63`、binding `39`、
+  Task-252/255、fingerprint-only absence、stale precedence、immediate
+  replay、clones/isolationをcover。
+- [x] B3P `source_drift`/`test_gap`をcloseし、checker/public/active、
+  canonical/fixture/expectation/sidecar/traceをunchangedに維持。
+- [x] test-sufficiency reviewを**NO FINDINGS**でcomplete。
+- [x] implementation reviewを**NO FINDINGS**でcomplete。
+- [x] focused `2/2`、runner library `446/446`、format、package Clippy
+  `-D warnings`、diff checkをPASS。
+- [x] current counts/hashesとtrace no-opをrecord。
+- [x] source/documentation consistencyとdocumentation/boundaryのrepeat
+  reviewを**NO FINDINGS**でcomplete。
+- [x] lint-policy `15/14`、metadata `137`、focused `2/2`、runner
+  library `446/446`、format、workspace-wide warnings-denied Clippy/tests、
+  5 CLI/count/hash、current manifest/test-list hash、exact 30-file scope、
+  diff-check gatesをPASS。
+- [x] final read-only quality reviewを**NO FINDINGS**、全9 hard gates
+  PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] dedicated B3P implementation commitをaudit/stage/create。
+- [ ] post-commit invariantsをverifyしupper B3Aをfresh inventory。

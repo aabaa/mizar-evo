@@ -38,7 +38,9 @@ use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 #[cfg(not(test))]
 use super::source_term::source_term_parts_for_roots;
 #[cfg(test)]
-use super::source_term::synthetic_source_term_parts_for_roots;
+use super::source_term::{
+    source_term_parts_for_context_roots, synthetic_source_term_parts_for_roots,
+};
 use super::{
     checker_handoff::{assemble_empty_resolved_typed_ast, source_module_binding_env},
     source_application::{
@@ -149,6 +151,15 @@ const TASK255C1_SOURCE: &str = concat!(
     "  func Task255ConditionedComprehensionDef:\n",
     "    task255_conditioned_comprehension -> set\n",
     "    equals { 1 ++ 2 where candidate255c is set : 3 = 4 };\n",
+    "end;\n",
+);
+
+#[cfg(test)]
+const TASK258B3M2B2B3P_SOURCE: &str = concat!(
+    "reserve x for set;\n",
+    "theorem FormulaStatementSetEnumerationWitnessSmoke: x = x proof\n",
+    "  take {1, 2};\n",
+    "  thus x = x;\n",
     "end;\n",
 );
 
@@ -312,6 +323,2236 @@ fn source_set_term_output_with_mutation_impl(
         None,
         mutate,
     ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3P_RESOLVER_FIELD_COUNT: usize = 63;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3P_BINDING_FIELD_COUNT: usize = 39;
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SetEnumerationSurfaceMutation {
+    None,
+    NodeKind(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    RootIdentity,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SetEnumerationResolverMutation {
+    None,
+    Field(usize),
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SetEnumerationSelectionStage {
+    Source,
+    Surface,
+    Resolver,
+    Selected,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SetEnumerationBindingMutation {
+    None,
+    Field(usize),
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SetEnumerationPrimaryMutation {
+    None,
+    DuplicateRoot,
+    MissingRoot,
+    SourceId,
+    ModuleId,
+    TermSite(usize),
+    TermRange(usize),
+    TermOrdinal(usize),
+    TermContext(usize),
+    TermRecovery(usize),
+    TermSpelling(usize),
+    TermKind(usize),
+    TermRole(usize),
+    TermParent(usize),
+    ReferenceTerm(usize),
+    ReferenceBinding(usize),
+    ReferenceRole(usize),
+    ReferenceScopeModule,
+    ReferenceScopeProof,
+    ReferenceUseOrdinal,
+    NumericTerm(usize),
+    NumericOwner(usize),
+    NumericRange(usize),
+    NumericSpelling(usize),
+    NumericOrdinal(usize),
+    StaleFingerprintReplay,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SetEnumerationHandoffMutation {
+    None,
+    SourceId,
+    ModuleId,
+    TermSite,
+    TermRange,
+    TermOrdinal,
+    TermContext,
+    TermRecovery,
+    TermSpelling,
+    TermKind,
+    ExtraWrapper,
+    ExtraGenerator,
+    ExtraTypeSite,
+    ExtraCondition,
+    EdgeTerm(usize),
+    EdgeOrdinal(usize),
+    EdgeRole(usize),
+    EdgeTarget(usize),
+    RequestTerm,
+    RequestOrdinal,
+    RequestKind,
+    RequestGenerator,
+    RequestTypeSite,
+    CoherentApplicationFingerprint,
+    CoherentStructureFingerprint,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SetEnumerationFinalMutation {
+    None,
+    TypedClone,
+    ResolvedClone,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) struct SetEnumerationProofContextTestOptions {
+    pub(in crate::runner) surface: SetEnumerationSurfaceMutation,
+    pub(in crate::runner) resolver: SetEnumerationResolverMutation,
+    pub(in crate::runner) binding: SetEnumerationBindingMutation,
+    pub(in crate::runner) primary: SetEnumerationPrimaryMutation,
+    pub(in crate::runner) handoff: SetEnumerationHandoffMutation,
+    pub(in crate::runner) final_clone: SetEnumerationFinalMutation,
+}
+
+#[cfg(test)]
+impl Default for SetEnumerationProofContextTestOptions {
+    fn default() -> Self {
+        Self {
+            surface: SetEnumerationSurfaceMutation::None,
+            resolver: SetEnumerationResolverMutation::None,
+            binding: SetEnumerationBindingMutation::None,
+            primary: SetEnumerationPrimaryMutation::None,
+            handoff: SetEnumerationHandoffMutation::None,
+            final_clone: SetEnumerationFinalMutation::None,
+        }
+    }
+}
+
+#[cfg(test)]
+// Rationale: keep every ordered B3P selection-stage authority input explicit.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::runner) fn set_enumeration_selection_stage_for_test(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    loaded_source: &str,
+    surface: SetEnumerationSurfaceMutation,
+    resolver: SetEnumerationResolverMutation,
+) -> SetEnumerationSelectionStage {
+    if loaded_source != TASK258B3M2B2B3P_SOURCE || loaded_source.len() != 117 {
+        return SetEnumerationSelectionStage::Source;
+    }
+    if !task258b3m2b2b3p_surface_contract(ast, loaded_source, surface) {
+        return SetEnumerationSelectionStage::Surface;
+    }
+    if !task258b3m2b2b3p_resolver_contract(ast, module, shells, symbols, resolver) {
+        return SetEnumerationSelectionStage::Resolver;
+    }
+    SetEnumerationSelectionStage::Selected
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_surface_contract(
+    ast: &SurfaceAst,
+    loaded_source: &str,
+    mutation: SetEnumerationSurfaceMutation,
+) -> bool {
+    const KINDS: [&str; 57] = [
+        "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"FormulaStatementSetEnumerationWitnessSmoke\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"proof\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"take\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"{\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"1\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \",\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"2\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"}\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"end\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "TypeHead",
+        "TypeExpression",
+        "ReserveSegment",
+        "ReserveItem",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "NumeralTerm",
+        "TermExpression",
+        "NumeralTerm",
+        "TermExpression",
+        "SetEnumeration",
+        "TermExpression",
+        "Witness",
+        "TakeStatement",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "Proposition",
+        "ConclusionStatement",
+        "ProofBlock",
+        "TheoremItem",
+        "ItemList",
+        "CompilationUnit",
+        "Root",
+    ];
+    const RANGES: [(usize, usize); 57] = [
+        (0, 7),
+        (8, 9),
+        (10, 13),
+        (14, 17),
+        (17, 18),
+        (19, 26),
+        (27, 69),
+        (69, 70),
+        (71, 72),
+        (73, 74),
+        (75, 76),
+        (77, 82),
+        (85, 89),
+        (90, 91),
+        (91, 92),
+        (92, 93),
+        (94, 95),
+        (95, 96),
+        (96, 97),
+        (100, 104),
+        (105, 106),
+        (107, 108),
+        (109, 110),
+        (110, 111),
+        (112, 115),
+        (115, 116),
+        (14, 17),
+        (14, 17),
+        (8, 17),
+        (0, 18),
+        (71, 72),
+        (71, 72),
+        (75, 76),
+        (75, 76),
+        (71, 76),
+        (71, 76),
+        (91, 92),
+        (91, 92),
+        (94, 95),
+        (94, 95),
+        (90, 96),
+        (90, 96),
+        (90, 96),
+        (85, 97),
+        (105, 106),
+        (105, 106),
+        (109, 110),
+        (109, 110),
+        (105, 110),
+        (105, 110),
+        (105, 110),
+        (100, 111),
+        (77, 115),
+        (19, 116),
+        (0, 116),
+        (0, 116),
+        (0, 116),
+    ];
+    const CHILDREN: [&[usize]; 57] = [
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[3],
+        &[26],
+        &[1, 2, 27],
+        &[0, 28, 4],
+        &[8],
+        &[30],
+        &[10],
+        &[32],
+        &[31, 9, 33],
+        &[34],
+        &[14],
+        &[36],
+        &[16],
+        &[38],
+        &[13, 37, 15, 39, 17],
+        &[40],
+        &[41],
+        &[12, 42, 18],
+        &[20],
+        &[44],
+        &[22],
+        &[46],
+        &[45, 21, 47],
+        &[48],
+        &[49],
+        &[19, 50, 23],
+        &[11, 43, 51, 24],
+        &[5, 6, 7, 35, 52, 25],
+        &[29, 53],
+        &[54],
+        &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 55,
+        ],
+    ];
+    if loaded_source != TASK258B3M2B2B3P_SOURCE || loaded_source.len() != 117 {
+        return false;
+    }
+    let mut kinds = KINDS
+        .iter()
+        .map(|kind| (*kind).to_owned())
+        .collect::<Vec<_>>();
+    let mut ranges = RANGES.to_vec();
+    let mut recoveries = [false; 57];
+    let mut children = CHILDREN
+        .iter()
+        .map(|children| children.to_vec())
+        .collect::<Vec<_>>();
+    let mut root = Some(56);
+    match mutation {
+        SetEnumerationSurfaceMutation::None => {}
+        SetEnumerationSurfaceMutation::NodeKind(index) => {
+            if let Some(kind) = kinds.get_mut(index) {
+                kind.push('!');
+            }
+        }
+        SetEnumerationSurfaceMutation::NodeRange(index) => {
+            if let Some(range) = ranges.get_mut(index) {
+                range.1 = range.1.saturating_add(1);
+            }
+        }
+        SetEnumerationSurfaceMutation::NodeRecovery(index) => {
+            if let Some(recovered) = recoveries.get_mut(index) {
+                *recovered = !*recovered;
+            }
+        }
+        SetEnumerationSurfaceMutation::NodeChildren(index) => {
+            if let Some(node_children) = children.get_mut(index) {
+                if node_children.len() > 1 {
+                    node_children.rotate_left(1);
+                } else {
+                    node_children.push(index);
+                }
+            }
+        }
+        SetEnumerationSurfaceMutation::RootIdentity => root = None,
+    }
+    ast.nodes().len() == 57
+        && ast.root().map(|root| root.index()) == root
+        && ast.nodes().iter().enumerate().all(|(index, node)| {
+            format!("{:?}", node.kind) == kinds[index]
+                && (node.range.start, node.range.end) == ranges[index]
+                && node.range.source_id == ast.source_id
+                && node.recovered == recoveries[index]
+                && node
+                    .children
+                    .iter()
+                    .map(|child| child.index())
+                    .eq(children[index].iter().copied())
+        })
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_resolver_contract(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    mutation: SetEnumerationResolverMutation,
+) -> bool {
+    use mizar_resolve::{
+        declarations::{DeclarationShellKind, DeclarationShellVisibilityState},
+        env::{ContributionKind, ExportStatus, SymbolKind, Visibility},
+    };
+    use mizar_session::SourceAnchor;
+
+    let declarations = shells.declarations();
+    let Some(symbol) = symbols.symbols().iter().next() else {
+        return false;
+    };
+    let Some(contribution) = symbols.contributions().get(symbol.contribution()) else {
+        return false;
+    };
+    let signature = symbol.signature();
+    let mut fields = vec![
+        format!("{:?}", symbols.module_id()),
+        symbols.imports().iter().count().to_string(),
+        shells.exports().len().to_string(),
+        declarations.len().to_string(),
+    ];
+    for shell in declarations {
+        fields.extend([
+            shell.id().index().to_string(),
+            shell.ordinal().to_string(),
+            format!("{:?}", shell.kind()),
+            format!("{:?}", shell.module()),
+            shell.node_id().index().to_string(),
+            format!("{:?}", shell.syntax_kind()),
+            format!("{:?}", shell.range()),
+            format!("{:?}", shell.parent()),
+            format!("{:?}", shell.visibility().state()),
+            format!("{:?}", shell.visibility().marker_range()),
+            format!("{:?}", shell.visibility().spelling()),
+            shell.recovered().to_string(),
+        ]);
+    }
+    fields.extend([
+        symbols.symbols().iter().count().to_string(),
+        format!("{:?}", symbol.symbol().module()),
+        symbol.symbol().local().as_str().to_owned(),
+        symbol.symbol().fqn().as_str().to_owned(),
+        format!("{:?}", symbol.kind()),
+        format!("{:?}", symbol.visibility()),
+        format!("{:?}", symbol.export_status()),
+        symbol.namespace().as_str().to_owned(),
+        symbol.primary_spelling().to_owned(),
+        format!("{:?}", symbol.notation_spelling()),
+        format!("{:?}", symbol.origin().source_id()),
+        format!("{:?}", symbol.origin().module_id()),
+        format!("{:?}", symbol.origin().anchor()),
+        format!("{:?}", symbol.origin().structural_path()),
+        format!("{:?}", symbol.origin().import_edge()),
+        symbol.origin().is_recovered().to_string(),
+        symbol.contribution().index().to_string(),
+        format!("{signature:?}"),
+        format!("{:?}", symbol.relations()),
+        symbols.contributions().iter().count().to_string(),
+        contribution.id().index().to_string(),
+        format!("{:?}", contribution.module()),
+        format!("{:?}", contribution.kind()),
+        format!("{:?}", contribution.anchor()),
+        format!("{:?}", contribution.effects().symbols()),
+        format!("{:?}", contribution.effects().definitions()),
+        contribution.effects().overload_groups().len().to_string(),
+        contribution.effects().registrations().len().to_string(),
+        contribution.effects().lexical_summaries().len().to_string(),
+        contribution.effects().labels().len().to_string(),
+        contribution.effects().namespace_edges().len().to_string(),
+        contribution
+            .effects()
+            .declaration_dependencies()
+            .len()
+            .to_string(),
+        contribution.effects().imports().len().to_string(),
+        contribution.effects().exports().len().to_string(),
+        contribution.effects().diagnostics().len().to_string(),
+    ]);
+    if fields.len() != TASK258B3M2B2B3P_RESOLVER_FIELD_COUNT {
+        return false;
+    }
+    if let SetEnumerationResolverMutation::Field(index) = mutation
+        && let Some(field) = fields.get_mut(index)
+    {
+        field.push('!');
+    }
+
+    let expected_local = format!(
+        "contribution=0:namespace={}:owner=theorem#1:shell=theorem:kind=theorem:name=FormulaStatementSetEnumerationWitnessSmoke:notation=_:arity=_:definition=theorem:registration=_:policy=non-overloadable:slot=non-overloadable:_:theorem:_",
+        module.path().as_str()
+    );
+    let expected_fqn = format!(
+        "{}::{}::{expected_local}",
+        module.package().as_str(),
+        module.path().as_str()
+    );
+    let expected_signature = "Opaque { schema: \"parser-signature-v1\", payload: \"node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens=theorem FormulaStatementSetEnumerationWitnessSmoke : x = x proof take { 1 , 2 } ; thus x = x ; end ;;notation=_;arity=_;roles=FormulaExpression,ProofBlock\" }";
+    let module_debug = format!("{module:?}");
+    let reserve_range = SourceRange {
+        source_id: ast.source_id,
+        start: 0,
+        end: 18,
+    };
+    let theorem_range = SourceRange {
+        source_id: ast.source_id,
+        start: 19,
+        end: 116,
+    };
+    let expected_symbol = mizar_resolve::resolved_ast::SymbolId::new(
+        module.clone(),
+        mizar_resolve::resolved_ast::LocalSymbolId::new(expected_local.clone()),
+        mizar_resolve::resolved_ast::FullyQualifiedName::new(expected_fqn.clone()),
+    );
+    let expected_fields = vec![
+        module_debug.clone(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "2".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "Reserve".to_owned(),
+        module_debug.clone(),
+        "29".to_owned(),
+        "ReserveItem".to_owned(),
+        format!("{reserve_range:?}"),
+        "None".to_owned(),
+        "Unspecified".to_owned(),
+        "None".to_owned(),
+        "None".to_owned(),
+        "false".to_owned(),
+        "1".to_owned(),
+        "1".to_owned(),
+        "Theorem".to_owned(),
+        module_debug.clone(),
+        "53".to_owned(),
+        "TheoremItem".to_owned(),
+        format!("{theorem_range:?}"),
+        "None".to_owned(),
+        "Unspecified".to_owned(),
+        "None".to_owned(),
+        "None".to_owned(),
+        "false".to_owned(),
+        "1".to_owned(),
+        module_debug.clone(),
+        expected_local.clone(),
+        expected_fqn.clone(),
+        "Theorem".to_owned(),
+        "Public".to_owned(),
+        "Exported".to_owned(),
+        module.path().as_str().to_owned(),
+        "FormulaStatementSetEnumerationWitnessSmoke".to_owned(),
+        "None".to_owned(),
+        format!("{:?}", ast.source_id),
+        module_debug.clone(),
+        format!("{:?}", SourceAnchor::Range(theorem_range)),
+        "[2, 1]".to_owned(),
+        "None".to_owned(),
+        "false".to_owned(),
+        "0".to_owned(),
+        format!("Some({expected_signature})"),
+        "[]".to_owned(),
+        "1".to_owned(),
+        "0".to_owned(),
+        module_debug,
+        format!(
+            "{:?}",
+            ContributionKind::LocalSource {
+                source_id: ast.source_id
+            }
+        ),
+        format!("{:?}", SourceAnchor::Range(reserve_range)),
+        format!("{:?}", [expected_symbol]),
+        "[DefinitionId(0)]".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+        "0".to_owned(),
+    ];
+    fields[0] == format!("{module:?}")
+        && fields[1] == "0"
+        && fields[2] == "0"
+        && fields[3] == "2"
+        && declarations.first().is_some_and(|shell| {
+            shell.id().index() == 0
+                && shell.ordinal() == 0
+                && shell.kind() == DeclarationShellKind::Reserve
+                && shell.module() == module
+                && shell.node_id().index() == 29
+                && format!("{:?}", shell.syntax_kind()) == "ReserveItem"
+                && shell.range()
+                    == SourceRange {
+                        source_id: ast.source_id,
+                        start: 0,
+                        end: 18,
+                    }
+                && shell.parent().is_none()
+                && shell.visibility().state() == DeclarationShellVisibilityState::Unspecified
+                && shell.visibility().marker_range().is_none()
+                && shell.visibility().spelling().is_none()
+                && !shell.recovered()
+        })
+        && declarations.get(1).is_some_and(|shell| {
+            shell.id().index() == 1
+                && shell.ordinal() == 1
+                && shell.kind() == DeclarationShellKind::Theorem
+                && shell.module() == module
+                && shell.node_id().index() == 53
+                && format!("{:?}", shell.syntax_kind()) == "TheoremItem"
+                && shell.range()
+                    == SourceRange {
+                        source_id: ast.source_id,
+                        start: 19,
+                        end: 116,
+                    }
+                && shell.parent().is_none()
+                && shell.visibility().state() == DeclarationShellVisibilityState::Unspecified
+                && shell.visibility().marker_range().is_none()
+                && shell.visibility().spelling().is_none()
+                && !shell.recovered()
+        })
+        && fields[28] == "1"
+        && symbol.symbol().module() == module
+        && fields[30] == expected_local
+        && fields[31] == expected_fqn
+        && symbol.kind() == SymbolKind::Theorem
+        && symbol.visibility() == Visibility::Public
+        && symbol.export_status() == ExportStatus::Exported
+        && symbol.namespace().as_str() == module.path().as_str()
+        && symbol.primary_spelling() == "FormulaStatementSetEnumerationWitnessSmoke"
+        && symbol.notation_spelling().is_none()
+        && symbol.origin().source_id() == ast.source_id
+        && symbol.origin().module_id() == module
+        && matches!(
+            symbol.origin().anchor(),
+            SourceAnchor::Range(range)
+                if *range == SourceRange {
+                    source_id: ast.source_id,
+                    start: 19,
+                    end: 116,
+                }
+        )
+        && symbol.origin().structural_path() == [2, 1]
+        && symbol.origin().import_edge().is_none()
+        && !symbol.origin().is_recovered()
+        && symbol.contribution().index() == 0
+        && fields[45] == format!("Some({expected_signature})")
+        && symbol.relations().is_empty()
+        && contribution.id().index() == 0
+        && contribution.module() == module
+        && matches!(
+            contribution.kind(),
+            ContributionKind::LocalSource { source_id } if *source_id == ast.source_id
+        )
+        && matches!(
+            contribution.anchor(),
+            SourceAnchor::Range(range)
+                if *range == SourceRange {
+                    source_id: ast.source_id,
+                    start: 0,
+                    end: 18,
+                }
+        )
+        && contribution.effects().symbols() == [symbol.symbol().clone()]
+        && contribution
+            .effects()
+            .definitions()
+            .iter()
+            .map(|definition| definition.index())
+            .eq([0])
+        && contribution.effects().overload_groups().is_empty()
+        && contribution.effects().registrations().is_empty()
+        && contribution.effects().lexical_summaries().is_empty()
+        && contribution.effects().labels().is_empty()
+        && contribution.effects().namespace_edges().is_empty()
+        && contribution.effects().declaration_dependencies().is_empty()
+        && contribution.effects().imports().is_empty()
+        && contribution.effects().exports().is_empty()
+        && contribution.effects().diagnostics().is_empty()
+        && symbols.contributions().iter().count() == 1
+        && expected_fields.len() == TASK258B3M2B2B3P_RESOLVER_FIELD_COUNT
+        && fields == expected_fields
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_binding_contract(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    binding_env: &BindingEnv,
+    _mutation: SetEnumerationBindingMutation,
+) -> bool {
+    use mizar_checker::binding_env::{
+        BinderIdentity, BindingContextLayer, BindingContextOwner, BindingContextRecovery,
+        BindingKind, BindingRecoveryState, BindingStatus, BindingTypeSite,
+    };
+    let Some(module_context) = binding_env.contexts().get(BindingContextId::new(0)) else {
+        return false;
+    };
+    let Some(proof_context) = binding_env.contexts().get(BindingContextId::new(1)) else {
+        return false;
+    };
+    let Some((binding_id, binding)) = binding_env.bindings().iter().next() else {
+        return false;
+    };
+    let fields = vec![
+        format!("{:?}", binding_env.source_id()),
+        format!("{:?}", binding_env.module_id()),
+        binding_env.contexts().len().to_string(),
+        binding_env.bindings().len().to_string(),
+        binding_env.diagnostics().len().to_string(),
+        format!("{:?}", module_context.owner),
+        format!("{:?}", module_context.parent),
+        format!("{:?}", module_context.layer),
+        format!("{:?}", module_context.lexical_scope),
+        format!("{:?}", module_context.bindings),
+        format!("{:?}", module_context.visible_bindings),
+        format!("{:?}", module_context.recovery),
+        format!("{:?}", proof_context.owner),
+        format!("{:?}", proof_context.parent),
+        format!("{:?}", proof_context.layer),
+        format!("{:?}", proof_context.lexical_scope),
+        format!("{:?}", proof_context.bindings),
+        format!("{:?}", proof_context.visible_bindings),
+        format!("{:?}", proof_context.recovery),
+        binding_id.index().to_string(),
+        binding.id.index().to_string(),
+        binding.spelling.clone(),
+        format!("{:?}", binding.kind),
+        format!("{:?}", binding.identity),
+        format!("{:?}", binding.owner_context),
+        format!("{:?}", binding.declaration_range),
+        binding.visible_after_ordinal.to_string(),
+        format!("{:?}", binding.type_site),
+        format!("{:?}", binding.status),
+        format!("{:?}", binding.captured),
+        format!("{:?}", binding.diagnostics),
+        format!("{:?}", binding.recovery),
+        binding_env
+            .contexts()
+            .iter()
+            .map(|(id, _)| id.index())
+            .collect::<Vec<_>>()
+            .len()
+            .to_string(),
+        binding_env
+            .bindings()
+            .iter()
+            .map(|(id, _)| id.index())
+            .collect::<Vec<_>>()
+            .len()
+            .to_string(),
+        format!("{:?}", module_context.bindings.first()),
+        format!("{:?}", module_context.visible_bindings.first()),
+        format!("{:?}", proof_context.visible_bindings.first()),
+        format!(
+            "{:?}",
+            proof_context
+                .lexical_scope
+                .as_ref()
+                .map(|scope| scope.path().to_vec())
+        ),
+        format!("{:?}", binding.captured.identities()),
+    ];
+    if fields.len() != TASK258B3M2B2B3P_BINDING_FIELD_COUNT {
+        return false;
+    }
+    let reserve_range = SourceRange {
+        source_id: ast.source_id,
+        start: 8,
+        end: 9,
+    };
+    binding_env.source_id() == ast.source_id
+        && binding_env.module_id() == module
+        && binding_env.contexts().len() == 2
+        && binding_env.bindings().len() == 1
+        && binding_env.diagnostics().is_empty()
+        && matches!(module_context.owner, BindingContextOwner::Module)
+        && module_context.parent.is_none()
+        && module_context.layer == BindingContextLayer::Module
+        && module_context.lexical_scope.is_none()
+        && module_context.bindings.iter().map(|id| id.index()).eq([0])
+        && module_context
+            .visible_bindings
+            .iter()
+            .map(|id| id.index())
+            .eq([0])
+        && module_context.recovery == BindingContextRecovery::Normal
+        && matches!(
+            proof_context.owner,
+            BindingContextOwner::SourceStatement { source_range }
+                if source_range == SourceRange {
+                    source_id: ast.source_id,
+                    start: 77,
+                    end: 115,
+                }
+        )
+        && proof_context.parent == Some(BindingContextId::new(0))
+        && proof_context.layer == BindingContextLayer::Proof
+        && proof_context
+            .lexical_scope
+            .as_ref()
+            .is_some_and(|scope| scope.path() == [0])
+        && proof_context.bindings.is_empty()
+        && proof_context
+            .visible_bindings
+            .iter()
+            .map(|id| id.index())
+            .eq([0])
+        && proof_context.recovery == BindingContextRecovery::Normal
+        && binding_id.index() == 0
+        && binding.id == binding_id
+        && binding.spelling == "x"
+        && binding.kind == BindingKind::ReservedVariable
+        && matches!(
+            &binding.identity,
+            BinderIdentity::ReservedVariable {
+                spelling,
+                declaration_range,
+            } if spelling == "x" && *declaration_range == reserve_range
+        )
+        && binding.owner_context == BindingContextId::new(0)
+        && binding.declaration_range == reserve_range
+        && binding.visible_after_ordinal == 0
+        && matches!(
+            binding.type_site,
+            BindingTypeSite::Source(range)
+                if range == SourceRange {
+                    source_id: ast.source_id,
+                    start: 14,
+                    end: 17,
+                }
+        )
+        && binding.status == BindingStatus::Reserved
+        && binding.captured.identities().is_empty()
+        && binding.diagnostics.is_empty()
+        && binding.recovery == BindingRecoveryState::Normal
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_binding_env_with_field_mutation(
+    binding_env: &BindingEnv,
+    field: usize,
+) -> Result<BindingEnv, String> {
+    use mizar_checker::binding_env::{
+        BinderIdentity, BindingContextDraft, BindingContextLayer, BindingContextOwner,
+        BindingContextRecovery, BindingContextTable, BindingDiagnosticClass,
+        BindingDiagnosticDraft, BindingDiagnosticRecovery, BindingDiagnosticSeverity,
+        BindingDiagnosticTable, BindingDraft, BindingEnvParts, BindingKind, BindingRecoveryState,
+        BindingStatus, BindingTable, BindingTypeSite, CapturedFreeVariables,
+    };
+    let mut diagnostics = BindingDiagnosticTable::new();
+    let diagnostic = diagnostics.insert(BindingDiagnosticDraft {
+        source_range: None,
+        class: BindingDiagnosticClass::UnsupportedSourceShape,
+        severity: BindingDiagnosticSeverity::Note,
+        message_key: "checker.binding.b3p.test-mutation".to_owned(),
+        recovery: BindingDiagnosticRecovery::Degraded,
+    });
+    let mut binding_drafts = binding_env
+        .bindings()
+        .iter()
+        .map(|(_, binding)| BindingDraft {
+            spelling: binding.spelling.clone(),
+            kind: binding.kind,
+            identity: binding.identity.clone(),
+            owner_context: binding.owner_context,
+            declaration_range: binding.declaration_range,
+            visible_after_ordinal: binding.visible_after_ordinal,
+            type_site: binding.type_site.clone(),
+            status: binding.status,
+            captured: binding.captured.clone(),
+            diagnostics: binding.diagnostics.clone(),
+            recovery: binding.recovery,
+        })
+        .collect::<Vec<_>>();
+    match field {
+        3 | 19 | 20 | 33 => binding_drafts.push(BindingDraft {
+            spelling: "b3p_extra".to_owned(),
+            kind: BindingKind::Generated,
+            identity: BinderIdentity::Generated {
+                context: BindingContextId::new(0),
+                counter: 1,
+            },
+            owner_context: BindingContextId::new(0),
+            declaration_range: binding_drafts[0].declaration_range,
+            visible_after_ordinal: 1,
+            type_site: BindingTypeSite::Missing,
+            status: BindingStatus::Active,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        }),
+        21 => binding_drafts[0].spelling.push('!'),
+        22 => binding_drafts[0].kind = BindingKind::LetBinding,
+        23 => {
+            binding_drafts[0].identity = BinderIdentity::Generated {
+                context: BindingContextId::new(0),
+                counter: 1,
+            }
+        }
+        24 => binding_drafts[0].owner_context = BindingContextId::new(1),
+        25 => binding_drafts[0].declaration_range.start += 1,
+        26 => binding_drafts[0].visible_after_ordinal += 1,
+        27 => binding_drafts[0].type_site = BindingTypeSite::Missing,
+        28 => binding_drafts[0].status = BindingStatus::Active,
+        29 | 38 => {
+            binding_drafts[0].captured =
+                CapturedFreeVariables::new(vec![binding_drafts[0].identity.clone()])
+        }
+        30 => binding_drafts[0].diagnostics = vec![diagnostic],
+        31 => binding_drafts[0].recovery = BindingRecoveryState::Degraded,
+        _ => {}
+    }
+    let mut bindings = BindingTable::new();
+    for draft in binding_drafts {
+        bindings.insert(draft);
+    }
+    let mut contexts = binding_env
+        .contexts()
+        .iter()
+        .map(|(_, context)| BindingContextDraft {
+            owner: context.owner.clone(),
+            parent: context.parent,
+            layer: context.layer,
+            lexical_scope: context.lexical_scope.clone(),
+            bindings: context.bindings.clone(),
+            visible_bindings: context.visible_bindings.clone(),
+            recovery: context.recovery,
+        })
+        .collect::<Vec<_>>();
+    match field {
+        5 => contexts[0].owner = BindingContextOwner::Generated("B3P".to_owned()),
+        6 => contexts[0].parent = Some(BindingContextId::new(1)),
+        7 => contexts[0].layer = BindingContextLayer::Block,
+        8 => contexts[0].lexical_scope = contexts[1].lexical_scope.clone(),
+        9 | 34 => contexts[0].bindings.clear(),
+        10 | 35 => contexts[0].visible_bindings.clear(),
+        11 => contexts[0].recovery = BindingContextRecovery::Degraded,
+        12 => {
+            let BindingContextOwner::SourceStatement { source_range } = contexts[1].owner else {
+                return Err("B3P proof owner disappeared".to_owned());
+            };
+            contexts[1].owner = BindingContextOwner::SourceFormula { source_range };
+        }
+        13 => contexts[1].parent = None,
+        14 => contexts[1].layer = BindingContextLayer::Block,
+        15 | 37 => contexts[1].lexical_scope = None,
+        16 => contexts[1]
+            .bindings
+            .push(mizar_checker::binding_env::BindingId::new(0)),
+        17 | 36 => contexts[1].visible_bindings.clear(),
+        18 => contexts[1].recovery = BindingContextRecovery::Degraded,
+        _ => {}
+    }
+    if matches!(field, 2 | 32) {
+        contexts.push(BindingContextDraft {
+            owner: BindingContextOwner::Generated("B3P-extra".to_owned()),
+            parent: Some(BindingContextId::new(1)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+    }
+    if matches!(field, 3 | 19 | 20 | 33) {
+        contexts[0]
+            .bindings
+            .push(mizar_checker::binding_env::BindingId::new(1));
+    }
+    let mut context_table = BindingContextTable::new();
+    for draft in contexts {
+        context_table.insert(draft);
+    }
+    let source_id = if field == 0 {
+        task258b3m2b2b3p_distinct_source_id()?
+    } else {
+        binding_env.source_id()
+    };
+    let module_id = if field == 1 {
+        ModuleId::new(
+            binding_env.module_id().package().clone(),
+            mizar_session::ModulePath::new("tests.task258b3m2b2b3p.binding-substitute"),
+        )
+    } else {
+        binding_env.module_id().clone()
+    };
+    if field != 4 && field != 30 {
+        diagnostics = BindingDiagnosticTable::new();
+    }
+    BindingEnv::try_new(BindingEnvParts {
+        source_id,
+        module_id,
+        contexts: context_table,
+        bindings,
+        diagnostics,
+    })
+    .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_binding_env_with_prior_event(
+    binding_env: &BindingEnv,
+) -> Result<BindingEnv, String> {
+    use mizar_checker::binding_env::{
+        BinderIdentity, BindingContextDraft, BindingContextTable, BindingDiagnosticTable,
+        BindingDraft, BindingEnvParts, BindingKind, BindingRecoveryState, BindingStatus,
+        BindingTable, BindingTypeSite, CapturedFreeVariables,
+    };
+
+    let Some((_, original)) = binding_env.bindings().iter().next() else {
+        return Err("B3P use-ordinal profile lost BindingId(0)".to_owned());
+    };
+    let mut bindings = BindingTable::new();
+    bindings.insert(BindingDraft {
+        spelling: original.spelling.clone(),
+        kind: original.kind,
+        identity: original.identity.clone(),
+        owner_context: original.owner_context,
+        declaration_range: original.declaration_range,
+        visible_after_ordinal: original.visible_after_ordinal,
+        type_site: original.type_site.clone(),
+        status: original.status,
+        captured: original.captured.clone(),
+        diagnostics: original.diagnostics.clone(),
+        recovery: original.recovery,
+    });
+    let prior_range = SourceRange {
+        source_id: binding_env.source_id(),
+        start: 18,
+        end: 19,
+    };
+    bindings.insert(BindingDraft {
+        spelling: "b3p_prior_event".to_owned(),
+        kind: BindingKind::Generated,
+        identity: BinderIdentity::Generated {
+            context: BindingContextId::new(0),
+            counter: 1,
+        },
+        owner_context: BindingContextId::new(0),
+        declaration_range: prior_range,
+        visible_after_ordinal: 1,
+        type_site: BindingTypeSite::Missing,
+        status: BindingStatus::Active,
+        captured: CapturedFreeVariables::default(),
+        diagnostics: Vec::new(),
+        recovery: BindingRecoveryState::Normal,
+    });
+
+    let mut contexts = binding_env
+        .contexts()
+        .iter()
+        .map(|(_, context)| BindingContextDraft {
+            owner: context.owner.clone(),
+            parent: context.parent,
+            layer: context.layer,
+            lexical_scope: context.lexical_scope.clone(),
+            bindings: context.bindings.clone(),
+            visible_bindings: context.visible_bindings.clone(),
+            recovery: context.recovery,
+        })
+        .collect::<Vec<_>>();
+    let prior = mizar_checker::binding_env::BindingId::new(1);
+    contexts[0].bindings.push(prior);
+    contexts[0].visible_bindings.push(prior);
+    contexts[1].visible_bindings.push(prior);
+    let mut context_table = BindingContextTable::new();
+    for context in contexts {
+        context_table.insert(context);
+    }
+    BindingEnv::try_new(BindingEnvParts {
+        source_id: binding_env.source_id(),
+        module_id: binding_env.module_id().clone(),
+        contexts: context_table,
+        bindings,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_primary_roots() -> [(usize, BindingContextId); 6] {
+    let module = BindingContextId::new(0);
+    let proof = BindingContextId::new(1);
+    [
+        (30, module),
+        (32, module),
+        (36, proof),
+        (38, proof),
+        (44, proof),
+        (46, proof),
+    ]
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_primary_profile_is_exact(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+) -> bool {
+    use mizar_checker::{
+        source_term::{
+            SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceRole,
+            SourcePrimaryTermRole,
+        },
+        typed_ast::{NodeRecoveryState, TypingState},
+    };
+    use mizar_session::SourceAnchor;
+
+    let expected_terms = [
+        (30, 71, 72, 0, "x", SourcePrimaryTermKind::VariableReference),
+        (32, 75, 76, 0, "x", SourcePrimaryTermKind::VariableReference),
+        (36, 91, 92, 1, "1", SourcePrimaryTermKind::Numeral),
+        (38, 94, 95, 1, "2", SourcePrimaryTermKind::Numeral),
+        (
+            44,
+            105,
+            106,
+            1,
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+        (
+            46,
+            109,
+            110,
+            1,
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+    ];
+    if source_term.handoff.source_id() != ast.source_id
+        || source_term.handoff.module_id() != module
+        || source_term.handoff.terms().len() != 6
+        || source_term.handoff.references().len() != 4
+        || source_term.handoff.numeric_type_requests().len() != 2
+        || source_term.handoff.terms().iter().zip(expected_terms).any(
+            |((id, term), (site, start, end, context, spelling, kind))| {
+                id.index() != term.source_ordinal()
+                    || term.site().node().index() != site
+                    || term.source_range()
+                        != SourceRange {
+                            source_id: ast.source_id,
+                            start,
+                            end,
+                        }
+                    || term.context() != BindingContextId::new(context)
+                    || term.recovery() != SourcePrimaryTermRecovery::Normal
+                    || term.spelling() != spelling
+                    || term.kind() != kind
+                    || term.role() != SourcePrimaryTermRole::Value
+                    || term.parent().is_some()
+            },
+        )
+    {
+        return false;
+    }
+    let expected_references = [(0, false), (1, false), (4, true), (5, true)];
+    if source_term
+        .handoff
+        .references()
+        .iter()
+        .zip(expected_references)
+        .any(|((id, reference), (term, scoped))| {
+            id.index() >= 4
+                || reference.term().index() != term
+                || reference.binding().index() != 0
+                || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                || reference.use_ordinal() != 1
+                || if scoped {
+                    reference
+                        .lexical_scope()
+                        .is_none_or(|scope| scope.path() != [0])
+                } else {
+                    reference.lexical_scope().is_some()
+                }
+        })
+    {
+        return false;
+    }
+    let expected_requests = [(2, 36, 91, 92, "1"), (3, 38, 94, 95, "2")];
+    if source_term
+        .handoff
+        .numeric_type_requests()
+        .iter()
+        .zip(expected_requests)
+        .any(|((id, request), (term, owner, start, end, spelling))| {
+            request.term().index() != term
+                || request.owner().node().index() != owner
+                || request.source_range()
+                    != SourceRange {
+                        source_id: ast.source_id,
+                        start,
+                        end,
+                    }
+                || request.spelling() != spelling
+                || request.request_ordinal() != id.index()
+        })
+    {
+        return false;
+    }
+    source_term.arena.len() == 57
+        && source_term.arena.root().map(|root| root.index()) == Some(56)
+        && source_term.arena.iter().all(|(id, node)| {
+            let index = id.index();
+            let expected_kind = match index {
+                30 | 32 | 44 | 46 => "source.term.variable-reference",
+                36 | 38 => "source.term.numeral",
+                _ => "source.surface.unowned",
+            };
+            ast.nodes().get(index).is_some_and(|surface| {
+                node.kind.as_str() == expected_kind
+                    && node.resolved_node.is_none()
+                    && node.anchor == SourceAnchor::Range(surface.range)
+                    && node
+                        .children
+                        .iter()
+                        .map(|child| child.index())
+                        .eq(surface.children.iter().map(|child| child.index()))
+                    && node.typing == TypingState::Unknown
+                    && node.recovery == NodeRecoveryState::Normal
+                    && node.links.context.is_none()
+                    && node.links.type_entry.is_none()
+                    && node.links.facts.is_empty()
+                    && node.links.coercions.is_empty()
+                    && node.links.initial_obligations.is_empty()
+                    && node.links.diagnostics.is_empty()
+            })
+        })
+        && binding_env.source_id() == ast.source_id
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_distinct_source_id() -> Result<mizar_session::SourceId, String> {
+    let allocator = mizar_session::InMemorySessionIdAllocator::new();
+    mizar_session::SessionIdAllocator::next_source_id(
+        &allocator,
+        super::super::shared::snapshot_id(258_330),
+    )
+    .map_err(|error| error.to_string())?;
+    mizar_session::SessionIdAllocator::next_source_id(
+        &allocator,
+        super::super::shared::snapshot_id(258_330),
+    )
+    .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_source_term_with_mutation(
+    _ast: &SurfaceAst,
+    module: &ModuleId,
+    binding_env: &BindingEnv,
+    source_term: SourceTermParts,
+    mutation: SetEnumerationPrimaryMutation,
+) -> Result<SourceTermParts, String> {
+    use mizar_checker::source_term::{
+        SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermId,
+        SourcePrimaryTermInput, SourcePrimaryTermKind, SourcePrimaryTermProducer,
+        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput, SourcePrimaryTermReferenceRole,
+        SourcePrimaryTermRole,
+    };
+    if mutation == SetEnumerationPrimaryMutation::None
+        || mutation == SetEnumerationPrimaryMutation::StaleFingerprintReplay
+    {
+        return Ok(source_term);
+    }
+    let mut input = SourcePrimaryTermHandoffInput {
+        source_id: source_term.handoff.source_id(),
+        module_id: source_term.handoff.module_id().clone(),
+        terms: source_term
+            .handoff
+            .terms()
+            .iter()
+            .map(|(_, term)| SourcePrimaryTermInput {
+                site: term.site().clone(),
+                source_range: term.source_range(),
+                source_ordinal: term.source_ordinal(),
+                context: term.context(),
+                recovery: term.recovery(),
+                spelling: term.spelling().to_owned(),
+                kind: term.kind(),
+                role: term.role(),
+                parent: term.parent(),
+            })
+            .collect(),
+        references: source_term
+            .handoff
+            .references()
+            .iter()
+            .map(|(_, reference)| SourcePrimaryTermReferenceInput {
+                term: reference.term(),
+                binding: reference.binding(),
+                role: reference.role(),
+            })
+            .collect(),
+        numeric_type_requests: source_term
+            .handoff
+            .numeric_type_requests()
+            .iter()
+            .map(|(_, request)| SourceNumericTypeRequestInput {
+                term: request.term(),
+                owner: request.owner().clone(),
+                source_range: request.source_range(),
+                spelling: request.spelling().to_owned(),
+                request_ordinal: request.request_ordinal(),
+            })
+            .collect(),
+    };
+    match mutation {
+        SetEnumerationPrimaryMutation::None
+        | SetEnumerationPrimaryMutation::DuplicateRoot
+        | SetEnumerationPrimaryMutation::MissingRoot
+        | SetEnumerationPrimaryMutation::StaleFingerprintReplay => {}
+        SetEnumerationPrimaryMutation::SourceId => {
+            input.source_id = task258b3m2b2b3p_distinct_source_id()?;
+        }
+        SetEnumerationPrimaryMutation::ModuleId => {
+            input.module_id = ModuleId::new(
+                module.package().clone(),
+                mizar_session::ModulePath::new("tests.task258b3m2b2b3p.primary-substitute"),
+            );
+        }
+        SetEnumerationPrimaryMutation::TermSite(index) => {
+            input.terms[index].site = TypedSiteRef::Node(TypedNodeId::new(0));
+        }
+        SetEnumerationPrimaryMutation::TermRange(index) => {
+            input.terms[index].source_range.start += 1;
+        }
+        SetEnumerationPrimaryMutation::TermOrdinal(index) => {
+            input.terms[index].source_ordinal += 1;
+        }
+        SetEnumerationPrimaryMutation::TermContext(index) => {
+            input.terms[index].context =
+                BindingContextId::new(1 - input.terms[index].context.index());
+        }
+        SetEnumerationPrimaryMutation::TermRecovery(index) => {
+            input.terms[index].recovery = SourcePrimaryTermRecovery::Degraded;
+        }
+        SetEnumerationPrimaryMutation::TermSpelling(index) => {
+            input.terms[index].spelling.push('!');
+        }
+        SetEnumerationPrimaryMutation::TermKind(index) => {
+            input.terms[index].kind = if input.terms[index].kind == SourcePrimaryTermKind::Numeral {
+                SourcePrimaryTermKind::VariableReference
+            } else {
+                SourcePrimaryTermKind::Numeral
+            };
+        }
+        SetEnumerationPrimaryMutation::TermRole(index) => {
+            input.terms[index].role = SourcePrimaryTermRole::CurrentDefinitionResult;
+        }
+        SetEnumerationPrimaryMutation::TermParent(index) => {
+            input.terms[index].parent = Some(SourcePrimaryTermId::new(index));
+        }
+        SetEnumerationPrimaryMutation::ReferenceTerm(index) => {
+            input.references[index].term = SourcePrimaryTermId::new(2);
+        }
+        SetEnumerationPrimaryMutation::ReferenceBinding(index) => {
+            input.references[index].binding = mizar_checker::binding_env::BindingId::new(1);
+        }
+        SetEnumerationPrimaryMutation::ReferenceRole(index) => {
+            input.references[index].role = SourcePrimaryTermReferenceRole::LocalConstant;
+        }
+        SetEnumerationPrimaryMutation::ReferenceScopeModule
+        | SetEnumerationPrimaryMutation::ReferenceScopeProof
+        | SetEnumerationPrimaryMutation::ReferenceUseOrdinal => {}
+        SetEnumerationPrimaryMutation::NumericTerm(index) => {
+            input.numeric_type_requests[index].term = SourcePrimaryTermId::new(0);
+        }
+        SetEnumerationPrimaryMutation::NumericOwner(index) => {
+            input.numeric_type_requests[index].owner = TypedSiteRef::Node(TypedNodeId::new(0));
+        }
+        SetEnumerationPrimaryMutation::NumericRange(index) => {
+            input.numeric_type_requests[index].source_range.start += 1;
+        }
+        SetEnumerationPrimaryMutation::NumericSpelling(index) => {
+            input.numeric_type_requests[index].spelling.push('!');
+        }
+        SetEnumerationPrimaryMutation::NumericOrdinal(index) => {
+            input.numeric_type_requests[index].request_ordinal += 1;
+        }
+    }
+    let handoff = SourcePrimaryTermProducer::build(input, binding_env, &source_term.arena)
+        .map_err(|error| error.to_string())?;
+    Ok(SourceTermParts {
+        arena: source_term.arena,
+        handoff,
+    })
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_dependency_probe_arena(
+    ast: &SurfaceAst,
+    source: &TypedArena,
+    owned: &[(usize, &'static str)],
+    anchor_overrides: &[(usize, SourceRange)],
+) -> Result<TypedArena, String> {
+    use mizar_session::SourceAnchor;
+
+    let kinds = owned.iter().copied().collect::<BTreeMap<_, _>>();
+    let arena = arena_with_overrides(ast, source, &kinds, &BTreeMap::new())?;
+    let mut nodes = arena
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for (site, range) in anchor_overrides {
+        nodes
+            .get_mut(*site)
+            .ok_or_else(|| "Task255 dependency probe occurrence site disappeared".to_owned())?
+            .anchor = SourceAnchor::Range(*range);
+    }
+    TypedArena::try_new(arena.root(), nodes).map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_dependency_probe_set_input(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    first: SourceSetTarget,
+    first_spelling: &str,
+) -> SourceSetTermHandoffInput {
+    use mizar_checker::source_term::SourcePrimaryTermId;
+
+    SourceSetTermHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        terms: vec![SourceSetTermInput {
+            site: TypedSiteRef::Node(TypedNodeId::new(40)),
+            source_range: ast.nodes()[40].range,
+            source_ordinal: 0,
+            context: BindingContextId::new(1),
+            recovery: SourceSetTermRecovery::Normal,
+            spelling: format!("{{ {first_spelling} , 2 }}"),
+            kind: SourceSetTermKind::Enumeration,
+        }],
+        wrappers: Vec::new(),
+        generators: Vec::new(),
+        type_sites: Vec::new(),
+        conditions: Vec::new(),
+        edges: vec![
+            SourceSetEdgeInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                role: SourceSetEdgeRole::EnumerationElement,
+                target: first,
+            },
+            SourceSetEdgeInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 1,
+                role: SourceSetEdgeRole::EnumerationElement,
+                target: SourceSetTarget::Primary(SourcePrimaryTermId::new(3)),
+            },
+        ],
+        requests: vec![SourceSetRequestInput {
+            term: SourceSetTermId::new(0),
+            ordinal: 0,
+            kind: SourceSetRequestKind::ResultType,
+            generator: None,
+            type_site: None,
+        }],
+    }
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_fingerprint_profile_is_exact(
+    primary_fingerprint: &str,
+    handoff: &mizar_checker::source_set_term::SourceSetTermHandoff,
+) -> bool {
+    handoff.primary_term_fingerprint() == primary_fingerprint
+        && handoff.application_fingerprint().is_none()
+        && handoff.structure_fingerprint().is_none()
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_set_handoff_profile_is_exact(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    primary_fingerprint: &str,
+    handoff: &mizar_checker::source_set_term::SourceSetTermHandoff,
+) -> bool {
+    let Some(term) = handoff.terms().get(SourceSetTermId::new(0)) else {
+        return false;
+    };
+    let edges = handoff
+        .edges()
+        .iter()
+        .map(|(id, edge)| {
+            (
+                id.index(),
+                edge.term().index(),
+                edge.ordinal(),
+                edge.role(),
+                edge.target(),
+            )
+        })
+        .collect::<Vec<_>>();
+    let requests = handoff
+        .requests()
+        .iter()
+        .map(|(id, request)| {
+            (
+                id.index(),
+                request.term().index(),
+                request.ordinal(),
+                request.kind(),
+                request.generator(),
+                request.type_site(),
+            )
+        })
+        .collect::<Vec<_>>();
+    handoff.source_id() == ast.source_id
+        && handoff.module_id() == module
+        && handoff.terms().len() == 1
+        && handoff.wrappers().is_empty()
+        && handoff.generators().is_empty()
+        && handoff.type_sites().is_empty()
+        && handoff.conditions().is_empty()
+        && term.site().node().index() == 40
+        && term.source_range()
+            == SourceRange {
+                source_id: ast.source_id,
+                start: 90,
+                end: 96,
+            }
+        && term.source_ordinal() == 0
+        && term.context() == BindingContextId::new(1)
+        && term.recovery() == SourceSetTermRecovery::Normal
+        && term.spelling() == "{ 1 , 2 }"
+        && term.kind() == SourceSetTermKind::Enumeration
+        && edges
+            == [
+                (
+                    0,
+                    0,
+                    0,
+                    SourceSetEdgeRole::EnumerationElement,
+                    SourceSetTarget::Primary(mizar_checker::source_term::SourcePrimaryTermId::new(
+                        2,
+                    )),
+                ),
+                (
+                    1,
+                    0,
+                    1,
+                    SourceSetEdgeRole::EnumerationElement,
+                    SourceSetTarget::Primary(mizar_checker::source_term::SourcePrimaryTermId::new(
+                        3,
+                    )),
+                ),
+            ]
+        && requests == [(0, 0, 0, SourceSetRequestKind::ResultType, None, None)]
+        && task258b3m2b2b3p_fingerprint_profile_is_exact(primary_fingerprint, handoff)
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_coherent_application_fingerprint_probe(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+) -> Result<mizar_checker::source_set_term::SourceSetTermHandoff, String> {
+    use mizar_checker::source_application::{
+        SourceFunctorApplicationForm, SourceFunctorApplicationHandoffInput,
+        SourceFunctorApplicationInput, SourceFunctorApplicationKind,
+        SourceFunctorApplicationProducer, SourceFunctorApplicationRecovery, SourceFunctorHeadSite,
+    };
+
+    let occurrence = SourceRange {
+        source_id: ast.source_id,
+        start: 91,
+        end: 94,
+    };
+    let arena = task258b3m2b2b3p_dependency_probe_arena(
+        ast,
+        &source_term.arena,
+        &[
+            (37, "source.term.functor-head.single"),
+            (41, "source.term.functor-application.inline"),
+        ],
+        &[(41, occurrence)],
+    )?;
+    let applications = SourceFunctorApplicationProducer::build(
+        SourceFunctorApplicationHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            applications: vec![SourceFunctorApplicationInput {
+                site: TypedSiteRef::Node(TypedNodeId::new(41)),
+                source_range: occurrence,
+                source_ordinal: 0,
+                context: BindingContextId::new(1),
+                recovery: SourceFunctorApplicationRecovery::Normal,
+                spelling: "b3p_inline ( )".to_owned(),
+                kind: SourceFunctorApplicationKind::Inline,
+                form: SourceFunctorApplicationForm::Functional,
+                head_ordinal: 0,
+                head: SourceFunctorHeadSite::Single {
+                    site: TypedSiteRef::Node(TypedNodeId::new(37)),
+                    source_range: ast.nodes()[37].range,
+                    spelling: "b3p_inline".to_owned(),
+                },
+            }],
+            wrappers: Vec::new(),
+            candidates: Vec::new(),
+            arguments: Vec::new(),
+            type_requests: Vec::new(),
+        },
+        symbols,
+        binding_env,
+        &source_term.handoff,
+        &arena,
+    )
+    .map_err(|error| error.to_string())?;
+    let arena = arena_with_overrides(
+        ast,
+        &arena,
+        &BTreeMap::from([(40, "source.term.set.enumeration")]),
+        &BTreeMap::new(),
+    )?;
+    let handoff = SourceSetTermProducer::build(
+        task258b3m2b2b3p_dependency_probe_set_input(
+            ast,
+            module,
+            SourceSetTarget::Application(SourceFunctorApplicationId::new(0)),
+            "b3p_inline ( )",
+        ),
+        binding_env,
+        &source_term.handoff,
+        Some(&applications),
+        None,
+        &arena,
+    )
+    .map_err(|error| error.to_string())?;
+    if handoff.application_fingerprint() != Some(applications.debug_text().as_str())
+        || handoff.structure_fingerprint().is_some()
+    {
+        return Err("coherent application dependency did not produce one fingerprint".to_owned());
+    }
+    Ok(handoff)
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_coherent_structure_fingerprint_probe(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+) -> Result<mizar_checker::source_set_term::SourceSetTermHandoff, String> {
+    use mizar_checker::{
+        source_structure::{
+            SourceStructureEdgeInput, SourceStructureEdgeRole, SourceStructureHandoffInput,
+            SourceStructureMemberId, SourceStructureMemberInput, SourceStructureMemberRole,
+            SourceStructureProducer, SourceStructureRecovery, SourceStructureRequestInput,
+            SourceStructureRequestKind, SourceStructureTarget, SourceStructureTermInput,
+            SourceStructureTermKind,
+        },
+        source_term::SourcePrimaryTermId,
+    };
+
+    let occurrence = SourceRange {
+        source_id: ast.source_id,
+        start: 91,
+        end: 94,
+    };
+    let member_range = SourceRange {
+        source_id: ast.source_id,
+        start: 93,
+        end: 94,
+    };
+    let arena = task258b3m2b2b3p_dependency_probe_arena(
+        ast,
+        &source_term.arena,
+        &[
+            (39, "source.term.structure.member.selector"),
+            (41, "source.term.structure.selector"),
+        ],
+        &[(39, member_range), (41, occurrence)],
+    )?;
+    let structures = SourceStructureProducer::build(
+        SourceStructureHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            terms: vec![SourceStructureTermInput {
+                site: TypedSiteRef::Node(TypedNodeId::new(41)),
+                source_range: occurrence,
+                source_ordinal: 0,
+                context: BindingContextId::new(1),
+                recovery: SourceStructureRecovery::Normal,
+                spelling: "1 . b3p_member".to_owned(),
+                kind: SourceStructureTermKind::SelectorAccess,
+            }],
+            wrappers: Vec::new(),
+            roots: Vec::new(),
+            members: vec![SourceStructureMemberInput {
+                term: SourceStructureTermId::new(0),
+                ordinal: 0,
+                site: TypedSiteRef::Node(TypedNodeId::new(39)),
+                source_range: member_range,
+                spelling: "b3p_member".to_owned(),
+                role: SourceStructureMemberRole::Selector,
+                parent: None,
+            }],
+            field_updates: Vec::new(),
+            edges: vec![SourceStructureEdgeInput {
+                term: SourceStructureTermId::new(0),
+                ordinal: 0,
+                role: SourceStructureEdgeRole::SelectorBase,
+                member: None,
+                target: SourceStructureTarget::Primary(SourcePrimaryTermId::new(2)),
+            }],
+            requests: vec![
+                SourceStructureRequestInput {
+                    term: SourceStructureTermId::new(0),
+                    member: Some(SourceStructureMemberId::new(0)),
+                    request_ordinal: 0,
+                    kind: SourceStructureRequestKind::MemberIdentity,
+                },
+                SourceStructureRequestInput {
+                    term: SourceStructureTermId::new(0),
+                    member: Some(SourceStructureMemberId::new(0)),
+                    request_ordinal: 1,
+                    kind: SourceStructureRequestKind::InheritancePath,
+                },
+                SourceStructureRequestInput {
+                    term: SourceStructureTermId::new(0),
+                    member: None,
+                    request_ordinal: 2,
+                    kind: SourceStructureRequestKind::ResultType,
+                },
+            ],
+        },
+        symbols,
+        binding_env,
+        &source_term.handoff,
+        None,
+        &arena,
+    )
+    .map_err(|error| error.to_string())?;
+    let arena = arena_with_overrides(
+        ast,
+        &arena,
+        &BTreeMap::from([(40, "source.term.set.enumeration")]),
+        &BTreeMap::new(),
+    )?;
+    let handoff = SourceSetTermProducer::build(
+        task258b3m2b2b3p_dependency_probe_set_input(
+            ast,
+            module,
+            SourceSetTarget::Structure(SourceStructureTermId::new(0)),
+            "1 . b3p_member",
+        ),
+        binding_env,
+        &source_term.handoff,
+        None,
+        Some(&structures),
+        &arena,
+    )
+    .map_err(|error| error.to_string())?;
+    if handoff.structure_fingerprint() != Some(structures.debug_text().as_str())
+        || handoff.application_fingerprint().is_some()
+    {
+        return Err("coherent structure dependency did not produce one fingerprint".to_owned());
+    }
+    Ok(handoff)
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3p_mutate_handoff(
+    input: &mut SourceSetTermHandoffInput,
+    ast: &SurfaceAst,
+    mutation: SetEnumerationHandoffMutation,
+) {
+    match mutation {
+        SetEnumerationHandoffMutation::None => {}
+        SetEnumerationHandoffMutation::SourceId => {
+            input.source_id =
+                task258b3m2b2b3p_distinct_source_id().expect("B3P distinct source identity");
+        }
+        SetEnumerationHandoffMutation::ModuleId => {
+            input.module_id = ModuleId::new(
+                input.module_id.package().clone(),
+                mizar_session::ModulePath::new("tests.task258b3m2b2b3p.set-substitute"),
+            );
+        }
+        SetEnumerationHandoffMutation::TermSite => {
+            input.terms[0].site = TypedSiteRef::Node(TypedNodeId::new(41));
+        }
+        SetEnumerationHandoffMutation::TermRange => input.terms[0].source_range.start += 1,
+        SetEnumerationHandoffMutation::TermOrdinal => input.terms[0].source_ordinal = 1,
+        SetEnumerationHandoffMutation::TermContext => {
+            input.terms[0].context = BindingContextId::new(0);
+        }
+        SetEnumerationHandoffMutation::TermRecovery => {
+            input.terms[0].recovery = SourceSetTermRecovery::Degraded;
+        }
+        SetEnumerationHandoffMutation::TermSpelling => input.terms[0].spelling.push('!'),
+        SetEnumerationHandoffMutation::TermKind => {
+            input.terms[0].kind = SourceSetTermKind::Comprehension;
+        }
+        SetEnumerationHandoffMutation::ExtraWrapper => {
+            input.wrappers.push(SourceSetWrapperInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                site: TypedSiteRef::Node(TypedNodeId::new(41)),
+                source_range: ast.nodes()[41].range,
+                context: BindingContextId::new(1),
+                recovery: SourceSetTermRecovery::Normal,
+                spelling: "{ 1 , 2 }".to_owned(),
+            });
+        }
+        SetEnumerationHandoffMutation::ExtraGenerator => {
+            input.generators.push(SourceSetGeneratorInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                site: TypedSiteRef::Node(TypedNodeId::new(14)),
+                source_range: ast.nodes()[14].range,
+                spelling: "1".to_owned(),
+                context: BindingContextId::new(1),
+                recovery: SourceSetTermRecovery::Normal,
+                type_site: SourceSetTypeSiteId::new(0),
+            });
+        }
+        SetEnumerationHandoffMutation::ExtraTypeSite => {
+            input.type_sites.push(SourceSetTypeSiteInput {
+                owner: SourceSetTypeOwner::Term {
+                    term: SourceSetTermId::new(0),
+                    role: SourceSetTypeRole::ChoiceTarget,
+                },
+                site: TypedSiteRef::Node(TypedNodeId::new(27)),
+                source_range: ast.nodes()[27].range,
+                spelling: "set".to_owned(),
+                head_site: TypedSiteRef::Node(TypedNodeId::new(26)),
+                head_range: ast.nodes()[26].range,
+                head_spelling: "set".to_owned(),
+                context: BindingContextId::new(1),
+                recovery: SourceSetTermRecovery::Normal,
+                head: SourceSetTypeHead::BuiltinSet,
+            });
+        }
+        SetEnumerationHandoffMutation::ExtraCondition => {
+            input.conditions.push(SourceSetConditionInput {
+                term: SourceSetTermId::new(0),
+                ordinal: 0,
+                colon_site: TypedSiteRef::Node(TypedNodeId::new(7)),
+                colon_range: ast.nodes()[7].range,
+                colon_spelling: ":".to_owned(),
+                condition_site: TypedSiteRef::Node(TypedNodeId::new(35)),
+                source_range: ast.nodes()[35].range,
+                spelling: "x = x".to_owned(),
+                recovery: SourceSetTermRecovery::Normal,
+            });
+        }
+        SetEnumerationHandoffMutation::EdgeTerm(index) => {
+            input.edges[index].term = SourceSetTermId::new(1);
+        }
+        SetEnumerationHandoffMutation::EdgeOrdinal(index) => {
+            input.edges[index].ordinal = 1 - index;
+        }
+        SetEnumerationHandoffMutation::EdgeRole(index) => {
+            input.edges[index].role = SourceSetEdgeRole::QuaBase;
+        }
+        SetEnumerationHandoffMutation::EdgeTarget(index) => {
+            input.edges[index].target =
+                SourceSetTarget::Primary(mizar_checker::source_term::SourcePrimaryTermId::new(0));
+        }
+        SetEnumerationHandoffMutation::RequestTerm => {
+            input.requests[0].term = SourceSetTermId::new(1);
+        }
+        SetEnumerationHandoffMutation::RequestOrdinal => input.requests[0].ordinal = 1,
+        SetEnumerationHandoffMutation::RequestKind => {
+            input.requests[0].kind = SourceSetRequestKind::ChoiceNonempty;
+        }
+        SetEnumerationHandoffMutation::RequestGenerator => {
+            input.requests[0].generator = Some(SourceSetGeneratorId::new(0));
+        }
+        SetEnumerationHandoffMutation::RequestTypeSite => {
+            input.requests[0].type_site = Some(SourceSetTypeSiteId::new(0));
+        }
+        SetEnumerationHandoffMutation::CoherentApplicationFingerprint
+        | SetEnumerationHandoffMutation::CoherentStructureFingerprint => {}
+    }
+}
+
+#[cfg(test)]
+// Rationale: keep every frozen B3P corruption boundary explicit in one test seam.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::runner) fn set_enumeration_proof_context_handoff_for_test(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    loaded_source: &str,
+    options: SetEnumerationProofContextTestOptions,
+) -> Option<Result<SourceSetTermRouteOutput, String>> {
+    if set_enumeration_selection_stage_for_test(
+        ast,
+        module,
+        shells,
+        symbols,
+        loaded_source,
+        options.surface,
+        options.resolver,
+    ) != SetEnumerationSelectionStage::Selected
+    {
+        return None;
+    }
+    let mutated_binding_env;
+    let binding_env = if let SetEnumerationBindingMutation::Field(field) = options.binding {
+        mutated_binding_env =
+            match task258b3m2b2b3p_binding_env_with_field_mutation(binding_env, field) {
+                Ok(binding_env) => binding_env,
+                Err(error) => return Some(Err(format!("Task48: {error}"))),
+            };
+        &mutated_binding_env
+    } else {
+        binding_env
+    };
+    if !task258b3m2b2b3p_binding_contract(
+        ast,
+        module,
+        binding_env,
+        SetEnumerationBindingMutation::None,
+    ) {
+        return Some(Err(
+            "Task48: exact proof-context profile rejected".to_owned()
+        ));
+    }
+    let mut roots = task258b3m2b2b3p_primary_roots().to_vec();
+    match options.primary {
+        SetEnumerationPrimaryMutation::DuplicateRoot => roots[3] = roots[2],
+        SetEnumerationPrimaryMutation::MissingRoot => {
+            roots.pop();
+        }
+        _ => {}
+    }
+    let primary_binding_env_storage;
+    let primary_binding_env = match options.primary {
+        SetEnumerationPrimaryMutation::ReferenceScopeModule => {
+            primary_binding_env_storage =
+                match task258b3m2b2b3p_binding_env_with_field_mutation(binding_env, 8) {
+                    Ok(binding_env) => binding_env,
+                    Err(error) => return Some(Err(format!("Task252: {error}"))),
+                };
+            &primary_binding_env_storage
+        }
+        SetEnumerationPrimaryMutation::ReferenceScopeProof => {
+            primary_binding_env_storage =
+                match task258b3m2b2b3p_binding_env_with_field_mutation(binding_env, 15) {
+                    Ok(binding_env) => binding_env,
+                    Err(error) => return Some(Err(format!("Task252: {error}"))),
+                };
+            &primary_binding_env_storage
+        }
+        SetEnumerationPrimaryMutation::ReferenceUseOrdinal => {
+            primary_binding_env_storage =
+                match task258b3m2b2b3p_binding_env_with_prior_event(binding_env) {
+                    Ok(binding_env) => binding_env,
+                    Err(error) => return Some(Err(format!("Task252: {error}"))),
+                };
+            &primary_binding_env_storage
+        }
+        _ => binding_env,
+    };
+    let source_term = match source_term_parts_for_context_roots(
+        ast,
+        module.clone(),
+        primary_binding_env,
+        roots,
+        &BTreeMap::new(),
+    ) {
+        Ok(source_term) => source_term,
+        Err(error) => return Some(Err(format!("Task252: {error}"))),
+    };
+    let source_term = match task258b3m2b2b3p_source_term_with_mutation(
+        ast,
+        module,
+        primary_binding_env,
+        source_term,
+        options.primary,
+    ) {
+        Ok(source_term) => source_term,
+        Err(error) => return Some(Err(format!("Task252: {error}"))),
+    };
+    if options.primary == SetEnumerationPrimaryMutation::ReferenceUseOrdinal {
+        let changed = source_term
+            .handoff
+            .references()
+            .iter()
+            .map(|(_, reference)| (reference.binding().index(), reference.use_ordinal()))
+            .collect::<Vec<_>>();
+        if changed != [(0, 2), (0, 2), (0, 2), (0, 2)] {
+            return Some(Err(format!(
+                "Task252: use-ordinal substitution did not reach all four BindingId(0) rows: {changed:?}"
+            )));
+        }
+    }
+    if !task258b3m2b2b3p_primary_profile_is_exact(ast, module, binding_env, &source_term) {
+        return Some(Err("Task252: exact lower profile mismatch".to_owned()));
+    }
+    let primary_fingerprint = source_term.handoff.debug_text();
+    let dependency_probe = match options.handoff {
+        SetEnumerationHandoffMutation::CoherentApplicationFingerprint => Some((
+            "application",
+            task258b3m2b2b3p_coherent_application_fingerprint_probe(
+                ast,
+                module,
+                symbols,
+                binding_env,
+                &source_term,
+            ),
+        )),
+        SetEnumerationHandoffMutation::CoherentStructureFingerprint => Some((
+            "structure",
+            task258b3m2b2b3p_coherent_structure_fingerprint_probe(
+                ast,
+                module,
+                symbols,
+                binding_env,
+                &source_term,
+            ),
+        )),
+        _ => None,
+    };
+    if let Some((kind, probe)) = dependency_probe {
+        match probe {
+            Ok(handoff)
+                if !task258b3m2b2b3p_fingerprint_profile_is_exact(
+                    &primary_fingerprint,
+                    &handoff,
+                ) =>
+            {
+                return Some(Err(format!(
+                    "Task255: exact B3P fingerprint-only profile rejected coherent non-None {kind} dependency fingerprint"
+                )));
+            }
+            Ok(_) => {
+                return Some(Err(format!(
+                    "Task255: BUG: exact B3P fingerprint-only profile accepted coherent non-None {kind} dependency fingerprint"
+                )));
+            }
+            Err(error) => return Some(Err(format!("Task255: {error}"))),
+        }
+    }
+    if options.primary == SetEnumerationPrimaryMutation::None
+        && options.handoff == SetEnumerationHandoffMutation::None
+        && options.final_clone == SetEnumerationFinalMutation::None
+    {
+        let result = source_set_term_output_with_source_term_in_context(
+            ast,
+            module.clone(),
+            binding_env.clone(),
+            &[40],
+            source_term,
+            BindingContextId::new(1),
+        )
+        .map_err(|error| format!("Task255: {error}"))
+        .and_then(|output| {
+            let handoff = output
+                .typed_ast
+                .source_set_term()
+                .ok_or_else(|| "Task255: exact B3P handoff disappeared".to_owned())?;
+            if task258b3m2b2b3p_set_handoff_profile_is_exact(
+                ast,
+                module,
+                &primary_fingerprint,
+                handoff,
+            ) {
+                Ok(output)
+            } else {
+                Err("Task255: exact B3P handoff profile mismatch".to_owned())
+            }
+        });
+        return Some(result);
+    }
+    let extracted = match extract_set_terms(
+        ast,
+        module,
+        BindingContextId::new(1),
+        &[40],
+        None,
+        None,
+        &BTreeSet::new(),
+        false,
+    ) {
+        Ok(extracted) => extracted,
+        Err(error) => return Some(Err(format!("Task255: {error}"))),
+    };
+    let output = match build_output(
+        ast,
+        module.clone(),
+        binding_env.clone(),
+        extracted,
+        Some(SyntheticSourceSetTermDependencies {
+            arena: source_term.arena,
+            primary: source_term.handoff,
+            application: None,
+            structure: None,
+        }),
+        |input| task258b3m2b2b3p_mutate_handoff(input, ast, options.handoff),
+    ) {
+        Ok(output) => output,
+        Err(error) => return Some(Err(format!("Task255: {error}"))),
+    };
+    let Some(set_handoff) = output.typed_ast.source_set_term() else {
+        return Some(Err("Task255: exact B3P handoff disappeared".to_owned()));
+    };
+    if !task258b3m2b2b3p_set_handoff_profile_is_exact(
+        ast,
+        module,
+        &primary_fingerprint,
+        set_handoff,
+    ) {
+        return Some(Err("Task255: exact B3P handoff profile mismatch".to_owned()));
+    }
+    if options.primary == SetEnumerationPrimaryMutation::StaleFingerprintReplay {
+        let stale = match source_term_parts_for_context_roots(
+            ast,
+            module.clone(),
+            binding_env,
+            task258b3m2b2b3p_primary_roots()
+                .into_iter()
+                .filter(|(root, _)| *root != 38),
+            &BTreeMap::new(),
+        ) {
+            Ok(stale) => stale,
+            Err(error) => return Some(Err(format!("Task252: {error}"))),
+        };
+        let typed = match TypedAst::try_new(TypedAstParts {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: output.typed_ast.nodes().clone(),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        }) {
+            Ok(typed) => match typed.with_source_term(stale.handoff) {
+                Ok(typed) => typed,
+                Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+            },
+            Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+        };
+        return Some(
+            match typed.with_source_set_term(
+                output
+                    .typed_ast
+                    .source_set_term()
+                    .expect("B3P baseline set handoff")
+                    .clone(),
+            ) {
+                Ok(_) => Err("BUG: TypedAst accepted stale Task252 fingerprint".to_owned()),
+                Err(error) => Err(format!(
+                    "TypedAst: rejected stale Task252 fingerprint: {error}"
+                )),
+            },
+        );
+    }
+    if options.final_clone == SetEnumerationFinalMutation::TypedClone {
+        let typed = TypedAst::try_new(TypedAstParts {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: output.typed_ast.nodes().clone(),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .map_err(|error| error.to_string());
+        return Some(
+            match typed.and_then(|typed| {
+                typed
+                    .with_source_set_term(
+                        output
+                            .typed_ast
+                            .source_set_term()
+                            .expect("B3P set handoff")
+                            .clone(),
+                    )
+                    .map_err(|error| error.to_string())
+            }) {
+                Ok(_) => Err("BUG: TypedAst accepted set handoff without Task252 clone".to_owned()),
+                Err(error) => Err(format!("TypedAst: rejected clone corruption: {error}")),
+            },
+        );
+    }
+    if options.final_clone == SetEnumerationFinalMutation::ResolvedClone {
+        let hints = vec![ResolvedNodeKindHint {
+            typed_node: TypedNodeId::new(57),
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.term.surface"),
+            },
+        }];
+        return Some(
+            match assemble_empty_resolved_typed_ast(&output.typed_ast, hints) {
+                Ok(_) => Err("BUG: ResolvedTypedAst accepted invalid clone hint".to_owned()),
+                Err(error) => Err(format!(
+                    "ResolvedTypedAst: rejected clone corruption: {error}"
+                )),
+            },
+        );
+    }
+    Some(Ok(output))
 }
 
 fn exact_conditioned_route(ast: &SurfaceAst, source_text: &str) -> Option<ExactConditionedRoute> {
@@ -545,10 +2786,28 @@ pub(super) fn source_set_term_output_with_source_term(
     roots: &[usize],
     source_term: SourceTermParts,
 ) -> Result<SourceSetTermRouteOutput, String> {
+    source_set_term_output_with_source_term_in_context(
+        ast,
+        module,
+        binding_env,
+        roots,
+        source_term,
+        BindingContextId::new(0),
+    )
+}
+
+pub(super) fn source_set_term_output_with_source_term_in_context(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    binding_env: BindingEnv,
+    roots: &[usize],
+    source_term: SourceTermParts,
+    context: BindingContextId,
+) -> Result<SourceSetTermRouteOutput, String> {
     let extracted = extract_set_terms(
         ast,
         &module,
-        BindingContextId::new(0),
+        context,
         roots,
         None,
         None,

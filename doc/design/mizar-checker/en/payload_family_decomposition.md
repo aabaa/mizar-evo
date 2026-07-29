@@ -1260,3 +1260,25 @@ quality, commit, post-commit, and fresh implementation inventory are pending.
 Final quality reports **NO FINDINGS**, all nine hard gates PASS, and valid
 `98/100` (`20/20/15/14/10/10/5/4`). Family evidence is unchanged. Only
 stage/commit, post-commit, and fresh implementation inventory are pending.
+
+### Task 258B3M2B2B3P Implemented Lower-Family Reuse
+
+Prerequisite commit `285a1f11c310bb313c4c6b4feae914eb11f74754`
+is now implemented by the private explicit-context Task-255 seam. The exact
+Task-252 numeral roots feed the two ordered `EnumerationElement` edges in
+proof context 1, while Tasks 253/254/256/258 remain empty. The implementation
+also authenticates absent application/structure dependencies through a
+shared fingerprint-only subprofile, rather than inferring absence from a
+missing edge.
+
+This changes no upper payload family: there is still no
+`SourceStatementWitness -> SetTerm(0)` edge and no statement, proof, goal,
+or semantic row. Test-sufficiency and implementation reviews are
+**NO FINDINGS**; B3P `source_drift`/`test_gap` are closed. Upper B3A remains
+the next dependency owner. Source/documentation consistency and
+documentation/boundary repeats are **NO FINDINGS**; lint-policy `15/14`,
+metadata `137`, focused/library/fmt, workspace Clippy/tests, CLI/manifests/
+test-list hashes, diff check, and exact 30-file scope PASS. Independent
+final quality reports **NO FINDINGS**; all nine hard gates PASS with valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only commit, post-commit, and fresh B3A
+inventory remain pending.

@@ -343,3 +343,34 @@ quality, commit, post-commit, and fresh inventory are pending.
 Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
 fresh implementation inventory remain pending.
+
+## Task 258B3M2B2B3P Implemented Proof-Context Enumeration Reuse
+
+The frozen contract from
+`285a1f11c310bb313c4c6b4feae914eb11f74754` is implemented in the four
+authorized runner files. `source_set_term_output_with_source_term_in_context`
+is a `pub(super)` explicit-context sibling; the pre-existing entry point is a
+context-0 delegate. Context-0 compatibility remains independently fixed by
+the literal handoff/typed/resolved hashes
+`30b72230bb7ff39464962133b58df212e23afccccc8f4e4788ab9a9d0481c43a`,
+`1bb296c06ab62691684260aa94987adee23081baa4a35aac9e485d95370d2cb9`,
+and
+`cdb4eaae9605f62269d6a74d64267a8fcb1e8d8008564d8b9e014037665df1e4`.
+
+The exact two tests cover every source byte/final-LF variant, 57-node
+surface field, 63-field resolver oracle, 39-field binding oracle, every
+Task-252/255 field, coherent application/structure dependencies whose
+non-None fingerprints are rejected by a shared fingerprint-only exact
+subprofile, stale and simultaneous validation precedence, immediate clean
+replay, typed/resolved clone rollback, and family/active isolation. Focused
+`2/2`, runner library `446/446`, formatting, package Clippy, and diff check
+pass; test-sufficiency and implementation reviews are **NO FINDINGS**.
+Source/documentation consistency and documentation/boundary repeats are also
+**NO FINDINGS**. Lint-policy `15/14`, metadata `137`, focused/library/fmt,
+workspace Clippy/tests, five CLI and current manifest/test-list hashes, diff
+check, and exact 30-file scope PASS.
+
+No checker schema/API or semantic result was added. Independent final
+quality reports **NO FINDINGS**; all nine hard gates PASS with valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only the implementation
+commit/post-commit checks and fresh B3A inventory remain pending.

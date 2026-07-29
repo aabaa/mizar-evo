@@ -3,8 +3,13 @@ use super::type_elaboration::{
     synthetic_source_set_term_output_with_mutation,
 };
 use super::{
+    SetEnumerationBindingMutation, SetEnumerationFinalMutation, SetEnumerationHandoffMutation,
+    SetEnumerationPrimaryMutation, SetEnumerationProofContextTestOptions,
+    SetEnumerationResolverMutation, SetEnumerationSelectionStage, SetEnumerationSurfaceMutation,
     SourceSetTermRouteOutput, source_set_term_output, source_set_term_output_with_mutation,
     source_set_term_output_with_source, source_set_term_output_with_source_and_mutation,
+    TASK258B3M2B2B3P_BINDING_FIELD_COUNT, TASK258B3M2B2B3P_RESOLVER_FIELD_COUNT,
+    set_enumeration_proof_context_handoff_for_test, set_enumeration_selection_stage_for_test,
 };
 
 const TASK255C1_SET_SOURCE: &str = concat!(
@@ -13,6 +18,14 @@ const TASK255C1_SET_SOURCE: &str = concat!(
     "  func Task255ConditionedComprehensionDef:\n",
     "    task255_conditioned_comprehension -> set\n",
     "    equals { 1 ++ 2 where candidate255c is set : 3 = 4 };\n",
+    "end;\n",
+);
+
+const TASK258B3M2B2B3P_SET_SOURCE: &str = concat!(
+    "reserve x for set;\n",
+    "theorem FormulaStatementSetEnumerationWitnessSmoke: x = x proof\n",
+    "  take {1, 2};\n",
+    "  thus x = x;\n",
     "end;\n",
 );
 
@@ -1769,4 +1782,747 @@ fn task255_term_id_with_spelling(
         panic!("Task 255 handoff term `{spelling}` should be unique, got {matches:?}");
     };
     *id
+}
+
+#[test]
+fn task258b3m2b2b3p_set_enumeration_proof_context_reuse_is_exact() {
+    use mizar_checker::source_set_term::{
+        SourceSetEdgeRole, SourceSetRequestKind, SourceSetTarget, SourceSetTermId,
+        SourceSetTermKind, SourceSetTermRecovery,
+    };
+    let (ast, module, shells, symbols, diagnostic_count) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            TASK258B3M2B2B3P_SET_SOURCE,
+            25_831,
+        );
+    assert_eq!(diagnostic_count, 0);
+    assert_eq!(TASK258B3M2B2B3P_SET_SOURCE.len(), 117);
+    assert_eq!(
+        sha256_text(TASK258B3M2B2B3P_SET_SOURCE),
+        "4f8ea5b9cadf763ea108b6f7deb6b481cb6f997dec2048b4351f07fd5dc38539"
+    );
+    assert_eq!((ast.nodes().len(), ast.root().map(|root| root.index())), (57, Some(56)));
+    let bindings = task258b3m2b2b1p_binding_env(&ast, &module, &symbols);
+    let first = set_enumeration_proof_context_handoff_for_test(
+        &ast,
+        &module,
+        &shells,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B3P_SET_SOURCE,
+        SetEnumerationProofContextTestOptions::default(),
+    )
+    .expect("B3P exact selector")
+    .expect("B3P exact transaction");
+    let second = set_enumeration_proof_context_handoff_for_test(
+        &ast,
+        &module,
+        &shells,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B3P_SET_SOURCE,
+        SetEnumerationProofContextTestOptions::default(),
+    )
+    .expect("B3P replay selector")
+    .expect("B3P replay transaction");
+
+    assert_eq!(
+        (
+            first.binding_env.contexts().len(),
+            first.binding_env.bindings().len(),
+            first.binding_env.diagnostics().len(),
+        ),
+        (2, 1, 0)
+    );
+    let primary = first.typed_ast.source_term().expect("Task252 handoff");
+    assert_eq!(
+        (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ),
+        (6, 4, 2)
+    );
+    let set = first.typed_ast.source_set_term().expect("Task255 handoff");
+    assert_eq!(
+        (
+            set.terms().len(),
+            set.wrappers().len(),
+            set.generators().len(),
+            set.type_sites().len(),
+            set.conditions().len(),
+            set.edges().len(),
+            set.requests().len(),
+        ),
+        (1, 0, 0, 0, 0, 2, 1)
+    );
+    let term = set
+        .terms()
+        .get(SourceSetTermId::new(0))
+        .expect("enumeration term");
+    assert_eq!(term.site().node().index(), 40);
+    assert_eq!(
+        (term.source_range().start, term.source_range().end),
+        (90, 96)
+    );
+    assert_eq!(term.source_ordinal(), 0);
+    assert_eq!(term.context().index(), 1);
+    assert_eq!(term.recovery(), SourceSetTermRecovery::Normal);
+    assert_eq!(term.spelling(), "{ 1 , 2 }");
+    assert_eq!(term.kind(), SourceSetTermKind::Enumeration);
+    assert_eq!(
+        set.edges()
+            .iter()
+            .map(|(_, edge)| {
+                (
+                    edge.term().index(),
+                    edge.ordinal(),
+                    edge.role(),
+                    edge.target(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                SourceSetEdgeRole::EnumerationElement,
+                SourceSetTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(2)
+                ),
+            ),
+            (
+                0,
+                1,
+                SourceSetEdgeRole::EnumerationElement,
+                SourceSetTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(3)
+                ),
+            ),
+        ]
+    );
+    let request = set
+        .requests()
+        .iter()
+        .next()
+        .map(|(_, request)| request)
+        .expect("result-type request");
+    assert_eq!(request.term().index(), 0);
+    assert_eq!(request.ordinal(), 0);
+    assert_eq!(request.kind(), SourceSetRequestKind::ResultType);
+    assert_eq!(request.generator(), None);
+    assert_eq!(request.type_site(), None);
+    assert_eq!(set.primary_term_fingerprint(), primary.debug_text());
+    assert_eq!(set.application_fingerprint(), None);
+    assert_eq!(set.structure_fingerprint(), None);
+
+    let owned = first
+        .typed_ast
+        .nodes()
+        .iter()
+        .filter(|(_, node)| node.kind.as_str() != "source.surface.unowned")
+        .map(|(id, node)| (id.index(), node.kind.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        owned,
+        [
+            (30, "source.term.variable-reference"),
+            (32, "source.term.variable-reference"),
+            (36, "source.term.numeral"),
+            (38, "source.term.numeral"),
+            (40, "source.term.set.enumeration"),
+            (44, "source.term.variable-reference"),
+            (46, "source.term.variable-reference"),
+        ]
+    );
+    assert_eq!(
+        first
+            .typed_ast
+            .nodes()
+            .iter()
+            .filter(|(_, node)| node.kind.as_str() == "source.surface.unowned")
+            .map(|(id, _)| id.index())
+            .collect::<Vec<_>>(),
+        [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 33, 34, 35, 37, 39, 41, 42, 43, 45,
+            47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+        ]
+    );
+    assert_eq!(first.typed_ast.source_term(), first.resolved.source_term());
+    assert_eq!(
+        first.typed_ast.source_set_term(),
+        first.resolved.source_set_term()
+    );
+    assert!(first.typed_ast.source_context().is_none());
+    assert!(first.typed_ast.source_type().is_none());
+    assert!(first.typed_ast.source_attribute().is_none());
+    assert!(first.typed_ast.source_evidence().is_none());
+    assert!(first.typed_ast.source_application().is_none());
+    assert!(first.typed_ast.source_structure().is_none());
+    assert!(first.typed_ast.source_atomic_formula().is_none());
+    assert!(first.typed_ast.source_composite_formula().is_none());
+    assert!(first.typed_ast.source_formula_composition().is_none());
+    assert!(
+        first
+            .typed_ast
+            .source_condition_formula_composition()
+            .is_none()
+    );
+    assert!(
+        first
+            .typed_ast
+            .source_predicate_chain_composition()
+            .is_none()
+    );
+    assert!(first.typed_ast.source_statement().is_none());
+    assert!(first.typed_ast.source_statement_references().is_none());
+    assert!(first.typed_ast.source_statement_witnesses().is_none());
+    assert!(first.typed_ast.contexts().is_empty());
+    assert!(first.typed_ast.types().is_empty());
+    assert!(first.typed_ast.facts().is_empty());
+    assert!(first.typed_ast.coercions().is_empty());
+    assert!(first.typed_ast.initial_obligations().is_empty());
+    assert!(first.typed_ast.diagnostics().is_empty());
+    assert!(first.resolved.source_context().is_none());
+    assert!(first.resolved.source_type().is_none());
+    assert!(first.resolved.source_attribute().is_none());
+    assert!(first.resolved.source_evidence().is_none());
+    assert!(first.resolved.source_application().is_none());
+    assert!(first.resolved.source_structure().is_none());
+    assert!(first.resolved.source_atomic_formula().is_none());
+    assert!(first.resolved.source_composite_formula().is_none());
+    assert!(first.resolved.source_formula_composition().is_none());
+    assert!(
+        first
+            .resolved
+            .source_condition_formula_composition()
+            .is_none()
+    );
+    assert!(
+        first
+            .resolved
+            .source_predicate_chain_composition()
+            .is_none()
+    );
+    assert!(first.resolved.source_statement().is_none());
+    assert!(first.resolved.source_statement_references().is_none());
+    assert!(first.resolved.source_statement_witnesses().is_none());
+    assert!(first.resolved.checked_formulas().is_empty());
+    assert!(first.resolved.checked_proofs().is_empty());
+    assert!(first.resolved.checked_proof_nodes().is_empty());
+    assert!(first.resolved.checked_terminal_goals().is_empty());
+    assert!(first.resolved.statement_semantics().is_empty());
+    assert!(first.resolved.expr_metadata().is_empty());
+    assert!(first.resolved.collection_candidates().is_empty());
+    assert!(first.resolved.expanded_candidates().is_empty());
+    assert!(first.resolved.template_expansions().is_empty());
+    assert!(first.resolved.viable_candidates().is_empty());
+    assert!(first.resolved.viability_decisions().is_empty());
+    assert!(first.resolved.specificity_graphs().is_empty());
+    assert!(first.resolved.resolved_overloads().is_empty());
+    assert!(first.resolved.inserted_coercions().is_empty());
+    assert!(first.resolved.cluster_facts().is_empty());
+    assert!(first.resolved.diagnostics().is_empty());
+    assert_eq!(first.typed_ast.debug_text(), second.typed_ast.debug_text());
+    assert_eq!(first.resolved.debug_text(), second.resolved.debug_text());
+}
+
+#[test]
+fn task258b3m2b2b3p_set_enumeration_corruption_replay_and_legacy_output_fail_closed() {
+    let (ast, module, shells, symbols, diagnostic_count) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            TASK258B3M2B2B3P_SET_SOURCE,
+            25_832,
+        );
+    assert_eq!(diagnostic_count, 0);
+    let bindings = task258b3m2b2b1p_binding_env(&ast, &module, &symbols);
+    let run = |options| {
+        set_enumeration_proof_context_handoff_for_test(
+            &ast,
+            &module,
+            &shells,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B3P_SET_SOURCE,
+            options,
+        )
+    };
+    let baseline = run(SetEnumerationProofContextTestOptions::default())
+        .expect("B3P baseline selector")
+        .expect("B3P baseline");
+    let baseline_set = baseline
+        .typed_ast
+        .source_set_term()
+        .expect("B3P set handoff")
+        .debug_text();
+    let baseline_typed = baseline.typed_ast.debug_text();
+    let baseline_resolved = baseline.resolved.debug_text();
+    assert!(
+        source_set_term_output(&ast, module.clone(), &shells, &symbols).is_none(),
+        "B3P must not activate the legacy Task255 production route"
+    );
+    let reject = |options, label: &str| match run(options) {
+        None | Some(Err(_)) => {}
+        Some(Ok(_)) => panic!("{label} was accepted"),
+    };
+    let clean_replay = || {
+        let replay = run(SetEnumerationProofContextTestOptions::default())
+            .expect("B3P replay selector")
+            .expect("B3P replay");
+        assert_eq!(
+            replay
+                .typed_ast
+                .source_set_term()
+                .expect("replay set")
+                .debug_text(),
+            baseline_set
+        );
+        assert_eq!(replay.typed_ast.debug_text(), baseline_typed);
+        assert_eq!(replay.resolved.debug_text(), baseline_resolved);
+    };
+
+    for byte in 0..TASK258B3M2B2B3P_SET_SOURCE.len() {
+        let mut source = TASK258B3M2B2B3P_SET_SOURCE.as_bytes().to_vec();
+        source[byte] = if source[byte] == b'!' { b'?' } else { b'!' };
+        let source = String::from_utf8(source).expect("ASCII B3P source");
+        assert!(
+            set_enumeration_proof_context_handoff_for_test(
+                &ast,
+                &module,
+                &shells,
+                &symbols,
+                &bindings,
+                &source,
+                SetEnumerationProofContextTestOptions::default(),
+            )
+            .is_none(),
+            "loaded-source byte {byte}"
+        );
+        clean_replay();
+    }
+    clean_replay();
+    for source in [
+        TASK258B3M2B2B3P_SET_SOURCE
+            .trim_end_matches('\n')
+            .to_owned(),
+        format!("{TASK258B3M2B2B3P_SET_SOURCE}\n"),
+    ] {
+        assert!(
+            set_enumeration_proof_context_handoff_for_test(
+                &ast,
+                &module,
+                &shells,
+                &symbols,
+                &bindings,
+                &source,
+                SetEnumerationProofContextTestOptions::default(),
+            )
+            .is_none()
+        );
+        clean_replay();
+    }
+    clean_replay();
+    for (ordinal, source) in [
+        TASK258B3M2B2B3P_SET_SOURCE.replacen("{1, 2}", "{}", 1),
+        TASK258B3M2B2B3P_SET_SOURCE.replacen("{1, 2}", "{1}", 1),
+        TASK258B3M2B2B3P_SET_SOURCE.replacen("{1, 2}", "{1, 2, 3}", 1),
+        TASK258B3M2B2B3P_SET_SOURCE.replacen("{1, 2}", "({1, 2})", 1),
+        TASK258B3M2B2B3P_SET_SOURCE.replacen("{1, 2}", "{{1}, 2}", 1),
+        TASK258B3M2B2B3P_SET_SOURCE.replacen("{1, 2}", "{1 where y is set}", 1),
+        TASK258B3M2B2B3P_SET_SOURCE.replacen("{1, 2}", "the set", 1),
+        TASK258B3M2B2B3P_SET_SOURCE.replacen("{1, 2}", "1 qua set", 1),
+        TASK258B3M2B2B3P_SET_SOURCE.replacen(
+            "FormulaStatementSetEnumerationWitnessSmoke",
+            "FormulaStatementSetEnumerationWitnessNearMiss",
+            1,
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (near_ast, near_module, near_shells, near_symbols, _) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 25_900 + ordinal);
+        assert!(
+            set_enumeration_proof_context_handoff_for_test(
+                &near_ast,
+                &near_module,
+                &near_shells,
+                &near_symbols,
+                &bindings,
+                &source,
+                SetEnumerationProofContextTestOptions::default(),
+            )
+            .is_none(),
+            "parsed near miss {ordinal}"
+        );
+        assert!(
+            source_set_term_output(
+                &near_ast,
+                near_module,
+                &near_shells,
+                &near_symbols
+            )
+            .is_none(),
+            "parsed near miss {ordinal} activated legacy Task255"
+        );
+        clean_replay();
+    }
+    clean_replay();
+    for node in 0..57 {
+        for surface in [
+            SetEnumerationSurfaceMutation::NodeKind(node),
+            SetEnumerationSurfaceMutation::NodeRange(node),
+            SetEnumerationSurfaceMutation::NodeRecovery(node),
+            SetEnumerationSurfaceMutation::NodeChildren(node),
+        ] {
+            reject(
+                SetEnumerationProofContextTestOptions {
+                    surface,
+                    ..Default::default()
+                },
+                "surface substitution",
+            );
+            clean_replay();
+        }
+    }
+    clean_replay();
+    reject(
+        SetEnumerationProofContextTestOptions {
+            surface: SetEnumerationSurfaceMutation::RootIdentity,
+            ..Default::default()
+        },
+        "root substitution",
+    );
+    clean_replay();
+    for field in 0..TASK258B3M2B2B3P_RESOLVER_FIELD_COUNT {
+        reject(
+            SetEnumerationProofContextTestOptions {
+                resolver: SetEnumerationResolverMutation::Field(field),
+                ..Default::default()
+            },
+            "resolver substitution",
+        );
+        clean_replay();
+    }
+    clean_replay();
+    for field in 0..TASK258B3M2B2B3P_BINDING_FIELD_COUNT {
+        let result = run(SetEnumerationProofContextTestOptions {
+            binding: SetEnumerationBindingMutation::Field(field),
+            ..Default::default()
+        })
+        .expect("Task48 mutation retains source/resolver selection")
+        .expect_err("Task48 mutation");
+        assert!(result.starts_with("Task48:"), "{field}: {result}");
+        clean_replay();
+    }
+    clean_replay();
+
+    let mut primary_mutations = vec![
+        SetEnumerationPrimaryMutation::DuplicateRoot,
+        SetEnumerationPrimaryMutation::MissingRoot,
+        SetEnumerationPrimaryMutation::SourceId,
+        SetEnumerationPrimaryMutation::ModuleId,
+        SetEnumerationPrimaryMutation::ReferenceScopeModule,
+        SetEnumerationPrimaryMutation::ReferenceScopeProof,
+        SetEnumerationPrimaryMutation::ReferenceUseOrdinal,
+    ];
+    for term in 0..6 {
+        primary_mutations.extend([
+            SetEnumerationPrimaryMutation::TermSite(term),
+            SetEnumerationPrimaryMutation::TermRange(term),
+            SetEnumerationPrimaryMutation::TermOrdinal(term),
+            SetEnumerationPrimaryMutation::TermContext(term),
+            SetEnumerationPrimaryMutation::TermRecovery(term),
+            SetEnumerationPrimaryMutation::TermSpelling(term),
+            SetEnumerationPrimaryMutation::TermKind(term),
+            SetEnumerationPrimaryMutation::TermRole(term),
+            SetEnumerationPrimaryMutation::TermParent(term),
+        ]);
+    }
+    for reference in 0..4 {
+        primary_mutations.extend([
+            SetEnumerationPrimaryMutation::ReferenceTerm(reference),
+            SetEnumerationPrimaryMutation::ReferenceBinding(reference),
+            SetEnumerationPrimaryMutation::ReferenceRole(reference),
+        ]);
+    }
+    for request in 0..2 {
+        primary_mutations.extend([
+            SetEnumerationPrimaryMutation::NumericTerm(request),
+            SetEnumerationPrimaryMutation::NumericOwner(request),
+            SetEnumerationPrimaryMutation::NumericRange(request),
+            SetEnumerationPrimaryMutation::NumericSpelling(request),
+            SetEnumerationPrimaryMutation::NumericOrdinal(request),
+        ]);
+    }
+    for primary in primary_mutations {
+        let error = run(SetEnumerationProofContextTestOptions {
+            primary,
+            ..Default::default()
+        })
+        .expect("Task252 mutation retains earlier selection")
+        .expect_err("Task252 corruption");
+        assert!(error.starts_with("Task252:"), "{primary:?}: {error}");
+        if primary == SetEnumerationPrimaryMutation::ReferenceUseOrdinal {
+            assert!(
+                error.contains("exact lower profile mismatch"),
+                "real four-row use-ordinal substitution must reach the shared exact profile: {error}"
+            );
+        }
+        clean_replay();
+    }
+
+    let mut handoff_mutations = vec![
+        SetEnumerationHandoffMutation::SourceId,
+        SetEnumerationHandoffMutation::ModuleId,
+        SetEnumerationHandoffMutation::TermSite,
+        SetEnumerationHandoffMutation::TermRange,
+        SetEnumerationHandoffMutation::TermOrdinal,
+        SetEnumerationHandoffMutation::TermContext,
+        SetEnumerationHandoffMutation::TermRecovery,
+        SetEnumerationHandoffMutation::TermSpelling,
+        SetEnumerationHandoffMutation::TermKind,
+        SetEnumerationHandoffMutation::ExtraWrapper,
+        SetEnumerationHandoffMutation::ExtraGenerator,
+        SetEnumerationHandoffMutation::ExtraTypeSite,
+        SetEnumerationHandoffMutation::ExtraCondition,
+        SetEnumerationHandoffMutation::RequestTerm,
+        SetEnumerationHandoffMutation::RequestOrdinal,
+        SetEnumerationHandoffMutation::RequestKind,
+        SetEnumerationHandoffMutation::RequestGenerator,
+        SetEnumerationHandoffMutation::RequestTypeSite,
+        SetEnumerationHandoffMutation::CoherentApplicationFingerprint,
+        SetEnumerationHandoffMutation::CoherentStructureFingerprint,
+    ];
+    for edge in 0..2 {
+        handoff_mutations.extend([
+            SetEnumerationHandoffMutation::EdgeTerm(edge),
+            SetEnumerationHandoffMutation::EdgeOrdinal(edge),
+            SetEnumerationHandoffMutation::EdgeRole(edge),
+            SetEnumerationHandoffMutation::EdgeTarget(edge),
+        ]);
+    }
+    for handoff in handoff_mutations {
+        let error = run(SetEnumerationProofContextTestOptions {
+            handoff,
+            ..Default::default()
+        })
+        .expect("Task255 mutation retains lower selection")
+        .expect_err("Task255 corruption");
+        assert!(error.starts_with("Task255:"), "{handoff:?}: {error}");
+        let fingerprint_kind = match handoff {
+            SetEnumerationHandoffMutation::CoherentApplicationFingerprint => Some("application"),
+            SetEnumerationHandoffMutation::CoherentStructureFingerprint => Some("structure"),
+            _ => None,
+        };
+        if let Some(kind) = fingerprint_kind {
+            assert_eq!(
+                error,
+                format!(
+                    "Task255: exact B3P fingerprint-only profile rejected coherent non-None {kind} dependency fingerprint"
+                ),
+                "{handoff:?}"
+            );
+        }
+        clean_replay();
+    }
+    let stale = run(SetEnumerationProofContextTestOptions {
+        primary: SetEnumerationPrimaryMutation::StaleFingerprintReplay,
+        ..Default::default()
+    })
+    .expect("stale selector")
+    .expect_err("stale Task252 fingerprint");
+    assert!(
+        stale.starts_with("TypedAst: rejected stale Task252 fingerprint:"),
+        "{stale}"
+    );
+    clean_replay();
+
+    for (final_clone, prefix) in [
+        (SetEnumerationFinalMutation::TypedClone, "TypedAst:"),
+        (
+            SetEnumerationFinalMutation::ResolvedClone,
+            "ResolvedTypedAst:",
+        ),
+    ] {
+        let error = run(SetEnumerationProofContextTestOptions {
+            final_clone,
+            ..Default::default()
+        })
+        .expect("final clone selector")
+        .expect_err("final clone corruption");
+        assert!(error.starts_with(prefix), "{error}");
+        clean_replay();
+    }
+
+    assert_eq!(
+        set_enumeration_selection_stage_for_test(
+            &ast,
+            &module,
+            &shells,
+            &symbols,
+            "!",
+            SetEnumerationSurfaceMutation::NodeKind(0),
+            SetEnumerationResolverMutation::Field(0),
+        ),
+        SetEnumerationSelectionStage::Source
+    );
+    clean_replay();
+    assert_eq!(
+        set_enumeration_selection_stage_for_test(
+            &ast,
+            &module,
+            &shells,
+            &symbols,
+            TASK258B3M2B2B3P_SET_SOURCE,
+            SetEnumerationSurfaceMutation::NodeKind(0),
+            SetEnumerationResolverMutation::Field(0),
+        ),
+        SetEnumerationSelectionStage::Surface
+    );
+    clean_replay();
+    assert_eq!(
+        set_enumeration_selection_stage_for_test(
+            &ast,
+            &module,
+            &shells,
+            &symbols,
+            TASK258B3M2B2B3P_SET_SOURCE,
+            SetEnumerationSurfaceMutation::None,
+            SetEnumerationResolverMutation::Field(0),
+        ),
+        SetEnumerationSelectionStage::Resolver
+    );
+    clean_replay();
+    assert!(
+        set_enumeration_proof_context_handoff_for_test(
+            &ast,
+            &module,
+            &shells,
+            &symbols,
+            &bindings,
+            "!",
+            SetEnumerationProofContextTestOptions {
+                surface: SetEnumerationSurfaceMutation::NodeKind(0),
+                resolver: SetEnumerationResolverMutation::Field(0),
+                binding: SetEnumerationBindingMutation::Field(0),
+                primary: SetEnumerationPrimaryMutation::TermRange(0),
+                handoff: SetEnumerationHandoffMutation::TermRange,
+                final_clone: SetEnumerationFinalMutation::TypedClone,
+            },
+        )
+        .is_none(),
+        "loaded source must win simultaneous corruption"
+    );
+    clean_replay();
+    assert!(
+        run(SetEnumerationProofContextTestOptions {
+            surface: SetEnumerationSurfaceMutation::NodeKind(0),
+            resolver: SetEnumerationResolverMutation::Field(0),
+            binding: SetEnumerationBindingMutation::Field(0),
+            primary: SetEnumerationPrimaryMutation::TermRange(0),
+            handoff: SetEnumerationHandoffMutation::TermRange,
+            final_clone: SetEnumerationFinalMutation::TypedClone,
+        })
+        .is_none(),
+        "arena/root must win after source selection"
+    );
+    clean_replay();
+    assert!(
+        run(SetEnumerationProofContextTestOptions {
+            resolver: SetEnumerationResolverMutation::Field(0),
+            binding: SetEnumerationBindingMutation::Field(0),
+            primary: SetEnumerationPrimaryMutation::TermRange(0),
+            handoff: SetEnumerationHandoffMutation::TermRange,
+            final_clone: SetEnumerationFinalMutation::TypedClone,
+            ..Default::default()
+        })
+        .is_none(),
+        "resolver must win after arena/root"
+    );
+    clean_replay();
+    let task48 = run(SetEnumerationProofContextTestOptions {
+        binding: SetEnumerationBindingMutation::Field(0),
+        primary: SetEnumerationPrimaryMutation::TermRange(0),
+        handoff: SetEnumerationHandoffMutation::TermRange,
+        final_clone: SetEnumerationFinalMutation::TypedClone,
+        ..Default::default()
+    })
+    .expect("Task48 simultaneous selector")
+    .expect_err("Task48 simultaneous corruption");
+    assert!(task48.starts_with("Task48:"), "{task48}");
+    clean_replay();
+    let task252 = run(SetEnumerationProofContextTestOptions {
+        primary: SetEnumerationPrimaryMutation::TermRange(0),
+        handoff: SetEnumerationHandoffMutation::TermRange,
+        final_clone: SetEnumerationFinalMutation::TypedClone,
+        ..Default::default()
+    })
+    .expect("Task252 simultaneous selector")
+    .expect_err("Task252 simultaneous corruption");
+    assert!(task252.starts_with("Task252:"), "{task252}");
+    clean_replay();
+    let task255 = run(SetEnumerationProofContextTestOptions {
+        primary: SetEnumerationPrimaryMutation::StaleFingerprintReplay,
+        handoff: SetEnumerationHandoffMutation::TermRange,
+        final_clone: SetEnumerationFinalMutation::TypedClone,
+        ..Default::default()
+    })
+    .expect("Task255 simultaneous selector")
+    .expect_err("Task255 simultaneous corruption");
+    assert!(task255.starts_with("Task255:"), "{task255}");
+    clean_replay();
+    let stale_before_final = run(SetEnumerationProofContextTestOptions {
+        primary: SetEnumerationPrimaryMutation::StaleFingerprintReplay,
+        final_clone: SetEnumerationFinalMutation::ResolvedClone,
+        ..Default::default()
+    })
+    .expect("stale/final simultaneous selector")
+    .expect_err("stale/final simultaneous corruption");
+    assert!(
+        stale_before_final.starts_with("TypedAst: rejected stale Task252 fingerprint:"),
+        "{stale_before_final}"
+    );
+    clean_replay();
+
+    let (legacy_ast, legacy_module, legacy_symbols) =
+        task252_real_ast("fail_type_elaboration_set_enumeration_formula_gap_001");
+    let legacy_first = source_atomic_formula_output(
+        &legacy_ast,
+        legacy_module.clone(),
+        &legacy_symbols,
+    )
+    .expect("legacy Task111 selector")
+    .expect("legacy Task111 output");
+    let legacy_second =
+        source_atomic_formula_output(&legacy_ast, legacy_module, &legacy_symbols)
+            .expect("legacy Task111 replay selector")
+            .expect("legacy Task111 replay");
+    assert_eq!(
+        sha256_text(
+            &legacy_first
+                .typed_ast
+                .source_set_term()
+                .expect("legacy Task255 handoff")
+                .debug_text()
+        ),
+        "30b72230bb7ff39464962133b58df212e23afccccc8f4e4788ab9a9d0481c43a"
+    );
+    assert_eq!(
+        sha256_text(&legacy_first.typed_ast.debug_text()),
+        "1bb296c06ab62691684260aa94987adee23081baa4a35aac9e485d95370d2cb9"
+    );
+    assert_eq!(
+        sha256_text(&legacy_first.resolved.debug_text()),
+        "cdb4eaae9605f62269d6a74d64267a8fcb1e8d8008564d8b9e014037665df1e4"
+    );
+    assert_eq!(
+        legacy_first.typed_ast.debug_text(),
+        legacy_second.typed_ast.debug_text()
+    );
+    assert_eq!(
+        legacy_first.resolved.debug_text(),
+        legacy_second.resolved.debug_text()
+    );
 }

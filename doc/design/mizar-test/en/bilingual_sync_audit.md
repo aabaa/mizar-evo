@@ -951,3 +951,24 @@ Both languages record final quality **NO FINDINGS**, all nine hard gates
 PASS, and valid `98/100` with
 `20/20/15/14/10/10/5/4` category scores. Only stage/commit,
 post-commit, and fresh implementation inventory remain pending in both.
+
+## Checker Task 258B3M2B2B3P Implementation-Closure Synchronization
+
+English canonical and Japanese companion now both record prerequisite
+`285a1f11c310bb313c4c6b4feae914eb11f74754`, the exact four runner
+files, `pub(super)` explicit-context sibling/context-0 delegate, exactly two
+tests, `63/39` resolver/binding fields, fingerprint-only absence,
+precedence/replay/clones/isolation, and unchanged literal legacy hashes.
+They agree on runner `446`, sizes `7240/4517/740/2557/19275/2528`,
+production `30/49472`, and current production/test-list hashes.
+
+Both record test-sufficiency, implementation, source/documentation
+consistency repeat, and documentation/boundary repeat **NO FINDINGS**. Both
+record lint-policy `15/14`, metadata `137`, focused `2/2`, library
+`446/446`, fmt, workspace Clippy/tests, five CLI/current manifest/test-list
+hashes, diff check, and exact 30-file scope PASS. Both record independent
+final quality **NO FINDINGS**, all nine hard gates PASS, and valid
+`98/100`: specification `20`, tests `20`, traceability `15`,
+implementation readiness `14`, documentation `10`, boundary discipline
+`10`, verification `5`, and handoff `4`. Both leave commit/post-commit and
+fresh B3A inventory pending.

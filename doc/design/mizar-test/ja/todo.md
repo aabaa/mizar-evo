@@ -2341,6 +2341,34 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   5 CLI hashes、exact scope、diff、trace no-op verificationをPASS。
 - [x] final qualityをfindingsなし、全9 hard gates PASS、valid
   `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] task-only docsをaudit/stageしfrozen contractをcommit。
-- [ ] post-commit invariantsをverify後fresh-inventoryし、private B3P runner
-  seamだけをimplement。
+- [x] task-only docsをaudit/stageしfrozen contractを
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`としてcommit。
+- [x] clean post-commit invariantsとunchanged stashをverify後、private
+  B3P runner seamをfresh inventory。
+
+## Checker Task 258B3M2B2B3P runner implementation-closure ledger
+
+- [x] prerequisite commit
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`をrecord。
+- [x] exact 4 existing runner filesに`pub(super)` explicit-context sibling/
+  context-0 delegateをimplementしpublic/active changeなし。
+- [x] exact 2 testsでbytes/LF、57 nodes、resolver `63`、binding `39`、
+  Task-252/255、fingerprint-only absence、precedence/replay/clones、
+  literal hashes/isolationをcover。
+- [x] test-sufficiency/implementation reviewsを**NO FINDINGS**でcomplete。
+- [x] focused `2/2`、runner library `446/446`、format、package Clippy
+  `-D warnings`、diff checkをPASS。
+- [x] sizes `7240/4517/740/2557/19275/2528`、production `30/49472`、
+  current production/test-list hashesをrecord。
+- [x] canonical/fixture/expectation/sidecar/trace/checker/public/activeを
+  unchangedに維持。
+- [x] source/documentation consistencyとdocumentation/boundaryのrepeat
+  reviewを**NO FINDINGS**でcomplete。
+- [x] lint-policy `15/14`、metadata `137`、focused `2/2`、runner
+  library `446/446`、format、workspace-wide warnings-denied Clippy/tests、
+  5 CLI/count/hash、current manifest/test-list hash、exact 30-file scope、
+  diff-check gatesをPASS。
+- [x] final read-only quality reviewを**NO FINDINGS**、全9 hard gates
+  PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] B3P implementation closureをaudit/stage/commit。
+- [ ] post-commit invariantsをverifyしupper B3Aをfresh inventory。

@@ -413,10 +413,15 @@ pub(super) use source_reserve::{
 pub(super) use source_set_term::source_set_term_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_set_term::{
-    SourceSetTermRouteOutput, SyntheticSourceSetTermDependencies, source_set_term_output,
-    source_set_term_output_with_mutation, source_set_term_output_with_source,
-    source_set_term_output_with_source_and_mutation, synthetic_source_set_term_output,
-    synthetic_source_set_term_output_with_mutation,
+    SetEnumerationBindingMutation, SetEnumerationFinalMutation, SetEnumerationHandoffMutation,
+    SetEnumerationPrimaryMutation, SetEnumerationProofContextTestOptions,
+    SetEnumerationResolverMutation, SetEnumerationSelectionStage, SetEnumerationSurfaceMutation,
+    SourceSetTermRouteOutput, SyntheticSourceSetTermDependencies,
+    TASK258B3M2B2B3P_BINDING_FIELD_COUNT, TASK258B3M2B2B3P_RESOLVER_FIELD_COUNT,
+    set_enumeration_proof_context_handoff_for_test, set_enumeration_selection_stage_for_test,
+    source_set_term_output, source_set_term_output_with_mutation,
+    source_set_term_output_with_source, source_set_term_output_with_source_and_mutation,
+    synthetic_source_set_term_output, synthetic_source_set_term_output_with_mutation,
 };
 pub(super) use source_statement::source_statement_transport_detail_keys;
 #[cfg(test)]

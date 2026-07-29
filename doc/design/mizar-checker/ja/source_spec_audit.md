@@ -4341,3 +4341,27 @@ final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`。
 implementation readiness `14`、documentation `10`、boundary discipline
 `10`、verification `5`、handoff `4`。pendingはstage/commit、
 post-commit、fresh implementation inventoryだけ。
+
+## Task 258B3M2B2B3P implementation source/specification status
+
+canonical authorityを変更せず、prerequisite
+`285a1f11c310bb313c4c6b4feae914eb11f74754`からexact 4 runner files/
+2 testsをderiveし、B3P `source_drift`/`test_gap`をclosedした。
+test-sufficiency/implementation reviewsは**NO FINDINGS**。`spec_gap`、
+undocumented semantics、expectation drift、boundary violation、
+checker/public/active-route changeはない。
+
+evidenceはproof-context-1 Task-255 enumeration transport、exhaustive
+source/node/resolver/Task-48/Task-252/Task-255 corruption/replay、
+fingerprint-only absence、literal legacy hashesに限定。
+`spec.en.checker.formula_statement.source_payloads`は`deferred`、
+`tests = []`、Task-255 credit unchanged、`spec_trace.toml`はdeliberate
+no-op。next dependency ownershipはupper B3Aへtransfer。
+
+focused/library/fmt/package-Clippy、lint-policy `15/14`、metadata `137`は
+PASS。source/docs consistency repeatとdocumentation/boundary repeatは
+**NO FINDINGS**、workspace Clippy/tests、5 CLI/current manifest/test-list
+hashes、diff、exact30 scopeもPASS。independent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。pendingはcommit/post-commit、fresh B3A
+inventoryだけ。

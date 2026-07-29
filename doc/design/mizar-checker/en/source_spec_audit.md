@@ -4549,3 +4549,31 @@ Final quality reports **NO FINDINGS**. All nine hard gates PASS and valid
 implementation readiness `14`, documentation `10`, boundary discipline
 `10`, verification `5`, and handoff `4`. Only stage/commit, post-commit,
 and fresh implementation inventory remain pending.
+
+## Task 258B3M2B2B3P Implementation Source/Specification Status
+
+The implementation is derived without changing canonical authority from the
+contract committed as
+`285a1f11c310bb313c4c6b4feae914eb11f74754`. Exactly four runner files and
+two tests close the classified B3P `source_drift` and `test_gap`;
+test-sufficiency and implementation reviews report **NO FINDINGS**. No
+`spec_gap`, undocumented semantic behavior, expectation drift, boundary
+violation, checker/public change, or active-route change was introduced.
+
+The executable evidence remains transport-only: Task-255 enumeration reuse
+in proof context 1, exhaustive source/node/resolver/Task-48/Task-252/Task-255
+corruption and replay, fingerprint-only absence authentication, and literal
+legacy hashes. Requirement
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`; existing Task-255 credit is unchanged and
+`tests/coverage/spec_trace.toml` is a deliberate no-op. Narrative ownership
+now transfers the next dependency to upper B3A.
+
+Focused tests, runner library `446`, formatting, package Clippy, checker/
+mizar-test lint-policy `15/14`, and metadata `137` pass.
+Source/documentation consistency and documentation/boundary repeats report
+**NO FINDINGS**; workspace Clippy/tests, five CLI and current manifest/
+test-list hashes, diff check, and exact 30-file scope also PASS. Independent
+final quality reports **NO FINDINGS**; all nine hard gates PASS with valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only commit/post-commit and fresh B3A
+inventory remain pending.

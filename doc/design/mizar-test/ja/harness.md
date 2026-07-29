@@ -4063,3 +4063,28 @@ fresh implementation inventoryはpending。
 final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
 （`20/20/15/14/10/10/5/4`）。pendingはstage/commit、post-commit、
 fresh implementation inventoryだけ。
+
+## Checker Task 258B3M2B2B3P implemented private harness
+
+`285a1f11c310bb313c4c6b4feae914eb11f74754`のcontractに対しexact
+2 testsがPASS：
+
+- `task258b3m2b2b3p_set_enumeration_proof_context_reuse_is_exact`
+- `task258b3m2b2b3p_set_enumeration_corruption_replay_and_legacy_output_fail_closed`
+
+117 bytes/final-LFとstripped/extra LF、57 nodesのkind/range/recovery/
+children/root、independent resolver 63 fields、binding 39 fields、
+Task-252/255全rows、real prior-binding use-ordinal substitution、coherent
+application/structure dependenciesをcover。shared fingerprint-only
+subprofileにより各absence clauseはindependently observable。各reject直後
+clean replay、stale/simultaneous precedence、typed/resolved clone rollback、
+owner partitions、semantic emptiness、legacy hashes、active/adjacent
+isolationもfixed。
+
+focused `2/2`、runner library `446/446`、fmt、package/workspace
+Clippy/tests、lint-policy `15/14`、metadata `137`、5 CLI/current
+manifest/test-list hashes、diff、exact30 scopeはPASS。test-sufficiency/
+implementation/source-docs consistency repeat/documentation-boundary
+repeatは**NO FINDINGS**。independent final qualityは**NO FINDINGS**、
+全9 hard gates PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）。
+pendingはcommit/post-commit、fresh B3Aだけ。

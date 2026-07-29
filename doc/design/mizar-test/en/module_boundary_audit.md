@@ -12137,3 +12137,25 @@ commit, post-commit, and fresh inventory are pending.
 Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
 fresh implementation inventory remain pending.
+
+## Checker Task 258B3M2B2B3P Implemented Runner Boundary
+
+Prerequisite `285a1f11c310bb313c4c6b4feae914eb11f74754` is implemented
+without expanding the frozen boundary: exactly the four existing runner
+files changed, no new file/path/dependency/module/public API or active route
+was added, and no checker source changed. The only production seam is the
+`pub(super)` explicit-context sibling plus the preserved context-0 delegate;
+exactly two tests remain in the existing set-term test leaf.
+
+Runner production remains `30` paths and is now `49472` lines, with
+unchanged path hash
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`
+and content hash
+`814290d6a53b9dfb6061cb301d7728eff3a7c78e1e87a1d0bd5d75839bbc9a5a`.
+Test-sufficiency, implementation, source/documentation consistency repeat,
+and documentation/boundary repeat are **NO FINDINGS**. Lint-policy `15/14`,
+metadata `137`, focused/library/fmt, workspace Clippy/tests, five CLI/current
+manifest/test-list hashes, diff check, and exact 30-file scope PASS.
+Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
+with valid `98/100` (`20/20/15/14/10/10/5/4`). Only commit/post-commit and
+fresh B3A inventory remain pending.

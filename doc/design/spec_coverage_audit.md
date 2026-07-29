@@ -4978,3 +4978,34 @@ traceability `15`, implementation readiness `14`, documentation `10`,
 boundary discipline `10`, verification `5`, and handoff `4`. Coverage and
 trace no-op evidence is unchanged. Only task-only stage/commit, post-commit
 verification, and fresh implementation inventory remain pending.
+
+## Task 258B3M2B2B3P Implementation Coverage Closure
+
+The frozen prerequisite was committed as
+`285a1f11c310bb313c4c6b4feae914eb11f74754` and is now implemented in
+exactly four runner files with exactly two tests. This closes the classified
+B3P `source_drift` and `test_gap`: proof-context-1 Task-255 enumeration
+transport is executable and exhaustively checked across source bytes, 57
+surface nodes, resolver `63`, binding `39`, Task-252/255 rows,
+fingerprint-only dependency absence, precedence/replay/clones, and
+family/active isolation. Test-sufficiency and implementation reviews report
+**NO FINDINGS**.
+
+This is a real narrative coverage update, not new semantic credit.
+Requirement `spec.en.checker.formula_statement.source_payloads` remains
+`deferred`, `tests = []`; existing Task-255 covered credit is unchanged.
+No status, count, test, backlink, or credit changes are made to
+`tests/coverage/spec_trace.toml`. Specifications, `.miz`, fixtures,
+expectations, sidecars, checker/public APIs, active routes, and semantics are
+unchanged. Follow-up ownership transfers to upper B3A for the still-absent
+`SourceStatementWitness -> SetTerm(0)` edge.
+
+Focused `2/2`, runner library `446`, formatting, lint-policy `15/14`,
+metadata `137`, package and workspace Clippy/tests, five CLI/current
+manifest/test-list hashes, diff check, and exact 30-file scope PASS.
+Source/documentation consistency and documentation/boundary repeats report
+**NO FINDINGS**. Independent final quality reports **NO FINDINGS**; all
+nine hard gates PASS with valid `98/100`: specification `20`, tests `20`,
+traceability `15`, implementation readiness `14`, documentation `10`,
+boundary discipline `10`, verification `5`, and handoff `4`. Only the
+implementation commit/post-commit and fresh B3A inventory remain pending.

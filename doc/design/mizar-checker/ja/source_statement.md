@@ -2802,3 +2802,20 @@ final quality、commit、post-commit、fresh inventoryはpending。
 final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
 （`20/20/15/14/10/10/5/4`）。pendingはstage/commit、post-commit、
 fresh implementation inventoryだけ。
+
+## Task 258B3M2B2B3P implemented statement-owner exclusion
+
+prerequisite `285a1f11c310bb313c4c6b4feae914eb11f74754`のprivate lower
+implementationはTask-252/Task-255 set-enumeration transportだけをpublish。
+statement/witness/proof/theorem/term-expression containersはunownedのまま、
+`SourceStatementWitness -> SetTerm(0)` edgeもstatement semantic rowもない。
+exact 2 testsがactive/adjacent profilesを含めこのexclusionを固定。
+
+lower B3P `source_drift`/`test_gap`はupper B3A ownershipを消費せずclosed。
+次dependencyはB3A。test-sufficiency/implementation reviewsは
+**NO FINDINGS**。source/docs consistency repeatとdocumentation/boundary
+repeatも**NO FINDINGS**。lint-policy `15/14`、metadata `137`、
+focused/library/fmt、workspace Clippy/tests、CLI/manifests/test-list hashes、
+diff、exact30 scopeはPASS。independent final qualityは**NO FINDINGS**、
+全9 hard gates PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）。
+pendingはcommit/post-commit、fresh B3A inventoryだけ。

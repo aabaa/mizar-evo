@@ -2545,6 +2545,36 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   test-list, five CLI hash, exact-scope, diff, and trace-no-op verification.
 - [x] Complete final quality with no findings, all nine hard gates PASS, and
   valid `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Audit/stage the task-only docs and commit the frozen contract.
-- [ ] Verify post-commit invariants, then fresh-inventory and implement only
-  the private B3P runner seam.
+- [x] Audit/stage the task-only docs and commit the frozen contract as
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`.
+- [x] Verify clean post-commit invariants and unchanged stash, then fresh-
+  inventory the private B3P runner seam.
+
+## Checker Task 258B3M2B2B3P Runner Implementation-Closure Ledger
+
+- [x] Record prerequisite commit
+  `285a1f11c310bb313c4c6b4feae914eb11f74754`.
+- [x] Implement exactly four existing runner files with one `pub(super)`
+  explicit-context sibling, context-0 delegate, and no public/active change.
+- [x] Add exactly two compound tests covering bytes/LF, 57 nodes, resolver
+  `63`, binding `39`, Task-252/255, fingerprint-only absence, precedence,
+  replay, clones, literal hashes, and isolation.
+- [x] Complete test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused `2/2`, runner library `446/446`, formatting, package
+  Clippy with `-D warnings`, and diff check.
+- [x] Record sizes `7240/4517/740/2557/19275/2528`, production
+  `30/49472`, and current production/test-list hashes.
+- [x] Keep canonical, fixture, expectation, sidecar, trace, checker/public,
+  and active-route surfaces unchanged.
+- [x] Complete repeated source/documentation consistency and
+  documentation/boundary reviews with **NO FINDINGS**.
+- [x] Pass lint-policy `15/14`, metadata `137`, focused `2/2`, runner
+  library `446/446`, formatting, workspace-wide warnings-denied Clippy and
+  tests, five CLI/count/hash, current manifest/test-list hash, exact-30-file
+  scope, and diff-check gates.
+- [x] Complete final read-only quality review with **NO FINDINGS**, all nine
+  hard gates PASS, and valid `98/100`
+  (`20/20/15/14/10/10/5/4`).
+- [ ] Audit/stage and commit the B3P implementation closure.
+- [ ] Verify post-commit invariants and fresh-inventory upper B3A.
