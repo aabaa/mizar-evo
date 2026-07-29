@@ -972,3 +972,24 @@ final quality **NO FINDINGS**, all nine hard gates PASS, and valid
 implementation readiness `14`, documentation `10`, boundary discipline
 `10`, verification `5`, and handoff `4`. Both leave commit/post-commit and
 fresh B3A inventory pending.
+
+## Checker Task 258B3M2B2B3A Frozen-Contract Synchronization
+
+EN/JA runner companions freeze identical authority, source/resolver/label
+facts, immutable Tasks 48/252/255/256/258, one B3A witness/zero names,
+partition/graph, additive checker API, exact seven implementation files, and
+source-only non-existential intent. Both preserve B3P's context-aware
+set-term output and forbid either `source_set_term.rs`.
+
+Both name the same four checker/five runner tests, matrices, precedence,
+deferrals, classifications, baseline/projection counts, hashes, CLI
+outcomes, trace no-op, and exact `32`-doc prerequisite scope. B3P commit
+`abbfedfc2cdbaa97d8294893859da8cd350ad9a8` is closed and B3A ownership is
+fresh. Specification/documentation repeat, test-sufficiency,
+implementation/API boundary, and all executable/count/hash/scope/no-op
+verification are complete with **NO FINDINGS**/PASS in both languages.
+Source/documentation consistency and documentation/boundary repeats are
+**NO FINDINGS** in both languages. Final quality is synchronized as
+**NO FINDINGS**, all nine hard gates PASS, valid `98/100`
+(`20/20/15/14/10/10/5/4`). Only commit, post-commit, and fresh implementation
+inventory remain pending in both.

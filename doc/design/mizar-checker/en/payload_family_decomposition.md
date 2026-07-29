@@ -1282,3 +1282,17 @@ test-list hashes, diff check, and exact 30-file scope PASS. Independent
 final quality reports **NO FINDINGS**; all nine hard gates PASS with valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only commit, post-commit, and fresh B3A
 inventory remain pending.
+
+### Task 258B3M2B2B3A Frozen Upper-Family Edge
+
+B3A owns nodes `{42,43}` and the sole directed
+`SourceStatementWitness(0) -> SetTerm(0)` edge. Lower ownership remains
+Task 252 `{30,32,36,38,44,46}`, Task 255 `{40}`, Task 256 `{34,48}`, and
+Task 258 base `{51,53}`. Nodes
+`0..29,31,33,35,37,39,41,45,47,49,50,52,54..56` are unowned.
+
+The full graph is formula `0 -> Primary(0/1)`, formula
+`1 -> Primary(4/5)`, witness `0 -> SetTerm(0)`, and
+`SetTerm(0) -> Primary(2/3)`. No reverse/cross-owner/semantic edge exists.
+All set-shape, label, family-hybrid, and family-order near misses fail closed
+without partial publication. B4/B5 and semantic expansion remain deferred.

@@ -4365,3 +4365,18 @@ hashes、diff、exact30 scopeもPASS。independent final qualityは
 **NO FINDINGS**、全9 hard gates PASS、valid `98/100`
 （`20/20/15/14/10/10/5/4`）。pendingはcommit/post-commit、fresh B3A
 inventoryだけ。
+
+## Task 258B3M2B2B3A frozen source/specification audit
+
+Chapters4/13/15/16、parser pass、unchanged formula-gap failure
+expectation/trace、B3P lower tests、Tasks48/252/255/256/258は
+`take { 1 , 2 }`から`SetTerm(0)`へのexact transportだけをauthorize。
+goal `x = x`はnon-existentialで、witness semantics、goal progress、
+proof validity、theorem acceptanceはauthorizeしない。
+
+stale/missing docsは`design_drift`、missing API/installers/consumerは
+`source_drift`、missing checker4+runner5 testsは`test_gap`。
+`spec_gap`、`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`なし。trace rowは
+`deferred`, `tests = []`、Task-111/255 credit unchanged。spec/`.miz`/
+fixture/expectation/sidecar/trace editなし、auditはnarrative ownershipのみ。

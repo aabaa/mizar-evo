@@ -1210,3 +1210,21 @@ independent final source/docs consistency/final qualityは**NO FINDINGS**。
 全9 hard gates PASS、valid score `98/100`で、final-AST evidence/boundariesは
 unchanged。pendingはcached-diff/staging audit、implementation commit、
 post-commit inventory/fresh-next-task gatesだけ。
+
+## Task 258B3M2B2B3A frozen final-AST contract
+
+`ResolvedTypedAst`はapplication/structure fingerprints absent、set
+fingerprint presentの`SetTerm(SourceSetTermId)`にexact allow/revalidate/
+cloneだけを追加。precedenceはsource/AST、local resolver+label、
+Tasks48/252/255/256/258 base、witness、atomic publication、final clone。
+unsupported B3A statement/witness combinationとwitness/fingerprint
+revalidation failureは`ResolvedTypedAstError::InvalidSourceStatement`。
+precedence上先行するlower-stage mutationは`InvalidSourceSetTerm`、
+`InvalidSourceAtomicFormula`を含む既存owner variantを保持。全failureは
+partial stateなしでimmediate clean replay可能。lower
+`SourceStatementWitnessError`はinternalのままで、final error variant/
+display textを変更しない。
+
+final cloneはwitness 1/names 0、`set-term#0`、existing optional debug fields
+後のoptional set fingerprint、literal legacy bytes、empty semantic/proof/
+goal/IRをpreserve。semantic result/public routeは追加しない。

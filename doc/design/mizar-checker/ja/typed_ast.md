@@ -1205,3 +1205,30 @@ independent final source/docs consistency/final qualityは**NO FINDINGS**。
 全9 hard gates PASS、valid `98/100`。atomicity evidence/counts/hashes/
 public/semantic boundariesはunchanged。pendingはcached-diff/staging audit、
 implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+
+## Task 258B3M2B2B3A frozen Typed-AST installer
+
+`TypedAst`はexactly以下だけを追加：
+
+```rust
+pub fn with_source_set_term_statement_witnesses(
+    mut self,
+    set_terms: SourceSetTermHandoff,
+    statements: SourceStatementHandoff,
+    witnesses: SourceStatementWitnessHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+set-term table、Task258 base owners/contexts、B3A witness1をpublication前に
+atomically authenticate。tupleはapplication `None`、structure `None`、
+set `Some`。legacy `None/None/None`、application `Some/None/None`、
+structure `None/Some/None`はexisting installerだけでaccepted、
+他のtupleとhybrid/reorder/duplicate/stale dependency/partition violation/
+invalid targetは`TypedAstError::InvalidSourceStatement`でimmediate replay
+可能にfail closed。error variant/displayは追加・変更せず、lower handoff
+`SourceStatementWitnessError`はこのpublic layerからescapeしない。
+
+installerはwitness1/names0とsole witness-to-`SetTerm(0)`だけpublish。
+existing installers/family composition/literal debug/semantics/routes不変。
+final clone revalidationは`ResolvedTypedAst` ownershipで、set-term producer
+editなし。

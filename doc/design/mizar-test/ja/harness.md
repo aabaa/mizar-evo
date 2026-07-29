@@ -4088,3 +4088,23 @@ implementation/source-docs consistency repeat/documentation-boundary
 repeatは**NO FINDINGS**。independent final qualityは**NO FINDINGS**、
 全9 hard gates PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）。
 pendingはcommit/post-commit、fresh B3Aだけ。
+
+## Checker Task 258B3M2B2B3A frozen runner harness
+
+exact runner testsは次の5件：
+
+1. `task258b3m2b2b3a_real_frontend_freezes_set_enumeration_witness_contract`
+2. `task258b3m2b2b3a_validation_precedence_mutation_and_replay_fail_closed`
+3. `task258b3m2b2b3a_set_enumeration_and_byte_subtree_near_misses_are_exact`
+4. `task258b3m2b2b3a_family_and_active_route_isolation_is_atomic`
+5. `task258b3m2b2b3a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`
+
+final LF/117 bytes、57 nodes全fields/root、local resolver label/owner、
+全Task48/252/255/256/258 rows、witness1/names0、partition/graph、
+fingerprints、empty/singleton/3+/parenthesized/nested/comprehension/choice/
+`qua`/label near misses、全family hybrid/order、immediate replay/rollback、
+final clone/debug/isolation/empty semanticsをauthenticate。
+
+precedenceはsource/AST、resolver+label、Tasks48、252、255、256、258 base、
+witness、atomic publication、final clone。real fixture/expectation/traceは
+unchanged/inactiveで、existential goal/proof acceptance/active creditなし。

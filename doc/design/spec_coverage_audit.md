@@ -5009,3 +5009,29 @@ nine hard gates PASS with valid `98/100`: specification `20`, tests `20`,
 traceability `15`, implementation readiness `14`, documentation `10`,
 boundary discipline `10`, verification `5`, and handoff `4`. Only the
 implementation commit/post-commit and fresh B3A inventory remain pending.
+
+## Task 258B3M2B2B3A Frozen-Contract Coverage Audit
+
+Chapters 4/13/15/16 and existing parser/failure/lower-task evidence now have
+a frozen design owner for exactly one source transport edge:
+`SourceStatementWitness(0) -> SetTerm(0)`. The edge begins at the exact
+`take { 1 , 2 }` source item and reuses unchanged Task-255/B3P set-term
+transport. It does not credit an existential witness because the goal is
+`x = x`, and it adds no typing, goal, proof, theorem, fact, overload,
+Core/CFG/VC, active route, diagnostic, or broader-set semantics.
+
+The stale contract is `design_drift`, missing API/consumer is
+`source_drift`, and missing four checker/five runner tests is `test_gap`;
+there is no blocking disagreement. Requirement
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`; Task-111/255 credit and all trace status/count/backlinks stay
+unchanged. `tests/coverage/spec_trace.toml` is a deliberate no-op. This is
+narrative ownership only; later implementation is exactly seven files and
+this prerequisite is exactly `32` design docs.
+
+Specification/documentation, test-sufficiency, implementation/API boundary,
+source/documentation consistency, and documentation/boundary reviews all
+report **NO FINDINGS**. Executable/count/hash/scope/no-op verification
+passes, and independent final quality reports **NO FINDINGS**, all nine hard
+gates PASS, valid `98/100` (`20/20/15/14/10/10/5/4`). This review closure
+does not change trace status, count, backlinks, tests, or semantic credit.

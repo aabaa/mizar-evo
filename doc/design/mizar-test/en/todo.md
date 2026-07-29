@@ -2576,5 +2576,32 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete final read-only quality review with **NO FINDINGS**, all nine
   hard gates PASS, and valid `98/100`
   (`20/20/15/14/10/10/5/4`).
-- [ ] Audit/stage and commit the B3P implementation closure.
-- [ ] Verify post-commit invariants and fresh-inventory upper B3A.
+- [x] Audit/stage and commit the B3P implementation closure as
+  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`.
+- [x] Verify clean post-commit HEAD, ahead-10 origin metadata, untouched
+  stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh-inventory
+  upper B3A.
+
+## Checker Task 258B3M2B2B3A Runner Frozen-Contract Ledger
+
+- [x] Close B3P commit `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`
+  and fresh-inventory B3A with clean/ahead-10/untouched-stash evidence.
+- [x] Freeze authority, source/resolver label facts, lower Tasks
+  48/252/255/256/258, one witness/zero names, partition/graph, and
+  non-existential source-only intent.
+- [x] Freeze exact seven implementation files, unchanged B3P set-term
+  consumer, additive API/debug, five runner plus four checker tests,
+  matrices, precedence, and deferrals.
+- [x] Record `design_drift`/`source_drift`/`test_gap`, no blocking
+  disagreement, baselines/projections/hashes, trace no-op, and exact
+  `32`-doc prerequisite scope.
+- [x] Complete specification/documentation, test-sufficiency, and
+  implementation/API boundary reviews with **NO FINDINGS**.
+- [x] Pass source/count/hash, lint/library, CLI, exact-scope, diff, and
+  trace-no-op verification.
+- [x] Complete documentation/boundary and source/docs consistency
+  reviews with **NO FINDINGS**.
+- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
+  and valid `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Create the dedicated documentation-only commit.
+- [ ] Verify post-commit/stash invariants and fresh implementation inventory.

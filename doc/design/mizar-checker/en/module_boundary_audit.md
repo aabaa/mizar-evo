@@ -710,3 +710,24 @@ report **NO FINDINGS**. All nine hard gates PASS and the valid score is
 `98/100`; the exact boundary evidence remains unchanged. Only cached-diff/
 staging audit, implementation commit, and post-commit inventory/fresh-next-
 task gates remain pending.
+
+## Task 258B3M2B2B3A Frozen Module Boundary
+
+The later implementation changes exactly seven existing files: checker
+`source_statement.rs`, `typed_ast.rs`, `resolved_typed_ast.rs`; runner
+`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
+and `runner/tests/type_elaboration/source_statement.rs`. No new file,
+module, dependency, re-export, active route, fixture, or corpus artifact is
+allowed. Both `source_set_term.rs` files and all other source/tests are
+forbidden; the runner consumes unchanged B3P
+`source_set_term_output_with_source_term_in_context`.
+
+The only checker boundary is additive `SetTerm(SourceSetTermId)`, optional
+set fingerprint/getter, `build_with_set_term`, set-aware `TypedAst`
+installer, and exact `ResolvedTypedAst` allow/revalidate/clone. The tuple is
+application/structure `None`, set `Some`; legacy API/debug stays literal.
+This prerequisite owns exactly `32` design docs and no executable artifact.
+Independent documentation/boundary and source/documentation consistency
+repeats report **NO FINDINGS**; final quality reports **NO FINDINGS**, all
+nine hard gates PASS, valid `98/100`. Only the documentation-only commit and
+post-commit/fresh implementation inventory remain.

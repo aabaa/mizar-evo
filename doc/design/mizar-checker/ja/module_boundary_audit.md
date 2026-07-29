@@ -679,3 +679,23 @@ independent final source/docs consistencyとfinal qualityはどちらも
 **NO FINDINGS**。全9 hard gates PASS、valid score `98/100`で、exact
 boundary evidenceはunchanged。pendingはcached-diff/staging audit、
 implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+
+## Task 258B3M2B2B3A frozen module boundary
+
+later implementationはchecker `source_statement.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs`、runner `type_elaboration/source_statement.rs`、
+`type_elaboration.rs`、`runner.rs`、
+`runner/tests/type_elaboration/source_statement.rs`のexisting exact7。
+new file/module/dependency/re-export/active route/fixture/corpusはゼロ。
+両`source_set_term.rs`と他のsource/testsはforbiddenで、runnerはB3P
+`source_set_term_output_with_source_term_in_context`をunchanged consume。
+
+checker boundaryはadditive `SetTerm(SourceSetTermId)`、optional set
+fingerprint/getter、`build_with_set_term`、set-aware `TypedAst` installer、
+exact `ResolvedTypedAst` allow/revalidate/cloneだけ。tupleはapplication/
+structure `None`、set `Some`、legacy API/debug literal不変。prerequisite
+はexact32 design docsのみをown。
+independent documentation/boundaryとsource/docs consistency repeatは
+**NO FINDINGS**。final qualityも**NO FINDINGS**、全9 hard gates PASS、
+valid `98/100`。documentation-only commitとpostcommit/fresh implementation
+inventoryのみpending。

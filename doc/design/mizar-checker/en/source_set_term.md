@@ -374,3 +374,17 @@ No checker schema/API or semantic result was added. Independent final
 quality reports **NO FINDINGS**; all nine hard gates PASS with valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only the implementation
 commit/post-commit checks and fresh B3A inventory remain pending.
+
+## Task 258B3M2B2B3A Frozen Set-Term Consumer Boundary
+
+Task 255/B3P stays byte-exact. `SetTerm(0)` is node/range `40/90..96`,
+context `1`, ordinal `0`, `Normal`, spelling `{ 1 , 2 }`, `Enumeration`;
+two `EnumerationElement` edges target `Primary(2/3)`, one result-type
+request exists, primary fingerprint is exact, and application/structure
+fingerprints are absent. B3A consumes unchanged
+`source_set_term_output_with_source_term_in_context`.
+
+B3A adds no set-term producer behavior, only witness
+`0 -> SetTerm(0) -> Primary(2/3)` and exact set fingerprint authentication.
+No reverse/semantic edge exists. Both `source_set_term.rs` files, result
+typing/sethood/element unification, and broader set forms are forbidden.

@@ -12159,3 +12159,22 @@ manifest/test-list hashes, diff check, and exact 30-file scope PASS.
 Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
 with valid `98/100` (`20/20/15/14/10/10/5/4`). Only commit/post-commit and
 fresh B3A inventory remain pending.
+
+## Checker Task 258B3M2B2B3A Frozen Runner Boundary
+
+The later runner edit set is exactly existing
+`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
+and `runner/tests/type_elaboration/source_statement.rs`. It consumes
+unchanged B3P `source_set_term_output_with_source_term_in_context`; runner
+`type_elaboration/source_set_term.rs` is explicitly forbidden. No file,
+module, dependency, route, fixture, expectation, sidecar, trace, diagnostic,
+or corpus change is allowed.
+
+The paired checker edit set is exactly `source_statement.rs`, `typed_ast.rs`,
+and `resolved_typed_ast.rs`, for seven files total. The prerequisite itself
+changes exactly `32` design docs. This boundary publishes one witness/zero
+names and source transport only, with all semantic/proof/goal surfaces empty.
+Independent documentation/boundary and source/documentation consistency
+repeats report **NO FINDINGS**; final quality reports **NO FINDINGS**, all
+nine hard gates PASS, valid `98/100`. Only the documentation-only commit and
+post-commit/fresh implementation inventory remain.

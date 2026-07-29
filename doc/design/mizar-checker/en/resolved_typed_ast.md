@@ -1275,3 +1275,23 @@ Independent final source/documentation consistency and final quality report
 final-AST evidence and boundaries remain unchanged. Only cached-diff/staging
 audit, implementation commit, and post-commit inventory/fresh-next-task gates
 remain pending.
+
+## Task 258B3M2B2B3A Frozen Final-AST Contract
+
+`ResolvedTypedAst` adds only exact allow/revalidate/clone support for
+`SetTerm(SourceSetTermId)` with application/structure fingerprints absent
+and set fingerprint present. Revalidation follows source/AST, local resolver
+plus label, Tasks 48/252/255/256/258 base, witness, atomic publication, then
+final clone. Unsupported B3A statement/witness combinations and witness/
+fingerprint revalidation failures yield
+`ResolvedTypedAstError::InvalidSourceStatement`. Earlier lower-stage
+mutations retain their existing owning variants according to that
+precedence, including `InvalidSourceSetTerm` and
+`InvalidSourceAtomicFormula`. Every failure publishes no partial state and
+allows immediate clean replay. Lower `SourceStatementWitnessError` values
+remain internal; no final error variant or display text changes.
+
+Final clones preserve one witness/zero names, target `set-term#0`, the
+optional set fingerprint after existing optional debug fields, literal
+legacy bytes, and empty semantic/proof/goal/IR surfaces. No semantic result
+or public route is added.

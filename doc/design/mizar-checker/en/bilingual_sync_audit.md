@@ -888,3 +888,26 @@ implementation readiness `14`, documentation `10`, boundary discipline
 `10`, verification `5`, and handoff `4`. Only implementation
 commit/post-commit checks and fresh upper-B3A inventory remain pending in
 both.
+
+## Task 258B3M2B2B3A Frozen-Contract Synchronization
+
+EN canonical and JA companions freeze the same source-only contract: exact
+Chapters 4/13/15/16 authority, `117` bytes/`57` nodes, fresh resolver label
+and `CheckedStatementOwner` authentication, Tasks 48/252/255/256/258, one
+B3A witness/zero names, the owned/unowned partition, and sole
+`SourceStatementWitness(0) -> SetTerm(0)` transport edge. Both say `x = x`
+is non-existential and claim no witness semantics.
+
+Both freeze the same additive API, application/structure `None` plus set
+`Some`, debug compatibility, exact seven-file later implementation, four
+checker plus five runner tests, precedence, deferrals, classifications,
+baselines/hashes, trace no-op, and exact `32`-doc scope. B3P post-commit
+`abbfedfc2cdbaa97d8294893859da8cd350ad9a8` and fresh B3A ownership are
+synchronized. Specification/documentation repeat, test-sufficiency,
+implementation/API boundary, and all executable/count/hash/scope/no-op
+verification are complete with **NO FINDINGS**/PASS in both languages.
+Source/documentation consistency and documentation/boundary repeats are
+**NO FINDINGS** in both languages. Final quality is synchronized as
+**NO FINDINGS**, all nine hard gates PASS, valid `98/100`
+(`20/20/15/14/10/10/5/4`). Only docs commit, post-commit, and fresh
+implementation inventory remain pending in both.

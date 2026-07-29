@@ -2819,3 +2819,69 @@ focused/library/fmt、workspace Clippy/tests、CLI/manifests/test-list hashes、
 diff、exact30 scopeはPASS。independent final qualityは**NO FINDINGS**、
 全9 hard gates PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）。
 pendingはcommit/post-commit、fresh B3A inventoryだけ。
+
+## Task 258B3M2B2B3A frozen source-statement witness contract
+
+source ownerは`53/19..116`、local-only/public-exported、label spelling
+`FormulaStatementSetEnumerationWitnessSmoke` at `27..69`、reserve anchor
+`0..18`、origin `19..116/[2,1]`、`LocalSource` contribution 0、
+import/recoveryなし。B3Aはresolver labelと`CheckedStatementOwner`を
+fresh-authenticateし、B3P empty-label oracleで代替しない。
+
+Task258 baseはowner1、statements/contexts/input facts/candidates各2。
+statement0はowner/context `0/0`、`Atomic(0)`、`53/19..116`、ordinal0、
+`TheoremProposition`、normalized
+`theorem FormulaStatementSetEnumerationWitnessSmoke : x = x proof take { 1 , 2 } ; thus x = x ; end ;`。
+statement1は`0/1`、`Atomic(1)`、`51/100..111`、ordinal2、
+`Conclusion`、`thus x = x ;`。binding contexts0/1は`[0]`、
+statement context rangesは`19..116`/`100..111`、
+`ReservedTypeGuard` refs `[0,1]`/`[2,3]`、candidates `Atomic(0/1)`。
+
+B3Aはwitness0/names0だけ：owner/context `0/1`、source/take ordinals
+`1/0`、take `43/85..97`、item `42/90..96`、spelling `{ 1 , 2 }`、
+unnamed `Normal`、target `SetTerm(0)`。APIはexact：
+
+```rust
+SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId)
+
+pub fn set_term_fingerprint(&self) -> Option<&str>;
+
+pub fn build_with_set_term(
+    input: SourceStatementWitnessHandoffInput,
+    statements: &SourceStatementHandoff,
+    primary_terms: &SourcePrimaryTermHandoff,
+    set_terms: &SourceSetTermHandoff,
+    arena: &TypedArena,
+) -> Result<SourceStatementWitnessHandoff, SourceStatementWitnessError>;
+
+pub(crate) fn validate_installation_with_set_term(
+    &self,
+    source_id: SourceId,
+    module_id: &ModuleId,
+    statements: &SourceStatementHandoff,
+    primary_terms: &SourcePrimaryTermHandoff,
+    set_terms: Option<&SourceSetTermHandoff>,
+    arena: &TypedArena,
+) -> Result<(), SourceStatementWitnessError>;
+```
+
+accepted application/structure/set fingerprint tupleは
+`None/None/None`、`Some/None/None`、`None/Some/None`、B3A
+`None/None/Some`で、他は全てinvalid。debugはexisting optional fields後に
+set fingerprint、target `set-term#0`。producer/handoff validationは
+`SourceStatementWitnessError::DependencyMismatch`、typed installationと
+final statement/witness revalidationは既存`InvalidSourceStatement` variantを
+保持。先行final lower-stage failureは`InvalidSourceSetTerm`、
+`InvalidSourceAtomicFormula`を含むowner variantを保持。error variant/
+display/legacy bytesは変更しない。
+
+checker4+runner5 testsはbytes/LF、57 AST nodes/root、resolver label、
+Tasks48/252/255/256/258、partition/graph、fingerprints、set/label near
+misses、family hybrids/orders、rollback/replay、final clone、empty semantics
+をexhaust。precedenceはsource/AST、resolver+label、Tasks48、252、255、
+256、258 base、witness、atomic publication、final clone。
+
+source transportだけで、result/numeric/set/element typing、existential
+goal matching、witness guards/obligations、substitution、goal progress/
+discharge、proof/theorem acceptance、facts、overload/coercion、Core/CFG/VC、
+imported set、broader forms、B4/B5、active/corpus/diagnostic creditはdeferred。

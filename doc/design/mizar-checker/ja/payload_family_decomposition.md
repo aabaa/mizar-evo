@@ -1199,3 +1199,17 @@ focused/library/fmt、workspace Clippy/tests、CLI/manifests/test-list hashes、
 diff、exact30 scopeはPASS。independent final qualityは**NO FINDINGS**、
 全9 hard gates PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）。
 pendingはcommit、post-commit、fresh B3A inventoryだけ。
+
+### Task 258B3M2B2B3A frozen upper-family edge
+
+B3Aはnodes `{42,43}`とsole directed
+`SourceStatementWitness(0) -> SetTerm(0)` edgeをown。lowerはTask252
+`{30,32,36,38,44,46}`、Task255 `{40}`、Task256 `{34,48}`、Task258
+base `{51,53}`。unownedは
+`0..29,31,33,35,37,39,41,45,47,49,50,52,54..56`。
+
+full graphはformula `0 -> Primary(0/1)`、formula
+`1 -> Primary(4/5)`、witness `0 -> SetTerm(0)`、
+`SetTerm(0) -> Primary(2/3)`。reverse/cross-owner/semantic edgeなし。
+set-shape/label/family hybrid/order near missesはpartial publicationなしで
+fail closed。B4/B5とsemantic expansionはdeferred。

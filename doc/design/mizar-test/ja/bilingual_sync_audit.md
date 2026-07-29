@@ -931,3 +931,21 @@ exact30 scopeはPASS。両言語ともindependent final qualityは
 readiness `14`、documentation `10`、boundary discipline `10`、
 verification `5`、handoff `4`）で一致。pendingはcommit/post-commit、
 fresh B3Aだけ。
+
+## Checker Task 258B3M2B2B3A frozen-contract synchronization
+
+EN/JA runner companionsはauthority、source/resolver label、unchanged
+Tasks48/252/255/256/258、witness1/names0、partition/graph、additive API、
+exact7 files、source-only non-existential intentで一致。B3P context-aware
+set-term outputをpreserveし、両`source_set_term.rs`をforbid。
+
+同じchecker4/runner5 tests、matrices、precedence、deferrals、
+classifications、baseline/projection、hashes、CLI、trace no-op、exact32
+docsをrecord。B3P commit `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`
+closed、B3A ownership fresh。specification/documentation repeat、
+test-sufficiency、implementation/API boundaryは**NO FINDINGS**、全
+executable/count/hash/scope/no-op verificationはPASSとして両言語で同期。
+source/docs consistencyとdocumentation/boundary repeatは両言語
+**NO FINDINGS**。final qualityも**NO FINDINGS**、全9 hard gates PASS、
+valid `98/100`（`20/20/15/14/10/10/5/4`）で同期。commit、
+postcommit/fresh implementation inventoryだけが両言語pending。

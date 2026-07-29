@@ -5486,5 +5486,35 @@ implementation commit does not satisfy a producer task.
 - [x] Complete final read-only quality review with **NO FINDINGS**, all nine
   hard gates PASS, and valid `98/100`
   (`20/20/15/14/10/10/5/4`).
-- [ ] Audit/stage and create the dedicated B3P implementation commit.
-- [ ] Verify post-commit invariants and fresh-inventory upper B3A.
+- [x] Audit/stage and create dedicated B3P implementation commit
+  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`.
+- [x] Verify clean post-commit HEAD, ahead-10 origin metadata, untouched
+  stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh-inventory
+  upper B3A.
+
+## Checker Task 258B3M2B2B3A Frozen-Contract Ledger
+
+- [x] Close B3P as commit
+  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`, verify clean/ahead-10/
+  untouched-stash invariants, and transfer ownership to B3A.
+- [x] Freeze Chapters 4/13/15/16 authority, existing parser/failure
+  artifacts, B3P evidence, and Tasks 48/252/255/256/258 patterns.
+- [x] Freeze `117` bytes/`57` nodes, resolver label/owner provenance, lower
+  tables, one witness/zero names, partition/graph, and source-only intent.
+- [x] Freeze additive API/debug compatibility, seven implementation files,
+  four checker plus five runner tests, precedence, and semantic deferrals.
+- [x] Record `design_drift`/`source_drift`/`test_gap`, no blocking
+  disagreement, trace `deferred`, `tests = []`, unchanged Task-111/255
+  credit, and exact current/projected counts/hashes.
+- [x] Complete specification review with **NO FINDINGS**.
+- [x] Complete documentation review/repeat, test-sufficiency review, and
+  implementation/API boundary repeat with **NO FINDINGS**.
+- [x] Pass source/count/hash, lint/library, five-CLI, exact-32 scope,
+  diff-check, and trace-no-op verification.
+- [x] Complete source/docs consistency and documentation/boundary reviews
+  with **NO FINDINGS**.
+- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
+  and valid `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Create the dedicated B3A documentation-only commit.
+- [ ] Verify post-commit/stash invariants and fresh B3A implementation
+  inventory.

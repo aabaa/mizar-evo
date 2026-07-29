@@ -10905,3 +10905,21 @@ manifest/test-list hashes、diff、exact30 scopeはPASS。independent final
 qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
 （`20/20/15/14/10/10/5/4`）。pendingはcommit/post-commit、fresh B3A
 inventoryだけ。
+
+## Checker Task 258B3M2B2B3A frozen runner boundary
+
+later runner editはexisting `type_elaboration/source_statement.rs`、
+`type_elaboration.rs`、`runner.rs`、
+`runner/tests/type_elaboration/source_statement.rs`のexact4。unchanged B3P
+`source_set_term_output_with_source_term_in_context`をconsumeし、runner
+`type_elaboration/source_set_term.rs`はexplicitly forbidden。new file/
+module/dependency/route/fixture/expectation/sidecar/trace/diagnostic/corpusなし。
+
+paired checkerは`source_statement.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs`のexact3、total7。prerequisite自体はexact32 design
+docs。publishはwitness1/names0とsource transportだけでsemantic/proof/
+goal surfacesはempty。
+independent documentation/boundaryとsource/docs consistency repeatは
+**NO FINDINGS**。final qualityも**NO FINDINGS**、全9 hard gates PASS、
+valid `98/100`。documentation-only commitとpostcommit/fresh implementation
+inventoryのみpending。

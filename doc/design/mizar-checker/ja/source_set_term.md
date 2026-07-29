@@ -331,3 +331,16 @@ checker schema/API/semantic resultは追加なし。independent final qualityは
 **NO FINDINGS**、全9 hard gates PASS、valid `98/100`
 （`20/20/15/14/10/10/5/4`）。pendingはcommit/post-commit、fresh B3A
 inventoryだけ。
+
+## Task 258B3M2B2B3A frozen set-term consumer boundary
+
+Task255/B3Pはbyte-exact不変。`SetTerm(0)`はnode/range `40/90..96`、
+context1、ordinal0、`Normal`、spelling `{ 1 , 2 }`、`Enumeration`、
+`EnumerationElement` edgesは`Primary(2/3)`、ResultType request 1、
+primary fingerprint exact、application/structure fingerprints absent。
+B3Aはunchanged `source_set_term_output_with_source_term_in_context`をconsume。
+
+B3Aはset-term producer behaviorを追加せず、witness
+`0 -> SetTerm(0) -> Primary(2/3)`とexact set fingerprint authentication
+だけ。reverse/semantic edgeなし。両`source_set_term.rs`、result typing/
+sethood/element unification、broader set formsはforbidden。

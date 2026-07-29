@@ -3074,5 +3074,36 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete final read-only quality review with **NO FINDINGS**, all nine
   hard gates PASS, and valid `98/100`
   (`20/20/15/14/10/10/5/4`).
-- [ ] Audit/stage and create the dedicated implementation commit.
-- [ ] Verify post-commit invariants and fresh-inventory upper B3A.
+- [x] Audit/stage and create dedicated implementation commit
+  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`.
+- [x] Verify clean post-commit HEAD, ahead-10 origin metadata, untouched
+  stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh-inventory
+  upper B3A.
+
+## Checker Task 258B3M2B2B3A Frozen-Contract Completion
+
+- [x] Close B3P as commit
+  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8` and fresh-inventory B3A
+  under clean/ahead-10/untouched-stash invariants.
+- [x] Freeze Chapters 4/13/15/16 authority and exact source/resolver/lower
+  tables for one non-semantic witness-to-`SetTerm(0)` transport edge.
+- [x] Freeze one witness/zero names, ownership partition/graph, additive
+  checker API, exact seven implementation files, and source-set-term
+  producer exclusion.
+- [x] Freeze four checker/five runner tests, exhaustive matrices,
+  validation precedence, semantic deferrals, and no active/corpus/trace
+  credit.
+- [x] Record `design_drift`, `source_drift`, `test_gap`, no blocking
+  disagreement, fresh/projected counts and hashes, exact `32` docs, and
+  deliberate trace no-op.
+- [x] Complete specification/documentation, test-sufficiency, and
+  implementation/API boundary reviews with **NO FINDINGS**.
+- [x] Pass documentation, source/count/hash, lint/library, five CLI,
+  exact-scope, diff-check, and trace-no-op verification.
+- [x] Complete source/docs consistency and boundary reviews with
+  **NO FINDINGS**.
+- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
+  and valid `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Create dedicated B3A documentation-only commit.
+- [ ] Verify post-commit/stash invariants and fresh B3A implementation
+  inventory.

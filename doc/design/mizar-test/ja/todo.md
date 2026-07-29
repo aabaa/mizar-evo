@@ -2370,5 +2370,27 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   diff-check gatesをPASS。
 - [x] final read-only quality reviewを**NO FINDINGS**、全9 hard gates
   PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] B3P implementation closureをaudit/stage/commit。
-- [ ] post-commit invariantsをverifyしupper B3Aをfresh inventory。
+- [x] B3P implementation closureを
+  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`としてaudit/stage/commit。
+- [x] clean post-commit HEAD、ahead-10 origin metadata、untouched stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`をverifyしupper B3Aを
+  fresh inventory。
+
+## Checker Task 258B3M2B2B3A runner frozen-contract ledger
+
+- [x] B3P commit `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`と
+  fresh B3Aをclean/ahead-10/untouched-stash evidenceでclose。
+- [x] authority、source/resolver label、Tasks48/252/255/256/258、
+  witness1/names0、partition/graph、non-existential intentをfreeze。
+- [x] exact7 files、unchanged B3P set-term consumer、additive API/debug、
+  runner5+checker4 tests、matrices、precedence、deferralsをfreeze。
+- [x] `design_drift`/`source_drift`/`test_gap`、blocking disagreementなし、
+  baselines/projections/hashes、trace no-op、exact32 scopeをrecord。
+- [x] specification/documentation、test-sufficiency、implementation/API
+  boundary reviewsを**NO FINDINGS**でcomplete。
+- [x] source/count/hash、lint/library、CLI、scope、diff、trace no-opをPASS。
+- [x] documentation/boundary/source-docs reviewsを**NO FINDINGS**でcomplete。
+- [x] final qualityを**NO FINDINGS**、全9 hard gates PASS、valid
+  `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] dedicated documentation-only commitをcreate。
+- [ ] postcommit/stash invariantsとfresh implementation inventoryをverify。

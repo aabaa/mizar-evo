@@ -1268,3 +1268,31 @@ Independent final source/documentation consistency and final quality report
 evidence, counts, hashes, and public/semantic boundaries remain unchanged.
 Only cached-diff/staging audit, implementation commit, and post-commit
 inventory/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3A Frozen Typed-AST Installer
+
+`TypedAst` adds exactly:
+
+```rust
+pub fn with_source_set_term_statement_witnesses(
+    mut self,
+    set_terms: SourceSetTermHandoff,
+    statements: SourceStatementHandoff,
+    witnesses: SourceStatementWitnessHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+It atomically authenticates the set-term table, Task-258 base owners/
+contexts, and one B3A witness before publication. The tuple is application
+`None`, structure `None`, set `Some`. Legacy `None/None/None`, application
+`Some/None/None`, and structure `None/Some/None` remain accepted only by
+their existing installers; every other tuple and all hybrids, reorders,
+duplicates, stale dependencies, partition violations, and invalid targets
+fail closed with `TypedAstError::InvalidSourceStatement` and immediate replay.
+The installer adds no error variant or display change; lower handoff
+`SourceStatementWitnessError` values never escape this public layer.
+
+The installer publishes one witness/zero names and only
+witness-to-`SetTerm(0)`. Existing installers, family composition, literal
+debug bytes, semantics, and routes stay unchanged. Final-clone revalidation
+belongs to `ResolvedTypedAst`; no set-term producer edit is permitted.

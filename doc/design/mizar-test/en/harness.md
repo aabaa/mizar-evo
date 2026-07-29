@@ -4352,3 +4352,25 @@ and documentation/boundary repeat are **NO FINDINGS**. Independent final
 quality reports **NO FINDINGS**; all nine hard gates PASS with valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only commit/post-commit and fresh B3A
 inventory remain pending.
+
+## Checker Task 258B3M2B2B3A Frozen Runner Harness
+
+The five exact runner tests are:
+
+1. `task258b3m2b2b3a_real_frontend_freezes_set_enumeration_witness_contract`
+2. `task258b3m2b2b3a_validation_precedence_mutation_and_replay_fail_closed`
+3. `task258b3m2b2b3a_set_enumeration_and_byte_subtree_near_misses_are_exact`
+4. `task258b3m2b2b3a_family_and_active_route_isolation_is_atomic`
+5. `task258b3m2b2b3a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`
+
+They authenticate final-LF/all `117` bytes, all fields/root of `57` nodes,
+local resolver including label/owner provenance, every Task-48/252/255/256/
+258 row, the one witness/zero names, exact partition/graph, fingerprints,
+empty/singleton/three-plus/parenthesized/nested/comprehension/choice/`qua`/
+label near misses, all family hybrids/orders, immediate replay/rollback,
+final clone, debug compatibility, isolation, and empty semantics.
+
+Every failure follows precedence source/AST, resolver plus label, Tasks
+48,252,255,256,258 base, witness, atomic publication, final clone. The
+real fixture/expectation/trace remain unchanged and inactive; no existential
+goal matching, proof acceptance, or active-route credit is asserted.

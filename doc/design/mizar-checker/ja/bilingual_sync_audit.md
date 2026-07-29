@@ -841,3 +841,23 @@ Clippy/tests、5 CLI/current manifest/test-list hashes、diff check、exact
 readiness `14`、documentation `10`、boundary discipline `10`、
 verification `5`、handoff `4`）で一致。両言語pendingはimplementation
 commit/post-commitとfresh upper-B3A inventoryだけ。
+
+## Task 258B3M2B2B3A frozen-contract synchronization
+
+EN canonical/JA companionはChapters 4/13/15/16 authority、117 bytes/
+57 nodes、fresh resolver label/`CheckedStatementOwner`、Tasks
+48/252/255/256/258、B3A witness 1/names 0、owned/unowned partition、
+sole `SourceStatementWitness(0) -> SetTerm(0)` transport edgeで一致。
+`x = x`はnon-existentialでsemantic witness claimなし。
+
+additive API、application/structure `None`・set `Some`、debug compatibility、
+later exact 7 files、checker4+runner5 tests、precedence、deferrals、
+classifications、baselines/hashes、trace no-op、exact32 docsも同期。
+B3P commit `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`とfresh B3A ownershipは
+closed。specification/documentation repeat、test-sufficiency、
+implementation/API boundaryは**NO FINDINGS**、全executable/count/hash/
+scope/no-op verificationはPASSとして両言語で同期。source/docs
+consistencyとdocumentation/boundary repeatは両言語**NO FINDINGS**。
+final qualityも**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
+（`20/20/15/14/10/10/5/4`）で同期。docs commit、postcommit/fresh
+implementation inventoryだけが両言語pending。

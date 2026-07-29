@@ -5232,5 +5232,34 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   diff-check gatesをPASS。
 - [x] final read-only quality reviewを**NO FINDINGS**、全9 hard gates
   PASS、valid `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] dedicated B3P implementation commitをaudit/stage/create。
-- [ ] post-commit invariantsをverifyしupper B3Aをfresh inventory。
+- [x] dedicated B3P implementation commit
+  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`をaudit/stage/create。
+- [x] clean post-commit HEAD、ahead-10 origin metadata、untouched stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`をverifyしupper B3Aを
+  fresh inventory。
+
+## Checker Task 258B3M2B2B3A frozen-contract ledger
+
+- [x] B3P commit `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`、
+  clean/ahead-10/untouched-stashをcloseしB3Aへownership transfer。
+- [x] Chapters4/13/15/16 authority、parser/failure artifacts、B3P evidence、
+  Tasks48/252/255/256/258 patternsをfreeze。
+- [x] 117 bytes/57 nodes、resolver label/owner provenance、lower tables、
+  witness1/names0、partition/graph、source-only intentをfreeze。
+- [x] additive API/debug、exact7 implementation files、checker4+runner5
+  tests、precedence、semantic deferralsをfreeze。
+- [x] `design_drift`/`source_drift`/`test_gap`、blocking disagreementなし、
+  trace `deferred`, `tests = []`、Task-111/255 credit unchanged、
+  current/projected counts/hashesをrecord。
+- [x] specification reviewを**NO FINDINGS**でcomplete。
+- [x] documentation review/repeat、test-sufficiency、
+  implementation/API boundary repeatを**NO FINDINGS**でcomplete。
+- [x] source/count/hash、lint/library、5 CLI、exact32 scope、diff、
+  trace no-op verificationをPASS。
+- [x] source/docs consistencyとdocumentation/boundary reviewsを
+  **NO FINDINGS**でcomplete。
+- [x] final qualityを**NO FINDINGS**、全9 hard gates PASS、valid
+  `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] dedicated B3A documentation-only commitをcreate。
+- [ ] postcommit/stash invariantsとfresh B3A implementation inventoryを
+  verify。

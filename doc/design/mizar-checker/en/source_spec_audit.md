@@ -4577,3 +4577,19 @@ test-list hashes, diff check, and exact 30-file scope also PASS. Independent
 final quality reports **NO FINDINGS**; all nine hard gates PASS with valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only commit/post-commit and fresh B3A
 inventory remain pending.
+
+## Task 258B3M2B2B3A Frozen Source/Specification Audit
+
+Chapters 4/13/15/16, the parser pass, unchanged formula-gap failure
+expectation/trace, B3P lower tests, and Tasks 48/252/255/256/258 authorize
+only exact transport from `take { 1 , 2 }` to `SetTerm(0)`. The goal `x = x`
+is non-existential, so witness semantics, goal progress, proof validity, and
+theorem acceptance are not authorized.
+
+Stale/missing documentation is `design_drift`; missing API/installers/
+consumer is `source_drift`; missing four-plus-five tests is `test_gap`.
+There is no `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or
+`repo_metadata_conflict`. The trace row remains `deferred`, `tests = []`;
+Task-111/255 credit is unchanged. No spec, `.miz`, fixture, expectation,
+sidecar, or trace edit is allowed; audit impact is narrative ownership only.

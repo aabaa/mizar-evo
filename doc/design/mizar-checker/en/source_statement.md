@@ -3354,3 +3354,73 @@ hashes, diff check, and exact 30-file scope PASS. Independent final quality
 reports **NO FINDINGS**; all nine hard gates PASS with valid `98/100`
 (`20/20/15/14/10/10/5/4`). Only commit/post-commit and fresh B3A inventory
 remain pending.
+
+## Task 258B3M2B2B3A Frozen Source-Statement Witness Contract
+
+The source owner is node/range `53/19..116`, local-only and
+public/exported, with label spelling `FormulaStatementSetEnumerationWitnessSmoke`
+at `27..69`, reserve anchor `0..18`, origin `19..116/[2,1]`,
+`LocalSource` contribution `0`, and no import/recovery.
+B3A freshly authenticates the resolver label and `CheckedStatementOwner`;
+B3P's empty-label resolver oracle cannot substitute for this check.
+
+Task 258 base remains one owner, two statements/contexts/input facts/
+candidates. Statement `0` is owner/context `0/0`, `Atomic(0)`,
+`53/19..116`, ordinal `0`, `TheoremProposition`, normalized
+`theorem FormulaStatementSetEnumerationWitnessSmoke : x = x proof take { 1 , 2 } ; thus x = x ; end ;`.
+Statement `1` is `0/1`, `Atomic(1)`, `51/100..111`, ordinal `2`,
+`Conclusion`, normalized `thus x = x ;`. Binding contexts `0/1` see `[0]`;
+statement context ranges are `19..116` and `100..111`;
+`ReservedTypeGuard` uses refs `[0,1]` / `[2,3]`; candidates are `Atomic(0/1)`.
+
+B3A adds exactly witness `0`/zero names: owner/context `0/1`, source/take
+ordinals `1/0`, take `43/85..97`, item `42/90..96`, spelling
+`{ 1 , 2 }`, unnamed `Normal`, target `SetTerm(0)`. API is exactly:
+
+```rust
+SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId)
+
+pub fn set_term_fingerprint(&self) -> Option<&str>;
+
+pub fn build_with_set_term(
+    input: SourceStatementWitnessHandoffInput,
+    statements: &SourceStatementHandoff,
+    primary_terms: &SourcePrimaryTermHandoff,
+    set_terms: &SourceSetTermHandoff,
+    arena: &TypedArena,
+) -> Result<SourceStatementWitnessHandoff, SourceStatementWitnessError>;
+
+pub(crate) fn validate_installation_with_set_term(
+    &self,
+    source_id: SourceId,
+    module_id: &ModuleId,
+    statements: &SourceStatementHandoff,
+    primary_terms: &SourcePrimaryTermHandoff,
+    set_terms: Option<&SourceSetTermHandoff>,
+    arena: &TypedArena,
+) -> Result<(), SourceStatementWitnessError>;
+```
+
+Accepted application/structure/set fingerprint tuples are
+`None/None/None`, `Some/None/None`, `None/Some/None`, and B3A
+`None/None/Some`; every other tuple is invalid. Debug appends set fingerprint
+after existing optional fields and renders `set-term#0`. Producer/handoff
+validation retains `SourceStatementWitnessError::DependencyMismatch`;
+typed installation and final statement/witness revalidation retain their
+existing `InvalidSourceStatement` variants. Earlier final lower-stage
+failures retain their owning variants, including `InvalidSourceSetTerm` and
+`InvalidSourceAtomicFormula`. No error variant/display or legacy byte
+changes.
+
+The frozen four checker plus five runner tests exhaust bytes/LF, `57` AST
+nodes/root, resolver including label, Tasks 48/252/255/256/258, partition/
+graph, fingerprints, set/label near misses, family hybrids/orders,
+rollback/replay, final clone, and empty semantics. Precedence is source/AST,
+resolver plus label, Tasks 48, 252, 255, 256, 258 base, witness, atomic
+publication, final clone.
+
+This is transport only. Result/numeric/set/element typing, existential goal
+matching, witness guards/obligations, substitution, goal progress/discharge,
+proof/theorem acceptance, facts, overload/coercion, Core/CFG/VC, imported
+sets, broader set forms, B4/B5, and active-route/corpus/diagnostic credit
+remain deferred.
