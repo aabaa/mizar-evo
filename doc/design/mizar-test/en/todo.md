@@ -2240,3 +2240,16 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   active routes, fixtures, expectations, sidecars, trace status/count, and
   semantic/proof/goal ownership.
 - [x] Commit documentation alone, fresh-inventory, then implement B1B1.
+
+## Checker Task 258B3M2B2B1B1 Runner Implementation Ledger
+
+- [x] Implement the exact private wrapped selector and B1B1 route without
+  broadening B1A or active dispatch.
+- [x] Pass all five frozen runner tests and four checker tests; libraries are
+  `378/423`.
+- [x] Close `source_drift`, `test_gap`, and completion `design_drift`; test
+  sufficiency and implementation reviews report no findings.
+- [x] Preserve fixtures, expectations, sidecars, trace status/count, public
+  APIs, and semantic/proof/goal/type-substitution deferrals.
+- [x] Pass every final read-only quality hard gate with a valid `98/100`
+  score before commit.

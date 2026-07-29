@@ -623,3 +623,13 @@ wrapped lower profiles; base `1/2/2/2/2`; one unnamed
 route isolation; semantic deferrals; and unchanged `374/418` baselines,
 sizes, counts, and hashes. English remains canonical and there is no B1B1
 bilingual debt.
+
+## Checker Task 258B3M2B2B1B1 Runner Implementation Synchronization
+
+The EN canonical and JA companion agree on the exact dormant implementation,
+`378/423` tests, final runner sizes/manifest hashes, closed `source_drift` /
+`test_gap` / `design_drift`, unchanged public/active/fixture/trace boundaries,
+and continuing semantic/proof/goal/type-substitution deferrals. Test,
+implementation, and source/documentation reviews have no findings. The final
+quality review passed every hard gate at `98/100`; no implementation bilingual
+debt remains.

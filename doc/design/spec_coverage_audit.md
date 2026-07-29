@@ -4432,3 +4432,29 @@ Implementation projects `378/423`, but all changed sizes and hashes must be
 measured. Plan/requirements, active parse/declaration/type/proof, coverage,
 pass/fail, warnings/errors, and the five CLI hashes remain unchanged by this
 prerequisite.
+
+## Task 258B3M2B2B1B1 Implementation Result
+
+The frozen private B1B1 consumer and its four checker/five runner tests are
+implemented, closing `source_drift`, `test_gap`, and completion
+`design_drift`. Libraries are `378/423`. Checker raw/normalized test hashes
+are
+`6951374b14f4446f8e3b97a65fc35b7e6fd67b3782f906a98042f27e0122f1dc` /
+`ab769fa48b6283b7708863945abf44777aa9f0ca24c037a08adbb2b8f3749910`;
+runner hashes are
+`fa026adf9ebc5bdf7aa3f00ea84f88ffd8f620dbc9af47ee896952b3c4e7ab88` /
+`56a661b2d79b6f866008df3684e263feeca5ef069d5e1ea097e6c3404095872d`.
+Checker production is 23 paths / 118,205 lines with content hash
+`a4656745edbba7e9b8c382c4d67ac691484d6a067e2b7a0f0f7b5d7a7fc5996e`;
+runner production is 30 paths / 41,513 lines with content hash
+`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`.
+Both path hashes are unchanged.
+
+This dormant implementation adds no coverage credit. The trace row
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, with no backlink; canonical specs, `.miz`, fixtures,
+expectations, sidecars, active cases, trace counts, CLI counts/hashes, and
+public APIs are unchanged. Semantic/proof/goal/type substitution remains
+deferred. Test, implementation, and source/documentation reviews report no
+findings. The final quality review passed every hard gate with a valid score
+of `98/100`.

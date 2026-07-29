@@ -997,3 +997,11 @@ The public B1A schema and atomic three-handoff installer are reused without
 broadening B1A. The new profile is crate-private. Task-254/255,
 structure/set/choice/qualification, semantic term, proof, goal, Core/CFG/VC,
 and every other family remain excluded.
+
+### Task 258B3M2B2B1B1 Implemented Cross-Family Edge
+
+The frozen witness-to-application edge is now installed atomically for the
+private B1B1 profile. Ownership is unchanged: Task 252 retains primaries,
+Task 253 retains application/wrapper/candidate/requests, and Task 258 owns
+only the take/witness pair. No reverse wrapper edge, new payload family, or
+semantic/proof/goal edge was introduced.

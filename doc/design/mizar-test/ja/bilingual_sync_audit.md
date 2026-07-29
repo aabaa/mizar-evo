@@ -601,3 +601,13 @@ wrapped lower profiles、base `1/2/2/2/2`、one unnamed
 route isolation、semantic deferrals、unchanged `374/418` baselines/sizes/
 counts/hashesで一致する。English canonicalと同期し、B1B1 bilingual
 debtなし。
+
+## Checker Task 258B3M2B2B1B1 runner implementation synchronization
+
+EN canonical/JA companionは、exact dormant implementation、tests
+`378/423`、final runner sizes/manifest hashes、closed `source_drift` /
+`test_gap` / `design_drift`、unchanged public/active/fixture/trace
+boundaries、continuing semantic/proof/goal/type-substitution deferralsで一致。
+test、implementation、source/documentation reviewsはfindingsなし。final
+quality reviewは全hard gate PASS、`98/100`。implementation bilingual
+debtはない。

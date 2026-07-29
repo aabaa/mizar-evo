@@ -519,3 +519,12 @@ unchanged `374/418` baselineで一致する。
 このdocumentation prerequisiteがproduction、test、canonical、fixture、
 expectation、sidecar、trace、active、public、semantic artifactを変更しない
 ことも一致する。English canonicalと同期し、B1B1 bilingual debtなし。
+
+## Task 258B3M2B2B1B1 implementation synchronization
+
+EN canonical/JA companionは、same private implementation、tests
+`378/423`、checker module/manifest sizesとhashes、closed `source_drift` /
+`test_gap` / `design_drift`、unchanged trace/public/active boundaries、
+continuing semantic/proof/goal/type-substitution deferralsを記録する。
+test、implementation、source/documentation reviewsはfindingsなし。final
+quality reviewは全hard gate PASS、`98/100`。B1B1 bilingual debtはない。

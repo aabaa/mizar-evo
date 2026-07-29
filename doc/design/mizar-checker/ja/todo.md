@@ -4885,3 +4885,17 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   libraries `374/418`、全measured hashesをpreserve。
 - [x] このdocumentation prerequisiteだけをcommitし、fresh-inventory後、
   B1B1だけをimplement。
+
+## Checker Task 258B3M2B2B1B1 implementation ledger
+
+- [x] exact private B1B1 statement/witness profileをimplementし、B1A
+  byte/API compatibilityをpreserve。
+- [x] frozen checker tests 4件/runner tests 5件をpass。inventoriesは
+  `378/423`。
+- [x] `source_drift`、`test_gap`、completion `design_drift`をcloseし、
+  test-sufficiency/implementation reviewsはfindingsなし。
+- [x] spec、`.miz`、fixture、expectation、sidecar、trace、active、
+  public-API artifactsを不変にし、semantic/proof/goal/type-substitution
+  deferralsを維持。
+- [x] commit前のfinal read-only quality reviewは全hard gate PASS、
+  valid score `98/100`。

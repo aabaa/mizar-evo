@@ -2730,3 +2730,17 @@ or semantic owner changed. B3M2B2B remains next before B4.
   artifacts, executable coverage, libraries `374/418`, and all counts/hashes.
 - [x] Commit the documentation prerequisite alone; after fresh inventory,
   implement only B1B1 and measure projected libraries `378/423`.
+
+## Checker Task 258B3M2B2B1B1 Implementation Completion
+
+- [x] Implement one exact private B1B1 profile without broadening B1A or
+  changing public/active routes.
+- [x] Pass the frozen four checker and five runner tests; libraries are
+  `378/423`.
+- [x] Close `source_drift`, `test_gap`, and completion `design_drift`;
+  test-sufficiency and implementation reviews report no findings.
+- [x] Preserve canonical specs, `.miz`, fixtures, expectations, sidecars,
+  trace `deferred` / `tests = []`, CLI baselines, and semantic/proof/goal/type
+  substitution deferrals.
+- [x] Pass every final read-only quality hard gate with a valid `98/100`
+  score; make the dedicated implementation commit after cached-diff audit.

@@ -2500,3 +2500,12 @@ matrix、B1A compatibility、family/active-route isolation、validation
 precedence、rollback/replay/clone、empty downstream semanticsをcoverする。
 type checking、goal matching、substitution、proof acceptance、Task-254/255
 forms、他application/witness shapesはdeferする。
+
+## Task 258B3M2B2B1B1 implementation result
+
+private B1B1 profileはexact 158-byte/67-node owner、base statements、one
+unnamed application witness、lower fingerprints、wrapper containmentを
+authenticateする。checker tests 4件/runner tests 5件は、mutation
+precedence、B1A/family/active isolation、rollback/replay、final cloneを含め
+全てpass。bounded `source_drift`/`test_gap`はclosedで、semantic、proof、
+goal、type-substitution behaviorは追加していない。

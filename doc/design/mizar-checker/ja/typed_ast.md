@@ -1099,3 +1099,11 @@ partial/reverse/repeated installation、別Task-258 family、Tasks-254/255
 coexistence、semantic coexistenceはoriginal `TypedAst`不変でrejectする。
 new public typed-AST API/debug grammar/type/semantic/proof/goal ownerは
 authorizeしない。
+
+## Task 258B3M2B2B1B1 typed installation result
+
+typed installationはB1B1をB1Aの内部ではなく隣にenumerateし、exact
+application/statement/witness bundleをatomically publishする。frozen
+partial、hybrid、substituted、stale、reverse、repeated、coexistence
+failuresはoriginal ASTを不変に保つ。`typed_ast.rs`は4,743 lines。
+public installer/semantic/type ownerは変更していない。

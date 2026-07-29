@@ -3812,3 +3812,12 @@ all family and active-route isolation, atomic rollback and clean replay,
 final clone equality, and empty semantic/proof/goal/overload output. Exact
 success still returns no detail keys. No fixture, sidecar, expectation,
 trace row, active case, or semantic consumer is authorized.
+
+## Checker Task 258B3M2B2B1B1 Dormant Harness Result
+
+The exact B1B1 selector, resolver substitutions, full byte/node mutation
+matrix, family/active isolation, atomic replay/rollback, clone, and empty
+upper-table assertions are implemented in five passing runner tests. The
+runner library now has 423 tests and the statement-test leaf is 13,381 lines.
+No fixture, expectation, sidecar, trace row, active detail key, or semantic
+consumer changed.

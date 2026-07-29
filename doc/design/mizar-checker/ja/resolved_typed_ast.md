@@ -1100,3 +1100,11 @@ repairできない。successful B1B1 cloneはthree handoffsをbyte-for-byte
 preserveし、type-semantic、formula-semantic、proof、goal、overload、
 coercion、obligation、cluster、diagnostic outputsをemptyに保つ。new
 public final-AST API/semantic meaningは追加しない。
+
+## Task 258B3M2B2B1B1 final revalidation result
+
+final assemblyはexact B1B1 bundleをseparate private profileとしてacceptし、
+frozen partial/hybrid/substitution casesを全てrejectする。clone
+revalidationはthree handoffsをbyte-for-byte preserveし、deferred upper
+tablesは全てempty。`resolved_typed_ast.rs`は7,225 lines。public final-AST/
+semantic/proof/goal APIは変更していない。

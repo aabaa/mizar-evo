@@ -3987,3 +3987,13 @@ blocking `spec_gap`/unsafe test intentなし。trace row
 `tests = []`、backlink/executable coverage creditなしのまま。canonical
 specs、existing `.miz`、expectations、sidecars、trace status/count、
 active casesはこのprerequisiteで不変。
+
+## Task 258B3M2B2B1B1 implementation audit
+
+spec-derived private consumerとtests 9件により`source_drift`、`test_gap`、
+completion `design_drift`はclosed、reviewsはfindingsなし。これはdormant
+design/test evidenceだけ。trace row
+`spec.en.checker.formula_statement.source_payloads`は`deferred`、
+`tests = []`、backlink/coverage creditなしのまま。canonical specs、
+`.miz`、fixtures、expectations、sidecars、active casesは不変で、
+semantic/proof/goal/type substitutionはdeferしたまま。

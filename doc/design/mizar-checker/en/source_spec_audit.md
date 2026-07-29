@@ -4173,3 +4173,13 @@ The trace row `spec.en.checker.formula_statement.source_payloads` remains
 `deferred`, `tests = []`, with no backlink or executable coverage credit.
 Canonical specs, existing `.miz`, expectations, sidecars, trace status/count,
 and active cases remain unchanged by this prerequisite.
+
+## Task 258B3M2B2B1B1 Implementation Audit
+
+The spec-derived private consumer and its nine tests close `source_drift`,
+`test_gap`, and completion `design_drift`; reviews report no findings. This
+is dormant design/test evidence only. The trace row
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, with no backlink or coverage credit. Canonical specs, `.miz`,
+fixtures, expectations, sidecars, and active cases are unchanged, while
+semantic/proof/goal/type substitution remains deferred.

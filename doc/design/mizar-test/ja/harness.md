@@ -3612,3 +3612,11 @@ atomic rollback/clean replay、final clone equality、empty semantic/proof/
 goal/overload outputをexhaustする。exact successはdetail keysなし。
 fixture、sidecar、expectation、trace row、active case、semantic consumerは
 authorizeしない。
+
+## Checker Task 258B3M2B2B1B1 dormant harness result
+
+exact B1B1 selector、resolver substitutions、full byte/node mutation matrix、
+family/active isolation、atomic replay/rollback、clone、empty upper-table
+assertionsをpassing runner tests 5件として実装した。runner libraryは423
+tests、statement-test leafは13,381 lines。fixture、expectation、sidecar、
+trace row、active detail key、semantic consumerは変更していない。

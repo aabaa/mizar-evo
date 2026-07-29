@@ -1853,7 +1853,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
                 }
                 (None, Some(witnesses))
-                    if source_statement.is_task_258b3m2b2b1a_profile()
+                    if (source_statement.is_task_258b3m2b2b1a_profile()
+                        || source_statement.is_task_258b3m2b2b1b1_profile())
                         && source_application.is_some() =>
                 {
                     witnesses

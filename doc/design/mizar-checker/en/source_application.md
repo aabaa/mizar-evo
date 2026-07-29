@@ -291,3 +291,11 @@ checker-private B1B1 statement profile consumes its immutable handoff through
 the existing application fingerprint and atomic installer. B1A unwrapped
 bytes remain compatible, and all other wrapped/application forms remain
 deferred.
+
+## Task 258B3M2B2B1B1 Consumer Result
+
+The B1B1 consumer now reuses the existing wrapped handoff exactly as frozen:
+application 0 remains the witness target and wrapper 0 remains Task-253
+containment. No Task-253 table, fingerprint, validator, public API, or
+source-application test was added. The module is 4,001 lines; all other
+wrapped/application shapes and semantic interpretation remain deferred.

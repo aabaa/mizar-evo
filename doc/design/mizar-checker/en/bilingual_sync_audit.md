@@ -544,3 +544,13 @@ semantic deferrals; and unchanged `374/418` baseline.
 They also agree that this documentation prerequisite changes no production,
 test, canonical, fixture, expectation, sidecar, trace, active, public, or
 semantic artifact. English is canonical and no B1B1 bilingual debt remains.
+
+## Task 258B3M2B2B1B1 Implementation Synchronization
+
+The EN canonical and JA companion record the same private implementation,
+`378/423` tests, checker module/manifest sizes and hashes, closed
+`source_drift` / `test_gap` / `design_drift`, unchanged trace/public/active
+boundaries, and continuing semantic/proof/goal/type-substitution deferrals.
+Test, implementation, and source/documentation reviews have no findings. The
+final quality review passed every hard gate at `98/100`; no B1B1 bilingual
+debt remains.

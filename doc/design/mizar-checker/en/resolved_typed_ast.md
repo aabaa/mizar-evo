@@ -1162,3 +1162,11 @@ family-coexisting, or semantic-coexisting state is
 preserves all three handoffs byte-for-byte and retains empty type-semantic,
 formula-semantic, proof, goal, overload, coercion, obligation, cluster, and
 diagnostic outputs. No public final-AST API or semantic meaning is added.
+
+## Task 258B3M2B2B1B1 Final Revalidation Result
+
+Final assembly now accepts the exact B1B1 bundle as a separate private profile
+and rejects every frozen partial/hybrid/substitution case. Clone revalidation
+preserves the three handoffs byte-for-byte and all deferred upper tables
+remain empty. `resolved_typed_ast.rs` is 7,225 lines; no public final-AST or
+semantic/proof/goal API changed.

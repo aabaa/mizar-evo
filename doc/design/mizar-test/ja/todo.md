@@ -2043,3 +2043,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   routes、fixtures、expectations、sidecars、trace status/count、
   semantic/proof/goal ownershipをpreserve。
 - [x] documentationだけをcommitし、fresh-inventory後B1B1をimplement。
+
+## Checker Task 258B3M2B2B1B1 runner implementation ledger
+
+- [x] B1A/active dispatchをbroadenせず、exact private wrapped selectorと
+  B1B1 routeをimplement。
+- [x] frozen runner tests 5件/checker tests 4件を全てpass。librariesは
+  `378/423`。
+- [x] `source_drift`、`test_gap`、completion `design_drift`をcloseし、
+  test-sufficiency/implementation reviewsはfindingsなし。
+- [x] fixtures、expectations、sidecars、trace status/count、public APIs、
+  semantic/proof/goal/type-substitution deferralsをpreserve。
+- [x] commit前のfinal read-only quality reviewは全hard gate PASS、
+  valid score `98/100`。

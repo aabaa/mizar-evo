@@ -5128,3 +5128,16 @@ implementation commit does not satisfy a producer task.
   owners, libraries `374/418`, and all measured hashes.
 - [x] Commit this documentation prerequisite alone, fresh-inventory, then
   implement only B1B1.
+
+## Checker Task 258B3M2B2B1B1 Implementation Ledger
+
+- [x] Implement the exact private B1B1 statement/witness profile and preserve
+  B1A byte/API compatibility.
+- [x] Pass the frozen four checker and five runner tests; inventories are
+  `378/423`.
+- [x] Close `source_drift`, `test_gap`, and completion `design_drift`; test
+  sufficiency and implementation reviews report no findings.
+- [x] Preserve spec, `.miz`, fixture, expectation, sidecar, trace, active, and
+  public-API artifacts; retain semantic/proof/goal/type-substitution deferrals.
+- [x] Pass every final read-only quality hard gate with a valid `98/100`
+  score before commit.

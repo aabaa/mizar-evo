@@ -1391,13 +1391,6 @@ pub(super) struct WrappedImportedApplicationSite {
     pub(super) wrapper: usize,
 }
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "Task 258B3M2B2B1B1P freezes this production-private seam before B1B1 consumes it"
-    )
-)]
 pub(super) fn wrapped_imported_source_application_owned_node_kinds(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1459,13 +1452,6 @@ pub(super) fn unwrapped_imported_source_application_handoff_in_context(
     ))
 }
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "Task 258B3M2B2B1B1P freezes this production-private seam before B1B1 consumes it"
-    )
-)]
 pub(super) fn wrapped_imported_source_application_handoff_in_context(
     ast: &SurfaceAst,
     module: &ModuleId,

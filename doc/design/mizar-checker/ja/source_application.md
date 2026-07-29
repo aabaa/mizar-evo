@@ -273,3 +273,11 @@ selectorはexisting wrapped seamをreuseし、checker-private B1B1 statement
 profileはexisting application fingerprint/atomic installer経由でimmutable
 handoffをconsumeする。B1A unwrapped bytesはcompatibleなまま、全other
 wrapped/application formsをdeferする。
+
+## Task 258B3M2B2B1B1 consumer result
+
+B1B1 consumerはfrozenどおりexisting wrapped handoffをreuseし、
+application 0をwitness target、wrapper 0をTask-253 containmentのまま保つ。
+Task-253 table/fingerprint/validator/public API/source-application testは
+追加していない。moduleは4,001 lines。other wrapped/application shapesと
+semantic interpretationはdeferしたまま。

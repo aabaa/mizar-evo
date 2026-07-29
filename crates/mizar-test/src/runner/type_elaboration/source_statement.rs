@@ -56,8 +56,10 @@ use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceTokenKind, SyntaxKind};
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
     source_application::{
-        unwrapped_imported_source_application_handoff_in_context,
+        WrappedImportedApplicationSite, unwrapped_imported_source_application_handoff_in_context,
         unwrapped_imported_source_application_owned_node_kinds,
+        wrapped_imported_source_application_handoff_in_context,
+        wrapped_imported_source_application_owned_node_kinds,
     },
     source_ast::{
         direct_token_texts, structural_child_ids, subtree_has_recovery, surface_nodes_with_kind,
@@ -151,6 +153,15 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B1A_TEXT: &str = concat!(
     "end;\n",
 );
 
+pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B1B1_TEXT: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementParenthesizedApplicationWitnessSmoke: x = x proof\n",
+    "  take (1 ++ 2);\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
 const SOURCE_STATEMENT_LABEL: &str = "FormulaStatementReservedVariableEqualitySmoke";
 const SOURCE_STATEMENT_SPELLING: &str =
     "theorem FormulaStatementReservedVariableEqualitySmoke : x = x ;";
@@ -200,6 +211,12 @@ const SOURCE_STATEMENT_B3M2B2A_SPELLINGS: [&str; 2] = [
 const SOURCE_STATEMENT_B3M2B2B1A_LABEL: &str = "FormulaStatementApplicationWitnessSmoke";
 const SOURCE_STATEMENT_B3M2B2B1A_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementApplicationWitnessSmoke : x = x proof take 1 ++ 2 ; thus x = x ; end ;",
+    "thus x = x ;",
+];
+const SOURCE_STATEMENT_B3M2B2B1B1_LABEL: &str =
+    "FormulaStatementParenthesizedApplicationWitnessSmoke";
+const SOURCE_STATEMENT_B3M2B2B1B1_SPELLINGS: [&str; 2] = [
+    "theorem FormulaStatementParenthesizedApplicationWitnessSmoke : x = x proof take ( 1 ++ 2 ) ; thus x = x ; end ;",
     "thus x = x ;",
 ];
 const SOURCE_STATEMENT_CONFIG: SourceReservedVariableBinaryFormulaConfig =
@@ -393,6 +410,26 @@ pub(in crate::runner) struct SourceStatementB3M2B2B1AExtraction {
 }
 
 #[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceStatementB3M2B2B1B1Extraction {
+    pub(in crate::runner) theorem_site: TypedSiteRef,
+    pub(in crate::runner) theorem_range: SourceRange,
+    pub(in crate::runner) label_range: SourceRange,
+    pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) statement_ranges: [SourceRange; 2],
+    pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) formula_ranges: [SourceRange; 2],
+    pub(in crate::runner) term_sites: [TypedSiteRef; 6],
+    pub(in crate::runner) term_ranges: [SourceRange; 6],
+    pub(in crate::runner) take_site: TypedSiteRef,
+    pub(in crate::runner) take_range: SourceRange,
+    pub(in crate::runner) witness_site: TypedSiteRef,
+    pub(in crate::runner) witness_range: SourceRange,
+    pub(in crate::runner) application_node: usize,
+    pub(in crate::runner) application_wrapper_node: usize,
+    pub(in crate::runner) proof_range: SourceRange,
+}
+
+#[derive(Debug, Clone)]
 struct SourceStatementWitnessItemExtraction {
     site: TypedSiteRef,
     range: SourceRange,
@@ -423,6 +460,7 @@ struct SourceStatementWitnessExtraction {
     atomic_term_starts: [usize; 2],
     input_fact_reference_starts: [usize; 2],
     application_node: Option<usize>,
+    application_wrapper_node: Option<usize>,
 }
 
 impl From<SourceStatementB3Extraction> for SourceStatementWitnessExtraction {
@@ -454,6 +492,7 @@ impl From<SourceStatementB3Extraction> for SourceStatementWitnessExtraction {
             atomic_term_starts: [0, 3],
             input_fact_reference_starts: [0, 3],
             application_node: None,
+            application_wrapper_node: None,
         }
     }
 }
@@ -487,6 +526,7 @@ impl From<SourceStatementB3NExtraction> for SourceStatementWitnessExtraction {
             atomic_term_starts: [0, 3],
             input_fact_reference_starts: [0, 3],
             application_node: None,
+            application_wrapper_node: None,
         }
     }
 }
@@ -528,6 +568,7 @@ impl From<SourceStatementB3M1Extraction> for SourceStatementWitnessExtraction {
             atomic_term_starts: [0, 4],
             input_fact_reference_starts: [0, 4],
             application_node: None,
+            application_wrapper_node: None,
         }
     }
 }
@@ -561,6 +602,7 @@ impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
             atomic_term_starts: [0, 3],
             input_fact_reference_starts: [0, 2],
             application_node: None,
+            application_wrapper_node: None,
         }
     }
 }
@@ -594,6 +636,7 @@ impl From<SourceStatementB3M2B1Extraction> for SourceStatementWitnessExtraction 
             atomic_term_starts: [0, 4],
             input_fact_reference_starts: [0, 3],
             application_node: None,
+            application_wrapper_node: None,
         }
     }
 }
@@ -627,6 +670,7 @@ impl From<SourceStatementB3M2B2AExtraction> for SourceStatementWitnessExtraction
             atomic_term_starts: [0, 5],
             input_fact_reference_starts: [0, 3],
             application_node: None,
+            application_wrapper_node: None,
         }
     }
 }
@@ -660,6 +704,41 @@ impl From<SourceStatementB3M2B2B1AExtraction> for SourceStatementWitnessExtracti
             atomic_term_starts: [0, 4],
             input_fact_reference_starts: [0, 2],
             application_node: Some(extracted.application_node),
+            application_wrapper_node: None,
+        }
+    }
+}
+
+impl From<SourceStatementB3M2B2B1B1Extraction> for SourceStatementWitnessExtraction {
+    fn from(extracted: SourceStatementB3M2B2B1B1Extraction) -> Self {
+        Self {
+            theorem_site: extracted.theorem_site,
+            theorem_range: extracted.theorem_range,
+            label_range: extracted.label_range,
+            statement_sites: extracted.statement_sites,
+            statement_ranges: extracted.statement_ranges,
+            formula_sites: extracted.formula_sites,
+            formula_ranges: extracted.formula_ranges,
+            term_sites: extracted.term_sites.into(),
+            term_ranges: extracted.term_ranges.into(),
+            take_site: extracted.take_site,
+            take_range: extracted.take_range,
+            witnesses: vec![SourceStatementWitnessItemExtraction {
+                site: extracted.witness_site,
+                range: extracted.witness_range,
+                name: None,
+                spelling: "( 1 ++ 2 )",
+            }],
+            proof_range: extracted.proof_range,
+            label: SOURCE_STATEMENT_B3M2B2B1B1_LABEL,
+            spellings: &SOURCE_STATEMENT_B3M2B2B1B1_SPELLINGS,
+            task: "Task258B3M2B2B1B1",
+            node_count: 67,
+            root: 66,
+            atomic_term_starts: [0, 4],
+            input_fact_reference_starts: [0, 2],
+            application_node: Some(extracted.application_node),
+            application_wrapper_node: Some(extracted.application_wrapper_node),
         }
     }
 }
@@ -704,6 +783,7 @@ pub(in crate::runner) type SourceStatementB3M2ARouteInputs = SourceStatementB3Ro
 pub(in crate::runner) type SourceStatementB3M2B1RouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B1ARouteInputs = SourceStatementB3RouteInputs;
+pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatementB3RouteInputs;
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceStatementRouteOutput {
@@ -2406,6 +2486,130 @@ pub(in crate::runner) fn extract_application_witness_source_statement(
     })
 }
 
+pub(in crate::runner) fn extract_wrapped_application_witness_source_statement(
+    ast: &SurfaceAst,
+    source_text: &str,
+) -> Option<SourceStatementB3M2B2B1B1Extraction> {
+    if source_text != SOURCE_STATEMENT_B3M2B2B1B1_TEXT
+        || source_text.len() != 158
+        || !source_text.ends_with('\n')
+        || ast
+            .nodes()
+            .iter()
+            .any(|node| node.recovered || node.range.source_id != ast.source_id)
+    {
+        return None;
+    }
+
+    let (theorem_id, theorem) = exact_surface_node(ast, SurfaceNodeKind::TheoremItem, 48, 157)?;
+    let (proof_id, proof) = exact_surface_node(ast, SurfaceNodeKind::ProofBlock, 116, 156)?;
+    let (take_id, take) = exact_surface_node(ast, SurfaceNodeKind::TakeStatement, 124, 138)?;
+    let (witness_id, witness) = exact_surface_node(ast, SurfaceNodeKind::Witness, 129, 137)?;
+    let (wrapper_id, wrapper) =
+        exact_surface_node(ast, SurfaceNodeKind::ParenthesizedTerm, 129, 137)?;
+    let wrapper_children = structural_child_ids(ast, wrapper);
+    let [body_id] = wrapper_children.as_slice() else {
+        return None;
+    };
+    let body = ast.node(*body_id)?;
+    let body_children = structural_child_ids(ast, body);
+    let [application_id] = body_children.as_slice() else {
+        return None;
+    };
+    let application_id = *application_id;
+    let application = ast.node(application_id)?;
+    let (conclusion_id, _) =
+        exact_surface_node(ast, SurfaceNodeKind::ConclusionStatement, 141, 152)?;
+    let label = ast.nodes().get(11)?;
+    if theorem_id.index() != 63
+        || proof_id.index() != 62
+        || take_id.index() != 53
+        || witness_id.index() != 52
+        || wrapper_id.index() != 50
+        || application_id.index() != 48
+        || conclusion_id.index() != 61
+        || label.range != range(ast.source_id, 56, 108)
+        || label.token_text() != Some(SOURCE_STATEMENT_B3M2B2B1B1_LABEL)
+        || direct_token_texts(ast, theorem).as_slice()
+            != ["theorem", SOURCE_STATEMENT_B3M2B2B1B1_LABEL, ":", ";"]
+        || direct_token_texts(ast, proof).as_slice() != ["proof", "end"]
+        || direct_token_texts(ast, take).as_slice() != ["take", ";"]
+        || !direct_token_texts(ast, witness).is_empty()
+        || direct_token_texts(ast, wrapper).as_slice() != ["(", ")"]
+        || application.range != range(ast.source_id, 130, 136)
+        || !matches!(
+            &application.kind,
+            SurfaceNodeKind::InfixExpression(operator)
+                if operator.spelling.as_ref() == "++"
+        )
+        || direct_token_texts(ast, application).as_slice() != ["++"]
+    {
+        return None;
+    }
+    let statement_ids = [theorem_id, conclusion_id];
+    let formula_ids = [
+        exact_surface_node(ast, SurfaceNodeKind::BuiltinPredicateApplication, 110, 115)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::BuiltinPredicateApplication, 146, 151)?.0,
+    ];
+    if formula_ids.map(|id| id.index()) != [44, 58] {
+        return None;
+    }
+    let root_ranges = [
+        (110, 111),
+        (114, 115),
+        (130, 131),
+        (135, 136),
+        (146, 147),
+        (150, 151),
+    ];
+    let expected_root_ids = [40, 42, 46, 47, 54, 56];
+    let root_kinds = [
+        SurfaceNodeKind::TermReference,
+        SurfaceNodeKind::TermReference,
+        SurfaceNodeKind::NumeralTerm,
+        SurfaceNodeKind::NumeralTerm,
+        SurfaceNodeKind::TermReference,
+        SurfaceNodeKind::TermReference,
+    ];
+    let expected_tokens = ["x", "x", "1", "2", "x", "x"];
+    let mut term_sites = Vec::with_capacity(root_ranges.len());
+    for index in 0..root_ranges.len() {
+        let (start, end) = root_ranges[index];
+        let (id, term) = exact_surface_node(ast, root_kinds[index].clone(), start, end)?;
+        if id.index() != expected_root_ids[index]
+            || direct_token_texts(ast, term).as_slice() != [expected_tokens[index]]
+        {
+            return None;
+        }
+        term_sites.push(surface_site(id));
+    }
+
+    Some(SourceStatementB3M2B2B1B1Extraction {
+        theorem_site: surface_site(theorem_id),
+        theorem_range: theorem.range,
+        label_range: label.range,
+        statement_sites: statement_ids.map(surface_site),
+        statement_ranges: [
+            range(ast.source_id, 48, 157),
+            range(ast.source_id, 141, 152),
+        ],
+        formula_sites: formula_ids.map(surface_site),
+        formula_ranges: [
+            range(ast.source_id, 110, 115),
+            range(ast.source_id, 146, 151),
+        ],
+        term_sites: term_sites.try_into().ok()?,
+        term_ranges: root_ranges.map(|(start, end)| range(ast.source_id, start, end)),
+        take_site: surface_site(take_id),
+        take_range: take.range,
+        witness_site: surface_site(witness_id),
+        witness_range: witness.range,
+        application_node: application_id.index(),
+        application_wrapper_node: wrapper_id.index(),
+        proof_range: proof.range,
+    })
+}
+
 const TASK258B3M2B2A_SURFACE_RANGES: [(usize, usize); 57] = [
     (0, 7),
     (8, 9),
@@ -2821,6 +3025,15 @@ pub(in crate::runner) fn source_statement_output_with_source(
     symbols: &SymbolEnv,
     source_text: &str,
 ) -> Option<Result<SourceStatementRouteOutput, String>> {
+    if source_text == SOURCE_STATEMENT_B3M2B2B1B1_TEXT {
+        return source_statement_b3m2b2b1b1_output_with_source_and_mutation_impl(
+            ast,
+            module,
+            symbols,
+            source_text,
+            |_| {},
+        );
+    }
     if source_text == SOURCE_STATEMENT_B3M2B2B1A_TEXT {
         return source_statement_b3m2b2b1a_output_with_source_and_mutation_impl(
             ast,
@@ -2903,6 +3116,72 @@ pub(in crate::runner) fn source_statement_output_with_source(
         );
     }
     source_statement_output_with_source_and_mutation_impl(ast, module, symbols, source_text, |_| {})
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b1b1_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B1B1RouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    source_statement_b3m2b2b1b1_output_with_source_and_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        mutate,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_wrapped_application_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B1B1_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => mutate(symbols),
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b3m2b2b1b1_output(
+        ast,
+        module,
+        &symbols,
+        extracted,
+        |_| {},
+    ))
+}
+
+fn source_statement_b3m2b2b1b1_output_with_source_and_mutation_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B1B1RouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_wrapped_application_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B1B1_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b3m2b2b1b1_output(
+        ast, module, &symbols, extracted, mutate,
+    ))
 }
 
 #[cfg(test)]
@@ -3737,6 +4016,20 @@ pub(in crate::runner) fn source_statement_b3m2b2b1a_resolver_env_for_test(
     )
 }
 
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b1b1_resolver_env_for_test(
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    extracted: &SourceStatementB3M2B2B1B1Extraction,
+) -> Result<SymbolEnv, String> {
+    enrich_source_statement_resolver_env_for_owner(
+        module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B1B1_LABEL,
+        extracted.label_range,
+    )
+}
+
 fn build_source_statement_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -3995,6 +4288,16 @@ fn build_source_statement_b3m2b2b1a_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+fn build_source_statement_b3m2b2b1b1_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    extracted: SourceStatementB3M2B2B1B1Extraction,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B1B1RouteInputs),
+) -> Result<SourceStatementRouteOutput, String> {
+    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+}
+
 fn build_source_statement_witness_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -4137,12 +4440,24 @@ fn build_source_statement_witness_output(
         owned_node_kinds.insert(site.node().index(), "source.formula.atomic.equality");
     }
     if let Some(application_node) = extracted.application_node {
-        let application_owned = unwrapped_imported_source_application_owned_node_kinds(
-            ast,
-            &module,
-            symbols,
-            application_node,
-        )
+        let application_owned = if let Some(wrapper) = extracted.application_wrapper_node {
+            wrapped_imported_source_application_owned_node_kinds(
+                ast,
+                &module,
+                symbols,
+                WrappedImportedApplicationSite {
+                    application: application_node,
+                    wrapper,
+                },
+            )
+        } else {
+            unwrapped_imported_source_application_owned_node_kinds(
+                ast,
+                &module,
+                symbols,
+                application_node,
+            )
+        }
         .ok_or_else(|| format!("{} application ownership selector mismatch", extracted.task))?;
         owned_node_kinds.extend(application_owned);
     }
@@ -4164,15 +4479,31 @@ fn build_source_statement_witness_output(
         &owned_node_kinds,
     )?;
     let application = if let Some(application_node) = extracted.application_node {
-        match unwrapped_imported_source_application_handoff_in_context(
-            ast,
-            &module,
-            symbols,
-            &binding_env,
-            &parts,
-            application_node,
-            BindingContextId::new(1),
-        ) {
+        let application = if let Some(wrapper) = extracted.application_wrapper_node {
+            wrapped_imported_source_application_handoff_in_context(
+                ast,
+                &module,
+                symbols,
+                &binding_env,
+                &parts,
+                WrappedImportedApplicationSite {
+                    application: application_node,
+                    wrapper,
+                },
+                BindingContextId::new(1),
+            )
+        } else {
+            unwrapped_imported_source_application_handoff_in_context(
+                ast,
+                &module,
+                symbols,
+                &binding_env,
+                &parts,
+                application_node,
+                BindingContextId::new(1),
+            )
+        };
+        match application {
             Some(Ok(application)) => Some(application),
             Some(Err(error)) => return Err(error),
             None => {
@@ -4264,6 +4595,11 @@ fn build_source_statement_witness_output(
         witnesses,
         names,
     };
+    let expected_binding_env = binding_env.clone();
+    let expected_arena = arena.clone();
+    let expected_primary = primary.clone();
+    let expected_atomic = atomic.clone();
+    let expected_application = application.clone();
     let mut inputs = SourceStatementB3RouteInputs {
         binding_env,
         arena,
@@ -4274,6 +4610,14 @@ fn build_source_statement_witness_output(
         application,
     };
     mutate(&mut inputs);
+    if inputs.binding_env != expected_binding_env
+        || inputs.arena != expected_arena
+        || inputs.primary != expected_primary
+        || inputs.atomic != expected_atomic
+        || inputs.application != expected_application
+    {
+        return Err(format!("{} lower dependency mismatch", extracted.task));
+    }
     let statement = SourceStatementProducer::build(
         inputs.statement,
         symbols,

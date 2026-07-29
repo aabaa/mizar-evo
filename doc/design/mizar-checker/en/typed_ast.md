@@ -1156,3 +1156,11 @@ fingerprints, partial/reverse/repeated installation, another Task-258 family,
 Tasks-254/255 coexistence, or semantic coexistence rejects with the original
 `TypedAst` unchanged. No new public typed-AST API, debug grammar, type,
 semantic, proof, or goal owner is authorized.
+
+## Task 258B3M2B2B1B1 Typed Installation Result
+
+Typed installation now enumerates B1B1 beside, not inside, B1A and atomically
+publishes the exact application/statement/witness bundle. The frozen partial,
+hybrid, substituted, stale, reverse, repeated, and coexistence failures leave
+the original AST unchanged. `typed_ast.rs` is 4,743 lines; no public installer
+or semantic/type owner changed.

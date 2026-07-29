@@ -11763,3 +11763,13 @@ No new module, crate dependency, checker public API, active fixture route,
 trace/expectation/sidecar owner, or semantic dependency is introduced.
 Baseline sizes `5618/2652/708/2523/11945/3727` and all hashes are measured
 documentation invariants for this prerequisite.
+
+## Checker Task 258B3M2B2B1B1 Implemented Module Boundary
+
+Implementation stayed in the existing statement/application leaves,
+type-elaboration facade, root orchestration, and statement-test leaf. Final
+sizes are `5962/2638/713/2528/13381/3727`; production is 30 paths / 41,513
+lines with unchanged path hash and content hash
+`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`.
+No new module, dependency, public/active route, source-application test, trace
+owner, or semantic boundary was introduced.

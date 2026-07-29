@@ -3005,3 +3005,12 @@ active-route isolation, validation precedence, rollback/replay/clone, and
 empty downstream semantics. Type checking, goal matching, substitution,
 proof acceptance, Task-254/255 forms, and other application/witness shapes
 remain deferred.
+
+## Task 258B3M2B2B1B1 Implementation Result
+
+The private B1B1 profile now authenticates the exact 158-byte/67-node owner,
+base statements, one unnamed application witness, lower fingerprints, and
+wrapper containment. All four checker and five runner tests pass, including
+mutation precedence, B1A/family/active isolation, rollback/replay, and final
+clone checks. This closes the bounded `source_drift` and `test_gap`; no
+semantic, proof, goal, or type-substitution behavior was added.

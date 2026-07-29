@@ -10527,3 +10527,13 @@ new module、crate dependency、checker public API、active fixture route、
 trace/expectation/sidecar owner、semantic dependencyは追加しない。
 baseline sizes `5618/2652/708/2523/11945/3727`と全hashesはこの
 prerequisiteのmeasured documentation invariants。
+
+## Checker Task 258B3M2B2B1B1 implemented module boundary
+
+implementationはexisting statement/application leaves、type-elaboration
+facade、root orchestration、statement-test leaf内に留まった。final sizesは
+`5962/2638/713/2528/13381/3727`、productionは30 paths / 41,513 lines、
+path hashは不変、content hashは
+`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`。
+new module、dependency、public/active route、source-application test、
+trace owner、semantic boundaryは追加していない。

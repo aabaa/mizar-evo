@@ -928,3 +928,11 @@ public B1A schema/atomic three-handoff installerはB1Aをbroadenせずreuseす�
 new profileはcrate-private。Task-254/255、structure/set/choice/
 qualification、semantic term、proof、goal、Core/CFG/VC、全other familiesは
 excludeする。
+
+### Task 258B3M2B2B1B1 implemented cross-family edge
+
+frozen witness-to-application edgeをprivate B1B1 profileへatomically
+installした。ownershipは不変で、Task 252はprimaries、Task 253は
+application/wrapper/candidate/requests、Task 258はtake/witness pairだけを
+retainする。reverse wrapper edge、new payload family、semantic/proof/goal
+edgeは追加していない。
