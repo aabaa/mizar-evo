@@ -11979,3 +11979,34 @@ repeated reviews now have no findings, all nine hard gates pass, and final
 quality is a valid `98/100` with live broad reruns explicitly justified as
 blocked by unrelated incomplete source work. Only a dedicated correction
 commit and fresh implementation inventory remain pending.
+
+## Checker Task 258B3M2B2B2CP Implemented Runner Boundary
+
+CPC1 correction commit `ee267d9c` is complete. B2CP now changes exactly the
+four frozen runner files and no others, adding only private dormant update
+selection/authentication/handoff plumbing and exactly two passing tests.
+The prerequisite `design_drift`, bounded `source_drift`, and `test_gap`
+are closed; final test-sufficiency and implementation re-reviews have no
+findings. Checker source/public API, active dispatch, dependencies,
+fixtures, expectations, sidecars, trace metadata, production paths, and
+semantic owners remain untouched.
+
+The final runner sizes are `6826/6065/730/2546/17120/5848`; production is
+30 paths / 46,788 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`.
+Checker/runner libraries are `386/439`, and raw/normalized runner
+test-list hashes are
+`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
+`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`.
+Checker/corpus/CLI hashes remain unchanged.
+
+The formula row remains `deferred`, `tests = []`; audit impact is
+narrative-only. B2C/public/active and semantic/proof/goal/IR deferrals are
+unchanged. Concurrent ownership remains a report-only
+`repo_metadata_conflict`; no metadata repair is made. Broad formatting,
+Clippy, tests, and every count/hash gate pass. The final
+source/documentation re-review has no findings. Independent final quality
+has no findings, all nine hard gates PASS, and valid `98/100`. The B2CP
+commit remains pending; B2C fresh inventory owns the next step after the
+commit.

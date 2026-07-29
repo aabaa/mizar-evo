@@ -475,6 +475,16 @@ const TASK258B3M2B2B2BP_SOURCE: &str = concat!(
     "end;\n",
 );
 
+#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
+const TASK258B3M2B2B2CP_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementStructureUpdateWitnessSmoke: x = x proof\n",
+    "  take TypeCaseStruct(x: 1, y: 2) with (x := 3);\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
 #[allow(dead_code)] // Rationale: B2BP freezes a production-private seam whose sole production consumer is the separately scoped B2B task.
 fn task258b3m2b2b2bp_surface_contract(ast: &SurfaceAst, loaded_source: &str) -> bool {
     task258b3m2b2b2bp_surface_contract_impl(ast, loaded_source, |_, _, _, _, _| {})
@@ -778,6 +788,337 @@ fn task258b3m2b2b2bp_surface_contract_impl(
         && kinds.iter().map(String::as_str).eq(KINDS.iter().copied())
         && ranges == RANGES
         && recoveries.iter().all(|recovered| !recovered)
+        && children
+            .iter()
+            .map(Vec::as_slice)
+            .eq(CHILDREN.iter().copied())
+}
+
+#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
+fn task258b3m2b2b2cp_surface_contract(ast: &SurfaceAst, loaded_source: &str) -> bool {
+    task258b3m2b2b2cp_surface_contract_impl(ast, loaded_source, |_, _, _, _, _| {})
+}
+
+#[allow(dead_code)] // Rationale: exercised by B2CP tests before the separately scoped B2C production consumer exists.
+fn task258b3m2b2b2cp_surface_contract_impl(
+    ast: &SurfaceAst,
+    loaded_source: &str,
+    mutate: impl FnOnce(
+        &mut Vec<String>,
+        &mut Vec<(usize, usize)>,
+        &mut Vec<bool>,
+        &mut Vec<Vec<usize>>,
+        &mut Option<usize>,
+    ),
+) -> bool {
+    const KINDS: [&str; 86] = [
+        "Token(SurfaceToken { kind: ReservedWord, text: \"import\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"parser\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \".\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"type_fixtures\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"FormulaStatementStructureUpdateWitnessSmoke\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"proof\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"take\" })",
+        "Token(SurfaceToken { kind: UserSymbol, text: \"TypeCaseStruct\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"(\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"1\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \",\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"y\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"2\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \")\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"with\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"(\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":=\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"3\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \")\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"end\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "PathSegment",
+        "PathSegment",
+        "ModulePath",
+        "ImportAliasDecl",
+        "ImportItem",
+        "TypeHead",
+        "TypeExpression",
+        "ReserveSegment",
+        "ReserveItem",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "PathSegment",
+        "QualifiedSymbol",
+        "NumeralTerm",
+        "TermExpression",
+        "FieldArgument",
+        "NumeralTerm",
+        "TermExpression",
+        "FieldArgument",
+        "StructureConstructor",
+        "NumeralTerm",
+        "TermExpression",
+        "FieldUpdate",
+        "StructureUpdate",
+        "TermExpression",
+        "Witness",
+        "TakeStatement",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "Proposition",
+        "ConclusionStatement",
+        "ProofBlock",
+        "TheoremItem",
+        "ItemList",
+        "CompilationUnit",
+        "Root",
+    ];
+    const RANGES: [(usize, usize); 86] = [
+        (0, 6),
+        (7, 13),
+        (13, 14),
+        (14, 27),
+        (27, 28),
+        (29, 36),
+        (37, 38),
+        (39, 42),
+        (43, 46),
+        (46, 47),
+        (48, 55),
+        (56, 99),
+        (99, 100),
+        (101, 102),
+        (103, 104),
+        (105, 106),
+        (107, 112),
+        (115, 119),
+        (120, 134),
+        (134, 135),
+        (135, 136),
+        (136, 137),
+        (138, 139),
+        (139, 140),
+        (141, 142),
+        (142, 143),
+        (144, 145),
+        (145, 146),
+        (147, 151),
+        (152, 153),
+        (153, 154),
+        (155, 157),
+        (158, 159),
+        (159, 160),
+        (160, 161),
+        (164, 168),
+        (169, 170),
+        (171, 172),
+        (173, 174),
+        (174, 175),
+        (176, 179),
+        (179, 180),
+        (7, 13),
+        (14, 27),
+        (7, 27),
+        (7, 27),
+        (0, 28),
+        (43, 46),
+        (43, 46),
+        (37, 46),
+        (29, 47),
+        (101, 102),
+        (101, 102),
+        (105, 106),
+        (105, 106),
+        (101, 106),
+        (101, 106),
+        (120, 134),
+        (120, 134),
+        (138, 139),
+        (138, 139),
+        (135, 139),
+        (144, 145),
+        (144, 145),
+        (141, 145),
+        (120, 146),
+        (158, 159),
+        (158, 159),
+        (153, 159),
+        (120, 160),
+        (120, 160),
+        (120, 160),
+        (115, 161),
+        (169, 170),
+        (169, 170),
+        (173, 174),
+        (173, 174),
+        (169, 174),
+        (169, 174),
+        (169, 174),
+        (164, 175),
+        (107, 179),
+        (48, 180),
+        (0, 180),
+        (0, 180),
+        (0, 180),
+    ];
+    const CHILDREN: [&[usize]; 86] = [
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[1],
+        &[3],
+        &[42, 2, 43],
+        &[44],
+        &[0, 45, 4],
+        &[8],
+        &[47],
+        &[6, 7, 48],
+        &[5, 49, 9],
+        &[13],
+        &[51],
+        &[15],
+        &[53],
+        &[52, 14, 54],
+        &[55],
+        &[18],
+        &[57],
+        &[22],
+        &[59],
+        &[20, 21, 60],
+        &[26],
+        &[62],
+        &[24, 25, 63],
+        &[58, 19, 61, 23, 64, 27],
+        &[32],
+        &[66],
+        &[30, 31, 67],
+        &[65, 28, 29, 68, 33],
+        &[69],
+        &[70],
+        &[17, 71, 34],
+        &[36],
+        &[73],
+        &[38],
+        &[75],
+        &[74, 37, 76],
+        &[77],
+        &[78],
+        &[35, 79, 39],
+        &[16, 72, 80, 40],
+        &[10, 11, 12, 56, 81, 41],
+        &[46, 50, 82],
+        &[83],
+        &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 84,
+        ],
+    ];
+
+    if loaded_source != TASK258B3M2B2B2CP_SOURCE || ast.nodes().len() != 86 {
+        return false;
+    }
+    let mut kinds = ast
+        .nodes()
+        .iter()
+        .map(|node| format!("{:?}", node.kind))
+        .collect::<Vec<_>>();
+    let mut ranges = ast
+        .nodes()
+        .iter()
+        .map(|node| (node.range.start, node.range.end))
+        .collect::<Vec<_>>();
+    let mut recoveries = ast
+        .nodes()
+        .iter()
+        .map(|node| node.recovered)
+        .collect::<Vec<_>>();
+    let mut children = ast
+        .nodes()
+        .iter()
+        .map(|node| {
+            node.children
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let mut root = ast.root().map(|root| root.index());
+    mutate(
+        &mut kinds,
+        &mut ranges,
+        &mut recoveries,
+        &mut children,
+        &mut root,
+    );
+    root == Some(85)
+        && kinds.iter().map(String::as_str).eq(KINDS.iter().copied())
+        && ranges == RANGES
+        && recoveries == [false; 86]
         && children
             .iter()
             .map(Vec::as_slice)
@@ -1284,6 +1625,76 @@ pub(super) fn imported_structure_selector_handoff_in_context(
     if !task258b3m2b2b2bp_lower_profile_is_exact(ast, module, binding_env, source_term, context) {
         return Some(Err(
             "exact Task-48/252 selector proof-context profile mismatch".to_owned(),
+        ));
+    }
+    extracted.context = context;
+    Some(build_handoff_with_source_term(
+        ast,
+        module,
+        symbols,
+        binding_env,
+        &extracted,
+        source_term,
+        None,
+        |_| {},
+    ))
+}
+
+#[allow(dead_code)]
+// Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct ImportedStructureUpdateSite {
+    pub(super) update: usize,
+}
+
+#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
+pub(super) fn imported_structure_update_owned_node_kinds(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    loaded_source: &str,
+    site: ImportedStructureUpdateSite,
+) -> Option<BTreeMap<usize, &'static str>> {
+    let extracted = extract_task258b3m2b2b2cp_update(ast, module, symbols, loaded_source, site)?;
+    Some(BTreeMap::from([
+        (extracted.terms[0].node, "source.term.structure.update"),
+        (extracted.terms[1].node, "source.term.structure.constructor"),
+        (
+            extracted.members[0].node,
+            "source.term.structure.member.update-path-segment",
+        ),
+        (
+            extracted.members[1].node,
+            "source.term.structure.member.constructor-assignment",
+        ),
+        (
+            extracted.members[2].node,
+            "source.term.structure.member.constructor-assignment",
+        ),
+        (
+            extracted.field_updates[0].node,
+            "source.term.structure.field-update",
+        ),
+    ]))
+}
+
+#[allow(clippy::too_many_arguments)] // Rationale: keep every authenticated lower-stage authority explicit at the private reuse seam.
+#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
+pub(super) fn imported_structure_update_handoff_in_context(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+    loaded_source: &str,
+    site: ImportedStructureUpdateSite,
+    context: BindingContextId,
+) -> Option<Result<SourceStructureHandoff, String>> {
+    let mut extracted =
+        extract_task258b3m2b2b2cp_update(ast, module, symbols, loaded_source, site)?;
+    if !task258b3m2b2b2cp_lower_profile_is_exact(ast, module, binding_env, source_term, context) {
+        return Some(Err(
+            "exact Task-48/252 update proof-context profile mismatch".to_owned(),
         ));
     }
     extracted.context = context;
@@ -1908,6 +2319,274 @@ fn task258b3m2b2b2bp_lower_profile_is_exact(
     })
 }
 
+#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
+fn task258b3m2b2b2cp_lower_profile_is_exact(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+    context: BindingContextId,
+) -> bool {
+    if context != BindingContextId::new(1)
+        || binding_env.source_id() != ast.source_id
+        || binding_env.module_id() != module
+        || source_term.handoff.source_id() != ast.source_id
+        || source_term.handoff.module_id() != module
+        || binding_env.contexts().len() != 2
+        || binding_env.bindings().len() != 1
+        || !binding_env.diagnostics().is_empty()
+    {
+        return false;
+    }
+
+    let Some(module_context) = binding_env.contexts().get(BindingContextId::new(0)) else {
+        return false;
+    };
+    let Some(proof_context) = binding_env.contexts().get(BindingContextId::new(1)) else {
+        return false;
+    };
+    if !matches!(module_context.owner, BindingContextOwner::Module)
+        || module_context.parent.is_some()
+        || module_context.layer != BindingContextLayer::Module
+        || module_context.lexical_scope.is_some()
+        || module_context
+            .bindings
+            .iter()
+            .map(|binding| binding.index())
+            .collect::<Vec<_>>()
+            != [0]
+        || module_context
+            .visible_bindings
+            .iter()
+            .map(|binding| binding.index())
+            .collect::<Vec<_>>()
+            != [0]
+        || module_context.recovery != BindingContextRecovery::Normal
+        || !matches!(
+            proof_context.owner,
+            BindingContextOwner::SourceStatement { source_range }
+                if source_range == task258b3m2b2b2cp_range(ast, 107, 179)
+        )
+        || proof_context.parent != Some(BindingContextId::new(0))
+        || proof_context.layer != BindingContextLayer::Proof
+        || proof_context
+            .lexical_scope
+            .as_ref()
+            .is_none_or(|scope| scope.path() != [0])
+        || !proof_context.bindings.is_empty()
+        || proof_context
+            .visible_bindings
+            .iter()
+            .map(|binding| binding.index())
+            .collect::<Vec<_>>()
+            != [0]
+        || proof_context.recovery != BindingContextRecovery::Normal
+    {
+        return false;
+    }
+
+    let Some((binding_id, binding)) = binding_env.bindings().iter().next() else {
+        return false;
+    };
+    if binding_id.index() != 0
+        || binding.id != binding_id
+        || binding.spelling != "x"
+        || binding.kind != BindingKind::ReservedVariable
+        || !matches!(
+            &binding.identity,
+            BinderIdentity::ReservedVariable {
+                spelling,
+                declaration_range,
+            } if spelling == "x"
+                && *declaration_range == task258b3m2b2b2cp_range(ast, 37, 38)
+        )
+        || binding.owner_context != BindingContextId::new(0)
+        || binding.declaration_range != task258b3m2b2b2cp_range(ast, 37, 38)
+        || binding.visible_after_ordinal != 0
+        || !matches!(
+            binding.type_site,
+            BindingTypeSite::Source(source_range)
+                if source_range == task258b3m2b2b2cp_range(ast, 43, 46)
+        )
+        || binding.status != BindingStatus::Reserved
+        || !binding.captured.identities().is_empty()
+        || !binding.diagnostics.is_empty()
+        || binding.recovery != BindingRecoveryState::Normal
+    {
+        return false;
+    }
+
+    let expected_terms = [
+        (
+            51,
+            101,
+            102,
+            BindingContextId::new(0),
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+        (
+            53,
+            105,
+            106,
+            BindingContextId::new(0),
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+        (
+            59,
+            138,
+            139,
+            BindingContextId::new(1),
+            "1",
+            SourcePrimaryTermKind::Numeral,
+        ),
+        (
+            62,
+            144,
+            145,
+            BindingContextId::new(1),
+            "2",
+            SourcePrimaryTermKind::Numeral,
+        ),
+        (
+            66,
+            158,
+            159,
+            BindingContextId::new(1),
+            "3",
+            SourcePrimaryTermKind::Numeral,
+        ),
+        (
+            73,
+            169,
+            170,
+            BindingContextId::new(1),
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+        (
+            75,
+            173,
+            174,
+            BindingContextId::new(1),
+            "x",
+            SourcePrimaryTermKind::VariableReference,
+        ),
+    ];
+    if source_term.handoff.terms().len() != expected_terms.len()
+        || source_term.handoff.terms().iter().zip(expected_terms).any(
+            |((id, term), (site, start, end, expected_context, spelling, kind))| {
+                id.index() != term.source_ordinal()
+                    || term.site().node().index() != site
+                    || term.source_range() != task258b3m2b2b2cp_range(ast, start, end)
+                    || term.context() != expected_context
+                    || term.recovery() != SourcePrimaryTermRecovery::Normal
+                    || term.spelling() != spelling
+                    || term.kind() != kind
+                    || term.role() != SourcePrimaryTermRole::Value
+                    || term.parent().is_some()
+            },
+        )
+    {
+        return false;
+    }
+
+    let expected_references = [(0, false), (1, false), (5, true), (6, true)];
+    if source_term.handoff.references().len() != expected_references.len()
+        || source_term
+            .handoff
+            .references()
+            .iter()
+            .zip(expected_references)
+            .any(|((id, reference), (term, scoped))| {
+                id.index() >= expected_references.len()
+                    || reference.term().index() != term
+                    || reference.binding().index() != 0
+                    || reference.role() != SourcePrimaryTermReferenceRole::Variable
+                    || reference.use_ordinal() != 1
+                    || if scoped {
+                        reference
+                            .lexical_scope()
+                            .is_none_or(|scope| scope.path() != [0])
+                    } else {
+                        reference.lexical_scope().is_some()
+                    }
+            })
+    {
+        return false;
+    }
+
+    let expected_requests = [
+        (2, 59, 138, 139, "1"),
+        (3, 62, 144, 145, "2"),
+        (4, 66, 158, 159, "3"),
+    ];
+    if source_term.handoff.numeric_type_requests().len() != expected_requests.len()
+        || source_term
+            .handoff
+            .numeric_type_requests()
+            .iter()
+            .zip(expected_requests)
+            .any(|((id, request), (term, owner, start, end, spelling))| {
+                request.term().index() != term
+                    || request.owner().node().index() != owner
+                    || request.source_range() != task258b3m2b2b2cp_range(ast, start, end)
+                    || request.spelling() != spelling
+                    || request.request_ordinal() != id.index()
+            })
+    {
+        return false;
+    }
+
+    if source_term.arena.len() != ast.nodes().len()
+        || source_term.arena.root().map(|root| root.index()) != ast.root().map(|root| root.index())
+    {
+        return false;
+    }
+    source_term.arena.iter().all(|(id, node)| {
+        let index = id.index();
+        let Some(surface) = ast.nodes().get(index) else {
+            return false;
+        };
+        let expected_kind = match index {
+            20 | 24 => "source.term.structure.member.constructor-assignment",
+            30 => "source.term.structure.member.update-path-segment",
+            51 | 53 | 73 | 75 => "source.term.variable-reference",
+            59 | 62 | 66 => "source.term.numeral",
+            65 => "source.term.structure.constructor",
+            68 => "source.term.structure.field-update",
+            69 => "source.term.structure.update",
+            _ => "source.surface.unowned",
+        };
+        node.kind.as_str() == expected_kind
+            && node.resolved_node.is_none()
+            && node.anchor == SourceAnchor::Range(surface.range)
+            && node
+                .children
+                .iter()
+                .map(|child| child.index())
+                .eq(surface.children.iter().map(|child| child.index()))
+            && node.typing == TypingState::Unknown
+            && node.recovery == NodeRecoveryState::Normal
+            && node.links.context.is_none()
+            && node.links.type_entry.is_none()
+            && node.links.facts.is_empty()
+            && node.links.coercions.is_empty()
+            && node.links.initial_obligations.is_empty()
+            && node.links.diagnostics.is_empty()
+    })
+}
+
+#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
+fn task258b3m2b2b2cp_range(ast: &SurfaceAst, start: usize, end: usize) -> SourceRange {
+    SourceRange {
+        source_id: ast.source_id,
+        start,
+        end,
+    }
+}
+
 fn task258b3m2b2b2bp_range(ast: &SurfaceAst, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id: ast.source_id,
@@ -1991,6 +2670,101 @@ fn extract_task258b3m2b2b2bp_selector(
         || right_edge.member != Some(SourceStructureMemberId::new(2))
         || !matches!(right_edge.target, ExtractedTarget::Primary(59))
         || extracted.primary_roots != [56, 59]
+        || !task258b3m2b2b2p_root_is_exact(ast, module, symbols, &root.symbol)
+    {
+        return None;
+    }
+    Some(extracted)
+}
+
+#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
+fn extract_task258b3m2b2b2cp_update(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    loaded_source: &str,
+    site: ImportedStructureUpdateSite,
+) -> Option<ExtractedStructure> {
+    if site.update != 69
+        || !task258b3m2b2b2cp_surface_contract(ast, loaded_source)
+        || symbols.module_id() != module
+    {
+        return None;
+    }
+    let extracted = extract_structure(
+        ast,
+        module,
+        symbols,
+        BindingContextId::new(0),
+        &[site.update],
+        None,
+        &BTreeSet::new(),
+    )
+    .ok()?;
+    let [update, constructor] = extracted.terms.as_slice() else {
+        return None;
+    };
+    let [root] = extracted.roots.as_slice() else {
+        return None;
+    };
+    let [update_member, left, right] = extracted.members.as_slice() else {
+        return None;
+    };
+    let [field_update] = extracted.field_updates.as_slice() else {
+        return None;
+    };
+    let [base_edge, value_edge, left_edge, right_edge] = extracted.edges.as_slice() else {
+        return None;
+    };
+    if update.node != 69
+        || update.kind != SourceStructureTermKind::FunctionalUpdate
+        || update.recovery != SourceStructureRecovery::Normal
+        || constructor.node != 65
+        || constructor.kind != SourceStructureTermKind::Constructor
+        || constructor.recovery != SourceStructureRecovery::Normal
+        || !extracted.wrappers.is_empty()
+        || root.term != SourceStructureTermId::new(1)
+        || update_member.term != SourceStructureTermId::new(0)
+        || update_member.ordinal != 0
+        || update_member.node != 30
+        || update_member.role != SourceStructureMemberRole::UpdatePathSegment
+        || update_member.parent.is_some()
+        || left.term != SourceStructureTermId::new(1)
+        || left.ordinal != 0
+        || left.node != 20
+        || left.role != SourceStructureMemberRole::ConstructorAssignment
+        || left.parent.is_some()
+        || right.term != SourceStructureTermId::new(1)
+        || right.ordinal != 1
+        || right.node != 24
+        || right.role != SourceStructureMemberRole::ConstructorAssignment
+        || right.parent.is_some()
+        || field_update.term != SourceStructureTermId::new(0)
+        || field_update.ordinal != 0
+        || field_update.node != 68
+        || field_update.first_member != SourceStructureMemberId::new(0)
+        || field_update.final_member != SourceStructureMemberId::new(0)
+        || base_edge.term != SourceStructureTermId::new(0)
+        || base_edge.ordinal != 0
+        || base_edge.role != SourceStructureEdgeRole::UpdateBase
+        || base_edge.member.is_some()
+        || !matches!(base_edge.target, ExtractedTarget::Structure(term) if term == SourceStructureTermId::new(1))
+        || value_edge.term != SourceStructureTermId::new(0)
+        || value_edge.ordinal != 1
+        || value_edge.role != SourceStructureEdgeRole::UpdateValue
+        || value_edge.member != Some(SourceStructureMemberId::new(0))
+        || !matches!(value_edge.target, ExtractedTarget::Primary(67))
+        || left_edge.term != SourceStructureTermId::new(1)
+        || left_edge.ordinal != 0
+        || left_edge.role != SourceStructureEdgeRole::ConstructorValue
+        || left_edge.member != Some(SourceStructureMemberId::new(1))
+        || !matches!(left_edge.target, ExtractedTarget::Primary(60))
+        || right_edge.term != SourceStructureTermId::new(1)
+        || right_edge.ordinal != 1
+        || right_edge.role != SourceStructureEdgeRole::ConstructorValue
+        || right_edge.member != Some(SourceStructureMemberId::new(2))
+        || !matches!(right_edge.target, ExtractedTarget::Primary(63))
+        || extracted.primary_roots != [60, 63, 67]
         || !task258b3m2b2b2p_root_is_exact(ast, module, symbols, &root.symbol)
     {
         return None;
@@ -3085,6 +3859,132 @@ pub(in crate::runner) struct ImportedStructureSelectorTestOutput {
 }
 
 #[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum ImportedStructureUpdateSurfaceMutation {
+    None,
+    NodeKind(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    RootIdentity,
+    DirectProductionSeam,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum ImportedStructureUpdateTestMutation {
+    None,
+    BindingSourceId,
+    BindingModuleId,
+    BindingContextCount,
+    BindingCount,
+    BindingDiagnosticCount,
+    ModuleContextOwner,
+    ModuleContextParent,
+    ModuleContextLayer,
+    ModuleContextScope,
+    ModuleContextBindings,
+    ModuleContextVisibleBindings,
+    ModuleContextRecovery,
+    ProofContextOwner,
+    ProofContextParent,
+    ProofContextLayer,
+    ProofContextScope,
+    ProofContextBindings,
+    ProofContextVisibleBindings,
+    ProofContextRecovery,
+    BindingSpelling,
+    BindingKind,
+    BindingIdentityKind,
+    BindingIdentitySpelling,
+    BindingIdentityRange,
+    BindingOwner,
+    BindingDeclarationRange,
+    BindingVisibleOrdinal,
+    BindingTypeSite,
+    BindingStatus,
+    BindingCaptured,
+    BindingDiagnostics,
+    BindingRecovery,
+    PrimarySourceId,
+    PrimaryModuleId,
+    PrimaryTermSite(usize),
+    PrimaryTermRange(usize),
+    PrimaryTermOrdinal(usize),
+    PrimaryTermContext(usize),
+    PrimaryTermRecovery(usize),
+    PrimaryTermSpelling(usize),
+    PrimaryTermKind(usize),
+    PrimaryTermRole(usize),
+    PrimaryTermParent(usize),
+    PrimaryReferenceTerm(usize),
+    PrimaryReferenceBinding(usize),
+    PrimaryReferenceRole(usize),
+    PrimaryReferenceUseOrdinal(usize),
+    PrimaryReferenceScope(usize),
+    NumericRequestTerm(usize),
+    NumericRequestOwner(usize),
+    NumericRequestRange(usize),
+    NumericRequestSpelling(usize),
+    NumericRequestOrdinal(usize),
+    TermSite(usize),
+    TermRange(usize),
+    TermOrdinal(usize),
+    TermContext(usize),
+    TermRecovery(usize),
+    TermSpelling(usize),
+    TermKind(usize),
+    RootTerm,
+    RootSymbol,
+    RootContribution,
+    MemberTerm(usize),
+    MemberOrdinal(usize),
+    MemberSite(usize),
+    MemberRange(usize),
+    MemberSpelling(usize),
+    MemberRole(usize),
+    MemberParent(usize),
+    FieldUpdateMissing,
+    FieldUpdateExtra,
+    FieldUpdateTerm(usize),
+    FieldUpdateOrdinal(usize),
+    FieldUpdateSite(usize),
+    FieldUpdateRange(usize),
+    FieldUpdateSpelling(usize),
+    FieldUpdateFirstMember(usize),
+    FieldUpdateFinalMember(usize),
+    EdgeTerm(usize),
+    EdgeOrdinal(usize),
+    EdgeRole(usize),
+    EdgeMember(usize),
+    EdgeTarget(usize),
+    RequestTerm(usize),
+    RequestOrdinal(usize),
+    RequestMember(usize),
+    RequestKind(usize),
+    StalePrimaryReplay,
+    TermRangeAndStalePrimaryReplay,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy)]
+pub(in crate::runner) struct ImportedStructureUpdateTestOptions {
+    pub(in crate::runner) update: usize,
+    pub(in crate::runner) context: BindingContextId,
+    pub(in crate::runner) surface_mutation: ImportedStructureUpdateSurfaceMutation,
+    pub(in crate::runner) handoff_mutation: ImportedStructureUpdateTestMutation,
+}
+
+#[cfg(test)]
+#[derive(Debug)]
+pub(in crate::runner) struct ImportedStructureUpdateTestOutput {
+    pub(in crate::runner) handoff: SourceStructureHandoff,
+    pub(in crate::runner) primary_counts: (usize, usize, usize),
+    pub(in crate::runner) typed_ast: TypedAst,
+    pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+#[cfg(test)]
 fn task258b3m2b2b2p_surface_contract_with_mutation(
     ast: &SurfaceAst,
     loaded_source: &str,
@@ -3162,6 +4062,47 @@ fn task258b3m2b2b2bp_surface_contract_with_mutation(
                 }
             }
             ImportedStructureSelectorSurfaceMutation::RootIdentity => *root = None,
+        },
+    )
+}
+
+#[cfg(test)]
+fn task258b3m2b2b2cp_surface_contract_with_mutation(
+    ast: &SurfaceAst,
+    loaded_source: &str,
+    mutation: ImportedStructureUpdateSurfaceMutation,
+) -> bool {
+    task258b3m2b2b2cp_surface_contract_impl(
+        ast,
+        loaded_source,
+        |kinds, ranges, recoveries, children, root| match mutation {
+            ImportedStructureUpdateSurfaceMutation::None
+            | ImportedStructureUpdateSurfaceMutation::DirectProductionSeam => {}
+            ImportedStructureUpdateSurfaceMutation::NodeKind(index) => {
+                if let Some(kind) = kinds.get_mut(index) {
+                    kind.push('!');
+                }
+            }
+            ImportedStructureUpdateSurfaceMutation::NodeRange(index) => {
+                if let Some(range) = ranges.get_mut(index) {
+                    range.1 = range.1.saturating_add(1);
+                }
+            }
+            ImportedStructureUpdateSurfaceMutation::NodeRecovery(index) => {
+                if let Some(recovered) = recoveries.get_mut(index) {
+                    *recovered = !*recovered;
+                }
+            }
+            ImportedStructureUpdateSurfaceMutation::NodeChildren(index) => {
+                if let Some(node_children) = children.get_mut(index) {
+                    if node_children.len() > 1 {
+                        node_children.rotate_left(1);
+                    } else {
+                        node_children.push(index);
+                    }
+                }
+            }
+            ImportedStructureUpdateSurfaceMutation::RootIdentity => *root = None,
         },
     )
 }
@@ -4177,6 +5118,624 @@ pub(in crate::runner) fn imported_structure_selector_handoff_for_test(
         Err(error) => return Some(Err(format!("ResolvedTypedAst: {error}"))),
     };
     Some(Ok(ImportedStructureSelectorTestOutput {
+        handoff,
+        primary_counts,
+        typed_ast,
+        resolved,
+    }))
+}
+
+#[cfg(test)]
+fn task258b3m2b2b2cp_binding_mutation(
+    mutation: ImportedStructureUpdateTestMutation,
+) -> Option<ImportedStructureSelectorTestMutation> {
+    Some(match mutation {
+        ImportedStructureUpdateTestMutation::BindingSourceId => {
+            ImportedStructureSelectorTestMutation::BindingSourceId
+        }
+        ImportedStructureUpdateTestMutation::BindingModuleId => {
+            ImportedStructureSelectorTestMutation::BindingModuleId
+        }
+        ImportedStructureUpdateTestMutation::BindingContextCount => {
+            ImportedStructureSelectorTestMutation::BindingContextCount
+        }
+        ImportedStructureUpdateTestMutation::BindingCount => {
+            ImportedStructureSelectorTestMutation::BindingCount
+        }
+        ImportedStructureUpdateTestMutation::BindingDiagnosticCount => {
+            ImportedStructureSelectorTestMutation::BindingDiagnosticCount
+        }
+        ImportedStructureUpdateTestMutation::ModuleContextOwner => {
+            ImportedStructureSelectorTestMutation::ModuleContextOwner
+        }
+        ImportedStructureUpdateTestMutation::ModuleContextParent => {
+            ImportedStructureSelectorTestMutation::ModuleContextParent
+        }
+        ImportedStructureUpdateTestMutation::ModuleContextLayer => {
+            ImportedStructureSelectorTestMutation::ModuleContextLayer
+        }
+        ImportedStructureUpdateTestMutation::ModuleContextScope => {
+            ImportedStructureSelectorTestMutation::ModuleContextScope
+        }
+        ImportedStructureUpdateTestMutation::ModuleContextBindings => {
+            ImportedStructureSelectorTestMutation::ModuleContextBindings
+        }
+        ImportedStructureUpdateTestMutation::ModuleContextVisibleBindings => {
+            ImportedStructureSelectorTestMutation::ModuleContextVisibleBindings
+        }
+        ImportedStructureUpdateTestMutation::ModuleContextRecovery => {
+            ImportedStructureSelectorTestMutation::ModuleContextRecovery
+        }
+        ImportedStructureUpdateTestMutation::ProofContextOwner => {
+            ImportedStructureSelectorTestMutation::ProofContextOwner
+        }
+        ImportedStructureUpdateTestMutation::ProofContextParent => {
+            ImportedStructureSelectorTestMutation::ProofContextParent
+        }
+        ImportedStructureUpdateTestMutation::ProofContextLayer => {
+            ImportedStructureSelectorTestMutation::ProofContextLayer
+        }
+        ImportedStructureUpdateTestMutation::ProofContextScope => {
+            ImportedStructureSelectorTestMutation::ProofContextScope
+        }
+        ImportedStructureUpdateTestMutation::ProofContextBindings => {
+            ImportedStructureSelectorTestMutation::ProofContextBindings
+        }
+        ImportedStructureUpdateTestMutation::ProofContextVisibleBindings => {
+            ImportedStructureSelectorTestMutation::ProofContextVisibleBindings
+        }
+        ImportedStructureUpdateTestMutation::ProofContextRecovery => {
+            ImportedStructureSelectorTestMutation::ProofContextRecovery
+        }
+        ImportedStructureUpdateTestMutation::BindingSpelling => {
+            ImportedStructureSelectorTestMutation::BindingSpelling
+        }
+        ImportedStructureUpdateTestMutation::BindingKind => {
+            ImportedStructureSelectorTestMutation::BindingKind
+        }
+        ImportedStructureUpdateTestMutation::BindingIdentityKind => {
+            ImportedStructureSelectorTestMutation::BindingIdentityKind
+        }
+        ImportedStructureUpdateTestMutation::BindingIdentitySpelling => {
+            ImportedStructureSelectorTestMutation::BindingIdentitySpelling
+        }
+        ImportedStructureUpdateTestMutation::BindingIdentityRange => {
+            ImportedStructureSelectorTestMutation::BindingIdentityRange
+        }
+        ImportedStructureUpdateTestMutation::BindingOwner => {
+            ImportedStructureSelectorTestMutation::BindingOwner
+        }
+        ImportedStructureUpdateTestMutation::BindingDeclarationRange => {
+            ImportedStructureSelectorTestMutation::BindingDeclarationRange
+        }
+        ImportedStructureUpdateTestMutation::BindingVisibleOrdinal => {
+            ImportedStructureSelectorTestMutation::BindingVisibleOrdinal
+        }
+        ImportedStructureUpdateTestMutation::BindingTypeSite => {
+            ImportedStructureSelectorTestMutation::BindingTypeSite
+        }
+        ImportedStructureUpdateTestMutation::BindingStatus => {
+            ImportedStructureSelectorTestMutation::BindingStatus
+        }
+        ImportedStructureUpdateTestMutation::BindingCaptured => {
+            ImportedStructureSelectorTestMutation::BindingCaptured
+        }
+        ImportedStructureUpdateTestMutation::BindingDiagnostics => {
+            ImportedStructureSelectorTestMutation::BindingDiagnostics
+        }
+        ImportedStructureUpdateTestMutation::BindingRecovery => {
+            ImportedStructureSelectorTestMutation::BindingRecovery
+        }
+        _ => return None,
+    })
+}
+
+#[cfg(test)]
+fn task258b3m2b2b2cp_is_primary_mutation(mutation: ImportedStructureUpdateTestMutation) -> bool {
+    matches!(
+        mutation,
+        ImportedStructureUpdateTestMutation::PrimarySourceId
+            | ImportedStructureUpdateTestMutation::PrimaryModuleId
+            | ImportedStructureUpdateTestMutation::PrimaryTermSite(_)
+            | ImportedStructureUpdateTestMutation::PrimaryTermRange(_)
+            | ImportedStructureUpdateTestMutation::PrimaryTermOrdinal(_)
+            | ImportedStructureUpdateTestMutation::PrimaryTermContext(_)
+            | ImportedStructureUpdateTestMutation::PrimaryTermRecovery(_)
+            | ImportedStructureUpdateTestMutation::PrimaryTermSpelling(_)
+            | ImportedStructureUpdateTestMutation::PrimaryTermKind(_)
+            | ImportedStructureUpdateTestMutation::PrimaryTermRole(_)
+            | ImportedStructureUpdateTestMutation::PrimaryTermParent(_)
+            | ImportedStructureUpdateTestMutation::PrimaryReferenceTerm(_)
+            | ImportedStructureUpdateTestMutation::PrimaryReferenceBinding(_)
+            | ImportedStructureUpdateTestMutation::PrimaryReferenceRole(_)
+            | ImportedStructureUpdateTestMutation::PrimaryReferenceUseOrdinal(_)
+            | ImportedStructureUpdateTestMutation::PrimaryReferenceScope(_)
+            | ImportedStructureUpdateTestMutation::NumericRequestTerm(_)
+            | ImportedStructureUpdateTestMutation::NumericRequestOwner(_)
+            | ImportedStructureUpdateTestMutation::NumericRequestRange(_)
+            | ImportedStructureUpdateTestMutation::NumericRequestSpelling(_)
+            | ImportedStructureUpdateTestMutation::NumericRequestOrdinal(_)
+    )
+}
+
+#[cfg(test)]
+fn task258b3m2b2b2cp_source_term_with_mutation(
+    source_term: &SourceTermParts,
+    binding_env: &BindingEnv,
+    mutation: ImportedStructureUpdateTestMutation,
+) -> Result<SourceTermParts, String> {
+    let mut input = SourcePrimaryTermHandoffInput {
+        source_id: source_term.handoff.source_id(),
+        module_id: source_term.handoff.module_id().clone(),
+        terms: source_term
+            .handoff
+            .terms()
+            .iter()
+            .map(|(_, term)| SourcePrimaryTermInput {
+                site: term.site().clone(),
+                source_range: term.source_range(),
+                source_ordinal: term.source_ordinal(),
+                context: term.context(),
+                recovery: term.recovery(),
+                spelling: term.spelling().to_owned(),
+                kind: term.kind(),
+                role: term.role(),
+                parent: term.parent(),
+            })
+            .collect(),
+        references: source_term
+            .handoff
+            .references()
+            .iter()
+            .map(|(_, reference)| SourcePrimaryTermReferenceInput {
+                term: reference.term(),
+                binding: reference.binding(),
+                role: reference.role(),
+            })
+            .collect(),
+        numeric_type_requests: source_term
+            .handoff
+            .numeric_type_requests()
+            .iter()
+            .map(|(_, request)| SourceNumericTypeRequestInput {
+                term: request.term(),
+                owner: request.owner().clone(),
+                source_range: request.source_range(),
+                spelling: request.spelling().to_owned(),
+                request_ordinal: request.request_ordinal(),
+            })
+            .collect(),
+    };
+    let mut producer_binding_env = None;
+    match mutation {
+        ImportedStructureUpdateTestMutation::PrimarySourceId => {
+            let allocator = mizar_session::InMemorySessionIdAllocator::new();
+            mizar_session::SessionIdAllocator::next_source_id(
+                &allocator,
+                super::super::shared::snapshot_id(25_803),
+            )
+            .map_err(|error| error.to_string())?;
+            input.source_id = mizar_session::SessionIdAllocator::next_source_id(
+                &allocator,
+                super::super::shared::snapshot_id(25_803),
+            )
+            .map_err(|error| error.to_string())?;
+        }
+        ImportedStructureUpdateTestMutation::PrimaryModuleId => {
+            input.module_id = ModuleId::new(
+                input.module_id.package().clone(),
+                mizar_session::ModulePath::new("tests.b2cp.primary-module-substitute"),
+            );
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermSite(index) => {
+            let replacement = input.terms[(index + 1) % input.terms.len()].site.clone();
+            input.terms[index].site = replacement;
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermRange(index) => {
+            input.terms[index].source_range.start += 1;
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermOrdinal(index) => {
+            input.terms[index].source_ordinal += 1;
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermContext(index) => {
+            input.terms[index].context =
+                BindingContextId::new(1 - input.terms[index].context.index());
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermRecovery(index) => {
+            input.terms[index].recovery = SourcePrimaryTermRecovery::Degraded;
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermSpelling(index) => {
+            input.terms[index].spelling.push('0');
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermKind(index) => {
+            input.terms[index].kind = if input.terms[index].kind == SourcePrimaryTermKind::Numeral {
+                SourcePrimaryTermKind::VariableReference
+            } else {
+                SourcePrimaryTermKind::Numeral
+            };
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermRole(index) => {
+            input.terms[index].role = SourcePrimaryTermRole::CurrentDefinitionResult;
+        }
+        ImportedStructureUpdateTestMutation::PrimaryTermParent(index) => {
+            input.terms[index].parent = Some(SourcePrimaryTermId::new(0));
+        }
+        ImportedStructureUpdateTestMutation::PrimaryReferenceTerm(index) => {
+            input.references[index].term = SourcePrimaryTermId::new(
+                (input.references[index].term.index() + 1) % input.terms.len(),
+            );
+        }
+        ImportedStructureUpdateTestMutation::PrimaryReferenceBinding(index) => {
+            input.references[index].binding = mizar_checker::binding_env::BindingId::new(1);
+        }
+        ImportedStructureUpdateTestMutation::PrimaryReferenceRole(index) => {
+            input.references[index].role = SourcePrimaryTermReferenceRole::LocalConstant;
+        }
+        ImportedStructureUpdateTestMutation::PrimaryReferenceUseOrdinal(_) => {
+            producer_binding_env = Some(task258b3m2b2b2bp_binding_env_with_mutation(
+                binding_env,
+                ImportedStructureSelectorTestMutation::BindingCount,
+            )?);
+        }
+        ImportedStructureUpdateTestMutation::PrimaryReferenceScope(index) => {
+            producer_binding_env = Some(task258b3m2b2b2bp_binding_env_with_mutation(
+                binding_env,
+                if index < 2 {
+                    ImportedStructureSelectorTestMutation::ModuleContextScope
+                } else {
+                    ImportedStructureSelectorTestMutation::ProofContextScope
+                },
+            )?);
+        }
+        ImportedStructureUpdateTestMutation::NumericRequestTerm(index) => {
+            input.numeric_type_requests[index].term = SourcePrimaryTermId::new(
+                (input.numeric_type_requests[index].term.index() + 1) % input.terms.len(),
+            );
+        }
+        ImportedStructureUpdateTestMutation::NumericRequestOwner(index) => {
+            let replacement = input.numeric_type_requests
+                [(index + 1) % input.numeric_type_requests.len()]
+            .owner
+            .clone();
+            input.numeric_type_requests[index].owner = replacement;
+        }
+        ImportedStructureUpdateTestMutation::NumericRequestRange(index) => {
+            input.numeric_type_requests[index].source_range.start += 1;
+        }
+        ImportedStructureUpdateTestMutation::NumericRequestSpelling(index) => {
+            input.numeric_type_requests[index].spelling.push('0');
+        }
+        ImportedStructureUpdateTestMutation::NumericRequestOrdinal(index) => {
+            input.numeric_type_requests[index].request_ordinal += 1;
+        }
+        _ => {}
+    }
+    let producer_binding_env = producer_binding_env.as_ref().unwrap_or(binding_env);
+    let handoff = SourcePrimaryTermProducer::build(input, producer_binding_env, &source_term.arena)
+        .map_err(|error| error.to_string())?;
+    Ok(SourceTermParts {
+        arena: source_term.arena.clone(),
+        handoff,
+    })
+}
+
+#[cfg(test)]
+#[allow(clippy::too_many_arguments)] // Rationale: keep exact source, lower rows, context, and both corruption classes explicit.
+pub(in crate::runner) fn imported_structure_update_handoff_for_test(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    loaded_source: &str,
+    roots: &[(usize, BindingContextId)],
+    options: ImportedStructureUpdateTestOptions,
+) -> Option<Result<ImportedStructureUpdateTestOutput, String>> {
+    let ImportedStructureUpdateTestOptions {
+        update,
+        context,
+        surface_mutation,
+        handoff_mutation,
+    } = options;
+    let site = ImportedStructureUpdateSite { update };
+    if surface_mutation != ImportedStructureUpdateSurfaceMutation::DirectProductionSeam
+        && !task258b3m2b2b2cp_surface_contract_with_mutation(ast, loaded_source, surface_mutation)
+    {
+        return None;
+    }
+    let owned_node_kinds =
+        imported_structure_update_owned_node_kinds(ast, module, symbols, loaded_source, site)?;
+    let source_term = match source_term_parts_for_context_roots(
+        ast,
+        module.clone(),
+        binding_env,
+        roots.iter().copied(),
+        &owned_node_kinds,
+    ) {
+        Ok(source_term) => source_term,
+        Err(error) => return Some(Err(format!("Task252: {error}"))),
+    };
+    let binding_mutation = task258b3m2b2b2cp_binding_mutation(handoff_mutation);
+    let mutated_binding_env = if let Some(binding_mutation) = binding_mutation {
+        match task258b3m2b2b2bp_binding_env_with_mutation(binding_env, binding_mutation) {
+            Ok(binding_env) => Some(binding_env),
+            Err(error) => return Some(Err(format!("Task48: {error}"))),
+        }
+    } else {
+        None
+    };
+    let effective_binding_env = mutated_binding_env.as_ref().unwrap_or(binding_env);
+    let mutated_source_term = if task258b3m2b2b2cp_is_primary_mutation(handoff_mutation) {
+        match task258b3m2b2b2cp_source_term_with_mutation(
+            &source_term,
+            binding_env,
+            handoff_mutation,
+        ) {
+            Ok(source_term) => Some(source_term),
+            Err(error) => return Some(Err(format!("Task252: {error}"))),
+        }
+    } else {
+        None
+    };
+    let effective_source_term = mutated_source_term.as_ref().unwrap_or(&source_term);
+    let mut extracted =
+        extract_task258b3m2b2b2cp_update(ast, module, symbols, loaded_source, site)?;
+    extracted.context = context;
+    let selected_contribution = extracted.roots[0].contribution;
+    let substitute_contribution = symbols
+        .contributions()
+        .iter()
+        .map(|entry| entry.id())
+        .find(|candidate| *candidate != selected_contribution)
+        .unwrap_or(selected_contribution);
+    let stale_replay = matches!(
+        handoff_mutation,
+        ImportedStructureUpdateTestMutation::StalePrimaryReplay
+            | ImportedStructureUpdateTestMutation::TermRangeAndStalePrimaryReplay
+    );
+    let lower_dependency_mutation =
+        binding_mutation.is_some() || task258b3m2b2b2cp_is_primary_mutation(handoff_mutation);
+    let handoff = if matches!(
+        handoff_mutation,
+        ImportedStructureUpdateTestMutation::None
+            | ImportedStructureUpdateTestMutation::StalePrimaryReplay
+    ) || lower_dependency_mutation
+    {
+        match imported_structure_update_handoff_in_context(
+            ast,
+            module,
+            symbols,
+            effective_binding_env,
+            effective_source_term,
+            loaded_source,
+            site,
+            context,
+        )? {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(format!("Task254: {error}"))),
+        }
+    } else {
+        match build_handoff_with_source_term(
+            ast,
+            module,
+            symbols,
+            effective_binding_env,
+            &extracted,
+            effective_source_term,
+            None,
+            |input| match handoff_mutation {
+                ImportedStructureUpdateTestMutation::None
+                | ImportedStructureUpdateTestMutation::StalePrimaryReplay => {}
+                ImportedStructureUpdateTestMutation::TermSite(index) => {
+                    input.terms[index].site =
+                        TypedSiteRef::Node(TypedNodeId::new(if index == 0 { 65 } else { 69 }));
+                }
+                ImportedStructureUpdateTestMutation::TermRange(index) => {
+                    input.terms[index].source_range.start += 1;
+                }
+                ImportedStructureUpdateTestMutation::TermRangeAndStalePrimaryReplay => {
+                    input.terms[0].source_range.start += 1;
+                }
+                ImportedStructureUpdateTestMutation::TermOrdinal(index) => {
+                    input.terms[index].source_ordinal += 1;
+                }
+                ImportedStructureUpdateTestMutation::TermContext(index) => {
+                    input.terms[index].context = BindingContextId::new(0);
+                }
+                ImportedStructureUpdateTestMutation::TermRecovery(index) => {
+                    input.terms[index].recovery = SourceStructureRecovery::Degraded;
+                }
+                ImportedStructureUpdateTestMutation::TermSpelling(index) => {
+                    input.terms[index].spelling.push(' ');
+                }
+                ImportedStructureUpdateTestMutation::TermKind(index) => {
+                    input.terms[index].kind = if index == 0 {
+                        SourceStructureTermKind::Constructor
+                    } else {
+                        SourceStructureTermKind::FunctionalUpdate
+                    };
+                }
+                ImportedStructureUpdateTestMutation::RootTerm => {
+                    input.roots[0].term = SourceStructureTermId::new(0);
+                }
+                ImportedStructureUpdateTestMutation::RootSymbol => {
+                    input.roots[0].symbol = SymbolId::new(
+                        module.clone(),
+                        mizar_resolve::resolved_ast::LocalSymbolId::new("B2CP/substitute"),
+                        mizar_resolve::resolved_ast::FullyQualifiedName::new(
+                            "b2cp::substitute::TypeCaseStruct",
+                        ),
+                    );
+                }
+                ImportedStructureUpdateTestMutation::RootContribution => {
+                    input.roots[0].contribution = substitute_contribution;
+                }
+                ImportedStructureUpdateTestMutation::MemberTerm(index) => {
+                    input.members[index].term =
+                        SourceStructureTermId::new(1 - input.members[index].term.index());
+                }
+                ImportedStructureUpdateTestMutation::MemberOrdinal(index) => {
+                    input.members[index].ordinal += 1;
+                }
+                ImportedStructureUpdateTestMutation::MemberSite(index) => {
+                    input.members[index].site =
+                        TypedSiteRef::Node(TypedNodeId::new([20, 24, 30][index]));
+                }
+                ImportedStructureUpdateTestMutation::MemberRange(index) => {
+                    input.members[index].source_range.start += 1;
+                }
+                ImportedStructureUpdateTestMutation::MemberSpelling(index) => {
+                    input.members[index].spelling.push('!');
+                }
+                ImportedStructureUpdateTestMutation::MemberRole(index) => {
+                    input.members[index].role = if index == 0 {
+                        SourceStructureMemberRole::ConstructorAssignment
+                    } else {
+                        SourceStructureMemberRole::UpdatePathSegment
+                    };
+                }
+                ImportedStructureUpdateTestMutation::MemberParent(index) => {
+                    input.members[index].parent =
+                        Some(SourceStructureMemberId::new((index + 1) % 3));
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateMissing => {
+                    input.field_updates.clear();
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateExtra => {
+                    let mut extra = input.field_updates[0].clone();
+                    extra.ordinal += 1;
+                    input.field_updates.push(extra);
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateTerm(index) => {
+                    input.field_updates[index].term = SourceStructureTermId::new(1);
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateOrdinal(index) => {
+                    input.field_updates[index].ordinal += 1;
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateSite(index) => {
+                    input.field_updates[index].site = TypedSiteRef::Node(TypedNodeId::new(65));
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateRange(index) => {
+                    input.field_updates[index].source_range.start += 1;
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateSpelling(index) => {
+                    input.field_updates[index].spelling.push(' ');
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateFirstMember(index) => {
+                    input.field_updates[index].first_member = SourceStructureMemberId::new(1);
+                }
+                ImportedStructureUpdateTestMutation::FieldUpdateFinalMember(index) => {
+                    input.field_updates[index].final_member = SourceStructureMemberId::new(1);
+                }
+                ImportedStructureUpdateTestMutation::EdgeTerm(index) => {
+                    input.edges[index].term =
+                        SourceStructureTermId::new(1 - input.edges[index].term.index());
+                }
+                ImportedStructureUpdateTestMutation::EdgeOrdinal(index) => {
+                    input.edges[index].ordinal += 1;
+                }
+                ImportedStructureUpdateTestMutation::EdgeRole(index) => {
+                    input.edges[index].role =
+                        if input.edges[index].role == SourceStructureEdgeRole::UpdateBase {
+                            SourceStructureEdgeRole::ConstructorValue
+                        } else {
+                            SourceStructureEdgeRole::UpdateBase
+                        };
+                }
+                ImportedStructureUpdateTestMutation::EdgeMember(index) => {
+                    input.edges[index].member = if input.edges[index].member.is_some() {
+                        None
+                    } else {
+                        Some(SourceStructureMemberId::new(0))
+                    };
+                }
+                ImportedStructureUpdateTestMutation::EdgeTarget(index) => {
+                    input.edges[index].target = if index == 0 {
+                        SourceStructureTarget::Primary(SourcePrimaryTermId::new(4))
+                    } else {
+                        SourceStructureTarget::Structure(SourceStructureTermId::new(0))
+                    };
+                }
+                ImportedStructureUpdateTestMutation::RequestTerm(index) => {
+                    input.requests[index].term =
+                        SourceStructureTermId::new(1 - input.requests[index].term.index());
+                }
+                ImportedStructureUpdateTestMutation::RequestOrdinal(index) => {
+                    input.requests[index].request_ordinal += 1;
+                }
+                ImportedStructureUpdateTestMutation::RequestMember(index) => {
+                    input.requests[index].member = if input.requests[index].member.is_some() {
+                        None
+                    } else {
+                        Some(SourceStructureMemberId::new(0))
+                    };
+                }
+                ImportedStructureUpdateTestMutation::RequestKind(index) => {
+                    input.requests[index].kind =
+                        if input.requests[index].kind == SourceStructureRequestKind::ResultType {
+                            SourceStructureRequestKind::MemberIdentity
+                        } else {
+                            SourceStructureRequestKind::ResultType
+                        };
+                }
+                _ => unreachable!("lower dependency mutation uses the production seam"),
+            },
+        ) {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(format!("Task254: {error}"))),
+        }
+    };
+
+    if stale_replay {
+        let stale_source_term = match source_term_parts_for_context_roots(
+            ast,
+            module.clone(),
+            binding_env,
+            roots.iter().copied().filter(|(root, _)| *root != 67),
+            &owned_node_kinds,
+        ) {
+            Ok(source_term) => source_term,
+            Err(error) => return Some(Err(format!("Task252: {error}"))),
+        };
+        let stale_typed = match task258b3m2b2b2p_typed_ast(ast, module, stale_source_term) {
+            Ok(typed) => typed,
+            Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+        };
+        return Some(match stale_typed.with_source_structure(handoff) {
+            Ok(_) => Err("BUG: TypedAst accepted stale Task252 fingerprint".to_owned()),
+            Err(error) => Err(format!(
+                "TypedAst: rejected stale Task252 fingerprint: {error}"
+            )),
+        });
+    }
+
+    let primary_counts = (
+        effective_source_term.handoff.terms().len(),
+        effective_source_term.handoff.references().len(),
+        effective_source_term.handoff.numeric_type_requests().len(),
+    );
+    let typed_ast =
+        match task258b3m2b2b2p_typed_ast(ast, module, mutated_source_term.unwrap_or(source_term)) {
+            Ok(typed) => match typed.with_source_structure(handoff.clone()) {
+                Ok(typed) => typed,
+                Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+            },
+            Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+        };
+    let node_hints = typed_ast
+        .nodes()
+        .iter()
+        .map(|(typed_node, _)| ResolvedNodeKindHint {
+            typed_node,
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.term.surface"),
+            },
+        })
+        .collect();
+    let resolved = match assemble_empty_resolved_typed_ast(&typed_ast, node_hints) {
+        Ok(resolved) => resolved,
+        Err(error) => return Some(Err(format!("ResolvedTypedAst: {error}"))),
+    };
+    Some(Ok(ImportedStructureUpdateTestOutput {
         handoff,
         primary_counts,
         typed_ast,

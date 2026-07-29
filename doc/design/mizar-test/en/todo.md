@@ -2442,5 +2442,20 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete CPC1 repeated no-findings reviews, pass all nine hard gates,
   and obtain valid final quality `98/100`; explicitly justify live broad
   reruns blocked by the unrelated incomplete source diff.
-- [ ] Commit docs-only correction `258B3M2B2B2CPC1` separately.
-- [ ] Fresh-inventory and implement B2CP only.
+- [x] Commit docs-only correction `258B3M2B2B2CPC1` separately as
+  `ee267d9c`.
+- [x] Fresh-inventory and implement only the private dormant B2CP runner
+  seam; pass exactly its two frozen tests and close `design_drift`,
+  `source_drift`, and `test_gap`.
+- [x] Complete final test-sufficiency and implementation re-reviews with no
+  findings.
+- [x] Pass focused and workspace formatting, Clippy, tests, and all
+  count/hash gates.
+- [x] Synchronize final runner metrics and narrative-only audit impact with
+  no specification/corpus/trace-credit change.
+- [x] Complete final source/documentation review with no findings.
+- [x] Pass independent final quality with no findings, all nine hard gates,
+  and a valid `98/100`.
+- [ ] Pass the staged-diff audit and create the dedicated B2CP
+  implementation commit.
+- [ ] Fresh-inventory B2C after the B2CP commit.

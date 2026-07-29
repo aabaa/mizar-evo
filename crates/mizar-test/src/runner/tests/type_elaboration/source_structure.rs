@@ -2,9 +2,12 @@ use super::{
     ImportedStructureConstructorSurfaceMutation, ImportedStructureConstructorTestMutation,
     ImportedStructureConstructorTestOptions, SourceStructureRouteOutput,
     ImportedStructureSelectorSurfaceMutation, ImportedStructureSelectorTestMutation,
-    ImportedStructureSelectorTestOptions, SyntheticSourceStructureDependencies,
+    ImportedStructureSelectorTestOptions, ImportedStructureUpdateSurfaceMutation,
+    ImportedStructureUpdateTestMutation, ImportedStructureUpdateTestOptions,
+    SyntheticSourceStructureDependencies,
     imported_structure_constructor_handoff_for_test, imported_structure_selector_handoff_for_test,
-    source_structure_output, source_structure_output_with_mutation,
+    imported_structure_update_handoff_for_test, source_structure_output,
+    source_structure_output_with_mutation,
     synthetic_source_structure_output, synthetic_source_structure_output_with_mutation,
 };
 use mizar_resolve::env::SourceContributionIndex;
@@ -69,6 +72,36 @@ macro_rules! b2bp_structure_handoff {
     };
 }
 
+macro_rules! b2cp_structure_handoff {
+    (
+        $ast:expr,
+        $module:expr,
+        $symbols:expr,
+        $binding_env:expr,
+        $loaded_source:expr,
+        $roots:expr,
+        $update:expr,
+        $context:expr,
+        $surface_mutation:expr,
+        $handoff_mutation:expr $(,)?
+    ) => {
+        imported_structure_update_handoff_for_test(
+            $ast,
+            $module,
+            $symbols,
+            $binding_env,
+            $loaded_source,
+            $roots,
+            ImportedStructureUpdateTestOptions {
+                update: $update,
+                context: $context,
+                surface_mutation: $surface_mutation,
+                handoff_mutation: $handoff_mutation,
+            },
+        )
+    };
+}
+
 const TASK258B3M2B2B2P_SOURCE: &str = concat!(
     "import parser.type_fixtures;\n",
     "reserve x for set;\n",
@@ -83,6 +116,15 @@ const TASK258B3M2B2B2BP_SOURCE: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementStructureSelectorWitnessSmoke: x = x proof\n",
     "  take TypeCaseStruct(x: 1, y: 2).x;\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
+const TASK258B3M2B2B2CP_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementStructureUpdateWitnessSmoke: x = x proof\n",
+    "  take TypeCaseStruct(x: 1, y: 2) with (x := 3);\n",
     "  thus x = x;\n",
     "end;\n",
 );
@@ -172,6 +214,48 @@ fn task258b3m2b2b2bp_roots() -> [(usize, mizar_checker::binding_env::BindingCont
         (66, proof),
         (68, proof),
     ]
+}
+
+fn task258b3m2b2b2cp_roots() -> [(usize, mizar_checker::binding_env::BindingContextId); 7] {
+    let module = mizar_checker::binding_env::BindingContextId::new(0);
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    [
+        (51, module),
+        (53, module),
+        (60, proof),
+        (63, proof),
+        (67, proof),
+        (73, proof),
+        (75, proof),
+    ]
+}
+
+fn task258b3m2b2b2cp_roots_from_ast(
+    ast: &SurfaceAst,
+) -> Vec<(usize, mizar_checker::binding_env::BindingContextId)> {
+    let module = mizar_checker::binding_env::BindingContextId::new(0);
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    ast.nodes()
+        .iter()
+        .enumerate()
+        .filter_map(|(index, node)| {
+            let kind = format!("{:?}", node.kind);
+            let is_reference = kind == "TermReference";
+            let is_numeral_expression = kind == "TermExpression"
+                && node.children.iter().any(|child| {
+                    ast.node(*child)
+                        .is_some_and(|child| format!("{:?}", child.kind) == "NumeralTerm")
+                });
+            (is_reference || is_numeral_expression).then_some((
+                index,
+                if node.range.start < 107 {
+                    module
+                } else {
+                    proof
+                },
+            ))
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1664,6 +1748,1455 @@ fn task258b3m2b2b2bp_structure_selector_corruption_replay_and_constructor_compat
         sha256_text(&legacy.resolved.debug_text()),
         "118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40"
     );
+}
+
+#[test]
+fn task258b3m2b2b2cp_structure_update_proof_context_reuse_is_exact() {
+    assert_eq!(TASK258B3M2B2B2CP_SOURCE.len(), 181);
+    assert_eq!(
+        sha256_text(TASK258B3M2B2B2CP_SOURCE),
+        "03f14a98bffb557ea4dda4f879bf504d241aaebae0552a97f0f2417ef4b43560"
+    );
+    let (ast, module, shells, base_symbols, diagnostic_count) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            TASK258B3M2B2B2CP_SOURCE,
+            24_001,
+        );
+    assert_eq!(diagnostic_count, 0);
+    assert_eq!(
+        (ast.nodes().len(), ast.root().map(|id| id.index())),
+        (86, Some(85))
+    );
+    assert!(ast.nodes().iter().all(|node| !node.recovered));
+    let symbols = augment_type_elaboration_import_summaries(&ast, &module, base_symbols);
+    let bindings = task258b3m2b2b1p_binding_env(&ast, &module, &symbols);
+    assert_eq!(
+        (
+            bindings.contexts().len(),
+            bindings.bindings().len(),
+            bindings.diagnostics().len(),
+        ),
+        (2, 1, 0)
+    );
+    assert_eq!(
+        bindings.debug_text(),
+        concat!(
+            "binding-env-debug-v1\n",
+            "module: mizar-test-task253-corruption::tests.task253_local_corruption_24001\n",
+            "contexts:\n",
+            "  context#0 owner=module parent=none layer=module scope=none bindings=[binding#0] visible=[binding#0] recovery=normal\n",
+            "  context#1 owner=source-statement(107..179) parent=context#0 layer=proof scope=[0] bindings=[] visible=[binding#0] recovery=normal\n",
+            "bindings:\n",
+            "  binding#0 spelling=\"x\" kind=reserved_variable owner=context#0 identity=reserved_variable(spelling=\"x\", range=37..38) range=37..38 visible_after=0 type=source(43..46) status=reserved captured=[] diagnostics=[] recovery=normal\n",
+            "diagnostics:\n",
+        )
+    );
+    assert!(
+        source_structure_output(&ast, module.clone(), &shells, &symbols).is_none(),
+        "B2CP exact source must not activate the legacy Task254 route"
+    );
+
+    let roots = task258b3m2b2b2cp_roots();
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    let first = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &roots,
+        69,
+        proof,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::None,
+    )
+    .expect("B2CP exact update")
+    .expect("B2CP exact handoff");
+    let second = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &roots,
+        69,
+        proof,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::None,
+    )
+    .expect("B2CP replay update")
+    .expect("B2CP replay handoff");
+    assert_eq!(first.primary_counts, (7, 4, 3));
+    let primary = first
+        .typed_ast
+        .source_term()
+        .expect("B2CP exact Task252 handoff");
+    assert_eq!(primary.source_id(), ast.source_id);
+    assert_eq!(primary.module_id(), &module);
+    assert_eq!(first.handoff.source_id(), ast.source_id);
+    assert_eq!(first.handoff.module_id(), &module);
+    assert_eq!(
+        first.handoff.primary_term_fingerprint(),
+        primary.debug_text().as_str()
+    );
+    assert_eq!(first.typed_ast.source_id(), ast.source_id);
+    assert_eq!(first.typed_ast.module_id(), &module);
+    assert_eq!(first.resolved.source_id(), ast.source_id);
+    assert_eq!(first.resolved.module_id(), &module);
+    assert_eq!(
+        primary.debug_text(),
+        concat!(
+            "source-primary-term-debug-v1\n",
+            "module: tests.task253_local_corruption_24001\n",
+            "term#0 ordinal=0 kind=variable-reference role=value range=101..102 site=51 context=0 recovery=normal spelling=\"x\" parent=-\n",
+            "term#1 ordinal=1 kind=variable-reference role=value range=105..106 site=53 context=0 recovery=normal spelling=\"x\" parent=-\n",
+            "term#2 ordinal=2 kind=numeral role=value range=138..139 site=59 context=1 recovery=normal spelling=\"1\" parent=-\n",
+            "term#3 ordinal=3 kind=numeral role=value range=144..145 site=62 context=1 recovery=normal spelling=\"2\" parent=-\n",
+            "term#4 ordinal=4 kind=numeral role=value range=158..159 site=66 context=1 recovery=normal spelling=\"3\" parent=-\n",
+            "term#5 ordinal=5 kind=variable-reference role=value range=169..170 site=73 context=1 recovery=normal spelling=\"x\" parent=-\n",
+            "term#6 ordinal=6 kind=variable-reference role=value range=173..174 site=75 context=1 recovery=normal spelling=\"x\" parent=-\n",
+            "reference#0 term=0 binding=0 role=variable use_ordinal=1 scope=-\n",
+            "reference#1 term=1 binding=0 role=variable use_ordinal=1 scope=-\n",
+            "reference#2 term=5 binding=0 role=variable use_ordinal=1 scope=[0]\n",
+            "reference#3 term=6 binding=0 role=variable use_ordinal=1 scope=[0]\n",
+            "numeric-request#0 term=2 ordinal=0 owner=59 range=138..139 spelling=\"1\"\n",
+            "numeric-request#1 term=3 ordinal=1 owner=62 range=144..145 spelling=\"2\"\n",
+            "numeric-request#2 term=4 ordinal=2 owner=66 range=158..159 spelling=\"3\"\n",
+        )
+    );
+    assert_eq!(first.handoff, second.handoff);
+    assert_eq!(first.handoff.debug_text(), second.handoff.debug_text());
+    assert_eq!(
+        (
+            first.handoff.terms().len(),
+            first.handoff.wrappers().len(),
+            first.handoff.roots().len(),
+            first.handoff.members().len(),
+            first.handoff.field_updates().len(),
+            first.handoff.edges().len(),
+            first.handoff.requests().len(),
+        ),
+        (2, 0, 1, 3, 1, 4, 9)
+    );
+    assert!(first.handoff.application_fingerprint().is_none());
+
+    assert_eq!(
+        first
+            .typed_ast
+            .source_term()
+            .expect("B2CP exact Task252 handoff")
+            .terms()
+            .iter()
+            .map(|(_, term)| {
+                (
+                    term.site().node().index(),
+                    term.source_range(),
+                    term.context().index(),
+                    term.spelling(),
+                    term.kind(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                51,
+                range(ast.source_id, 101, 102),
+                0,
+                "x",
+                mizar_checker::source_term::SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                53,
+                range(ast.source_id, 105, 106),
+                0,
+                "x",
+                mizar_checker::source_term::SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                59,
+                range(ast.source_id, 138, 139),
+                1,
+                "1",
+                mizar_checker::source_term::SourcePrimaryTermKind::Numeral,
+            ),
+            (
+                62,
+                range(ast.source_id, 144, 145),
+                1,
+                "2",
+                mizar_checker::source_term::SourcePrimaryTermKind::Numeral,
+            ),
+            (
+                66,
+                range(ast.source_id, 158, 159),
+                1,
+                "3",
+                mizar_checker::source_term::SourcePrimaryTermKind::Numeral,
+            ),
+            (
+                73,
+                range(ast.source_id, 169, 170),
+                1,
+                "x",
+                mizar_checker::source_term::SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                75,
+                range(ast.source_id, 173, 174),
+                1,
+                "x",
+                mizar_checker::source_term::SourcePrimaryTermKind::VariableReference,
+            ),
+        ]
+    );
+    assert_eq!(
+        first
+            .handoff
+            .terms()
+            .iter()
+            .map(|(_, term)| {
+                (
+                    term.site().node().index(),
+                    term.source_range(),
+                    term.source_ordinal(),
+                    term.context(),
+                    term.recovery(),
+                    term.spelling(),
+                    term.kind(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                69,
+                range(ast.source_id, 120, 160),
+                0,
+                proof,
+                mizar_checker::source_structure::SourceStructureRecovery::Normal,
+                "TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 )",
+                mizar_checker::source_structure::SourceStructureTermKind::FunctionalUpdate,
+            ),
+            (
+                65,
+                range(ast.source_id, 120, 146),
+                1,
+                proof,
+                mizar_checker::source_structure::SourceStructureRecovery::Normal,
+                "TypeCaseStruct ( x : 1 , y : 2 )",
+                mizar_checker::source_structure::SourceStructureTermKind::Constructor,
+            ),
+        ]
+    );
+
+    let root = first
+        .handoff
+        .roots()
+        .get(mizar_checker::source_structure::SourceStructureRootId::new(0))
+        .expect("B2CP root 0");
+    assert_eq!(root.term().index(), 1);
+    assert_eq!(root.symbol().module().package(), module.package());
+    assert_eq!(
+        root.symbol().module().path().as_str(),
+        "parser.type_fixtures"
+    );
+    assert_eq!(
+        root.symbol().local().as_str(),
+        "summary:parser.type_fixtures#parse-only#TypeCaseStruct:5"
+    );
+    assert_eq!(
+        root.symbol().fqn().as_str(),
+        "parser.type_fixtures::TypeCaseStruct#5"
+    );
+    assert_eq!(root.contribution().index(), 2);
+    assert_eq!(root.origin().source_id(), ast.source_id);
+    assert_eq!(root.origin().module_id(), root.symbol().module());
+    assert_eq!(
+        root.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(range(ast.source_id, 7, 27))
+    );
+    assert_eq!(root.origin().structural_path(), [5]);
+    assert!(root.origin().import_edge().is_none());
+    assert!(!root.origin().is_recovered());
+    assert_eq!(root.visibility(), mizar_resolve::env::Visibility::Public);
+    assert_eq!(
+        root.export_status(),
+        mizar_resolve::env::ExportStatus::Exported
+    );
+    assert!(root.signature().is_none());
+
+    assert_eq!(
+        first
+            .handoff
+            .members()
+            .iter()
+            .map(|(_, member)| {
+                (
+                    member.term().index(),
+                    member.ordinal(),
+                    member.site().node().index(),
+                    member.source_range(),
+                    member.spelling(),
+                    member.role(),
+                    member.parent(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                30,
+                range(ast.source_id, 153, 154),
+                "x",
+                mizar_checker::source_structure::SourceStructureMemberRole::UpdatePathSegment,
+                None,
+            ),
+            (
+                1,
+                0,
+                20,
+                range(ast.source_id, 135, 136),
+                "x",
+                mizar_checker::source_structure::SourceStructureMemberRole::ConstructorAssignment,
+                None,
+            ),
+            (
+                1,
+                1,
+                24,
+                range(ast.source_id, 141, 142),
+                "y",
+                mizar_checker::source_structure::SourceStructureMemberRole::ConstructorAssignment,
+                None,
+            ),
+        ]
+    );
+    let update = first
+        .handoff
+        .field_updates()
+        .get(mizar_checker::source_structure::SourceFieldUpdateId::new(0))
+        .expect("B2CP FieldUpdate 0");
+    assert_eq!(
+        (
+            update.term().index(),
+            update.ordinal(),
+            update.site().node().index(),
+            update.source_range(),
+            update.spelling(),
+            update.first_member().index(),
+            update.final_member().index(),
+        ),
+        (
+            0,
+            0,
+            68,
+            range(ast.source_id, 153, 159),
+            "x := 3",
+            0,
+            0,
+        )
+    );
+    assert_eq!(
+        first
+            .handoff
+            .edges()
+            .iter()
+            .map(|(_, edge)| {
+                (
+                    edge.term().index(),
+                    edge.ordinal(),
+                    edge.role(),
+                    edge.member().map(|member| member.index()),
+                    edge.target(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                mizar_checker::source_structure::SourceStructureEdgeRole::UpdateBase,
+                None,
+                mizar_checker::source_structure::SourceStructureTarget::Structure(
+                    mizar_checker::source_structure::SourceStructureTermId::new(1),
+                ),
+            ),
+            (
+                0,
+                1,
+                mizar_checker::source_structure::SourceStructureEdgeRole::UpdateValue,
+                Some(0),
+                mizar_checker::source_structure::SourceStructureTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(4),
+                ),
+            ),
+            (
+                1,
+                0,
+                mizar_checker::source_structure::SourceStructureEdgeRole::ConstructorValue,
+                Some(1),
+                mizar_checker::source_structure::SourceStructureTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(2),
+                ),
+            ),
+            (
+                1,
+                1,
+                mizar_checker::source_structure::SourceStructureEdgeRole::ConstructorValue,
+                Some(2),
+                mizar_checker::source_structure::SourceStructureTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(3),
+                ),
+            ),
+        ]
+    );
+    assert_eq!(
+        first
+            .handoff
+            .requests()
+            .iter()
+            .map(|(_, request)| {
+                (
+                    request.term().index(),
+                    request.request_ordinal(),
+                    request.member().map(|member| member.index()),
+                    request.kind(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                Some(0),
+                mizar_checker::source_structure::SourceStructureRequestKind::MemberIdentity,
+            ),
+            (
+                0,
+                1,
+                Some(0),
+                mizar_checker::source_structure::SourceStructureRequestKind::InheritancePath,
+            ),
+            (
+                0,
+                2,
+                None,
+                mizar_checker::source_structure::SourceStructureRequestKind::ResultType,
+            ),
+            (
+                1,
+                0,
+                None,
+                mizar_checker::source_structure::SourceStructureRequestKind::ConstructorSignature,
+            ),
+            (
+                1,
+                1,
+                Some(1),
+                mizar_checker::source_structure::SourceStructureRequestKind::MemberIdentity,
+            ),
+            (
+                1,
+                2,
+                Some(1),
+                mizar_checker::source_structure::SourceStructureRequestKind::InheritancePath,
+            ),
+            (
+                1,
+                3,
+                Some(2),
+                mizar_checker::source_structure::SourceStructureRequestKind::MemberIdentity,
+            ),
+            (
+                1,
+                4,
+                Some(2),
+                mizar_checker::source_structure::SourceStructureRequestKind::InheritancePath,
+            ),
+            (
+                1,
+                5,
+                None,
+                mizar_checker::source_structure::SourceStructureRequestKind::ResultType,
+            ),
+        ]
+    );
+
+    assert_eq!(
+        first
+            .typed_ast
+            .nodes()
+            .iter()
+            .filter(|(_, row)| row.kind.as_str().starts_with("source.term.structure."))
+            .map(|(id, row)| (id.index(), row.kind.as_str()))
+            .collect::<Vec<_>>(),
+        [
+            (
+                20,
+                "source.term.structure.member.constructor-assignment"
+            ),
+            (
+                24,
+                "source.term.structure.member.constructor-assignment"
+            ),
+            (30, "source.term.structure.member.update-path-segment"),
+            (65, "source.term.structure.constructor"),
+            (68, "source.term.structure.field-update"),
+            (69, "source.term.structure.update"),
+        ],
+        "no other surface node may acquire Task254 ownership"
+    );
+    assert_eq!(
+        first.typed_ast.source_structure(),
+        first.resolved.source_structure()
+    );
+    assert_eq!(first.typed_ast.source_term(), first.resolved.source_term());
+    assert!(first.typed_ast.source_context().is_none());
+    assert!(first.typed_ast.source_type().is_none());
+    assert!(first.typed_ast.source_attribute().is_none());
+    assert!(first.typed_ast.source_evidence().is_none());
+    assert!(first.typed_ast.source_application().is_none());
+    assert!(first.typed_ast.source_set_term().is_none());
+    assert!(first.typed_ast.source_atomic_formula().is_none());
+    assert!(first.typed_ast.source_composite_formula().is_none());
+    assert!(first.typed_ast.source_formula_composition().is_none());
+    assert!(
+        first
+            .typed_ast
+            .source_condition_formula_composition()
+            .is_none()
+    );
+    assert!(
+        first
+            .typed_ast
+            .source_predicate_chain_composition()
+            .is_none()
+    );
+    assert!(first.typed_ast.source_statement().is_none());
+    assert!(first.typed_ast.source_statement_references().is_none());
+    assert!(first.typed_ast.source_statement_witnesses().is_none());
+    assert!(first.typed_ast.contexts().is_empty());
+    assert!(first.typed_ast.types().is_empty());
+    assert!(first.typed_ast.facts().is_empty());
+    assert!(first.typed_ast.coercions().is_empty());
+    assert!(first.typed_ast.initial_obligations().is_empty());
+    assert!(first.typed_ast.diagnostics().is_empty());
+    assert!(first.resolved.source_context().is_none());
+    assert!(first.resolved.source_type().is_none());
+    assert!(first.resolved.source_attribute().is_none());
+    assert!(first.resolved.source_evidence().is_none());
+    assert!(first.resolved.source_application().is_none());
+    assert!(first.resolved.source_set_term().is_none());
+    assert!(first.resolved.source_atomic_formula().is_none());
+    assert!(first.resolved.source_composite_formula().is_none());
+    assert!(first.resolved.source_formula_composition().is_none());
+    assert!(
+        first
+            .resolved
+            .source_condition_formula_composition()
+            .is_none()
+    );
+    assert!(
+        first
+            .resolved
+            .source_predicate_chain_composition()
+            .is_none()
+    );
+    assert!(first.resolved.source_statement().is_none());
+    assert!(first.resolved.source_statement_references().is_none());
+    assert!(first.resolved.source_statement_witnesses().is_none());
+    assert!(first.resolved.checked_formulas().is_empty());
+    assert!(first.resolved.checked_proofs().is_empty());
+    assert!(first.resolved.checked_proof_nodes().is_empty());
+    assert!(first.resolved.checked_terminal_goals().is_empty());
+    assert!(first.resolved.statement_semantics().is_empty());
+    assert!(first.resolved.expr_metadata().is_empty());
+    assert!(first.resolved.collection_candidates().is_empty());
+    assert!(first.resolved.expanded_candidates().is_empty());
+    assert!(first.resolved.template_expansions().is_empty());
+    assert!(first.resolved.viable_candidates().is_empty());
+    assert!(first.resolved.viability_decisions().is_empty());
+    assert!(first.resolved.specificity_graphs().is_empty());
+    assert!(first.resolved.resolved_overloads().is_empty());
+    assert!(first.resolved.inserted_coercions().is_empty());
+    assert!(first.resolved.cluster_facts().is_empty());
+    assert!(first.resolved.diagnostics().is_empty());
+}
+
+#[test]
+fn task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed(
+) {
+    let (ast, module, _shells, base_symbols, diagnostic_count) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            TASK258B3M2B2B2CP_SOURCE,
+            24_002,
+        );
+    assert_eq!(diagnostic_count, 0);
+    let symbols = augment_type_elaboration_import_summaries(&ast, &module, base_symbols);
+    let bindings = task258b3m2b2b1p_binding_env(&ast, &module, &symbols);
+    let roots = task258b3m2b2b2cp_roots();
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    let baseline = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &roots,
+        69,
+        proof,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::None,
+    )
+    .expect("B2CP baseline update")
+    .expect("B2CP baseline");
+    let baseline_handoff = baseline.handoff.debug_text();
+    let baseline_typed = baseline.typed_ast.debug_text();
+    let baseline_resolved = baseline.resolved.debug_text();
+    let assert_clean_replay = || {
+        let replay = b2cp_structure_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B2CP_SOURCE,
+            &roots,
+            69,
+            proof,
+            ImportedStructureUpdateSurfaceMutation::None,
+            ImportedStructureUpdateTestMutation::None,
+        )
+        .expect("B2CP clean replay update")
+        .expect("B2CP clean replay");
+        assert_eq!(replay.handoff.debug_text(), baseline_handoff);
+        assert_eq!(replay.typed_ast.debug_text(), baseline_typed);
+        assert_eq!(replay.resolved.debug_text(), baseline_resolved);
+    };
+
+    for mutation in [
+        Task258B3M2B2B2PResolverMutation::LocalAndFqn,
+        Task258B3M2B2B2PResolverMutation::ModulePackage,
+        Task258B3M2B2B2PResolverMutation::ModulePath,
+        Task258B3M2B2B2PResolverMutation::SymbolKind,
+        Task258B3M2B2B2PResolverMutation::PrimarySpelling,
+        Task258B3M2B2B2PResolverMutation::StructuralPath,
+        Task258B3M2B2B2PResolverMutation::OriginSource,
+        Task258B3M2B2B2PResolverMutation::OriginModule,
+        Task258B3M2B2B2PResolverMutation::OriginAnchor,
+        Task258B3M2B2B2PResolverMutation::OriginImportEdge,
+        Task258B3M2B2B2PResolverMutation::OriginRecovery,
+        Task258B3M2B2B2PResolverMutation::Signature,
+        Task258B3M2B2B2PResolverMutation::Visibility,
+        Task258B3M2B2B2PResolverMutation::ExportStatus,
+        Task258B3M2B2B2PResolverMutation::Namespace,
+        Task258B3M2B2B2PResolverMutation::Contribution,
+        Task258B3M2B2B2PResolverMutation::ContributionKind,
+        Task258B3M2B2B2PResolverMutation::ContributionModule,
+        Task258B3M2B2B2PResolverMutation::ContributionAnchor,
+    ] {
+        let substituted = task258b3m2b2b2p_substituted_symbol_env(&symbols, mutation);
+        assert!(
+            b2cp_structure_handoff!(
+                &ast,
+                &module,
+                &substituted,
+                &bindings,
+                TASK258B3M2B2B2CP_SOURCE,
+                &roots,
+                69,
+                proof,
+                ImportedStructureUpdateSurfaceMutation::DirectProductionSeam,
+                ImportedStructureUpdateTestMutation::None,
+            )
+            .is_none(),
+            "same-source resolver substitution {mutation:?} selected"
+        );
+    }
+    assert_clean_replay();
+
+    for node in 0..86 {
+        for mutation in [
+            ImportedStructureUpdateSurfaceMutation::NodeKind(node),
+            ImportedStructureUpdateSurfaceMutation::NodeRange(node),
+            ImportedStructureUpdateSurfaceMutation::NodeRecovery(node),
+            ImportedStructureUpdateSurfaceMutation::NodeChildren(node),
+        ] {
+            assert!(
+                b2cp_structure_handoff!(
+                    &ast,
+                    &module,
+                    &symbols,
+                    &bindings,
+                    TASK258B3M2B2B2CP_SOURCE,
+                    &roots,
+                    69,
+                    proof,
+                    mutation,
+                    ImportedStructureUpdateTestMutation::None,
+                )
+                .is_none(),
+                "surface mutation {mutation:?} selected"
+            );
+        }
+    }
+    assert!(
+        b2cp_structure_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B2CP_SOURCE,
+            &roots,
+            69,
+            proof,
+            ImportedStructureUpdateSurfaceMutation::RootIdentity,
+            ImportedStructureUpdateTestMutation::None,
+        )
+        .is_none()
+    );
+    for update in [65, 68, 70, usize::MAX] {
+        assert!(
+            b2cp_structure_handoff!(
+                &ast,
+                &module,
+                &symbols,
+                &bindings,
+                TASK258B3M2B2B2CP_SOURCE,
+                &roots,
+                update,
+                proof,
+                ImportedStructureUpdateSurfaceMutation::None,
+                ImportedStructureUpdateTestMutation::None,
+            )
+            .is_none(),
+            "wrong update site {update} selected"
+        );
+    }
+    for byte_index in 0..TASK258B3M2B2B2CP_SOURCE.len() {
+        let mut bytes = TASK258B3M2B2B2CP_SOURCE.as_bytes().to_vec();
+        bytes[byte_index] ^= 1;
+        let changed = String::from_utf8(bytes).expect("ASCII source mutation");
+        assert!(
+            b2cp_structure_handoff!(
+                &ast,
+                &module,
+                &symbols,
+                &bindings,
+                &changed,
+                &roots,
+                69,
+                proof,
+                ImportedStructureUpdateSurfaceMutation::None,
+                ImportedStructureUpdateTestMutation::None,
+            )
+            .is_none(),
+            "source byte {byte_index} mutation selected"
+        );
+    }
+    assert_clean_replay();
+
+    let invalid_roots = [(usize::MAX, proof)];
+    let invalid_root_error = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &invalid_roots,
+        69,
+        proof,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::None,
+    )
+    .expect("B2CP invalid Task252 root surface")
+    .expect_err("invalid Task252 root must fail");
+    assert!(
+        invalid_root_error.starts_with("Task252:") || invalid_root_error.starts_with("Task254:"),
+        "{invalid_root_error}"
+    );
+
+    let duplicate_roots = [(60, proof), (60, proof)];
+    let duplicate_root_error = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &duplicate_roots,
+        69,
+        proof,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::None,
+    )
+    .expect("B2CP duplicate Task252 roots surface")
+    .expect_err("duplicate-only Task252 roots must fail the exact lower profile");
+    assert!(
+        duplicate_root_error.starts_with("Task252:"),
+        "{duplicate_root_error}"
+    );
+
+    let incomplete_roots = [
+        (51, mizar_checker::binding_env::BindingContextId::new(0)),
+        (53, mizar_checker::binding_env::BindingContextId::new(0)),
+        (60, proof),
+        (63, proof),
+        (73, proof),
+        (75, proof),
+    ];
+    let incomplete_root_error = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &incomplete_roots,
+        69,
+        proof,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::None,
+    )
+    .expect("B2CP incomplete Task252 roots surface")
+    .expect_err("incomplete Task252 roots must fail the exact lower profile");
+    assert!(
+        incomplete_root_error.starts_with("Task254:"),
+        "{incomplete_root_error}"
+    );
+
+    let wrong_context_error = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &roots,
+        69,
+        mizar_checker::binding_env::BindingContextId::new(0),
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::None,
+    )
+    .expect("B2CP direct wrong-context surface")
+    .expect_err("update, constructor, and primary contexts must agree");
+    assert!(
+        wrong_context_error.starts_with("Task254:"),
+        "{wrong_context_error}"
+    );
+
+    let module_context = mizar_checker::binding_env::BindingContextId::new(0);
+    let jointly_substituted_roots = [
+        (51, module_context),
+        (53, module_context),
+        (60, module_context),
+        (63, module_context),
+        (67, module_context),
+        (73, module_context),
+        (75, module_context),
+    ];
+    let joint_context_error = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &jointly_substituted_roots,
+        69,
+        module_context,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::None,
+    )
+    .expect("B2CP joint context substitution surface")
+    .expect_err("joint Task252/254 context substitution must fail");
+    assert!(
+        joint_context_error.starts_with("Task254:"),
+        "{joint_context_error}"
+    );
+
+    assert!(
+        b2cp_structure_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B2CP_SOURCE,
+            &invalid_roots,
+            68,
+            proof,
+            ImportedStructureUpdateSurfaceMutation::None,
+            ImportedStructureUpdateTestMutation::TermRange(0),
+        )
+        .is_none(),
+        "B2CP update selection rejection must precede Task252 and Task254 corruption"
+    );
+    assert_clean_replay();
+
+    let expect_dependency_failure = |mutation| {
+        let error = b2cp_structure_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B2CP_SOURCE,
+            &roots,
+            69,
+            proof,
+            ImportedStructureUpdateSurfaceMutation::None,
+            mutation,
+        )
+        .expect("B2CP exact surface should select")
+        .expect_err("lower dependency mutation must fail");
+        assert!(
+            error.starts_with("Task48:")
+                || error.starts_with("Task252:")
+                || error.starts_with("Task254:"),
+            "{mutation:?}: {error}"
+        );
+    };
+    for mutation in [
+        ImportedStructureUpdateTestMutation::BindingSourceId,
+        ImportedStructureUpdateTestMutation::BindingModuleId,
+        ImportedStructureUpdateTestMutation::BindingContextCount,
+        ImportedStructureUpdateTestMutation::BindingCount,
+        ImportedStructureUpdateTestMutation::BindingDiagnosticCount,
+        ImportedStructureUpdateTestMutation::ModuleContextOwner,
+        ImportedStructureUpdateTestMutation::ModuleContextParent,
+        ImportedStructureUpdateTestMutation::ModuleContextLayer,
+        ImportedStructureUpdateTestMutation::ModuleContextScope,
+        ImportedStructureUpdateTestMutation::ModuleContextBindings,
+        ImportedStructureUpdateTestMutation::ModuleContextVisibleBindings,
+        ImportedStructureUpdateTestMutation::ModuleContextRecovery,
+        ImportedStructureUpdateTestMutation::ProofContextOwner,
+        ImportedStructureUpdateTestMutation::ProofContextParent,
+        ImportedStructureUpdateTestMutation::ProofContextLayer,
+        ImportedStructureUpdateTestMutation::ProofContextScope,
+        ImportedStructureUpdateTestMutation::ProofContextBindings,
+        ImportedStructureUpdateTestMutation::ProofContextVisibleBindings,
+        ImportedStructureUpdateTestMutation::ProofContextRecovery,
+        ImportedStructureUpdateTestMutation::BindingSpelling,
+        ImportedStructureUpdateTestMutation::BindingKind,
+        ImportedStructureUpdateTestMutation::BindingIdentityKind,
+        ImportedStructureUpdateTestMutation::BindingIdentitySpelling,
+        ImportedStructureUpdateTestMutation::BindingIdentityRange,
+        ImportedStructureUpdateTestMutation::BindingOwner,
+        ImportedStructureUpdateTestMutation::BindingDeclarationRange,
+        ImportedStructureUpdateTestMutation::BindingVisibleOrdinal,
+        ImportedStructureUpdateTestMutation::BindingTypeSite,
+        ImportedStructureUpdateTestMutation::BindingStatus,
+        ImportedStructureUpdateTestMutation::BindingCaptured,
+        ImportedStructureUpdateTestMutation::BindingDiagnostics,
+        ImportedStructureUpdateTestMutation::BindingRecovery,
+    ] {
+        expect_dependency_failure(mutation);
+    }
+    for index in 0..7 {
+        for mutation in [
+            ImportedStructureUpdateTestMutation::PrimaryTermSite(index),
+            ImportedStructureUpdateTestMutation::PrimaryTermRange(index),
+            ImportedStructureUpdateTestMutation::PrimaryTermOrdinal(index),
+            ImportedStructureUpdateTestMutation::PrimaryTermContext(index),
+            ImportedStructureUpdateTestMutation::PrimaryTermRecovery(index),
+            ImportedStructureUpdateTestMutation::PrimaryTermSpelling(index),
+            ImportedStructureUpdateTestMutation::PrimaryTermKind(index),
+            ImportedStructureUpdateTestMutation::PrimaryTermRole(index),
+            ImportedStructureUpdateTestMutation::PrimaryTermParent(index),
+        ] {
+            expect_dependency_failure(mutation);
+        }
+    }
+    for index in 0..4 {
+        for mutation in [
+            ImportedStructureUpdateTestMutation::PrimaryReferenceTerm(index),
+            ImportedStructureUpdateTestMutation::PrimaryReferenceBinding(index),
+            ImportedStructureUpdateTestMutation::PrimaryReferenceRole(index),
+            ImportedStructureUpdateTestMutation::PrimaryReferenceUseOrdinal(index),
+            ImportedStructureUpdateTestMutation::PrimaryReferenceScope(index),
+        ] {
+            expect_dependency_failure(mutation);
+        }
+    }
+    for index in 0..3 {
+        for mutation in [
+            ImportedStructureUpdateTestMutation::NumericRequestTerm(index),
+            ImportedStructureUpdateTestMutation::NumericRequestOwner(index),
+            ImportedStructureUpdateTestMutation::NumericRequestRange(index),
+            ImportedStructureUpdateTestMutation::NumericRequestSpelling(index),
+            ImportedStructureUpdateTestMutation::NumericRequestOrdinal(index),
+        ] {
+            expect_dependency_failure(mutation);
+        }
+    }
+    for mutation in [
+        ImportedStructureUpdateTestMutation::PrimarySourceId,
+        ImportedStructureUpdateTestMutation::PrimaryModuleId,
+    ] {
+        expect_dependency_failure(mutation);
+    }
+    assert_clean_replay();
+
+    let expect_task254_failure = |mutation| {
+        let error = b2cp_structure_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B2CP_SOURCE,
+            &roots,
+            69,
+            proof,
+            ImportedStructureUpdateSurfaceMutation::None,
+            mutation,
+        )
+        .expect("B2CP exact surface should select")
+        .expect_err("Task254 mutation must fail");
+        assert!(error.starts_with("Task254:"), "{mutation:?}: {error}");
+    };
+    for index in 0..2 {
+        for mutation in [
+            ImportedStructureUpdateTestMutation::TermSite(index),
+            ImportedStructureUpdateTestMutation::TermRange(index),
+            ImportedStructureUpdateTestMutation::TermOrdinal(index),
+            ImportedStructureUpdateTestMutation::TermContext(index),
+            ImportedStructureUpdateTestMutation::TermRecovery(index),
+            ImportedStructureUpdateTestMutation::TermSpelling(index),
+            ImportedStructureUpdateTestMutation::TermKind(index),
+        ] {
+            expect_task254_failure(mutation);
+        }
+    }
+    for mutation in [
+        ImportedStructureUpdateTestMutation::RootTerm,
+        ImportedStructureUpdateTestMutation::RootSymbol,
+        ImportedStructureUpdateTestMutation::RootContribution,
+    ] {
+        expect_task254_failure(mutation);
+    }
+    for index in 0..3 {
+        for mutation in [
+            ImportedStructureUpdateTestMutation::MemberTerm(index),
+            ImportedStructureUpdateTestMutation::MemberOrdinal(index),
+            ImportedStructureUpdateTestMutation::MemberSite(index),
+            ImportedStructureUpdateTestMutation::MemberRange(index),
+            ImportedStructureUpdateTestMutation::MemberSpelling(index),
+            ImportedStructureUpdateTestMutation::MemberRole(index),
+            ImportedStructureUpdateTestMutation::MemberParent(index),
+        ] {
+            expect_task254_failure(mutation);
+        }
+    }
+    for mutation in [
+        ImportedStructureUpdateTestMutation::FieldUpdateMissing,
+        ImportedStructureUpdateTestMutation::FieldUpdateExtra,
+        ImportedStructureUpdateTestMutation::FieldUpdateTerm(0),
+        ImportedStructureUpdateTestMutation::FieldUpdateOrdinal(0),
+        ImportedStructureUpdateTestMutation::FieldUpdateSite(0),
+        ImportedStructureUpdateTestMutation::FieldUpdateRange(0),
+        ImportedStructureUpdateTestMutation::FieldUpdateSpelling(0),
+        ImportedStructureUpdateTestMutation::FieldUpdateFirstMember(0),
+        ImportedStructureUpdateTestMutation::FieldUpdateFinalMember(0),
+    ] {
+        expect_task254_failure(mutation);
+    }
+    for index in 0..4 {
+        for mutation in [
+            ImportedStructureUpdateTestMutation::EdgeTerm(index),
+            ImportedStructureUpdateTestMutation::EdgeOrdinal(index),
+            ImportedStructureUpdateTestMutation::EdgeRole(index),
+            ImportedStructureUpdateTestMutation::EdgeMember(index),
+            ImportedStructureUpdateTestMutation::EdgeTarget(index),
+        ] {
+            expect_task254_failure(mutation);
+        }
+    }
+    for index in 0..9 {
+        for mutation in [
+            ImportedStructureUpdateTestMutation::RequestTerm(index),
+            ImportedStructureUpdateTestMutation::RequestOrdinal(index),
+            ImportedStructureUpdateTestMutation::RequestMember(index),
+            ImportedStructureUpdateTestMutation::RequestKind(index),
+        ] {
+            expect_task254_failure(mutation);
+        }
+    }
+    assert_clean_replay();
+
+    let stale_error = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &roots,
+        69,
+        proof,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::StalePrimaryReplay,
+    )
+    .expect("B2CP stale replay update")
+    .expect_err("stale Task252 replay must fail");
+    assert!(
+        stale_error.starts_with("TypedAst: rejected stale Task252 fingerprint:"),
+        "{stale_error}"
+    );
+    let precedence_error = b2cp_structure_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B2CP_SOURCE,
+        &roots,
+        69,
+        proof,
+        ImportedStructureUpdateSurfaceMutation::None,
+        ImportedStructureUpdateTestMutation::TermRangeAndStalePrimaryReplay,
+    )
+    .expect("B2CP combined corruption surface")
+    .expect_err("Task254 corruption must precede stale replay");
+    assert!(precedence_error.starts_with("Task254:"), "{precedence_error}");
+    assert_clean_replay();
+
+    let missing_value =
+        TASK258B3M2B2B2CP_SOURCE.replacen("with (x := 3);", "with (x := );", 1);
+    assert_eq!(missing_value.len(), 180);
+    assert_eq!(
+        sha256_text(&missing_value),
+        "8310de3b172cea98e4e85ebc6021c85c4e1bd7c2a74f8cd99413ae5a80569d67"
+    );
+    assert_eq!(
+        task258b3m2b2b2bp_frontend_diagnostic_profile(&missing_value, 24_003),
+        [("malformed_term_expression".to_owned(), 158, 159)]
+    );
+    let (
+        missing_ast,
+        missing_module,
+        missing_shells,
+        missing_base_symbols,
+        missing_diagnostics,
+    ) =
+        task253_ast_from_source_text_with_diagnostic_count(&missing_value, 24_003);
+    assert_eq!(missing_diagnostics, 1);
+    assert_eq!(
+        (
+            missing_ast.nodes().len(),
+            missing_ast.root().map(|id| id.index()),
+            missing_ast
+                .nodes()
+                .iter()
+                .enumerate()
+                .filter(|(_, node)| node.recovered)
+                .map(|(index, _)| index)
+                .collect::<Vec<_>>(),
+        ),
+        (84, Some(83), vec![65])
+    );
+    let missing_symbols = augment_type_elaboration_import_summaries(
+        &missing_ast,
+        &missing_module,
+        missing_base_symbols,
+    );
+    let missing_bindings =
+        task258b3m2b2b1p_binding_env(&missing_ast, &missing_module, &missing_symbols);
+    let missing_roots = task258b3m2b2b2cp_roots_from_ast(&missing_ast);
+    assert_eq!(missing_roots.len(), 6);
+    assert!(
+        b2cp_structure_handoff!(
+            &missing_ast,
+            &missing_module,
+            &missing_symbols,
+            &missing_bindings,
+            TASK258B3M2B2B2CP_SOURCE,
+            &missing_roots,
+            69,
+            proof,
+            ImportedStructureUpdateSurfaceMutation::DirectProductionSeam,
+            ImportedStructureUpdateTestMutation::None,
+        )
+        .is_none(),
+        "parsed malformed-value AST selected against the canonical source bytes"
+    );
+    assert!(
+        source_structure_output(
+            &missing_ast,
+            missing_module,
+            &missing_shells,
+            &missing_symbols
+        )
+        .is_none(),
+        "parsed malformed-value AST activated the legacy Task254 route"
+    );
+
+    for (ordinal, (changed, expected)) in [
+        (
+            TASK258B3M2B2B2CP_SOURCE.replacen(
+                "TypeCaseStruct(x: 1, y: 2) with (x := 3)",
+                "TypeCaseStruct(x: 1, y: 2)",
+                1,
+            ),
+            (
+                167,
+                "bb26a425d2bc16e6518d6366128de138862c4525af6eb82b748e4cb28f1b8bc9",
+                76,
+                75,
+                6,
+            ),
+        ),
+        (
+            TASK258B3M2B2B2CP_SOURCE.replacen(
+                "TypeCaseStruct(x: 1, y: 2) with (x := 3)",
+                "TypeCaseStruct(x: 1, y: 2).x",
+                1,
+            ),
+            (
+                169,
+                "64039fca35d6199fea281d43df6dafdfeff78f1d97139d6286a3082115552747",
+                79,
+                78,
+                6,
+            ),
+        ),
+        (
+            TASK258B3M2B2B2CP_SOURCE.replacen(
+                "TypeCaseStruct(x: 1, y: 2) with (x := 3)",
+                "(TypeCaseStruct(x: 1, y: 2) with (x := 3))",
+                1,
+            ),
+            (
+                183,
+                "e1a2b79cb03a4aebc5e0e29150cde382da457aa31cb8e66643eecce6e8296ae6",
+                90,
+                89,
+                7,
+            ),
+        ),
+        (
+            TASK258B3M2B2B2CP_SOURCE.replacen(
+                "with (x := 3)",
+                "with (x := 3, y := 4)",
+                1,
+            ),
+            (
+                189,
+                "a95336dc08b9534d7c5c16ca5070384e2610f0db31841187878b68b4403666b6",
+                93,
+                92,
+                8,
+            ),
+        ),
+        (
+            TASK258B3M2B2B2CP_SOURCE.replacen("with (x := 3)", "with (x.y := 3)", 1),
+            (
+                183,
+                "92440b4b3814d7b8a738bf71b2e89b9056fbb382301e12b5f4a4ccab17e0f082",
+                88,
+                87,
+                7,
+            ),
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (near_ast, near_module, near_shells, near_base_symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(&changed, 24_010 + ordinal);
+        assert_eq!(
+            (
+                changed.len(),
+                sha256_text(&changed),
+                diagnostics,
+                near_ast.nodes().len(),
+                near_ast.root().map(|root| root.index()),
+                near_ast
+                    .nodes()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, node)| node.recovered.then_some(index))
+                    .collect::<Vec<_>>(),
+            ),
+            (
+                expected.0,
+                expected.1.to_owned(),
+                0,
+                expected.2,
+                Some(expected.3),
+                Vec::<usize>::new(),
+            ),
+            "valid excluded update form {ordinal} parser profile",
+        );
+        assert_eq!(
+            task258b3m2b2b2bp_frontend_diagnostic_profile(&changed, 24_010 + ordinal),
+            [],
+            "valid excluded update form {ordinal} diagnostic profile"
+        );
+        let near_symbols =
+            augment_type_elaboration_import_summaries(&near_ast, &near_module, near_base_symbols);
+        let near_bindings =
+            task258b3m2b2b1p_binding_env(&near_ast, &near_module, &near_symbols);
+        let near_roots = task258b3m2b2b2cp_roots_from_ast(&near_ast);
+        assert_eq!(
+            near_roots.len(),
+            expected.4,
+            "valid excluded update form {ordinal} Task252 roots"
+        );
+        assert!(
+            b2cp_structure_handoff!(
+                &near_ast,
+                &near_module,
+                &near_symbols,
+                &near_bindings,
+                TASK258B3M2B2B2CP_SOURCE,
+                &near_roots,
+                69,
+                proof,
+                ImportedStructureUpdateSurfaceMutation::DirectProductionSeam,
+                ImportedStructureUpdateTestMutation::None,
+            )
+            .is_none(),
+            "parsed valid excluded update form {ordinal} selected against canonical source bytes"
+        );
+        assert!(
+            source_structure_output(&near_ast, near_module, &near_shells, &near_symbols).is_none(),
+            "parsed valid excluded update form {ordinal} activated the legacy Task254 route"
+        );
+    }
+    assert_clean_replay();
+
+    let (
+        selector_ast,
+        selector_module,
+        _selector_shells,
+        selector_base_symbols,
+        selector_diagnostics,
+    ) = task253_ast_from_source_text_with_diagnostic_count(
+        TASK258B3M2B2B2BP_SOURCE,
+        24_100,
+    );
+    assert_eq!(selector_diagnostics, 0);
+    let selector_symbols = augment_type_elaboration_import_summaries(
+        &selector_ast,
+        &selector_module,
+        selector_base_symbols,
+    );
+    let selector_bindings =
+        task258b3m2b2b1p_binding_env(&selector_ast, &selector_module, &selector_symbols);
+    let selector = b2bp_structure_handoff!(
+        &selector_ast,
+        &selector_module,
+        &selector_symbols,
+        &selector_bindings,
+        TASK258B3M2B2B2BP_SOURCE,
+        &task258b3m2b2b2bp_roots(),
+        62,
+        proof,
+        ImportedStructureSelectorSurfaceMutation::None,
+        ImportedStructureSelectorTestMutation::None,
+    )
+    .expect("B2BP compatibility selector")
+    .expect("B2BP compatibility handoff");
+    assert_eq!(
+        [
+            sha256_text(&selector.handoff.debug_text()),
+            sha256_text(&selector.typed_ast.debug_text()),
+            sha256_text(&selector.resolved.debug_text()),
+        ],
+        [
+            "a064225908d40807fa98617b0904c76383e862fb99bf9468f40157abf0cea4f5",
+            "4ade5072473d9fd3dc097633fd09f955a78f372b07340b0740367e5ba52c4783",
+            "1c8fa71f89554c1caff964ef0aa43e58e73352577e19f8f9276b10a91cbc90a3",
+        ],
+        "B2BP compatibility debug output must stay byte-exact"
+    );
+    assert_eq!(
+        (
+            selector.handoff.terms().len(),
+            selector.handoff.field_updates().len(),
+            selector.handoff.edges().len(),
+        ),
+        (2, 0, 3)
+    );
+
+    let (
+        constructor_ast,
+        constructor_module,
+        _constructor_shells,
+        constructor_base_symbols,
+        constructor_diagnostics,
+    ) = task253_ast_from_source_text_with_diagnostic_count(
+        TASK258B3M2B2B2P_SOURCE,
+        24_101,
+    );
+    assert_eq!(constructor_diagnostics, 0);
+    let constructor_symbols = augment_type_elaboration_import_summaries(
+        &constructor_ast,
+        &constructor_module,
+        constructor_base_symbols,
+    );
+    let constructor_bindings = task258b3m2b2b1p_binding_env(
+        &constructor_ast,
+        &constructor_module,
+        &constructor_symbols,
+    );
+    let constructor = b2p_structure_handoff!(
+        &constructor_ast,
+        &constructor_module,
+        &constructor_symbols,
+        &constructor_bindings,
+        TASK258B3M2B2B2P_SOURCE,
+        &task258b3m2b2b2p_roots(),
+        59,
+        proof,
+        ImportedStructureConstructorSurfaceMutation::None,
+        ImportedStructureConstructorTestMutation::None,
+    )
+    .expect("B2P compatibility constructor")
+    .expect("B2P compatibility handoff");
+    assert_eq!(
+        [
+            sha256_text(&constructor.handoff.debug_text()),
+            sha256_text(&constructor.typed_ast.debug_text()),
+            sha256_text(&constructor.resolved.debug_text()),
+        ],
+        [
+            "1929f70a2be609e57da4ffeb1a686ebd0e3bb9e095cfcf3ff553b241e08a2712",
+            "3d5f2b4aa0a0931c52c2a76fbebb9fa17afafa36ad60320c76458286c3bb5da3",
+            "65f623898679e93ae72344a98032c8d55015dc2bdac63799c54025dac0eb2a3d",
+        ],
+        "B2P compatibility debug output must stay byte-exact"
+    );
+    assert_eq!(
+        (
+            constructor.handoff.terms().len(),
+            constructor.handoff.field_updates().len(),
+            constructor.handoff.edges().len(),
+        ),
+        (1, 0, 2)
+    );
+
+    let (legacy_ast, legacy_module, legacy_shells, legacy_symbols) = task254_real_ast();
+    let legacy = source_structure_output(
+        &legacy_ast,
+        legacy_module,
+        &legacy_shells,
+        &legacy_symbols,
+    )
+    .expect("legacy Task254 compatibility selector")
+    .expect("legacy Task254 compatibility output");
+    assert_eq!(
+        [
+            sha256_text(
+                &legacy
+                    .typed_ast
+                    .source_structure()
+                    .expect("legacy Task254 compatibility handoff")
+                    .debug_text()
+            ),
+            sha256_text(&legacy.typed_ast.debug_text()),
+            sha256_text(&legacy.resolved.debug_text()),
+        ],
+        [
+            "0d6af57b89e6156d8e5de6831568c81ec110880bebf1e4aeb4ab00563f4da6c8",
+            "8264d1574faf67e19b6b84d6e11fa7ab6435335238b398fa0966bbfbc63d0599",
+            "118a998bc5edb770c7818be1d74cbece0f566353bf9d3e6aabb817d994a3db40",
+        ],
+        "legacy Task254 debug output must stay byte-exact"
+    );
+    assert_clean_replay();
 }
 
 #[test]

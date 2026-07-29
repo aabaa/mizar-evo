@@ -778,3 +778,30 @@ correction ownerにする。repeated reviewsはfindingsなし。両companionは
 docs/checker-lint PASS、unrelated-sourceによるlive broad rerun blockの
 justification、全9 hard gates PASS、valid final quality `98/100`をrecord。
 残るのはdedicated correction commitとfresh implementation inventoryだけ。
+
+## Checker Task 258B3M2B2B2CP implementation synchronization
+
+English canonical runner documents/JA companionsはCPC1 commit `ee267d9c`
+complete、B2CPをprivate dormant Task-254 update reuse seamだけに
+implementedとrecordする。frozen runner tests exactly 2件がPASSし、
+prerequisite `design_drift`、bounded `source_drift`、`test_gap`はclose。
+final test-sufficiency/implementation re-reviewsはfindingsなし。両sideは
+checker/runner `386/439`、sizes `6826/6065/730/2546/17120/5848`、
+30 production paths / 46,788 lines、production hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`、
+raw/normalized test-list hashes
+`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
+`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`
+を同期する。
+
+specification、corpus、fixture、expectation、sidecar、trace status/count/
+backlink/credit、public、active、B2C、semantic surfaceは変更せず、
+checker/corpus/CLI hashesもunchanged。formula rowは`deferred`、
+`tests = []`、audit impactはnarrative-only。concurrent ownershipは
+report-only `repo_metadata_conflict`でmetadata repairなし。
+両sideはfmt、workspace Clippy/tests、focused `2/2`、全count/hash gatesの
+PASSもrecordする。final source/documentation re-reviewはfindingsなし。
+両sideはindependent final quality findingsなし、全9 hard gates PASS、
+valid `98/100`もrecordする。implementation commitはpendingで、その後B2C
+fresh inventory。

@@ -1061,3 +1061,24 @@ equality nodes 55/77だけでupdate subtreeをexcludeし、formula
 containers 56/78はunowned。functional-copy meaning、member identity、
 replacement/result typing、proof/goal semantics、active routes、
 coverage creditはabsent。
+
+### Task 258B3M2B2B2CP implemented lower-family seam
+
+CPC1 correction commit `ee267d9c`はcomplete。B2CPはexisting proof
+context内でfrozen Task-254 functional-update/constructor/member/
+`FieldUpdate` graphだけをprivately authenticate/re-publishし、
+payload-family rowやupper edgeを追加しない。exact runner tests 2件が
+PASSしたためprerequisite `design_drift`、bounded `source_drift`、
+`test_gap`はclose。final test-sufficiency/implementation re-reviewsは
+findingsなし。
+
+Task 252/254 ownershipはunchanged。Task 256/258、B2C witness ownership、
+public/active route、functional-copy/type/result meaning、proof/goal/theorem、
+IRはdeferred。specification、corpus、fixture、expectation、sidecar、
+trace status/count/backlink/creditは変更せず、formula rowは`deferred`、
+`tests = []`、coverage audit impactはnarrative-only。concurrent ownershipは
+report-only `repo_metadata_conflict`でmetadata repairなし。
+fmt、Clippy、tests、全count/hash gatesはPASS。final source/documentation
+re-reviewはfindingsなし。independent final qualityはfindingsなし、
+全9 hard gates PASS、valid `98/100`。dedicated B2CP commitはpendingで、
+そのcommit後にB2C fresh inventory。

@@ -3876,3 +3876,31 @@ sidecar、expectation、trace row、detail key、semantic behaviorは追加な�
 functional-copy semantics、update result typing/identity、witness
 obligations、theorem/proof acceptance、goals、IRはdeferred。特に
 `x = x` goal下の`take`はsemantic acceptance claimではない。
+
+## Checker Task 258B3M2B2B2CP private harness implementation
+
+CPC1 commit `ee267d9c`はcomplete。frozen runner files 4件はprivate/
+corpus-dormantなupdate reuse seamだけをimplementし、frozen B2CP tests
+exactly 2件がPASS。direct table comparisonは全Task-48/252/254 rows、
+replay/corruption、B2P/B2BP compatibilityをauthenticateする。これで
+prerequisite `design_drift`、bounded `source_drift`、`test_gap`はclose。
+final test-sufficiency/implementation re-reviewsはfindingsなし。
+
+checker/runner librariesは`386/439`、runner sizesは
+`6826/6065/730/2546/17120/5848`。productionは30 paths / 46,788 lines、
+hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`、
+test-list hashesは
+`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
+`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`。
+checker/corpus/CLI hashesはunchanged。
+
+fixture、sidecar、expectation、trace status/count/backlink/credit、
+public/active route、semantic changeはなし。formula creditは`deferred`、
+`tests = []`、audit impactはnarrative-only。B2Cと全functional-copy/type/
+proof/goal/IR deferralはunchanged。concurrent ownershipはreport-only
+`repo_metadata_conflict`でmetadata repairなし。fmt、Clippy、tests、
+全count/hash gatesはPASS。final source/documentation re-reviewは
+findingsなし。independent final qualityはfindingsなし、全9 hard gates
+PASS、valid `98/100`。commitはpending。

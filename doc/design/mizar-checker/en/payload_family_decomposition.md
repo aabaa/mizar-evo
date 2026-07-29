@@ -1130,3 +1130,25 @@ owns only equality nodes 55/77 and excludes the update subtree; formula
 containers 56/78 remain unowned. Functional-copy meaning, member identity,
 replacement/result typing, proof/goal semantics, active routes, and
 coverage credit remain absent.
+
+### Task 258B3M2B2B2CP Implemented Lower-Family Seam
+
+CPC1 correction commit `ee267d9c` is complete. B2CP now privately
+authenticates and republishes exactly the frozen Task-254
+functional-update/constructor/member/`FieldUpdate` graph in the existing
+proof context; it adds no payload-family row or upper edge. The two exact
+runner tests pass, so the prerequisite `design_drift`, bounded
+`source_drift`, and `test_gap` are closed. Final test-sufficiency and
+implementation re-reviews have no findings.
+
+Task 252/254 ownership is unchanged. Task 256/258, B2C witness ownership,
+public/active routes, functional-copy and type/result meaning, proof/goal/
+theorem behavior, and IR remain deferred. No specification, corpus,
+fixture, expectation, sidecar, or trace status/count/backlink/credit
+changed; the formula row stays `deferred`, `tests = []`, and coverage audit
+impact is narrative-only. Concurrent ownership is report-only
+`repo_metadata_conflict` with no metadata repair. Broad formatting, Clippy,
+tests, and all count/hash gates pass. The final source/documentation
+re-review has no findings. Independent final quality has no findings, all
+nine hard gates PASS, and valid `98/100`. The dedicated B2CP commit remains
+pending; B2C fresh inventory follows that commit.

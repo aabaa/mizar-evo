@@ -10739,3 +10739,31 @@ repeated reviewsはfindingsなし、全9 hard gatesがPASS、final qualityは
 valid `98/100`。live broad rerunはunrelated incomplete source workでblock
 されるため明示的にjustify。残るのはdedicated correction commitとfresh
 implementation inventoryだけ。
+
+## Checker Task 258B3M2B2B2CP implemented runner boundary
+
+CPC1 correction commit `ee267d9c`はcomplete。B2CPはfrozen runner files
+4件だけを変更し、private dormantなupdate selection/authentication/
+handoff plumbingとpassing tests exactly 2件だけを追加する。
+prerequisite `design_drift`、bounded `source_drift`、`test_gap`はcloseし、
+final test-sufficiency/implementation re-reviewsはfindingsなし。checker
+source/public API、active dispatch、dependencies、fixtures、expectations、
+sidecars、trace metadata、production paths、semantic ownersはuntouched。
+
+final runner sizesは`6826/6065/730/2546/17120/5848`。productionは
+30 paths / 46,788 lines、path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`。
+checker/runner librariesは`386/439`、raw/normalized runner test-list
+hashesは
+`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
+`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`。
+checker/corpus/CLI hashesはunchanged。
+
+formula rowは`deferred`、`tests = []`、audit impactはnarrative-only。
+B2C/public/activeとsemantic/proof/goal/IR deferralはunchanged。
+concurrent ownershipはreport-only `repo_metadata_conflict`でmetadata
+repairなし。fmt、Clippy、tests、全count/hash gatesはPASS。
+final source/documentation re-reviewはfindingsなし。independent final
+qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。B2CP commitは
+pendingで、その後B2C fresh inventoryがnext step。

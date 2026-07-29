@@ -4089,3 +4089,33 @@ is added. Functional-copy semantics, update result typing/identity, witness
 obligations, theorem/proof acceptance, goals, and IR are deferred. In
 particular, the `take` under the `x = x` goal is not a semantic acceptance
 claim.
+
+## Checker Task 258B3M2B2B2CP Private Harness Implementation
+
+CPC1 commit `ee267d9c` is complete. The four frozen runner files now
+implement only the private, corpus-dormant update reuse seam, and exactly
+the two frozen B2CP tests pass. Direct table comparisons authenticate all
+Task-48/252/254 rows, replay/corruption, and B2P/B2BP compatibility. This
+closes the prerequisite `design_drift`, bounded `source_drift`, and
+`test_gap`. Final test-sufficiency and implementation re-reviews have no
+findings.
+
+Checker/runner libraries are `386/439`; runner sizes are
+`6826/6065/730/2546/17120/5848`. Production is 30 paths / 46,788 lines with
+hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`;
+test-list hashes are
+`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
+`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`.
+Checker/corpus/CLI hashes remain unchanged.
+
+There is no fixture, sidecar, expectation, trace
+status/count/backlink/credit, public/active route, or semantic change.
+Formula credit remains `deferred`, `tests = []`; audit impact is
+narrative-only. B2C and all functional-copy/type/proof/goal/IR deferrals
+remain unchanged. Concurrent ownership remains report-only
+`repo_metadata_conflict` with no metadata repair. Broad formatting, Clippy,
+tests, and all count/hash gates pass. The final source/documentation
+re-review has no findings. Independent final quality has no findings, all
+nine hard gates PASS, and valid `98/100`. The commit remains pending.

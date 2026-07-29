@@ -5094,5 +5094,19 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] CPC1 repeated no-findings reviewsをcompleteし、全9 hard gatesを
   PASS、valid final quality `98/100`を取得。unrelated incomplete source
   diffでblockされるlive broad rerunを明示的にjustify。
-- [ ] docs-only correction `258B3M2B2B2CPC1`をseparate commit。
-- [ ] fresh-inventory後B2CPだけをimplementしてからB2Cをfreeze。
+- [x] docs-only correction `258B3M2B2B2CPC1`を`ee267d9c`として
+  separate commit。
+- [x] fresh-inventory後private dormant B2CP seamだけをimplementし、
+  frozen tests exactly 2件をPASS、`design_drift`、`source_drift`、
+  `test_gap`をclose。
+- [x] final test-sufficiency/implementation re-reviewsをfindingsなしで
+  complete。
+- [x] `cargo fmt --check`、workspace Clippy warnings-denied、`cargo test`、
+  focused B2CP `2/2`、全count/hash gatesをPASS。
+- [x] specification/corpus/trace-creditを変更せずcompletion metricsと
+  narrative-only audit impactを同期。
+- [x] final source/documentation reviewをfindingsなしでcomplete。
+- [x] independent final qualityをfindingsなし、全9 hard gates PASS、
+  valid `98/100`でcomplete。
+- [ ] staged-diff auditとdedicated B2CP implementation commitをcomplete。
+- [ ] B2CP commit後B2Cをfresh-inventory。

@@ -4212,3 +4212,22 @@ source workがlive runner/workspace rerunをblockする間はidentical HEAD
 executable broad verificationをauthorityにする。全9 hard gatesがPASSし、
 final read-only qualityはvalid `98/100`。残るのはdedicated correction
 commitとfresh implementation inventoryだけ。
+
+## Task 258B3M2B2B2CP implementation audit update
+
+CPC1 correction commit `ee267d9c`はcompleteし、frozen private B2CP seamは
+canonical authorityを変更せずimplementedされた。B2CP runner tests
+exactly 2件がPASS。skipped-prerequisite `design_drift`、bounded private
+`source_drift`、two-test `test_gap`はclose。final test-sufficiency/
+implementation re-reviewsはfindingsなし。fmt、workspace Clippy/tests、
+全count/hash gatesはPASS。final source/documentation re-reviewは
+findingsなし。independent final qualityはfindingsなし、全9 hard gates
+PASS、valid `98/100`。stagingとimplementation commitはpending。
+
+`doc/spec`、`.miz`、fixture、expectation、sidecar、trace status/count/
+backlink/credit、checker/public API、active route、B2C owner、semantic
+behaviorは変更なし。formula-statement rowは`deferred`、`tests = []`、
+audit updateはnarrative-only。checker/corpus/CLI hashesはunchanged。
+concurrent-writer historyはreport-only `repo_metadata_conflict`で、
+repository metadataはrepairしない。B2Cはseparate B2CP commit後だけ
+fresh-inventoryする。

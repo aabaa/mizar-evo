@@ -2676,3 +2676,24 @@ formula tableはupdate subtreeをexcludeする。update/member/
 meaning、existential obligations/substitution、proof、goal、theorem
 acceptanceはdeferred。smoke theoremのgoalは`x = x`なので、この`take`
 occurrenceはsemantic acceptance claimを供給しない。
+
+## Task 258B3M2B2B2CP implementation result: statement surface unchanged
+
+CPC1 correction commit `ee267d9c`はcompleteし、B2CP private lower reuse
+seamはimplemented。frozen runner tests 2件がPASSし、prerequisite
+`design_drift`、bounded `source_drift`、`test_gap`をclose。final
+test-sufficiency/implementation re-reviewsはfindingsなし。
+source-statement production/testsはunchangedで、B2CPはTask-258 statement、
+witness、name、target edge、fingerprint、TypedAst/final row、public API、
+active routeをpublishしない。
+
+specification、`.miz`、fixture、expectation、sidecar、trace status/count/
+backlink/credit、semantic behaviorは変更なし。formula rowは`deferred`、
+`tests = []`、coverage impactはnarrative-only。functional-copy/update
+meaning、type/result identity、B2C ownership、proof/goal/theorem acceptance、
+IRはdeferred。concurrent ownershipはreport-only
+`repo_metadata_conflict`でmetadata repairなし。fmt、Clippy、tests、
+全count/hash gatesはPASS。final source/documentation re-reviewは
+findingsなし。independent final qualityはfindingsなし、全9 hard gates
+PASS、valid `98/100`。B2CP commitはpendingで、そのcommit後にB2C fresh
+inventory。

@@ -2939,5 +2939,21 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete CPC1 repeated no-findings reviews, pass all nine hard gates,
   and obtain valid final quality `98/100`; explicitly justify live broad
   reruns blocked by the unrelated incomplete source diff.
-- [ ] Commit docs-only correction Task `258B3M2B2B2CPC1` separately.
-- [ ] Fresh-inventory and implement only B2CP before returning to B2C.
+- [x] Commit docs-only correction Task `258B3M2B2B2CPC1` separately as
+  `ee267d9c`.
+- [x] Fresh-inventory and implement only the private dormant B2CP seam;
+  pass exactly the two frozen tests and close `design_drift`,
+  `source_drift`, and `test_gap`.
+- [x] Complete final test-sufficiency and implementation re-reviews with no
+  findings.
+- [x] Pass focused/workspace formatting, Clippy, tests, and all count/hash
+  gates.
+- [x] Synchronize final metrics and narrative-only audit impact while
+  preserving all authority, trace-credit, public/active, and semantic
+  boundaries.
+- [x] Complete final source/documentation review with no findings.
+- [x] Pass independent final quality with no findings, all nine hard gates,
+  and a valid `98/100`.
+- [ ] Pass the staged-diff audit and create the dedicated B2CP
+  implementation commit.
+- [ ] Fresh-inventory B2C after the B2CP commit.

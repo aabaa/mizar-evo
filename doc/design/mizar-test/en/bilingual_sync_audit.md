@@ -805,3 +805,31 @@ Both companions record passing docs/checker-lint checks, the justified
 unrelated-source block on live broad reruns, all nine hard gates PASS, and
 valid final quality `98/100`. Only the dedicated correction commit and fresh
 implementation inventory remain.
+
+## Checker Task 258B3M2B2B2CP Implementation Synchronization
+
+English canonical runner documents and Japanese companions record CPC1
+commit `ee267d9c` complete and B2CP implemented only as the private dormant
+Task-254 update reuse seam. Exactly the two frozen runner tests pass,
+closing the prerequisite `design_drift`, bounded `source_drift`, and
+`test_gap`. Final test-sufficiency and implementation re-reviews have no
+findings. Both sides synchronize checker/runner `386/439`, sizes
+`6826/6065/730/2546/17120/5848`, 30 production paths / 46,788 lines,
+production hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`,
+and raw/normalized test-list hashes
+`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
+`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`.
+
+No specification, corpus, fixture, expectation, sidecar, trace
+status/count/backlink/credit, public, active, B2C, or semantic surface
+changed; checker/corpus/CLI hashes remain unchanged. The formula row stays
+`deferred`, `tests = []`, and audit impact is narrative-only. Concurrent
+ownership remains report-only `repo_metadata_conflict`, without metadata
+repair. Both record passing formatting, workspace Clippy, workspace tests,
+focused `2/2`, and unchanged count/hash gates. The final
+source/documentation re-review has no findings. Both record independent
+final quality with no findings, all nine hard gates PASS, and valid
+`98/100`. The implementation commit remains pending; B2C fresh inventory
+follows it.

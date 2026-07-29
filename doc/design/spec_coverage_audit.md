@@ -4750,3 +4750,29 @@ by unrelated incomplete source work while the identical HEAD executable
 baseline retains complete verification. All nine hard gates pass and final
 read-only quality is a valid `98/100`. Only a dedicated correction commit
 and fresh B2CP implementation inventory remain open.
+
+## Task 258B3M2B2B2CP Implementation Completion Audit
+
+Docs-only CPC1 correction commit `ee267d9c` is complete. B2CP is now
+implemented only as the private, corpus-dormant Task-254
+functional-update/`FieldUpdate` proof-context reuse seam, and exactly its
+two frozen runner tests pass. This closes the prerequisite `design_drift`,
+bounded `source_drift`, and `test_gap`. Final test-sufficiency and
+implementation re-reviews have no findings.
+
+The audit impact remains narrative-only. No `doc/spec`, `.miz`, fixture,
+expectation, sidecar, trace status/count/backlink/credit, public/active
+route, or semantic behavior changed. In particular,
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, and Task-254 diagnostic credit is unchanged. Checker, corpus,
+and CLI hashes remain unchanged. B2C and all functional-copy/type/proof/
+goal/IR deferrals remain open.
+
+Concurrent write ownership remains a report-only
+`repo_metadata_conflict`; no repository metadata is repaired.
+Broad formatting, workspace Clippy, workspace tests, focused B2CP `2/2`,
+and every count/hash gate pass. The final source/documentation re-review has
+no findings. Independent final quality has no findings, all nine hard gates
+PASS, and valid `98/100`. Staging and the dedicated B2CP implementation
+commit remain pending. B2C fresh inventory is the next owner only after
+that commit.
