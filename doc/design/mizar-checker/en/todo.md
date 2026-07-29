@@ -5244,7 +5244,24 @@ implementation commit does not satisfy a producer task.
   owner/label provenance to B2B; repeat all three reviews to no findings.
 - [x] Pass the BPC1 final read-only quality review with no findings, all nine
   hard gates, and a valid score of `98/100`.
-- [ ] Commit only the correction, verify clean/stash invariants, and
+- [x] Commit only the correction, verify clean/stash invariants, and
   fresh-inventory B2BP implementation only.
 - [ ] After the separate B2BP implementation commit, return to B2B frozen
   consumer documentation.
+
+## Checker Task 258B3M2B2B2BP Implementation Ledger
+
+- [x] Implement the exact production-private selector site, owned-kind map,
+  and proof-context handoff in the frozen four runner files.
+- [x] Pass the two exact runner tests, including malformed diagnostic
+  code/range and stale-fingerprint clean replay.
+- [x] Close bounded `source_drift` and `test_gap`; test-sufficiency and
+  implementation reviews report no findings.
+- [x] Preserve checker/public/active/spec/fixture/expectation/sidecar/trace
+  and semantic boundaries; publish no Task-256/258 row.
+- [x] Record libraries `382/432`, current module sizes, production/test-list
+  hashes, and unchanged five CLI counts/hashes.
+- [x] Complete source/documentation consistency with no findings and pass
+  final quality review with all nine hard gates and a valid `98/100`.
+- [ ] Create one implementation commit, then fresh-inventory B2B
+  documentation.

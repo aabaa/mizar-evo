@@ -4998,7 +4998,24 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   docs-only correctionとしてfreezeし、3 reviewsをfindingsなしまでrepeat。
 - [x] BPC1 final read-only quality reviewをfindingsなし、全9 hard gates、
   valid score `98/100`でPASS。
-- [ ] correctionだけをcommit、clean/stash invariants verify後にB2BP
+- [x] correctionだけをcommit、clean/stash invariants verify後にB2BP
   implementationだけをfresh-inventory。
 - [ ] separate B2BP implementation commit後にB2B frozen consumer docsへ
   戻る。
+
+## Checker Task 258B3M2B2B2BP implementation ledger
+
+- [x] frozen 4 runner filesでexact production-private selector site、
+  owned-kind map、proof-context handoffを実装。
+- [x] malformed diagnostic code/rangeとstale-fingerprint clean replayを
+  含むexact runner tests 2件をPASS。
+- [x] bounded `source_drift`/`test_gap`をcloseし、test-sufficiency/
+  implementation reviewsはfindingsなし。
+- [x] checker/public/active/spec/fixture/expectation/sidecar/trace/semantic
+  boundaryをpreserveし、Task-256/258 rowをpublishしない。
+- [x] libraries `382/432`、current module sizes、production/test-list
+  hashes、不変のCLI counts/hashes 5件を記録。
+- [x] source/documentation consistencyをfindingsなしで完了し、全9 hard
+  gatesとvalid `98/100`でfinal quality reviewをPASS。
+- [ ] implementation commit 1件を作成後、B2B documentationを
+  fresh-inventory。

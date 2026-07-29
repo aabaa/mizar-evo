@@ -695,3 +695,12 @@ provenanceだけに限定しlocal theorem owner/label provenanceをB2Bへdefer
 source-documentation reviewsはfindingsなし。BPC1 final qualityは
 findingsなし、全9 hard gates PASS、valid `98/100`。openなのは
 correction commitとimplementation inventoryだけ。
+
+## Checker Task 258B3M2B2B2BP implementation synchronization
+
+English canonical runner documentsとJapanese companionsはimplemented
+private selector seam、exact tests 2件、runner library `432`、sizes
+`6414/4514/722/2538/15058/4315`、30-path / 44,809-line manifest、
+current test-list/production hashesを同期して記録する。imported-only
+provenance boundary、public/active surfaceなし、unchanged trace/diagnostic
+credit、B2B/B2C/semantic deferralsを両言語で維持する。

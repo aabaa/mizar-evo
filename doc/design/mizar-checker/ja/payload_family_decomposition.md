@@ -996,3 +996,9 @@ future seamはexact selector profileをexisting proof-context extractionへ
 routeできるが、cross-family witness edge、public API、semantic edge、
 coverage creditは追加しない。B2Bがlater direct-selector witness consumer、
 B2Cがupdate/`FieldUpdate` owner。
+
+private lower edgeはTask-258 rowを追加せずimplemented/testedとなった。
+Task 254はselector/constructor/member/request rowsを、Task 252はprimary
+valuesを引き続きownし、exact chainは
+`Structure(0) -> Structure(1) -> Primary(2/3)`のまま。future witness
+consumerはB2Bだけ。

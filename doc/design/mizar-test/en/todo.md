@@ -2355,6 +2355,22 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   after BPC1 with no findings.
 - [x] Pass BPC1 final quality with no findings, all nine hard gates, and a
   valid `98/100`.
-- [ ] Commit the correction only and fresh-inventory B2BP implementation
+- [x] Commit the correction only and fresh-inventory B2BP implementation
   only.
 - [ ] After separate implementation, return to B2B frozen consumer docs.
+
+## Checker Task 258B3M2B2B2BP Runner Implementation Ledger
+
+- [x] Implement the exact private selector site/owned-kind/context handoff
+  in the frozen four files with no public or active surface.
+- [x] Pass the two exact tests, all mutation/precedence/replay gates, the
+  exact malformed diagnostic, and B2P/B2A/legacy compatibility.
+- [x] Close bounded `source_drift` and `test_gap`; test-sufficiency and
+  implementation reviews report no findings.
+- [x] Preserve fixtures, expectations, sidecars, trace/credit, diagnostics,
+  active cases, checker APIs, and semantic boundaries.
+- [x] Record runner tests `432`, sizes, production/test-list hashes, and
+  unchanged CLI counts/hashes.
+- [x] Complete source/documentation consistency with no findings and pass
+  final quality review with all nine hard gates and a valid `98/100`.
+- [ ] Commit once, then fresh-inventory B2B documentation.

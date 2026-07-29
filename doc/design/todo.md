@@ -2853,7 +2853,20 @@ or semantic owner changed. B3M2B2B remains next before B4.
   boundary, and repeat test/implementation/source-doc reviews to no findings.
 - [x] Pass BPC1 final quality with no findings, all nine hard gates, and a
   valid score of `98/100`.
-- [ ] Make one dedicated correction commit, then fresh-inventory and
+- [x] Make one dedicated correction commit, then fresh-inventory and
   implement only the B2BP seam and two tests in a separate commit.
 - [ ] After B2BP implementation, fresh-inventory and return to B2B
   frozen-contract documentation; keep B2C/semantics deferred.
+
+## Checker Task 258B3M2B2B2BP Implementation Completion
+
+- [x] Implement the exact private selector reuse seam in the frozen four
+  runner files and add exactly the two frozen tests.
+- [x] Close bounded `source_drift` / `test_gap`; preserve all public,
+  active, canonical, trace, diagnostic, and semantic boundaries.
+- [x] Pass focused/full tests, lint policies, format, warnings-denied
+  workspace Clippy, five CLIs, and all count/hash gates.
+- [x] Complete source/documentation consistency with no findings and pass
+  final quality review with all nine hard gates and a valid `98/100`.
+- [ ] Commit once, then fresh-inventory the B2B frozen-contract
+  documentation prerequisite.

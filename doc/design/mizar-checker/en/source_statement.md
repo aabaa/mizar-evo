@@ -3121,3 +3121,8 @@ The later B2B consumer may own the exact witness-to-selector edge only after
 B2BP is implemented and committed separately. B2C
 functional-update/`FieldUpdate` and all selector identity/type, proof, goal,
 and theorem semantics remain deferred.
+
+The B2BP private lower seam is now implemented after its frozen prerequisite.
+This does not install a statement witness or alter any checker API. Fresh
+dependency inventory may therefore freeze B2B as the next separate logical
+task; B2C and all semantic/proof/goal behavior remain deferred.

@@ -3975,3 +3975,18 @@ tables are also covered.
 
 No active case, public route, fixture, expectation, sidecar, trace credit,
 diagnostic detail, checker test, or semantic behavior is added.
+
+## Checker Task 258B3M2B2B2BP Private Selector Harness Result
+
+The frozen private harness is implemented and both named tests pass. The
+valid path publishes the exact Task-254 `2/0/1/3/0/3/9` bytes only after
+authenticating Task-48/252, all 79 surface nodes, imported root provenance,
+owned nodes `62/61/29/20/24`, every lower row, and the current Task-252
+fingerprint. Every mutation fails closed and a clean replay reproduces the
+handoff, TypedAst, and ResolvedTypedAst debug bytes.
+
+The missing-selector near miss is directly authenticated as sole syntax
+diagnostic `malformed_term_expression` at `149..150`. B2P/B2A and legacy
+Task-254 compatibility hashes remain exact. The runner library is `432`;
+active cases, fixtures, sidecars, expectations, trace credit, diagnostics,
+and semantic outputs remain unchanged.

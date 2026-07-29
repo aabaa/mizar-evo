@@ -2157,6 +2157,22 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   findingsなしまでrepeat。
 - [x] BPC1 final qualityをfindingsなし、全9 hard gates、valid `98/100`
   でPASS。
-- [ ] correctionだけをcommit後、B2BP implementationだけを
+- [x] correctionだけをcommit後、B2BP implementationだけを
   fresh-inventory。
 - [ ] separate implementation後にB2B frozen consumer docsへ戻る。
+
+## Checker Task 258B3M2B2B2BP runner implementation ledger
+
+- [x] frozen 4 filesへexact private selector site/owned-kind/context
+  handoffを実装し、public/active surfaceを追加しない。
+- [x] exact tests 2件、全mutation/precedence/replay gates、exact malformed
+  diagnostic、B2P/B2A/legacy compatibilityをPASS。
+- [x] bounded `source_drift`/`test_gap`をcloseし、test-sufficiency/
+  implementation reviewsはfindingsなし。
+- [x] fixtures、expectations、sidecars、trace/credit、diagnostics、active
+  cases、checker APIs、semantic boundariesをpreserve。
+- [x] runner tests `432`、sizes、production/test-list hashes、unchanged
+  CLI counts/hashesを記録。
+- [x] source/documentation consistencyをfindingsなしで完了し、全9 hard
+  gatesとvalid `98/100`でfinal quality reviewをPASS。
+- [ ] commit 1件を作成後、B2B documentationをfresh-inventory。

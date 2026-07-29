@@ -4271,3 +4271,26 @@ Repeated specification and source/documentation consistency reviews report
 no findings. Every verification gate passes, and the final read-only review
 passes all nine hard gates with a valid `98/100`. This closure changes no
 trace row, status, count, backlink, test list, or executable credit.
+
+## Task 258B3M2B2B2BP Implementation Audit
+
+The bounded `source_drift` and `test_gap` are closed by the production-private
+selector seam and exactly two runner tests. The implementation preserves the
+frozen imported provenance, lower tables, ownership, failure precedence, and
+semantic exclusions. No `spec_gap`, undocumented behavior, expectation
+drift, or boundary violation was found. During final review, an external
+same-task writer expanded the Task-48/252 mutation matrices, fixed their
+initial no-op mutation, and added the frozen direct B2P compatibility hashes;
+the earlier external docs commit `6f84d4eb` and correction commit
+`a782606c` remain report-only history. With local HEAD unchanged at
+`a782606c`, the dirty task-owned scope expanded from 4 to 32 files and
+`origin/main...HEAD` moved from ahead-four to `0/0`. This is a nonblocking,
+report-only `repo_metadata_conflict`. The final task-owned target remains
+unambiguous; no metadata repair, revert, fetch, push, or stash action is
+performed.
+
+This implementation changes no canonical specification, `.miz`, fixture,
+expectation, sidecar, trace row/status/count/backlink, Task-254 diagnostic
+credit, or active route. Formula-statement coverage stays `deferred`,
+`tests = []`; B2B/B2C and all selector identity/type/proof semantics remain
+deferred.

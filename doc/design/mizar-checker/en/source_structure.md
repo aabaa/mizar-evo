@@ -264,3 +264,16 @@ Constructor B2P/B2A bytes remain unchanged.
 No checker API, Task-256/258 row, TypedAst statement installation, public
 runner route, selector identity/type result, or semantic behavior is owned
 here. Exactly two future runner tests freeze the private seam before B2B.
+
+## Task 258B3M2B2B2BP Implementation Result
+
+The three frozen production-private siblings are implemented in the runner
+source-structure leaf and reuse the existing generic Task-254 extractor and
+Task-252 proof-context roots. They publish only the exact
+`2/0/1/3/0/3/9` lower table after full source, arena, provenance, ownership,
+and fingerprint authentication. The two frozen tests pass and preserve B2P,
+B2A, legacy Task-254, and empty upper-family bytes.
+
+No checker source or public API changed. Selector identity, typing, result,
+inheritance, proof, goal, and theorem behavior remain outside this transport
+seam.

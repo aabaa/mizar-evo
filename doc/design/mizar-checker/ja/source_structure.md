@@ -254,3 +254,16 @@ debug grammarをreuseし、constructor B2P/B2A bytesをpreserveする。
 checker API、Task-256/258 row、TypedAst statement installation、public
 runner route、selector identity/type result、semantic behaviorはownしない。
 future runner tests 2件だけがB2B前のprivate seamをfreezeする。
+
+## Task 258B3M2B2B2BP implementation result
+
+frozen production-private siblings 3件をrunner source-structure leafへ
+実装し、existing generic Task-254 extractorとTask-252 proof-context
+rootsをreuseする。full source/arena/provenance/ownership/fingerprint
+authentication後にexact `2/0/1/3/0/3/9` lower tableだけをpublishする。
+frozen tests 2件はPASSし、B2P、B2A、legacy Task-254、empty upper-family
+bytesをpreserveする。
+
+checker source/public APIは変更しない。selector identity、typing、
+result、inheritance、proof、goal、theorem behaviorはこのtransport seamの
+scope外。

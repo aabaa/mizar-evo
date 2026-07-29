@@ -2595,3 +2595,8 @@ installer、final clone rule、public API、debug grammarは変更しない。
 later B2B consumerはB2BP separate implementation commit後だけexact
 witness-to-selector edgeをownできる。B2C functional-update/`FieldUpdate`、
 selector identity/type、proof/goal/theorem semanticsはdeferred。
+
+B2BP private lower seamはfrozen prerequisite後にimplementedとなった。
+statement witnessのinstallやchecker API変更はない。fresh dependency
+inventoryは次のseparate logical taskとしてB2Bをfreezeできる。B2Cと
+semantic/proof/goal behaviorはdeferred。

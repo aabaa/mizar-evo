@@ -1065,3 +1065,9 @@ The future seam may route the exact selector profile through existing
 proof-context extraction but adds no cross-family witness edge, public API,
 semantic edge, or coverage credit. B2B is the later direct-selector witness
 consumer; B2C remains the update/`FieldUpdate` owner.
+
+The private lower edge is now implemented and tested without adding a
+Task-258 row. Task 254 still owns the selector/constructor/member/request
+rows, Task 252 owns the primary values, and the exact chain remains
+`Structure(0) -> Structure(1) -> Primary(2/3)`. B2B remains the only future
+witness consumer.

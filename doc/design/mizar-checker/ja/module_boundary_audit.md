@@ -569,3 +569,12 @@ content hash
 `d4683b1df3c2ef9d69e382bf4cad35d3d434f337d16887086eed88d2a9b8d8f3`。
 additive API/atomic typed-final behaviorはB2B/B2C/semantic boundaryを
 broadenせずimplemented。
+
+## Task 258B3M2B2B2BP private runner boundary completion
+
+B2BPはchecker file、public API、module path、dependency、production
+manifestを変更しない。implementationはexisting `mizar-test`
+source-structure leaf、そのprivate facade/root test visibility、
+structure test leafだけに限定する。future B2B statement consumerは
+separate taskのままで、statement、Task-258、semantic、proof、goal、
+Core、CFG、VC ownerをB2BPへ移動しない。

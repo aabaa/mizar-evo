@@ -3764,3 +3764,18 @@ rollback/replay、constructor compatibility、empty upper tablesもcover。
 
 active case、public route、fixture、expectation、sidecar、trace credit、
 diagnostic detail、checker test、semantic behaviorは追加しない。
+
+## Checker Task 258B3M2B2B2BP private selector harness result
+
+frozen private harnessを実装し、named tests 2件はPASSする。valid pathは
+Task-48/252、全79 surface nodes、imported root provenance、owned nodes
+`62/61/29/20/24`、全lower rows、current Task-252 fingerprintを認証した
+後だけexact Task-254 `2/0/1/3/0/3/9` bytesをpublishする。全mutationは
+fail closedし、clean replayはhandoff/TypedAst/ResolvedTypedAst debug
+bytesを再現する。
+
+missing-selector near missはsole syntax diagnostic
+`malformed_term_expression` at `149..150`として直接認証する。B2P/B2Aと
+legacy Task-254 compatibility hashesはexact。runner libraryは`432`で、
+active cases、fixtures、sidecars、expectations、trace credit、
+diagnostics、semantic outputsは不変。

@@ -470,8 +470,10 @@ pub(super) use source_structure::source_structure_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_structure::{
     ImportedStructureConstructorSurfaceMutation, ImportedStructureConstructorTestMutation,
-    ImportedStructureConstructorTestOptions, SourceStructureRouteOutput,
-    SyntheticSourceStructureDependencies, imported_structure_constructor_handoff_for_test,
+    ImportedStructureConstructorTestOptions, ImportedStructureSelectorSurfaceMutation,
+    ImportedStructureSelectorTestMutation, ImportedStructureSelectorTestOptions,
+    SourceStructureRouteOutput, SyntheticSourceStructureDependencies,
+    imported_structure_constructor_handoff_for_test, imported_structure_selector_handoff_for_test,
     source_structure_output, source_structure_output_with_mutation,
     synthetic_source_structure_output, synthetic_source_structure_output_with_mutation,
     synthetic_source_structure_output_with_validation_symbols,

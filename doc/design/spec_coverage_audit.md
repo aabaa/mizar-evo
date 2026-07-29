@@ -4621,3 +4621,15 @@ Repeated specification and source/documentation consistency reviews have no
 findings. All verification gates pass, and the final read-only review passes
 all nine hard gates with a valid `98/100`. This closure changes no trace
 row, status, count, backlink, test list, or coverage credit.
+
+### B2BP Implementation Result
+
+The private selector-reuse seam and its exact two runner tests are now
+implemented, closing the bounded `source_drift` and `test_gap`. This audit
+update is required only because the recorded follow-up changed from future
+to implemented and the next owner is now B2B. It grants no executable
+specification credit: `spec.en.checker.formula_statement.source_payloads`
+remains `deferred`, `tests = []`, without backlink/status/count change.
+Task-254 diagnostic credit, canonical artifacts, active routes, and every
+semantic owner remain unchanged. B2B direct-selector witness consumption
+and B2C update/`FieldUpdate` remain separate deferred tasks.

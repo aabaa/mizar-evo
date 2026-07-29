@@ -604,3 +604,13 @@ local theorem owner/label provenanceをB2Bへdeferして同期する。repeated
 test/implementation-boundary/source-documentation reviewsはfindingsなし。
 BPC1 final qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。
 openなのはcorrection commitとimplementation inventoryだけ。
+
+## Task 258B3M2B2B2BP implementation synchronization
+
+English canonical documentsとJapanese companionsは、implemented private
+selector seam、exact runner tests 2件、libraries `382/432`、runner sizes
+`6414/4514/722/2538/15058/4315`、30-path / 44,809-line production
+manifest、current test-list/production hashesを同期して記録する。
+両言語はimported-only provenance boundary、unchanged checker surface、
+dormant active route、deferred trace row、B2B/B2C/semantic deferralsを
+preserveする。implementation bilingual debtはない。

@@ -595,3 +595,12 @@ and has content hash
 `d4683b1df3c2ef9d69e382bf4cad35d3d434f337d16887086eed88d2a9b8d8f3`.
 The additive API and atomic typed/final behavior are implemented without
 broadening B2B/B2C or any semantic boundary.
+
+## Task 258B3M2B2B2BP Private Runner Boundary Completion
+
+B2BP changes no checker file, public API, module path, dependency, or
+production manifest. The implementation is confined to the existing
+`mizar-test` source-structure leaf, its private facade/root test visibility,
+and its structure test leaf. The future B2B statement consumer remains a
+separate task; no statement, Task-258, semantic, proof, goal, Core, CFG, or
+VC owner moves into B2BP.

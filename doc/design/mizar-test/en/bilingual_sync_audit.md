@@ -720,3 +720,12 @@ owner/label provenance to B2B. Repeated test, implementation-boundary, and
 source/documentation reviews have no findings. BPC1 final quality has no
 findings, passes all nine hard gates, and scores a valid `98/100`; only the
 correction commit and implementation inventory remain open.
+
+## Checker Task 258B3M2B2B2BP Implementation Synchronization
+
+English canonical runner documents and Japanese companions synchronously
+record the implemented private selector seam, exact two tests, runner
+library `432`, sizes `6414/4514/722/2538/15058/4315`, 30-path /
+44,809-line manifest, and current test-list/production hashes. Both retain
+the imported-only provenance boundary, no public/active surface, unchanged
+trace/diagnostic credit, and B2B/B2C/semantic deferrals.

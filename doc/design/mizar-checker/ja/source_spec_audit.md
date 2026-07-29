@@ -4081,3 +4081,25 @@ repeated specification/source-documentation consistency reviewsはfindings
 なし。全verification gatesはPASS、final read-only reviewは全9 hard gates
 PASS、valid `98/100`。このclosureはtrace row/status/count/backlink/test
 list/executable creditを変更しない。
+
+## Task 258B3M2B2B2BP implementation audit
+
+bounded `source_drift`と`test_gap`はproduction-private selector seamと
+exact runner tests 2件でcloseした。implementationはfrozen imported
+provenance、lower tables、ownership、failure precedence、semantic
+exclusionsをpreserveする。`spec_gap`、undocumented behavior、expectation
+drift、boundary violationはない。final review中にexternal same-task
+writerがTask-48/252 mutation matricesをexpandし、initial no-op mutationを
+fixし、frozen direct B2P compatibility hashesを追加した。先行する
+external docs commit `6f84d4eb`とcorrection commit `a782606c`は
+report-only historyのまま。local HEADが`a782606c`でunchangedの間に、
+dirty task-owned scopeは4 filesから32 filesへexpandし、
+`origin/main...HEAD`はahead-fourから`0/0`へ移動した。これは
+nonblocking、report-only `repo_metadata_conflict`。final task-owned
+targetは引き続き明確で、metadata repair、revert、fetch、push、stash
+actionは行わない。
+
+canonical specification、`.miz`、fixture、expectation、sidecar、trace
+row/status/count/backlink、Task-254 diagnostic credit、active routeは
+変更しない。formula-statement coverageは`deferred`、`tests = []`のまま。
+B2B/B2Cとselector identity/type/proof semanticsはdeferred。
