@@ -911,3 +911,27 @@ Source/documentation consistency and documentation/boundary repeats are
 **NO FINDINGS**, all nine hard gates PASS, valid `98/100`
 (`20/20/15/14/10/10/5/4`). Only docs commit, post-commit, and fresh
 implementation inventory remain pending in both.
+
+## Task 258B3M2B2B3A Implementation Synchronization
+
+The EN canonical and JA companion now synchronize the implementation
+closure after prerequisite commit
+`f4ff45964d97b31b6c328381120ba8ede080a2b1` and its clean
+ahead-`11`/behind-`0`, unchanged-stash, fresh-inventory checks. Both record
+the exact seven source files, additive set-witness API, four checker plus
+five runner tests, measured checker `394` and runner `451` libraries,
+production/test-list hashes, unchanged five CLI counts/hashes, semantic
+deferrals, and deliberate trace no-credit.
+
+Specification, test-sufficiency, and implementation reviews are synchronized
+as **NO FINDINGS**; focused/package/fmt/targeted-Clippy/CLI/count/hash/diff
+checks are synchronized as PASS. The second source/documentation
+consistency repeat and final documentation/boundary reread are synchronized
+as **NO FINDINGS**. Parent final verification listed in the crate plans is
+synchronized as PASS, including exact `39`-file scope. Independent final
+read-only quality review is synchronized as **NO FINDINGS** in both
+languages: all nine hard gates PASS with no score cap and valid `98/100`
+(`20/20/15/14/10/10/5/4`). Both preserve the stated semantic and coverage
+deferrals as unchanged residual risk. Only the dedicated implementation
+commit, post-commit invariant verification, and fresh next-task inventory
+remain pending in both languages.

@@ -2603,5 +2603,36 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   reviews with **NO FINDINGS**.
 - [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
   and valid `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Create the dedicated documentation-only commit.
-- [ ] Verify post-commit/stash invariants and fresh implementation inventory.
+- [x] Create the dedicated documentation-only commit
+  `f4ff45964d97b31b6c328381120ba8ede080a2b1`.
+- [x] Verify clean ahead-11/behind-0 post-commit state, unchanged stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh
+  implementation inventory.
+
+## Checker Task 258B3M2B2B3A Runner Implementation Ledger
+
+- [x] Close the prerequisite commit/post-commit/fresh-inventory gates.
+- [x] Implement only the exact four runner plus three checker source files,
+  preserving both set-term source owners and all authority artifacts.
+- [x] Add the exact five runner plus four checker tests, additive API,
+  set-only tuple, atomic installation/final clone, and all frozen matrices.
+- [x] Complete specification, test-sufficiency, and implementation reviews
+  with **NO FINDINGS**.
+- [x] Pass focused/package tests, formatting, targeted Clippy, five CLI,
+  final count/hash manifests, and diff checks.
+- [x] Complete the second source/documentation consistency repeat with
+  **NO FINDINGS**.
+- [x] Complete the final documentation/boundary reread with
+  **NO FINDINGS**.
+- [x] Pass parent final verification: focused checker `4` plus runner `5`;
+  checker package `394` plus lint-policy `15`; mizar-test package `451`,
+  layout `3`, lint-policy `14`, metadata `137`, public-enum `2`, snapshot
+  `21`; format; workspace Clippy/tests; five CLI counts/hashes; production
+  manifests/test lists; diff check; and exact `39`-file scope.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**: all nine hard gates PASS with no score cap, valid
+  `98/100` (`20/20/15/14/10/10/5/4`), and the stated residual deferrals
+  unchanged.
+- [ ] Create the dedicated implementation commit.
+- [ ] Verify implementation post-commit invariants.
+- [ ] Complete fresh next-task inventory.

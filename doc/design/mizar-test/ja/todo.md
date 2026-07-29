@@ -2392,5 +2392,35 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] documentation/boundary/source-docs reviewsを**NO FINDINGS**でcomplete。
 - [x] final qualityを**NO FINDINGS**、全9 hard gates PASS、valid
   `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] dedicated documentation-only commitをcreate。
-- [ ] postcommit/stash invariantsとfresh implementation inventoryをverify。
+- [x] dedicated documentation-only commit
+  `f4ff45964d97b31b6c328381120ba8ede080a2b1`をcreate。
+- [x] clean ahead-11/behind-0 postcommit state、unchanged stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`、fresh implementation
+  inventoryをverify。
+
+## Checker Task 258B3M2B2B3A runner implementation ledger
+
+- [x] prerequisite commit/postcommit/fresh-inventory gatesをclose。
+- [x] exact runner4+checker3 source filesだけをimplementし、両set-term
+  source ownerと全authority artifactをpreserve。
+- [x] exact runner5+checker4 tests、additive API、set-only tuple、atomic
+  installation/final clone、全frozen matricesを追加。
+- [x] specification/test-sufficiency/implementation reviewsを
+  **NO FINDINGS**でcomplete。
+- [x] focused/package tests、fmt、targeted Clippy、5 CLI、final
+  count/hash manifests、diff checksをPASS。
+- [x] 2回目のsource/documentation consistency repeatを
+  **NO FINDINGS**でcomplete。
+- [x] final documentation/boundary rereadを**NO FINDINGS**でcomplete。
+- [x] parent final verificationをPASS：focused checker `4` + runner `5`、
+  checker package `394` + lint-policy `15`、mizar-test package `451` +
+  layout `3` + lint-policy `14` + metadata `137` + public-enum `2` +
+  snapshot `21`、fmt、workspace Clippy/tests、5 CLI counts/hashes、
+  production manifests/test lists、diff check、exact `39`-file scope。
+- [x] independent final read-only quality reviewを**NO FINDINGS**、全9
+  hard gates PASS、score capなし、valid `98/100`
+  （`20/20/15/14/10/10/5/4`）、記載済みresidual deferrals unchangedで
+  complete。
+- [ ] dedicated implementation commitをcreate。
+- [ ] implementation postcommit invariantsをverify。
+- [ ] fresh next-task inventoryをcomplete。

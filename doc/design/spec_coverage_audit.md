@@ -5035,3 +5035,39 @@ report **NO FINDINGS**. Executable/count/hash/scope/no-op verification
 passes, and independent final quality reports **NO FINDINGS**, all nine hard
 gates PASS, valid `98/100` (`20/20/15/14/10/10/5/4`). This review closure
 does not change trace status, count, backlinks, tests, or semantic credit.
+
+## Task 258B3M2B2B3A Implementation Coverage Closure
+
+The prerequisite commit
+`f4ff45964d97b31b6c328381120ba8ede080a2b1` closed cleanly at
+ahead `11` / behind `0`; stash fingerprint
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged, and fresh
+inventory selected the bounded seven-file implementation.
+
+The implementation now supplies the exact witness-to-`SetTerm(0)` transport
+API, the set-only fingerprint tuple, atomic typed publication, final
+revalidation/clone, and the frozen four checker plus five runner tests.
+Specification, test-sufficiency, and implementation reviews report
+**NO FINDINGS**. Focused/package tests, formatting, targeted Clippy, five
+CLIs, count/hash manifests, and diff checks pass.
+
+This is narrative implementation ownership only. The
+`spec.en.checker.formula_statement.source_payloads` row remains `deferred`
+with `tests = []`; Task-111/255 credit, all trace counts/status/backlinks,
+and the existing corpus/expectation outcomes remain unchanged. Semantic
+witness matching, proof progress/acceptance, theorem publication, and
+Core/CFG/VC remain deferred. The second source/documentation consistency
+repeat and final documentation/boundary reread report **NO FINDINGS**.
+Parent final verification listed in the crate plans passes, including
+focused checker `4` plus runner `5`, checker package `394` plus lint-policy
+`15`, mizar-test package `451` plus layout `3` / lint-policy `14` /
+metadata `137` / public-enum `2` / snapshot `21`, format, workspace
+Clippy/tests, five CLI counts/hashes, production manifests/test lists, diff
+check, and exact `39`-file scope. This remains a narrative no-op for trace
+status, counts, backlinks, tests, and semantic credit. Independent final
+read-only quality review reports **NO FINDINGS**. All nine hard gates PASS
+with no score cap; the valid score is `98/100`
+(`20/20/15/14/10/10/5/4`). The stated semantic and coverage deferrals
+remain unchanged as residual risk. Only the dedicated implementation
+commit, post-commit invariant verification, and fresh next-task inventory
+remain pending.

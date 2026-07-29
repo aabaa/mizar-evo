@@ -1296,3 +1296,22 @@ The full graph is formula `0 -> Primary(0/1)`, formula
 `SetTerm(0) -> Primary(2/3)`. No reverse/cross-owner/semantic edge exists.
 All set-shape, label, family-hybrid, and family-order near misses fail closed
 without partial publication. B4/B5 and semantic expansion remain deferred.
+
+### Task 258B3M2B2B3A Implemented Upper-Family Edge
+
+The implementation realizes the frozen partition and sole
+`SourceStatementWitness(0) -> SetTerm(0)` edge without changing Task-255
+production. The set-only fingerprint tuple, exact label/lower provenance,
+atomic typed installation, and final revalidation/clone are covered by the
+frozen four checker plus five runner tests. Application, structure, and
+multi-family hybrids still fail closed; B4/B5 and every semantic expansion
+remain deferred. Specification, test-sufficiency, and implementation
+reviews report **NO FINDINGS**. The second source/documentation consistency
+repeat and final documentation/boundary reread also report
+**NO FINDINGS**; parent final verification listed in the crate plans
+passes, including exact `39`-file scope. Independent final read-only quality
+review reports **NO FINDINGS**. All nine hard gates PASS with no score cap;
+the valid score is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic
+and coverage deferrals remain unchanged as residual risk. Only the
+dedicated implementation commit, post-commit invariant verification, and
+fresh next-task inventory remain pending.

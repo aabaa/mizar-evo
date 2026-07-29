@@ -4374,3 +4374,22 @@ Every failure follows precedence source/AST, resolver plus label, Tasks
 48,252,255,256,258 base, witness, atomic publication, final clone. The
 real fixture/expectation/trace remain unchanged and inactive; no existential
 goal matching, proof acceptance, or active-route credit is asserted.
+
+## Checker Task 258B3M2B2B3A Implemented Runner Harness
+
+The exact route now consumes the unchanged B3P set-enumeration handoff and
+publishes the frozen one-witness/zero-name set edge. The five named runner
+tests cover the real frontend, exact resolver label, every lower/upper row,
+Task-256 `72`, Task-258 `62`, and witness `21` field matrices, all `57`
+surface nodes/root, both final-LF near misses, family tuples/routes,
+rollback/replay, final clone/debug, and empty semantics. The paired four
+checker tests remain exact. No fixture/expectation/trace/corpus activation or
+semantic/proof credit changed. The second source/documentation consistency
+repeat and final documentation/boundary reread report **NO FINDINGS**;
+parent final verification listed in the crate plans passes, including exact
+`39`-file scope. Independent final read-only quality review reports
+**NO FINDINGS**. All nine hard gates PASS with no score cap; the valid score
+is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic and coverage
+deferrals remain unchanged as residual risk. Only the dedicated
+implementation commit, post-commit invariant verification, and fresh
+next-task inventory remain pending.

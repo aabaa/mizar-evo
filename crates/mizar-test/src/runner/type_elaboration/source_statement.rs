@@ -10,12 +10,16 @@ use mizar_checker::{
     },
     source_application::{SourceFunctorApplicationHandoff, SourceFunctorApplicationId},
     source_atomic_formula::{
-        SourceAtomicEdgeId, SourceAtomicEdgeInput, SourceAtomicEdgeRole,
-        SourceAtomicFormulaHandoff, SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId,
-        SourceAtomicFormulaInput, SourceAtomicFormulaKind, SourceAtomicFormulaProducer,
-        SourceAtomicFormulaRecovery, SourceAtomicRequestInput, SourceAtomicRequestKind,
-        SourceAtomicTermTarget,
+        SourceAssertionAttributeInput, SourceAssertionAttributePolarityInput,
+        SourceAssertionTypeHead, SourceAssertionTypeSiteInput, SourceAtomicEdgeId,
+        SourceAtomicEdgeInput, SourceAtomicEdgeRole, SourceAtomicFormulaHandoff,
+        SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId, SourceAtomicFormulaInput,
+        SourceAtomicFormulaKind, SourceAtomicFormulaProducer, SourceAtomicFormulaRecovery,
+        SourceAtomicRequestInput, SourceAtomicRequestKind, SourceAtomicTermTarget,
+        SourceAtomicWrapperInput, SourcePredicateCandidateInput, SourcePredicateHeadId,
+        SourcePredicateHeadInput, SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
     },
+    source_set_term::{SourceSetTermHandoff, SourceSetTermId},
     source_statement::{
         SourceStatementCandidateFactId, SourceStatementCandidateFactInput,
         SourceStatementCandidateFactKind, SourceStatementCitationInput,
@@ -39,7 +43,10 @@ use mizar_checker::{
     },
 };
 use mizar_resolve::{
-    env::{ExportStatus, NamespacePath, SymbolEnv, SymbolEnvIndexes, SymbolKind, Visibility},
+    env::{
+        ExportStatus, NamespacePath, SourceContributionId, SymbolEnv, SymbolEnvIndexes, SymbolKind,
+        Visibility,
+    },
     labels::{
         LabelProjection, LabelProjectionData, LabelReferenceCandidate, LabelResolver,
         LabelScopePath,
@@ -48,10 +55,13 @@ use mizar_resolve::{
     resolved_ast::{
         LabelKind, LabelOriginPath, ModuleId, NameRefTable, NodeReferenceKey, NodeResolutionState,
         RecoveryState, ReferenceSite, ResolvedArena, ResolvedArenaBuilder, ResolvedAst,
-        ResolvedImports, ResolvedNode, SemanticOrigin,
+        ResolvedImports, ResolvedNode, SemanticOrigin, SymbolId,
     },
 };
-use mizar_session::{SourceAnchor, SourceRange};
+use mizar_session::{
+    BuildSnapshotId, Hash, InMemorySessionIdAllocator, ModulePath, SessionIdAllocator,
+    SourceAnchor, SourceId, SourceRange,
+};
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceTokenKind, SyntaxKind};
 
 use super::{
@@ -71,6 +81,7 @@ use super::{
         SourceReservedVariableBuiltinType, extract_source_reserved_variable_binary_formula,
     },
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
+    source_set_term::source_set_term_output_with_source_term_in_context,
     source_structure::{
         ImportedStructureConstructorSite, ImportedStructureSelectorSite,
         ImportedStructureUpdateSite, imported_structure_constructor_handoff_in_context,
@@ -198,6 +209,14 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2C_TEXT: &str = concat!(
     "end;\n",
 );
 
+pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3A_TEXT: &str = concat!(
+    "reserve x for set;\n",
+    "theorem FormulaStatementSetEnumerationWitnessSmoke: x = x proof\n",
+    "  take {1, 2};\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
 const SOURCE_STATEMENT_LABEL: &str = "FormulaStatementReservedVariableEqualitySmoke";
 const SOURCE_STATEMENT_SPELLING: &str =
     "theorem FormulaStatementReservedVariableEqualitySmoke : x = x ;";
@@ -268,6 +287,11 @@ const SOURCE_STATEMENT_B3M2B2B2B_SPELLINGS: [&str; 2] = [
 const SOURCE_STATEMENT_B3M2B2B2C_LABEL: &str = "FormulaStatementStructureUpdateWitnessSmoke";
 const SOURCE_STATEMENT_B3M2B2B2C_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementStructureUpdateWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 ) ; thus x = x ; end ;",
+    "thus x = x ;",
+];
+const SOURCE_STATEMENT_B3M2B2B3A_LABEL: &str = "FormulaStatementSetEnumerationWitnessSmoke";
+const SOURCE_STATEMENT_B3M2B2B3A_SPELLINGS: [&str; 2] = [
+    "theorem FormulaStatementSetEnumerationWitnessSmoke : x = x proof take { 1 , 2 } ; thus x = x ; end ;",
     "thus x = x ;",
 ];
 const SOURCE_STATEMENT_CONFIG: SourceReservedVariableBinaryFormulaConfig =
@@ -538,6 +562,25 @@ pub(in crate::runner) struct SourceStatementB3M2B2B2CExtraction {
 }
 
 #[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceStatementB3M2B2B3AExtraction {
+    pub(in crate::runner) theorem_site: TypedSiteRef,
+    pub(in crate::runner) theorem_range: SourceRange,
+    pub(in crate::runner) label_range: SourceRange,
+    pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) statement_ranges: [SourceRange; 2],
+    pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) formula_ranges: [SourceRange; 2],
+    pub(in crate::runner) term_sites: [TypedSiteRef; 6],
+    pub(in crate::runner) term_ranges: [SourceRange; 6],
+    pub(in crate::runner) take_site: TypedSiteRef,
+    pub(in crate::runner) take_range: SourceRange,
+    pub(in crate::runner) witness_site: TypedSiteRef,
+    pub(in crate::runner) witness_range: SourceRange,
+    pub(in crate::runner) set_term_node: usize,
+    pub(in crate::runner) proof_range: SourceRange,
+}
+
+#[derive(Debug, Clone)]
 struct SourceStatementWitnessItemExtraction {
     site: TypedSiteRef,
     range: SourceRange,
@@ -572,6 +615,7 @@ struct SourceStatementWitnessExtraction {
     structure_node: Option<usize>,
     structure_selector_node: Option<usize>,
     structure_update_node: Option<usize>,
+    set_term_node: Option<usize>,
     source_text: &'static str,
 }
 
@@ -608,6 +652,7 @@ impl From<SourceStatementB3Extraction> for SourceStatementWitnessExtraction {
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3_TEXT,
         }
     }
@@ -646,6 +691,7 @@ impl From<SourceStatementB3NExtraction> for SourceStatementWitnessExtraction {
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3N_TEXT,
         }
     }
@@ -692,6 +738,7 @@ impl From<SourceStatementB3M1Extraction> for SourceStatementWitnessExtraction {
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M1_TEXT,
         }
     }
@@ -730,6 +777,7 @@ impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2A_TEXT,
         }
     }
@@ -768,6 +816,7 @@ impl From<SourceStatementB3M2B1Extraction> for SourceStatementWitnessExtraction 
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2B1_TEXT,
         }
     }
@@ -806,6 +855,7 @@ impl From<SourceStatementB3M2B2AExtraction> for SourceStatementWitnessExtraction
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2A_TEXT,
         }
     }
@@ -844,6 +894,7 @@ impl From<SourceStatementB3M2B2B1AExtraction> for SourceStatementWitnessExtracti
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B1A_TEXT,
         }
     }
@@ -882,6 +933,7 @@ impl From<SourceStatementB3M2B2B1B1Extraction> for SourceStatementWitnessExtract
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
         }
     }
@@ -920,6 +972,7 @@ impl From<SourceStatementB3M2B2B2AExtraction> for SourceStatementWitnessExtracti
             structure_node: Some(extracted.structure_node),
             structure_selector_node: None,
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B2A_TEXT,
         }
     }
@@ -958,6 +1011,7 @@ impl From<SourceStatementB3M2B2B2BExtraction> for SourceStatementWitnessExtracti
             structure_node: None,
             structure_selector_node: Some(extracted.selector_node),
             structure_update_node: None,
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B2B_TEXT,
         }
     }
@@ -996,7 +1050,47 @@ impl From<SourceStatementB3M2B2B2CExtraction> for SourceStatementWitnessExtracti
             structure_node: None,
             structure_selector_node: None,
             structure_update_node: Some(extracted.update_node),
+            set_term_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B2C_TEXT,
+        }
+    }
+}
+
+impl From<SourceStatementB3M2B2B3AExtraction> for SourceStatementWitnessExtraction {
+    fn from(extracted: SourceStatementB3M2B2B3AExtraction) -> Self {
+        Self {
+            theorem_site: extracted.theorem_site,
+            theorem_range: extracted.theorem_range,
+            label_range: extracted.label_range,
+            statement_sites: extracted.statement_sites,
+            statement_ranges: extracted.statement_ranges,
+            formula_sites: extracted.formula_sites,
+            formula_ranges: extracted.formula_ranges,
+            term_sites: extracted.term_sites.into(),
+            term_ranges: extracted.term_ranges.into(),
+            take_site: extracted.take_site,
+            take_range: extracted.take_range,
+            witnesses: vec![SourceStatementWitnessItemExtraction {
+                site: extracted.witness_site,
+                range: extracted.witness_range,
+                name: None,
+                spelling: "{ 1 , 2 }",
+            }],
+            proof_range: extracted.proof_range,
+            label: SOURCE_STATEMENT_B3M2B2B3A_LABEL,
+            spellings: &SOURCE_STATEMENT_B3M2B2B3A_SPELLINGS,
+            task: "Task258B3M2B2B3A",
+            node_count: 57,
+            root: 56,
+            atomic_term_starts: [0, 4],
+            input_fact_reference_starts: [0, 2],
+            application_node: None,
+            application_wrapper_node: None,
+            structure_node: None,
+            structure_selector_node: None,
+            structure_update_node: None,
+            set_term_node: Some(extracted.set_term_node),
+            source_text: SOURCE_STATEMENT_B3M2B2B3A_TEXT,
         }
     }
 }
@@ -1034,6 +1128,7 @@ pub(in crate::runner) struct SourceStatementB3RouteInputs {
     pub(in crate::runner) witness: SourceStatementWitnessHandoffInput,
     pub(in crate::runner) application: Option<SourceFunctorApplicationHandoff>,
     pub(in crate::runner) structure: Option<SourceStructureHandoff>,
+    pub(in crate::runner) set_term: Option<SourceSetTermHandoff>,
 }
 
 pub(in crate::runner) type SourceStatementB3NRouteInputs = SourceStatementB3RouteInputs;
@@ -1046,6 +1141,23 @@ pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatemen
 pub(in crate::runner) type SourceStatementB3M2B2B2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2BRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2CRouteInputs = SourceStatementB3RouteInputs;
+pub(in crate::runner) type SourceStatementB3M2B2B3ARouteInputs = SourceStatementB3RouteInputs;
+
+// Rationale: these variants type the exhaustive test-only lower-stage mutation seam and are intentionally dormant in non-test builds.
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceStatementB3M2B2B3AStage {
+    Task256,
+    Task258,
+    Witness,
+}
+
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3A_TASK256_FIELD_COUNT: usize = 72;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3A_TASK258_FIELD_COUNT: usize = 62;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3A_WITNESS_FIELD_COUNT: usize = 21;
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceStatementRouteOutput {
@@ -3399,6 +3511,350 @@ pub(in crate::runner) fn extract_structure_update_witness_source_statement(
     })
 }
 
+// Rationale: these variants type the exhaustive test-only surface-profile mutation seam and are intentionally dormant in non-test builds.
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceStatementB3M2B2B3ASurfaceMutation {
+    None,
+    NodeKind(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    RootIdentity,
+}
+
+fn exact_set_enumeration_witness_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
+    exact_set_enumeration_witness_surface_profile_with_mutation(
+        ast,
+        source_text,
+        SourceStatementB3M2B2B3ASurfaceMutation::None,
+    )
+}
+
+fn exact_set_enumeration_witness_surface_profile_with_mutation(
+    ast: &SurfaceAst,
+    source_text: &str,
+    mutation: SourceStatementB3M2B2B3ASurfaceMutation,
+) -> bool {
+    const KINDS: [&str; 57] = [
+        "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"FormulaStatementSetEnumerationWitnessSmoke\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"proof\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"take\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"{\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"1\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \",\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"2\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"}\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"end\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "TypeHead",
+        "TypeExpression",
+        "ReserveSegment",
+        "ReserveItem",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "NumeralTerm",
+        "TermExpression",
+        "NumeralTerm",
+        "TermExpression",
+        "SetEnumeration",
+        "TermExpression",
+        "Witness",
+        "TakeStatement",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "Proposition",
+        "ConclusionStatement",
+        "ProofBlock",
+        "TheoremItem",
+        "ItemList",
+        "CompilationUnit",
+        "Root",
+    ];
+    const RANGES: [(usize, usize); 57] = [
+        (0, 7),
+        (8, 9),
+        (10, 13),
+        (14, 17),
+        (17, 18),
+        (19, 26),
+        (27, 69),
+        (69, 70),
+        (71, 72),
+        (73, 74),
+        (75, 76),
+        (77, 82),
+        (85, 89),
+        (90, 91),
+        (91, 92),
+        (92, 93),
+        (94, 95),
+        (95, 96),
+        (96, 97),
+        (100, 104),
+        (105, 106),
+        (107, 108),
+        (109, 110),
+        (110, 111),
+        (112, 115),
+        (115, 116),
+        (14, 17),
+        (14, 17),
+        (8, 17),
+        (0, 18),
+        (71, 72),
+        (71, 72),
+        (75, 76),
+        (75, 76),
+        (71, 76),
+        (71, 76),
+        (91, 92),
+        (91, 92),
+        (94, 95),
+        (94, 95),
+        (90, 96),
+        (90, 96),
+        (90, 96),
+        (85, 97),
+        (105, 106),
+        (105, 106),
+        (109, 110),
+        (109, 110),
+        (105, 110),
+        (105, 110),
+        (105, 110),
+        (100, 111),
+        (77, 115),
+        (19, 116),
+        (0, 116),
+        (0, 116),
+        (0, 116),
+    ];
+    const CHILDREN: [&[usize]; 57] = [
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[3],
+        &[26],
+        &[1, 2, 27],
+        &[0, 28, 4],
+        &[8],
+        &[30],
+        &[10],
+        &[32],
+        &[31, 9, 33],
+        &[34],
+        &[14],
+        &[36],
+        &[16],
+        &[38],
+        &[13, 37, 15, 39, 17],
+        &[40],
+        &[41],
+        &[12, 42, 18],
+        &[20],
+        &[44],
+        &[22],
+        &[46],
+        &[45, 21, 47],
+        &[48],
+        &[49],
+        &[19, 50, 23],
+        &[11, 43, 51, 24],
+        &[5, 6, 7, 35, 52, 25],
+        &[29, 53],
+        &[54],
+        &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 55,
+        ],
+    ];
+    let mut kinds = KINDS
+        .iter()
+        .map(|kind| (*kind).to_owned())
+        .collect::<Vec<_>>();
+    let mut ranges = RANGES.to_vec();
+    let mut recoveries = [false; 57];
+    let mut children = CHILDREN
+        .iter()
+        .map(|children| children.to_vec())
+        .collect::<Vec<_>>();
+    let mut root = Some(56);
+    match mutation {
+        SourceStatementB3M2B2B3ASurfaceMutation::None => {}
+        SourceStatementB3M2B2B3ASurfaceMutation::NodeKind(index) => {
+            if let Some(kind) = kinds.get_mut(index) {
+                kind.push('!');
+            }
+        }
+        SourceStatementB3M2B2B3ASurfaceMutation::NodeRange(index) => {
+            if let Some(range) = ranges.get_mut(index) {
+                range.1 = range.1.saturating_add(1);
+            }
+        }
+        SourceStatementB3M2B2B3ASurfaceMutation::NodeRecovery(index) => {
+            if let Some(recovered) = recoveries.get_mut(index) {
+                *recovered = !*recovered;
+            }
+        }
+        SourceStatementB3M2B2B3ASurfaceMutation::NodeChildren(index) => {
+            if let Some(node_children) = children.get_mut(index) {
+                if node_children.len() > 1 {
+                    node_children.rotate_left(1);
+                } else {
+                    node_children.push(index);
+                }
+            }
+        }
+        SourceStatementB3M2B2B3ASurfaceMutation::RootIdentity => root = None,
+    }
+    source_text == SOURCE_STATEMENT_B3M2B2B3A_TEXT
+        && source_text.len() == 117
+        && source_text.ends_with('\n')
+        && ast.nodes().len() == 57
+        && ast.root().map(|root| root.index()) == root
+        && ast.nodes().iter().enumerate().all(|(index, node)| {
+            format!("{:?}", node.kind) == kinds[index]
+                && (node.range.start, node.range.end) == ranges[index]
+                && node.range.source_id == ast.source_id
+                && node.recovered == recoveries[index]
+                && node
+                    .children
+                    .iter()
+                    .map(|child| child.index())
+                    .eq(children[index].iter().copied())
+        })
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn extract_set_enumeration_witness_source_statement_with_surface_mutation(
+    ast: &SurfaceAst,
+    source_text: &str,
+    mutation: SourceStatementB3M2B2B3ASurfaceMutation,
+) -> Option<SourceStatementB3M2B2B3AExtraction> {
+    if !exact_set_enumeration_witness_surface_profile_with_mutation(ast, source_text, mutation) {
+        return None;
+    }
+    extract_set_enumeration_witness_source_statement(ast, source_text)
+}
+
+pub(in crate::runner) fn extract_set_enumeration_witness_source_statement(
+    ast: &SurfaceAst,
+    source_text: &str,
+) -> Option<SourceStatementB3M2B2B3AExtraction> {
+    if !exact_set_enumeration_witness_surface_profile(ast, source_text) {
+        return None;
+    }
+    let (theorem_id, theorem) = exact_surface_node(ast, SurfaceNodeKind::TheoremItem, 19, 116)?;
+    let (proof_id, proof) = exact_surface_node(ast, SurfaceNodeKind::ProofBlock, 77, 115)?;
+    let (take_id, take) = exact_surface_node(ast, SurfaceNodeKind::TakeStatement, 85, 97)?;
+    let (witness_id, witness) = exact_surface_node(ast, SurfaceNodeKind::Witness, 90, 96)?;
+    let (set_term_id, _) = exact_surface_node(ast, SurfaceNodeKind::SetEnumeration, 90, 96)?;
+    let (conclusion_id, _) =
+        exact_surface_node(ast, SurfaceNodeKind::ConclusionStatement, 100, 111)?;
+    let formula_ids = [
+        exact_surface_node(ast, SurfaceNodeKind::BuiltinPredicateApplication, 71, 76)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::BuiltinPredicateApplication, 105, 110)?.0,
+    ];
+    let term_ids = [
+        exact_surface_node(ast, SurfaceNodeKind::TermReference, 71, 72)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::TermReference, 75, 76)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::NumeralTerm, 91, 92)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::NumeralTerm, 94, 95)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::TermReference, 105, 106)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::TermReference, 109, 110)?.0,
+    ];
+    let label_id = ast
+        .token_nodes()
+        .iter()
+        .copied()
+        .find(|id| id.index() == 6)?;
+    if !surface_is_descendant(ast, theorem_id, proof_id)
+        || !surface_is_descendant(ast, proof_id, take_id)
+        || !surface_is_descendant(ast, take_id, witness_id)
+        || !surface_is_descendant(ast, witness_id, set_term_id)
+        || !surface_is_descendant(ast, theorem_id, formula_ids[0])
+        || !surface_is_descendant(ast, proof_id, formula_ids[1])
+        || surface_is_descendant(ast, set_term_id, formula_ids[1])
+    {
+        return None;
+    }
+    Some(SourceStatementB3M2B2B3AExtraction {
+        theorem_site: surface_site(theorem_id),
+        theorem_range: theorem.range,
+        label_range: ast.node(label_id)?.range,
+        statement_sites: [theorem_id, conclusion_id].map(surface_site),
+        statement_ranges: [
+            range(ast.source_id, 19, 116),
+            range(ast.source_id, 100, 111),
+        ],
+        formula_sites: formula_ids.map(surface_site),
+        formula_ranges: [range(ast.source_id, 71, 76), range(ast.source_id, 105, 110)],
+        term_sites: term_ids.map(surface_site),
+        term_ranges: [
+            range(ast.source_id, 71, 72),
+            range(ast.source_id, 75, 76),
+            range(ast.source_id, 91, 92),
+            range(ast.source_id, 94, 95),
+            range(ast.source_id, 105, 106),
+            range(ast.source_id, 109, 110),
+        ],
+        take_site: surface_site(take_id),
+        take_range: take.range,
+        witness_site: surface_site(witness_id),
+        witness_range: witness.range,
+        set_term_node: set_term_id.index(),
+        proof_range: proof.range,
+    })
+}
+
 const TASK258B3M2B2A_SURFACE_RANGES: [(usize, usize); 57] = [
     (0, 7),
     (8, 9),
@@ -3814,6 +4270,15 @@ pub(in crate::runner) fn source_statement_output_with_source(
     symbols: &SymbolEnv,
     source_text: &str,
 ) -> Option<Result<SourceStatementRouteOutput, String>> {
+    if source_text == SOURCE_STATEMENT_B3M2B2B3A_TEXT {
+        return source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
+            ast,
+            module,
+            symbols,
+            source_text,
+            |_| {},
+        );
+    }
     if source_text == SOURCE_STATEMENT_B3M2B2B2C_TEXT {
         return source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
             ast,
@@ -3932,6 +4397,145 @@ pub(in crate::runner) fn source_statement_output_with_source(
         );
     }
     source_statement_output_with_source_and_mutation_impl(ast, module, symbols, source_text, |_| {})
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ARouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        mutate,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_stage_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    stage: SourceStatementB3M2B2B3AStage,
+    field: usize,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_set_enumeration_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3A_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_witness_output_with_controls(
+        ast,
+        module,
+        &symbols,
+        extracted.into(),
+        |_| {},
+        Some((stage, field)),
+        |_| {},
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_post_auth_family_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ARouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_set_enumeration_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3A_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_witness_output_with_controls(
+        ast,
+        module,
+        &symbols,
+        extracted.into(),
+        |_| {},
+        None,
+        mutate,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_set_enumeration_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3A_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => mutate(symbols),
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b3m2b2b3a_output(
+        ast,
+        module,
+        &symbols,
+        extracted,
+        |_| {},
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3a_resolver_env_for_test(
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    label_range: SourceRange,
+) -> Result<SymbolEnv, String> {
+    enrich_source_statement_resolver_env_for_owner(
+        module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3A_LABEL,
+        label_range,
+    )
+}
+
+fn source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ARouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_set_enumeration_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3A_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b3m2b2b3a_output(
+        ast, module, &symbols, extracted, mutate,
+    ))
 }
 
 #[cfg(test)]
@@ -5384,12 +5988,386 @@ fn build_source_statement_b3m2b2b2c_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+fn build_source_statement_b3m2b2b3a_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    extracted: SourceStatementB3M2B2B3AExtraction,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ARouteInputs),
+) -> Result<SourceStatementRouteOutput, String> {
+    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+}
+
+fn task258b3m2b2b3a_mutated_module(module: &ModuleId) -> ModuleId {
+    ModuleId::new(
+        module.package().clone(),
+        ModulePath::new(format!(
+            "{}.task258b3m2b2b3a-mutated",
+            module.path().as_str()
+        )),
+    )
+}
+
+fn task258b3m2b2b3a_mutated_source_id(source_id: SourceId) -> SourceId {
+    let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+        "mizar-session-build-snapshot-v1:{}",
+        "a3".repeat(Hash::BYTE_LEN)
+    ))
+    .expect("Task258B3M2B2B3A test snapshot");
+    let allocator = InMemorySessionIdAllocator::new();
+    loop {
+        let candidate = allocator
+            .next_source_id(snapshot)
+            .expect("Task258B3M2B2B3A test source id");
+        if candidate != source_id {
+            return candidate;
+        }
+    }
+}
+
+fn mutate_task258b3m2b2b3a_atomic_input(
+    input: &mut SourceAtomicFormulaHandoffInput,
+    owner_symbol: &SymbolId,
+    owner_contribution: SourceContributionId,
+    field: usize,
+) -> Result<(), String> {
+    match field {
+        0 => input.formulas.clear(),
+        1 => input.formulas.push(input.formulas[0].clone()),
+        2..16 => {
+            let offset = field - 2;
+            let formula = offset / 7;
+            let member = offset % 7;
+            let other = 1 - formula;
+            match member {
+                0 => input.formulas[formula].site = input.formulas[other].site.clone(),
+                1 => input.formulas[formula].source_range.start += 1,
+                2 => input.formulas[formula].source_ordinal += 2,
+                3 => {
+                    input.formulas[formula].context =
+                        BindingContextId::new(1 - input.formulas[formula].context.index())
+                }
+                4 => input.formulas[formula].recovery = SourceAtomicFormulaRecovery::Degraded,
+                5 => input.formulas[formula].spelling.push('!'),
+                6 => input.formulas[formula].kind = SourceAtomicFormulaKind::Inequality,
+                _ => unreachable!(),
+            }
+        }
+        16..32 => {
+            let offset = field - 16;
+            let edge = offset / 4;
+            match offset % 4 {
+                0 => {
+                    input.edges[edge].formula =
+                        SourceAtomicFormulaId::new(1 - input.edges[edge].formula.index())
+                }
+                1 => input.edges[edge].ordinal += 2,
+                2 => input.edges[edge].role = SourceAtomicEdgeRole::PredicateLeftArgument,
+                3 => {
+                    input.edges[edge].target =
+                        SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(99))
+                }
+                _ => unreachable!(),
+            }
+        }
+        32..60 => {
+            let offset = field - 32;
+            let request = offset / 7;
+            match offset % 7 {
+                0 => {
+                    input.requests[request].formula =
+                        SourceAtomicFormulaId::new(1 - input.requests[request].formula.index())
+                }
+                1 => input.requests[request].ordinal += 2,
+                2 => {
+                    input.requests[request].kind =
+                        SourceAtomicRequestKind::PredicateCandidateSignature
+                }
+                3 => input.requests[request].edge = None,
+                4 => {
+                    input.requests[request].candidate = Some(
+                        mizar_checker::source_atomic_formula::SourcePredicateCandidateId::new(0),
+                    )
+                }
+                5 => {
+                    input.requests[request].type_site = Some(
+                        mizar_checker::source_atomic_formula::SourceAssertionTypeSiteId::new(0),
+                    )
+                }
+                6 => {
+                    input.requests[request].attribute = Some(
+                        mizar_checker::source_atomic_formula::SourceAssertionAttributeId::new(0),
+                    )
+                }
+                _ => unreachable!(),
+            }
+        }
+        60 => input.module_id = task258b3m2b2b3a_mutated_module(&input.module_id),
+        61 => input.source_id = task258b3m2b2b3a_mutated_source_id(input.source_id),
+        62 => input.wrappers.push(SourceAtomicWrapperInput {
+            formula: SourceAtomicFormulaId::new(0),
+            ordinal: 0,
+            site: input.formulas[0].site.clone(),
+            source_range: input.formulas[0].source_range,
+            context: input.formulas[0].context,
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: "( x = x )".to_owned(),
+        }),
+        63 => input.predicate_segments.push(SourcePredicateSegmentInput {
+            formula: SourceAtomicFormulaId::new(0),
+            ordinal: 0,
+            site: input.formulas[0].site.clone(),
+            source_range: input.formulas[0].source_range,
+            context: input.formulas[0].context,
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: "x = x".to_owned(),
+            head: SourcePredicateHeadId::new(0),
+            polarity: SourcePredicateSegmentPolarityInput::Positive,
+            left_edge: SourceAtomicEdgeId::new(0),
+            right_edge: SourceAtomicEdgeId::new(1),
+        }),
+        64 => input.predicate_heads.push(SourcePredicateHeadInput {
+            formula: SourceAtomicFormulaId::new(0),
+            site: input.formulas[0].site.clone(),
+            source_range: input.formulas[0].source_range,
+            context: input.formulas[0].context,
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: "=".to_owned(),
+            left_arity: 1,
+            right_arity: 1,
+        }),
+        65 => input.candidates.push(SourcePredicateCandidateInput {
+            head: SourcePredicateHeadId::new(0),
+            ordinal: 0,
+            symbol: owner_symbol.clone(),
+            contribution: owner_contribution,
+        }),
+        66 => input.type_sites.push(SourceAssertionTypeSiteInput {
+            formula: SourceAtomicFormulaId::new(0),
+            site: input.formulas[0].site.clone(),
+            source_range: input.formulas[0].source_range,
+            spelling: "set".to_owned(),
+            head_site: input.formulas[0].site.clone(),
+            head_range: input.formulas[0].source_range,
+            head_spelling: "set".to_owned(),
+            context: input.formulas[0].context,
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            head: SourceAssertionTypeHead::BuiltinSet,
+        }),
+        67 => input.attributes.push(SourceAssertionAttributeInput {
+            formula: SourceAtomicFormulaId::new(0),
+            ordinal: 0,
+            site: input.formulas[0].site.clone(),
+            source_range: input.formulas[0].source_range,
+            spelling: "attr".to_owned(),
+            target_site: input.formulas[0].site.clone(),
+            target_range: input.formulas[0].source_range,
+            target_spelling: "attr".to_owned(),
+            context: input.formulas[0].context,
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            symbol: owner_symbol.clone(),
+            contribution: owner_contribution,
+            polarity: SourceAssertionAttributePolarityInput::Positive,
+        }),
+        68 => input.edges.clear(),
+        69 => {
+            let extra = input.edges[0].clone();
+            input.edges.push(extra);
+        }
+        70 => input.requests.clear(),
+        71 => {
+            let extra = input.requests[0].clone();
+            input.requests.push(extra);
+        }
+        _ => return Err(format!("Task256: unknown mutation field {field}")),
+    }
+    Ok(())
+}
+
+fn mutate_task258b3m2b2b3a_statement_input(
+    input: &mut SourceStatementHandoffInput,
+    field: usize,
+) -> Result<(), String> {
+    match field {
+        0 => input.owners.clear(),
+        1 => input.owners.push(input.owners[0].clone()),
+        2 => input.owners[0].site = input.statements[1].site.clone(),
+        3 => input.owners[0].source_range.start += 1,
+        4 => input.owners[0].spelling.push('!'),
+        5 => input.owners[0].recovery = SourceStatementRecovery::Degraded,
+        6 => input.statements.clear(),
+        7 => input.statements.push(input.statements[0].clone()),
+        8..24 => {
+            let offset = field - 8;
+            let statement = offset / 8;
+            let other = 1 - statement;
+            match offset % 8 {
+                0 => input.statements[statement].owner = SourceTheoremOwnerId::new(1),
+                1 => input.statements[statement].context = SourceStatementContextId::new(other),
+                2 => {
+                    input.statements[statement].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(other))
+                }
+                3 => input.statements[statement].site = input.statements[other].site.clone(),
+                4 => input.statements[statement].source_range.start += 1,
+                5 => input.statements[statement].source_ordinal += 3,
+                6 => input.statements[statement].spelling.push('!'),
+                7 => input.statements[statement].recovery = SourceStatementRecovery::Degraded,
+                _ => unreachable!(),
+            }
+        }
+        24 => input.contexts.clear(),
+        25 => input.contexts.push(input.contexts[0].clone()),
+        26..34 => {
+            let offset = field - 26;
+            let context = offset / 4;
+            let other = 1 - context;
+            match offset % 4 {
+                0 => input.contexts[context].statement = SourceStatementId::new(other),
+                1 => input.contexts[context].binding_context = BindingContextId::new(other),
+                2 => input.contexts[context].source_range.start += 1,
+                3 => input.contexts[context].visible_bindings.clear(),
+                _ => unreachable!(),
+            }
+        }
+        34 => input.input_facts.clear(),
+        35 => input.input_facts.push(input.input_facts[0].clone()),
+        36..46 => {
+            let offset = field - 36;
+            let fact = offset / 5;
+            let other = 1 - fact;
+            match offset % 5 {
+                0 => input.input_facts[fact].statement = SourceStatementId::new(other),
+                1 => input.input_facts[fact].context = SourceStatementContextId::new(other),
+                2 => input.input_facts[fact].ordinal += 1,
+                3 => input.input_facts[fact].binding = BindingId::new(99),
+                4 => input.input_facts[fact].uses.swap(0, 1),
+                _ => unreachable!(),
+            }
+        }
+        46 => input.candidate_facts.clear(),
+        47 => input.candidate_facts.push(input.candidate_facts[0].clone()),
+        48..56 => {
+            let offset = field - 48;
+            let candidate = offset / 4;
+            let other = 1 - candidate;
+            match offset % 4 {
+                0 => input.candidate_facts[candidate].statement = SourceStatementId::new(other),
+                1 => {
+                    input.candidate_facts[candidate].context = SourceStatementContextId::new(other)
+                }
+                2 => input.candidate_facts[candidate].ordinal += 1,
+                3 => {
+                    input.candidate_facts[candidate].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(other))
+                }
+                _ => unreachable!(),
+            }
+        }
+        56 => input.module_id = task258b3m2b2b3a_mutated_module(&input.module_id),
+        57 => input.source_id = task258b3m2b2b3a_mutated_source_id(input.source_id),
+        58 => {
+            input.owners[0].symbol = SymbolId::new(
+                input.module_id.clone(),
+                mizar_resolve::resolved_ast::LocalSymbolId::new("Task258B3M2B2B3A/mutated-owner"),
+                mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+                    "{}::Task258B3M2B2B3A/mutated-owner",
+                    input.module_id.path().as_str()
+                )),
+            )
+        }
+        59 => {
+            let mut contributions = mizar_resolve::env::SourceContributionIndex::new();
+            let kind = mizar_resolve::env::ContributionKind::LocalSource {
+                source_id: input.source_id,
+            };
+            let anchor = SourceAnchor::Range(input.owners[0].source_range);
+            contributions.insert(input.module_id.clone(), kind.clone(), anchor.clone());
+            input.owners[0].contribution =
+                contributions.insert(input.module_id.clone(), kind, anchor);
+        }
+        60 => input.statements[0].kind = SourceStatementKind::Conclusion,
+        61 => input.statements[1].kind = SourceStatementKind::TheoremProposition,
+        _ => return Err(format!("Task258: unknown mutation field {field}")),
+    }
+    Ok(())
+}
+
+fn mutate_task258b3m2b2b3a_witness_input(
+    input: &mut SourceStatementWitnessHandoffInput,
+    field: usize,
+) -> Result<(), String> {
+    match field {
+        0 => input.witnesses.clear(),
+        1 => input.witnesses.push(input.witnesses[0].clone()),
+        2 => input.witnesses[0].owner = SourceTheoremOwnerId::new(1),
+        3 => input.witnesses[0].binding_context = BindingContextId::new(0),
+        4 => {
+            input.witnesses[0].term =
+                SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2))
+        }
+        5 => input.witnesses[0].take_site = input.witnesses[0].site.clone(),
+        6 => input.witnesses[0].take_range.start += 1,
+        7 => input.witnesses[0].site = input.witnesses[0].take_site.clone(),
+        8 => input.witnesses[0].source_range.end -= 1,
+        9 => input.witnesses[0].source_ordinal = 0,
+        10 => input.witnesses[0].ordinal = 1,
+        11 => input.witnesses[0].spelling.push('!'),
+        12 => input.witnesses[0].recovery = SourceStatementRecovery::Degraded,
+        13 => input.witnesses[0].name = Some(SourceStatementWitnessNameId::new(0)),
+        14 => input.names.push(SourceStatementWitnessNameInput {
+            witness: mizar_checker::source_statement::SourceStatementWitnessId::new(0),
+            site: input.witnesses[0].site.clone(),
+            source_range: input.witnesses[0].source_range,
+            spelling: "y".to_owned(),
+            recovery: SourceStatementRecovery::Normal,
+        }),
+        15 => input.module_id = task258b3m2b2b3a_mutated_module(&input.module_id),
+        16 => input.source_id = task258b3m2b2b3a_mutated_source_id(input.source_id),
+        17 => input.witnesses[0].kind = SourceStatementWitnessKind::Named,
+        18 => {
+            input.witnesses[0].term =
+                SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId::new(1))
+        }
+        19 => {
+            input.witnesses[0].term =
+                SourceStatementWitnessTermTarget::Application(SourceFunctorApplicationId::new(0))
+        }
+        20 => {
+            input.witnesses[0].term =
+                SourceStatementWitnessTermTarget::Structure(SourceStructureTermId::new(0))
+        }
+        _ => return Err(format!("B3A: unknown mutation field {field}")),
+    }
+    Ok(())
+}
+
 fn build_source_statement_witness_output(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementWitnessExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
+) -> Result<SourceStatementRouteOutput, String> {
+    build_source_statement_witness_output_with_controls(
+        ast,
+        module,
+        symbols,
+        extracted,
+        mutate,
+        None,
+        |_| {},
+    )
+}
+
+fn build_source_statement_witness_output_with_controls(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    extracted: SourceStatementWitnessExtraction,
+    mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
+    stage_mutation: Option<(SourceStatementB3M2B2B3AStage, usize)>,
+    post_auth_mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
 ) -> Result<SourceStatementRouteOutput, String> {
     let structure_family_count = [
         extracted.structure_node,
@@ -5400,7 +6378,10 @@ fn build_source_statement_witness_output(
     .flatten()
     .count();
     let has_structure = structure_family_count == 1;
-    if (extracted.application_node.is_some() && has_structure) || structure_family_count > 1 {
+    let lower_family_count = usize::from(extracted.application_node.is_some())
+        + usize::from(has_structure)
+        + usize::from(extracted.set_term_node.is_some());
+    if lower_family_count > 1 || structure_family_count > 1 {
         return Err(format!(
             "{} lower-family dependencies must be mutually exclusive",
             extracted.task
@@ -5766,8 +6747,34 @@ fn build_source_statement_witness_output(
     } else {
         None
     };
-    let primary = parts.handoff;
-    let arena = parts.arena;
+    let (primary, arena, set_term) = if let Some(set_term_node) = extracted.set_term_node {
+        let output = source_set_term_output_with_source_term_in_context(
+            ast,
+            module.clone(),
+            binding_env.clone(),
+            &[set_term_node],
+            parts,
+            BindingContextId::new(1),
+        )?;
+        let primary = output
+            .typed_ast
+            .source_term()
+            .cloned()
+            .ok_or_else(|| format!("{} set-term primary handoff is missing", extracted.task))?;
+        let set_term = output
+            .typed_ast
+            .source_set_term()
+            .cloned()
+            .ok_or_else(|| format!("{} set-term handoff is missing", extracted.task))?;
+        if output.resolved.source_term() != Some(&primary)
+            || output.resolved.source_set_term() != Some(&set_term)
+        {
+            return Err(format!("{} set-term lower replay mismatch", extracted.task));
+        }
+        (primary, output.typed_ast.nodes().clone(), Some(set_term))
+    } else {
+        (parts.handoff, parts.arena, None)
+    };
     if primary.terms().len() != extracted.term_ranges.len()
         || primary
             .terms()
@@ -5781,8 +6788,17 @@ fn build_source_statement_witness_output(
     {
         return Err(format!("{} primary-term profile drift", extracted.task));
     }
+    let mut atomic_input = task258b3_atomic_input(ast, module.clone(), &extracted);
+    if let Some((SourceStatementB3M2B2B3AStage::Task256, field)) = stage_mutation {
+        mutate_task258b3m2b2b3a_atomic_input(
+            &mut atomic_input,
+            owner_entry.symbol(),
+            owner_entry.contribution(),
+            field,
+        )?;
+    }
     let atomic = SourceAtomicFormulaProducer::build(
-        task258b3_atomic_input(ast, module.clone(), &extracted),
+        atomic_input,
         &binding_env,
         symbols,
         &primary,
@@ -5791,14 +6807,26 @@ fn build_source_statement_witness_output(
         None,
         &arena,
     )
-    .map_err(|error| error.to_string())?;
-    let statement = task258b3_statement_input(
+    .map_err(|error| {
+        if matches!(
+            stage_mutation,
+            Some((SourceStatementB3M2B2B3AStage::Task256, _))
+        ) {
+            format!("Task256: {error}")
+        } else {
+            error.to_string()
+        }
+    })?;
+    let mut statement = task258b3_statement_input(
         ast,
         module.clone(),
         owner_entry.symbol().clone(),
         owner_entry.contribution(),
         &extracted,
     );
+    if let Some((SourceStatementB3M2B2B3AStage::Task258, field)) = stage_mutation {
+        mutate_task258b3m2b2b3a_statement_input(&mut statement, field)?;
+    }
     let mut names = Vec::new();
     let mut witnesses = Vec::new();
     for (index, witness) in extracted.witnesses.iter().enumerate() {
@@ -5822,6 +6850,8 @@ fn build_source_statement_witness_output(
                 ))
             } else if has_structure {
                 SourceStatementWitnessTermTarget::Structure(SourceStructureTermId::new(index))
+            } else if set_term.is_some() {
+                SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId::new(index))
             } else {
                 SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2 + index))
             },
@@ -5841,18 +6871,22 @@ fn build_source_statement_witness_output(
             name,
         });
     }
-    let witness = SourceStatementWitnessHandoffInput {
+    let mut witness = SourceStatementWitnessHandoffInput {
         source_id: ast.source_id,
         module_id: module.clone(),
         witnesses,
         names,
     };
+    if let Some((SourceStatementB3M2B2B3AStage::Witness, field)) = stage_mutation {
+        mutate_task258b3m2b2b3a_witness_input(&mut witness, field)?;
+    }
     let expected_binding_env = binding_env.clone();
     let expected_arena = arena.clone();
     let expected_primary = primary.clone();
     let expected_atomic = atomic.clone();
     let expected_application = application.clone();
     let expected_structure = structure.clone();
+    let expected_set_term = set_term.clone();
     let mut inputs = SourceStatementB3RouteInputs {
         binding_env,
         arena,
@@ -5862,6 +6896,7 @@ fn build_source_statement_witness_output(
         witness,
         application,
         structure,
+        set_term,
     };
     mutate(&mut inputs);
     if inputs.binding_env != expected_binding_env
@@ -5870,9 +6905,11 @@ fn build_source_statement_witness_output(
         || inputs.atomic != expected_atomic
         || inputs.application != expected_application
         || inputs.structure != expected_structure
+        || inputs.set_term != expected_set_term
     {
         return Err(format!("{} lower dependency mismatch", extracted.task));
     }
+    post_auth_mutate(&mut inputs);
     let statement = SourceStatementProducer::build(
         inputs.statement,
         symbols,
@@ -5881,36 +6918,60 @@ fn build_source_statement_witness_output(
         &inputs.atomic,
         &inputs.arena,
     )
-    .map_err(|error| error.to_string())?;
-    let witnesses = match (&inputs.application, &inputs.structure) {
-        (Some(application), None) => SourceStatementWitnessProducer::build_with_application(
+    .map_err(|error| match stage_mutation {
+        Some((SourceStatementB3M2B2B3AStage::Task256, _)) => {
+            format!("Task256: {error}")
+        }
+        Some((SourceStatementB3M2B2B3AStage::Task258, _)) => {
+            format!("Task258: {error}")
+        }
+        _ => error.to_string(),
+    })?;
+    let witnesses = match (&inputs.application, &inputs.structure, &inputs.set_term) {
+        (Some(application), None, None) => SourceStatementWitnessProducer::build_with_application(
             inputs.witness,
             &statement,
             &inputs.primary,
             application,
             &inputs.arena,
         ),
-        (None, Some(structure)) => SourceStatementWitnessProducer::build_with_structure(
+        (None, Some(structure), None) => SourceStatementWitnessProducer::build_with_structure(
             inputs.witness,
             &statement,
             &inputs.primary,
             structure,
             &inputs.arena,
         ),
-        (None, None) => SourceStatementWitnessProducer::build(
+        (None, None, Some(set_term)) => SourceStatementWitnessProducer::build_with_set_term(
+            inputs.witness,
+            &statement,
+            &inputs.primary,
+            set_term,
+            &inputs.arena,
+        ),
+        (None, None, None) => SourceStatementWitnessProducer::build(
             inputs.witness,
             &statement,
             &inputs.primary,
             &inputs.arena,
         ),
-        (Some(_), Some(_)) => {
+        _ => {
             return Err(format!(
                 "{} lower-family dependencies must be mutually exclusive",
                 extracted.task
             ));
         }
     }
-    .map_err(|error| error.to_string())?;
+    .map_err(|error| {
+        if matches!(
+            stage_mutation,
+            Some((SourceStatementB3M2B2B3AStage::Witness, _))
+        ) {
+            format!("B3A: {error}")
+        } else {
+            error.to_string()
+        }
+    })?;
     let reference_use_ordinals = inputs
         .primary
         .references()
@@ -5937,15 +6998,18 @@ fn build_source_statement_witness_output(
     .map_err(|error| error.to_string())?
     .with_source_atomic_formula(inputs.atomic)
     .map_err(|error| error.to_string())?;
-    let typed_ast = match (inputs.application, inputs.structure) {
-        (Some(application), None) => {
+    let typed_ast = match (inputs.application, inputs.structure, inputs.set_term) {
+        (Some(application), None, None) => {
             typed_ast.with_source_application_statement_witnesses(application, statement, witnesses)
         }
-        (None, Some(structure)) => {
+        (None, Some(structure), None) => {
             typed_ast.with_source_structure_statement_witnesses(structure, statement, witnesses)
         }
-        (None, None) => typed_ast.with_source_statement_witnesses(statement, witnesses),
-        (Some(_), Some(_)) => {
+        (None, None, Some(set_term)) => {
+            typed_ast.with_source_set_term_statement_witnesses(set_term, statement, witnesses)
+        }
+        (None, None, None) => typed_ast.with_source_statement_witnesses(statement, witnesses),
+        _ => {
             return Err(format!(
                 "{} lower-family dependencies must be mutually exclusive",
                 extracted.task
@@ -5985,7 +7049,8 @@ fn build_source_statement_witness_output(
         || typed_ast.source_application() != resolved.source_application()
         || typed_ast.source_structure().is_some() != has_structure
         || typed_ast.source_structure() != resolved.source_structure()
-        || typed_ast.source_set_term().is_some()
+        || typed_ast.source_set_term().is_some() != extracted.set_term_node.is_some()
+        || typed_ast.source_set_term() != resolved.source_set_term()
         || typed_ast.source_composite_formula().is_some()
         || typed_ast.source_formula_composition().is_some()
         || typed_ast.source_condition_formula_composition().is_some()

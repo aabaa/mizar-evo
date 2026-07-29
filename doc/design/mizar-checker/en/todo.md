@@ -5515,6 +5515,39 @@ implementation commit does not satisfy a producer task.
   with **NO FINDINGS**.
 - [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
   and valid `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Create the dedicated B3A documentation-only commit.
-- [ ] Verify post-commit/stash invariants and fresh B3A implementation
-  inventory.
+- [x] Create the dedicated B3A documentation-only commit
+  `f4ff45964d97b31b6c328381120ba8ede080a2b1`.
+- [x] Verify clean post-commit ahead-11/behind-0 metadata, unchanged stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh B3A
+  implementation inventory.
+
+## Checker Task 258B3M2B2B3A Implementation Ledger
+
+- [x] Close prerequisite commit
+  `f4ff45964d97b31b6c328381120ba8ede080a2b1` and its clean
+  ahead-11/behind-0, unchanged-stash, fresh-inventory gates.
+- [x] Implement only the exact three checker plus four runner files and
+  preserve both `source_set_term.rs` owners and every authority artifact.
+- [x] Add the exact set-witness API, set-only fingerprint tuple, atomic
+  typed installation, final revalidation/clone, and four checker plus five
+  runner tests while preserving semantic deferrals and trace no-credit.
+- [x] Complete specification, test-sufficiency, and implementation reviews
+  with **NO FINDINGS**.
+- [x] Pass focused/package tests, formatting, targeted Clippy, five CLI,
+  final count/hash manifests, and diff checks.
+- [x] Complete the second source/documentation consistency repeat with
+  **NO FINDINGS**.
+- [x] Complete the final documentation/boundary reread with
+  **NO FINDINGS**.
+- [x] Pass parent final verification: focused checker `4` plus runner `5`;
+  checker package `394` plus lint-policy `15`; mizar-test package `451`,
+  layout `3`, lint-policy `14`, metadata `137`, public-enum `2`, snapshot
+  `21`; format; workspace Clippy/tests; five CLI counts/hashes; production
+  manifests/test lists; diff check; and exact `39`-file scope.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**: all nine hard gates PASS with no score cap, valid
+  `98/100` (`20/20/15/14/10/10/5/4`), and the stated residual deferrals
+  unchanged.
+- [ ] Create the dedicated implementation commit.
+- [ ] Verify implementation post-commit invariants.
+- [ ] Complete fresh next-task inventory.

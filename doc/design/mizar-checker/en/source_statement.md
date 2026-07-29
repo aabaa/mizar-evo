@@ -3006,6 +3006,27 @@ empty downstream semantics. Type checking, goal matching, substitution,
 proof acceptance, Task-254/255 forms, and other application/witness shapes
 remain deferred.
 
+## Task 258B3M2B2B3A Implemented Source-Statement Witness Closure
+
+The source-statement owner now provides exactly `SetTerm(SourceSetTermId)`,
+the optional set fingerprint/getter, `build_with_set_term`, and the
+crate-private set-aware installation seam. The exact one-witness/zero-name
+profile authenticates the resolver label, Tasks 48/252/255/256/258, all
+`57` nodes/root, the ownership partition, and the sole witness-to-set edge.
+The four checker and five runner tests cover all frozen mutations,
+fingerprint tuples, near misses, family orders, rollback/replay, final clone,
+and empty semantics. Specification, test-sufficiency, and implementation
+reviews report **NO FINDINGS**. All semantic deferrals remain. The second
+source/documentation consistency repeat and final documentation/boundary
+reread also report **NO FINDINGS**; parent final verification listed in the
+crate plans passes, including exact `39`-file scope. Independent final
+read-only quality review reports **NO FINDINGS**. All nine hard gates PASS
+with no score cap; the valid score is `98/100`
+(`20/20/15/14/10/10/5/4`). The stated semantic and coverage deferrals
+remain unchanged as residual risk. Only the dedicated implementation
+commit, post-commit invariant verification, and fresh next-task inventory
+remain pending.
+
 ## Task 258B3M2B2B1B1 Implementation Result
 
 The private B1B1 profile now authenticates the exact 158-byte/67-node owner,

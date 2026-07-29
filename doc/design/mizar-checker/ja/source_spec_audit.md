@@ -4380,3 +4380,19 @@ stale/missing docsは`design_drift`、missing API/installers/consumerは
 `boundary_violation`、`repo_metadata_conflict`なし。trace rowは
 `deferred`, `tests = []`、Task-111/255 credit unchanged。spec/`.miz`/
 fixture/expectation/sidecar/trace editなし、auditはnarrative ownershipのみ。
+
+## Task 258B3M2B2B3A implementation source/specification closure
+
+bounded implementationはexact additive APIとchecker4+runner5 testsにより
+record済み`source_drift`/`test_gap`をcloseする。independent
+specification/test-sufficiency/implementation reviewsは**NO FINDINGS**で、
+new disagreement classなし。`doc/spec`、`.miz`、expectation、sidecar、
+`tests/coverage/spec_trace.toml`はunchanged。trace rowは`deferred`、
+`tests = []`、Task-111/255 credit unchanged。2回目のsource/documentation
+consistency repeatとfinal documentation/boundary rereadは
+**NO FINDINGS**で、crate plans記載のparent final verificationはexact
+`39`-file scopeを含めPASS。independent final read-only quality reviewは
+**NO FINDINGS**。全9 hard gates PASS、score capなし、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。記載済みsemantic/coverage deferralsは
+unchanged residual risk。pendingはdedicated implementation commit、
+postcommit invariant verification、fresh next-task inventoryだけ。

@@ -2885,3 +2885,22 @@ source transportだけで、result/numeric/set/element typing、existential
 goal matching、witness guards/obligations、substitution、goal progress/
 discharge、proof/theorem acceptance、facts、overload/coercion、Core/CFG/VC、
 imported set、broader forms、B4/B5、active/corpus/diagnostic creditはdeferred。
+
+## Task 258B3M2B2B3A implemented source-statement witness closure
+
+source-statement ownerはexactly `SetTerm(SourceSetTermId)`、optional set
+fingerprint/getter、`build_with_set_term`、crate-private set-aware
+installation seamを提供する。exact witness1/names0 profileはresolver label、
+Tasks48/252/255/256/258、全`57` nodes/root、ownership partition、sole
+witness-to-set edgeをauthenticateする。checker4+runner5 testsはfrozen
+mutation、fingerprint tuple、near miss、family order、rollback/replay、
+final clone、empty semanticsをcoverする。specification/test-sufficiency/
+implementation reviewsは**NO FINDINGS**。semantic deferralsは全て維持し、
+2回目のsource/documentation consistency repeatとfinal documentation/
+boundary rereadも**NO FINDINGS**。crate plans記載のparent final
+verificationはexact `39`-file scopeを含めPASS。independent final
+read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score
+capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
+semantic/coverage deferralsはunchanged residual risk。pendingは
+dedicated implementation commit、postcommit invariant verification、
+fresh next-task inventoryだけ。

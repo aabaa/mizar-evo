@@ -1213,3 +1213,21 @@ full graphはformula `0 -> Primary(0/1)`、formula
 `SetTerm(0) -> Primary(2/3)`。reverse/cross-owner/semantic edgeなし。
 set-shape/label/family hybrid/order near missesはpartial publicationなしで
 fail closed。B4/B5とsemantic expansionはdeferred。
+
+### Task 258B3M2B2B3A implemented upper-family edge
+
+implementationはfrozen partitionとsole
+`SourceStatementWitness(0) -> SetTerm(0)` edgeを実現し、Task-255
+productionは変更しない。set-only fingerprint tuple、exact label/lower
+provenance、atomic typed installation、final revalidation/cloneはfrozen
+checker4+runner5 testsでcoverする。application/structure/multi-family
+hybridは引き続きfail closedし、B4/B5と全semantic expansionはdeferred。
+specification/test-sufficiency/implementation reviewsは**NO FINDINGS**。
+2回目のsource/documentation consistency repeatとfinal documentation/
+boundary rereadも**NO FINDINGS**で、crate plans記載のparent final
+verificationはexact `39`-file scopeを含めPASS。independent final
+read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score
+capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
+semantic/coverage deferralsはunchanged residual risk。pendingは
+dedicated implementation commit、postcommit invariant verification、
+fresh next-task inventoryだけ。

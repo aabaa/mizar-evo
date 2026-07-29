@@ -861,3 +861,25 @@ consistencyとdocumentation/boundary repeatは両言語**NO FINDINGS**。
 final qualityも**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
 （`20/20/15/14/10/10/5/4`）で同期。docs commit、postcommit/fresh
 implementation inventoryだけが両言語pending。
+
+## Task 258B3M2B2B3A implementation synchronization
+
+EN canonicalとJA companionは、prerequisite commit
+`f4ff45964d97b31b6c328381120ba8ede080a2b1`およびclean
+ahead-`11`/behind-`0`、unchanged stash、fresh inventory後のimplementation
+closureを同期する。両文書はexact7 source files、additive set-witness API、
+checker4+runner5 tests、measured checker `394` / runner `451` libraries、
+production/test-list hashes、unchanged 5 CLI counts/hashes、semantic
+deferrals、deliberate trace no-creditを同じlogical stateとしてrecordする。
+
+specification、test-sufficiency、implementation reviewsは両言語で
+**NO FINDINGS**、focused/package/fmt/targeted-Clippy/CLI/count/hash/diff
+checksはPASS。2回目のsource/documentation consistency repeatとfinal
+documentation/boundary rereadも両言語で**NO FINDINGS**。crate plans記載
+のparent final verificationはexact `39`-file scopeを含め両言語でPASS。
+independent final read-only quality reviewも両言語で**NO FINDINGS**。
+全9 hard gates PASS、score capなし、valid `98/100`
+（`20/20/15/14/10/10/5/4`）で同期し、記載済みsemantic/coverage
+deferralsをunchanged residual riskとして保持する。両言語のpendingは
+dedicated implementation commit、postcommit invariant verification、
+fresh next-task inventoryだけである。

@@ -1296,3 +1296,21 @@ The installer publishes one witness/zero names and only
 witness-to-`SetTerm(0)`. Existing installers, family composition, literal
 debug bytes, semantics, and routes stay unchanged. Final-clone revalidation
 belongs to `ResolvedTypedAst`; no set-term producer edit is permitted.
+
+## Task 258B3M2B2B3A Implemented Typed Installation Closure
+
+`with_source_set_term_statement_witnesses` now validates the exact empty
+semantic/competing-family precondition, Task-255 set handoff, set-aware
+Task-256 atomic handoff, Task-258 statement profile, and B3A witness before
+publishing any field. It then publishes set, statement, and witnesses
+atomically. Every mutation and family-order failure leaves the prior
+`TypedAst` unchanged and permits exact replay; all errors map to the frozen
+`InvalidSourceStatement` boundary. The second source/documentation
+consistency repeat and final documentation/boundary reread report
+**NO FINDINGS**; parent final verification listed in the crate plans
+passes, including exact `39`-file scope. Independent final read-only quality
+review reports **NO FINDINGS**. All nine hard gates PASS with no score cap;
+the valid score is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic
+and coverage deferrals remain unchanged as residual risk. Only the
+dedicated implementation commit, post-commit invariant verification, and
+fresh next-task inventory remain pending.

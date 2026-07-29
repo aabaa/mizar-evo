@@ -4593,3 +4593,21 @@ There is no `spec_gap`, `source_undocumented_behavior`,
 `repo_metadata_conflict`. The trace row remains `deferred`, `tests = []`;
 Task-111/255 credit is unchanged. No spec, `.miz`, fixture, expectation,
 sidecar, or trace edit is allowed; audit impact is narrative ownership only.
+
+## Task 258B3M2B2B3A Implementation Source/Specification Closure
+
+The bounded implementation closes the recorded `source_drift` and
+`test_gap` with the exact additive API and four-plus-five tests. Independent
+specification, test-sufficiency, and implementation reviews report
+**NO FINDINGS**; no new disagreement class was found. `doc/spec`, `.miz`,
+expectations, sidecars, and `tests/coverage/spec_trace.toml` remain unchanged.
+The trace row stays `deferred`, `tests = []`, and Task-111/255 credit remains
+unchanged. The second source/documentation consistency repeat and final
+documentation/boundary reread report **NO FINDINGS**; parent final
+verification listed in the crate plans passes, including exact `39`-file
+scope. Independent final read-only quality review reports **NO FINDINGS**.
+All nine hard gates PASS with no score cap; the valid score is `98/100`
+(`20/20/15/14/10/10/5/4`). The stated semantic and coverage deferrals
+remain unchanged as residual risk. Only the dedicated implementation
+commit, post-commit invariant verification, and fresh next-task inventory
+remain pending.

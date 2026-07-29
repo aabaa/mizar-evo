@@ -1228,3 +1228,21 @@ display textを変更しない。
 final cloneはwitness 1/names 0、`set-term#0`、existing optional debug fields
 後のoptional set fingerprint、literal legacy bytes、empty semantic/proof/
 goal/IRをpreserve。semantic result/public routeは追加しない。
+
+## Task 258B3M2B2B3A implemented final-AST closure
+
+`ResolvedTypedAst`はexact B3A statement + set-only witness tupleだけをallowし、
+set/witness fingerprintsをrevalidateし、source set/statement/witness
+handoffをcloneする。set/atomic defectは
+`InvalidSourceSetTerm`/`InvalidSourceAtomicFormula` precedenceを保持し、
+unsupported/stale upper combinationは`InvalidSourceStatement`のまま。
+final clone/replay/debug/empty semantic/proof/goal surfacesのfrozen testsは
+PASS。semantic result、error variant/text、public/active routeは追加しない。
+2回目のsource/documentation consistency repeatとfinal documentation/
+boundary rereadは**NO FINDINGS**で、crate plans記載のparent final
+verificationはexact `39`-file scopeを含めPASS。independent final
+read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score
+capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
+semantic/coverage deferralsはunchanged residual risk。pendingは
+dedicated implementation commit、postcommit invariant verification、
+fresh next-task inventoryだけ。

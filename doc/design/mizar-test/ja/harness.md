@@ -4108,3 +4108,21 @@ final clone/debug/isolation/empty semanticsをauthenticate。
 precedenceはsource/AST、resolver+label、Tasks48、252、255、256、258 base、
 witness、atomic publication、final clone。real fixture/expectation/traceは
 unchanged/inactiveで、existential goal/proof acceptance/active creditなし。
+
+## Checker Task 258B3M2B2B3A implemented runner harness
+
+exact routeはunchanged B3P set-enumeration handoffをconsumeし、frozen
+witness1/names0 set edgeをpublishする。named runner5 testsはreal frontend、
+exact resolver label、全lower/upper rows、Task-256 `72`、Task-258 `62`、
+witness `21` field matrices、全`57` surface nodes/root、両final-LF near
+miss、family tuples/routes、rollback/replay、final clone/debug、empty
+semanticsをcoverする。paired checker4 testsもexactのまま。
+fixture/expectation/trace/corpus activationやsemantic/proof creditは変更なし。
+2回目のsource/documentation consistency repeatとfinal documentation/
+boundary rereadは**NO FINDINGS**で、crate plans記載のparent final
+verificationはexact `39`-file scopeを含めPASS。independent final
+read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score
+capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
+semantic/coverage deferralsはunchanged residual risk。pendingは
+dedicated implementation commit、postcommit invariant verification、
+fresh next-task inventoryだけ。

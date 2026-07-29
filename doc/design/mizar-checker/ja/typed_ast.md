@@ -1232,3 +1232,19 @@ installerはwitness1/names0とsole witness-to-`SetTerm(0)`だけpublish。
 existing installers/family composition/literal debug/semantics/routes不変。
 final clone revalidationは`ResolvedTypedAst` ownershipで、set-term producer
 editなし。
+
+## Task 258B3M2B2B3A implemented typed installation closure
+
+`with_source_set_term_statement_witnesses`はpublish前にexact empty
+semantic/competing-family precondition、Task-255 set handoff、set-aware
+Task-256 atomic handoff、Task-258 statement profile、B3A witnessをvalidateし、
+その後set/statement/witnessをatomically publishする。全mutation/family-order
+failureはprior `TypedAst`をunchangedに保ちexact replay可能で、errorはfrozen
+`InvalidSourceStatement` boundaryへmapする。2回目のsource/documentation
+consistency repeatとfinal documentation/boundary rereadは
+**NO FINDINGS**で、crate plans記載のparent final verificationはexact
+`39`-file scopeを含めPASS。independent final read-only quality reviewは
+**NO FINDINGS**。全9 hard gates PASS、score capなし、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。記載済みsemantic/coverage deferralsは
+unchanged residual risk。pendingはdedicated implementation commit、
+postcommit invariant verification、fresh next-task inventoryだけ。

@@ -344,3 +344,20 @@ B3Aはset-term producer behaviorを追加せず、witness
 `0 -> SetTerm(0) -> Primary(2/3)`とexact set fingerprint authentication
 だけ。reverse/semantic edgeなし。両`source_set_term.rs`、result typing/
 sethood/element unification、broader set formsはforbidden。
+
+## Task 258B3M2B2B3A implemented consumer closure
+
+B3Aはexisting runner seamからunchanged Task-255/B3P handoffをconsumeし、
+statement-witness handoffへexact debug fingerprintをrecordする。両
+`source_set_term.rs`は変更しない。enumeration edges 2件とresult-type
+requestはsource transportだけで、result typing、sethood/element
+unification、imported/broader set form、semantic edgeのcreditなし。
+focused/package testsとimplementation reviewsは**NO FINDINGS**/PASS。
+2回目のsource/documentation consistency repeatとfinal documentation/
+boundary rereadも**NO FINDINGS**で、crate plans記載のparent final
+verificationはexact `39`-file scopeを含めPASS。independent final
+read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score
+capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
+semantic/coverage deferralsはunchanged residual risk。pendingは
+dedicated implementation commit、postcommit invariant verification、
+fresh next-task inventoryだけ。

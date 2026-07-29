@@ -1295,3 +1295,22 @@ Final clones preserve one witness/zero names, target `set-term#0`, the
 optional set fingerprint after existing optional debug fields, literal
 legacy bytes, and empty semantic/proof/goal/IR surfaces. No semantic result
 or public route is added.
+
+## Task 258B3M2B2B3A Implemented Final-AST Closure
+
+`ResolvedTypedAst` now allows only the exact B3A statement plus set-only
+witness tuple, revalidates the set/witness fingerprints, and clones the
+source set, statement, and witness handoffs. Set and atomic defects retain
+`InvalidSourceSetTerm` and `InvalidSourceAtomicFormula` precedence; unsupported
+or stale upper combinations remain `InvalidSourceStatement`. Final clone,
+replay, debug, and empty semantic/proof/goal surfaces pass their frozen
+tests. No semantic result, error variant/text, or public/active route was
+added. The second source/documentation consistency repeat and final
+documentation/boundary reread report **NO FINDINGS**; parent final
+verification listed in the crate plans passes, including exact `39`-file
+scope. Independent final read-only quality review reports **NO FINDINGS**.
+All nine hard gates PASS with no score cap; the valid score is `98/100`
+(`20/20/15/14/10/10/5/4`). The stated semantic and coverage deferrals
+remain unchanged as residual risk. Only the dedicated implementation
+commit, post-commit invariant verification, and fresh next-task inventory
+remain pending.

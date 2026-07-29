@@ -388,3 +388,21 @@ B3A adds no set-term producer behavior, only witness
 `0 -> SetTerm(0) -> Primary(2/3)` and exact set fingerprint authentication.
 No reverse/semantic edge exists. Both `source_set_term.rs` files, result
 typing/sethood/element unification, and broader set forms are forbidden.
+
+## Task 258B3M2B2B3A Implemented Consumer Closure
+
+B3A consumes the unchanged Task-255/B3P handoff through the existing runner
+seam and records its exact debug fingerprint in the statement-witness
+handoff. Neither `source_set_term.rs` file changed. The two enumeration
+edges and result-type request remain source transport only: no result
+typing, sethood/element unification, imported/broader set form, or semantic
+edge is credited. Focused/package and implementation reviews pass with
+**NO FINDINGS**. The second source/documentation consistency repeat and
+final documentation/boundary reread also report **NO FINDINGS**; parent
+final verification listed in the crate plans passes, including exact
+`39`-file scope. Independent final read-only quality review reports
+**NO FINDINGS**. All nine hard gates PASS with no score cap; the valid score
+is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic and coverage
+deferrals remain unchanged as residual risk. Only the dedicated
+implementation commit, post-commit invariant verification, and fresh
+next-task inventory remain pending.

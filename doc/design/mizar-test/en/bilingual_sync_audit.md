@@ -945,6 +945,26 @@ is closed/frozen while future implementation `source_drift`/`test_gap`
 remains planned. Final quality, commit, post-commit, and fresh implementation
 inventory remain pending in both.
 
+## Checker Task 258B3M2B2B3A Runner Implementation Synchronization
+
+EN canonical and JA companion synchronize prerequisite
+`f4ff45964d97b31b6c328381120ba8ede080a2b1`, its clean
+ahead-`11`/behind-`0` and unchanged-stash post-commit, the exact four runner
+plus three checker implementation files, additive API, five runner plus four
+checker tests, final measurements/hashes, unchanged CLI evidence, semantic
+deferrals, and trace no-credit. Specification, test-sufficiency, and
+implementation reviews are **NO FINDINGS**, and the completed focused/
+package/fmt/targeted-Clippy/CLI/count/hash/diff checks are PASS in both
+languages. The second source/documentation consistency repeat and final
+documentation/boundary reread are **NO FINDINGS** in both languages. Parent
+final verification listed in the crate plans is PASS in both, including
+exact `39`-file scope. Independent final read-only quality review is
+**NO FINDINGS** in both languages: all nine hard gates PASS with no score
+cap and valid `98/100` (`20/20/15/14/10/10/5/4`). Both preserve the stated
+semantic and coverage deferrals as unchanged residual risk. Only the
+dedicated implementation commit, post-commit invariant verification, and
+fresh next-task inventory remain pending in both.
+
 ## Checker Task 258B3M2B2B3P Final-Quality Synchronization
 
 Both languages record final quality **NO FINDINGS**, all nine hard gates

@@ -12178,3 +12178,30 @@ Independent documentation/boundary and source/documentation consistency
 repeats report **NO FINDINGS**; final quality reports **NO FINDINGS**, all
 nine hard gates PASS, valid `98/100`. Only the documentation-only commit and
 post-commit/fresh implementation inventory remain.
+
+## Checker Task 258B3M2B2B3A Implementation Boundary Closure
+
+No production path was added. The bounded runner owners are
+`source_statement.rs` `8305`, set-term leaf `4517`, type-elaboration facade
+`752`, root `2567`, statement test leaf `21241`, and unchanged set-term test
+leaf `2528` lines. Production remains `30` paths / `50559` lines with
+path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`bc8c3d7e56ffc14608bc6e69863859a44487b19137bb8b90938878ec6c73ca4f`.
+The runner test library is `451`, with raw/normalized list hashes
+`a1e31aaa7919f1efe500dcdc7a194211026674e6f2a07bb9fd3bae8e0d538a07` /
+`5a6a65168298e2a398eac59df50d3cf75dad65a9905e5f0116b54cbe05b7fb18`.
+
+The implementation changes only the frozen four runner files and paired
+three checker files; both set-term source owners, topology, visibility, and
+dependencies remain unchanged. Implementation review reports
+**NO FINDINGS** and targeted boundary checks pass. The second
+source/documentation consistency repeat and final documentation/boundary
+reread also report **NO FINDINGS**; parent final verification listed in the
+crate plans passes, including exact `39`-file scope. Independent final
+read-only quality review reports **NO FINDINGS**. All nine hard gates PASS
+with no score cap; the valid score is `98/100`
+(`20/20/15/14/10/10/5/4`). The stated semantic and coverage deferrals
+remain unchanged as residual risk. Only the dedicated implementation
+commit, post-commit invariant verification, and fresh next-task inventory
+remain pending.
