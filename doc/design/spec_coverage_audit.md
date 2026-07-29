@@ -4714,10 +4714,11 @@ The future private seam is bounded `source_drift`; its two Rust tests are a
 `test_gap`. Independent specification review confirms that Chapters 5,
 13, 15, and 16 plus the active parser fixtures authorize this
 syntax/provenance-only transport. Chapter 13's local
-`structure_expression` helper omits the functional-update alternative that
-§13.3.3 and the complete postfix grammar specify; this is a low,
-nonblocking `spec_gap`. There is no unsafe test intent, undocumented source
-behavior, expectation drift, or boundary violation.
+`structure_expression` helper is a narrower summary and does not override
+the explicit §13.3.3 and complete-postfix productions. No required behavior
+or choice is absent, so there is no blocking or nonblocking `spec_gap`.
+There is no unsafe test intent, undocumented source behavior, expectation
+drift, or boundary violation.
 
 A task-related English draft and these two root ledgers appeared after the
 clean inventory from an earlier/parallel Codex session. That write-owner
@@ -4737,7 +4738,15 @@ baseline. The formula-statement source uses `take` in an `x = x` proof only
 to freeze source transport; it claims no existential-witness acceptance or
 functional-copy semantics. Repeated specification/dependency,
 test-sufficiency, implementation-boundary, and source/documentation
-consistency reviews have no findings. Broad verification and all frozen
-counts/hashes pass; all nine hard gates pass. Final read-only quality is a
-valid `98/100`. Only a dedicated documentation commit and immediate fresh
-B2CP implementation inventory remain open.
+consistency reviews had no findings before the committed classification
+regressed. Concurrent commit `817bb92b` is a report-only
+`repo_metadata_conflict`; no repository metadata is repaired. Its later
+quality review found high `design_drift`, failed hard gates 1 and 9, and
+invalidated the recorded `98/100`. Docs-only Task `258B3M2B2B2CPC1`
+restores the no-`spec_gap` classification only. The audit impact remains
+narrative-only. Repeated reviews have no findings; the docs diff and checker
+lint pass; live runner/workspace reruns are explicitly justified as blocked
+by unrelated incomplete source work while the identical HEAD executable
+baseline retains complete verification. All nine hard gates pass and final
+read-only quality is a valid `98/100`. Only a dedicated correction commit
+and fresh B2CP implementation inventory remain open.

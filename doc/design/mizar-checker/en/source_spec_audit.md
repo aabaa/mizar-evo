@@ -4373,9 +4373,10 @@ tests are `test_gap`.
 
 Chapter 13 §13.3.3 and the complete postfix grammar, read with the active
 parser fixtures, unambiguously authorize this exact shape. The local
-`structure_expression` shorthand omits the functional-update alternative,
-which is a low, nonblocking `spec_gap`; canonical specification is not
-edited. There is no unsafe test intent,
+`structure_expression` shorthand is a narrower helper summary and does not
+override the complete postfix production. No required behavior or choice is
+absent, so there is no blocking or nonblocking `spec_gap`; canonical
+specification is not edited. There is no unsafe test intent,
 `source_undocumented_behavior`, `test_expectation_drift`, or
 `boundary_violation`. The earlier/parallel
 write-owner overlap remains a nonblocking, report-only
@@ -4392,9 +4393,18 @@ Task 254 retains nodes `69/65/30/20/24/68`; Task 252 retains published
 sites `51/53/59/62/66/73/75`. Task 256 later owns only nodes `55/77`, with
 containers `56/78` unowned and the whole update subtree excluded. B2CP
 publishes no Task-256/258 row; B2C alone may later own take/witness nodes
-`72/71` and the witness-to-`Structure(0)` edge. Repeated
-specification/dependency, test-sufficiency, implementation-boundary, and
-source/documentation consistency reviews have no findings. Broad
-verification, every count/hash gate, and all nine hard gates pass. Final
-read-only quality is a valid `98/100`. Only dedicated-commit closure and
-fresh implementation inventory remain.
+`72/71` and the witness-to-`Structure(0)` edge.
+
+Concurrent commit `817bb92b` restored the rejected low/nonblocking
+`spec_gap` classification after the no-`spec_gap` adjudication. The later
+quality review therefore found high `design_drift`; hard gates 1 and 9
+failed and its `98/100` assertion was invalid. Docs-only Task
+`258B3M2B2B2CPC1` corrects those six passages without changing canonical
+specification, source, tests, trace data, counts, hashes, or coverage credit.
+Repeated specification/dependency, test-sufficiency,
+implementation-boundary, and source/documentation reviews have no findings.
+The docs diff check and checker lint pass; identical HEAD executable broad
+verification remains authoritative while unrelated incomplete source work
+blocks live runner/workspace reruns. All nine hard gates pass and final
+read-only quality is a valid `98/100`. Only the dedicated correction commit
+and fresh implementation inventory remain.

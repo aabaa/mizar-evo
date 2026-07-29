@@ -5088,6 +5088,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] repeated specification/dependency、test-sufficiency、
   implementation-boundary、source/documentation reviewsをfindingsなしで
   completeし、全documentation verification/hard gatesをPASS。
-- [x] final read-only qualityでvalid `98/100`を取得。
-- [ ] docs prerequisiteだけをcommitし、fresh-inventory後B2CPだけを
-  implementしてからB2Cをfreeze。
+- [x] concurrent docs commit `817bb92b`をreport-only
+  `repo_metadata_conflict`としてrecordし、restored `spec_gap` labelが
+  hard gates 1/9とrecorded `98/100`をinvalidateしたことを記録。
+- [x] CPC1 repeated no-findings reviewsをcompleteし、全9 hard gatesを
+  PASS、valid final quality `98/100`を取得。unrelated incomplete source
+  diffでblockされるlive broad rerunを明示的にjustify。
+- [ ] docs-only correction `258B3M2B2B2CPC1`をseparate commit。
+- [ ] fresh-inventory後B2CPだけをimplementしてからB2Cをfreeze。

@@ -4180,8 +4180,9 @@ absent private seamはbounded
 
 Chapter 13 §13.3.3とcomplete postfix grammarをactive parser fixturesと
 共に読むとexact shapeはunambiguous。local `structure_expression`
-shorthandがfunctional-update alternativeを列挙しない点は
-low/nonblocking `spec_gap`で、canonical specはeditしない。unsafe test
+shorthandはnarrower helper summaryで、complete postfix productionを
+overrideしない。missingなbehavior/choiceはなく、blocking/nonblocking
+いずれの`spec_gap`もない。canonical specはeditしない。unsafe test
 intent、`source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`はない。earlier/parallel write-owner overlapは
 nonblocking/report-only `repo_metadata_conflict`のまま、safe commit
@@ -4198,8 +4199,16 @@ Task 254はnodes `69/65/30/20/24/68`、Task 252はpublished sites
 nodes `55/77`だけで、containers `56/78`はunowned、update subtree全体
 をexcludeする。B2CPはTask-256/258 rowをpublishせず、B2Cだけがlater
 take/witness nodes `72/71`とwitness-to-`Structure(0)` edgeをownできる。
-repeated specification/dependency、test-sufficiency、
-implementation-boundary、source/documentation consistency reviewsは
-findingsなし。broad verification、全count/hash gate、全9 hard gatesが
-PASSし、final read-only qualityはvalid `98/100`。残るのは
-dedicated-commit closureとfresh implementation inventoryだけ。
+
+concurrent commit `817bb92b`はno-`spec_gap` adjudication後にrejected
+low/nonblocking `spec_gap` classificationをrestoreした。later quality
+reviewはhigh `design_drift`を発見し、hard gates 1/9はFAIL、
+`98/100` assertionはinvalid。docs-only Task `258B3M2B2B2CPC1`は
+canonical spec/source/tests/trace/count/hash/coverage creditを変更せず、
+passages 6箇所をcorrectする。repeated specification/dependency、
+test-sufficiency、implementation-boundary、source/documentation reviewsは
+findingsなし。docs diff check/checker lintはPASSし、unrelated incomplete
+source workがlive runner/workspace rerunをblockする間はidentical HEAD
+executable broad verificationをauthorityにする。全9 hard gatesがPASSし、
+final read-only qualityはvalid `98/100`。残るのはdedicated correction
+commitとfresh implementation inventoryだけ。

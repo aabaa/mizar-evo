@@ -5334,6 +5334,11 @@ implementation commit does not satisfy a producer task.
 - [x] Complete repeated specification/dependency, test-sufficiency,
   implementation-boundary, and source/documentation reviews with no
   findings; pass every documentation verification and hard gate.
-- [x] Pass final read-only quality with a valid score of `98/100`.
-- [ ] Commit this documentation prerequisite alone, fresh-inventory, and
-  implement only B2CP before freezing B2C.
+- [x] Record concurrent docs commit `817bb92b` as report-only
+  `repo_metadata_conflict`; the restored `spec_gap` label invalidated hard
+  gates 1/9 and the recorded `98/100`.
+- [x] Complete CPC1 repeated no-findings reviews, pass all nine hard gates,
+  and obtain valid final quality `98/100`; explicitly justify live broad
+  reruns blocked by the unrelated incomplete source diff.
+- [ ] Commit docs-only correction `258B3M2B2B2CPC1` separately.
+- [ ] Fresh-inventory and implement only B2CP before freezing B2C.

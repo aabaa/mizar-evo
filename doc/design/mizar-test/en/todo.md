@@ -2431,10 +2431,16 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Record libraries `386/437`, projection `386/439`, current module,
   manifest, test-list, count, and CLI hashes.
 - [x] Classify the skipped prerequisite as `design_drift`, the future seam
-  as bounded `source_drift`, and its tests as `test_gap`; no blocking
-  `spec_gap` was found.
+  as bounded `source_drift`, and its tests as `test_gap`; no blocking or
+  nonblocking `spec_gap` was found.
 - [x] Complete specification/dependency, test-sufficiency,
   implementation-boundary, and source/documentation reviews with no
   findings; pass documentation verification and all hard gates.
-- [x] Pass final read-only quality with a valid score of `98/100`.
-- [ ] Commit documentation only, then fresh-inventory and implement B2CP.
+- [x] Record concurrent docs commit `817bb92b` as report-only
+  `repo_metadata_conflict`; its restored `spec_gap` label invalidated the
+  hard-gate and `98/100` claims.
+- [x] Complete CPC1 repeated no-findings reviews, pass all nine hard gates,
+  and obtain valid final quality `98/100`; explicitly justify live broad
+  reruns blocked by the unrelated incomplete source diff.
+- [ ] Commit docs-only correction `258B3M2B2B2CPC1` separately.
+- [ ] Fresh-inventory and implement B2CP only.

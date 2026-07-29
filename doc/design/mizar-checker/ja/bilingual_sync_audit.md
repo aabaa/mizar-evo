@@ -673,10 +673,13 @@ B2CP bilingual debtは認めない。functional-copy meaningをexplicitに
 deferし、goal `x = x`のsmoke theoremにおける`take`はsemantic
 acceptance evidenceではないことも両言語で一致する。
 
-repeated specification/dependency、test-sufficiency、
-implementation-boundary、source/documentation consistency reviewsは
-findingsなし。documentation lint、両lint policies、format、
-warnings-denied workspace Clippy、full workspace tests、CLI 5件、全frozen
-count/hashが両companionでPASS。全9 hard gatesもPASSし、final read-only
-qualityはvalid `98/100`。残るのはdedicated documentation commitとfresh
-implementation inventoryだけ。
+concurrent commit `817bb92b`はno-`spec_gap` adjudication後にpassages
+6箇所へrejected low/nonblocking `spec_gap` labelをrestoreした。両言語は
+これをhigh `design_drift`と分類し、hard gates 1/9とcommitted
+`98/100` assertionをinvalidとしてrecordし、docs-only Task
+`258B3M2B2B2CPC1`をcorrection ownerにする。bilingual executable/
+canonical/corpus/trace/public/active/semantic surfaceは変更なし。repeated
+reviewsはfindingsなし。両companionはdocs diff/checker-lint PASS、
+unrelated-sourceによるlive broad rerun blockのjustification、全9 hard
+gates PASS、valid final quality `98/100`をrecordする。残るのはdedicated
+correction commitとfresh implementation inventoryだけ。

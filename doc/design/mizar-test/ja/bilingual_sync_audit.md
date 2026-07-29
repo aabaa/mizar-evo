@@ -768,12 +768,13 @@ diagnostic boundariesをrecordする。functional-copy semanticsと全
 Task-256/258、statement/witness、proof/goal/IR resultはdeferredで、
 `x = x` goal内の`take`にsemantic acceptance claimはない。skipped
 prerequisiteを`design_drift`、future seamを`source_drift`、testsを
-`test_gap`と分類し、blocking `spec_gap`なし。
+`test_gap`と分類し、blocking/nonblockingいずれの`spec_gap`もなし。
 
-repeated specification/dependency、test-sufficiency、
-implementation-boundary、source/documentation consistency reviewsは
-findingsなし。documentation lint、両lint policies、format、
-warnings-denied workspace Clippy、full workspace tests、CLI 5件、全frozen
-count/hashが両companionでPASSし、全9 hard gatesもPASS。final read-only
-qualityはvalid `98/100`。残るのはdedicated documentation commitとfresh
-implementation inventoryだけ。
+concurrent commit `817bb92b`はchecker/root passages 6箇所にrejected
+`spec_gap` labelをrestoreした。両言語はこれをhigh `design_drift`と
+report-only `repo_metadata_conflict`としてrecordし、committed hard-gate/
+`98/100` claimsをinvalidateし、docs-only Task `258B3M2B2B2CPC1`を
+correction ownerにする。repeated reviewsはfindingsなし。両companionは
+docs/checker-lint PASS、unrelated-sourceによるlive broad rerun blockの
+justification、全9 hard gates PASS、valid final quality `98/100`をrecord。
+残るのはdedicated correction commitとfresh implementation inventoryだけ。

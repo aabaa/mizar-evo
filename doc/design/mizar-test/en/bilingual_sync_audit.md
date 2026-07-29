@@ -794,12 +794,14 @@ diagnostic boundaries. Functional-copy semantics and every Task-256/258,
 statement/witness, proof/goal/IR result remain deferred; the `take` inside
 the `x = x` goal carries no semantic acceptance claim. Both classify the
 skipped prerequisite as `design_drift`, the future seam as `source_drift`,
-and the tests as `test_gap`, with no blocking `spec_gap`.
+and the tests as `test_gap`, with no blocking or nonblocking `spec_gap`.
 
-Repeated specification/dependency, test-sufficiency,
-implementation-boundary, and source/documentation consistency reviews now
-have no findings. Documentation lint, both lint policies, formatting,
-warnings-denied workspace Clippy, full workspace tests, all five CLIs, and
-every frozen count/hash pass in both companions; all nine hard gates pass.
-Final read-only quality is a valid `98/100`. Only the dedicated
-documentation commit and fresh implementation inventory remain.
+Concurrent commit `817bb92b` restored the rejected `spec_gap` label in six
+checker/root passages. Both languages record this as high
+`design_drift` plus report-only `repo_metadata_conflict`, invalidate the
+committed hard-gate/`98/100` claims, and select docs-only Task
+`258B3M2B2B2CPC1` as the correction. Repeated reviews have no findings.
+Both companions record passing docs/checker-lint checks, the justified
+unrelated-source block on live broad reruns, all nine hard gates PASS, and
+valid final quality `98/100`. Only the dedicated correction commit and fresh
+implementation inventory remain.

@@ -2924,14 +2924,20 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Preserve `386/437`, all count/hash gates, canonical/corpus artifacts,
   Task-254 credit, and formula trace `deferred` / `tests = []`.
 - [x] Complete independent specification/dependency review after recording
-  the nonblocking roadmap `design_drift` and the low/nonblocking Chapter-13
-  helper-grammar `spec_gap`; canonical specification remains unchanged.
+  the nonblocking roadmap `design_drift`; §13.3.3 and the complete postfix
+  grammar leave no blocking or nonblocking `spec_gap`, and canonical
+  specification remains unchanged.
 - [x] Report the overlapping earlier-session EN/root draft as a nonblocking
   `repo_metadata_conflict`; keep the exact safe target and do not repair
   repository metadata or touch the stash.
 - [x] Complete specification/dependency, test-sufficiency,
   implementation-boundary, and source/documentation reviews with no
   findings; pass documentation verification and all nine hard gates.
-- [x] Pass final read-only quality at a valid `98/100`.
-- [ ] Commit this docs-only prerequisite, fresh-inventory, and implement
-  only B2CP before returning to B2C.
+- [x] Record concurrent docs commit `817bb92b` as report-only
+  `repo_metadata_conflict`; its restored `spec_gap` wording invalidated hard
+  gates 1/9 and the recorded `98/100`.
+- [x] Complete CPC1 repeated no-findings reviews, pass all nine hard gates,
+  and obtain valid final quality `98/100`; explicitly justify live broad
+  reruns blocked by the unrelated incomplete source diff.
+- [ ] Commit docs-only correction Task `258B3M2B2B2CPC1` separately.
+- [ ] Fresh-inventory and implement only B2CP before returning to B2C.

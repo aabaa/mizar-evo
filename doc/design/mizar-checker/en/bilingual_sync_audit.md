@@ -709,10 +709,13 @@ bilingual debt is accepted. Both explicitly defer functional-copy meaning
 and record that `take` in the smoke theorem with goal `x = x` supplies no
 semantic-acceptance evidence.
 
-Repeated specification/dependency, test-sufficiency,
-implementation-boundary, and source/documentation consistency reviews now
-have no findings. Documentation lint, both lint policies, formatting,
-warnings-denied workspace Clippy, full workspace tests, all five CLIs, and
-every frozen count/hash pass in both companions. All nine hard gates pass
-and final read-only quality is a valid `98/100`. Only the dedicated
-documentation commit and fresh implementation inventory remain.
+Concurrent commit `817bb92b` restored a rejected low/nonblocking
+`spec_gap` label in six passages after the no-`spec_gap` adjudication. Both
+languages now classify that as high `design_drift`, record hard gates 1
+and 9 plus the committed `98/100` assertion as invalid, and identify
+docs-only Task `258B3M2B2B2CPC1` as the correction. No bilingual executable,
+canonical, corpus, trace, public, active, or semantic surface changes.
+Repeated reviews have no findings. Both companions record the passing docs
+diff/checker-lint checks, the justified unrelated-source block on live broad
+reruns, all nine hard gates PASS, and valid final quality `98/100`. Only the
+dedicated correction commit and fresh implementation inventory remain.

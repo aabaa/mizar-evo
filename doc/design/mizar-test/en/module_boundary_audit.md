@@ -11971,6 +11971,11 @@ Raw/normalized runner test-list hashes remain
 `51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
 `2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.
 Implementation projects only the runner library from 437 to 439. All four
-independent reviews have no findings, verification and all nine hard gates
-pass, and final read-only quality is a valid `98/100`. Only the
-documentation commit and fresh implementation inventory remain pending.
+pre-commit reviews had no findings, but concurrent commit `817bb92b`
+restored a rejected `spec_gap` classification outside this module table.
+The later quality review invalidated its hard-gate/`98/100` claims.
+Docs-only correction Task `258B3M2B2B2CPC1` changes no module boundary;
+repeated reviews now have no findings, all nine hard gates pass, and final
+quality is a valid `98/100` with live broad reruns explicitly justified as
+blocked by unrelated incomplete source work. Only a dedicated correction
+commit and fresh implementation inventory remain pending.

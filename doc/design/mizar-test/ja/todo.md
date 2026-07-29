@@ -2233,9 +2233,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] libraries `386/437`、projection `386/439`、current module、
   manifest、test-list、count、CLI hashesをrecord。
 - [x] skipped prerequisiteを`design_drift`、future seamをbounded
-  `source_drift`、testsを`test_gap`と分類し、blocking `spec_gap`なし。
+  `source_drift`、testsを`test_gap`と分類し、blocking/nonblocking
+  いずれの`spec_gap`もなし。
 - [x] specification/dependency、test-sufficiency、
   implementation-boundary、source/documentation reviewsをfindingsなしで
   completeし、documentation verificationと全hard gatesをPASS。
-- [x] final read-only qualityでvalid `98/100`を取得。
-- [ ] docs-only commit後、fresh-inventoryしてB2CPをimplement。
+- [x] concurrent docs commit `817bb92b`をreport-only
+  `repo_metadata_conflict`としてrecordし、restored `spec_gap` labelが
+  hard-gate/`98/100` claimsをinvalidateしたことを記録。
+- [x] CPC1 repeated no-findings reviewsをcompleteし、全9 hard gatesを
+  PASS、valid final quality `98/100`を取得。unrelated incomplete source
+  diffでblockされるlive broad rerunを明示的にjustify。
+- [ ] docs-only correction `258B3M2B2B2CPC1`をseparate commit。
+- [ ] fresh-inventory後B2CPだけをimplement。
