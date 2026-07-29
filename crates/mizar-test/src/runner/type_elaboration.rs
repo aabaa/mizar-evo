@@ -332,9 +332,11 @@ pub(super) use source_application::{
     SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
     SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
     UnwrappedImportedApplicationTestMutation, UnwrappedImportedApplicationTestOptions,
-    source_application_output, source_application_output_with_mutation,
-    synthetic_functional_actual_count, synthetic_source_application_output,
-    unwrapped_imported_source_application_handoff_for_test,
+    WrappedImportedApplicationSurfaceMutation, WrappedImportedApplicationTestMutation,
+    WrappedImportedApplicationTestOptions, source_application_output,
+    source_application_output_with_mutation, synthetic_functional_actual_count,
+    synthetic_source_application_output, unwrapped_imported_source_application_handoff_for_test,
+    wrapped_imported_source_application_handoff_for_test,
 };
 #[cfg(test)]
 pub(super) use source_ast::{

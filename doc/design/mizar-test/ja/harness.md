@@ -3571,3 +3571,20 @@ typed/resolved publicationがatomicにabsent/unchangedであることをprove
 separateな`Primary(0/1)`付き`2/0/2`と`Primary(2/3)`付き`6/4/2` rowsは
 exactのまま。active case、fixture、sidecar、expectation、trace row、
 detail key、public dispatchは追加しない。
+
+## Checker Task 258B3M2B2B1B1P dormant lower harness implementation
+
+private harnessはexact 158-byte/67-node wrapped applicationをselectし、
+proof context 1でTask-252 `6/4/2`とTask-253 `1/1/1/2/2`をreuseする。
+contribution 2、structural path `[12]`を含む全frozen candidate/origin
+provenance fieldsをauthenticateし、legacy unwrapped pathsを
+byte-compatibleに保つ。
+
+exact tests 2件はpass。全loaded-source bytes/AST fields、same-source
+resolver substitutions 5件、empty source familiesと全semantic/proof/goal/
+diagnostic tables、atomic failure/clean replay、およびexact reparsed
+`(diagnostics,nodes)` matrix
+`[(0,63),(0,71),(0,67),(12,72),(1,64),(0,72),(0,67),(14,73)]`
+をfreezeする。statement consumer、active case、fixture、sidecar、
+expectation、trace row、detail key、public dispatch、downstream semantic
+ownerは追加していない。

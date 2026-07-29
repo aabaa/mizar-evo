@@ -4364,3 +4364,33 @@ specification backlink or executable coverage credit.
 The completed real-provider determinism regression compares recovered
 AST/diagnostics and v2 cache keys across replay. It adds Rust test evidence but
 no frontend production source, trace status/count, or coverage credit.
+
+## Task 258B3M2B2B1B1P Wrapped-Application Implementation Result
+
+The bounded runner `source_drift`, Rust `test_gap`, and paired-document
+`design_drift` are closed. One private exact wrapper-aware Task-253 reuse seam
+now authenticates the frozen 158-byte/67-node source and complete imported
+`++` resolver provenance, then delegates Task-252 `6/4/2` and wrapped
+Task-253 `1/1/1/2/2` in proof context 1. Exactly two tests cover every
+source byte and AST field, five same-source provenance substitutions, the
+eight-entry reparsed near-miss matrix, atomic failure/replay, compatibility,
+and empty downstream tables.
+
+This adds Rust implementation evidence only. The
+`spec.en.checker.formula_statement.source_payloads` row remains `deferred`,
+`tests = []`, without backlink or coverage credit. Canonical specs, `.miz`,
+fixtures, expectations, sidecars, trace metadata/status/count, public and
+active routes, and semantic/proof/goal ownership remain unchanged.
+
+Checker/runner libraries are `374/418`; runner Task-253
+leaf/facade/root/test sizes are `2652/708/2523/3727`; production is 30 paths
+/ 41,173 lines. Production path/content hashes are
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`,
+and runner raw/normalized test-list hashes are
+`becc23c77b37b858edca581d11e396efc431f1f47f4cc80d859d6d06d1f19c37` /
+`66089f0f420203a4cf24c182315b77ce58775ce35c50285041823bcc0700248b`.
+Plan/requirements, active parse/declaration/type/proof, coverage, pass/fail,
+warnings/errors, and all five CLI hashes remain unchanged. Final read-only
+quality review found no remaining findings, passed every hard gate, and
+assigned a valid score of `98/100`.

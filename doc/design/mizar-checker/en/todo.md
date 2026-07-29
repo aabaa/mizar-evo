@@ -5086,5 +5086,21 @@ implementation commit does not satisfy a producer task.
 - [x] Preserve production/tests, canonical artifacts, active routes,
   fixtures, expectations, sidecars, trace status/count, public APIs,
   semantic ownership, libraries `374/416`, and all measured hashes.
-- [ ] Commit this documentation prerequisite alone, fresh-inventory, then
+- [x] Commit this documentation prerequisite alone, fresh-inventory, then
   implement only B1B1P before freezing the B1B1 statement consumer.
+
+## Checker Task 258B3M2B2B1B1P Implementation Ledger
+
+- [x] Add only the runner-private wrapped Task-253 reuse seam; leave checker
+  source, public APIs, active routes, and the B1B1 consumer unchanged.
+- [x] Authenticate exact imported `++` provenance and reject five classes of
+  same-source resolver substitution before lower-table publication.
+- [x] Pass exactly two compound tests covering all 158 bytes, 67-node/root
+  mutations, the eight-entry diagnostic/node matrix, precedence, rollback,
+  replay, legacy hashes, exact rows, and empty upper tables.
+- [x] Measure checker/runner tests `374/418`, runner sizes
+  `2652/708/2523/3727`, and 30 production paths / 41,173 lines.
+- [x] Preserve canonical artifacts, fixtures, expectations, sidecars, trace
+  status/count, executable coverage credit, and semantic/proof/goal owners.
+- [ ] Fresh-inventory B1B1 statement-consumer documentation as a separate
+  logical task after this implementation commit.

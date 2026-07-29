@@ -266,3 +266,13 @@ and
 `0fd83f61a40d3fd43816a52b70fca4fa4cf7f1d6e9172d3c5fe558c5d4add80d`.
 Exactly two future runner tests own this lower prerequisite; the B1B1
 statement consumer remains a later logical task.
+
+## Task 258B3M2B2B1B1P Implementation Result
+
+The wrapped proof-context reuse seam now delegates to the existing Task-253
+producer after authenticating the exact 67-node arena, wrapper/application
+containment, Task-252 fingerprint, and complete imported `++` identity.
+Five same-source resolver substitutions fail at selector admission. The two
+frozen tests pass every byte/node mutation, exact diagnostic/node near-miss
+matrix, producer/typed-install precedence, replay/clone, and legacy hash
+gate. No public producer/table/API or unwrapped output changed.

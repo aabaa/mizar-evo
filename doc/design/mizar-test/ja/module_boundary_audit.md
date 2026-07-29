@@ -10498,3 +10498,18 @@ production 30 paths / 40,298 lines、path/content hashes
 `201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`。
 public re-export、checker dependency、active route、fixture、trace、
 binding、semantic ownerを変更しない。
+
+## Checker Task 258B3M2B2B1B1P implemented module boundary
+
+implementationはexisting private
+`runner/type_elaboration/source_application.rs` leaf、そのprivate
+facade/root imports、paired source-application test leafに限定した。
+module、production path、checker dependency、public re-export、statement
+consumer、active routeは追加していない。leaf/facade/root/test sizesは
+`2652/708/2523/3727`、production manifestは30 pathsのままで41,173
+lines。sorted path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`、
+raw/normalized 418-test hashesは
+`becc23c77b37b858edca581d11e396efc431f1f47f4cc80d859d6d06d1f19c37` /
+`66089f0f420203a4cf24c182315b77ce58775ce35c50285041823bcc0700248b`。

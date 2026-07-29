@@ -602,3 +602,14 @@ private source-application leaf ownership, two future tests, legacy
 unwrapped compatibility, unchanged 416-test/40,298-line baseline, and
 B1B1P-before-B1B1 order. No public/active/fixture/trace/semantic change or
 bilingual debt is accepted.
+
+## Task 258B3M2B2B1B1P Runner Implementation Synchronization
+
+The EN canonical and JA companion record the same private exact wrapped
+selector, full imported-`++` provenance, five same-source resolver
+substitutions, eight-entry reparsed near-miss matrix, and exactly two passing
+tests. They also agree on the 418-test inventory, sizes
+`2652/708/2523/3727`, 30-path/41,173-line production manifest and hashes,
+unchanged legacy unwrapped paths, and empty downstream tables. No
+public/active/statement/fixture/expectation/sidecar/trace/semantic change or
+implementation bilingual debt remains; B1B1 follows separately.

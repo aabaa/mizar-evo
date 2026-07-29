@@ -2008,5 +2008,21 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 416 tests、Task-253 sizes `1782/706/2520/2799`、30 paths /
   40,298 lines、全active/fixture/expectation/sidecar/trace artifactsを
   preserve。
-- [ ] docs commitとfresh preflight後、B1B1Pだけをimplementし、B1B1
+- [x] docs commitとfresh preflight後、B1B1Pだけをimplementし、B1B1
   statement consumerはlater logical taskでfreeze。
+
+## Checker Task 258B3M2B2B1B1P runner implementation ledger
+
+- [x] private exact wrapped-imported-application reuse seamだけを追加し、
+  legacy unwrapped contexts 2件をpreserve。
+- [x] complete imported `++` resolver provenanceをauthenticateし、
+  same-source identity/path/signature/export/contribution substitutions
+  5件をreject。
+- [x] exactly two compound testsで全source bytes、全AST fields、exact
+  eight-entry reparsed near-miss matrix、empty downstream tables、atomic
+  failure、replay、compatibilityをcover。
+- [x] 418 tests、sizes `2652/708/2523/3727`、production 30 paths /
+  41,173 linesとrecorded production/test-list hashesを実測。
+- [x] public/active/statement routes、fixtures、expectations、sidecars、
+  trace status/count、semantic/proof/goal ownershipを不変にし、B1B1
+  documentationはimplementation commit後にのみselect。

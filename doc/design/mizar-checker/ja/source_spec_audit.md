@@ -3962,3 +3962,12 @@ APIs、trace metadataは不変。従って
 `tests = []`、backlink/creditなしのまま。
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`はない。
+
+## Task 258B3M2B2B1B1P implementation audit
+
+bounded `source_drift`、Rust `test_gap`、paired `design_drift`はclosed。
+productionはfrozen exact resolver provenanceをenforceし、Rust tests 2件は
+same-source substitutions、parser-derived diagnostic/node matrix、全frozen
+empty upper familiesをcoverする。implementation evidenceだけを追加し、
+canonical specs、`.miz`、expectations、sidecars、trace row/status/count、
+`deferred` status、backlinks、executable coverage creditは不変。

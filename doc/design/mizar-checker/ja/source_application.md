@@ -249,3 +249,13 @@ context-0/context-1 unwrapped hashesはそれぞれ
 `0fd83f61a40d3fd43816a52b70fca4fa4cf7f1d6e9172d3c5fe558c5d4add80d`
 のまま。future runner testsちょうど2件がこのlower prerequisiteをownし、
 B1B1 statement consumerはlater logical taskのまま。
+
+## Task 258B3M2B2B1B1P implementation result
+
+wrapped proof-context reuse seamは、exact 67-node arena、wrapper/application
+containment、Task-252 fingerprint、complete imported `++` identityを
+authenticateした後、existing Task-253 producerへdelegateする。same-source
+resolver substitutions 5件はselector admissionでfailする。frozen tests
+2件は全byte/node mutations、exact diagnostic/node near-miss matrix、
+producer/typed-install precedence、replay/clone、legacy hash gateをpassする。
+public producer/table/APIもunwrapped outputも変更なし。

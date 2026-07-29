@@ -173,8 +173,10 @@ use type_elaboration::{
     SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
     SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
     SyntheticSourceStructureDependencies, UnwrappedImportedApplicationTestMutation,
-    UnwrappedImportedApplicationTestOptions, assemble_source_checker_handoff,
-    assemble_source_contradiction_checker_handoff, assert_source_contradiction_handoff,
+    UnwrappedImportedApplicationTestOptions, WrappedImportedApplicationSurfaceMutation,
+    WrappedImportedApplicationTestMutation, WrappedImportedApplicationTestOptions,
+    assemble_source_checker_handoff, assemble_source_contradiction_checker_handoff,
+    assert_source_contradiction_handoff,
     assert_source_parenthesized_heterogeneous_reserve_membership_output,
     assert_source_parenthesized_reserved_object_variable_equality_output,
     assert_source_parenthesized_reserved_object_variable_inequality_output,
@@ -490,6 +492,7 @@ use type_elaboration::{
     synthetic_source_application_output, synthetic_source_attribute_output,
     synthetic_source_structure_output, synthetic_source_structure_output_with_mutation,
     synthetic_source_term_output, unwrapped_imported_source_application_handoff_for_test,
+    wrapped_imported_source_application_handoff_for_test,
 };
 use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,

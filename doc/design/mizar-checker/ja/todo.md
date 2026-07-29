@@ -4842,5 +4842,22 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] production/tests、canonical artifacts、active routes、fixtures、
   expectations、sidecars、trace status/count、public APIs、semantic
   ownership、libraries `374/416`、全measured hashesをpreserve。
-- [ ] このdocumentation prerequisiteだけをcommitし、fresh-inventory後、
+- [x] このdocumentation prerequisiteだけをcommitし、fresh-inventory後、
   B1B1 statement consumerをfreezeする前にB1B1Pだけをimplement。
+
+## Checker Task 258B3M2B2B1B1P implementation ledger
+
+- [x] runner-private wrapped Task-253 reuse seamだけを追加し、checker
+  source、public APIs、active routes、B1B1 consumerを不変に維持。
+- [x] exact imported `++` provenanceをauthenticateし、same-source resolver
+  substitution 5 classesをlower-table publication前にreject。
+- [x] 全158 bytes、67-node/root mutations、eight-entry diagnostic/node
+  matrix、precedence、rollback/replay、legacy hashes、exact rows、empty
+  upper tablesをcoverするcompound testsちょうど2件をpass。
+- [x] checker/runner tests `374/418`、runner sizes
+  `2652/708/2523/3727`、production 30 paths / 41,173 linesを実測。
+- [x] canonical artifacts、fixtures、expectations、sidecars、trace
+  status/count、executable coverage credit、semantic/proof/goal ownersを
+  preserve。
+- [ ] implementation commit後、B1B1 statement-consumer documentationを
+  separate logical taskとしてfresh-inventory。

@@ -2206,5 +2206,20 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   separate context-0/context-1 debug hashes.
 - [x] Preserve 416 tests, Task-253 sizes `1782/706/2520/2799`, 30 paths /
   40,298 lines, and every active/fixture/expectation/sidecar/trace artifact.
-- [ ] After the docs commit and fresh preflight, implement only B1B1P;
+- [x] After the docs commit and fresh preflight, implement only B1B1P;
   freeze the B1B1 statement consumer in a later logical task.
+
+## Checker Task 258B3M2B2B1B1P Runner Implementation Ledger
+
+- [x] Add only the private exact wrapped-imported-application reuse seam and
+  preserve both legacy unwrapped contexts.
+- [x] Authenticate the complete imported `++` resolver provenance and reject
+  five same-source identity/path/signature/export/contribution substitutions.
+- [x] Pass exactly two compound tests covering all source bytes, all AST
+  fields, the exact eight-entry reparsed near-miss matrix, empty downstream
+  tables, atomic failure, replay, and compatibility.
+- [x] Measure 418 tests, sizes `2652/708/2523/3727`, and 30 production paths
+  / 41,173 lines with the recorded production and test-list hashes.
+- [x] Leave public/active/statement routes, fixtures, expectations, sidecars,
+  trace status/count, and semantic/proof/goal ownership unchanged; select
+  B1B1 documentation only after this implementation commit.

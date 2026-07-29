@@ -4146,3 +4146,13 @@ trace metadata remain unchanged. The
 `deferred`, `tests = []`, without backlink or credit. No
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict` is present.
+
+## Task 258B3M2B2B1B1P Implementation Audit
+
+The bounded `source_drift`, Rust `test_gap`, and paired `design_drift` are
+closed. Production now enforces the frozen exact resolver provenance; the
+two Rust tests cover same-source substitutions, the parser-derived
+diagnostic/node matrix, and all frozen empty upper families. This adds
+implementation evidence only. Canonical specs, `.miz`, expectations,
+sidecars, trace row/status/count, `deferred` status, backlinks, and executable
+coverage credit remain unchanged.

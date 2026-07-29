@@ -3772,3 +3772,19 @@ and
 their separate `2/0/2` with `Primary(0/1)` and `6/4/2` with
 `Primary(2/3)` rows remain exact. No active case, fixture, sidecar,
 expectation, trace row, detail key, or public dispatch is added.
+
+## Checker Task 258B3M2B2B1B1P Dormant Lower Harness Implementation
+
+The private harness now selects the exact 158-byte/67-node wrapped
+application and reuses Task-252 `6/4/2` plus Task-253 `1/1/1/2/2` in proof
+context 1. It authenticates every frozen candidate and origin-provenance
+field, including contribution 2 and structural path `[12]`, while leaving
+the legacy unwrapped paths byte-compatible.
+
+The two exact tests pass. They freeze every loaded-source byte and AST field,
+five same-source resolver substitutions, empty source families and all
+semantic/proof/goal/diagnostic tables, atomic failure and clean replay, plus
+the exact reparsed `(diagnostics,nodes)` matrix
+`[(0,63),(0,71),(0,67),(12,72),(1,64),(0,72),(0,67),(14,73)]`.
+No statement consumer, active case, fixture, sidecar, expectation, trace
+row, detail key, public dispatch, or downstream semantic owner was added.

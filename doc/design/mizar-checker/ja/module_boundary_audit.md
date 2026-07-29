@@ -477,3 +477,15 @@ handoffsのsyntax-free consumerのまま。statement、witness、typed/final
 installer、semantic/proof/goal owner、crate edge、dependency directionを
 authorizeしない。baseline checker modulesは
 `21664/4742/7224/3156`のまま。
+
+## Task 258B3M2B2B1B1P implemented boundary
+
+checker modules/public APIsはimplementation diffの外でbyte-for-byte不変。
+runner implementationはexisting private source-application leaf、その
+private facade/root imports、paired test leafに留まり、module/production
+pathを追加しない。runner sizesは`2652/708/2523/3727`、30-path
+production manifestは41,173 lines、path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`。
+statement extraction、checker dependency、public/active route、binding、
+semantic owner、crate edge、dependency directionは変更なし。

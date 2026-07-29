@@ -580,3 +580,14 @@ private source-application leaf ownership、future tests 2件、legacy
 unwrapped compatibility、unchanged 416-test/40,298-line baseline、
 B1B1P-before-B1B1 orderをfreezeする。public/active/fixture/trace/semantic
 changeもbilingual debtも許容しない。
+
+## Task 258B3M2B2B1B1P runner implementation synchronization
+
+EN canonical/JA companionは同じprivate exact wrapped selector、完全な
+imported-`++` provenance、same-source resolver substitutions 5件、
+reparsed near-miss matrix 8 entries、passing testsちょうど2件を記録する。
+418-test inventory、sizes `2652/708/2523/3727`、30-path/41,173-line
+production manifest/hashes、unchanged legacy unwrapped paths、empty
+downstream tablesも一致する。public/active/statement/fixture/expectation/
+sidecar/trace/semantic changeもimplementation bilingual debtも残らず、
+B1B1は別taskで続く。

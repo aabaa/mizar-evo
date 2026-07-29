@@ -2679,7 +2679,7 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Preserve canonical artifacts, production/tests, active routes,
   fixtures, expectations, sidecars, trace metadata, public APIs, semantic
   ownership, libraries `374/416`, and all count/hash baselines.
-- [ ] Commit the B1B1P documentation prerequisite, fresh-inventory, and
+- [x] Commit the B1B1P documentation prerequisite, fresh-inventory, and
   implement B1B1P alone before freezing B1B1.
 
 ## `PARSER-RECOVERY-B1B1P-P1` Lower-Stage Prerequisite
@@ -2696,3 +2696,20 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Fresh-inventory, implement the bounded parser correction and Rust-only
   regressions in a second commit, pass all reviews/gates at 90/100 or higher,
   then resume the isolated Checker B1B1P implementation.
+
+## Checker Task 258B3M2B2B1B1P Implementation Completion
+
+- [x] Implement only the private exact wrapped Task-253 reuse seam and
+  authenticate every frozen imported-`++` provenance field.
+- [x] Preserve Task-252 `6/4/2`, Task-253 `1/1/1/2/2`, legacy unwrapped
+  outputs, dormant public/active routes, and all deferred semantic ownership.
+- [x] Pass exactly two compound tests covering every source byte and AST
+  field, five same-source substitutions, the exact eight-entry reparsed
+  near-miss matrix, atomic rollback/replay, and empty downstream tables.
+- [x] Measure checker/runner libraries `374/418`, sizes
+  `2652/708/2523/3727`, production 30 paths / 41,173 lines, and the recorded
+  production/test-list hashes.
+- [x] Add no canonical, `.miz`, fixture, expectation, sidecar, trace
+  status/count, public/active route, statement consumer, or coverage credit.
+- [ ] After the dedicated implementation commit and fresh inventory, freeze
+  the B1B1 statement-consumer contract as a separate documentation task.

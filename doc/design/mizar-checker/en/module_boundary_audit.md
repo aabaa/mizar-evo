@@ -500,3 +500,16 @@ runner tests. The checker remains the syntax-free consumer of the unchanged
 Task-252/253 public handoffs. No statement, witness, typed/final installer,
 semantic/proof/goal owner, crate edge, or dependency direction is authorized.
 Baseline checker modules remain `21664/4742/7224/3156`.
+
+## Task 258B3M2B2B1B1P Implemented Boundary
+
+Checker modules and public APIs remain byte-for-byte outside the
+implementation diff. The runner implementation stays in the existing private
+source-application leaf, its private facade/root imports, and paired test
+leaf; no module or production path was added. Runner sizes are
+`2652/708/2523/3727`, and the 30-path production manifest totals 41,173
+lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`.
+No statement extraction, checker dependency, public/active route, binding,
+semantic owner, crate edge, or dependency direction changed.

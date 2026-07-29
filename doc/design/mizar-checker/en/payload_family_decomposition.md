@@ -975,3 +975,11 @@ The future B1B1 edge will still be
 `SourceStatementWitness(0) -> SourceFunctorApplication(0)`; wrapper 0 is
 authenticated containment metadata, not a witness target. Task-254/255 and
 all semantic/proof/goal families remain excluded.
+
+### Task 258B3M2B2B1B1P Completion Boundary
+
+Implementation adds only the private extraction/reuse seam and no checker
+payload family or cross-family edge. Task 252 still owns primaries 2/3 and
+Task 253 owns application/wrapper 0; exact resolver authentication narrows
+admission without publishing another row. Task 258 still owns nothing, and
+all statement/witness/semantic/proof/goal families remain deferred to B1B1.

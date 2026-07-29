@@ -26,11 +26,11 @@ use mizar_checker::{
 };
 use mizar_resolve::{
     declarations::{DeclarationShell, DeclarationShellKind, DeclarationShellSet},
-    env::{SymbolEnv, SymbolKind},
+    env::{ContributionKind, ExportStatus, SymbolEnv, SymbolKind, Visibility},
     names::{LocalTermBinding, LocalTermScope},
     resolved_ast::{ModuleId, SymbolId},
 };
-use mizar_session::SourceRange;
+use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 
 use super::{
@@ -847,6 +847,148 @@ fn extract_unwrapped_imported(
     })
 }
 
+fn extract_wrapped_imported(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    application_index: usize,
+    wrapper_index: usize,
+) -> Option<ExtractedApplication> {
+    if !task258b3m2b2b1b1p_surface_contract(ast, None) {
+        return None;
+    }
+    let application_id = node_id(
+        ast,
+        TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(
+            application_index,
+        )),
+    )?;
+    let application = ast.node(application_id)?;
+    if application.recovered
+        || !matches!(
+            &application.kind,
+            SurfaceNodeKind::InfixExpression(operator) if operator.spelling.as_ref() == "++"
+        )
+        || direct_token_texts(ast, application).as_slice() != ["++"]
+        || subtree_tokens(ast, application) != ["1", "++", "2"]
+    {
+        return None;
+    }
+    let argument_roots = structural_child_ids(ast, application);
+    let [left_id, right_id] = argument_roots.as_slice() else {
+        return None;
+    };
+    let left = ast.node(*left_id)?;
+    let right = ast.node(*right_id)?;
+    if !matches!(left.kind, SurfaceNodeKind::NumeralTerm)
+        || !matches!(right.kind, SurfaceNodeKind::NumeralTerm)
+        || left.recovered
+        || right.recovered
+        || subtree_tokens(ast, left) != ["1"]
+        || subtree_tokens(ast, right) != ["2"]
+    {
+        return None;
+    }
+    let enclosing_wrappers = surface_nodes_with_kind(ast, SurfaceNodeKind::ParenthesizedTerm)
+        .into_iter()
+        .filter(|(_, wrapper)| structural_descendant(ast, wrapper, application_id))
+        .collect::<Vec<_>>();
+    let [(wrapper_id, wrapper)] = enclosing_wrappers.as_slice() else {
+        return None;
+    };
+    if wrapper_id.index() != wrapper_index
+        || wrapper.recovered
+        || direct_token_texts(ast, wrapper).as_slice() != ["(", ")"]
+        || subtree_tokens(ast, wrapper) != ["(", "1", "++", "2", ")"]
+    {
+        return None;
+    }
+    let wrapper_children = structural_child_ids(ast, wrapper);
+    let [body_id] = wrapper_children.as_slice() else {
+        return None;
+    };
+    let body = ast.node(*body_id)?;
+    if !matches!(body.kind, SurfaceNodeKind::TermExpression)
+        || body.recovered
+        || structural_child_ids(ast, body).as_slice() != [application_id]
+    {
+        return None;
+    }
+    let head_ids = application
+        .children
+        .iter()
+        .copied()
+        .filter(|child| ast.node(*child).and_then(SurfaceNode::token_text) == Some("++"))
+        .collect::<Vec<_>>();
+    let [head_id] = head_ids.as_slice() else {
+        return None;
+    };
+    let head = ast.node(*head_id)?;
+    let candidate =
+        resolve_imported_fixture_term_formula_symbol(symbols, module, "++", SymbolKind::Functor)
+            .ok()?;
+    if !task258b3m2b2b1b1p_candidate_is_exact(ast, module, symbols, &candidate) {
+        return None;
+    }
+    Some(ExtractedApplication {
+        kind: SourceApplicationRouteKind::ImportedInfix,
+        context: BindingContextId::new(0),
+        application_id,
+        application_range: application.range,
+        application_spelling: "1 ++ 2".to_owned(),
+        form: SourceFunctorApplicationForm::Infix,
+        head_id: *head_id,
+        head_range: head.range,
+        head_spelling: "++".to_owned(),
+        wrapper: Some((*wrapper_id, wrapper.range)),
+        argument_roots: vec![*left_id, *right_id],
+        candidate,
+    })
+}
+
+fn task258b3m2b2b1b1p_candidate_is_exact(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    candidate: &SymbolId,
+) -> bool {
+    let Some(entry) = symbols.symbols().get(candidate) else {
+        return false;
+    };
+    let Some(contribution) = symbols.contributions().get(entry.contribution()) else {
+        return false;
+    };
+    let import_range = SourceRange {
+        source_id: ast.source_id,
+        start: 7,
+        end: 27,
+    };
+    candidate.module().package().as_str() == "mizar-test-task253-corruption"
+        && candidate.module().package() == module.package()
+        && candidate.module().path().as_str() == "parser.type_fixtures"
+        && candidate.local().as_str() == "summary:parser.type_fixtures#parse-only#++:12"
+        && candidate.fqn().as_str() == "parser.type_fixtures::++#12"
+        && entry.kind() == SymbolKind::Functor
+        && entry.primary_spelling() == "++"
+        && entry.visibility() == Visibility::Public
+        && entry.export_status() == ExportStatus::Exported
+        && entry.signature().is_none()
+        && entry.contribution().index() == 2
+        && entry.origin().source_id() == ast.source_id
+        && entry.origin().module_id() == candidate.module()
+        && entry.origin().anchor() == &SourceAnchor::Range(import_range)
+        && entry.origin().structural_path() == [12]
+        && entry.origin().import_edge().is_none()
+        && !entry.origin().is_recovered()
+        && contribution.id() == entry.contribution()
+        && contribution.module() == candidate.module()
+        && matches!(
+            contribution.kind(),
+            ContributionKind::ImportedSource { source_id } if *source_id == ast.source_id
+        )
+        && contribution.anchor() == &SourceAnchor::Range(import_range)
+}
+
 fn extract_local(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1243,6 +1385,39 @@ pub(super) fn unwrapped_imported_source_application_owned_node_kinds(
     ]))
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(super) struct WrappedImportedApplicationSite {
+    pub(super) application: usize,
+    pub(super) wrapper: usize,
+}
+
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Task 258B3M2B2B1B1P freezes this production-private seam before B1B1 consumes it"
+    )
+)]
+pub(super) fn wrapped_imported_source_application_owned_node_kinds(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    site: WrappedImportedApplicationSite,
+) -> Option<BTreeMap<usize, &'static str>> {
+    let extracted = extract_wrapped_imported(ast, module, symbols, site.application, site.wrapper)?;
+    Some(BTreeMap::from([
+        (
+            extracted.application_id.index(),
+            "source.term.functor-application.symbolic",
+        ),
+        (extracted.head_id.index(), "source.term.functor-head.single"),
+        (
+            extracted.wrapper?.0.index(),
+            "source.term.functor-application.parenthesized",
+        ),
+    ]))
+}
+
 pub(super) fn unwrapped_imported_source_application_handoff(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1284,6 +1459,36 @@ pub(super) fn unwrapped_imported_source_application_handoff_in_context(
     ))
 }
 
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "Task 258B3M2B2B1B1P freezes this production-private seam before B1B1 consumes it"
+    )
+)]
+pub(super) fn wrapped_imported_source_application_handoff_in_context(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    source_term: &SourceTermParts,
+    site: WrappedImportedApplicationSite,
+    context: BindingContextId,
+) -> Option<Result<SourceFunctorApplicationHandoff, String>> {
+    let mut extracted =
+        extract_wrapped_imported(ast, module, symbols, site.application, site.wrapper)?;
+    extracted.context = context;
+    Some(build_handoff_with_source_term(
+        ast,
+        module,
+        symbols,
+        binding_env,
+        &extracted,
+        source_term,
+        |_| {},
+    ))
+}
+
 #[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::runner) enum UnwrappedImportedApplicationTestMutation {
@@ -1313,6 +1518,400 @@ pub(in crate::runner) struct UnwrappedImportedApplicationTestOutput {
     pub(in crate::runner) primary_counts: (usize, usize, usize),
     pub(in crate::runner) typed_ast: TypedAst,
     pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum WrappedImportedApplicationSurfaceMutation {
+    None,
+    NodeKind(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    RootIdentity,
+    DirectProductionSeam,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum WrappedImportedApplicationTestMutation {
+    None,
+    ApplicationSite,
+    ApplicationRange,
+    ApplicationOrdinal,
+    ApplicationContext,
+    ApplicationRecovery,
+    ApplicationSpelling,
+    ApplicationKind,
+    ApplicationForm,
+    HeadOrdinal,
+    HeadSite,
+    HeadRange,
+    HeadSpelling,
+    WrapperExtra,
+    WrapperApplication,
+    WrapperOrdinal,
+    WrapperSite,
+    WrapperRange,
+    WrapperContext,
+    WrapperSpelling,
+    WrapperRecovery,
+    CandidateApplication,
+    CandidateOrdinal,
+    CandidateSymbol,
+    CandidateContribution,
+    ArgumentApplication,
+    ArgumentOrdinal,
+    ArgumentTarget,
+    RequestApplication,
+    RequestOrdinal,
+    RequestCandidate,
+    RequestKind,
+    StalePrimaryReplay,
+    ApplicationRangeAndStalePrimaryReplay,
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy)]
+pub(in crate::runner) struct WrappedImportedApplicationTestOptions {
+    pub(in crate::runner) application: usize,
+    pub(in crate::runner) wrapper: usize,
+    pub(in crate::runner) context: BindingContextId,
+    pub(in crate::runner) surface_mutation: WrappedImportedApplicationSurfaceMutation,
+    pub(in crate::runner) handoff_mutation: WrappedImportedApplicationTestMutation,
+}
+
+#[cfg(test)]
+#[derive(Debug)]
+pub(in crate::runner) struct WrappedImportedApplicationTestOutput {
+    pub(in crate::runner) handoff: SourceFunctorApplicationHandoff,
+    pub(in crate::runner) primary_counts: (usize, usize, usize),
+    pub(in crate::runner) typed_ast: TypedAst,
+    pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+const TASK258B3M2B2B1B1P_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementParenthesizedApplicationWitnessSmoke: x = x proof\n",
+    "  take (1 ++ 2);\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
+fn task258b3m2b2b1b1p_surface_contract(ast: &SurfaceAst, loaded_source: Option<&str>) -> bool {
+    task258b3m2b2b1b1p_surface_contract_impl(ast, loaded_source, |_, _, _, _, _| {})
+}
+
+fn task258b3m2b2b1b1p_surface_contract_impl(
+    ast: &SurfaceAst,
+    loaded_source: Option<&str>,
+    mutate: impl FnOnce(
+        &mut Vec<String>,
+        &mut Vec<(usize, usize)>,
+        &mut Vec<bool>,
+        &mut Vec<Vec<usize>>,
+        &mut Option<usize>,
+    ),
+) -> bool {
+    const KINDS: [&str; 67] = [
+        "Token(SurfaceToken { kind: ReservedWord, text: \"import\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"parser\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \".\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"type_fixtures\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"FormulaStatementParenthesizedApplicationWitnessSmoke\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"proof\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"take\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"(\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"1\" })",
+        "Token(SurfaceToken { kind: UserSymbol, text: \"++\" })",
+        "Token(SurfaceToken { kind: Numeral, text: \"2\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \")\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"end\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "PathSegment",
+        "PathSegment",
+        "ModulePath",
+        "ImportAliasDecl",
+        "ImportItem",
+        "TypeHead",
+        "TypeExpression",
+        "ReserveSegment",
+        "ReserveItem",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "NumeralTerm",
+        "NumeralTerm",
+        "InfixExpression(SurfaceInfixOperator { spelling: \"++\", precedence: 10, associativity: Left })",
+        "TermExpression",
+        "ParenthesizedTerm",
+        "TermExpression",
+        "Witness",
+        "TakeStatement",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "Proposition",
+        "ConclusionStatement",
+        "ProofBlock",
+        "TheoremItem",
+        "ItemList",
+        "CompilationUnit",
+        "Root",
+    ];
+    const RANGES: [(usize, usize); 67] = [
+        (0, 6),
+        (7, 13),
+        (13, 14),
+        (14, 27),
+        (27, 28),
+        (29, 36),
+        (37, 38),
+        (39, 42),
+        (43, 46),
+        (46, 47),
+        (48, 55),
+        (56, 108),
+        (108, 109),
+        (110, 111),
+        (112, 113),
+        (114, 115),
+        (116, 121),
+        (124, 128),
+        (129, 130),
+        (130, 131),
+        (132, 134),
+        (135, 136),
+        (136, 137),
+        (137, 138),
+        (141, 145),
+        (146, 147),
+        (148, 149),
+        (150, 151),
+        (151, 152),
+        (153, 156),
+        (156, 157),
+        (7, 13),
+        (14, 27),
+        (7, 27),
+        (7, 27),
+        (0, 28),
+        (43, 46),
+        (43, 46),
+        (37, 46),
+        (29, 47),
+        (110, 111),
+        (110, 111),
+        (114, 115),
+        (114, 115),
+        (110, 115),
+        (110, 115),
+        (130, 131),
+        (135, 136),
+        (130, 136),
+        (130, 136),
+        (129, 137),
+        (129, 137),
+        (129, 137),
+        (124, 138),
+        (146, 147),
+        (146, 147),
+        (150, 151),
+        (150, 151),
+        (146, 151),
+        (146, 151),
+        (146, 151),
+        (141, 152),
+        (116, 156),
+        (48, 157),
+        (0, 157),
+        (0, 157),
+        (0, 157),
+    ];
+    const CHILDREN: [&[usize]; 67] = [
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[1],
+        &[3],
+        &[31, 2, 32],
+        &[33],
+        &[0, 34, 4],
+        &[8],
+        &[36],
+        &[6, 7, 37],
+        &[5, 38, 9],
+        &[13],
+        &[40],
+        &[15],
+        &[42],
+        &[41, 14, 43],
+        &[44],
+        &[19],
+        &[21],
+        &[46, 20, 47],
+        &[48],
+        &[18, 49, 22],
+        &[50],
+        &[51],
+        &[17, 52, 23],
+        &[25],
+        &[54],
+        &[27],
+        &[56],
+        &[55, 26, 57],
+        &[58],
+        &[59],
+        &[24, 60, 28],
+        &[16, 53, 61, 29],
+        &[10, 11, 12, 45, 62, 30],
+        &[35, 39, 63],
+        &[64],
+        &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 65,
+        ],
+    ];
+
+    if loaded_source.is_some_and(|source| source != TASK258B3M2B2B1B1P_SOURCE)
+        || ast.nodes().len() != 67
+    {
+        return false;
+    }
+    let mut kinds = ast
+        .nodes()
+        .iter()
+        .map(|node| format!("{:?}", node.kind))
+        .collect::<Vec<_>>();
+    let mut ranges = ast
+        .nodes()
+        .iter()
+        .map(|node| (node.range.start, node.range.end))
+        .collect::<Vec<_>>();
+    let mut recoveries = ast
+        .nodes()
+        .iter()
+        .map(|node| node.recovered)
+        .collect::<Vec<_>>();
+    let mut children = ast
+        .nodes()
+        .iter()
+        .map(|node| {
+            node.children
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let mut root = ast.root().map(|root| root.index());
+    mutate(
+        &mut kinds,
+        &mut ranges,
+        &mut recoveries,
+        &mut children,
+        &mut root,
+    );
+    root == Some(66)
+        && kinds.iter().map(String::as_str).eq(KINDS.iter().copied())
+        && ranges == RANGES
+        && recoveries.iter().all(|recovered| !recovered)
+        && children
+            .iter()
+            .map(Vec::as_slice)
+            .eq(CHILDREN.iter().copied())
+}
+
+#[cfg(test)]
+fn task258b3m2b2b1b1p_surface_contract_with_mutation(
+    ast: &SurfaceAst,
+    loaded_source: Option<&str>,
+    mutation: WrappedImportedApplicationSurfaceMutation,
+) -> bool {
+    task258b3m2b2b1b1p_surface_contract_impl(
+        ast,
+        loaded_source,
+        |kinds, ranges, recoveries, children, root| match mutation {
+            WrappedImportedApplicationSurfaceMutation::None
+            | WrappedImportedApplicationSurfaceMutation::DirectProductionSeam => {}
+            WrappedImportedApplicationSurfaceMutation::NodeKind(index) => {
+                if let Some(kind) = kinds.get_mut(index) {
+                    kind.push('!');
+                }
+            }
+            WrappedImportedApplicationSurfaceMutation::NodeRange(index) => {
+                if let Some(range) = ranges.get_mut(index) {
+                    range.1 = range.1.saturating_add(1);
+                }
+            }
+            WrappedImportedApplicationSurfaceMutation::NodeRecovery(index) => {
+                if let Some(recovered) = recoveries.get_mut(index) {
+                    *recovered = !*recovered;
+                }
+            }
+            WrappedImportedApplicationSurfaceMutation::NodeChildren(index) => {
+                if let Some(node_children) = children.get_mut(index) {
+                    if node_children.len() > 1 {
+                        node_children.rotate_left(1);
+                    } else {
+                        node_children.push(index);
+                    }
+                }
+            }
+            WrappedImportedApplicationSurfaceMutation::RootIdentity => *root = None,
+        },
+    )
 }
 
 #[cfg(test)]
@@ -1492,6 +2091,277 @@ pub(in crate::runner) fn unwrapped_imported_source_application_handoff_for_test(
         Err(error) => return Some(Err(error)),
     };
     Some(Ok(UnwrappedImportedApplicationTestOutput {
+        handoff,
+        primary_counts,
+        typed_ast,
+        resolved,
+    }))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn wrapped_imported_source_application_handoff_for_test(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    binding_env: &BindingEnv,
+    loaded_source: &str,
+    roots: &[(usize, BindingContextId)],
+    options: WrappedImportedApplicationTestOptions,
+) -> Option<Result<WrappedImportedApplicationTestOutput, String>> {
+    let WrappedImportedApplicationTestOptions {
+        application,
+        wrapper,
+        context,
+        surface_mutation,
+        handoff_mutation,
+    } = options;
+    if surface_mutation != WrappedImportedApplicationSurfaceMutation::DirectProductionSeam
+        && !task258b3m2b2b1b1p_surface_contract_with_mutation(
+            ast,
+            Some(loaded_source),
+            surface_mutation,
+        )
+    {
+        return None;
+    }
+    let wrapped_site = WrappedImportedApplicationSite {
+        application,
+        wrapper,
+    };
+    let owned_node_kinds =
+        wrapped_imported_source_application_owned_node_kinds(ast, module, symbols, wrapped_site)?;
+    let source_term = match source_term_parts_for_context_roots(
+        ast,
+        module.clone(),
+        binding_env,
+        roots.iter().copied(),
+        &owned_node_kinds,
+    ) {
+        Ok(source_term) => source_term,
+        Err(error) => return Some(Err(format!("Task252: {error}"))),
+    };
+    let mut extracted = extract_wrapped_imported(ast, module, symbols, application, wrapper)?;
+    extracted.context = context;
+    let selected_contribution = symbols
+        .symbols()
+        .get(&extracted.candidate)
+        .expect("B1B1P extracted candidate remains in the symbol environment")
+        .contribution();
+    let substitute_contribution = symbols
+        .symbols()
+        .iter()
+        .map(|entry| entry.contribution())
+        .find(|candidate| *candidate != selected_contribution)
+        .unwrap_or(selected_contribution);
+    let stale_replay = matches!(
+        handoff_mutation,
+        WrappedImportedApplicationTestMutation::StalePrimaryReplay
+            | WrappedImportedApplicationTestMutation::ApplicationRangeAndStalePrimaryReplay
+    );
+    let handoff = if matches!(
+        handoff_mutation,
+        WrappedImportedApplicationTestMutation::None
+            | WrappedImportedApplicationTestMutation::StalePrimaryReplay
+    ) {
+        match wrapped_imported_source_application_handoff_in_context(
+            ast,
+            module,
+            symbols,
+            binding_env,
+            &source_term,
+            wrapped_site,
+            context,
+        )? {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(format!("Task253: {error}"))),
+        }
+    } else {
+        match build_handoff_with_source_term(
+            ast,
+            module,
+            symbols,
+            binding_env,
+            &extracted,
+            &source_term,
+            |input| match handoff_mutation {
+                WrappedImportedApplicationTestMutation::None
+                | WrappedImportedApplicationTestMutation::StalePrimaryReplay => {}
+                WrappedImportedApplicationTestMutation::ApplicationSite => {
+                    input.applications[0].site =
+                        TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(49));
+                }
+                WrappedImportedApplicationTestMutation::ApplicationRange
+                | WrappedImportedApplicationTestMutation::ApplicationRangeAndStalePrimaryReplay => {
+                    input.applications[0].source_range.start += 1;
+                }
+                WrappedImportedApplicationTestMutation::ApplicationOrdinal => {
+                    input.applications[0].source_ordinal = 1;
+                }
+                WrappedImportedApplicationTestMutation::ApplicationContext => {
+                    input.applications[0].context = BindingContextId::new(0);
+                }
+                WrappedImportedApplicationTestMutation::ApplicationRecovery => {
+                    input.applications[0].recovery = SourceFunctorApplicationRecovery::Degraded;
+                }
+                WrappedImportedApplicationTestMutation::ApplicationSpelling => {
+                    input.applications[0].spelling.push('x');
+                }
+                WrappedImportedApplicationTestMutation::ApplicationKind => {
+                    input.applications[0].kind = SourceFunctorApplicationKind::Inline;
+                }
+                WrappedImportedApplicationTestMutation::ApplicationForm => {
+                    input.applications[0].form = SourceFunctorApplicationForm::Prefix;
+                }
+                WrappedImportedApplicationTestMutation::HeadOrdinal => {
+                    input.applications[0].head_ordinal = 0;
+                }
+                WrappedImportedApplicationTestMutation::HeadSite => {
+                    if let SourceFunctorHeadSite::Single { site, .. } =
+                        &mut input.applications[0].head
+                    {
+                        *site = TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(21));
+                    }
+                }
+                WrappedImportedApplicationTestMutation::HeadRange => {
+                    if let SourceFunctorHeadSite::Single { source_range, .. } =
+                        &mut input.applications[0].head
+                    {
+                        source_range.start += 1;
+                    }
+                }
+                WrappedImportedApplicationTestMutation::HeadSpelling => {
+                    if let SourceFunctorHeadSite::Single { spelling, .. } =
+                        &mut input.applications[0].head
+                    {
+                        spelling.push('+');
+                    }
+                }
+                WrappedImportedApplicationTestMutation::WrapperExtra => {
+                    let mut extra = input.wrappers[0].clone();
+                    extra.ordinal = 1;
+                    input.wrappers.push(extra);
+                }
+                WrappedImportedApplicationTestMutation::WrapperApplication => {
+                    input.wrappers[0].application = SourceFunctorApplicationId::new(1);
+                }
+                WrappedImportedApplicationTestMutation::WrapperOrdinal => {
+                    input.wrappers[0].ordinal = 1;
+                }
+                WrappedImportedApplicationTestMutation::WrapperSite => {
+                    input.wrappers[0].site =
+                        TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(49));
+                }
+                WrappedImportedApplicationTestMutation::WrapperRange => {
+                    input.wrappers[0].source_range.start += 1;
+                }
+                WrappedImportedApplicationTestMutation::WrapperContext => {
+                    input.wrappers[0].context = BindingContextId::new(0);
+                }
+                WrappedImportedApplicationTestMutation::WrapperSpelling => {
+                    input.wrappers[0].spelling = "(1 ++ 2)".to_owned();
+                }
+                WrappedImportedApplicationTestMutation::WrapperRecovery => {
+                    input.wrappers[0].recovery = SourceFunctorApplicationRecovery::Degraded;
+                }
+                WrappedImportedApplicationTestMutation::CandidateApplication => {
+                    input.candidates[0].application = SourceFunctorApplicationId::new(1);
+                }
+                WrappedImportedApplicationTestMutation::CandidateOrdinal => {
+                    input.candidates[0].ordinal = 1;
+                }
+                WrappedImportedApplicationTestMutation::CandidateSymbol => {
+                    input.candidates[0].symbol = SymbolId::new(
+                        module.clone(),
+                        mizar_resolve::resolved_ast::LocalSymbolId::new("B1B1P/substitute"),
+                        mizar_resolve::resolved_ast::FullyQualifiedName::new(
+                            "b1b1p::substitute::++",
+                        ),
+                    );
+                }
+                WrappedImportedApplicationTestMutation::CandidateContribution => {
+                    input.candidates[0].contribution = substitute_contribution;
+                }
+                WrappedImportedApplicationTestMutation::ArgumentApplication => {
+                    input.arguments[0].application = SourceFunctorApplicationId::new(1);
+                }
+                WrappedImportedApplicationTestMutation::ArgumentOrdinal => {
+                    input.arguments[0].ordinal = 1;
+                }
+                WrappedImportedApplicationTestMutation::ArgumentTarget => {
+                    input.arguments[0].target = SourceFunctorArgumentTarget::Primary(
+                        mizar_checker::source_term::SourcePrimaryTermId::new(4),
+                    );
+                }
+                WrappedImportedApplicationTestMutation::RequestApplication => {
+                    input.type_requests[0].application = SourceFunctorApplicationId::new(1);
+                }
+                WrappedImportedApplicationTestMutation::RequestOrdinal => {
+                    input.type_requests[0].request_ordinal = 1;
+                }
+                WrappedImportedApplicationTestMutation::RequestCandidate => {
+                    input.type_requests[0].candidate = None;
+                }
+                WrappedImportedApplicationTestMutation::RequestKind => {
+                    input.type_requests[0].kind =
+                        SourceFunctorTypeRequestKind::ApplicationResultType;
+                }
+            },
+        ) {
+            Ok(handoff) => handoff,
+            Err(error) => return Some(Err(format!("Task253: {error}"))),
+        }
+    };
+
+    if stale_replay {
+        let stale_source_term = match source_term_parts_for_context_roots(
+            ast,
+            module.clone(),
+            binding_env,
+            [(46, context), (47, context)],
+            &owned_node_kinds,
+        ) {
+            Ok(source_term) => source_term,
+            Err(error) => return Some(Err(format!("Task252: {error}"))),
+        };
+        let stale_typed = match task258b3m2b2b1p_typed_ast(ast, module, stale_source_term) {
+            Ok(typed) => typed,
+            Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+        };
+        return Some(match stale_typed.with_source_application(handoff) {
+            Ok(_) => Err("TypedAst: accepted stale Task252 fingerprint".to_owned()),
+            Err(error) => Err(format!(
+                "TypedAst: rejected stale Task252 fingerprint: {error}"
+            )),
+        });
+    }
+
+    let primary_counts = (
+        source_term.handoff.terms().len(),
+        source_term.handoff.references().len(),
+        source_term.handoff.numeric_type_requests().len(),
+    );
+    let typed_ast = match task258b3m2b2b1p_typed_ast(ast, module, source_term) {
+        Ok(typed) => match typed.with_source_application(handoff.clone()) {
+            Ok(typed) => typed,
+            Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+        },
+        Err(error) => return Some(Err(format!("TypedAst: {error}"))),
+    };
+    let node_hints = typed_ast
+        .nodes()
+        .iter()
+        .map(|(typed_node, _)| ResolvedNodeKindHint {
+            typed_node,
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.term.surface"),
+            },
+        })
+        .collect();
+    let resolved = match assemble_empty_resolved_typed_ast(&typed_ast, node_hints) {
+        Ok(resolved) => resolved,
+        Err(error) => return Some(Err(format!("ResolvedTypedAst: {error}"))),
+    };
+    Some(Ok(WrappedImportedApplicationTestOutput {
         handoff,
         primary_counts,
         typed_ast,

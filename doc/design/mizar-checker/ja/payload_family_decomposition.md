@@ -906,3 +906,11 @@ B1B1 edgeは引き続き
 `SourceStatementWitness(0) -> SourceFunctorApplication(0)`。wrapper 0は
 authenticated containment metadataでありwitness targetではない。
 Task-254/255と全semantic/proof/goal familiesは除外したまま。
+
+### Task 258B3M2B2B1B1P completion boundary
+
+implementationはprivate extraction/reuse seamだけを追加し、checker payload
+family/cross-family edgeを追加しない。Task 252はprimaries 2/3、Task 253は
+application/wrapper 0を引き続きownし、exact resolver authenticationは
+別rowをpublishせずadmissionだけを狭める。Task 258はまだ何もownせず、
+全statement/witness/semantic/proof/goal familiesはB1B1へdeferする。

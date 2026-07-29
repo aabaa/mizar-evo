@@ -522,3 +522,12 @@ private wrapper-aware reuse boundary, two future runner tests, legacy
 unwrapped byte compatibility, unchanged `374/416` baseline, and
 B1B1P-before-B1B1 order. No public/active/canonical/fixture/trace/semantic
 change or bilingual debt is accepted.
+
+## Task 258B3M2B2B1B1P Implementation Synchronization
+
+The EN canonical and JA companion now record the same exact-provenance
+wrapped seam, five same-source resolver substitution rejections, eight-entry
+diagnostic/node near-miss matrix, two passing compound tests, checker/runner
+inventories `374/418`, runner sizes `2652/708/2523/3727`, and 30 paths /
+41,173 lines. Public/active/canonical/fixture/trace/semantic boundaries and
+B1B1P-before-B1B1 order remain synchronized without bilingual debt.

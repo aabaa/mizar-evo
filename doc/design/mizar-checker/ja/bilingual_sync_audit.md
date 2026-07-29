@@ -497,3 +497,12 @@ wrapper-aware reuse boundary、future runner tests 2件、legacy unwrapped
 byte compatibility、unchanged `374/416` baseline、B1B1P-before-B1B1 orderを
 freezeする。public/active/canonical/fixture/trace/semantic changeも
 bilingual debtも許容しない。
+
+## Task 258B3M2B2B1B1P implementation synchronization
+
+EN canonicalとJA companionは、同じexact-provenance wrapped seam、
+same-source resolver substitution rejection 5件、eight-entry diagnostic/
+node near-miss matrix、passing compound tests 2件、checker/runner
+inventories `374/418`、runner sizes `2652/708/2523/3727`、30 paths /
+41,173 linesを記録する。public/active/canonical/fixture/trace/semantic
+boundariesとB1B1P-before-B1B1 orderはbilingual debtなしで同期済み。

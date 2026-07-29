@@ -1,11 +1,13 @@
 use super::{
     SyntheticSourceFunctorApplication, SyntheticSourceFunctorArgument,
     SyntheticSourceFunctorHead, UnwrappedImportedApplicationTestMutation,
-    UnwrappedImportedApplicationTestOptions,
+    UnwrappedImportedApplicationTestOptions, WrappedImportedApplicationSurfaceMutation,
+    WrappedImportedApplicationTestMutation, WrappedImportedApplicationTestOptions,
     extract_builtin_source_reserve_declarations_after_node_guard, source_application_output,
     source_application_output_with_mutation, synthetic_functional_actual_count,
     synthetic_source_application_output,
     unwrapped_imported_source_application_handoff_for_test,
+    wrapped_imported_source_application_handoff_for_test,
 };
 
 macro_rules! b1p_application_handoff {
@@ -31,6 +33,38 @@ macro_rules! b1p_application_handoff {
                 context: $context,
                 legacy_context_zero: $legacy_context_zero,
                 mutation: $mutation,
+            },
+        )
+    };
+}
+
+macro_rules! b1b1p_application_handoff {
+    (
+        $ast:expr,
+        $module:expr,
+        $symbols:expr,
+        $binding_env:expr,
+        $loaded_source:expr,
+        $roots:expr,
+        $application:expr,
+        $wrapper:expr,
+        $context:expr,
+        $surface_mutation:expr,
+        $handoff_mutation:expr $(,)?
+    ) => {
+        wrapped_imported_source_application_handoff_for_test(
+            $ast,
+            $module,
+            $symbols,
+            $binding_env,
+            $loaded_source,
+            $roots,
+            WrappedImportedApplicationTestOptions {
+                application: $application,
+                wrapper: $wrapper,
+                context: $context,
+                surface_mutation: $surface_mutation,
+                handoff_mutation: $handoff_mutation,
             },
         )
     };
@@ -2467,6 +2501,11 @@ fn task258b3m2b2b1p_proof_context_reuses_exact_unwrapped_imported_application() 
     assert_eq!(candidate.origin().structural_path(), [12]);
     assert!(first.typed_ast.source_statement().is_none());
     assert!(first.typed_ast.source_statement_witnesses().is_none());
+    assert!(first.typed_ast.source_structure().is_none());
+    assert!(first.typed_ast.source_set_term().is_none());
+    assert!(first.typed_ast.source_atomic_formula().is_none());
+    assert!(first.typed_ast.source_composite_formula().is_none());
+    assert!(first.typed_ast.source_formula_composition().is_none());
     assert!(first.typed_ast.types().is_empty());
     assert!(first.typed_ast.facts().is_empty());
     assert!(first.typed_ast.coercions().is_empty());
@@ -2478,7 +2517,16 @@ fn task258b3m2b2b1p_proof_context_reuses_exact_unwrapped_imported_application() 
     assert!(first.resolved.checked_proofs().is_empty());
     assert!(first.resolved.checked_proof_nodes().is_empty());
     assert!(first.resolved.checked_terminal_goals().is_empty());
+    assert!(first.resolved.statement_semantics().is_empty());
     assert!(first.resolved.expr_metadata().is_empty());
+    assert!(first.resolved.collection_candidates().is_empty());
+    assert!(first.resolved.expanded_candidates().is_empty());
+    assert!(first.resolved.template_expansions().is_empty());
+    assert!(first.resolved.viable_candidates().is_empty());
+    assert!(first.resolved.viability_decisions().is_empty());
+    assert!(first.resolved.specificity_graphs().is_empty());
+    assert!(first.resolved.resolved_overloads().is_empty());
+    assert!(first.resolved.inserted_coercions().is_empty());
     assert!(first.resolved.cluster_facts().is_empty());
     assert!(first.resolved.diagnostics().is_empty());
 
@@ -2739,6 +2787,886 @@ fn task258b3m2b2b1p_context_provenance_and_legacy_replay_fail_closed() {
         );
     }
 }
+
+const TASK258B3M2B2B1B1P_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementParenthesizedApplicationWitnessSmoke: x = x proof\n",
+    "  take (1 ++ 2);\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Task258B3M2B2B1B1PResolverMutation {
+    LocalAndFqn,
+    StructuralPath,
+    Signature,
+    ExportStatus,
+    Contribution,
+}
+
+fn task258b3m2b2b1b1p_substituted_symbol_env(
+    symbols: &SymbolEnv,
+    mutation: Task258B3M2B2B1B1PResolverMutation,
+) -> SymbolEnv {
+    let selected = symbols
+        .symbols()
+        .iter()
+        .find(|entry| {
+            entry.symbol().module().path().as_str() == "parser.type_fixtures"
+                && entry.kind() == SymbolKind::Functor
+                && entry.primary_spelling() == "++"
+        })
+        .expect("B1B1P imported ++ entry")
+        .clone();
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(symbols);
+    let contribution = if mutation == Task258B3M2B2B1B1PResolverMutation::Contribution {
+        indexes.contributions.insert(
+            selected.symbol().module().clone(),
+            ContributionKind::ImportedSource {
+                source_id: selected.origin().source_id(),
+            },
+            selected.origin().anchor().clone(),
+        )
+    } else {
+        selected.contribution()
+    };
+    let symbol = if mutation == Task258B3M2B2B1B1PResolverMutation::LocalAndFqn {
+        ResolverSymbolId::new(
+            selected.symbol().module().clone(),
+            LocalSymbolId::new("summary:parser.type_fixtures#parse-only#++:substitute"),
+            FullyQualifiedName::new("parser.type_fixtures::++#substitute"),
+        )
+    } else {
+        selected.symbol().clone()
+    };
+    let structural_path =
+        if mutation == Task258B3M2B2B1B1PResolverMutation::StructuralPath {
+            vec![13]
+        } else {
+            selected.origin().structural_path().to_vec()
+        };
+    let origin = SemanticOrigin::new(
+        selected.origin().source_id(),
+        selected.origin().module_id().clone(),
+        selected.origin().anchor().clone(),
+        structural_path,
+    );
+    let export_status = if mutation == Task258B3M2B2B1B1PResolverMutation::ExportStatus {
+        ExportStatus::ReExported
+    } else {
+        selected.export_status()
+    };
+    let mut replacement = SymbolEntry::new(
+        symbol.clone(),
+        selected.kind(),
+        selected.namespace().clone(),
+        selected.primary_spelling(),
+        origin,
+        contribution,
+    )
+    .with_visibility(selected.visibility())
+    .with_export_status(export_status)
+    .with_relations(selected.relations().to_vec());
+    if let Some(notation) = selected.notation_spelling() {
+        replacement = replacement.with_notation_spelling(notation);
+    }
+    if mutation == Task258B3M2B2B1B1PResolverMutation::Signature {
+        replacement = replacement.with_signature(mizar_resolve::env::SignatureShell::Pending);
+    } else if let Some(signature) = selected.signature().cloned() {
+        replacement = replacement.with_signature(signature);
+    }
+    indexes.symbols = Default::default();
+    for entry in symbols.symbols().iter() {
+        indexes.symbols.insert(if entry.symbol() == selected.symbol() {
+            replacement.clone()
+        } else {
+            entry.clone()
+        });
+    }
+    indexes.contributions.add_symbol(contribution, symbol);
+    SymbolEnv::new(symbols.module_id().clone(), indexes)
+}
+
+fn task258b3m2b2b1b1p_roots() -> [(usize, mizar_checker::binding_env::BindingContextId); 6] {
+    let module = mizar_checker::binding_env::BindingContextId::new(0);
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    [
+        (40, module),
+        (42, module),
+        (46, proof),
+        (47, proof),
+        (54, proof),
+        (56, proof),
+    ]
+}
+
+#[test]
+fn task258b3m2b2b1b1p_wrapped_imported_application_proof_context_reuse_is_exact() {
+    assert_eq!(TASK258B3M2B2B1B1P_SOURCE.len(), 158);
+    assert_eq!(
+        sha256_text(TASK258B3M2B2B1B1P_SOURCE),
+        "e3778c52953be6848cfc0aaa989e6d5c83625e8b798f27df7f7b2b5606271777"
+    );
+    let (ast, module, shells, base_symbols, diagnostic_count) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            TASK258B3M2B2B1B1P_SOURCE,
+            21_001,
+        );
+    assert_eq!(diagnostic_count, 0);
+    assert_eq!((ast.nodes().len(), ast.root().map(|id| id.index())), (67, Some(66)));
+    let symbols = augment_type_elaboration_import_summaries(&ast, &module, base_symbols);
+    let bindings = task258b3m2b2b1p_binding_env(&ast, &module, &symbols);
+    assert_eq!(
+        (
+            bindings.contexts().len(),
+            bindings.bindings().len(),
+            bindings.diagnostics().len(),
+        ),
+        (2, 1, 0)
+    );
+    assert!(
+        source_application_output(&ast, module.clone(), &shells, &symbols).is_none(),
+        "B1B1P exact source must not activate the public Task253 route"
+    );
+    let roots = task258b3m2b2b1b1p_roots();
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    let first = b1b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B1B1P_SOURCE,
+        &roots,
+        48,
+        50,
+        proof,
+        WrappedImportedApplicationSurfaceMutation::None,
+        WrappedImportedApplicationTestMutation::None,
+    )
+    .expect("B1B1P exact selector")
+    .expect("B1B1P exact handoff");
+    let second = b1b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B1B1P_SOURCE,
+        &roots,
+        48,
+        50,
+        proof,
+        WrappedImportedApplicationSurfaceMutation::None,
+        WrappedImportedApplicationTestMutation::None,
+    )
+    .expect("B1B1P replay selector")
+    .expect("B1B1P replay handoff");
+    assert_eq!(first.primary_counts, (6, 4, 2));
+    assert_eq!(first.handoff, second.handoff);
+    assert_eq!(first.handoff.debug_text(), second.handoff.debug_text());
+    assert_eq!(
+        (
+            first.handoff.applications().len(),
+            first.handoff.wrappers().len(),
+            first.handoff.candidates().len(),
+            first.handoff.arguments().len(),
+            first.handoff.type_requests().len(),
+        ),
+        (1, 1, 1, 2, 2)
+    );
+
+    let application = first
+        .handoff
+        .applications()
+        .get(mizar_checker::source_application::SourceFunctorApplicationId::new(0))
+        .expect("B1B1P application 0");
+    assert_eq!(application.source_ordinal(), 0);
+    assert_eq!(application.site().node().index(), 48);
+    assert_eq!(application.source_range(), range(ast.source_id, 130, 136));
+    assert_eq!(application.context(), proof);
+    assert_eq!(
+        application.recovery(),
+        mizar_checker::source_application::SourceFunctorApplicationRecovery::Normal
+    );
+    assert_eq!(application.spelling(), "1 ++ 2");
+    assert_eq!(
+        application.kind(),
+        mizar_checker::source_application::SourceFunctorApplicationKind::Symbolic
+    );
+    assert_eq!(
+        application.form(),
+        mizar_checker::source_application::SourceFunctorApplicationForm::Infix
+    );
+    assert_eq!(application.head_ordinal(), 1);
+    match application.head() {
+        mizar_checker::source_application::SourceFunctorHeadSite::Single {
+            site,
+            source_range,
+            spelling,
+        } => {
+            assert_eq!(site.node().index(), 20);
+            assert_eq!(*source_range, range(ast.source_id, 132, 134));
+            assert_eq!(spelling, "++");
+        }
+        head => panic!("unexpected B1B1P head: {head:?}"),
+    }
+
+    let wrapper = first
+        .handoff
+        .wrappers()
+        .get(mizar_checker::source_application::SourceFunctorWrapperId::new(0))
+        .expect("B1B1P wrapper 0");
+    assert_eq!(wrapper.application().index(), 0);
+    assert_eq!(wrapper.ordinal(), 0);
+    assert_eq!(wrapper.site().node().index(), 50);
+    assert_eq!(wrapper.source_range(), range(ast.source_id, 129, 137));
+    assert_eq!(wrapper.context(), proof);
+    assert_eq!(wrapper.spelling(), "( 1 ++ 2 )");
+    assert_eq!(
+        wrapper.recovery(),
+        mizar_checker::source_application::SourceFunctorApplicationRecovery::Normal
+    );
+
+    assert_eq!(
+        first
+            .handoff
+            .arguments()
+            .iter()
+            .map(|(_, row)| (row.application().index(), row.ordinal(), row.target()))
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                mizar_checker::source_application::SourceFunctorArgumentTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(2),
+                ),
+            ),
+            (
+                0,
+                1,
+                mizar_checker::source_application::SourceFunctorArgumentTarget::Primary(
+                    mizar_checker::source_term::SourcePrimaryTermId::new(3),
+                ),
+            ),
+        ]
+    );
+    assert_eq!(
+        first
+            .handoff
+            .type_requests()
+            .iter()
+            .map(|(_, row)| {
+                (
+                    row.application().index(),
+                    row.request_ordinal(),
+                    row.candidate().map(|candidate| candidate.index()),
+                    row.kind(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                Some(0),
+                mizar_checker::source_application::SourceFunctorTypeRequestKind::CandidateSignature,
+            ),
+            (
+                0,
+                1,
+                None,
+                mizar_checker::source_application::SourceFunctorTypeRequestKind::ApplicationResultType,
+            ),
+        ]
+    );
+    let candidate = first
+        .handoff
+        .candidates()
+        .get(mizar_checker::source_application::SourceFunctorCandidateId::new(0))
+        .expect("B1B1P candidate 0");
+    assert_eq!(candidate.application().index(), 0);
+    assert_eq!(candidate.ordinal(), 0);
+    assert_eq!(
+        candidate.symbol().module().package().as_str(),
+        "mizar-test-task253-corruption"
+    );
+    assert_eq!(candidate.symbol().module().package(), module.package());
+    assert_eq!(
+        candidate.symbol().module().path().as_str(),
+        "parser.type_fixtures"
+    );
+    assert_eq!(
+        candidate.symbol().local().as_str(),
+        "summary:parser.type_fixtures#parse-only#++:12"
+    );
+    assert_eq!(
+        candidate.symbol().fqn().as_str(),
+        "parser.type_fixtures::++#12"
+    );
+    assert_eq!(candidate.contribution().index(), 2);
+    assert_eq!(candidate.origin().source_id(), ast.source_id);
+    assert_eq!(candidate.origin().module_id(), candidate.symbol().module());
+    assert_eq!(
+        candidate.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(range(ast.source_id, 7, 27))
+    );
+    assert_eq!(candidate.origin().structural_path(), [12]);
+    assert!(candidate.origin().import_edge().is_none());
+    assert!(!candidate.origin().is_recovered());
+    assert_eq!(
+        candidate.visibility(),
+        mizar_resolve::env::Visibility::Public
+    );
+    assert_eq!(
+        candidate.export_status(),
+        mizar_resolve::env::ExportStatus::Exported
+    );
+    assert!(candidate.signature().is_none());
+
+    assert_eq!(
+        first.typed_ast.source_application(),
+        first.resolved.source_application()
+    );
+    assert_eq!(first.typed_ast.source_term(), first.resolved.source_term());
+    assert_eq!(first.typed_ast.clone(), first.typed_ast);
+    assert_eq!(first.resolved.clone(), first.resolved);
+    assert_eq!(
+        first.typed_ast.clone().debug_text(),
+        first.typed_ast.debug_text()
+    );
+    assert_eq!(
+        first.resolved.clone().debug_text(),
+        first.resolved.debug_text()
+    );
+    assert!(first.typed_ast.source_statement().is_none());
+    assert!(first.typed_ast.source_statement_witnesses().is_none());
+    assert!(first.typed_ast.source_structure().is_none());
+    assert!(first.typed_ast.source_set_term().is_none());
+    assert!(first.typed_ast.source_atomic_formula().is_none());
+    assert!(first.typed_ast.source_composite_formula().is_none());
+    assert!(first.typed_ast.source_formula_composition().is_none());
+    assert!(first.typed_ast.types().is_empty());
+    assert!(first.typed_ast.facts().is_empty());
+    assert!(first.typed_ast.coercions().is_empty());
+    assert!(first.typed_ast.initial_obligations().is_empty());
+    assert!(first.typed_ast.diagnostics().is_empty());
+    assert!(first.resolved.source_statement().is_none());
+    assert!(first.resolved.source_statement_witnesses().is_none());
+    assert!(first.resolved.checked_formulas().is_empty());
+    assert!(first.resolved.checked_proofs().is_empty());
+    assert!(first.resolved.checked_proof_nodes().is_empty());
+    assert!(first.resolved.checked_terminal_goals().is_empty());
+    assert!(first.resolved.statement_semantics().is_empty());
+    assert!(first.resolved.expr_metadata().is_empty());
+    assert!(first.resolved.collection_candidates().is_empty());
+    assert!(first.resolved.expanded_candidates().is_empty());
+    assert!(first.resolved.template_expansions().is_empty());
+    assert!(first.resolved.viable_candidates().is_empty());
+    assert!(first.resolved.viability_decisions().is_empty());
+    assert!(first.resolved.specificity_graphs().is_empty());
+    assert!(first.resolved.resolved_overloads().is_empty());
+    assert!(first.resolved.inserted_coercions().is_empty());
+    assert!(first.resolved.cluster_facts().is_empty());
+    assert!(first.resolved.diagnostics().is_empty());
+}
+
+#[test]
+fn task258b3m2b2b1b1p_wrapper_corruption_replay_and_legacy_outputs_fail_closed() {
+    let (ast, module, _shells, base_symbols, diagnostic_count) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            TASK258B3M2B2B1B1P_SOURCE,
+            21_002,
+        );
+    assert_eq!(diagnostic_count, 0);
+    let symbols = augment_type_elaboration_import_summaries(&ast, &module, base_symbols);
+    let bindings = task258b3m2b2b1p_binding_env(&ast, &module, &symbols);
+    let roots = task258b3m2b2b1b1p_roots();
+    let proof = mizar_checker::binding_env::BindingContextId::new(1);
+    let baseline = b1b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B1B1P_SOURCE,
+        &roots,
+        48,
+        50,
+        proof,
+        WrappedImportedApplicationSurfaceMutation::None,
+        WrappedImportedApplicationTestMutation::None,
+    )
+    .expect("B1B1P baseline selector")
+    .expect("B1B1P baseline");
+    let baseline_handoff = baseline.handoff.debug_text();
+    let baseline_typed = baseline.typed_ast.debug_text();
+    let baseline_resolved = baseline.resolved.debug_text();
+
+    for mutation in [
+        Task258B3M2B2B1B1PResolverMutation::LocalAndFqn,
+        Task258B3M2B2B1B1PResolverMutation::StructuralPath,
+        Task258B3M2B2B1B1PResolverMutation::Signature,
+        Task258B3M2B2B1B1PResolverMutation::ExportStatus,
+        Task258B3M2B2B1B1PResolverMutation::Contribution,
+    ] {
+        let substituted = task258b3m2b2b1b1p_substituted_symbol_env(&symbols, mutation);
+        assert!(
+            b1b1p_application_handoff!(
+                &ast,
+                &module,
+                &substituted,
+                &bindings,
+                TASK258B3M2B2B1B1P_SOURCE,
+                &roots,
+                48,
+                50,
+                proof,
+                WrappedImportedApplicationSurfaceMutation::DirectProductionSeam,
+                WrappedImportedApplicationTestMutation::None,
+            )
+            .is_none(),
+            "same-source resolver substitution {mutation:?} selected"
+        );
+    }
+
+    for node in 0..67 {
+        for mutation in [
+            WrappedImportedApplicationSurfaceMutation::NodeKind(node),
+            WrappedImportedApplicationSurfaceMutation::NodeRange(node),
+            WrappedImportedApplicationSurfaceMutation::NodeRecovery(node),
+            WrappedImportedApplicationSurfaceMutation::NodeChildren(node),
+        ] {
+            assert!(
+                b1b1p_application_handoff!(
+                    &ast,
+                    &module,
+                    &symbols,
+                    &bindings,
+                    TASK258B3M2B2B1B1P_SOURCE,
+                    &roots,
+                    48,
+                    50,
+                    proof,
+                    mutation,
+                    WrappedImportedApplicationTestMutation::None,
+                )
+                .is_none(),
+                "surface mutation {mutation:?} selected"
+            );
+        }
+    }
+    assert!(
+        b1b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B1B1P_SOURCE,
+            &roots,
+            48,
+            50,
+            proof,
+            WrappedImportedApplicationSurfaceMutation::RootIdentity,
+            WrappedImportedApplicationTestMutation::None,
+        )
+        .is_none()
+    );
+    for (application, wrapper) in [(49, 50), (48, 49), (48, 51), (48, usize::MAX)] {
+        assert!(
+            b1b1p_application_handoff!(
+                &ast,
+                &module,
+                &symbols,
+                &bindings,
+                TASK258B3M2B2B1B1P_SOURCE,
+                &roots,
+                application,
+                wrapper,
+                proof,
+                WrappedImportedApplicationSurfaceMutation::DirectProductionSeam,
+                WrappedImportedApplicationTestMutation::None,
+            )
+            .is_none(),
+            "production selector admitted application {application}/wrapper {wrapper}"
+        );
+    }
+    let context_error = b1b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B1B1P_SOURCE,
+        &roots,
+        48,
+        50,
+        mizar_checker::binding_env::BindingContextId::new(0),
+        WrappedImportedApplicationSurfaceMutation::DirectProductionSeam,
+        WrappedImportedApplicationTestMutation::None,
+    )
+    .expect("production context selector")
+    .expect_err("wrapper/application context must agree with proof-context arguments");
+    assert!(context_error.starts_with("Task253:"), "{context_error}");
+
+    for byte_index in 0..TASK258B3M2B2B1B1P_SOURCE.len() {
+        let mut bytes = TASK258B3M2B2B1B1P_SOURCE.as_bytes().to_vec();
+        bytes[byte_index] = if bytes[byte_index] == b'!' { b'?' } else { b'!' };
+        let loaded_source = String::from_utf8(bytes).expect("ASCII B1B1P mutation");
+        assert!(
+            b1b1p_application_handoff!(
+                &ast,
+                &module,
+                &symbols,
+                &bindings,
+                &loaded_source,
+                &roots,
+                48,
+                50,
+                proof,
+                WrappedImportedApplicationSurfaceMutation::None,
+                WrappedImportedApplicationTestMutation::None,
+            )
+            .is_none(),
+            "byte mutation {byte_index} selected"
+        );
+    }
+    for loaded_source in [
+        TASK258B3M2B2B1B1P_SOURCE
+            .trim_end_matches('\n')
+            .to_owned(),
+        format!("{TASK258B3M2B2B1B1P_SOURCE}\n"),
+    ] {
+        assert!(
+            b1b1p_application_handoff!(
+                &ast,
+                &module,
+                &symbols,
+                &bindings,
+                &loaded_source,
+                &roots,
+                48,
+                50,
+                proof,
+                WrappedImportedApplicationSurfaceMutation::None,
+                WrappedImportedApplicationTestMutation::None,
+            )
+            .is_none()
+        );
+    }
+
+    for (ordinal, (source, expected_diagnostics, expected_nodes)) in [
+        (
+            TASK258B3M2B2B1B1P_SOURCE.replacen("take (1 ++ 2);", "take 1 ++ 2;", 1),
+            0,
+            63,
+        ),
+        (
+            TASK258B3M2B2B1B1P_SOURCE.replacen("take (1 ++ 2);", "take ((1 ++ 2));", 1),
+            0,
+            71,
+        ),
+        (
+            TASK258B3M2B2B1B1P_SOURCE.replacen("take (1 ++ 2);", "take (2 ++ 1);", 1),
+            0,
+            67,
+        ),
+        (
+            TASK258B3M2B2B1B1P_SOURCE.replacen("take (1 ++ 2);", "take (1 + 2);", 1),
+            12,
+            72,
+        ),
+        (
+            TASK258B3M2B2B1B1P_SOURCE.replacen("take (1 ++ 2);", "take (1 ++ );", 1),
+            1,
+            64,
+        ),
+        (
+            TASK258B3M2B2B1B1P_SOURCE.replacen(
+                "take (1 ++ 2);",
+                "take 1, (1 ++ 2);",
+                1,
+            ),
+            0,
+            72,
+        ),
+        (
+            TASK258B3M2B2B1B1P_SOURCE.replacen(
+                "FormulaStatementParenthesizedApplicationWitnessSmoke",
+                "FormulaStatementParenthesizedApplicationWitnessNearMiss",
+                1,
+            ),
+            0,
+            67,
+        ),
+        (
+            TASK258B3M2B2B1B1P_SOURCE.replacen(
+                "import parser.type_fixtures;",
+                "import parser.other_fixtures;",
+                1,
+            ),
+            14,
+            73,
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (near_ast, near_module, near_shells, near_symbols, diagnostic_count) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 21_100 + ordinal);
+        assert_eq!(
+            (diagnostic_count, near_ast.nodes().len()),
+            (expected_diagnostics, expected_nodes),
+            "parsed near miss {ordinal} shape drift"
+        );
+        let near_symbols =
+            augment_type_elaboration_import_summaries(&near_ast, &near_module, near_symbols);
+        assert!(
+            b1b1p_application_handoff!(
+                &near_ast,
+                &near_module,
+                &near_symbols,
+                &bindings,
+                TASK258B3M2B2B1B1P_SOURCE,
+                &roots,
+                48,
+                50,
+                proof,
+                WrappedImportedApplicationSurfaceMutation::DirectProductionSeam,
+                WrappedImportedApplicationTestMutation::None,
+            )
+            .is_none(),
+            "parsed near miss {ordinal} matched the exact arena"
+        );
+        assert!(
+            source_application_output(
+                &near_ast,
+                near_module,
+                &near_shells,
+                &near_symbols
+            )
+            .is_none(),
+            "parsed near miss {ordinal} activated the public route"
+        );
+    }
+
+    let invalid_roots = [(46, proof), (46, proof)];
+    let task252_error = b1b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B1B1P_SOURCE,
+        &invalid_roots,
+        48,
+        50,
+        proof,
+        WrappedImportedApplicationSurfaceMutation::None,
+        WrappedImportedApplicationTestMutation::ApplicationRange,
+    )
+    .expect("Task252 precedence selector")
+    .expect_err("Task252 corruption must fail");
+    assert!(task252_error.starts_with("Task252:"), "{task252_error}");
+    let task252_replay = b1b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B1B1P_SOURCE,
+        &roots,
+        48,
+        50,
+        proof,
+        WrappedImportedApplicationSurfaceMutation::None,
+        WrappedImportedApplicationTestMutation::None,
+    )
+    .expect("Task252 clean replay selector")
+    .expect("Task252 clean replay");
+    assert_eq!(task252_replay.handoff.debug_text(), baseline_handoff);
+    assert_eq!(task252_replay.typed_ast.debug_text(), baseline_typed);
+    assert_eq!(task252_replay.resolved.debug_text(), baseline_resolved);
+    assert!(
+        b1b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B1B1P_SOURCE,
+            &invalid_roots,
+            49,
+            50,
+            proof,
+            WrappedImportedApplicationSurfaceMutation::None,
+            WrappedImportedApplicationTestMutation::ApplicationRange,
+        )
+        .is_none(),
+        "selector rejection must precede Task252 and Task253"
+    );
+
+    for mutation in [
+        WrappedImportedApplicationTestMutation::ApplicationSite,
+        WrappedImportedApplicationTestMutation::ApplicationRange,
+        WrappedImportedApplicationTestMutation::ApplicationOrdinal,
+        WrappedImportedApplicationTestMutation::ApplicationContext,
+        WrappedImportedApplicationTestMutation::ApplicationRecovery,
+        WrappedImportedApplicationTestMutation::ApplicationSpelling,
+        WrappedImportedApplicationTestMutation::ApplicationKind,
+        WrappedImportedApplicationTestMutation::ApplicationForm,
+        WrappedImportedApplicationTestMutation::HeadOrdinal,
+        WrappedImportedApplicationTestMutation::HeadSite,
+        WrappedImportedApplicationTestMutation::HeadRange,
+        WrappedImportedApplicationTestMutation::HeadSpelling,
+        WrappedImportedApplicationTestMutation::WrapperExtra,
+        WrappedImportedApplicationTestMutation::WrapperApplication,
+        WrappedImportedApplicationTestMutation::WrapperOrdinal,
+        WrappedImportedApplicationTestMutation::WrapperSite,
+        WrappedImportedApplicationTestMutation::WrapperRange,
+        WrappedImportedApplicationTestMutation::WrapperContext,
+        WrappedImportedApplicationTestMutation::WrapperSpelling,
+        WrappedImportedApplicationTestMutation::WrapperRecovery,
+        WrappedImportedApplicationTestMutation::CandidateApplication,
+        WrappedImportedApplicationTestMutation::CandidateOrdinal,
+        WrappedImportedApplicationTestMutation::CandidateSymbol,
+        WrappedImportedApplicationTestMutation::CandidateContribution,
+        WrappedImportedApplicationTestMutation::ArgumentApplication,
+        WrappedImportedApplicationTestMutation::ArgumentOrdinal,
+        WrappedImportedApplicationTestMutation::ArgumentTarget,
+        WrappedImportedApplicationTestMutation::RequestApplication,
+        WrappedImportedApplicationTestMutation::RequestOrdinal,
+        WrappedImportedApplicationTestMutation::RequestCandidate,
+        WrappedImportedApplicationTestMutation::RequestKind,
+        WrappedImportedApplicationTestMutation::ApplicationRangeAndStalePrimaryReplay,
+    ] {
+        let error = b1b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B1B1P_SOURCE,
+            &roots,
+            48,
+            50,
+            proof,
+            WrappedImportedApplicationSurfaceMutation::None,
+            mutation,
+        )
+        .expect("Task253 mutation selector")
+        .expect_err("Task253 mutation must fail");
+        assert!(error.starts_with("Task253:"), "{mutation:?}: {error}");
+        let replay = b1b1p_application_handoff!(
+            &ast,
+            &module,
+            &symbols,
+            &bindings,
+            TASK258B3M2B2B1B1P_SOURCE,
+            &roots,
+            48,
+            50,
+            proof,
+            WrappedImportedApplicationSurfaceMutation::None,
+            WrappedImportedApplicationTestMutation::None,
+        )
+        .expect("clean replay selector")
+        .expect("clean replay");
+        assert_eq!(replay.handoff.debug_text(), baseline_handoff);
+        assert_eq!(replay.typed_ast.debug_text(), baseline_typed);
+        assert_eq!(replay.resolved.debug_text(), baseline_resolved);
+    }
+
+    let stale_error = b1b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B1B1P_SOURCE,
+        &roots,
+        48,
+        50,
+        proof,
+        WrappedImportedApplicationSurfaceMutation::None,
+        WrappedImportedApplicationTestMutation::StalePrimaryReplay,
+    )
+    .expect("stale replay selector")
+    .expect_err("stale replay must fail");
+    assert!(stale_error.starts_with("TypedAst:"), "{stale_error}");
+    assert_eq!(baseline.typed_ast.debug_text(), baseline_typed);
+    assert_eq!(baseline.resolved.debug_text(), baseline_resolved);
+    let stale_clean_replay = b1b1p_application_handoff!(
+        &ast,
+        &module,
+        &symbols,
+        &bindings,
+        TASK258B3M2B2B1B1P_SOURCE,
+        &roots,
+        48,
+        50,
+        proof,
+        WrappedImportedApplicationSurfaceMutation::None,
+        WrappedImportedApplicationTestMutation::None,
+    )
+    .expect("stale clean replay selector")
+    .expect("stale clean replay");
+    assert_eq!(stale_clean_replay.handoff.debug_text(), baseline_handoff);
+    assert_eq!(stale_clean_replay.typed_ast.debug_text(), baseline_typed);
+    assert_eq!(stale_clean_replay.resolved.debug_text(), baseline_resolved);
+
+    let (legacy_ast, legacy_module, _, legacy_base_symbols, legacy_diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(TASK258B3M2B2B1P_SOURCE, 20_001);
+    assert_eq!(legacy_diagnostics, 0);
+    let legacy_symbols = augment_type_elaboration_import_summaries(
+        &legacy_ast,
+        &legacy_module,
+        legacy_base_symbols,
+    );
+    let legacy_bindings =
+        task258b3m2b2b1p_binding_env(&legacy_ast, &legacy_module, &legacy_symbols);
+    let legacy_context_zero_roots = [
+        (
+            44,
+            mizar_checker::binding_env::BindingContextId::new(0),
+        ),
+        (
+            45,
+            mizar_checker::binding_env::BindingContextId::new(0),
+        ),
+    ];
+    let legacy_context_zero = b1p_application_handoff!(
+        &legacy_ast,
+        &legacy_module,
+        &legacy_symbols,
+        &legacy_bindings,
+        &legacy_context_zero_roots,
+        46,
+        mizar_checker::binding_env::BindingContextId::new(0),
+        true,
+        UnwrappedImportedApplicationTestMutation::None,
+    )
+    .expect("legacy context-0 selector")
+    .expect("legacy context-0 output");
+    let legacy_context_one = b1p_application_handoff!(
+        &legacy_ast,
+        &legacy_module,
+        &legacy_symbols,
+        &legacy_bindings,
+        &task258b3m2b2b1p_roots(),
+        46,
+        proof,
+        false,
+        UnwrappedImportedApplicationTestMutation::None,
+    )
+    .expect("legacy context-1 selector")
+    .expect("legacy context-1 output");
+    assert_eq!(legacy_context_zero.primary_counts, (2, 0, 2));
+    assert_eq!(legacy_context_one.primary_counts, (6, 4, 2));
+    assert_eq!(
+        sha256_text(&legacy_context_zero.handoff.debug_text()),
+        "9f1449159bf362bc90c4b41f3e4befb9a6d54f4152b836063f5cc07083d82a8d"
+    );
+    assert_eq!(
+        sha256_text(&legacy_context_one.handoff.debug_text()),
+        "0fd83f61a40d3fd43816a52b70fca4fa4cf7f1d6e9172d3c5fe558c5d4add80d"
+    );
+}
+
 
 fn task258b3m2b2b1p_roots() -> [(usize, mizar_checker::binding_env::BindingContextId); 6] {
     let module = mizar_checker::binding_env::BindingContextId::new(0);

@@ -2431,3 +2431,10 @@ separateにfresh-inventoryしてfreezeしなければならない。他operator/
 operandのparenthesized applications、nested wrappers/applications、
 named/multiple witnesses、Task-254/255 witness terms、goal matching、
 type obligations、substitution、proof acceptanceはdeferredのまま。
+
+## Task 258B3M2B2B1B1P dependency completion
+
+runner-private wrapped Task-253 prerequisiteはstatement/witnessをpublishせず、
+exact tests 2件をpassしてcompleteした。future B1B1 consumerはapplication
+0とwrapper containmentに対してfresh-inventory可能になったが、本completion
+からB1B1 selector、checker row、installer、semantic behaviorを推定しない。

@@ -2932,3 +2932,11 @@ fresh-inventoried and frozen separately. Parenthesized applications with
 other operators/operands, nested wrappers/applications, named or multiple
 witnesses, Task-254/255 witness terms, goal matching, type obligations,
 substitution, and proof acceptance remain deferred.
+
+## Task 258B3M2B2B1B1P Dependency Completion
+
+The runner-private wrapped Task-253 prerequisite is complete and passes its
+two exact tests without publishing a statement or witness. The future B1B1
+consumer may now be fresh-inventoried against application 0 and wrapper
+containment, but no B1B1 selector, checker row, installer, or semantic behavior
+is inferred by this completion.
