@@ -1013,3 +1013,20 @@ Source/documentation consistency and documentation/boundary repeats are
 **NO FINDINGS**, all nine hard gates PASS, valid `98/100`
 (`20/20/15/14/10/10/5/4`). Only commit, post-commit, and fresh implementation
 inventory remain pending in both.
+
+## Task 258B3M2B2B3B Bilingual Runner Freeze
+
+EN and JA runner plans now agree on the exact 118-byte/hash source,
+50-node AST, zero-edge Task-255 profile, one SetTerm witness, unchanged
+generic lower helper, four-checker/five-runner projection, dormant-only
+scope, unchanged CLI/trace/corpus, and semantic deferrals. Both record B3A
+commit `a147bad88f1963c504f796051ba0b855eca71d07` and the same clean
+post-commit invariants.
+
+The repeated specification, test-sufficiency, implementation-boundary,
+source/documentation-consistency, and final documentation/boundary reviews
+are synchronized as **NO FINDINGS**. Exact source/count/hash/scope/no-op and
+workspace verification pass in both languages. Independent final quality is
+**NO FINDINGS**, all nine hard gates PASS with no score cap, and valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only the dedicated documentation
+commit, post-commit invariants, and fresh implementation inventory remain.

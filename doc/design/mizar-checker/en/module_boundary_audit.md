@@ -747,3 +747,19 @@ is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic and coverage
 deferrals remain unchanged as residual risk. Only the dedicated
 implementation commit, post-commit invariant verification, and fresh
 next-task inventory remain pending.
+
+## Task 258B3M2B2B3B Boundary Audit
+
+B3B is an upper statement-consumer profile, not a new Task-255 producer.
+It may edit only the three checker statement/typed/final owners and the four
+runner statement/facade/test owners frozen in the crate plan.
+`source_set_term.rs`, parser, resolver, canonical specification, corpus,
+expectations, sidecars, trace metadata, semantic/proof/goal owners, B4, and
+B5 are forbidden. The existing inactive template fixture is parser/source
+evidence only and keeps its advanced-semantics rejection intent. No
+blocking `spec_gap`, boundary violation, or repository-metadata conflict is
+present.
+
+Repeated boundary and implementation-scope reviews report **NO FINDINGS**.
+The exact-32 documentation-only scope, unchanged forbidden paths, and all
+nine hard gates PASS; independent final quality is valid `98/100`.

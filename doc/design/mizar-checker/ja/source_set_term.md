@@ -361,3 +361,14 @@ capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
 semantic/coverage deferralsはunchanged residual risk。pendingは
 dedicated implementation commit、postcommit invariant verification、
 fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B reused empty-enumeration lower contract
+
+B3BはTask-255 schemaまたはproducer behaviorを追加しない。existing
+explicit-context extractorは`33/95..97`にexactly 1件の`Enumeration` term、
+spelling `{ }`、context 1、wrapper/generator/type site/condition/edge 0件、
+`ResultType` request 1件をyieldしなければならない。existing
+zero-element producer testsがlower authorityのままであり、
+`source_set_term.rs` source/test changeはauthorizeしない。B3Bはseparate
+upper statement/witness consumerだけをownし、choice、comprehension、
+`qua`、全semantic requestsをlater workとして保持する。

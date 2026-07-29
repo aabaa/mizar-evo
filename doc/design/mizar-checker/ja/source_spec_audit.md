@@ -4396,3 +4396,18 @@ consistency repeatとfinal documentation/boundary rereadは
 （`20/20/15/14/10/10/5/4`）。記載済みsemantic/coverage deferralsは
 unchanged residual risk。pendingはdedicated implementation commit、
 postcommit invariant verification、fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B source-spec audit
+
+Sections 13.4.1、15.4.4、16.3.3は`{}`をunnamed `take` termとして
+authorizeする。B3Bはempty-set typing、existential discharge、proof
+acceptanceをclaimせず、そのsyntaxをexisting Task-255 SetTerm targetへ
+transportする。exact existing `.miz` occurrenceはreinterpretまたはcredit
+せず、expectationはtemplate-signature rejectionのままである。missing
+upper documentationは`design_drift`、future exact profile/testsは
+`source_drift`/`test_gap`。specification/expectation driftはない。
+
+repeatしたsource/documentation consistency reviewは**NO FINDINGS**。
+canonical authority、dormant fixture intent、deferred trace row、全
+forbidden artifactsはunchanged。exact source/count/hash/no-op
+verificationと全9 hard gatesはPASSし、final qualityはvalid `98/100`。

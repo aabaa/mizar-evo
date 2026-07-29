@@ -10948,3 +10948,18 @@ capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
 semantic/coverage deferralsはunchanged residual risk。pendingは
 dedicated implementation commit、postcommit invariant verification、
 fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B runner boundary audit
+
+future runner editがownするのは
+`type_elaboration/source_statement.rs`、そのfacade/root modules 2件、
+statement runner test moduleだけである。generic Task-255
+explicit-context helperはread-only dependency。parser/resolver crates、
+set-term owners、active corpus/metadata、expectations、sidecars、trace rows、
+semantic/proof/goal runnersはout of scopeである。このboundaryにより
+language behavior/test intentを変更せずexact source transport testsを
+行える。
+
+repeatしたboundary/implementation-scope reviewsは**NO FINDINGS**。
+exact-32 documentation-only scope、forbidden paths unchanged、全9 hard
+gatesはPASSし、independent final qualityはvalid `98/100`である。

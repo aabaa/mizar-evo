@@ -4611,3 +4611,19 @@ All nine hard gates PASS with no score cap; the valid score is `98/100`
 remain unchanged as residual risk. Only the dedicated implementation
 commit, post-commit invariant verification, and fresh next-task inventory
 remain pending.
+
+## Task 258B3M2B2B3B Source-Spec Audit
+
+Sections 13.4.1, 15.4.4, and 16.3.3 authorize `{}` as an unnamed `take`
+term. B3B transports that syntax into an existing Task-255 SetTerm target
+without claiming empty-set typing, existential discharge, or proof
+acceptance. The exact existing `.miz` occurrence is not reinterpreted or
+credited; its expectation remains template-signature rejection. Missing
+upper documentation is `design_drift`, and the future exact profile/tests
+are `source_drift`/`test_gap`. No specification or expectation drift is
+found.
+
+Repeated source/documentation consistency review reports **NO FINDINGS**.
+The canonical authority, dormant fixture intent, deferred trace row, and
+all forbidden artifacts remain unchanged. Exact source/count/hash/no-op
+verification and all nine hard gates PASS; final quality is valid `98/100`.

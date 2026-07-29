@@ -2904,3 +2904,29 @@ capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
 semantic/coverage deferralsはunchanged residual risk。pendingは
 dedicated implementation commit、postcommit invariant verification、
 fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B frozen empty-enumeration statement contract
+
+B3Aは`a147bad88f1963c504f796051ba0b855eca71d07`でclosedした。generic
+SetTerm carrierによってexact `{ 1 , 2 }` statement profileが`{}`をaccept
+することにはならない。そのためB3Bは118-byte
+`FormulaStatementEmptySetEnumerationWitnessSmoke` source、diagnostics 0、
+50 nodes/root 49、local public/exported theorem `46/19..117`、label
+`27..74`、proof context `1` at `82..116`をfreezeする。
+
+Task 252はreference roots `{27,29,37,39}`をownする。Task 255はempty
+enumeration `33/95..97`、spelling `{ }`、profile
+`1/0/0/0/0/0/1`、child edge 0件、`ResultType` request 1件だけをownする。
+Task 256はformula roots `{31,41}`、Task-258 baseは`{44,46}`をownする。
+B3Bはwitness/take `{35,36}`とsole
+`Witness(0) -> SetTerm(0)` edgeをownする。他の全nodesはcrate planで
+freezeしたとおりunownedである。
+
+B3BはB3A SetTerm APIとset-only fingerprint tupleをreuseする。future
+private exact profileはpublic schema/debug grammarを変更しない。
+checker4+runner5 matrixは全bytes/nodes/resolver/lower rows、zero-edge
+nonvacuity、precedence、family isolation、replay/rollback、final clone、
+empty semanticsをfreezeする。singleton/nonempty enumeration、choice、
+comprehension、`qua`、named/multiple witnesses、semantic typing、
+existential/proof behavior、B4/B5、active/trace creditはdeferredのままで
+ある。

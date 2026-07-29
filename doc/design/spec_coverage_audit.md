@@ -5071,3 +5071,21 @@ with no score cap; the valid score is `98/100`
 remain unchanged as residual risk. Only the dedicated implementation
 commit, post-commit invariant verification, and fresh next-task inventory
 remain pending.
+
+### Task 258B3M2B2B3B narrative-only ownership
+
+B3A closed at `a147bad88f1963c504f796051ba0b855eca71d07`. B3B now freezes only
+the exact empty-enumeration statement-to-Task-255 transport profile and its
+future four-checker/five-runner matrix. The formula-statement row remains
+`deferred`, `tests = []`; no specification, `.miz`, expectation, sidecar,
+trace backlink/status/count, diagnostic, or semantic coverage credit
+changes. The existing template fixture containing `take {};` retains only
+its template-signature test intent. Choice, other set forms, existential
+matching, proof acceptance, B4, and B5 remain follow-up owned.
+
+Repeated source/documentation consistency and final documentation/boundary
+reviews report **NO FINDINGS**. Exact source/count/hash/scope/no-op and
+workspace verification pass. Independent final quality reports
+**NO FINDINGS** with all nine hard gates PASS, no score cap, and valid
+`98/100`. This remains a narrative-only audit change; trace status, counts,
+backlinks, tests, and semantic credit are unchanged.

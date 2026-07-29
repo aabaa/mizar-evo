@@ -968,3 +968,20 @@ capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）で同期し、記載済�
 semantic/coverage deferralsをunchanged residual riskとして保持する。
 両言語のpendingはdedicated implementation commit、postcommit invariant
 verification、fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B bilingual runner freeze
+
+EN/JA runner plansはexact 118-byte/hash source、50-node AST、zero-edge
+Task-255 profile、SetTerm witness 1件、unchanged generic lower helper、
+checker4+runner5 projection、dormant-only scope、unchanged
+CLI/trace/corpus、semantic deferralsで一致する。両方がB3A commit
+`a147bad88f1963c504f796051ba0b855eca71d07`と同じclean post-commit
+invariantsをrecordする。
+
+repeatしたspecification、test-sufficiency、implementation-boundary、
+source/documentation-consistency、final documentation/boundary reviewsは
+両言語で**NO FINDINGS**。exact source/count/hash/scope/no-opとworkspace
+verificationも両言語でPASS。independent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、score capなし、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。残るのはdedicated documentation commit、
+post-commit invariants、fresh implementation inventoryだけである。

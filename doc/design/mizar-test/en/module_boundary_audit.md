@@ -12205,3 +12205,17 @@ with no score cap; the valid score is `98/100`
 remain unchanged as residual risk. Only the dedicated implementation
 commit, post-commit invariant verification, and fresh next-task inventory
 remain pending.
+
+## Task 258B3M2B2B3B Runner Boundary Audit
+
+The future runner edit owns only
+`type_elaboration/source_statement.rs`, its two facade/root modules, and
+the statement runner test module. The generic Task-255 explicit-context
+helper is a read-only dependency. Parser/resolver crates, set-term owners,
+active corpus/metadata, expectations, sidecars, trace rows, and
+semantic/proof/goal runners are out of scope. This boundary permits exact
+source transport tests without changing language behavior or test intent.
+
+Repeated boundary and implementation-scope reviews report **NO FINDINGS**.
+The exact-32 documentation-only scope, unchanged forbidden paths, and all
+nine hard gates PASS; independent final quality is valid `98/100`.

@@ -713,3 +713,18 @@ documentation consistency repeatとfinal documentation/boundary rereadも
 （`20/20/15/14/10/10/5/4`）。記載済みsemantic/coverage deferralsは
 unchanged residual risk。pendingはdedicated implementation commit、
 postcommit invariant verification、fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B boundary audit
+
+B3Bはnew Task-255 producerではなく、upper statement-consumer profileで
+ある。crate planでfreezeしたchecker statement/typed/final owners 3件と
+runner statement/facade/test owners 4件だけをeditできる。
+`source_set_term.rs`、parser、resolver、canonical specification、corpus、
+expectations、sidecars、trace metadata、semantic/proof/goal owners、B4、
+B5は禁止。existing inactive template fixtureはparser/source evidence
+だけで、advanced-semantics rejection intentを保持する。blocking
+`spec_gap`、boundary violation、repository-metadata conflictはない。
+
+repeatしたboundary/implementation-scope reviewsは**NO FINDINGS**。
+exact-32 documentation-only scope、forbidden paths unchanged、全9 hard
+gatesはPASSし、independent final qualityはvalid `98/100`である。

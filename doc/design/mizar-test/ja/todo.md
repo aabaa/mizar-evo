@@ -2421,6 +2421,21 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   hard gates PASS、score capなし、valid `98/100`
   （`20/20/15/14/10/10/5/4`）、記載済みresidual deferrals unchangedで
   complete。
-- [ ] dedicated implementation commitをcreate。
-- [ ] implementation postcommit invariantsをverify。
-- [ ] fresh next-task inventoryをcomplete。
+- [x] dedicated B3A implementation commit
+  `a147bad88f1963c504f796051ba0b855eca71d07`をcreate。
+- [x] clean ahead-12/behind-0 postcommit stateとunchanged stashをverify。
+- [x] fresh inventoryでB3B empty-enumeration documentationをselect。
+
+## Checker Task 258B3M2B2B3B runner ledger
+
+- [x] exact 118-byte/hash source、diagnostics 0、50 nodes/root 49、
+  resolver label、complete Task-48/252/255/256/258 handoffsをfreeze。
+- [x] zero-edge Enumeration target 1件とunnamed witness 1件をfreezeし、
+  new lower helper/public APIは追加しない。
+- [x] exhaustive dormant runner tests exactly 5件とmatching checker tests
+  4件をfreezeし、libraries `394/451`から`398/456`をproject。
+- [x] `.miz`、expectations、sidecars、trace status/count、active route、
+  CLI output、semanticsをunchangedに保持。
+- [x] 全repeat reviewsとverificationを**NO FINDINGS**でcomplete。
+- [ ] documentation prerequisiteをcommitしinvariantsをverify後、separate
+  B3B implementationをfresh inventory。

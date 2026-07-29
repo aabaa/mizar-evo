@@ -1246,3 +1246,13 @@ capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
 semantic/coverage deferralsはunchanged residual risk。pendingは
 dedicated implementation commit、postcommit invariant verification、
 fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B frozen final-clone boundary
+
+final assemblyはexact B3B statement/witness profileをrecognizeし、
+zero-edge Task-255 dependencyとset-only fingerprintをrevalidateして、
+debug bytesまたはsemantic tablesを変更せずcloneしなければならない。
+corrupt source ownership、label、Task-48/252/255/256/258 rows、witness
+linkage、fingerprintはalready owning final errorでfailする。choice、
+comprehension、`qua`、existential matching、proof acceptance、
+Core/CFG/VC、その他すべてのsemanticsはabsentのままである。

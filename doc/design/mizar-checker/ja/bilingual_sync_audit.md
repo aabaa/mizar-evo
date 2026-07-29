@@ -883,3 +883,22 @@ independent final read-only quality reviewも両言語で**NO FINDINGS**。
 deferralsをunchanged residual riskとして保持する。両言語のpendingは
 dedicated implementation commit、postcommit invariant verification、
 fresh next-task inventoryだけである。
+
+## Task 258B3M2B2B3B bilingual freeze
+
+EN canonicalとJA companionは、同じ118-byte/hash、50-node/root-49
+empty-enumeration source、resolver provenance、Tasks 48/252/255/256/258
+rows、zero-edge owner graph、unchanged SetTerm API、checker4+runner5
+matrix、forbidden scope、semantic deferrals、baseline/projection、trace
+no-op、exit gatesをfreezeする。B3A closure commit
+`a147bad88f1963c504f796051ba0b855eca71d07`とpost-commit invariantsも
+synchronizedした。later wording correctionは同じlogical taskで両言語を
+updateしなければならない。
+
+repeatしたspecification、test-sufficiency、implementation-boundary、
+source/documentation-consistency、final documentation/boundary reviewsは
+両言語で**NO FINDINGS**。exact source/count/hash/scope/no-opとworkspace
+verificationも両言語でPASS。independent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、score capなし、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。残るのはdedicated documentation commit、
+post-commit invariants、fresh implementation inventoryだけである。

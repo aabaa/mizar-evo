@@ -406,3 +406,14 @@ is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic and coverage
 deferrals remain unchanged as residual risk. Only the dedicated
 implementation commit, post-commit invariant verification, and fresh
 next-task inventory remain pending.
+
+## Task 258B3M2B2B3B Reused Empty-Enumeration Lower Contract
+
+B3B adds no Task-255 schema or producer behavior. The existing
+explicit-context extractor must yield exactly one `Enumeration` term at
+`33/95..97`, spelling `{ }`, context 1, with zero wrappers, generators,
+type sites, conditions, and edges plus one `ResultType` request. Existing
+zero-element producer tests remain the lower authority; no
+`source_set_term.rs` source or test changes are authorized. B3B owns only
+the separate upper statement/witness consumer and preserves choice,
+comprehension, `qua`, and all semantic requests as later work.

@@ -4393,3 +4393,13 @@ is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic and coverage
 deferrals remain unchanged as residual risk. Only the dedicated
 implementation commit, post-commit invariant verification, and fresh
 next-task inventory remain pending.
+
+## Task 258B3M2B2B3B Dormant Runner Surface
+
+B3B adds only an exact dormant source selector for the 118-byte
+`FormulaStatementEmptySetEnumerationWitnessSmoke` input and five compound
+runner tests. The selector must authenticate every byte/node, resolver and
+lower handoff field, owner partition, zero-edge graph, family isolation,
+replay/rollback, final clone, and empty semantics before publishing the
+existing private detail route. It must not enter active discovery, change a
+diagnostic/detail key, or reinterpret the inactive template fixture.

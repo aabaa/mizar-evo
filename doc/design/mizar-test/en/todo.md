@@ -2633,6 +2633,21 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   **NO FINDINGS**: all nine hard gates PASS with no score cap, valid
   `98/100` (`20/20/15/14/10/10/5/4`), and the stated residual deferrals
   unchanged.
-- [ ] Create the dedicated implementation commit.
-- [ ] Verify implementation post-commit invariants.
-- [ ] Complete fresh next-task inventory.
+- [x] Create dedicated B3A implementation commit
+  `a147bad88f1963c504f796051ba0b855eca71d07`.
+- [x] Verify clean ahead-12/behind-0 post-commit state and unchanged stash.
+- [x] Fresh-inventory and select B3B empty-enumeration documentation.
+
+## Checker Task 258B3M2B2B3B Runner Ledger
+
+- [x] Freeze exact 118-byte/hash source, zero diagnostics, 50 nodes/root 49,
+  resolver label, and complete Task-48/252/255/256/258 handoffs.
+- [x] Freeze one zero-edge Enumeration target and one unnamed witness with
+  no new lower helper or public API.
+- [x] Freeze exactly five exhaustive dormant runner tests and four matching
+  checker tests, projecting libraries `398/456` from `394/451`.
+- [x] Keep `.miz`, expectations, sidecars, trace status/count, active route,
+  CLI output, and semantics unchanged.
+- [x] Complete all repeated reviews and verification with **NO FINDINGS**.
+- [ ] Commit the documentation prerequisite, verify invariants, and
+  fresh-inventory the separate B3B implementation.

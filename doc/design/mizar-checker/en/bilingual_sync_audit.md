@@ -935,3 +935,22 @@ languages: all nine hard gates PASS with no score cap and valid `98/100`
 deferrals as unchanged residual risk. Only the dedicated implementation
 commit, post-commit invariant verification, and fresh next-task inventory
 remain pending in both languages.
+
+## Task 258B3M2B2B3B Bilingual Freeze
+
+The EN canonical and JA companion now freeze the same 118-byte/hash,
+50-node/root-49 empty-enumeration source, resolver provenance, Tasks
+48/252/255/256/258 rows, zero-edge owner graph, unchanged SetTerm API,
+four-checker/five-runner matrix, forbidden scope, semantic deferrals,
+baseline/projection, trace no-op, and exit gates. B3A closure commit
+`a147bad88f1963c504f796051ba0b855eca71d07` and post-commit invariants are
+also synchronized. Any later wording correction must update both languages
+in one logical task.
+
+The repeated specification, test-sufficiency, implementation-boundary,
+source/documentation-consistency, and final documentation/boundary reviews
+are synchronized as **NO FINDINGS**. Exact source/count/hash/scope/no-op and
+workspace verification pass in both languages. Independent final quality is
+**NO FINDINGS**, all nine hard gates PASS with no score cap, and valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only the dedicated documentation
+commit, post-commit invariants, and fresh implementation inventory remain.

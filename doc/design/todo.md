@@ -3135,6 +3135,21 @@ or semantic owner changed. B3M2B2B remains next before B4.
   **NO FINDINGS**: all nine hard gates PASS with no score cap, valid
   `98/100` (`20/20/15/14/10/10/5/4`), and the stated residual deferrals
   unchanged.
-- [ ] Create the dedicated implementation commit.
-- [ ] Verify implementation post-commit invariants.
-- [ ] Complete fresh next-task inventory.
+- [x] Create B3A implementation commit
+  `a147bad88f1963c504f796051ba0b855eca71d07`.
+- [x] Verify clean ahead-12/behind-0 post-commit state and unchanged stash.
+- [x] Fresh-inventory and select B3B empty-enumeration documentation.
+
+## Checker Task 258B3M2B2B3B
+
+- [x] Freeze the dependency-minimal `take {};` upper statement profile,
+  exact 118-byte/hash and 50-node AST, zero-edge Task-255 contract, one
+  SetTerm witness, existing API reuse, and semantic/trace deferrals.
+- [x] Keep production source, `.miz`, expectations, sidecars, trace
+  status/count, and coverage credit unchanged in the documentation
+  prerequisite.
+- [x] Finish no-findings reviews and verification with all nine hard gates
+  PASS, no score cap, and valid quality `98/100`.
+- [ ] Create one dedicated docs-only commit.
+- [ ] Fresh-inventory and implement only B3B before selecting the next B3
+  sibling; B4 remains blocked behind the unfinished B3 umbrella.

@@ -3445,3 +3445,27 @@ matching, witness guards/obligations, substitution, goal progress/discharge,
 proof/theorem acceptance, facts, overload/coercion, Core/CFG/VC, imported
 sets, broader set forms, B4/B5, and active-route/corpus/diagnostic credit
 remain deferred.
+
+## Task 258B3M2B2B3B Frozen Empty-Enumeration Statement Contract
+
+B3A closed at `a147bad88f1963c504f796051ba0b855eca71d07`; its generic SetTerm
+carrier does not make its exact `{ 1 , 2 }` statement profile accept `{}`.
+B3B therefore freezes the 118-byte
+`FormulaStatementEmptySetEnumerationWitnessSmoke` source with zero
+diagnostics, 50 nodes/root 49, local public/exported theorem
+`46/19..117`, label `27..74`, and proof context `1` at `82..116`.
+
+Task 252 owns reference roots `{27,29,37,39}`. Task 255 owns only empty
+enumeration `33/95..97`, spelling `{ }`, profile
+`1/0/0/0/0/0/1`, no child edge, and one `ResultType` request. Task 256 owns
+formula roots `{31,41}`; Task-258 base owns `{44,46}`. B3B owns witness/take
+`{35,36}` and the sole `Witness(0) -> SetTerm(0)` edge. All other nodes are
+unowned as frozen in the crate plan.
+
+B3B reuses the B3A SetTerm API and set-only fingerprint tuple. Its future
+private exact profile changes no public schema or debug grammar. The
+four-checker/five-runner matrix freezes all bytes/nodes/resolver/lower rows,
+zero-edge nonvacuity, precedence, family isolation, replay/rollback, final
+clone, and empty semantics. Singleton/nonempty enumeration, choice,
+comprehension, `qua`, named/multiple witnesses, semantic typing,
+existential/proof behavior, B4/B5, and active/trace credit remain deferred.

@@ -4126,3 +4126,14 @@ capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
 semantic/coverage deferralsはunchanged residual risk。pendingは
 dedicated implementation commit、postcommit invariant verification、
 fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B dormant runner surface
+
+B3Bは118-byte
+`FormulaStatementEmptySetEnumerationWitnessSmoke` inputのexact dormant
+source selectorとcompound runner tests 5件だけを追加する。selectorは
+existing private detail routeをpublishする前に、全byte/node、resolverと
+lower handoff fields、owner partition、zero-edge graph、family isolation、
+replay/rollback、final clone、empty semanticsをauthenticateしなければ
+ならない。active discoveryへenterせず、diagnostic/detail keyを変更せず、
+inactive template fixtureをreinterpretしてはならない。

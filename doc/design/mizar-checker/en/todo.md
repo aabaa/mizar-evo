@@ -5548,6 +5548,43 @@ implementation commit does not satisfy a producer task.
   **NO FINDINGS**: all nine hard gates PASS with no score cap, valid
   `98/100` (`20/20/15/14/10/10/5/4`), and the stated residual deferrals
   unchanged.
-- [ ] Create the dedicated implementation commit.
-- [ ] Verify implementation post-commit invariants.
-- [ ] Complete fresh next-task inventory.
+- [x] Create dedicated implementation commit
+  `a147bad88f1963c504f796051ba0b855eca71d07`.
+- [x] Verify clean ahead-12/behind-0 implementation post-commit invariants
+  and unchanged stash.
+- [x] Complete fresh next-task inventory and select B3B empty enumeration.
+
+## Checker Task 258B3M2B2B3B Frozen-Contract Ledger
+
+- [x] Close B3A at `a147bad88f1963c504f796051ba0b855eca71d07`
+  with clean ahead-12/behind-0 state and unchanged stash.
+- [x] Resolve empty-enumeration versus choice ordering as nonblocking
+  task-decomposition `design_drift`; select the dependency-minimal zero-edge
+  enumeration and retain every other set/choice/B3 sibling for post-
+  implementation fresh inventory.
+- [x] Freeze final-LF 118-byte/hash identity, zero diagnostics, all 50
+  normal nodes/root 49, and exact local theorem/label provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `4/4/0`, empty Tasks 253/254,
+  Task-255 `1/0/0/0/0/0/1`, Task-256
+  `2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and witness `1/0`.
+- [x] Freeze ownership, the zero-child Task-255 boundary, the sole
+  witness-to-SetTerm edge, resolver provenance, and complete subtree
+  exclusion.
+- [x] Reuse the B3A SetTerm API and exact seven future implementation
+  files; forbid Task-255 source changes and all authority artifacts.
+- [x] Freeze exactly four checker and five runner tests, baseline `394/451`,
+  projection `398/456`, current production/test/CLI hashes, and trace
+  `deferred`, `tests = []` no-op.
+- [x] Preserve the inactive template fixture's existing semantic intent and
+  credit; do not modify its source, expectation, or trace row.
+- [x] Complete specification/documentation review with **NO FINDINGS**.
+- [x] Complete test-sufficiency and implementation-boundary reviews with no
+  findings.
+- [x] Complete source/documentation consistency review with **NO FINDINGS**.
+- [x] Pass exact source/count/hash/scope/diff/trace-no-op verification.
+- [x] Complete final quality review with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `98/100`
+  (`20/20/15/14/10/10/5/4`).
+- [ ] Create the dedicated B3B documentation-only commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B3B
+  implementation.

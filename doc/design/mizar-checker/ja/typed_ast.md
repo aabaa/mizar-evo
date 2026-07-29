@@ -1248,3 +1248,14 @@ consistency repeatとfinal documentation/boundary rereadは
 （`20/20/15/14/10/10/5/4`）。記載済みsemantic/coverage deferralsは
 unchanged residual risk。pendingはdedicated implementation commit、
 postcommit invariant verification、fresh next-task inventoryだけ。
+
+## Task 258B3M2B2B3B frozen atomic installation boundary
+
+B3Bはexact 118-byte empty-enumeration profileに
+`with_source_set_term_statement_witnesses`をreuseする。typed
+installationはauthenticated Task-252 references、zero-edge Task-255
+handoff、Task-256 formula rows、Task-258 base、unnamed SetTerm witness
+1件だけをatomically publishできる。lower-stage failure precedenceと全
+legacy/application/structure/B3A tuplesはunchangedのままである。partial
+state、stale fingerprints、family hybrids、nonempty semantic/proof/goal
+tableはいずれもfail closedする。public API/error variantは追加しない。

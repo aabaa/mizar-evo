@@ -1231,3 +1231,20 @@ capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
 semantic/coverage deferralsはunchanged residual risk。pendingは
 dedicated implementation commit、postcommit invariant verification、
 fresh next-task inventoryだけ。
+
+### Task 258B3M2B2B3B frozen zero-edge family boundary
+
+post-B3A inventoryはlower Task-255 zero-edge capabilityとupper statement
+acceptanceを区別する。B3Bはnode/range `33/95..97`にexactly 1件の
+`Enumeration` SetTerm、wrapper/generator/type-site/condition/edge 0件、
+proof context 1の`ResultType` request 1件をfreezeする。upper familyは
+witness/take nodes `{35,36}`と
+`Witness(0) -> SetTerm(0)`だけを追加する。
+
+Task 252は`{27,29,37,39}`、Task 256は`{31,41}`、Task-258 baseは
+`{44,46}`、Task 255は`{33}`をownする。empty enumerationはprimary childを
+持たないため、directed graphはformula-to-primary edgesと1件の
+witness-to-set edge以外を含まない。choice、comprehension、`qua`、
+other enumeration cardinalities、semantic expansion、B4、B5はseparateの
+ままである。missing upper contractは`design_drift`、future code/testsは
+bounded `source_drift`/`test_gap`で、blocking authority gapはない。

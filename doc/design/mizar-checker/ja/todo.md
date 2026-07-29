@@ -5292,6 +5292,45 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   hard gates PASS、score capなし、valid `98/100`
   （`20/20/15/14/10/10/5/4`）、記載済みresidual deferrals unchangedで
   complete。
-- [ ] dedicated implementation commitをcreate。
-- [ ] implementation postcommit invariantsをverify。
-- [ ] fresh next-task inventoryをcomplete。
+- [x] dedicated implementation commit
+  `a147bad88f1963c504f796051ba0b855eca71d07`をcreate。
+- [x] clean ahead-12/behind-0 implementation postcommit invariantsと
+  unchanged stashをverify。
+- [x] fresh next-task inventoryをcompleteし、B3B empty enumerationを
+  select。
+
+## Checker Task 258B3M2B2B3B frozen-contract ledger
+
+- [x] B3Aを`a147bad88f1963c504f796051ba0b855eca71d07`でcloseし、clean
+  ahead-12/behind-0 stateとunchanged stashをverify。
+- [x] empty-enumeration対choiceのorderingをnonblockingな
+  task-decomposition `design_drift`としてresolveし、dependency-minimal
+  zero-edge enumerationをselectして、その他すべてのset/choice/B3 siblingは
+  post-implementation fresh inventoryまで保持。
+- [x] final-LF 118-byte/hash identity、diagnostics 0、全50 normal
+  nodes/root 49、exact local theorem/label provenanceをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `4/4/0`、empty Tasks 253/254、
+  Task-255 `1/0/0/0/0/0/1`、Task-256
+  `2/0/0/0/0/0/0/4/4`、Task-258 base `1/2/2/2/2`、witness
+  `1/0`をfreeze。
+- [x] ownership、zero-child Task-255 boundary、sole
+  witness-to-SetTerm edge、resolver provenance、complete subtree
+  exclusionをfreeze。
+- [x] B3A SetTerm APIとexact seven future implementation filesをreuseし、
+  Task-255 source changesと全authority artifactsをforbid。
+- [x] checker4+runner5 tests、baseline `394/451`、projection
+  `398/456`、current production/test/CLI hashes、trace `deferred`、
+  `tests = []` no-opをfreeze。
+- [x] inactive template fixtureのexisting semantic intent/creditをpreserveし、
+  source、expectation、trace rowを変更しない。
+- [x] specification/documentation reviewを**NO FINDINGS**でcomplete。
+- [x] test-sufficiency/implementation-boundary reviewsをno findingsで
+  complete。
+- [x] source/documentation consistency reviewを**NO FINDINGS**でcomplete。
+- [x] exact source/count/hash/scope/diff/trace-no-op verificationをPASS。
+- [x] final quality reviewを**NO FINDINGS**、全9 hard gates PASS、
+  score capなし、valid `98/100`
+  （`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] dedicated B3B documentation-only commitをcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、B3B implementationを
+  fresh inventory。

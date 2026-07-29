@@ -1314,3 +1314,14 @@ the valid score is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic
 and coverage deferrals remain unchanged as residual risk. Only the
 dedicated implementation commit, post-commit invariant verification, and
 fresh next-task inventory remain pending.
+
+## Task 258B3M2B2B3B Frozen Atomic Installation Boundary
+
+B3B reuses `with_source_set_term_statement_witnesses` for the exact
+118-byte empty-enumeration profile. Typed installation may publish only the
+authenticated Task-252 references, zero-edge Task-255 handoff, Task-256
+formula rows, Task-258 base, and one unnamed SetTerm witness atomically.
+Lower-stage failure precedence and all legacy/application/structure/B3A
+tuples remain unchanged. Partial state, stale fingerprints, family hybrids,
+or any nonempty semantic/proof/goal table fail closed. No public API or error
+variant is added.

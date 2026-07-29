@@ -1314,3 +1314,13 @@ All nine hard gates PASS with no score cap; the valid score is `98/100`
 remain unchanged as residual risk. Only the dedicated implementation
 commit, post-commit invariant verification, and fresh next-task inventory
 remain pending.
+
+## Task 258B3M2B2B3B Frozen Final-Clone Boundary
+
+Final assembly must recognize the exact B3B statement/witness profile,
+revalidate its zero-edge Task-255 dependency and set-only fingerprint, and
+clone it without changing any debug bytes or semantic tables. Corrupt
+source ownership, label, Task-48/252/255/256/258 rows, witness linkage, or
+fingerprint fails with the already owning final error. Choice,
+comprehension, `qua`, existential matching, proof acceptance, Core/CFG/VC,
+and all other semantics remain absent.

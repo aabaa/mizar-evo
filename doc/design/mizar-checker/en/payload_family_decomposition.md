@@ -1315,3 +1315,19 @@ the valid score is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic
 and coverage deferrals remain unchanged as residual risk. Only the
 dedicated implementation commit, post-commit invariant verification, and
 fresh next-task inventory remain pending.
+
+### Task 258B3M2B2B3B Frozen Zero-Edge Family Boundary
+
+Post-B3A inventory distinguishes lower Task-255 zero-edge capability from
+upper statement acceptance. B3B freezes exactly one `Enumeration` SetTerm
+at node/range `33/95..97`, zero wrappers/generators/type-sites/conditions/
+edges, and one `ResultType` request in proof context 1. The upper family adds
+witness/take nodes `{35,36}` and only `Witness(0) -> SetTerm(0)`.
+
+Task 252 owns `{27,29,37,39}`, Task 256 `{31,41}`, Task-258 base `{44,46}`,
+and Task 255 `{33}`. The empty enumeration contributes no primary child, so
+the directed graph contains formula-to-primary edges plus the one
+witness-to-set edge and nothing else. Choice, comprehension, `qua`, other
+enumeration cardinalities, semantic expansion, B4, and B5 remain separate.
+The missing upper contract is `design_drift`; future code/tests are bounded
+`source_drift`/`test_gap`, with no blocking authority gap.
