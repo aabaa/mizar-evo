@@ -3833,8 +3833,10 @@ Successful lower ownership is exact. Constructor node 59 alone owns
 `source.term.structure.constructor`; member token nodes 20/24 alone own
 `source.term.structure.member.constructor-assignment`. Qualified root 52 is
 authenticated imported resolver traversal but remains
-`source.surface.unowned`. Numeral-expression roots 54/57 remain
-Task-252-owned. The constructor has proof context 1, members `x/y`, ordered
+`source.surface.unowned`. Task 252 uses nodes 54/57 only as private
+extraction roots and publishes numeral rows at sites 53/56, so 53/56 are
+`source.term.numeral` while 54/57 remain `source.surface.unowned`. The
+constructor has proof context 1, members `x/y`, ordered
 `ConstructorValue` edges to `Primary(2/3)`, six ordered unresolved requests,
 and no application fingerprint.
 

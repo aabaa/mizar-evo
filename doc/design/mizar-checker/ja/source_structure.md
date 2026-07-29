@@ -168,7 +168,9 @@ existing public Task-254 constructor producerのfuture runner-private reuse
 `source.term.structure.constructor`とmember nodes 20/24の
 `source.term.structure.member.constructor-assignment`だけ。qualified root
 node 52は`source.surface.unowned`のままresolver-provenance traversalだけに
-participateする。numeral term expressions 54/57はTask-252-ownedのままで、
+participateする。Task 252はnodes 54/57をprivate extraction rootsとしてのみ
+使用してnumeral rowsをnodes 53/56でpublishするため、53/56は
+`source.term.numeral`、54/57は`source.surface.unowned`のままであり、
 他nodeをTask-254-ownedにしない。
 
 handoffはexisting `BindingContextId(1)`とshared `SourceTermParts`を使い、

@@ -3632,8 +3632,10 @@ successful lower ownershipはexact。constructor node 59だけが
 `source.term.structure.constructor`、member token nodes 20/24だけが
 `source.term.structure.member.constructor-assignment`をownする。
 qualified root 52はauthenticated imported resolver traversalだが
-`source.surface.unowned`のまま。numeral-expression roots 54/57は
-Task-252-ownedのまま。constructorはproof context 1、members `x/y`、
+`source.surface.unowned`のまま。Task 252はnodes 54/57をprivate extraction
+rootsとしてのみ使用してnumeral rowsをsites 53/56でpublishするため、
+53/56は`source.term.numeral`、54/57は`source.surface.unowned`のまま。
+constructorはproof context 1、members `x/y`、
 ordered `ConstructorValue` edges -> `Primary(2/3)`、ordered unresolved
 requests 6件、application fingerprintなし。
 

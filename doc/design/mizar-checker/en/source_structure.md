@@ -175,8 +175,10 @@ the crate plan. Its owned-kind map is exactly constructor node 59 as
 `source.term.structure.constructor` and member nodes 20/24 as
 `source.term.structure.member.constructor-assignment`. Qualified root node
 52 stays `source.surface.unowned` and participates only in authenticated
-resolver-provenance traversal. Numeral term expressions 54/57 remain
-Task-252-owned; no other node becomes Task-254-owned.
+resolver-provenance traversal. Task 252 uses nodes 54/57 only as private
+extraction roots and publishes numeral rows at nodes 53/56, so 53/56 are
+`source.term.numeral` while 54/57 stay `source.surface.unowned`; no other
+node becomes Task-254-owned.
 
 The handoff uses existing `BindingContextId(1)` and shared
 `SourceTermParts`, preserving Task-48 `2/1/0`, Task-252 `6/4/2`, and the

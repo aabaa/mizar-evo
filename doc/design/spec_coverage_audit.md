@@ -4478,8 +4478,10 @@ Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
 `1 term / 0 wrappers / 1 root / 2 members / 0 FieldUpdates / 2 edges /
 6 requests` in proof context 1. Task 254 owns exactly constructor node 59
 and constructor-assignment member nodes 20/24. Qualified root node 52 stays
-`source.surface.unowned` resolver traversal, while numeral expression nodes
-54/57 remain Task-252-owned. The imported
+`source.surface.unowned` resolver traversal. Task 252 uses nodes 54/57 only
+as private extraction roots and publishes numeral rows at nodes 53/56, so
+53/56 are `source.term.numeral` while 54/57 remain
+`source.surface.unowned`. The imported
 `parser.type_fixtures::TypeCaseStruct#5` root keeps contribution 2, origin
 range `7..27`, structural path `[5]`, public/exported status, and no
 signature. Constructor-value edges target only `Primary(2/3)`;

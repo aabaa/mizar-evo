@@ -534,7 +534,8 @@ quality reviewは全hard gate PASS、`98/100`。B1B1 bilingual debtはない。
 EN canonical/JA companionは172-byte/76-node source/hash、exact node/subtree
 map、Task-48/252/254 lower rows、imported constructor provenance、exact
 owned-kind map（constructor 59とassignment members 20/24だけ）で一致。
-qualified root 52はunowned、numeral expressions 54/57はTask-252-owned、
+qualified root 52はunowned、54/57はTask-252のprivate extraction roots、
+53/56はpublishされる`source.term.numeral` sites、54/57はarena-unownedとし、
 §5.7 selector authorityはfuture B2Bへexcludeする。
 
 future runner tests 2件、checker testなし、unchanged `378/423`と全measured

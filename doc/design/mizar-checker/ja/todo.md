@@ -4908,7 +4908,8 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] Task-48 `2/1/0`、Task-252 `6/4/2`、exact Task-254
   `1/0/1/2/0/2/6` rows、imported `TypeCaseStruct#5` provenanceをfreeze。
 - [x] owned-kind mapをconstructor 59とassignment members 20/24だけにfreeze。
-  root 52はunowned、numerals 54/57はTask-252-owned。
+  root 52はunowned、Task-252 private extraction roots 54/57とpublishされる
+  `source.term.numeral` sites 53/56を区別し、54/57はarena-unownedとする。
 - [x] 全bytes/nodes、provenance/substitution/precedence、replay、legacy
   output、empty upper families用future runner tests 2件、checker testなし。
 - [x] §5.7 selector semanticsをB2B、witness ownershipをB2A、update/

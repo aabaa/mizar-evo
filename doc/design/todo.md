@@ -2758,7 +2758,9 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
   `1/0/1/2/0/2/6` in proof context 1. Task 254 owns only constructor node
   59 and member nodes 20/24; qualified root 52 remains unowned resolver
-  traversal and numeral nodes 54/57 remain Task-252-owned.
+  traversal. Task 252 uses 54/57 only as private extraction roots, publishes
+  numeral rows at 53/56, and therefore owns only 53/56 as
+  `source.term.numeral` while 54/57 remain arena-unowned.
 - [x] Freeze the exact request order, `None` application fingerprint,
   no duplicated lower rows, and a runner-private existing-context/shared-
   Task-252 reuse seam that leaves the current Task-254 route unchanged.

@@ -5150,7 +5150,9 @@ implementation commit does not satisfy a producer task.
 - [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and exact Task-254
   `1/0/1/2/0/2/6` rows and imported `TypeCaseStruct#5` provenance.
 - [x] Freeze the owned-kind map to constructor 59 and assignment members
-  20/24 only; keep root 52 unowned and numerals 54/57 Task-252-owned.
+  20/24 only; keep root 52 unowned; distinguish Task-252 private extraction
+  roots 54/57 from its published `source.term.numeral` sites 53/56, leaving
+  54/57 arena-unowned.
 - [x] Freeze two future runner tests and no checker test for all bytes/nodes,
   provenance/substitution/precedence, replay, legacy output, and empty upper
   families.

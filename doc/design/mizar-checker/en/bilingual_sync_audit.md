@@ -461,8 +461,10 @@ debt remains.
 The EN canonical and JA companion agree on the 172-byte/76-node source and
 hash, exact node/subtree map, Task-48/252/254 lower rows, imported constructor
 provenance, and exact owned-kind map: constructor 59 and assignment members
-20/24 only. Both keep qualified root 52 unowned, numeral expressions 54/57
-Task-252-owned, and §5.7 selector authority excluded for future B2B.
+20/24 only. Both keep qualified root 52 unowned; identify 54/57 as private
+Task-252 extraction roots, 53/56 as its published
+`source.term.numeral` sites, and 54/57 as arena-unowned; and exclude §5.7
+selector authority for future B2B.
 
 They also freeze the same two future runner tests, no checker test, unchanged
 `378/423` and all measured metrics/hashes, no public/active/fixture/trace/
