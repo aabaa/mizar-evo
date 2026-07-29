@@ -1106,3 +1106,33 @@ structure fingerprintはlower dependency authenticationでsemantic edgeでは
 proof/goal/theorem、active credit、IR edgeなし。checker tests 4件/runner
 tests 5件はfuture `test_gap`; implementationはopenだが、4つの
 documentation-prerequisite reviewsはすべてfindingsなし。
+
+### Task 258B3M2B2B2C implemented witness-to-update edge
+
+B2Cはfrozen family decompositionをchangeせずbounded source/test gapsを
+closeした。new cross-family edgeは
+`SourceStatementWitness(0) -> Structure(0)`だけ。Task254はupdate/
+constructor/member/field-update graphを、Task256はequality 2 nodesだけを
+引き続きownし、listed subtree containersはunownedのまま。reverse/
+semantic edgeはない。
+
+checker 4件/runner 5件のexact testsはhybrid/order、ownership、replay、
+final clone、near miss、empty semanticsを含めPASS。final
+test-sufficiency/implementation reviewsはfindingsなし。trace creditは
+deferredのままで、broad verification、final consistency/quality、
+commit gatesはpending。
+
+### Task 258B3M2B2B2C broad family verification
+
+broad fmt/Clippy/crate/workspace gates、focused `4/4`/`5/5`、sibling
+`12/12`/`21/21` suitesはPASS。fresh counts/hashesはimplemented inventoryと
+一致するため、sole B2C witness edgeとretain/excludeした全family boundaryは
+exactのまま。trace creditはdeferredで、independent final consistency/
+quality、commit/post-commit gatesはpending。
+
+### Task 258B3M2B2B2C final family review status
+
+independent final source/docs consistency/final qualityは**NO FINDINGS**。
+全9 hard gates PASS、valid `98/100`。frozen family decomposition、evidence、
+deferred trace statusはunchanged。pendingはcached-diff/staging audit、
+implementation commit、post-commit inventory/fresh-next-task gatesだけ。

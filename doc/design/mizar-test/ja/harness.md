@@ -3969,3 +3969,38 @@ baseline/projection `386/439` -> `390/444`、all hashes unchanged。
 4 independent reviewsはfindingsなしで、complete documentation/count/hash
 verificationもPASS。independent final qualityはfindingsなし、全9 hard
 gates PASS、valid `98/100`。commitとimplementation inventoryはopen。
+
+## Checker Task 258B3M2B2B2C implemented runner harness
+
+harnessはfrozen 181-byte/86-node functional-update sourceだけをrecognizeし、
+B2CP update extractor/producer boundaryをreuseして、Task258
+statement/witness producers前にexact lower tablesをassembleする。witnessは
+`Structure(0)`をtargetとし、constructor/update value/equality operands/
+resolver provenance/ownership exclusionsはexisting producersのまま。
+
+frozen runner tests 5件はreal frontend、validation precedence/replay、
+malformed/valid-excluded byte/subtree near misses、family/active isolation、
+typed/final/debug/rollback/empty semanticsをcoverしてPASS。paired checker
+tests 4件もPASS。final test-sufficiency/implementation reviewsはfindingsなし。
+runner library `444`+policy suitesはPASSし、broad workspace/remaining final
+reviewsはpending。
+
+active fixture、expectation、sidecar、trace row/credit、diagnostic、
+semantic/proof/goal/IRはunchanged。formula-statement trace rowは
+`deferred`, `tests = []`のまま。
+
+## Checker Task 258B3M2B2B2C broad harness verification
+
+fmt、workspace Clippy、checker/runner crate/policy suites、full workspace
+tests、focused `4/4`/`5/5`、sibling `12/12`/`21/21` suitesはPASS。
+fresh counts/hashesはpaired plansと一致する。active/fixture/trace-credit/
+diagnostic/semantic harness surface変更なし。independent final
+consistency/quality、commit、post-commit gatesはpending。
+
+## Checker Task 258B3M2B2B2C final harness review status
+
+independent final source/docs consistency/final qualityはどちらも
+**NO FINDINGS**。全9 hard gates PASS、valid score `98/100`で、exact
+harness evidence/boundariesはunchanged。pendingはcached-diff/staging
+audit、implementation commit、post-commit inventory/fresh-next-task
+gatesだけ。

@@ -880,3 +880,37 @@ no findings and complete documentation/count/hash verification passes.
 Independent final quality has no findings, all nine hard gates PASS, and the
 valid score is `98/100`. The dedicated documentation commit and fresh
 implementation inventory remain open.
+
+## Checker Task 258B3M2B2B2C Implementation Synchronization
+
+The EN/JA runner companions now agree that prerequisite commit
+`d6076cc757ce675d1b46a720b4f00805923d3c70` and fresh inventory are
+complete and that the exact five-runner-file portion of the frozen eight-file
+transaction is implemented. Both record the unchanged private B2CP seam,
+exact witness target, five runner/four checker tests, and no public, active,
+trace-credit, or semantic expansion.
+
+Both languages record libraries `390/444`, runner sizes
+`7240/6055/735/2552/19275/5848` and 30 paths / 47,203 lines, checker sizes
+`32036/4832/7246/5036` and 23 paths / 126,115 lines, plus identical
+production/test-list hashes. Focused and library verification described in
+the plan passes, and final test-sufficiency/implementation reviews have no
+findings. Broad workspace and final consistency/quality/commit gates remain
+pending in both companions.
+
+## Checker Task 258B3M2B2B2C Broad-Verification Synchronization
+
+Both runner companions now record passing format, workspace Clippy, checker
+`390+15`, runner `444+3+14+137+2+21`, full workspace, focused
+`4/4`/`5/5`, and sibling `12/12`/`21/21` gates. The five unchanged CLI
+counts and hashes are synchronized in the paired plans. Canonical and trace
+artifacts remain unchanged; independent final consistency/quality, commit,
+and post-commit gates remain pending in both languages.
+
+## Checker Task 258B3M2B2B2C Final-Review Synchronization
+
+Both runner companions now record independent final source/documentation
+consistency as **NO FINDINGS** and independent final quality as
+**NO FINDINGS**, with all nine hard gates PASS and a valid `98/100`. Evidence
+remains unchanged. Only cached-diff/staging audit, implementation commit, and
+post-commit inventory/fresh-next-task gates remain pending in both languages.

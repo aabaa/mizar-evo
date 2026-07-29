@@ -775,3 +775,43 @@ no findings and complete documentation/count/hash verification passes.
 Independent final quality has no findings, all nine hard gates PASS, and the
 valid score is `98/100`. The prerequisite commit and fresh implementation
 inventory remain open.
+
+## Task 258B3M2B2B2C Implementation Synchronization
+
+The canonical English completion record and Japanese companion now agree that
+the prerequisite was committed as `d6076cc757ce675d1b46a720b4f00805923d3c70`
+and that fresh inventory led to the exact eight-file B2C implementation. Both
+record the unchanged public/private boundary, the witness target
+`Structure(0)`, the existing B2CP seam, four checker and five runner tests, and
+the absence of semantic or coverage credit.
+
+Both companions record libraries `390/444`, checker sizes
+`32036/4832/7246/5036` with 23 paths / 126,115 lines, and runner sizes
+`7240/6055/735/2552/19275/5848` with 30 paths / 47,203 lines. The paired
+production and raw/normalized test-list hashes are synchronized. Focused
+checker `4/4`, focused runner `5/5`, checker `390`, and runner `444` plus
+policy suites pass; final test-sufficiency and implementation reviews have no
+findings.
+
+The `deferred`, `tests = []` formula-statement row, canonical artifacts,
+active corpus, public APIs, and semantic surfaces remain unchanged. Broad
+workspace verification, final source/documentation re-review, final quality,
+commit, and post-commit inventory remain pending in both languages.
+
+## Task 258B3M2B2B2C Broad-Verification Synchronization
+
+The EN/JA companions now both record passing format, workspace Clippy,
+checker `390+15`, runner `444+3+14+137+2+21`, and full workspace test gates,
+plus focused `4/4` and `5/5` and sibling `12/12` and `21/21` suites. They
+also agree on the unchanged five CLI counts and hashes recorded in the paired
+plans. Canonical and trace artifacts remain unchanged. The independent final
+source/documentation re-review, final quality, commit, and post-commit
+inventory remain pending in both languages.
+
+## Task 258B3M2B2B2C Final-Review Synchronization
+
+Both companions now record independent final source/documentation consistency
+as **NO FINDINGS** and independent final quality as **NO FINDINGS**, with all
+nine hard gates PASS and a valid `98/100`. Evidence and metrics remain
+unchanged. Only cached-diff/staging audit, implementation commit, and
+post-commit inventory/fresh-next-task gates remain pending in both languages.

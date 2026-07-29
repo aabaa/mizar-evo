@@ -12059,3 +12059,38 @@ All four independent reviews have no findings and complete
 documentation/count/hash verification passes. Independent final quality has
 no findings, all nine hard gates PASS, and the valid score is `98/100`. The
 dedicated documentation commit and implementation inventory remain open.
+
+## Checker Task 258B3M2B2B2C Implemented Runner Boundary
+
+The documentation prerequisite is complete at
+`d6076cc757ce675d1b46a720b4f00805923d3c70`; fresh inventory selected the
+frozen transaction. Runner changes are limited to its five existing files:
+the source-statement consumer, source-structure allowance cleanup, private
+facade, test-only root registration, and statement tests. The three private
+B2CP seams are consumed unchanged. No dependency, module, path, public
+re-export, active fixture/route owner, or semantic owner was added.
+
+Libraries are `390/444`. Runner sizes are
+`7240/6055/735/2552/19275/5848`, with 30 paths / 47,203 lines and
+path/content hashes `98f3b264...` / `b8fedfbe...`; checker sizes are
+`32036/4832/7246/5036`, with 23 paths / 126,115 lines and hashes
+`c2eea2db...` / `315fb931...`. Exact raw/normalized test hashes are recorded
+in the paired plans. The five runner and four checker tests pass; final
+test-sufficiency and implementation reviews have no findings. Broad
+verification and final consistency/quality/commit gates remain pending.
+
+## Checker Task 258B3M2B2B2C Broad Runner-Boundary Verification
+
+Format, workspace Clippy, both crate and policy suites, full workspace tests,
+focused `4/4` and `5/5`, and sibling `12/12` and `21/21` suites pass with
+unchanged counts and hashes. No runner module, dependency, path, public,
+active-route, or semantic boundary changes. Independent final consistency/
+quality, commit, and post-commit gates remain pending.
+
+## Checker Task 258B3M2B2B2C Final Runner-Boundary Review Status
+
+Independent final source/documentation consistency and final quality both
+report **NO FINDINGS**. All nine hard gates PASS and the valid score is
+`98/100`; exact module-boundary evidence remains unchanged. Only cached-diff/
+staging audit, implementation commit, and post-commit inventory/fresh-next-
+task gates remain pending.

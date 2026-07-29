@@ -1247,3 +1247,31 @@ fingerprints, swapped targets, partial/reverse/repeated installation, and
 subtree ownership substitution reject atomically. All semantic, proof,
 goal, overload, coercion, obligation, and theorem-acceptance outputs remain
 empty. Implementation and its final-clone tests remain open.
+
+## Task 258B3M2B2B2C Implemented Final-AST Sibling
+
+Final assembly now enumerates B2C beside B2A/B2B and revalidates the complete
+source, arena, Task-252/254/256/258, witness, structure-fingerprint, and
+`Structure(0)` target contract before cloning. It adds no public accessor,
+schema, or semantic output. Hybrid, stale, swapped, partial, reverse,
+repeated, and subtree-substitution cases fail atomically.
+
+The frozen checker final-clone test and runner typed/final rollback test pass;
+the complete four-plus-five matrix passes and final implementation review has
+no findings. Final source/documentation and quality reviews remain pending.
+
+## Task 258B3M2B2B2C Broad Final-AST Verification
+
+The broad format, Clippy, checker, runner, and full workspace gates, focused
+`4/4` and `5/5`, and sibling `12/12` and `21/21` suites pass with unchanged
+counts and hashes. This adds no final-AST surface or semantic claim.
+Independent final source/documentation and quality reviews, the implementation
+commit, and post-commit inventory remain pending.
+
+## Task 258B3M2B2B2C Final Final-AST Review Status
+
+Independent final source/documentation consistency and final quality report
+**NO FINDINGS**. All nine hard gates PASS and the valid score is `98/100`;
+final-AST evidence and boundaries remain unchanged. Only cached-diff/staging
+audit, implementation commit, and post-commit inventory/fresh-next-task gates
+remain pending.

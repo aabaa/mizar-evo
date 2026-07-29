@@ -1184,3 +1184,29 @@ B2A/B2B/B2C/application hybrids、stale fingerprints、swapped targets、
 partial/reverse/repeated、subtree ownership substitutionはatomic reject。
 semantic/proof/goal/overload/coercion/obligation/theorem outputsはempty。
 implementation/final-clone testsはopen。
+
+## Task 258B3M2B2B2C implemented final-AST sibling
+
+final assemblyはB2A/B2Bと並べてB2Cをenumerateし、clone前にcomplete
+source/arena、Tasks252/254/256/258、witness、structure fingerprint、
+`Structure(0)` target contractをrevalidateする。public accessor/schema/
+semantic output追加なし。hybrid/stale/swapped/partial/reverse/repeated/
+subtree substitutionはatomic reject。
+
+frozen checker final-clone testとrunner typed/final rollback testを含む
+four-plus-five matrixはPASSし、final implementation reviewはfindingsなし。
+final source/docsとquality reviewsはpending。
+
+## Task 258B3M2B2B2C broad final-AST verification
+
+broad fmt/Clippy/checker/runner/full workspace gates、focused `4/4`/`5/5`、
+sibling `12/12`/`21/21` suitesはunchanged counts/hashesでPASS。final-AST
+surface/semantic claim追加なし。independent final source/docs/quality
+reviews、implementation commit、post-commit inventoryはpending。
+
+## Task 258B3M2B2B2C final final-AST review status
+
+independent final source/docs consistency/final qualityは**NO FINDINGS**。
+全9 hard gates PASS、valid score `98/100`で、final-AST evidence/boundariesは
+unchanged。pendingはcached-diff/staging audit、implementation commit、
+post-commit inventory/fresh-next-task gatesだけ。

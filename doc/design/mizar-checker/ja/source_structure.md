@@ -378,3 +378,31 @@ equality nodes 55/77はupdate subtree全体をexcludeし、containers
 まま。functional-copy、member/replacement/result typing、proof、goal、
 theorem semanticsはdeferred。consumer implementation時にobsoleteな
 B2C-future `dead_code` allowancesだけをremoveしてよい。
+
+## Task 258B3M2B2B2C implemented update consumer
+
+B2C runner consumerは`ImportedStructureUpdateSite`、
+`imported_structure_update_owned_node_kinds`、
+`imported_structure_update_handoff_in_context`をunchanged利用し、obsolete
+future-consumer `dead_code` allowancesをremoveした。structure table row/
+edge/request/fingerprint grammar/public API/Task254 ownershipはunchanged。
+witnessはexisting update `Structure(0)`だけをtargetとする。
+
+focused checker/runner matricesはPASSしimplementation reviewはfindingsなし。
+functional-copy、member/replacement/result typing、immutability、proof、
+goal、theorem semanticsはdeferred。
+
+## Task 258B3M2B2B2C broad structure verification
+
+fmt/Clippy/crate/workspace gates、focused `4/4`/`5/5`、sibling
+`12/12`/`21/21` suitesはunchanged Task254 inventory/hashesでPASS。B2Cは
+existing structure handoffのconsumerだけで、structure/semantic ownership
+追加なし。independent final source/docs/quality reviews、commit、
+post-commit inventoryはpending。
+
+## Task 258B3M2B2B2C final structure review status
+
+independent final source/docs consistency/final qualityは**NO FINDINGS**。
+全9 hard gates PASS、valid `98/100`。Task254 ownership、exact evidence、
+semantic deferralsはunchanged。pendingはcached-diff/staging audit、
+implementation commit、post-commit inventory/fresh-next-task gatesだけ。

@@ -5384,5 +5384,35 @@ implementation commit does not satisfy a producer task.
 - [x] Run documentation verification and all required count/hash gates.
 - [x] Complete final read-only quality review with every hard gate passing
   and a valid score of `98/100`.
-- [ ] Commit the B2C documentation prerequisite separately.
-- [ ] Fresh-inventory and implement only the frozen B2C contract.
+- [x] Commit the B2C documentation prerequisite separately as
+  `d6076cc757ce675d1b46a720b4f00805923d3c70`.
+- [x] Fresh-inventory and implement only the frozen B2C contract.
+
+## Checker Task 258B3M2B2B2C Implementation Ledger
+
+- [x] Keep the implementation to the frozen three checker and five runner
+  files, with no unrelated formatter or pre-existing semantic churn.
+- [x] Reuse the existing public structure-witness APIs and unchanged private
+  B2CP update seam; add no public schema or active corpus case.
+- [x] Publish exactly one unnamed witness targeting update `Structure(0)` and
+  preserve the complete Task-252/254/256/base ownership graph.
+- [x] Add exactly four checker and five runner tests and close the bounded
+  `source_drift` and `test_gap`.
+- [x] Pass focused checker `4/4`, focused runner `5/5`, checker library `390`,
+  and runner library `444` plus policy suites.
+- [x] Complete final test-sufficiency and implementation reviews with no
+  findings.
+- [x] Record final sizes, production manifests, and test-list hashes in paired
+  completion documentation.
+- [x] Keep canonical specification, `.miz`, fixtures, expectations, sidecars,
+  trace status/tests, coverage credit, public API, and semantics unchanged.
+- [x] Complete broad workspace format, Clippy, and test verification,
+  including focused `4/4` and `5/5` and sibling `12/12` and `21/21` suites.
+- [x] Complete final source/documentation consistency re-review with
+  **NO FINDINGS**.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, and a valid `98/100`.
+- [ ] Audit the cached diff and create the dedicated B2C implementation
+  commit.
+- [ ] Verify post-commit HEAD, clean worktree, origin relation, unchanged
+  stash, and fresh-inventory the next dependency-authorized task.

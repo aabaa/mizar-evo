@@ -735,3 +735,41 @@ expectation、semantic claimなし。4 independent reviewsはfindingsなしで�
 complete documentation/count/hash verificationもPASS。independent final
 qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。commitと
 fresh implementation inventoryはopen。
+
+## Task 258B3M2B2B2C implementation synchronization
+
+canonical EN completion recordとJA companionは、prerequisiteが
+`d6076cc757ce675d1b46a720b4f00805923d3c70`としてcommitされ、fresh
+inventory後にexact eight-file B2C implementationへ進んだ点で同期する。
+両方がunchanged public/private boundary、witness target `Structure(0)`、
+existing B2CP seam、checker 4/runner 5 tests、semantic/coverage creditなしを
+recordする。
+
+両companionはlibraries `390/444`、checker sizes
+`32036/4832/7246/5036`・23 paths/126,115 lines、runner sizes
+`7240/6055/735/2552/19275/5848`・30 paths/47,203 lines、およびpaired
+production/test-list hashesで一致する。focused checker `4/4`、runner
+`5/5`、checker `390`、runner `444`+policy suitesはPASSし、final
+test-sufficiency/implementation reviewsはfindingsなし。
+
+formula-statement row `deferred`, `tests = []`、canonical artifacts、
+active corpus、public APIs、semantic surfacesはunchanged。broad workspace
+verification、final source/docs re-review、final quality、commit、
+post-commit inventoryは両言語でpending。
+
+## Task 258B3M2B2B2C broad-verification synchronization
+
+EN/JA companionsはfmt、workspace Clippy、checker `390+15`、runner
+`444+3+14+137+2+21`、full workspace tests、focused `4/4`/`5/5`、
+sibling `12/12`/`21/21` suitesのPASSを同期する。paired plans記載のCLI
+counts/hashesもunchangedで一致。canonical/trace artifactsはunchanged。
+independent final source/docs re-review、final quality、commit、
+post-commit inventoryは両言語でpending。
+
+## Task 258B3M2B2B2C final-review synchronization
+
+両companionがindependent final source/docs consistencyを**NO FINDINGS**、
+independent final qualityも**NO FINDINGS**、全9 hard gates PASS、valid
+`98/100`としてrecordする。evidence/metricsはunchanged。pendingは
+cached-diff/staging audit、implementation commit、post-commit inventory/
+fresh-next-task gatesだけで両言語一致。

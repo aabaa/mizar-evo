@@ -10810,3 +10810,37 @@ test-list hashes
 complete documentation/count/hash verificationもPASS。independent final
 qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。docs commitと
 implementation inventoryはopen。
+
+## Checker Task 258B3M2B2B2C implemented runner boundary
+
+documentation prerequisiteは
+`d6076cc757ce675d1b46a720b4f00805923d3c70`でcompleteし、fresh
+inventoryがfrozen transactionをselectした。runner changesはexisting 5 files、
+すなわちsource-statement consumer、source-structure allowance cleanup、
+private facade、test-only root registration、statement testsだけ。private
+B2CP seams 3件はunchanged consumeする。dependency/module/path/public
+re-export/active fixture/route owner/semantic owner追加なし。
+
+librariesは`390/444`。runner sizes
+`7240/6055/735/2552/19275/5848`、30 paths/47,203 lines、
+hashes `98f3b264...`/`b8fedfbe...`。checker sizes
+`32036/4832/7246/5036`、23 paths/126,115 lines、hashes
+`c2eea2db...`/`315fb931...`。exact test hashesはpaired plansにrecord。
+runner 5/checker 4 testsはPASSしfinal test-sufficiency/implementation
+reviewsはfindingsなし。broad verificationとfinal consistency/quality/
+commit gatesはpending。
+
+## Checker Task 258B3M2B2B2C broad runner-boundary verification
+
+fmt、workspace Clippy、両crate/policy suites、full workspace tests、
+focused `4/4`/`5/5`、sibling `12/12`/`21/21` suitesはunchanged
+counts/hashesでPASS。runner module/dependency/path/public/active-route/
+semantic boundary変更なし。independent final consistency/quality、
+commit/post-commit gatesはpending。
+
+## Checker Task 258B3M2B2B2C final runner-boundary review status
+
+independent final source/docs consistency/final qualityはどちらも
+**NO FINDINGS**。全9 hard gates PASS、valid score `98/100`で、exact
+module-boundary evidenceはunchanged。pendingはcached-diff/staging audit、
+implementation commit、post-commit inventory/fresh-next-task gatesだけ。

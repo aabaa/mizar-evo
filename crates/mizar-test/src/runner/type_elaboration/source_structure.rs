@@ -475,7 +475,6 @@ const TASK258B3M2B2B2BP_SOURCE: &str = concat!(
     "end;\n",
 );
 
-#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
 const TASK258B3M2B2B2CP_SOURCE: &str = concat!(
     "import parser.type_fixtures;\n",
     "reserve x for set;\n",
@@ -794,12 +793,10 @@ fn task258b3m2b2b2bp_surface_contract_impl(
             .eq(CHILDREN.iter().copied())
 }
 
-#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
 fn task258b3m2b2b2cp_surface_contract(ast: &SurfaceAst, loaded_source: &str) -> bool {
     task258b3m2b2b2cp_surface_contract_impl(ast, loaded_source, |_, _, _, _, _| {})
 }
 
-#[allow(dead_code)] // Rationale: exercised by B2CP tests before the separately scoped B2C production consumer exists.
 fn task258b3m2b2b2cp_surface_contract_impl(
     ast: &SurfaceAst,
     loaded_source: &str,
@@ -1640,14 +1637,11 @@ pub(super) fn imported_structure_selector_handoff_in_context(
     ))
 }
 
-#[allow(dead_code)]
-// Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct ImportedStructureUpdateSite {
     pub(super) update: usize,
 }
 
-#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
 pub(super) fn imported_structure_update_owned_node_kinds(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -1679,7 +1673,6 @@ pub(super) fn imported_structure_update_owned_node_kinds(
 }
 
 #[allow(clippy::too_many_arguments)] // Rationale: keep every authenticated lower-stage authority explicit at the private reuse seam.
-#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
 pub(super) fn imported_structure_update_handoff_in_context(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -2319,7 +2312,6 @@ fn task258b3m2b2b2bp_lower_profile_is_exact(
     })
 }
 
-#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
 fn task258b3m2b2b2cp_lower_profile_is_exact(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -2578,7 +2570,6 @@ fn task258b3m2b2b2cp_lower_profile_is_exact(
     })
 }
 
-#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
 fn task258b3m2b2b2cp_range(ast: &SurfaceAst, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id: ast.source_id,
@@ -2677,7 +2668,6 @@ fn extract_task258b3m2b2b2bp_selector(
     Some(extracted)
 }
 
-#[allow(dead_code)] // Rationale: B2CP freezes a production-private seam whose sole production consumer is the separately scoped B2C task.
 fn extract_task258b3m2b2b2cp_update(
     ast: &SurfaceAst,
     module: &ModuleId,

@@ -1178,3 +1178,30 @@ fingerprint/target hybrids、application coexistence、stale/reverse/partial/
 repeated、container substitutionはoriginal AST unchangedでreject。
 public installer/debug schema/type/semantic/proof/goal/fixture/trace/active
 root dispatch追加なし。implementation/atomicity testsはopen。
+
+## Task 258B3M2B2B2C implemented atomic sibling
+
+`with_source_structure_statement_witnesses`はB2A/B2Bと並ぶexact B2C profileを
+admitし、existing structure-aware validation/publication pathをreuseする。
+common option shapeだけではselectせず、source/arena/lower tables/ownership/
+fingerprint/statement/witnessを全て先にrevalidateする。failure時original
+TypedAstはunchanged。
+
+frozen atomicity、hybrid/order、replay、rollback matricesはPASS。public
+installer/field/schema/semantic payload追加なし。final source/docs/quality
+reviewsはpending。
+
+## Task 258B3M2B2B2C broad atomic-install verification
+
+broad fmt/Clippy/crate/workspace gates、focused `4/4`/`5/5`、sibling
+`12/12`/`21/21` suitesはunchanged counts/hashesでPASS。atomic publication/
+rollbackはimplemented private siblingに限定され、public/semantic expansion
+なし。independent final source/docs/quality reviews、commit、post-commit
+inventoryはpending。
+
+## Task 258B3M2B2B2C final atomic-install review status
+
+independent final source/docs consistency/final qualityは**NO FINDINGS**。
+全9 hard gates PASS、valid `98/100`。atomicity evidence/counts/hashes/
+public/semantic boundariesはunchanged。pendingはcached-diff/staging audit、
+implementation commit、post-commit inventory/fresh-next-task gatesだけ。

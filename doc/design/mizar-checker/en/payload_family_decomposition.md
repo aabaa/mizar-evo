@@ -1180,3 +1180,35 @@ or result type, functional-copy meaning, witness obligation, proof, goal,
 theorem acceptance, active-route credit, or IR edge. The four checker and
 five runner tests are a future `test_gap`; implementation remains open while
 all four documentation-prerequisite reviews have no findings.
+
+### Task 258B3M2B2B2C Implemented Witness-to-Update Edge
+
+B2C now closes the bounded source/test gaps without changing the frozen family
+decomposition. The sole new cross-family edge is
+`SourceStatementWitness(0) -> Structure(0)`; Task 254 continues to own the
+update/constructor/member/field-update graph, Task 256 continues to own only
+the two equality nodes, and all listed subtree containers remain unowned.
+There is still no reverse or semantic edge.
+
+The exact four checker and five runner tests pass, including hybrid/order,
+ownership, replay, final-clone, near-miss, and empty-semantic matrices. Final
+test-sufficiency and implementation reviews have no findings. Trace credit
+remains deferred, and broad verification plus final consistency/quality and
+commit gates remain pending.
+
+### Task 258B3M2B2B2C Broad Family Verification
+
+Broad format, Clippy, crate, and workspace gates, focused `4/4` and `5/5`,
+and sibling `12/12` and `21/21` suites now pass. Fresh counts and hashes match
+the implemented inventory, so the sole B2C witness edge and every retained/
+excluded family boundary above remain exact. Trace credit is still deferred;
+independent final consistency/quality, commit, and post-commit gates remain
+pending.
+
+### Task 258B3M2B2B2C Final Family Review Status
+
+Independent final source/documentation consistency and final quality report
+**NO FINDINGS**; all nine hard gates PASS with a valid `98/100`. The frozen
+family decomposition, evidence, and deferred trace status remain unchanged.
+Only cached-diff/staging audit, implementation commit, and post-commit
+inventory/fresh-next-task gates remain pending.

@@ -1239,3 +1239,32 @@ subtree-container substitution leave the original AST unchanged. No public
 installer, debug schema, type/semantic/proof/goal owner, fixture, trace
 credit, or active root dispatch is added. Implementation and atomicity tests
 remain open.
+
+## Task 258B3M2B2B2C Implemented Atomic Sibling
+
+`with_source_structure_statement_witnesses` now admits the exact B2C profile
+beside B2A/B2B and reuses the existing structure-aware validation and
+publication path. The profile cannot be selected by the common option shape:
+all source, arena, lower-table, ownership, fingerprint, statement, and witness
+fields are revalidated first. Failure leaves the original TypedAst unchanged.
+
+The frozen atomicity, hybrid/order, replay, and rollback matrices pass. No
+public installer, field, schema, or semantic payload was added; final
+source/documentation and quality reviews remain pending.
+
+## Task 258B3M2B2B2C Broad Atomic-Install Verification
+
+The broad format, Clippy, crate, and workspace gates, focused `4/4` and
+`5/5`, and sibling `12/12` and `21/21` suites pass with unchanged counts and
+hashes. Atomic publication and rollback remain exactly bounded to the
+implemented private sibling, with no public or semantic expansion. Independent
+final source/documentation and quality reviews, commit, and post-commit
+inventory remain pending.
+
+## Task 258B3M2B2B2C Final Atomic-Install Review Status
+
+Independent final source/documentation consistency and final quality report
+**NO FINDINGS**; all nine hard gates PASS with a valid `98/100`. Atomicity
+evidence, counts, hashes, and public/semantic boundaries remain unchanged.
+Only cached-diff/staging audit, implementation commit, and post-commit
+inventory/fresh-next-task gates remain pending.

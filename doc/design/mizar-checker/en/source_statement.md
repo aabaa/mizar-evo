@@ -3273,3 +3273,33 @@ exact source/arena, local and imported provenance, Tasks 48/252/254/256,
 Task-258 base, witness, atomic publication, and final clone. The `x = x`
 goal makes this source transport only; all statement semantics remain
 deferred.
+
+## Task 258B3M2B2B2C Implemented Statement and Witness Contract
+
+The statement producer now recognizes the exact B2C Task-48/252/256/base
+profile and the witness producer additionally authenticates the existing
+Task-254 functional-update handoff. It publishes one unnamed proof-context
+witness whose sole term target is `Structure(0)` and whose debug spelling is
+`term=structure#0`. No name row, public table/API, reverse edge, fact,
+obligation, proof result, goal progress, or theorem acceptance is added.
+
+All four frozen checker tests and five frozen runner tests pass. Final
+test-sufficiency and implementation reviews have no findings; final
+source/documentation and quality reviews remain pending.
+
+## Task 258B3M2B2B2C Broad Statement Verification
+
+The broad format, Clippy, crate, and workspace gates, focused `4/4` and
+`5/5`, and sibling `12/12` and `21/21` suites pass with unchanged counts and
+hashes. The statement/witness transport above therefore requires no source-
+contract change and gains no semantic credit. Independent final source/
+documentation and quality reviews, commit, and post-commit inventory remain
+pending.
+
+## Task 258B3M2B2B2C Final Statement Review Status
+
+Independent final source/documentation consistency and final quality report
+**NO FINDINGS**; all nine hard gates PASS with a valid `98/100`. The exact
+statement/witness evidence and semantic deferrals remain unchanged. Only
+cached-diff/staging audit, implementation commit, and post-commit inventory/
+fresh-next-task gates remain pending.

@@ -73,10 +73,11 @@ use super::{
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
     source_structure::{
         ImportedStructureConstructorSite, ImportedStructureSelectorSite,
-        imported_structure_constructor_handoff_in_context,
+        ImportedStructureUpdateSite, imported_structure_constructor_handoff_in_context,
         imported_structure_constructor_owned_node_kinds,
         imported_structure_selector_handoff_in_context,
-        imported_structure_selector_owned_node_kinds,
+        imported_structure_selector_owned_node_kinds, imported_structure_update_handoff_in_context,
+        imported_structure_update_owned_node_kinds,
     },
     source_term::{source_term_parts_for_context_roots, source_term_parts_for_roots},
 };
@@ -188,6 +189,15 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2B_TEXT: &str = concat!(
     "end;\n",
 );
 
+pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B2C_TEXT: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementStructureUpdateWitnessSmoke: x = x proof\n",
+    "  take TypeCaseStruct(x: 1, y: 2) with (x := 3);\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
 const SOURCE_STATEMENT_LABEL: &str = "FormulaStatementReservedVariableEqualitySmoke";
 const SOURCE_STATEMENT_SPELLING: &str =
     "theorem FormulaStatementReservedVariableEqualitySmoke : x = x ;";
@@ -253,6 +263,11 @@ const SOURCE_STATEMENT_B3M2B2B2A_SPELLINGS: [&str; 2] = [
 const SOURCE_STATEMENT_B3M2B2B2B_LABEL: &str = "FormulaStatementStructureSelectorWitnessSmoke";
 const SOURCE_STATEMENT_B3M2B2B2B_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementStructureSelectorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) . x ; thus x = x ; end ;",
+    "thus x = x ;",
+];
+const SOURCE_STATEMENT_B3M2B2B2C_LABEL: &str = "FormulaStatementStructureUpdateWitnessSmoke";
+const SOURCE_STATEMENT_B3M2B2B2C_SPELLINGS: [&str; 2] = [
+    "theorem FormulaStatementStructureUpdateWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 ) ; thus x = x ; end ;",
     "thus x = x ;",
 ];
 const SOURCE_STATEMENT_CONFIG: SourceReservedVariableBinaryFormulaConfig =
@@ -504,6 +519,25 @@ pub(in crate::runner) struct SourceStatementB3M2B2B2BExtraction {
 }
 
 #[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceStatementB3M2B2B2CExtraction {
+    pub(in crate::runner) theorem_site: TypedSiteRef,
+    pub(in crate::runner) theorem_range: SourceRange,
+    pub(in crate::runner) label_range: SourceRange,
+    pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) statement_ranges: [SourceRange; 2],
+    pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) formula_ranges: [SourceRange; 2],
+    pub(in crate::runner) term_sites: [TypedSiteRef; 7],
+    pub(in crate::runner) term_ranges: [SourceRange; 7],
+    pub(in crate::runner) take_site: TypedSiteRef,
+    pub(in crate::runner) take_range: SourceRange,
+    pub(in crate::runner) witness_site: TypedSiteRef,
+    pub(in crate::runner) witness_range: SourceRange,
+    pub(in crate::runner) update_node: usize,
+    pub(in crate::runner) proof_range: SourceRange,
+}
+
+#[derive(Debug, Clone)]
 struct SourceStatementWitnessItemExtraction {
     site: TypedSiteRef,
     range: SourceRange,
@@ -537,6 +571,7 @@ struct SourceStatementWitnessExtraction {
     application_wrapper_node: Option<usize>,
     structure_node: Option<usize>,
     structure_selector_node: Option<usize>,
+    structure_update_node: Option<usize>,
     source_text: &'static str,
 }
 
@@ -572,6 +607,7 @@ impl From<SourceStatementB3Extraction> for SourceStatementWitnessExtraction {
             application_wrapper_node: None,
             structure_node: None,
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3_TEXT,
         }
     }
@@ -609,6 +645,7 @@ impl From<SourceStatementB3NExtraction> for SourceStatementWitnessExtraction {
             application_wrapper_node: None,
             structure_node: None,
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3N_TEXT,
         }
     }
@@ -654,6 +691,7 @@ impl From<SourceStatementB3M1Extraction> for SourceStatementWitnessExtraction {
             application_wrapper_node: None,
             structure_node: None,
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3M1_TEXT,
         }
     }
@@ -691,6 +729,7 @@ impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
             application_wrapper_node: None,
             structure_node: None,
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3M2A_TEXT,
         }
     }
@@ -728,6 +767,7 @@ impl From<SourceStatementB3M2B1Extraction> for SourceStatementWitnessExtraction 
             application_wrapper_node: None,
             structure_node: None,
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3M2B1_TEXT,
         }
     }
@@ -765,6 +805,7 @@ impl From<SourceStatementB3M2B2AExtraction> for SourceStatementWitnessExtraction
             application_wrapper_node: None,
             structure_node: None,
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2A_TEXT,
         }
     }
@@ -802,6 +843,7 @@ impl From<SourceStatementB3M2B2B1AExtraction> for SourceStatementWitnessExtracti
             application_wrapper_node: None,
             structure_node: None,
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B1A_TEXT,
         }
     }
@@ -839,6 +881,7 @@ impl From<SourceStatementB3M2B2B1B1Extraction> for SourceStatementWitnessExtract
             application_wrapper_node: Some(extracted.application_wrapper_node),
             structure_node: None,
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
         }
     }
@@ -876,6 +919,7 @@ impl From<SourceStatementB3M2B2B2AExtraction> for SourceStatementWitnessExtracti
             application_wrapper_node: None,
             structure_node: Some(extracted.structure_node),
             structure_selector_node: None,
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B2A_TEXT,
         }
     }
@@ -913,7 +957,46 @@ impl From<SourceStatementB3M2B2B2BExtraction> for SourceStatementWitnessExtracti
             application_wrapper_node: None,
             structure_node: None,
             structure_selector_node: Some(extracted.selector_node),
+            structure_update_node: None,
             source_text: SOURCE_STATEMENT_B3M2B2B2B_TEXT,
+        }
+    }
+}
+
+impl From<SourceStatementB3M2B2B2CExtraction> for SourceStatementWitnessExtraction {
+    fn from(extracted: SourceStatementB3M2B2B2CExtraction) -> Self {
+        Self {
+            theorem_site: extracted.theorem_site,
+            theorem_range: extracted.theorem_range,
+            label_range: extracted.label_range,
+            statement_sites: extracted.statement_sites,
+            statement_ranges: extracted.statement_ranges,
+            formula_sites: extracted.formula_sites,
+            formula_ranges: extracted.formula_ranges,
+            term_sites: extracted.term_sites.into(),
+            term_ranges: extracted.term_ranges.into(),
+            take_site: extracted.take_site,
+            take_range: extracted.take_range,
+            witnesses: vec![SourceStatementWitnessItemExtraction {
+                site: extracted.witness_site,
+                range: extracted.witness_range,
+                name: None,
+                spelling: "TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 )",
+            }],
+            proof_range: extracted.proof_range,
+            label: SOURCE_STATEMENT_B3M2B2B2C_LABEL,
+            spellings: &SOURCE_STATEMENT_B3M2B2B2C_SPELLINGS,
+            task: "Task258B3M2B2B2C",
+            node_count: 86,
+            root: 85,
+            atomic_term_starts: [0, 5],
+            input_fact_reference_starts: [0, 2],
+            application_node: None,
+            application_wrapper_node: None,
+            structure_node: None,
+            structure_selector_node: None,
+            structure_update_node: Some(extracted.update_node),
+            source_text: SOURCE_STATEMENT_B3M2B2B2C_TEXT,
         }
     }
 }
@@ -962,6 +1045,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B1ARouteInputs = SourceStatement
 pub(in crate::runner) type SourceStatementB3M2B2B1B1RouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B2BRouteInputs = SourceStatementB3RouteInputs;
+pub(in crate::runner) type SourceStatementB3M2B2B2CRouteInputs = SourceStatementB3RouteInputs;
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceStatementRouteOutput {
@@ -3139,6 +3223,182 @@ pub(in crate::runner) fn extract_structure_selector_witness_source_statement(
     })
 }
 
+pub(in crate::runner) fn extract_structure_update_witness_source_statement(
+    ast: &SurfaceAst,
+    source_text: &str,
+) -> Option<SourceStatementB3M2B2B2CExtraction> {
+    if source_text != SOURCE_STATEMENT_B3M2B2B2C_TEXT
+        || source_text.len() != 181
+        || !source_text.ends_with('\n')
+        || ast.nodes().len() != 86
+        || ast.root()?.index() != 85
+        || ast
+            .nodes()
+            .iter()
+            .any(|node| node.recovered || node.range.source_id != ast.source_id)
+    {
+        return None;
+    }
+
+    let item_list = super::source_ast::exact_compilation_item_list(ast)?;
+    let item_children = structural_child_ids(ast, item_list);
+    let (import_id, import) = exact_surface_node(ast, SurfaceNodeKind::ImportItem, 0, 28)?;
+    let (reserve_id, _) = exact_surface_node(ast, SurfaceNodeKind::ReserveItem, 29, 47)?;
+    let (theorem_id, theorem) = exact_surface_node(ast, SurfaceNodeKind::TheoremItem, 48, 180)?;
+    let (proof_id, proof) = exact_surface_node(ast, SurfaceNodeKind::ProofBlock, 107, 179)?;
+    let (take_id, take) = exact_surface_node(ast, SurfaceNodeKind::TakeStatement, 115, 161)?;
+    let (witness_id, witness) = exact_surface_node(ast, SurfaceNodeKind::Witness, 120, 160)?;
+    let (transparent_id, transparent) =
+        exact_surface_node(ast, SurfaceNodeKind::TermExpression, 120, 160)?;
+    let (update_id, update) = exact_surface_node(ast, SurfaceNodeKind::StructureUpdate, 120, 160)?;
+    let (constructor_id, constructor) =
+        exact_surface_node(ast, SurfaceNodeKind::StructureConstructor, 120, 146)?;
+    let (field_update_id, field_update) =
+        exact_surface_node(ast, SurfaceNodeKind::FieldUpdate, 153, 159)?;
+    let (conclusion_id, conclusion) =
+        exact_surface_node(ast, SurfaceNodeKind::ConclusionStatement, 164, 175)?;
+    let label = ast.nodes().get(11)?;
+    if item_children != [import_id, reserve_id, theorem_id]
+        || import_id.index() != 46
+        || reserve_id.index() != 50
+        || theorem_id.index() != 82
+        || proof_id.index() != 81
+        || take_id.index() != 72
+        || witness_id.index() != 71
+        || transparent_id.index() != 70
+        || update_id.index() != 69
+        || constructor_id.index() != 65
+        || field_update_id.index() != 68
+        || conclusion_id.index() != 80
+        || label.range != range(ast.source_id, 56, 99)
+        || label.token_text() != Some(SOURCE_STATEMENT_B3M2B2B2C_LABEL)
+        || direct_token_texts(ast, import).as_slice() != ["import", ";"]
+        || direct_token_texts(ast, theorem).as_slice()
+            != ["theorem", SOURCE_STATEMENT_B3M2B2B2C_LABEL, ":", ";"]
+        || direct_token_texts(ast, proof).as_slice() != ["proof", "end"]
+        || direct_token_texts(ast, take).as_slice() != ["take", ";"]
+        || !direct_token_texts(ast, witness).is_empty()
+        || !direct_token_texts(ast, transparent).is_empty()
+        || direct_token_texts(ast, constructor).as_slice() != ["(", ",", ")"]
+        || direct_token_texts(ast, conclusion).as_slice() != ["thus", ";"]
+        || structural_child_ids(ast, witness) != [transparent_id]
+        || structural_child_ids(ast, transparent) != [update_id]
+        || !surface_is_descendant(ast, theorem_id, proof_id)
+        || !surface_is_descendant(ast, proof_id, take_id)
+        || !surface_is_descendant(ast, take_id, witness_id)
+        || !surface_is_descendant(ast, witness_id, transparent_id)
+        || !surface_is_descendant(ast, transparent_id, update_id)
+        || !surface_is_descendant(ast, update_id, constructor_id)
+        || !surface_is_descendant(ast, update_id, field_update_id)
+        || !surface_is_descendant(ast, proof_id, conclusion_id)
+        || surface_is_descendant(ast, conclusion_id, take_id)
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::ImportItem).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::ProofBlock).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::TakeStatement).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::Witness).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::StructureUpdate).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::StructureConstructor).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::FieldUpdate).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::ConclusionStatement).len() != 1
+        || !surface_nodes_with_kind(ast, SurfaceNodeKind::CompactStatement).is_empty()
+        || !surface_nodes_with_kind(ast, SurfaceNodeKind::Reference).is_empty()
+        || !surface_nodes_with_kind(ast, SurfaceNodeKind::JustificationClause).is_empty()
+        || update.range != range(ast.source_id, 120, 160)
+        || field_update.range != range(ast.source_id, 153, 159)
+    {
+        return None;
+    }
+
+    let statement_ids = [theorem_id, conclusion_id];
+    let formula_ranges = [(101, 106), (169, 174)];
+    let expected_formula_ids = [55, 77];
+    let mut formula_ids = Vec::with_capacity(2);
+    for (index, (start, end)) in formula_ranges.into_iter().enumerate() {
+        let (id, formula) = exact_surface_node(
+            ast,
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            start,
+            end,
+        )?;
+        if id.index() != expected_formula_ids[index]
+            || direct_token_texts(ast, formula).as_slice() != ["="]
+            || !surface_is_descendant(ast, statement_ids[index], id)
+            || surface_is_descendant(ast, take_id, id)
+        {
+            return None;
+        }
+        formula_ids.push(id);
+    }
+
+    let root_ranges = [
+        (101, 102),
+        (105, 106),
+        (138, 139),
+        (144, 145),
+        (158, 159),
+        (169, 170),
+        (173, 174),
+    ];
+    let expected_root_ids = [51, 53, 60, 63, 67, 73, 75];
+    let root_kinds = [
+        SurfaceNodeKind::TermReference,
+        SurfaceNodeKind::TermReference,
+        SurfaceNodeKind::TermExpression,
+        SurfaceNodeKind::TermExpression,
+        SurfaceNodeKind::TermExpression,
+        SurfaceNodeKind::TermReference,
+        SurfaceNodeKind::TermReference,
+    ];
+    let mut term_sites = Vec::with_capacity(root_ranges.len());
+    for index in 0..root_ranges.len() {
+        let (start, end) = root_ranges[index];
+        let (id, term) = exact_surface_node(ast, root_kinds[index].clone(), start, end)?;
+        let token_is_exact = if matches!(root_kinds[index], SurfaceNodeKind::TermReference) {
+            direct_token_texts(ast, term).as_slice() == ["x"]
+        } else {
+            direct_token_texts(ast, term).is_empty()
+        };
+        if id.index() != expected_root_ids[index] || !token_is_exact {
+            return None;
+        }
+        term_sites.push(surface_site(id));
+    }
+    for (expression, numeral, spelling) in [(60, 59, "1"), (63, 62, "2"), (67, 66, "3")] {
+        let numeral_node = ast.nodes().get(numeral)?;
+        if !matches!(numeral_node.kind, SurfaceNodeKind::NumeralTerm)
+            || direct_token_texts(ast, numeral_node).as_slice() != [spelling]
+            || structural_child_ids(ast, ast.nodes().get(expression)?)
+                .iter()
+                .map(|child| child.index())
+                .ne([numeral])
+        {
+            return None;
+        }
+    }
+
+    let formula_ids: [mizar_syntax::SurfaceNodeId; 2] = formula_ids.try_into().ok()?;
+    Some(SourceStatementB3M2B2B2CExtraction {
+        theorem_site: surface_site(theorem_id),
+        theorem_range: theorem.range,
+        label_range: label.range,
+        statement_sites: statement_ids.map(surface_site),
+        statement_ranges: [
+            range(ast.source_id, 48, 180),
+            range(ast.source_id, 164, 175),
+        ],
+        formula_sites: formula_ids.map(surface_site),
+        formula_ranges: formula_ranges.map(|(start, end)| range(ast.source_id, start, end)),
+        term_sites: term_sites.try_into().ok()?,
+        term_ranges: root_ranges.map(|(start, end)| range(ast.source_id, start, end)),
+        take_site: surface_site(take_id),
+        take_range: take.range,
+        witness_site: surface_site(witness_id),
+        witness_range: witness.range,
+        update_node: update_id.index(),
+        proof_range: proof.range,
+    })
+}
+
 const TASK258B3M2B2A_SURFACE_RANGES: [(usize, usize); 57] = [
     (0, 7),
     (8, 9),
@@ -3554,6 +3814,15 @@ pub(in crate::runner) fn source_statement_output_with_source(
     symbols: &SymbolEnv,
     source_text: &str,
 ) -> Option<Result<SourceStatementRouteOutput, String>> {
+    if source_text == SOURCE_STATEMENT_B3M2B2B2C_TEXT {
+        return source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
+            ast,
+            module,
+            symbols,
+            source_text,
+            |_| {},
+        );
+    }
     if source_text == SOURCE_STATEMENT_B3M2B2B2B_TEXT {
         return source_statement_b3m2b2b2b_output_with_source_and_mutation_impl(
             ast,
@@ -3663,6 +3932,86 @@ pub(in crate::runner) fn source_statement_output_with_source(
         );
     }
     source_statement_output_with_source_and_mutation_impl(ast, module, symbols, source_text, |_| {})
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b2c_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B2CRouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        mutate,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b2c_output_with_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_structure_update_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B2C_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => mutate(symbols),
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b3m2b2b2c_output(
+        ast,
+        module,
+        &symbols,
+        extracted,
+        |_| {},
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b2c_resolver_env_for_test(
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    label_range: SourceRange,
+) -> Result<SymbolEnv, String> {
+    enrich_source_statement_resolver_env_for_owner(
+        module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B2C_LABEL,
+        label_range,
+    )
+}
+
+fn source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B2CRouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_structure_update_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B2C_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b3m2b2b2c_output(
+        ast, module, &symbols, extracted, mutate,
+    ))
 }
 
 #[cfg(test)]
@@ -5025,6 +5374,16 @@ fn build_source_statement_b3m2b2b2b_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+fn build_source_statement_b3m2b2b2c_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    extracted: SourceStatementB3M2B2B2CExtraction,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B2CRouteInputs),
+) -> Result<SourceStatementRouteOutput, String> {
+    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+}
+
 fn build_source_statement_witness_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -5032,11 +5391,16 @@ fn build_source_statement_witness_output(
     extracted: SourceStatementWitnessExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
 ) -> Result<SourceStatementRouteOutput, String> {
-    let has_structure =
-        extracted.structure_node.is_some() || extracted.structure_selector_node.is_some();
-    if (extracted.application_node.is_some() && has_structure)
-        || (extracted.structure_node.is_some() && extracted.structure_selector_node.is_some())
-    {
+    let structure_family_count = [
+        extracted.structure_node,
+        extracted.structure_selector_node,
+        extracted.structure_update_node,
+    ]
+    .into_iter()
+    .flatten()
+    .count();
+    let has_structure = structure_family_count == 1;
+    if (extracted.application_node.is_some() && has_structure) || structure_family_count > 1 {
         return Err(format!(
             "{} lower-family dependencies must be mutually exclusive",
             extracted.task
@@ -5218,6 +5582,19 @@ fn build_source_statement_witness_output(
         .ok_or_else(|| format!("{} structure ownership selector mismatch", extracted.task))?;
         owned_node_kinds.extend(structure_owned.clone());
         structure_owned_node_kinds = Some(structure_owned);
+    } else if let Some(update_node) = extracted.structure_update_node {
+        let structure_owned = imported_structure_update_owned_node_kinds(
+            ast,
+            &module,
+            symbols,
+            extracted.source_text,
+            ImportedStructureUpdateSite {
+                update: update_node,
+            },
+        )
+        .ok_or_else(|| format!("{} structure ownership selector mismatch", extracted.task))?;
+        owned_node_kinds.extend(structure_owned.clone());
+        structure_owned_node_kinds = Some(structure_owned);
     }
     let roots = extracted
         .term_sites
@@ -5331,6 +5708,43 @@ fn build_source_statement_witness_output(
             extracted.source_text,
             ImportedStructureSelectorSite {
                 selector: selector_node,
+            },
+            BindingContextId::new(1),
+        ) {
+            Some(Ok(structure)) if structure_parts.handoff == parts.handoff => Some(structure),
+            Some(Ok(_)) => {
+                return Err(format!(
+                    "{} structure primary-term dependency mismatch",
+                    extracted.task
+                ));
+            }
+            Some(Err(error)) => return Err(error),
+            None => {
+                return Err(format!(
+                    "{} structure handoff selector mismatch",
+                    extracted.task
+                ));
+            }
+        }
+    } else if let Some(update_node) = extracted.structure_update_node {
+        let structure_parts = source_term_parts_for_context_roots(
+            ast,
+            module.clone(),
+            &binding_env,
+            roots.iter().copied(),
+            structure_owned_node_kinds
+                .as_ref()
+                .ok_or_else(|| format!("{} structure ownership is missing", extracted.task))?,
+        )?;
+        match imported_structure_update_handoff_in_context(
+            ast,
+            &module,
+            symbols,
+            &binding_env,
+            &structure_parts,
+            extracted.source_text,
+            ImportedStructureUpdateSite {
+                update: update_node,
             },
             BindingContextId::new(1),
         ) {

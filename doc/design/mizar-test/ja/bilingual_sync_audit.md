@@ -842,3 +842,36 @@ goal下の`take`はsource transportのみ。4 independent reviewsはfindings
 なしで、complete documentation/count/hash verificationもPASS。
 independent final qualityはfindingsなし、全9 hard gates PASS、valid
 `98/100`。docs commitとfresh implementation inventoryはopen。
+
+## Checker Task 258B3M2B2B2C implementation synchronization
+
+EN/JA runner companionsは、prerequisite commit
+`d6076cc757ce675d1b46a720b4f00805923d3c70`とfresh inventoryがcompleteし、
+frozen eight-file transactionのexact five-runner-file portionをimplementした
+点で一致する。両方がunchanged private B2CP seam、exact witness target、
+runner 5/checker 4 tests、public/active/trace-credit/semantic expansionなしを
+recordする。
+
+両言語はlibraries `390/444`、runner sizes
+`7240/6055/735/2552/19275/5848`・30 paths/47,203 lines、checker sizes
+`32036/4832/7246/5036`・23 paths/126,115 lines、identical production/
+test-list hashesをrecordする。plan記載のfocused/library verificationはPASSし、
+final test-sufficiency/implementation reviewsはfindingsなし。broad workspace
+とfinal consistency/quality/commit gatesは両companionでpending。
+
+## Checker Task 258B3M2B2B2C broad-verification synchronization
+
+runner companions両方がfmt、workspace Clippy、checker `390+15`、
+runner `444+3+14+137+2+21`、full workspace、focused `4/4`/`5/5`、
+sibling `12/12`/`21/21` gatesのPASSをrecordする。paired plansのCLI
+counts/hashesもunchangedで同期。canonical/trace artifactsはunchangedで、
+independent final consistency/quality、commit、post-commit gatesは
+両言語でpending。
+
+## Checker Task 258B3M2B2B2C final-review synchronization
+
+runner companions両方がindependent final source/docs consistencyを
+**NO FINDINGS**、independent final qualityも**NO FINDINGS**、全9 hard
+gates PASS、valid `98/100`としてrecordする。evidenceはunchanged。
+pendingはcached-diff/staging audit、implementation commit、post-commit
+inventory/fresh-next-task gatesだけで両言語一致。

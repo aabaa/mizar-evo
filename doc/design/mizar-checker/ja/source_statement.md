@@ -2746,3 +2746,30 @@ behaviorをfreezeする。validation順序はexact source/arena、local/imported
 provenance、Tasks 48/252/254/256、Task-258 base、witness、atomic
 publication、final clone。goal `x = x`のため、このsourceはtransport
 onlyであり、statement semanticsはすべてdeferred。
+
+## Task 258B3M2B2B2C implemented statement/witness contract
+
+statement producerはexact B2C Task48/252/256/base profileをrecognizeし、
+witness producerはexisting Task254 functional-update handoffもauthenticate
+する。proof contextのunnamed witness 1件だけをpublishし、sole term targetは
+`Structure(0)`、debug spellingは`term=structure#0`。name row、public
+table/API、reverse edge、fact、obligation、proof result、goal progress、
+theorem acceptance追加なし。
+
+frozen checker 4 tests/runner 5 testsはPASS。final test-sufficiency/
+implementation reviewsはfindingsなしで、final source/docs/quality reviewsは
+pending。
+
+## Task 258B3M2B2B2C broad statement verification
+
+broad fmt/Clippy/crate/workspace gates、focused `4/4`/`5/5`、sibling
+`12/12`/`21/21` suitesはunchanged counts/hashesでPASS。statement/witness
+transport contractの変更やsemantic credit追加は不要。independent final
+source/docs/quality reviews、commit、post-commit inventoryはpending。
+
+## Task 258B3M2B2B2C final statement review status
+
+independent final source/docs consistency/final qualityは**NO FINDINGS**。
+全9 hard gates PASS、valid `98/100`。exact statement/witness evidenceと
+semantic deferralsはunchanged。pendingはcached-diff/staging audit、
+implementation commit、post-commit inventory/fresh-next-task gatesだけ。

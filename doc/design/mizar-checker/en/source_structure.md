@@ -389,3 +389,33 @@ root 58, and private roots 60/63/67 stay unowned. Functional-copy,
 member/replacement/result typing, proof, goal, and theorem semantics remain
 deferred. Only obsolete B2C-future dead-code allowances may be removed when
 the consumer is implemented.
+
+## Task 258B3M2B2B2C Implemented Update Consumer
+
+The B2C runner consumer now uses `ImportedStructureUpdateSite`,
+`imported_structure_update_owned_node_kinds`, and
+`imported_structure_update_handoff_in_context` unchanged, so the obsolete
+future-consumer `dead_code` allowances are removed. No structure table row,
+edge, request, fingerprint grammar, public API, or Task-254 ownership changed.
+The witness points to existing update `Structure(0)` only.
+
+The focused checker and runner matrices pass and implementation review has no
+findings. Functional-copy, member/replacement/result typing, immutability,
+proof, goal, and theorem semantics remain deferred.
+
+## Task 258B3M2B2B2C Broad Structure Verification
+
+Format, Clippy, crate, and workspace gates, focused `4/4` and `5/5`, and
+sibling `12/12` and `21/21` suites pass with the unchanged Task-254 inventory
+and hashes. B2C remains only a consumer of the existing structure handoff and
+gains no structure or semantic ownership. Independent final source/
+documentation and quality reviews, commit, and post-commit inventory remain
+pending.
+
+## Task 258B3M2B2B2C Final Structure Review Status
+
+Independent final source/documentation consistency and final quality report
+**NO FINDINGS**; all nine hard gates PASS with a valid `98/100`. Task-254
+ownership, exact evidence, and semantic deferrals remain unchanged. Only
+cached-diff/staging audit, implementation commit, and post-commit inventory/
+fresh-next-task gates remain pending.

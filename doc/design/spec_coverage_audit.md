@@ -4840,3 +4840,68 @@ routes, and diagnostics are unchanged. Checker/runner libraries remain
 `386/439`; implementation projects `390/444`. Current production and
 test-list hashes, corpus counts, and five CLI hashes remain exactly at the
 B2CP completion baseline.
+
+## Task 258B3M2B2B2C Implementation Completion Audit
+
+Frozen-contract prerequisite commit
+`d6076cc757ce675d1b46a720b4f00805923d3c70` and its clean fresh inventory
+are complete. The exact eight-file B2C transaction now composes the existing
+Task-48/252/254/256/258 tables and adds one syntax-free directed
+`SourceStatementWitness(0) -> Structure(0)` edge. Task 254 retains every
+functional-update, constructor, member, `FieldUpdate`, edge, request, and
+imported-root row; Task 256 retains only equality nodes 55/77. No reverse or
+semantic edge is credited.
+
+Exactly four checker and five runner tests pass. Final test-sufficiency and
+implementation reviews have no findings, closing the bounded `test_gap` and
+`source_drift`. Libraries are `390/444`; checker is 23 paths / 126,115 lines
+with sizes `32036/4832/7246/5036`, while runner is 30 paths / 47,203 lines
+with sizes `7240/6055/735/2552/19275/5848`. Their exact production and
+raw/normalized test-list hashes are recorded in the synchronized crate plans.
+
+This audit change is narrative-only. Requirement
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, because B2C transports source occurrence/provenance/ownership
+only and does not implement formula-statement execution, existential witness
+obligations or substitution, proof/goal checking, theorem acceptance, facts,
+Core IR, Control-Flow IR, or VC. Existing Task-254 diagnostic credit is
+unchanged. Consequently `tests/coverage/spec_trace.toml`, canonical
+specification, existing `.miz`, fixtures, expectations, sidecars, active
+corpus cases, public APIs, diagnostics, and semantic behavior remain
+unchanged.
+
+This completion evidence resolves the B2C implementation-status
+`design_drift`; no `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `boundary_violation` is introduced. Broad
+workspace verification, final source/documentation no-findings re-review,
+final quality, implementation commit, and post-commit inventory remain
+pending.
+
+## Task 258B3M2B2B2C Broad Verification Completion Audit
+
+Format, workspace Clippy, checker `390+15`, runner
+`444+3+14+137+2+21`, full workspace tests, focused checker `4/4`,
+focused runner `5/5`, and sibling `12/12` and `21/21` suites pass. The five
+CLI projections remain `419/387`, `228/191`, `253/241`, `101/5/198/1`,
+and `23/0`; their exact unchanged hashes are recorded in the synchronized
+crate plans. Fresh source/test counts and hashes also match those plans.
+
+This closes only the broad-verification gate. The formula-statement
+requirement remains `deferred`, `tests = []`; canonical specification,
+existing `.miz`, fixtures, expectations, sidecars, trace data/credit,
+public/active surfaces, diagnostics, and semantics remain unchanged.
+Independent final source/documentation re-review, final quality, the
+implementation commit, and post-commit inventory remain pending.
+
+## Task 258B3M2B2B2C Final Review Completion Audit
+
+The independent final source/documentation consistency re-review and
+independent final quality review both report **NO FINDINGS**. All nine hard
+gates PASS and the valid score is `98/100`. Exact verification evidence,
+counts, hashes, classifications, and the deliberate narrative-only trace
+impact remain unchanged.
+
+Canonical specification, existing `.miz`, fixtures, expectations, sidecars,
+trace status/tests/credit, public/active surfaces, diagnostics, and semantics
+remain unchanged. Only cached-diff/staging audit, implementation commit, and
+post-commit inventory/fresh-next-task gates remain pending.

@@ -2984,6 +2984,36 @@ or semantic owner changed. B3M2B2B remains next before B4.
   findings; pass all documentation verification and count/hash gates.
 - [x] Pass all nine final-quality hard gates with a valid score of
   `98/100`.
-- [ ] Commit this B2C frozen-contract documentation prerequisite alone,
-  and verify clean metadata/stash invariants.
-- [ ] Fresh-inventory and implement only the frozen B2C contract.
+- [x] Commit this B2C frozen-contract documentation prerequisite alone as
+  `d6076cc757ce675d1b46a720b4f00805923d3c70`, and verify clean
+  metadata/stash invariants.
+- [x] Fresh-inventory and implement only the frozen B2C contract.
+
+## Checker Task 258B3M2B2B2C Implementation
+
+- [x] Implement exactly the frozen eight-file transaction after clean
+  post-`d6076cc7` inventory.
+- [x] Consume the unchanged B2CP functional-update seam and existing checker
+  structure-witness APIs without adding public or active corpus surfaces.
+- [x] Preserve exact Tasks 48/252/254/256/258 ownership and publish only the
+  witness-to-update `Structure(0)` edge.
+- [x] Add and pass exactly four checker and five runner tests.
+- [x] Pass checker library `390`, runner library `444` plus policy suites,
+  focused checker `4/4`, and focused runner `5/5`.
+- [x] Complete final test-sufficiency and implementation reviews with no
+  findings.
+- [x] Synchronize the paired checker/test plans, ledgers, module/design
+  audits, and narrative-only coverage audit.
+- [x] Keep spec, `.miz`, fixtures, expectations, sidecars, trace
+  status/tests, coverage credit, active corpus, public API, and semantics
+  unchanged.
+- [x] Pass broad workspace format, Clippy, and test gates, including focused
+  `4/4` and `5/5` and sibling `12/12` and `21/21` suites.
+- [x] Complete final source/documentation consistency re-review with
+  **NO FINDINGS**.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, and a valid `98/100`.
+- [ ] Audit the cached implementation diff and create one dedicated B2C
+  implementation commit.
+- [ ] Verify post-commit HEAD/clean/origin/stash invariants and fresh-inventory
+  the next dependency-authorized task.
