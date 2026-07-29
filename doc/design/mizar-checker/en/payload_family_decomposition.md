@@ -1347,3 +1347,14 @@ Post-auth injection and stage-prefix/non-generic-guard assertions close the
 last matrix gaps. All test-sufficiency repeats and the final implementation
 repeat report **NO FINDINGS** without changing family ownership or semantic
 credit.
+
+## Task 258B3M2B2B3C Choice-Witness Family
+
+B3C is the distinct Task-255 choice sibling after B3A/B3B enumerations. It
+owns only take/witness nodes `{38,37}` and the edge
+`Witness(0) -> SetTerm(0)`. Task 255 retains choice/type nodes `{35,34,33}`,
+one `ChoiceTarget` type site, and ordered `ChoiceNonempty`/`ResultType`
+requests with zero child edges. Task 252 retains `{27,29,39,41}`, Task 256
+`{31,43}`, and Task 258 base `{46,48}`. Comprehension, `qua`, nonemptiness
+discharge, generated choice semantics, B4/B5, and proof acceptance remain
+separate families.

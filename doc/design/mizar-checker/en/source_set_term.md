@@ -432,3 +432,13 @@ Post-auth injection and stage-prefix/non-generic-guard assertions remain
 upper-consumer tests only. All test-sufficiency repeats and the final
 implementation repeat report **NO FINDINGS**; lower ownership remains a
 source/test no-op.
+
+## Task 258B3M2B2B3C Reuse Contract
+
+No Task-255 source change is needed. The frozen handoff is
+`1/0/0/1/0/0/2`: one `Choice` term at `35/82..89`, one `ChoiceTarget`
+`BuiltinSet` type site at expression/head `34/33/86..89`, zero child edges,
+then `ChoiceNonempty(type-site 0)` and `ResultType`. Context is proof context
+`1`; application/structure fingerprints are absent. Future B3C tests mutate
+all `39` safely mutable input fields, replay each result, and require Task-255
+stage errors rather than a generic dependency failure.

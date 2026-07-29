@@ -3492,3 +3492,14 @@ repeat report **NO FINDINGS**. Source/documentation consistency repeat also
 reports **NO FINDINGS**. Final documentation/boundary and independent
 quality reviews report **NO FINDINGS**, all hard gates PASS, valid
 `98/100`.
+
+## Task 258B3M2B2B3C Frozen Statement Profile
+
+The exact `110`-byte/`52`-node choice source contributes one theorem owner,
+two statement/context/guard/candidate rows, and one unnamed witness/no name.
+Task 258 owns `{48,46}` and B3C owns `{38,37}`; the witness at
+`37/82..89` targets `SetTerm(0)` in proof context `1`. The complete
+cross-family graph and owner partition are frozen in the crate plan.
+Implementation must reuse the existing SetTerm target/fingerprint/install/
+clone APIs and add no public/error/debug/semantic surface. Exact four checker
+and five runner tests plus `32/55/39/72/62/21` mutation matrices are frozen.

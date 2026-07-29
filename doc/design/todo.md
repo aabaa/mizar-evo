@@ -3185,8 +3185,29 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete independent final read-only quality review with
   **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
   `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Stage only the exact `39` synchronized task files and inspect cached
+- [x] Stage only the exact `39` synchronized task files and inspect cached
   diff.
-- [ ] Create one dedicated implementation commit.
-- [ ] Verify clean post-commit origin/stash invariants.
-- [ ] Fresh-inventory the next dependency-ready task.
+- [x] Create implementation commit
+  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`.
+- [x] Verify clean ahead-14/behind-0 origin/stash invariants.
+- [x] Fresh-inventory and select B3C choice witness.
+
+## Checker Task 258B3M2B2B3C Documentation Prerequisite
+
+- [x] Freeze exact `110`-byte/hash, 52-node choice witness, resolver/lower
+  profiles, ownership graph, and semantic exclusions.
+- [x] Freeze exact checker 4 + runner 5 tests and
+  `32/55/39/72/62/21` exhaustive matrices.
+- [x] Limit future implementation to seven source consumers; keep specs,
+  corpus, expectations, trace metadata, active behavior, semantics, and both
+  Task-255 source owners unchanged.
+- [x] Resolve initial medium ownership `design_drift` and matrix `test_gap`;
+  repeated specification review **NO FINDINGS**.
+- [x] Complete synchronized documentation consistency/boundary review with
+  **NO FINDINGS**.
+- [x] Pass docs-only scope/count/hash/no-op, crate/workspace, and five-CLI
+  verification.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine
+  hard gates PASS, no score cap, and valid `98/100`.
+- [ ] Create one dedicated documentation commit, verify clean/stash
+  invariants, and fresh-inventory B3C implementation.

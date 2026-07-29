@@ -1268,3 +1268,12 @@ implementation repeatは**NO FINDINGS**。source/documentation
 consistency repeat、final documentation/boundary、independent qualityも
 **NO FINDINGS**。全9 protocol hard gates PASS、score capなし、valid
 `98/100`（`20/20/15/14/10/10/5/4`）である。
+
+## Task 258B3M2B2B3C frozen final boundary
+
+future B3C routeは`with_source_set_term_statement_witnesses`をreuseし、
+exact Task-48/252/255/256/258/witness tupleを再検証してから
+`ResolvedTypedAst`へcloneしなければならない。new graph edgeは
+`Witness(0) -> SetTerm(0)`だけ。choice nonemptiness、stable choice
+symbols、facts/proofsと全semantic tablesはemptyのまま。このdocumentation
+taskはresolved-AST source/public APIを変更しない。

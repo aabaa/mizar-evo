@@ -1338,3 +1338,13 @@ post-auth/stage-prefix guard additions. Source/documentation consistency
 repeat also reports **NO FINDINGS**. Final documentation/boundary and
 independent quality reviews report **NO FINDINGS**, all hard gates PASS,
 valid `98/100`.
+
+## Task 258B3M2B2B3C Frozen Final Boundary
+
+The future B3C route must reuse
+`with_source_set_term_statement_witnesses` and revalidate the exact
+Task-48/252/255/256/258/witness tuple before cloning into
+`ResolvedTypedAst`. Its only new graph edge is
+`Witness(0) -> SetTerm(0)`; choice nonemptiness, stable choice symbols, facts,
+proofs, and every semantic table remain empty. This documentation task makes
+no resolved-AST source or public-API change.

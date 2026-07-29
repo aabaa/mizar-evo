@@ -5362,7 +5362,43 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] independent final read-only quality reviewを**NO FINDINGS**、全9
   hard gates PASS、score capなし、valid `98/100`
   （`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] exact `39` task filesをstageし、cached diffをinspect。
-- [ ] dedicated implementation commitをcreate。
-- [ ] post-commit invariants/stash unchangedをverify。
-- [ ] fresh next-task inventoryへ進む。
+- [x] exact `39` task filesをstageし、cached diffをinspect。
+- [x] dedicated implementation commit
+  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`をcreate。
+- [x] clean ahead-14/behind-0 post-commit invariants/stash unchangedをverify。
+- [x] fresh inventoryでB3C choice witnessをselect。
+
+## Checker Task 258B3M2B2B3C frozen-contract ledger
+
+- [x] B3Bを
+  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`、clean
+  ahead-14/behind-0、stash unchangedでclose。
+- [x] choiceをcomprehension/`qua`よりdependency-minimalなprepared Task-255
+  siblingとしてselectし、missing contract/route/testsを
+  `design_drift`/`source_drift`/`test_gap`にclassify。
+- [x] final-LF `110`-byte/hash source、diagnostic 0、全`52` nodes/root `51`、
+  resolver owner/label provenance、exact sitesをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `4/4/0`、Tasks 253/254 empty、
+  Task-255 `1/0/0/1/0/0/2`、Task-256 `2/0/0/0/0/0/0/4/4`、
+  Task-258 base `1/2/2/2/2`、witness `1/0`をfreeze。
+- [x] exact ownership/unowned partition、complete graph、Task-255 child edge
+  0、choice/witness subtree exclusionをfreeze。
+- [x] B3A/B3B SetTerm APIsとfuture source consumers exact 7をreuseし、
+  両`source_set_term.rs`と全authority artifactsをforbid。
+- [x] exact checker 4 + runner 5 namesとbyte/LF、`52 x 4`+root、
+  resolver、`32/55/39/72/62/21`、zero-edge、family-order、
+  replay/rollback/clone matricesをfreeze。
+- [x] parser/Task-255 fixture、expectation、active intent、trace creditを
+  preserveし、formula-statement traceは`deferred`, `tests = []`。
+- [x] initial medium ownership/subtree `design_drift`とexact-matrix
+  `test_gap`をremediateし、repeat specification review **NO FINDINGS**。
+- [x] final documentation consistency/boundary review **NO FINDINGS**。
+- [x] exact source/count/hash/scope/diff/trace-no-op verification、crate tests、
+  format、workspace Clippy/tests、5 CLIsをPASS。
+- [x] independent final read-only quality reviewを**NO FINDINGS**、全9
+  hard gates PASS、score capなし、valid `98/100`
+  （`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] synchronized documentation scopeだけをstageしcached diffをinspect。
+- [ ] dedicated B3C documentation-only commitを作成。
+- [ ] clean post-commit/stash invariantsとfresh B3C implementation inventoryを
+  verify。

@@ -4167,3 +4167,14 @@ stage-prefix/non-generic-guard assertionsでauthenticationをcompleteし、
 
 four surface axesとtest-list hashesのfinal remeasurement記録をconfirmした
 source/documentation consistency repeatも**NO FINDINGS**である。
+
+## Task 258B3M2B2B3C frozen harness
+
+dormant harness selectorはexact `110`-byte、`52`-node/root-`51` sourceと
+local theorem provenanceだけをauthenticateし、proof context `1`でexisting
+explicit-context Task-255 choice handoffをassembleする。future testsは全
+bytes/LF、各node/rootのfour surface axes、resolver、
+`32/55/39/72/62/21` lower/upper fieldsのreplay/stage prefix、
+non-vacuous zero-edge、choice target/request order、ownership、family
+isolation、clone/rollback/debug stability、empty semanticsをexhaustする。
+corpus/expectation/sidecar/trace count/CLI/active routeは変更しない。

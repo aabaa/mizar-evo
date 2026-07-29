@@ -4427,3 +4427,14 @@ source/documentation consistency repeatはauthority/trace/
 documentation/boundary reviewとindependent qualityも**NO FINDINGS**。
 全9 protocol hard gates PASS、score capなし、valid `98/100`
 （`20/20/15/14/10/10/5/4`）である。
+
+## Task 258B3M2B2B3C authority audit
+
+Specs 13.5/4.4.3/15.4.4/16.3.3とexisting parser/Task-255 fixturesは
+exact dormant `take the set;` source transportをauthorizeするが、
+nonemptiness discharge、stable generated choice symbol、existential
+matching、substitution、proof acceptanceはauthorizeしない。したがって
+spec/`.miz`/expectation/sidecar/trace rowは編集せず、
+`spec.en.checker.formula_statement.source_payloads`は`deferred`,
+`tests = []`、existing Task-255 coverageもunchanged。repeat specification
+reviewは**NO FINDINGS**。

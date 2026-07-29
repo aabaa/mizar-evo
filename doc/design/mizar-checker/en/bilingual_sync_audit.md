@@ -982,3 +982,15 @@ consistency repeat is synchronized as
 **NO FINDINGS**, including independently remeasured final hashes and exact
 `39`-file/no-op confirmation. Trace no-credit and every semantic deferral
 remain synchronized.
+
+## Task 258B3M2B2B3C Frozen-Contract Sync
+
+The EN/JA plans now synchronously close B3B at
+`dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc` and freeze B3C's exact
+`110`-byte/hash, `52`-node/root-`51` choice witness. Both languages record
+the same Task-255 `1/0/0/1/0/0/2` type-site/request profile, ownership graph,
+`32/55/39/72/62/21` matrices, exact four checker plus five runner names,
+seven future source consumers, semantic deferrals, `398/456 -> 402/461`
+projection, and trace/authority no-op. Initial ownership and matrix findings
+are fixed; repeated specification review is **NO FINDINGS**. Consistency,
+quality, commit, and post-commit reviews remain pending.

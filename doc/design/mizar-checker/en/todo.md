@@ -5625,7 +5625,46 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final read-only quality review with
   **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
   `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Stage exactly `39` task files and inspect the cached diff.
-- [ ] Create the dedicated implementation commit.
-- [ ] Verify implementation post-commit invariants.
-- [ ] Complete fresh next-task inventory.
+- [x] Stage exactly `39` task files and inspect the cached diff.
+- [x] Create dedicated implementation commit
+  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`.
+- [x] Verify clean ahead-14/behind-0 implementation post-commit invariants
+  and unchanged stash.
+- [x] Complete fresh next-task inventory and select B3C choice witness.
+
+## Checker Task 258B3M2B2B3C Frozen-Contract Ledger
+
+- [x] Close B3B at
+  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`, clean
+  ahead-14/behind-0, with unchanged stash.
+- [x] Select choice before comprehension/`qua` as the dependency-minimal
+  prepared Task-255 sibling; classify missing contract/route/tests as
+  `design_drift`/`source_drift`/`test_gap`.
+- [x] Freeze final-LF `110`-byte/hash source, zero diagnostics, all `52`
+  nodes/root `51`, resolver owner/label provenance, and exact sites.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `4/4/0`, empty Tasks 253/254,
+  Task-255 `1/0/0/1/0/0/2`, Task-256
+  `2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and witness `1/0`.
+- [x] Freeze exact ownership/unowned partition, complete graph, zero
+  Task-255 child edge, and choice/witness subtree exclusions.
+- [x] Reuse B3A/B3B SetTerm APIs and exact seven future source consumers;
+  forbid both `source_set_term.rs` owners and every authority artifact.
+- [x] Freeze exact four checker plus five runner names and exhaustive
+  byte/LF, `52 x 4`+root, resolver, `32/55/39/72/62/21`,
+  zero-edge, family-order, replay/rollback/clone matrices.
+- [x] Preserve the parser/Task-255 fixture, expectation, active intent, and
+  trace credit; keep formula-statement trace `deferred`, `tests = []`.
+- [x] Remediate initial medium ownership/subtree `design_drift` and
+  exact-matrix `test_gap`; repeat specification review **NO FINDINGS**.
+- [x] Complete final documentation consistency/boundary review with
+  **NO FINDINGS**.
+- [x] Pass exact source/count/hash/scope/diff/trace-no-op verification,
+  crate tests, formatting, workspace Clippy/tests, and all five CLIs.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
+  `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Stage only the synchronized documentation scope and inspect cached
+  diff.
+- [ ] Create the dedicated B3C documentation-only commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B3C
+  implementation.

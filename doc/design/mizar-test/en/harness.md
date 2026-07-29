@@ -4437,3 +4437,15 @@ test-sufficiency repeats and the final implementation repeat report
 The source/documentation consistency repeat also reports **NO FINDINGS**
 after confirming the four surface axes and recording the test-list hashes
 as final remeasurements.
+
+## Task 258B3M2B2B3C Frozen Harness
+
+The dormant harness selector must authenticate only the exact `110`-byte,
+`52`-node/root-`51` source and local theorem provenance before assembling the
+existing explicit-context Task-255 choice handoff in proof context `1`.
+Future tests exhaust all bytes/LF, four surface axes per node/root, resolver,
+`32/55/39/72/62/21` lower/upper fields with replay and stage prefixes,
+non-vacuous zero-edge corruption, choice target/request ordering, ownership,
+family isolation, clone/rollback/debug stability, and empty semantic tables.
+No corpus case, expectation, sidecar, trace count, CLI output, or active route
+changes in this prerequisite or future transport.

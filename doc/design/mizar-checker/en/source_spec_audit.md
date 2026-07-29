@@ -4645,3 +4645,14 @@ repeat reports **NO FINDINGS** after independently confirming the
 authority/trace/`source_set_term` no-ops. Final documentation/boundary and
 independent quality reviews report **NO FINDINGS**, all hard gates PASS,
 valid `98/100`; this section grants no semantic or coverage credit.
+
+## Task 258B3M2B2B3C Authority Audit
+
+Specs 13.5, 4.4.3, 15.4.4, and 16.3.3 plus existing parser and Task-255
+fixtures authorize the exact dormant `take the set;` source transport.
+They do not authorize nonemptiness discharge, stable generated choice
+symbols, existential matching, substitution, or proof acceptance here.
+Accordingly, no specification, `.miz`, expectation, sidecar, or trace row is
+edited; `spec.en.checker.formula_statement.source_payloads` remains
+`deferred`, `tests = []`, and existing Task-255 coverage remains unchanged.
+The repeated specification review is **NO FINDINGS**.

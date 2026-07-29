@@ -2469,7 +2469,34 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] independent final read-only quality reviewを**NO FINDINGS**、全9
   hard gates PASS、score capなし、valid `98/100`
   （`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] exact `39` synchronized task filesをstageし、cached diffをinspect。
-- [ ] dedicated implementation commitをcreate。
-- [ ] post-commit invariants/stash unchangedをverify。
-- [ ] fresh next-task inventoryへ進む。
+- [x] exact `39` synchronized task filesをstageし、cached diffをinspect。
+- [x] implementation commit
+  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`をcreate。
+- [x] clean ahead-14/behind-0 post-commit/stash unchangedをverify。
+- [x] fresh inventoryでB3C choice witnessをselect。
+
+## Checker Task 258B3M2B2B3C documentation ledger
+
+- [x] exact `110`-byte/hash、52-node/root-51 choice sourceとlocal resolver
+  provenanceをfreeze。
+- [x] lower profiles `2/1/0`、`4/4/0`、Tasks 253/254 empty、
+  `1/0/0/1/0/0/2`、`2/0/0/0/0/0/0/4/4`、base `1/2/2/2/2`、
+  witness `1/0`をfreeze。
+- [x] owner/unowned graphとTask-255 child edge 0のSetTerm witness edgeを
+  freeze。
+- [x] exact checker 4/runner 5 namesと`32/55/39/72/62/21`、
+  byte/node/resolver/family/replay matricesをfreeze。
+- [x] future runner scopeをexact 4 filesに固定し両`source_set_term.rs`は
+  unchanged。
+- [x] fixture/expectation/sidecar/trace status/count/active route/CLI/
+  semantics/coverage creditをpreserve。
+- [x] initial medium ownership/matrix findingsをfixし、repeat specification
+  review **NO FINDINGS**。
+- [x] consistency/boundary reviewを**NO FINDINGS**でcomplete。
+- [x] independent final quality reviewを**NO FINDINGS**、全9 hard gates
+  PASS、score capなし、valid `98/100`でcomplete。
+- [x] exact docs-only scope、crate/workspace checks、5 CLIs、全count/hash/
+  no-op gatesをverify。
+- [ ] dedicated B3C documentation commit 1件を作りclean post-commit/stashを
+  verify。
+- [ ] B3C implementationをfresh inventory。

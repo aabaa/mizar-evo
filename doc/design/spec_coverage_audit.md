@@ -5135,3 +5135,28 @@ expectation, sidecar, or inactive fixture intent changes. Set semantics,
 existential matching, witness substitution, proof/theorem acceptance,
 Core/CFG/VC, remaining B3, B4/B5, and active coverage credit remain
 deferred.
+
+### Task 258B3M2B2B3C narrative-only ownership
+
+B3B implementation closed at
+`dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc` with clean
+ahead-14/behind-0 state and unchanged stash. Fresh inventory selects the
+exact 110-byte choice-witness documentation prerequisite. Specs 13.5, 4.4.3,
+15.4.4, and 16.3.3 plus existing parser and Task-255 fixtures authorize only
+the dormant syntax-free `take the set;` transport.
+
+The frozen profile is 52 nodes/root 51, Task-255 `1/0/0/1/0/0/2` with one
+`ChoiceTarget` builtin-set type site, zero child edges, ordered
+`ChoiceNonempty`/`ResultType`, and one witness-to-SetTerm edge. Exact owner/
+unowned boundaries, four checker plus five runner tests, and exhaustive
+`32/55/39/72/62/21` lower/upper matrices are documented in the paired crate
+plans. Initial medium ownership `design_drift` and exact-matrix `test_gap`
+were fixed; repeated specification review is **NO FINDINGS**.
+
+This prerequisite is narrative-only. It changes no specification, `.miz`,
+expectation, sidecar, trace status/count, tests list, active route, diagnostic,
+or coverage credit. `spec.en.checker.formula_statement.source_payloads`
+remains `deferred`, `tests = []`; the existing Task-255 covered row remains
+unchanged. Choice nonemptiness/stability/generated-symbol/type-fact
+semantics, existential matching/substitution/proof acceptance, facts,
+Core/CFG/VC, comprehension/`qua`, B4/B5, and active coverage remain deferred.

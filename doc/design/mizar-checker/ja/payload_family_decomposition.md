@@ -1263,3 +1263,14 @@ post-auth injectionとstage-prefix/non-generic-guard assertionsがlast
 matrix gapsをcloseした。family ownershipまたはsemantic creditを変えず、
 全test-sufficiency repeatsとfinal implementation repeatは
 **NO FINDINGS**である。
+
+## Task 258B3M2B2B3C choice-witness family
+
+B3CはB3A/B3B enumeration後のdistinct Task-255 choice siblingである。
+B3C ownershipはtake/witness `{38,37}`と
+`Witness(0) -> SetTerm(0)` edgeだけ。Task 255はchoice/type nodes
+`{35,34,33}`、`ChoiceTarget` type site 1件、ordered
+`ChoiceNonempty`/`ResultType` requests、child edge 0をretainする。
+Task 252は`{27,29,39,41}`、Task 256は`{31,43}`、Task 258 baseは
+`{46,48}`をretainする。comprehension、`qua`、nonemptiness discharge、
+generated choice semantics、B4/B5、proof acceptanceはseparate families。

@@ -779,3 +779,14 @@ authority, trace, and `source_set_term` no-ops. Final
 documentation/boundary and independent quality reviews are
 **NO FINDINGS**, all hard gates PASS, valid `98/100`. Cached-diff/staging,
 commit, post-commit, and fresh inventory remain pending.
+
+## Task 258B3M2B2B3C Documentation Boundary
+
+This prerequisite changes design/ledger/audit documentation only. The future
+implementation boundary is exactly checker `source_statement.rs`,
+`typed_ast.rs`, `resolved_typed_ast.rs` and four paired runner owners. Both
+`source_set_term.rs` owners, every authority artifact, public schema, error/
+debug grammar, dependency, active route, and semantic/trace credit remain
+outside scope. B3C reuses the set-only statement fingerprint and atomic
+typed/final APIs; no lower prerequisite is authorized. Boundary review after
+the completed documentation diff remains pending.

@@ -386,3 +386,13 @@ post-auth injectionとstage-prefix/non-generic-guard assertionsはupper
 consumer testsだけであり、lower ownershipはsource/test no-opのまま。
 全test-sufficiency repeatsとfinal implementation repeatは
 **NO FINDINGS**である。
+
+## Task 258B3M2B2B3C reuse contract
+
+Task-255 source changeは不要。frozen handoffは`1/0/0/1/0/0/2`。
+`35/82..89`の`Choice` term 1件、expression/head `34/33/86..89`の
+`ChoiceTarget` `BuiltinSet` type site 1件、child edge 0、その後
+`ChoiceNonempty(type-site 0)`と`ResultType`。contextはproof context `1`、
+application/structure fingerprintsはabsent。future B3C testsは全`39`
+safely mutable input fieldsをmutate/replayし、generic dependency failureで
+なくTask-255 stage errorをrequireする。

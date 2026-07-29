@@ -10981,3 +10981,11 @@ lower-owner no-opをindependently confirmして**NO FINDINGS**。final
 documentation/boundary、independent quality reviewsも**NO FINDINGS**、
 全hard gates PASS、valid `98/100`。cached-diff/staging、commit、
 post-commit、fresh inventoryはpending。
+
+## Task 258B3M2B2B3C documentation boundary
+
+このtaskはdocs-only。future runner ownershipは
+`type_elaboration/source_statement.rs`、`type_elaboration.rs`、`runner.rs`、
+`tests/type_elaboration/source_statement.rs`のexact 4 files、checkerは
+paired 3 files。`source_set_term.rs`、fixture、expectation、trace metadata、
+active routing、public API、semanticsはboundary外。

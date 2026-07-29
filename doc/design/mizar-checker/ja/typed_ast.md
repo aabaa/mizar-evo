@@ -1270,3 +1270,12 @@ reuseし、new public schema/error/debug grammarまたはsemantic stateは
 追加しない。post-auth injectionとstage-prefix/non-generic-guard
 assertionsもatomic failure/replayをpreserveし、全test-sufficiency repeatsと
 final implementation repeatは**NO FINDINGS**である。
+
+## Task 258B3M2B2B3C frozen atomic installation
+
+B3Cはexisting `build_with_set_term`/
+`validate_installation_with_set_term` pathでTask-48/252/255/256/258と
+SetTerm witness 1件をatomic installする。choice target/type-site/request
+authenticationはwitness publicationより先で、mutation/stale replay/family
+hybrid failure後もtyped ASTはunchanged。このprerequisiteはtyped-AST
+source/public schema/semantic table/debug bytesを変更しない。

@@ -2682,7 +2682,33 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete independent final read-only quality review with
   **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
   `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Stage exactly `39` synchronized task files and inspect cached diff.
-- [ ] Create the dedicated implementation commit.
-- [ ] Verify post-commit invariants and unchanged stash.
-- [ ] Fresh-inventory the next task.
+- [x] Stage exactly `39` synchronized task files and inspect cached diff.
+- [x] Create implementation commit
+  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`.
+- [x] Verify clean ahead-14/behind-0 post-commit state and unchanged stash.
+- [x] Fresh-inventory and select B3C choice witness.
+
+## Checker Task 258B3M2B2B3C Documentation Ledger
+
+- [x] Freeze exact `110`-byte/hash, 52-node/root-51 choice source and local
+  resolver provenance.
+- [x] Freeze lower profiles `2/1/0`, `4/4/0`, empty Tasks 253/254,
+  `1/0/0/1/0/0/2`, `2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, witness `1/0`.
+- [x] Freeze owner/unowned graph and SetTerm witness edge with zero
+  Task-255 child edges.
+- [x] Freeze exact four checker/five runner names and
+  `32/55/39/72/62/21` plus byte/node/resolver/family/replay matrices.
+- [x] Keep exact future runner scope at four files and both
+  `source_set_term.rs` owners unchanged.
+- [x] Preserve fixtures, expectations, sidecars, trace status/count, active
+  route, CLI output, semantics, and coverage credit.
+- [x] Fix initial medium ownership/matrix findings; repeat specification
+  review **NO FINDINGS**.
+- [x] Complete consistency/boundary review with **NO FINDINGS**.
+- [x] Complete independent final quality review with **NO FINDINGS**, all
+  nine hard gates PASS, no score cap, and valid `98/100`.
+- [x] Verify exact docs-only scope, crate/workspace checks, five CLIs, and
+  all count/hash/no-op gates.
+- [ ] Create one dedicated B3C documentation commit and verify clean
+  post-commit/stash state.
+- [ ] Fresh-inventory B3C implementation.

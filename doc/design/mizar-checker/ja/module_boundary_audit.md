@@ -746,3 +746,14 @@ independently confirmして**NO FINDINGS**。final documentation/boundary、
 independent quality reviewsも**NO FINDINGS**、全hard gates PASS、valid
 `98/100`。cached-diff/staging、commit、post-commit、fresh inventoryは
 pendingである。
+
+## Task 258B3M2B2B3C documentation boundary
+
+このprerequisiteはdesign/ledger/audit docsだけを変更する。future
+implementation boundaryはchecker `source_statement.rs`/`typed_ast.rs`/
+`resolved_typed_ast.rs`とpaired runner 4 ownersのexact 7 filesである。
+両`source_set_term.rs`、全authority artifacts、public schema、error/debug
+grammar、dependency、active route、semantic/trace creditはscope外。
+B3Cはset-only statement fingerprintとatomic typed/final APIをreuseし、
+lower prerequisiteをauthorizeしない。completed documentation diffの
+boundary reviewはpending。

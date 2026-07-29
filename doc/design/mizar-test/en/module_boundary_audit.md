@@ -12238,3 +12238,11 @@ scope, metrics/hashes, authority, trace, and lower-owner no-ops and reports
 reviews are **NO FINDINGS**, all hard gates PASS, valid `98/100`.
 Cached-diff/staging, commit, post-commit, and fresh inventory remain
 pending.
+
+## Task 258B3M2B2B3C Documentation Boundary
+
+This task is docs-only. Future runner ownership is exactly four files:
+`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
+and `tests/type_elaboration/source_statement.rs`; checker ownership is three
+paired files. `source_set_term.rs`, fixtures, expectations, trace metadata,
+active routing, public APIs, and semantics remain outside the boundary.

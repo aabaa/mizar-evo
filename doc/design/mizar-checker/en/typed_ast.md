@@ -1340,3 +1340,12 @@ unchanged.
 Post-auth injection and stage-prefix/non-generic-guard assertions preserve
 atomic failure and replay. All test-sufficiency repeats and the final
 implementation repeat report **NO FINDINGS**.
+
+## Task 258B3M2B2B3C Frozen Atomic Installation
+
+B3C requires the existing `build_with_set_term` and
+`validate_installation_with_set_term` path to install Task-48/252/255/256/258
+plus one SetTerm witness atomically. Choice target/type-site/request
+authentication precedes witness publication; failed mutation, stale replay,
+or family hybrid leaves the typed AST unchanged. This prerequisite changes no
+typed-AST source, public schema, semantic table, or debug bytes.

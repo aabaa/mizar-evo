@@ -2948,3 +2948,14 @@ implementation repeatは**NO FINDINGS**。source/documentation
 consistency repeat、final documentation/boundary、independent qualityも
 **NO FINDINGS**。全9 protocol hard gates PASS、score capなし、valid
 `98/100`（`20/20/15/14/10/10/5/4`）である。
+
+## Task 258B3M2B2B3C frozen statement profile
+
+exact `110`-byte/`52`-node choice sourceはtheorem owner 1、
+statement/context/guard/candidate各2、unnamed witness 1/name 0を持つ。
+Task 258 ownershipは`{48,46}`、B3Cは`{38,37}`、witness
+`37/82..89`はproof context `1`の`SetTerm(0)`をtargetにする。
+complete cross-family graph/owner partitionはcrate planでfreeze済み。
+implementationはexisting SetTerm target/fingerprint/install/clone APIを
+reuseしpublic/error/debug/semantic surfaceを追加しない。exact checker 4 +
+runner 5 testsと`32/55/39/72/62/21` matricesをfreezeした。

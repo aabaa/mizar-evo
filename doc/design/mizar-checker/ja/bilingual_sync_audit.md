@@ -923,3 +923,15 @@ remeasured hashesとexact-`39`/no-op confirmationを含め両言語で
 も**NO FINDINGS**、全9 hard gates PASS、score capなし、valid `98/100`
 （`20/20/15/14/10/10/5/4`）。pendingはcached-diff/staging、commit、
 post-commit、fresh-next-task gatesだけである。
+
+## Task 258B3M2B2B3C frozen-contract sync
+
+EN/JA plansはB3Bを
+`dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`で同期してcloseし、B3Cの
+exact `110`-byte/hash、`52`-node/root-`51` choice witnessを同じlogical
+contractとしてfreezeした。両言語はTask-255 `1/0/0/1/0/0/2`
+type-site/request profile、ownership graph、`32/55/39/72/62/21` matrices、
+exact checker 4 + runner 5 names、future source consumers 7、semantic
+deferrals、`398/456 -> 402/461` projection、trace/authority no-opで一致する。
+initial ownership/matrix findingsはfix済みでrepeat specification reviewは
+**NO FINDINGS**。consistency/quality/commit/post-commitはpending。
