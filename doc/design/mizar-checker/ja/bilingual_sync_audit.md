@@ -528,3 +528,16 @@ EN canonical/JA companionは、same private implementation、tests
 continuing semantic/proof/goal/type-substitution deferralsを記録する。
 test、implementation、source/documentation reviewsはfindingsなし。final
 quality reviewは全hard gate PASS、`98/100`。B1B1 bilingual debtはない。
+
+## Task 258B3M2B2B2P frozen-prerequisite synchronization
+
+EN canonical/JA companionは172-byte/76-node source/hash、exact node/subtree
+map、Task-48/252/254 lower rows、imported constructor provenance、exact
+owned-kind map（constructor 59とassignment members 20/24だけ）で一致。
+qualified root 52はunowned、numeral expressions 54/57はTask-252-owned、
+§5.7 selector authorityはfuture B2Bへexcludeする。
+
+future runner tests 2件、checker testなし、unchanged `378/423`と全measured
+metrics/hashes、public/active/fixture/trace/semantic artifactなし、future
+B2A witness edge、B2C update boundaryも一致する。English canonicalで、
+B2P bilingual debtはない。

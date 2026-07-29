@@ -3821,3 +3821,43 @@ upper-table assertions are implemented in five passing runner tests. The
 runner library now has 423 tests and the statement-test leaf is 13,381 lines.
 No fixture, expectation, sidecar, trace row, active detail key, or semantic
 consumer changed.
+
+## Checker Task 258B3M2B2B2P Dormant Lower Harness Contract
+
+The B2P harness freezes only the exact final-LF 172-byte/76-node source with
+`take TypeCaseStruct(x: 1, y: 2);`. It stops after composing an existing
+proof binding context, shared Task-252 `6/4/2`, and Task-254
+`1/0/1/2/0/2/6`; it does not construct a Task-258 statement or witness.
+
+Successful lower ownership is exact. Constructor node 59 alone owns
+`source.term.structure.constructor`; member token nodes 20/24 alone own
+`source.term.structure.member.constructor-assignment`. Qualified root 52 is
+authenticated imported resolver traversal but remains
+`source.surface.unowned`. Numeral-expression roots 54/57 remain
+Task-252-owned. The constructor has proof context 1, members `x/y`, ordered
+`ConstructorValue` edges to `Primary(2/3)`, six ordered unresolved requests,
+and no application fingerprint.
+
+The imported root is exactly
+`summary:parser.type_fixtures#parse-only#TypeCaseStruct:5` /
+`parser.type_fixtures::TypeCaseStruct#5`, contribution 2, origin
+`7..27/[5]`, public/exported, with no signature. The runner-private seam
+must reuse the public Task-254 producer and the already built binding/source
+term parts; it may not duplicate Task-252 rows, synthesize field identity, or
+broaden the existing Task-254 real route.
+
+The two future compound tests are
+`task258b3m2b2b2p_structure_constructor_proof_context_reuse_is_exact` and
+`task258b3m2b2b2p_structure_constructor_corruption_replay_and_legacy_output_fail_closed`.
+They cover all 172 bytes including final LF; all 76 nodes' kind, range,
+recovery, ordered children, and root identity; reparsed
+import/root/member/value/recovery near misses; exact rows, owned kinds, and
+imported provenance; context/root/member/edge/request substitutions; lower
+validation precedence; stale failure followed by clean replay; and
+byte-identical legacy Task-254 output. All upper source families and
+semantic/proof/goal/IR tables remain empty.
+
+No active case, public dispatch, statement consumer, fixture, sidecar,
+expectation, trace row, detail key, or checker test is added. The future B2A
+contract alone may attach a witness to `Structure(0)`; selector and
+functional-update/`FieldUpdate` witnesses remain B2B and B2C.

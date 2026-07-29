@@ -2056,3 +2056,24 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   semantic/proof/goal/type-substitution deferralsをpreserve。
 - [x] commit前のfinal read-only quality reviewは全hard gate PASS、
   valid score `98/100`。
+
+## Checker Task 258B3M2B2B2P runner prerequisite ledger
+
+- [x] B2Aより先に、exact final-LF 172-byte/hash、diagnostics 0、
+  76 nodes/root 75のimported structure-constructor sourceをselect。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、Task-254
+  `1/0/1/2/0/2/6`をTask-252 row duplicateなしでproof context 1にfreeze。
+- [x] exact imported `TypeCaseStruct#5` contribution/origin/export
+  provenanceと、constructor 59/members 20/24だけのowned kindsをfreeze。
+- [x] exactly two runner compound testsで全bytes/nodes、lower rows、
+  provenance、substitutions、precedence、atomic replay、existing Task-254
+  outputをcoverするとfreeze。
+- [x] checker source/API/tests、statement consumers、active routes、
+  fixtures、expectations、sidecars、trace status/count、全semantic/proof/
+  goal/IR ownersをpreserve。
+- [x] documentation baselines `378/423`、sizes
+  `1689/713/2528/1716`、30 paths / 41,513 lines、全measured hashesを
+  preserve。
+- [ ] dedicated documentation commit/fresh preflight後、B2Pだけをimplementし、
+  runner tests 425をproject、全changed counts/hashesを再実測してからB2A
+  documentationをfresh-inventory。

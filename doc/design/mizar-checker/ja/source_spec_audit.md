@@ -3997,3 +3997,21 @@ design/test evidenceだけ。trace row
 `tests = []`、backlink/coverage creditなしのまま。canonical specs、
 `.miz`、fixtures、expectations、sidecars、active casesは不変で、
 semantic/proof/goal/type substitutionはdeferしたまま。
+
+## Task 258B3M2B2B2P frozen-prerequisite audit
+
+Chapters 5 §5.5、13 §§13.3/13.3.1、15 §§15.4.4/15.11.5、16
+§§16.3.3/16.7.3とexisting primary-term/simple-statement/
+local-structure-gap artifactsはexact constructor-shaped proof syntaxと
+imported provenanceをauthorizeする。Chapter 5 §5.7 selector authorityは
+explicit future B2B exclusionとしてだけ記録し、B2P constructor semanticsを
+authorizeしない。
+
+missing lower-reuse contractはselected `design_drift`、future private
+implementationは`source_drift`、runner tests 2件は`test_gap`。blocking
+`spec_gap`、unsafe test intent、undocumented-source behavior、expectation
+drift、boundary violation、metadata conflictはない。formula-statement
+trace rowは`deferred`、`tests = []`、backlink/creditなし、existing
+Task-254 diagnostic creditは不変。canonical specs、`.miz`、fixtures、
+expectations、sidecars、trace metadata/counts、active routes、semantic/
+proof/goal/type behaviorは変更しない。

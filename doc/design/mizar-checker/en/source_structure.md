@@ -166,3 +166,30 @@ The bounded trace row is
 changes MC-G017/MC-G018 executable coverage but leaves semantic
 structure/member/view behavior, later term families, accepted facts/proofs,
 and Steps 6/7 unimplemented.
+
+## Task 258B3M2B2B2P Frozen Proof-Context Reuse Seam
+
+B2P freezes only the future runner-private reuse of the existing public
+Task-254 constructor producer for the exact 172-byte/76-node proof source in
+the crate plan. Its owned-kind map is exactly constructor node 59 as
+`source.term.structure.constructor` and member nodes 20/24 as
+`source.term.structure.member.constructor-assignment`. Qualified root node
+52 stays `source.surface.unowned` and participates only in authenticated
+resolver-provenance traversal. Numeral term expressions 54/57 remain
+Task-252-owned; no other node becomes Task-254-owned.
+
+The handoff uses existing `BindingContextId(1)` and shared
+`SourceTermParts`, preserving Task-48 `2/1/0`, Task-252 `6/4/2`, and the
+exact Task-254 `1/0/1/2/0/2/6` constructor/root/member/edge/request profile.
+Root provenance is the imported public/exported, signature-free
+`parser.type_fixtures::TypeCaseStruct#5`; edges connect members 0/1 only to
+primaries 2/3, and the application fingerprint is absent.
+
+The later implementation is confined to the mizar-test source-structure
+leaf, publishes no checker or statement/witness API, and keeps the legacy
+Task-254 route/debug output byte-compatible. Chapter 5 §5.7 selector
+authority is explicitly excluded here and remains future B2B work, not
+current constructor semantics. `FieldUpdate` and functional update remain
+B2C. The two frozen runner tests exhaust bytes/nodes, ownership/provenance,
+corruption precedence, stale/clean replay, legacy output, and empty upper
+families; there is no checker test.

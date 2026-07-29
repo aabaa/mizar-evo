@@ -611,3 +611,14 @@ boundaries、continuing semantic/proof/goal/type-substitution deferralsで一致
 test、implementation、source/documentation reviewsはfindingsなし。final
 quality reviewは全hard gate PASS、`98/100`。implementation bilingual
 debtはない。
+
+## Checker Task 258B3M2B2B2P runner prerequisite synchronization
+
+English canonicalとJapanese companionは、同じfinal-LF 172-byte/76-node
+imported structure-constructor source、proof-context Task-48 `2/1/0`、
+shared Task-252 `6/4/2`、Task-254 `1/0/1/2/0/2/6`、exact imported
+`TypeCaseStruct#5` provenance、owned-kind nodes 3件、future runner tests
+2件、legacy Task-254 compatibility、unchanged `378/423` baselines、
+B2P-before-B2A orderをfreezeする。両言語ともstatement consumer、
+checker API、active/fixture/trace changes、全semantic/proof/goal ownershipを
+excludeする。B2P bilingual debtなし。

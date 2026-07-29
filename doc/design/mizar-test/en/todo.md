@@ -2253,3 +2253,23 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   APIs, and semantic/proof/goal/type-substitution deferrals.
 - [x] Pass every final read-only quality hard gate with a valid `98/100`
   score before commit.
+
+## Checker Task 258B3M2B2B2P Runner Prerequisite Ledger
+
+- [x] Select the exact final-LF 172-byte/hash, zero-diagnostic,
+  76-node/root-75 imported structure-constructor source before B2A.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
+  `1/0/1/2/0/2/6` in proof context 1 without duplicated Task-252 rows.
+- [x] Freeze exact imported `TypeCaseStruct#5` contribution/origin/export
+  provenance and the only owned kinds at constructor 59 and members 20/24.
+- [x] Freeze exactly two runner compound tests covering all bytes/nodes,
+  lower rows, provenance, substitutions, precedence, atomic replay, and
+  existing Task-254 output.
+- [x] Preserve checker source/API/tests, statement consumers, active routes,
+  fixtures, expectations, sidecars, trace status/count, and all semantic,
+  proof, goal, and IR owners.
+- [x] Preserve documentation baselines `378/423`, sizes
+  `1689/713/2528/1716`, 30 paths / 41,513 lines, and all measured hashes.
+- [ ] After the dedicated documentation commit and fresh preflight,
+  implement B2P only, project 425 runner tests, remeasure all changed
+  counts/hashes, then fresh-inventory B2A documentation.

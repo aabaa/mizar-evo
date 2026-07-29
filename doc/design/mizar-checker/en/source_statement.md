@@ -3014,3 +3014,14 @@ wrapper containment. All four checker and five runner tests pass, including
 mutation precedence, B1A/family/active isolation, rollback/replay, and final
 clone checks. This closes the bounded `source_drift` and `test_gap`; no
 semantic, proof, goal, or type-substitution behavior was added.
+
+## Task 258B3M2B2B2P Statement-Owner Deferral
+
+B2P publishes no Task-258 owner, statement, context, input/candidate fact,
+witness, witness name, typed coexistence row, or final-statement profile.
+The future B2A contract alone may add
+`SourceStatementWitness(0) -> SourceStructureTerm(0)` after this lower seam
+is implemented and fresh-inventoried. Take node 62 and witness node 61 are
+therefore unowned by B2P, while transparent node 60 remains excluded and
+constructor node 59 stays Task-254-owned. Witness obligation, substitution,
+proof/fact acceptance, and goal discharge remain deferred.

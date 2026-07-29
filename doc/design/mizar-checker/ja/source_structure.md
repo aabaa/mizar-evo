@@ -159,3 +159,29 @@ bounded trace row は
 Task 254 は MC-G017/MC-G018 の executable coverage を増やすが、semantic
 structure/member/view behavior、later term family、accepted fact/proof、
 Steps 6/7 は未実装のままである。
+
+## Task 258B3M2B2B2P frozen proof-context reuse seam
+
+B2Pがfreezeするのはcrate planのexact 172-byte/76-node proof sourceに対する、
+existing public Task-254 constructor producerのfuture runner-private reuse
+だけ。owned-kind mapはconstructor node 59の
+`source.term.structure.constructor`とmember nodes 20/24の
+`source.term.structure.member.constructor-assignment`だけ。qualified root
+node 52は`source.surface.unowned`のままresolver-provenance traversalだけに
+participateする。numeral term expressions 54/57はTask-252-ownedのままで、
+他nodeをTask-254-ownedにしない。
+
+handoffはexisting `BindingContextId(1)`とshared `SourceTermParts`を使い、
+Task-48 `2/1/0`、Task-252 `6/4/2`、exact Task-254
+`1/0/1/2/0/2/6` constructor/root/member/edge/request profileをpreserve。
+root provenanceはimported public/exported/signature-free
+`parser.type_fixtures::TypeCaseStruct#5`、edgesはmembers 0/1からprimaries
+2/3だけ、application fingerprintはabsent。
+
+later implementationはmizar-test source-structure leafに限定し、checker/
+statement/witness APIをpublishせずlegacy Task-254 route/debug outputを
+byte-compatibleに保つ。Chapter 5 §5.7 selector authorityはexplicitにexclude
+し、current constructor semanticsではなくfuture B2B work。`FieldUpdate`/
+functional updateはB2C。frozen runner tests 2件はbytes/nodes、ownership/
+provenance、corruption precedence、stale/clean replay、legacy output、
+empty upper familiesをexhaustし、checker testはない。

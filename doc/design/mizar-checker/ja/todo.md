@@ -4899,3 +4899,22 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   deferralsを維持。
 - [x] commit前のfinal read-only quality reviewは全hard gate PASS、
   valid score `98/100`。
+
+## Checker Task 258B3M2B2B2P frozen-prerequisite ledger
+
+- [x] final-LF 172-byte/76-node source、SHA-256、exact theorem/proof/
+  take/witness/constructor/root/member/numeral/conclusion/formula nodes、
+  containmentをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、exact Task-254
+  `1/0/1/2/0/2/6` rows、imported `TypeCaseStruct#5` provenanceをfreeze。
+- [x] owned-kind mapをconstructor 59とassignment members 20/24だけにfreeze。
+  root 52はunowned、numerals 54/57はTask-252-owned。
+- [x] 全bytes/nodes、provenance/substitution/precedence、replay、legacy
+  output、empty upper families用future runner tests 2件、checker testなし。
+- [x] §5.7 selector semanticsをB2B、witness ownershipをB2A、update/
+  `FieldUpdate`をB2Cへexcludeし、semantic/proof/goal/type deferralsと
+  existing Task-254 creditをpreserve。
+- [x] `378/423`、全counts/hashes、public/active/fixture/expectation/
+  sidecar/trace artifactsをpreserveし、selected gapを`design_drift`に分類。
+- [ ] no-findings docs review、hard gates、quality 90/100以上、dedicated docs
+  commit後、fresh-inventoryしてB2Pだけをimplement。

@@ -2509,3 +2509,13 @@ authenticateする。checker tests 4件/runner tests 5件は、mutation
 precedence、B1A/family/active isolation、rollback/replay、final cloneを含め
 全てpass。bounded `source_drift`/`test_gap`はclosedで、semantic、proof、
 goal、type-substitution behaviorは追加していない。
+
+## Task 258B3M2B2B2P statement-owner deferral
+
+B2PはTask-258 owner、statement、context、input/candidate fact、witness、
+witness name、typed coexistence row、final-statement profileをpublishしない。
+このlower seamのimplementation/fresh inventory後、future B2A contractだけが
+`SourceStatementWitness(0) -> SourceStructureTerm(0)`を追加できる。
+したがってtake node 62/witness node 61はB2Pではunowned、transparent node
+60はexcluded、constructor node 59はTask-254-ownedのまま。witness
+obligation、substitution、proof/fact acceptance、goal dischargeはdeferする。

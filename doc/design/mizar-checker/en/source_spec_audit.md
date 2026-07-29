@@ -4183,3 +4183,22 @@ is dormant design/test evidence only. The trace row
 `tests = []`, with no backlink or coverage credit. Canonical specs, `.miz`,
 fixtures, expectations, sidecars, and active cases are unchanged, while
 semantic/proof/goal/type substitution remains deferred.
+
+## Task 258B3M2B2B2P Frozen-Prerequisite Audit
+
+Chapters 5 §5.5, 13 §§13.3/13.3.1, 15 §§15.4.4/15.11.5, and 16
+§§16.3.3/16.7.3 plus the existing primary-term, simple-statement, and
+local-structure-gap artifacts authorize the exact constructor-shaped proof
+syntax and imported provenance. Chapter 5 §5.7 selector authority is recorded
+only as an explicit future B2B exclusion; it does not authorize B2P
+constructor semantics.
+
+The missing lower-reuse contract is selected `design_drift`; its future
+private implementation is `source_drift` and its two runner tests are
+`test_gap`. There is no blocking `spec_gap`, unsafe test intent,
+undocumented-source behavior, expectation drift, boundary violation, or
+metadata conflict. The formula-statement trace row remains `deferred`,
+`tests = []`, with no backlink or credit, while existing Task-254 diagnostic
+credit is unchanged. Canonical specs, `.miz`, fixtures, expectations,
+sidecars, trace metadata/counts, active routes, and semantic/proof/goal/type
+behavior remain unchanged.

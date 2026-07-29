@@ -5141,3 +5141,24 @@ implementation commit does not satisfy a producer task.
   public-API artifacts; retain semantic/proof/goal/type-substitution deferrals.
 - [x] Pass every final read-only quality hard gate with a valid `98/100`
   score before commit.
+
+## Checker Task 258B3M2B2B2P Frozen-Prerequisite Ledger
+
+- [x] Freeze the final-LF 172-byte/76-node source, SHA-256, exact theorem,
+  proof, take/witness, constructor/root/member/numeral/conclusion/formula
+  nodes, and containment.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and exact Task-254
+  `1/0/1/2/0/2/6` rows and imported `TypeCaseStruct#5` provenance.
+- [x] Freeze the owned-kind map to constructor 59 and assignment members
+  20/24 only; keep root 52 unowned and numerals 54/57 Task-252-owned.
+- [x] Freeze two future runner tests and no checker test for all bytes/nodes,
+  provenance/substitution/precedence, replay, legacy output, and empty upper
+  families.
+- [x] Exclude §5.7 selector semantics to B2B, witness ownership to B2A, and
+  update/`FieldUpdate` to B2C; preserve all semantic/proof/goal/type
+  deferrals and existing Task-254 credit.
+- [x] Preserve `378/423`, all counts/hashes, public/active/fixture/
+  expectation/sidecar/trace artifacts, and classify the selected gap as
+  `design_drift`.
+- [ ] After no-findings documentation review, hard gates, quality at least
+  90/100, and dedicated docs commit, fresh-inventory and implement B2P only.

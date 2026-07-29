@@ -936,3 +936,14 @@ installした。ownershipは不変で、Task 252はprimaries、Task 253は
 application/wrapper/candidate/requests、Task 258はtake/witness pairだけを
 retainする。reverse wrapper edge、new payload family、semantic/proof/goal
 edgeは追加していない。
+
+### Task 258B3M2B2B2P frozen lower-family boundary
+
+B2Pはpayload family/cross-family edgeを追加しない。existing Task-254 family
+だけのprivate runner reuse seamをfreezeする。Task 254はconstructor 59と
+assignment members 20/24をownし、qualified root 52はunowned provenance
+traversal、numeral expressions 54/57はTask 252-ownedのまま。B2Pでは
+Task 258は何もownしない。future B2A witness-to-structure edge、§5.7配下の
+future B2B selector family、B2C update/`FieldUpdate` familiesはseparate。
+semantic term、proof、fact、goal、Core/CFG/VC、inheritance、typing、
+defaults、coverage edgesはabsent。

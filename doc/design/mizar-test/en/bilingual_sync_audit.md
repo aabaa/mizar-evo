@@ -633,3 +633,14 @@ and continuing semantic/proof/goal/type-substitution deferrals. Test,
 implementation, and source/documentation reviews have no findings. The final
 quality review passed every hard gate at `98/100`; no implementation bilingual
 debt remains.
+
+## Checker Task 258B3M2B2B2P Runner Prerequisite Synchronization
+
+The English canonical and Japanese companion freeze the same final-LF
+172-byte/76-node imported structure-constructor source, proof-context Task-48
+`2/1/0`, shared Task-252 `6/4/2`, Task-254
+`1/0/1/2/0/2/6`, exact imported `TypeCaseStruct#5` provenance, three-node
+owned-kind map, two future runner tests, legacy Task-254 compatibility,
+unchanged `378/423` baselines, and B2P-before-B2A order. Both languages
+exclude the statement consumer, checker API, active/fixture/trace changes,
+and all semantic/proof/goal ownership. No B2P bilingual debt remains.

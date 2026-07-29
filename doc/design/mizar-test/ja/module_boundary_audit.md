@@ -10537,3 +10537,32 @@ path hashは不変、content hashは
 `02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`。
 new module、dependency、public/active route、source-application test、
 trace owner、semantic boundaryは追加していない。
+
+## Checker Task 258B3M2B2B2P frozen module boundary
+
+later B2P implementation write scopeはexisting private
+`runner/type_elaboration/source_structure.rs` leaf、そのprivate facade/root
+imports、`runner/tests/type_elaboration/source_structure.rs`に限定する。
+exact-source owned-kind selector 1件とexisting-context/shared-source-term
+parts reuse seam 1件だけを追加できる。module/production pathは追加しない。
+
+source-statement leafはunchangedのまま。B2PはTask-258 statement/witnessを
+publishせず、checker API/co-installation pathも追加しない。raw surface
+nodes/resolver projectionsはrunner-privateに保ち、syntax-free
+Task-48/252/254 handoffsだけがexisting public Task-254 producer経由で
+checker boundaryをcrossする。
+
+documentation baselineはchecker/runner tests `378/423`。
+source-structure leaf/facade/root/test sizesは`1689/713/2528/1716`。
+productionは30 paths / 41,513 lines、path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`、
+runner raw/normalized test hashesは
+`fa026adf9ebc5bdf7aa3f00ea84f88ffd8f620dbc9af47ee896952b3c4e7ab88` /
+`56a661b2d79b6f866008df3684e263feeca5ef069d5e1ea097e6c3404095872d`。
+implementationはrunner tests 425をprojectし、全changed size/hashを
+再実測する。
+
+crate dependency、public re-export、active route、fixture、expectation、
+sidecar、trace owner、semantic dependency、statement consumer、checker
+testはauthorizeしない。

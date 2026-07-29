@@ -3620,3 +3620,42 @@ family/active isolation、atomic replay/rollback、clone、empty upper-table
 assertionsをpassing runner tests 5件として実装した。runner libraryは423
 tests、statement-test leafは13,381 lines。fixture、expectation、sidecar、
 trace row、active detail key、semantic consumerは変更していない。
+
+## Checker Task 258B3M2B2B2P dormant lower harness contract
+
+B2P harnessがfreezeするのは、`take TypeCaseStruct(x: 1, y: 2);`を含む
+exact final-LF 172-byte/76-node sourceだけ。existing proof binding context、
+shared Task-252 `6/4/2`、Task-254 `1/0/1/2/0/2/6`をcomposeした時点で
+停止し、Task-258 statement/witnessはconstructしない。
+
+successful lower ownershipはexact。constructor node 59だけが
+`source.term.structure.constructor`、member token nodes 20/24だけが
+`source.term.structure.member.constructor-assignment`をownする。
+qualified root 52はauthenticated imported resolver traversalだが
+`source.surface.unowned`のまま。numeral-expression roots 54/57は
+Task-252-ownedのまま。constructorはproof context 1、members `x/y`、
+ordered `ConstructorValue` edges -> `Primary(2/3)`、ordered unresolved
+requests 6件、application fingerprintなし。
+
+imported rootはexact
+`summary:parser.type_fixtures#parse-only#TypeCaseStruct:5` /
+`parser.type_fixtures::TypeCaseStruct#5`、contribution 2、origin
+`7..27/[5]`、public/exported、signatureなし。runner-private seamはpublic
+Task-254 producerとalready-built binding/source-term partsをreuseし、
+Task-252 rowsをduplicateせず、field identityをsynthesizeせず、existing
+Task-254 real routeをbroadenしない。
+
+future compound tests 2件:
+`task258b3m2b2b2p_structure_constructor_proof_context_reuse_is_exact`と
+`task258b3m2b2b2p_structure_constructor_corruption_replay_and_legacy_output_fail_closed`。
+final LFを含む172 bytes全て、76 nodesのkind/range/recovery/ordered
+children/root identity、reparsed import/root/member/value/recovery near
+misses、exact rows/owned kinds/imported provenance、context/root/member/
+edge/request substitutions、lower validation precedence、stale failure後の
+clean replay、byte-identical legacy Task-254 outputをcoverする。全upper
+source familiesとsemantic/proof/goal/IR tablesはemptyのまま。
+
+active case、public dispatch、statement consumer、fixture、sidecar、
+expectation、trace row、detail key、checker testは追加しない。future B2A
+contractだけがwitnessを`Structure(0)`へattachできる。selectorおよび
+functional-update/`FieldUpdate` witnessesはB2B/B2Cのまま。

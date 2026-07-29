@@ -456,6 +456,19 @@ measured module/production sizes and hashes, unchanged public/active/trace/
 semantic boundary, and B3M2B2-before-B4 order. No implementation bilingual
 debt remains.
 
+## Task 258B3M2B2B2P Frozen-Prerequisite Synchronization
+
+The EN canonical and JA companion agree on the 172-byte/76-node source and
+hash, exact node/subtree map, Task-48/252/254 lower rows, imported constructor
+provenance, and exact owned-kind map: constructor 59 and assignment members
+20/24 only. Both keep qualified root 52 unowned, numeral expressions 54/57
+Task-252-owned, and §5.7 selector authority excluded for future B2B.
+
+They also freeze the same two future runner tests, no checker test, unchanged
+`378/423` and all measured metrics/hashes, no public/active/fixture/trace/
+semantic artifact, future B2A witness edge, and B2C update boundary. English
+remains canonical and there is no B2P bilingual debt.
+
 ## Task 258B3M2B2A Frozen-Contract Synchronization
 
 Canonical EN and JA checker/runner companions record the same 121-byte/

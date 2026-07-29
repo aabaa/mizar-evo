@@ -11773,3 +11773,33 @@ lines with unchanged path hash and content hash
 `02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`.
 No new module, dependency, public/active route, source-application test, trace
 owner, or semantic boundary was introduced.
+
+## Checker Task 258B3M2B2B2P Frozen Module Boundary
+
+The later B2P implementation write scope is restricted to the existing
+private `runner/type_elaboration/source_structure.rs` leaf, its private
+facade/root imports, and
+`runner/tests/type_elaboration/source_structure.rs`. It may add one
+exact-source owned-kind selector and one existing-context/shared-source-term
+parts reuse seam only. No module or production path may be added.
+
+The source-statement leaf remains unchanged: B2P publishes no Task-258
+statement or witness and adds no checker API or co-installation path. Raw
+surface nodes and resolver projections stay runner-private; only the
+syntax-free Task-48/252/254 handoffs cross the checker boundary through the
+existing public Task-254 producer.
+
+The documentation baseline is checker/runner tests `378/423`.
+Source-structure leaf/facade/root/test sizes are `1689/713/2528/1716`.
+Production remains 30 paths / 41,513 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`;
+runner raw/normalized test hashes are
+`fa026adf9ebc5bdf7aa3f00ea84f88ffd8f620dbc9af47ee896952b3c4e7ab88` /
+`56a661b2d79b6f866008df3684e263feeca5ef069d5e1ea097e6c3404095872d`.
+Implementation projects 425 runner tests and must remeasure every changed
+size and hash.
+
+No crate dependency, public re-export, active route, fixture, expectation,
+sidecar, trace owner, semantic dependency, statement consumer, or checker
+test is authorized.

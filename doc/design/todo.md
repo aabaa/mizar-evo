@@ -2665,7 +2665,8 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Preserve canonical specs and `.miz`, fixtures, expectations,
   sidecars, active routes, trace row/status/count, and semantic/proof/goal
   ownership; retain `deferred`, `tests = []`, without coverage credit.
-- [ ] Fresh-inventory the next authority-valid Task-258 B1B+ witness shape.
+- [x] Fresh-inventory and complete the next authority-valid Task-258 B1B+
+  witness shape as B1B1 before selecting the Task-254-backed family.
 
 ## Checker Task 258B3M2B2B1B1P Frozen Lower-Prerequisite
 
@@ -2744,3 +2745,31 @@ or semantic owner changed. B3M2B2B remains next before B4.
   substitution deferrals.
 - [x] Pass every final read-only quality hard gate with a valid `98/100`
   score; make the dedicated implementation commit after cached-diff audit.
+
+## Checker Task 258B3M2B2B2P Frozen Lower-Prerequisite
+
+- [x] Decompose the remaining B3M2B2B dependency-first into the private
+  Task-254 proof-context constructor seam B2P, exact constructor witness B2A,
+  selector witness B2B, and functional-update witness B2C.
+- [x] Freeze the final-LF 172-byte source, SHA-256
+  `24e2ee2332ead5c0d46025df6044450eeab3ebb5733ebe83587ceae3ba129eb6`,
+  zero diagnostics, all 76 unrecovered nodes/root 75, and exact imported
+  `parser.type_fixtures::TypeCaseStruct#5` provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
+  `1/0/1/2/0/2/6` in proof context 1. Task 254 owns only constructor node
+  59 and member nodes 20/24; qualified root 52 remains unowned resolver
+  traversal and numeral nodes 54/57 remain Task-252-owned.
+- [x] Freeze the exact request order, `None` application fingerprint,
+  no duplicated lower rows, and a runner-private existing-context/shared-
+  Task-252 reuse seam that leaves the current Task-254 route unchanged.
+- [x] Freeze exactly two future runner compound tests for the complete
+  source/arena/provenance/row corruption matrix, failure precedence,
+  rollback/replay, legacy compatibility, and empty upper families.
+- [x] Preserve canonical specs, existing `.miz`, fixtures, expectations,
+  sidecars, trace row/status/count, active/public routes, semantic owners,
+  libraries `378/423`, and all CLI/test-list/production counts and hashes.
+- [x] Keep the formula-statement row `deferred`, `tests = []`, without
+  backlink or executable credit; the existing Task-254 diagnostic coverage
+  is unchanged.
+- [ ] After the dedicated documentation commit and fresh preflight,
+  implement B2P alone before freezing the B2A statement consumer.

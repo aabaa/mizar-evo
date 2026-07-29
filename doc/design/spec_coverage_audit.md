@@ -4458,3 +4458,55 @@ public APIs are unchanged. Semantic/proof/goal/type substitution remains
 deferred. Test, implementation, and source/documentation reviews report no
 findings. The final quality review passed every hard gate with a valid score
 of `98/100`.
+
+## Task 258B3M2B2B2P Frozen Structure-Constructor Prerequisite
+
+Fresh inventory selects the first Task-254-backed witness dependency before
+selector and functional-update shapes. Canonical Chapter 5 §5.5 and Chapter
+13 §§13.3/13.3.1 authorize the imported structure-constructor term; Chapter
+15 §§15.4.4/15.11.5 and Chapter 16 §§16.3.3/16.7.3 authorize only its
+placement as a `take term_expression` witness. Chapter 5 §5.7 and Chapter 13
+§§13.3.2-13.3.3 remain exclusion authority for later B2B/B2C work. The
+existing parser primary-term and `take` fixtures plus the Task-254 source
+transport fixture make the lower test intent derivable without changing any
+canonical or corpus artifact.
+
+The exact dormant final-LF 172-byte source has SHA-256
+`24e2ee2332ead5c0d46025df6044450eeab3ebb5733ebe83587ceae3ba129eb6`,
+zero diagnostics, and 76 unrecovered nodes/root 75. Its lower projection is
+Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
+`1 term / 0 wrappers / 1 root / 2 members / 0 FieldUpdates / 2 edges /
+6 requests` in proof context 1. Task 254 owns exactly constructor node 59
+and constructor-assignment member nodes 20/24. Qualified root node 52 stays
+`source.surface.unowned` resolver traversal, while numeral expression nodes
+54/57 remain Task-252-owned. The imported
+`parser.type_fixtures::TypeCaseStruct#5` root keeps contribution 2, origin
+range `7..27`, structural path `[5]`, public/exported status, and no
+signature. Constructor-value edges target only `Primary(2/3)`;
+the application fingerprint remains absent.
+
+B2P freezes only a private runner reuse seam for an existing proof
+`BindingContextId` and shared Task-252 parts. It publishes no Task-258
+statement or witness row, changes no checker public API or typed/final
+statement coexistence rule, and grants no constructor acceptance, member
+identity, coverage/default, inheritance, value/result type, witness
+obligation, substitution, proof, fact, or IR semantics. B2A later owns the
+single directed witness-to-`Structure(0)` edge; selector, update, and
+`FieldUpdate` ownership remain B2B/B2C.
+
+This prerequisite resolves the selected decomposition `design_drift`.
+The later private seam is bounded `source_drift`, and its two compound tests
+are a Rust `test_gap`. There is no blocking `spec_gap`, unsafe test intent,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`.
+
+This is follow-up ownership documentation only. The trace row
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, without backlink or executable credit, and existing Task-254
+diagnostic coverage is unchanged. Canonical specs, `.miz`, fixtures,
+expectations, sidecars, active routes, and `tests/coverage/spec_trace.toml`
+remain unchanged. Checker/runner libraries stay `378/423`; plan/requirements
+stay `419/387`, type coverage `253/241`, pass/fail `228/191`, active
+parse/declaration/type/proof `101/5/198/1`, and warnings/errors `23/0`.
+All five CLI hashes, both libraries' test-list hashes, and checker/runner
+production manifests remain the B1B1 implementation values recorded above.

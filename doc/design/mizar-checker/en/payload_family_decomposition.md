@@ -1005,3 +1005,14 @@ private B1B1 profile. Ownership is unchanged: Task 252 retains primaries,
 Task 253 retains application/wrapper/candidate/requests, and Task 258 owns
 only the take/witness pair. No reverse wrapper edge, new payload family, or
 semantic/proof/goal edge was introduced.
+
+### Task 258B3M2B2B2P Frozen Lower-Family Boundary
+
+B2P adds no payload family or cross-family edge. It freezes a private runner
+reuse seam for the existing Task-254 family only: Task 254 owns constructor
+59 and assignment members 20/24, while qualified root 52 remains unowned
+provenance traversal and Task 252 retains numeral expressions 54/57.
+Task 258 owns nothing in B2P. The future B2A witness-to-structure edge,
+future B2B selector family under §5.7, and B2C update/`FieldUpdate` families
+remain separate. Semantic term, proof, fact, goal, Core/CFG/VC, inheritance,
+typing, defaults, and coverage edges remain absent.
