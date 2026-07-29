@@ -2313,5 +2313,34 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] final source/docs consistency re-reviewを**NO FINDINGS**でcomplete。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   valid `98/100`でcomplete。
-- [ ] cached implementation diffをauditしB2Cをcommit。
-- [ ] post-commit repo/stash invariantsをverifyしnext taskをfresh inventory。
+- [x] cached implementation diffをauditしB2Cを
+  `e8373c683448e524cb98edde83fdf8de83a125cd`としてcommit。
+- [x] clean ahead 8/behind 0 post-commit repo state、unchanged stashを
+  verifyしB3Pをfresh inventory。
+
+## Checker Task 258B3M2B2B3P runner frozen-contract ledger
+
+- [x] exact 117-byte/hash、57-node/root-56 parser profileをfreeze。
+- [x] proof context 1、local resolver record、Task48 `2/1/0`、Task252
+  `6/4/2`、Task255 `1/0/0/0/0/2/1`、ownership/exclusionsをfreeze。
+- [x] runner files exactly 4件とcompound tests 2件をfreezeし、existing
+  context-0 helper bytesをpreserve。
+- [x] 同じ2 testsに全source bytes/LF variants、node/lower-table fields、
+  resolver substitutions、owner partitions、precedence/replay/rollback/
+  clones、family/semantic emptiness、Task111 handoff/typed/resolved literal
+  debug hashesをexhaustさせる。
+- [x] checker source/test/API、upper B3A statement-witness edgeを追加しない。
+- [x] canonical/executable/trace artifactsとsemantic deferralsをpreserveし、
+  baseline `390/444`、projection `390/446`、exact counts/hashesをrecord。
+- [x] specification reviewをfindingsなしでcomplete。
+- [x] documentation review/repeatをfindingsなしでcomplete。
+- [x] test-sufficiency reviewをfindingsなしでcomplete。
+- [x] implementation-boundary reviewをfindingsなしでcomplete。
+- [x] source/documentation consistency reviewをfindingsなしでcomplete。
+- [x] source/hash、lint `15/14`、libraries `390/444`、production/test-list、
+  5 CLI hashes、exact scope、diff、trace no-op verificationをPASS。
+- [x] final qualityをfindingsなし、全9 hard gates PASS、valid
+  `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] task-only docsをaudit/stageしfrozen contractをcommit。
+- [ ] post-commit invariantsをverify後fresh-inventoryし、private B3P runner
+  seamだけをimplement。

@@ -10844,3 +10844,44 @@ independent final source/docs consistency/final qualityはどちらも
 **NO FINDINGS**。全9 hard gates PASS、valid score `98/100`で、exact
 module-boundary evidenceはunchanged。pendingはcached-diff/staging audit、
 implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+
+## Checker Task 258B3M2B2B3P frozen runner boundary
+
+B2Cは`e8373c683448e524cb98edde83fdf8de83a125cd`でclose。clean
+post-commit inventoryはB3Pをselect。future write scopeはexisting runner
+files exactly 4件:
+
+- `crates/mizar-test/src/runner/type_elaboration/source_set_term.rs`
+- `crates/mizar-test/src/runner/type_elaboration.rs`
+- `crates/mizar-test/src/runner.rs`
+- `crates/mizar-test/src/runner/tests/type_elaboration/source_set_term.rs`
+
+production leafはprivate explicit-context siblingだけをown。facade/rootは
+existing private/test-only patternだけでexposeし、test leafはcompound tests
+exactly 2件をown。context-0 helper/legacy outputはbyte-identicalに保つ。
+
+checker file、module、dependency、path、public re-export/API、active
+dispatch、fixture、expectation、sidecar、trace metadata、diagnostic owner、
+Task256/258 table、upper B3A witness owner、semantic owner、adjacent term
+form ownerを追加しない。このboundaryはbounded `source_drift` +
+`test_gap`でありmodule split authorizationではない。
+
+2 testsは同じtest leaf内で117-byte/LF variants、57-node/resolver/lower
+table fields、owner partition、precedence/replay/rollback/clone、empty
+family outputをexhaustする。independent Task111 legacy hashes 3件をliteral
+assertし、追加test/fileはauthorizeしない。
+
+## Checker Task 258B3M2B2B3P documentation review status
+
+specification/documentation、test-sufficiency、implementation-boundary、
+source/documentation consistency reviewsは**NO FINDINGS**。scope、
+source/hash、lint/library、production/test-list/CLI hashes、diff、trace
+no-op verificationはPASS。four-file boundaryはfrozenで、future
+implementation `source_drift`/`test_gap`はplanned。final quality、
+commit、post-commit、fresh inventoryはpending。
+
+## Checker Task 258B3M2B2B3P final quality status
+
+final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。pendingはstage/commit、post-commit、
+fresh implementation inventoryだけ。

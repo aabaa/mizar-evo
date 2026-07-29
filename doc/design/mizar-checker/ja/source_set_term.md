@@ -238,3 +238,68 @@ Task-255 rowを追加・rewriteしない。exact conditioned profileは
 `1/0/1/1/1/1/2`、debug/fingerprintは不変で、stale、wrong-owner、wrapped、
 non-direct relationはTask 256でfail closedする。両installation orderはexact
 authenticated relationだけをacceptする。
+
+## Task 258B3M2B2B3P frozen proof-context enumeration reuse
+
+B2C implementation commit
+`e8373c683448e524cb98edde83fdf8de83a125cd`後、fresh inventoryはprivate
+Task-255 set-enumeration reuse prerequisiteをselectする。exact 117-byte
+final-LF source/hash/57-node mapはpaired crate planと一致する。set term 0は
+site `Node(40)`、range `90..96`、source ordinal 0、proof context 1、
+recovery `Normal`、spelling `{ 1 , 2 }`、kind `Enumeration`。
+`EnumerationElement` edge 0はterm 0、ordinal 0、target `Primary(2)`
+node/range `36/91..92`、edge 1はterm 0、ordinal 1、target
+`Primary(3)` at `38/94..95`。request 0はterm 0、ordinal 0、kind
+`ResultType`、`generator = None`、`type_site = None`。primary fingerprint
+はexact Task252 handoff fingerprint、application/structure fingerprintsは
+absent。comprehension/choice/condition/other Task255 rowsはない。
+
+Task 48はcontexts 0/1、reserve binding 1、diagnostics zero。Task 252は
+nodes `30/32/36/38/44/46`をownし、theorem/conclusion referencesと
+numeric requests 2/3を持つ。Task 255はnode 40だけをown。Tasks
+253/254/256/258はemptyで、term-expression/witness/statement/proof/
+theorem/item/compilation/root containersはunowned。imported provenanceはない。
+
+B3Pはexisting context-0 helperをbyte-for-byte preserveし、runner
+`source_set_term` pathにexplicit-context private siblingだけを追加できる。
+future tests exactly 2件は
+`task258b3m2b2b3p_set_enumeration_proof_context_reuse_is_exact`と
+`task258b3m2b2b3p_set_enumeration_corruption_replay_and_legacy_output_fail_closed`。
+同じ2 testsでfinal LFを含む117 loaded-source bytes全件、stripped/
+extra-LF variants、57 nodes全件のkind/range/recovery/ordered children各
+field/root identity、local resolver全field/substitution、Task48全context/
+binding fields、Task252全term/reference/numeric-request fields、Task255
+全term/`EnumerationElement` edge/request/fingerprint fieldsをmutate/assert。
+owned partition `{30,32,36,38,40,44,46}`とnode 56までのcomplement、
+explicit validation precedence、stale-fingerprint replay、atomic rollback、
+clean replay、exact final typed/resolved cloneをfreezeする。
+
+Tasks253/254/256/258 empty、active/adjacent-family isolation、empty
+semantic/proof/goal outputsもassert。legacy context-0はpreimplementation
+Task111 literal hashes: handoff
+`30b72230bb7ff39464962133b58df212e23afccccc8f4e4788ab9a9d0481c43a`、
+typed `1bb296c06ab62691684260aa94987adee23081baa4a35aac9e485d95370d2cb9`、
+resolved
+`cdb4eaae9605f62269d6a74d64267a8fcb1e8d8008564d8b9e014037665df1e4`
+をliteral assertし、old/new in-build equalityだけでは不可。
+
+このlower taskはchecker row/API/statement witness/semantic claimを追加しない。
+upper B3Aだけがlater `SourceStatementWitness -> SetTerm(0)`をown可能。
+empty/singleton/3+、nested/parenthesized/comprehension/choice/`qua`、
+sethood/element/result unification、existential/proof/goal/theorem behavior、
+Tasks253/254/256/258はexclude。
+
+## Task 258B3M2B2B3P documentation review status
+
+specification/documentation、test-sufficiency、implementation-boundary、
+source/documentation consistency reviewsはすべて**NO FINDINGS**。
+exact source/hash、lint、library、production/test-list/CLI hashes、scope、
+diff、trace no-op verificationはPASS。lower table/test oracleはfrozenで、
+future private implementation `source_drift`/`test_gap`はplanned。
+final quality、commit、post-commit、fresh inventoryはpending。
+
+## Task 258B3M2B2B3P final quality status
+
+final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。pendingはstage/commit、post-commit、
+fresh implementation inventoryだけ。

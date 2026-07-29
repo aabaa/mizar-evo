@@ -815,3 +815,52 @@ as **NO FINDINGS** and independent final quality as **NO FINDINGS**, with all
 nine hard gates PASS and a valid `98/100`. Evidence and metrics remain
 unchanged. Only cached-diff/staging audit, implementation commit, and
 post-commit inventory/fresh-next-task gates remain pending in both languages.
+
+## Task 258B3M2B2B2C Closure and Task 258B3M2B2B3P Synchronization
+
+Both languages close B2C at implementation commit
+`e8373c683448e524cb98edde83fdf8de83a125cd`, clean ahead-eight/behind-zero
+post-commit inventory, unchanged stash object
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`, no push, no-findings reviews,
+nine passing hard gates, and valid `98/100`.
+
+The English canonical B3P contract and Japanese companion agree on the exact
+117-byte/hash, zero-diagnostic 57-node/root-56 source; significant
+kind/range/containment map; local-only resolver contribution; Task-48
+`2/1/0`, Task-252 `6/4/2`, and Task-255
+`1/0/0/0/0/2/1` lower rows; ownership and empty Tasks 253/254/256/258; and
+the absence of an upper statement-witness edge.
+
+Both freeze exactly four private runner files and two compound runner tests,
+preserve the existing context-0 helper bytes, defer upper B3A and all
+semantics, and record unchanged baseline counts/hashes and deliberate trace
+no-op. Specification review is no-findings. Documentation review, quality,
+commit, and post-commit implementation inventory remain pending in both
+languages.
+
+Both now also spell the Task-255 term, two `EnumerationElement` edges,
+request, and three fingerprint slots field-for-field. The same two tests
+exhaust all 117 bytes/LF variants, 57 node fields/root, resolver and lower
+rows, owner partitions, precedence/replay/rollback/clones, empty adjacent
+and semantic outputs, and literal Task-111 handoff/typed/resolved hashes.
+This correction does not mark documentation re-review complete.
+
+## Task 258B3M2B2B3P Reviewed Synchronization Status
+
+EN/JA specification/documentation, test-sufficiency,
+implementation-boundary, and source/documentation consistency reviews now
+all report **NO FINDINGS**. Both companions record passing source/hash,
+lint `15/14`, library `390/444`, production/test-list/CLI hash,
+exact-26-doc, diff-check, and trace-no-op verification. Prerequisite
+`design_drift`/test-intent drift is closed and frozen; future implementation
+`source_drift`/`test_gap` remains planned. Final nine-gate quality, commit,
+post-commit, and fresh implementation inventory remain pending in both.
+
+## Task 258B3M2B2B3P Final-Quality Synchronization
+
+Both companions record final quality **NO FINDINGS**, all nine hard gates
+PASS, and valid `98/100` with category scores
+`20/20/15/14/10/10/5/4` for specification/tests/traceability/
+implementation-readiness/documentation/boundary/verification/handoff.
+Only stage/commit, post-commit, and fresh implementation inventory remain
+pending in both languages.

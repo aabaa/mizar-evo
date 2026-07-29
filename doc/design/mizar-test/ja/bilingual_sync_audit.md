@@ -875,3 +875,38 @@ runner companions両方がindependent final source/docs consistencyを
 gates PASS、valid `98/100`としてrecordする。evidenceはunchanged。
 pendingはcached-diff/staging audit、implementation commit、post-commit
 inventory/fresh-next-task gatesだけで両言語一致。
+
+## Checker Task 258B3M2B2B2C closureとB3P synchronization
+
+両言語はB2Cをcommit
+`e8373c683448e524cb98edde83fdf8de83a125cd`、clean ahead 8/behind 0
+post-commit inventory、unchanged stash、no push、no-findings reviews、
+全9 hard gates PASS、valid `98/100`としてclose。
+
+B3P companionsはexact 117-byte/hash/57-node profile、proof context 1、
+local resolver、Task48 `2/1/0`、Task252 `6/4/2`、Task255
+`1/0/0/0/0/2/1`、ownership/exclusions、private runner 4-file scope、
+exact compound tests 2件、unchanged context-0 bytes、upper B3A separation、
+semantic deferrals、baseline/projection `390/444` -> `390/446`、
+unchanged hashes、deliberate trace no-opで一致。specification reviewは
+findingsなしで、later documentation/quality/commit gatesは両言語pending。
+
+両companionsはTask255全fields、`EnumerationElement` role、同じ2 tests内の
+exhaustive byte/node/resolver/lower/ownership/precedence/clone/emptiness
+checks、Task111 literal legacy hashes 3件でも一致。re-review完了とは
+markしない。
+
+## Checker Task 258B3M2B2B3P reviewed synchronization status
+
+両言語は4 review tracksすべて**NO FINDINGS**、source/hash、lint、
+library、production/test-list/CLI hashes、exact scope、diff、trace no-op
+verification PASSで一致。prerequisite design/test-intent driftは
+closed/frozen、future implementation `source_drift`/`test_gap`はplanned。
+final quality、commit、post-commit、fresh implementation inventoryは
+両言語pending。
+
+## Checker Task 258B3M2B2B3P final-quality synchronization
+
+両言語はfinal quality **NO FINDINGS**、全9 hard gates PASS、valid
+`98/100`、category scores `20/20/15/14/10/10/5/4`で一致。
+pendingはstage/commit、post-commit、fresh implementation inventoryだけ。

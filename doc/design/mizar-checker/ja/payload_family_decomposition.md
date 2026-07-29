@@ -1136,3 +1136,48 @@ independent final source/docs consistency/final qualityは**NO FINDINGS**。
 全9 hard gates PASS、valid `98/100`。frozen family decomposition、evidence、
 deferred trace statusはunchanged。pendingはcached-diff/staging audit、
 implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+
+### Task 258B3M2B2B3P frozen lower set-term reuse
+
+B2Cはimplementation commit
+`e8373c683448e524cb98edde83fdf8de83a125cd`でcloseし、post-commit
+worktree clean、ahead 8/behind 0、recorded stash unchanged。B3Pはupper
+payload-family edgeを追加せず、proof context 1のlower graphだけをfreeze:
+
+```text
+SetTerm(0 Enumeration, node 40, 90..96)
+  -> ordered Primary(2, node 36, 91..92)
+  -> ordered Primary(3, node 38, 94..95)
+  -> ResultType request(0)
+```
+
+Task 252が6 primaries、Task 255がset term 0だけをown。Tasks
+253/254/256/258はemptyで、statement/witness/proof/theorem containersは
+unowned。B3Pに`SourceStatementWitness -> SetTerm(0)` edgeはなく、upper
+B3A ownership。result/sethood/element、existential、proof、goal、theorem、
+Core/CFG/VC edgeもない。
+
+missing contractはclosed `design_drift`、future private explicit-context
+runner reuseは`source_drift`、compound runner tests 2件は`test_gap`。
+public schema、active route、checker source/test、trace creditは変更しない。
+
+上記2 arrowsはordinals 0/1の`EnumerationElement` edgesで、generic member/
+expansion edgeではない。term/target fields、`ResultType` request、
+Task252 primary fingerprint、absent application/structure fingerprintsを
+field-for-fieldでfreeze。同じ2 testsがgraphをexhaustiveにauthenticateし、
+Task111 literal hashes 3件を使う。
+
+### Task 258B3M2B2B3P reviewed family status
+
+documentation phaseの4 review tracksはすべて**NO FINDINGS**。
+117-byte/hash、lint `15/14`、libraries `390/444`、source/test/CLI hashes、
+exact scope、diff、trace no-op checksはPASS。prerequisite family/test
+oracleはfrozenで、future private implementationはbounded
+`source_drift`/`test_gap`をownする。final quality、commit、post-commit、
+fresh implementation inventoryはpending。
+
+### Task 258B3M2B2B3P final family quality
+
+final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。family evidenceはunchanged。pendingは
+stage/commit、post-commit、fresh implementation inventoryだけ。

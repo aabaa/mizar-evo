@@ -4004,3 +4004,62 @@ independent final source/docs consistency/final qualityはどちらも
 harness evidence/boundariesはunchanged。pendingはcached-diff/staging
 audit、implementation commit、post-commit inventory/fresh-next-task
 gatesだけ。
+
+## Checker Task 258B3M2B2B3P frozen private harness
+
+B2C commit `e8373c683448e524cb98edde83fdf8de83a125cd`後、B3Pはexact
+117-byte set-enumeration sourceのprivate proof-context reuse harnessを
+freeze。real frontendは57 nodes/root 56、local-only resolver、Task48
+`2/1/0`、Task252 `6/4/2`、Task255 `1/0/0/0/0/2/1`をreproduceする。
+enumeration term 0はsite `Node(40)`、range `90..96`、source ordinal 0、
+context 1、recovery `Normal`、spelling `{ 1 , 2 }`、kind
+`Enumeration`。`EnumerationElement` edgesはexactly
+`(term 0, ordinal 0, Primary(2))`と
+`(term 0, ordinal 1, Primary(3))`。request 0はterm 0、ordinal 0、
+`ResultType`、`generator = None`、`type_site = None`。primary fingerprint
+はexact Task252 handoff、application/structure fingerprintsはabsent。
+
+private explicit-context helperはpre-existing context-0 helper/output bytesを
+変更しない。exact 2 tests togetherで:
+
+- final LFを含むloaded-source 117 bytes全件をmutateしstripped/extra-LFをreject;
+- 57 nodes全件のkind/range/recovery/ordered childrenとroot identityをmutate;
+- local resolver shell/symbol/contribution/provenance全fieldsをassert/substitute;
+- Task48 context/binding、Task252 primary term/reference/numeric request、
+  Task255 term/`EnumerationElement` edge/request/fingerprintの全fieldsを
+  assert/mutate;
+- owner Task252 `{30,32,36,38,44,46}`、Task255 `{40}`、unowned
+  `0..29,31,33..35,37,39,41..43,45,47..56`をexact assert;
+- source/module selectorからarena/root、resolver、Task48、Task252、
+  Task255、stale fingerprint、typed/final clone validationまでのprecedence、
+  atomic rollback、clean replay、exact final clonesをfreeze;
+- empty Tasks253/254/256/258、active/adjacent isolation、empty semantic/
+  proof/goal outputsをassert。
+
+legacy Task111 context-0 oracleはliteral assertする。Task255 handoff debug
+SHA-256
+`30b72230bb7ff39464962133b58df212e23afccccc8f4e4788ab9a9d0481c43a`、
+full typed debug
+`1bb296c06ab62691684260aa94987adee23081baa4a35aac9e485d95370d2cb9`、
+resolved debug
+`cdb4eaae9605f62269d6a74d64267a8fcb1e8d8008564d8b9e014037665df1e4`。
+implementation build内のold/new equalityはoracleではない。
+
+checker test、active fixture/sidecar/route、expectation、trace row/credit、
+public API、statement witness、imported behavior、semantic behaviorを追加しない。
+upper B3Aがlater witness-to-set-term consumerとseparate checker/runner testsを
+ownする。
+
+## Checker Task 258B3M2B2B3P documentation review status
+
+4 review tracksはすべて**NO FINDINGS**で、record済み
+source/count/hash/scope/trace-no-op checksはPASS。exhaustive two-test
+harness contractはfrozen、future implementationはplanned
+`source_drift`/`test_gap`。final quality、commit、post-commit、
+fresh implementation inventoryはpending。
+
+## Checker Task 258B3M2B2B3P final quality status
+
+final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
+（`20/20/15/14/10/10/5/4`）。pendingはstage/commit、post-commit、
+fresh implementation inventoryだけ。

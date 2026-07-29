@@ -4259,3 +4259,68 @@ report **NO FINDINGS**. All nine hard gates PASS and the valid score is
 `98/100`; exact harness evidence and boundaries remain unchanged. Only
 cached-diff/staging audit, implementation commit, and post-commit inventory/
 fresh-next-task gates remain pending.
+
+## Checker Task 258B3M2B2B3P Frozen Private Harness
+
+After B2C commit `e8373c683448e524cb98edde83fdf8de83a125cd`, B3P freezes
+a private proof-context reuse harness for the exact 117-byte set-enumeration
+source. The real frontend must reproduce 57 nodes/root 56, local-only
+resolver provenance, Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-255
+`1/0/0/0/0/2/1`. Enumeration term 0 is site `Node(40)`, range
+`90..96`, source ordinal 0, context 1, recovery `Normal`, spelling
+`{ 1 , 2 }`, and kind `Enumeration`. Its `EnumerationElement` edges are
+exactly `(term 0, ordinal 0, Primary(2))` and
+`(term 0, ordinal 1, Primary(3))`. Request 0 is term 0, ordinal 0,
+`ResultType`, `generator = None`, `type_site = None`. Its primary
+fingerprint is the exact Task-252 handoff fingerprint; application and
+structure fingerprints are absent.
+
+The private explicit-context helper must not alter the pre-existing
+context-0 helper or its output bytes. Across the exact two tests, the
+harness must:
+
+- mutate all 117 loaded-source bytes including final LF and reject stripped/
+  extra-LF variants;
+- mutate kind, range, recovery, and ordered children for all 57 nodes and
+  root identity;
+- assert/substitute every local resolver shell, symbol, contribution, and
+  provenance field;
+- assert/mutate every Task-48 context/binding field, every Task-252 primary
+  term/reference/numeric-request field, and every Task-255 term/
+  `EnumerationElement` edge/request/fingerprint field;
+- assert exact owner sets Task-252 `{30,32,36,38,44,46}`, Task-255 `{40}`,
+  and unowned `0..29,31,33..35,37,39,41..43,45,47..56`;
+- freeze precedence from source/module selector through arena/root,
+  resolver, Task 48, Task 252, Task 255, stale fingerprint, typed/final
+  clone validation; prove atomic rollback, clean replay, and exact final
+  clones;
+- assert empty Tasks 253/254/256/258, active/adjacent isolation, and empty
+  semantic/proof/goal outputs.
+
+The legacy Task-111 context-0 oracle is asserted literally: Task-255 handoff
+debug SHA-256
+`30b72230bb7ff39464962133b58df212e23afccccc8f4e4788ab9a9d0481c43a`,
+full typed debug
+`1bb296c06ab62691684260aa94987adee23081baa4a35aac9e485d95370d2cb9`,
+and resolved debug
+`cdb4eaae9605f62269d6a74d64267a8fcb1e8d8008564d8b9e014037665df1e4`.
+Old/new equality measured in the implementation build is not an oracle.
+
+No checker test, active fixture/sidecar/route, expectation, trace row/credit,
+public API, statement witness, imported behavior, or semantic behavior is
+added. Upper B3A owns the later witness-to-set-term consumer and its separate
+checker/runner tests.
+
+## Checker Task 258B3M2B2B3P Documentation Review Status
+
+All four review tracks report **NO FINDINGS** and all recorded
+source/count/hash/scope/trace-no-op checks pass. The exhaustive two-test
+harness contract is frozen; its future implementation remains planned
+`source_drift`/`test_gap`. Final quality, commit, post-commit, and fresh
+implementation inventory are pending.
+
+## Checker Task 258B3M2B2B3P Final Quality Status
+
+Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
+fresh implementation inventory remain pending.

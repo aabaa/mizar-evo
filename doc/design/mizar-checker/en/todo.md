@@ -5412,7 +5412,47 @@ implementation commit does not satisfy a producer task.
   **NO FINDINGS**.
 - [x] Complete independent final read-only quality review with
   **NO FINDINGS**, all nine hard gates PASS, and a valid `98/100`.
-- [ ] Audit the cached diff and create the dedicated B2C implementation
-  commit.
-- [ ] Verify post-commit HEAD, clean worktree, origin relation, unchanged
-  stash, and fresh-inventory the next dependency-authorized task.
+- [x] Audit the cached diff and create the dedicated B2C implementation
+  commit `e8373c683448e524cb98edde83fdf8de83a125cd`.
+- [x] Verify clean ahead-eight/behind-zero post-commit state, unchanged
+  stash, and fresh-inventory B3P as the next dependency-authorized task.
+
+## Checker Task 258B3M2B2B3P Frozen-Contract Ledger
+
+- [x] Close B2C at commit `e8373c683448e524cb98edde83fdf8de83a125cd`
+  with clean post-commit invariants and untouched stash.
+- [x] Freeze the exact 117-byte/hash, zero-diagnostic 57-node/root-56 source
+  and complete significant kind/range/containment map.
+- [x] Freeze local resolver provenance, Task-48 `2/1/0`, Task-252 `6/4/2`,
+  Task-255 `1/0/0/0/0/2/1`, and empty Tasks 253/254/256/258.
+- [x] Freeze Task-252 ownership of `30/32/36/38/44/46`, Task-255 ownership
+  of 40, and unowned term/statement/proof/theorem containers.
+- [x] Freeze exactly four private runner implementation files, two compound
+  runner tests, explicit proof-context reuse, and byte-identical context-0
+  legacy behavior.
+- [x] Freeze the two tests as exhaustive over all 117 bytes/final-LF
+  variants, all 57 node fields/root, complete resolver and Task-48/252/255
+  fields, exact owner partitions, precedence/stale replay/atomic clone
+  behavior, empty adjacent/semantic outputs, and the three literal Task-111
+  legacy debug hashes.
+- [x] Keep checker source/tests/API and upper B3A witness edge separate.
+- [x] Exclude every semantic result, sethood/element unification,
+  existential/proof/goal/theorem behavior, adjacent term form, imported
+  behavior, Task 253/254/256/258, B4, and B5.
+- [x] Preserve documentation-only scope, baseline `390/444`, projection
+  `390/446`, all production/test-list/CLI counts and hashes, and deliberate
+  trace no-op.
+- [x] Classify missing contract as `design_drift`, future private seam as
+  `source_drift`, and two tests as `test_gap`; record no other disagreement.
+- [x] Complete specification review with **NO FINDINGS**.
+- [x] Complete documentation review/repeat with **NO FINDINGS**.
+- [x] Complete test-sufficiency review with **NO FINDINGS**.
+- [x] Complete implementation-boundary review with **NO FINDINGS**.
+- [x] Complete source/documentation consistency review with
+  **NO FINDINGS**.
+- [x] Pass source/hash, lint `15/14`, library `390/444`, production/test-list,
+  five-CLI-hash, exact-26-doc scope, diff-check, and trace-no-op verification.
+- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
+  and valid `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Audit the task-only docs diff and commit the B3P prerequisite.
+- [ ] Verify post-commit invariants and fresh-inventory B3P implementation.

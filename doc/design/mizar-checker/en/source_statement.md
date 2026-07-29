@@ -3303,3 +3303,34 @@ Independent final source/documentation consistency and final quality report
 statement/witness evidence and semantic deferrals remain unchanged. Only
 cached-diff/staging audit, implementation commit, and post-commit inventory/
 fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3P Statement-Owner Deferral
+
+B2C implementation is committed as
+`e8373c683448e524cb98edde83fdf8de83a125cd` with clean post-commit
+invariants. The next lower prerequisite B3P authenticates only Task-255
+enumeration term 0 at node/range `40/90..96` in proof context 1 for the
+117-byte set-enumeration source. It owns no `SourceStatement`,
+`SourceStatementWitness`, statement-to-term edge, checker API, or checker
+test.
+
+The theorem statement, `take` witness, proof, and all containers remain
+unowned by B3P. Upper B3A is a separate future logical task that may freeze
+and implement `SourceStatementWitness -> SetTerm(0)` plus public witness
+schema/installers and four checker/five runner tests. B3P neither anticipates
+that edge nor claims witness, existential, substitution, type, goal, proof,
+or theorem semantics.
+
+## Task 258B3M2B2B3P Documentation Review Status
+
+All four documentation-phase review tracks report **NO FINDINGS**, and all
+recorded source/count/hash/scope/trace-no-op verification passes. This
+confirms the B3P statement-owner exclusion without closing the later B3A
+consumer. Future B3P implementation `source_drift`/`test_gap` remains
+planned; final quality, commit, post-commit, and fresh inventory are pending.
+
+## Task 258B3M2B2B3P Final Quality Status
+
+Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
+fresh implementation inventory remain pending.

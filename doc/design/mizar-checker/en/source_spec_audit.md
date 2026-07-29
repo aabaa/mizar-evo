@@ -4495,3 +4495,57 @@ quality review both report **NO FINDINGS**. All nine hard gates PASS and the
 valid score is `98/100`. Evidence, metrics, classifications, and the deliberate
 trace no-op remain unchanged. Only cached-diff/staging audit, implementation
 commit, and post-commit inventory/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B2C Post-Commit and Task 258B3M2B2B3P Specification Audit
+
+B2C is committed as `e8373c683448e524cb98edde83fdf8de83a125cd`;
+post-commit inventory is clean, ahead eight/behind zero, and leaves
+`stash@{0}` object `f65cf4a13752ec380710814a9ac6392ccb9d75d4`
+unchanged. Its no-findings reviews, nine passing hard gates, and valid
+`98/100` remain final.
+
+Canonical Chapter 13 §13.4.1 and complete term grammar, Chapter 15 §15.4.4,
+Chapter 4 witness syntax, Chapter 16 theorem/proof syntax, existing
+`pass_parser_simple_statements_001`, and existing Task-255 `{1,2}` evidence
+authorize the exact B3P parser/resolver/lower-table contract. They do not
+authorize a statement witness edge or semantic result. The exact 117-byte,
+57-node/root-56 profile and the lower Task-48 `2/1/0`, Task-252 `6/4/2`,
+and Task-255 `1/0/0/0/0/2/1` tables are fully stated in the crate plan and
+set-term design. Tasks 253/254/256/258 are empty.
+
+Specification review reports **NO FINDINGS**. Missing/stale B3P design is
+`design_drift`; the future private explicit-context seam is bounded
+`source_drift`; two tests are `test_gap`. There is no `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or current `repo_metadata_conflict`. This
+documentation prerequisite changes no canonical or executable artifact.
+The formula-statement trace row remains `deferred`, `tests = []`, and
+Task-255 covered credit remains unchanged; the trace TOML is deliberately
+not edited.
+
+The corrected contract freezes every Task-255 term/
+`EnumerationElement`-edge/request/fingerprint field and requires the same
+two tests to exhaust source bytes, node fields, resolver/lower fields,
+ownership, precedence/replay/clones, empty adjacent/semantic outputs, and
+the three independent Task-111 literal hashes. Documentation re-review and
+quality remain pending.
+
+## Task 258B3M2B2B3P Review Closure Status
+
+Repeated specification/documentation, test-sufficiency,
+implementation-boundary, and source/documentation consistency reviews all
+report **NO FINDINGS**. Exact-source/hash, `15/14` lint, `390/444`
+libraries, recorded production/test-list/five-CLI hashes, exact 26-doc scope,
+diff check, and trace no-op verification pass. This closes/finalizes the
+documentation prerequisite's `design_drift` and test-intent correction while
+retaining planned future implementation `source_drift`/`test_gap`. Only
+final nine-gate quality/score, commit, post-commit, and fresh implementation
+inventory remain pending.
+
+## Task 258B3M2B2B3P Final Quality Audit
+
+Final quality reports **NO FINDINGS**. All nine hard gates PASS and valid
+`98/100` is composed as specification `20`, tests `20`, traceability `15`,
+implementation readiness `14`, documentation `10`, boundary discipline
+`10`, verification `5`, and handoff `4`. Only stage/commit, post-commit,
+and fresh implementation inventory remain pending.

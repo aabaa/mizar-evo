@@ -914,3 +914,40 @@ consistency as **NO FINDINGS** and independent final quality as
 **NO FINDINGS**, with all nine hard gates PASS and a valid `98/100`. Evidence
 remains unchanged. Only cached-diff/staging audit, implementation commit, and
 post-commit inventory/fresh-next-task gates remain pending in both languages.
+
+## Checker Task 258B3M2B2B2C Closure and B3P Synchronization
+
+Both languages close B2C at commit
+`e8373c683448e524cb98edde83fdf8de83a125cd`, clean ahead-eight/behind-zero
+post-commit inventory, unchanged stash, no push, no-findings reviews, nine
+passing hard gates, and valid `98/100`.
+
+The B3P companions agree on the exact 117-byte/hash and 57-node profile,
+proof context 1, local resolver provenance, Task-48 `2/1/0`, Task-252
+`6/4/2`, Task-255 `1/0/0/0/0/2/1`, ownership/exclusions, four-file
+private runner scope, two exact compound tests, unchanged context-0 bytes,
+upper B3A separation, semantic deferrals, baseline/projection `390/444` to
+`390/446`, unchanged hashes, and deliberate trace no-op. Specification
+review is no-findings; later documentation/quality/commit gates remain
+pending in both languages.
+
+Both companions additionally match every Task-255 field, use the
+`EnumerationElement` role, and freeze exhaustive byte/node/resolver/lower/
+ownership/precedence/clone/emptiness checks plus the three literal Task-111
+legacy hashes in the same two tests. Neither marks re-review complete.
+
+## Checker Task 258B3M2B2B3P Reviewed Synchronization Status
+
+Both languages now record all four review tracks as **NO FINDINGS** and
+source/hash, lint, library, production/test-list/CLI hash, exact-scope, diff,
+and trace-no-op verification as PASS. Prerequisite design/test-intent drift
+is closed/frozen while future implementation `source_drift`/`test_gap`
+remains planned. Final quality, commit, post-commit, and fresh implementation
+inventory remain pending in both.
+
+## Checker Task 258B3M2B2B3P Final-Quality Synchronization
+
+Both languages record final quality **NO FINDINGS**, all nine hard gates
+PASS, and valid `98/100` with
+`20/20/15/14/10/10/5/4` category scores. Only stage/commit,
+post-commit, and fresh implementation inventory remain pending in both.

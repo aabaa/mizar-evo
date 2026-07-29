@@ -3013,7 +3013,37 @@ or semantic owner changed. B3M2B2B remains next before B4.
   **NO FINDINGS**.
 - [x] Complete independent final read-only quality review with
   **NO FINDINGS**, all nine hard gates PASS, and a valid `98/100`.
-- [ ] Audit the cached implementation diff and create one dedicated B2C
-  implementation commit.
-- [ ] Verify post-commit HEAD/clean/origin/stash invariants and fresh-inventory
-  the next dependency-authorized task.
+- [x] Audit the cached implementation diff and create dedicated B2C
+  implementation commit `e8373c683448e524cb98edde83fdf8de83a125cd`.
+- [x] Verify clean ahead-eight/behind-zero post-commit state, unchanged stash,
+  and fresh-inventory B3P as the next dependency-authorized task.
+
+## Checker Task 258B3M2B2B3P Frozen-Contract Prerequisite
+
+- [x] Freeze the exact 117-byte/hash, zero-diagnostic 57-node/root-56 source,
+  significant syntax map, and local-only resolver provenance.
+- [x] Freeze lower Task-48 `2/1/0`, Task-252 `6/4/2`, Task-255
+  `1/0/0/0/0/2/1`, empty Tasks 253/254/256/258, ownership, and subtree
+  exclusions.
+- [x] Freeze only the private explicit-context runner seam in four files and
+  exactly two compound tests, preserving context-0 bytes.
+- [x] Freeze exhaustive two-test sufficiency over all bytes/LF variants,
+  nodes, resolver/lower fields, ownership, precedence/replay/rollback/clones,
+  empty adjacent/semantic outputs, and literal Task-111 legacy hashes.
+- [x] Keep upper B3A checker/public witness ownership and all semantic,
+  adjacent-family, active, canonical, and trace changes forbidden.
+- [x] Record baseline `390/444`, projection `390/446`, exact source/test/CLI
+  counts and hashes, classifications, and narrative-only audit impact.
+- [x] Complete specification review with **NO FINDINGS**.
+- [x] Complete documentation review/repeat with **NO FINDINGS**.
+- [x] Complete test-sufficiency review with **NO FINDINGS**.
+- [x] Complete implementation-boundary review with **NO FINDINGS**.
+- [x] Complete source/documentation consistency review with
+  **NO FINDINGS**.
+- [x] Pass source/hash, lint, library, production/test-list, five CLI hash,
+  exact-26-doc, diff-check, and trace-no-op verification.
+- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
+  and valid `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Audit/stage and commit this documentation prerequisite alone.
+- [ ] Verify post-commit invariants, then fresh-inventory and implement only
+  B3P.

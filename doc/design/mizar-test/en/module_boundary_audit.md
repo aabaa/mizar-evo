@@ -12094,3 +12094,46 @@ report **NO FINDINGS**. All nine hard gates PASS and the valid score is
 `98/100`; exact module-boundary evidence remains unchanged. Only cached-diff/
 staging audit, implementation commit, and post-commit inventory/fresh-next-
 task gates remain pending.
+
+## Checker Task 258B3M2B2B3P Frozen Runner Boundary
+
+B2C is closed at `e8373c683448e524cb98edde83fdf8de83a125cd`; clean
+post-commit inventory selects B3P. Its future write scope is exactly four
+existing runner files:
+
+- `crates/mizar-test/src/runner/type_elaboration/source_set_term.rs`
+- `crates/mizar-test/src/runner/type_elaboration.rs`
+- `crates/mizar-test/src/runner.rs`
+- `crates/mizar-test/src/runner/tests/type_elaboration/source_set_term.rs`
+
+The production leaf owns a private explicit-context sibling only. The facade
+and root may expose it only along the existing private/test-only pattern, and
+the test leaf owns exactly two compound tests. The context-0 helper and
+legacy output must remain byte-identical.
+
+No checker file, module, dependency, path, public re-export/API, active
+dispatch, fixture, expectation, sidecar, trace metadata, diagnostic owner,
+Task-256/258 table, upper B3A witness owner, semantic owner, or adjacent
+term-form owner is added. This boundary is bounded `source_drift` plus
+`test_gap`, not authorization for a module split.
+
+The two tests remain in that one leaf but must exhaust every 117-byte/LF
+variant, 57-node and resolver/lower-table field, owner partition,
+precedence/replay/rollback/clone and empty-family output. They assert the
+three independent Task-111 legacy hashes literally; no additional test or
+file is authorized.
+
+## Checker Task 258B3M2B2B3P Documentation Review Status
+
+Specification/documentation, test-sufficiency, implementation-boundary, and
+source/documentation consistency reviews report **NO FINDINGS**. Scope,
+source/hash, lint/library, production/test-list/CLI hash, diff, and trace
+no-op verification pass. The four-file boundary is frozen; future
+implementation `source_drift`/`test_gap` remains planned. Final quality,
+commit, post-commit, and fresh inventory are pending.
+
+## Checker Task 258B3M2B2B3P Final Quality Status
+
+Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
+fresh implementation inventory remain pending.

@@ -1212,3 +1212,51 @@ Independent final source/documentation consistency and final quality report
 family decomposition, evidence, and deferred trace status remain unchanged.
 Only cached-diff/staging audit, implementation commit, and post-commit
 inventory/fresh-next-task gates remain pending.
+
+### Task 258B3M2B2B3P Frozen Lower Set-Term Reuse
+
+B2C closed at implementation commit
+`e8373c683448e524cb98edde83fdf8de83a125cd`; its post-commit worktree is
+clean, branch relation is ahead-eight/behind-zero, and the recorded stash is
+unchanged. B3P adds no upper payload-family edge. It freezes only this lower
+graph in proof context 1:
+
+```text
+SetTerm(0 Enumeration, node 40, 90..96)
+  -> ordered Primary(2, node 36, 91..92)
+  -> ordered Primary(3, node 38, 94..95)
+  -> ResultType request(0)
+```
+
+Task 252 owns all six primaries and Task 255 owns only set term 0. Tasks
+253/254/256/258 are empty and all statement/witness/proof/theorem containers
+are unowned. There is no `SourceStatementWitness -> SetTerm(0)` edge in
+B3P; that is upper B3A ownership. Likewise there is no result/sethood/
+element, existential, proof, goal, theorem, Core, CFG, or VC edge.
+
+The missing contract is closed `design_drift`; future private
+explicit-context runner reuse is `source_drift`; two compound runner tests
+are `test_gap`. No public schema, active route, checker source/test, or trace
+credit changes.
+
+The two arrows above are specifically `EnumerationElement` edges with
+ordinals 0 and 1; neither is a generic member or expansion edge. Their
+term/target fields, the `ResultType` request, Task-252 primary fingerprint,
+and absent application/structure fingerprints are frozen field-for-field.
+The two tests authenticate this graph exhaustively and use the three literal
+Task-111 legacy hashes.
+
+### Task 258B3M2B2B3P Reviewed Family Status
+
+All four documentation-phase review tracks report **NO FINDINGS**, and the
+117-byte/hash, lint `15/14`, library `390/444`, source/test/CLI hash,
+exact-scope, diff, and trace-no-op checks pass. The prerequisite family
+description and exhaustive test oracle are now frozen; the future private
+implementation still owns the bounded `source_drift`/`test_gap`. Final
+quality, commit, post-commit, and fresh implementation inventory are pending.
+
+### Task 258B3M2B2B3P Final Family Quality
+
+Final quality reports **NO FINDINGS**, all nine hard gates PASS, and valid
+`98/100` (`20/20/15/14/10/10/5/4`). Family evidence is unchanged. Only
+stage/commit, post-commit, and fresh implementation inventory are pending.

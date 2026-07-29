@@ -5165,6 +5165,43 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] final source/docs consistency re-reviewを**NO FINDINGS**でcomplete。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   valid `98/100`でcomplete。
-- [ ] cached diffをauditしdedicated B2C implementation commitを作成。
-- [ ] post-commit HEAD/clean/origin/stash invariantsをverifyし、次taskをfresh
-  inventory。
+- [x] cached diffをauditしdedicated B2C implementation commit
+  `e8373c683448e524cb98edde83fdf8de83a125cd`を作成。
+- [x] clean ahead 8/behind 0 post-commit state、unchanged stashをverifyし、
+  次のdependency-authorized task B3Pをfresh inventory。
+
+## Checker Task 258B3M2B2B3P frozen-contract ledger
+
+- [x] B2Cをcommit `e8373c683448e524cb98edde83fdf8de83a125cd`、
+  clean post-commit invariants、untouched stashでclose。
+- [x] exact 117-byte/hash、zero-diagnostic 57-node/root-56 source、complete
+  significant kind/range/containment mapをfreeze。
+- [x] local resolver provenance、Task48 `2/1/0`、Task252 `6/4/2`、
+  Task255 `1/0/0/0/0/2/1`、empty Tasks253/254/256/258をfreeze。
+- [x] Task252 owner `30/32/36/38/44/46`、Task255 owner 40、unowned
+  term/statement/proof/theorem containersをfreeze。
+- [x] private runner implementation files exactly 4件、compound tests 2件、
+  explicit proof-context reuse、byte-identical context-0 legacy behaviorをfreeze。
+- [x] 2 testsを117 bytes/final-LF variants全件、57 node fields/root、
+  complete resolver/Task48/252/255 fields、exact owner partitions、
+  precedence/stale replay/atomic clone、empty adjacent/semantic outputs、
+  Task111 literal legacy debug hashes 3件までexhaustiveにfreeze。
+- [x] checker source/tests/APIとupper B3A witness edgeをseparateに保つ。
+- [x] semantic result、sethood/element unification、existential/proof/goal/
+  theorem behavior、adjacent term forms、imported behavior、Tasks
+  253/254/256/258、B4/B5をexclude。
+- [x] docs-only scope、baseline `390/444`、projection `390/446`、全
+  production/test-list/CLI counts/hashes、deliberate trace no-opをpreserve。
+- [x] missing contractを`design_drift`、future private seamを
+  `source_drift`、2 testsを`test_gap`にclassifyし、他disagreementなし。
+- [x] specification reviewを**NO FINDINGS**でcomplete。
+- [x] documentation review/repeatを**NO FINDINGS**でcomplete。
+- [x] test-sufficiency reviewを**NO FINDINGS**でcomplete。
+- [x] implementation-boundary reviewを**NO FINDINGS**でcomplete。
+- [x] source/documentation consistency reviewを**NO FINDINGS**でcomplete。
+- [x] source/hash、lint `15/14`、libraries `390/444`、production/test-list、
+  5 CLI hashes、exact 26-doc scope、diff-check、trace no-op verificationをPASS。
+- [x] final qualityを**NO FINDINGS**、全9 hard gates PASS、valid
+  `98/100`（`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] task-only docs diffをauditしB3P prerequisiteをcommit。
+- [ ] post-commit invariantsをverifyしB3P implementationをfresh inventory。

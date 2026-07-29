@@ -2516,6 +2516,35 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   **NO FINDINGS**.
 - [x] Complete independent final read-only quality review with
   **NO FINDINGS**, all nine hard gates PASS, and a valid `98/100`.
-- [ ] Audit the cached implementation diff and commit B2C.
-- [ ] Verify post-commit repository/stash invariants and fresh-inventory the
-  next task.
+- [x] Audit the cached implementation diff and commit B2C as
+  `e8373c683448e524cb98edde83fdf8de83a125cd`.
+- [x] Verify clean ahead-eight/behind-zero post-commit repository state,
+  unchanged stash, and fresh-inventory B3P.
+
+## Checker Task 258B3M2B2B3P Runner Frozen-Contract Ledger
+
+- [x] Freeze exact 117-byte/hash and 57-node/root-56 parser profile.
+- [x] Freeze proof context 1, the local resolver record, Task-48 `2/1/0`,
+  Task-252 `6/4/2`, Task-255 `1/0/0/0/0/2/1`, ownership, and exclusions.
+- [x] Freeze exactly four runner files and two compound tests while
+  preserving existing context-0 helper bytes.
+- [x] Require the same two tests to exhaust all source bytes/LF variants,
+  node and lower-table fields, resolver substitutions, owner partitions,
+  precedence/replay/rollback/clones, family/semantic emptiness, and literal
+  Task-111 handoff/typed/resolved debug hashes.
+- [x] Add no checker source/test/API or upper B3A statement-witness edge.
+- [x] Preserve all canonical/executable/trace artifacts and semantic
+  deferrals; record baseline `390/444`, projection `390/446`, and exact
+  counts/hashes.
+- [x] Complete specification review with no findings.
+- [x] Complete documentation review/repeat with no findings.
+- [x] Complete test-sufficiency review with no findings.
+- [x] Complete implementation-boundary review with no findings.
+- [x] Complete source/documentation consistency review with no findings.
+- [x] Pass source/hash, `15/14` lint, `390/444` libraries, production/
+  test-list, five CLI hash, exact-scope, diff, and trace-no-op verification.
+- [x] Complete final quality with no findings, all nine hard gates PASS, and
+  valid `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Audit/stage the task-only docs and commit the frozen contract.
+- [ ] Verify post-commit invariants, then fresh-inventory and implement only
+  the private B3P runner seam.

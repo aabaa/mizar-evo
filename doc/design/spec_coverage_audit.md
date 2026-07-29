@@ -4905,3 +4905,76 @@ Canonical specification, existing `.miz`, fixtures, expectations, sidecars,
 trace status/tests/credit, public/active surfaces, diagnostics, and semantics
 remain unchanged. Only cached-diff/staging audit, implementation commit, and
 post-commit inventory/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B2C Post-Commit Closure Audit
+
+The dedicated implementation commit is
+`e8373c683448e524cb98edde83fdf8de83a125cd`. Post-commit inventory is
+clean, `main` is ahead eight/behind zero, stash object
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` is unchanged, and no push
+occurred. The independent reviews remain no-findings, all nine hard gates
+PASS, and the valid final score remains `98/100`. Fresh inventory selects
+lower prerequisite B3P.
+
+## Task 258B3M2B2B3P Frozen Coverage Ownership Audit
+
+B3P is a documentation-only prerequisite for private proof-context reuse of
+the already covered Task-255 enumeration lower table. Canonical Chapter 13
+§13.4.1/complete term grammar, Chapter 15 §15.4.4, Chapter 4 witness
+syntax, Chapter 16 theorem/proof syntax, and existing Task-255 evidence
+authorize the exact 117-byte, zero-diagnostic 57-node/root-56 profile.
+
+The lower ownership is unchanged: Task 48 contributes `2/1/0`, Task 252
+contributes `6/4/2` and owns nodes `30/32/36/38/44/46`, and Task 255
+contributes `1/0/0/0/0/2/1` and owns enumeration node 40/range
+`90..96` in proof context 1. Tasks 253/254/256/258 are empty. B3P adds no
+statement witness or semantic coverage. Upper B3A separately owns any future
+`SourceStatementWitness -> SetTerm(0)` edge.
+
+This audit change records follow-up ownership only. The missing contract is
+closed `design_drift`; the later private explicit-context runner seam is
+bounded `source_drift`; its two compound runner tests are `test_gap`. There
+is no `spec_gap`, undocumented behavior, expectation drift, boundary
+violation, or current repository metadata conflict.
+
+Requirement `spec.en.checker.formula_statement.source_payloads` therefore
+remains `deferred`, `tests = []`, and existing Task-255 covered credit is
+unchanged. `tests/coverage/spec_trace.toml` receives no status, count, test,
+backlink, or credit edit. Canonical specifications, existing `.miz`,
+fixtures, expectations, sidecars, active routes, public APIs, diagnostics,
+and all semantic behavior remain unchanged. Specification review reports
+**NO FINDINGS**; the remaining documentation/verification/quality/commit
+gates are intentionally pending.
+
+The field-exact clarification uses `EnumerationElement` for both ordered
+edges, freezes all Task-255 term/request/fingerprint fields, and strengthens
+the same two future tests to exhaustive byte/node/resolver/lower/ownership/
+precedence/clone/emptiness checks with three independent Task-111 literal
+hashes. Test count, trace credit, and pending review/quality status do not
+change.
+
+## Task 258B3M2B2B3P Documentation Review Completion Audit
+
+Repeated specification/documentation, test-sufficiency,
+implementation-boundary, and source/documentation consistency reviews all
+report **NO FINDINGS**. Verification passes the exact 117-byte/source hash,
+checker/runner lint `15/14`, libraries `390/444`, recorded raw/normalized
+test-list hashes, checker 23 paths / 126,115 lines and production hashes,
+runner 30 / 47,203 and production hashes, all five recorded CLI hashes,
+`git diff --check`, exact 26-file documentation-only scope, and deliberate
+trace no-op.
+
+The prerequisite's missing-design `design_drift` and documentation test-
+intent gap are closed/frozen. The future private implementation retains its
+planned bounded `source_drift` and `test_gap`; no implementation or coverage
+credit is claimed. Only final nine-hard-gate quality and score, stage/commit,
+post-commit verification, and fresh implementation inventory remain pending.
+
+## Task 258B3M2B2B3P Final Quality Completion Audit
+
+Independent final quality reports **NO FINDINGS**. All nine hard gates PASS
+and the valid `98/100` score is specification `20`, tests `20`,
+traceability `15`, implementation readiness `14`, documentation `10`,
+boundary discipline `10`, verification `5`, and handoff `4`. Coverage and
+trace no-op evidence is unchanged. Only task-only stage/commit, post-commit
+verification, and fresh implementation inventory remain pending.

@@ -773,3 +773,49 @@ independent final qualityも**NO FINDINGS**、全9 hard gates PASS、valid
 `98/100`としてrecordする。evidence/metricsはunchanged。pendingは
 cached-diff/staging audit、implementation commit、post-commit inventory/
 fresh-next-task gatesだけで両言語一致。
+
+## Task 258B3M2B2B2C closureとTask 258B3M2B2B3P synchronization
+
+両言語はB2Cをimplementation commit
+`e8373c683448e524cb98edde83fdf8de83a125cd`、clean ahead 8/behind 0
+post-commit inventory、unchanged stash object
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`、no push、no-findings
+reviews、全9 hard gates PASS、valid `98/100`としてcloseする。
+
+English canonical B3P contract/JA companionはexact 117-byte/hash、
+zero-diagnostic 57-node/root-56 source、significant kind/range/containment
+map、local-only resolver contribution、Task-48 `2/1/0`、Task-252
+`6/4/2`、Task-255 `1/0/0/0/0/2/1` lower rows、ownership、empty
+Tasks253/254/256/258、upper statement-witness edgeなしで一致。
+
+両方がprivate runner files exactly 4件とcompound runner tests 2件、
+existing context-0 helper byte preservation、upper B3A/全semantics deferral、
+unchanged baseline counts/hashes、deliberate trace no-opをfreeze。
+specification reviewはfindingsなし。documentation review/quality/commit/
+post-commit implementation inventoryは両言語でpending。
+
+両方がTask255 term、`EnumerationElement` edges 2件、request、
+fingerprint slots 3件をfield-for-fieldでrecord。同じ2 testsが117
+bytes/LF variants全件、57 node fields/root、resolver/lower rows、owner
+partitions、precedence/replay/rollback/clones、empty adjacent/semantic
+outputs、Task111 handoff/typed/resolved literal hashesをexhaustする。
+このcorrectionでdocumentation re-review完了とはしない。
+
+## Task 258B3M2B2B3P reviewed synchronization status
+
+EN/JA specification/documentation、test-sufficiency、
+implementation-boundary、source/documentation consistency reviewsはすべて
+**NO FINDINGS**。両companionsはsource/hash、lint `15/14`、libraries
+`390/444`、production/test-list/CLI hashes、exact 26 docs、diff check、
+trace no-op verification PASSで一致。prerequisite
+`design_drift`/test-intent driftはclosed/frozen、future implementation
+`source_drift`/`test_gap`はplanned。final nine-gate quality、commit、
+post-commit、fresh implementation inventoryは両言語pending。
+
+## Task 258B3M2B2B3P final-quality synchronization
+
+両companionsはfinal quality **NO FINDINGS**、全9 hard gates PASS、
+valid `98/100`、category scores `20/20/15/14/10/10/5/4`
+（specification/tests/traceability/implementation-readiness/documentation/
+boundary/verification/handoff）で一致。両言語pendingはstage/commit、
+post-commit、fresh implementation inventoryだけ。

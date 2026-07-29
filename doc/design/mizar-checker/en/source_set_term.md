@@ -262,3 +262,84 @@ conditioned profile remains `1/0/1/1/1/1/2`, its debug and fingerprints are
 unchanged, and stale, wrong-owner, wrapped, or non-direct relations fail
 closed in Task 256. Both installation orders now accept only the exact
 authenticated relation.
+
+## Task 258B3M2B2B3P Frozen Proof-Context Enumeration Reuse
+
+After B2C implementation commit
+`e8373c683448e524cb98edde83fdf8de83a125cd`, fresh inventory selects a
+private Task-255 set-enumeration reuse prerequisite. Its exact final-LF
+source is:
+
+```text
+reserve x for set;
+theorem FormulaStatementSetEnumerationWitnessSmoke: x = x proof
+  take {1, 2};
+  thus x = x;
+end;
+```
+
+The source is 117 bytes, SHA-256
+`4f8ea5b9cadf763ea108b6f7deb6b481cb6f997dec2048b4351f07fd5dc38539`,
+zero-diagnostic, and 57 nodes/root 56 with normal same-source recovery.
+Set term 0 has site `Node(40)`, range `90..96`, source ordinal 0, proof
+context 1, recovery `Normal`, spelling `{ 1 , 2 }`, and kind
+`Enumeration`. `EnumerationElement` edge 0 has term 0, ordinal 0, and
+target `Primary(2)` at node/range `36/91..92`; edge 1 has term 0, ordinal
+1, and target `Primary(3)` at `38/94..95`. Request 0 has term 0, ordinal
+0, kind `ResultType`, `generator = None`, and `type_site = None`. The
+primary fingerprint equals the exact Task-252 handoff fingerprint;
+application and structure fingerprints are absent. There are no
+comprehension, choice, condition, or other Task-255 rows.
+
+Task 48 supplies contexts 0 and proof context 1, one reserve binding, and no
+diagnostics. Task 252 owns nodes `30/32/36/38/44/46`, with theorem and
+conclusion references plus numeric requests 2/3. Task 255 owns only node 40.
+Tasks 253/254/256/258 are empty, and the term-expression, witness,
+statement, proof, theorem, item, compilation, and root containers are
+unowned. There is no imported provenance.
+
+B3P may add only an explicit-context private sibling in the runner
+`source_set_term` path while preserving the existing context-0 helper
+byte-for-byte. The exact two future compound tests are
+`task258b3m2b2b3p_set_enumeration_proof_context_reuse_is_exact` and
+`task258b3m2b2b3p_set_enumeration_corruption_replay_and_legacy_output_fail_closed`.
+Together they mutate all 117 loaded-source bytes including final LF,
+stripped/extra-LF variants, every kind/range/recovery/ordered-children field
+of all 57 nodes and root identity, every local resolver field/substitution,
+every Task-48 context/binding field, every Task-252 term/reference/numeric-
+request field, and every Task-255 term/`EnumerationElement` edge/request/
+fingerprint field. They assert the exact owned partition
+`{30,32,36,38,40,44,46}` and its complement through node 56, explicit
+validation precedence, stale-fingerprint replay, atomic rollback, clean
+replay, and exact final typed/resolved clone.
+
+They also assert empty Tasks 253/254/256/258, active and adjacent-family
+isolation, and empty semantic/proof/goal outputs. Legacy context-0 stability
+uses literal preimplementation Task-111 hashes: handoff
+`30b72230bb7ff39464962133b58df212e23afccccc8f4e4788ab9a9d0481c43a`,
+typed `1bb296c06ab62691684260aa94987adee23081baa4a35aac9e485d95370d2cb9`,
+and resolved
+`cdb4eaae9605f62269d6a74d64267a8fcb1e8d8008564d8b9e014037665df1e4`.
+Old/new in-build equality alone is insufficient.
+
+This lower task adds no checker row, API, statement witness, or semantic
+claim. Upper B3A alone may later own
+`SourceStatementWitness -> SetTerm(0)`. Empty, singleton, three-or-more,
+nested, parenthesized, comprehension, choice, and `qua` terms; sethood,
+element/result unification; existential/proof/goal/theorem behavior; and
+Tasks 253/254/256/258 remain excluded.
+
+## Task 258B3M2B2B3P Documentation Review Status
+
+Specification/documentation, test-sufficiency, implementation-boundary, and
+source/documentation consistency reviews all report **NO FINDINGS**. Exact
+source/hash, lint, library, production/test-list/CLI hash, scope, diff, and
+trace-no-op verification pass. The lower table/test oracle is frozen; future
+private implementation `source_drift`/`test_gap` remains planned. Final
+quality, commit, post-commit, and fresh inventory are pending.
+
+## Task 258B3M2B2B3P Final Quality Status
+
+Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
+`98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
+fresh implementation inventory remain pending.
