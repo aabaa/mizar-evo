@@ -229,3 +229,17 @@ The existing Task-254 public producer, tables, validation, debug bytes, and
 legacy route remain unchanged. Field/property identity, coverage/defaults,
 value/result typing, inheritance, selector, update, and `FieldUpdate`
 semantics remain Task 263/B2B/B2C work.
+
+## Task 258B3M2B2B2A Implemented Structure Consumer
+
+The statement route consumes the completed B2P seam and exact Task-254
+handoff without changing its public producer or rows. Structure term 0
+remains constructor 59 in proof context 1 with root 0, members 20/24, two
+`Primary(2/3)` value edges, six requests, and no application fingerprint.
+Only the statement witness adds the directed target to that term.
+
+The B2P seam is now live, so its private dead-code allowance was removed;
+visibility, extraction, ownership, validation, and debug bytes are
+unchanged; `source_structure.rs` remains 5,036 lines. Selector, update,
+`FieldUpdate`, field identity, typing,
+inheritance, and all semantic behavior remain deferred.

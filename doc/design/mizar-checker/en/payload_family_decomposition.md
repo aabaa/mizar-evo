@@ -1040,3 +1040,16 @@ retains only the two equality formulas, with zero direct `Structure` targets
 and no structure fingerprint. No reverse edge, wrapper target, field/member
 identity, selector/update family, semantic/proof/goal edge, or coverage
 credit is authorized. B2B/B2C remain separate.
+
+### Task 258B3M2B2B2A Implemented Witness-to-Structure Edge
+
+The exact directed `SourceStatementWitness(0) ->
+SourceStructureTerm(0)` edge is installed. Task 258 owns only the
+theorem/conclusion base rows and take/witness 62/61; Task 254 retains
+constructor/member/request ownership and Task 252 retains the primary
+children. Task 256 remains equality-only with no direct structure target or
+fingerprint and is revalidated only at the atomic typed/final boundary.
+
+No reverse edge, field/member identity, selector/update payload,
+semantic/proof/goal edge, active route, or coverage credit was added. B2B
+selector and B2C update/`FieldUpdate` remain separate deferred families.

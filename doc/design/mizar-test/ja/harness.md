@@ -3729,3 +3729,16 @@ documentation baselinesはchecker/runner tests `378/425`、runner
 statement/structure/facade/root/statement-test/structure-test sizesは
 `5962/2857/715/2531/13381/2991`。implementationはrunner 430 testsを
 projectする。
+
+## Checker Task 258B3M2B2B2A dormant harness result
+
+private harnessはfrozen constructor-witness sourceだけをrecognizeし、
+Task-48/252/254/256/baseと`Structure(0)` witness 1件をcomposeする。parser/
+resolver tablesをcopyせずB2P ownership/provenance selectorをreuseする。
+exact five named testsは全172 bytes、B2P seam経由の76 node/root fields、
+malformed recovery、dependency/base/witness mutation/replay、family
+isolation、typed/final clone/empty semanticsを含めPASS。
+
+runner libraryは430 tests。active case、fixture、expectation、sidecar、
+trace row/backlink/credit、diagnostic detail、public runner routeは追加なし。
+B2B/B2Cとsemantic/proof/goal/overload/Core/CFG/VCはdeferredまたはempty。

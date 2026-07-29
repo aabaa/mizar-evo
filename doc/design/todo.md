@@ -2805,5 +2805,27 @@ or semantic owner changed. B3M2B2B remains next before B4.
   trace `deferred` / `tests = []`, active routes, and all counts/hashes.
 - [x] Complete no-findings specification review and every documentation hard
   gate with a valid final quality score of `98/100`.
-- [ ] Make one dedicated docs commit, then fresh-inventory and implement only
+- [x] Make one dedicated docs commit, then fresh-inventory and implement only
   B2A.
+
+## Checker Task 258B3M2B2B2A Implementation Completion
+
+- [x] Implement the exact checker target/fingerprint/builder/atomic
+  typed/final APIs and private runner consumer.
+- [x] Pass the exact four checker/five runner tests and close bounded B2A
+  `source_drift` / `test_gap`.
+- [x] Preserve B2B/B2C and semantic/proof/goal deferrals, active routes,
+  fixtures, expectations, sidecars, and trace `deferred` / `tests = []`.
+- [x] Record tests `382/430`, current module/manifests, and test-list hashes.
+- [x] Complete prerequisite spec review and no-findings test-sufficiency,
+  implementation, and source/documentation consistency reviews.
+- [x] Pass focused checker/runner `4/4` and `5/5`, full format, all-target/
+  all-feature Clippy with warnings denied, and `cargo test -q` with libraries
+  `382/430` and lint policies `15/14`.
+- [x] Pass five CLIs at exit zero with 23 warnings / zero errors and
+  unchanged counts/hashes; keep manifests/test lists/forbidden artifacts
+  unchanged and `stash@{0}` untouched.
+- [x] Complete the final read-only quality review with all nine hard gates
+  passing and a valid score of `98/100`.
+- [ ] Commit this logical task, verify post-commit metadata/stash invariants,
+  and fresh-inventory the B2B selector documentation prerequisite.

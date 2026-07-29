@@ -1178,3 +1178,15 @@ already-authorized pre-statement structure/atomic coexistence; it and
 statement bundle. Application installers reject structure targets and the
 new installer rejects application/legacy targets. Every failure leaves the
 original AST unchanged.
+
+## Task 258B3M2B2B2A Atomic Installation Result
+
+`with_source_structure_statement_witnesses` now atomically installs only the
+authenticated B2A structure/statement/witness triple. It revalidates
+Task-252/254/256 and all statement/witness fingerprints before mutation,
+including Task 256 with `Some(&structure)` but no direct structure target or
+fingerprint. Application, legacy, partial, repeated, stale, reverse, and
+family-coexisting bundles reject with the original AST unchanged.
+
+`typed_ast.rs` is 4,829 lines. Existing installers remain compatible; no
+active route, semantic/type/proof owner, or coverage credit was added.

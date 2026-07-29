@@ -3937,3 +3937,18 @@ sidecar, trace row/credit, diagnostic detail, or public runner route changes.
 Documentation baselines remain checker/runner tests `378/425`; runner
 statement/structure/facade/root/statement-test/structure-test sizes are
 `5962/2857/715/2531/13381/2991`. Implementation projects 430 runner tests.
+
+## Checker Task 258B3M2B2B2A Dormant Harness Result
+
+The private harness now recognizes only the frozen constructor-witness
+source and composes Task-48/252/254/256/base with one `Structure(0)`
+witness. It reuses the B2P ownership/provenance selector rather than copying
+parser or resolver tables. The five exact named tests pass, including all
+172 bytes, all 76 node/root fields through the B2P seam, malformed recovery,
+dependency/base/witness mutation and replay, family isolation, and typed/
+final clone/empty semantics.
+
+The runner library is 430 tests. No active case, fixture, expectation,
+sidecar, trace row/backlink/credit, diagnostic detail, or public runner
+route was added. B2B/B2C and all semantic/proof/goal/overload/Core/CFG/VC
+families remain deferred or empty.

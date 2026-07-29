@@ -1182,3 +1182,16 @@ byte-for-byte. The current blanket structure-plus-statement rejection is
 relaxed only for this exact B2A triple. Missing, orphan, partial, stale,
 application/structure hybrid, reverse, or repeated bundles reject atomically.
 All semantic/proof/goal/overload tables remain empty.
+
+## Task 258B3M2B2B2A Final Revalidation Result
+
+Final assembly now admits only the exact coexisting structure, statement,
+and structure-target witness bundle. It revalidates every lower
+installation and fingerprint, including equality-only Task 256 against
+`Some(&structure)`, and clone-preserves all three handoffs byte-for-byte.
+Missing, partial, stale, repeated, reversed, or application/structure hybrid
+states remain `InvalidSourceStatement`.
+
+`resolved_typed_ast.rs` is 7,241 lines. No public final accessor, active
+route, semantic/proof/goal owner, or coverage credit was added, and every
+upper semantic table remains empty.

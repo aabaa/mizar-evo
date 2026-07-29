@@ -663,3 +663,17 @@ bilingual debtはない。
 independent specification reviewはdocumentation-only `design_drift` 3件の
 correction後findingsなし。final read-only reviewは全hard gate PASS、
 score capなし、valid `98/100`で、runner contract syncを維持。
+
+## Checker Task 258B3M2B2B2A runner implementation synchronization
+
+English canonical runner docs/JA companionsはimplemented exact-source
+selector、live B2P seam reuse、`Structure(0)` witness、checker-owned API/
+atomic installer、runner 5/checker 4 testsで一致する。tests `382/430`、
+runner sizes `6414/2843/720/2537/15058`、30 paths / 43,135 lines、
+production/test-list hashesも一致。
+
+dormant active boundary/deferred empty trace rowはbacklink/creditなしで
+preserveする。fixtures、expectations、sidecars、CLI outputs、semantic/
+proof/goal familiesはunchangedで、B2B/B2Cはdeferred。reviewsはfindings
+なし、verificationはPASS。final read-only reviewは全9 hard gates PASS、
+valid `98/100`。openなのはcommit/fresh-inventory closureだけ。

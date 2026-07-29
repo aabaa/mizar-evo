@@ -2310,4 +2310,26 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   `5962/2857/715/2531/13381/2991`, counts, and exact hashes.
 - [x] Complete no-findings specification review and every documentation hard
   gate with a valid final quality score of `98/100`.
-- [ ] After the dedicated commit, fresh-inventory and implement only B2A.
+- [x] After the dedicated commit, fresh-inventory and implement only B2A.
+
+## Checker Task 258B3M2B2B2A Runner Implementation Ledger
+
+- [x] Implement the exact private selector and reuse B2P plus
+  Task-48/252/254/256/base without duplicating lower rows.
+- [x] Publish one `Structure(0)` witness through the checker-owned APIs and
+  pass exactly five runner plus four checker tests.
+- [x] Close bounded B2A `source_drift` and `test_gap`; preserve active,
+  fixture, expectation, sidecar, trace, and semantic boundaries.
+- [x] Record runner tests 430, sizes/manifests, and test-list hashes.
+- [x] Complete no-findings test, implementation, and docs consistency
+  reviews.
+- [x] Pass focused checker/runner `4/4` and `5/5`, full format,
+  all-target/all-feature Clippy with warnings denied, and `cargo test -q`
+  with libraries `382/430` and lint policies `15/14`.
+- [x] Pass all five CLIs at exit zero with 23 warnings / zero errors and
+  unchanged counts/hashes; preserve manifests/test lists/forbidden artifacts
+  and leave `stash@{0}` untouched.
+- [x] Complete final quality review with all nine hard gates passing and a
+  valid score of `98/100`.
+- [ ] Commit, verify clean metadata/stash invariants, and fresh-inventory
+  the B2B selector documentation prerequisite.

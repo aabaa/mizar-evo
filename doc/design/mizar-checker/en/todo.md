@@ -5193,5 +5193,28 @@ implementation commit does not satisfy a producer task.
   artifacts, formula trace `deferred` / `tests = []`, and all counts/hashes.
 - [x] Complete no-findings specification review and every documentation hard
   gate with a valid final quality score of `98/100`.
-- [ ] After the dedicated docs commit, fresh-inventory and implement B2A
+- [x] After the dedicated docs commit, fresh-inventory and implement B2A
   only.
+
+## Checker Task 258B3M2B2B2A Implementation Ledger
+
+- [x] Implement the structure target/fingerprint/builder and atomic
+  typed/final installation for the exact frozen profile.
+- [x] Implement the bounded runner consumer through the existing B2P seam
+  and pass the exact four checker/five runner tests.
+- [x] Close bounded B2A `source_drift` and `test_gap`; preserve all B2B/B2C
+  and semantic deferrals.
+- [x] Record tests `382/430`, module/manifests, and test-list hashes; keep
+  trace `deferred` / `tests = []` without credit.
+- [x] Complete no-findings test-sufficiency, implementation, and
+  source/documentation consistency reviews.
+- [x] Pass focused checker/runner `4/4` and `5/5`, `cargo fmt --all
+  --check`, all-target/all-feature Clippy with warnings denied, and
+  `cargo test -q` with libraries `382/430` and lint policies `15/14`.
+- [x] Pass all five CLIs at exit zero with 23 warnings / zero errors and
+  unchanged counts/hashes; leave manifests/test lists and forbidden
+  artifacts unchanged and `stash@{0}` untouched.
+- [x] Complete final read-only quality review with all nine hard gates
+  passing and a valid score of `98/100`.
+- [ ] Commit this logical task, verify clean metadata/stash invariants, and
+  fresh-inventory the B2B selector documentation prerequisite.

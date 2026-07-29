@@ -220,3 +220,17 @@ field valueはtargetしない。
 existing Task-254 public producer/tables/validation/debug bytes/legacy routeは
 unchanged。field/property identity、coverage/defaults、value/result typing、
 inheritance、selector、update、`FieldUpdate` semanticsはTask 263/B2B/B2C。
+
+## Task 258B3M2B2B2A implemented structure consumer
+
+statement routeはcompleted B2P seam/exact Task-254 handoffをpublic producer/
+rowsを変えずconsumeする。structure term 0はproof context 1のconstructor
+59、root 0、members 20/24、`Primary(2/3)` value edges 2件、requests 6件、
+application fingerprintなし。statement witnessだけがdirected targetを
+追加する。
+
+B2P seamがliveになったためprivate dead-code allowanceをremoveしたが、
+visibility/extraction/ownership/validation/debug bytesはunchangedで、
+`source_structure.rs`は5,036 linesのまま。
+selector、update、`FieldUpdate`、field identity、typing、inheritance、
+semantic behaviorはdeferred。

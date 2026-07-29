@@ -4043,3 +4043,19 @@ formula-statement trace rowは`deferred`、`tests = []`、backlink/creditなし�
 canonical specs、`.miz`、fixtures、expectations、sidecars、trace metadata/
 counts、active routes、Task-254 diagnostic credit、semantic/proof/goal
 behaviorはunchanged。
+
+## Task 258B3M2B2B2A implementation audit
+
+exact checker/runner implementationとchecker 4/runner 5 testsがbounded B2A
+`source_drift`/`test_gap`をcloseした。additive public API、fingerprint
+matrix、witness-to-structure ownership、validation precedence、atomic typed
+publication、final clone behaviorはfrozen contractと一致する。B2B selector、
+B2C functional update/`FieldUpdate`、structure/proof semanticsはdeferred。
+
+このaudit updateはnarrative source/test follow-upだけ。formula-statement
+rowは`deferred`、`tests = []`、backlink/status/count change/coverage credit
+なし。canonical specs、`.miz`、fixtures、expectations、sidecars、active
+routes、Task-254 diagnostic creditはunchanged。implementation-phase
+reviewsはfindingsなし、全verification gatesはPASS。final read-only
+reviewは全9 hard gates PASS、valid `98/100`。openなのはcommit/fresh
+inventoryだけ。

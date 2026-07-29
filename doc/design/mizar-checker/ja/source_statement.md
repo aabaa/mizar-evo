@@ -2568,3 +2568,18 @@ revalidateする。
 contractはsource provenance/ownershipで終了し、existential matching、
 type obligation、substitution、remaining goal、formula truth、proof fact、
 theorem acceptanceはpublishしない。
+
+## Task 258B3M2B2B2A structure-witness result
+
+syntax-free producerはexact B2A profileをenumerateし、authenticated
+Task-258 base上のunnamed `Structure(0)` witness 1件をpublishする。
+`build_with_structure`はexact structure fingerprintをstoreし、legacy/
+application pairsは`(None,None)`/`(Some,None)`のまま、hybridはreject。
+debugはB2Aだけconditional structure fingerprintと`term=structure#0`を
+renderする。
+
+checker 4 testsがpublic API、base/witness rows、dependency substitutions、
+fingerprint isolation、atomic installation、final cloneをvalidateする。
+`source_statement.rs`は27,194 lines。
+existential matching、obligation、goal、proof fact、theorem acceptance、
+active route、coverage creditは追加しない。

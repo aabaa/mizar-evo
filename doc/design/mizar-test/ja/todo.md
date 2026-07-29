@@ -2113,4 +2113,25 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   `5962/2857/715/2531/13381/2991`、counts/exact hashesをpreserve。
 - [x] no-findings specification reviewと全documentation hard gatesを
   valid final quality `98/100`で完了。
-- [ ] dedicated commit後、fresh-inventoryしてB2Aだけをimplement。
+- [x] dedicated commit後、fresh-inventoryしてB2Aだけをimplement。
+
+## Checker Task 258B3M2B2B2A runner implementation ledger
+
+- [x] exact private selectorをimplementし、lower rowsをduplicateせずB2Pと
+  Task-48/252/254/256/baseをreuse。
+- [x] checker-owned APIs経由で`Structure(0)` witness 1件をpublishし、
+  runner 5/checker 4 exact testsをpass。
+- [x] bounded B2A `source_drift`/`test_gap`をcloseし、active/fixture/
+  expectation/sidecar/trace/semantic boundariesをpreserve。
+- [x] runner tests 430、sizes/manifests、test-list hashesをrecord。
+- [x] no-findings test/implementation/docs consistency reviewsをcomplete。
+- [x] focused checker/runner `4/4`/`5/5`、full format、all-target/all-feature
+  Clippy warnings denied、libraries `382/430`/lint policies `15/14`を含む
+  `cargo test -q`をPASS。
+- [x] five CLIs exit 0、warnings 23/errors 0、counts/hashes不変をverifyし、
+  manifests/test lists/forbidden artifactsはunchanged、`stash@{0}`は
+  untouched。
+- [x] 全9 hard gates PASS、valid score `98/100`でfinal quality reviewを
+  complete。
+- [ ] commit、clean metadata/stash invariants verify、B2B selector
+  documentation prerequisiteのfresh inventoryを実行。

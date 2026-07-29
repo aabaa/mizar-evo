@@ -686,3 +686,19 @@ The independent specification review ended with no findings after three
 documentation-only `design_drift` corrections. The final read-only review
 passed every hard gate with no score cap and a valid `98/100`; the runner
 contract remains synchronized.
+
+## Checker Task 258B3M2B2B2A Runner Implementation Synchronization
+
+The English canonical runner documents and Japanese companions agree on the
+implemented exact-source selector, live B2P seam reuse, one
+`Structure(0)` witness, checker-owned API/atomic installer, and five
+runner/four checker tests. They record tests `382/430`, runner sizes
+`6414/2843/720/2537/15058`, 30 paths / 43,135 lines, and matching
+production/test-list hashes.
+
+Both languages preserve the dormant active boundary and deferred empty trace
+row without backlink or credit. Fixtures, expectations, sidecars, CLI
+outputs, and semantic/proof/goal families remain unchanged; B2B/B2C remain
+deferred. Reviews have no findings and verification passes. The final
+read-only review passes all nine hard gates with a valid `98/100`; only
+commit and fresh-inventory closure remain open.

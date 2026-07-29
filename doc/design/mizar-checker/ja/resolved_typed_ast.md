@@ -1119,3 +1119,16 @@ installations、equality-only Task 256をdirect structure fingerprintなしの
 current blanket structure+statement rejectionはexact B2A tripleだけrelax。
 missing/orphan/partial/stale/application-structure hybrid/reverse/repeated
 bundlesはatomically reject。全semantic/proof/goal/overload tablesはempty。
+
+## Task 258B3M2B2B2A final revalidation result
+
+final assemblyはexact coexisting structure/statement/structure-target
+witness bundleだけをadmitする。equality-only Task 256の
+`Some(&structure)` revalidationを含む全lower installation/fingerprintを
+revalidateし、three handoffsをbyte-for-byte clone-preserveする。
+missing/partial/stale/repeated/reversed/application-structure hybridは
+`InvalidSourceStatement`のまま。
+
+`resolved_typed_ast.rs`は7,241 lines。public final accessor、active route、
+semantic/proof/goal owner、coverage creditは追加せず、upper semantic
+tablesはempty。

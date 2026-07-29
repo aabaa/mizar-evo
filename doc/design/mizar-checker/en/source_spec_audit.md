@@ -4230,3 +4230,20 @@ The formula-statement trace row remains `deferred`, `tests = []`, with no
 backlink or credit. Canonical specs, `.miz`, fixtures, expectations,
 sidecars, trace metadata/counts, active routes, Task-254 diagnostic credit,
 and semantic/proof/goal behavior are unchanged.
+
+## Task 258B3M2B2B2A Implementation Audit
+
+The exact checker/runner implementation and its four/five tests close the
+bounded B2A `source_drift` and `test_gap`. The additive public API,
+fingerprint matrix, witness-to-structure ownership, validation precedence,
+atomic typed publication, and final clone behavior match the frozen
+contract. B2B selector behavior, B2C functional update/`FieldUpdate`, and
+all structure/proof semantics remain deferred.
+
+This audit update is narrative source/test follow-up only. The
+formula-statement row remains `deferred`, `tests = []`, without backlink,
+status/count change, or coverage credit. Canonical specs, `.miz`, fixtures,
+expectations, sidecars, active routes, and Task-254 diagnostic credit remain
+unchanged. The implementation-phase reviews have no findings and all
+verification gates pass. The final read-only review passes all nine hard
+gates with a valid `98/100`; only commit and fresh inventory remain open.

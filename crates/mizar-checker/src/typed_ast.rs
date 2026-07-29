@@ -1058,6 +1058,92 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_structure_statement_witnesses(
+        mut self,
+        structure: SourceStructureHandoff,
+        statements: SourceStatementHandoff,
+        witnesses: SourceStatementWitnessHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_statement.is_some()
+            || self.source_statement_references.is_some()
+            || self.source_statement_witnesses.is_some()
+            || self.resolved_root.is_some()
+            || self.source_context.is_some()
+            || self.source_type.is_some()
+            || self.source_attribute.is_some()
+            || self.source_evidence.is_some()
+            || self.source_application.is_some()
+            || self.source_structure.is_some()
+            || self.source_set_term.is_some()
+            || self.source_composite_formula.is_some()
+            || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
+            || !self.contexts.is_empty()
+            || !self.types.is_empty()
+            || !self.facts.is_empty()
+            || !self.coercions.is_empty()
+            || !self.initial_obligations.is_empty()
+            || !self.diagnostics.is_empty()
+        {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        structure
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                None,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        source_atomic_formula
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                None,
+                Some(&structure),
+                None,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        statements
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_atomic_formula,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        if !statements.is_task_258b3m2b2b2a_profile() {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        witnesses
+            .validate_installation_with_structure(
+                self.source_id,
+                &self.module_id,
+                &statements,
+                source_term,
+                Some(&structure),
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        self.source_structure = Some(structure);
+        self.source_statement = Some(statements);
+        self.source_statement_witnesses = Some(witnesses);
+        Ok(self)
+    }
+
     pub const fn nodes(&self) -> &TypedArena {
         &self.nodes
     }

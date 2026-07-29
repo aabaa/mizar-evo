@@ -601,3 +601,20 @@ The independent specification review ended with no findings after three
 documentation-only `design_drift` corrections. The final read-only review
 passed every hard gate with no score cap and a valid `98/100`; EN/JA remain
 synchronized.
+
+## Task 258B3M2B2B2A Implementation Synchronization
+
+The EN canonical and JA companion record the same implemented additive
+target/fingerprint/builder/atomic installer, exact `(None, Some)` profile,
+four checker/five runner tests, and atomic typed/final clone behavior. They
+also record matching inventories: tests `382/430`, checker module sizes
+`27194/4829/7241/5036`, runner sizes `6414/2843/720/2537/15058`, and the
+same manifest/test-list hashes.
+
+Both languages keep the formula-statement row `deferred`, `tests = []`,
+without backlink or executable credit. Active routes, fixtures,
+expectations, sidecars, and semantic/proof/goal ownership are unchanged;
+B2B/B2C remain deferred. The three implementation-phase reviews and all
+verification gates have no findings/pass. The final read-only review passes
+all nine hard gates with a valid `98/100`; only commit and fresh-inventory
+closure remain open. No implementation bilingual debt remains.

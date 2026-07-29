@@ -971,3 +971,15 @@ node 52をauthenticateする。Task 252はprimary children、Task 256はdirect
 retainする。reverse edge、wrapper target、field/member identity、
 selector/update family、semantic/proof/goal edge、coverage creditは
 authorizeしない。B2B/B2Cはseparate。
+
+### Task 258B3M2B2B2A implemented witness-to-structure edge
+
+exact directed `SourceStatementWitness(0) -> SourceStructureTerm(0)` edgeを
+installした。Task 258はtheorem/conclusion base rowsとtake/witness 62/61
+だけをownし、Task 254はconstructor/member/request、Task 252はprimary
+childrenをretainする。Task 256はdirect structure target/fingerprintなしの
+equality-onlyで、atomic typed/final boundaryだけでrevalidateする。
+
+reverse edge、field/member identity、selector/update payload、semantic/
+proof/goal edge、active route、coverage creditは追加していない。B2B
+selectorとB2C update/`FieldUpdate`はseparate deferred families。

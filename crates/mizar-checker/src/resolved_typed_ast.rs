@@ -1794,7 +1794,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 || self.inputs.typed_ast.source_type().is_some()
                 || self.inputs.typed_ast.source_attribute().is_some()
                 || self.inputs.typed_ast.source_evidence().is_some()
-                || source_structure.is_some()
+                || (source_structure.is_some() && !source_statement.is_task_258b3m2b2b2a_profile())
                 || source_set_term.is_some()
                 || source_composite_formula.is_some()
                 || source_formula_composition.is_some()
@@ -1864,6 +1864,22 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                             source_statement,
                             source_term,
                             source_application.as_ref(),
+                            self.inputs.typed_ast.nodes(),
+                        )
+                        .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
+                }
+                (None, Some(witnesses))
+                    if source_statement.is_task_258b3m2b2b2a_profile()
+                        && source_application.is_none()
+                        && source_structure.is_some() =>
+                {
+                    witnesses
+                        .validate_installation_with_structure(
+                            source_id,
+                            &module_id,
+                            source_statement,
+                            source_term,
+                            source_structure.as_ref(),
                             self.inputs.typed_ast.nodes(),
                         )
                         .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?

@@ -572,3 +572,18 @@ B2A bilingual debtは認めない。
 independent specification reviewはdocumentation-only `design_drift` 3件の
 correction後findingsなし。final read-only reviewは全hard gate PASS、
 score capなし、valid `98/100`で、EN/JA syncを維持。
+
+## Task 258B3M2B2B2A implementation synchronization
+
+EN canonical/JA companionはimplemented additive target/fingerprint/builder/
+atomic installer、exact `(None, Some)` profile、checker 4/runner 5 tests、
+atomic typed/final clone behaviorで一致する。inventoriesもtests `382/430`、
+checker module sizes `27194/4829/7241/5036`、runner sizes
+`6414/2843/720/2537/15058`、manifest/test-list hashesで一致する。
+
+formula-statement rowは`deferred`、`tests = []`、backlink/creditなし。
+active routes、fixtures、expectations、sidecars、semantic/proof/goal
+ownershipはunchangedでB2B/B2Cはdeferred。three implementation-phase
+reviewsはfindingsなし、全verification gatesはPASS。final read-only
+reviewは全9 hard gates PASS、valid `98/100`。openなのはcommit/
+fresh-inventory closureだけ。implementation bilingual debtなし。

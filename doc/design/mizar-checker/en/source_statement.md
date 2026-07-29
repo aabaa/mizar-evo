@@ -3093,3 +3093,18 @@ reauthenticate it with `Some(&structure)`.
 The contract ends at source provenance/ownership. No existential matching,
 type obligation, substitution, remaining goal, formula truth, proof fact,
 or theorem acceptance is published.
+
+## Task 258B3M2B2B2A Structure-Witness Result
+
+The syntax-free producer now enumerates the exact B2A profile and publishes
+one unnamed `Structure(0)` witness over the authenticated Task-258 base.
+`build_with_structure` stores the exact structure fingerprint while
+legacy/application pairs remain `(None, None)` / `(Some, None)` and hybrids
+reject. Debug rendering emits the conditional structure fingerprint and
+`term=structure#0` only for B2A.
+
+Four checker tests validate the public API, base/witness rows, dependency
+substitutions, fingerprint isolation, atomic installation, and final clone.
+`source_statement.rs` is 27,194 lines.
+No existential matching, obligation, goal, proof fact, theorem acceptance,
+active route, or coverage credit is introduced.

@@ -4948,4 +4948,27 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   formula trace `deferred` / `tests = []`、全counts/hashesをpreserve。
 - [x] no-findings specification reviewと全documentation hard gatesを
   valid final quality `98/100`で完了。
-- [ ] dedicated docs commit後、fresh-inventoryしてB2Aだけをimplement。
+- [x] dedicated docs commit後、fresh-inventoryしてB2Aだけをimplement。
+
+## Checker Task 258B3M2B2B2A implementation ledger
+
+- [x] exact frozen profileのstructure target/fingerprint/builderとatomic
+  typed/final installationをimplement。
+- [x] existing B2P seam経由のbounded runner consumerをimplementし、exact
+  checker 4/runner 5 testsをpass。
+- [x] bounded B2A `source_drift`/`test_gap`をcloseし、B2B/B2C/semantic
+  deferralsをpreserve。
+- [x] tests `382/430`、module/manifests、test-list hashesをrecordし、trace
+  `deferred` / `tests = []`をcreditなしで維持。
+- [x] no-findings test-sufficiency/implementation/source-doc consistency
+  reviewsをcomplete。
+- [x] focused checker/runner `4/4`/`5/5`、`cargo fmt --all --check`、
+  all-target/all-feature Clippy warnings denied、libraries `382/430`/
+  lint policies `15/14`を含む`cargo test -q`をPASS。
+- [x] five CLIs exit 0、warnings 23/errors 0、counts/hashes不変をverifyし、
+  manifests/test lists/forbidden artifactsはunchanged、`stash@{0}`は
+  untouched。
+- [x] 全9 hard gates PASS、valid score `98/100`でfinal read-only quality
+  reviewをcomplete。
+- [ ] logical taskをcommitし、clean metadata/stash invariantsをverifyして
+  B2B selector documentation prerequisiteをfresh-inventory。

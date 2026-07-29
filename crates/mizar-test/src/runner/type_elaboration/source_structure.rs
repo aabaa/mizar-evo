@@ -853,13 +853,6 @@ pub(super) struct ImportedStructureConstructorSite {
     pub(super) constructor: usize,
 }
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "Task 258B3M2B2B2P freezes this production-private seam before B2A consumes it"
-    )
-)]
 pub(super) fn imported_structure_constructor_owned_node_kinds(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -883,13 +876,6 @@ pub(super) fn imported_structure_constructor_owned_node_kinds(
 }
 
 #[allow(clippy::too_many_arguments)] // Rationale: keep every authenticated lower-stage authority explicit at the private reuse seam.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "Task 258B3M2B2B2P freezes this production-private seam before B2A consumes it"
-    )
-)]
 pub(super) fn imported_structure_constructor_handoff_in_context(
     ast: &SurfaceAst,
     module: &ModuleId,

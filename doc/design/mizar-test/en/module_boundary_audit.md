@@ -11848,3 +11848,21 @@ raw/normalized runner-test hashes are
 `97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`.
 Implementation projects `382/430` tests and must remeasure every changed
 size/count/hash.
+
+## Checker Task 258B3M2B2B2A Implemented Runner Boundary
+
+Implementation stayed in the existing private source-statement leaf,
+facade/root registration, and statement test leaf. The source-structure leaf
+changed only by removing the B2P-only dead-code allowance after the private
+seam became live; its extractor, visibility, and rows remain unchanged. No
+module, production path, dependency, public re-export, active route,
+fixture, sidecar, expectation, trace owner, or semantic owner was added.
+
+Final statement/structure/facade/root/statement-test sizes are
+`6414/2843/720/2537/15058`. The 30-path production layout is 43,135 lines
+with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`26debcb7201bdd49828bfd06b2bcee7e775867462f8f6003755f4f8676dd4869`;
+runner test-list hashes are
+`da5ef4a681303797f208849dc15bd76e545bedf23319ed634c16b00fa9a60d55` /
+`7fe2eb9d8e8f7a920e8eb2043a60bc9eed61cfa2081cce27f84a57b6af4ccf3b`.

@@ -1120,3 +1120,15 @@ pre-statement structure/atomic coexistenceを維持するが、
 partially assembleできない。application installersはstructure targetを、
 new installerはapplication/legacy targetsをrejectする。全failureは
 original ASTをunchangedに保つ。
+
+## Task 258B3M2B2B2A atomic installation result
+
+`with_source_structure_statement_witnesses`はauthenticated B2A
+structure/statement/witness tripleだけをatomically installする。mutation前に
+Task-252/254/256と全statement/witness fingerprintsをrevalidateし、Task 256は
+direct structure target/fingerprintなしの`Some(&structure)`でvalidate。
+application/legacy/partial/repeated/stale/reverse/family-coexisting bundleは
+original AST unchangedでrejectする。
+
+`typed_ast.rs`は4,829 lines。existing installersはcompatibleで、active
+route、semantic/type/proof owner、coverage creditは追加していない。
