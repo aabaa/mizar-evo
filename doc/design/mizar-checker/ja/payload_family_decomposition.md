@@ -914,3 +914,17 @@ family/cross-family edgeを追加しない。Task 252はprimaries 2/3、Task 253
 application/wrapper 0を引き続きownし、exact resolver authenticationは
 別rowをpublishせずadmissionだけを狭める。Task 258はまだ何もownせず、
 全statement/witness/semantic/proof/goal familiesはB1B1へdeferする。
+
+### Task 258B3M2B2B1B1 frozen cross-family edge
+
+B1B1はwrapped sourceにexisting edge shape
+`SourceStatementWitness(0) -> SourceFunctorApplication(0)`だけを追加する。
+Task 252はprimaries 2/3、Task 253はapplication 0、wrapper 0、
+candidate、arguments、requests、Task 258はtake/witness pair 1件をown。
+wrapper 0はauthenticated containmentだけで、reverse edge/witness target
+ではない。Task 256はequality edges `[0,1]`、`[4,5]`だけを保持する。
+
+public B1A schema/atomic three-handoff installerはB1Aをbroadenせずreuseする。
+new profileはcrate-private。Task-254/255、structure/set/choice/
+qualification、semantic term、proof、goal、Core/CFG/VC、全other familiesは
+excludeする。

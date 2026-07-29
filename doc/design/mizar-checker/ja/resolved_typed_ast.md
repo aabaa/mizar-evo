@@ -1083,3 +1083,20 @@ invalid stateをrepairしない。successful cloneはexpression-semantic、
 candidate、coercion、cluster、diagnostic、statement-semantic、proof、goal
 outputsをemptyに維持し、type、proof step、substitution、goal effectを
 inferしない。
+
+## Task 258B3M2B2B1B1 frozen final bundle revalidation
+
+final assemblyはtyped-stage enumerationをmirrorする。existing
+application/statement/witness bundleはexact B1Aまたはexact B1B1だけが
+valid。B1B1は67-node arena、local theorem contribution/label、wrapped
+Task-253 `1/1/1/2/2` application provenance/containment、Task-252
+`6/4/2`、Task-256 equality-only exclusion、base `1/2/2/2/2`、one
+unnamed `Application(0)` witness/no names、全fingerprintsをrevalidateする。
+B1Aはunchanged bytesを持つindependent 63-node unwrapped profileのまま。
+
+partial、orphaned、stale、substituted、B1A/B1B1-hybrid、reversed、
+family/semantic coexistence stateは`InvalidSourceStatement`で、cloneは
+repairできない。successful B1B1 cloneはthree handoffsをbyte-for-byte
+preserveし、type-semantic、formula-semantic、proof、goal、overload、
+coercion、obligation、cluster、diagnostic outputsをemptyに保つ。new
+public final-AST API/semantic meaningは追加しない。

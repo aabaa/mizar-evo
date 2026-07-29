@@ -591,3 +591,13 @@ production manifest/hashes、unchanged legacy unwrapped paths、empty
 downstream tablesも一致する。public/active/statement/fixture/expectation/
 sidecar/trace/semantic changeもimplementation bilingual debtも残らず、
 B1B1は別taskで続く。
+
+## Checker Task 258B3M2B2B1B1 runner contract synchronization
+
+paired runner plans、harness contracts、module audits、ledgersは、
+158-byte/67-node selector、theorem/imported-application provenance、
+wrapped lower profiles、base `1/2/2/2/2`、one unnamed
+`Application(0)` witness/no names、exact runner tests 5件、B1A/active
+route isolation、semantic deferrals、unchanged `374/418` baselines/sizes/
+counts/hashesで一致する。English canonicalと同期し、B1B1 bilingual
+debtなし。

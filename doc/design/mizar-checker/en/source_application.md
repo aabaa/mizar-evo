@@ -276,3 +276,18 @@ Five same-source resolver substitutions fail at selector admission. The two
 frozen tests pass every byte/node mutation, exact diagnostic/node near-miss
 matrix, producer/typed-install precedence, replay/clone, and legacy hash
 gate. No public producer/table/API or unwrapped output changed.
+
+## Task 258B3M2B2B1B1 Exact Wrapped Statement Consumer
+
+B1B1 is the first statement consumer of the B1B1P wrapped proof-context
+handoff. Task 253 remains unchanged and owns application 0 at `130..136`,
+wrapper 0 at `129..137`, imported `parser.type_fixtures::++#12`, ordered
+`Primary(2/3)` arguments, and its two unresolved requests. The statement
+witness targets application 0; it never targets or copies wrapper 0.
+
+No new Task-253 API, row, fingerprint, or validator is authorized. The
+runner-private B1B1 selector reuses the existing wrapped seam, and the
+checker-private B1B1 statement profile consumes its immutable handoff through
+the existing application fingerprint and atomic installer. B1A unwrapped
+bytes remain compatible, and all other wrapped/application forms remain
+deferred.

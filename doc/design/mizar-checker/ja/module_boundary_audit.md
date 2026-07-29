@@ -489,3 +489,23 @@ production manifestは41,173 lines、path/content hashesは
 `ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`。
 statement extraction、checker dependency、public/active route、binding、
 semantic owner、crate edge、dependency directionは変更なし。
+
+## Task 258B3M2B2B1B1 frozen boundary
+
+B1B1は`src/source_statement.rs`のnew explicit crate-private profileと、
+`src/typed_ast.rs`/`src/resolved_typed_ast.rs`のexisting-installer/final
+revalidation enumerationを必要とする。public checker API/new moduleは
+追加しない。public `Application` witness target、optional fingerprint、
+application-aware producer、atomic installerを不変のままreuseする。
+
+runner consumerはexisting source-statement leafに留まり、complete済み
+private source-application wrapped seamをcallする。facade/root importsは
+dormant routeに必要な範囲だけ。`lib.rs`、Task-253 public schema、
+fixtures、expectations、sidecars、trace metadata、active dispatchはscope外。
+current checker sizes `21664/4742/7224/3156`、runner statement/application/
+facade/root/test sizes `5618/2652/708/2523/11945/3727`はdocumentation
+baselinesでtargetではない。
+checker source manifestは23 paths / 115,631 lines、hashesは
+`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
+`0d79034477a92c850563478abda36df1e50c951a447f79fca886830ade8acce0`
+のまま。

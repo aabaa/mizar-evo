@@ -2223,3 +2223,20 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Leave public/active/statement routes, fixtures, expectations, sidecars,
   trace status/count, and semantic/proof/goal ownership unchanged; select
   B1B1 documentation only after this implementation commit.
+
+## Checker Task 258B3M2B2B1B1 Runner Prerequisite Ledger
+
+- [x] Freeze the exact final-LF 158-byte/67-node selector and complete local
+  theorem/imported `++` resolver provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, wrapped Task-253
+  `1/1/1/2/2`, equality-only Task-256, base `1/2/2/2/2`, and one unnamed
+  `Application(0)` witness/no names.
+- [x] Reuse the B1B1P wrapped seam and existing B1A checker API/atomic
+  installer through one explicit private B1B1 profile.
+- [x] Freeze five exact runner tests for all bytes/nodes, resolver
+  substitutions, near-miss matrix, precedence, B1A/family/active isolation,
+  rollback/replay/clone, and empty upper tables.
+- [x] Preserve tests `374/418`, all measured sizes/counts/hashes, public and
+  active routes, fixtures, expectations, sidecars, trace status/count, and
+  semantic/proof/goal ownership.
+- [x] Commit documentation alone, fresh-inventory, then implement B1B1.

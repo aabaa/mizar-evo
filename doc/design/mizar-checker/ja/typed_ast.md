@@ -1076,3 +1076,26 @@ reverse-order、Tasks-253/254/255 coexistence、semantic coexistenceのB1A
 publication attemptは全てoriginal `TypedAst`を変更せずfailする。legacy
 application-free statement profile/debug bytesは維持する。successful B1A
 installはtype、expression-semantic、proof、goal ownershipを追加しない。
+
+## Task 258B3M2B2B1B1 frozen atomic typed ownership
+
+existing `TypedAst::with_source_application_statement_witnesses` entry
+pointはB1A/B1B1をtwo exact profilesとしてenumerateする。B1B1は67-node
+wrapped profileで、Task-252 `6/4/2`、Task-253 `1/1/1/2/2`、Task-256
+equality-only edges `[0,1]` / `[4,5]`、base statement `1/2/2/2/2`、
+one unnamed `Application(0)` witness/no names。wrapper 0はauthenticated
+Task-253 containmentでwitness targetではない。
+
+installerはthree handoffs publish前にcomplete source/module/arena
+identity、local theorem/imported application provenance、lower
+fingerprints 2件、base/witness rows、wrapper-to-application containment、
+witness-to-application edgeをrevalidateする。B1Aはbyte-identical
+API/debug behaviorを持つseparate 63-node unwrapped profileのままで、
+一方をbroadenして他方を推定しない。
+
+application + statement/witness片方だけ、orphan statement/witness pair、
+B1A/B1B1 hybrids、wrapper/application substitution、stale fingerprints、
+partial/reverse/repeated installation、別Task-258 family、Tasks-254/255
+coexistence、semantic coexistenceはoriginal `TypedAst`不変でrejectする。
+new public typed-AST API/debug grammar/type/semantic/proof/goal ownerは
+authorizeしない。

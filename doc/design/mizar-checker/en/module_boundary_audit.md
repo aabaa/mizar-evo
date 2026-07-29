@@ -513,3 +513,23 @@ lines with path/content hashes
 `ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`.
 No statement extraction, checker dependency, public/active route, binding,
 semantic owner, crate edge, or dependency direction changed.
+
+## Task 258B3M2B2B1B1 Frozen Boundary
+
+B1B1 requires a new explicit crate-private profile in
+`src/source_statement.rs` and corresponding existing-installer/final
+revalidation enumeration in `src/typed_ast.rs` and
+`src/resolved_typed_ast.rs`. It adds no public checker API and no new
+module. The public `Application` witness target, optional fingerprint,
+application-aware producer, and atomic installer are reused unchanged.
+
+The runner consumer remains in the existing source-statement leaf and calls
+the completed private source-application wrapped seam. Facade/root imports
+change only as required by that dormant route. `lib.rs`, Task-253 public
+schema, fixtures, expectations, sidecars, trace metadata, and active
+dispatch are outside scope. Current checker sizes `21664/4742/7224/3156` and
+runner statement/application/facade/root/test sizes
+`5618/2652/708/2523/11945/3727` are documentation baselines, not targets.
+The checker source manifest remains 23 paths / 115,631 lines with hashes
+`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
+`0d79034477a92c850563478abda36df1e50c951a447f79fca886830ade8acce0`.

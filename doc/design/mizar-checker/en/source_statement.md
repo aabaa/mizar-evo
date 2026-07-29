@@ -2940,3 +2940,68 @@ two exact tests without publishing a statement or witness. The future B1B1
 consumer may now be fresh-inventoried against application 0 and wrapper
 containment, but no B1B1 selector, checker row, installer, or semantic behavior
 is inferred by this completion.
+
+## Task 258B3M2B2B1B1 Wrapped Application-Witness Ownership
+
+B1B1 consumes only the final-LF 158-byte/67-node source containing
+`take (1 ++ 2);`. It reuses the B1B1P Task-253 application/wrapper handoff
+and the existing B1A public application-witness schema. It adds no public
+type, method, table, or fingerprint grammar.
+
+The exact containment path is `take 53 -> witness 52 -> unowned 51 ->
+wrapper 50 -> unowned 49 -> application 48`. Task 258 owns take/witness
+nodes 53/52 and the directed `Witness(0) -> Application(0)` edge. Task 253
+continues to own wrapper/application 50/48; wrapper 0 is containment
+metadata, never the target. Task 252 owns numeral primaries 2/3, and Task
+256 excludes the entire subtree.
+
+Owner 0 is the exact local theorem
+`FormulaStatementParenthesizedApplicationWitnessSmoke`: site/range
+`63/48..157`, label `56..108`, contribution 0, `LocalSource` anchor
+`29..47`, checked origin `48..157` with structural path `[2,1]`,
+public/exported/normal. Resolver symbol, definition, label, contribution,
+and checked owner must agree. The resolver has one import and no
+witness-name symbol.
+
+Base rows are exact:
+
+| Row | Frozen value |
+| --- | --- |
+| statement 0 | owner/context `0/0`; `Atomic(0)`; site/range `63/48..157`; ordinal 0; `TheoremProposition`; normalized complete-theorem spelling |
+| statement 1 | owner/context `0/1`; `Atomic(1)`; site/range `61/141..152`; ordinal 2; `Conclusion`; `thus x = x ;` |
+| context 0/1 | statements 0/1; binding contexts 0/1; ranges `48..157` / `141..152`; visible binding `[0]` |
+| input fact 0/1 | corresponding statement/context; ordinal 0; `ReservedTypeGuard`; binding 0; refs `[0,1] -> Primary(0/1)` / `[2,3] -> Primary(4/5)` |
+| candidate fact 0/1 | corresponding statement/context; ordinal 0; `UnverifiedProposition`; `Atomic(0/1)` |
+
+Witness 0 is owner/context `0/1`, source/witness ordinal `1/0`,
+normal/unnamed/no name. Take is site/range `53/124..138`, children
+`[17,52,23]`. The witness is site/range `52/129..137`, normalized spelling
+`( 1 ++ 2 )`, child `[51]`, and target `Application(0)`. The theorem
+contains take/witness, the conclusion does not, and only nodes 53/52 use
+statement-witness ownership kinds.
+
+Lower tables remain Task-48 `2/1/0`, Task-252 `6/4/2`, wrapped Task-253
+`1/1/1/2/2`, and equality-only Task-256 `2/0/0/0/0/0/0/4/4`. Application
+0 remains node/range/context `48/130..136/1`; wrapper 0 remains
+`50/129..137/1`; head is `20/132..134/++`; arguments are `Primary(2/3)`;
+candidate provenance is the exact imported
+`parser.type_fixtures::++#12`, contribution 2, origin `7..27`, path `[12]`,
+public/exported/no signature.
+
+The implementation adds one explicit crate-private B1B1 statement and
+witness profile. It reuses
+`SourceStatementWitnessTermTarget::Application`,
+`SourceStatementWitnessProducer::build_with_application`, and
+`TypedAst::with_source_application_statement_witnesses`; B1A is not
+broadened. Validation proceeds through selector/owner, lower dependencies
+and fingerprints, aggregate, all base rows, witness, empty names, atomic
+typed install, and final revalidation. Failure is atomic and clean replay
+must remain byte-identical.
+
+The four exact checker and five exact runner tests named in the crate plan
+cover all 158 bytes, all fields of 67 nodes plus root, five resolver
+substitutions, the eight-entry reparse matrix, B1A compatibility, family and
+active-route isolation, validation precedence, rollback/replay/clone, and
+empty downstream semantics. Type checking, goal matching, substitution,
+proof acceptance, Task-254/255 forms, and other application/witness shapes
+remain deferred.

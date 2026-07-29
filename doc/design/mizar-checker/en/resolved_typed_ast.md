@@ -1144,3 +1144,21 @@ installation, or semantic coexistence is rejected as
 clone retains empty expression-semantic, candidate, coercion, cluster,
 diagnostic, statement-semantic, proof, and goal outputs and infers no type,
 proof step, substitution, or goal effect.
+
+## Task 258B3M2B2B1B1 Frozen Final Bundle Revalidation
+
+Final assembly must mirror the typed-stage enumeration: the existing
+application/statement/witness bundle is valid only as exact B1A or exact
+B1B1. B1B1 revalidates the 67-node arena, local theorem contribution and
+label, wrapped Task-253 `1/1/1/2/2` application provenance and containment,
+Task-252 `6/4/2`, Task-256 equality-only exclusion, base
+`1/2/2/2/2`, one unnamed `Application(0)` witness/no names, and all
+fingerprints. B1A remains the independent 63-node unwrapped profile with
+unchanged bytes.
+
+A partial, orphaned, stale, substituted, B1A/B1B1-hybrid, reversed,
+family-coexisting, or semantic-coexisting state is
+`InvalidSourceStatement`; cloning cannot repair it. A successful B1B1 clone
+preserves all three handoffs byte-for-byte and retains empty type-semantic,
+formula-semantic, proof, goal, overload, coercion, obligation, cluster, and
+diagnostic outputs. No public final-AST API or semantic meaning is added.

@@ -613,3 +613,13 @@ tests. They also agree on the 418-test inventory, sizes
 unchanged legacy unwrapped paths, and empty downstream tables. No
 public/active/statement/fixture/expectation/sidecar/trace/semantic change or
 implementation bilingual debt remains; B1B1 follows separately.
+
+## Checker Task 258B3M2B2B1B1 Runner Contract Synchronization
+
+The paired runner plans, harness contracts, module audits, and ledgers agree
+on the 158-byte/67-node selector; theorem/imported-application provenance;
+wrapped lower profiles; base `1/2/2/2/2`; one unnamed
+`Application(0)` witness/no names; exact five runner tests; B1A and active
+route isolation; semantic deferrals; and unchanged `374/418` baselines,
+sizes, counts, and hashes. English remains canonical and there is no B1B1
+bilingual debt.

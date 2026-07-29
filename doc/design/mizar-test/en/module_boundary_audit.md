@@ -11748,3 +11748,18 @@ totals 41,173 lines. Sorted path/content hashes are
 raw/normalized 418-test hashes are
 `becc23c77b37b858edca581d11e396efc431f1f47f4cc80d859d6d06d1f19c37` /
 `66089f0f420203a4cf24c182315b77ce58775ce35c50285041823bcc0700248b`.
+
+## Checker Task 258B3M2B2B1B1 Frozen Module Boundary
+
+The existing source-statement leaf owns the new private B1B1 selector and
+calls the existing wrapped source-application seam. The source-application
+leaf changes later only to remove the helper's dead-code allowance; its
+public surface and tests do not change. Existing facade/root modules expose
+the dormant consumer internally without a new public dispatch or detail
+key. The checker changes later only in private statement/typed/final profile
+enumeration.
+
+No new module, crate dependency, checker public API, active fixture route,
+trace/expectation/sidecar owner, or semantic dependency is introduced.
+Baseline sizes `5618/2652/708/2523/11945/3727` and all hashes are measured
+documentation invariants for this prerequisite.

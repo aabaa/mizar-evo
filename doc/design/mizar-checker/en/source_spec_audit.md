@@ -4156,3 +4156,20 @@ diagnostic/node matrix, and all frozen empty upper families. This adds
 implementation evidence only. Canonical specs, `.miz`, expectations,
 sidecars, trace row/status/count, `deferred` status, backlinks, and executable
 coverage credit remain unchanged.
+
+## Task 258B3M2B2B1B1 Frozen-Contract Audit
+
+Chapter 13 parenthesized symbolic infix terms, Chapter 15 `take`
+`term_expression`, and Chapter 16 proof-skeleton requirements jointly
+authorize the exact 158-byte source. Existing `.miz` fixtures separately
+cover the parenthesized operator term and `take` grammar. They do not
+authorize proof validity, witness type checking, substitution, or goal
+discharge.
+
+The missing paired B1B1 design contract is `design_drift`; the absent
+private consumer is bounded `source_drift`; its four checker and five runner
+tests are `test_gap`. There is no blocking `spec_gap` or unsafe test intent.
+The trace row `spec.en.checker.formula_statement.source_payloads` remains
+`deferred`, `tests = []`, with no backlink or executable coverage credit.
+Canonical specs, existing `.miz`, expectations, sidecars, trace status/count,
+and active cases remain unchanged by this prerequisite.

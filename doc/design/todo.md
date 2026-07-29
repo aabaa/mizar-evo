@@ -2711,5 +2711,22 @@ or semantic owner changed. B3M2B2B remains next before B4.
   production/test-list hashes.
 - [x] Add no canonical, `.miz`, fixture, expectation, sidecar, trace
   status/count, public/active route, statement consumer, or coverage credit.
-- [ ] After the dedicated implementation commit and fresh inventory, freeze
+- [x] After the dedicated implementation commit and fresh inventory, freeze
   the B1B1 statement-consumer contract as a separate documentation task.
+
+## Checker Task 258B3M2B2B1B1 Frozen Contract
+
+- [x] Fresh-inventory and freeze the exact 158-byte/67-node parenthesized
+  application witness before Task-254/255 and all other application shapes.
+- [x] Freeze the complete local theorem and imported `++` provenance, lower
+  Task-48/252/253/256 rows, base `1/2/2/2/2`, one unnamed
+  `Application(0)` witness/no names, and wrapper containment.
+- [x] Freeze reuse of the existing B1A public schema/atomic installer and
+  B1B1P private wrapped seam through one explicit private B1B1 profile.
+- [x] Freeze four checker and five runner tests for all bytes/nodes,
+  resolver substitutions, precedence, B1A/family/active isolation,
+  rollback/replay/clone, and semantic deferral.
+- [x] Preserve canonical/test/fixture/expectation/sidecar/trace/active/public
+  artifacts, executable coverage, libraries `374/418`, and all counts/hashes.
+- [x] Commit the documentation prerequisite alone; after fresh inventory,
+  implement only B1B1 and measure projected libraries `378/423`.

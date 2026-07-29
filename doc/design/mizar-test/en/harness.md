@@ -3788,3 +3788,27 @@ the exact reparsed `(diagnostics,nodes)` matrix
 `[(0,63),(0,71),(0,67),(12,72),(1,64),(0,72),(0,67),(14,73)]`.
 No statement consumer, active case, fixture, sidecar, expectation, trace
 row, detail key, public dispatch, or downstream semantic owner was added.
+
+## Checker Task 258B3M2B2B1B1 Dormant Harness Contract
+
+The B1B1 harness selects only the frozen 158-byte/67-node
+`take (1 ++ 2);` source. It reuses the B1B1P wrapped Task-253 seam, then
+publishes base `1/2/2/2/2` and one unnamed witness targeting
+`Application(0)` through the existing atomic checker path. Wrapper 0 remains
+Task-253 containment and is not the witness target.
+
+The exact successful witness is owner/context/source/witness ordinal
+`0/1/1/0`, take `53/124..138`, item `52/129..137`, normalized spelling
+`( 1 ++ 2 )`, normal/unnamed/no name. The exact lower handoff is application
+`48/130..136`, wrapper `50/129..137`, head `20/132..134/++`, ordered
+`Primary(2/3)`, and the imported `parser.type_fixtures::++#12` candidate.
+The theorem owner is contribution 0 with `LocalSource` anchor `29..47`,
+origin `48..157/[2,1]`, and label `56..108`.
+
+The five named runner tests exhaust all source bytes and all arena fields,
+the five same-source resolver substitutions, the exact reparse matrix,
+selector/lower/aggregate/witness/typed/final precedence, B1A compatibility,
+all family and active-route isolation, atomic rollback and clean replay,
+final clone equality, and empty semantic/proof/goal/overload output. Exact
+success still returns no detail keys. No fixture, sidecar, expectation,
+trace row, active case, or semantic consumer is authorized.

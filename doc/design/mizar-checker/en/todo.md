@@ -5102,5 +5102,29 @@ implementation commit does not satisfy a producer task.
   `2652/708/2523/3727`, and 30 production paths / 41,173 lines.
 - [x] Preserve canonical artifacts, fixtures, expectations, sidecars, trace
   status/count, executable coverage credit, and semantic/proof/goal owners.
-- [ ] Fresh-inventory B1B1 statement-consumer documentation as a separate
+- [x] Fresh-inventory B1B1 statement-consumer documentation as a separate
   logical task after this implementation commit.
+
+## Checker Task 258B3M2B2B1B1 Frozen-Contract Ledger
+
+- [x] Fresh-inventory the final-LF 158-byte/67-node `take (1 ++ 2);`
+  source and canonical Chapter 13/15/16 plus parser-fixture authority.
+- [x] Freeze the exact local theorem owner/contribution/label bundle and
+  imported `parser.type_fixtures::++#12` provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, wrapped Task-253
+  `1/1/1/2/2`, equality-only Task-256, base `1/2/2/2/2`, and one unnamed
+  `Application(0)` witness/no names.
+- [x] Freeze take 53 -> witness 52 -> unowned 51 -> wrapper 50 -> unowned
+  49 -> application 48; wrapper 0 remains Task-253 containment, not a
+  witness target.
+- [x] Reuse the existing public B1A schema and atomic installer; require one
+  explicit crate-private B1B1 profile and keep B1A byte/API compatibility.
+- [x] Freeze exact validation precedence, atomic rollback/replay/final
+  revalidation, four checker and five runner named tests, all bytes/nodes,
+  resolver substitutions, near-miss matrix, family/active isolation, and
+  empty semantic outputs.
+- [x] Preserve production/tests, canonical specs, `.miz`, fixtures,
+  expectations, sidecars, trace status/count, public/active routes, semantic
+  owners, libraries `374/418`, and all measured hashes.
+- [x] Commit this documentation prerequisite alone, fresh-inventory, then
+  implement only B1B1.

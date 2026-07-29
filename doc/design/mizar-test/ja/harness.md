@@ -3588,3 +3588,27 @@ diagnostic tables、atomic failure/clean replay、およびexact reparsed
 をfreezeする。statement consumer、active case、fixture、sidecar、
 expectation、trace row、detail key、public dispatch、downstream semantic
 ownerは追加していない。
+
+## Checker Task 258B3M2B2B1B1 dormant harness contract
+
+B1B1 harnessはfrozen 158-byte/67-node `take (1 ++ 2);` sourceだけを
+selectする。B1B1P wrapped Task-253 seamをreuseし、existing atomic checker
+path経由でbase `1/2/2/2/2`と`Application(0)`をtargetするone unnamed
+witnessをpublishする。wrapper 0はTask-253 containmentのままでwitness
+targetではない。
+
+exact successful witnessはowner/context/source/witness ordinal
+`0/1/1/0`、take `53/124..138`、item `52/129..137`、normalized spelling
+`( 1 ++ 2 )`、normal/unnamed/nameなし。exact lower handoffはapplication
+`48/130..136`、wrapper `50/129..137`、head `20/132..134/++`、ordered
+`Primary(2/3)`、imported `parser.type_fixtures::++#12` candidate。
+theorem ownerはcontribution 0、`LocalSource` anchor `29..47`、origin
+`48..157/[2,1]`、label `56..108`。
+
+named runner tests 5件は全source bytes/arena fields、same-source resolver
+substitutions 5件、exact reparse matrix、selector/lower/aggregate/witness/
+typed/final precedence、B1A compatibility、全family/active-route isolation、
+atomic rollback/clean replay、final clone equality、empty semantic/proof/
+goal/overload outputをexhaustする。exact successはdetail keysなし。
+fixture、sidecar、expectation、trace row、active case、semantic consumerは
+authorizeしない。

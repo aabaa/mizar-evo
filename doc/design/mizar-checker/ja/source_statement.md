@@ -2438,3 +2438,65 @@ runner-private wrapped Task-253 prerequisiteはstatement/witnessをpublishせず
 exact tests 2件をpassしてcompleteした。future B1B1 consumerはapplication
 0とwrapper containmentに対してfresh-inventory可能になったが、本completion
 からB1B1 selector、checker row、installer、semantic behaviorを推定しない。
+
+## Task 258B3M2B2B1B1 wrapped application-witness ownership
+
+B1B1は`take (1 ++ 2);`を含むfinal-LF 158-byte/67-node sourceだけを
+consumeする。B1B1P Task-253 application/wrapper handoffとexisting B1A
+public application-witness schemaをreuseし、public type/method/table/
+fingerprint grammarを追加しない。
+
+exact containment pathは`take 53 -> witness 52 -> unowned 51 ->
+wrapper 50 -> unowned 49 -> application 48`。Task 258はtake/witness
+nodes 53/52とdirected `Witness(0) -> Application(0)` edgeをownする。
+Task 253はwrapper/application 50/48をownし続け、wrapper 0はcontainment
+metadataでtargetではない。Task 252はnumeral primaries 2/3をownし、
+Task 256はsubtree全体をexcludeする。
+
+owner 0はexact local theorem
+`FormulaStatementParenthesizedApplicationWitnessSmoke`: site/range
+`63/48..157`、label `56..108`、contribution 0、`LocalSource` anchor
+`29..47`、checked origin `48..157`、structural path `[2,1]`、
+public/exported/normal。resolver symbol、definition、label、contribution、
+checked ownerは一致する。resolverはone import、witness-name symbolなし。
+
+base rows:
+
+| Row | Frozen value |
+| --- | --- |
+| statement 0 | owner/context `0/0`; `Atomic(0)`; site/range `63/48..157`; ordinal 0; `TheoremProposition`; normalized complete-theorem spelling |
+| statement 1 | owner/context `0/1`; `Atomic(1)`; site/range `61/141..152`; ordinal 2; `Conclusion`; `thus x = x ;` |
+| context 0/1 | statements 0/1; binding contexts 0/1; ranges `48..157` / `141..152`; visible binding `[0]` |
+| input fact 0/1 | corresponding statement/context; ordinal 0; `ReservedTypeGuard`; binding 0; refs `[0,1] -> Primary(0/1)` / `[2,3] -> Primary(4/5)` |
+| candidate fact 0/1 | corresponding statement/context; ordinal 0; `UnverifiedProposition`; `Atomic(0/1)` |
+
+witness 0はowner/context `0/1`、source/witness ordinal `1/0`、
+normal/unnamed/nameなし。takeはsite/range `53/124..138`、children
+`[17,52,23]`。witnessはsite/range `52/129..137`、normalized spelling
+`( 1 ++ 2 )`、child `[51]`、target `Application(0)`。theoremは
+take/witnessをcontainし、conclusionはcontainせず、statement-witness
+ownership kindsはnodes 53/52だけ。
+
+lower tablesはTask-48 `2/1/0`、Task-252 `6/4/2`、wrapped Task-253
+`1/1/1/2/2`、equality-only Task-256 `2/0/0/0/0/0/0/4/4`。
+application 0はnode/range/context `48/130..136/1`、wrapper 0は
+`50/129..137/1`、headは`20/132..134/++`、argumentsは
+`Primary(2/3)`、candidate provenanceはexact imported
+`parser.type_fixtures::++#12`、contribution 2、origin `7..27`、
+path `[12]`、public/exported/signatureなし。
+
+implementationはexplicit crate-private B1B1 statement/witness profileを
+1件追加する。`SourceStatementWitnessTermTarget::Application`、
+`SourceStatementWitnessProducer::build_with_application`、
+`TypedAst::with_source_application_statement_witnesses`をreuseし、B1Aを
+broadenしない。validationはselector/owner、lower dependencies/
+fingerprints、aggregate、全base rows、witness、empty names、atomic typed
+install、final revalidationの順。failureはatomic、clean replayは
+byte-identical。
+
+crate plan記載のexact checker tests 4件/runner tests 5件で、158 bytes、
+67 nodes+root全fields、resolver substitutions 5件、eight-entry reparse
+matrix、B1A compatibility、family/active-route isolation、validation
+precedence、rollback/replay/clone、empty downstream semanticsをcoverする。
+type checking、goal matching、substitution、proof acceptance、Task-254/255
+forms、他application/witness shapesはdeferする。

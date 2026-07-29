@@ -983,3 +983,17 @@ payload family or cross-family edge. Task 252 still owns primaries 2/3 and
 Task 253 owns application/wrapper 0; exact resolver authentication narrows
 admission without publishing another row. Task 258 still owns nothing, and
 all statement/witness/semantic/proof/goal families remain deferred to B1B1.
+
+### Task 258B3M2B2B1B1 Frozen Cross-Family Edge
+
+B1B1 adds exactly the existing edge shape
+`SourceStatementWitness(0) -> SourceFunctorApplication(0)` for the wrapped
+source. Task 252 owns primaries 2/3; Task 253 owns application 0, wrapper 0,
+candidate, arguments, and requests; Task 258 owns one take/witness pair.
+Wrapper 0 is authenticated containment only and is never a reverse edge or
+witness target. Task 256 retains only equality edges `[0,1]` and `[4,5]`.
+
+The public B1A schema and atomic three-handoff installer are reused without
+broadening B1A. The new profile is crate-private. Task-254/255,
+structure/set/choice/qualification, semantic term, proof, goal, Core/CFG/VC,
+and every other family remain excluded.

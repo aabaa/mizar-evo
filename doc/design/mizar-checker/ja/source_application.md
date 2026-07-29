@@ -259,3 +259,17 @@ resolver substitutions 5件はselector admissionでfailする。frozen tests
 2件は全byte/node mutations、exact diagnostic/node near-miss matrix、
 producer/typed-install precedence、replay/clone、legacy hash gateをpassする。
 public producer/table/APIもunwrapped outputも変更なし。
+
+## Task 258B3M2B2B1B1 exact wrapped statement consumer
+
+B1B1はB1B1P wrapped proof-context handoffの最初のstatement consumer。
+Task 253は不変で、application 0 `130..136`、wrapper 0 `129..137`、
+imported `parser.type_fixtures::++#12`、ordered `Primary(2/3)` arguments、
+unresolved requests 2件をownする。statement witnessはapplication 0を
+targetし、wrapper 0をtarget/copyしない。
+
+new Task-253 API/row/fingerprint/validatorは禁止。runner-private B1B1
+selectorはexisting wrapped seamをreuseし、checker-private B1B1 statement
+profileはexisting application fingerprint/atomic installer経由でimmutable
+handoffをconsumeする。B1A unwrapped bytesはcompatibleなまま、全other
+wrapped/application formsをdeferする。

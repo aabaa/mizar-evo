@@ -4859,5 +4859,29 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] canonical artifacts、fixtures、expectations、sidecars、trace
   status/count、executable coverage credit、semantic/proof/goal ownersを
   preserve。
-- [ ] implementation commit後、B1B1 statement-consumer documentationを
+- [x] implementation commit後、B1B1 statement-consumer documentationを
   separate logical taskとしてfresh-inventory。
+
+## Checker Task 258B3M2B2B1B1 frozen-contract ledger
+
+- [x] final-LF 158-byte/67-node `take (1 ++ 2);` sourceとcanonical
+  Chapter 13/15/16 + parser-fixture authorityをfresh-inventory。
+- [x] exact local theorem owner/contribution/label bundleとimported
+  `parser.type_fixtures::++#12` provenanceをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、wrapped Task-253
+  `1/1/1/2/2`、equality-only Task-256、base `1/2/2/2/2`、one unnamed
+  `Application(0)` witness/no namesをfreeze。
+- [x] take 53 -> witness 52 -> unowned 51 -> wrapper 50 -> unowned 49
+  -> application 48をfreeze。wrapper 0はTask-253 containmentでwitness
+  targetではない。
+- [x] existing public B1A schema/atomic installerをreuseし、explicit
+  crate-private B1B1 profile 1件をrequire、B1A byte/API compatibilityを維持。
+- [x] exact validation precedence、atomic rollback/replay/final
+  revalidation、named checker tests 4件/runner tests 5件、全bytes/nodes、
+  resolver substitutions、near-miss matrix、family/active isolation、empty
+  semantic outputsをfreeze。
+- [x] production/tests、canonical specs、`.miz`、fixtures、expectations、
+  sidecars、trace status/count、public/active routes、semantic owners、
+  libraries `374/418`、全measured hashesをpreserve。
+- [x] このdocumentation prerequisiteだけをcommitし、fresh-inventory後、
+  B1B1だけをimplement。

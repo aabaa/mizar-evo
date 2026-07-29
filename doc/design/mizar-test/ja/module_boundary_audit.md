@@ -10513,3 +10513,17 @@ lines。sorted path/content hashesは
 raw/normalized 418-test hashesは
 `becc23c77b37b858edca581d11e396efc431f1f47f4cc80d859d6d06d1f19c37` /
 `66089f0f420203a4cf24c182315b77ce58775ce35c50285041823bcc0700248b`。
+
+## Checker Task 258B3M2B2B1B1 frozen module boundary
+
+existing source-statement leafがnew private B1B1 selectorをownし、existing
+wrapped source-application seamをcallする。source-application leafは後続で
+helperのdead-code allowanceをremoveするだけで、public surface/testsは
+変更しない。existing facade/root modulesはnew public dispatch/detail key
+なしにdormant consumerをinternal exposeする。checkerはprivate
+statement/typed/final profile enumerationだけを後続変更する。
+
+new module、crate dependency、checker public API、active fixture route、
+trace/expectation/sidecar owner、semantic dependencyは追加しない。
+baseline sizes `5618/2652/708/2523/11945/3727`と全hashesはこの
+prerequisiteのmeasured documentation invariants。

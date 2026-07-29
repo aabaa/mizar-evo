@@ -2026,3 +2026,20 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] public/active/statement routes、fixtures、expectations、sidecars、
   trace status/count、semantic/proof/goal ownershipを不変にし、B1B1
   documentationはimplementation commit後にのみselect。
+
+## Checker Task 258B3M2B2B1B1 runner prerequisite ledger
+
+- [x] exact final-LF 158-byte/67-node selectorとcomplete local
+  theorem/imported `++` resolver provenanceをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、wrapped Task-253
+  `1/1/1/2/2`、equality-only Task-256、base `1/2/2/2/2`、one unnamed
+  `Application(0)` witness/no namesをfreeze。
+- [x] B1B1P wrapped seam/existing B1A checker API/atomic installerをone
+  explicit private B1B1 profile経由でreuse。
+- [x] exact runner tests 5件で全bytes/nodes、resolver substitutions、
+  near-miss matrix、precedence、B1A/family/active isolation、rollback/
+  replay/clone、empty upper tablesをfreeze。
+- [x] tests `374/418`、全measured sizes/counts/hashes、public/active
+  routes、fixtures、expectations、sidecars、trace status/count、
+  semantic/proof/goal ownershipをpreserve。
+- [x] documentationだけをcommitし、fresh-inventory後B1B1をimplement。

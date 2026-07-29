@@ -3971,3 +3971,19 @@ same-source substitutions、parser-derived diagnostic/node matrix、全frozen
 empty upper familiesをcoverする。implementation evidenceだけを追加し、
 canonical specs、`.miz`、expectations、sidecars、trace row/status/count、
 `deferred` status、backlinks、executable coverage creditは不変。
+
+## Task 258B3M2B2B1B1 frozen-contract audit
+
+Chapter 13 parenthesized symbolic infix terms、Chapter 15 `take`
+`term_expression`、Chapter 16 proof-skeleton requirementsの合成はexact
+158-byte sourceをauthorizeする。existing `.miz` fixturesはparenthesized
+operator termと`take` grammarを別々にcoverするが、proof validity、
+witness type checking、substitution、goal dischargeをauthorizeしない。
+
+missing paired B1B1 design contractは`design_drift`、absent private
+consumerはbounded `source_drift`、checker 4/runner 5 testsは`test_gap`。
+blocking `spec_gap`/unsafe test intentなし。trace row
+`spec.en.checker.formula_statement.source_payloads`は`deferred`、
+`tests = []`、backlink/executable coverage creditなしのまま。canonical
+specs、existing `.miz`、expectations、sidecars、trace status/count、
+active casesはこのprerequisiteで不変。

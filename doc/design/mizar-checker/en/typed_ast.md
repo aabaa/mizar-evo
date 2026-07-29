@@ -1132,3 +1132,27 @@ Tasks-253/254/255 coexisting, and semantic-coexisting B1A publication attempts
 all fail with the original `TypedAst` unchanged. Legacy application-free
 statement profiles and debug bytes remain valid. The successful B1A
 installation adds no type, expression-semantic, proof, or goal ownership.
+
+## Task 258B3M2B2B1B1 Frozen Atomic Typed Ownership
+
+The existing
+`TypedAst::with_source_application_statement_witnesses` entry point must
+enumerate B1A and B1B1 as two exact profiles. B1B1 is the 67-node wrapped
+profile with Task-252 `6/4/2`, Task-253 `1/1/1/2/2`, Task-256 equality-only
+edges `[0,1]` / `[4,5]`, base statement `1/2/2/2/2`, and one unnamed
+`Application(0)` witness/no names. Wrapper 0 is authenticated Task-253
+containment, never a witness target.
+
+The installer revalidates complete source/module/arena identity, local
+theorem and imported application provenance, both lower fingerprints,
+base/witness rows, wrapper-to-application containment, and the
+witness-to-application edge before publishing all three handoffs. B1A
+remains the separate 63-node unwrapped profile with byte-identical API/debug
+behavior; neither profile may be inferred by broadening the other.
+
+Application plus only a statement or witness, an orphan statement/witness
+pair, B1A/B1B1 hybrids, wrapper/application substitution, stale
+fingerprints, partial/reverse/repeated installation, another Task-258 family,
+Tasks-254/255 coexistence, or semantic coexistence rejects with the original
+`TypedAst` unchanged. No new public typed-AST API, debug grammar, type,
+semantic, proof, or goal owner is authorized.

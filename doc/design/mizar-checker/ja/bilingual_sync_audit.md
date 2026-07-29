@@ -506,3 +506,16 @@ node near-miss matrix、passing compound tests 2件、checker/runner
 inventories `374/418`、runner sizes `2652/708/2523/3727`、30 paths /
 41,173 linesを記録する。public/active/canonical/fixture/trace/semantic
 boundariesとB1B1P-before-B1B1 orderはbilingual debtなしで同期済み。
+
+## Task 258B3M2B2B1B1 frozen-contract synchronization
+
+paired plans、statement/application contracts、module/payload/spec audits、
+ledgersは、exact 158-byte/67-node source、local theorem owner/imported `++`
+provenance、Task-48/252/253/256 lower profiles、base `1/2/2/2/2`、one
+unnamed `Application(0)` witness/no names、wrapper containment、validation
+precedence、checker tests 4件/runner tests 5件のnames、semantic deferrals、
+unchanged `374/418` baselineで一致する。
+
+このdocumentation prerequisiteがproduction、test、canonical、fixture、
+expectation、sidecar、trace、active、public、semantic artifactを変更しない
+ことも一致する。English canonicalと同期し、B1B1 bilingual debtなし。

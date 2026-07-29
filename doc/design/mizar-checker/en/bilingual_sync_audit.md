@@ -531,3 +531,16 @@ diagnostic/node near-miss matrix, two passing compound tests, checker/runner
 inventories `374/418`, runner sizes `2652/708/2523/3727`, and 30 paths /
 41,173 lines. Public/active/canonical/fixture/trace/semantic boundaries and
 B1B1P-before-B1B1 order remain synchronized without bilingual debt.
+
+## Task 258B3M2B2B1B1 Frozen-Contract Synchronization
+
+The paired plans, statement/application contracts, module/payload/spec
+audits, and ledgers agree on the exact 158-byte/67-node source; local theorem
+owner and imported `++` provenance; Task-48/252/253/256 lower profiles;
+base `1/2/2/2/2`; one unnamed `Application(0)` witness/no names; wrapper
+containment; validation precedence; four checker and five runner test names;
+semantic deferrals; and unchanged `374/418` baseline.
+
+They also agree that this documentation prerequisite changes no production,
+test, canonical, fixture, expectation, sidecar, trace, active, public, or
+semantic artifact. English is canonical and no B1B1 bilingual debt remains.

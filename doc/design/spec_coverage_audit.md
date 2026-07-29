@@ -4394,3 +4394,41 @@ Plan/requirements, active parse/declaration/type/proof, coverage, pass/fail,
 warnings/errors, and all five CLI hashes remain unchanged. Final read-only
 quality review found no remaining findings, passed every hard gate, and
 assigned a valid score of `98/100`.
+
+## Task 258B3M2B2B1B1 Frozen Wrapped Application-Witness Follow-Up
+
+Fresh inventory freezes the exact final-LF 158-byte/67-node
+`take (1 ++ 2);` consumer. Chapter 13 parenthesized symbolic infix terms,
+Chapter 15 `take term_expression`, Chapter 16 proof skeletons, and the
+existing parser fixtures authorize its syntax-only source ownership. They do
+not authorize witness typing, substitution, goal matching, or proof
+acceptance.
+
+B1B1 composes Task-48 `2/1/0`, Task-252 `6/4/2`, wrapped Task-253
+`1/1/1/2/2`, Task-256 equality-only edges `[0,1]` / `[4,5]`, Task-258 base
+`1/2/2/2/2`, and one unnamed `Application(0)` witness/no names. Task 253
+retains wrapper 0 as containment metadata; it is not the witness target.
+The local theorem owner/contribution and imported `++` candidate provenance
+are frozen completely. Four checker and five runner tests are named for the
+later implementation.
+
+The missing contract is `design_drift`; the later private profile is bounded
+`source_drift`; the nine tests are `test_gap`. No blocking `spec_gap`,
+unsafe test intent, boundary violation, or metadata conflict was found.
+This documentation prerequisite adds no executable evidence. The row
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, without backlink or coverage credit. Canonical specs, `.miz`,
+expectations, sidecars, trace status/count, active routes, and all existing
+coverage counts remain unchanged.
+
+Checker/runner test baselines remain `374/418`; production remains 30 paths
+/ 41,173 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`.
+Checker source separately remains 23 paths / 115,631 lines with hashes
+`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
+`0d79034477a92c850563478abda36df1e50c951a447f79fca886830ade8acce0`.
+Implementation projects `378/423`, but all changed sizes and hashes must be
+measured. Plan/requirements, active parse/declaration/type/proof, coverage,
+pass/fail, warnings/errors, and the five CLI hashes remain unchanged by this
+prerequisite.
