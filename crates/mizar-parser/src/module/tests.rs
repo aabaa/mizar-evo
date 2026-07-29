@@ -18138,6 +18138,178 @@ fn qualified_symbol_token_texts(
         .collect()
 }
 
+const B1B1P_RECOVERY_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementParenthesizedApplicationWitnessSmoke: x = x proof\n",
+    "  take (1 ++ 2);\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
+#[test]
+fn parser_recovers_imported_postfix_fallback_ownership_matrix() {
+    const RECOVERABLE_MUTATIONS: [usize; 9] = [48, 49, 50, 51, 52, 53, 54, 112, 148];
+
+    assert_eq!(B1B1P_RECOVERY_SOURCE.len(), 158);
+    assert_eq!(&B1B1P_RECOVERY_SOURCE[48..55], "theorem");
+    assert_eq!(&B1B1P_RECOVERY_SOURCE[112..113], "=");
+    assert_eq!(&B1B1P_RECOVERY_SOURCE[116..121], "proof");
+    assert_eq!(&B1B1P_RECOVERY_SOURCE[148..149], "=");
+
+    for (ordinal, mutation) in RECOVERABLE_MUTATIONS.into_iter().enumerate() {
+        let source_id = source_id(220 + ordinal as u8);
+        let tokens = b1b1p_recovery_tokens(source_id, mutation);
+        let request = || {
+            ParseRequest::new(
+                source_id,
+                Edition::new("2026"),
+                tokens.clone(),
+                operator_fixture_fixities(),
+            )
+        };
+
+        let first = parse(request());
+        let second = parse(request());
+        let first_ast = first
+            .ast
+            .as_ref()
+            .unwrap_or_else(|| panic!("mutation byte {mutation} must retain a recovered AST"));
+        let second_ast = second
+            .ast
+            .as_ref()
+            .unwrap_or_else(|| panic!("replay byte {mutation} must retain a recovered AST"));
+
+        assert!(
+            !first.diagnostics.is_empty(),
+            "mutation byte {mutation} must retain syntax diagnostics"
+        );
+        assert!(
+            first_ast
+                .nodes()
+                .iter()
+                .any(|node| matches!(node.kind, SurfaceNodeKind::ErrorRecovery(_))),
+            "mutation byte {mutation} must retain explicit recovery structure"
+        );
+        if mutation == 112 {
+            assert_eq!(
+                count_nodes(first_ast, |kind| matches!(
+                    kind,
+                    SurfaceNodeKind::StatementItem
+                )),
+                2,
+                "the first unclaimed statement boundary after the claimed prefix must be preserved"
+            );
+            assert_eq!(
+                count_nodes(first_ast, |kind| matches!(
+                    kind,
+                    SurfaceNodeKind::TakeStatement
+                )),
+                1,
+                "the later `take` statement must not be swallowed by theorem recovery"
+            );
+            assert_eq!(
+                count_nodes(first_ast, |kind| matches!(
+                    kind,
+                    SurfaceNodeKind::ConclusionStatement
+                )),
+                1,
+                "the later `thus` statement must not be swallowed by theorem recovery"
+            );
+        }
+        assert_eq!(
+            first.diagnostics, second.diagnostics,
+            "mutation byte {mutation} diagnostics must be deterministic"
+        );
+        assert_eq!(
+            first_ast.snapshot_text(),
+            second_ast.snapshot_text(),
+            "mutation byte {mutation} AST must be deterministic"
+        );
+    }
+}
+
+fn b1b1p_recovery_tokens(source_id: SourceId, mutation: usize) -> Vec<ParserToken> {
+    let mut entries = vec![
+        ("import".to_owned(), ParserTokenKind::ReservedWord),
+        ("parser".to_owned(), ParserTokenKind::Identifier),
+        (".".to_owned(), ParserTokenKind::ReservedSymbol),
+        ("type_fixtures".to_owned(), ParserTokenKind::Identifier),
+        (";".to_owned(), ParserTokenKind::ReservedSymbol),
+        ("reserve".to_owned(), ParserTokenKind::ReservedWord),
+        ("x".to_owned(), ParserTokenKind::Identifier),
+        ("for".to_owned(), ParserTokenKind::ReservedWord),
+        ("set".to_owned(), ParserTokenKind::ReservedWord),
+        (";".to_owned(), ParserTokenKind::ReservedSymbol),
+    ];
+
+    if (48..=54).contains(&mutation) {
+        let keyword_offset = mutation - 48;
+        let (prefix, suffix_with_mutation) = "theorem".split_at(keyword_offset);
+        let suffix = &suffix_with_mutation[1..];
+        if !prefix.is_empty() {
+            entries.push((prefix.to_owned(), ParserTokenKind::Identifier));
+        }
+        entries.push(("!".to_owned(), ParserTokenKind::UserSymbol));
+        if !suffix.is_empty() {
+            entries.push((suffix.to_owned(), ParserTokenKind::Identifier));
+        }
+    } else {
+        entries.push(("theorem".to_owned(), ParserTokenKind::ReservedWord));
+    }
+
+    entries.extend([
+        (
+            "FormulaStatementParenthesizedApplicationWitnessSmoke".to_owned(),
+            ParserTokenKind::Identifier,
+        ),
+        (":".to_owned(), ParserTokenKind::ReservedSymbol),
+        ("x".to_owned(), ParserTokenKind::Identifier),
+        (
+            if mutation == 112 { "!" } else { "=" }.to_owned(),
+            if mutation == 112 {
+                ParserTokenKind::UserSymbol
+            } else {
+                ParserTokenKind::ReservedSymbol
+            },
+        ),
+        ("x".to_owned(), ParserTokenKind::Identifier),
+        ("proof".to_owned(), ParserTokenKind::ReservedWord),
+        ("take".to_owned(), ParserTokenKind::ReservedWord),
+        ("(".to_owned(), ParserTokenKind::ReservedSymbol),
+        ("1".to_owned(), ParserTokenKind::Numeral),
+        ("++".to_owned(), ParserTokenKind::UserSymbol),
+        ("2".to_owned(), ParserTokenKind::Numeral),
+        (")".to_owned(), ParserTokenKind::ReservedSymbol),
+        (";".to_owned(), ParserTokenKind::ReservedSymbol),
+        ("thus".to_owned(), ParserTokenKind::ReservedWord),
+        ("x".to_owned(), ParserTokenKind::Identifier),
+        (
+            if mutation == 148 { "!" } else { "=" }.to_owned(),
+            if mutation == 148 {
+                ParserTokenKind::UserSymbol
+            } else {
+                ParserTokenKind::ReservedSymbol
+            },
+        ),
+        ("x".to_owned(), ParserTokenKind::Identifier),
+        (";".to_owned(), ParserTokenKind::ReservedSymbol),
+        ("end".to_owned(), ParserTokenKind::ReservedWord),
+        (";".to_owned(), ParserTokenKind::ReservedSymbol),
+    ]);
+
+    let mut cursor = 0;
+    entries
+        .into_iter()
+        .map(|(text, kind)| {
+            let start = cursor;
+            let end = start + text.len();
+            cursor = end + 1;
+            token(source_id, kind, &text, start, end)
+        })
+        .collect()
+}
+
 fn token(
     source_id: SourceId,
     kind: ParserTokenKind,

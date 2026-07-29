@@ -35,12 +35,13 @@ classified overbroad frontend string-position heuristic remains external to
 parser scope. Global Step 5 is not closed, and Task 49 and Steps 6/7 are not
 authorized.
 
-Current qualification: Checker B1B1P preflight independently authorizes only
-the bounded `PARSER-RECOVERY-B1B1P-P1` fallback-ownership prerequisite in
-[00.crate_plan.md](./00.crate_plan.md). Until its separate implementation
-commit passes the full gates, the 99/100 score above is historical closeout
-evidence rather than a current panic-free claim. This prerequisite is not
-parser Task 49 and adds no grammar or semantic scope.
+Current qualification: the bounded `PARSER-RECOVERY-B1B1P-P1`
+fallback-ownership prerequisite in [00.crate_plan.md](./00.crate_plan.md) is
+implemented and its independent test/implementation reviews have no findings.
+The exact nine recoverable inputs now return deterministic recovered ASTs;
+the five excluded inputs retain `ast = None`, and previously returning
+controls retain their boundaries. This prerequisite is not parser Task 49 and
+adds no grammar or semantic scope.
 
 Module specs and audits:
 

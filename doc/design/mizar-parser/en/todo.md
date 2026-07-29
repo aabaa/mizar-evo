@@ -1124,7 +1124,7 @@ Check the task off here once tests pass.
 
 ## Independently Authorized Lower-Stage Prerequisite
 
-- **`PARSER-RECOVERY-B1B1P-P1`: preserve fallback child ownership.** [ ]
+- **`PARSER-RECOVERY-B1B1P-P1`: preserve fallback child ownership.** [x]
   - This identifier is a bounded Checker-B1B1P prerequisite, not the
     previously unpromoted parser Task 49.
   - Freeze and then correct only the nine imported-postfix recovery panics
@@ -1136,3 +1136,7 @@ Check the task off here once tests pass.
   - Documentation and implementation are separate logical tasks and commits.
     After both complete, return to Checker `258B3M2B2B1B1P`; do not infer a
     successor grammar task.
+  - Implemented with parse-local non-root child tracking, claimed-child
+    fallback filtering, and a contiguous-claimed-prefix theorem boundary.
+    Exact nine-case parser/frontend matrices, five excluded controls, the
+    unchanged valid-source control, and later-boundary assertions pass.

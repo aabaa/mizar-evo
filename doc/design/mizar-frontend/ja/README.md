@@ -56,8 +56,8 @@
 - cache storage、cache hit 検証、scheduler task-key composition の所有。
 - 意味的な名前解決、型検査、オーバーロード選択、クラスタ登録、証明義務生成。
 
-current qualification: parser-owned `PARSER-RECOVERY-B1B1P-P1`はbounded frontend
-`PARSER-RECOVERY-B1B1P-P1-FE` follow-throughをopenする。paired
-[00.crate_plan.md](./00.crate_plan.md)はunchanged production
-passthrough/merge/cache/fuzz ownershipとfuture real-provider determinism regression
-1件をfreezeする。grammar/semanticsはreopenしない。
+current qualification: bounded frontend `PARSER-RECOVERY-B1B1P-P1-FE`
+follow-throughはcompleteである。real-provider determinism regressionはrecovered
+input 9件、excluded `ast = None` control 5件、unchanged valid source、replay-stable
+cache keyをverifyする。production passthrough/merge/cache/fuzz ownershipは不変で、
+grammar/semanticsはreopenしない。

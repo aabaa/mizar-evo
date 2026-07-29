@@ -4,9 +4,9 @@
 > [../ja/source_spec_audit.md](../ja/source_spec_audit.md).
 
 Status: task 43 audit complete; Task 265 ownership refreshed through completed
-Tasks 46-48. P-043-01/P-046 is closed by Task 46. Fresh
-`PARSER-RECOVERY-B1B1P-P1` inventory reopens one bounded recovery
-`source_drift` / `test_gap` follow-up.
+Tasks 46-48. P-043-01/P-046 is closed by Task 46. The bounded
+`PARSER-RECOVERY-B1B1P-P1` recovery `source_drift` / `test_gap` is also
+closed by its separate implementation.
 
 ## Task 46 Source/Specification Recheck
 
@@ -45,8 +45,8 @@ is represented by source, unit tests, active parse-only corpus cases, and
 traceability metadata. The original task-43 audit found one deferred operator-
 declaration gap, recorded below; Task 265 adds two later, canonically grounded
 current-state rows. Tasks 46-48 now close all three bounded parser slices.
-The separately authorized `PARSER-RECOVERY-B1B1P-P1` recovery slice remains
-open until its implementation commit; it does not reopen those three slices.
+The separately authorized `PARSER-RECOVERY-B1B1P-P1` recovery slice is
+implemented and does not reopen those three slices.
 
 The only task-43 follow-up is now closed:
 
@@ -88,7 +88,7 @@ property productions; there is no current parser grammar position for a
 | Type, term, formula, statement, proof, definition, operator declaration, property implementation, structure, registration, template, algorithm, claim, verification-clause, annotation, and predicate redefinition-label surfaces are implemented through task 36 plus Tasks 46-48. | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | active parser pass/fail corpus requirements in `tests/coverage/spec_trace.toml`, parser unit tests, parse-only snapshots | No finding; P-043-01/P-046, P-265-47, and P-265-48 are closed. |
 | Term Pratt parsing respects `active_from`, newest active same-spelling metadata, prefix/postfix/infix binding powers, `qua` as the fixed lowest term operator, and non-associative diagnostics. | `src/grammar.rs`, `src/module.rs`, `src/pratt.rs` | parser operator unit tests, `crates/mizar-parser/tests/determinism.rs`, `pass_parser_operator_terms_001`, operator fail cases | No finding |
 | Formula Pratt parsing uses fixed connective precedence and outer quantifier parsing. | `src/module.rs` | `pass_parser_formula_connectives_001` and formula fail corpus | No finding |
-| Recovery synchronizes at semicolons, `end`, top-level item starts, category-local starts, and EOF; recoverable syntax emits recovery nodes and diagnostics. | `src/recovery.rs`, `src/sync.rs`, `src/module.rs`, `src/module/annotations.rs` | fail parser corpus, parser recovery unit tests, task-37 consolidation cases | Open bounded `PARSER-RECOVERY-B1B1P-P1` `source_drift` / `test_gap`: nine exact imported-postfix corruptions reach the builder abort before fallback recovery. |
+| Recovery synchronizes at semicolons, `end`, top-level item starts, category-local starts, and EOF; recoverable syntax emits recovery nodes and diagnostics. | `src/recovery.rs`, `src/sync.rs`, `src/module.rs`, `src/module/annotations.rs` | fail parser corpus, parser recovery unit tests, task-37 consolidation cases, `parser_recovers_imported_postfix_fallback_ownership_matrix` | No finding; `PARSER-RECOVERY-B1B1P-P1` closes the exact nine-case fallback-ownership drift while preserving excluded and unclaimed controls. |
 | Stray unmatched `end` is intentionally unrecoverable and returns diagnostics with `ast = None`. | `src/recovery.rs` | `fail_parser_stray_end_001`, parser recovery unit tests | No finding |
 | Parser determinism and frontend cache readiness are preserved: no global state, hidden caches, or salsa dependency. | `src/lib.rs`, `src/grammar.rs`, `src/module.rs` | `crates/mizar-parser/tests/determinism.rs`, parser fuzz target, frontend passthrough audit from task 41 | No finding |
 
@@ -156,7 +156,7 @@ Fresh Checker B1B1P preflight reopens one bounded post-closeout parser item:
 
 | Finding | Classification | Authority / disposition |
 |---|---|---|
-| Seven single-byte corruptions of `theorem` and two single-byte equality corruptions panic while finishing the syntax tree under imported postfix `!`. | `source_drift` | Chapter 22 §§22.2.1-22.2.2 and the existing recovery/fuzz contracts require parser recovery rather than a production panic. Correct parser fallback child ownership and same-position theorem resynchronization without weakening `SurfaceAstBuilder`. |
+| Seven single-byte corruptions of `theorem` and two single-byte equality corruptions panic while finishing the syntax tree under imported postfix `!`. | `source_drift` | Chapter 22 §§22.2.1-22.2.2 and the existing recovery/fuzz contracts require parser recovery rather than a production panic. Correct parser fallback child ownership and limit theorem resynchronization to the contiguous claimed speculative prefix beginning at the initiating token without weakening `SurfaceAstBuilder`. |
 | No parser-unit plus real-frontend regression freezes the exact nine positions. | `test_gap` | Add only Rust tests derived from the existing recovery authority; do not add or edit `.miz`, expectations, sidecars, or trace rows. |
 | The recovery and closeout documents say no implemented category reaches an unintended abort. | `design_drift` | Qualify the historical 99/100 closeout while this independently authorized prerequisite is open. |
 
@@ -170,3 +170,14 @@ This item changes recovery robustness, not specification coverage.
 `tests/coverage/spec_trace.toml`, all row status/counts, and active corpus
 admissions remain unchanged. The task is not parser Task 49 and earns no
 grammar or semantic credit.
+
+### Implementation disposition
+
+The `source_drift` and Rust `test_gap` above are closed. Parse-local ownership
+tracking and fallback filtering preserve the strict builder invariant. A
+test-first `design_drift` refinement records that theorem recovery must cross
+the contiguous claimed `x !` speculative prefix, then end the exception at
+the first unclaimed token. Independent test and implementation reviews report
+no findings. The five excluded cases, previously returning valid-source and
+unclaimed-fallback controls, public/diagnostic/cache boundaries, corpus, and
+trace metadata remain unchanged.

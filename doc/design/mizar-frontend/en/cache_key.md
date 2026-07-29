@@ -239,3 +239,8 @@ the frozen contract. New recovered AST keys remain separated by exact token
 stream, imported fixity-bearing parser inputs, edition, and parser version.
 The real frontend regression must compare replay keys for all nine cases. No
 cache-key source, version constant, storage policy, or public API changes.
+
+Implementation result: replay keys match for all nine recovered cases, the
+unchanged valid source retains its AST shape and v2 key, and the five excluded
+cases retain `cache_keys.ast = None`. The no-bump assessment is therefore
+closed without a cache source change.

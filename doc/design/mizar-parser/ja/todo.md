@@ -1077,7 +1077,7 @@ cargo test -p mizar-test
 
 ## Independently authorized lower-stage prerequisite
 
-- **`PARSER-RECOVERY-B1B1P-P1`: fallback child ownershipを保持する。** [ ]
+- **`PARSER-RECOVERY-B1B1P-P1`: fallback child ownershipを保持する。** [x]
   - 本identifierはbounded Checker-B1B1P prerequisiteであり、従来unpromotedの
     parser Task 49ではない。
   - [00.crate_plan.md](./00.crate_plan.md)に記録したimported-postfix recovery
@@ -1088,3 +1088,7 @@ cargo test -p mizar-test
     corpus、expectation、trace statusを保持する。
   - documentationとimplementationは別logical task / commitとする。両方の完了後は
     Checker `258B3M2B2B1B1P`へ戻り、successor grammar taskを推定しない。
+  - parse-local non-root child tracking、claimed-child fallback filtering、
+    contiguous-claimed-prefix theorem boundaryで実装済み。exact 9-case
+    parser/frontend matrix、excluded 5 control、unchanged valid-source control、
+    later-boundary assertionがpassする。

@@ -2775,7 +2775,13 @@ impl Parser {
         } else {
             self.diagnose_malformed_formula_expression(cursor, "expected theorem formula");
             self.push_missing_formula(cursor, &mut children, &mut recovery_nodes);
-            if !self.is_theorem_item_tail_boundary_at(cursor)
+            let initiating_token_claimed = self
+                .token_node_ids
+                .get(cursor)
+                .is_some_and(|id| self.events.is_non_root_child_claimed(*id));
+            let claimed_statement_boundary =
+                initiating_token_claimed && self.is_compilation_item_or_statement_start_at(cursor);
+            if (!self.is_theorem_item_tail_boundary_at(cursor) || claimed_statement_boundary)
                 && let Some(recovery) = self.recover_malformed_theorem_tail(cursor)
             {
                 cursor = recovery.next_position;
@@ -12112,7 +12118,9 @@ impl Parser {
     }
 
     fn emit_placeholder_item(&mut self, start: usize, end_exclusive: usize) -> ParsedItem {
-        let children = self.token_node_ids[start..end_exclusive].to_vec();
+        let children = self
+            .events
+            .unclaimed_non_root_children(&self.token_node_ids[start..end_exclusive]);
         let range = self.covering_token_range(start, end_exclusive);
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::PlaceholderItem,
@@ -12750,21 +12758,32 @@ impl Parser {
 
     fn recover_malformed_theorem_tail(&mut self, position: usize) -> Option<ParsedItem> {
         let mut cursor = position;
+        let mut scanning_claimed_prefix = self
+            .token_node_ids
+            .get(position)
+            .is_some_and(|id| self.events.is_non_root_child_claimed(*id));
         let mut paren_depth = 0_usize;
         let mut bracket_depth = 0_usize;
         let mut brace_depth = 0_usize;
 
         while cursor < self.request.tokens.len() {
             let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            let current_token_claimed = self
+                .token_node_ids
+                .get(cursor)
+                .is_some_and(|id| self.events.is_non_root_child_claimed(*id));
+            let current_is_claimed_prefix = scanning_claimed_prefix && current_token_claimed;
             if top_level
                 && (self.is_semicolon_at(cursor)
                     || self.is_end_keyword_at(cursor)
                     || self.is_case_branch_keyword_at(cursor)
-                    || self.is_compilation_item_or_statement_start_at(cursor))
+                    || (self.is_compilation_item_or_statement_start_at(cursor)
+                        && !current_is_claimed_prefix))
             {
                 break;
             }
 
+            scanning_claimed_prefix = current_is_claimed_prefix;
             if self.is_reserved_symbol_at(cursor, "(") {
                 paren_depth += 1;
             } else if self.is_reserved_symbol_at(cursor, ")") {
@@ -13442,7 +13461,9 @@ impl Parser {
         let range = self.covering_token_range(position, cursor);
         self.trivia
             .add_skipped_token_range(range, None, SkippedTokenReason::Recovery);
-        let children = self.token_node_ids[position..cursor].to_vec();
+        let children = self
+            .events
+            .unclaimed_non_root_children(&self.token_node_ids[position..cursor]);
         let id = self.add_recovery_node(SyntaxRecoveryKind::SkippedToken, range, children);
         Some(ParsedItem {
             id,

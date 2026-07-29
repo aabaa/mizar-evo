@@ -312,12 +312,14 @@ cargo test -p mizar-lexer
 
 ## Independently authorized parser-recovery follow-through
 
-- **`PARSER-RECOVERY-B1B1P-P1-FE`。** [ ]
+- **`PARSER-RECOVERY-B1B1P-P1-FE`。** [x]
   - [x] exact parser panic input 9件についてTask-41/Task-28 assessmentをfreezeする。
     passthrough/merge productionは不変、existing real-parser fuzzが所有し、old AST
     artifactが存在しないためcache-version bumpは不要。
-  - [ ] `tests/determinism.rs`へreal-provider determinism regressionだけを追加し、
+  - [x] `tests/determinism.rs`へreal-provider determinism regressionだけを追加し、
     9 caseすべてのrecovered AST/diagnosticとcache keyをreplay間で比較する。
   - frontend production、public API、diagnostic vocabulary、cache constant、fuzz target、
     corpus/expectation/trace metadata、coverage creditを保持する。parser prerequisiteへ
     戻った後、Checker B1B1Pへ戻る。
+  - regressionはunchanged valid sourceとexcluded `ast = None` control 5件もfreezeし、
+    frontend productionとcache v2は不変である。

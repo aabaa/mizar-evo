@@ -265,10 +265,11 @@ postfix/infix 158-byte source frozen in [00.crate_plan.md](./00.crate_plan.md),
 seven corrupted `theorem` bytes and the two corrupted equality bytes must not
 cause a builder panic. Speculative partial syntax may retain already-produced
 children, but later placeholder and malformed-tail recovery must not claim
-those children a second time. Theorem-tail recovery must advance past its
-initiating malformed token when failed speculative syntax already owns that
-token before honoring a later statement/item boundary; unclaimed paths retain
-their current synchronization.
+those children a second time. Theorem-tail recovery must advance across the
+contiguous already-claimed speculative prefix beginning at the initiating
+malformed token before honoring a later statement/item boundary. The
+exception ends at the first unclaimed token; unclaimed paths retain their
+current synchronization.
 
 The nine cases must return a recovered `SurfaceAst` plus syntax diagnostics;
 the strict one-non-root-parent tree invariant remains unchanged. Mutations of
@@ -276,3 +277,8 @@ the five-byte `proof` keyword that reach the documented unmatched-`end`
 `ast = None` path are excluded and remain valid unrecoverable outcomes. This
 bounded correction adds no grammar, public diagnostic, public API, or
 semantic behavior and is not parser Task 49.
+
+Implementation closes the nine panics without weakening
+`SurfaceAstBuilder`. The byte-112 regression proves that the first unclaimed
+`take`/`thus` boundaries survive after the claimed `x !` prefix, while the
+five excluded proof mutations retain the documented `ast = None` result.

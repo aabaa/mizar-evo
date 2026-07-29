@@ -333,3 +333,7 @@ AST/recovery structure and diagnostics for every frozen byte mutation and
 compare two complete frontend runs. The five documented unmatched-`end`
 `ast = None` mutations remain outside the slice. No parser input, public seam
 API, grammar, or diagnostic contract changes.
+
+Implementation result: the regression now observes all nine recovered cases,
+the unchanged valid source, and all five excluded `ast = None` controls
+through `MizarParserSeam`; no production seam change was needed.

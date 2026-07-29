@@ -16,12 +16,12 @@ independent read-only scoreは99/100である。
 
 状態: この crate は、session `SourceRange` を持つ frontend 適合済み token transfer object を消費し、`mizar_syntax::SurfaceAst` と構文診断を返す parser entry point を公開している。Tasks 1-48は実装済みである。P-043-01/P-046はTask 46によりclosed、P-265-47Dはnonblocking human-owned wording gapのままである。独立にclassifiedされたoverbroad frontend string-position heuristicはparser scope外に残る。Task 46はglobal Step 5を閉じず、Task 49やSteps 6/7を許可しない。
 
-current qualification: Checker B1B1P preflightは
-[00.crate_plan.md](./00.crate_plan.md)のbounded
-`PARSER-RECOVERY-B1B1P-P1` fallback-ownership prerequisiteだけを独立にauthorizeする。
-separate implementation commitがfull gateをpassするまで、上記99/100 scoreはhistorical
-closeout evidenceであり、current panic-free claimではない。本prerequisiteはparser
-Task 49でなく、grammar/semantic scopeを追加しない。
+current qualification: [00.crate_plan.md](./00.crate_plan.md)のbounded
+`PARSER-RECOVERY-B1B1P-P1` fallback-ownership prerequisiteは実装済みで、
+independent test/implementation reviewはno findingsである。exact recoverable input
+9件はdeterministic recovered ASTを返し、excluded 5件は`ast = None`、previously
+returning controlはboundaryを保持する。本prerequisiteはparser Task 49でなく、
+grammar/semantic scopeを追加しない。
 
 モジュール仕様と監査:
 

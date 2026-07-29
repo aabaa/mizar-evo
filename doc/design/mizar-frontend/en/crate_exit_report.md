@@ -205,8 +205,17 @@ Recommended reasoning setting for the next task:
 The historical frontend closeout is qualified only by the bounded follow-up
 frozen in [00.crate_plan.md](./00.crate_plan.md). No frontend production bug or
 cache-version change is open: passthrough, merge ordering, and real-parser fuzz
-ownership already satisfy the Task-28 checklist. One real-provider
-determinism regression remains to verify the nine newly returning parser
-outputs and their v2 AST cache keys. The implementation commit must restore a
-fresh hard-gate score of at least 90/100 without grammar/semantic or coverage
-credit.
+ownership already satisfy the Task-28 checklist. At freeze time, one
+real-provider determinism regression remained to verify the nine newly
+returning parser outputs and their v2 AST cache keys. The implementation commit
+was required to restore a fresh hard-gate score of at least 90/100 without
+grammar/semantic or coverage credit.
+
+### Qualification resolution
+
+The regression is implemented and passes for the exact nine recovered inputs,
+the unchanged valid source, and all five excluded `ast = None` controls.
+Frontend production, cache v2, fuzz ownership, public APIs, diagnostics, and
+coverage metadata remain unchanged. Independent test and implementation
+reviews report no findings. A fresh read-only hard-gate review scores the
+shared parser prerequisite implementation 96/100 with every hard gate passing.

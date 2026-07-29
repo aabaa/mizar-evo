@@ -100,3 +100,8 @@ order, existing fuzz ownership, v2 no-bump rationale, one determinism-test
 addition, immutable public/corpus/trace/coverage boundaries, and return to the
 parser/checker tasks. No bilingual finding remains in this frozen
 follow-through.
+
+Implementation synchronization is complete: both languages record the real
+provider, nine recovered cases, unchanged valid source, five excluded
+`ast = None` controls, replay-stable diagnostics/AST/cache keys, and unchanged
+production/cache/fuzz/coverage boundaries.

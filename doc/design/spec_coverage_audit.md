@@ -4348,6 +4348,19 @@ and diagnostic merge production, existing real-parser valid-UTF-8 fuzz
 ownership, and no `MIZAR_PARSER_CACHE_KEY_VERSION` bump: the old parser
 produced no reusable AST/`FrontendOutput` for the nine panicking inputs, while
 all previously returning inputs remain outside and unchanged by the contract.
-The single real-provider determinism regression will compare recovered
-AST/diagnostics and v2 cache keys across replay. This assessment adds no
-frontend source, trace, or coverage credit.
+
+### Implementation disposition
+
+The bounded parser `source_drift`, frontend/parser Rust `test_gap`, and paired
+`design_drift` are closed. The implementation uses parse-local non-root child
+tracking, claimed-child fallback filtering, and a theorem exception limited to
+the contiguous claimed speculative prefix beginning at the initiating token.
+The exact nine recovered cases, unchanged valid source, first unclaimed
+`take`/`thus` boundaries, and five excluded `ast = None` cases are covered.
+Parser/frontend production ownership, cache v2, specification/corpus/trace
+status and counts, active coverage credit, and all five CLI hashes remain
+unchanged. Therefore this audit changes follow-up disposition only; it adds no
+specification backlink or executable coverage credit.
+The completed real-provider determinism regression compares recovered
+AST/diagnostics and v2 cache keys across replay. It adds Rust test evidence but
+no frontend production source, trace status/count, or coverage credit.

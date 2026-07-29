@@ -156,3 +156,9 @@ bilingual finding remains in the frozen documentation contract. The paired
 frontend follow-through documents freeze the same nine/five split, unchanged
 passthrough/merge production, existing fuzz ownership, v2 no-bump rationale,
 and one determinism regression.
+
+Implementation synchronization is also complete. The paired plan, recovery
+contract, source/spec audit, TODO, README, and closeout qualification record
+the contiguous claimed-prefix refinement, exact nine recovered cases, five
+excluded controls, unchanged returning-path controls, and measured
+test/production oracles.

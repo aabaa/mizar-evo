@@ -206,3 +206,13 @@ is qualified until a separate implementation commit passes independent
 reviews and all gates with a fresh score of at least 90/100. This does not
 infer parser Task 49, change specification coverage, or authorize broader
 grammar/recovery work.
+
+### Qualification resolution
+
+The separate implementation now closes the exact nine-case `source_drift` and
+Rust `test_gap`. Test and implementation reviews end with no findings; focused
+and crate tests, the unchanged corpus/CLI oracles, test-list inventories, and
+production manifest pass. The five excluded inputs retain `ast = None`, and
+unclaimed/previously returning controls remain unchanged. A fresh read-only
+hard-gate review scores the implementation 96/100 with every hard gate
+passing; no Task 49 or coverage promotion follows.

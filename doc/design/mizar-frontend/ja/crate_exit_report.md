@@ -198,6 +198,15 @@ Open questions:
 historical frontend closeoutは[00.crate_plan.md](./00.crate_plan.md)でfreezeしたbounded
 follow-upだけによりqualifyされる。frontend production bugまたはcache-version変更はopen
 でない。passthrough、merge ordering、real-parser fuzz ownershipはTask-28 checklistを
-すでに満たす。newly returning parser output 9件とv2 AST cache keyを検証する
-real-provider determinism regression 1件だけが残る。implementation commitは
-grammar/semanticまたはcoverage creditなしにfresh hard-gate score 90/100以上を回復する。
+すでに満たす。freeze時点では、newly returning parser output 9件とv2 AST cache keyを
+検証するreal-provider determinism regression 1件だけが残っていた。implementation
+commitには、grammar/semanticまたはcoverage creditなしにfresh hard-gate score
+90/100以上を回復することを要求した。
+
+### Qualification resolution
+
+regressionはexact recovered input 9件、unchanged valid source、excluded
+`ast = None` control 5件で実装・pass済みである。frontend production、cache v2、
+fuzz ownership、public API、diagnostic、coverage metadataは不変である。independent
+test/implementation reviewはno findingsである。fresh read-only hard-gate reviewは
+全hard gateをPASSとし、shared parser prerequisite implementationを96/100と評価した。

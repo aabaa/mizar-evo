@@ -199,3 +199,7 @@ sortingはparser recovery shapeに依存しないため、production merge logic
 exact 9-case real-pipeline regressionは2 run間でfull diagnostic vectorと
 recovery-bearing AST outputを比較し、newly returning outputがexisting total orderへ
 deterministically入ることを証明する。
+
+implementation result: real-provider regressionはincluded mutationすべてのfull
+diagnostic vectorとAST/cache outputを比較する。merge logicまたはdiagnostic
+class/codeは変更しない。

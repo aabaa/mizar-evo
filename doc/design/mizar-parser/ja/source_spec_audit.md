@@ -4,9 +4,9 @@
 > [../en/source_spec_audit.md](../en/source_spec_audit.md)。
 
 状態: task 43の監査完了。Task 265 ownershipはcompleted Tasks 46-48までrefresh済み。
-P-043-01/P-046はTask 46によりclosedである。fresh
-`PARSER-RECOVERY-B1B1P-P1` inventory は bounded recovery
-`source_drift` / `test_gap` follow-up 1件をreopenする。
+P-043-01/P-046はTask 46によりclosedである。bounded
+`PARSER-RECOVERY-B1B1P-P1` recovery `source_drift` / `test_gap`もseparate
+implementationによりclosedである。
 
 ## Task 46 source/specification recheck
 
@@ -44,8 +44,8 @@ rebaselineではない。
 表現されている。original task-43 auditは下記deferred operator-declaration gap 1件を
 記録し、Task 265はcanonical authorityを持つlater current-state row 2件を追加した。
 Tasks 46-48は3つのbounded parser sliceをすべてclose済みである。
-独立にauthorizeされた`PARSER-RECOVERY-B1B1P-P1` recovery sliceは、その
-implementation commitまでopenであり、これら3 sliceをreopenしない。
+独立にauthorizeされた`PARSER-RECOVERY-B1B1P-P1` recovery sliceは実装済みであり、
+これら3 sliceをreopenしない。
 
 task 43で残したfollow-upは現在closedである。
 
@@ -86,7 +86,7 @@ parser/test/trace sliceをclose済みである。
 | type、term、formula、statement、proof、definition、operator declaration、property implementation、structure、registration、template、algorithm、claim、verification-clause、annotation、predicate redefinition-label surfaceはtask 36までとTasks 46-48を実装済み。 | `src/module.rs`, `src/module/annotations.rs`, `src/path.rs` | `tests/coverage/spec_trace.toml`のactive parser pass/fail corpus requirement、parser unit test、parse-only snapshot | 所見なし。P-043-01/P-046、P-265-47/P-265-48はclosed。 |
 | term Pratt parsing は `active_from`、newest active same-spelling metadata、prefix/postfix/infix binding power、固定最下位 term operator としての `qua`、non-associative diagnostic を尊重する。 | `src/grammar.rs`, `src/module.rs`, `src/pratt.rs` | parser operator unit test、`crates/mizar-parser/tests/determinism.rs`、`pass_parser_operator_terms_001`、operator fail case | 所見なし |
 | formula Pratt parsing は固定 connective precedence と外側 quantifier parsing を使う。 | `src/module.rs` | `pass_parser_formula_connectives_001` と formula fail corpus | 所見なし |
-| recovery は semicolon、`end`、top-level item start、category-local start、EOF で同期し、recover 可能な syntax には recovery node と diagnostic を出す。 | `src/recovery.rs`, `src/sync.rs`, `src/module.rs`, `src/module/annotations.rs` | fail parser corpus、parser recovery unit test、task-37 consolidation case | open bounded `PARSER-RECOVERY-B1B1P-P1` `source_drift` / `test_gap`: exact imported-postfix corruption 9件がfallback recovery前にbuilder abortへ到達する。 |
+| recovery は semicolon、`end`、top-level item start、category-local start、EOF で同期し、recover 可能な syntax には recovery node と diagnostic を出す。 | `src/recovery.rs`, `src/sync.rs`, `src/module.rs`, `src/module/annotations.rs` | fail parser corpus、parser recovery unit test、task-37 consolidation case、`parser_recovers_imported_postfix_fallback_ownership_matrix` | 所見なし。`PARSER-RECOVERY-B1B1P-P1`がexact 9-case fallback-ownership driftをcloseし、excluded/unclaimed controlを保持する。 |
 | stray unmatched `end` は意図的に recover 不能で、diagnostics と `ast = None` を返す。 | `src/recovery.rs` | `fail_parser_stray_end_001`、parser recovery unit test | 所見なし |
 | parser determinism と frontend cache readiness を維持する: global state、hidden cache、salsa dependency を持たない。 | `src/lib.rs`, `src/grammar.rs`, `src/module.rs` | `crates/mizar-parser/tests/determinism.rs`、parser fuzz target、task 41 frontend passthrough audit | 所見なし |
 
@@ -147,7 +147,7 @@ Checker B1B1Pのfresh preflightにより、post-closeout parser itemをbounded�
 
 | Finding | Classification | Authority / disposition |
 |---|---|---|
-| imported postfix `!`下で`theorem`のsingle-byte corruption 7件とequalityのsingle-byte corruption 2件がsyntax tree finish時にpanicする。 | `source_drift` | Chapter 22 §§22.2.1-22.2.2と既存recovery/fuzz contractはproduction panicではなくparser recoveryを要求する。`SurfaceAstBuilder`を弱めずparser fallback child ownershipとsame-position theorem resynchronizationを修正する。 |
+| imported postfix `!`下で`theorem`のsingle-byte corruption 7件とequalityのsingle-byte corruption 2件がsyntax tree finish時にpanicする。 | `source_drift` | Chapter 22 §§22.2.1-22.2.2と既存recovery/fuzz contractはproduction panicではなくparser recoveryを要求する。`SurfaceAstBuilder`を弱めずparser fallback child ownershipを修正し、theorem resynchronizationをinitiating tokenから始まるcontiguous claimed speculative prefixに限定する。 |
 | exact 9 positionをfreezeするparser-unit + real-frontend regressionがない。 | `test_gap` | existing recovery authorityから導出したRust testだけを追加し、`.miz`、expectation、sidecar、trace rowは追加・編集しない。 |
 | recovery/closeout docsがimplemented categoryにunintended abortなしと記録する。 | `design_drift` | 本independently authorized prerequisiteがopenの間、historical 99/100 closeoutをqualifyする。 |
 
@@ -159,3 +159,13 @@ panicでなく除外する。blocking `spec_gap`、unsafe test intent、
 本itemはrecovery robustnessを変更するがspecification coverageは変更しない。
 `tests/coverage/spec_trace.toml`、全row status/count、active corpus admissionは不変。
 parser Task 49ではなく、grammar/semantic creditを得ない。
+
+### Implementation disposition
+
+上記`source_drift`とRust `test_gap`はclosedである。parse-local ownership trackingと
+fallback filteringはstrict builder invariantを保持する。test-first `design_drift`
+refinementはtheorem recoveryがcontiguous claimed `x !` speculative prefixを越え、
+最初のunclaimed tokenで例外を終了することを記録する。independent test /
+implementation reviewはno findingsである。excluded 5 case、previously returning
+valid-source / unclaimed-fallback control、public/diagnostic/cache boundary、corpus、
+trace metadataは不変である。

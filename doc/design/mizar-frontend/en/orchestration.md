@@ -326,3 +326,7 @@ production merge logic changes. The exact nine-case real-pipeline regression
 must compare full diagnostic vectors and recovery-bearing AST output across
 two runs, proving the newly returning outputs enter the existing total order
 deterministically.
+
+Implementation result: the real-provider regression compares the full
+diagnostic vectors and AST/cache outputs for every included mutation. No merge
+logic or diagnostic class/code changed.

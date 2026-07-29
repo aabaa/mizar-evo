@@ -194,3 +194,12 @@ historical hard-gate resultは記録として保持するが、separate implemen
 independent reviewと全gateをfresh score 90/100以上でpassするまでcurrent parser
 closeoutをqualifyする。parser Task 49を推定せず、specification coverageを変更せず、
 broader grammar/recovery workをauthorizeしない。
+
+### Qualification resolution
+
+separate implementationはexact 9-case `source_drift`とRust `test_gap`をcloseした。
+test/implementation reviewはno findingsであり、focused/crate test、unchanged
+corpus/CLI oracle、test-list inventory、production manifestがpassする。excluded
+5 inputは`ast = None`、unclaimed/previously returning controlは不変である。fresh
+read-only hard-gate reviewは全hard gateをPASSとし、implementationを96/100と評価した。
+Task 49やcoverage promotionへ進まない。

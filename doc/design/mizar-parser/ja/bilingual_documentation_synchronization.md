@@ -141,3 +141,8 @@ prerequisiteとする。frozen documentation contractにbilingual findingは残�
 paired frontend follow-through docsも同じ9/5 split、unchanged passthrough/merge
 production、existing fuzz ownership、v2 no-bump rationale、determinism regression 1件を
 freezeする。
+
+implementation synchronizationもcompleteである。paired plan、recovery contract、
+source/spec audit、TODO、README、closeout qualificationはcontiguous claimed-prefix
+refinement、exact recovered 9 case、excluded 5 control、unchanged returning-path
+control、measured test/production oracleを記録する。

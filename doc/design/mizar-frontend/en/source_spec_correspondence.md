@@ -143,3 +143,10 @@ No frontend `source_drift`, `source_undocumented_behavior`,
 Rust regression closes the frontend side of the existing `test_gap`; no
 `.miz`, expectation, trace row/status/count, active admission, or coverage
 credit changes.
+
+Implementation disposition: `imported_postfix_parser_recovery_is_deterministic_end_to_end`
+closes the frontend `test_gap`. It exercises the real summary provider and
+parser seam for the nine included and five excluded mutations plus the
+unchanged valid source. Production passthrough, merge ordering, fuzz
+ownership, v2 cache version, public surfaces, and coverage metadata remain
+unchanged. No frontend finding remains.

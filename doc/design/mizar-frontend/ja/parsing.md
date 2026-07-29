@@ -213,3 +213,7 @@ real-provider regressionは全frozen byte mutationでrecovered AST/recovery stru
 diagnosticを観測し、complete frontend run 2回を比較する。documented unmatched-`end`
 `ast = None` mutation 5件はslice外のままである。parser input、public seam API、
 grammar、diagnostic contractは変更しない。
+
+implementation result: regressionは`MizarParserSeam`を通してrecovered 9 case、
+unchanged valid source、excluded `ast = None` control 5件を観測し、production
+seam変更は不要だった。

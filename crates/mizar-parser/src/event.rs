@@ -3,7 +3,7 @@ use mizar_syntax::{
     SurfaceAst, SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind,
     SyntaxRecoveryKind,
 };
-use std::sync::Arc;
+use std::{collections::BTreeSet, sync::Arc};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum SyntaxEvent {
@@ -27,12 +27,14 @@ pub(super) enum SyntaxEvent {
 
 pub(super) struct SyntaxEventSink {
     builder: SurfaceAstBuilder,
+    claimed_non_root_children: BTreeSet<SurfaceBuilderNodeId>,
 }
 
 impl SyntaxEventSink {
     pub(super) fn new(source_id: SourceId) -> Self {
         Self {
             builder: SurfaceAstBuilder::new(source_id),
+            claimed_non_root_children: BTreeSet::new(),
         }
     }
 
@@ -54,13 +56,37 @@ impl SyntaxEventSink {
                 kind,
                 range,
                 children,
-            } => self.builder.add_node(kind, range, children),
+            } => {
+                if !matches!(kind, SurfaceNodeKind::Root) {
+                    self.claimed_non_root_children
+                        .extend(children.iter().copied());
+                }
+                self.builder.add_node(kind, range, children)
+            }
             SyntaxEvent::Recovery {
                 kind,
                 range,
                 children,
-            } => self.builder.add_recovery(kind, range, children),
+            } => {
+                self.claimed_non_root_children
+                    .extend(children.iter().copied());
+                self.builder.add_recovery(kind, range, children)
+            }
         }
+    }
+
+    pub(super) fn is_non_root_child_claimed(&self, id: SurfaceBuilderNodeId) -> bool {
+        self.claimed_non_root_children.contains(&id)
+    }
+
+    pub(super) fn unclaimed_non_root_children(
+        &self,
+        ids: &[SurfaceBuilderNodeId],
+    ) -> Vec<SurfaceBuilderNodeId> {
+        ids.iter()
+            .copied()
+            .filter(|id| !self.is_non_root_child_claimed(*id))
+            .collect()
     }
 
     pub(super) fn node_kind(&self, id: SurfaceBuilderNodeId) -> Option<&SurfaceNodeKind> {

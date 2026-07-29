@@ -137,3 +137,10 @@ frontend `source_drift`、`source_undocumented_behavior`、
 `test_expectation_drift`、`boundary_violation`は推定しない。bounded Rust regressionが
 existing `test_gap`のfrontend側を閉じる。`.miz`、expectation、trace row/status/count、
 active admission、coverage creditは変更しない。
+
+implementation disposition:
+`imported_postfix_parser_recovery_is_deterministic_end_to_end`がfrontend
+`test_gap`をcloseする。real summary provider/parser seamでincluded 9 mutation、
+excluded 5 mutation、unchanged valid sourceをexerciseする。production passthrough、
+merge ordering、fuzz ownership、v2 cache version、public surface、coverage metadataは
+不変であり、frontend findingは残らない。

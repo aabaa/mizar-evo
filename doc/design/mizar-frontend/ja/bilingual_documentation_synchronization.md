@@ -94,3 +94,7 @@ TODO/closeout qualification、本auditは、exact 9/5 input split、unchanged pr
 passthrough/merge order、existing fuzz ownership、v2 no-bump rationale、determinism
 test 1件追加、immutable public/corpus/trace/coverage boundary、parser/checker taskへの
 returnで一致する。本frozen follow-throughにbilingual findingは残らない。
+
+implementation synchronizationもcompleteである。両言語はreal provider、recovered
+9 case、unchanged valid source、excluded `ast = None` control 5件、replay-stable
+diagnostic/AST/cache key、unchanged production/cache/fuzz/coverage boundaryを記録する。

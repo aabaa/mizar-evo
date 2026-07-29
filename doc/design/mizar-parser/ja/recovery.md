@@ -240,12 +240,16 @@ freezeしたexact imported postfix/infix 158-byte sourceでは、corrupted `theo
 7 bytesとcorrupted equality 2 bytesがbuilder panicを起こしてはならない。speculative
 partial syntaxはすでに生成したchildを保持してよいが、後続placeholder/malformed-tail
 recoveryは同じchildを二重claimしてはならない。theorem-tail recoveryは、後続
-statement/item boundaryを尊重する前に、failed speculative syntaxが開始malformed
-tokenをすでに所有する場合だけそれを越えてadvanceする。unclaimed pathはcurrent
-synchronizationを保持する。
+statement/item boundaryを尊重する前に、開始malformed tokenから連続する
+already-claimed speculative prefixだけを越えてadvanceする。例外は最初のunclaimed
+tokenで終了し、unclaimed pathはcurrent synchronizationを保持する。
 
 9 caseはrecovered `SurfaceAst`とsyntax diagnosticを返し、strict
 one-non-root-parent tree invariantは変更しない。5-byte `proof` keywordのmutationが
 documented unmatched-`end` `ast = None` pathへ到達する場合は除外し、valid
 unrecoverable outcomeのままとする。本bounded correctionはgrammar、public
 diagnostic、public API、semantic behaviorを追加せず、parser Task 49ではない。
+
+implementationは`SurfaceAstBuilder`を弱めずpanic 9件をcloseする。byte-112
+regressionはclaimed `x !` prefix後の最初のunclaimed `take`/`thus` boundaryを保持し、
+excluded proof mutation 5件はdocumented `ast = None`を保持する。

@@ -85,15 +85,15 @@ are companions when both are present.
   and parser-owned hardening are implemented through Tasks 1-48. Task 46 closes
   concrete operator-declaration syntax after its frontend trigger was found
   already satisfied; the historical post-Task-46 milestone passed all nine hard
-  gates with a fresh independent read-only score of 99/100. Fresh Checker
-  B1B1P preflight has since opened the bounded
-  `PARSER-RECOVERY-B1B1P-P1` fallback-recovery prerequisite. One nonblocking
+  gates with a fresh independent read-only score of 99/100. The later bounded
+  `PARSER-RECOVERY-B1B1P-P1` fallback-recovery prerequisite is implemented
+  with independent test/implementation reviews reporting no findings. One nonblocking
   human-owned wording gap remains; the known overbroad frontend string-position
   heuristic is external to parser scope.
 - [mizar-frontend](./mizar-frontend/README.md) - source loading and phase 1-3
-  orchestration across session, lexer, syntax, and parser services; the prior
-  milestone is complete, while the paired `PARSER-RECOVERY-B1B1P-P1-FE`
-  real-consumer regression remains open with the parser prerequisite.
+  orchestration across session, lexer, syntax, and parser services; the paired
+  `PARSER-RECOVERY-B1B1P-P1-FE` real-consumer regression is complete without
+  frontend production or cache-version changes.
 - [mizar-test](./mizar-test/README.md) - corpus layout, expectation sidecars,
   staged model, traceability, snapshots, and harness behavior; implementation
   exists and the TODO tracks formal gap-closing work.

@@ -3,7 +3,8 @@ use mizar_frontend::cache_key::{
     PreprocessedSourceCacheKey, SourceUnitCacheKey, SurfaceAstCacheKey, TokenStreamCacheKey,
 };
 use mizar_frontend::lexical_env::{
-    ActiveLexicalEnvironmentResult, ExportRank, ExportedSymbolShape,
+    ActiveLexicalEnvironmentResult, ExportRank, ExportedOperatorAssociativity,
+    ExportedOperatorFixity, ExportedOperatorMetadata, ExportedSymbolShape,
     FrontendLexicalEnvironmentError, LexicalEnvironmentDiagnostic,
     LexicalEnvironmentDiagnosticCode, LexicalEnvironmentFingerprint, LexicalEnvironmentRequest,
     LexicalSummaryFingerprint, LexicalSummaryProvider, ModuleId, ModuleLexicalSummary,
@@ -62,6 +63,15 @@ definition
 x**y
 end;
 ";
+
+const B1B1P_RECOVERY_SOURCE: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementParenthesizedApplicationWitnessSmoke: x = x proof\n",
+    "  take (1 ++ 2);\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
 
 #[test]
 fn frontend_output_order_and_token_spans_are_independent_of_provider_scheduling() {
@@ -239,6 +249,155 @@ fn import_edits_invalidate_frontend_cache_keys_end_to_end() {
     assert_ne!(baseline.cache_keys.ast, changed_import.cache_keys.ast);
 }
 
+#[test]
+fn imported_postfix_parser_recovery_is_deterministic_end_to_end() {
+    const RECOVERABLE_MUTATIONS: [usize; 9] = [48, 49, 50, 51, 52, 53, 54, 112, 148];
+
+    assert_eq!(B1B1P_RECOVERY_SOURCE.len(), 158);
+    assert_eq!(&B1B1P_RECOVERY_SOURCE[48..55], "theorem");
+    assert_eq!(&B1B1P_RECOVERY_SOURCE[112..113], "=");
+    assert_eq!(&B1B1P_RECOVERY_SOURCE[116..121], "proof");
+    assert_eq!(&B1B1P_RECOVERY_SOURCE[148..149], "=");
+
+    let fixture = PackageFixture::new();
+    fixture.write("src/recovery.miz", B1B1P_RECOVERY_SOURCE);
+    let control = run_frontend(&fixture, "src/recovery.miz", ProviderSchedule::InOrder);
+    let control_replay = run_frontend(&fixture, "src/recovery.miz", ProviderSchedule::InOrder);
+    let control_ast = control
+        .ast
+        .as_ref()
+        .expect("the unchanged source must retain its previously returning AST");
+    assert!(
+        !control
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.class == DiagnosticClass::Syntax),
+        "the unchanged source must remain syntax-diagnostic free"
+    );
+    assert_eq!(
+        control_ast
+            .nodes()
+            .iter()
+            .filter(|node| matches!(node.kind, mizar_syntax::SurfaceNodeKind::TheoremItem))
+            .count(),
+        1,
+        "the unchanged source must retain its theorem structure"
+    );
+    assert_eq!(
+        control_ast
+            .nodes()
+            .iter()
+            .filter(|node| matches!(node.kind, mizar_syntax::SurfaceNodeKind::ProofBlock))
+            .count(),
+        1,
+        "the unchanged source must retain its proof boundary"
+    );
+    assert!(
+        !control_ast
+            .nodes()
+            .iter()
+            .any(|node| matches!(node.kind, mizar_syntax::SurfaceNodeKind::ErrorRecovery(_))),
+        "the unchanged source must not gain recovery structure"
+    );
+    assert_eq!(
+        control.ast, control_replay.ast,
+        "the unchanged source AST must remain deterministic"
+    );
+    assert_eq!(
+        control.cache_keys, control_replay.cache_keys,
+        "the unchanged source cache keys must remain deterministic"
+    );
+
+    for mutation in RECOVERABLE_MUTATIONS {
+        let mut source = B1B1P_RECOVERY_SOURCE.as_bytes().to_vec();
+        source[mutation] = b'!';
+        let source = String::from_utf8(source).expect("single-byte mutations remain valid UTF-8");
+        fixture.write("src/recovery.miz", &source);
+
+        let first = run_frontend(&fixture, "src/recovery.miz", ProviderSchedule::InOrder);
+        let second = run_frontend(&fixture, "src/recovery.miz", ProviderSchedule::InOrder);
+        let first_ast = first
+            .ast
+            .as_ref()
+            .unwrap_or_else(|| panic!("mutation byte {mutation} must retain a recovered AST"));
+
+        assert!(
+            first
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.class == DiagnosticClass::Syntax),
+            "mutation byte {mutation} must retain a syntax diagnostic"
+        );
+        assert!(
+            first_ast
+                .nodes()
+                .iter()
+                .any(|node| matches!(node.kind, mizar_syntax::SurfaceNodeKind::ErrorRecovery(_))),
+            "mutation byte {mutation} must retain explicit recovery structure"
+        );
+        assert!(
+            first
+                .tokens
+                .tokens()
+                .iter()
+                .any(|token| { token.kind == TokenKind::UserSymbol && token.text.as_ref() == "!" }),
+            "mutation byte {mutation} must tokenize imported postfix `!` as a user symbol"
+        );
+        assert!(
+            first.tokens.tokens().iter().any(|token| {
+                token.kind == TokenKind::UserSymbol && token.text.as_ref() == "++"
+            }),
+            "mutation byte {mutation} must retain imported infix `++` provenance"
+        );
+        assert_eq!(
+            first.diagnostics, second.diagnostics,
+            "mutation byte {mutation} diagnostics must be deterministic"
+        );
+        assert_eq!(
+            first.ast, second.ast,
+            "mutation byte {mutation} AST must be deterministic"
+        );
+        assert_eq!(
+            first.cache_keys, second.cache_keys,
+            "mutation byte {mutation} cache keys must be deterministic"
+        );
+    }
+
+    for mutation in 116..=120 {
+        let mut source = B1B1P_RECOVERY_SOURCE.as_bytes().to_vec();
+        source[mutation] = b'!';
+        let source = String::from_utf8(source).expect("single-byte mutations remain valid UTF-8");
+        fixture.write("src/recovery.miz", &source);
+
+        let first = run_frontend(&fixture, "src/recovery.miz", ProviderSchedule::InOrder);
+        let second = run_frontend(&fixture, "src/recovery.miz", ProviderSchedule::InOrder);
+
+        assert!(
+            first.ast.is_none(),
+            "excluded proof mutation byte {mutation} must retain the documented absent AST"
+        );
+        assert!(
+            first
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.class == DiagnosticClass::Syntax),
+            "excluded proof mutation byte {mutation} must retain syntax diagnostics"
+        );
+        assert_eq!(
+            first.diagnostics, second.diagnostics,
+            "excluded proof mutation byte {mutation} diagnostics must remain deterministic"
+        );
+        assert_eq!(
+            first.cache_keys, second.cache_keys,
+            "excluded proof mutation byte {mutation} cache keys must remain deterministic"
+        );
+        assert!(
+            first.cache_keys.ast.is_none(),
+            "excluded proof mutation byte {mutation} must not create a reusable AST artifact"
+        );
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ProviderSchedule {
     InOrder,
@@ -261,10 +420,12 @@ impl LexicalSummaryProvider for DeterminismProvider {
     ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
         let mut imports = Vec::new();
         let mut diagnostics = Vec::new();
+        let mut uses_type_fixtures = false;
 
         for (stub_ordinal, stub) in request.import_stubs.iter().enumerate() {
             match stub.path.spelling.as_ref() {
-                "alpha" | "beta" | "gamma" => {
+                "alpha" | "beta" | "gamma" | "parser.type_fixtures" => {
+                    uses_type_fixtures |= stub.path.spelling.as_ref() == "parser.type_fixtures";
                     imports.push(ResolvedImportEntry {
                         stub_ordinal,
                         stub_span: stub.span,
@@ -288,23 +449,46 @@ impl LexicalSummaryProvider for DeterminismProvider {
             }
         }
 
-        Ok(ResolvedImports {
-            imports: schedule_items(imports, self.schedule),
-            summaries: schedule_items(
+        let mut summaries = vec![
+            summary(
+                "alpha",
+                101,
+                vec![symbol("+*+", "alpha.plus_star_plus", "alpha")],
+            ),
+            summary(
+                "beta",
+                self.beta_fingerprint,
+                vec![symbol("**", "beta.times", "beta")],
+            ),
+        ];
+        if uses_type_fixtures {
+            summaries.push(summary(
+                "parser.type_fixtures",
+                303,
                 vec![
-                    summary(
-                        "alpha",
-                        101,
-                        vec![symbol("+*+", "alpha.plus_star_plus", "alpha")],
+                    operator_symbol(
+                        "!",
+                        "parser.type_fixtures.factorial",
+                        "parser.type_fixtures",
+                        UserSymbolArity::exact(1),
+                        ExportedOperatorFixity::Postfix,
+                        90,
                     ),
-                    summary(
-                        "beta",
-                        self.beta_fingerprint,
-                        vec![symbol("**", "beta.times", "beta")],
+                    operator_symbol(
+                        "++",
+                        "parser.type_fixtures.append",
+                        "parser.type_fixtures",
+                        UserSymbolArity::exact(2),
+                        ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+                        10,
                     ),
                 ],
-                self.schedule,
-            ),
+            ));
+        }
+
+        Ok(ResolvedImports {
+            imports: schedule_items(imports, self.schedule),
+            summaries: schedule_items(summaries, self.schedule),
             diagnostics: schedule_items(diagnostics, self.schedule),
         })
     }
@@ -467,6 +651,25 @@ fn symbol(spelling: &str, symbol_id: &str, source_module: &str) -> ExportedSymbo
         kind: UserSymbolKind::Functor,
         arity: UserSymbolArity::exact(2),
         operator: None,
+    }
+}
+
+fn operator_symbol(
+    spelling: &str,
+    symbol_id: &str,
+    source_module: &str,
+    arity: UserSymbolArity,
+    fixity: ExportedOperatorFixity,
+    precedence: u8,
+) -> ExportedSymbolShape {
+    ExportedSymbolShape {
+        spelling: spelling.to_owned(),
+        symbol_id: SymbolId::new(symbol_id),
+        source_module: ModuleId::new(source_module),
+        export_rank: ExportRank::new(0),
+        kind: UserSymbolKind::Functor,
+        arity,
+        operator: Some(ExportedOperatorMetadata { fixity, precedence }),
     }
 }
 

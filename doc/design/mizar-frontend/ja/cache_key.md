@@ -182,3 +182,7 @@ frozen contract外で明示的に不変である。new recovered AST keyはexact
 imported fixityを含むparser inputs、edition、parser versionで引き続き分離される。real
 frontend regressionは9 caseすべてのreplay keyを比較する。cache-key source、version
 constant、storage policy、public APIは変更しない。
+
+implementation result: recovered 9 caseのreplay keyは一致し、unchanged valid
+sourceはAST shapeとv2 keyを保持し、excluded 5 caseは`cache_keys.ast = None`を
+保持する。cache source変更なしでno-bump assessmentをcloseする。
