@@ -743,6 +743,37 @@ sidecar/expectation/trace/diagnostic creditをpreserveし、bounded
 `design_drift`、`source_drift`、`test_gap`をcloseする。specification/
 dependency、test-sufficiency、implementation、consistency reviewsは
 findingsなしでcompleteし、complete verificationもPASS。final qualityも
-全9 hard gatesをvalid `98/100`でPASS。commit、fresh B2C
-functional-update/`FieldUpdate` documentation inventoryは両companionで
-openのまま。
+全9 hard gatesをvalid `98/100`でPASS。implementation commit
+`8311502c`とfresh inventoryは両companionでcomplete。
+
+## Checker Task 258B3M2B2B2CP synchronization
+
+English canonical runner documents/JA companionsはsame private B2CP
+dependencyをB2Cより先にfreezeする。final-LF 181-byte source/hash、
+86 nodes/root 85、exact 180-byte missing-value recovery/hash、全parser
+locations、Task-48 `2/1/0`、Task-252 `7/4/3`、Task-254
+`2/0/1/3/1/4/9`、imported root provenance、Task-256 exclusion、
+ownership `69/65/30/20/24/68`、ordered update/constructor edges/requests
+を同期する。
+
+same private `ImportedStructureUpdateSite`/owned-kind/context-handoff
+siblings、runner implementation files 4件、runner tests exactly 2件/
+checker tests 0件をnameする。second testは
+`task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed`
+で、B2P constructor/B2BP selector双方のcompatibilityをcoverする。
+
+両言語は`386/437` baseline、`386/439` projection、exact current
+sizes/hashes、unchanged canonical/corpus/public/active/trace-credit/
+diagnostic boundariesをrecordする。functional-copy semanticsと全
+Task-256/258、statement/witness、proof/goal/IR resultはdeferredで、
+`x = x` goal内の`take`にsemantic acceptance claimはない。skipped
+prerequisiteを`design_drift`、future seamを`source_drift`、testsを
+`test_gap`と分類し、blocking `spec_gap`なし。
+
+repeated specification/dependency、test-sufficiency、
+implementation-boundary、source/documentation consistency reviewsは
+findingsなし。documentation lint、両lint policies、format、
+warnings-denied workspace Clippy、full workspace tests、CLI 5件、全frozen
+count/hashが両companionでPASSし、全9 hard gatesもPASS。final read-only
+qualityはvalid `98/100`。残るのはdedicated documentation commitとfresh
+implementation inventoryだけ。

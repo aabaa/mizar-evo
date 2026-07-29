@@ -11939,3 +11939,38 @@ production layout contains 45,224 lines with path/content hashes
 The runner test list is `437` with raw/normalized hashes
 `51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
 `2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.
+
+## Checker Task 258B3M2B2B2CP Frozen Runner Boundary
+
+B2B commit `8311502c` is complete and fresh clean inventory inserts B2CP
+before B2C.
+
+B2CP may change only four existing runner files:
+`type_elaboration/source_structure.rs`, `type_elaboration.rs`, `runner.rs`,
+and `tests/type_elaboration/source_structure.rs`. The source-structure leaf
+owns exact-source selection, imported-root/owned-kind authentication, and
+the proof-context Task-254 reuse seam; the facade/root expose only private
+production and test plumbing; the test leaf owns exactly two tests.
+
+The only new private siblings are `ImportedStructureUpdateSite`,
+`imported_structure_update_owned_node_kinds`, and
+`imported_structure_update_handoff_in_context`. They expose the exact
+Task-254 update/`FieldUpdate` lower bytes to the future B2C consumer without
+owning Task-256/258, statement/witness installation, or semantic results.
+
+Checker source, source-statement modules/tests, public re-exports, active
+dispatch, dependencies, fixtures, expectations, sidecars, trace metadata,
+new modules/production paths, debug grammar, and semantic owners are
+outside scope. Functional-copy/update evaluation, type/result identity,
+proof acceptance, goals, and IR remain deferred. Current runner sizes remain
+`6826/4506/728/2543/17120/4315`; production remains 30 paths / 45,224
+lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`.
+Raw/normalized runner test-list hashes remain
+`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
+`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.
+Implementation projects only the runner library from 437 to 439. All four
+independent reviews have no findings, verification and all nine hard gates
+pass, and final read-only quality is a valid `98/100`. Only the
+documentation commit and fresh implementation inventory remain pending.

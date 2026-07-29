@@ -682,7 +682,37 @@ specification/dependency, test-sufficiency, and implementation reviews have
 no findings; and bounded `source_drift`, `test_gap`, and `design_drift` are
 closed. Source/documentation consistency and final verification now also
 pass, and final quality passes all nine hard gates with a valid `98/100`.
-Implementation commit and fresh B2C functional-update/`FieldUpdate`
-documentation inventory remain pending. No
+Implementation commit `8311502c` and fresh inventory are complete. No
 public, semantic/proof/goal, corpus active-route, or trace-credit bilingual
 debt is introduced.
+
+## Task 258B3M2B2B2CP Frozen-Prerequisite Synchronization
+
+The English canonical documents and Japanese companions freeze the same
+dependency correction: B2CP is the private Task-254 functional-update reuse
+seam before the separately scoped B2C statement consumer. Both record the
+181-byte/hash and 86-node/root-85 exact source, 180-byte missing-value
+recovery profile, imported `TypeCaseStruct#5` provenance, Task-48
+`2/1/0`, Task-252 `7/4/3`, and Task-254
+`2/0/1/3/1/4/9`.
+
+Both languages assign Task-254 ownership only to update 69, constructor 65,
+members 30/20/24, and `FieldUpdate` 68; freeze the same four runner
+implementation files and two tests; preserve empty Task-256/258 and upper
+tables; retain future Task-256 ownership only at nodes 55/77 with unowned
+containers 56/78; and defer B2C take/witness nodes 72/71 plus all update,
+proof, goal, and theorem semantics. They record baseline `386/437`,
+projection `386/439`,
+the same module/manifest/test-list/CLI hashes, narrative-only coverage
+impact, and commit `8311502c` as the completed B2B handoff. No B2CP
+bilingual debt is accepted. Both explicitly defer functional-copy meaning
+and record that `take` in the smoke theorem with goal `x = x` supplies no
+semantic-acceptance evidence.
+
+Repeated specification/dependency, test-sufficiency,
+implementation-boundary, and source/documentation consistency reviews now
+have no findings. Documentation lint, both lint policies, formatting,
+warnings-denied workspace Clippy, full workspace tests, all five CLIs, and
+every frozen count/hash pass in both companions. All nine hard gates pass
+and final read-only quality is a valid `98/100`. Only the dedicated
+documentation commit and fresh implementation inventory remain.

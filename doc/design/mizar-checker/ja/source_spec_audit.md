@@ -4162,5 +4162,44 @@ corpus active route、public API、semantic/proof/goal ownershipを変更
 specification/dependency、test-sufficiency、implementation、
 source/documentation consistency reviewsはfindingsなしで、broad final
 verificationもPASS。final qualityも全9 hard gatesをvalid `98/100`で
-PASS。implementation commit、fresh B2C functional-update/`FieldUpdate`
-documentation inventoryはpending。
+PASS。implementation commit `8311502c`とfresh inventoryはcomplete。
+
+## Task 258B3M2B2B2CP specification audit
+
+Chapter 13 §13.3.3のspecific grammar/immutability、Chapter 5の
+constructor/selector context、Chapter 15/16の`take` placement、active
+selector/update parser fixtureとmissing-value/missing-close failures、
+existing Task-254 structure-term fixtureにより、canonical artifactsを
+変更せずexact B2CP transport intentをderiveできる。
+
+fresh inventoryはmedium `design_drift`を1件発見した。roadmapはB2Cを
+directにnameしたが、proof-context reuse seamはconstructor/selector
+だけ。B2CPがdependency boundaryとstale B2B commit handoffをcloseする。
+absent private seamはbounded
+`source_drift`、tests 2件は`test_gap`。
+
+Chapter 13 §13.3.3とcomplete postfix grammarをactive parser fixturesと
+共に読むとexact shapeはunambiguous。local `structure_expression`
+shorthandがfunctional-update alternativeを列挙しない点は
+low/nonblocking `spec_gap`で、canonical specはeditしない。unsafe test
+intent、`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`はない。earlier/parallel write-owner overlapは
+nonblocking/report-only `repo_metadata_conflict`のまま、safe commit
+targetはexactで、repository metadataはrepairしない。
+
+docs taskはsyntax/provenanceだけをfreezeする。`doc/spec`、`.miz`、
+fixture、expectation、sidecar、trace row/status/count/backlink、active
+route、public API、diagnostic credit、semantic ownerは変更なし。
+formula-statement rowは`deferred`、`tests = []`、Task-254 diagnostic
+creditもunchanged。
+
+Task 254はnodes `69/65/30/20/24/68`、Task 252はpublished sites
+`51/53/59/62/66/73/75`をretainする。Task 256がlater ownするのは
+nodes `55/77`だけで、containers `56/78`はunowned、update subtree全体
+をexcludeする。B2CPはTask-256/258 rowをpublishせず、B2Cだけがlater
+take/witness nodes `72/71`とwitness-to-`Structure(0)` edgeをownできる。
+repeated specification/dependency、test-sufficiency、
+implementation-boundary、source/documentation consistency reviewsは
+findingsなし。broad verification、全count/hash gate、全9 hard gatesが
+PASSし、final read-only qualityはvalid `98/100`。残るのは
+dedicated-commit closureとfresh implementation inventoryだけ。

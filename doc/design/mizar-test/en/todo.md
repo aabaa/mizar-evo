@@ -2410,6 +2410,31 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete all focused/full verification, lint, count, and hash gates.
 - [x] Pass final read-only quality review with all hard gates and a valid
   score of at least `90/100`.
-- [ ] Create the dedicated implementation commit, verify clean worktree,
-  origin metadata, and untouched stash, then fresh-inventory the B2C
-  functional-update/`FieldUpdate` documentation prerequisite.
+- [x] Create implementation commit `8311502c`, verify clean worktree,
+  ahead-three origin metadata and untouched stash, then fresh-inventory the
+  B2CP prerequisite before B2C.
+
+## Checker Task 258B3M2B2B2CP Runner Frozen-Prerequisite Ledger
+
+- [x] Establish the private update/`FieldUpdate` reuse seam before B2C.
+- [x] Freeze the 181-byte/86-node exact source, 180-byte malformed profile,
+  Task-48/252/254 rows, provenance, ownership, edges, and exclusions.
+- [x] Freeze the exact four-file runner boundary, two tests, zero checker
+  tests, and no statement/public/active/semantic output.
+- [x] Freeze private `ImportedStructureUpdateSite`, owned-kind, and
+  context-handoff siblings plus B2P-constructor/B2BP-selector compatibility.
+- [x] Use the exact second test name
+  `task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed`.
+- [x] Keep functional-copy semantics, type/result identity, witness
+  obligations, theorem/proof acceptance, goals, and IR deferred; make no
+  semantic acceptance claim for the `take` inside the `x = x` goal.
+- [x] Record libraries `386/437`, projection `386/439`, current module,
+  manifest, test-list, count, and CLI hashes.
+- [x] Classify the skipped prerequisite as `design_drift`, the future seam
+  as bounded `source_drift`, and its tests as `test_gap`; no blocking
+  `spec_gap` was found.
+- [x] Complete specification/dependency, test-sufficiency,
+  implementation-boundary, and source/documentation reviews with no
+  findings; pass documentation verification and all hard gates.
+- [x] Pass final read-only quality with a valid score of `98/100`.
+- [ ] Commit documentation only, then fresh-inventory and implement B2CP.

@@ -2654,3 +2654,25 @@ revalidation、empty semantic deferralsを含めてPASS。
 `source_statement.rs`は29,941 lines。selector meaning、proof/goal effect、
 theorem acceptance、B2C update/`FieldUpdate`、corpus active-route status、
 trace creditは追加していない。
+
+## Task 258B3M2B2B2CP statement-owner deferral
+
+B2CPはstatement-witness profileではない。181-byte functional-update
+sourceはprivate Task-254 proof-context reuse seamだけをmotivateする。
+このprerequisite/implementation中、Task 258はtheorem、statement、
+context、fact、take、witness、name、directed witness targetをownしない。
+`SourceStatementWitnessTermTarget`、fingerprint、producer、TypedAst
+installer、final-clone rule、public API、debug grammarは変更なし。
+
+B2CP implementationをseparately commitした後だけ、B2Cはsame sourceを
+fresh-inventoryし、theorem 82/conclusion 80のtheorem/statement/context/
+fact rowsとlocal owner/labelを含むcomplete Task-258 base transaction/
+provenanceをfreezeする。そのexact countsはB2CPではfreezeしない。
+B2C witness extensionがownできるのはtake/witness nodes `72/71`とexact
+witness-to-functional-update `Structure(0)` edgeだけ。Task 256がlater
+ownするのはnodes `55/77`だけで、formula containers `56/78`はunowned、
+formula tableはupdate subtreeをexcludeする。update/member/
+`FieldUpdate` semantics、replacement/result typing、functional-copy
+meaning、existential obligations/substitution、proof、goal、theorem
+acceptanceはdeferred。smoke theoremのgoalは`x = x`なので、この`take`
+occurrenceはsemantic acceptance claimを供給しない。

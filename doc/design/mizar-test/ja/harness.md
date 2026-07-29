@@ -3822,3 +3822,57 @@ outputsをcoverする。
 
 runner libraryは`437`。public/active route、fixture、expectation、sidecar、
 trace row/backlink/credit、diagnostic credit、semantic behaviorは追加なし。
+
+B2Bはimplementation commit `8311502c`でcloseし、clean fresh inventoryは
+B2Cより先にB2CPをselectする。
+
+## Checker Task 258B3M2B2B2CP frozen private harness
+
+dormant harnessはfinal-LF 181-byte、SHA-256
+`03f14a98bffb557ea4dda4f879bf504d241aaebae0552a97f0f2417ef4b43560`、
+86-node/root-85 `FormulaStatementStructureUpdateWitnessSmoke` sourceだけを
+freezeする:
+
+```text
+import parser.type_fixtures;
+reserve x for set;
+theorem FormulaStatementStructureUpdateWitnessSmoke: x = x proof
+  take TypeCaseStruct(x: 1, y: 2) with (x := 3);
+  thus x = x;
+end;
+```
+
+proof context 1 at `107..179`とexact Task-48 `2/1/0`、Task-252
+`7/4/3`、Task-254 `2/0/1/3/1/4/9`をreuseする。Task-252 extraction
+rootsは`51/53/60/63/67/73/75`、published sitesは
+`51/53/59/62/66/73/75`。Task 254はupdate/constructor/member/
+`FieldUpdate` nodes `69/65/30/20/24/68`をownし、imported
+`TypeCaseStruct#5` contribution 2 at `7..27/[5]`をauthenticateし、
+exact update-base/update-value/constructor-value edgesとnine-request
+orderをpreserveする。
+
+Task 256がownするのは`BuiltinPredicateApplication` nodes `55/77`だけ。
+formula containers `56/78`とcomplete update subtreeはexcluded。harnessは
+Task-256/258、statement、witness、checker/public API、active route、
+diagnostic、semantic outputをownしない。
+
+future tests exactly 2件:
+
+- `task258b3m2b2b2cp_structure_update_proof_context_reuse_is_exact`
+- `task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed`
+
+全source byte/node field、imported root、lower rows、update-path/
+`FieldUpdate` ownership、edge/request order、corruption/precedence、
+stale/clean replayをcoverする。complete `with (x := 3)` fragmentを
+`with (x := )`へreplaceしたnear missはexact 180-byte SHA-256
+`8310de3b172cea98e4e85ebc6021c85c4e1bd7c2a74f8cd99413ae5a80569d67`、
+sole `malformed_term_expression` at `158..159`、84 nodes/root 83、
+`recovered = [65]`。
+
+valid excluded base-only/selector/wrapped/multi-update/nested-path formsは
+seam scope外。B2P constructor/B2BP selector双方のcompatibilityをexactに
+preserveする。checker test、statement consumer、active case、fixture、
+sidecar、expectation、trace row、detail key、semantic behaviorは追加なし。
+functional-copy semantics、update result typing/identity、witness
+obligations、theorem/proof acceptance、goals、IRはdeferred。特に
+`x = x` goal下の`take`はsemantic acceptance claimではない。

@@ -768,6 +768,38 @@ Both languages close the bounded `design_drift`, `source_drift`, and
 and unchanged fixture, sidecar, expectation, trace, and diagnostic credit.
 Specification/dependency, test-sufficiency, implementation, and consistency
 reviews are complete with no findings, complete verification passes, and
-final quality passes all nine hard gates with a valid `98/100`. Commit and
-fresh B2C functional-update/`FieldUpdate` documentation inventory remain open
-in both companions.
+final quality passes all nine hard gates with a valid `98/100`.
+Implementation commit `8311502c` and clean fresh inventory are complete in
+both companions.
+
+## Checker Task 258B3M2B2B2CP Synchronization
+
+English canonical runner documents and Japanese companions freeze the same
+private B2CP dependency before B2C: final-LF 181-byte source/hash, 86
+nodes/root 85, exact 180-byte missing-value recovery/hash, all parser
+locations, Task-48 `2/1/0`, Task-252 `7/4/3`, Task-254
+`2/0/1/3/1/4/9`, imported root provenance, Task-256 exclusion, ownership
+`69/65/30/20/24/68`, and ordered update/constructor edges and requests.
+
+Both languages name the same private
+`ImportedStructureUpdateSite`/owned-kind/context-handoff siblings, four
+runner implementation files, and exactly two runner/zero checker tests. The
+second test uses
+`task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed`
+and covers both B2P constructor and B2BP selector compatibility.
+
+Both record `386/437` with `386/439` projection, exact current sizes and
+hashes, and unchanged canonical/corpus/public/active/trace-credit/
+diagnostic boundaries. Functional-copy semantics and every Task-256/258,
+statement/witness, proof/goal/IR result remain deferred; the `take` inside
+the `x = x` goal carries no semantic acceptance claim. Both classify the
+skipped prerequisite as `design_drift`, the future seam as `source_drift`,
+and the tests as `test_gap`, with no blocking `spec_gap`.
+
+Repeated specification/dependency, test-sufficiency,
+implementation-boundary, and source/documentation consistency reviews now
+have no findings. Documentation lint, both lint policies, formatting,
+warnings-denied workspace Clippy, full workspace tests, all five CLIs, and
+every frozen count/hash pass in both companions; all nine hard gates pass.
+Final read-only quality is a valid `98/100`. Only the dedicated
+documentation commit and fresh implementation inventory remain.

@@ -3179,3 +3179,25 @@ rollback, final-clone revalidation, and empty semantic deferrals.
 `source_statement.rs` is 29,941 lines. No selector meaning, proof/goal
 effect, theorem acceptance, B2C update/`FieldUpdate`, corpus active-route
 status, or trace credit was added.
+
+## Task 258B3M2B2B2CP Statement-Owner Deferral
+
+B2CP is not a statement-witness profile. Its 181-byte functional-update
+source motivates only a private Task-254 proof-context reuse seam. Task 258
+owns no theorem, statement, context, fact, take, witness, name, or directed
+witness target during this prerequisite or its implementation. No
+`SourceStatementWitnessTermTarget`, fingerprint, producer, TypedAst
+installer, final-clone rule, public API, or debug grammar changes.
+
+After B2CP implementation is separately committed, B2C must fresh-inventory
+and freeze its complete Task-258 base transaction and provenance, including
+the theorem/statement/context/fact rows for theorem 82 and conclusion 80
+and the local owner/label; their exact counts are not fixed by B2CP. The
+B2C witness extension may then own only take/witness nodes `72/71` and the
+exact witness-to-functional-update `Structure(0)` edge. Task 256 later owns
+only nodes `55/77`; formula containers `56/78` remain unowned and its
+formula table excludes the update subtree. Update/member/`FieldUpdate`
+semantics, replacement/result typing, functional-copy meaning, existential
+obligations/substitution, proof, goal, and theorem acceptance remain
+deferred. Because the smoke theorem's goal is `x = x`, its `take`
+occurrence supplies no semantic-acceptance claim.

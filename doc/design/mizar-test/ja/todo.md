@@ -2211,6 +2211,31 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] focused/full verification、lint、count、hash gatesを全てcomplete。
 - [x] 全hard gatesとvalid score `90/100`以上でfinal read-only quality
   reviewをPASS。
-- [ ] dedicated implementation commitを作成し、clean worktree、origin
-  metadata、untouched stashをverifyしてから、B2C functional
-  update/`FieldUpdate` documentation prerequisiteをfresh-inventory。
+- [x] implementation commit `8311502c`を作成し、clean worktree、
+  ahead-three origin metadata、untouched stashをverifyしてからB2Cより
+  先のB2CP prerequisiteをfresh-inventory。
+
+## Checker Task 258B3M2B2B2CP runner frozen-prerequisite ledger
+
+- [x] B2Cより先のprivate update/`FieldUpdate` reuse seamをestablish。
+- [x] 181-byte/86-node exact source、180-byte malformed profile、
+  Task-48/252/254 rows、provenance、ownership、edges、exclusionsをfreeze。
+- [x] exact four-file runner boundary、tests 2件、checker tests 0件、
+  no-statement/no-public/no-active/no-semantic outputをfreeze。
+- [x] private `ImportedStructureUpdateSite`、owned-kind、context-handoff
+  siblingsとB2P-constructor/B2BP-selector compatibilityをfreeze。
+- [x] second testのexact nameを
+  `task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed`
+  に固定。
+- [x] functional-copy semantics、type/result identity、witness
+  obligations、theorem/proof acceptance、goals、IRをdeferし、`x = x`
+  goal内の`take`にsemantic acceptance claimを与えない。
+- [x] libraries `386/437`、projection `386/439`、current module、
+  manifest、test-list、count、CLI hashesをrecord。
+- [x] skipped prerequisiteを`design_drift`、future seamをbounded
+  `source_drift`、testsを`test_gap`と分類し、blocking `spec_gap`なし。
+- [x] specification/dependency、test-sufficiency、
+  implementation-boundary、source/documentation reviewsをfindingsなしで
+  completeし、documentation verificationと全hard gatesをPASS。
+- [x] final read-only qualityでvalid `98/100`を取得。
+- [ ] docs-only commit後、fresh-inventoryしてB2CPをimplement。

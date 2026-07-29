@@ -648,8 +648,35 @@ fresh implementation inventoryはcomplete、specification/dependency、
 test-sufficiency、implementation reviewsはfindingsなし、bounded
 `source_drift`、`test_gap`、`design_drift`はclosed。
 source/documentation consistencyとfinal verificationもPASSし、final
-qualityも全9 hard gatesをvalid `98/100`でPASS。implementation commitと
-fresh B2C functional-update/`FieldUpdate` documentation inventoryは
-pending。public、
+qualityも全9 hard gatesをvalid `98/100`でPASS。implementation commit
+`8311502c`とfresh inventoryはcomplete。public、
 semantic/proof/goal、corpus active-route、trace-credit bilingual debtは
 追加しない。
+
+## Task 258B3M2B2B2CP frozen-prerequisite synchronization
+
+English canonical documentsとJapanese companionsはsame dependency
+correctionをfreezeする。B2CPはseparate scoped B2C statement consumerより
+先のprivate Task-254 functional-update reuse seam。181-byte/hash、
+86-node/root-85 exact source、180-byte missing-value recovery、
+imported `TypeCaseStruct#5` provenance、Task-48 `2/1/0`、Task-252
+`7/4/3`、Task-254 `2/0/1/3/1/4/9`を両言語で一致させる。
+
+Task-254 ownershipはupdate 69、constructor 65、members 30/20/24、
+`FieldUpdate` 68だけ。同じrunner implementation files 4件/tests 2件、
+empty Task-256/258/upper tables、future Task-256 ownership nodes 55/77と
+unowned containers 56/78、B2C take/witness nodes 72/71、全update/proof/
+goal/theorem semanticsのdeferralを同期する。baseline `386/437`、
+projection `386/439`、same module/manifest/test-list/CLI hashes、
+narrative-only coverage impact、complete B2B commit `8311502c`も一致。
+B2CP bilingual debtは認めない。functional-copy meaningをexplicitに
+deferし、goal `x = x`のsmoke theoremにおける`take`はsemantic
+acceptance evidenceではないことも両言語で一致する。
+
+repeated specification/dependency、test-sufficiency、
+implementation-boundary、source/documentation consistency reviewsは
+findingsなし。documentation lint、両lint policies、format、
+warnings-denied workspace Clippy、full workspace tests、CLI 5件、全frozen
+count/hashが両companionでPASS。全9 hard gatesもPASSし、final read-only
+qualityはvalid `98/100`。残るのはdedicated documentation commitとfresh
+implementation inventoryだけ。

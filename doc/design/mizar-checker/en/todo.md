@@ -5310,6 +5310,30 @@ implementation commit does not satisfy a producer task.
 - [x] Run broad final verification and confirm every count/hash gate.
 - [x] Complete final read-only quality review with every hard gate passing
   and a valid score of at least `90/100`.
-- [ ] Commit this implementation as one logical task, verify clean worktree,
-  origin metadata, and untouched stash, then fresh-inventory the B2C
-  functional-update/`FieldUpdate` documentation prerequisite.
+- [x] Commit this implementation as logical commit `8311502c`, verify clean
+  worktree, ahead-three origin metadata, and untouched stash, then
+  fresh-inventory the B2CP prerequisite before B2C.
+
+## Checker Task 258B3M2B2B2CP Frozen-Prerequisite Ledger
+
+- [x] Establish B2CP as the missing private Task-254 update reuse seam before
+  the later B2C statement consumer.
+- [x] Freeze the exact final-LF 181-byte/hash, 86-node/root-85 source and
+  180-byte missing-value recovery profile.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `7/4/3`, Task-254
+  `2/0/1/3/1/4/9`, imported `TypeCaseStruct#5` provenance, ownership, and
+  subtree exclusions.
+- [x] Freeze only four runner implementation files, exactly two runner
+  tests, zero checker tests, and no public/active/semantic surface.
+- [x] Freeze tests
+  `task258b3m2b2b2cp_structure_update_proof_context_reuse_is_exact` and
+  `task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed`,
+  including exact B2P constructor/B2BP selector compatibility.
+- [x] Preserve canonical artifacts, fixtures, expectations, sidecars, trace
+  status/count/credit, libraries `386/437`, and all baseline hashes.
+- [x] Complete repeated specification/dependency, test-sufficiency,
+  implementation-boundary, and source/documentation reviews with no
+  findings; pass every documentation verification and hard gate.
+- [x] Pass final read-only quality with a valid score of `98/100`.
+- [ ] Commit this documentation prerequisite alone, fresh-inventory, and
+  implement only B2CP before freezing B2C.

@@ -1105,3 +1105,28 @@ remain arena-unowned. B2A and B2B are separately authenticated atomic
 siblings, so target, fingerprint, ownership, or lower-family hybrids reject
 without publication. No reverse, selector-semantic, update/`FieldUpdate`,
 proof, goal, Core/CFG/VC, active-route, or coverage edge was added.
+
+### Task 258B3M2B2B2CP Frozen Lower-Family Boundary
+
+B2CP adds no Task-258 edge. It freezes only a runner-private reuse of the
+existing Task-254 lower graph for one functional update:
+
+```text
+Structure(0 functional-update)
+  -> UpdateBase -> Structure(1 constructor)
+  -> UpdateValue(member 0) -> Primary(4)
+Structure(1 constructor)
+  -> ConstructorValue(member 1/2) -> Primary(2/3)
+FieldUpdate(0) -> member 0
+```
+
+Task 252 retains all seven primary rows. Task 254 retains update,
+constructor, three member rows, the non-term `FieldUpdate`, four directed
+child edges, and nine unresolved requests. B2CP owns no theorem, statement,
+take, witness, formula, reverse edge, or typed/final row. The later B2C
+consumer alone may own take/witness nodes 72/71 and add a
+witness-to-`Structure(0)` edge after B2CP is implemented. Task 256 later
+owns only equality nodes 55/77 and excludes the update subtree; formula
+containers 56/78 remain unowned. Functional-copy meaning, member identity,
+replacement/result typing, proof/goal semantics, active routes, and
+coverage credit remain absent.

@@ -2907,7 +2907,31 @@ or semantic owner changed. B3M2B2B remains next before B4.
   coverage audit.
 - [x] Pass final read-only quality review and the protocol minimum valid score
   of 90/100; every verification/count/hash gate already passes.
-- [ ] Commit the B2B implementation as one logical task, verify clean
-  worktree/origin-metadata/untouched-stash invariants, and fresh-inventory
-  the B2C functional-update/`FieldUpdate` documentation prerequisite without
-  activating its implementation or any semantics implicitly.
+- [x] Commit the B2B implementation as logical commit `8311502c`, verify
+  clean worktree/ahead-three origin metadata/untouched stash, and
+  fresh-inventory the B2CP prerequisite before B2C.
+
+## Checker Task 258B3M2B2B2CP Frozen Lower-Prerequisite
+
+- [x] Classify direct B2C selection as `design_drift` because an exact
+  private Task-254 update proof-context reuse seam is still absent.
+- [x] Freeze the final-LF 181-byte/hash, 86-node/root-85 parser source,
+  180-byte missing-value recovery, and imported constructor provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `7/4/3`, Task-254
+  `2/0/1/3/1/4/9`, exact ownership, edges, requests, and subtree exclusion.
+- [x] Freeze four runner files, two tests, zero checker tests, no public or
+  active route, and all semantic/proof/goal deferrals.
+- [x] Preserve `386/437`, all count/hash gates, canonical/corpus artifacts,
+  Task-254 credit, and formula trace `deferred` / `tests = []`.
+- [x] Complete independent specification/dependency review after recording
+  the nonblocking roadmap `design_drift` and the low/nonblocking Chapter-13
+  helper-grammar `spec_gap`; canonical specification remains unchanged.
+- [x] Report the overlapping earlier-session EN/root draft as a nonblocking
+  `repo_metadata_conflict`; keep the exact safe target and do not repair
+  repository metadata or touch the stash.
+- [x] Complete specification/dependency, test-sufficiency,
+  implementation-boundary, and source/documentation reviews with no
+  findings; pass documentation verification and all nine hard gates.
+- [x] Pass final read-only quality at a valid `98/100`.
+- [ ] Commit this docs-only prerequisite, fresh-inventory, and implement
+  only B2CP before returning to B2C.

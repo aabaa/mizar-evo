@@ -4668,8 +4668,9 @@ dependency provenance, B2A/B2B sibling isolation, rollback/replay, final-clone
 revalidation, and empty semantic outputs.
 
 This implementation changes follow-up ownership from future B2B to completed
-B2B, with B2C functional update/`FieldUpdate` as the next fresh-inventory
-candidate. It does not grant executable specification credit:
+B2B. B2C functional update/`FieldUpdate` is the next consumer candidate,
+subject to the B2CP lower prerequisite found by the fresh inventory below.
+It does not grant executable specification credit:
 `spec.en.checker.formula_statement.source_payloads` remains `deferred`,
 `tests = []`, without backlink, status, count, test-list, or coverage-credit
 change. Existing Task-254 diagnostic credit is unchanged, and
@@ -4690,3 +4691,53 @@ Checker raw/normalized test-list hashes are
 runner hashes are
 `51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
 `2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.
+
+## Task 258B3M2B2B2CP Frozen Functional-Update Lower Prerequisite
+
+Post-B2B inventory records implementation commit `8311502c` and corrects
+the next-owner dependency. The generic Task-254 transport already covers
+functional-update and non-term `FieldUpdate` source shape, but the private
+proof-context reuse surface has only constructor and selector profiles.
+B2CP therefore precedes the B2C statement consumer.
+
+The frozen final-LF source is 181 bytes, SHA-256
+`03f14a98bffb557ea4dda4f879bf504d241aaebae0552a97f0f2417ef4b43560`,
+with zero diagnostics and 86 nodes/root 85. It authenticates Task-48
+`2/1/0`, Task-252 `7/4/3`, Task-254 `2/0/1/3/1/4/9`, imported
+`TypeCaseStruct#5`, update/constructor/member/`FieldUpdate` ownership, and
+ordered update-base/update-value/constructor-value edges. It publishes no
+Task-256/258 row and grants no structure, witness, proof, goal, or theorem
+semantics.
+
+This prerequisite resolves dependency and stale-completion `design_drift`.
+The future private seam is bounded `source_drift`; its two Rust tests are a
+`test_gap`. Independent specification review confirms that Chapters 5,
+13, 15, and 16 plus the active parser fixtures authorize this
+syntax/provenance-only transport. Chapter 13's local
+`structure_expression` helper omits the functional-update alternative that
+§13.3.3 and the complete postfix grammar specify; this is a low,
+nonblocking `spec_gap`. There is no unsafe test intent, undocumented source
+behavior, expectation drift, or boundary violation.
+
+A task-related English draft and these two root ledgers appeared after the
+clean inventory from an earlier/parallel Codex session. That write-owner
+overlap is a nonblocking, report-only `repo_metadata_conflict`. The exact
+B2CP files and safe commit target remain identifiable; no metadata repair,
+revert, fetch, push, or stash action is performed. Canonical review corrects
+only task content and synchronizes the Japanese companions.
+
+The audit edit records follow-up ownership only. Existing Task-254
+diagnostic credit is unchanged, while
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, without backlink/status/count/test-list/credit change.
+Therefore `tests/coverage/spec_trace.toml` remains unchanged. Canonical
+specs, `.miz`, fixtures, expectations, sidecars, active routes, public
+APIs, and all executable counts/hashes remain at the B2B completion
+baseline. The formula-statement source uses `take` in an `x = x` proof only
+to freeze source transport; it claims no existential-witness acceptance or
+functional-copy semantics. Repeated specification/dependency,
+test-sufficiency, implementation-boundary, and source/documentation
+consistency reviews have no findings. Broad verification and all frozen
+counts/hashes pass; all nine hard gates pass. Final read-only quality is a
+valid `98/100`. Only a dedicated documentation commit and immediate fresh
+B2CP implementation inventory remain open.

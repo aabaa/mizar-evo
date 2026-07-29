@@ -1036,3 +1036,28 @@ arena-unownedのまま。B2A/B2Bはseparately authenticated atomic siblings
 なので、target/fingerprint/ownership/lower-family hybridはpublication
 なしでrejectする。reverse、selector-semantic、update/`FieldUpdate`、
 proof、goal、Core/CFG/VC、active-route、coverage edgeは追加していない。
+
+### Task 258B3M2B2B2CP frozen lower-family boundary
+
+B2CPはTask-258 edgeを追加しない。existing Task-254 lower graphの
+runner-private reuseだけをfreezeする:
+
+```text
+Structure(0 functional-update)
+  -> UpdateBase -> Structure(1 constructor)
+  -> UpdateValue(member 0) -> Primary(4)
+Structure(1 constructor)
+  -> ConstructorValue(member 1/2) -> Primary(2/3)
+FieldUpdate(0) -> member 0
+```
+
+Task 252はprimary rows 7件、Task 254はupdate/constructor、members 3件、
+non-term `FieldUpdate`、directed child edges 4件、unresolved requests
+9件をretainする。B2CPはtheorem、statement、take、witness、formula、
+reverse edge、typed/final rowをownしない。later B2C consumerだけがB2CP
+implementation後にtake/witness nodes 72/71をownして
+witness-to-`Structure(0)` edgeを追加できる。Task 256がlater ownするのは
+equality nodes 55/77だけでupdate subtreeをexcludeし、formula
+containers 56/78はunowned。functional-copy meaning、member identity、
+replacement/result typing、proof/goal semantics、active routes、
+coverage creditはabsent。

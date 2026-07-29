@@ -10699,3 +10699,38 @@ production layoutは45,224 lines、path/content hashesは
 runner test listは`437`、raw/normalized hashesは
 `51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
 `2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`。
+
+## Checker Task 258B3M2B2B2CP frozen runner boundary
+
+B2B commit `8311502c`はcompleteし、fresh clean inventoryはB2Cより先に
+B2CPをinsertする。
+
+B2CPがchangeできるのはexisting runner files 4件だけ:
+`type_elaboration/source_structure.rs`、`type_elaboration.rs`、
+`runner.rs`、`tests/type_elaboration/source_structure.rs`。
+source-structure leafはexact-source selection、imported-root/owned-kind
+authentication、proof-context Task-254 reuse seamをownし、facade/rootは
+private production/test plumbingだけ、test leafはexact tests 2件をown。
+
+new private siblingsは`ImportedStructureUpdateSite`、
+`imported_structure_update_owned_node_kinds`、
+`imported_structure_update_handoff_in_context`だけ。future B2C
+consumerへexact Task-254 update/`FieldUpdate` lower bytesをexposeするが、
+Task-256/258、statement/witness installation、semantic resultsはownしない。
+
+checker source、source-statement modules/tests、public re-exports、active
+dispatch、dependencies、fixtures、expectations、sidecars、trace metadata、
+new modules/production paths、debug grammar、semantic ownersはscope外。
+functional-copy/update evaluation、type/result identity、proof acceptance、
+goals、IRはdeferred。current runner sizesは
+`6826/4506/728/2543/17120/4315`、productionは30 paths / 45,224 lines、
+path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`。
+runner raw/normalized test-list hashesは
+`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
+`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`。
+implementationはrunner libraryだけ437から439へprojectする。independent
+reviews 4件はfindingsなし、verificationと全9 hard gatesがPASSし、final
+read-only qualityはvalid `98/100`。残るのはdocumentation commitとfresh
+implementation inventoryだけ。

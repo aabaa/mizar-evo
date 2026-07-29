@@ -4355,5 +4355,46 @@ Formula-statement coverage remains `deferred`, `tests = []`. The
 specification/dependency, test-sufficiency, and implementation reviews have
 no findings. Source/documentation consistency and broad final verification
 now also pass. Final quality passes all nine hard gates with a valid
-`98/100`. Implementation commit and fresh B2C functional-update/`FieldUpdate`
-documentation inventory remain pending.
+`98/100`. Implementation commit `8311502c` and fresh inventory are complete.
+
+## Task 258B3M2B2B2CP Specification Audit
+
+Specific Chapter 13 §13.3.3 grammar and immutability text, Chapter 5
+constructor/selector context, Chapter 15/16 `take` placement, the active
+selector/update parser fixture and its missing-value/missing-close failures,
+and the existing Task-254 structure-term fixture make the exact B2CP
+transport intent derivable without changing canonical artifacts.
+
+Fresh inventory finds one medium `design_drift`: the roadmap named B2C
+directly although only constructor and selector proof-context reuse seams
+exist. B2CP resolves that dependency boundary and closes the stale B2B
+commit handoff. The absent private seam is bounded `source_drift`; its two
+tests are `test_gap`.
+
+Chapter 13 §13.3.3 and the complete postfix grammar, read with the active
+parser fixtures, unambiguously authorize this exact shape. The local
+`structure_expression` shorthand omits the functional-update alternative,
+which is a low, nonblocking `spec_gap`; canonical specification is not
+edited. There is no unsafe test intent,
+`source_undocumented_behavior`, `test_expectation_drift`, or
+`boundary_violation`. The earlier/parallel
+write-owner overlap remains a nonblocking, report-only
+`repo_metadata_conflict`; the safe commit target is exact and repository
+metadata is not repaired.
+
+This documentation task freezes syntax/provenance only. It changes no
+`doc/spec`, `.miz`, fixture, expectation, sidecar, trace row/status/count/
+backlink, active route, public API, diagnostic credit, or semantic owner.
+The formula-statement row remains `deferred`, `tests = []`, and Task-254
+diagnostic credit remains unchanged.
+
+Task 254 retains nodes `69/65/30/20/24/68`; Task 252 retains published
+sites `51/53/59/62/66/73/75`. Task 256 later owns only nodes `55/77`, with
+containers `56/78` unowned and the whole update subtree excluded. B2CP
+publishes no Task-256/258 row; B2C alone may later own take/witness nodes
+`72/71` and the witness-to-`Structure(0)` edge. Repeated
+specification/dependency, test-sufficiency, implementation-boundary, and
+source/documentation consistency reviews have no findings. Broad
+verification, every count/hash gate, and all nine hard gates pass. Final
+read-only quality is a valid `98/100`. Only dedicated-commit closure and
+fresh implementation inventory remain.

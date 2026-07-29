@@ -5064,6 +5064,30 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] broad final verificationを実行し、全count/hash gatesを確認。
 - [x] final read-only quality reviewで全hard gatesをPASSし、valid
   `90/100`以上を取得。
-- [ ] implementationを1 logical taskとしてcommitし、clean worktree、
-  origin metadata、untouched stashをverifyしてから、B2C functional
-  update/`FieldUpdate` documentation prerequisiteをfresh-inventory。
+- [x] implementationをlogical commit `8311502c`としてcommitし、clean
+  worktree、ahead-three origin metadata、untouched stashをverifyしてから
+  B2Cより先のB2CP prerequisiteをfresh-inventory。
+
+## Checker Task 258B3M2B2B2CP frozen-prerequisite ledger
+
+- [x] later B2C statement consumerより先にmissing private Task-254 update
+  reuse seamをB2CPとしてestablish。
+- [x] exact final-LF 181-byte/hash、86-node/root-85 source、180-byte
+  missing-value recovery profileをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `7/4/3`、Task-254
+  `2/0/1/3/1/4/9`、imported `TypeCaseStruct#5` provenance、ownership、
+  subtree exclusionsをfreeze。
+- [x] runner implementation files 4件、runner tests exactly 2件、checker
+  tests 0件、no-public/no-active/no-semantic surfaceをfreeze。
+- [x]
+  `task258b3m2b2b2cp_structure_update_proof_context_reuse_is_exact`と
+  `task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed`
+  をfreezeし、exact B2P constructor/B2BP selector compatibilityをcover。
+- [x] canonical artifacts、fixtures、expectations、sidecars、trace
+  status/count/credit、libraries `386/437`、all baseline hashesをpreserve。
+- [x] repeated specification/dependency、test-sufficiency、
+  implementation-boundary、source/documentation reviewsをfindingsなしで
+  completeし、全documentation verification/hard gatesをPASS。
+- [x] final read-only qualityでvalid `98/100`を取得。
+- [ ] docs prerequisiteだけをcommitし、fresh-inventory後B2CPだけを
+  implementしてからB2Cをfreeze。

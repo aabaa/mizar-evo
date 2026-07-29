@@ -301,3 +301,34 @@ unchangedで、obsolete consumer-use `dead_code` allowancesだけをremove
 source-structure leafはcleanup後4,506 lines。selector
 identity/type/result、inheritance、update/`FieldUpdate`、proof、goal、全
 semantic behaviorはdeferred。
+
+## Task 258B3M2B2B2CP frozen proof-context update reuse
+
+fresh post-B2B inventoryではgeneric Task-254 extractorがfunctional
+updatesをmodelする一方、production-private proof-context reuse surfaceは
+constructor/selector profilesだけ。B2CPはB2C statement consumerより先に
+runner-private `ImportedStructureUpdateSite`、owned-kind、in-context
+handoff siblingsをfreezeする。
+
+exact 181-byte/86-node sourceでTask 254は`2/0/1/3/1/4/9`をpublish。
+functional update `Structure(0)`はnode 69、constructor `Structure(1)`は
+node 65。membersはupdate path 30とconstructor assignments 20/24。
+`FieldUpdate(0)`はnode/range `68/153..159`、spelling `x := 3`、member
+0をown。edgesはupdate base -> `Structure(1)`、update value/member 0 ->
+`Primary(4)`、constructor values/members 1/2 -> `Primary(2/3)`。
+imported root `TypeCaseStruct#5`はcontribution 2、origin `7..27`、path
+`[5]`をretainし、application fingerprintはabsent。
+
+B2CPはTask-258 witness/statement rowをownしない。unchanged Task-254
+public producerをreuseし、exact-source private selection、owned-kind
+authentication、existing proof context、shared Task-252 partsだけを
+freezeする。tests 2件は全byte/node、lower rows/corruptions、exact
+missing-value recovery、replay、exact B2P constructor/B2BP selector
+compatibility、empty upper familiesをcoverする。functional-copy
+semantics、member identity、replacement/result typing、proof/goal/theorem
+behavior、B2C witness ownershipはdeferred。
+
+Task 256がlater ownするのはnodes `55/77`だけで、full update subtreeを
+excludeする。containers `56/78`はunowned。B2Cだけがlater
+take/witness nodes `72/71`をownし、そのwitnessをfunctional-update
+`Structure(0)`へattachできる。B2CPはこれらupper rows/edgesをownしない。

@@ -311,3 +311,35 @@ removed. Checker `source_structure.rs` remains 5,036 lines; the runner
 source-structure leaf is 4,506 lines after that cleanup. Selector
 identity/type/result, inheritance, update/`FieldUpdate`, proof, goal, and all
 semantic behavior remain deferred.
+
+## Task 258B3M2B2B2CP Frozen Proof-Context Update Reuse
+
+Fresh post-B2B inventory finds that the generic Task-254 extractor models
+functional updates, while the production-private proof-context reuse surface
+has only constructor and selector profiles. B2CP freezes runner-private
+`ImportedStructureUpdateSite`, owned-kind, and in-context handoff siblings
+before any B2C statement consumer.
+
+For the exact 181-byte/86-node source, Task 254 must publish
+`2/0/1/3/1/4/9`. Functional update `Structure(0)` is node 69; constructor
+`Structure(1)` is node 65. Members are update path 30 and constructor
+assignments 20/24. `FieldUpdate(0)` is node/range `68/153..159`, spelling
+`x := 3`, and owns member 0. Edges are update base to `Structure(1)`,
+update value/member 0 to `Primary(4)`, and constructor values/members 1/2
+to `Primary(2/3)`. Imported root `TypeCaseStruct#5` retains contribution 2,
+origin `7..27`, and path `[5]`; no application fingerprint exists.
+
+B2CP owns no Task-258 witness or statement row. It reuses the unchanged
+Task-254 public producer and freezes only exact-source private selection,
+owned-kind authentication, existing proof context, and shared Task-252
+parts. The two tests cover every byte/node, all lower rows and corruptions,
+the exact missing-value recovery, replay, exact B2P constructor/B2BP
+selector compatibility, and empty upper families. Functional-copy
+semantics, member identity,
+replacement/result typing, proof/goal/theorem behavior, and B2C witness
+ownership remain deferred.
+
+Task 256 later owns only nodes `55/77` and excludes the full update subtree;
+containers `56/78` remain unowned. B2C alone may later own take/witness
+nodes `72/71` and attach its witness to functional-update `Structure(0)`.
+B2CP owns none of these upper rows or edges.
