@@ -1331,3 +1331,19 @@ witness-to-set edge and nothing else. Choice, comprehension, `qua`, other
 enumeration cardinalities, semantic expansion, B4, and B5 remain separate.
 The missing upper contract is `design_drift`; future code/tests are bounded
 `source_drift`/`test_gap`, with no blocking authority gap.
+
+### Task 258B3M2B2B3B Implemented Zero-Edge Upper-Family Edge
+
+The implementation realizes Task-252 ownership `{27,29,37,39}`, Task-255
+ownership `{33}`, Task-256 ownership `{31,41}`, Task-258 base ownership
+`{44,46}`, and B3B ownership `{35,36}`. The complete graph is the two
+formula-to-primary pairs plus `Witness(0) -> SetTerm(0)`; the empty
+enumeration has no child edge. Only the set-only fingerprint tuple is
+accepted, while application/structure hybrids and both B3A/B3B family
+orders fail atomically. Choice, comprehension, `qua`, semantic expansion,
+remaining B3, B4, and B5 stay deferred.
+
+Post-auth injection and stage-prefix/non-generic-guard assertions close the
+last matrix gaps. All test-sufficiency repeats and the final implementation
+repeat report **NO FINDINGS** without changing family ownership or semantic
+credit.

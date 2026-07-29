@@ -2930,3 +2930,21 @@ empty semanticsをfreezeする。singleton/nonempty enumeration、choice、
 comprehension、`qua`、named/multiple witnesses、semantic typing、
 existential/proof behavior、B4/B5、active/trace creditはdeferredのままで
 ある。
+
+## Task 258B3M2B2B3B implemented statement profile
+
+private selectorはall 118 bytes、50 nodes/root 49、resolver provenance、
+Tasks 48/252/255/256/258 rows、zero-edge graph、one unnamed witness、
+family isolationをauthenticateしてからB3A SetTerm-aware routeへpublish
+する。8 base-resolver mutations、両方向family order、non-vacuous
+zero-edge corruptionを含むchecker 4 / runner 5 testsがfail-closed
+precedence、replay/rollback、final clone、empty semanticsをcoverする。
+public schema/error/debug、active route、semantic/trace creditはunchanged。
+initial 3 findingsとrepeat reviewのcurrently mutable Task-48/252/255
+mutation/replay gapはremediatedし、後者はexact `32/55/23` matricesを持つ。
+post-auth injectionとstage-prefix/non-generic-guard assertionsが
+authenticationをcompleteした。全test-sufficiency repeatsとfinal
+implementation repeatは**NO FINDINGS**。source/documentation
+consistency repeat、final documentation/boundary、independent qualityも
+**NO FINDINGS**。全9 protocol hard gates PASS、score capなし、valid
+`98/100`（`20/20/15/14/10/10/5/4`）である。

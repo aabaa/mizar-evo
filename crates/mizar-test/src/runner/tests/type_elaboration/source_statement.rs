@@ -4,7 +4,8 @@ use super::{
     SOURCE_STATEMENT_B3M2B2A_TEXT, SOURCE_STATEMENT_B3M2B2B1A_TEXT,
     SOURCE_STATEMENT_B3M2B2B1B1_TEXT, SOURCE_STATEMENT_B3M2B2B2A_TEXT,
     SOURCE_STATEMENT_B3M2B2B2B_TEXT, SOURCE_STATEMENT_B3M2B2B2C_TEXT,
-    SOURCE_STATEMENT_B3M2B2B3A_TEXT, SOURCE_STATEMENT_B3N_TEXT, SOURCE_STATEMENT_TEXT,
+    SOURCE_STATEMENT_B3M2B2B3A_TEXT, SOURCE_STATEMENT_B3M2B2B3B_TEXT, SOURCE_STATEMENT_B3N_TEXT,
+    SOURCE_STATEMENT_TEXT,
     SourceStatementB1Extraction, SourceStatementB2Extraction, SourceStatementB3Extraction,
     SourceStatementB3M1Extraction, SourceStatementB3M1RouteInputs, SourceStatementB3M2AExtraction,
     SourceStatementB3M2ARouteInputs, SourceStatementB3M2B1Extraction,
@@ -16,10 +17,16 @@ use super::{
     SourceStatementB3M2B2B2BRouteInputs, SourceStatementB3M2B2B2CExtraction,
     SourceStatementB3M2B2B2CRouteInputs, SourceStatementB3M2B2B3AExtraction,
     SourceStatementB3M2B2B3ARouteInputs, SourceStatementB3M2B2B3AStage,
-    SourceStatementB3M2B2B3ASurfaceMutation, SourceStatementB3NExtraction,
+    SourceStatementB3M2B2B3ASurfaceMutation, SourceStatementB3M2B2B3BExtraction,
+    SourceStatementB3M2B2B3BLowerStage, SourceStatementB3M2B2B3BRouteInputs,
+    SourceStatementB3M2B2B3BStage, SourceStatementB3M2B2B3BSurfaceMutation,
+    SourceStatementB3NExtraction,
     SourceStatementB3NRouteInputs, SourceStatementB3RouteInputs, SourceStatementExtraction,
     SourceStatementRouteInputs, SourceStatementRouteOutput,
-    extract_application_witness_source_statement, extract_multiple_witness_source_statement,
+    extract_application_witness_source_statement,
+    extract_empty_set_enumeration_witness_source_statement,
+    extract_empty_set_enumeration_witness_source_statement_with_surface_mutation,
+    extract_multiple_witness_source_statement,
     extract_named_witness_source_statement, extract_nested_parenthesized_witness_source_statement,
     extract_nested_source_statement, extract_numeral_witness_source_statement,
     extract_parenthesized_witness_source_statement,
@@ -61,12 +68,21 @@ use super::{
     source_statement_b3m2b2b3a_output_with_post_auth_family_mutation,
     source_statement_b3m2b2b3a_output_with_resolver_mutation,
     source_statement_b3m2b2b3a_output_with_stage_mutation,
-    source_statement_b3m2b2b3a_resolver_env_for_test, source_statement_b3n_output_with_mutation,
+    source_statement_b3m2b2b3a_resolver_env_for_test,
+    source_statement_b3m2b2b3b_output_with_lower_stage_mutation,
+    source_statement_b3m2b2b3b_output_with_mutation,
+    source_statement_b3m2b2b3b_output_with_post_auth_family_mutation,
+    source_statement_b3m2b2b3b_output_with_resolver_mutation,
+    source_statement_b3m2b2b3b_output_with_stage_mutation,
+    source_statement_b3m2b2b3b_resolver_env_for_test, source_statement_b3n_output_with_mutation,
     source_statement_b3n_output_with_resolver_mutation, source_statement_b3n_resolver_env_for_test,
     source_statement_output_with_resolver_mutation, source_statement_output_with_source,
     source_statement_output_with_source_and_mutation, source_statement_resolver_env_for_test,
     source_statement_transport_detail_keys, TASK258B3M2B2B3A_TASK256_FIELD_COUNT,
     TASK258B3M2B2B3A_TASK258_FIELD_COUNT, TASK258B3M2B2B3A_WITNESS_FIELD_COUNT,
+    TASK258B3M2B2B3B_TASK48_FIELD_COUNT, TASK258B3M2B2B3B_TASK252_FIELD_COUNT,
+    TASK258B3M2B2B3B_TASK255_FIELD_COUNT, TASK258B3M2B2B3B_TASK256_FIELD_COUNT,
+    TASK258B3M2B2B3B_TASK258_FIELD_COUNT, TASK258B3M2B2B3B_WITNESS_FIELD_COUNT,
 };
 
 fn sha256_text(text: &str) -> String {
@@ -21195,6 +21211,1133 @@ fn task258b3m2b2b3a_typed_final_clone_debug_rollback_and_empty_semantics_are_sta
     assert_eq!(
         output.typed_ast.source_statement_witnesses(),
         output.resolved.source_statement_witnesses()
+    );
+    assert!(output.typed_ast.source_application().is_none());
+    assert!(output.typed_ast.source_structure().is_none());
+    assert!(output.typed_ast.source_statement_references().is_none());
+    assert!(output.typed_ast.source_context().is_none());
+    assert!(output.typed_ast.source_type().is_none());
+    assert!(output.typed_ast.source_attribute().is_none());
+    assert!(output.typed_ast.source_evidence().is_none());
+    assert!(output.typed_ast.source_composite_formula().is_none());
+    assert!(output.typed_ast.source_formula_composition().is_none());
+    assert!(
+        output
+            .typed_ast
+            .source_condition_formula_composition()
+            .is_none()
+    );
+    assert!(
+        output
+            .typed_ast
+            .source_predicate_chain_composition()
+            .is_none()
+    );
+    assert!(output.typed_ast.types().is_empty());
+    assert!(output.typed_ast.facts().is_empty());
+    assert!(output.typed_ast.coercions().is_empty());
+    assert!(output.typed_ast.initial_obligations().is_empty());
+    assert!(output.typed_ast.diagnostics().is_empty());
+    assert!(output.resolved.expr_metadata().is_empty());
+    assert!(output.resolved.collection_candidates().is_empty());
+    assert!(output.resolved.expanded_candidates().is_empty());
+    assert!(output.resolved.template_expansions().is_empty());
+    assert!(output.resolved.viable_candidates().is_empty());
+    assert!(output.resolved.viability_decisions().is_empty());
+    assert!(output.resolved.specificity_graphs().is_empty());
+    assert!(output.resolved.resolved_overloads().is_empty());
+    assert!(output.resolved.inserted_coercions().is_empty());
+    assert!(output.resolved.cluster_facts().is_empty());
+    assert!(output.resolved.diagnostics().is_empty());
+    assert!(output.resolved.statement_semantics().is_empty());
+    assert!(output.resolved.checked_formulas().is_empty());
+    assert!(output.resolved.checked_proofs().is_empty());
+    assert!(output.resolved.checked_proof_nodes().is_empty());
+    assert!(output.resolved.checked_terminal_goals().is_empty());
+}
+fn task258b3m2b2b3b_fixture(
+    source_ordinal: usize,
+) -> (
+    mizar_syntax::ast::SurfaceAst,
+    mizar_resolve::resolved_ast::ModuleId,
+    mizar_resolve::env::SymbolEnv,
+) {
+    let (ast, module, _, symbols, diagnostics) = task253_ast_from_source_text_with_diagnostic_count(
+        SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        source_ordinal,
+    );
+    assert_eq!(diagnostics, 0);
+    (ast, module, symbols)
+}
+
+fn task258b3m2b2b3b_output(
+    source_ordinal: usize,
+) -> (
+    mizar_syntax::ast::SurfaceAst,
+    mizar_resolve::resolved_ast::ModuleId,
+    mizar_resolve::env::SymbolEnv,
+    SourceStatementRouteOutput,
+) {
+    let (ast, module, symbols) = task258b3m2b2b3b_fixture(source_ordinal);
+    let output = source_statement_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+    )
+    .expect("Task258B3M2B2B3B selector")
+    .unwrap_or_else(|error| panic!("Task258B3M2B2B3B route failed: {error}"));
+    (ast, module, symbols, output)
+}
+
+#[test]
+fn task258b3m2b2b3b_real_frontend_freezes_empty_set_enumeration_witness_contract() {
+    use mizar_checker::{
+        source_set_term::{SourceSetRequestKind, SourceSetTermId, SourceSetTermKind},
+        source_statement::{
+            SourceStatementId, SourceStatementKind, SourceStatementWitnessId,
+            SourceStatementWitnessKind, SourceStatementWitnessTermTarget,
+        },
+        source_term::SourcePrimaryTermKind,
+    };
+
+    assert_eq!(SOURCE_STATEMENT_B3M2B2B3B_TEXT.len(), 118);
+    assert!(SOURCE_STATEMENT_B3M2B2B3B_TEXT.ends_with('\n'));
+    assert_eq!(
+        sha256_text(SOURCE_STATEMENT_B3M2B2B3B_TEXT),
+        "4899f5660afab3b5caf7c51bf760643ed5c7bd80445d44de86b5cfe0abee9dcb"
+    );
+    let (ast, module, symbols, output) = task258b3m2b2b3b_output(259_500);
+    assert_eq!(
+        (ast.nodes().len(), ast.root().map(|root| root.index())),
+        (50, Some(49))
+    );
+    let extracted: SourceStatementB3M2B2B3BExtraction =
+        extract_empty_set_enumeration_witness_source_statement(
+            &ast,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        )
+        .expect("exact empty-enumeration extraction");
+    assert_eq!(
+        (
+            extracted.theorem_site.node().index(),
+            extracted.theorem_range,
+            extracted.label_range,
+            extracted.take_site.node().index(),
+            extracted.take_range,
+            extracted.witness_site.node().index(),
+            extracted.witness_range,
+            extracted.set_term_node,
+            extracted.proof_range,
+        ),
+        (
+            46,
+            range(ast.source_id, 19, 117),
+            range(ast.source_id, 27, 74),
+            36,
+            range(ast.source_id, 90, 98),
+            35,
+            range(ast.source_id, 95, 97),
+            33,
+            range(ast.source_id, 82, 116),
+        )
+    );
+    assert_eq!(
+        extracted
+            .term_sites
+            .iter()
+            .map(|site| site.node().index())
+            .collect::<Vec<_>>(),
+        [27, 29, 37, 39]
+    );
+    assert_eq!(
+        extracted
+            .formula_sites
+            .iter()
+            .map(|site| site.node().index())
+            .collect::<Vec<_>>(),
+        [31, 41]
+    );
+
+    let resolver =
+        source_statement_b3m2b2b3b_resolver_env_for_test(&module, &symbols, extracted.label_range)
+            .expect("resolver");
+    assert_eq!(resolver.module_id(), &module);
+    assert!(resolver.imports().is_empty());
+    let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+    let owners = resolver.symbols().visible_candidates(
+        &namespace,
+        "FormulaStatementEmptySetEnumerationWitnessSmoke",
+    );
+    let [owner] = owners.as_slice() else {
+        panic!("one exact theorem owner");
+    };
+    assert_eq!(owner.contribution().index(), 0);
+    assert_eq!(
+        owner.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(range(ast.source_id, 19, 117))
+    );
+    assert_eq!(owner.origin().structural_path(), [2, 1]);
+    assert_eq!(owner.visibility(), mizar_resolve::env::Visibility::Public);
+    assert_eq!(
+        owner.export_status(),
+        mizar_resolve::env::ExportStatus::Exported
+    );
+    assert_eq!(owner.origin().source_id(), ast.source_id);
+    assert_eq!(owner.origin().module_id(), &module);
+    assert!(owner.origin().import_edge().is_none());
+    assert!(!owner.origin().is_recovered());
+    let labels = resolver.labels().visible_candidates(
+        &namespace,
+        "FormulaStatementEmptySetEnumerationWitnessSmoke",
+    );
+    let [label] = labels.as_slice() else {
+        panic!("one exact theorem label");
+    };
+    assert_eq!(label.origin(), owner.origin());
+    assert_eq!(label.contribution(), owner.contribution());
+    assert_eq!(label.visibility(), mizar_resolve::env::Visibility::Public);
+    assert_eq!(
+        label.export_status(),
+        mizar_resolve::env::ExportStatus::Exported
+    );
+    assert_eq!(
+        label.recovery(),
+        mizar_resolve::resolved_ast::RecoveryState::Normal
+    );
+    let contribution = resolver
+        .contributions()
+        .get(owner.contribution())
+        .expect("contribution");
+    assert_eq!(
+        contribution.anchor(),
+        &mizar_session::SourceAnchor::Range(range(ast.source_id, 0, 18))
+    );
+    assert_eq!(
+        contribution.effects().labels(),
+        [label.origin_path().clone()]
+    );
+
+    let statements = output.typed_ast.source_statement().expect("Task258");
+    let bindings = statements.binding_env();
+    assert_eq!(
+        (
+            bindings.contexts().len(),
+            bindings.bindings().len(),
+            bindings.diagnostics().len(),
+        ),
+        (2, 1, 0)
+    );
+    let proof = bindings
+        .contexts()
+        .get(mizar_checker::binding_env::BindingContextId::new(1))
+        .expect("proof context");
+    assert!(matches!(
+        proof.owner,
+        mizar_checker::binding_env::BindingContextOwner::SourceStatement { source_range }
+            if source_range == range(ast.source_id, 82, 116)
+    ));
+    assert_eq!(
+        proof.parent,
+        Some(mizar_checker::binding_env::BindingContextId::new(0))
+    );
+    assert_eq!(
+        proof
+            .lexical_scope
+            .as_ref()
+            .map(mizar_resolve::names::LocalTermScope::path),
+        Some(&[0][..])
+    );
+    assert_eq!(
+        proof.visible_bindings,
+        [mizar_checker::binding_env::BindingId::new(0)]
+    );
+
+    let primary = output.typed_ast.source_term().expect("Task252");
+    assert_eq!(
+        (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ),
+        (4, 4, 0)
+    );
+    assert_eq!(
+        primary
+            .terms()
+            .iter()
+            .map(|(_, term)| (
+                term.site().node().index(),
+                term.source_range(),
+                term.source_ordinal(),
+                term.context().index(),
+                term.spelling(),
+                term.kind(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                27,
+                range(ast.source_id, 76, 77),
+                0,
+                0,
+                "x",
+                SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                29,
+                range(ast.source_id, 80, 81),
+                1,
+                0,
+                "x",
+                SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                37,
+                range(ast.source_id, 106, 107),
+                2,
+                1,
+                "x",
+                SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                39,
+                range(ast.source_id, 110, 111),
+                3,
+                1,
+                "x",
+                SourcePrimaryTermKind::VariableReference,
+            ),
+        ]
+    );
+    assert_eq!(
+        primary
+            .references()
+            .iter()
+            .map(|(_, row)| (row.term().index(), row.use_ordinal()))
+            .collect::<Vec<_>>(),
+        [(0, 1), (1, 1), (2, 1), (3, 1)]
+    );
+
+    let set = output.typed_ast.source_set_term().expect("Task255");
+    assert_eq!(
+        (
+            set.terms().len(),
+            set.wrappers().len(),
+            set.generators().len(),
+            set.type_sites().len(),
+            set.conditions().len(),
+            set.edges().len(),
+            set.requests().len(),
+        ),
+        (1, 0, 0, 0, 0, 0, 1)
+    );
+    let set_row = set
+        .terms()
+        .get(SourceSetTermId::new(0))
+        .expect("empty enumeration");
+    assert_eq!(set_row.site().node().index(), 33);
+    assert_eq!(set_row.source_range(), range(ast.source_id, 95, 97));
+    assert_eq!(set_row.source_ordinal(), 0);
+    assert_eq!(set_row.context().index(), 1);
+    assert_eq!(set_row.spelling(), "{ }");
+    assert_eq!(set_row.kind(), SourceSetTermKind::Enumeration);
+    assert!(set.edges().is_empty());
+    let request = set.requests().iter().next().expect("request").1;
+    assert_eq!(request.term(), SourceSetTermId::new(0));
+    assert_eq!(request.ordinal(), 0);
+    assert_eq!(request.kind(), SourceSetRequestKind::ResultType);
+    assert!(request.generator().is_none());
+    assert!(request.type_site().is_none());
+
+    let atomic = output.typed_ast.source_atomic_formula().expect("Task256");
+    assert_eq!(
+        (
+            atomic.formulas().len(),
+            atomic.edges().len(),
+            atomic.requests().len(),
+        ),
+        (2, 4, 4)
+    );
+    assert_eq!(
+        atomic
+            .formulas()
+            .iter()
+            .map(|(_, row)| (
+                row.site().node().index(),
+                row.source_range(),
+                row.context().index()
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (31, range(ast.source_id, 76, 81), 0),
+            (41, range(ast.source_id, 106, 111), 1),
+        ]
+    );
+    assert_eq!(
+        atomic
+            .edges()
+            .iter()
+            .map(|(_, edge)| match edge.target() {
+                mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(id) => {
+                    id.index()
+                }
+                _ => usize::MAX,
+            })
+            .collect::<Vec<_>>(),
+        [0, 1, 2, 3]
+    );
+
+    assert_eq!(
+        (
+            statements.owners().len(),
+            statements.statements().len(),
+            statements.contexts().len(),
+            statements.input_facts().len(),
+            statements.candidate_facts().len(),
+        ),
+        (1, 2, 2, 2, 2)
+    );
+    assert_eq!(statements.checked_owner().symbol(), owner.symbol());
+    assert_eq!(
+        statements
+            .statements()
+            .iter()
+            .map(|(id, row)| (
+                id.index(),
+                row.site().node().index(),
+                row.source_range(),
+                row.source_ordinal(),
+                row.kind(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                46,
+                range(ast.source_id, 19, 117),
+                0,
+                SourceStatementKind::TheoremProposition,
+            ),
+            (
+                1,
+                44,
+                range(ast.source_id, 101, 112),
+                2,
+                SourceStatementKind::Conclusion,
+            ),
+        ]
+    );
+    assert_eq!(
+        statements
+            .input_facts()
+            .iter()
+            .map(|(_, row)| row.uses().iter().map(|id| id.index()).collect::<Vec<_>>())
+            .collect::<Vec<_>>(),
+        [vec![0, 1], vec![2, 3]]
+    );
+    for index in 0..2 {
+        let row = statements
+            .statements()
+            .get(SourceStatementId::new(index))
+            .expect("statement");
+        assert_eq!(row.context().index(), index);
+    }
+
+    let witnesses = output
+        .typed_ast
+        .source_statement_witnesses()
+        .expect("witness");
+    assert_eq!(
+        (witnesses.witnesses().len(), witnesses.names().len()),
+        (1, 0)
+    );
+    let witness = witnesses
+        .witnesses()
+        .get(SourceStatementWitnessId::new(0))
+        .expect("witness row");
+    assert_eq!(
+        witness.term(),
+        SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId::new(0))
+    );
+    assert_eq!(witness.take_site().node().index(), 36);
+    assert_eq!(witness.take_range(), range(ast.source_id, 90, 98));
+    assert_eq!(witness.site().node().index(), 35);
+    assert_eq!(witness.source_range(), range(ast.source_id, 95, 97));
+    assert_eq!(witness.binding_context().index(), 1);
+    assert_eq!(witness.source_ordinal(), 1);
+    assert_eq!(witness.ordinal(), 0);
+    assert_eq!(witness.spelling(), "{ }");
+    assert_eq!(witness.kind(), SourceStatementWitnessKind::Unnamed);
+    assert!(witness.name().is_none());
+
+    let owned = output
+        .typed_ast
+        .nodes()
+        .iter()
+        .filter(|(_, node)| node.kind.as_str() != "source.surface.unowned")
+        .map(|(id, node)| (id.index(), node.kind.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        owned,
+        [
+            (27, "source.term.variable-reference"),
+            (29, "source.term.variable-reference"),
+            (31, "source.formula.atomic.equality"),
+            (33, "source.term.set.enumeration"),
+            (35, "source.statement-witness.item"),
+            (36, "source.statement-witness.take"),
+            (37, "source.term.variable-reference"),
+            (39, "source.term.variable-reference"),
+            (41, "source.formula.atomic.equality"),
+            (44, "source.statement.conclusion"),
+            (46, "source.statement.theorem"),
+        ]
+    );
+    assert_eq!(output.reference_use_ordinals, [1; 4]);
+    assert_eq!(
+        output.typed_ast.source_set_term(),
+        output.resolved.source_set_term()
+    );
+    assert_eq!(
+        output.typed_ast.source_statement_witnesses(),
+        output.resolved.source_statement_witnesses()
+    );
+}
+
+#[test]
+fn task258b3m2b2b3b_validation_precedence_mutation_and_replay_fail_closed() {
+    let (ast, module, symbols, baseline) = task258b3m2b2b3b_output(259_510);
+    let (_, _, _, stale) = task258b3m2b2b3b_output(259_511);
+
+    for mutation in 0..5 {
+        let error = source_statement_b3m2b2b3b_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+            |input: &mut SourceStatementB3M2B2B3BRouteInputs| match mutation {
+                0 => {
+                    input.arena = mizar_checker::typed_ast::TypedArena::try_new(None, Vec::new())
+                        .expect("empty arena")
+                }
+                1 => {
+                    input.binding_env = stale
+                        .typed_ast
+                        .source_statement()
+                        .expect("statement")
+                        .binding_env()
+                        .clone()
+                }
+                2 => input.primary = stale.typed_ast.source_term().expect("primary").clone(),
+                3 => {
+                    input.atomic = stale
+                        .typed_ast
+                        .source_atomic_formula()
+                        .expect("atomic")
+                        .clone()
+                }
+                4 => input.set_term = None,
+                _ => unreachable!(),
+            },
+        )
+        .expect("selector")
+        .expect_err("lower mutation must fail");
+        assert!(
+            error.to_ascii_lowercase().contains("dependency")
+                || error.to_ascii_lowercase().contains("invalid"),
+            "mutation {mutation}: {error}"
+        );
+    }
+
+    for mutation in [
+        Task258B2ResolverMutation::Imported,
+        Task258B2ResolverMutation::Missing,
+        Task258B2ResolverMutation::Duplicate,
+        Task258B2ResolverMutation::WrongPath,
+        Task258B2ResolverMutation::WrongKind,
+        Task258B2ResolverMutation::Private,
+        Task258B2ResolverMutation::LocalOnly,
+        Task258B2ResolverMutation::Recovered,
+    ] {
+        let error = source_statement_b3m2b2b3b_output_with_resolver_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+            |symbols| task258b2_mutate_resolver(symbols, mutation),
+        )
+        .expect("B3B resolver selector")
+        .expect_err("B3B resolver mutation must fail");
+        assert!(
+            error.starts_with("Task258B3M2B2B3B resolver"),
+            "{mutation:?}: {error}"
+        );
+        let replay = source_statement_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        )
+        .expect("B3B resolver replay selector")
+        .expect("B3B resolver replay");
+        assert_eq!(
+            replay.typed_ast.debug_text(),
+            baseline.typed_ast.debug_text(),
+            "{mutation:?} typed replay"
+        );
+        assert_eq!(
+            replay.resolved.debug_text(),
+            baseline.resolved.debug_text(),
+            "{mutation:?} resolved replay"
+        );
+    }
+
+    for mutation in [
+        Task258B3M2B2B3ALabelMutation::Namespace,
+        Task258B3M2B2B3ALabelMutation::PrimarySpelling,
+        Task258B3M2B2B3ALabelMutation::Contribution,
+        Task258B3M2B2B3ALabelMutation::OriginSource,
+        Task258B3M2B2B3ALabelMutation::OriginModule,
+        Task258B3M2B2B3ALabelMutation::OriginAnchor,
+        Task258B3M2B2B3ALabelMutation::OriginStructuralPath,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsMissing,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsExtra,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsWrongPath,
+    ] {
+        let error = source_statement_b3m2b2b3b_output_with_resolver_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+            |symbols| task258b3m2b2b3a_mutate_label_resolver(symbols, mutation),
+        )
+        .expect("selector")
+        .expect_err("resolver mutation must fail");
+        assert!(
+            error.to_ascii_lowercase().contains("resolver")
+                || error.to_ascii_lowercase().contains("owner"),
+            "{mutation:?}: {error}"
+        );
+    }
+
+    let binding_env = baseline
+        .typed_ast
+        .source_statement()
+        .expect("baseline statement")
+        .binding_env();
+    assert_eq!(
+        (
+            binding_env.contexts().len(),
+            binding_env.bindings().len(),
+            binding_env.diagnostics().len(),
+        ),
+        (2, 1, 0),
+        "Task48 exact profile, including the absent diagnostic table"
+    );
+    let primary = baseline.typed_ast.source_term().expect("baseline primary");
+    assert_eq!(
+        (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ),
+        (4, 4, 0),
+        "Task252 exact profile, including the absent numeric-request table"
+    );
+    let set = baseline
+        .typed_ast
+        .source_set_term()
+        .expect("baseline set term");
+    assert_eq!(
+        (
+            set.terms().len(),
+            set.wrappers().len(),
+            set.generators().len(),
+            set.type_sites().len(),
+            set.conditions().len(),
+            set.edges().len(),
+            set.requests().len(),
+        ),
+        (1, 0, 0, 0, 0, 0, 1),
+        "Task255 exact profile, including every absent family table and zero edges"
+    );
+    assert_eq!(set.primary_term_fingerprint(), primary.debug_text());
+    assert!(set.application_fingerprint().is_none());
+    assert!(set.structure_fingerprint().is_none());
+
+    for (stage, fields, error_prefix) in [
+        (
+            SourceStatementB3M2B2B3BLowerStage::Task48,
+            TASK258B3M2B2B3B_TASK48_FIELD_COUNT,
+            "Task48:",
+        ),
+        (
+            SourceStatementB3M2B2B3BLowerStage::Task252,
+            TASK258B3M2B2B3B_TASK252_FIELD_COUNT,
+            "Task252:",
+        ),
+        (
+            SourceStatementB3M2B2B3BLowerStage::Task255,
+            TASK258B3M2B2B3B_TASK255_FIELD_COUNT,
+            "Task255:",
+        ),
+    ] {
+        for field in 0..fields {
+            let error = source_statement_b3m2b2b3b_output_with_lower_stage_mutation(
+                &ast,
+                module.clone(),
+                &symbols,
+                SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+                stage,
+                field,
+            )
+            .expect("lower-stage selector")
+            .expect_err("lower-stage mutation must fail");
+            assert!(
+                error.starts_with(error_prefix),
+                "lower stage {stage:?} field {field}: {error}"
+            );
+            assert!(
+                !error.contains("lower dependency mismatch"),
+                "lower stage {stage:?} field {field} stopped at the generic pre-auth guard: {error}"
+            );
+
+            let replay = source_statement_output_with_source(
+                &ast,
+                module.clone(),
+                &symbols,
+                SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+            )
+            .expect("lower-stage replay selector")
+            .expect("lower-stage replay");
+            assert_eq!(
+                replay.typed_ast.debug_text(),
+                baseline.typed_ast.debug_text(),
+                "lower stage {stage:?} field {field} typed replay"
+            );
+            assert_eq!(
+                replay.resolved.debug_text(),
+                baseline.resolved.debug_text(),
+                "lower stage {stage:?} field {field} resolved replay"
+            );
+        }
+    }
+
+    // These Task-258 fields have only one safely constructible public enum
+    // value. The exact positive profile above is therefore the exhaustive
+    // boundary; the frozen Task-258 mutation count stays 62.
+    for (stage, fields) in [
+        (
+            SourceStatementB3M2B2B3BStage::Task256,
+            TASK258B3M2B2B3B_TASK256_FIELD_COUNT,
+        ),
+        (
+            SourceStatementB3M2B2B3BStage::Task258,
+            TASK258B3M2B2B3B_TASK258_FIELD_COUNT,
+        ),
+        (
+            SourceStatementB3M2B2B3BStage::Witness,
+            TASK258B3M2B2B3B_WITNESS_FIELD_COUNT,
+        ),
+    ] {
+        for field in 0..fields {
+            let error = source_statement_b3m2b2b3b_output_with_stage_mutation(
+                &ast,
+                module.clone(),
+                &symbols,
+                SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+                stage,
+                field,
+            )
+            .expect("selector")
+            .expect_err("stage mutation must fail");
+            assert!(
+                !error.is_empty(),
+                "stage {stage:?} field {field} returned an empty error"
+            );
+        }
+    }
+
+    let (_, _, _, nonempty) = task258b3m2b2b3a_output(259_510);
+    let nonempty_set = nonempty
+        .typed_ast
+        .source_set_term()
+        .expect("nonempty set")
+        .clone();
+    assert_eq!(
+        nonempty_set.edges().len(),
+        2,
+        "zero-edge corruption must inject real extra rows"
+    );
+    let error = source_statement_b3m2b2b3b_output_with_post_auth_family_mutation(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        |input| input.set_term = Some(nonempty_set),
+    )
+    .expect("selector")
+    .expect_err("nonempty edge rows must not satisfy the zero-edge profile");
+    assert!(
+        error.to_ascii_lowercase().contains("dependency")
+            || error.to_ascii_lowercase().contains("set"),
+        "{error}"
+    );
+
+    assert_eq!(
+        baseline.typed_ast.debug_text(),
+        source_statement_output_with_source(
+            &ast,
+            baseline.typed_ast.module_id().clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        )
+        .expect("replay selector")
+        .expect("replay")
+        .typed_ast
+        .debug_text()
+    );
+}
+
+#[test]
+fn task258b3m2b2b3b_empty_enumeration_and_byte_subtree_near_misses_are_exact() {
+    let (ast, module, symbols) = task258b3m2b2b3b_fixture(259_520);
+    assert!(
+        extract_empty_set_enumeration_witness_source_statement(
+            &ast,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        )
+        .is_some()
+    );
+
+    for byte_index in 0..SOURCE_STATEMENT_B3M2B2B3B_TEXT.len() {
+        let mut bytes = SOURCE_STATEMENT_B3M2B2B3B_TEXT.as_bytes().to_vec();
+        bytes[byte_index] = b'?';
+        let source = String::from_utf8(bytes).expect("ASCII source");
+        assert!(
+            source_statement_output_with_source(&ast, module.clone(), &symbols, &source).is_none(),
+            "byte {byte_index}"
+        );
+    }
+
+    for node in 0..50 {
+        for mutation in [
+            SourceStatementB3M2B2B3BSurfaceMutation::NodeKind(node),
+            SourceStatementB3M2B2B3BSurfaceMutation::NodeRange(node),
+            SourceStatementB3M2B2B3BSurfaceMutation::NodeRecovery(node),
+            SourceStatementB3M2B2B3BSurfaceMutation::NodeChildren(node),
+        ] {
+            assert!(
+                extract_empty_set_enumeration_witness_source_statement_with_surface_mutation(
+                    &ast,
+                    SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+                    mutation,
+                )
+                .is_none(),
+                "{mutation:?}"
+            );
+        }
+    }
+    assert!(
+        extract_empty_set_enumeration_witness_source_statement_with_surface_mutation(
+            &ast,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+            SourceStatementB3M2B2B3BSurfaceMutation::RootIdentity,
+        )
+        .is_none()
+    );
+    assert!(
+        extract_empty_set_enumeration_witness_source_statement(
+            &ast,
+            &format!("{SOURCE_STATEMENT_B3M2B2B3B_TEXT}\n"),
+        )
+        .is_none()
+    );
+
+    let changed_label = SOURCE_STATEMENT_B3M2B2B3B_TEXT.replacen(
+        "FormulaStatementEmptySetEnumerationWitnessSmoke",
+        "FormulaStatementEmptySetEnumerationWitnessNearMiss",
+        1,
+    );
+    let mut near_misses = vec![changed_label];
+    for replacement in [
+        "{1}",
+        "{1, 2}",
+        "{1, 2, 3}",
+        "({})",
+        "{{}}",
+        "{x where x is set : x = x}",
+        "the set",
+        "{} qua set",
+        "choose set",
+    ] {
+        near_misses.push(SOURCE_STATEMENT_B3M2B2B3B_TEXT.replacen("{}", replacement, 1));
+    }
+    near_misses.push(SOURCE_STATEMENT_B3M2B2B3B_TEXT.replacen("take {}", "take y = {}", 1));
+    near_misses.push(SOURCE_STATEMENT_B3M2B2B3B_TEXT.replacen("take {}", "take {}, {}", 1));
+    near_misses.push(SOURCE_STATEMENT_B3M2B2B3B_TEXT.replace("\n", "\r\n"));
+    near_misses.push(SOURCE_STATEMENT_B3M2B2B3B_TEXT.trim_end().to_owned());
+
+    for (index, source) in near_misses.into_iter().enumerate() {
+        let (near_ast, near_module, _, near_symbols, _) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 260_200 + index);
+        assert!(
+            source_statement_output_with_source(
+                &near_ast,
+                near_module.clone(),
+                &near_symbols,
+                &source,
+            )
+            .is_none(),
+            "near miss {index}: {source:?}"
+        );
+        assert!(
+            source_statement_transport_detail_keys(&near_ast, near_module, &near_symbols, &source,)
+                .is_none(),
+            "near-miss detail route {index}"
+        );
+    }
+
+    assert!(
+        source_statement_output_with_source(
+            &ast,
+            module,
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        )
+        .expect("exact selector")
+        .is_ok()
+    );
+}
+
+#[test]
+fn task258b3m2b2b3b_family_and_active_route_isolation_is_atomic() {
+    let (ast, module, symbols, b3b) = task258b3m2b2b3b_output(259_530);
+    let (_, _, _, b3a) = task258b3m2b2b3a_output(259_531);
+    let b3a_debug = b3a.typed_ast.debug_text();
+    assert_ne!(b3b.typed_ast.debug_text(), b3a_debug);
+    assert_eq!(
+        b3b.typed_ast
+            .source_set_term()
+            .expect("B3B set")
+            .edges()
+            .len(),
+        0
+    );
+    assert_eq!(
+        b3a.typed_ast
+            .source_set_term()
+            .expect("B3A set")
+            .edges()
+            .len(),
+        2
+    );
+
+    let (application_ast, application_module, _, application_symbols, application_diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+            259_532,
+        );
+    assert_eq!(application_diagnostics, 0);
+    let application_symbols = augment_type_elaboration_import_summaries(
+        &application_ast,
+        &application_module,
+        application_symbols,
+    );
+    let application = source_statement_output_with_source(
+        &application_ast,
+        application_module,
+        &application_symbols,
+        SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+    )
+    .expect("application selector")
+    .expect("application route")
+    .typed_ast
+    .source_application()
+    .expect("application")
+    .clone();
+
+    let (structure_ast, structure_module, _, structure_symbols, structure_diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_STATEMENT_B3M2B2B2A_TEXT,
+            259_533,
+        );
+    assert_eq!(structure_diagnostics, 0);
+    let structure_symbols = augment_type_elaboration_import_summaries(
+        &structure_ast,
+        &structure_module,
+        structure_symbols,
+    );
+    let structure = source_statement_output_with_source(
+        &structure_ast,
+        structure_module,
+        &structure_symbols,
+        SOURCE_STATEMENT_B3M2B2B2A_TEXT,
+    )
+    .expect("structure selector")
+    .expect("structure route")
+    .typed_ast
+    .source_structure()
+    .expect("structure")
+    .clone();
+    let set = b3b.typed_ast.source_set_term().expect("B3B set").clone();
+
+    for tuple in 0u8..8 {
+        let result = source_statement_b3m2b2b3b_output_with_post_auth_family_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+            |input| {
+                input.application = (tuple & 0b001 != 0).then(|| application.clone());
+                input.structure = (tuple & 0b010 != 0).then(|| structure.clone());
+                input.set_term = (tuple & 0b100 != 0).then(|| set.clone());
+            },
+        )
+        .expect("selector");
+        if tuple == 0b100 {
+            assert!(result.is_ok(), "set-only tuple: {result:?}");
+        } else {
+            let error = result.expect_err("all non-set-only tuples must fail");
+            assert!(
+                error.to_ascii_lowercase().contains("dependency")
+                    || error.to_ascii_lowercase().contains("exclusive")
+                    || error.to_ascii_lowercase().contains("invalid"),
+                "tuple {tuple:03b}: {error}"
+            );
+        }
+    }
+
+    for (source, expects_application, expects_structure, expects_set) in [
+        (SOURCE_STATEMENT_B3M2B2B1A_TEXT, true, false, false),
+        (SOURCE_STATEMENT_B3M2B2B2A_TEXT, false, true, false),
+        (SOURCE_STATEMENT_B3M2B2B2B_TEXT, false, true, false),
+        (SOURCE_STATEMENT_B3M2B2B2C_TEXT, false, true, false),
+        (SOURCE_STATEMENT_B3M2B2B3A_TEXT, false, false, true),
+        (SOURCE_STATEMENT_B3M2B2B3B_TEXT, false, false, true),
+    ] {
+        let (case_ast, case_module, _, case_symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(source, 259_540 + source.len());
+        assert_eq!(diagnostics, 0);
+        let case_symbols =
+            augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
+        let output =
+            source_statement_output_with_source(&case_ast, case_module, &case_symbols, source)
+                .expect("dormant selector")
+                .expect("dormant route");
+        assert_eq!(
+            output.typed_ast.source_application().is_some(),
+            expects_application
+        );
+        assert_eq!(
+            output.typed_ast.source_structure().is_some(),
+            expects_structure
+        );
+        assert_eq!(output.typed_ast.source_set_term().is_some(), expects_set);
+    }
+
+    let detail = source_statement_transport_detail_keys(
+        &ast,
+        module,
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+    )
+    .expect("exact private detail route");
+    assert!(detail.is_empty());
+    let (_, _, _, b3a_replay) = task258b3m2b2b3a_output(259_531);
+    assert_eq!(b3a_replay.typed_ast.debug_text(), b3a_debug);
+}
+
+#[test]
+fn task258b3m2b2b3b_typed_final_clone_debug_rollback_and_empty_semantics_are_stable() {
+    let (ast, module, symbols, output) = task258b3m2b2b3b_output(259_550);
+    let replay = source_statement_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+    )
+    .expect("selector")
+    .expect("replay");
+    assert_eq!(output.typed_ast.debug_text(), replay.typed_ast.debug_text());
+    assert_eq!(output.resolved.debug_text(), replay.resolved.debug_text());
+    assert_eq!(
+        output.typed_ast.clone().debug_text(),
+        output.typed_ast.debug_text()
+    );
+    assert_eq!(
+        output.resolved.clone().debug_text(),
+        output.resolved.debug_text()
+    );
+
+    let witnesses = output
+        .typed_ast
+        .source_statement_witnesses()
+        .expect("witnesses");
+    let debug = witnesses.debug_text();
+    let lines = debug.lines().collect::<Vec<_>>();
+    let statement = lines
+        .iter()
+        .position(|line| line.starts_with("statement-fingerprint:"))
+        .expect("statement fingerprint");
+    let primary = lines
+        .iter()
+        .position(|line| line.starts_with("primary-term-fingerprint:"))
+        .expect("primary fingerprint");
+    let set = lines
+        .iter()
+        .position(|line| line.starts_with("set-term-fingerprint:"))
+        .expect("set fingerprint");
+    let row = lines
+        .iter()
+        .position(|line| line.starts_with("witness#0 "))
+        .expect("witness row");
+    assert!(statement < primary && primary < set && set < row);
+    assert!(!debug.contains("\napplication-fingerprint:"));
+    assert!(!debug.contains("\nstructure-fingerprint:"));
+    assert!(debug.contains(" term=set-term#0 "));
+
+    let baseline = output.typed_ast.debug_text();
+    let error = source_statement_b3m2b2b3b_output_with_mutation(
+        &ast,
+        module,
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        |input| input.witness.witnesses.clear(),
+    )
+    .expect("rollback selector")
+    .expect_err("empty witness aggregate must roll back");
+    assert!(error.to_ascii_lowercase().contains("aggregate"), "{error}");
+    assert_eq!(output.typed_ast.debug_text(), baseline);
+
+    assert_eq!(
+        output.typed_ast.source_term(),
+        output.resolved.source_term()
+    );
+    assert_eq!(
+        output.typed_ast.source_set_term(),
+        output.resolved.source_set_term()
+    );
+    assert_eq!(
+        output.typed_ast.source_atomic_formula(),
+        output.resolved.source_atomic_formula()
+    );
+    assert_eq!(
+        output.typed_ast.source_statement(),
+        output.resolved.source_statement()
+    );
+    assert_eq!(
+        output.typed_ast.source_statement_witnesses(),
+        output.resolved.source_statement_witnesses()
+    );
+    assert!(
+        output
+            .typed_ast
+            .source_set_term()
+            .expect("set term")
+            .edges()
+            .is_empty()
     );
     assert!(output.typed_ast.source_application().is_none());
     assert!(output.typed_ast.source_structure().is_none());

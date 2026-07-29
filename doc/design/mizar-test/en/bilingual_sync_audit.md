@@ -1030,3 +1030,23 @@ workspace verification pass in both languages. Independent final quality is
 **NO FINDINGS**, all nine hard gates PASS with no score cap, and valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only the dedicated documentation
 commit, post-commit invariants, and fresh implementation inventory remain.
+
+## Task 258B3M2B2B3B Bilingual Implementation Synchronization
+
+EN and JA now record the same prerequisite commit, exact seven-file
+ownership, private 118-byte/50-node route, B3A SetTerm API reuse, exact
+checker-four/runner-five matrix, unchanged CLI/trace/corpus state, and
+semantic deferrals. The initial three test gaps are recorded as remediated;
+the repeated review's additional Task-48/252/255 lower-field mutation gap
+is also remediated with exact `32/55/23` matrices. Both languages record
+the same final runner measurements and the retracted Task-258
+single-variant candidate. Post-auth injection and stage-prefix/
+non-generic-guard assertions close the remaining matrix; all
+test-sufficiency repeats and the final implementation repeat are
+**NO FINDINGS**. Focused tests, libraries `398/456`, format/diff,
+workspace Clippy, and final `cargo test -q` PASS in both records. Only
+final documentation/boundary and independent quality reviews are
+**NO FINDINGS**, all hard gates PASS, valid `98/100`. Cached-diff/staging,
+commit, post-commit, and fresh inventory remain pending. The synchronized
+source/documentation consistency repeat is **NO FINDINGS** after final
+hash remeasurement and exact-`39`/no-op confirmation.

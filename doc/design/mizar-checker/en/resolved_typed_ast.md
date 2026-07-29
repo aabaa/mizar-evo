@@ -1324,3 +1324,17 @@ source ownership, label, Task-48/252/255/256/258 rows, witness linkage, or
 fingerprint fails with the already owning final error. Choice,
 comprehension, `qua`, existential matching, proof acceptance, Core/CFG/VC,
 and all other semantics remain absent.
+
+## Task 258B3M2B2B3B Implemented Final-AST Closure
+
+`ResolvedTypedAst` now admits only the exact B3B statement/witness/set-only
+tuple, revalidates the zero-edge Task-255 handoff and fingerprints, and
+clones source set, statement, and witness state. Set and atomic defects keep
+their existing lower error precedence; stale or hybrid upper state remains
+`InvalidSourceStatement`. Final replay preserves debug bytes and empty
+semantic/proof/goal tables. No error, public route, or semantic result was
+added. The final implementation repeat reports **NO FINDINGS** after the
+post-auth/stage-prefix guard additions. Source/documentation consistency
+repeat also reports **NO FINDINGS**. Final documentation/boundary and
+independent quality reviews report **NO FINDINGS**, all hard gates PASS,
+valid `98/100`.

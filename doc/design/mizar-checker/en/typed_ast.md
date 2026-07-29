@@ -1325,3 +1325,18 @@ Lower-stage failure precedence and all legacy/application/structure/B3A
 tuples remain unchanged. Partial state, stale fingerprints, family hybrids,
 or any nonempty semantic/proof/goal table fail closed. No public API or error
 variant is added.
+
+## Task 258B3M2B2B3B Implemented Atomic Installation Closure
+
+`with_source_set_term_statement_witnesses` now recognizes the exact B3B
+statement profile after revalidating Task-252, zero-edge Task-255,
+set-aware Task-256, Task-258 base, and the one SetTerm witness. Set,
+statement, and witness fields publish only after every check succeeds.
+Stale dependencies, semantic-table coexistence, family hybrids, and both
+B3A/B3B installation orders fail without partial mutation and permit exact
+replay. The existing `InvalidSourceStatement` boundary and public API are
+unchanged.
+
+Post-auth injection and stage-prefix/non-generic-guard assertions preserve
+atomic failure and replay. All test-sufficiency repeats and the final
+implementation repeat report **NO FINDINGS**.

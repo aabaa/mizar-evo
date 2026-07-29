@@ -1259,3 +1259,14 @@ handoff、Task-256 formula rows、Task-258 base、unnamed SetTerm witness
 legacy/application/structure/B3A tuplesはunchangedのままである。partial
 state、stale fingerprints、family hybrids、nonempty semantic/proof/goal
 tableはいずれもfail closedする。public API/error variantは追加しない。
+
+## Task 258B3M2B2B3B implemented atomic installation boundary
+
+typed installationはauthenticated base rows、zero-edge Task-255 handoff、
+set-only fingerprint、unnamed witness 1件だけをatomicにpublishする。
+partial state、resolver mutations、stale fingerprint、B3A/B3Bおよび他
+family hybridsをfrozen matrixでrejectする。B3A public SetTerm-aware APIを
+reuseし、new public schema/error/debug grammarまたはsemantic stateは
+追加しない。post-auth injectionとstage-prefix/non-generic-guard
+assertionsもatomic failure/replayをpreserveし、全test-sufficiency repeatsと
+final implementation repeatは**NO FINDINGS**である。

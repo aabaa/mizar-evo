@@ -4411,3 +4411,19 @@ repeatしたsource/documentation consistency reviewは**NO FINDINGS**。
 canonical authority、dormant fixture intent、deferred trace row、全
 forbidden artifactsはunchanged。exact source/count/hash/no-op
 verificationと全9 hard gatesはPASSし、final qualityはvalid `98/100`。
+
+## Task 258B3M2B2B3B implementation authority closure
+
+implementationはSections 13.4.1、15.4.4、16.3.3とfrozen
+parser/resolver/Task-255 transport authorityだけをmaterializeした。
+existing `.miz`、fixture、expectation、sidecar、trace rowは変更せず、
+empty-set typing、existential matching、proof/theorem acceptanceをclaim
+しない。initial 3 `test_gap`とlower-field matrix gapはexact 9 tests内で
+closeし、post-auth injectionとstage-prefix/non-generic-guard assertions後の
+全test-sufficiency repeatsとfinal implementation repeatは
+**NO FINDINGS**。blocking `spec_gap`またはtest-intent changeはない。
+source/documentation consistency repeatはauthority/trace/
+`source_set_term` no-opをindependently confirmして**NO FINDINGS**。final
+documentation/boundary reviewとindependent qualityも**NO FINDINGS**。
+全9 protocol hard gates PASS、score capなし、valid `98/100`
+（`20/20/15/14/10/10/5/4`）である。

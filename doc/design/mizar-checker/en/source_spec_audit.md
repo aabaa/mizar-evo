@@ -4627,3 +4627,21 @@ Repeated source/documentation consistency review reports **NO FINDINGS**.
 The canonical authority, dormant fixture intent, deferred trace row, and
 all forbidden artifacts remain unchanged. Exact source/count/hash/no-op
 verification and all nine hard gates PASS; final quality is valid `98/100`.
+
+## Task 258B3M2B2B3B Implementation Source/Specification Closure
+
+The bounded implementation closes the recorded `source_drift`. Three
+medium test-sufficiency `test_gap` findings were remediated inside the exact
+four-plus-five tests. Post-auth injection and stage-prefix/
+non-generic-guard assertions close the remaining lower-field matrix gap;
+all test-sufficiency repeats and the final implementation repeat report
+**NO FINDINGS**. No new disagreement class was found. `doc/spec`, `.miz`,
+expectations, fixtures, sidecars, and `tests/coverage/spec_trace.toml`
+remain unchanged.
+
+The formula-statement trace row stays `deferred`, `tests = []`, and
+Task-111/255 credit remains unchanged. Source/documentation consistency
+repeat reports **NO FINDINGS** after independently confirming the
+authority/trace/`source_set_term` no-ops. Final documentation/boundary and
+independent quality reviews report **NO FINDINGS**, all hard gates PASS,
+valid `98/100`; this section grants no semantic or coverage credit.

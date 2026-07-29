@@ -372,3 +372,17 @@ zero-element producer testsがlower authorityのままであり、
 `source_set_term.rs` source/test changeはauthorizeしない。B3Bはseparate
 upper statement/witness consumerだけをownし、choice、comprehension、
 `qua`、全semantic requestsをlater workとして保持する。
+
+## Task 258B3M2B2B3B implementation lower-contract no-op
+
+implementationはexisting B3A `SetTerm(SourceSetTermId)` targetとTask-255
+zero-edge producer outputをconsumeしただけで、`source_set_term.rs`または
+そのtestsを変更しない。8 base-resolver mutationsとnon-vacuous
+zero-edge corruptionをupper testsでverifyし、lower ownershipを拡張して
+いない。producer schema、fingerprint grammar、semantic requests、trace
+creditはunchangedである。
+
+post-auth injectionとstage-prefix/non-generic-guard assertionsはupper
+consumer testsだけであり、lower ownershipはsource/test no-opのまま。
+全test-sufficiency repeatsとfinal implementation repeatは
+**NO FINDINGS**である。

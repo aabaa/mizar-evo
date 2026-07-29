@@ -4403,3 +4403,37 @@ lower handoff field, owner partition, zero-edge graph, family isolation,
 replay/rollback, final clone, and empty semantics before publishing the
 existing private detail route. It must not enter active discovery, change a
 diagnostic/detail key, or reinterpret the inactive template fixture.
+
+## Task 258B3M2B2B3B Implemented Runner Harness
+
+The five frozen runner tests exercise the exact 118-byte input and all 50
+nodes/root 49. Their byte matrix covers all 118 positions; their node
+matrix covers all 50 nodes across the four surface mutation axes of kind,
+range, recovery, and children. They
+cover eight base-resolver and ten label-resolver mutations, every
+currently constructible Task-48/252/255/256/258 handoff field, the frozen
+Task-256 `72`-field and Task-258 `62`-field matrices, and the `21`-field
+witness matrix. The four omitted Task-258 kind/role/status fields each have
+only one safely constructible public variant, so the repeat reviewer
+retracted that candidate finding as **NO DISAGREEMENT**.
+
+The suite includes a non-vacuous two-edge rejection for the frozen
+zero-edge contract and both B3A-before-B3B and B3B-before-B3A family
+orders. It also verifies active-route isolation, immediate replay and
+rollback, final clone/debug stability, and empty semantics. Initial
+findings for resolver coverage, bidirectional ordering, and non-vacuous
+zero-edge validation were closed inside the same five runner and four
+checker tests. The repeated review then found one remaining B3B-specific
+gap in currently mutable Task-48/252/255 mutation/replay coverage. The
+bounded test-only remediation adds exact Task-48 `32`, Task-252 `55`, and
+Task-255 `23` mutation/replay matrices without changing the test count,
+fixture, expectation, trace row, or active route. Focused runner `5/5`,
+checker `4/4`, libraries `398/456`, format/diff, workspace Clippy with
+warnings denied, and final `cargo test -q` PASS. Post-auth injection plus
+stage-prefix and non-generic-guard assertions complete authentication; all
+test-sufficiency repeats and the final implementation repeat report
+**NO FINDINGS**.
+
+The source/documentation consistency repeat also reports **NO FINDINGS**
+after confirming the four surface axes and recording the test-list hashes
+as final remeasurements.

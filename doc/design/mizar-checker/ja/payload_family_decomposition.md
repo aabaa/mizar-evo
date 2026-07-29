@@ -1248,3 +1248,18 @@ witness-to-set edge以外を含まない。choice、comprehension、`qua`、
 other enumeration cardinalities、semantic expansion、B4、B5はseparateの
 ままである。missing upper contractは`design_drift`、future code/testsは
 bounded `source_drift`/`test_gap`で、blocking authority gapはない。
+
+## Task 258B3M2B2B3B implemented cross-family closure
+
+B3B exact profileはB3Aのset target/fingerprint/APIをreuseし、Task-255の
+zero-edge enumeration、Task-252/256/258 base rows、unnamed witness 1件
+だけをcomposeする。initial reviewで不足したbidirectional family orders
+とnon-vacuous zero-edge corruptionはexisting frozen tests内に追加し、
+B3A/B3B、legacy/application/structure、other B3 profilesとのhybridを
+fail closedにした。semantic expansion、remaining B3、B4/B5は引き続き
+deferredである。
+
+post-auth injectionとstage-prefix/non-generic-guard assertionsがlast
+matrix gapsをcloseした。family ownershipまたはsemantic creditを変えず、
+全test-sufficiency repeatsとfinal implementation repeatは
+**NO FINDINGS**である。

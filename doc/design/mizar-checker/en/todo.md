@@ -5585,6 +5585,47 @@ implementation commit does not satisfy a producer task.
 - [x] Complete final quality review with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `98/100`
   (`20/20/15/14/10/10/5/4`).
-- [ ] Create the dedicated B3B documentation-only commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B3B
-  implementation.
+- [x] Create the dedicated B3B documentation-only commit
+  `080e6824d843655986079f5d5fc41abe06b0fbd6`.
+- [x] Verify clean ahead-13/behind-0 post-commit state, unchanged stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh-inventory B3B
+  implementation selection.
+
+## Checker Task 258B3M2B2B3B Implementation Ledger
+
+- [x] Close prerequisite commit
+  `080e6824d843655986079f5d5fc41abe06b0fbd6` and its clean
+  ahead-13/behind-0, unchanged-stash, fresh-inventory gates.
+- [x] Implement only the exact three checker plus four runner source files,
+  reusing the B3A SetTerm API and preserving every authority artifact.
+- [x] Add the exact private zero-edge profile and existing four checker plus
+  five runner tests without public, error, debug, dependency, semantic, or
+  trace changes.
+- [x] Remediate all three medium test gaps inside the existing tests:
+  eight resolver mutations, bidirectional family orders, and non-vacuous
+  zero-edge corruption.
+- [x] Remediate the additional B3B-specific currently mutable
+  Task-48/252/255 mutation/replay gap with exact `32/55/23` matrices.
+- [x] Before that bounded follow-up, pass focused checker `4/4`, runner
+  `5/5`, checker/runner libraries
+  `398/456`, formatting, diff checks, five CLIs, and workspace Clippy.
+- [x] Complete independent full implementation repeat with
+  **NO FINDINGS**.
+- [x] Add post-auth injection plus stage-prefix/non-generic-guard
+  assertions and complete all test-sufficiency repeats with
+  **NO FINDINGS**.
+- [x] Complete final implementation repeat with **NO FINDINGS**.
+- [x] Remeasure affected runner counts/content/test hashes.
+- [x] Rerun focused tests, libraries `398/456`, format/diff, workspace
+  Clippy with warnings denied, `cargo test -q`, and five CLI verification.
+- [x] Complete source/documentation consistency repeat with
+  **NO FINDINGS** after the two `design_drift` wording fixes.
+- [x] Complete independent final documentation/boundary review with
+  **NO FINDINGS**.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
+  `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Stage exactly `39` task files and inspect the cached diff.
+- [ ] Create the dedicated implementation commit.
+- [ ] Verify implementation post-commit invariants.
+- [ ] Complete fresh next-task inventory.

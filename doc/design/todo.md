@@ -3150,6 +3150,43 @@ or semantic owner changed. B3M2B2B remains next before B4.
   prerequisite.
 - [x] Finish no-findings reviews and verification with all nine hard gates
   PASS, no score cap, and valid quality `98/100`.
-- [ ] Create one dedicated docs-only commit.
-- [ ] Fresh-inventory and implement only B3B before selecting the next B3
-  sibling; B4 remains blocked behind the unfinished B3 umbrella.
+- [x] Create the dedicated docs-only commit
+  `080e6824d843655986079f5d5fc41abe06b0fbd6`.
+- [x] Verify clean ahead-13/behind-0 state and unchanged stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, then fresh-inventory and
+  select only B3B implementation before the next B3 sibling; B4 remains
+  blocked behind the unfinished B3 umbrella.
+
+## Checker Task 258B3M2B2B3B Implementation Completion
+
+- [x] Close prerequisite commit/post-commit/fresh-inventory gates.
+- [x] Implement the frozen exact seven-file private checker/runner
+  transport and the exact four checker plus five runner tests.
+- [x] Preserve public APIs, errors, debug grammar, dependencies, active
+  routes, specification, corpus, fixtures, expectations, sidecars, trace
+  metadata, and semantic/coverage credit.
+- [x] Remediate the initial three test-sufficiency findings within the
+  existing nine tests.
+- [x] Remediate the additional B3B-specific currently mutable
+  Task-48/252/255 mutation/replay finding with exact `32/55/23` matrices.
+- [x] Complete the implementation repeat with **NO FINDINGS** before the
+  bounded test-only follow-up.
+- [x] Add post-auth injection plus stage-prefix/non-generic-guard
+  assertions and complete all test-sufficiency repeats with
+  **NO FINDINGS**.
+- [x] Complete final implementation repeat with **NO FINDINGS**.
+- [x] Rerun focused tests, format, diff, and final runner count/hash gates.
+- [x] Rerun libraries `398/456`, workspace Clippy/tests, five CLIs, scope,
+  and no-op gates.
+- [x] Complete source/documentation consistency repeat with
+  **NO FINDINGS** after the two `design_drift` wording fixes.
+- [x] Complete independent final documentation/boundary review with
+  **NO FINDINGS**.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
+  `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Stage only the exact `39` synchronized task files and inspect cached
+  diff.
+- [ ] Create one dedicated implementation commit.
+- [ ] Verify clean post-commit origin/stash invariants.
+- [ ] Fresh-inventory the next dependency-ready task.

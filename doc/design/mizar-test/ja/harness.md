@@ -4137,3 +4137,33 @@ lower handoff fields、owner partition、zero-edge graph、family isolation、
 replay/rollback、final clone、empty semanticsをauthenticateしなければ
 ならない。active discoveryへenterせず、diagnostic/detail keyを変更せず、
 inactive template fixtureをreinterpretしてはならない。
+
+## Task 258B3M2B2B3B implemented runner harness
+
+frozen runner tests 5件はexact 118-byte inputと全50 nodes/root 49をexercise
+する。byte matrixはall 118 positions、node matrixはkind/range/recovery/
+childrenの4 surface mutation axesでall 50 nodesをcoverする。8
+base-resolver mutations、10
+label-resolver mutations、currently constructibleな全Task-48/252/255/
+256/258 handoff fields、frozen Task-256 `72`、Task-258 `62`、witness
+`21` field matricesをcoverする。omitted Task-258 kind/role/status 4 fields
+は各々safely constructibleなpublic variantが1件だけなので、repeat
+reviewerはcandidate findingを**NO DISAGREEMENT**としてretractした。
+
+suiteはfrozen zero-edge contractに対するnon-vacuous 2-edge rejectionと、
+B3A-before-B3B / B3B-before-B3Aの両family ordersを含む。active-route
+isolation、immediate replay/rollback、final clone/debug stability、empty
+semanticsもverifyする。resolver coverage、bidirectional ordering、
+non-vacuous zero-edge validationのinitial findingsは同じrunner 5 /
+checker 4 tests内でcloseした。repeat reviewで残ったB3B-specificな
+currently mutable Task-48/252/255 mutation/replay coverage gapも、test数、
+fixture、expectation、trace row、active routeを変えず、exact Task-48
+`32`、Task-252 `55`、Task-255 `23` matricesでremediateした。focused
+runner `5/5`、checker `4/4`、libraries `398/456`、format/diff、workspace
+Clippy `-D warnings`、final `cargo test -q`はPASS。post-auth injectionと
+stage-prefix/non-generic-guard assertionsでauthenticationをcompleteし、
+全test-sufficiency repeatsとfinal implementation repeatは
+**NO FINDINGS**である。
+
+four surface axesとtest-list hashesのfinal remeasurement記録をconfirmした
+source/documentation consistency repeatも**NO FINDINGS**である。

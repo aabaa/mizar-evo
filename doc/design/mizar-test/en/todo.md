@@ -2649,5 +2649,40 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Keep `.miz`, expectations, sidecars, trace status/count, active route,
   CLI output, and semantics unchanged.
 - [x] Complete all repeated reviews and verification with **NO FINDINGS**.
-- [ ] Commit the documentation prerequisite, verify invariants, and
-  fresh-inventory the separate B3B implementation.
+- [x] Commit the documentation prerequisite as
+  `080e6824d843655986079f5d5fc41abe06b0fbd6`, verify clean
+  ahead-13/behind-0 state and unchanged stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh-inventory the
+  separate B3B implementation.
+
+## Checker Task 258B3M2B2B3B Implementation Ledger
+
+- [x] Close prerequisite commit/post-commit/fresh-inventory gates.
+- [x] Implement the exact four runner owners plus paired three checker
+  owners and preserve public API, diagnostics, dependencies, and routes.
+- [x] Implement the frozen five runner and four checker tests.
+- [x] Remediate the initial three test-sufficiency findings within the
+  existing nine tests.
+- [x] Remediate the additional B3B-specific Task-48/252/255 lower-field
+  mutation finding with exact `32/55/23` matrices.
+- [x] Complete the independent implementation repeat with
+  **NO FINDINGS** before the bounded test-only follow-up.
+- [x] Add post-auth injection plus stage-prefix/non-generic-guard
+  assertions and complete all test-sufficiency repeats with
+  **NO FINDINGS**.
+- [x] Complete final implementation repeat with **NO FINDINGS**.
+- [x] Rerun focused tests and format/diff checks after the follow-up.
+- [x] Complete final runner count/hash measurements.
+- [x] Rerun libraries `398/456`, workspace Clippy/tests, and five CLI
+  invariants.
+- [x] Complete source/documentation consistency repeat with
+  **NO FINDINGS** after the two `design_drift` wording fixes.
+- [x] Complete independent final documentation/boundary review with
+  **NO FINDINGS**.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
+  `98/100` (`20/20/15/14/10/10/5/4`).
+- [ ] Stage exactly `39` synchronized task files and inspect cached diff.
+- [ ] Create the dedicated implementation commit.
+- [ ] Verify post-commit invariants and unchanged stash.
+- [ ] Fresh-inventory the next task.

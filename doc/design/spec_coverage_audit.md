@@ -5089,3 +5089,49 @@ workspace verification pass. Independent final quality reports
 **NO FINDINGS** with all nine hard gates PASS, no score cap, and valid
 `98/100`. This remains a narrative-only audit change; trace status, counts,
 backlinks, tests, and semantic credit are unchanged.
+
+### Task 258B3M2B2B3B implementation coverage closure
+
+The prerequisite closed as
+`080e6824d843655986079f5d5fc41abe06b0fbd6`, followed by a clean
+ahead-13/behind-0 inventory with unchanged stash fingerprint
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Implementation is confined to
+the frozen seven checker/runner files. It reuses the B3A SetTerm-aware API
+to transport the exact 118-byte/50-node empty enumeration, authenticates
+the zero-edge Task-255 contract and Tasks 48/252/256/258, and publishes one
+unnamed witness without changing a public schema, diagnostic, dependency,
+debug grammar, or active route.
+
+The exact four checker and five runner tests remain the only tests in this
+task. Three initial test gaps—base-resolver mutations, bidirectional family
+orders, and non-vacuous zero-edge corruption—were remediated within those
+nine tests. Repeat review identified one remaining B3B-specific gap in
+currently mutable Task-48/252/255 mutation/replay coverage. Remediation is
+confined to the authorized runner statement source/test owners and now
+provides exact `32/55/23` matrices.
+The separate Task-258 single-variant candidate was retracted as
+**NO DISAGREEMENT** because each omitted kind/role/status field has only
+one safely constructible public variant. Final runner state is library
+`456`, sizes `9423/4517/766/2581/22384/2528`, production `30/51705`,
+unchanged path hash, final remeasured test-list hashes, and content hash
+`bb682b0dd77bd3533cf0eae8120225294f8fafab0af8dbed45427b7922d042c7`.
+Focused checker `4/4`, runner `5/5`, format, and diff checks pass.
+Post-auth injection plus stage-prefix/non-generic-guard assertions complete
+the matrix. All test-sufficiency repeats and the final implementation
+repeat report **NO FINDINGS**; libraries `398/456`, workspace all-target/
+all-feature Clippy with warnings denied, and final post-seam
+`cargo test -q` PASS. Source-documentation consistency repeat
+independently remeasured the exact metrics/hashes, confirmed EN/JA sync,
+exact-`39` scope, and trace/authority/`source_set_term` no-ops, and reports
+**NO FINDINGS**. Final documentation/boundary review, independent final
+quality, cached-diff/staging, commit, post-commit, and fresh-next-task gates
+remain pending.
+
+This is still narrative implementation ownership only. The
+`spec.en.checker.formula_statement.source_payloads` row remains
+`deferred`, `tests = []`; Task-111/255 credit and all trace
+status/count/backlink values remain unchanged. No existing `.miz`,
+expectation, sidecar, or inactive fixture intent changes. Set semantics,
+existential matching, witness substitution, proof/theorem acceptance,
+Core/CFG/VC, remaining B3, B4/B5, and active coverage credit remain
+deferred.

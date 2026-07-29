@@ -2437,5 +2437,39 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] `.miz`、expectations、sidecars、trace status/count、active route、
   CLI output、semanticsをunchangedに保持。
 - [x] 全repeat reviewsとverificationを**NO FINDINGS**でcomplete。
-- [ ] documentation prerequisiteをcommitしinvariantsをverify後、separate
-  B3B implementationをfresh inventory。
+- [x] documentation prerequisiteを
+  `080e6824d843655986079f5d5fc41abe06b0fbd6`としてcommitし、clean
+  ahead-13/behind-0 stateとunchanged stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`をverify後、separate B3B
+  implementationをfresh inventory。
+
+## Checker Task 258B3M2B2B3B implementation ledger
+
+- [x] prerequisite commit/post-commit/fresh-inventory gatesをclose。
+- [x] exact runner owners 4件とpaired checker owners 3件を実装し、
+  public API/diagnostics/dependencies/routesをpreserve。
+- [x] frozen runner tests 5件とchecker tests 4件を実装。
+- [x] initial test-sufficiency findings 3件をexisting 9 tests内で
+  remediate。
+- [x] additional B3B-specific Task-48/252/255 lower-field mutation findingを
+  exact `32/55/23` matricesでremediate。
+- [x] bounded test-only follow-up前のindependent implementation repeatを
+  **NO FINDINGS**でcomplete。
+- [x] post-auth injectionとstage-prefix/non-generic-guard assertionsを追加し、
+  全test-sufficiency repeatsを**NO FINDINGS**でcomplete。
+- [x] final implementation repeatを**NO FINDINGS**でcomplete。
+- [x] follow-up後のfocused testsとformat/diffをrerun。
+- [x] final runner count/hash measurementsをcomplete。
+- [x] libraries `398/456`、workspace Clippy/tests、5 CLI invariantsを
+  rerun。
+- [x] medium `design_drift` wording fixes 2件後のsource/documentation
+  consistency repeatを**NO FINDINGS**でcomplete。
+- [x] independent final documentation/boundary reviewを
+  **NO FINDINGS**でcomplete。
+- [x] independent final read-only quality reviewを**NO FINDINGS**、全9
+  hard gates PASS、score capなし、valid `98/100`
+  （`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] exact `39` synchronized task filesをstageし、cached diffをinspect。
+- [ ] dedicated implementation commitをcreate。
+- [ ] post-commit invariants/stash unchangedをverify。
+- [ ] fresh next-task inventoryへ進む。

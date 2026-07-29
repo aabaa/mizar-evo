@@ -954,3 +954,31 @@ workspace verification pass in both languages. Independent final quality is
 **NO FINDINGS**, all nine hard gates PASS with no score cap, and valid
 `98/100` (`20/20/15/14/10/10/5/4`). Only the dedicated documentation
 commit, post-commit invariants, and fresh implementation inventory remain.
+
+## Task 258B3M2B2B3B Implementation Synchronization
+
+The EN canonical and JA companion synchronize prerequisite commit
+`080e6824d843655986079f5d5fc41abe06b0fbd6`, clean
+ahead-`13`/behind-`0` inventory, unchanged stash, the exact seven source
+files, reused B3A SetTerm API, four checker plus five runner tests, measured
+checker `398` and runner `456` states, hashes, and unchanged five CLI
+results. Both record that three initial medium test-sufficiency gaps and
+the repeat's currently mutable Task-48/252/255 lower-field gap were
+remediated inside the existing tests, the latter with exact `32/55/23`
+matrices. The Task-258 single-variant candidate was retracted as
+**NO DISAGREEMENT**. The independent implementation repeat before the
+bounded follow-up was **NO FINDINGS**. Post-auth injection and
+stage-prefix/non-generic-guard assertions close the remaining matrix;
+all test-sufficiency repeats and the final implementation repeat are
+**NO FINDINGS**. Focused `4/4 + 5/5`, libraries `398/456`, format/diff,
+workspace Clippy with warnings denied, and final `cargo test -q` PASS.
+
+Both languages record final runner sizes/content/test hashes. Final
+documentation/boundary and independent quality reviews are synchronized as
+**NO FINDINGS**, all nine hard gates PASS, no score cap, valid `98/100`
+(`20/20/15/14/10/10/5/4`). Only cached-diff/staging, commit, post-commit,
+and fresh-next-task gates remain pending. The source/documentation
+consistency repeat is synchronized as
+**NO FINDINGS**, including independently remeasured final hashes and exact
+`39`-file/no-op confirmation. Trace no-credit and every semantic deferral
+remain synchronized.

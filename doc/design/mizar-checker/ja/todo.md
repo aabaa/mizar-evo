@@ -5331,6 +5331,38 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] final quality reviewを**NO FINDINGS**、全9 hard gates PASS、
   score capなし、valid `98/100`
   （`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] dedicated B3B documentation-only commitをcreate。
-- [ ] clean post-commit/stash invariantsをverifyし、B3B implementationを
-  fresh inventory。
+- [x] dedicated B3B documentation-only commit
+  `080e6824d843655986079f5d5fc41abe06b0fbd6`をcreate。
+- [x] clean ahead-13/behind-0 post-commit state、unchanged stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`をverifyし、B3B
+  implementationをfresh inventory。
+
+## Task 258B3M2B2B3B implementation completion
+
+- [x] prerequisite commit/post-commit/fresh-inventory gatesをclose。
+- [x] exact seven-file private transportとfrozen checker 4 / runner 5
+  testsを実装し、public API/error/debug/dependency/active routeをpreserve。
+- [x] initial test-sufficiency findings 3件をexisting tests内でremediate。
+- [x] additional B3B-specific currently mutable Task-48/252/255
+  mutation/replay gapをexact `32/55/23` matricesでremediate。
+- [x] independent full implementation repeatを**NO FINDINGS**でcomplete。
+- [x] post-auth injectionとstage-prefix/non-generic-guard assertionsを追加し、
+  全test-sufficiency repeatsを**NO FINDINGS**でcomplete。
+- [x] final implementation repeatを**NO FINDINGS**でcomplete。
+- [x] bounded follow-up前にfocused checker `4/4`、runner `5/5`、
+  format/diff、workspace Clippy `-D warnings`、workspace `cargo test -q`
+  をPASS。
+- [x] follow-up後のaffected runner counts/content/test hashesをremeasure。
+- [x] focused tests、libraries `398/456`、format/diff、workspace Clippy
+  `-D warnings`、`cargo test -q`、5 CLI verificationをrerun。
+- [x] medium `design_drift` wording fixes 2件後のsource/documentation
+  consistency repeatを**NO FINDINGS**でcomplete。
+- [x] independent final documentation/boundary reviewを
+  **NO FINDINGS**でcomplete。
+- [x] independent final read-only quality reviewを**NO FINDINGS**、全9
+  hard gates PASS、score capなし、valid `98/100`
+  （`20/20/15/14/10/10/5/4`）でcomplete。
+- [ ] exact `39` task filesをstageし、cached diffをinspect。
+- [ ] dedicated implementation commitをcreate。
+- [ ] post-commit invariants/stash unchangedをverify。
+- [ ] fresh next-task inventoryへ進む。

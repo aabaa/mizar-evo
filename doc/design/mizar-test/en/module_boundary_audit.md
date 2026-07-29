@@ -12219,3 +12219,22 @@ source transport tests without changing language behavior or test intent.
 Repeated boundary and implementation-scope reviews report **NO FINDINGS**.
 The exact-32 documentation-only scope, unchanged forbidden paths, and all
 nine hard gates PASS; independent final quality is valid `98/100`.
+
+## Task 258B3M2B2B3B Implemented Runner Boundary
+
+Only the frozen four runner owners changed. The generic Task-255 producer,
+parser/resolver, active corpus and metadata, expectations, sidecars, trace
+rows, semantic/proof/goal runners, B4, and B5 remain unchanged. The route
+is private and dormant; no public API, error, debug grammar, dependency, or
+active-discovery boundary moved. The additional lower-field test-gap
+remediation remains within the already authorized runner statement
+source/test owners. Final measured sizes are statement `9423`, unchanged
+set leaf `4517`, facade `766`, root `2581`, statement tests `22384`, and
+unchanged set tests `2528`. All test-sufficiency repeats and the final
+implementation repeat are **NO FINDINGS**; workspace verification passes.
+Source/documentation consistency repeat independently confirms exact
+scope, metrics/hashes, authority, trace, and lower-owner no-ops and reports
+**NO FINDINGS**. Final documentation/boundary and independent quality
+reviews are **NO FINDINGS**, all hard gates PASS, valid `98/100`.
+Cached-diff/staging, commit, post-commit, and fresh inventory remain
+pending.

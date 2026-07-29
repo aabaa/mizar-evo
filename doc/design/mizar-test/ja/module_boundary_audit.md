@@ -10963,3 +10963,21 @@ language behavior/test intentを変更せずexact source transport testsを
 repeatしたboundary/implementation-scope reviewsは**NO FINDINGS**。
 exact-32 documentation-only scope、forbidden paths unchanged、全9 hard
 gatesはPASSし、independent final qualityはvalid `98/100`である。
+
+## Task 258B3M2B2B3B implemented runner boundary
+
+frozen runner owners 4件だけを変更した。generic Task-255 producer、
+parser/resolver、active corpus/metadata、expectations、sidecars、trace
+rows、semantic/proof/goal runners、B4/B5はunchanged。routeはprivate/
+dormantで、public API/error/debug/dependency/active-discovery boundaryは
+移動しない。追加lower-field test-gap remediationもalready authorizedな
+runner statement source/test owners内に限定する。final measured sizesは
+statement `9423`、unchanged set leaf `4517`、facade `766`、root `2581`、
+statement tests `22384`、unchanged set tests `2528`である。全
+test-sufficiency repeatsとfinal implementation repeatは
+**NO FINDINGS**、workspace verificationはPASS。source/documentation
+consistency repeatはexact scope、metrics/hashes、authority、trace、
+lower-owner no-opをindependently confirmして**NO FINDINGS**。final
+documentation/boundary、independent quality reviewsも**NO FINDINGS**、
+全hard gates PASS、valid `98/100`。cached-diff/staging、commit、
+post-commit、fresh inventoryはpending。
