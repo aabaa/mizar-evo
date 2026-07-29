@@ -578,3 +578,25 @@ source-structure leaf、そのprivate facade/root test visibility、
 structure test leafだけに限定する。future B2B statement consumerは
 separate taskのままで、statement、Task-258、semantic、proof、goal、
 Core、CFG、VC ownerをB2BPへ移動しない。
+
+## Task 258B3M2B2B2B frozen module boundary
+
+B2Bはpublic API/moduleを追加しない。checker implementationはexisting
+`source_statement.rs`、`typed_ast.rs`、`resolved_typed_ast.rs`の
+private exact-profile additionsだけ。runner implementationはexisting
+private source-statement leaf、facade/root registration、statement test
+leafだけ。completed B2BP source-structure logicはimmutableで、consumer
+live時にobsolete future-consumer `dead_code` allowancesだけ除去可能。
+
+checker `source_structure` change、new builder/installer/accessor/table、
+dependency、production path、active route、fixture、sidecar、expectation、
+trace owner、semantic ownerは禁止。public `Structure` witness target、
+structure fingerprint、structure-aware producer、atomic installerを
+unchanged reuseする。
+
+current checker statement/typed/final/structure sizesは
+`27194/4829/7241/5036`、23-path / 121,265-line manifest/hashesは不変。
+runner statement/structure/facade/root/statement-test/structure-test sizesは
+`6414/4514/722/2538/15058/4315`、30-path / 44,809-line
+manifest/hashesは不変。documentation baseline testsは`382/432`、
+implementation projectionは`386/437`。

@@ -604,3 +604,26 @@ production manifest. The implementation is confined to the existing
 and its structure test leaf. The future B2B statement consumer remains a
 separate task; no statement, Task-258, semantic, proof, goal, Core, CFG, or
 VC owner moves into B2BP.
+
+## Task 258B3M2B2B2B Frozen Module Boundary
+
+B2B adds no public API or module. Checker implementation is restricted to
+private exact-profile additions in existing `source_statement.rs`,
+`typed_ast.rs`, and `resolved_typed_ast.rs`. Runner implementation is
+restricted to the existing private source-statement leaf, its facade/root
+registration, and statement test leaf. The completed B2BP source-structure
+logic is immutable; only obsolete future-consumer `dead_code` allowances
+may be removed when the consumer becomes live.
+
+No checker `source_structure` change, new builder/installer/accessor/table,
+dependency, production path, active route, fixture, sidecar, expectation,
+trace owner, or semantic owner is authorized. The public `Structure`
+witness target, structure fingerprint, structure-aware producer, and
+atomic installer are reused unchanged.
+
+Current checker statement/typed/final/structure sizes are
+`27194/4829/7241/5036`; its 23-path / 121,265-line manifest and hashes are
+unchanged. Runner statement/structure/facade/root/statement-test/
+structure-test sizes are `6414/4514/722/2538/15058/4315`; its 30-path /
+44,809-line manifest and hashes are unchanged. Documentation baseline tests
+are `382/432`; implementation projects `386/437`.

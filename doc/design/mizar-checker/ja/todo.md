@@ -5000,7 +5000,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   valid score `98/100`でPASS。
 - [x] correctionだけをcommit、clean/stash invariants verify後にB2BP
   implementationだけをfresh-inventory。
-- [ ] separate B2BP implementation commit後にB2B frozen consumer docsへ
+- [x] separate B2BP implementation commit後にB2B frozen consumer docsへ
   戻る。
 
 ## Checker Task 258B3M2B2B2BP implementation ledger
@@ -5017,5 +5017,25 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   hashes、不変のCLI counts/hashes 5件を記録。
 - [x] source/documentation consistencyをfindingsなしで完了し、全9 hard
   gatesとvalid `98/100`でfinal quality reviewをPASS。
-- [ ] implementation commit 1件を作成後、B2B documentationを
+- [x] implementation commit 1件を作成後、B2B documentationを
   fresh-inventory。
+
+## Checker Task 258B3M2B2B2B frozen-contract ledger
+
+- [x] exact 171-byte selector-witness source、parser nodes、malformed
+  recovery、resolver provenance、lower Task-48/252/254/256 rows、
+  ownership/subtree exclusionsをfreeze。
+- [x] Task-258 base `1/2/2/2/2`、witness `1/0`、target
+  `Structure(0)`、selector-base `Structure(1)`、exact B2A/B2B sibling
+  boundaryをfreeze。
+- [x] exact checker/runner consumers、implementation file scopes、checker
+  tests 4件、runner tests 5件、validation precedence、family isolation、
+  semantic/B2C deferralsをfreeze。
+- [x] baseline library/projection counts、module sizes、production/test-list
+  hashes、CLI counts/hashes、unchanged coverage-credit impactを記録。
+- [x] specification、test-sufficiency、implementation-boundary、
+  source/documentation reviewsをfindingsなしで完了し、final quality全9
+  hard gatesをvalid `98/100`でPASS。
+- [ ] このdocumentation prerequisiteだけをcommitし、clean worktree、
+  ahead count、untouched stashをverify。
+- [ ] commit後にTask 258B3M2B2B2B implementationをfresh-inventory。

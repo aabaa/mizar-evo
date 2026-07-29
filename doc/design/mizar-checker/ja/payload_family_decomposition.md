@@ -1002,3 +1002,21 @@ Task 254はselector/constructor/member/request rowsを、Task 252はprimary
 valuesを引き続きownし、exact chainは
 `Structure(0) -> Structure(1) -> Primary(2/3)`のまま。future witness
 consumerはB2Bだけ。
+
+### Task 258B3M2B2B2B frozen witness-to-selector edge
+
+B2Bはdirected cross-family edge
+`SourceStatementWitness(0) -> SourceStructureTerm(0)`をexact 1件だけ
+追加する。Structure term 0はselector。Task 254はlower chain
+`Structure(0 selector) -> Structure(1 constructor) -> Primary(2/3)`を
+retainする。Task 258はtheorem/conclusion base rows、take/witness 65/64、
+new directed edgeだけをownし、structure terms、root、member、primary
+child、reverse edgeをownしない。
+
+Task 252はprimaries、Task 254はselector/constructor/member/request rows、
+Task 256はdirect structure target/fingerprintなしのequality-only
+`BuiltinPredicateApplication` nodes 51/70をretainし、
+`FormulaExpression` containers 52/71はunowned。witness handoffのexisting
+fingerprintはdependency authenticationでsemantic edgeではない。B2C
+update/`FieldUpdate`、selector identity/type/call/chain、semantic term、
+proof、goal、Core/CFG/VC、coverage creditはabsentのまま。

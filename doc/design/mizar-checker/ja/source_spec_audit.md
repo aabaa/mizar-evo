@@ -4103,3 +4103,44 @@ canonical specification、`.miz`、fixture、expectation、sidecar、trace
 row/status/count/backlink、Task-254 diagnostic credit、active routeは
 変更しない。formula-statement coverageは`deferred`、`tests = []`のまま。
 B2B/B2Cとselector identity/type/proof semanticsはdeferred。
+
+## Task 258B3M2B2B2B frozen-contract audit
+
+fresh post-B2BP inventoryはmissing direct-selector witness contractを
+`design_drift`、future bounded implementationを`source_drift`、exact
+checker tests 4件/runner tests 5件を`test_gap`にclassifyする。reviewで
+pre-existing same-task draftが2 formula node kindsをreverseしたことも
+foundした。Task 256がownするのは`BuiltinPredicateApplication` nodes
+51/70で、`FormulaExpression` containers 52/71はarena-unowned。この
+content errorは`design_drift`。draftが外部から現れた事実は
+nonblocking/report-only `repo_metadata_conflict`で、safe targetは
+unambiguous、metadata repairは行わない。blocking `spec_gap`、unsafe
+test intent、undocumented source behavior、expectation drift、boundary
+violationはない。
+
+Chapters 5 §§5.5/5.7、13 §§13.3–13.3.2、15
+§§15.4.4/15.11.5、16 §§16.3.3/16.7.3、unchanged parser/resolver
+fixtures、Tasks 48/248–258はsyntax/provenance transportとunnamed witness
+target 1件だけをauthorizeする。exact 171-byte/79-node sourceはTask-48
+`2/1/0`、Task-252 `6/4/2`、completed B2BP Task-254
+`2/0/1/3/0/3/9`、Task-256 equality-only
+`2/0/0/0/0/0/0/4/4`、Task-258 base `1/2/2/2/2`、witness `1/0`を
+composeする。new edgeはwitness 0からselector `Structure(0)`だけ。
+constructor `Structure(1)`、members、roots、primaries、applications、
+transparent containersはexcludeする。
+
+existing `Structure` target、structure fingerprint、
+`build_with_structure`、atomic typed/final installerをreuseしpublic APIは
+追加しない。B2C update/`FieldUpdate`、selector
+identity/type/result/call/chain、witness obligation/substitution、
+proof/goal/theorem acceptance、active routes、diagnostics、semanticsは
+deferred。canonical specs、existing `.miz`、fixtures、expectations、
+sidecars、trace metadataはunchanged。
+`spec.en.checker.formula_statement.source_payloads`は`deferred`、
+`tests = []`、Task-254 diagnostic creditは不変。
+
+specification、test-sufficiency、implementation-boundary、
+source/documentation consistency reviewsはすべてfindingsなし。fresh
+verificationは全documentation gatesをPASSし、final read-only quality
+reviewは全9 hard gates PASS、valid `98/100`。openなのはdedicated
+documentation commitと直後のfresh B2B implementation inventoryだけ。

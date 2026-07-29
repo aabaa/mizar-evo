@@ -646,3 +646,20 @@ implemented private selector seam, exact two runner tests, libraries
 Both preserve the imported-only provenance boundary, unchanged checker
 surface, dormant active route, deferred trace row, and B2B/B2C/semantic
 deferrals. No implementation bilingual debt remains.
+
+## Task 258B3M2B2B2B Frozen Contract Synchronization
+
+The English canonical documents and Japanese companions freeze the same
+171-byte/79-node direct-selector source, Task-256
+`BuiltinPredicateApplication` nodes 51/70 with unowned
+`FormulaExpression` containers 52/71, Task-48/252/254/256 tables, Task-258
+base `1/2/2/2/2`, and one
+unnamed witness targeting selector `Structure(0)`. Both languages retain
+constructor term 1, members, roots, primaries, and applications outside the
+witness edge; reuse existing public checker APIs unchanged; freeze the same
+four checker/five runner tests; and defer B2C, selector semantics,
+proof/goal/acceptance, active/trace credit, and all semantic output.
+
+Both companions record baseline libraries `382/432`, current module sizes,
+manifest/test-list/CLI hashes, exact implementation consumers, validation
+precedence, and docs-only exit criteria. No B2B bilingual debt is accepted.

@@ -4294,3 +4294,45 @@ expectation, sidecar, trace row/status/count/backlink, Task-254 diagnostic
 credit, or active route. Formula-statement coverage stays `deferred`,
 `tests = []`; B2B/B2C and all selector identity/type/proof semantics remain
 deferred.
+
+## Task 258B3M2B2B2B Frozen-Contract Audit
+
+Fresh post-B2BP inventory classifies the missing direct-selector witness
+contract as `design_drift`, its future bounded implementation as
+`source_drift`, and the exact four checker plus five runner tests as
+`test_gap`. Review also found a pre-existing same-task draft that reversed
+the two formula node kinds: Task 256 owns `BuiltinPredicateApplication`
+nodes 51/70, while `FormulaExpression` containers 52/71 are arena-unowned.
+That content error is `design_drift`. The external appearance of the draft
+is a nonblocking, report-only `repo_metadata_conflict`; the safe target is
+unambiguous and no metadata repair is performed. There is no blocking
+`spec_gap`, unsafe test intent, undocumented source behavior, expectation
+drift, or boundary violation.
+
+Chapters 5 §§5.5/5.7, 13 §§13.3–13.3.2, 15
+§§15.4.4/15.11.5, and 16 §§16.3.3/16.7.3, the unchanged parser/resolver
+fixtures, and Tasks 48/248–258 authorize only syntax/provenance transport
+and one directed unnamed witness target. The exact 171-byte/79-node source
+composes Task-48 `2/1/0`, Task-252 `6/4/2`, completed B2BP Task-254
+`2/0/1/3/0/3/9`, Task-256 equality-only
+`2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and witness `1/0`.
+The only new edge is witness 0 to selector `Structure(0)`; constructor
+`Structure(1)`, members, roots, primaries, applications, and transparent
+containers are excluded.
+
+The task reuses the existing `Structure` target, structure fingerprint,
+`build_with_structure`, and atomic typed/final installer. It adds no public
+API. B2C update/`FieldUpdate`, selector identity/type/result/call/chain,
+witness obligations/substitution, proof/goal/theorem acceptance, active
+routes, diagnostics, and all semantics remain deferred. Canonical specs,
+existing `.miz`, fixtures, expectations, sidecars, and trace metadata stay
+unchanged. The row
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`; Task-254 diagnostic credit is unchanged.
+
+Specification, test-sufficiency, implementation-boundary, and
+source/documentation consistency reviews all end with no findings. Fresh
+verification passes every documentation gate, and the final read-only
+quality review passes all nine hard gates with a valid `98/100`. Only the
+dedicated documentation commit and immediate fresh B2B implementation
+inventory remain open.

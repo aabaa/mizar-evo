@@ -2855,7 +2855,7 @@ or semantic owner changed. B3M2B2B remains next before B4.
   valid score of `98/100`.
 - [x] Make one dedicated correction commit, then fresh-inventory and
   implement only the B2BP seam and two tests in a separate commit.
-- [ ] After B2BP implementation, fresh-inventory and return to B2B
+- [x] After B2BP implementation, fresh-inventory and return to B2B
   frozen-contract documentation; keep B2C/semantics deferred.
 
 ## Checker Task 258B3M2B2B2BP Implementation Completion
@@ -2868,5 +2868,26 @@ or semantic owner changed. B3M2B2B remains next before B4.
   workspace Clippy, five CLIs, and all count/hash gates.
 - [x] Complete source/documentation consistency with no findings and pass
   final quality review with all nine hard gates and a valid `98/100`.
-- [ ] Commit once, then fresh-inventory the B2B frozen-contract
+- [x] Commit once, then fresh-inventory the B2B frozen-contract
   documentation prerequisite.
+
+## Checker Task 258B3M2B2B2B Frozen-Contract Completion
+
+- [x] Freeze the exact 171-byte source, parser/malformed profiles, resolver
+  provenance, lower rows, node ownership, subtree exclusions, Task-258
+  base/witness rows, and target edge.
+- [x] Freeze B2A/B2B sibling isolation, exact checker/runner consumers and
+  file scopes, validation order, rollback/replay, and semantic deferrals.
+- [x] Freeze four checker tests and five runner tests while preserving
+  existing specs, `.miz`, fixtures, expectations, sidecars, trace metadata,
+  active routes, and diagnostic credit.
+- [x] Synchronize canonical English and Japanese companion plans, ledgers,
+  module/design audits, and this narrative-only coverage audit.
+- [x] Record baseline `382/432`, projection `386/437`, current production/
+  test-list/CLI counts and hashes, the report-only metadata conflict, and
+  the associated formula-node `design_drift`.
+- [x] Complete all four reviews with no findings, pass fresh verification,
+  and pass all nine final quality hard gates with a valid `98/100`.
+- [ ] Commit this documentation prerequisite as one logical task.
+- [ ] Immediately fresh-inventory Task 258B3M2B2B2B implementation after
+  the documentation commit; keep B2C and all semantics deferred.

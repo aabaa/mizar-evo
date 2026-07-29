@@ -1132,3 +1132,23 @@ missing/partial/stale/repeated/reversed/application-structure hybridは
 `resolved_typed_ast.rs`は7,241 lines。public final accessor、active route、
 semantic/proof/goal owner、coverage creditは追加せず、upper semantic
 tablesはempty。
+
+## Task 258B3M2B2B2B frozen final-AST sibling
+
+`ResolvedTypedAst` accessorは追加しない。final assemblyが
+source-structure statementとcoexistできるのは、exact authenticated
+siblings 2種だけ。B2Aは`Structure(0)`をtargetとする76-node
+constructor-witness profile、B2Bは`Structure(0)`をtargetとし、その
+selector baseが`Structure(1)`となる79-node selector-witness profile。
+両方とも`application = None`、`structure = Some`なので、このoption
+shapeではなくfull source/arena/ownership/lower-table/target/fingerprint
+profileがsiblingをselectする。
+
+B2B final assemblyはTask 252、Task 254、equality-only Task 256、Task 258
+base rows、witness edge、全statement/primary/structure fingerprintsを
+revalidateしてからauthenticated bundleをbyte-for-byte cloneする。
+Task 256はformula application nodes `51/70`をownし、enclosing
+`FormulaExpression` nodes `52/71`はunowned containersのまま。
+B2A/B2B hybrid、swapped target、cross-profile fingerprint、partial/
+repeated bundle、application coexistenceはatomically rejectする。
+semantic/proof/goal/overload/theorem acceptance tablesはemptyのまま。

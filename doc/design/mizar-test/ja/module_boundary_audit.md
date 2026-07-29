@@ -10656,3 +10656,24 @@ production layoutは44,809 lines、path/content hashesは
 runner test listは432、raw/normalized hashesは
 `913a06523e707dacff403dc14ccaeef92d3f23ae6a4084d213b5a991e82bdfd6` /
 `a00cadb8916d53cd541f90e654a2beb0fc1596d94482d741dc15214aa27e0ba6`。
+
+## Checker Task 258B3M2B2B2B frozen runner boundary
+
+runner implementationはexisting 5 filesに限定する。
+`type_elaboration/source_statement.rs`がprivate B2BP seamをconsume、
+`type_elaboration/source_structure.rs`はobsolete B2BP `dead_code`
+allowancesだけremove可能、`type_elaboration.rs`/`runner.rs`はexisting
+production-private pathをinternally expose、
+`tests/type_elaboration/source_statement.rs`がexact tests 5件をownする。
+checker側のseparate ownersは`source_statement.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs`だけ。
+
+module、production path、dependency、public re-export、active runner route、
+fixture、sidecar、expectation、trace entry、debug grammarは追加しない。
+current runner statement/structure/facade/root/statement-test/
+structure-test sizesは`6414/4514/722/2538/15058/4315`。productionは
+30 paths / 44,809 lines、path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`6a0586185a5959f842f914e869e70d53b75fa08298661295e52919b205ad16c0`
+のまま。implementationはcanonical/active artifactsを変えずchecker/
+runner testsを`382/432`から`386/437`へprojectする。

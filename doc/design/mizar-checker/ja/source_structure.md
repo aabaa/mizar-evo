@@ -267,3 +267,22 @@ bytesをpreserveする。
 checker source/public APIは変更しない。selector identity、typing、
 result、inheritance、proof、goal、theorem behaviorはこのtransport seamの
 scope外。
+
+## Task 258B3M2B2B2B frozen consumer boundary
+
+B2BPはB2Bがconsumeするsole production-private lower seamとなった。同じ
+171-byte sourceについてTask 254はbyte-for-byte
+`2/0/1/3/0/3/9`のまま。selector term `0` node `62`は
+`SelectorBase`でconstructor `Structure(1)`をtargetとし、selector
+member identity node `29`をownする。constructor term `1` node `61`は
+member identities nodes `20/24`と`Primary(2/3)`へのvalue edgesをownする。imported
+root `TypeCaseStruct#5`はcontribution `2`、origin `7..27`、path `[5]`
+をretainする。
+
+B2Bはauthenticated tableをconsumeしてwitness node `64`を
+`Structure(0)`へattachするだけ。Task-254 ownership/bytesはTask 258へ
+移さない。implementationはrunner `source_statement.rs`でseamをconsumeし、
+`source_structure.rs`からobsolete B2BP `dead_code` allowancesだけを
+removeできるが、Task-254 extraction/public surface/existing testsは変更
+しない。selector identity/type/result、inheritance、functional update、
+`FieldUpdate`、全semantic behaviorはdeferred。

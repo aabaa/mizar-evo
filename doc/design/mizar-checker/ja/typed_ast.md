@@ -1132,3 +1132,21 @@ original AST unchangedでrejectする。
 
 `typed_ast.rs`は4,829 lines。existing installersはcompatibleで、active
 route、semantic/type/proof owner、coverage creditは追加していない。
+
+## Task 258B3M2B2B2B frozen atomic sibling
+
+existing combined structure-statement installerはB2A/B2Bをexact siblings
+2種としてenumerateし、genericな
+`application = None`/`structure = Some` statement bundleをadmitしない。
+B2Aは上でfreeze済みのconstructor-witness bundle。B2Bは79-node
+selector bundleで、Task-254 terms `0/1`、witness target
+`Structure(0)`、selector base `Structure(1)`を持つ。exact Task-252 roots、
+Task-254 rows、Task-256 equality rows、Task-258 base rows、全fingerprintsを
+revalidateしてからstructure/statement/witness tablesをtogether
+publishする。
+
+Task 256は`BuiltinPredicateApplication` nodes `51/70`をownする。
+nodes `52/71`はunowned formula containersで、ownership mapへsubstitute
+できない。B2A/B2B row/target/ownership/fingerprint hybridはoriginal AST
+unchangedでrejectする。このprerequisiteはpublic API、installer、debug
+surface、active route、semantic tableを追加しない。

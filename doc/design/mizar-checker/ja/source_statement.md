@@ -2600,3 +2600,39 @@ B2BP private lower seamはfrozen prerequisite後にimplementedとなった。
 statement witnessのinstallやchecker API変更はない。fresh dependency
 inventoryは次のseparate logical taskとしてB2Bをfreezeできる。B2Cと
 semantic/proof/goal behaviorはdeferred。
+
+## Task 258B3M2B2B2B frozen structure-selector witness contract
+
+exact 171-byte、final-LF sourceはexisting Task-258 base tableへ
+syntax/provenance-only witness edgeを1件追加する。baseは`1/2/2/2/2`の
+まま。theorem site node `75`、conclusion statement node `73`、context
+`1`からcontext `0`がvisible、input-fact references `[0,1]`/`[2,3]`、
+atomic statements `0/1`がcandidates。witness tableはexact `1/0`。
+`take` node `65`がwitness expression node `64`をownし、selector spelling
+をpreserve、nameなし、Task-254 `Structure(0)`だけをtargetとする。
+selector base `Structure(1)`はlower-stage childで、second witness target
+ではない。
+
+exact consumersは`SourceStatementProducer`、
+`SourceStatementWitnessProducer::build_with_structure`、combined TypedAst
+installer、
+final-AST clone path。checker implementationの変更範囲は
+`source_statement.rs`、`typed_ast.rs`、`resolved_typed_ast.rs`だけで、
+public API/debug grammarは追加しない。Task 252 owns
+`47/49/55/58/66/68`、Task 254 owns `62/61/29/20/24`、Task 256 owns
+`51/70`、Task 258 base owns `75/73`、B2B owns nodes `65/64`と
+witness-to-`Structure(0)` edgeだけ。formula containers `52/71`と
+private numeric roots `56/59`はunownedのまま。
+
+required checker tests 4件:
+
+- `task258b3m2b2b2b_exact_structure_selector_witness_api_debug_and_legacy_compatibility_are_stable`
+- `task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_nodes_fail_closed`
+- `task258b3m2b2b2b_combined_ownership_hybrids_and_all_family_orders_are_atomic`
+- `task258b3m2b2b2b_final_clone_revalidation_and_semantic_deferrals_are_stable`
+
+canonical `take` semanticsはexistential goalをrequireするが、このsmoke
+sourceのconclusionは`x = x`。よって本taskはsyntax/provenanceだけを
+authenticateする。existential matching、proof facts、obligations、goals、
+theorem acceptance、selector identity/type/result、B2C functional update、
+`FieldUpdate`はdeferred。

@@ -729,3 +729,22 @@ library `432`, sizes `6414/4514/722/2538/15058/4315`, 30-path /
 44,809-line manifest, and current test-list/production hashes. Both retain
 the imported-only provenance boundary, no public/active surface, unchanged
 trace/diagnostic credit, and B2B/B2C/semantic deferrals.
+
+## Checker Task 258B3M2B2B2B Contract Synchronization
+
+English canonical runner documents and Japanese companions freeze the same
+171-byte source (SHA-256
+`63f4be4d458905ba01f7510798bb87783bb90c9e6f866044be5726ce35429d00`),
+79-node parser profile, sole malformed-selector diagnostic, imported
+`TypeCaseStruct#5` provenance, Task-48/252/254/256 lower rows, Task-258 base
+`1/2/2/2/2`, and witness `1/0` targeting `Structure(0)`. Task 256 owns
+application nodes `51/70`; formula containers `52/71` are unowned in both
+languages.
+
+Both languages enumerate the same four checker and five runner tests,
+B2A/B2B atomic sibling rules, exact implementation owners, unchanged
+`382/432` library baseline, `386/437` projection, current module/manifest/
+test-list/CLI hashes, semantic deferrals, and narrative-only coverage
+impact. Both companions classify the pre-existing draft's external
+appearance as a nonblocking, report-only `repo_metadata_conflict` and its
+ownership mismatch as `design_drift`.

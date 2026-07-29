@@ -3779,3 +3779,28 @@ missing-selector near missはsole syntax diagnostic
 legacy Task-254 compatibility hashesはexact。runner libraryは`432`で、
 active cases、fixtures、sidecars、expectations、trace credit、
 diagnostics、semantic outputsは不変。
+
+## Checker Task 258B3M2B2B2B frozen runner harness
+
+harnessはselector witness
+`TypeCaseStruct(x: 1, y: 2).x`を持つexact 171-byte final-LF sourceを使う。
+79 nodes/root `78`、Task-48 `2/1/0`、Task-252 `6/4/2`、Task-254
+`2/0/1/3/0/3/9`、Task-256 `2/0/0/0/0/0/0/4/4`、Task-258 base
+`1/2/2/2/2`、witness `1/0`をauthenticateする。`.x`を`.`へreplaceした
+exact 170-byte near missはsole `malformed_term_expression` at
+`149..150`、78 nodes/root `77`、`recovered = []`。
+
+required runner tests 5件:
+
+- `task258b3m2b2b2b_real_frontend_freezes_structure_selector_witness_contract`
+- `task258b3m2b2b2b_validation_precedence_mutation_and_replay_fail_closed`
+- `task258b3m2b2b2b_selector_and_byte_subtree_near_misses_are_exact`
+- `task258b3m2b2b2b_family_and_active_route_isolation_is_atomic`
+- `task258b3m2b2b2b_typed_final_clone_debug_rollback_and_empty_semantics_are_stable`
+
+全source byte/node field、provenance/ownership row、subtree exclusions、
+全lower fingerprints、validation precedence、clean replay、B2A/B2B hybrids/
+family orders、active-route isolation、debug stability、atomic rollback、
+final clone、empty semantic tablesをcoverする。existing fixtures、
+expectations、sidecars、trace metadata、active cases、diagnostic credit、
+CLI behaviorはunchanged。

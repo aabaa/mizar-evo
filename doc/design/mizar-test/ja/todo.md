@@ -2159,7 +2159,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   でPASS。
 - [x] correctionだけをcommit後、B2BP implementationだけを
   fresh-inventory。
-- [ ] separate implementation後にB2B frozen consumer docsへ戻る。
+- [x] separate implementation後にB2B frozen consumer docsへ戻る。
 
 ## Checker Task 258B3M2B2B2BP runner implementation ledger
 
@@ -2175,4 +2175,19 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   CLI counts/hashesを記録。
 - [x] source/documentation consistencyをfindingsなしで完了し、全9 hard
   gatesとvalid `98/100`でfinal quality reviewをPASS。
-- [ ] commit 1件を作成後、B2B documentationをfresh-inventory。
+- [x] commit 1件を作成後、B2B documentationをfresh-inventory。
+
+## Checker Task 258B3M2B2B2B runner frozen-contract ledger
+
+- [x] exact source/parser/malformed profileと全Task-48/252/254/256/258
+  rows、provenance、ownership、exclusionsをfreeze。
+- [x] production-private B2BP consumer、B2A/B2B family boundary、exact
+  runner implementation owners 5 files、no-public/no-active routeをfreeze。
+- [x] exact runner tests 5件、precedence/replay matrices、subtree near
+  misses、final clone、rollback、semantic emptinessをfreeze。
+- [x] `382/432` baseline、`386/437` projection、module/manifest/test-list/
+  CLI hashes、unchanged fixture/trace/coverage impactを記録。
+- [x] reviews 4系統をfindingsなしで完了し、final quality全9 hard gatesを
+  valid `98/100`でPASS。
+- [ ] paired documentation prerequisiteだけをcommit。
+- [ ] docs commit後にfresh-inventoryし、B2Bだけをimplement。

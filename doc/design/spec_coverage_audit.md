@@ -4633,3 +4633,23 @@ remains `deferred`, `tests = []`, without backlink/status/count change.
 Task-254 diagnostic credit, canonical artifacts, active routes, and every
 semantic owner remain unchanged. B2B direct-selector witness consumption
 and B2C update/`FieldUpdate` remain separate deferred tasks.
+
+### B2B Structure-Selector Witness Frozen Contract
+
+Task `258B3M2B2B2B` now freezes the exact syntax/provenance transport
+contract for the 171-byte selector-witness theorem. It combines the already
+credited lower Task-48/252/254 data, equality-only Task 256, Task-258 base
+`1/2/2/2/2`, and a single unnamed witness edge from nodes `65/64` to
+Task-254 `Structure(0)`. The selector's base is `Structure(1)`. Task 256
+continues to own `BuiltinPredicateApplication` nodes `51/70`; enclosing
+formula containers `52/71` remain unowned.
+
+This is a narrative ownership/follow-up update only. It does not grant
+executable specification credit or alter a trace row, backlink, status,
+count, test list, or Task-254 credit:
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`. The four checker and five runner tests are implementation
+contract tests, not semantic acceptance tests. Existential `take`
+matching, proof/goal/theorem acceptance, selector identity/type/result,
+B2C functional update, and `FieldUpdate` remain deferred. Therefore
+`tests/coverage/spec_trace.toml` is unchanged.

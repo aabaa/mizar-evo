@@ -1195,3 +1195,23 @@ states remain `InvalidSourceStatement`.
 `resolved_typed_ast.rs` is 7,241 lines. No public final accessor, active
 route, semantic/proof/goal owner, or coverage credit was added, and every
 upper semantic table remains empty.
+
+## Task 258B3M2B2B2B Frozen Final-AST Sibling
+
+`ResolvedTypedAst` gains no accessor. Final assembly may coexist with a
+source-structure statement only through one of the two exact authenticated
+siblings: B2A is the 76-node constructor-witness profile targeting
+`Structure(0)`, while B2B is the 79-node selector-witness profile targeting
+`Structure(0)`, whose selector base is `Structure(1)`. Both have
+`application = None` and `structure = Some`, so the full source, arena,
+ownership, lower-table, target, and fingerprint profile—not that option
+shape—selects the sibling.
+
+For B2B, final assembly revalidates Task 252, Task 254, equality-only Task
+256, Task 258 base rows, the witness edge, and all statement/primary/structure
+fingerprints before cloning the authenticated bundle byte-for-byte. Task 256
+owns formula application nodes `51/70`; enclosing `FormulaExpression` nodes
+`52/71` remain unowned containers. B2A/B2B hybrids, swapped targets,
+cross-profile fingerprints, partial or repeated bundles, and any application
+coexistence reject atomically. Semantic, proof, goal, overload, and theorem
+acceptance tables remain empty.

@@ -3126,3 +3126,38 @@ The B2BP private lower seam is now implemented after its frozen prerequisite.
 This does not install a statement witness or alter any checker API. Fresh
 dependency inventory may therefore freeze B2B as the next separate logical
 task; B2C and all semantic/proof/goal behavior remain deferred.
+
+## Task 258B3M2B2B2B Frozen Structure-Selector Witness Contract
+
+The exact 171-byte, final-LF source adds one syntax/provenance-only witness
+edge to the existing Task-258 base table. The base remains
+`1/2/2/2/2`: theorem site node `75`, conclusion statement node `73`,
+context `1` seeing context `0`, input-fact references `[0,1]` and `[2,3]`,
+and candidates at atomic statements `0/1`. The witness table is exactly
+`1/0`: `take` node `65` owns witness expression node `64`, preserves the
+selector spelling, has no name, and targets Task-254 `Structure(0)` only.
+The selector base `Structure(1)` is a lower-stage child, not a second witness
+target.
+
+`SourceStatementProducer`,
+`SourceStatementWitnessProducer::build_with_structure`, the
+combined TypedAst installer, and final-AST clone path are the exact
+consumers. The implementation may change only `source_statement.rs`,
+`typed_ast.rs`, and `resolved_typed_ast.rs` in the checker. It adds no public
+API or debug grammar. Task 252 owns nodes `47/49/55/58/66/68`; Task 254 owns
+`62/61/29/20/24`; Task 256 owns `51/70`; Task 258 owns base nodes `75/73`;
+B2B owns only nodes `65/64` and the witness-to-`Structure(0)` edge. Formula
+containers `52/71` and private numeric roots `56/59` remain unowned.
+
+The four required checker tests are:
+
+- `task258b3m2b2b2b_exact_structure_selector_witness_api_debug_and_legacy_compatibility_are_stable`
+- `task258b3m2b2b2b_dependencies_structure_selector_witness_precedence_and_all_nodes_fail_closed`
+- `task258b3m2b2b2b_combined_ownership_hybrids_and_all_family_orders_are_atomic`
+- `task258b3m2b2b2b_final_clone_revalidation_and_semantic_deferrals_are_stable`
+
+Canonical `take` semantics would require an existential goal, but this smoke
+source has conclusion `x = x`; therefore this task authenticates syntax and
+provenance only. Existential matching, proof facts, obligations, goals,
+theorem acceptance, selector identity/type/result, B2C functional update,
+and `FieldUpdate` remain deferred.

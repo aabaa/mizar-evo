@@ -704,3 +704,22 @@ private selector seam、exact tests 2件、runner library `432`、sizes
 current test-list/production hashesを同期して記録する。imported-only
 provenance boundary、public/active surfaceなし、unchanged trace/diagnostic
 credit、B2B/B2C/semantic deferralsを両言語で維持する。
+
+## Checker Task 258B3M2B2B2B contract synchronization
+
+English canonical runner docs/JA companionsはsame 171-byte source
+（SHA-256
+`63f4be4d458905ba01f7510798bb87783bb90c9e6f866044be5726ce35429d00`）、
+79-node parser profile、sole malformed-selector diagnostic、imported
+`TypeCaseStruct#5` provenance、Task-48/252/254/256 lower rows、Task-258
+base `1/2/2/2/2`、`Structure(0)`をtargetとするwitness `1/0`をfreeze。
+Task 256 owns application nodes `51/70`、formula containers `52/71`は
+両言語でunowned。
+
+両言語はsame checker tests 4件/runner tests 5件、B2A/B2B atomic sibling
+rules、exact implementation owners、unchanged `382/432` library baseline、
+`386/437` projection、current module/manifest/test-list/CLI hashes、
+semantic deferrals、narrative-only coverage impactをenumerateする。
+pre-existing draftが外部から現れた事実をnonblocking/report-only
+`repo_metadata_conflict`、そのownership mismatchを`design_drift`として
+両companionで同期して記録する。

@@ -1071,3 +1071,21 @@ Task-258 row. Task 254 still owns the selector/constructor/member/request
 rows, Task 252 owns the primary values, and the exact chain remains
 `Structure(0) -> Structure(1) -> Primary(2/3)`. B2B remains the only future
 witness consumer.
+
+### Task 258B3M2B2B2B Frozen Witness-to-Selector Edge
+
+B2B adds exactly one directed cross-family edge:
+`SourceStatementWitness(0) -> SourceStructureTerm(0)`. Structure term 0 is
+the selector; Task 254 retains the lower chain
+`Structure(0 selector) -> Structure(1 constructor) -> Primary(2/3)`.
+Task 258 owns only theorem/conclusion base rows, take/witness 65/64, and the
+new directed edge. It does not own either structure term, root, member,
+primary child, or reverse edge.
+
+Task 252 retains primaries; Task 254 retains selector/constructor/member/
+request rows; Task 256 retains equality-only `BuiltinPredicateApplication`
+nodes 51/70 while `FormulaExpression` containers 52/71 remain unowned, with
+no direct structure target or fingerprint. The existing structure fingerprint in the
+witness handoff is dependency authentication, not a semantic edge.
+B2C update/`FieldUpdate`, selector identity/type/call/chain, semantic term,
+proof, goal, Core/CFG/VC, and coverage credit remain absent.

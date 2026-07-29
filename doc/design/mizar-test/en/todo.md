@@ -2357,7 +2357,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   valid `98/100`.
 - [x] Commit the correction only and fresh-inventory B2BP implementation
   only.
-- [ ] After separate implementation, return to B2B frozen consumer docs.
+- [x] After separate implementation, return to B2B frozen consumer docs.
 
 ## Checker Task 258B3M2B2B2BP Runner Implementation Ledger
 
@@ -2373,4 +2373,19 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   unchanged CLI counts/hashes.
 - [x] Complete source/documentation consistency with no findings and pass
   final quality review with all nine hard gates and a valid `98/100`.
-- [ ] Commit once, then fresh-inventory B2B documentation.
+- [x] Commit once, then fresh-inventory B2B documentation.
+
+## Checker Task 258B3M2B2B2B Runner Frozen-Contract Ledger
+
+- [x] Freeze the exact source/parser/malformed profile and all
+  Task-48/252/254/256/258 rows, provenance, ownership, and exclusions.
+- [x] Freeze the production-private B2BP consumer, B2A/B2B family boundary,
+  exact five runner implementation owners, and no-public/no-active route.
+- [x] Freeze five exact runner tests, precedence and replay matrices,
+  subtree near misses, final clone, rollback, and semantic emptiness.
+- [x] Record `382/432` baseline, `386/437` projection, module/manifest/
+  test-list/CLI hashes, and unchanged fixture/trace/coverage impact.
+- [x] Complete all four no-findings reviews and pass all nine final quality
+  hard gates with a valid `98/100`.
+- [ ] Commit the paired documentation prerequisite alone.
+- [ ] Fresh-inventory and implement only B2B after the documentation commit.

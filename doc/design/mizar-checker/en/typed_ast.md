@@ -1190,3 +1190,20 @@ family-coexisting bundles reject with the original AST unchanged.
 
 `typed_ast.rs` is 4,829 lines. Existing installers remain compatible; no
 active route, semantic/type/proof owner, or coverage credit was added.
+
+## Task 258B3M2B2B2B Frozen Atomic Sibling
+
+The existing combined structure-statement installer must enumerate B2A and
+B2B as two exact siblings; it must not admit a generic
+`application = None`/`structure = Some` statement bundle. B2A is the
+constructor-witness bundle already frozen above. B2B is the 79-node selector
+bundle with Task-254 terms `0/1`, witness target `Structure(0)`, and selector
+base `Structure(1)`. It revalidates the exact Task-252 roots, Task-254 rows,
+Task-256 equality rows, Task-258 base rows, and all fingerprints before
+publishing the structure, statement, and witness tables together.
+
+Task 256 owns `BuiltinPredicateApplication` nodes `51/70`; nodes `52/71`
+are unowned formula containers and cannot be substituted into the ownership
+map. B2A/B2B row, target, ownership, or fingerprint hybrids reject with the
+original AST unchanged. This prerequisite adds no public API, installer,
+debug surface, active route, or semantic table.

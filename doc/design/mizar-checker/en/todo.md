@@ -5246,7 +5246,7 @@ implementation commit does not satisfy a producer task.
   hard gates, and a valid score of `98/100`.
 - [x] Commit only the correction, verify clean/stash invariants, and
   fresh-inventory B2BP implementation only.
-- [ ] After the separate B2BP implementation commit, return to B2B frozen
+- [x] After the separate B2BP implementation commit, return to B2B frozen
   consumer documentation.
 
 ## Checker Task 258B3M2B2B2BP Implementation Ledger
@@ -5263,5 +5263,25 @@ implementation commit does not satisfy a producer task.
   hashes, and unchanged five CLI counts/hashes.
 - [x] Complete source/documentation consistency with no findings and pass
   final quality review with all nine hard gates and a valid `98/100`.
-- [ ] Create one implementation commit, then fresh-inventory B2B
+- [x] Create one implementation commit, then fresh-inventory B2B
   documentation.
+
+## Checker Task 258B3M2B2B2B Frozen-Contract Ledger
+
+- [x] Freeze the exact 171-byte selector-witness source, parser nodes,
+  malformed recovery, resolver provenance, lower Task-48/252/254/256 rows,
+  and ownership/subtree exclusions.
+- [x] Freeze the Task-258 base `1/2/2/2/2`, witness `1/0`, target
+  `Structure(0)`, selector-base `Structure(1)`, and the exact B2A/B2B
+  sibling boundary.
+- [x] Freeze exact checker/runner consumers, implementation file scopes,
+  four checker tests, five runner tests, validation precedence, family
+  isolation, and semantic/B2C deferrals.
+- [x] Record baseline library/projection counts, module sizes, production and
+  test-list hashes, CLI counts/hashes, and unchanged coverage-credit impact.
+- [x] Complete specification, test-sufficiency, implementation-boundary,
+  and source/documentation reviews with no findings; pass all nine final
+  quality hard gates with a valid `98/100`.
+- [ ] Commit this documentation prerequisite alone and verify clean worktree,
+  ahead count, and untouched stash.
+- [ ] Fresh-inventory Task 258B3M2B2B2B implementation after that commit.

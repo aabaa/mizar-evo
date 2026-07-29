@@ -614,3 +614,19 @@ manifest、current test-list/production hashesを同期して記録する。
 両言語はimported-only provenance boundary、unchanged checker surface、
 dormant active route、deferred trace row、B2B/B2C/semantic deferralsを
 preserveする。implementation bilingual debtはない。
+
+## Task 258B3M2B2B2B frozen contract synchronization
+
+English canonical documentsとJapanese companionsは、same 171-byte/
+79-node direct-selector source、Task-256 `BuiltinPredicateApplication`
+nodes 51/70とunowned `FormulaExpression` containers 52/71、
+Task-48/252/254/256 tables、Task-258 base `1/2/2/2/2`、selector
+`Structure(0)`をtargetにするunnamed witness 1件を同期してfreezeする。
+constructor term 1、members、roots、primaries、applicationsはwitness
+edge外、existing public checker APIsはunchanged reuse、checker 4件/
+runner 5件のsame testsをfreezeし、B2C、selector semantics、
+proof/goal/acceptance、active/trace credit、semantic outputをdeferする。
+
+libraries `382/432` baseline、current module sizes、manifest/test-list/CLI
+hashes、exact implementation consumers、validation precedence、docs-only
+exit criteriaも同期する。B2B bilingual debtは認めない。

@@ -277,3 +277,22 @@ B2A, legacy Task-254, and empty upper-family bytes.
 No checker source or public API changed. Selector identity, typing, result,
 inheritance, proof, goal, and theorem behavior remain outside this transport
 seam.
+
+## Task 258B3M2B2B2B Frozen Consumer Boundary
+
+B2BP is now the sole production-private lower seam consumed by B2B. For the
+same 171-byte source, Task 254 must remain byte-for-byte
+`2/0/1/3/0/3/9`: selector term `0` at node `62` targets constructor
+`Structure(1)` by `SelectorBase` and owns selector member identity node
+`29`; constructor term `1` at node `61` owns member identities at nodes
+`20/24` and value edges to `Primary(2/3)`. Imported root
+`TypeCaseStruct#5` retains
+contribution `2`, origin `7..27`, and path `[5]`.
+
+B2B may consume this authenticated table only to attach witness node `64` to
+`Structure(0)`. Task-254 ownership and bytes do not move to Task 258.
+Implementation may consume the seam in runner `source_statement.rs` and
+remove only obsolete B2BP `dead_code` allowances from
+`source_structure.rs`; it may not change Task-254 extraction, its public
+surface, or existing tests. Selector identity/type/result, inheritance,
+functional update, `FieldUpdate`, and all semantic behavior remain deferred.
