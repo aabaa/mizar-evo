@@ -286,3 +286,18 @@ B2Bはauthenticated tableをconsumeしてwitness node `64`を
 removeできるが、Task-254 extraction/public surface/existing testsは変更
 しない。selector identity/type/result、inheritance、functional update、
 `FieldUpdate`、全semantic behaviorはdeferred。
+
+## Task 258B3M2B2B2B implemented consumer result
+
+B2Bはfrozen B2BP private selector owned-kind/proof-context handoff seams
+だけをconsumeする。authenticated Task-254 tableは
+`2/0/1/3/0/3/9`のまま。node 62のselector `Structure(0)`はnode 61の
+constructor `Structure(1)`を指し、membersは`29/20/24`、value edgesは
+`Primary(2/3)`。Task 258が追加するのはwitness-to-selector edgeだけ。
+
+B2BP extractor、lower rows、provenance、public surface、existing testsは
+unchangedで、obsolete consumer-use `dead_code` allowancesだけをremove
+した。checker `source_structure.rs`は5,036 linesのまま、runner
+source-structure leafはcleanup後4,506 lines。selector
+identity/type/result、inheritance、update/`FieldUpdate`、proof、goal、全
+semantic behaviorはdeferred。

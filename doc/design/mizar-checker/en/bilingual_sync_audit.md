@@ -663,3 +663,26 @@ proof/goal/acceptance, active/trace credit, and all semantic output.
 Both companions record baseline libraries `382/432`, current module sizes,
 manifest/test-list/CLI hashes, exact implementation consumers, validation
 precedence, and docs-only exit criteria. No B2B bilingual debt is accepted.
+
+## Task 258B3M2B2B2B Implementation Synchronization
+
+The English canonical documents and Japanese companions now record the same
+exact eight-file implementation: one unnamed witness targets selector
+`Structure(0)`, whose base is `Structure(1)`, while the complete
+Task-48/252/254/256/base profiles and B2A/B2B atomic sibling boundary remain
+fail closed. Both preserve Task-256 ownership at `51/70`, unowned
+containers `52/71`, unchanged public APIs, and the B2BP seam apart from
+obsolete consumer-use `dead_code` cleanup.
+
+Both languages record libraries `386/437`, checker sizes
+`29941/4830/7244/5036`, the 23-path / 124,016-line production manifest, and
+the same checker production/test-list hashes. They also agree that commit
+`4d2fb2b6` and fresh implementation inventory are complete; the
+specification/dependency, test-sufficiency, and implementation reviews have
+no findings; and bounded `source_drift`, `test_gap`, and `design_drift` are
+closed. Source/documentation consistency and final verification now also
+pass, and final quality passes all nine hard gates with a valid `98/100`.
+Implementation commit and fresh B2C functional-update/`FieldUpdate`
+documentation inventory remain pending. No
+public, semantic/proof/goal, corpus active-route, or trace-credit bilingual
+debt is introduced.

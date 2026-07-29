@@ -748,3 +748,26 @@ test-list/CLI hashes, semantic deferrals, and narrative-only coverage
 impact. Both companions classify the pre-existing draft's external
 appearance as a nonblocking, report-only `repo_metadata_conflict` and its
 ownership mismatch as `design_drift`.
+
+## Checker Task 258B3M2B2B2B Implementation Synchronization
+
+English canonical runner documents and Japanese companions synchronously
+record the exact eight-file implementation, private B2BP owned-kind/handoff
+consumption, five passing runner tests, and checker/runner libraries
+`386/437`. Both record runner sizes
+`6826/4506/728/2543/17120/4315`, the unchanged 30-path / 45,224-line
+production manifest, path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`,
+and raw/normalized runner-test hashes
+`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
+`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.
+
+Both languages close the bounded `design_drift`, `source_drift`, and
+`test_gap` while preserving the no-public/no-active/no-semantic boundary
+and unchanged fixture, sidecar, expectation, trace, and diagnostic credit.
+Specification/dependency, test-sufficiency, implementation, and consistency
+reviews are complete with no findings, complete verification passes, and
+final quality passes all nine hard gates with a valid `98/100`. Commit and
+fresh B2C functional-update/`FieldUpdate` documentation inventory remain open
+in both companions.

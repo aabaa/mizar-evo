@@ -4015,3 +4015,22 @@ replay, B2A/B2B hybrids and family orders, active-route isolation, debug
 stability, atomic rollback, final clone, and empty semantic tables. Existing
 fixtures, expectations, sidecars, trace metadata, active cases, diagnostic
 credit, and CLI behavior remain unchanged.
+
+## Checker Task 258B3M2B2B2B Dormant Harness Result
+
+The private harness now recognizes only the frozen 171-byte/79-node
+selector-witness source. It consumes the existing B2BP owned-kind and
+proof-context handoff seams, composes the exact Task-48/252/254/256/258
+tables, and installs one unnamed witness targeting selector
+`Structure(0)`. No lower parser/resolver row is copied or relaxed.
+
+All five exact runner tests pass. Their matrices cover all source bytes and
+node fields, complete local/imported provenance and ownership, lower/base/
+witness corruption and validation precedence, the exact
+`malformed_term_expression` near miss, valid excluded selector forms,
+B2A/B2B and active-family isolation, rollback/replay, final clone, and empty
+semantic/proof/goal/overload/Core/CFG/VC outputs.
+
+The runner library is `437`. No public or active route, fixture,
+expectation, sidecar, trace row/backlink/credit, diagnostic credit, or
+semantic behavior was added.

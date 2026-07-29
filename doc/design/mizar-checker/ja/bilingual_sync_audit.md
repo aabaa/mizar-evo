@@ -630,3 +630,26 @@ proof/goal/acceptance、active/trace credit、semantic outputをdeferする。
 libraries `382/432` baseline、current module sizes、manifest/test-list/CLI
 hashes、exact implementation consumers、validation precedence、docs-only
 exit criteriaも同期する。B2B bilingual debtは認めない。
+
+## Task 258B3M2B2B2B implementation synchronization
+
+English canonical documentsとJapanese companionsは、exact 8-file
+implementationを同期して記録する。unnamed witness 1件はselector
+`Structure(0)`をtargetとし、そのbaseは`Structure(1)`。complete
+Task-48/252/254/256/base profilesとB2A/B2B atomic sibling boundaryは
+fail-closedのまま。Task-256 ownership `51/70`、unowned containers
+`52/71`、unchanged public APIs、obsolete consumer-use `dead_code` cleanup
+以外unchangedのB2BP seamも両言語で一致する。
+
+両言語はlibraries `386/437`、checker sizes
+`29941/4830/7244/5036`、23-path / 124,016-line production manifest、
+same checker production/test-list hashesを記録する。commit `4d2fb2b6`と
+fresh implementation inventoryはcomplete、specification/dependency、
+test-sufficiency、implementation reviewsはfindingsなし、bounded
+`source_drift`、`test_gap`、`design_drift`はclosed。
+source/documentation consistencyとfinal verificationもPASSし、final
+qualityも全9 hard gatesをvalid `98/100`でPASS。implementation commitと
+fresh B2C functional-update/`FieldUpdate` documentation inventoryは
+pending。public、
+semantic/proof/goal、corpus active-route、trace-credit bilingual debtは
+追加しない。

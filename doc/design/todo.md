@@ -2888,6 +2888,26 @@ or semantic owner changed. B3M2B2B remains next before B4.
   the associated formula-node `design_drift`.
 - [x] Complete all four reviews with no findings, pass fresh verification,
   and pass all nine final quality hard gates with a valid `98/100`.
-- [ ] Commit this documentation prerequisite as one logical task.
-- [ ] Immediately fresh-inventory Task 258B3M2B2B2B implementation after
-  the documentation commit; keep B2C and all semantics deferred.
+- [x] Commit this documentation prerequisite as logical commit `4d2fb2b6`.
+- [x] Immediately fresh-inventory Task 258B3M2B2B2B implementation after
+  that commit; keep B2C and all semantics deferred.
+
+## Checker Task 258B3M2B2B2B Implementation Completion
+
+- [x] Reconfirm the frozen authority/dependency boundary, then implement only
+  the exact eight-file B2B consumer while reusing the completed B2BP seam and
+  existing checker APIs.
+- [x] Add exactly four checker and five runner tests; complete the independent
+  test-sufficiency review with no findings.
+- [x] Complete the independent implementation review with no findings while
+  preserving B2A/B2B isolation, Task-254 ownership, public/active boundaries,
+  and all B2C/semantic deferrals.
+- [x] Complete source/documentation consistency review and synchronize the
+  paired completion records, metrics, hashes, ledgers, and narrative-only
+  coverage audit.
+- [x] Pass final read-only quality review and the protocol minimum valid score
+  of 90/100; every verification/count/hash gate already passes.
+- [ ] Commit the B2B implementation as one logical task, verify clean
+  worktree/origin-metadata/untouched-stash invariants, and fresh-inventory
+  the B2C functional-update/`FieldUpdate` documentation prerequisite without
+  activating its implementation or any semantics implicitly.

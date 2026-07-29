@@ -2387,5 +2387,29 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   test-list/CLI hashes, and unchanged fixture/trace/coverage impact.
 - [x] Complete all four no-findings reviews and pass all nine final quality
   hard gates with a valid `98/100`.
-- [ ] Commit the paired documentation prerequisite alone.
-- [ ] Fresh-inventory and implement only B2B after the documentation commit.
+- [x] Commit the paired documentation prerequisite alone as `4d2fb2b6`.
+- [x] Fresh-inventory and implement only B2B after the documentation commit.
+
+## Checker Task 258B3M2B2B2B Runner Implementation Ledger
+
+- [x] Implement the exact frozen eight-file transaction and consume only the
+  private B2BP owned-kind/proof-context handoff seams.
+- [x] Preserve exact source, lower/base/witness rows, ownership exclusions,
+  transitive surface validation, and the no-public/no-active/no-semantic
+  boundary.
+- [x] Pass the five exact frozen runner tests and record checker/runner
+  library counts `386/437`.
+- [x] Record final runner sizes `6826/4506/728/2543/17120/4315`, the
+  30-path / 45,224-line production manifest, and production/test-list
+  hashes.
+- [x] Close the bounded `design_drift`, `source_drift`, and `test_gap`.
+- [x] Complete specification/dependency review with no findings.
+- [x] Complete test-sufficiency review with no findings.
+- [x] Complete implementation review with no findings.
+- [x] Complete source/documentation consistency review with no findings.
+- [x] Complete all focused/full verification, lint, count, and hash gates.
+- [x] Pass final read-only quality review with all hard gates and a valid
+  score of at least `90/100`.
+- [ ] Create the dedicated implementation commit, verify clean worktree,
+  origin metadata, and untouched stash, then fresh-inventory the B2C
+  functional-update/`FieldUpdate` documentation prerequisite.

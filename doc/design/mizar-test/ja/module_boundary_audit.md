@@ -10677,3 +10677,25 @@ structure-test sizesは`6414/4514/722/2538/15058/4315`。productionは
 `6a0586185a5959f842f914e869e70d53b75fa08298661295e52919b205ad16c0`
 のまま。implementationはcanonical/active artifactsを変えずchecker/
 runner testsを`382/432`から`386/437`へprojectする。
+
+## Checker Task 258B3M2B2B2B implemented runner boundary
+
+implementationはfrozen eight filesにexactに留まる。checker
+`source_statement.rs`、`typed_ast.rs`、`resolved_typed_ast.rs`と、
+runner `type_elaboration/source_statement.rs`、
+`type_elaboration/source_structure.rs`、`type_elaboration.rs`、
+`runner.rs`、`tests/type_elaboration/source_statement.rs`だけ。
+source-statement leafはauthorized B2BP owned-kind/handoff seamsだけを
+consumeし、source-structure leafはextraction/visibility/row ownershipを
+変更せずobsolete future-consumer allowancesだけをremoveする。
+
+module、production path、dependency、public re-export、active route、
+fixture、sidecar、expectation、trace entry、debug grammar、semantic ownerは
+追加なし。final runner statement/structure/facade/root/statement-test/
+structure-test sizesは`6826/4506/728/2543/17120/4315`。30-path
+production layoutは45,224 lines、path/content hashesは
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`。
+runner test listは`437`、raw/normalized hashesは
+`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
+`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`。

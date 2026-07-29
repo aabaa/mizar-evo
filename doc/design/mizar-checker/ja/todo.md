@@ -5036,6 +5036,34 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] specification、test-sufficiency、implementation-boundary、
   source/documentation reviewsをfindingsなしで完了し、final quality全9
   hard gatesをvalid `98/100`でPASS。
-- [ ] このdocumentation prerequisiteだけをcommitし、clean worktree、
-  ahead count、untouched stashをverify。
-- [ ] commit後にTask 258B3M2B2B2B implementationをfresh-inventory。
+- [x] このdocumentation prerequisiteだけを`4d2fb2b6`としてcommitし、
+  clean worktree、ahead count、untouched stashをverify。
+- [x] commit後にTask 258B3M2B2B2B implementationをfresh-inventory。
+
+## Checker Task 258B3M2B2B2B implementation ledger
+
+- [x] exact frozen B2B profileをauthorized 8 filesでimplementし、unnamed
+  witness 1件をselector `Structure(0)`へtarget。
+- [x] Task-48/252/254/256とTask-258 base rows、selector base
+  `Structure(1)`、Task-256 ownership `51/70`、unowned containers
+  `52/71`をpreserve。
+- [x] B2A/B2Bをexact fail-closed typed/final siblingsとしてenumerateし、
+  generic structure admission、hybrid、stale fingerprint、partial/
+  repeated bundleをatomically reject。
+- [x] frozen checker 4/runner 5 testsを追加。checker 4 testsとfocused
+  runner matrixはPASS。
+- [x] bounded `source_drift`、`test_gap`、`design_drift`をcloseし、
+  public、semantic/proof/goal、corpus active-route、fixture、expectation、
+  sidecar、trace-credit boundariesをpreserve。
+- [x] libraries `386/437`、checker sizes
+  `29941/4830/7244/5036`、23-path / 124,016-line production manifest、
+  checker production/test-list hashesを記録。
+- [x] specification/dependency、test-sufficiency、implementation reviewsを
+  findingsなしで完了。
+- [x] source/documentation consistency reviewをfindingsなしで完了。
+- [x] broad final verificationを実行し、全count/hash gatesを確認。
+- [x] final read-only quality reviewで全hard gatesをPASSし、valid
+  `90/100`以上を取得。
+- [ ] implementationを1 logical taskとしてcommitし、clean worktree、
+  origin metadata、untouched stashをverifyしてから、B2C functional
+  update/`FieldUpdate` documentation prerequisiteをfresh-inventory。

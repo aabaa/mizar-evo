@@ -296,3 +296,18 @@ remove only obsolete B2BP `dead_code` allowances from
 `source_structure.rs`; it may not change Task-254 extraction, its public
 surface, or existing tests. Selector identity/type/result, inheritance,
 functional update, `FieldUpdate`, and all semantic behavior remain deferred.
+
+## Task 258B3M2B2B2B Implemented Consumer Result
+
+B2B now consumes only the frozen B2BP private selector owned-kind and
+proof-context handoff seams. The authenticated Task-254 table remains
+`2/0/1/3/0/3/9`: selector `Structure(0)` at node 62 points to constructor
+`Structure(1)` at node 61, with members `29/20/24` and value edges to
+`Primary(2/3)`. Task 258 adds only the witness-to-selector edge.
+
+The B2BP extractor, lower rows, provenance, public surface, and existing
+tests are unchanged; only obsolete consumer-use `dead_code` allowances were
+removed. Checker `source_structure.rs` remains 5,036 lines; the runner
+source-structure leaf is 4,506 lines after that cleanup. Selector
+identity/type/result, inheritance, update/`FieldUpdate`, proof, goal, and all
+semantic behavior remain deferred.

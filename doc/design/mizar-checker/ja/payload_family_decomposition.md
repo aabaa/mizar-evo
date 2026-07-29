@@ -1020,3 +1020,19 @@ Task 256はdirect structure target/fingerprintなしのequality-only
 fingerprintはdependency authenticationでsemantic edgeではない。B2C
 update/`FieldUpdate`、selector identity/type/call/chain、semantic term、
 proof、goal、Core/CFG/VC、coverage creditはabsentのまま。
+
+### Task 258B3M2B2B2B implemented witness-to-selector edge
+
+exact directed
+`SourceStatementWitness(0) -> SourceStructureTerm(0)` edgeをprivate B2B
+profileへinstallした。Task 258はtheorem/conclusion nodes `75/73`、
+take/witness nodes `65/64`、そのedgeだけをownする。Task 254は
+selector/constructor/member/request ownershipと
+`Structure(0) -> Structure(1) -> Primary(2/3)`をretainし、Task 252は
+primary rowsをretainする。
+
+Task 256はequality-onlyでnodes `51/70`をownし、containers `52/71`は
+arena-unownedのまま。B2A/B2Bはseparately authenticated atomic siblings
+なので、target/fingerprint/ownership/lower-family hybridはpublication
+なしでrejectする。reverse、selector-semantic、update/`FieldUpdate`、
+proof、goal、Core/CFG/VC、active-route、coverage edgeは追加していない。

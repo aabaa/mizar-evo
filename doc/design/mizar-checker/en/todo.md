@@ -5282,6 +5282,34 @@ implementation commit does not satisfy a producer task.
 - [x] Complete specification, test-sufficiency, implementation-boundary,
   and source/documentation reviews with no findings; pass all nine final
   quality hard gates with a valid `98/100`.
-- [ ] Commit this documentation prerequisite alone and verify clean worktree,
-  ahead count, and untouched stash.
-- [ ] Fresh-inventory Task 258B3M2B2B2B implementation after that commit.
+- [x] Commit this documentation prerequisite alone as `4d2fb2b6` and verify
+  clean worktree, ahead count, and untouched stash.
+- [x] Fresh-inventory Task 258B3M2B2B2B implementation after that commit.
+
+## Checker Task 258B3M2B2B2B Implementation Ledger
+
+- [x] Implement the exact frozen B2B profile in the eight authorized files,
+  with one unnamed witness targeting selector `Structure(0)`.
+- [x] Preserve Task-48/252/254/256 and Task-258 base rows, selector base
+  `Structure(1)`, Task-256 ownership `51/70`, and unowned containers
+  `52/71`.
+- [x] Enumerate B2A/B2B as exact fail-closed typed/final siblings and reject
+  generic structure admission, hybrids, stale fingerprints, and partial or
+  repeated bundles atomically.
+- [x] Add the frozen four checker/five runner tests; the four checker tests
+  and focused runner matrix pass.
+- [x] Close bounded `source_drift`, `test_gap`, and `design_drift`; preserve
+  public, semantic/proof/goal, corpus active-route, fixture, expectation,
+  sidecar, and trace-credit boundaries.
+- [x] Record libraries `386/437`, checker sizes
+  `29941/4830/7244/5036`, the 23-path / 124,016-line production manifest,
+  and checker production/test-list hashes.
+- [x] Complete specification/dependency, test-sufficiency, and
+  implementation reviews with no findings.
+- [x] Complete source/documentation consistency review with no findings.
+- [x] Run broad final verification and confirm every count/hash gate.
+- [x] Complete final read-only quality review with every hard gate passing
+  and a valid score of at least `90/100`.
+- [ ] Commit this implementation as one logical task, verify clean worktree,
+  origin metadata, and untouched stash, then fresh-inventory the B2C
+  functional-update/`FieldUpdate` documentation prerequisite.

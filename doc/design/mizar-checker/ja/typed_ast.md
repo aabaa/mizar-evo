@@ -1150,3 +1150,17 @@ nodes `52/71`はunowned formula containersで、ownership mapへsubstitute
 できない。B2A/B2B row/target/ownership/fingerprint hybridはoriginal AST
 unchangedでrejectする。このprerequisiteはpublic API、installer、debug
 surface、active route、semantic tableを追加しない。
+
+## Task 258B3M2B2B2B atomic installation result
+
+`with_source_structure_statement_witnesses`はB2BをB2A besideにenumerateし、
+exact authenticated 79-node selector bundleだけをacceptする。publication
+前にTask-252/254/256、Task-258 base/witness rows、全fingerprints、
+witness target `Structure(0)`、selector base `Structure(1)`、Task-256
+ownership `51/70`、unowned containers `52/71`をrevalidateする。
+
+generic structure admission、B2A/B2B hybrid、stale/swapped
+fingerprint/target、application coexistence、partial/reverse/repeated
+installationはoriginal AST unchanged。`typed_ast.rs`は4,830 lines。
+public installer、debug surface、semantic/type/proof/goal owner、corpus
+active route、coverage creditは変更していない。

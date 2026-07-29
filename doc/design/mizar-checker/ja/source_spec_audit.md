@@ -4144,3 +4144,23 @@ source/documentation consistency reviewsはすべてfindingsなし。fresh
 verificationは全documentation gatesをPASSし、final read-only quality
 reviewは全9 hard gates PASS、valid `98/100`。openなのはdedicated
 documentation commitと直後のfresh B2B implementation inventoryだけ。
+
+## Task 258B3M2B2B2B implementation audit
+
+exact 8-file checker/runner implementationとchecker 4/runner 5 testsが
+bounded B2B `source_drift`、`test_gap`、`design_drift`をcloseした。
+frozen Task-48/252/254/256とTask-258 base tablesをpreserveし、unnamed
+`Structure(0)` selector witnessを1件installし、selector base
+`Structure(1)`をretainし、B2A/B2B typed/final validationをexact
+fail-closed siblingsのままにする。Task 256はnodes `51/70`をownし、
+`52/71`はunowned。
+
+このnarrative audit updateはcanonical specification、`.miz`、fixture、
+expectation、sidecar、trace row/status/count/backlink、Task-254 diagnostic credit、
+corpus active route、public API、semantic/proof/goal ownershipを変更
+しない。formula-statement coverageは`deferred`、`tests = []`のまま。
+specification/dependency、test-sufficiency、implementation、
+source/documentation consistency reviewsはfindingsなしで、broad final
+verificationもPASS。final qualityも全9 hard gatesをvalid `98/100`で
+PASS。implementation commit、fresh B2C functional-update/`FieldUpdate`
+documentation inventoryはpending。

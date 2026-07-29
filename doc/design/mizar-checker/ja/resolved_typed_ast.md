@@ -1152,3 +1152,18 @@ Task 256はformula application nodes `51/70`をownし、enclosing
 B2A/B2B hybrid、swapped target、cross-profile fingerprint、partial/
 repeated bundle、application coexistenceはatomically rejectする。
 semantic/proof/goal/overload/theorem acceptance tablesはemptyのまま。
+
+## Task 258B3M2B2B2B final revalidation result
+
+final assemblyはB2BをB2Aのexact 79-node siblingとしてのみacceptする。
+Task-48/252/254/256とTask-258 base profiles、structure fingerprint、
+selector target `Structure(0)`、selector base `Structure(1)`、ownership
+`51/70`、unowned containers `52/71`をrevalidateしてから、3 handoffsを
+byte-for-byte clone-preserveする。
+
+B2A/B2B hybrid、generic structure-plus-statement bundle、stale
+fingerprint、swapped target、partial/repeated installation、application
+coexistenceは`InvalidSourceStatement`のまま。semantic、proof、goal、
+overload、theorem-acceptance outputsはすべてempty。
+`resolved_typed_ast.rs`は7,244 linesで、public final-AST APIは変更して
+いない。

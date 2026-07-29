@@ -1215,3 +1215,17 @@ owns formula application nodes `51/70`; enclosing `FormulaExpression` nodes
 cross-profile fingerprints, partial or repeated bundles, and any application
 coexistence reject atomically. Semantic, proof, goal, overload, and theorem
 acceptance tables remain empty.
+
+## Task 258B3M2B2B2B Final Revalidation Result
+
+Final assembly now accepts B2B only as the exact 79-node sibling of B2A. It
+revalidates the Task-48/252/254/256 and Task-258 base profiles, the
+structure fingerprint, selector target `Structure(0)`, selector base
+`Structure(1)`, ownership at `51/70`, and unowned containers `52/71`
+before clone-preserving the three handoffs byte-for-byte.
+
+B2A/B2B hybrids, generic structure-plus-statement bundles, stale
+fingerprints, swapped targets, partial/repeated installation, and
+application coexistence remain `InvalidSourceStatement`. All semantic,
+proof, goal, overload, and theorem-acceptance outputs remain empty.
+`resolved_typed_ast.rs` is 7,244 lines; no public final-AST API changed.

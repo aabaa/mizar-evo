@@ -3804,3 +3804,21 @@ family orders、active-route isolation、debug stability、atomic rollback、
 final clone、empty semantic tablesをcoverする。existing fixtures、
 expectations、sidecars、trace metadata、active cases、diagnostic credit、
 CLI behaviorはunchanged。
+
+## Checker Task 258B3M2B2B2B dormant harness result
+
+private harnessはfrozen 171-byte/79-node selector-witness sourceだけを
+recognizeする。existing B2BP owned-kind/proof-context handoff seamsを
+consumeし、exact Task-48/252/254/256/258 tablesをcomposeして、selector
+`Structure(0)`をtargetとするunnamed witness 1件をinstallする。lower
+parser/resolver rowはcopyもrelaxもしない。
+
+exact runner tests 5件は全てPASS。all source bytes/node fields、complete
+local/imported provenance/ownership、lower/base/witness corruptionと
+validation precedence、exact `malformed_term_expression` near miss、
+valid excluded selector forms、B2A/B2B/active-family isolation、rollback/
+replay、final clone、empty semantic/proof/goal/overload/Core/CFG/VC
+outputsをcoverする。
+
+runner libraryは`437`。public/active route、fixture、expectation、sidecar、
+trace row/backlink/credit、diagnostic credit、semantic behaviorは追加なし。

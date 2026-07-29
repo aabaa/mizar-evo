@@ -723,3 +723,26 @@ semantic deferrals、narrative-only coverage impactをenumerateする。
 pre-existing draftが外部から現れた事実をnonblocking/report-only
 `repo_metadata_conflict`、そのownership mismatchを`design_drift`として
 両companionで同期して記録する。
+
+## Checker Task 258B3M2B2B2B implementation synchronization
+
+English canonical runner documents/JA companionsはexact eight-file
+implementation、private B2BP owned-kind/handoff consumption、PASSした
+runner tests 5件、checker/runner libraries `386/437`を同期して記録する。
+両言語はrunner sizes `6826/4506/728/2543/17120/4315`、unchanged
+30-path / 45,224-line production manifest、path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`、
+raw/normalized runner-test hashes
+`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
+`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`
+を同じ値でrecordする。
+
+両言語はno-public/no-active/no-semantic boundaryとunchanged fixture/
+sidecar/expectation/trace/diagnostic creditをpreserveし、bounded
+`design_drift`、`source_drift`、`test_gap`をcloseする。specification/
+dependency、test-sufficiency、implementation、consistency reviewsは
+findingsなしでcompleteし、complete verificationもPASS。final qualityも
+全9 hard gatesをvalid `98/100`でPASS。commit、fresh B2C
+functional-update/`FieldUpdate` documentation inventoryは両companionで
+openのまま。

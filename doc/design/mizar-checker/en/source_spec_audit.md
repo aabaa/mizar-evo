@@ -4336,3 +4336,24 @@ verification passes every documentation gate, and the final read-only
 quality review passes all nine hard gates with a valid `98/100`. Only the
 dedicated documentation commit and immediate fresh B2B implementation
 inventory remain open.
+
+## Task 258B3M2B2B2B Implementation Audit
+
+The exact eight-file checker/runner implementation and its four checker/five
+runner tests close the bounded B2B `source_drift`, `test_gap`, and
+`design_drift`. The implementation preserves the frozen
+Task-48/252/254/256 and Task-258 base tables, installs one unnamed
+`Structure(0)` selector witness, retains selector base `Structure(1)`, and
+keeps B2A/B2B typed/final validation as exact fail-closed siblings. Task 256
+owns nodes `51/70`; `52/71` remain unowned.
+
+This narrative audit update changes no canonical specification, `.miz`,
+fixture, expectation, sidecar, trace row/status/count/backlink, diagnostic
+credit for Task 254, corpus active route, public API, or
+semantic/proof/goal ownership.
+Formula-statement coverage remains `deferred`, `tests = []`. The
+specification/dependency, test-sufficiency, and implementation reviews have
+no findings. Source/documentation consistency and broad final verification
+now also pass. Final quality passes all nine hard gates with a valid
+`98/100`. Implementation commit and fresh B2C functional-update/`FieldUpdate`
+documentation inventory remain pending.

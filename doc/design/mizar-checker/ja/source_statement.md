@@ -2636,3 +2636,21 @@ sourceのconclusionは`x = x`。よって本taskはsyntax/provenanceだけを
 authenticateする。existential matching、proof facts、obligations、goals、
 theorem acceptance、selector identity/type/result、B2C functional update、
 `FieldUpdate`はdeferred。
+
+## Task 258B3M2B2B2B implementation result
+
+source-statement producerはexact 171-byte/79-node B2B profileを
+authenticateし、base `1/2/2/2/2`とunnamed witness 1件/names 0件を
+publishする。witness 0はtake/item nodes `65/64`をownし、Task-254
+selector `Structure(0)`だけをtargetとする。constructor
+`Structure(1)`、members、roots、primaries、applications、transparent
+containersはwitness targetではない。Task-256 nodes `51/70`はowned、
+containers `52/71`はunownedのまま。
+
+existing structure-aware builder、fingerprint、atomic installerをpublic
+API growthなしでreuseする。frozen checker 4 testsはexact dependency
+precedence、all-node failure、B2A/B2B hybrid rollback、final-clone
+revalidation、empty semantic deferralsを含めてPASS。
+`source_statement.rs`は29,941 lines。selector meaning、proof/goal effect、
+theorem acceptance、B2C update/`FieldUpdate`、corpus active-route status、
+trace creditは追加していない。

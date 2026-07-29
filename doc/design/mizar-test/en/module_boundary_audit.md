@@ -11917,3 +11917,25 @@ production remains 30 paths / 44,809 lines with path/content hashes
 `6a0586185a5959f842f914e869e70d53b75fa08298661295e52919b205ad16c0`.
 The implementation projects checker/runner tests from `382/432` to
 `386/437` without changing canonical or active artifacts.
+
+## Checker Task 258B3M2B2B2B Implemented Runner Boundary
+
+The implementation remains exactly within the frozen eight files: checker
+`source_statement.rs`, `typed_ast.rs`, and `resolved_typed_ast.rs`, plus
+runner `type_elaboration/source_statement.rs`,
+`type_elaboration/source_structure.rs`, `type_elaboration.rs`, `runner.rs`,
+and `tests/type_elaboration/source_statement.rs`. The source-statement leaf
+consumes only the authorized B2BP owned-kind/handoff seams; the
+source-structure leaf removes obsolete future-consumer allowances without
+changing extraction, visibility, or row ownership.
+
+No module, production path, dependency, public re-export, active route,
+fixture, sidecar, expectation, trace entry, debug grammar, or semantic owner
+was added. Final runner statement/structure/facade/root/statement-test/
+structure-test sizes are `6826/4506/728/2543/17120/4315`. The 30-path
+production layout contains 45,224 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`.
+The runner test list is `437` with raw/normalized hashes
+`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
+`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.

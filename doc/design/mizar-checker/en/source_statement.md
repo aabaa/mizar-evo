@@ -3161,3 +3161,21 @@ source has conclusion `x = x`; therefore this task authenticates syntax and
 provenance only. Existential matching, proof facts, obligations, goals,
 theorem acceptance, selector identity/type/result, B2C functional update,
 and `FieldUpdate` remain deferred.
+
+## Task 258B3M2B2B2B Implementation Result
+
+The source-statement producer now authenticates the exact 171-byte/79-node
+B2B profile and publishes base `1/2/2/2/2` plus one unnamed witness/no
+names. Witness 0 owns take/item nodes `65/64` and targets only Task-254
+selector `Structure(0)`; constructor `Structure(1)`, members, roots,
+primaries, applications, and transparent containers are not witness
+targets. Task-256 nodes `51/70` remain owned and containers `52/71` remain
+unowned.
+
+The existing structure-aware builder, fingerprint, and atomic installer are
+reused without public API growth. The four frozen checker tests pass,
+including exact dependency precedence, all-node failure, B2A/B2B hybrid
+rollback, final-clone revalidation, and empty semantic deferrals.
+`source_statement.rs` is 29,941 lines. No selector meaning, proof/goal
+effect, theorem acceptance, B2C update/`FieldUpdate`, corpus active-route
+status, or trace credit was added.

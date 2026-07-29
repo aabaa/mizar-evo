@@ -1207,3 +1207,17 @@ are unowned formula containers and cannot be substituted into the ownership
 map. B2A/B2B row, target, ownership, or fingerprint hybrids reject with the
 original AST unchanged. This prerequisite adds no public API, installer,
 debug surface, active route, or semantic table.
+
+## Task 258B3M2B2B2B Atomic Installation Result
+
+`with_source_structure_statement_witnesses` now enumerates B2B beside B2A
+and accepts only the exact authenticated 79-node selector bundle. Before
+publication it revalidates Task-252/254/256, Task-258 base/witness rows, all
+fingerprints, witness target `Structure(0)`, selector base `Structure(1)`,
+Task-256 ownership at `51/70`, and unowned containers `52/71`.
+
+Generic structure admission, B2A/B2B hybrids, stale or swapped
+fingerprints/targets, application coexistence, and partial/reverse/repeated
+installation leave the original AST unchanged. `typed_ast.rs` is 4,830
+lines. No public installer, debug surface, semantic/type/proof/goal owner,
+corpus active route, or coverage credit changed.

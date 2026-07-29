@@ -1089,3 +1089,19 @@ no direct structure target or fingerprint. The existing structure fingerprint in
 witness handoff is dependency authentication, not a semantic edge.
 B2C update/`FieldUpdate`, selector identity/type/call/chain, semantic term,
 proof, goal, Core/CFG/VC, and coverage credit remain absent.
+
+### Task 258B3M2B2B2B Implemented Witness-to-Selector Edge
+
+The exact directed
+`SourceStatementWitness(0) -> SourceStructureTerm(0)` edge is now installed
+for the private B2B profile. Task 258 owns only theorem/conclusion nodes
+`75/73`, take/witness nodes `65/64`, and that edge. Task 254 retains
+selector/constructor/member/request ownership and
+`Structure(0) -> Structure(1) -> Primary(2/3)`; Task 252 retains its
+primary rows.
+
+Task 256 remains equality-only and owns nodes `51/70`; containers `52/71`
+remain arena-unowned. B2A and B2B are separately authenticated atomic
+siblings, so target, fingerprint, ownership, or lower-family hybrids reject
+without publication. No reverse, selector-semantic, update/`FieldUpdate`,
+proof, goal, Core/CFG/VC, active-route, or coverage edge was added.

@@ -2189,5 +2189,28 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   CLI hashes、unchanged fixture/trace/coverage impactを記録。
 - [x] reviews 4系統をfindingsなしで完了し、final quality全9 hard gatesを
   valid `98/100`でPASS。
-- [ ] paired documentation prerequisiteだけをcommit。
-- [ ] docs commit後にfresh-inventoryし、B2Bだけをimplement。
+- [x] paired documentation prerequisiteだけを`4d2fb2b6`でcommit。
+- [x] docs commit後にfresh-inventoryし、B2Bだけをimplement。
+
+## Checker Task 258B3M2B2B2B runner implementation ledger
+
+- [x] exact frozen eight-file transactionを実装し、private B2BP
+  owned-kind/proof-context handoff seamsだけをconsume。
+- [x] exact source、lower/base/witness rows、ownership exclusions、
+  transitive surface validation、no-public/no-active/no-semantic boundaryを
+  preserve。
+- [x] exact frozen runner tests 5件をPASSし、checker/runner library counts
+  `386/437`をrecord。
+- [x] final runner sizes `6826/4506/728/2543/17120/4315`、30-path /
+  45,224-line production manifest、production/test-list hashesをrecord。
+- [x] bounded `design_drift`、`source_drift`、`test_gap`をclose。
+- [x] specification/dependency reviewをfindingsなしでcomplete。
+- [x] test-sufficiency reviewをfindingsなしでcomplete。
+- [x] implementation reviewをfindingsなしでcomplete。
+- [x] source/documentation consistency reviewをfindingsなしでcomplete。
+- [x] focused/full verification、lint、count、hash gatesを全てcomplete。
+- [x] 全hard gatesとvalid score `90/100`以上でfinal read-only quality
+  reviewをPASS。
+- [ ] dedicated implementation commitを作成し、clean worktree、origin
+  metadata、untouched stashをverifyしてから、B2C functional
+  update/`FieldUpdate` documentation prerequisiteをfresh-inventory。

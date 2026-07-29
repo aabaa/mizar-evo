@@ -4653,3 +4653,40 @@ contract tests, not semantic acceptance tests. Existential `take`
 matching, proof/goal/theorem acceptance, selector identity/type/result,
 B2C functional update, and `FieldUpdate` remain deferred. Therefore
 `tests/coverage/spec_trace.toml` is unchanged.
+
+### B2B Structure-Selector Witness Implementation Result
+
+Task `258B3M2B2B2B` now implements the separately frozen, dormant
+structure-selector witness consumer. The checker reuses the existing
+`Structure` witness target, structure fingerprint, structure-aware producer,
+and atomic typed/final installer to publish the exact Task-258 base
+`1/2/2/2/2`, one unnamed witness, and the sole directed edge from witness
+nodes `65/64` to Task-254 selector `Structure(0)`. The runner consumes the
+completed B2BP selector seam without changing its logic. Four checker and five
+runner tests close the bounded `source_drift` and `test_gap`, including exact
+dependency provenance, B2A/B2B sibling isolation, rollback/replay, final-clone
+revalidation, and empty semantic outputs.
+
+This implementation changes follow-up ownership from future B2B to completed
+B2B, with B2C functional update/`FieldUpdate` as the next fresh-inventory
+candidate. It does not grant executable specification credit:
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, without backlink, status, count, test-list, or coverage-credit
+change. Existing Task-254 diagnostic credit is unchanged, and
+`tests/coverage/spec_trace.toml` remains a deliberate no-op. Canonical specs,
+existing `.miz`, fixtures, expectations, sidecars, public APIs, active routes,
+diagnostics, and selector/proof/goal/theorem semantics are unchanged.
+
+Checker/runner libraries are now `386/437`. Checker production remains 23
+paths and now totals 124,016 lines, with path/content hashes
+`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
+`df0c806d8adf6283b2ac3341e11bab62a0f11ef216d48729852e98c40079d7d1`;
+runner production remains 30 paths and now totals 45,224 lines, with hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`.
+Checker raw/normalized test-list hashes are
+`c95eabdba15da88712434600fa5a855d1f0d5e356381608d65395d0502ca2920` /
+`48e755cf92b832f0f516c27fecdc41e6812784ab2946b4a10932756d71de482e`;
+runner hashes are
+`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
+`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.
