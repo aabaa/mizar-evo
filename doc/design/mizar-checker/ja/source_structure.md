@@ -234,3 +234,23 @@ visibility/extraction/ownership/validation/debug bytesはunchangedで、
 `source_structure.rs`は5,036 linesのまま。
 selector、update、`FieldUpdate`、field identity、typing、inheritance、
 semantic behaviorはdeferred。
+
+## Task 258B3M2B2B2BP frozen proof-context selector reuse
+
+B2A post-commit inventoryでgeneric Task-254 extractorは`SelectorAccess`を
+model済みだが、proof-context private seamはconstructor-onlyであると
+判明した。B2BPはTask-258 B2B consumerより前にrunner-private
+`ImportedStructureSelectorSite`、
+`imported_structure_selector_owned_node_kinds`、
+`imported_structure_selector_handoff_in_context` siblingsをfreezeする。
+
+exact 171-byte sourceのTask 254 outputは`2/0/1/3/0/3/9`。selector term 0
+node 62は`SelectorBase`でconstructor term 1 node 61へ、constructor
+member valuesは`Primary(2/3)`へ向く。owned nodesは
+`62/61/29/20/24`。existing extractor/producer、binding context 1、
+shared Task-252 roots、imported `TypeCaseStruct#5` provenance、current
+debug grammarをreuseし、constructor B2P/B2A bytesをpreserveする。
+
+checker API、Task-256/258 row、TypedAst statement installation、public
+runner route、selector identity/type result、semantic behaviorはownしない。
+future runner tests 2件だけがB2B前のprivate seamをfreezeする。

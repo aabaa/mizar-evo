@@ -2827,5 +2827,27 @@ or semantic owner changed. B3M2B2B remains next before B4.
   unchanged and `stash@{0}` untouched.
 - [x] Complete the final read-only quality review with all nine hard gates
   passing and a valid score of `98/100`.
-- [ ] Commit this logical task, verify post-commit metadata/stash invariants,
-  and fresh-inventory the B2B selector documentation prerequisite.
+- [x] Commit this logical task as `7613d50d`, verify post-commit
+  metadata/stash invariants, and fresh-inventory the next dependency.
+
+## Checker Task 258B3M2B2B2BP Frozen Private Selector Prerequisite
+
+- [x] Freeze B2BP before B2B as the runner-private Task-254 selector
+  proof-context reuse prerequisite for the 171-byte/79-node exact source.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, Task-254
+  `2/0/1/3/0/3/9`, exact resolver provenance, ownership, edge/request
+  order, malformed selector, and subtree exclusions.
+- [x] Freeze only private selector site/owned-kind/existing-context siblings;
+  add no checker/public API, Task-256/258, active route, diagnostic, or
+  semantic behavior.
+- [x] Freeze exactly two runner tests and zero checker tests, including all
+  bytes/nodes, corruption/precedence/replay, excluded valid forms,
+  constructor compatibility, and empty upper tables.
+- [x] Preserve trace `deferred` / `tests = []`, Task-254 credit, canonical
+  specs/tests/fixtures/expectations/sidecars, and exact baselines/hashes.
+- [x] Complete no-findings specification/source-documentation reviews,
+  verification, all nine hard gates, and valid final quality `98/100`.
+- [ ] Make one dedicated B2BP docs commit, then fresh-inventory and
+  implement only the B2BP seam and two tests in a separate commit.
+- [ ] After B2BP implementation, fresh-inventory and return to B2B
+  frozen-contract documentation; keep B2C/semantics deferred.

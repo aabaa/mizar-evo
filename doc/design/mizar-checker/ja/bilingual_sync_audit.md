@@ -585,5 +585,20 @@ formula-statement rowは`deferred`、`tests = []`、backlink/creditなし。
 active routes、fixtures、expectations、sidecars、semantic/proof/goal
 ownershipはunchangedでB2B/B2Cはdeferred。three implementation-phase
 reviewsはfindingsなし、全verification gatesはPASS。final read-only
-reviewは全9 hard gates PASS、valid `98/100`。openなのはcommit/
-fresh-inventory closureだけ。implementation bilingual debtなし。
+reviewは全9 hard gates PASS、valid `98/100`。commit `7613d50d`とfresh
+inventoryはcomplete。implementation bilingual debtなし。
+
+## Task 258B3M2B2B2BP frozen-contract synchronization
+
+English canonical documents/JA companionsはB2Bとdistinctなprivate
+Task-254 selector proof-context prerequisiteで同期する。exact 171-byte
+hash、79-node parser profile、Task-48/252/254 outputs、selector/
+constructor ownership/edge chain、future runner tests 2件、unchanged
+`382/430` baseline/exact hashesを両言語でrecordする。
+
+checker/public APIs、Task-256/258 rows、active routes、diagnostics、
+coverage credit、semanticsを両言語でexcludeする。B2A commit/post-commit
+inventoryはclosed。repeated specification/source-documentation consistency
+reviewsはfindingsなし、全verification gatesはPASS、final read-only
+reviewは全9 hard gates PASS、valid `98/100`。openなのはdedicated docs
+commitとimplementation inventoryだけ。

@@ -616,5 +616,21 @@ without backlink or executable credit. Active routes, fixtures,
 expectations, sidecars, and semantic/proof/goal ownership are unchanged;
 B2B/B2C remain deferred. The three implementation-phase reviews and all
 verification gates have no findings/pass. The final read-only review passes
-all nine hard gates with a valid `98/100`; only commit and fresh-inventory
-closure remain open. No implementation bilingual debt remains.
+all nine hard gates with a valid `98/100`; commit `7613d50d` and fresh
+inventory are complete. No implementation bilingual debt remains.
+
+## Task 258B3M2B2B2BP Frozen-Contract Synchronization
+
+The English canonical documents and Japanese companions synchronously
+freeze the private Task-254 selector proof-context prerequisite, distinct
+from B2B. Both record the exact 171-byte hash, 79-node parser profile,
+Task-48/252/254 outputs, selector/constructor ownership and edge chain, two
+future runner tests, unchanged `382/430` baseline, and exact hashes.
+
+Both languages exclude checker/public APIs, Task-256/258 rows, active
+routes, diagnostics, coverage credit, and semantics. B2A commit and
+post-commit inventory are closed. Repeated specification and
+source/documentation consistency reviews have no findings; every
+verification gate passes; the final read-only review passes all nine hard
+gates with a valid `98/100`. Only the dedicated docs commit and
+implementation inventory remain open.

@@ -3952,3 +3952,26 @@ The runner library is 430 tests. No active case, fixture, expectation,
 sidecar, trace row/backlink/credit, diagnostic detail, or public runner
 route was added. B2B/B2C and all semantic/proof/goal/overload/Core/CFG/VC
 families remain deferred or empty.
+
+## Checker Task 258B3M2B2B2BP Frozen Private Selector Harness
+
+This harness freezes only Task-254 proof-context lower reuse for the exact
+171-byte/79-node direct-selector source. It authenticates Task-48 `2/1/0`,
+Task-252 `6/4/2`, and Task-254 `2/0/1/3/0/3/9`, including imported
+`TypeCaseStruct#5`, owned nodes `62/61/29/20/24`, and the chain
+`Structure(0) -> Structure(1) -> Primary(2/3)`. It publishes no Task-256 or
+Task-258 output.
+
+The two frozen tests are
+`task258b3m2b2b2bp_structure_selector_proof_context_reuse_is_exact` and
+`task258b3m2b2b2bp_structure_selector_corruption_replay_and_constructor_compatibility_fail_closed`.
+They cover all source bytes/node fields, every lower row/fingerprint,
+provenance and owned-kind map, context/range/source/member/edge/request
+corruption, and the exact 170-byte missing-selector-name near miss
+(`malformed_term_expression` at `149..150`, 78 nodes/root 77, recovered
+`[]`). Valid but excluded selector/call/chain/wrapped/base/update forms,
+precedence, rollback/replay, constructor compatibility, and all empty upper
+tables are also covered.
+
+No active case, public route, fixture, expectation, sidecar, trace credit,
+diagnostic detail, checker test, or semantic behavior is added.

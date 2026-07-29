@@ -676,4 +676,19 @@ dormant active boundary/deferred empty trace rowはbacklink/creditなしで
 preserveする。fixtures、expectations、sidecars、CLI outputs、semantic/
 proof/goal familiesはunchangedで、B2B/B2Cはdeferred。reviewsはfindings
 なし、verificationはPASS。final read-only reviewは全9 hard gates PASS、
-valid `98/100`。openなのはcommit/fresh-inventory closureだけ。
+valid `98/100`。commit `7613d50d`とfresh inventoryはcomplete。
+
+## Checker Task 258B3M2B2B2BP runner contract synchronization
+
+English canonical runner docs/JA companionsはsame private lower prerequisite
+をfreezeする。exact 171-byte hash/79-node profile、Task-48/252/254
+outputs、private selector site/owned-kind/context seams、runner 2/checker 0
+tests、unchanged `382/430` baseline、runner sizes
+`6414/2843/720/2537/15058/2991`、matching hashesで同期する。
+
+B2B witness consumption、checker/public APIs、Task-256/258 outputs、active
+routes、diagnostics、trace credit、semanticsを両言語でexcludeする。B2A
+commit inventoryはclosed。repeated specification/source-documentation
+consistency reviewsはfindingsなし、全verification gatesはPASS、final
+read-only reviewは全9 hard gates PASS、valid `98/100`。openなのはB2BP
+docs commitとimplementation inventoryだけ。

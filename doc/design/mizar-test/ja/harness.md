@@ -3742,3 +3742,25 @@ isolation、typed/final clone/empty semanticsを含めPASS。
 runner libraryは430 tests。active case、fixture、expectation、sidecar、
 trace row/backlink/credit、diagnostic detail、public runner routeは追加なし。
 B2B/B2Cとsemantic/proof/goal/overload/Core/CFG/VCはdeferredまたはempty。
+
+## Checker Task 258B3M2B2B2BP frozen private selector harness
+
+exact 171-byte/79-node direct-selector sourceのTask-254 proof-context lower
+reuseだけをfreezeする。Task-48 `2/1/0`、Task-252 `6/4/2`、Task-254
+`2/0/1/3/0/3/9`、imported `TypeCaseStruct#5`、owned nodes
+`62/61/29/20/24`、chain
+`Structure(0) -> Structure(1) -> Primary(2/3)`をauthenticateし、
+Task-256/258 outputはpublishしない。
+
+frozen testsは
+`task258b3m2b2b2bp_structure_selector_proof_context_reuse_is_exact`と
+`task258b3m2b2b2bp_structure_selector_corruption_replay_and_constructor_compatibility_fail_closed`。
+全source bytes/node fields、lower rows/fingerprints、provenance/owned map、
+context/range/source/member/edge/request corruption、exact 170-byte
+missing-selector-name near miss（`149..150`の
+`malformed_term_expression`、78 nodes/root 77、recovered `[]`）をcover。
+validだがexcludedなselector/call/chain/wrapped/base/update、precedence、
+rollback/replay、constructor compatibility、empty upper tablesもcover。
+
+active case、public route、fixture、expectation、sidecar、trace credit、
+diagnostic detail、checker test、semantic behaviorは追加しない。

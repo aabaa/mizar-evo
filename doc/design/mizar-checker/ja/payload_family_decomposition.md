@@ -983,3 +983,16 @@ equality-onlyで、atomic typed/final boundaryだけでrevalidateする。
 reverse edge、field/member identity、selector/update payload、semantic/
 proof/goal edge、active route、coverage creditは追加していない。B2B
 selectorとB2C update/`FieldUpdate`はseparate deferred families。
+
+### Task 258B3M2B2B2BP frozen private selector lower edge
+
+B2BPはTask-254 chain
+`Structure(0 selector) -> Structure(1 constructor) -> Primary(2/3)`の
+runner-private reuse pathだけをownする。Task 254はselector/constructor/
+member/edge/request、Task 252はprimary valuesをretainし、Task 258はrow/
+edgeを追加しない。
+
+future seamはexact selector profileをexisting proof-context extractionへ
+routeできるが、cross-family witness edge、public API、semantic edge、
+coverage creditは追加しない。B2Bがlater direct-selector witness consumer、
+B2Cがupdate/`FieldUpdate` owner。

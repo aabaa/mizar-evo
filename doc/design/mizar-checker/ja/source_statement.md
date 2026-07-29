@@ -2583,3 +2583,15 @@ fingerprint isolation、atomic installation、final cloneをvalidateする。
 `source_statement.rs`は27,194 lines。
 existential matching、obligation、goal、proof fact、theorem acceptance、
 active route、coverage creditは追加しない。
+
+## Task 258B3M2B2B2BP lower-prerequisite exclusion
+
+B2BPはstatement-witness profileではない。171-byte selector sourceは
+private Task-254 proof-context reuse seamだけをmotivateし、Task 258は
+theorem/statement/context/fact/witness/name rowをownしない。
+`SourceStatementWitnessTermTarget`、fingerprint、builder、TypedAst
+installer、final clone rule、public API、debug grammarは変更しない。
+
+later B2B consumerはB2BP separate implementation commit後だけexact
+witness-to-selector edgeをownできる。B2C functional-update/`FieldUpdate`、
+selector identity/type、proof/goal/theorem semanticsはdeferred。

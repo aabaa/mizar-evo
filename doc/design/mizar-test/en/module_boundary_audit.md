@@ -11866,3 +11866,20 @@ with path/content hashes
 runner test-list hashes are
 `da5ef4a681303797f208849dc15bd76e545bedf23319ed634c16b00fa9a60d55` /
 `7fe2eb9d8e8f7a920e8eb2043a60bc9eed61cfa2081cce27f84a57b6af4ccf3b`.
+
+## Checker Task 258B3M2B2B2BP Frozen Runner Boundary
+
+B2BP stays within the existing `type_elaboration/source_structure.rs`
+private leaf, its facade/root test visibility, and
+`tests/type_elaboration/source_structure.rs`. It may add one private site
+shape and two private exact selector reuse functions; it adds no module,
+production path, dependency, public re-export, active route, or checker
+surface. The statement leaf and checker typed/final modules are not owners.
+
+Current sizes are statement/structure/facade/root/statement-test/
+structure-test `6414/2843/720/2537/15058/2991`. Production remains 30
+paths / 43,135 lines with path/content hashes
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`26debcb7201bdd49828bfd06b2bcee7e775867462f8f6003755f4f8676dd4869`.
+The implementation may grow existing owners only and projects runner tests
+`432`.

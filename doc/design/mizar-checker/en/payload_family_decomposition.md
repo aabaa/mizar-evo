@@ -1053,3 +1053,15 @@ fingerprint and is revalidated only at the atomic typed/final boundary.
 No reverse edge, field/member identity, selector/update payload,
 semantic/proof/goal edge, active route, or coverage credit was added. B2B
 selector and B2C update/`FieldUpdate` remain separate deferred families.
+
+### Task 258B3M2B2B2BP Frozen Private Selector Lower Edge
+
+B2BP owns only a runner-private reuse path for the Task-254 chain
+`Structure(0 selector) -> Structure(1 constructor) -> Primary(2/3)`.
+Task 254 retains selector/constructor/member/edge/request ownership; Task
+252 retains primary values. Task 258 contributes no row or edge.
+
+The future seam may route the exact selector profile through existing
+proof-context extraction but adds no cross-family witness edge, public API,
+semantic edge, or coverage credit. B2B is the later direct-selector witness
+consumer; B2C remains the update/`FieldUpdate` owner.

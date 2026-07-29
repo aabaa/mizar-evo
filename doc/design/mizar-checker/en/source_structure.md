@@ -243,3 +243,24 @@ visibility, extraction, ownership, validation, and debug bytes are
 unchanged; `source_structure.rs` remains 5,036 lines. Selector, update,
 `FieldUpdate`, field identity, typing,
 inheritance, and all semantic behavior remain deferred.
+
+## Task 258B3M2B2B2BP Frozen Proof-Context Selector Reuse
+
+B2A post-commit inventory found that the generic Task-254 extractor already
+models `SelectorAccess`, while the proof-context private seam accepts the
+constructor-only profile. B2BP freezes runner-private selector siblings
+before any Task-258 B2B consumer: `ImportedStructureSelectorSite`,
+`imported_structure_selector_owned_node_kinds`, and
+`imported_structure_selector_handoff_in_context`.
+
+For the exact 171-byte source, Task 254 produces
+`2/0/1/3/0/3/9`. Selector term 0 at node 62 points by `SelectorBase` to
+constructor term 1 at node 61; constructor member values point to
+`Primary(2/3)`. Owned nodes are exactly `62/61/29/20/24`. The seam reuses
+the existing extractor/producer, binding context 1, shared Task-252 roots,
+imported `TypeCaseStruct#5` provenance, and current debug grammar.
+Constructor B2P/B2A bytes remain unchanged.
+
+No checker API, Task-256/258 row, TypedAst statement installation, public
+runner route, selector identity/type result, or semantic behavior is owned
+here. Exactly two future runner tests freeze the private seam before B2B.

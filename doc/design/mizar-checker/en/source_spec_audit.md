@@ -4246,4 +4246,28 @@ status/count change, or coverage credit. Canonical specs, `.miz`, fixtures,
 expectations, sidecars, active routes, and Task-254 diagnostic credit remain
 unchanged. The implementation-phase reviews have no findings and all
 verification gates pass. The final read-only review passes all nine hard
-gates with a valid `98/100`; only commit and fresh inventory remain open.
+gates with a valid `98/100`; commit `7613d50d` and fresh inventory are
+complete.
+
+## Task 258B3M2B2B2BP Frozen-Contract Audit
+
+Fresh post-B2A inventory classifies the missing private proof-context
+Task-254 selector reuse contract as `design_drift`. The future runner seam
+is bounded `source_drift`, and its two tests are `test_gap`. There is no
+`spec_gap`, undocumented behavior, expectation drift, or boundary violation.
+The concurrent same-task EN draft that appeared after clean inventory is a
+nonblocking, report-only `repo_metadata_conflict`; the safe task-owned
+commit target remains identifiable and no metadata repair is performed.
+
+Authority supports only the 171-byte/79-node syntax/provenance profile,
+Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
+`2/0/1/3/0/3/9`. No Task-256/258, checker/public API, diagnostic, active
+route, or semantic output is authorized. Formula-statement coverage remains
+`deferred`, `tests = []`, without backlink/status/count/credit; Task-254
+diagnostic credit is unchanged. B2B/B2C and selector semantics remain
+follow-ups.
+
+Repeated specification and source/documentation consistency reviews report
+no findings. Every verification gate passes, and the final read-only review
+passes all nine hard gates with a valid `98/100`. This closure changes no
+trace row, status, count, backlink, test list, or executable credit.

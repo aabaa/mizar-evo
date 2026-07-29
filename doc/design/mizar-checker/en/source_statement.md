@@ -3108,3 +3108,16 @@ substitutions, fingerprint isolation, atomic installation, and final clone.
 `source_statement.rs` is 27,194 lines.
 No existential matching, obligation, goal, proof fact, theorem acceptance,
 active route, or coverage credit is introduced.
+
+## Task 258B3M2B2B2BP Lower-Prerequisite Exclusion
+
+B2BP is not a statement-witness profile. Its 171-byte selector source
+motivates only a private Task-254 proof-context reuse seam, and Task 258 owns
+no theorem, statement, context, fact, witness, or name row. No
+`SourceStatementWitnessTermTarget`, fingerprint, builder, TypedAst
+installer, final clone rule, public API, or debug grammar changes.
+
+The later B2B consumer may own the exact witness-to-selector edge only after
+B2BP is implemented and committed separately. B2C
+functional-update/`FieldUpdate` and all selector identity/type, proof, goal,
+and theorem semantics remain deferred.

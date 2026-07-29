@@ -5216,5 +5216,29 @@ implementation commit does not satisfy a producer task.
   artifacts unchanged and `stash@{0}` untouched.
 - [x] Complete final read-only quality review with all nine hard gates
   passing and a valid score of `98/100`.
-- [ ] Commit this logical task, verify clean metadata/stash invariants, and
-  fresh-inventory the B2B selector documentation prerequisite.
+- [x] Commit this logical task as `7613d50d`, verify clean metadata/stash
+  invariants, and fresh-inventory the next dependency.
+
+## Checker Task 258B3M2B2B2BP Frozen-Contract Ledger
+
+- [x] Select B2BP as the private Task-254 selector reuse prerequisite before
+  B2B and freeze the 171-byte/79-node exact source/parser identity.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
+  `2/0/1/3/0/3/9`, including provenance, ownership, edges, requests,
+  malformed selector, and subtree exclusions.
+- [x] Freeze only runner-private selector site/owned-kind/context-handoff
+  siblings; exclude checker APIs, Task-256/258, active routes, diagnostics,
+  statement installation, and semantics.
+- [x] Freeze exactly two runner tests and zero checker tests, including
+  corruption, precedence, replay, constructor compatibility, excluded
+  selector shapes, and empty upper tables.
+- [x] Preserve specs, `.miz`, fixtures, expectations, sidecars, trace
+  `deferred` / `tests = []`, Task-254 credit, and all baselines/hashes.
+- [x] Complete no-findings specification and source/documentation reviews
+  plus all documentation verification.
+- [x] Pass final read-only quality review with all nine hard gates and a
+  valid score of `98/100`.
+- [ ] Commit B2BP docs, verify clean/stash invariants, and fresh-inventory
+  B2BP implementation only.
+- [ ] After the separate B2BP implementation commit, return to B2B frozen
+  consumer documentation.

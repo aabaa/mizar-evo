@@ -2331,5 +2331,23 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   and leave `stash@{0}` untouched.
 - [x] Complete final quality review with all nine hard gates passing and a
   valid score of `98/100`.
-- [ ] Commit, verify clean metadata/stash invariants, and fresh-inventory
-  the B2B selector documentation prerequisite.
+- [x] Commit as `7613d50d`, verify clean metadata/stash invariants, and
+  fresh-inventory the next dependency.
+
+## Checker Task 258B3M2B2B2BP Runner Frozen-Contract Ledger
+
+- [x] Freeze B2BP as the private selector proof-context lower prerequisite,
+  distinct from B2B, over the 171-byte/79-node exact source.
+- [x] Freeze exact Task-48 `2/1/0`, Task-252 `6/4/2`, Task-254
+  `2/0/1/3/0/3/9`, provenance, ownership, edge/request, malformed, and
+  exclusion matrices.
+- [x] Freeze private selector site/owned-kind/context-handoff siblings in
+  existing source-structure owners; add no checker/public/active surface.
+- [x] Freeze exactly two runner tests and zero checker tests, including
+  corruption/replay and constructor-seam compatibility.
+- [x] Preserve fixtures, expectations, sidecars, trace/credit, diagnostics,
+  active cases, baseline `382/430`, sizes, manifests, and hashes.
+- [x] Complete no-findings specification/source-documentation reviews, all
+  verification, and final quality `98/100`.
+- [ ] Commit B2BP docs and fresh-inventory B2BP implementation only.
+- [ ] After separate implementation, return to B2B frozen consumer docs.

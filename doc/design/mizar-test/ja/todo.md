@@ -2133,5 +2133,23 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   untouched。
 - [x] 全9 hard gates PASS、valid score `98/100`でfinal quality reviewを
   complete。
-- [ ] commit、clean metadata/stash invariants verify、B2B selector
-  documentation prerequisiteのfresh inventoryを実行。
+- [x] `7613d50d`でcommitし、clean metadata/stash invariantsをverifyして
+  next dependencyをfresh-inventory。
+
+## Checker Task 258B3M2B2B2BP runner frozen-contract ledger
+
+- [x] B2Bとdistinctなprivate selector proof-context lower prerequisite
+  としてB2BPを171-byte/79-node exact source上でfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、Task-254
+  `2/0/1/3/0/3/9`、provenance/ownership/edge/request/malformed/exclusion
+  matricesをfreeze。
+- [x] existing source-structure ownersのprivate selector site/owned-kind/
+  context-handoff siblingsだけをfreezeしchecker/public/active surfaceなし。
+- [x] exact runner tests 2件/checker 0件とcorruption/replay/constructor seam
+  compatibilityをfreeze。
+- [x] fixtures、expectations、sidecars、trace/credit、diagnostics、active
+  cases、baseline `382/430`、sizes/manifests/hashesをpreserve。
+- [x] no-findings specification/source-documentation reviews、全verification、
+  final quality `98/100`をcomplete。
+- [ ] B2BP docs commit後にB2BP implementationだけをfresh-inventory。
+- [ ] separate implementation後にB2B frozen consumer docsへ戻る。

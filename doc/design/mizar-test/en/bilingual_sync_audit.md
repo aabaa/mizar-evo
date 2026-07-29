@@ -700,5 +700,21 @@ Both languages preserve the dormant active boundary and deferred empty trace
 row without backlink or credit. Fixtures, expectations, sidecars, CLI
 outputs, and semantic/proof/goal families remain unchanged; B2B/B2C remain
 deferred. Reviews have no findings and verification passes. The final
-read-only review passes all nine hard gates with a valid `98/100`; only
-commit and fresh-inventory closure remain open.
+read-only review passes all nine hard gates with a valid `98/100`; commit
+`7613d50d` and fresh inventory are complete.
+
+## Checker Task 258B3M2B2B2BP Runner Contract Synchronization
+
+English canonical runner documents and Japanese companions freeze the same
+private lower prerequisite: exact 171-byte hash/79-node profile,
+Task-48/252/254 outputs, private selector site/owned-kind/context seams,
+two runner and zero checker tests, unchanged `382/430` baseline, runner
+sizes `6414/2843/720/2537/15058/2991`, and matching hashes.
+
+Both languages exclude B2B witness consumption, checker/public APIs,
+Task-256/258 outputs, active routes, diagnostics, trace credit, and
+semantics. B2A commit inventory is closed. Repeated specification and
+source/documentation consistency reviews have no findings, every
+verification gate passes, and the final read-only review passes all nine
+hard gates with a valid `98/100`. Only the B2BP docs commit and
+implementation inventory remain open.

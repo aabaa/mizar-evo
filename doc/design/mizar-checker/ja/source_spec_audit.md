@@ -4057,5 +4057,27 @@ rowは`deferred`、`tests = []`、backlink/status/count change/coverage credit
 なし。canonical specs、`.miz`、fixtures、expectations、sidecars、active
 routes、Task-254 diagnostic creditはunchanged。implementation-phase
 reviewsはfindingsなし、全verification gatesはPASS。final read-only
-reviewは全9 hard gates PASS、valid `98/100`。openなのはcommit/fresh
-inventoryだけ。
+reviewは全9 hard gates PASS、valid `98/100`。commit `7613d50d`とfresh
+inventoryはcomplete。
+
+## Task 258B3M2B2B2BP frozen-contract audit
+
+post-B2A inventoryはmissing private proof-context Task-254 selector reuse
+contractを`design_drift`、future runner seamをbounded `source_drift`、two
+testsを`test_gap`にclassifyする。`spec_gap`、undocumented behavior、
+expectation drift、boundary violationなし。
+clean inventory後に現れたconcurrent same-task EN draftはnonblockingな
+report-only `repo_metadata_conflict`。safe task-owned commit targetは
+identifiableで、metadata repairは行わない。
+
+authorityは171-byte/79-node syntax/provenance、Task-48 `2/1/0`、
+Task-252 `6/4/2`、Task-254 `2/0/1/3/0/3/9`だけをsupportする。
+Task-256/258、checker/public API、diagnostic、active route、semantic output
+はauthorizeしない。formula-statement coverageは`deferred`、
+`tests = []`、backlink/status/count/creditなし、Task-254 diagnostic credit
+はunchanged。B2B/B2Cとselector semanticsはfollow-up。
+
+repeated specification/source-documentation consistency reviewsはfindings
+なし。全verification gatesはPASS、final read-only reviewは全9 hard gates
+PASS、valid `98/100`。このclosureはtrace row/status/count/backlink/test
+list/executable creditを変更しない。

@@ -4589,3 +4589,35 @@ The independent specification review ended with no findings after three
 documentation-only `design_drift` corrections. All documentation hard gates
 passed with a valid final quality score of `98/100`. This completion record
 changes no row status, test list, backlink, count, or coverage credit.
+
+## Checker Task 258B3M2B2B2BP Private Selector-Reuse Follow-Up
+
+Fresh post-B2A inventory records a lower-stage follow-up before the B2B
+consumer. The generic Task-254 extractor already represents direct
+`SelectorAccess`, but its current proof-context private reuse seam is
+constructor-only. B2BP freezes runner-private selector site, owned-kind, and
+existing-context handoff siblings for the exact 171-byte/79-node source.
+The lower profile is Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
+`2/0/1/3/0/3/9`; it produces no Task-256/258 or semantic output.
+
+This addendum is narrative/follow-up ownership only. The row
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`, without backlink, status/count change, or coverage credit.
+Existing Task-254 diagnostic credit is unchanged. Canonical specs, `.miz`,
+fixtures, expectations, sidecars, active routes, and
+`tests/coverage/spec_trace.toml` remain unchanged.
+
+The missing contract is `design_drift`; the future private runner seam is
+bounded `source_drift`, and its two tests are `test_gap`. There is no
+blocking `spec_gap`, undocumented behavior, expectation drift, or boundary
+violation. The concurrent same-task design draft that appeared after clean
+inventory is a nonblocking, report-only `repo_metadata_conflict`; its safe
+task-owned target remains identifiable and no metadata repair, revert,
+fetch, push, or stash action is performed. B2B direct-selector witness
+consumption, B2C update/`FieldUpdate`, selector identity/type/call/chain
+behavior, and all upper semantics remain deferred.
+
+Repeated specification and source/documentation consistency reviews have no
+findings. All verification gates pass, and the final read-only review passes
+all nine hard gates with a valid `98/100`. This closure changes no trace
+row, status, count, backlink, test list, or coverage credit.

@@ -4970,5 +4970,28 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   untouched。
 - [x] 全9 hard gates PASS、valid score `98/100`でfinal read-only quality
   reviewをcomplete。
-- [ ] logical taskをcommitし、clean metadata/stash invariantsをverifyして
-  B2B selector documentation prerequisiteをfresh-inventory。
+- [x] logical taskを`7613d50d`でcommitし、clean metadata/stash
+  invariantsをverifyしてnext dependencyをfresh-inventory。
+
+## Checker Task 258B3M2B2B2BP frozen-contract ledger
+
+- [x] B2B前のprivate Task-254 selector reuse prerequisiteとしてB2BPを
+  selectし、171-byte/79-node exact source/parser identityをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `6/4/2`、Task-254
+  `2/0/1/3/0/3/9`とprovenance/ownership/edges/requests/malformed/
+  subtree exclusionsをfreeze。
+- [x] runner-private selector site/owned-kind/context-handoff siblingsだけを
+  freezeし、checker APIs、Task-256/258、active routes、diagnostics、
+  statement installation、semanticsをexclude。
+- [x] runner tests exact 2件/checker tests 0件とcorruption/precedence/
+  replay/constructor compatibility/excluded shapes/empty upper tablesを
+  freeze。
+- [x] specs、`.miz`、fixtures、expectations、sidecars、trace
+  `deferred`/`tests = []`、Task-254 credit、baselines/hashesをpreserve。
+- [x] no-findings specification/source-documentation reviewsと全docs
+  verificationをcomplete。
+- [x] 全9 hard gates、valid score `98/100`でfinal quality reviewをPASS。
+- [ ] B2BP docsをcommitし、clean/stash invariants verify後にB2BP
+  implementationだけをfresh-inventory。
+- [ ] separate B2BP implementation commit後にB2B frozen consumer docsへ
+  戻る。
