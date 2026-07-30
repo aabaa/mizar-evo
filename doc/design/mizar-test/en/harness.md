@@ -4510,3 +4510,23 @@ reports **NO FINDINGS**; all nine hard gates PASS with no cap at valid
 `100/100` (`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff
 review, implementation commit, and post-commit/fresh-next-task gates remain
 pending.
+
+## Task 258B3M2B2B3E Frozen Harness Route
+
+The future private selector recognizes only the exact final-LF 139-byte
+source/hash and full 60-node/root-59 surface/resolver profile. Four checker
+and five runner tests must exhaust bytes/LF, `60 x 4` node surfaces/root,
+resolver fields, `32/70/53/72/62/21` lower/upper fields, ownership,
+generator-without-binding, all 120 B3A-E orders, replay, rollback, clone,
+debug stability, active-route isolation, and empty semantics. No active test
+case selects this source; fixtures, sidecars, expectations, trace metadata,
+counts, and coverage credit remain unchanged.
+
+The node/field matrices are supplemented by explicit post-auth negatives for
+a present condition, zero/multiple generators, a nested comprehension,
+a generator-referencing mapper, wrong/extra generator or type-site rows,
+nonzero condition cardinality, and partial/extra ownership in the complete
+`38..46` subtree. Resolver tests mutate all base-owner and enriched-label
+fields. Every Task-48/252/255/256/258/B3E mutation asserts its owning-stage
+prefix, rejects generic-guard-only failure, and repeats the failure
+immediately against the authenticated baseline.

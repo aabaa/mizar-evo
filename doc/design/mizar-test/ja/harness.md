@@ -4239,3 +4239,42 @@ gates PASS、no cap、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
 repeated-test diff review volumeはharness behaviorを変えないnonblocking
 residual。staging/cached diff、commit、post-commit/fresh-nextだけがpending。
+
+## Task 258B3M2B2B3E frozen harness
+
+dormant harness selectorはexisting context-1 Task-255 handoffをassembleする
+前に、exact final-LF 139-byte/hash、28-token、60-node/root-59
+condition-free comprehension sourceとlocal theorem/label/proof-context
+provenanceだけをauthenticateしなければならない。
+
+future runner tests 5件は全source bytes/LF、各node/rootのkind/range/
+recovery/children axes、resolver base/label mutation、Task-48/252/255/256/
+258/witnessのexact `32/70/53/72/62/21` matricesとimmediate replayを
+exhaustする。Task-255 assertionsはgenerator node `16`、type
+expression/head `41/40`、`SetComprehension(43)`、condition 0件、
+`ComprehensionMapper -> Primary(2)`、ordered
+`GeneratorSethood`/`ResultType`をfreezeする。
+
+suiteはowner partition Task-252 `{32,34,38,47,49}`、Task-255
+`{16,40,41,43}`、Task-256 `{36,51}`、Task-258 `{54,56}`、B3E
+`{45,46}`をcheckし、generator segment `42`をunownedに保つ。byte/subtree
+near misses、generator/condition/request validation precedence、all
+pairings、five-family `120` orders、owning-stage prefixes、non-generic
+guard、active-route isolation、typed/final clone/debug/rollback、empty
+semantic tablesをfail closedでcoverする。
+post-auth shape/cardinality negativesとして、present condition、
+zero/multiple generators、nested comprehension、generator-referencing
+mapper、wrong/extra generator rows、wrong/extra type-site rows、nonzero
+condition cardinality、complete `38..46` subtreeのincomplete/additional
+ownershipをすべて明示的にrejectする。exact byte/subtree mutationだけで
+これらを代用しない。これはB3E selector boundaryであり、existing
+Task-255C1 exact independent condition-bearing source transportとそのcovered
+creditはunchangedである。
+
+active fixtures、expectations、sidecars、trace、CLI、diagnostic、
+coverage/semantic harness surfaceは変更しない。generator binding/capture、
+sethood/result typing、condition-bearing B3E statement-witness profileと
+broader multiple/nested/generator-reference semantics、goal/proof/theorem
+semanticsをfabricateしない。documentation-only test-sufficiency reviewは
+**NO FINDINGS**、focused/package/workspace/CLI/count/hash verificationは
+PASSした。future implementation test reviewはseparate taskに残す。

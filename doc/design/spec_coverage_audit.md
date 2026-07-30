@@ -5277,3 +5277,27 @@ CLI `23/0` warnings/errors and large repeated-test diff review volume remain
 nonblocking residuals without coverage credit or score cap. Only exact
 staging/cached-diff review, implementation commit, and
 post-commit/fresh-next-task gates remain pending.
+
+### Task 258B3M2B2B3E Narrative-Only Ownership
+
+Fresh post-B3D inventory selects the sole remaining Task-255 set-family
+statement-witness sibling: the exact condition-free independent
+comprehension. B3E freezes the 139-byte/60-node source, Task-255
+`1/0/1/1/0/1/2` generator/type/mapper/sethood transport, one set-target
+witness, exact `32/70/53/72/62/21` matrices, and all 120 five-family
+orders. This is narrative ownership only. The existing Task-255 covered row
+and formula-statement deferred row remain unchanged; no trace row, status,
+test list, backlink, count, active diagnostic, or coverage credit changes.
+Generator binding/capture, conditions, sethood/result typing, proof
+acceptance, Core/CFG/VC, B4/B5, and semantics remain deferred.
+
+Repeated specification/documentation, test-sufficiency,
+implementation-boundary, and source/documentation/bilingual/boundary reviews
+report **NO FINDINGS** after preserving existing Task-255C1 condition-bearing
+credit and synchronizing the B3E boundary matrix. Exact 32-document and
+forbidden-artifact no-op checks, both package suites, formatting, full
+Clippy, workspace tests, all five metadata CLIs, and every recorded
+source/count/hash rerun PASS. The trace blob is unchanged. Independent final
+quality reports **NO FINDINGS**; all nine hard gates PASS with valid
+`100/100` and no cap. Staging/commit and
+post-commit/fresh-implementation inventory remain pending.

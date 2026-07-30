@@ -4497,3 +4497,40 @@ gates PASS、score capなし、valid `100/100`
 large repeated-test diff review volumeはauthority/trace creditを変えない
 nonblocking residual。staging/cached diff、commit、post-commit/fresh-next
 だけがpending。
+
+## Task 258B3M2B2B3E authority audit
+
+canonical `doc/spec/en/13.term_expression.md`はset comprehension grammarの
+conditionをoptional `[ ":" formula ]`とし、condition omittedの
+all-elements formを明示する。`doc/spec/en/15.statements.md`の`take`は
+任意の`term_expression`をadmitする。active parser fixture
+`tests/miz/pass/parser/pass_parser_set_comprehensions_001.miz`はomitted/
+present conditionsを既にcoverし、Task-255 active source
+`tests/miz/fail/types/fail_type_elaboration_local_set_choice_qua_term_gap_001.miz`
+はexact `{3 where candidate255 is set}`を既に保持する。
+
+したがってB3E exact final-LF `139` bytes/hash
+`b3b12979a119c859c3e563eb1aa47fa4601045a686c5a09460ee72873bf7a29d`、
+`28` tokens、`60` nodes/root `59`はexisting authorityからderiveできる。
+Task-255 profile `1/0/1/1/0/1/2`、generator/type sites
+`16/40/41`、`SetComprehension(43)`、condition 0件、
+`ComprehensionMapper -> Primary(2)`、ordered
+`GeneratorSethood`/`ResultType`もexisting lower contractと一致する。
+generator segment `42`はunownedである。
+
+generator binding/capture/name resolutionを実装しないことはTask-255の
+明示的deferralであり、`source_undocumented_behavior`またはlower defectでは
+ない。documentation-only contractの欠落は`design_drift`、future exact
+private consumer/testの欠落はbounded `source_drift`/`test_gap`である。
+blocking `spec_gap`、`boundary_violation`、
+`test_expectation_drift`はない。既存specification、`.miz`、
+expectations、sidecars、`tests/coverage/spec_trace.toml`のstatus/count/
+tests、active diagnostic/coverage creditは変更しない。
+`doc/design/spec_coverage_audit.md`はtrace/creditを昇格させない
+narrative-only ownership sectionだけを追加する。pre-document authority
+selection reviewとparser/lower preflightはownership correction後にblocking
+findingなしでcloseした。current documentation repeat、test-sufficiency、
+implementation-boundary、source/documentation/bilingual consistencyも
+corrections後に**NO FINDINGS**で、verificationはPASSした。independent
+final qualityも**NO FINDINGS**、全9 hard gates PASS、valid
+`100/100`である。staging/commit、post-commitだけがpendingである。

@@ -1318,3 +1318,28 @@ gates PASS、no cap、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
 repeated-test diff review volumeはnonblocking residual。staging/cached
 diff、commit、post-commit/fresh-nextだけがpending。
+
+## Task 258B3M2B2B3E frozen final boundary
+
+future `ResolvedTypedAst` projectionはauthenticated exact B3E set-only tuple
+だけをacceptする。tupleはfinal-LF 139-byte/60-node source fingerprint、
+Task-255 `1/0/1/1/0/1/2` comprehension state、
+`ComprehensionMapper -> Primary(2)`、ordered
+`GeneratorSethood`/`ResultType`、Task-258 `1/2/2/2/2` base、
+unnamed witness 1件と`Witness(0) -> SetTerm(0)`をclone-preservingに
+revalidateする。
+
+final owner partitionはTask-252 `{32,34,38,47,49}`、Task-255
+`{16,40,41,43}`、Task-256 `{36,51}`、Task-258 `{54,56}`、B3E
+`{45,46}`である。generator segment node `42`はunownedであり、final
+projectionはこれをbinding/referenceまたは別owner rowとしてsynthesize
+しない。stale/hybrid/family mixes、wrong generator/type/condition/edge/
+request state、reordered requests、non-generic fallbackは既存errorを通じて
+atomicにfailする。全five-family `120` ordersをindependentに保持する。
+
+semantic tablesはemptyのままで、generator binding/capture、sethood/
+result/numeric typing、goal/proof/fact/overload/Core/CFG/VC semanticsを
+final projectionに追加しない。public API/error/debug grammar変更、
+lower-stage prerequisite、active semantic creditはない。implementation
+前のdocumentation-only final-boundary reviewは**NO FINDINGS**である。
+future implementation reviewはseparate implementation taskに残す。

@@ -842,3 +842,13 @@ boundary. Independent final read-only quality review reports
 **NO FINDINGS**; all nine hard gates PASS with no cap at valid `100/100`
 (`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review,
 implementation commit, and post-commit/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3E Documentation Boundary
+
+B3E adds no module or dependency. The future exact consumer remains confined
+to the cohesive checker statement/typed/final modules and four existing
+runner statement/facade/test modules. Both Task-255 `source_set_term.rs`
+owners, parser/resolver/binding source, public APIs/errors/debug grammar,
+authority artifacts, active routing, and semantics are excluded. The
+current documentation-only scope changes no production boundary; source
+split decisions remain unchanged.

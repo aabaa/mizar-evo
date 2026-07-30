@@ -5767,3 +5767,36 @@ implementation commit does not satisfy a producer task.
   diff, and create one implementation commit.
 - [ ] Verify clean post-commit/stash invariants and fresh-inventory the next
   dependency-minimal task.
+
+## Checker Task 258B3M2B2B3E Frozen-Contract Ledger
+
+- [x] Close B3D implementation in
+  `08a7d1e3d8c4b3b439325a16e1e139df4a1c18ed`, verify clean
+  ahead-3/behind-0 state, and preserve stash fingerprint
+  `f65cf4a13752ec...`.
+- [x] Fresh-inventory the sole remaining Task-255 set-family sibling and
+  select condition-free independent comprehension before B4.
+- [x] Freeze final-LF 139-byte/hash, 28-token, 60-node/root-59 source,
+  exact sites, and local theorem/label resolver provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `5/4/1`, empty 253/254,
+  Task-255 `1/0/1/1/0/1/2`, Task-256
+  `2/0/0/0/0/0/0/4/4`, Task-258 `1/2/2/2/2`, and
+  witness `1/0`.
+- [x] Freeze corrected ownership with Task-255 `{16,40,41,43}` and
+  generator segment `42` unowned.
+- [x] Freeze checker four/runner five tests,
+  `32/70/53/72/62/21` matrices, and all 120 five-family orders.
+- [x] Confirm no lower-stage prerequisite; preserve generator binding/capture,
+  sethood/result typing, proof semantics, B4/B5, and active coverage as
+  explicit deferrals.
+- [x] Limit future implementation to the exact seven private consumers and
+  forbid both Task-255 owners plus all authority/trace/public/semantic
+  surfaces.
+- [x] Complete repeated documentation reviews with **NO FINDINGS**.
+- [x] Pass documentation-only source/count/hash/scope/no-op verification.
+- [x] Pass independent final quality with all nine hard gates and valid
+  score `>=90/100`.
+- [ ] Stage only the synchronized 32-document scope and create one dedicated
+  documentation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B3E
+  implementation.

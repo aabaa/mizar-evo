@@ -487,3 +487,23 @@ Independent final read-only quality review reports **NO FINDINGS**; all nine
 hard gates PASS with no cap at valid `100/100`
 (`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review,
 implementation commit, and post-commit/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3E Comprehension Reuse Contract
+
+B3E reuses the unchanged Task-255 `1/0/1/1/0/1/2` handoff:
+one condition-free `Comprehension`, generator `candidate255`, generator-owned
+builtin-`set` type site, no condition, one
+`ComprehensionMapper -> Primary(2)` edge, and ordered
+`GeneratorSethood`/`ResultType` requests. The handoff owns identifier node
+`16`, type nodes `40/41`, and term node `43`; segment container `42` remains
+`source.surface.unowned`. Both source-set owners are forbidden implementation
+files. Binding/capture, sethood discharge, conditioned/multiple/nested
+comprehensions in the B3E statement-witness profile, and result typing remain
+deferred. The existing covered Task-255C1 exact independent
+condition-bearing source transport remains unchanged. The future B3E suite
+must nevertheless reject a present condition, zero/multiple generators,
+nested comprehensions, generator-referencing mappers, wrong/extra generator
+or type-site rows, nonzero condition cardinality, and incomplete or
+additionally owned nodes in the complete `38..46` subtree after lower
+authentication; these are B3E boundary negatives, not semantic
+implementation or a withdrawal of Task-255C1 credit.

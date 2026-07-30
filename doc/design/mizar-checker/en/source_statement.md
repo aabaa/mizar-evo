@@ -3560,3 +3560,14 @@ read-only quality review reports **NO FINDINGS**; all nine hard gates PASS
 with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
 staging/cached-diff review, implementation commit, and
 post-commit/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3E Frozen Comprehension Statement Profile
+
+The exact 139-byte source owns theorem/conclusion nodes `{56,54}` and B3E
+take/witness nodes `{46,45}`. The unnamed witness at `45/89..118` targets
+Task-255 `SetTerm(0)` at `43/89..118`; the take is `46/84..119`.
+Task-252 owns `{32,34,38,47,49}`, Task-255 `{16,40,41,43}`, Task-256
+`{36,51}`, and generator segment `42` remains unowned. The complete graph is
+the two equality pairs, comprehension mapper to `Primary(2)`, and witness to
+the set term. No generator binding, semantic witness, proof acceptance, or
+fact edge is introduced.

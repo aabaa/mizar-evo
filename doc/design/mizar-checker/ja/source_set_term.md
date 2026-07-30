@@ -438,3 +438,42 @@ gates PASS、score capなし、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。CLI warnings/errors `23/0`とlarge
 repeated-test diff review volumeはunchanged lower ownerに対するnonblocking
 residual。staging/cached diff、commit、post-commit/fresh-nextだけがpending。
+
+## Task 258B3M2B2B3E comprehension reuse contract
+
+B3Eはexisting generic Task-255 condition-free comprehension handoffを
+unchangedでreuseする。exact profileは
+`term/wrapper/generator/type-site/condition/edge/request =
+1/0/1/1/0/1/2`である。`SetTerm(0)`は
+`Comprehension` node/range `43/89..118`、proof context `1`、ordinal
+`0`、spelling `{ 3 where candidate255 is set }`を持つ。
+
+generator `0`はidentifier site node/range `16/98..110`、spelling
+`candidate255`、normal recovery、context `1`、type-site `0`を保持する。
+type-site `0`はowner `Generator(0)`、expression/head
+`41/40/114..117`、`BuiltinSet`である。condition rowはない。edgeは
+`ComprehensionMapper -> Primary(2)`、requestsはordered
+`GeneratorSethood(generator 0, type-site 0)`、`ResultType`である。
+application/structure fingerprintsはabsent、primary fingerprintはcomplete
+Task-252 handoffとexactly一致し、mapper edgeのtargetが`Primary(2)`である。
+
+Task-255 owns nodes `{16,40,41,43}`。generator segment node `42`、
+mapper/outer transparent term nodes `39/44`、upper witness/take nodes
+`45/46`はこのlower ownerに属さない。identifier `candidate255`について
+BindingId、capture、Task-252 referenceをfabricateしない。
+
+`source_set_term.rs` checker/runner owners、public DTO/schema/error/debug
+grammarはfuture B3Eでもunchangedである。existing explicit-context helper、
+generic comprehension shape validation、fingerprint/request validationが
+既にこのprofileをadmitするためlower prerequisiteはない。future B3E
+matrixはTask-255 safely mutable fields exact `53`件をupper transaction
+からmutate/replayするだけである。generator binding/capture、sethood/
+result typing、condition-bearing B3E statement-witness profileとbroader
+multiple/nested comprehension semanticsは引き続きdeferredである。
+existing covered Task-255C1 exact independent condition-bearing source
+transportはunchangedである。future B3E suiteはpost-authでpresent
+condition、zero/multiple generators、nested comprehension、
+generator-referencing mapper、wrong/extra generatorまたはtype-site rows、
+nonzero condition cardinality、complete `38..46` subtreeのincomplete/
+additional ownershipを明示的にrejectする。これらはB3E boundary
+negativesであり、Task-255C1 creditのwithdrawalではない。

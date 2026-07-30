@@ -1388,3 +1388,13 @@ count/hash reruns pass. Independent final read-only quality review reports
 **NO FINDINGS**; all nine hard gates PASS with no cap at valid `100/100`
 (`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review,
 implementation commit, and post-commit/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3E Frozen Atomic Installation
+
+The future typed installation reuses
+`with_source_set_term_statement_witnesses` and accepts only the coherent
+Task-252/255/256/258/B3E tuple. It preserves one comprehension, generator,
+type site, mapper edge, two requests, and one unnamed set-target witness.
+Every stage mutation, stale replay, partial publication, or B3A-E hybrid must
+roll back atomically. No type/fact/coercion/obligation/diagnostic or public
+schema is added.

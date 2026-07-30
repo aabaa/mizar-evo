@@ -809,3 +809,34 @@ gates PASS、no cap、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
 repeated-test diff review volumeはboundaryを変えないnonblocking
 residual。残るgateはstaging/cached-diff、commit、post-commit/fresh-next。
+
+## Task 258B3M2B2B3E documentation boundary
+
+B3Eはexisting cohesive statement/typed/final ownershipへcondition-free
+comprehension witnessという別のprivate exact consumerをfreezeする。
+future checker ownershipは`source_statement.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs`、paired runner ownershipは
+`type_elaboration/source_statement.rs`、`type_elaboration.rs`、
+`runner.rs`、`tests/type_elaboration/source_statement.rs`のexact seven
+consumersに限定する。
+
+future routeが追加できるのはexact 139-byte/60-node selector、
+Task-255 `1/0/1/1/0/1/2` handoffのrevalidation、
+`Witness(0) -> SetTerm(0)`、`32/70/53/72/62/21` mutations、five-family
+`120` ordersだけである。owner partitionはTask-252
+`{32,34,38,47,49}`、Task-255 `{16,40,41,43}`、Task-256
+`{36,51}`、Task-258 `{54,56}`、B3E `{45,46}`であり、
+`ComprehensionVariableSegment(42)`はunownedのまま保持する。
+
+両`source_set_term.rs`、parser/resolver/binding modules、public
+schema/error/debug grammar、module topology、visibility、dependency、
+active dispatcher/corpus/metadata、authority/trace/coverage、semantic/
+proof/goal ownersはunchangedである。generator binding/capture、
+sethood/result typingその他のdeferred semantics、B4/B5をこのboundaryへ
+移動しない。module split、public boundary migration、lower-stage
+prerequisiteをauthorizeしない。documentation-only
+implementation-boundaryとrepeated boundary/consistency reviewsは
+**NO FINDINGS**、full verificationはPASSした。future implementation
+boundary reviewはseparate taskに残す。independent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、valid `100/100`である。
+staging/commit、post-commitだけがpendingである。

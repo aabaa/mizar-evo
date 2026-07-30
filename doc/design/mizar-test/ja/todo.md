@@ -2583,3 +2583,35 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   inspect。
 - [ ] implementation commit 1件をcreate。
 - [ ] clean post-commit/stash invariantsをverifyしnext taskをfresh inventory。
+
+## Checker Task 258B3M2B2B3E documentation ledger
+
+- [x] B3D implementation commit
+  `08a7d1e3d8c4b3b439325a16e1e139df4a1c18ed`、clean
+  `origin/main...HEAD = 0/3` snapshot、unchanged stashをrecord。
+- [x] exact final-LF 139-byte/hash、28-token、60-node/root-59 source、
+  resolver provenanceをfreeze。
+- [x] exact lower/upper profiles
+  `2/1/0`、`5/4/1`、empty Tasks 253/254、
+  `1/0/1/1/0/1/2`、`2/0/0/0/0/0/0/4/4`、
+  `1/2/2/2/2`、witness/names `1/0`をfreeze。
+- [x] exact ownership、generator segment `42` unowned、
+  `ComprehensionMapper -> Primary(2)`、ordered requests、upper witness
+  edgeをfreeze。
+- [x] runner 5 + checker 4 future test namesと
+  `32/70/53/72/62/21` matrices、five-family `120` ordersをfreeze。
+- [x] future runner 4 + checker 3 consumersをfixし、両
+  `source_set_term.rs`とactive/authority/trace/semantic ownersをpreserve。
+- [x] complete semantic deferrals、trace/coverage no-op、lower
+  prerequisite不要をrecord。
+- [x] specification/test/boundary reviewsを実行し、findingをremediateして
+  repeat。
+- [x] source/documentationとbilingual consistency reviewsを実行。
+- [x] relevant verificationとforbidden-path/no-op checksをcomplete。
+- [x] independent final quality reviewを全hard gatesとvalid score
+  `>=90/100`でcomplete。
+- [ ] exact synchronized documentation scopeだけをstageしcached diffを
+  inspect。
+- [ ] dedicated B3E documentation commitをcreate。
+- [ ] clean post-commit/stash invariantsをverifyしB3E implementationを
+  fresh inventory。

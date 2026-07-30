@@ -1403,3 +1403,15 @@ Independent final read-only quality review reports **NO FINDINGS**; all nine
 hard gates PASS with no cap at valid `100/100`
 (`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review,
 implementation commit, and post-commit/fresh-next-task gates remain pending.
+
+### Task 258B3M2B2B3E Frozen Comprehension-Witness Edge
+
+B3E is the last uncovered exact Task-255 set-family witness after
+enumeration, choice, and `qua`. It freezes one condition-free independent
+comprehension with one generator/type site, one
+`ComprehensionMapper -> Primary(2)` edge, ordered
+`GeneratorSethood`/`ResultType` requests, and one
+`witness -> SetTerm(0)` edge. Task-255 owns `{16,40,41,43}`; generator
+segment `42` remains unowned. All five B3A-E families remain independent
+across 120 orders. Binding/capture, sethood discharge, conditions, semantics,
+B4/B5, and coverage credit remain deferred.

@@ -4714,3 +4714,23 @@ quality review reports **NO FINDINGS**; all nine hard gates PASS with no cap
 at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
 staging/cached-diff review, implementation commit, and
 post-commit/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3E Authority Audit
+
+Chapter 13 §§13.4/13.4.2 authorize a set comprehension whose optional
+condition is omitted; Chapters 4, 15, and 16 authorize the unnamed
+`take term_expression;` proof-skeleton form. Existing parser coverage and
+the exact Task-255 fixture authorize `{3 where candidate255 is set}` without
+changing either artifact. The expectation explicitly defers generator
+binding/capture and sethood discharge. Independent review reports
+no blocking authority finding after the node-42 ownership correction: no
+blocking `spec_gap`, expectation drift, or boundary violation exists. The
+missing upper exact contract/consumer/matrices are `design_drift`,
+`source_drift`, and `test_gap`. Repeated specification/documentation,
+test-sufficiency, implementation-boundary, and
+source/documentation/bilingual/boundary reviews report **NO FINDINGS** after
+the classified documentation corrections. Verification passes with the
+authority/trace/coverage no-op intact. Independent final quality reports
+**NO FINDINGS**; all nine hard gates PASS with valid `100/100` and no cap.
+Only staging/commit and post-commit/fresh-implementation gates remain
+pending.

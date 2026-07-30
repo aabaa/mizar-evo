@@ -11039,3 +11039,25 @@ gates PASS、score capなし、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
 repeated-test diff review volumeはnonblocking residual。残るboundary
 gatesはstaging/cached diff、commit、post-commit/fresh-nextだけ。
+
+## Task 258B3M2B2B3E documentation boundary
+
+future runner editはexisting consumers
+`type_elaboration/source_statement.rs`、`type_elaboration.rs`、
+`runner.rs`、`tests/type_elaboration/source_statement.rs`のexact 4 filesと
+paired checker 3 filesに限定する。private dormant routeは139-byte/
+60-node source、Task-255 `1/0/1/1/0/1/2` comprehension handoff、
+upper witness edge、`32/70/53/72/62/21` mutations、five-family `120`
+ordersだけをownする。
+
+generic Task-255 checker/runner `source_set_term.rs` leaves、
+parser/resolver/binding owners、active dispatcher/corpus metadata、
+expectations/sidecars/trace rows、CLI/diagnostic/coverage、
+semantic/proof/goal runnersはunchangedである。generator segment node
+`42`はunownedのままで、binding/reference rowまたはsemantic ownerへ
+transferしない。public API/error/debug/dependency/active discovery、
+module topology、lower prerequisite、splitを追加しない。boundary reviewと
+verificationは**NO FINDINGS** / PASSでcloseした。future implementation
+boundary reviewはseparate taskに残す。independent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、valid `100/100`である。
+staging/commit、post-commitだけがpendingである。

@@ -3284,6 +3284,39 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete independent final read-only quality review with
   **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
   `100/100` (`20/20/15/15/10/10/5/5`).
-- [ ] Stage only the synchronized task scope, inspect cached diff, and create
-  one implementation commit.
-- [ ] Verify clean post-commit/stash state and fresh-inventory the next task.
+- [x] Stage only the synchronized task scope, inspect cached diff, and create
+  implementation commit
+  `08a7d1e3d8c4b3b439325a16e1e139df4a1c18ed`.
+- [x] Verify clean ahead-3/behind-0 post-commit state and unchanged stash
+  fingerprint `f65cf4a13752ec...`; retain the inherited origin movement as a
+  report-only `repo_metadata_conflict`.
+- [x] Fresh-inventory and select B3E condition-free comprehension witness.
+
+## Checker Task 258B3M2B2B3E Documentation Prerequisite
+
+- [x] Select the sole remaining Task-255 set-family statement-witness sibling
+  before B4: one condition-free independent comprehension.
+- [x] Confirm canonical §§13.4/13.4.2, 4.4.3, 15.4.4, and 16.3.3 authority,
+  existing parser/Task-255 fixtures, and no lower-stage prerequisite.
+- [x] Freeze the final-LF 139-byte source/hash, 28-token,
+  60-node/root-59 Surface profile, resolver provenance, and the exact
+  statement/witness ownership partition.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `5/4/1`, empty Tasks 253/254,
+  Task-255 `1/0/1/1/0/1/2`, Task-256
+  `2/0/0/0/0/0/0/4/4`, Task-258 `1/2/2/2/2`, and one unnamed
+  SetTerm witness.
+- [x] Freeze exact `32/70/53/72/62/21` mutation matrices, all 120
+  five-family orders, and the checker four plus runner five future tests.
+- [x] Limit future implementation to the exact seven private source
+  consumers; forbid both Task-255 source owners, parser/resolver/binding
+  source, specifications, corpus artifacts, trace metadata, public API, and
+  semantic/coverage credit.
+- [x] Complete repeated specification and documentation reviews with
+  **NO FINDINGS**.
+- [x] Pass documentation-only source/count/hash/scope/no-op verification.
+- [x] Pass all nine hard gates and independent final quality with valid
+  score `>=90/100`.
+- [ ] Stage only the synchronized 32-document scope and create one dedicated
+  documentation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B3E
+  implementation.

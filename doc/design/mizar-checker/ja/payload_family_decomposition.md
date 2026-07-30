@@ -1323,3 +1323,31 @@ gates PASS、score capなし、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。CLI warnings `23`/errors `0`とlarge
 repeated-test diff review volumeはnonblocking residual。残るのは
 staging/cached diff、commit、post-commit/fresh-nextだけ。
+
+### Task 258B3M2B2B3E frozen condition-free-comprehension witness edge
+
+B3EはB3D qua witness後のnext Task-255 set-family siblingである。
+Task-255は`Comprehension` term 1件、generator 1件、generator-owned
+`BuiltinSet` type-site 1件、condition 0件、
+`ComprehensionMapper -> Primary(2)` edge 1件、ordered unresolved
+`GeneratorSethood`/`ResultType` requests 2件をretainする。B3Eはupper
+`Witness(0) -> SetTerm(0)` edge 1件だけを追加する。
+
+exact owner partitionはTask-252 `{32,34,38,47,49}`、Task-255
+`{16,40,41,43}`、Task-256 `{36,51}`、Task-258 `{54,56}`、B3E
+`{45,46}`である。generator container
+`ComprehensionVariableSegment(42)`はunownedであり、generator identifier
+node `16`はTask-255 source siteとしてのみownedとなる。これをTask-48
+bindingまたはTask-252 referenceとしてreinterpretしてはならない。
+
+directed graphはTask-256 formula-to-primary edges、
+Task-255 `ComprehensionMapper -> Primary(2)`、B3E
+`Witness(0) -> SetTerm(0)`だけである。exact matricesは
+`32/70/53/72/62/21`。B3A/B3B/B3C/B3D/B3Eは全`120` install ordersで
+independent exact profilesとしてのみfuture acceptanceされる。
+
+generator BindingId/capture/name resolution、conditioned/multiple/nested/
+generator-referencing comprehension、sethood/result/numeric typing、
+existential/proof/goal semantics、B4/B5、active creditはseparate ownersに
+deferする。B3Eはtransport-onlyであり、lower-stage prerequisiteまたは
+semantic ownership expansionを導入しない。

@@ -1317,3 +1317,30 @@ gates PASS、score capなし、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
 repeated-test diff review volumeはnonblocking residual。staging/cached
 diff、commit、post-commit/fresh-nextだけがpending。
+
+## Task 258B3M2B2B3E frozen atomic installation
+
+future `TypedAst` installはexact B3E tupleをone atomic transactionとして
+acceptする。authenticated inputは139-byte/60-node source fingerprint、
+Task-48 `2/1/0`、Task-252 `5/4/1`、empty Tasks 253/254、
+Task-255 `1/0/1/1/0/1/2`、Task-256
+`2/0/0/0/0/0/0/4/4`、Task-258 `1/2/2/2/2`、one unnamed
+SetTerm witnessである。
+
+installationはTask-252 `{32,34,38,47,49}`、Task-255
+`{16,40,41,43}`、Task-256 `{36,51}`、Task-258 `{54,56}`、B3E
+`{45,46}`のowner partitionと、
+`ComprehensionMapper -> Primary(2)`および
+`Witness(0) -> SetTerm(0)`をrevalidateする。generator segment `42`は
+unownedであり、binding/reference/condition rowをfabricateしない。
+
+wrong generator/type-site/condition/edge/request、reordered
+`GeneratorSethood`/`ResultType`、stale source/lower fingerprints、
+partial family state、hybrid/non-generic inputはpublication前にrollback
+する。B3A/B3B/B3C/B3D/B3Eの全`120` ordersをindependent exact familiesと
+して保持する。semantic tablesはemptyで、generator capture、typing、
+goal/proof semanticsをinstallしない。future checker implementationは
+existing set-aware installerをreuseし、public schema/error/debug
+grammarを変えない。documentation-only atomic-boundary reviewは
+**NO FINDINGS**である。future implementation/atomicity reviewはseparate
+implementation taskに残す。

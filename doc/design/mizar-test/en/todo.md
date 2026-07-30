@@ -2791,3 +2791,23 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [ ] Stage the exact synchronized implementation scope, inspect cached diff,
   and create one implementation commit.
 - [ ] Verify post-commit/stash invariants and fresh-inventory the next task.
+
+## Checker Task 258B3M2B2B3E Documentation Ledger
+
+- [x] Close B3D implementation commit
+  `08a7d1e3d8c4b3b439325a16e1e139df4a1c18ed` and fresh-inventory B3E.
+- [x] Freeze the exact 139-byte/hash, 28-token, 60-node/root-59 source and
+  local resolver provenance.
+- [x] Freeze lower/upper profiles, corrected ownership, one generator/type
+  site, no condition, mapper/witness edges, and explicit semantic deferrals.
+- [x] Freeze four checker/five runner names, exact
+  `32/70/53/72/62/21` matrices, and all 120 B3A-E family orders.
+- [x] Restrict implementation to checker three plus runner four consumers;
+  preserve both set-term owners and every authority/corpus/trace/active
+  surface.
+- [x] Complete repeated reviews with **NO FINDINGS**.
+- [x] Pass documentation-only scope/count/hash/no-op verification.
+- [x] Pass independent final quality with all nine hard gates and valid
+  score `>=90/100`.
+- [ ] Create one 32-document prerequisite commit and fresh-inventory B3E
+  implementation.

@@ -1387,3 +1387,13 @@ final read-only quality review reports **NO FINDINGS**; all nine hard gates
 PASS with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
 exact staging/cached-diff review, implementation commit, and
 post-commit/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3E Frozen Final Boundary
+
+The future final projection may accept only the authenticated B3E tuple:
+Task-252 primary fingerprint, Task-255 comprehension fingerprint, Task-256
+formula handoff, Task-258 statement handoff, and one set-target witness.
+Clone/revalidation must preserve the generator/type-site tables while
+semantic tables remain empty. Stale fingerprints, partial publication,
+sibling hybrids, and any generator binding/capture state fail atomically.
+No final-AST public schema changes.

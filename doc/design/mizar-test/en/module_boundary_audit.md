@@ -12298,3 +12298,12 @@ read-only quality review reports **NO FINDINGS**; all nine hard gates PASS
 with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
 staging/cached-diff review, implementation commit, and
 post-commit/fresh-next-task gates remain pending.
+
+## Task 258B3M2B2B3E Documentation Boundary
+
+B3E adds no runner module or dependency. The future route is confined to the
+existing statement leaf, type-elaboration facade, root runner, and statement
+test module. The set-term leaf/test owners are read-only dependencies.
+Production, public enums/errors/keys, parser/resolver/binding ownership,
+corpus artifacts, trace, and active behavior do not change in this
+documentation prerequisite.

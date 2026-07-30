@@ -5499,3 +5499,43 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [ ] implementation commit 1件をcreate。
 - [ ] clean post-commit/stash invariantsをverifyし、next dependency-minimal
   taskをfresh inventory。
+
+## Checker Task 258B3M2B2B3E documentation ledger
+
+- [x] B3D implementation commit
+  `08a7d1e3d8c4b3b439325a16e1e139df4a1c18ed`、clean
+  `origin/main...HEAD = 0/3` closure、stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchangedをrecord。
+- [x] condition-free comprehension witnessのexact final-LF 139-byte/hash、
+  28-token、60-node/root-59 sourceをfreeze。
+- [x] resolver theorem/label/proof-context provenanceとwitness
+  owner/source ordinalをfreeze。
+- [x] lower profiles `2/1/0`、`5/4/1`、Tasks 253/254 empty、
+  `1/0/1/1/0/1/2`、`2/0/0/0/0/0/0/4/4`、Task-258
+  `1/2/2/2/2`、witness/names `1/0`をfreeze。
+- [x] owner partition Task-252 `{32,34,38,47,49}`、Task-255
+  `{16,40,41,43}`、Task-256 `{36,51}`、Task-258 `{54,56}`、B3E
+  `{45,46}`をfreezeし、generator segment `42`をunownedに保持。
+- [x] `ComprehensionMapper -> Primary(2)`、ordered
+  `GeneratorSethood`/`ResultType`、`Witness(0) -> SetTerm(0)`をfreeze。
+- [x] exact matrices `32/70/53/72/62/21`、five-family `120` orders、
+  checker 4 + runner 5 future test namesをfreeze。
+- [x] future implementationをexact seven consumersへ限定し、両
+  `source_set_term.rs`、public/authority/trace/active/semantic ownersを
+  unchangedに保持。
+- [x] generator binding/capture、sethood/result typing、goal/proof/
+  theorem semantics、B4/B5をdeferし、lower prerequisite不要をrecord。
+- [x] `tests/coverage/spec_trace.toml` no-opと
+  `spec_coverage_audit.md` narrative-only ownership updateをrecord。
+- [x] specification/documentation reviewを実行し、findingがあれば修正後に
+  repeat。
+- [x] test-sufficiency、implementation-boundary、source/documentation、
+  bilingual consistency reviewsを実行。
+- [x] relevant verificationとforbidden-path/no-op checksを実行。
+- [x] independent final quality reviewを全hard gatesとvalid score
+  `>=90/100`でcomplete。
+- [ ] exact synchronized documentation scopeだけをstageしcached diffを
+  inspect。
+- [ ] dedicated B3E documentation commitをcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、B3E implementationを
+  fresh inventory。

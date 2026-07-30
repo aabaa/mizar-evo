@@ -3018,3 +3018,39 @@ gates PASS、no cap、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
 repeated-test diff review volumeはnonblocking residual。残るのはexact
 staging/cached diff、implementation commit、post-commit/fresh-nextだけ。
+
+## Task 258B3M2B2B3E frozen comprehension statement profile
+
+exact sourceはfinal-LF 139 bytes、28 tokens、60 nodes/root 59である。
+Task-258 baseはone theorem resolver owner、two statements、two atomic
+inputs、two candidates、profile `1/2/2/2/2`を保持する。theorem statement
+node/range `56/19..138`はcontext `0`、source ordinal `0`、Atomic `0`、
+conclusion node/range `54/122..133`はproof context `1`、source ordinal
+`2`、Atomic `1`である。local theorem labelはnode/range
+`6/27..68`、origin path `[2, 1]`、reserve contribution anchor
+`0..18`である。
+
+B3Eはone unnamed normal witness、zero namesを追加する。
+`TakeStatement(46/84..119)`、`Witness(45/89..118)`、owner statement
+`0`、proof context `1`、source ordinal `1`、witness ordinal `0`、
+spelling `{ 3 where candidate255 is set }`、target `SetTerm(0)`である。
+Task-255 set termはnode/range `43/89..118`、kind
+`Comprehension`、generator node `16`、type expression/head `41/40`、
+condition 0件、`ComprehensionMapper -> Primary(2)`、
+ordered `GeneratorSethood`/`ResultType`を保持する。
+
+complete ownershipはTask-252 `{32,34,38,47,49}`、Task-255
+`{16,40,41,43}`、Task-256 `{36,51}`、Task-258 `{54,56}`、B3E
+`{45,46}`。generator segment `42`とtransparent term nodes `39/44`は
+unownedである。statement graphが追加するupper edgeは
+`Witness(0) -> SetTerm(0)`だけで、condition/formula edgeまたはgenerator
+binding/referenceをsynthesizeしない。
+
+future checker tests 4件はexact `32/70/53/72/62/21` field matrices、
+all nodes、resolver provenance、dependency/generator validation precedence、
+ownership/hybrids、five-family `120` orders、final clone/revalidation、
+empty semantic deferralsをcoverする。private selector/build pathはexisting
+`build_with_set_term`とset-only fingerprintをreuseし、public API/error/
+debug grammarを変更しない。documentation-only test-sufficiencyと
+implementation-boundary reviewsは**NO FINDINGS**である。future source
+implementation/test reviewはseparate implementation taskに残す。

@@ -1003,3 +1003,38 @@ gates PASS、score capなし、valid `100/100`
 warnings/errorsとlarge repeated-test diff review volumeはnonblocking
 residual。pendingはexact staging/cached diff、implementation commit、
 post-commit/fresh-nextだけである。
+
+## Task 258B3M2B2B3E frozen-contract synchronization
+
+canonical ENとJA companionは、B3D implementation commit
+`08a7d1e3d8c4b3b439325a16e1e139df4a1c18ed`、historical clean
+`origin/main...HEAD = 0/3` snapshot、unchanged stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`を同じprevious-task closureとして
+記録する。
+
+両言語はcondition-free comprehension witnessのexact final-LF
+`139` bytes/hash
+`b3b12979a119c859c3e563eb1aa47fa4601045a686c5a09460ee72873bf7a29d`、
+`28` tokens、`60` nodes/root `59`、resolver provenance、profiles
+`2/1/0`、`5/4/1`、empty Tasks 253/254、
+`1/0/1/1/0/1/2`、`2/0/0/0/0/0/0/4/4`、
+`1/2/2/2/2`、witness/names `1/0`を同期する。owner partitionは
+Task-252 `{32,34,38,47,49}`、Task-255 `{16,40,41,43}`、
+Task-256 `{36,51}`、Task-258 `{54,56}`、B3E `{45,46}`であり、
+generator segment `42`は両言語で明示的にunownedである。
+
+両言語は`ComprehensionMapper -> Primary(2)`、
+`Witness(0) -> SetTerm(0)`、ordered
+`GeneratorSethood`/`ResultType`、exact
+`32/70/53/72/62/21` matrices、five-family `120` orders、future checker
+4 + runner 5 test names、exact seven consumersを同じlogical contractとして
+freezeする。両`source_set_term.rs`、authority、trace/coverage、active
+behavior、semanticsはno-opであり、generator binding/captureを含む全
+comprehension semanticsはdeferredである。lower prerequisiteはない。
+
+repeated specification/documentation、test-sufficiency、
+implementation-boundary、source/documentation/bilingual/boundary reviewsは
+corrections後に**NO FINDINGS**で、verificationもPASSした。EN/JA
+synchronization exceptionはない。independent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、capなし、valid `100/100`である。
+staging/commit、post-commit gatesだけがpendingである。
