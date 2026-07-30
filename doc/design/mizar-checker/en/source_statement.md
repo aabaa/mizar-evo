@@ -537,7 +537,8 @@ statement families remain Task 258B or Tasks 269–272.
 | `SourceStatementWitnessTermTarget` | `#[non_exhaustive]`; Task 258B3 accepts only exact Task-252 `Primary` term 2. |
 | `SourceStatementWitnessKind` | `#[non_exhaustive]`; Task 258B3 accepts only one `Unnamed` witness. |
 | `SourceStatementLabelKind` | `#[non_exhaustive]`; Task 258B1 accepts only one resolver-authenticated `ProofStep` label. |
-| `SourceStatementCitationKind` | `#[non_exhaustive]`; Task 258B1 accepts only one `SimpleLocal` backward citation. |
+| `SourceStatementCitationTarget` | `#[non_exhaustive]`; Tasks 258B1/B5A use `Local(SourceStatementLabelId)`, while Task 258B5B uses `Imported` without fabricating a local label row. |
+| `SourceStatementCitationKind` | `#[non_exhaustive]`; Tasks 258B1/B5A accept `SimpleLocal`, while Task 258B5B accepts `SimpleImported`. |
 | `SourceStatementError` | `#[non_exhaustive]`; callers must not exhaustively match producer/installation failures. |
 | `SourceStatementReferenceError` | `#[non_exhaustive]`; callers must not exhaustively match reference dependency, aggregate, label, or citation failures. |
 | `SourceStatementWitnessError` | `#[non_exhaustive]`; callers must not exhaustively match witness dependency, aggregate, or row failures. |
@@ -817,7 +818,7 @@ pub struct SourceStatementLabelInput {
 pub struct SourceStatementCitationInput {
     pub statement: SourceStatementId,
     pub context: SourceStatementContextId,
-    pub label: SourceStatementLabelId,
+    pub target: SourceStatementCitationTarget,
     pub label_ref: LabelRefId,
     pub proof_scope: LabelScopePath,
     pub source_range: SourceRange,
@@ -845,7 +846,7 @@ pub struct SourceStatementCitation { /* immutable validated citation fields */ }
 impl SourceStatementCitation {
     pub const fn statement(&self) -> SourceStatementId;
     pub const fn context(&self) -> SourceStatementContextId;
-    pub const fn label(&self) -> SourceStatementLabelId;
+    pub const fn target(&self) -> SourceStatementCitationTarget;
     pub const fn label_ref(&self) -> LabelRefId;
     pub const fn proof_scope(&self) -> &LabelScopePath;
     pub const fn source_range(&self) -> SourceRange;
@@ -883,14 +884,21 @@ pub enum SourceStatementLabelKind {
 }
 
 #[non_exhaustive]
+pub enum SourceStatementCitationTarget {
+    Local(SourceStatementLabelId),
+    Imported,
+}
+
+#[non_exhaustive]
 pub enum SourceStatementCitationKind {
     SimpleLocal,
+    SimpleImported,
 }
 ```
 
 Both IDs have the existing dense-ID derives and `new`/`index` accessors.
 Inputs, immutable rows, tables, and handoff derive `Debug, Clone, PartialEq,
-Eq`; the two enums use the existing public data-enum derives and are
+Eq`; the three enums use the existing public data-enum derives and are
 `#[non_exhaustive]`. `SourceStatementLabel` and
 `SourceStatementCitation` expose read-only accessors for every corresponding
 input field. `SourceStatementLabelTable` and
@@ -3928,3 +3936,35 @@ test 2, runner test 2, and final-clone coverage independently mutate
 `Exported` to `ReExported`.
 B5C and every semantic result remain deferred. This prerequisite changes no
 source, fixture, expectation, trace row, or public runner schema.
+
+## Task 258B5B Implemented Imported Citation Transaction
+
+After documentation commit
+`141dc44a757555e8d4837756515e1577f672348b` and isolated lower commit
+`46dd9db56ced2fcc57799420de9d5fed06f284f5`, the upper transaction
+implements the frozen 146-byte route in the three checker and four runner
+consumers only. It publishes exact Task-258 base `1/2/2/2/2`, reference
+`0/1`, and root-preserving `8/49` ownership from the 57-node/root-56
+resolver arena.
+
+Citation row 0 uses `target=Imported`, `SimpleImported`, statement/context
+1, `LabelRefId(0)`, scope `[0]`, range `136..139`, and dense ordinal 0.
+There is no local label row. The producer authenticates resolved import 0,
+the imported/public/exported theorem projection, reference node 48,
+resolution key 0, source-statement ordinal 1, and the independent
+source/module/range/anchor/path/recovery provenance before publication.
+Its debug output includes `label_node=absent` and `source=imported`, emits
+no `label#0` row, and leaves B1/B5A local debug bytes unchanged.
+
+The primary API sketch and Public Enum Policy above now reflect the actual
+non-exhaustive target enum, `target` field/accessor, and
+`SimpleImported` variant. Dependency, aggregate, import, projection,
+reference, row, cross-profile, installation, and final-clone mutations fail
+atomically and preserve valid replay. Four checker tests and five upper
+runner tests cover the exact route; the separate lower commit retains its
+two tests. B5B alone compares the full nested operand child paths because
+both operands share the formula wrapper's sole immediate child; every
+pre-existing statement profile retains its immediate-child ordering rule,
+and the exact-profile test records this distinction. Facts, acceptance,
+proofs, goals, diagnostics, and downstream IR remain empty, while B5C and
+active corpus/trace coverage remain deferred.

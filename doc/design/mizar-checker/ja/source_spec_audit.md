@@ -4780,3 +4780,31 @@ requirement `spec.en.checker.formula_statement.source_payloads`は
 `deferred`、`tests = []`のまま。specification、existing `.miz`、
 expectation、sidecar、trace metadata、status/count/backlink、coverage
 creditはno-op。
+
+## Task 258B5B implementation authority result
+
+documentation commit `141dc44a757555e8d4837756515e1577f672348b`が
+authority-derived contractをfreezeした。lower commit
+`46dd9db56ced2fcc57799420de9d5fed06f284f5`はnormal augmentation routeを
+変えずbounded opt-in imported-label `source_drift`をcloseした。current
+seven-consumer upper implementationはbounded private-route `source_drift`と
+implementation-level `test_gap`をcloseし、four checker/five upper runner
+testsがexact imported public theorem citation/negative matrixをauthenticate。
+
+このclosureはactive corpus/trace coverageを作らない。human-reviewed
+active `.miz` B5B mapping不在はbroader bounded `test_gap`のままで、B5Cも
+separate。Chapters 11, 15, 16、existing parser/resolver fixtures、
+artifact schema、Tasks 248–258B5A APIがauthorityであり、sourceから
+language/test intentを推測しない。
+
+specification、existing `.miz`、expectation、sidecar、
+`tests/coverage/spec_trace.toml`、trace status/count/backlink、coverage
+creditはdeliberate no-op。したがって
+`spec.en.checker.formula_statement.source_payloads`は`deferred`、
+`tests = []`のまま。`doc/design/spec_coverage_audit.md`はnarrative-only
+implementation closureを受けるが、trace status/count/backlink/owner/
+coverage-credit fieldは変更しない。
+blocking `spec_gap`、`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`、
+`repo_metadata_conflict`はなく、このlogical taskがrepairするstale
+implementation-status proseは`design_drift`。

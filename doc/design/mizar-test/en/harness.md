@@ -4790,3 +4790,26 @@ unchanged.
 No public runner field, active selector, fixture, expectation, trace row,
 diagnostic, fact, theorem acceptance, proof result, or downstream IR
 changes. B5C and qualified/grouped/bulk citations remain deferred.
+
+## Checker Task 258B5B Implemented Imported Route
+
+Prerequisite commits `141dc44a` and `46dd9db5` now precede the upper route.
+Production performs the special imported-label augmentation only for exact
+source equality with the frozen 146-byte/final-LF text; every near miss keeps
+the default augmentation path and cannot select B5B.
+
+The implemented route preserves all 57 Surface/resolver identities and root
+56, then validates raw/enriched resolver `1/0/1/1/0` and `8/1/1/3/1`,
+Binding `2/1/0`, Task-252 `4/4/0`, Task-256 two formulas/four edges/four
+requests, Task-258 `1/2/2/2/2`, reference `0/1`, and `8/49` ownership. The
+sole citation is `Imported`/`SimpleImported`, resolves the public/exported
+theorem `Ref` through contribution 2 and exact import/projection/reference
+provenance, and emits no local label row. Typed and final clones retain empty
+semantic outputs.
+
+The five upper and two lower runner tests pass together as `7/7`; checker
+B5B passes `4/4`, and the full libraries measure `500/500` and `430/430`.
+B1/B5A selectors, target wrapping, public debug bytes, and cross-profile
+atomicity remain unchanged. No public harness/CLI field, corpus case,
+expectation, sidecar, trace row, diagnostic, semantic acceptance, proof, or
+IR output is promoted.

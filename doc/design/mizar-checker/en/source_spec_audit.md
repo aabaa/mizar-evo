@@ -4988,3 +4988,32 @@ semantics remain deferred. Requirement
 therefore stays `deferred` with `tests = []`; specifications, existing
 `.miz`, expectations, sidecars, trace metadata, status/count/backlinks, and
 coverage credit are no-ops.
+
+## Task 258B5B Implementation Authority Result
+
+Documentation commit `141dc44a757555e8d4837756515e1577f672348b`
+froze the authority-derived contract. Lower commit
+`46dd9db56ced2fcc57799420de9d5fed06f284f5` closed the bounded
+opt-in imported-label `source_drift` without changing the normal
+augmentation route. The current seven-consumer upper implementation closes
+the bounded private-route `source_drift` and its implementation-level
+`test_gap`: four checker and five upper runner tests authenticate the exact
+imported public theorem citation and its negative matrix.
+
+This closure does not create active corpus or trace coverage. The absence of
+a human-reviewed active `.miz` B5B mapping remains a broader bounded
+`test_gap`, and B5C remains separate. Chapters 11, 15, and 16, the existing
+parser/resolver fixtures, artifact schema, and Tasks 248–258B5A APIs remain
+the authority; no language or test intent is inferred from source.
+
+Specifications, existing `.miz`, expectations, sidecars,
+`tests/coverage/spec_trace.toml`, trace status/count/backlinks, and coverage
+credit are deliberate no-ops. Accordingly
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`; `doc/design/spec_coverage_audit.md` receives narrative-only
+implementation closure without any trace status, count, backlink, owner, or
+coverage-credit field change.
+There is no blocking `spec_gap`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or
+`repo_metadata_conflict`; the stale implementation-status prose repaired in
+this logical task was `design_drift`.

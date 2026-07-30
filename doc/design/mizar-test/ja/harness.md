@@ -4524,3 +4524,25 @@ resolver-ast/reference/result line、`target=imported` citation line、
 
 public runner、active fixture/selector、expectation、trace、diagnostic、
 semantic/proof/IR outputはno-op。B5Cとqualified/grouped/bulkはdeferred。
+
+## Checker Task 258B5B implemented imported route
+
+prerequisite commits `141dc44a`/`46dd9db5`がupper routeに先行する。
+productionはfrozen 146-byte/final-LF textとのexact source equalityの場合だけ
+special imported-label augmentationを実行し、全near missはdefault
+augmentationを維持してB5Bをselectできない。
+
+implemented routeは57 Surface/resolver identities/root 56を維持し、raw/
+enriched resolver `1/0/1/1/0`/`8/1/1/3/1`、Binding `2/1/0`、
+Task-252 `4/4/0`、Task-256 two formulas/four edges/four requests、
+Task-258 `1/2/2/2/2`、reference `0/1`、ownership `8/49`をvalidateする。
+sole citationは`Imported`/`SimpleImported`で、contribution 2とexact
+import/projection/reference provenanceを通してpublic/exported theorem
+`Ref`をresolveし、local label rowをemitしない。typed/final cloneの
+semantic outputはempty。
+
+upper five/lower two runner testsは合わせて`7/7`、checker B5Bは`4/4`、
+full librariesはrunner `500/500`/checker `430/430`をPASSする。B1/B5A
+selector、target wrapping、public debug bytes、cross-profile atomicityは
+unchanged。public harness/CLI field、corpus case、expectation、sidecar、
+trace row、diagnostic、semantic acceptance、proof、IR outputはpromoteしない。

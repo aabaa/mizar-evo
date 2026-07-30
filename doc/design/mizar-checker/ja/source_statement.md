@@ -236,7 +236,8 @@ separate Task 258BまたはTasks 269–272。
 | `SourceStatementWitnessTermTarget` | `#[non_exhaustive]`; Task 258B3はexactなTask-252 `Primary` term 2だけをaccept。 |
 | `SourceStatementWitnessKind` | `#[non_exhaustive]`; Task 258B3は`Unnamed` witness 1件だけをaccept。 |
 | `SourceStatementLabelKind` | `#[non_exhaustive]`; Task 258B1はresolver-authenticatedな`ProofStep` label 1件だけをaccept。 |
-| `SourceStatementCitationKind` | `#[non_exhaustive]`; Task 258B1は`SimpleLocal` backward citation 1件だけをaccept。 |
+| `SourceStatementCitationTarget` | `#[non_exhaustive]`; Tasks 258B1/B5Aは`Local(SourceStatementLabelId)`、Task 258B5Bはlocal label rowをfabricateせず`Imported`を使う。 |
+| `SourceStatementCitationKind` | `#[non_exhaustive]`; Tasks 258B1/B5Aは`SimpleLocal`、Task 258B5Bは`SimpleImported`をaccept。 |
 | `SourceStatementError` | `#[non_exhaustive]`; callerはproducer/installation failureをexhaustive matchしない。 |
 | `SourceStatementReferenceError` | `#[non_exhaustive]`; callerはreference dependency、aggregate、label、citation failureをexhaustive matchしない。 |
 | `SourceStatementWitnessError` | `#[non_exhaustive]`; callerはwitness dependency、aggregate、row failureをexhaustive matchしない。 |
@@ -505,7 +506,7 @@ pub struct SourceStatementLabelInput {
 pub struct SourceStatementCitationInput {
     pub statement: SourceStatementId,
     pub context: SourceStatementContextId,
-    pub label: SourceStatementLabelId,
+    pub target: SourceStatementCitationTarget,
     pub label_ref: LabelRefId,
     pub proof_scope: LabelScopePath,
     pub source_range: SourceRange,
@@ -533,7 +534,7 @@ pub struct SourceStatementCitation { /* immutable validated citation fields */ }
 impl SourceStatementCitation {
     pub const fn statement(&self) -> SourceStatementId;
     pub const fn context(&self) -> SourceStatementContextId;
-    pub const fn label(&self) -> SourceStatementLabelId;
+    pub const fn target(&self) -> SourceStatementCitationTarget;
     pub const fn label_ref(&self) -> LabelRefId;
     pub const fn proof_scope(&self) -> &LabelScopePath;
     pub const fn source_range(&self) -> SourceRange;
@@ -571,13 +572,20 @@ pub enum SourceStatementLabelKind {
 }
 
 #[non_exhaustive]
+pub enum SourceStatementCitationTarget {
+    Local(SourceStatementLabelId),
+    Imported,
+}
+
+#[non_exhaustive]
 pub enum SourceStatementCitationKind {
     SimpleLocal,
+    SimpleImported,
 }
 ```
 
 両IDはexisting dense-ID deriveと`new`/`index` accessorを持つ。input/
-immutable row/table/handoffは`Debug, Clone, PartialEq, Eq`、enum 2件はexisting
+immutable row/table/handoffは`Debug, Clone, PartialEq, Eq`、enum 3件はexisting
 public data-enum deriveと`#[non_exhaustive]`を持つ。
 `SourceStatementLabel`/`SourceStatementCitation`は対応する全input fieldの
 read-only accessorを公開し、`SourceStatementLabelTable`/
@@ -3411,3 +3419,33 @@ coverageは`Exported`から`ReExported`へのmutationを独立に実行する。
 B5Cと全semantic resultは
 deferred。このprerequisiteはsource、fixture、expectation、trace row、
 public runner schemaを変更しない。
+
+## Task 258B5B implemented imported citation transaction
+
+documentation commit
+`141dc44a757555e8d4837756515e1577f672348b`とisolated lower commit
+`46dd9db56ced2fcc57799420de9d5fed06f284f5`後、upper transactionは
+frozen 146-byte routeをthree checker/four runner consumersだけでimplement
+する。57-node/root-56 resolver arenaからexact Task-258 base
+`1/2/2/2/2`、reference `0/1`、root-preserving `8/49` ownershipをpublish。
+
+citation row 0は`target=Imported`、`SimpleImported`、statement/context 1、
+`LabelRefId(0)`、scope `[0]`、range `136..139`、dense ordinal 0。local
+label rowはない。producerはpublication前にresolved import 0、imported/
+public/exported theorem projection、reference node 48、resolution key 0、
+source-statement ordinal 1、independent source/module/range/anchor/path/
+recovery provenanceをauthenticateする。debug outputは
+`label_node=absent`/`source=imported`を含み、`label#0` rowを出さず、
+B1/B5A local debug bytesを維持する。
+
+上のprimary API sketch/Public Enum Policyはactual non-exhaustive target
+enum、`target` field/accessor、`SimpleImported` variantと一致する。
+dependency/aggregate/import/projection/reference/row/cross-profile/
+installation/final-clone mutationはatomically failしvalid replayを保持。
+four checker/five upper runner testsがexact routeをcoverし、separate lower
+commitはtwo testsを維持する。B5Bだけは両operandがformula wrapperのsole
+immediate childを共有するためfull nested operand child pathを比較し、全
+pre-existing statement profileは従来のimmediate-child ordering ruleを
+維持する。exact-profile testはこの区別をrecordする。fact、acceptance、
+proof、goal、diagnostic、downstream IRはempty、B5Cとactive corpus/trace
+coverageはdeferred。

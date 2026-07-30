@@ -1565,3 +1565,19 @@ import visibility/export/kind/module/namespace/contribution/origin/anchor/
 range/path, recovered or relocated rows, wrong node 48 key, Task-248 or
 other-family occupancy, and altered ownership fail before mutation and leave
 replay available. No semantic table or runner-facing public schema is added.
+
+## Task 258B5B Implemented Imported-Target Installation
+
+Typed installation now admits exactly three mutually exclusive reference
+profiles: B1 local, B5A local, or B5B imported. B5B requires the frozen
+57-node/root-56 resolver fingerprint, Task-258 `1/2/2/2/2 + 0/1`,
+`8/49` ownership, zero local labels, one
+`SourceStatementCitationTarget::Imported`, and one `SimpleImported`
+citation. B1/B5A construct `Local(id)` and preserve their prior bytes.
+
+Before mutation the installer revalidates every base/reference fingerprint,
+resolver node kind and key, import/projection/reference provenance, citation
+row, and owned-node partition. It rejects every B1/B5A/B5B cross-pair,
+partial or duplicate installation, and occupied semantic state atomically.
+No public installer, semantic table, runner-facing schema, or diagnostic is
+added.

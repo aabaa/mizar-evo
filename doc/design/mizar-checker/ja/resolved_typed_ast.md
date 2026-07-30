@@ -1511,3 +1511,19 @@ checked formula、fact、accepted statement、proof、proof node、goal、status
 propagation、downstream IRはemptyのまま。public checker surface changeは
 crate planでfreezeしたcitation-target enum/field/getterとimported citation
 kindだけ。
+
+## Task 258B5B implemented imported final-assembly boundary
+
+final assemblyはresolved import owner/range/spelling/alias/result、imported
+projection origin/public-exported theorem identity、reference candidate
+origin、node 48 kind/key、resolution result、citation target/kind/ordinal、
+complete `8/49` ownership partitionをindependently再検証した後だけtyped
+B5B installationをcloneする。stale/relocated/recovered/partial/
+wrongly-keyed/B1-B5A-B5B cross-paired stateはpublication前にfailしvalid
+replayを保持する。
+
+cloneはbyte-identical B1/B5A local behaviorとexact B5B
+`label_node=absent`/`source=imported` debug schemaをpreserveする。checked
+formula、fact、accepted statement、proof、proof node、terminal goal、
+diagnostic、status propagation、downstream IRはempty。public final-owner
+schema/semantic APIを変更しない。

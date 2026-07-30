@@ -11262,3 +11262,23 @@ facadeはtest-only、public runner/CLI schemaはunchanged。parser、resolver、
 artifact、BindingEnv、Tasks 252/256、fixtures、expectations、sidecars、
 trace metadata、active behavior、B5C、semantics、proof、downstream IRは
 全3 write scope外。
+
+## Checker Task 258B5B implemented runner boundary
+
+lower prerequisiteは`46dd9db5`としてseparate commit済みで、upper
+implementationはfrozen checker 3/runner 4 Rust consumersだけを変更する。
+required EN/JA plan、ledger、component document、audit、この
+module-boundary resultはderived implementation outputであり、seven-consumer
+code boundaryのexpansionではない。
+
+runnerはexisting `source_statement` leaf/facade内にexact-source opt-in、
+construction、mutation seam、testsを追加する。parser、resolver、
+imported-summary、BindingEnv、Task-252/256、public harness/CLI、trace、
+semantic ownershipをmoveしない。`8/49` partitionはother 49 Surface nodesを
+provenanceとして残すため、module split/ownership transferは不要。
+
+post-format owner sizeは
+`type_elaboration/source_statement.rs=17256`、
+`type_elaboration.rs=834`、`runner.rs=2658`、statement test leaf
+`34915`。productionは30 paths/59745 lines。measured increaseはexisting
+private runner owner内でcohesiveで、boundary decisionを変更しない。

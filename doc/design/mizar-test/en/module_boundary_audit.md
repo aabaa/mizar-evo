@@ -12516,3 +12516,25 @@ does not change.
 Parser, resolver, artifact, BindingEnv, Tasks 252/256, fixtures,
 expectations, sidecars, trace metadata, active behavior, B5C, semantics,
 proof, and downstream IR remain outside all three write scopes.
+
+## Checker Task 258B5B Implemented Runner Boundary
+
+The lower prerequisite is committed separately as `46dd9db5`; upper
+implementation changes only the frozen three checker and four runner Rust
+consumers. Required EN/JA plans, ledgers, component documents, audits, and
+this module-boundary result are derived implementation outputs, not an
+expansion of the seven-consumer code boundary.
+
+The runner adds exact-source opt-in, construction, mutation seams, and tests
+inside the existing `source_statement` leaf/facades. It does not move parser,
+resolver, imported-summary, BindingEnv, Task-252/256, public harness/CLI,
+trace, or semantic ownership. The `8/49` partition leaves all other 49
+Surface nodes as provenance, so no module split or ownership transfer is
+required.
+
+Post-format owner sizes are
+`type_elaboration/source_statement.rs=17256`,
+`type_elaboration.rs=834`, `runner.rs=2658`, and the statement test leaf
+`34915`. Production remains 30 paths/59745 lines. These measured increases
+are cohesive with the existing private runner owner and do not alter the
+boundary decision.

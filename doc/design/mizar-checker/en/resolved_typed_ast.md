@@ -1570,3 +1570,19 @@ Checked formulas, facts, accepted statements, proofs, proof nodes, goals,
 status propagation, and downstream IR remain empty. The only public checker
 surface change is the citation-target enum/field/getter and imported citation
 kind frozen in the crate plan.
+
+## Task 258B5B Implemented Imported Final-Assembly Boundary
+
+Final assembly now clones a typed B5B installation only after independently
+revalidating the resolved import owner/range/spelling/alias/result, imported
+projection origin and public/exported theorem identity, reference candidate
+origin, node 48 kind/key, resolution result, citation target/kind/ordinal,
+and the complete `8/49` ownership partition. Any stale, relocated,
+recovered, partial, wrongly keyed, or B1/B5A/B5B cross-paired state fails
+before publication and leaves valid replay available.
+
+The clone preserves byte-identical B1/B5A local behavior and the exact B5B
+`label_node=absent`/`source=imported` debug schema. Checked formulas, facts,
+accepted statements, proofs, proof nodes, terminal goals, diagnostics,
+status propagation, and downstream IR remain empty. No public final-owner
+schema or semantic API changes.

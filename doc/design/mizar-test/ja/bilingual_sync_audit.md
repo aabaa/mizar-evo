@@ -1304,3 +1304,20 @@ post-commitはthen-pending gateであった。independent final qualityは**NO F
 gates PASS、score capなし、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。残るのはstaging、commit、post-commitだけ。
 synchronization exceptionもcoverage creditもない。
+
+## Checker Task 258B5B upper implementation synchronization
+
+paired runner documentsはprerequisite commits `141dc44a`/`46dd9db5`、
+exact-source-only production opt-in、146-byte source、57-node/root-56
+Surface/resolver identity、raw/enriched resolver profile、全Binding/
+Task-252/Task-256/base/reference rows、`8/49` ownership、
+`Imported`/`SimpleImported` public/exported theorem provenance、telemetry、
+empty semantics、B1/B5A preservationを同期する。
+
+両languageはfocused checker `4/4`、runner `7/7`（upper five/lower two）、
+full checker/runner libraries `430/500`、同じproduction/test-list/CLI hash、
+runner owner size、seven-consumer code boundaryをrecordする。synchronized
+design filesがupper logical taskのderived outputである点も一致する。
+spec-coverage updateはnarrative onlyで、`tests = []`と全trace
+status/count/backlink/owner/credit fieldはunchanged。synchronization
+exceptionは残らない。

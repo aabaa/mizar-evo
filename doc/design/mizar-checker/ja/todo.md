@@ -5837,23 +5837,34 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   count/hash/scope、authority no-op、repository-state、stash gateをreproduce。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] synchronized B5B documentationだけをstageしone prerequisite commitを
-  作り、post-commit invariantをverifyしてmandatory lower-stage
-  prerequisiteをfresh inventory。
+- [x] synchronized B5B documentationだけをstageしprerequisite commit
+  `141dc44a757555e8d4837756515e1577f672348b`を作り、post-commit
+  invariantをverifyしてmandatory lower-stage prerequisiteをfresh inventory。
 
 ## Checker Task 258B5B lower-stage prerequisite
 
-- [ ] docs commit後、
+- [x] docs commit後、
   `crates/mizar-test/src/runner/import_fixtures.rs`とexisting statement
   test leafだけを変更。
-- [ ] normal augmentation/existing callerを変更せずcrate-private opt-in
+- [x] normal augmentation/existing callerを変更せずcrate-private opt-in
   `Ref` label augmentationを追加し、exact two frozen lower testsと全protocol
-  gatesをseparate commitでPASS。
+  gatesをseparate commit
+  `46dd9db56ced2fcc57799420de9d5fed06f284f5`でPASS。
 
 ## Checker Task 258B5B upper implementation
 
-- [ ] lower commitとfresh inventory後、frozen three checker/four runner
+- [x] lower commitとfresh inventory後、frozen three checker/four runner
   consumersだけを変更。
-- [ ] exact imported target/API、profile、resolver replay、mutation matrix、
+- [x] exact imported target/API、profile、resolver replay、mutation matrix、
   four checker/five runner testsをimplementし、全review/hard gatesを
-  separate commitでPASS。
+  pre-commit状態でPASS。
+- [x] classified `design_drift`/adjacent-profile `source_drift`をrepair後、
+  separate test-sufficiency、implementation、final source/documentation
+  consistency reviewを**NO FINDINGS**でcomplete。
+- [x] focused/crate/workspace、formatting、exact Clippy、five-CLI、
+  count/hash、forbidden-artifact、repository-state、stash gateをPASS。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] Task-258B5B upperだけをstage/inspectしdedicated implementation
+  commitを作り、post-commit invariantをverifyしてnext dependency-ready
+  taskをfresh inventory。

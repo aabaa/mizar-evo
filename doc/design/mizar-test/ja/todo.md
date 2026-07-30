@@ -2879,14 +2879,39 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] final scope/repository/stash gateをcomplete。
 - [x] final qualityを**NO FINDINGS**、全9 hard gates PASS、capなし、valid
   `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] synchronized docsだけをcommitし、mandatory lower taskをfresh inventory。
+- [x] synchronized docsだけを`141dc44a`としてcommitし、mandatory lower
+  taskをfresh inventory。
 
 ## Checker Task 258B5B lower-stage prerequisite
 
-- [ ] `runner/import_fixtures.rs`とstatement test leafだけを変更し、opt-in
-  `Ref` helperと2 testsをseparate commit。
+- [x] `runner/import_fixtures.rs`とstatement test leafだけを変更し、opt-in
+  `Ref` helperと2 testsをseparate commit `46dd9db5`として完成後、upperを
+  fresh inventory。
 
 ## Checker Task 258B5B upper implementation
 
-- [ ] lower commit後、frozen checker 3/runner 4 consumersだけでexact
-  imported citation transactionをseparate commit。
+- [x] frozen checker 3/runner 4 Rust consumersだけを変更し、同logical taskの
+  synchronized design outputがcode boundaryをexpandしないことを維持。
+- [x] exact source 146 bytes、57 nodes/root 56、raw/enriched resolver
+  `1/0/1/1/0`/`8/1/1/3/1`、Binding `2/1/0`、Task-252 `4/4/0`、
+  Task-256 two formulas/four edges/four requests、Task-258
+  `1/2/2/2/2 + 0/1`、`8/49`をauthenticate。
+- [x] exact-source opt-inだけでimported target/kindとexact import/
+  projection/reference provenanceをinstallし、B1/B5A debug bytes、pairing、
+  replay、empty semanticsをpreserve。
+- [x] focused checker `4/4`、runner `7/7`（upper five/lower two）、full
+  checker `430/430`、runner `500/500`をPASSし、current production/
+  test-list/CLI hash、owner countをrecord。
+- [x] test-sufficiency/repeated implementation reviewを**NO FINDINGS**で
+  completeし、hard-gate documentation mismatchを`design_drift`として同期。
+- [x] spec-coverage変更をnarrative onlyとし、requirement `tests = []`、
+  trace status/count/backlink/owner/credit、corpus、expectation、sidecar、
+  public runner schema、B5C、semantic deferralをpreserve。
+- [x] final source/documentation consistencyを**NO FINDINGS**でcompleteし、
+  workspace formatting、exact Clippy、full tests、five CLIs、final
+  count/hash/scope gateをPASS。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] B5B upper logical taskだけをstage/inspectし、implementation commitを
+  1件作り、clean post-commit/stash invariantをverifyしてnext taskをfresh
+  inventory。

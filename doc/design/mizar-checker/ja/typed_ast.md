@@ -1501,3 +1501,18 @@ visibility/export/kind/module/namespace/contribution/origin/anchor/range/
 path、recovered/relocated row、wrong node 48 key、Task-248/other-family
 occupancy、altered ownershipはmutation前にfailしreplay可能なままにする。
 semantic table/public runner-facing schemaを追加しない。
+
+## Task 258B5B implemented imported-target installation
+
+typed installationはmutually exclusiveなB1 local、B5A local、B5B imported
+のexact three reference profilesをadmitする。B5Bはfrozen
+57-node/root-56 resolver fingerprint、Task-258 `1/2/2/2/2 + 0/1`、
+`8/49` ownership、local label 0、one
+`SourceStatementCitationTarget::Imported`、one `SimpleImported` citationを
+要求する。B1/B5Aは`Local(id)`をconstructしprior bytesをpreserveする。
+
+installerはmutation前に全base/reference fingerprint、resolver node kind/
+key、import/projection/reference provenance、citation row、owned-node
+partitionを再検証する。全B1/B5A/B5B cross-pair、partial/duplicate
+installation、occupied semantic stateをatomically reject。public installer、
+semantic table、runner-facing schema、diagnosticを追加しない。

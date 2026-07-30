@@ -1349,3 +1349,20 @@ quality reports **NO FINDINGS**; all nine hard gates PASS, no score cap
 applies, and the valid score is `100/100`
 (`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit remain.
 No synchronization exception or trace/coverage credit exists.
+
+## Checker Task 258B5B Upper Implementation Synchronization
+
+The paired runner documents synchronize prerequisite commits `141dc44a` and
+`46dd9db5`, exact-source-only production opt-in, 146-byte source,
+57-node/root-56 Surface/resolver identity, raw/enriched resolver profiles,
+all Binding/Task-252/Task-256/base/reference rows, `8/49` ownership,
+`Imported`/`SimpleImported` public/exported theorem provenance, telemetry,
+empty semantics, and B1/B5A preservation.
+
+Both languages record focused checker `4/4`, runner `7/7` (five upper plus
+two lower), full checker/runner libraries `430/500`, the same production,
+test-list, CLI hashes and runner owner sizes, and the same seven-consumer
+code boundary. They also agree that the synchronized design files are
+derived outputs in the upper logical task. The spec-coverage update is
+narrative only; `tests = []` and every trace status/count/backlink/owner/
+credit field remain unchanged. No synchronization exception remains.

@@ -23,7 +23,10 @@ mod shared;
 mod type_elaboration;
 
 use declaration_symbol::{declaration_symbol_failure_diagnostic, run_declaration_symbol_case};
-use import_fixtures::{ParseOnlyImportProvider, augment_type_elaboration_import_summaries};
+use import_fixtures::{
+    ParseOnlyImportProvider, augment_type_elaboration_import_summaries,
+    augment_type_elaboration_import_summaries_with_imported_public_theorem_label,
+};
 use parse_only::{parse_only_failure_diagnostic, run_parse_only_case};
 use proof_verification::{
     is_active_proof_verification, proof_verification_failure_diagnostic,
@@ -133,7 +136,7 @@ use type_elaboration::{
     SOURCE_STATEMENT_B3M2B2B3B_TEXT, SOURCE_STATEMENT_B3M2B2B3C_TEXT,
     SOURCE_STATEMENT_B3M2B2B3D_TEXT, SOURCE_STATEMENT_B3M2B2B3E_TEXT, SOURCE_STATEMENT_B3N_TEXT,
     SOURCE_STATEMENT_B4A_TEXT, SOURCE_STATEMENT_B4B_TEXT, SOURCE_STATEMENT_B4C_TEXT,
-    SOURCE_STATEMENT_B5A_TEXT, SOURCE_STATEMENT_TEXT,
+    SOURCE_STATEMENT_B5A_TEXT, SOURCE_STATEMENT_B5B_TEXT, SOURCE_STATEMENT_TEXT,
     SOURCE_THREE_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_MODE_RADIX_ASSERTED_HEAD_CONFIG,
     SOURCE_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
@@ -200,10 +203,10 @@ use type_elaboration::{
     SourceStatementB3M2B2B3ESurfaceMutation, SourceStatementB3NExtraction,
     SourceStatementB3NRouteInputs, SourceStatementB3RouteInputs, SourceStatementB4ASurfaceMutation,
     SourceStatementB4BSurfaceMutation, SourceStatementB4CSurfaceMutation,
-    SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementExtraction,
-    SourceStatementRouteInputs, SourceStatementRouteOutput, SourceStructureRouteOutput,
-    SyntheticSourceApplicationOutput, SyntheticSourceFunctorApplication,
-    SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
+    SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
+    SourceStatementB5BSurfaceMutation, SourceStatementExtraction, SourceStatementRouteInputs,
+    SourceStatementRouteOutput, SourceStructureRouteOutput, SyntheticSourceApplicationOutput,
+    SyntheticSourceFunctorApplication, SyntheticSourceFunctorArgument, SyntheticSourceFunctorHead,
     SyntheticSourceStructureDependencies, TASK258B3M2B2B3A_TASK256_FIELD_COUNT,
     TASK258B3M2B2B3A_TASK258_FIELD_COUNT, TASK258B3M2B2B3A_WITNESS_FIELD_COUNT,
     TASK258B3M2B2B3B_TASK48_FIELD_COUNT, TASK258B3M2B2B3B_TASK252_FIELD_COUNT,
@@ -245,6 +248,7 @@ use type_elaboration::{
     extract_comprehension_witness_source_statement_with_surface_mutation,
     extract_empty_set_enumeration_witness_source_statement,
     extract_empty_set_enumeration_witness_source_statement_with_surface_mutation,
+    extract_imported_public_theorem_citation_source_statement,
     extract_multiple_witness_source_statement, extract_named_witness_source_statement,
     extract_nested_parenthesized_witness_source_statement, extract_nested_source_statement,
     extract_numeral_witness_source_statement, extract_parenthesized_witness_source_statement,
@@ -569,6 +573,9 @@ use type_elaboration::{
     source_statement_b5a_output_with_mutation,
     source_statement_b5a_output_with_raw_resolver_mutation,
     source_statement_b5a_output_with_resolver_mutation, source_statement_b5a_resolver_env_for_test,
+    source_statement_b5b_output_with_mutation,
+    source_statement_b5b_output_with_raw_resolver_mutation,
+    source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
     source_statement_output_with_resolver_mutation, source_statement_output_with_source,
     source_statement_output_with_source_and_mutation, source_statement_resolver_env_for_test,
     source_statement_transport_detail_keys_with_output_mutation_for_test, source_structure_output,
@@ -610,6 +617,7 @@ use type_elaboration::{
     task258b4b_surface_profile_with_mutation_for_test,
     task258b4c_surface_profile_with_mutation_for_test,
     task258b5a_surface_profile_with_mutation_for_test,
+    task258b5b_surface_profile_with_mutation_for_test,
     unwrapped_imported_source_application_handoff_for_test,
     wrapped_imported_source_application_handoff_for_test,
 };
@@ -1670,7 +1678,15 @@ fn type_elaboration_detail_keys(
             .collect();
     }
 
-    let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    let symbols = if source_text.as_ref() == type_elaboration::SOURCE_STATEMENT_B5B_TEXT {
+        augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
+            &ast,
+            &resolver.module,
+            resolver.env,
+        )
+    } else {
+        augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env)
+    };
     if let Some(keys) = source_statement_transport_detail_keys(
         &ast,
         resolver.module.clone(),

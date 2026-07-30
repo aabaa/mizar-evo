@@ -3582,15 +3582,34 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Pass final scope/repository/stash gates.
 - [x] Pass final quality with **NO FINDINGS**, all nine hard gates PASS, no
   cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
-- [ ] Commit only synchronized B5B documentation and fresh-inventory the
-  mandatory lower-stage prerequisite.
+- [x] Commit only synchronized B5B documentation as `141dc44a` and
+  fresh-inventory the mandatory lower-stage prerequisite.
 
 ## Checker Task 258B5B Lower-Stage Prerequisite
 
-- [ ] Change only `runner/import_fixtures.rs` and the statement test leaf;
-  add the opt-in `Ref` helper and two tests in one separate commit.
+- [x] Change only `runner/import_fixtures.rs` and the statement test leaf;
+  add the opt-in `Ref` helper and two tests in separate commit `46dd9db5`.
 
 ## Checker Task 258B5B Upper Implementation
 
-- [ ] After the lower commit, implement only the exact seven upper consumers
-  and four checker/five runner tests in one separate commit.
+- [x] Implement only the exact seven upper Rust consumers; include required
+  synchronized design outputs in the same logical task without expanding
+  the code-consumer boundary.
+- [x] Authenticate the exact 146-byte source, 57-node/root-56 Surface and
+  resolver identities, raw/enriched resolver profiles, all lower/base/
+  reference rows, imported theorem provenance, and `8/49` ownership.
+- [x] Preserve exact-source-only opt-in, B1/B5A target/debug behavior,
+  cross-profile atomicity, immutable clone replay, and empty semantics.
+- [x] Pass focused checker `4/4`, runner `7/7` (five upper/two lower), full
+  checker `430/430`, runner `500/500`, and current count/hash gates.
+- [x] Complete test-sufficiency and repeated implementation reviews with
+  **NO FINDINGS** and repair the derived-document `design_drift`.
+- [x] Add narrative-only spec-coverage closure while retaining `deferred`,
+  `tests = []`, and unchanged trace status/count/backlink/owner/credit.
+- [x] Complete final source/documentation consistency with **NO FINDINGS**,
+  then pass workspace formatting, exact Clippy, full tests, five CLIs, and
+  final count/hash/scope gates.
+- [x] Pass independent final quality with **NO FINDINGS**, all nine hard
+  gates, no cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Stage/inspect and create one B5B upper implementation commit, verify
+  clean post-commit/stash state, and fresh-inventory the next task.

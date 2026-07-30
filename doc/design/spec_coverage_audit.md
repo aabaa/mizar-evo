@@ -5560,3 +5560,31 @@ quality reports **NO FINDINGS**; all nine hard gates PASS, no score cap
 applies, and the valid score is `100/100`
 (`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit inventory
 remain, and none grant credit.
+
+## Task 258B5B Implemented Imported-Public Citation Follow-up
+
+Frozen-contract commit `141dc44a` and lower imported-label commit
+`46dd9db5` now precede the exact seven-consumer upper implementation. The
+private 146-byte/final-LF route authenticates 57 Surface/resolver nodes/root
+56, raw/enriched resolver `1/0/1/1/0` and `8/1/1/3/1`, Binding `2/1/0`,
+Task-252 `4/4/0`, Task-256 two formulas/four edges/four requests, Task-258
+base `1/2/2/2/2`, reference labels/citations `0/1`, and `8/49`
+syntax-free ownership. It transports one `Imported`/`SimpleImported`
+public/exported theorem citation with exact import, projection, reference,
+and contribution provenance and without a fabricated local label row.
+
+This closes the previously mapped lower `source_drift` and frozen API/
+ownership `design_drift` for the private derived transport. Missing active
+B5B corpus coverage remains the same bounded `test_gap`; B5C confinement
+negatives, qualified/grouped/bulk citations, facts, truth, acceptance,
+proof, goal, ATP, Core, CFG, and VC remain separately deferred. Exact-source
+runner opt-in and the five upper plus two lower runner tests do not create an
+active `.miz` mapping.
+
+Accordingly this audit change is narrative only. Requirement
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`. No trace status, test list, backlink, requirement count,
+owner-crate field, active mapping, or coverage-credit field changes.
+`tests/coverage/spec_trace.toml`, specifications, existing `.miz`,
+expectations, and sidecars remain intentional no-ops. The implementation
+narrative grants no coverage credit.

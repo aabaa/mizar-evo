@@ -1912,7 +1912,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 (Some(references), None)
                     if source_application.is_none()
                         && (source_statement.is_task_258b1_profile()
-                            || source_statement.is_task_258b5a_profile()) =>
+                            || source_statement.is_task_258b5a_profile()
+                            || source_statement.is_task_258b5b_profile()) =>
                 {
                     references
                         .validate_installation(

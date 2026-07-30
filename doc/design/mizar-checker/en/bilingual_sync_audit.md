@@ -1349,3 +1349,38 @@ applies, and the valid score is `100/100`
 (`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit inventory
 remain. They grant no active test mapping, trace backlink, status/count
 change, or coverage credit.
+
+## Task 258B5B Implementation Synchronization
+
+The English canonical documents and their Japanese companions synchronize
+the frozen-contract commit
+`141dc44a757555e8d4837756515e1577f672348b`, isolated lower commit
+`46dd9db56ced2fcc57799420de9d5fed06f284f5`, and the current exact
+seven-consumer upper implementation. Both languages record the same
+`SourceStatementCitationTarget::{Local, Imported}` API,
+`target`/`target()` migration, `SimpleImported` kind, exact
+`1/2/2/2/2 + 0/1` profile, `8/49` ownership, resolver/import provenance,
+mutation matrix, B1/B5A preservation, semantic deferrals, and prohibited
+artifact no-ops.
+
+Both languages record checker library/production `430` / `23/145097`,
+owners `50732/5008/7356`, path/content
+`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
+`c39d43229e85e6136597f0f6cd52c15e1ab1d2057cf7866f6bbbf244307250dc`,
+and test-list
+`5dc6cff8c93d86911dca85f91da81501ddf226c42fd6338f4c4be6105782132e` /
+`d7eb7a0d48d2c11b9c3f3b00ca025e1c7a1d5ce9b2b767ca94c2655c5d2dbf27`.
+They also record runner library/production `500` / `30/59745`, owners
+`17256/834/2658/34915`, path/content
+`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
+`75d3e70b1eb6a5871486c1dc6b0ccde06aec4b0d3e23a1b4c5eecf33dfb9039b`,
+and test-list
+`94aa81ba9af645c9de1e927aa06bf8d525e3510509a607074e604eafc00ff995` /
+`e0d976ab223f0ac0c1b48bd9926bb3fcf785706bdd4a24ecfd0633c81f66f943`.
+
+Focused B5B checker `4/4`, upper runner `5/5`, isolated lower runner `2/2`,
+and preserved B5A/B1 checker `4/4` each PASS. Both languages retain
+`spec.en.checker.formula_statement.source_payloads` as `deferred` with
+`tests = []`; no trace status, count, backlink, or credit changes.
+Task-only staging, the dedicated upper commit, and post-commit inventory
+remain synchronized and pending.

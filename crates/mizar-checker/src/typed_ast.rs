@@ -978,7 +978,10 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        if !statements.is_task_258b1_profile() && !statements.is_task_258b5a_profile() {
+        if !statements.is_task_258b1_profile()
+            && !statements.is_task_258b5a_profile()
+            && !statements.is_task_258b5b_profile()
+        {
             return Err(TypedAstError::InvalidSourceStatement);
         }
         references

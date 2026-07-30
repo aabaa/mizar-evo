@@ -6114,23 +6114,36 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage only synchronized B5B documentation, create one prerequisite
-  commit, verify post-commit invariants, and fresh-inventory the mandatory
-  lower-stage prerequisite.
+- [x] Stage only synchronized B5B documentation and create prerequisite
+  commit `141dc44a757555e8d4837756515e1577f672348b`; verify post-commit
+  invariants and fresh-inventory the mandatory lower-stage prerequisite.
 
 ## Checker Task 258B5B Lower-Stage Prerequisite
 
-- [ ] After the documentation commit, change only
+- [x] After the documentation commit, change only
   `crates/mizar-test/src/runner/import_fixtures.rs` and the existing
   statement test leaf.
-- [ ] Add the crate-private opt-in `Ref` label augmentation without changing
+- [x] Add the crate-private opt-in `Ref` label augmentation without changing
   normal augmentation or its existing callers; pass the exact two frozen
-  lower tests and all protocol gates in a separate commit.
+  lower tests and all protocol gates in separate commit
+  `46dd9db56ced2fcc57799420de9d5fed06f284f5`.
 
 ## Checker Task 258B5B Upper Implementation
 
-- [ ] After the lower commit and fresh inventory, change only the frozen
+- [x] After the lower commit and fresh inventory, change only the frozen
   three checker and four runner consumers.
-- [ ] Implement the exact imported target/API, profiles, resolver replay,
+- [x] Implement the exact imported target/API, profiles, resolver replay,
   mutation matrix, four checker and five runner tests, then pass all reviews
-  and hard gates in a separate commit.
+  and pre-commit hard gates.
+- [x] Complete separate test-sufficiency, implementation, and final
+  source/documentation consistency reviews with **NO FINDINGS** after
+  repairing the classified `design_drift` and adjacent-profile
+  `source_drift`.
+- [x] Pass focused, crate, workspace, formatting, exact Clippy, five-CLI,
+  count/hash, forbidden-artifact, repository-state, and stash gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage and inspect only Task-258B5B upper, create the dedicated
+  implementation commit, verify post-commit invariants, and fresh-inventory
+  the next dependency-ready task.

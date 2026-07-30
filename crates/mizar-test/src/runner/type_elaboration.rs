@@ -423,7 +423,6 @@ pub(super) use source_set_term::{
     source_set_term_output_with_source, source_set_term_output_with_source_and_mutation,
     synthetic_source_set_term_output, synthetic_source_set_term_output_with_mutation,
 };
-pub(super) use source_statement::source_statement_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_statement::{
     SOURCE_STATEMENT_B1_TEXT, SOURCE_STATEMENT_B2_TEXT, SOURCE_STATEMENT_B3_TEXT,
@@ -460,7 +459,8 @@ pub(super) use source_statement::{
     SourceStatementB3NExtraction, SourceStatementB3NRouteInputs, SourceStatementB3RouteInputs,
     SourceStatementB4ASurfaceMutation, SourceStatementB4BSurfaceMutation,
     SourceStatementB4CSurfaceMutation, SourceStatementB5AExtraction,
-    SourceStatementB5ASurfaceMutation, SourceStatementExtraction, SourceStatementRouteInputs,
+    SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction,
+    SourceStatementB5BSurfaceMutation, SourceStatementExtraction, SourceStatementRouteInputs,
     SourceStatementRouteOutput, TASK258B3M2B2B3A_TASK256_FIELD_COUNT,
     TASK258B3M2B2B3A_TASK258_FIELD_COUNT, TASK258B3M2B2B3A_WITNESS_FIELD_COUNT,
     TASK258B3M2B2B3B_TASK48_FIELD_COUNT, TASK258B3M2B2B3B_TASK252_FIELD_COUNT,
@@ -482,6 +482,7 @@ pub(super) use source_statement::{
     extract_comprehension_witness_source_statement_with_surface_mutation,
     extract_empty_set_enumeration_witness_source_statement,
     extract_empty_set_enumeration_witness_source_statement_with_surface_mutation,
+    extract_imported_public_theorem_citation_source_statement,
     extract_multiple_witness_source_statement, extract_named_witness_source_statement,
     extract_nested_parenthesized_witness_source_statement, extract_nested_source_statement,
     extract_numeral_witness_source_statement, extract_parenthesized_witness_source_statement,
@@ -560,6 +561,9 @@ pub(super) use source_statement::{
     source_statement_b5a_output_with_mutation,
     source_statement_b5a_output_with_raw_resolver_mutation,
     source_statement_b5a_output_with_resolver_mutation, source_statement_b5a_resolver_env_for_test,
+    source_statement_b5b_output_with_mutation,
+    source_statement_b5b_output_with_raw_resolver_mutation,
+    source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
     source_statement_output_with_resolver_mutation, source_statement_output_with_source,
     source_statement_output_with_source_and_mutation, source_statement_resolver_env_for_test,
     source_statement_transport_detail_keys_with_output_mutation_for_test,
@@ -567,6 +571,10 @@ pub(super) use source_statement::{
     task258b4b_surface_profile_with_mutation_for_test,
     task258b4c_surface_profile_with_mutation_for_test,
     task258b5a_surface_profile_with_mutation_for_test,
+    task258b5b_surface_profile_with_mutation_for_test,
+};
+pub(super) use source_statement::{
+    SOURCE_STATEMENT_B5B_TEXT, source_statement_transport_detail_keys,
 };
 pub(super) use source_structure::source_structure_transport_detail_keys;
 #[cfg(test)]

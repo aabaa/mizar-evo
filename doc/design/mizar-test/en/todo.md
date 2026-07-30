@@ -3091,16 +3091,42 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete final scope/repository/stash gates.
 - [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
   no cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
-- [ ] Stage/commit only synchronized B5B documentation, verify invariants,
-  and fresh-inventory the mandatory lower task.
+- [x] Stage/commit only synchronized B5B documentation as `141dc44a`,
+  verify invariants, and fresh-inventory the mandatory lower task.
 
 ## Checker Task 258B5B Lower-Stage Prerequisite
 
-- [ ] Change only `runner/import_fixtures.rs` and the statement test leaf;
-  add the opt-in `Ref` label helper and two tests in a separate commit.
+- [x] Change only `runner/import_fixtures.rs` and the statement test leaf;
+  add the opt-in `Ref` label helper and two tests in separate commit
+  `46dd9db5`, then fresh-inventory upper implementation.
 
 ## Checker Task 258B5B Upper Implementation
 
-- [ ] After the lower commit, change only the frozen three checker and four
-  runner consumers; implement and verify the exact imported citation
-  transaction in a separate commit.
+- [x] Change only the frozen three checker and four runner Rust consumers;
+  keep synchronized design output in the same logical task without expanding
+  that code boundary.
+- [x] Authenticate exact source 146 bytes, 57 nodes/root 56, raw/enriched
+  resolver `1/0/1/1/0` and `8/1/1/3/1`, Binding `2/1/0`, Task-252
+  `4/4/0`, Task-256 two formulas/four edges/four requests, Task-258
+  `1/2/2/2/2 + 0/1`, and `8/49` ownership.
+- [x] Install the imported target/kind and exact import/projection/reference
+  provenance only under exact-source opt-in; preserve B1/B5A debug bytes,
+  pairing, replay, and empty semantics.
+- [x] Pass focused checker `4/4`, runner `7/7` (upper five/lower two), full
+  checker `430/430`, runner `500/500`, and record current production,
+  test-list, CLI hashes, and owner counts.
+- [x] Complete test-sufficiency and repeated implementation reviews with
+  **NO FINDINGS**; classify the hard-gate documentation mismatch as
+  `design_drift` and synchronize it.
+- [x] Keep the spec-coverage change narrative-only and preserve requirement
+  `tests = []`, trace status/count/backlink/owner/credit, corpus,
+  expectations, sidecars, public runner schema, B5C, and semantic deferrals.
+- [x] Complete final source/documentation consistency with **NO FINDINGS**,
+  then pass workspace formatting, exact Clippy, full tests, five CLIs, and
+  final count/hash/scope gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage and inspect only the B5B upper logical task, create one
+  implementation commit, verify clean post-commit/stash invariants, and
+  fresh-inventory the next dependency-ready task.
