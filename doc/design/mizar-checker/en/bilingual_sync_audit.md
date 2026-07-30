@@ -1099,6 +1099,36 @@ boundaries. After synchronizing the three `design_drift` corrections, the
 source/documentation, bilingual, and boundary re-review reports
 **NO FINDINGS**. Independent final quality reports **NO FINDINGS**; all nine
 hard gates PASS at valid `100/100` (`20/20/15/15/10/10/5/5`) with no
-cap, and complete parent verification PASSes. Only staging/cached-diff,
-implementation commit, post-commit, and fresh-next-task gates remain pending
-in both languages.
+cap, and complete parent verification PASSes. Staging and post-commit gates
+subsequently closed in implementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`; fresh inventory selected
+Task 258B4A in both languages.
+
+## Task 258B4A Frozen Bilingual Contract
+
+English and Japanese synchronously record the B4A decomposition, canonical
+authority, private 80-byte/double-LF source and hash, 26-node/root-25
+profile, resolver contribution 0/origin `[2,0]`, lower
+`2/2/0`, `1/0/0/0/0/0/2/2`, `1/0/1/1/1/0/2`, `1/2`,
+and `2/1/4` profiles, and upper `1/1/1/0/1` contract. Both preserve the
+active 79-byte route as a lower-only negative and freeze the same eight
+future source consumers (three checker and five runner), four checker/five
+runner tests, the single crate-private lower-helper visibility seam, public
+API, semantic deferrals, baseline, audit narrative-only effect, and trace
+no-op. No synchronization exception exists.
+
+Repeated read-only specification/documentation and bilingual review reports
+**NO FINDINGS** after the synchronized scope corrections. That review did
+not itself close the subsequent verification, quality, staging, commit, or
+post-commit gates.
+
+Both languages now record the exact 32-document no-op scope, package and
+workspace suites, formatting, full Clippy, five CLI counts/hashes,
+production/test-list hashes, diff check, and stash invariant as PASS.
+Those verification results did not themselves close the then-subsequent
+quality, staging, commit, or post-commit gates.
+
+Independent final read-only quality is synchronized as **NO FINDINGS**: all
+nine hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging/cached-diff review, commit, and
+post-commit inventory remain pending in both languages.

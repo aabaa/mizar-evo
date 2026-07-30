@@ -3338,7 +3338,29 @@ or semantic owner changed. B3M2B2B remains next before B4.
   gates PASS, no cap, and valid `100/100`.
 - [x] Pass focused/package, formatting, full Clippy, workspace, five-CLI,
   count/hash/scope/forbidden/stash verification.
-- [ ] Stage the exact scope and inspect cached diff.
-- [ ] Create one B3E implementation commit.
-- [ ] Verify clean post-commit/stash state and fresh-inventory the next
-  dependency-ordered task.
+- [x] Stage the exact B3E scope and inspect cached diff.
+- [x] Create B3E implementation commit
+  `e4479691db3b0a8785bb16e94d386bd71a394274`.
+- [x] Verify clean ahead-5/behind-0 post-commit state and unchanged stash;
+  fresh-inventory Task 258B4A.
+
+## Checker Task 258B4A Documentation Prerequisite
+
+- [x] Decompose the B4 composite-root umbrella and select the
+  explicit-universal Task-257B1 consumer first.
+- [x] Freeze canonical authority, distinct private 80-byte/double-LF
+  selector, parser/resolver provenance, and lower/upper syntax-free tables.
+- [x] Resolve the active-case `test_expectation_drift` without changing the
+  79-byte `.miz`, expectation, sidecar, trace, or active route.
+- [x] Freeze the composite target/fingerprints, dedicated producer, paired
+  typed installation, final boundary, eight files (three checker/five
+  runner), the sole crate-private Task-257B1 helper visibility seam, nine
+  tests, deferrals, baseline, audit narrative-only impact, and exit criteria.
+- [x] Complete repeated specification/documentation reviews with no
+  findings.
+- [x] Pass docs-only verification and all no-op/count/hash/stash gates.
+- [x] Pass all hard gates and independent quality score `>=90/100`.
+- [ ] Stage the exact bilingual documentation scope and create one
+  prerequisite commit.
+- [ ] Verify post-commit/stash invariants and fresh-inventory B4A
+  implementation.

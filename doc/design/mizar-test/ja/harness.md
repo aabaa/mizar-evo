@@ -4298,5 +4298,24 @@ library `471` PASS。corpus/trace/CLI/semanticはunchangedで、reviewは
 harness responsibility overclaimと同期docs drift 2件の修正後、final
 consistency repeatは**NO FINDINGS**である。complete verificationはPASSし、
 independent qualityも**NO FINDINGS**、全9 gates PASS、valid `100/100`。
-pendingはstaging/cached-diff review、implementation commit、post-commit
-invariants、fresh next-task inventoryだけである。
+staging/post-commit gatesはimplementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
+Task 258B4Aをselectした。
+
+## Checker Task 258B4A frozen harness route
+
+harnessはexact private 80-byte/double-LF explicit-universal theoremだけを
+recognizeする。new Task-258 composite statement constructorとpaired typed
+installerをcallする前に、全26 Surface nodes、local theorem resolver
+provenance、complete Task-252/256/257/B1 handoffをauthenticateする。existing
+lower outputはsingle crate-private production-helper visibility seam経由で
+consumeし、Task-257 rowsをcopyまたはrebuildしない。79-byte active
+Task-257B1 sourceはlower-only routeに留めなければならない。
+
+4 stage vectorsはstatement selection、typed paired installation、final
+construction、stable reportingをcoverする。5 frozen testsはbytes/nodes、
+lower/upper fields、stage-prefix failure/replay、coherent near miss、両family
+orders、clone/debug、empty semantic outputをexhaustする。harnessはtheorem
+truth、acceptance、proof、fact、formula-statement coverageをclaimしない。
+documentation-only test-sufficiency reviewは**NO FINDINGS**である。future
+implementation test reviewはseparate taskに残す。

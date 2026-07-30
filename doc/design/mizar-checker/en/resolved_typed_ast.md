@@ -1414,6 +1414,25 @@ or semantic/proof/goal table changed. Independent implementation review
 reports **NO FINDINGS**. Final source/documentation consistency also reports
 **NO FINDINGS** after the bounded design corrections. Full verification
 PASSes; independent final quality reports **NO FINDINGS**, all nine hard
-gates PASS, valid `100/100`. Only staging/cached-diff review,
-implementation commit, post-commit invariants, and fresh-next-task inventory
-remain pending.
+gates PASS, valid `100/100`. Staging and post-commit gates subsequently
+closed in implementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`; fresh inventory selected
+Task 258B4A.
+
+## Task 258B4A Frozen Final Boundary
+
+Final construction revalidates the optional composite-formula and
+formula-composition statement fingerprints against the installed Task-257B1
+handoffs, the exact `Composite(0)` statement/candidate links, the one-owner
+resolver provenance, and mutual exclusion with atomic statement families.
+Clone and debug output preserve the complete syntax-free transaction.
+
+Contexts, types, facts, coercions, initial obligations, diagnostics, theorem
+acceptance, and proof state remain empty. Any stale, partial, hybrid, or
+cross-family tuple fails with
+`ResolvedTypedAstError::InvalidSourceStatement` before final publication and
+leaves replay available.
+
+Repeated read-only documentation review reports **NO FINDINGS**. Independent
+final quality passes all nine hard gates with no cap at valid `100/100`;
+only staging, commit, and post-commit inventory remain.

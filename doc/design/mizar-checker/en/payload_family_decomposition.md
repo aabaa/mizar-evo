@@ -1436,6 +1436,25 @@ proof/fact/Core/CFG/VC behavior, B4/B5, and coverage credit remain deferred.
 Final source/documentation consistency reports **NO FINDINGS** after the
 three bounded design corrections. Complete verification PASSes, and
 independent final quality reports **NO FINDINGS**, all nine hard gates PASS,
-valid `100/100` with no cap. Only staging/cached-diff review,
-implementation commit, post-commit invariants, and fresh-next-task inventory
-remain pending.
+valid `100/100` with no cap. Staging and post-commit gates subsequently
+closed in implementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`; fresh inventory selected
+Task 258B4A.
+
+## Task 258B4 Composite-Root Decomposition
+
+The composite-root umbrella is split by already public lower consumer:
+
+1. B4A consumes Task-257B1 explicit-universal composition.
+2. B4B retains Task-257B2 connective/grouping roots.
+3. B4C retains Task-257B3 restricted, existential, and nested roots.
+4. B5 retains broader imported/outer/inner visibility.
+
+B4A adds only the upper `Composite(0)` statement/candidate association over
+the private 80-byte/double-LF route. Its zero input-fact profile keeps
+explicit binder/type/use transport in Task 257. It neither copies lower rows
+nor converts lower `UnassignedStatement` ownership into semantic acceptance.
+
+Repeated read-only documentation review reports **NO FINDINGS**. Independent
+final quality passes all nine hard gates with no cap at valid `100/100`;
+only staging, commit, and post-commit inventory remain.

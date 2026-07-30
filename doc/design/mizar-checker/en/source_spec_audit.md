@@ -4755,5 +4755,26 @@ After the three bounded `design_drift` corrections, final source/
 documentation, bilingual, and boundary consistency reports
 **NO FINDINGS**. Complete parent verification PASSes. Independent final
 quality reports **NO FINDINGS**, all nine hard gates PASS, valid `100/100`
-with no cap. Only staging/cached-diff review, implementation commit,
-post-commit invariants, and fresh-next-task inventory remain pending.
+with no cap. Staging and post-commit gates subsequently closed in
+implementation commit `e4479691db3b0a8785bb16e94d386bd71a394274`;
+fresh inventory selected Task 258B4A.
+
+## Task 258B4A Authority Audit
+
+Canonical formula and theorem authority, existing parser/resolver behavior,
+and Tasks 252/256/257/258 public handoffs support the syntax-free B4A root
+association without a semantic decision. The active one-LF Task-257B1
+fixture cannot be reused because its expectation defers theorem ownership
+and the formula-statement trace row requires a distinct future source. The
+private two-LF source resolves this `test_expectation_drift` while preserving
+the exact lower AST and resolver provenance.
+
+The missing B4A design is `design_drift`; future upper API/route and test
+work is bounded `source_drift`/`test_gap`. No blocking `spec_gap`,
+`source_undocumented_behavior`, or `boundary_violation` remains, and no
+lower-stage prerequisite is authorized or required.
+
+Repeated specification/documentation review reports **NO FINDINGS** after
+the classified corrections. Independent final quality passes all nine hard
+gates with no cap at valid `100/100`; only staging, commit, and post-commit
+inventory remain.

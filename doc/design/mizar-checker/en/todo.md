@@ -5823,7 +5823,37 @@ implementation commit does not satisfy a producer task.
   (`20/20/15/15/10/10/5/5`).
 - [x] Pass focused/package tests, formatting, full workspace Clippy, root
   workspace tests, five CLIs, count/hash/scope/forbidden/stash gates.
-- [ ] Stage the exact implementation scope and inspect the cached diff.
-- [ ] Create one B3E implementation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory the next
-  dependency-ordered task.
+- [x] Stage the exact implementation scope and inspect the cached diff.
+- [x] Create B3E implementation commit
+  `e4479691db3b0a8785bb16e94d386bd71a394274`.
+- [x] Verify clean ahead-5/behind-0 post-commit state, unchanged stash
+  fingerprint `f65cf4a13752ec...`, and fresh-inventory Task 258B4A.
+
+## Checker Task 258B4A Documentation Prerequisite
+
+- [x] Decompose B4 into B4A explicit-universal, B4B connective/grouping,
+  and B4C restricted/existential/nested roots; retain B5 visibility.
+- [x] Audit canonical formula/theorem authority, parser/resolver fixtures,
+  and Tasks 252/256/257 public APIs with no lower-stage prerequisite.
+- [x] Classify active 79-byte fixture reuse as `test_expectation_drift` and
+  freeze the distinct private 80-byte/double-LF source and hash.
+- [x] Freeze 26 nodes/root 25, resolver contribution 0/origin `[2,0]`,
+  lower `2/2/0`, `1/0/0/0/0/0/2/2`, `1/0/1/1/1/0/2`,
+  `1/2`, `2/1/4`, and upper `1/1/1/0/1`.
+- [x] Freeze `Composite(0)`, zero input facts, optional lower fingerprints,
+  dedicated producer, paired typed installer, and final revalidation.
+- [x] Freeze exact eight future source consumers (three checker/five runner),
+  the sole crate-private Task-257B1 helper visibility seam, four checker/five
+  runner tests, near-miss matrices, cross-family edges, semantic deferrals,
+  and narrative-only audit/trace no-op.
+- [x] Complete repeated specification/documentation review with
+  **NO FINDINGS**.
+- [x] Pass documentation-only scope, forbidden-artifact, count/hash, CLI,
+  crate/workspace, and stash verification.
+- [x] Complete independent final quality with all nine hard gates and valid
+  score `>=90/100`.
+- [ ] Stage only the synchronized documentation scope and inspect cached
+  diff.
+- [ ] Create one dedicated B4A documentation prerequisite commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4A
+  implementation.

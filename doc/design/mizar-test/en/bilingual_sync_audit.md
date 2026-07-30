@@ -1138,6 +1138,34 @@ orders. Both record library `471`, final sizes/hashes, review
 **NO FINDINGS**, and public/active/corpus/trace/semantic no-ops. The
 three-correction consistency repeat is **NO FINDINGS**; independent final
 quality is **NO FINDINGS**, all nine gates PASS, valid `100/100`, and full
-verification PASSes in both languages. Only staging/cached-diff review,
-implementation commit, post-commit invariants, and fresh-next-task inventory
-remain pending.
+verification PASSes in both languages. Staging and post-commit gates
+subsequently closed in implementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`; fresh inventory selected
+Task 258B4A.
+
+## Checker Task 258B4A Frozen Runner Synchronization
+
+EN/JA runner documents synchronize the private 80-byte/hash,
+26-node/root-25 route, exact resolver and lower/upper profiles, active
+79-byte negative, five future runner consumers, the single crate-private
+lower-helper visibility seam, five exact tests, paired installation,
+semantic deferrals, baseline counts/hashes, and
+corpus/expectation/sidecar/trace no-ops. Both languages assign formula truth,
+theorem acceptance, proof, facts, coverage credit, B4B/B4C, and B5 to later
+tasks. No synchronization exception exists.
+
+Repeated read-only specification/documentation and bilingual review reports
+**NO FINDINGS** after synchronizing the exact five-runner-file boundary and
+crate-private lower-handoff seam. That review did not itself close the
+subsequent verification, quality, staging, commit, or post-commit gates.
+
+Both languages now record the exact docs-only scope, package/workspace
+suites, formatting, full Clippy, five CLI/count/hash gates, forbidden
+artifacts, diff check, and stash invariant as PASS. Those verification
+results did not themselves close the then-subsequent quality, staging,
+commit, or post-commit gates.
+
+Independent final read-only quality is synchronized as **NO FINDINGS**: all
+nine hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging/cached-diff review, commit, and
+post-commit inventory remain pending in both languages.

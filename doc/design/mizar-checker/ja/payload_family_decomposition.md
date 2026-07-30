@@ -1370,5 +1370,24 @@ coverage creditはdeferredである。
 3件のbounded design correction後のfinal source/docs consistencyは
 **NO FINDINGS**である。complete verificationはPASSし、independent final
 qualityも**NO FINDINGS**、全9 gates PASS、capなし、valid `100/100`。
-pendingはstaging/cached-diff review、implementation commit、post-commit
-invariants、fresh next-task inventoryだけである。
+staging/post-commit gatesはimplementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
+Task 258B4Aをselectした。
+
+### Task 258B4 composite-root decomposition
+
+composite-root umbrellaは既存public lower consumerごとに分ける。
+
+1. B4AはTask-257B1 explicit-universal compositionをconsumeする。
+2. B4BはTask-257B2 connective/grouping rootsを保持する。
+3. B4CはTask-257B3 restricted/existential/nested rootsを保持する。
+4. B5はbroader imported/outer/inner visibilityを保持する。
+
+B4Aが追加するのはprivate 80-byte/double-LF route上のupper
+`Composite(0)` statement/candidate associationだけである。zero input-fact
+profileによりexplicit binder/type/use transportはTask 257に残る。lower rowを
+copyせず、lower `UnassignedStatement` ownershipをsemantic acceptanceへ
+変換しない。repeated read-only documentation reviewは
+**NO FINDINGS**である。independent final qualityは全9 hard gatesを
+capなし、valid `100/100`でPASSした。remainingはstaging、commit、
+post-commit inventoryだけである。

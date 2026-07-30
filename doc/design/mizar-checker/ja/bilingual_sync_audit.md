@@ -1053,6 +1053,34 @@ implementation review **NO FINDINGS**、authority/corpus/trace/active/
 semantic no-opも同期する。3件の`design_drift`同期修正後のsource/docs、
 bilingual、boundary re-reviewは**NO FINDINGS**である。independent final
 qualityも**NO FINDINGS**、全9 gates PASS、valid `100/100`、full
-verification PASSである。pendingはstaging/cached-diff review、
-implementation commit、post-commit invariants、fresh next-task inventory
-だけである。
+verification PASSである。staging/post-commit gatesはimplementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
+両言語でTask 258B4Aをselectした。
+
+## Task 258B4A frozen bilingual contract
+
+EN/JAはB4A decomposition、canonical authority、private
+80-byte/double-LF source/hash、26-node/root-25 profile、resolver
+contribution `0` / origin `[2,0]`、lower `2/2/0`、
+`1/0/0/0/0/0/2/2`、`1/0/1/1/1/0/2`、`1/2`、`2/1/4`
+profiles、upper `1/1/1/0/1` contractを同期して記録する。
+
+両言語はactive 79-byte routeをlower-only negativeとして保持し、same
+eight future source consumers（checker 3/runner 5）、single crate-private
+lower-helper visibility seam、checker 4/runner 5 exact tests、public API、
+semantic deferrals、baseline、audit narrative-only effect、trace no-opを
+freezeする。synchronization exceptionはない。documentation/bilingual
+reviewはsynchronized scope correction後に**NO FINDINGS**である。
+このreview自体はsubsequent verification、quality、staging、commit、
+post-commit gatesをcloseしない。
+
+両言語はexact 32-document no-op scope、package/workspace suites、
+formatting、full Clippy、5 CLI counts/hashes、production/test-list hashes、
+diff check、stash invariantをPASSとして同期する。これらverification
+results自体はthen-subsequent quality、staging、commit、post-commit gatesを
+closeしない。
+
+independent final read-only qualityは**NO FINDINGS**として同期する。全9
+hard gatesはcapなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）でPASSした。両言語でpendingなのは
+staging/cached-diff review、commit、post-commit inventoryだけである。

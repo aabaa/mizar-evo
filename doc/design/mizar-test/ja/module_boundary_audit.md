@@ -11071,6 +11071,23 @@ parser/resolver/binding、Task-255 leaves、active/corpus/public/error/debug/
 dependency/trace/semantic ownersはunchanged。reviewは**NO FINDINGS**で、
 split/ownership transferは不要である。3件のdesign correction後のfinal
 consistencyとindependent qualityは**NO FINDINGS**、complete verificationと
-全9 gatesはvalid `100/100`でPASSした。pendingはstaging/cached-diff
-review、implementation commit、post-commit invariants、fresh next-task
-inventoryだけである。
+全9 gatesはvalid `100/100`でPASSした。staging/post-commit gatesは
+implementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
+Task 258B4Aをselectした。
+
+## Checker Task 258B4A runner boundary freeze
+
+future runner write scopeはexactに
+`type_elaboration/source_formula_composition.rs`、
+`type_elaboration/source_statement.rs`、`type_elaboration.rs`、`runner.rs`、
+`runner/tests/type_elaboration/source_statement.rs`である。最初のfileは
+existing production helper visibilityを`pub(in crate::runner)`へ変更する
+だけで、他4 ownersがprivate selector、stage wiring、5 testsをownする。
+lower row/signature/debug/selector/behavior、parser/resolver/binding owner、
+corpus artifact、public runner schema、trace ownerを変更せず、
+split/ownership transferも不要である。
+fresh read-only documentation boundary reviewは**NO FINDINGS**である。
+single visibility seamはexisting validated handoffだけをexposeし、lower
+ownershipを移動しない。implementation boundary reviewはlater separate
+taskである。

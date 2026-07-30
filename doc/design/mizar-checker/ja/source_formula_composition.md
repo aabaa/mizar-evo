@@ -627,3 +627,20 @@ predicate token/candidate/resolver contribution/lower edge/truth/fact/
 diagnostic/semantic resultをduplicate/inferしない。checker 3 tests /
 runner 4 testsがcomplete contractをcoverし、single covered trace rowは
 syntax-free associationだけをcreditする。
+
+## Task 258B4A downstream statement consumer
+
+Task 258B4AはTask-257B1 explicit-universal composite/composition pairの最初の
+upper consumerである。lower tables、fingerprints、
+`1/0/1/1/1/0/2` / `1/2` profiles、
+`SourceFormulaRootOwnership::UnassignedStatement`はbyte-for-byte
+unchanged。new statement constructorはこれらpublic handoffを
+reauthenticateし、`SourceCompositeFormulaId::new(0)`だけをtargetにする。
+
+paired typed installerはTask 258 ownerであり、本moduleのownerではない。
+existing composite/formula-composition handoffとstatementを一緒にinstallするか
+何もpublishしない。lower API、row、root ownership、debug grammar、truth、
+binder semantics、coverage creditを本moduleへ追加しない。documentation
+reviewは**NO FINDINGS**である。independent final qualityは全9 hard gatesを
+capなし、valid `100/100`でPASSした。remainingはstaging、commit、
+post-commit inventoryだけである。

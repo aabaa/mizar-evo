@@ -859,6 +859,26 @@ authority/corpus/trace artifactは不変である。focused checker `4/4`と
 source/docsとboundary re-reviewは**NO FINDINGS**である。checker
 `410+15`、runner `471+3/14/137/2/21`、fmt、full Clippy、workspace、
 5 CLI、count/hash/scope rerunはboundaryを拡大せずPASSした。independent
-qualityは**NO FINDINGS**、全9 gates PASS、valid `100/100`。pendingは
-staging/cached-diff review、implementation commit、post-commit
-invariants、fresh next-task inventoryだけである。
+qualityは**NO FINDINGS**、全9 gates PASS、valid `100/100`。staging/
+post-commit gatesはimplementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
+Task 258B4Aをselectした。
+
+## Task 258B4A boundary freeze
+
+B4Aはlower formula row/contract/behaviorをunchangedに保つ。
+`source_formula_composition.rs`はexisting output helperのproduction
+visibilityを`pub(in crate::runner)`へ変更するだけである。
+`source_statement.rs`がそのTask-257B1 handoffをauthenticateし、upper
+`Composite(0)` statement associationを作る。`typed_ast.rs`がatomic paired
+installation、`resolved_typed_ast.rs`がfinal revalidationをownする。
+
+runner boundaryはそのsingle crate-private visibility seamとexisting
+statement selector/wiring/test surfacesに限定する。parser、resolver、
+binding、全checker Task-252/256/257 owners、他のlower runner surface、
+fixture、expectation、sidecar、trace metadataはwrite scope外である。
+eight-file implementation boundaryはcohesiveで、module splitまたは
+ownership transferを必要としない。fresh read-only documentation boundary
+reviewは**NO FINDINGS**である。このvisibility seamはlower ownershipを
+transferせず、lower behavior changeもauthorizeしない。implementation
+boundary reviewはlater separate taskである。

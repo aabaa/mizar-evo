@@ -1356,6 +1356,29 @@ private allowlistでownerは4,933から4,934 linesへ増える。全five familie
 120 ordersでindependent。public typed-AST API、semantic/proof state、
 diagnostic/debug grammarはunchangedである。
 final source/docs consistencyとindependent qualityは**NO FINDINGS**、
-full verificationと全9 gatesはvalid `100/100`でPASSした。pendingは
-staging/cached-diff review、implementation commit、post-commit
-invariants、fresh next-task inventoryだけである。
+full verificationと全9 gatesはvalid `100/100`でPASSした。staging/
+post-commit gatesはimplementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
+Task 258B4Aをselectした。
+
+## Task 258B4A frozen paired installation
+
+new installation pathはexactに
+`with_source_formula_composition_statement(mut self, composite:
+SourceCompositeFormulaHandoff, composition:
+SourceFormulaCompositionHandoff, statement: SourceStatementHandoff) ->
+Result<Self, TypedAstError>`である。この順でexact Task-257B1
+composite/formula-composition handoffとB4A statementをconsumeし、全lower
+fingerprintとstatementのoptional composite/composition fingerprintを
+revalidateして、3件すべてをatomically publishする。existing lower-only
+`with_source_formula_composition` behaviorとdebug bytesはunchanged。
+
+transactionはprivate double-LF routeとexact `Composite(0)`
+statement/candidate pairだけをacceptする。atomic Task-258 statement
+families、duplicate owner、stale arena、reordered/hybrid lower handoff、
+partial tupleは`TypedAstError::InvalidSourceStatement`でfailし、stateを
+byte-identicalに保ってreplayを許す。semantic tableとlower root-ownership
+rowは変更しない。
+repeated read-only documentation reviewは**NO FINDINGS**である。
+independent final qualityは全9 hard gatesをcapなし、valid `100/100`で
+PASSした。remainingはstaging、commit、post-commit inventoryだけである。

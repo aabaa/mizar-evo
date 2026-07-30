@@ -3071,6 +3071,56 @@ matching、substitution/goal、proof/facts、Core/CFG/VC、B4/B5、active route�
 
 bounded design correction後のfinal source/docs consistencyは
 **NO FINDINGS**、full verificationはPASSした。independent final qualityは
-**NO FINDINGS**、全9 gates PASS、valid `100/100`。pendingは
-staging/cached-diff review、implementation commit、post-commit invariants、
-fresh next-task inventoryだけである。
+**NO FINDINGS**、全9 gates PASS、valid `100/100`。staging/post-commit
+gatesはimplementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
+Task 258B4Aをselectした。
+
+## Task 258B4A frozen composite statement root
+
+B4Aはprivate 80-byte/double-LF explicit-universal theoremと、既に認証済みの
+Task-257B1 composite `1/0/1/1/1/0/2` + composition `1/2`をconsumeする。
+theorem owner 1、theorem statement 1、context 1、input fact 0、unverified
+candidate 1をpublishする。statement/candidateはどちらも
+`SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0))`
+をtargetとし、context 0はbinding context 0とempty visible-binding setを
+保持する。
+
+owner 0はchecked local theorem symbol、contribution `0`、Surface site
+`22` / range `0..78`、label spelling
+`FormulaQuantifierBoundUsePayloadBoundary`、
+`Theorem` / `Unmodified` / `Normal`である。statement 0はowner/context
+`0`、site `22` / range `0..78`、ordinal `0`、
+`TheoremProposition` / `Normal`、normalized spelling
+`theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;`
+である。context 0はstatement 0、binding context 0、range `0..78`、
+visible `[]`。candidate 0はstatement/context/ordinal `0`、
+`UnverifiedProposition`、`Composite(0)`である。
+
+`SourceStatementFormulaTarget`には`Composite` variantだけを追加する。
+`SourceStatementHandoff`はoptional composite-formula/formula-composition
+fingerprintを保持し、
+`composite_formula_fingerprint(&self) -> Option<&str>` /
+`formula_composition_fingerprint(&self) -> Option<&str>`で公開する。
+existing atomic routeは両方absentのままbyte-identical debug textを保持する。
+present valuesはcorresponding lower handoffの`debug_text()` bytesに一致する。
+dedicated `SourceStatementProducer::build_with_formula_composition`の引数順は
+input、symbols、bindings、primary terms、atomic formulas、composite
+formulas、formula composition、arenaである。constructorは
+Task-252/256/257/B1、resolver owner contribution `0` / origin `[2,0]`、
+complete `1/1/1/0/1` table profile、exact `Composite(0)` links、subtree
+exclusionをpublication前にvalidateする。
+
+B4A handoffだけは`debug_text()`がexisting atomic-formula fingerprintの後、
+owner 0の前にRust-Debug quoteした
+`composite-formula-fingerprint: {:?}`、続いて
+`formula-composition-fingerprint: {:?}`をinsertする。atomic handoffは両lineを
+omitするため、complete debug bytesは変更しない。
+
+lower `UnassignedStatement` root ownershipはunchanged。binder fact、truth、
+proof acceptance/publication、fact、goal、justification、diagnostic、
+semantic resultを推測しない。active one-final-LF 79-byte Task-257B1 fixtureは
+upper-route negativeで、private double-LF 80-byte sourceだけがB4Aをselect
+できる。repeated read-only documentation reviewは**NO FINDINGS**である。
+independent final qualityは全9 hard gatesをcapなし、valid `100/100`で
+PASSした。remainingはstaging、commit、post-commit inventoryだけである。

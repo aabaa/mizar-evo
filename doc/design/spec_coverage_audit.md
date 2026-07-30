@@ -5328,7 +5328,31 @@ Paired plans record path/test-list hashes; five CLI counts/hashes pass
 unchanged. After the three bounded `design_drift` corrections, final
 source/documentation consistency reports **NO FINDINGS**. Independent final
 quality reports **NO FINDINGS**; all nine gates PASS at valid `100/100`
-with no cap, and complete verification PASSes. Only staging/cached-diff
-review, implementation commit, post-commit invariants, and fresh-next-task
-inventory remain pending.
+with no cap, and complete verification PASSes. Staging and post-commit gates
+subsequently closed in implementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`; fresh inventory selected
+Task 258B4A.
 None of these results changes trace status/count/backlinks or audit credit.
+
+### Task 258B4A narrative-only composite-root ownership
+
+Fresh post-B3E inventory decomposes Task 258B4 and freezes B4A as the
+syntax-free upper association between one theorem statement and the existing
+Task-257B1 explicit-universal composite root. The private 80-byte/double-LF
+source preserves the exact lower profiles and resolver provenance while
+remaining distinct from the active 79-byte type-elaboration fixture whose
+expectation defers theorem ownership.
+
+This changes ownership narrative only.
+`spec.en.checker.formula_statement.source_payloads` stays `deferred` with
+`tests = []`; no trace status, test list, backlink, requirement count, or
+coverage credit changes. Existing `.miz`, expectations, sidecars, and active
+outcomes remain unchanged. Binder guard discharge, equality/quantified
+truth, theorem acceptance/publication, proof, facts, Core/CFG/VC, B4B/B4C,
+B5, and MT10-FS remain deferred.
+
+Repeated specification/documentation review reports **NO FINDINGS**.
+Complete docs-only verification PASSes, and independent final quality reports
+**NO FINDINGS** with all nine hard gates PASS and valid `100/100`. This
+review outcome changes no trace row, count, backlink, test, or coverage
+credit. Only staging, commit, and post-commit inventory remain.

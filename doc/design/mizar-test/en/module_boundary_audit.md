@@ -12318,5 +12318,23 @@ dependency/trace/semantic owners remain unchanged. Reviews report
 **NO FINDINGS**; no split or transfer is required. Final consistency after
 the three design corrections and independent quality both report
 **NO FINDINGS**; complete verification and all nine gates PASS at valid
-`100/100`. Only staging/cached-diff review, implementation commit,
-post-commit invariants, and fresh-next-task inventory remain pending.
+`100/100`. Staging and post-commit gates subsequently closed in
+implementation commit `e4479691db3b0a8785bb16e94d386bd71a394274`;
+fresh inventory selected Task 258B4A.
+
+## Checker Task 258B4A Runner Boundary Freeze
+
+The future runner write scope is exactly
+`type_elaboration/source_formula_composition.rs`,
+`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
+and `runner/tests/type_elaboration/source_statement.rs`. The first changes
+only the existing production helper visibility to `pub(in crate::runner)`;
+the other four own the private selector, stage wiring, and five tests. No
+lower row/signature/debug/selector/behavior, parser/resolver/binding owner,
+corpus artifact, public runner schema, or trace owner changes, and no split
+or ownership transfer is needed.
+
+Fresh read-only documentation boundary review reports **NO FINDINGS**. The
+single visibility seam exposes an existing validated handoff only and does
+not move lower ownership; implementation boundary review remains a separate
+later task.

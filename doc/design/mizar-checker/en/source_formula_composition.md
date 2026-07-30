@@ -681,3 +681,21 @@ No predicate token, candidate, resolver contribution, lower edge, truth,
 fact, diagnostic, or semantic result is duplicated or inferred. Exactly
 three checker and four runner tests cover the complete contract, and the
 single covered trace row credits only this syntax-free association.
+
+## Task 258B4A Downstream Statement Consumer
+
+Task 258B4A is the first upper consumer of the Task-257B1
+explicit-universal composite/composition pair. The lower tables, fingerprints,
+`1/0/1/1/1/0/2` and `1/2` profiles, and
+`SourceFormulaRootOwnership::UnassignedStatement` remain byte-for-byte
+unchanged. The new statement constructor only reauthenticates those public
+handoffs and targets `SourceCompositeFormulaId::new(0)`.
+
+The paired typed installer is owned by Task 258, not by this module. It must
+install the existing composite and formula-composition handoffs together
+with the statement or publish nothing. No lower API, row, root ownership,
+debug grammar, truth, binder semantics, or coverage credit is added here.
+
+Repeated read-only documentation review reports **NO FINDINGS**. Independent
+final quality passes all nine hard gates with no cap at valid `100/100`;
+only staging, commit, and post-commit inventory remain.

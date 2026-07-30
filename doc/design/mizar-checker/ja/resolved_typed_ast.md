@@ -1357,6 +1357,24 @@ schema、error/debug、dependency、active route、semantic/proof/goal tableは
 unchanged。implementation reviewは**NO FINDINGS**。bounded design
 correction後のfinal source/docs consistencyも**NO FINDINGS**で、full
 verificationはPASSした。independent final qualityは**NO FINDINGS**、
-全9 gates PASS、valid `100/100`。pendingはstaging/cached-diff review、
-implementation commit、post-commit invariants、fresh next-task inventory
-だけである。
+全9 gates PASS、valid `100/100`。staging/post-commit gatesは
+implementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
+Task 258B4Aをselectした。
+
+## Task 258B4A frozen final boundary
+
+final constructionはoptional composite-formula/formula-composition statement
+fingerprintsをinstalled Task-257B1 handoffに対してrevalidateし、exact
+`Composite(0)` statement/candidate links、single-owner resolver provenance、
+atomic statement familiesとのmutual exclusionを検証する。clone/debug outputは
+complete syntax-free transactionをpreserveする。
+
+contexts、types、facts、coercions、initial obligations、diagnostics、
+theorem acceptance、proof stateはemptyのままである。stale、partial、
+hybrid、cross-family tupleはfinal publication前に
+`ResolvedTypedAstError::InvalidSourceStatement`でfailし、replay可能な
+stateを保持する。repeated read-only documentation reviewは
+**NO FINDINGS**である。independent final qualityは全9 hard gatesを
+capなし、valid `100/100`でPASSした。remainingはstaging、commit、
+post-commit inventoryだけである。

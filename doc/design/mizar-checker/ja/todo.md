@@ -5558,7 +5558,38 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）で完了。
 - [x] focused/package、fmt、full workspace Clippy、root tests、5 CLI、
   count/hash/scope/forbidden/stash gatesをPASS。
-- [ ] exact implementation scopeをstageしcached diffをinspect。
-- [ ] B3E implementation commitをcreate。
-- [ ] clean post-commit/stash invariantsをverifyし、next taskをfresh
+- [x] exact implementation scopeをstageしcached diffをinspect。
+- [x] B3E implementation commit
+  `e4479691db3b0a8785bb16e94d386bd71a394274`をcreate。
+- [x] clean ahead-5/behind-0 post-commit state、unchanged stash
+  fingerprint `f65cf4a13752ec...`をverifyし、Task 258B4Aをfresh
   inventory。
+
+## Checker Task 258B4A documentation prerequisite
+
+- [x] B4をB4A explicit-universal、B4B connective/grouping、
+  B4C restricted/existential/nested rootsへdecomposeし、B5 visibilityを
+  retain。
+- [x] canonical formula/theorem authority、parser/resolver fixtures、
+  Tasks 252/256/257 public APIをauditし、lower-stage prerequisiteなしを
+  confirm。
+- [x] active 79-byte fixture reuseを`test_expectation_drift`と分類し、
+  distinct private 80-byte/double-LF source/hashをfreeze。
+- [x] 26 nodes/root 25、resolver contribution 0/origin `[2,0]`、
+  lower `2/2/0`、`1/0/0/0/0/0/2/2`、`1/0/1/1/1/0/2`、
+  `1/2`、`2/1/4`、upper `1/1/1/0/1`をfreeze。
+- [x] `Composite(0)`、zero input facts、optional lower fingerprints、
+  dedicated producer、paired typed installer、final revalidationをfreeze。
+- [x] exact eight future source consumers（checker 3/runner 5）、single
+  crate-private Task-257B1 helper visibility seam、checker 4/runner 5
+  tests、near-miss matrices、cross-family edges、semantic deferrals、
+  narrative-only audit/trace no-opをfreeze。
+- [x] repeated specification/documentation reviewを**NO FINDINGS**でcomplete。
+- [x] documentation-only scope、forbidden-artifact、count/hash、CLI、
+  crate/workspace、stash verificationをPASS。
+- [x] independent final qualityを全9 hard gatesとvalid score
+  `>=90/100`でcomplete。
+- [ ] synchronized documentation scopeだけをstageしcached diffをinspect。
+- [ ] dedicated B4A documentation prerequisite commit 1件をcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、B4A implementationを
+  fresh inventory。

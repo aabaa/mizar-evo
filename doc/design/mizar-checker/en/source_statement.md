@@ -3591,5 +3591,56 @@ Core/CFG/VC, B4/B5, or active-route behavior is added.
 Final source/documentation consistency reports **NO FINDINGS** after the
 bounded design corrections. Full verification PASSes; independent final
 quality reports **NO FINDINGS**, all nine hard gates PASS, valid `100/100`.
-Only staging/cached-diff review, implementation commit, post-commit
-invariants, and fresh-next-task inventory remain pending.
+Staging and post-commit gates subsequently closed in implementation commit
+`e4479691db3b0a8785bb16e94d386bd71a394274`; fresh inventory selected
+Task 258B4A.
+
+## Task 258B4A Frozen Composite Statement Root
+
+B4A consumes the private 80-byte/double-LF explicit-universal theorem and
+the already authenticated Task-257B1 `1/0/1/1/1/0/2` composite plus `1/2`
+composition. It publishes one theorem owner, one theorem statement, one
+context, zero input facts, and one unverified candidate. Both statement and
+candidate target `SourceStatementFormulaTarget::Composite(
+SourceCompositeFormulaId::new(0))`; context 0 names binding context 0 with
+an empty visible-binding set.
+
+Owner 0 is the checked local theorem symbol at Surface site 22/range
+`0..78`, contribution 0, label spelling
+`FormulaQuantifierBoundUsePayloadBoundary`, `Theorem`/`Unmodified`/`Normal`.
+Statement 0 is owner/context 0, site 22/range `0..78`, ordinal 0,
+`TheoremProposition`/`Normal`, with normalized spelling
+`theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;`.
+Context 0 is statement 0, binding context 0, range `0..78`, visible `[]`.
+Candidate 0 is statement/context/ordinal 0,
+`UnverifiedProposition`, `Composite(0)`.
+
+`SourceStatementFormulaTarget` gains the `Composite` variant.
+`SourceStatementHandoff` stores optional composite-formula and
+formula-composition fingerprints, exposed by
+`composite_formula_fingerprint(&self) -> Option<&str>` and
+`formula_composition_fingerprint(&self) -> Option<&str>`. Existing atomic
+routes keep both absent and retain byte-identical debug text. Present values
+equal the corresponding lower handoff `debug_text()` bytes. The dedicated
+`SourceStatementProducer::build_with_formula_composition` argument order is
+input, symbols, bindings, primary terms, atomic formulas, composite
+formulas, formula composition, and arena. It validates Task-252/256/257/B1,
+resolver owner contribution 0/origin `[2,0]`, the complete `1/1/1/0/1`
+table profile, exact `Composite(0)` links, and subtree exclusion before
+publication.
+
+For a B4A handoff only, `debug_text()` inserts the Rust-Debug-quoted
+`composite-formula-fingerprint: {:?}` followed by
+`formula-composition-fingerprint: {:?}` after the existing atomic-formula
+fingerprint and before owner 0. Atomic handoffs omit both lines, so their
+complete debug bytes do not change.
+
+The lower `UnassignedStatement` root ownership stays unchanged. No binder
+fact, truth, proof acceptance, publication, fact, goal, justification,
+diagnostic, or semantic result is inferred. The active one-final-LF
+79-byte Task-257B1 fixture is an upper-route negative; only the private
+double-LF 80-byte source can select B4A.
+
+Repeated read-only documentation review reports **NO FINDINGS**. Independent
+final quality passes all nine hard gates with no cap at valid `100/100`;
+only staging, commit, and post-commit inventory remain.

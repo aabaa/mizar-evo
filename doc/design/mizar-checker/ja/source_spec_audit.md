@@ -4552,6 +4552,25 @@ proof、B4/B5、active coverageはdeferred。
 3件のbounded `design_drift`修正後、final source/docs、bilingual、
 boundary consistencyは**NO FINDINGS**である。complete parent verification
 はPASSした。independent final qualityは**NO FINDINGS**、全9 gates PASS、
-capなし、valid `100/100`。pendingはstaging/cached-diff review、
-implementation commit、post-commit invariants、fresh next-task inventory
-だけである。
+capなし、valid `100/100`。staging/post-commit gatesはimplementation
+commit `e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh
+inventoryはTask 258B4Aをselectした。
+
+## Task 258B4A authority audit
+
+canonical formula authority Chapter 14 §§14.1、14.4、14.5.2、14.5.4、
+theorem authority Chapter 16 §§16.2、16.7.1、existing parser/resolver
+behavior、Tasks 252/256/257/258 public handoffは、semantic decisionなしで
+syntax-free B4A root associationをsupportする。active one-LF Task-257B1
+fixtureはexpectationがtheorem ownershipをdeferし、formula-statement trace
+rowもdistinct future sourceを要求するためreuseできない。private two-LF
+sourceはexact lower AST/resolver provenanceを保ちながらこの
+`test_expectation_drift`を解消する。
+
+missing B4A designは`design_drift`、future upper API/routeとtest workはbounded
+`source_drift` / `test_gap`である。blocking `spec_gap`、
+`source_undocumented_behavior`、`boundary_violation`はなく、lower-stage
+prerequisiteはauthorizeもrequireもしない。classified correction後の
+repeated specification/documentation reviewは**NO FINDINGS**である。
+independent final qualityは全9 hard gatesをcapなし、valid `100/100`で
+PASSした。remainingはstaging、commit、post-commit inventoryだけである。

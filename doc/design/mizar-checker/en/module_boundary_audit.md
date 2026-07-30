@@ -874,5 +874,26 @@ boundary re-review reports **NO FINDINGS** after the three bounded
 `471+3/14/137/2/21`, formatting, full Clippy, workspace tests, five CLIs,
 and count/hash/scope reruns PASS without expanding the boundary. Independent
 final quality reports **NO FINDINGS**; all nine gates PASS at valid
-`100/100`. Only staging/cached-diff review, implementation commit,
-post-commit invariants, and fresh-next-task inventory remain pending.
+`100/100`. Staging and post-commit gates subsequently closed in
+implementation commit `e4479691db3b0a8785bb16e94d386bd71a394274`;
+fresh inventory selected Task 258B4A.
+
+## Task 258B4A Boundary Freeze
+
+B4A keeps lower formula rows, contracts, and behavior unchanged.
+`source_formula_composition.rs` changes only the production visibility of
+its existing output helper to `pub(in crate::runner)`;
+`source_statement.rs` authenticates that Task-257B1 handoff and creates the upper
+`Composite(0)` statement association; `typed_ast.rs` owns atomic paired
+installation and `resolved_typed_ast.rs` owns final revalidation.
+
+The runner boundary is limited to that one crate-private visibility seam and
+the existing statement selector/wiring/test surfaces. Parser, resolver,
+binding, all checker Task-252/256/257 owners, every other lower runner
+surface, fixtures, expectations, sidecars, and trace metadata remain outside
+the write scope. The eight-file implementation boundary is cohesive and
+requires no module split or ownership transfer.
+
+Fresh read-only boundary review reports **NO FINDINGS**. The visibility seam
+does not transfer lower ownership or authorize any lower behavior change;
+implementation boundary review remains a separate later task.

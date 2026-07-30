@@ -1413,5 +1413,30 @@ B3A-E families remain independent across 120 orders. No public typed-AST
 API, semantic table, proof state, diagnostic, or debug grammar changes.
 Final source/documentation consistency and independent quality report
 **NO FINDINGS**; full verification and all nine hard gates PASS at valid
-`100/100`. Only staging/cached-diff review, implementation commit,
-post-commit invariants, and fresh-next-task inventory remain pending.
+`100/100`. Staging and post-commit gates subsequently closed in
+implementation commit `e4479691db3b0a8785bb16e94d386bd71a394274`;
+fresh inventory selected Task 258B4A.
+
+## Task 258B4A Frozen Paired Installation
+
+The only new installation path is
+`with_source_formula_composition_statement(mut self, composite:
+SourceCompositeFormulaHandoff, composition:
+SourceFormulaCompositionHandoff, statement: SourceStatementHandoff) ->
+Result<Self, TypedAstError>`. It consumes the exact Task-257B1 composite and
+formula-composition handoffs plus the B4A statement in that order,
+revalidates every lower fingerprint and the statement's optional
+composite/composition fingerprints, and publishes all three atomically. The
+existing lower-only `with_source_formula_composition` behavior and debug
+bytes are unchanged.
+
+The transaction accepts only the private double-LF route and exact
+`Composite(0)` statement/candidate pair. Atomic Task-258 statement families,
+duplicate owners, stale arenas, reordered or hybrid lower handoffs, and
+partial tuples fail with `TypedAstError::InvalidSourceStatement`, leave state
+byte-identical, and permit replay. No semantic table or lower root-ownership
+row changes.
+
+Repeated read-only documentation review reports **NO FINDINGS**. Independent
+final quality passes all nine hard gates with no cap at valid `100/100`;
+only staging, commit, and post-commit inventory remain.

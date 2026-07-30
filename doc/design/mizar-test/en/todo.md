@@ -2826,6 +2826,27 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   PASS, no cap, and valid `100/100`.
 - [x] Pass focused/package tests, formatting, full Clippy, root workspace
   tests, five CLIs, and count/hash/scope/forbidden/stash gates.
-- [ ] Stage exact scope and inspect cached diff.
-- [ ] Create the B3E implementation commit.
-- [ ] Verify post-commit/stash invariants and fresh-inventory next task.
+- [x] Stage exact B3E scope and inspect cached diff.
+- [x] Create B3E implementation commit
+  `e4479691db3b0a8785bb16e94d386bd71a394274`.
+- [x] Verify clean post-commit/stash invariants and fresh-inventory B4A.
+
+## Checker Task 258B4A Documentation Ledger
+
+- [x] Freeze the distinct 80-byte/double-LF source/hash, 26-node/root-25
+  parser surface, and resolver owner provenance.
+- [x] Freeze exact Task-252/256/257/B1/binding profiles and Task-258
+  `1/1/1/0/1` `Composite(0)` association.
+- [x] Preserve the active 79-byte case as lower-only route isolation and
+  forbid every fixture/expectation/sidecar/trace edit.
+- [x] Freeze the five future runner consumers, including the sole
+  crate-private Task-257B1 helper visibility seam, and five exact tests with
+  lower/upper mutation, replay, family-order, clone/debug, and empty-semantic
+  coverage.
+- [x] Preserve truth, acceptance, proof, facts, active behavior, public
+  runner schemas, and formula-statement coverage credit.
+- [x] Complete repeated documentation review with **NO FINDINGS**.
+- [x] Pass docs-only verification and all no-op/count/hash/stash gates.
+- [x] Complete final quality with all hard gates and score `>=90/100`.
+- [ ] Stage/inspect and create the dedicated B4A documentation commit.
+- [ ] Verify post-commit invariants and fresh-inventory B4A implementation.

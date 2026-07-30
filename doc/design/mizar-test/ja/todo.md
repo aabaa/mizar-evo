@@ -2627,6 +2627,27 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   valid `100/100`で完了。
 - [x] focused/package、fmt、full Clippy、root workspace、5 CLI、
   count/hash/scope/forbidden/stash gatesをPASS。
-- [ ] exact scopeをstageしcached diffをinspect。
-- [ ] B3E implementation commitをcreate。
-- [ ] post-commit/stash invariantsをverifyしnext taskをfresh inventory。
+- [x] exact B3E scopeをstageしcached diffをinspect。
+- [x] B3E implementation commit
+  `e4479691db3b0a8785bb16e94d386bd71a394274`をcreate。
+- [x] post-commit/stash invariantsをverifyし、B4Aをfresh inventory。
+
+## Checker Task 258B4A documentation ledger
+
+- [x] distinct 80-byte/double-LF source/hash、26-node/root-25 parser
+  surface、resolver owner provenanceをfreeze。
+- [x] exact Task-252/256/257/B1/binding profilesとTask-258
+  `1/1/1/0/1` `Composite(0)` associationをfreeze。
+- [x] active 79-byte caseをlower-only route isolationとして保持し、全
+  fixture/expectation/sidecar/trace editをforbid。
+- [x] single crate-private Task-257B1 helper visibility seamを含むfuture
+  runner consumer 5件とexact tests 5件をlower/upper mutation、replay、
+  family-order、clone/debug、empty-semantic coverage付きでfreeze。
+- [x] truth、acceptance、proof、facts、active behavior、public runner
+  schemas、formula-statement coverage creditをpreserve。
+- [x] repeated documentation reviewを**NO FINDINGS**でcomplete。
+- [x] docs-only verificationと全no-op/count/hash/stash gatesをPASS。
+- [x] final qualityを全hard gatesとscore `>=90/100`でcomplete。
+- [ ] dedicated B4A documentation commitをstage/inspect/create。
+- [ ] post-commit invariantsをverifyし、B4A implementationをfresh
+  inventory。
