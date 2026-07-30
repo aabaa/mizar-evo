@@ -28,6 +28,7 @@ use super::source_reserve::{
 };
 
 const SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n";
+const SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD_PRIVATE_ALIAS: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n\n";
 const SOURCE_FORMULA_PREDICATE_CHAIN_PAYLOAD: &str = "import parser.type_fixtures;\ntheorem FormulaPredicateChainPayloadBoundary: 1 divides 2 does not divides 3;\n";
 
 #[derive(Debug)]
@@ -2738,7 +2739,9 @@ pub(in crate::runner) fn extract_source_formula_nested_quantifier_payload(
     symbols: &SymbolEnv,
     source_text: &str,
 ) -> Option<SourceFormulaNestedQuantifierPayload> {
-    if source_text != SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD {
+    if source_text != SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD
+        && source_text != SOURCE_FORMULA_NESTED_QUANTIFIER_PAYLOAD_PRIVATE_ALIAS
+    {
         return None;
     }
     if ast

@@ -17,6 +17,7 @@ const TASK257B1_CASE: &str = "pass_type_elaboration_formula_quantifier_bound_use
 const TASK257B2_CASE: &str = "pass_type_elaboration_formula_connective_grouping_payload_001";
 const TASK257B3_CASE: &str = "pass_type_elaboration_formula_nested_quantifier_payload_001";
 const TASK257B3_SOURCE: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n";
+const TASK257B3_PRIVATE_SOURCE: &str = "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: for x being set st x = x ex y being set st for r st r = y holds x = r;\n\n";
 const TASK257C2_CASE: &str =
     "fail_type_elaboration_conditioned_comprehension_source_payload_001";
 
@@ -1556,6 +1557,251 @@ fn task257b3_real_route_publishes_exact_nested_ranges_profiles_and_final_ownersh
     assert!(first.typed_ast.facts().is_empty());
     assert!(first.resolved.checked_formulas().is_empty());
     assert!(first.resolved.statement_semantics().is_empty());
+}
+
+#[test]
+fn task257b3_private_double_lf_alias_preserves_exact_lower_transaction() {
+    assert_eq!(TASK257B3_SOURCE.len(), 138);
+    assert_eq!(TASK257B3_PRIVATE_SOURCE.len(), 139);
+    assert_eq!(
+        TASK257B3_PRIVATE_SOURCE.strip_suffix('\n'),
+        Some(TASK257B3_SOURCE)
+    );
+    assert_eq!(
+        &TASK257B3_PRIVATE_SOURCE.as_bytes()[TASK257B3_PRIVATE_SOURCE.len() - 2..],
+        b"\n\n"
+    );
+
+    let (active_ast, active_module, _, active_symbols) =
+        task253_ast_from_source_text(TASK257B3_SOURCE, 21_100);
+    let (private_ast, private_module, _, private_symbols) =
+        task253_ast_from_source_text(TASK257B3_PRIVATE_SOURCE, 21_100);
+    assert_eq!(
+        (
+            active_ast.nodes().len(),
+            active_ast.root().map(|root| root.index()),
+        ),
+        (66, Some(65))
+    );
+    assert_eq!(
+        (
+            private_ast.nodes().len(),
+            private_ast.root().map(|root| root.index()),
+        ),
+        (66, Some(65))
+    );
+    assert!(
+        extract_source_formula_nested_quantifier_payload(
+            &active_ast,
+            &active_module,
+            &active_symbols,
+            TASK257B3_PRIVATE_SOURCE,
+        )
+        .is_some(),
+        "the authorized two-LF alias must match the whitespace-equivalent active AST"
+    );
+    assert!(
+        extract_source_formula_nested_quantifier_payload(
+            &private_ast,
+            &private_module,
+            &private_symbols,
+            TASK257B3_SOURCE,
+        )
+        .is_some(),
+        "the authorized active identity must match the whitespace-equivalent private AST"
+    );
+
+    let active = source_formula_composition_output_with_source(
+        &active_ast,
+        active_module.clone(),
+        &active_symbols,
+        TASK257B3_SOURCE,
+    )
+    .expect("active Task257B3 selector")
+    .expect("active Task257B3 transaction");
+    let active_replay = source_formula_composition_output_with_source(
+        &active_ast,
+        active_module,
+        &active_symbols,
+        TASK257B3_SOURCE,
+    )
+    .expect("active Task257B3 replay selector")
+    .expect("active Task257B3 replay transaction");
+    let private = source_formula_composition_output_with_source(
+        &private_ast,
+        private_module.clone(),
+        &private_symbols,
+        TASK257B3_PRIVATE_SOURCE,
+    )
+    .expect("private Task257B3 selector")
+    .expect("private Task257B3 transaction");
+    let private_replay = source_formula_composition_output_with_source(
+        &private_ast,
+        private_module,
+        &private_symbols,
+        TASK257B3_PRIVATE_SOURCE,
+    )
+    .expect("private Task257B3 replay selector")
+    .expect("private Task257B3 replay transaction");
+
+    for output in [&active, &active_replay, &private, &private_replay] {
+        let primary = output.typed_ast.source_term().expect("Task252 handoff");
+        let atomic = output
+            .typed_ast
+            .source_atomic_formula()
+            .expect("Task256 handoff");
+        let composite = output
+            .typed_ast
+            .source_composite_formula()
+            .expect("Task257 handoff");
+        let composition = task257b1_handoff(output);
+        assert_eq!(
+            (
+                composite.binding_env().contexts().len(),
+                composite.binding_env().bindings().len(),
+                composite.binding_env().diagnostics().len(),
+            ),
+            (4, 4, 0)
+        );
+        assert_eq!(
+            (
+                primary.terms().len(),
+                primary.references().len(),
+                primary.numeric_type_requests().len(),
+            ),
+            (6, 6, 0)
+        );
+        assert_eq!(
+            (
+                atomic.formulas().len(),
+                atomic.wrappers().len(),
+                atomic.predicate_segments().len(),
+                atomic.predicate_heads().len(),
+                atomic.candidates().len(),
+                atomic.type_sites().len(),
+                atomic.attributes().len(),
+                atomic.edges().len(),
+                atomic.requests().len(),
+            ),
+            (3, 0, 0, 0, 0, 0, 0, 6, 6)
+        );
+        assert_eq!(
+            (
+                composite.formulas().len(),
+                composite.wrappers().len(),
+                composite.roots().len(),
+                composite.binders().len(),
+                composite.type_sites().len(),
+                composite.edges().len(),
+                composite.requests().len(),
+            ),
+            (3, 0, 1, 3, 3, 2, 6)
+        );
+        assert_eq!(
+            (
+                composition.atomic_edges().len(),
+                composition.bound_uses().len()
+            ),
+            (3, 6)
+        );
+        assert_eq!(composition.primary_term_fingerprint(), primary.debug_text());
+        assert_eq!(
+            composition.atomic_formula_fingerprint(),
+            atomic.debug_text()
+        );
+        assert_eq!(
+            composition.composite_formula_fingerprint(),
+            composite.debug_text()
+        );
+        assert!(output.typed_ast.nodes().root().is_none());
+        assert!(output.typed_ast.types().is_empty());
+        assert!(output.typed_ast.facts().is_empty());
+        assert!(output.resolved.checked_formulas().is_empty());
+        assert!(output.resolved.statement_semantics().is_empty());
+    }
+
+    for output in [&active_replay, &private, &private_replay] {
+        assert_eq!(output.typed_ast.debug_text(), active.typed_ast.debug_text());
+        assert_eq!(output.resolved.debug_text(), active.resolved.debug_text());
+    }
+}
+
+#[test]
+fn task257b3_selector_accepts_only_authorized_lf_counts_and_rejects_spoofs() {
+    let zero_lf = TASK257B3_SOURCE
+        .strip_suffix('\n')
+        .expect("active source final LF");
+    let triple_lf = format!("{TASK257B3_PRIVATE_SOURCE}\n");
+    let (valid_ast, valid_module, _, valid_symbols) =
+        task253_ast_from_source_text(TASK257B3_SOURCE, 21_200);
+
+    for source in [zero_lf, triple_lf.as_str()] {
+        assert!(
+            extract_source_formula_nested_quantifier_payload(
+                &valid_ast,
+                &valid_module,
+                &valid_symbols,
+                source,
+            )
+            .is_none(),
+            "invalid source paired with a valid AST must remain rejected"
+        );
+        assert!(
+            source_formula_composition_output_with_source(
+                &valid_ast,
+                valid_module.clone(),
+                &valid_symbols,
+                source,
+            )
+            .is_none(),
+            "invalid LF count unexpectedly reached the producer"
+        );
+
+        let (ast, module, _, symbols) = task253_ast_from_source_text(source, 21_201);
+        assert!(
+            extract_source_formula_nested_quantifier_payload(&ast, &module, &symbols, source)
+                .is_none()
+        );
+        assert!(
+            source_formula_composition_output_with_source(&ast, module, &symbols, source).is_none()
+        );
+    }
+
+    let spelling_spoof = TASK257B3_SOURCE.replacen(
+        "FormulaNestedQuantifierPayloadBoundary",
+        "SpoofedNestedQuantifierPayloadBoundary",
+        1,
+    );
+    let structural_spoof = format!("{TASK257B3_SOURCE}theorem ExtraItem: 0 = 0;\n");
+    for (ordinal, spoof) in [spelling_spoof, structural_spoof]
+        .into_iter()
+        .enumerate()
+    {
+        let (ast, module, _, symbols) =
+            task253_ast_from_source_text(&spoof, 21_300 + ordinal);
+        for authorized_source in [TASK257B3_SOURCE, TASK257B3_PRIVATE_SOURCE] {
+            assert!(
+                extract_source_formula_nested_quantifier_payload(
+                    &ast,
+                    &module,
+                    &symbols,
+                    authorized_source,
+                )
+                .is_none(),
+                "authorized bytes must not authenticate a spoofed AST"
+            );
+            assert!(
+                source_formula_composition_output_with_source(
+                    &ast,
+                    module.clone(),
+                    &symbols,
+                    authorized_source,
+                )
+                .is_none(),
+                "spoofed AST unexpectedly reached the producer"
+            );
+        }
+    }
 }
 
 #[test]
