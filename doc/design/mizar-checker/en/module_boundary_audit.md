@@ -959,3 +959,50 @@ forbidden-artifact, and unchanged-stash gates PASS. Independent final
 quality reports **NO FINDINGS**; all nine hard gates PASS with no cap at
 valid `100/100` (`20/20/15/15/10/10/5/5`). Staging/cached-diff review,
 the implementation commit, post-commit inventory, and B4C remain pending.
+
+## Task 258B4C Documentation and Future Implementation Boundary
+
+Task 258B4B closed at
+`752c17ae7d552d5268d1028612b8174e480b6f3e` inside its exact seven-file
+boundary. The post-commit tree is clean, ahead 1/behind 0 after report-only
+origin metadata movement, and the protected stash is unchanged.
+
+B4C first requires one separately reviewed and committed lower-stage
+compatibility prerequisite. Its entire production/test write boundary is
+runner `type_elaboration/source_formula.rs` plus
+`runner/tests/type_elaboration/source_formula_composition.rs`. That change
+may only extend the exact Task-257B3 selector from the active 138-byte,
+one-final-LF source to the private 139-byte, two-final-LF sibling and add
+zero-/three-LF rejection tests. Checker lower owners, binding/resolver/parser
+owners, and production runner `source_formula_composition.rs` are explicit
+no-ops. This is selector compatibility, not lower table, ownership, or
+semantic expansion.
+
+Only after that prerequisite commits may B4C edit the same seven upper
+consumers as B4B: checker `source_statement.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs`; runner `type_elaboration/source_statement.rs`,
+`type_elaboration.rs`, `runner.rs`, and
+`runner/tests/type_elaboration/source_statement.rs`. Task 252 retains six
+reference sites, Task 256 retains three equality roots, and Task 257B3
+retains the 24 lower-owned sites including composite root 60. Task 258 may
+own only theorem node 62 and two upper `Composite(0)` associations; 41
+Surface nodes remain unowned.
+
+The two future commits must preserve exact B1/B4A, B2/B4B, and B3/B4C
+pairing, zero input facts, statement context visibility `[0]`, public APIs,
+debug/error grammar, active authority artifacts, trace status/counts, and
+all semantic/proof/IR boundaries. Parser, resolver, corpus, sidecars,
+expectations, specification, B5, and unrelated owners are forbidden.
+Documentation-only review and verification remain pending.
+
+## Task 258B4C Documentation Boundary Review Status
+
+After correcting one Medium `boundary_violation` in typed/final ownership
+wording, repeated boundary and source/documentation review reports **NO
+FINDINGS**. Raw authentication belongs to the runner selector and statement
+producer; checker installers retain only handoff/fingerprint/arena
+validation. The exact 32-document scope, both future write boundaries, all
+forbidden no-ops, counts/hashes, offline tests, formatting, Clippy, and stash
+gates PASS. Independent final quality reports **NO FINDINGS**, all nine hard
+gates PASS, no cap, and valid `100/100`; only staging, commit, and
+post-commit gates remain.

@@ -5942,6 +5942,67 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage and inspect only the exact Task-258B4B implementation scope,
-  then create one dedicated implementation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4C.
+- [x] Stage and inspect only the exact Task-258B4B implementation scope,
+  then create dedicated implementation commit
+  `752c17ae7d552d5268d1028612b8174e480b6f3e`.
+- [x] Verify clean ahead-1/behind-0 post-commit state after report-only
+  external origin movement, unchanged stash fingerprint, and fresh-inventory
+  B4C.
+
+## Checker Task 258B4C Documentation Prerequisite
+
+- [x] Select only Task-257B3 restricted-universal, existential, nested, and
+  implicit-reserve roots; retain B5.
+- [x] Classify active 138-byte upper-route reuse as
+  `test_expectation_drift` and freeze the private 139-byte/double-LF source
+  with hash
+  `36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`.
+- [x] Freeze Surface 66/root 65, theorem 62 at `19..137`, label 6 at
+  `27..65`, outer composite 60 at `67..136`, raw resolver `1/0/1/1/0`
+  with origin `[2,1]`/contribution 0 anchored `0..18`, and enriched
+  `1/1/1/1/0`.
+- [x] Freeze lower binding `4/4/0`, primary `6/6/0`, atomic
+  `3/0/0/0/0/0/0/6/6`, composite `3/0/1/3/3/2/6`, composition
+  `3/6`, exact 24 lower-owned sites, one upper theorem site, and 41 unowned
+  sites.
+- [x] Freeze upper `1/1/1/0/1`, context visibility `[0]`, zero input
+  facts, both `Composite(0)` links, and telemetry
+  `2/2/[2,2,4,4,4,4]`.
+- [x] Classify the one-LF-only Task-257B3 selector as bounded
+  `source_drift` and require a separate lower-stage prerequisite before the
+  B4C upper implementation.
+- [x] Bound that prerequisite to runner `type_elaboration/source_formula.rs`
+  plus `runner/tests/type_elaboration/source_formula_composition.rs`: admit
+  exact 138/139-byte routes, reject zero/three LF, and keep production
+  `source_formula_composition.rs` unchanged.
+- [x] Freeze the later upper scope to the same seven consumers as B4B,
+  exact B1/B4A, B2/B4B, B3/B4C pairing, unchanged public API/debug/error,
+  authority/trace no-op, subtree exclusion, semantic deferrals, audit
+  narrative-only effect, tests, baseline impact, and exit criteria.
+- [x] Complete repeated specification/documentation review with
+  **NO FINDINGS**.
+- [x] Pass documentation-only scope, forbidden-artifact, count/hash, CLI,
+  crate/workspace, diff, and stash verification.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage only synchronized Task-258B4C documentation, inspect the cached
+  diff, and create one dedicated documentation prerequisite commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory the
+  mandatory lower-stage prerequisite.
+
+## Checker Task 258B4C Lower-Stage Prerequisite Ledger
+
+- [ ] Reinventory authority, exact 138/139-byte routes, selector ownership,
+  tests, counts, hashes, and the clean documentation commit.
+- [ ] Review the prerequisite specification to **NO FINDINGS**.
+- [ ] Change only the frozen runner selector and its composition test owner;
+  do not change production `source_formula_composition.rs`.
+- [ ] Review test sufficiency, implementation, and source/document
+  consistency separately to **NO FINDINGS**.
+- [ ] Pass focused/package/workspace, formatting, Clippy, CLI, count/hash,
+  scope, forbidden-artifact, audit-no-op, and stash gates.
+- [ ] Complete independent final quality at `>=90/100`, stage only the two
+  files, inspect cached diff, and create one dedicated prerequisite commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4C
+  upper implementation.

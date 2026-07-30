@@ -3218,3 +3218,42 @@ qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、valid
 `100/100`（`20/20/15/15/10/10/5/5`）である。staging/cached-diff
 review、implementation commit、post-commit inventory、B4Cはpendingで
 ある。
+
+## Task 258B4C Frozen Nested-Quantifier Statement Root
+
+exact private sourceはfinal LF 2個の139 bytes、SHA-256
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
+である。diagnostic 0、normal Surface nodes 66/root65、reserve item
+35=`0..18`、theorem item 62=`19..137`、label token6=`27..65`、
+outer composite root60=`67..136`である。raw resolverは
+`1/0/1/1/0`で、public/exported theorem owner range `19..137`、
+origin `[2,1]`、contribution0 anchor `0..18`である。runnerがexact
+theorem label projection/effectを追加した後は`1/1/1/1/0`となる。
+
+active 138-byte sourceはTask-257B3 lower-onlyのままである。現行exact
+guardはprivate double-LF sourceをadmitしないため、B4C upperより前に
+別lower-stage prerequisiteを作る。scopeはprivate Task-257B3 selector
+とそのrunner testsだけで、exact 138/139 bytesをacceptしfinal LF
+0個/3個をrejectする。B4C upper commitへ混在させず、production
+`source_formula_composition.rs`は変更しない。
+
+matched lower profileはbinding `4/4/0`、primary `6/6/0`、atomic
+`3/0/0/0/0/0/0/6/6`、composite `3/0/1/3/3/2/6`、composition
+`3/6`である。rootless 66-node arenaのexact lower-owned idsは
+`{9,17,22,32,33,36,37,38,39,41,43,44,45,46,47,48,50,52,53,55,57,58,59,60}`。
+Task 258はtheorem node62だけをownし、41 nodesはunowned、lower root
+ownershipは`UnassignedStatement`のままである。
+
+upper publicationは`1/1/1/0/1`。owner/statementはsite62/range
+`19..137`、statement/candidateは`Composite(0)`をtargetする。
+context0はbinding context0、visible `[0]`。reserved binding0をselect
+するTask-252 referenceがないためinput factは0件である。six
+referencesのbinding idsは`1,1,3,2,1,3`、ordinalsは
+`2,2,4,4,4,4`、private telemetryは
+`2/2/[2,2,4,4,4,4]`である。exact pairingはB4A/B1、B4B/B2、
+B4C/B3だけである。
+
+public API/error/debug grammarは変更しない。B4Bと同じseven eventual
+upper consumers、checker 4/runner 5 testsをfreezeする。truth、
+restriction discharge、existential witness、implicit closure、facts、
+theorem acceptance/publication、proof、downstream IRはdeferredである。

@@ -1411,3 +1411,30 @@ relocated owned site、stale fingerprintをmutation前にrejectする。全
 installation ordersはatomic/replayableである。lower-only
 `with_source_formula_composition`はunchangedのままで、B1、B2、B3をlower
 transportとしてだけ引き続きacceptする。
+
+## Task 258B4C frozen paired installation
+
+`with_source_formula_composition_statement`はpublic signatureを維持し、
+matched Task-257B3 composite/composition handoffとexact B4C statementに
+限りB4Cをinstallできる。raw source、Surface、resolverのauthenticationは
+runner selectorと`SourceStatementProducer`が所有する。installerは
+mutation前に、その結果得られたproducer-authenticated statement
+owner/context/candidate rowsとhandoff identity、matched lower
+fingerprints、rootless 66-node lower arena、binding `4/4/0`、primary
+`6/6/0`、atomic `3/0/0/0/0/0/0/6/6`、composite
+`3/0/1/3/3/2/6`、composition `3/6`、24-site lower ownership
+partition、upper `1/1/1/0/1`をrevalidateする。
+
+statement/candidateは両方`Composite(0)`をtargetにし、statement context 0は
+reserved binding `[0]`だけをexposeし、input factsはemptyでなければならない。
+installerはB1/B4A、B2/B4B、B3/B4Cだけをrecognizeする。cross-pairing、
+duplicate/partial state、stale fingerprint、rooted/relocated arena、
+altered ownership、active atomic statement family、semantic-table
+coexistence、lower-selector mismatchはexisting
+`TypedAstError::InvalidSourceStatement`でfailし、ASTをbyte-identicalに
+保ってreplayを許す。
+
+mandatory lower-selector compatibility prerequisiteはinstaller変更前の
+separate logical task/commitである。B4C transactionはpublic installer、
+error variant、debug grammar、fact、theorem acceptance、proof、semantic
+tableを追加せず、lower-only installerはunchangedである。

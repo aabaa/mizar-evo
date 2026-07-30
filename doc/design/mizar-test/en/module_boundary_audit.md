@@ -12392,3 +12392,48 @@ final quality reports **NO FINDINGS**; all nine hard gates PASS with no cap
 at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff
 review, the implementation commit, post-commit invariants, and fresh-B4C
 inventory remain pending.
+
+## Checker Task 258B4C Runner Boundary Freeze
+
+B4B boundary closure is implementation commit
+`752c17ae7d552d5268d1028612b8174e480b6f3e`, followed by a clean
+ahead-1/behind-0 inventory and unchanged stash. B4C requires two strictly
+ordered, independently reviewed and committed boundaries.
+
+The first is a lower-stage prerequisite whose entire write scope is
+`crates/mizar-test/src/runner/type_elaboration/source_formula.rs` and
+`crates/mizar-test/src/runner/tests/type_elaboration/source_formula_composition.rs`.
+It may only broaden the existing exact Task-257B3 source guard from the
+active 138-byte/one-LF spelling to the exact union of that spelling and the
+private 139-byte/two-LF spelling. Zero and three trailing LFs remain
+rejected. Production
+`crates/mizar-test/src/runner/type_elaboration/source_formula_composition.rs`,
+all checker files, fixtures, sidecars, expectations, trace, and public or
+semantic owners are no-ops. Its test count is measured in fresh inventory,
+not projected here.
+
+Only after that commit and another fresh inventory may the B4C upper task
+write the same seven owners as B4B: checker
+`source_statement.rs`, `typed_ast.rs`, and `resolved_typed_ast.rs`; runner
+`source_statement.rs`, test-only facades `type_elaboration.rs` and
+`runner.rs`, and the statement test leaf. Those owners may add only the
+private 139-byte B4C selector, exact resolver enrichment, lower-handoff
+validation, upper `1/1/1/0/1` rows, `24/1/41` ownership, telemetry
+`2/2/[2,2,4,4,4,4]`, and four-checker/five-runner tests.
+
+The lower profiles `4/4/0`, `6/6/0`, `3/0/0/0/0/0/0/6/6`,
+`3/0/1/3/3/2/6`, and `3/6` retain their existing owner crates.
+Parser/resolver/binding modules, production lower composition, public API,
+active/corpus/expectation/sidecar/trace/coverage owners, diagnostics, and
+semantic/proof phases remain outside both write scopes. B5 remains deferred;
+no module split or ownership transfer is authorized.
+
+## Checker Task 258B4C Documentation Boundary Review
+
+Repeated boundary and source/documentation review reports **NO FINDINGS**
+after assigning raw authentication to the runner selector/statement producer
+and keeping checker installers at handoff/fingerprint/arena validation.
+Exact docs-only scope, future two-file then seven-file separation, forbidden
+no-ops, verification, counts/hashes, and stash invariance PASS. Independent
+final quality reports **NO FINDINGS**, all nine hard gates PASS, no cap, and
+valid `100/100`; only staging, commit, and post-commit gates remain.

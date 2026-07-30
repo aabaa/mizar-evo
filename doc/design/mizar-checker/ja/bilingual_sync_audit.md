@@ -1156,3 +1156,57 @@ qualityは両言語で**NO FINDINGS**、全9 hard gates PASS、capなし、valid
 `100/100`（`20/20/15/15/10/10/5/5`）として同期する。
 staging/cached-diff review、implementation commit、post-commit inventory、
 B4Cは両言語ともpendingである。
+
+## Task 258B4C frozen bilingual contract
+
+Task 258B4Bはimplementation commit
+`752c17ae7d552d5268d1028612b8174e480b6f3e`でcloseした。shared
+post-commit inventoryはcleanで、report-only external origin movement後の
+ahead 1/behind 0、stash fingerprint `f65cf4a13752ec...` unchangedである。
+
+canonical ENとJA companionsはB4CをTask-257B3
+restricted-universal/existential/nested-quantifier/implicit-reserve
+transportのupper consumerとしてfreezeする。private sourceはfinal LF 2 bytes
+を持つexact 139 bytes、SHA-256
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`で、
+active 138-byte/lower-only sourceはSHA-256
+`cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`
+のままである。両言語はSurface 66/root 65、theorem node 62
+`19..137`、label node 6 `27..65`、outer composite node 60
+`67..136`、raw resolver `1/0/1/1/0`、origin `[2,1]`、contribution 0
+anchor `0..18`、enriched resolver `1/1/1/1/0`をpreserveする。
+
+synchronized lower profilesはbinding `4/4/0`、primary `6/6/0`、atomic
+`3/0/0/0/0/0/0/6/6`、composite `3/0/1/3/3/2/6`、composition
+`3/6`である。lower ownershipはexact
+`{9,17,22,32,33,36,37,38,39,41,43,44,45,46,47,48,50,52,53,55,57,58,59,60}`、
+upper ownershipはtheorem node 62だけで、41 nodesはunownedである。upper
+tablesは`1/1/1/0/1`、context 0 visible `[0]`、input fact 0、statement/
+candidateは両方`Composite(0)`、runner-private telemetryは
+`2/2/[2,2,4,4,4,4]`である。
+
+upper implementation前にseparate lower-stage prerequisiteが必要である。
+runner `type_elaboration/source_formula.rs`と
+`runner/tests/type_elaboration/source_formula_composition.rs`だけを変更し、
+exact 138/139-byte formsをadmitしてzero/three final LFをrejectする。
+production `source_formula_composition.rs`はunchangedである。そのseparate
+commit後、B4CはB4Bと同じupper consumers 7件とexact B4A/B1、B4B/B2、
+B4C/B3 pairingだけを使う。public API、debug/error grammar、authority
+artifacts、trace credit、truth、facts、theorem acceptance、proof、IR、B5、
+active-route intentはunchangedである。documentation review、
+verification、quality、staging、commit、post-commit synchronizationは
+pendingである。
+
+## Task 258B4C documentation review synchronization
+
+Medium `boundary_violation` 1件の同期修正後、repeated specification、
+test-boundary、bilingual、source/documentation reviewsは**NO FINDINGS**。
+両言語はraw source/Surface/resolver authenticationをrunner selectorと
+`SourceStatementProducer`へ帰属し、typed/final validationを同じ
+authenticated handoff rows/identity、lower fingerprints、retained arenaに
+限定する。focused/full offline verification、全frozen count/hash、exact
+32-document/no-op scope、stash invarianceは両recordでPASS。external origin
+movementによる0/0はreport-only `repo_metadata_conflict`として同期した。
+independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、
+valid `100/100`（`20/20/15/15/10/10/5/5`）として同期した。pendingは
+staging、commit、post-commit synchronizationだけ。

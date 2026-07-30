@@ -1408,3 +1408,31 @@ semantic stateは`ResolvedTypedAstError::InvalidSourceStatement`でpartial
 outputなしにfailし、replayを許す。B4A bytesと全lower-owned error
 precedenceはunchangedである。final-AST schema、debug grammar、semantic
 tableは追加しない。
+
+## Task 258B4C frozen final boundary
+
+final constructionがB4Cをadmitできるのはexact Task-257B3 lower handoffsと
+exact B4C statement identityが揃う場合だけである。private 139-byte
+source、66-node/root-65 Surface identity、raw resolver origin `[2,1]`、
+contribution 0 anchor `0..18`、enriched `1/1/1/1/0`のraw
+authenticationはrunner selectorと`SourceStatementProducer`が所有する。
+final constructionはclone前にtyped ASTが保持するproducer-authenticated
+statement handoff rows/identity、matched lower fingerprints、rootless
+lower arena、binding `4/4/0`、primary `6/6/0`、atomic
+`3/0/0/0/0/0/0/6/6`、composite `3/0/1/3/3/2/6`、composition
+`3/6`、lower partition 24 sites、upper `1/1/1/0/1`をrevalidateする。
+
+statement 0/candidate 0は両方`Composite(0)`をtargetにし、context 0は
+exactly `[0]`をexposeし、input factsはempty、theorem node 62だけが
+upper-owned Surface nodeでなければならない。final dispatchはexact
+B1/B4A、B2/B4B、B3/B4C pairingだけをrecognizeする。cross-family
+hybrids、stale/partial handoffs、rooted/relocated arenas、altered
+ownership、active atomic statement family、occupied semantic state、
+lower-selector mismatchはexisting
+`ResolvedTypedAstError::InvalidSourceStatement` boundaryでpublication前に
+failし、replayを許す。
+
+このfrozen pathはfinal-AST schema、public API、debug/error grammar、
+fact、theorem-acceptance、proof、IR tableを追加しない。separately
+committed lower-selector prerequisiteを完了してからfinal projectionを
+implementする。

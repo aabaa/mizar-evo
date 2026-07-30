@@ -728,3 +728,32 @@ Inner biconditional/disjunction/conjunction/repetition rows, wrappers,
 equalities, and numerals acquire no upper ownership or semantic result. The
 runner helper is already available through B4A's crate-private seam, so this
 lower owner is a required no-op in B4B.
+
+## Task 258B4C Downstream Statement Consumer
+
+B4C consumes the existing Task-257B3 composite/composition handoffs:
+binding `4/4/0`, Task 252 `6/6/0`, Task 256
+`3/0/0/0/0/0/0/6/6`, Task 257 `3/0/1/3/3/2/6`, and composition
+`3/6`. The lower composite roots at `67..136`, `92..136`, and
+`110..136`, binder segments, three equality roots, six references, and six
+bound-use edges remain unchanged. Composite root 0 remains
+`UnassignedStatement`; the upper statement/candidate alone target it.
+
+The active 138-byte source is frozen by its sidecar and trace row as
+lower-only. B4C therefore uses the same source plus a second final LF,
+exactly 139 bytes with SHA-256
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`.
+Before upper work, a separate lower-stage prerequisite must update only
+runner `type_elaboration/source_formula.rs` and
+`runner/tests/type_elaboration/source_formula_composition.rs` so the
+Task-257B3 selector accepts the exact active 138-byte hash
+`cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`
+and private 139-byte hash, while rejecting the same text with zero or three
+final LF bytes.
+
+Production runner `source_formula_composition.rs` and both checker lower
+owners remain unchanged in that prerequisite and in B4C. The change does
+not broaden structural matching, alter a row/fingerprint/debug byte, or
+credit active upper behavior. Truth, restriction discharge, existential
+witnesses, capture, facts, theorem acceptance, proof, and IR remain
+deferred.

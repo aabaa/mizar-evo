@@ -673,3 +673,31 @@ biconditional/disjunction/conjunction/repetition rows、wrappers、
 equalities、numeralsはupper ownership/semantic resultを得ない。runner
 helperはB4Aのcrate-private seam経由ですでにavailableなので、B4Bではこの
 lower ownerはrequired no-opである。
+
+## Task 258B4C downstream statement consumer
+
+B4Cはexisting Task-257B3 composite/composition handoffs、binding
+`4/4/0`、Task 252 `6/6/0`、Task 256
+`3/0/0/0/0/0/0/6/6`、Task 257 `3/0/1/3/3/2/6`、composition
+`3/6`をconsumeする。`67..136`、`92..136`、`110..136`のlower
+composite roots、binder segments、equality roots 3件、references 6件、
+bound-use edges 6件はunchangedである。composite root 0は
+`UnassignedStatement`のままで、upper statement/candidateだけがtargetに
+する。
+
+active 138-byte sourceはsidecar/trace rowによりlower-onlyとしてfrozenで
+ある。B4Cは同じsourceにsecond final LFを加えたexact 139 bytes、SHA-256
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
+を使う。upper work前のseparate lower-stage prerequisiteはrunner
+`type_elaboration/source_formula.rs`と
+`runner/tests/type_elaboration/source_formula_composition.rs`だけを更新し、
+Task-257B3 selectorがactive 138-byte hash
+`cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`と
+private 139-byte hashをacceptし、同じtextのzero/three final LFをreject
+するようにする。
+
+production runner `source_formula_composition.rs`とchecker lower owners
+2件はprerequisite/B4Cともにunchangedである。structural matchingを
+broadenせず、row/fingerprint/debug byteを変更せず、active upper behaviorを
+creditしない。truth、restriction discharge、existential witnesses、
+capture、facts、theorem acceptance、proof、IRはdeferredである。

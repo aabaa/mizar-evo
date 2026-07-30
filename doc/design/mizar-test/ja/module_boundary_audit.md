@@ -11147,3 +11147,47 @@ independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし�
 valid `100/100`（`20/20/15/15/10/10/5/5`）である。exact
 staging/cached-diff review、implementation commit、post-commit
 invariants、fresh-B4C inventoryはpendingである。
+
+## Checker Task 258B4C runner boundary freeze
+
+B4B boundaryはimplementation commit
+`752c17ae7d552d5268d1028612b8174e480b6f3e`、続くclean
+ahead-1/behind-0 inventory、unchanged stashでcloseした。B4Cはstrictly
+ordered、independently reviewed/committedなboundary 2件をrequireする。
+
+最初はlower-stage prerequisiteで、entire write scopeは
+`crates/mizar-test/src/runner/type_elaboration/source_formula.rs`と
+`crates/mizar-test/src/runner/tests/type_elaboration/source_formula_composition.rs`
+である。existing exact Task-257B3 source guardをactive
+138-byte/one-LF spellingから、そのspellingとprivate 139-byte/two-LF
+spellingのexact unionにbroadenすることだけを許す。zero/three trailing
+LFはrejectする。production
+`crates/mizar-test/src/runner/type_elaboration/source_formula_composition.rs`、
+全checker files、fixture、sidecar、expectation、trace、public/semantic
+ownersはno-opである。test countはfresh inventoryでmeasureし、ここでは
+projectしない。
+
+そのcommitとfresh inventory後だけ、B4C upper taskはB4Bと同じ7 ownersを
+writeできる。checker `source_statement.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs`、runner `source_statement.rs`、test-only facade
+`type_elaboration.rs`/`runner.rs`、statement test leafである。private
+139-byte B4C selector、exact resolver enrichment、lower-handoff validation、
+upper `1/1/1/0/1` rows、`24/1/41` ownership、telemetry
+`2/2/[2,2,4,4,4,4]`、checker 4/runner 5 testsだけを追加できる。
+
+lower profiles `4/4/0`、`6/6/0`、`3/0/0/0/0/0/0/6/6`、
+`3/0/1/3/3/2/6`、`3/6`はexisting owner cratesをretainする。
+parser/resolver/binding modules、production lower composition、public API、
+active/corpus/expectation/sidecar/trace/coverage owners、diagnostics、
+semantic/proof phasesは両write scope外である。B5はdeferredで、
+module split/ownership transferはauthorizeしない。
+
+## Checker Task 258B4C documentation boundary review
+
+raw authenticationをrunner selector/statement producerへ帰属し、checker
+installersをhandoff/fingerprint/arena validationに限定した後、repeated
+boundary/source-documentation reviewは**NO FINDINGS**。exact docs-only
+scope、future two-file then seven-file separation、forbidden no-op、
+verification、counts/hashes、stash invarianceはPASS。independent final
+qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、valid
+`100/100`。pendingはstaging/commit/post-commit gatesである。

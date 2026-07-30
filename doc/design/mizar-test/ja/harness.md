@@ -4392,3 +4392,45 @@ no-op、unchanged stash gatesもPASSした。independent final qualityは
 （`20/20/15/15/10/10/5/5`）である。exact staging/cached-diff review、
 implementation commit、post-commit invariants、fresh-B4C inventoryは
 pendingである。
+
+## Checker Task 258B4C frozen harness route
+
+B4Bはsubsequently
+`752c17ae7d552d5268d1028612b8174e480b6f3e`としてcommitされ、clean
+ahead-1/behind-0 post-commit inventoryとunchanged stashがB4Cをselectする。
+harnessがrecognizeするのはprivate 139-byte/two-LF source/hash
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
+だけである。active 138-byte/one-LF source/hash
+`cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`
+はlower-onlyのままである。
+
+upper route実装前にindependent lower-stage prerequisiteとして、existing
+Task-257B3 selectorにexact 138/139-byte variantsだけをacceptさせ、zero/
+three trailing LFsをrejectさせる。write scopeは
+`type_elaboration/source_formula.rs`と
+`runner/tests/type_elaboration/source_formula_composition.rs`だけで、
+production `source_formula_composition.rs`はunchangedである。added-test
+countはここでprojectせずfresh inventory後にmeasureする。
+
+future upper selectorはSurface rows 66件/root `65`、theorem `62`
+`19..137`、label token `6` `27..65`、outer formula `60` `67..136`、
+raw resolver `1/0/1/1/0`、theorem path `[2,1]`、reserve contribution
+`0` anchor `0..18`をauthenticateしてからだけ`1/1/1/1/0`へenrichする。
+exact lower profiles binding `4/4/0`、primary `6/6/0`、atomic
+`3/0/0/0/0/0/0/6/6`、composite `3/0/1/3/3/2/6`、
+composition `3/6`をreuseする。
+
+publicationはupper `1/1/1/0/1`、context `0` visible binding `[0]`、
+input facts 0件、statement/candidateの両方が`Composite(0)`である。
+rootless typed arena partitionは`24/1/41`。profile-aware detail guardは
+telemetry `2/2/[2,2,4,4,4,4]`をexact B3/B4C pairだけでacceptする。
+
+projected checker 4/runner 5 testsはsource/LF isolation、全frozen
+Surface/resolver/lower/upper field、ownership、telemetry、coherent near
+miss、B4A/B4B/active-route isolation、order、rollback/replay、clone/debug、
+empty semanticsをcoverする。fixture、expectation、sidecar、trace
+status/count、active route、public schema、formula truth、witness/
+restriction semantics、theorem acceptance、fact、proof/Core/CFG/VC result、
+coverage creditは変更しない。baselineはlibraries `418/481`、checker
+production `23/140821`、runner production `30/56007`、および既記録の
+production/test-list/five-CLI hashesのままである。

@@ -1466,3 +1466,30 @@ occupied semantic state fails through
 `ResolvedTypedAstError::InvalidSourceStatement` without partial output and
 permits replay. B4A bytes and all lower-owned error precedence remain
 unchanged. No final-AST schema, debug grammar, or semantic table is added.
+
+## Task 258B4C Frozen Final Boundary
+
+Final construction may admit B4C only with the exact Task-257B3 lower
+handoffs and exact B4C statement identity. Raw authentication of the private
+139-byte source, 66-node/root-65 Surface identity, raw resolver origin
+`[2,1]`, contribution 0 anchored at `0..18`, and enriched `1/1/1/1/0`
+belongs to the runner selector and `SourceStatementProducer`. Before
+cloning, final construction revalidates the producer-authenticated statement
+handoff rows and identity retained by the typed AST, the matched lower
+fingerprints, rootless lower arena, binding `4/4/0`, primary `6/6/0`, atomic
+`3/0/0/0/0/0/0/6/6`, composite `3/0/1/3/3/2/6`, composition `3/6`,
+the 24-site lower partition, and upper `1/1/1/0/1` before cloning.
+
+Statement 0 and candidate 0 must both target `Composite(0)`; context 0 must
+expose exactly `[0]`, input facts remain empty, and theorem node 62 is the
+only upper-owned Surface node. Final dispatch recognizes only the exact
+B1/B4A, B2/B4B, and B3/B4C pairings. Cross-family hybrids, stale or partial
+handoffs, rooted/relocated arenas, altered ownership, an active atomic
+statement family, occupied semantic state, or lower-selector mismatch fail
+through the existing `ResolvedTypedAstError::InvalidSourceStatement`
+boundary before publication and permit replay.
+
+This frozen path adds no final-AST schema, public API, debug/error grammar,
+fact, theorem-acceptance, proof, or IR table. The separately committed
+lower-selector prerequisite must complete before this final projection is
+implemented.

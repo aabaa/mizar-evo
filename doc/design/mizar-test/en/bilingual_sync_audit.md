@@ -1226,3 +1226,46 @@ all nine hard gates PASS, no score cap, and valid `100/100`
 (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, the
 implementation commit, post-commit invariants, and fresh B4C inventory
 remain pending in both languages.
+
+## Checker Task 258B4C Frozen Runner Synchronization
+
+English and Japanese now close B4B at implementation commit
+`752c17ae7d552d5268d1028612b8174e480b6f3e`, clean ahead 1/behind 0 with
+unchanged stash fingerprint
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Both freeze the distinct
+private 139-byte/two-LF B4C source and hash
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`,
+while preserving the active 138-byte/one-LF lower-only source at
+`cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`.
+
+Both languages preserve Surface `66/root 65`, theorem `62` at `19..137`,
+label token `6` at `27..65`, outer formula `60` at `67..136`; raw resolver
+`1/0/1/1/0`, theorem path `[2,1]`, contribution `0` anchored `0..18`, and
+enriched `1/1/1/1/0`. They also synchronize the mandatory separate
+lower-stage prerequisite limited to `source_formula.rs` and the runner
+`source_formula_composition.rs` test leaf: exact one- or two-LF acceptance,
+zero- and three-LF rejection, production `source_formula_composition.rs`
+no-op, and a fresh-inventory-measured rather than invented test count.
+
+The synchronized lower profiles are `4/4/0`, `6/6/0`,
+`3/0/0/0/0/0/0/6/6`, `3/0/1/3/3/2/6`, and `3/6`.
+Upper state is `1/1/1/0/1`, context visibility `[0]`, no input facts, two
+`Composite(0)` links, ownership `24/1/41`, and telemetry
+`2/2/[2,2,4,4,4,4]`. Both name the same eventual seven upper consumers,
+project four checker/five runner tests, preserve the `418/481`,
+checker `23/140821`, runner `30/56007`, production/test-list/CLI hashes, and
+assign all semantic results to later tasks. Existing spec, corpus,
+expectation, sidecar, trace status/count, active route, public schema, and
+coverage-audit status remain no-ops; audit impact is narrative only. B5
+remains deferred. No synchronization exception exists.
+
+## Checker Task 258B4C Documentation Review Synchronization
+
+Both languages record the corrected checker authentication ownership,
+repeated **NO FINDINGS** reviews, focused and full offline PASSes, exact
+frozen counts/hashes, 32-document/no-op scope, unchanged protected stash,
+and report-only external origin movement to 0/0. There is no synchronization
+exception. Independent final quality is synchronized as **NO FINDINGS**,
+all nine hard gates PASS, no cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit inventory
+remain.

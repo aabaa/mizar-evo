@@ -1485,3 +1485,28 @@ fixture and B4A's 80-byte route. B4A/B4B profile hybrids fail atomically.
 B4C continues to own Task-257B3 restricted/existential/nested roots, and B5
 continues to own broader visibility. Connective/repetition semantics, truth,
 facts, acceptance, and proof remain deferred.
+
+## Task 258B4C Frozen Composite-Root Edge
+
+B4C consumes only the existing Task-257B3 restricted-universal,
+existential, nested-quantifier, and implicit-reserve graph. Its exact lower
+profiles are binding `4/4/0`, Task 252 `6/6/0`, Task 256
+`3/0/0/0/0/0/0/6/6`, Task 257 `3/0/1/3/3/2/6`, and Task-257B3
+composition `3/6`. The 24 lower-owned Surface sites are
+`{9,17,22,32,33,36,37,38,39,41,43,44,45,46,47,48,50,52,53,55,57,58,59,60}`;
+composite root 60 remains `UnassignedStatement`.
+
+Task 258 adds only theorem node 62 and the statement/candidate edges to
+`Composite(0)`. Context 0 sees reserved binding `[0]`, but reserve supplies
+a binder/type default rather than a prior statement fact, so the input-fact
+table remains empty. No edge targets an inner equality, binder segment, or
+reference. The remaining 41 Surface nodes stay unowned.
+
+The private 139-byte/double-LF route is distinct from the active
+138-byte/lower-only Task-257B3 source. A separate lower selector prerequisite
+must admit exactly those one- and two-LF forms and reject zero or three LF
+bytes before B4C implementation. Upper dispatch is matched only as
+B1/B4A, B2/B4B, and B3/B4C; every hybrid fails atomically. Quantifier
+truth, restriction discharge, witness semantics, capture, implicit theorem
+closure, facts, theorem acceptance, proof, Core/CFG/VC, and B5 remain
+deferred.

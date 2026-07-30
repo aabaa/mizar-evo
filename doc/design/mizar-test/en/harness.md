@@ -4646,3 +4646,45 @@ gates PASS with no score cap at valid `100/100`
 (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, the
 implementation commit, post-commit invariants, and fresh-B4C inventory
 remain pending.
+
+## Checker Task 258B4C Frozen Harness Route
+
+B4B subsequently committed as
+`752c17ae7d552d5268d1028612b8174e480b6f3e`; the clean ahead-1/behind-0
+post-commit inventory and unchanged stash select B4C. The harness will
+recognize only the exact private 139-byte/two-LF source with hash
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`.
+The active 138-byte/one-LF source and hash
+`cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`
+remain lower-only.
+
+Before the upper route is implemented, an independent lower-stage
+prerequisite must make the existing Task-257B3 selector accept exactly the
+138- and 139-byte variants and reject zero or three trailing LFs. Its write
+scope is only `type_elaboration/source_formula.rs` and
+`runner/tests/type_elaboration/source_formula_composition.rs`; production
+`source_formula_composition.rs` remains unchanged. Its added-test count is
+not projected here and must be measured after fresh inventory.
+
+The future upper selector authenticates all 66 Surface rows/root `65`,
+theorem `62` at `19..137`, label token `6` at `27..65`, outer formula `60`
+at `67..136`, raw resolver `1/0/1/1/0`, theorem path `[2,1]`, and reserve
+contribution `0` anchored at `0..18`; only then may it enrich to
+`1/1/1/1/0`. It reuses exact lower profiles binding `4/4/0`, primary
+`6/6/0`, atomic `3/0/0/0/0/0/0/6/6`, composite
+`3/0/1/3/3/2/6`, and composition `3/6`.
+
+Publication is upper `1/1/1/0/1`: context `0` exposes binding `[0]`, there
+are no input facts, and both statement and candidate target `Composite(0)`.
+The rootless typed arena partition is `24/1/41`. The profile-aware detail
+guard accepts telemetry `2/2/[2,2,4,4,4,4]` only for the exact B3/B4C pair.
+
+Four projected checker and five projected runner tests cover source/LF
+isolation, every frozen Surface/resolver/lower/upper field, ownership,
+telemetry, coherent near misses, B4A/B4B and active-route isolation, order,
+rollback/replay, clone/debug, and empty semantics. No fixture, expectation,
+sidecar, trace status/count, active route, public schema, formula truth,
+witness or restriction semantics, theorem acceptance, fact, proof/Core/CFG/
+VC result, or coverage credit changes. Baselines remain libraries
+`418/481`, checker production `23/140821`, runner production `30/56007`,
+and the previously recorded production/test-list/five-CLI hashes.

@@ -1418,3 +1418,28 @@ private 167-byte routeはactive 166-byte lower-only fixtureおよびB4A
 B4CはTask-257B3 restricted/existential/nested rootsを引き続きownし、B5は
 broader visibilityを引き続きownする。connective/repetition semantics、
 truth、facts、acceptance、proofはdeferredのままである。
+
+## Task 258B4C frozen composite-root edge
+
+B4Cはexisting Task-257B3 restricted-universal、existential、
+nested-quantifier、implicit-reserve graphだけをconsumeする。exact lower
+profilesはbinding `4/4/0`、Task 252 `6/6/0`、Task 256
+`3/0/0/0/0/0/0/6/6`、Task 257 `3/0/1/3/3/2/6`、Task-257B3
+composition `3/6`である。lower-owned Surface sites 24件は
+`{9,17,22,32,33,36,37,38,39,41,43,44,45,46,47,48,50,52,53,55,57,58,59,60}`
+で、composite root 60は`UnassignedStatement`のままである。
+
+Task 258が追加するのはtheorem node 62とstatement/candidateから
+`Composite(0)`へのedgesだけである。context 0はreserved binding `[0]`を
+見るが、reserveはprior statement factではなくbinder/type defaultを
+供給するため、input-fact tableはemptyのままである。inner equality、
+binder segment、referenceをtargetにするedgeはない。remaining Surface
+nodes 41件はunownedのままである。
+
+private 139-byte/double-LF routeはactive 138-byte/lower-only Task-257B3
+sourceとdistinctである。separate lower selector prerequisiteはB4C
+implementation前にexact one-/two-LF formsだけをadmitし、zero/three LFを
+rejectする。upper dispatchはB1/B4A、B2/B4B、B3/B4Cだけをmatchし、全
+hybridはatomically failする。quantifier truth、restriction discharge、
+witness semantics、capture、implicit theorem closure、facts、theorem
+acceptance、proof、Core/CFG/VC、B5はdeferredである。

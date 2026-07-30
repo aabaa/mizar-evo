@@ -1187,3 +1187,45 @@ qualityは両言語で**NO FINDINGS**、全9 hard gates PASS、score capなし�
 valid `100/100`（`20/20/15/15/10/10/5/5`）として同期する。exact
 staging/cached-diff review、implementation commit、post-commit
 invariants、fresh-B4Cは両言語でpendingである。
+
+## Checker Task 258B4C frozen runner synchronization
+
+EN/JAはB4Bをimplementation commit
+`752c17ae7d552d5268d1028612b8174e480b6f3e`、clean ahead 1/behind 0、
+unchanged stash fingerprint
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`としてcloseする。両言語は
+distinct private 139-byte/two-LF B4C source/hash
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
+をfreezeし、active 138-byte/one-LF lower-only source
+`cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`
+をpreserveする。
+
+Surface `66/root 65`、theorem `62` `19..137`、label token `6`
+`27..65`、outer formula `60` `67..136`、raw resolver `1/0/1/1/0`、
+theorem path `[2,1]`、contribution `0` anchor `0..18`、enriched
+`1/1/1/1/0`も一致する。`source_formula.rs`とrunner
+`source_formula_composition.rs` test leafだけに限定したmandatory separate
+lower-stage prerequisite、exact one-/two-LF acceptance、zero-/three-LF
+rejection、production `source_formula_composition.rs` no-op、
+fresh-inventory-measuredでinventしないtest countも同期する。
+
+lower profiles `4/4/0`、`6/6/0`、`3/0/0/0/0/0/0/6/6`、
+`3/0/1/3/3/2/6`、`3/6`、upper `1/1/1/0/1`、context visible
+`[0]`、input facts 0件、両`Composite(0)`、ownership `24/1/41`、
+telemetry `2/2/[2,2,4,4,4,4]`を両言語でfreezeする。同じeventual upper
+consumers 7件、projected checker 4/runner 5 tests、`418/481`、
+checker `23/140821`、runner `30/56007`、production/test-list/CLI hashesを
+preserveし、semantic resultはlater tasksへassignする。existing spec、
+corpus、expectation、sidecar、trace status/count、active route、public
+schema、coverage-audit statusはno-op、audit impactはnarrative onlyである。
+B5はdeferredで、synchronization exceptionはない。
+
+## Checker Task 258B4C documentation review synchronization
+
+両言語はcorrected checker authentication ownership、repeated **NO
+FINDINGS** reviews、focused/full offline PASS、exact frozen counts/hashes、
+32-document/no-op scope、unchanged protected stash、report-only external
+origin movement to 0/0を記録する。synchronization exceptionはない。
+independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、
+valid `100/100`（`20/20/15/15/10/10/5/5`）として同期した。pendingは
+staging、commit、post-commit inventoryである。

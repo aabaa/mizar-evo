@@ -1201,3 +1201,59 @@ unchanged stash. Independent final quality is synchronized as **NO
 FINDINGS**; all nine hard gates PASS with no cap at valid `100/100`
 (`20/20/15/15/10/10/5/5`). Staging/cached-diff review, the implementation
 commit, post-commit inventory, and B4C remain pending in both languages.
+
+## Task 258B4C Frozen Bilingual Contract
+
+Task 258B4B subsequently closed in implementation commit
+`752c17ae7d552d5268d1028612b8174e480b6f3e`. The shared post-commit
+inventory is clean, ahead 1/behind 0 after report-only external origin
+movement, and preserves stash fingerprint `f65cf4a13752ec...`.
+
+Canonical English and the Japanese companions now freeze B4C as the upper
+consumer of Task-257B3 restricted-universal, existential, nested-quantifier,
+and implicit-reserve transport. The private source is exactly 139 bytes
+with two final LF bytes and SHA-256
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`;
+the active 138-byte/lower-only source remains SHA-256
+`cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`.
+Both languages preserve Surface 66/root 65, theorem node 62 at `19..137`,
+label node 6 at `27..65`, outer composite node 60 at `67..136`, raw
+resolver `1/0/1/1/0` with origin `[2,1]` and contribution 0 anchored at
+`0..18`, and enriched resolver `1/1/1/1/0`.
+
+The synchronized lower profiles are binding `4/4/0`, primary `6/6/0`,
+atomic `3/0/0/0/0/0/0/6/6`, composite `3/0/1/3/3/2/6`, and
+composition `3/6`. Lower ownership is exactly
+`{9,17,22,32,33,36,37,38,39,41,43,44,45,46,47,48,50,52,53,55,57,58,59,60}`;
+the upper owns only theorem node 62 and leaves 41 nodes unowned. The upper
+tables are `1/1/1/0/1`, context 0 exposes `[0]`, no input fact is
+fabricated, both statement and candidate target `Composite(0)`, and the
+runner-private telemetry is `2/2/[2,2,4,4,4,4]`.
+
+A separate lower-stage prerequisite must precede the upper implementation.
+It may change only runner `type_elaboration/source_formula.rs` and
+`runner/tests/type_elaboration/source_formula_composition.rs` to admit the
+exact 138- and 139-byte forms while rejecting zero or three final LF bytes.
+Production `source_formula_composition.rs` remains unchanged. After that
+separate commit, B4C may use only the same seven upper consumers as B4B and
+the exact B4A/B1, B4B/B2, B4C/B3 pairing. Public API, debug/error grammar,
+authority artifacts, trace credit, truth, facts, theorem acceptance, proof,
+IR, B5, and active-route intent stay unchanged. Documentation review,
+verification, quality, staging, commit, and post-commit synchronization
+remain pending.
+
+## Task 258B4C Documentation Review Synchronization
+
+Repeated specification, test-boundary, bilingual, and source/documentation
+reviews report **NO FINDINGS** after one synchronized Medium
+`boundary_violation` correction. Both languages assign raw
+source/Surface/resolver authentication to the runner selector and
+`SourceStatementProducer`; typed/final validation is limited identically to
+authenticated handoff rows/identity, lower fingerprints, and retained arena.
+Focused and full offline verification, every frozen count/hash, exact
+32-document/no-op scope, and stash invariance PASS in both records. External
+origin movement to 0/0 is synchronized as report-only
+`repo_metadata_conflict`. Independent final quality is synchronized as
+**NO FINDINGS**, all nine hard gates PASS, no cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit
+synchronization remain.

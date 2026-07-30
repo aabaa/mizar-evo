@@ -944,3 +944,48 @@ unchanged-stash gatesはPASSした。independent final qualityは**NO
 FINDINGS**、全9 hard gates PASS、capなし、valid `100/100`
 （`20/20/15/15/10/10/5/5`）である。staging/cached-diff review、
 implementation commit、post-commit inventory、B4Cはpendingである。
+
+## Task 258B4C documentation/future implementation boundary
+
+Task 258B4Bはexact seven-file boundary内の
+`752c17ae7d552d5268d1028612b8174e480b6f3e`でcloseした。post-commit
+treeはclean、report-only origin metadata movement後のahead 1/behind 0で、
+protected stashはunchangedである。
+
+B4Cは最初にseparately review/commitするlower-stage compatibility
+prerequisiteを1件必要とする。そのproduction/test write boundaryはrunner
+`type_elaboration/source_formula.rs`と
+`runner/tests/type_elaboration/source_formula_composition.rs`だけである。
+exact Task-257B3 selectorをactive 138-byte/one-final-LF sourceからprivate
+139-byte/two-final-LF siblingへextendし、zero/three-LF rejection testsを
+追加するだけである。checker lower owners、binding/resolver/parser owners、
+production runner `source_formula_composition.rs`はexplicit no-opである。
+これはselector compatibilityであり、lower table、ownership、semantic
+expansionではない。
+
+prerequisite commit後だけ、B4CはB4Bと同じupper consumers 7件、checker
+`source_statement.rs`、`typed_ast.rs`、`resolved_typed_ast.rs`、runner
+`type_elaboration/source_statement.rs`、`type_elaboration.rs`、
+`runner.rs`、`runner/tests/type_elaboration/source_statement.rs`をedit
+できる。Task 252はreference sites 6件、Task 256はequality roots 3件、
+Task 257B3はcomposite root 60を含むlower-owned sites 24件を保持する。
+Task 258はtheorem node 62とupper `Composite(0)` associations 2件だけを
+ownでき、Surface nodes 41件はunownedのままである。
+
+future commits 2件はexact B1/B4A、B2/B4B、B3/B4C pairing、input facts 0、
+statement context visibility `[0]`、public APIs、debug/error grammar、
+active authority artifacts、trace status/counts、全semantic/proof/IR
+boundariesをpreserveする。parser、resolver、corpus、sidecars、
+expectations、specification、B5、unrelated ownersは禁止である。
+documentation-only review/verificationはpendingである。
+
+## Task 258B4C documentation boundary review status
+
+typed/final ownership wordingのMedium `boundary_violation` 1件を修正後、
+repeated boundary/source-documentation reviewは**NO FINDINGS**。raw
+authenticationはrunner selector/statement producerが所有し、checker
+installersはhandoff/fingerprint/arena validationだけをretainする。exact
+32-document scope、future write boundaries 2件、全forbidden no-op、
+counts/hashes、offline tests、formatting、Clippy、stash gatesはPASS。
+independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、
+valid `100/100`。pendingはstaging/commit/post-commit gatesである。

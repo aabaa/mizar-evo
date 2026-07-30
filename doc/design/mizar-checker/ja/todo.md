@@ -5674,8 +5674,64 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`
   （`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] exact Task-258B4B implementation scopeだけをstageしcached diffを
-  inspect。
-- [ ] dedicated B4B implementation commitをcreate。
-- [ ] clean post-commit/stash invariantsをverifyし、Task 258B4Cをfresh
-  inventory。
+- [x] exact Task-258B4B implementation scopeだけをstageしcached diffを
+  inspectし、dedicated implementation commit
+  `752c17ae7d552d5268d1028612b8174e480b6f3e`をcreate。
+- [x] report-only external origin movement後のclean ahead-1/behind-0
+  post-commit state、unchanged stash fingerprintをverifyし、Task 258B4Cを
+  fresh inventory。
+
+## Checker Task 258B4C documentation prerequisite
+
+- [x] Task-257B3 restricted-universal、existential、nested、
+  implicit-reserve rootsだけをselectし、B5をretain。
+- [x] active 138-byte upper-route reuseを`test_expectation_drift`と分類し、
+  private 139-byte/double-LF source、hash
+  `36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
+  をfreeze。
+- [x] Surface 66/root 65、theorem 62 `19..137`、label 6 `27..65`、
+  outer composite 60 `67..136`、raw resolver `1/0/1/1/0`、
+  origin `[2,1]`、contribution 0 anchor `0..18`、enriched
+  `1/1/1/1/0`をfreeze。
+- [x] lower binding `4/4/0`、primary `6/6/0`、atomic
+  `3/0/0/0/0/0/0/6/6`、composite `3/0/1/3/3/2/6`、composition
+  `3/6`、lower-owned sites 24件、upper theorem site 1件、unowned
+  sites 41件をfreeze。
+- [x] upper `1/1/1/0/1`、context visibility `[0]`、input facts 0、
+  両`Composite(0)` links、telemetry `2/2/[2,2,4,4,4,4]`をfreeze。
+- [x] one-LF-only Task-257B3 selectorをbounded `source_drift`と分類し、
+  B4C upper implementation前のseparate lower-stage prerequisiteを必須化。
+- [x] prerequisiteをrunner `type_elaboration/source_formula.rs`と
+  `runner/tests/type_elaboration/source_formula_composition.rs`だけにbound
+  し、exact 138/139-byte routesをadmit、zero/three LFをreject、production
+  `source_formula_composition.rs`をunchangedにする。
+- [x] later upper scopeをB4Bと同じconsumers 7件、exact B1/B4A、
+  B2/B4B、B3/B4C pairing、unchanged public API/debug/error、
+  authority/trace no-op、subtree exclusion、semantic deferrals、audit
+  narrative-only effect、tests、baseline impact、exit criteriaにfreeze。
+- [x] repeated specification/documentation reviewを**NO FINDINGS**で
+  complete。
+- [x] documentation-only scope、forbidden-artifact、count/hash、CLI、
+  crate/workspace、diff、stash verificationをPASS。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] synchronized Task-258B4C documentationだけをstageしcached diffを
+  inspectしてdedicated documentation prerequisite commitをcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、mandatory lower-stage
+  prerequisiteをfresh inventory。
+
+## Checker Task 258B4C lower-stage prerequisite ledger
+
+- [ ] authority、exact 138/139-byte routes、selector ownership、tests、
+  counts、hashes、clean documentation commitをfresh inventory。
+- [ ] prerequisite specification reviewを**NO FINDINGS**でclose。
+- [ ] frozen runner selector/composition test ownerだけを変更し、
+  production `source_formula_composition.rs`を変更しない。
+- [ ] test sufficiency、implementation、source/document consistencyを
+  separateに**NO FINDINGS**までreview。
+- [ ] focused/package/workspace、formatting、Clippy、CLI、count/hash、
+  scope、forbidden-artifact、audit-no-op、stash gatesをPASS。
+- [ ] independent final quality `>=90/100`、two-file staging/cached diff、
+  dedicated prerequisite commitをcomplete。
+- [ ] clean post-commit/stash invariantsをverifyし、B4C upper
+  implementationをfresh inventory。

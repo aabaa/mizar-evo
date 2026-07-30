@@ -4843,3 +4843,60 @@ Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
 with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Staging/cached-
 diff review, the implementation commit, post-commit inventory, and B4C
 selection remain pending.
+
+## Task 258B4C Authority Audit
+
+Task 258B4B implementation commit
+`752c17ae7d552d5268d1028612b8174e480b6f3e` is followed by a clean,
+ahead-1/behind-0 inventory with unchanged protected stash. The changed
+origin relationship is report-only `repo_metadata_conflict`; the commit
+target remains unambiguous.
+
+Canonical Chapter 4 §§4.1/4.3/4.5/4.6/4.7.1, Chapter 14
+§§14.1/14.4/14.5.2/14.5.4/14.7.5/14.8, and Chapter 16
+§§16.1/16.2/16.7.1 authorize restricted-universal, existential,
+nested-quantifier, reserve-default, and labeled theorem source transport.
+They do not authorize quantifier truth, restriction discharge, existential
+witness success, capture semantics, implicit theorem closure, facts,
+theorem acceptance, proof, or IR results.
+
+The active 138-byte Task-257B3 fixture and its expectation/trace row
+explicitly defer theorem ownership, so reusing it for an upper route is
+`test_expectation_drift`. B4C freezes an isolated 139-byte/double-LF source
+with hash
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`;
+its syntax/resolver/lower tables are otherwise identical. Missing B4C design
+is `design_drift`, and the future upper implementation/tests are bounded
+`source_drift`/`test_gap`.
+
+Fresh inventory also finds a lower selector compatibility defect: the
+Task-257B3 runner selector recognizes only the active 138-byte form even
+though the isolated 139-byte sibling has the same authority-derived parse,
+resolver provenance, and lower contract. This is bounded `source_drift`,
+not a semantic decision. Authority is sufficient for one mandatory,
+separate lower-stage prerequisite limited to
+`type_elaboration/source_formula.rs` and its composition test owner. It
+must accept exactly one or two final LF bytes and reject zero or three;
+production `source_formula_composition.rs`, authority artifacts, and all
+lower tables remain unchanged.
+
+After that separate commit, B4C upper work is limited to the same seven
+consumers as B4B, exact B3/B4C pairing, upper `1/1/1/0/1`, no input facts,
+and private telemetry `2/2/[2,2,4,4,4,4]`. There is no blocking
+`spec_gap`, `source_undocumented_behavior`, or `boundary_violation`.
+Specification review, verification, quality, and documentation commit
+remain pending.
+
+## Task 258B4C Documentation Review Result
+
+Repeated specification, test-boundary, bilingual, and corrected
+source/documentation reviews report **NO FINDINGS**. The sole interim Medium
+`boundary_violation` was derived ownership text, not an authority conflict,
+and is closed by assigning raw authentication to the runner selector and
+`SourceStatementProducer`. Focused and full verification, frozen
+counts/hashes, exact docs-only scope, authority/corpus/trace/production
+no-ops, and stash invariance PASS. There is still no blocking `spec_gap`,
+`source_undocumented_behavior`, or authority-less lower repair. Independent
+final quality reports **NO FINDINGS**, all nine hard gates PASS, no cap, and
+valid `100/100` (`20/20/15/15/10/10/5/5`). Only staging, the dedicated
+documentation commit, and post-commit inventory remain.

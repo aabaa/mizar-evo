@@ -4639,3 +4639,58 @@ stash gatesはPASSした。independent final qualityは**NO FINDINGS**、
 （`20/20/15/15/10/10/5/5`）である。staging/cached-diff review、
 implementation commit、post-commit inventory、B4C selectionはpendingで
 ある。
+
+## Task 258B4C authority audit
+
+Task 258B4B implementation commit
+`752c17ae7d552d5268d1028612b8174e480b6f3e`後のinventoryはclean、
+ahead-1/behind-0、protected stash unchangedである。origin relationship
+changeはreport-only `repo_metadata_conflict`で、commit targetは
+unambiguousである。
+
+canonical Chapter 4 §§4.1/4.3/4.5/4.6/4.7.1、Chapter 14
+§§14.1/14.4/14.5.2/14.5.4/14.7.5/14.8、Chapter 16
+§§16.1/16.2/16.7.1はrestricted-universal、existential、
+nested-quantifier、reserve-default、labeled theorem source transportを
+authorizeするが、quantifier truth、restriction discharge、existential
+witness success、capture semantics、implicit theorem closure、facts、
+theorem acceptance、proof、IR resultをauthorizeしない。
+
+active 138-byte Task-257B3 fixtureのexpectation/trace rowはtheorem
+ownershipをexplicitly deferするため、upper reuseは
+`test_expectation_drift`である。B4Cはisolated 139-byte/double-LF source、
+hash `36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
+をfreezeし、syntax/resolver/lower tablesは同一である。missing B4C designは
+`design_drift`、future upper implementation/testsはbounded
+`source_drift`/`test_gap`である。
+
+fresh inventoryはlower selector compatibility defectも検出した。
+Task-257B3 runner selectorは同じauthority-derived parse/resolver/lower
+contractを持つ139-byte siblingを認識しない。これはsemantic decisionでは
+なくbounded `source_drift`である。authorityは
+`type_elaboration/source_formula.rs`とcomposition test ownerだけの
+mandatory separate lower-stage prerequisiteに十分である。exact one/two
+final LFをacceptしzero/threeをrejectし、production
+`source_formula_composition.rs`、authority artifacts、lower tablesは
+unchangedとする。
+
+そのseparate commit後のB4C upper workはB4Bと同じconsumers 7件、exact
+B3/B4C pairing、upper `1/1/1/0/1`、input facts 0、private telemetry
+`2/2/[2,2,4,4,4,4]`だけである。blocking `spec_gap`、
+`source_undocumented_behavior`、`boundary_violation`はない。
+specification review、verification、quality、documentation commitは
+pendingである。
+
+## Task 258B4C documentation review result
+
+repeated specification、test-boundary、bilingual、corrected
+source/documentation reviewsは**NO FINDINGS**。途中のMedium
+`boundary_violation` 1件はauthority conflictではなくderived ownership
+textであり、raw authenticationをrunner selectorと
+`SourceStatementProducer`へ帰属してcloseした。focused/full
+verification、frozen counts/hashes、exact docs-only scope、
+authority/corpus/trace/production no-op、stash invarianceはPASS。blocking
+`spec_gap`、`source_undocumented_behavior`、authority-less lower repairは
+依然ない。independent final qualityは**NO FINDINGS**、全9 hard gates
+PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。pendingは
+staging、dedicated documentation commit、post-commit inventoryだけ。

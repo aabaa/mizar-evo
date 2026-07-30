@@ -2924,5 +2924,49 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage/inspect and commit only the exact B4B implementation scope.
-- [ ] Verify post-commit invariants and fresh-inventory B4C.
+- [x] Stage/inspect and commit only the exact B4B implementation scope as
+  `752c17ae7d552d5268d1028612b8174e480b6f3e`.
+- [x] Verify clean ahead-1/behind-0 post-commit state, unchanged stash, and
+  fresh-inventory B4C.
+
+## Checker Task 258B4C Documentation Ledger
+
+- [x] Freeze the private 139-byte/two-LF source hash
+  `36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
+  and preserve the active 138-byte lower-only hash
+  `cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`.
+- [x] Freeze Surface `66/root65`, theorem `62` `19..137`, label token `6`
+  `27..65`, outer formula `60` `67..136`, raw resolver `1/0/1/1/0`,
+  owner path `[2,1]`, contribution `0` anchor `0..18`, and enriched
+  resolver `1/1/1/1/0`.
+- [x] Freeze the mandatory independent lower prerequisite to only
+  `source_formula.rs` plus the runner `source_formula_composition.rs` test
+  leaf: accept exact 138/139-byte one-/two-LF variants, reject zero/triple
+  LF, and leave production `source_formula_composition.rs` unchanged.
+- [x] Require the lower prerequisite test count to be fresh-inventory
+  measured, with its own review, verification, quality gate, commit, and
+  post-commit inventory.
+- [x] Freeze lower profiles binding `4/4/0`, primary `6/6/0`, atomic
+  `3/0/0/0/0/0/0/6/6`, composite `3/0/1/3/3/2/6`, and
+  composition `3/6`.
+- [x] Freeze upper `1/1/1/0/1`, context visible `[0]`, no input facts, both
+  `Composite(0)` links, ownership `24/1/41`, and telemetry
+  `2/2/[2,2,4,4,4,4]`.
+- [x] Freeze the same seven eventual upper consumers as B4B and project
+  focused checker `4` / runner `5` tests with complete exact/mutation/
+  isolation/order/replay/final-empty coverage.
+- [x] Preserve all existing spec, fixture, expectation, sidecar, trace
+  status/count, active route, public schema, semantic/proof outputs, and
+  coverage-audit status; record narrative audit impact only and keep B5
+  deferred.
+- [x] Record baselines checker/runner `418/481`, checker production
+  `23/140821`, runner production `30/56007`, exact production/test-list and
+  five CLI hashes, and unchanged stash.
+- [x] Complete repeated documentation review with **NO FINDINGS**.
+- [x] Pass docs-only verification and all no-op/count/hash/stash gates.
+- [x] Pass independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage/inspect and create the dedicated B4C documentation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory the
+  mandatory lower-stage prerequisite.

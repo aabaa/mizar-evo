@@ -3732,3 +3732,42 @@ forbidden-artifact, and unchanged-stash gates PASS. Independent final
 quality reports **NO FINDINGS**; all nine hard gates PASS with no cap at
 valid `100/100` (`20/20/15/15/10/10/5/5`). Staging/cached-diff review,
 the implementation commit, post-commit inventory, and B4C remain pending.
+
+## Task 258B4C Frozen Nested-Quantifier Statement Root
+
+The exact private source is 139 bytes with two final LFs and SHA-256
+`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`.
+It parses with zero diagnostics as 66 normal Surface nodes/root 65. Reserve
+item 35 is `0..18`, theorem item 62 is `19..137`, label token 6 is
+`27..65`, and outer composite root 60 is `67..136`. Raw resolver
+cardinalities are `1/0/1/1/0`: public/exported theorem owner range
+`19..137`, origin `[2,1]`, contribution 0 anchored to reserve `0..18`.
+The runner adds one exact theorem label projection and contribution effect,
+producing `1/1/1/1/0`.
+
+The active 138-byte source remains Task-257B3 lower-only. The current exact
+source guard does not admit the private double-LF source, so a separate
+lower-stage prerequisite must first extend only the private Task-257B3
+selector and its runner tests to exact 138-or-139-byte acceptance while
+rejecting zero/triple LF. B4C upper implementation must not contain that
+repair, and production `source_formula_composition.rs` remains unchanged.
+
+The matched lower profile is binding `4/4/0`, primary `6/6/0`, atomic
+`3/0/0/0/0/0/0/6/6`, composite `3/0/1/3/3/2/6`, and composition
+`3/6`. The 66-node rootless arena retains exact lower ownership
+`{9,17,22,32,33,36,37,38,39,41,43,44,45,46,47,48,50,52,53,55,57,58,59,60}`;
+Task 258 owns only theorem node 62, leaving 41 nodes unowned. The lower root
+remains `UnassignedStatement`.
+
+The upper publication is exactly `1/1/1/0/1`. Owner and statement use site
+62/range `19..137`; statement and candidate target `Composite(0)`. Context
+0 uses binding context 0 with visible `[0]`. There is no input fact because
+no Task-252 reference selects reserved binding 0; the six references select
+bindings `1,1,3,2,1,3` with ordinals `2,2,4,4,4,4`. Private route telemetry
+is `2/2/[2,2,4,4,4,4]`. Exact profile pairing is B4A/B1, B4B/B2, and
+B4C/B3 only.
+
+No public API, error, or debug grammar changes. The same seven eventual upper
+consumers as B4B are frozen, with four checker and five runner tests. Truth,
+restriction discharge, existential witnesses, implicit closure, facts,
+theorem acceptance/publication, proofs, and downstream IR remain deferred.

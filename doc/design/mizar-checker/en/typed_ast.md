@@ -1470,3 +1470,31 @@ rooted arena, relocated owned site, and stale fingerprint before mutation.
 All installation orders are atomic and replayable. The lower-only
 `with_source_formula_composition` remains unchanged and still accepts B1,
 B2, and B3 only as lower transport.
+
+## Task 258B4C Frozen Paired Installation
+
+`with_source_formula_composition_statement` retains its public signature and
+may install B4C only for a matched Task-257B3 composite/composition handoff
+and exact B4C statement. The runner selector and
+`SourceStatementProducer` own raw source, Surface, and resolver
+authentication. Before mutation this installer revalidates the resulting
+producer-authenticated statement owner/context/candidate rows and handoff
+identity, the matched lower fingerprints, the rootless 66-node lower arena,
+binding `4/4/0`, primary `6/6/0`, atomic
+`3/0/0/0/0/0/0/6/6`, composite `3/0/1/3/3/2/6`, composition `3/6`,
+the 24-site lower ownership partition, and upper `1/1/1/0/1`.
+
+Both statement and candidate must target `Composite(0)`, statement context 0
+must expose exactly reserve binding `[0]`, and input facts must be empty.
+The installer recognizes only B1/B4A, B2/B4B, and B3/B4C. Any cross-pairing,
+duplicate/partial state, stale fingerprint, rooted or relocated arena,
+altered ownership, active atomic statement family, semantic-table
+coexistence, or lower-selector mismatch fails with the existing
+`TypedAstError::InvalidSourceStatement`, leaves the AST byte-identical, and
+permits replay.
+
+The mandatory lower-selector compatibility prerequisite is a separate
+logical task and commit before this installer changes. The B4C transaction
+adds no public installer, error variant, debug grammar, fact, theorem
+acceptance, proof, or semantic table; the lower-only installer remains
+unchanged.

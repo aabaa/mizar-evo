@@ -2722,6 +2722,48 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   score capなし、valid `100/100`
   （`20/20/15/15/10/10/5/5`）でclose。
-- [ ] exact B4B implementation scopeをstage/inspectし、dedicated commitを
-  create。
-- [ ] clean post-commit/stash invariantsをverifyし、B4Cをfresh inventory。
+- [x] exact B4B implementation scopeをstage/inspectし、dedicated commit
+  `752c17ae7d552d5268d1028612b8174e480b6f3e`をcreate。
+- [x] clean ahead-1/behind-0 post-commit state、unchanged stashをverifyし、
+  B4Cをfresh inventory。
+
+## Checker Task 258B4C documentation ledger
+
+- [x] private 139-byte/two-LF source hash
+  `36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
+  をfreezeし、active 138-byte lower-only hash
+  `cbfd7077713e8e9630900e349d5f579251c19fba55434acb62170ea1dd940237`
+  をpreserve。
+- [x] Surface `66/root65`、theorem `62` `19..137`、label token `6`
+  `27..65`、outer formula `60` `67..136`、raw resolver `1/0/1/1/0`、
+  owner path `[2,1]`、contribution `0` anchor `0..18`、enriched resolver
+  `1/1/1/1/0`をfreeze。
+- [x] mandatory independent lower prerequisiteを`source_formula.rs`と
+  runner `source_formula_composition.rs` test leafだけに限定し、exact
+  138/139-byte one-/two-LF variantsをaccept、zero/triple LFをreject、
+  production `source_formula_composition.rs`をunchangedとしてfreeze。
+- [x] lower prerequisite test countをfresh-inventory-measuredとし、
+  independent review、verification、quality gate、commit、post-commit
+  inventoryをrequire。
+- [x] lower profiles binding `4/4/0`、primary `6/6/0`、atomic
+  `3/0/0/0/0/0/0/6/6`、composite `3/0/1/3/3/2/6`、
+  composition `3/6`をfreeze。
+- [x] upper `1/1/1/0/1`、context visible `[0]`、input facts 0件、両
+  `Composite(0)`、ownership `24/1/41`、telemetry
+  `2/2/[2,2,4,4,4,4]`をfreeze。
+- [x] B4Bと同じeventual upper consumers 7件をfreezeし、complete exact/
+  mutation/isolation/order/replay/final-empty coverage付きfocused checker
+  4/runner 5 testsをproject。
+- [x] existing spec、fixture、expectation、sidecar、trace status/count、
+  active route、public schema、semantic/proof output、coverage-audit
+  statusをpreserveし、audit impactをnarrative only、B5をdeferred。
+- [x] baseline checker/runner `418/481`、checker production
+  `23/140821`、runner production `30/56007`、exact production/test-list/
+  five CLI hashes、unchanged stashをrecord。
+- [x] repeated documentation reviewを**NO FINDINGS**でcomplete。
+- [x] docs-only verificationと全no-op/count/hash/stash gatesをPASS。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
+- [ ] dedicated B4C documentation commitをstage/inspect/create。
+- [ ] clean post-commit/stash invariantsをverifyし、mandatory lower-stage
+  prerequisiteをfresh inventory。

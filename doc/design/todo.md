@@ -3433,5 +3433,48 @@ or semantic owner changed. B3M2B2B remains next before B4.
   stash verification.
 - [x] Pass independent final quality with all hard gates and score
   `>=90/100`.
-- [ ] Stage/inspect and create one dedicated B4B implementation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4C.
+- [x] Stage/inspect and create one dedicated B4B implementation commit
+  `752c17ae7d552d5268d1028612b8174e480b6f3e`.
+- [x] Verify clean behind-0/ahead-1 post-commit state, unchanged stash, and
+  fresh-inventory B4C; report external origin movement only as
+  `repo_metadata_conflict`.
+
+## Checker Task 258B4C Documentation Prerequisite
+
+- [x] Freeze Chapter 2/4/14/16 authority and distinguish the active
+  138-byte lower-only source from the private 139-byte/double-LF source.
+- [x] Freeze all 66 Surface nodes/root 65, raw/enriched resolver provenance,
+  contribution anchor, and exact source hashes.
+- [x] Freeze the Task-48/252/256/257/B3 lower transaction, nested shadowing,
+  `24/1/41` ownership, and `UnassignedStatement` root.
+- [x] Freeze upper `1/1/1/0/1`, context visible `[0]`, no input fact, both
+  `Composite(0)` links, and private telemetry
+  `2/2/[2,2,4,4,4,4]`.
+- [x] Classify the exact-source guard as bounded lower-stage `source_drift`
+  and require a separate two-file prerequisite commit before B4C upper
+  implementation.
+- [x] Freeze the same seven eventual upper consumers as B4B, four
+  checker/five runner tests, exact B1/A-B2/B-B3/C pairing, deferrals,
+  baseline, narrative-only audit impact, and exit criteria.
+- [x] Complete repeated specification, test-boundary, bilingual, and
+  source/documentation reviews with **NO FINDINGS**.
+- [x] Pass docs-only/no-op verification and all frozen scope, count/hash,
+  authority/trace/production no-op, and stash gates.
+- [x] Pass independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage/inspect and create one dedicated B4C documentation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory the
+  separate Task-257B3 private-selector prerequisite.
+
+## Task 257B3 Private Double-LF Selector Prerequisite
+
+- [ ] After the B4C docs commit, fresh-inventory only
+  `runner/type_elaboration/source_formula.rs` and the runner
+  `source_formula_composition` test owner.
+- [ ] Admit exactly the active 138-byte and private 139-byte identities;
+  reject zero/triple LF and source/AST identity spoofing.
+- [ ] Prove identical Task-257B3 lower tables/fingerprints and unchanged
+  active CLI/trace behavior.
+- [ ] Review, verify, and create one separate lower-stage prerequisite
+  commit before B4C upper implementation.

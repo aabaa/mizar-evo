@@ -5418,3 +5418,49 @@ all authority, corpus, trace, production, count, and hash no-op gates
 preserved. Independent final quality reports **NO FINDINGS**; all nine hard
 gates PASS with no cap at valid `100/100`. Staging, commit, and post-commit
 inventory remain pending; none may change trace credit.
+
+### Task 258B4C narrative-only nested-quantifier-root ownership
+
+Task 258B4B implementation closed at
+`752c17ae7d552d5268d1028612b8174e480b6f3e`; clean post-commit inventory
+selected Task 258B4C. B4C freezes a syntax-free upper association from one
+theorem statement and candidate to the existing Task-257B3 restricted-
+universal/existential/nested `Composite(0)` root. The private 139-byte/
+double-LF source is deliberately distinct from the active 138-byte
+Task-257B3 fixture whose expectation and covered trace row grant lower
+transport only and defer theorem ownership.
+
+The unchanged lower transaction is binding `4/4/0`, Task-252 `6/6/0`,
+Task-256 `3/0/0/0/0/0/0/6/6`, Task-257
+`3/0/1/3/3/2/6`, and composition `3/6`; its root remains
+`UnassignedStatement`. The future upper route adds only Task-258
+`1/1/1/0/1`, with context visible `[0]`, no input fact, and two
+`Composite(0)` links. A separately committed lower-stage runner prerequisite
+must first admit the exact private double-LF alias without changing the
+active route or any lower table.
+
+This is narrative ownership and dependency mapping only.
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`; the existing
+`spec.en.checker.type_elaboration.source_nested_quantifier_payload` row
+remains covered solely for lower transport. No trace status, test list,
+backlink, requirement count, corpus artifact, active outcome, or coverage
+credit changes. Equality/quantifier truth, binder-type results, restriction
+discharge, existential witness, implicit theorem closure, facts, theorem
+acceptance/publication, proof, Core/CFG/VC, B5, and MT10-FS remain deferred.
+
+The prerequisite baseline is checker/runner libraries `418/481`, production
+`23/140821` and `30/56007`, with all recorded test-list, production, and five
+CLI hashes unchanged. The documentation prerequisite, separate lower-stage
+prerequisite, and B4C upper implementation are three distinct logical tasks
+and commits. None may change trace credit.
+
+Repeated specification, test-boundary, bilingual, and corrected
+source/documentation reviews report **NO FINDINGS**. Focused and full
+offline verification, every frozen count/hash, exact 32-document scope,
+authority/corpus/trace/production no-ops, and protected-stash invariance
+PASS. This evidence does not change the deferred row, its empty test list,
+any backlink/count, or coverage credit. Independent final quality reports
+**NO FINDINGS**, all nine hard gates PASS, no cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging, the documentation commit, and
+post-commit inventory remain.
