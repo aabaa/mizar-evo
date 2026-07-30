@@ -4615,3 +4615,34 @@ matrices. The paired checker suite owns the syntax-free corruption and final
 allowlist checks. No active fixture, sidecar, trace, diagnostic, public
 runner schema, connective truth, repetition expansion, theorem acceptance,
 or proof result is added.
+
+## Checker Task 258B4B Implemented Harness Route
+
+The runner now authenticates the exact private 167-byte/double-LF source and
+all 124 Surface rows/root 123. Raw resolver preflight is label-free; the
+runner supplies the frozen theorem label projection and contribution effect
+to reach exact `1/1/1/1/0`, then reuses the Task-257B2 lower handoffs in one
+rootless `42/1/81` arena. Publication remains upper `1/1/1/0/1` with both
+edges `Composite(0)`.
+
+The route guard accepts `0/0/[]` only for the exact B2/B4B pair while B1/B4A
+retains `1/1/[1,1]`. Five runner tests pass the exact output, mutation,
+profile-isolation, both-order, rollback/replay, clone/debug, and empty
+semantic matrices; the four checker tests cover syntax-free and final
+allowlist rejection. Test-sufficiency and implementation reviews report
+**NO FINDINGS**. The active 166-byte fixture remains lower-only, and no
+public runner schema, active route, diagnostic, corpus/trace artifact, or
+semantic result changes.
+
+Final source/documentation, bilingual, and boundary review repeats report
+**NO FINDINGS**. Focused checker `4/4` and runner `5/5`, full
+`cargo test --offline`, `cargo fmt --all -- --check`, and full offline
+Clippy with warnings denied pass. Checker/runner counts remain `418/481`;
+production, test-list, and all five CLI counts/hashes reproduce the recorded
+values, including `419/387`, `228/191`, `101/5/198/1`, and warnings/errors
+`23/0`. Seven-file scope, spec-coverage-audit no-op, and unchanged-stash
+gates pass. Independent final quality reports **NO FINDINGS**; all nine hard
+gates PASS with no score cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, the
+implementation commit, post-commit invariants, and fresh-B4C inventory
+remain pending.

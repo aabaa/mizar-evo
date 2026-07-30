@@ -3186,3 +3186,35 @@ runner-private route outputはこのzero-reference profileにlookup telemetry
 transport-detail guardはexact matched Task-257B2/B4B profileだけでそれを
 acceptし、B4Aを`1/1/[1,1]`のまま保たなければならない。このdormant
 runner conventionはpublic checker DTO/statement semanticを変更しない。
+
+## Task 258B4B implemented connective/grouping statement root
+
+prerequisite commit
+`b8a7b8257a682f7c88de943ceaa35b67c0585bc4`でfrozen contractをcloseした
+後、existing composite-statement APIをTask-257B2/B4Bへexactにextend
+した。`is_task_258b4a_profile`はB4A owner spelling/rangeへnarrowし、
+`is_task_258b4b_profile`は
+`FormulaConnectiveGroupingPayloadBoundary` / `0..165`だけをrecognize
+する。producer、stored-handoff validation、typed installer、final
+revalidationはB1/B4AまたはB2/B4Bのmatched pairだけをadmitする。
+
+lower `16/0/16`、`8/0/0/0/0/0/0/16/16`、
+`8/6/1/1/1/7/9`、`8/0`、binding `2/1/4`とrootless 124-node arenaは
+unchangedである。Task 258はnode 120だけをownし、`42/1/81`
+partitionを形成する。upper tablesは`1/1/1/0/1`で、statementと
+candidateだけが`Composite(0)`を参照する。two optional lower
+fingerprint linesはexisting debug position/grammarをpreserveする。
+
+checker 4 testsとrunner 5 testsはPASSし、separate test-sufficiency/
+implementation reviewsは**NO FINDINGS**である。active 166-byte route、
+B4A、atomic families、hybrids、partial stateはfail closedである。public
+API/error/debug grammar、semantic tables、corpus、traceは変更していない。
+final source/documentation、bilingual、boundary consistency reviewsも
+**NO FINDINGS**である。focused checker `4/4` / runner `5/5`、full
+`cargo test --offline`、`cargo fmt --all -- --check`、warnings deniedの
+full offline Clippy、5 CLI、全count/hash、exact scope、audit no-op、
+forbidden-artifact、unchanged-stash gatesはPASSした。independent final
+qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、valid
+`100/100`（`20/20/15/15/10/10/5/5`）である。staging/cached-diff
+review、implementation commit、post-commit inventory、B4Cはpendingで
+ある。

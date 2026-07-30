@@ -3402,6 +3402,36 @@ or semantic owner changed. B3M2B2B remains next before B4.
   artifact and semantic/coverage deferral, with narrative-only audit impact.
 - [x] Complete repeated reviews, docs-only verification, and final quality
   with all nine hard gates and score `>=90/100`.
-- [ ] Stage/inspect and create one dedicated B4B documentation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4B
+- [x] Stage/inspect and create one dedicated B4B documentation commit
+  `b8a7b8257a682f7c88de943ceaa35b67c0585bc4`.
+- [x] Verify clean ahead-8/behind-0 post-commit state, unchanged stash
+  fingerprint, and fresh-inventory B4B
   implementation.
+
+## Checker Task 258B4B Implementation
+
+- [x] Implement exactly three checker and four runner consumers; preserve
+  all lower owners including the 1,853-line formula-composition helper.
+- [x] Authenticate private 167-byte source; raw label-free then enriched
+  `1/1/1/1/0`; Task-257B2 lower/rootless `42/1/81`; upper
+  `1/1/1/0/1` with both `Composite(0)` links.
+- [x] Enforce exact B1/A versus B2/B pairing, B4B `0/0/[]`, B4A
+  `1/1/[1,1]`, and active 166-byte lower-only exclusion.
+- [x] Pass focused checker `4/4` and runner `5/5`; complete separate
+  test-sufficiency and implementation reviews with **NO FINDINGS**.
+- [x] Record libraries `418/481`, production `23/140821` and `30/56007`,
+  exact owner sizes, four test-list hashes, production hashes, and unchanged
+  CLI counts/hashes.
+- [x] Keep `doc/design/spec_coverage_audit.md` unchanged because B4B changes
+  no specification coverage status, owner crate, trace row/backlink, active
+  test mapping, or deferred semantic credit.
+- [x] Preserve public APIs, semantics, specifications, existing `.miz`,
+  expectations, sidecars, corpus, and trace status/count.
+- [x] Complete final source/documentation, bilingual, and boundary
+  consistency reviews with **NO FINDINGS**.
+- [x] Pass broad crate/workspace, fmt, Clippy, CLI, count/hash, scope, and
+  stash verification.
+- [x] Pass independent final quality with all hard gates and score
+  `>=90/100`.
+- [ ] Stage/inspect and create one dedicated B4B implementation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4C.

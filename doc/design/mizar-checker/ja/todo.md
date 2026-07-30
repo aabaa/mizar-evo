@@ -5644,8 +5644,38 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   crate/workspace、stash verificationをPASS。
 - [x] independent final qualityを全9 hard gates、valid score
   `>=90/100`でcomplete。
-- [ ] synchronized Task-258B4B documentationだけをstageしcached diffを
+- [x] synchronized Task-258B4B documentationだけをstageしcached diffを
   inspect。
-- [ ] dedicated B4B documentation prerequisite commit 1件をcreate。
-- [ ] clean post-commit/stash invariantsをverifyし、B4B implementationを
+- [x] dedicated B4B documentation prerequisite commit
+  `b8a7b8257a682f7c88de943ceaa35b67c0585bc4`をcreate。
+- [x] clean ahead-8/behind-0 post-commit state、unchanged stash
+  fingerprintをverifyし、B4B implementationを
   fresh inventory。
+
+## Checker Task 258B4B implementation ledger
+
+- [x] frozen checker 3/runner 4、合計7 consumersだけをimplement。
+- [x] private 167-byte source、raw label-free resolverからenriched
+  `1/1/1/1/0`へのhandoff、Task-257B2 lower transactionをauthenticate。
+- [x] rootless 124-node arena、exact `42/1/81` ownership、upper
+  `1/1/1/0/1`、statement/candidateの両`Composite(0)`をpreserve。
+- [x] B1/B4AとB2/B4Bだけをpairし、B4B private telemetry
+  `0/0/[]`、B4A `1/1/[1,1]`をfail-closedに保持。
+- [x] active 166-byte sourceをlower-onlyに保持し、public API、
+  semantics、corpus、expectation、sidecar、traceを変更しない。
+- [x] exact checker `4/4` / runner `5/5` focused testsをPASS。
+- [x] separate test-sufficiency/implementation reviewsを
+  **NO FINDINGS**でcomplete。
+- [x] final source/documentation、bilingual、boundary consistency reviewを
+  repeatし、
+  **NO FINDINGS**でclose。
+- [x] focused/package、`cargo fmt --check`、full Clippy、workspace、
+  5 CLI、全count/hash/scope/forbidden/stash verificationをcomplete。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] exact Task-258B4B implementation scopeだけをstageしcached diffを
+  inspect。
+- [ ] dedicated B4B implementation commitをcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、Task 258B4Cをfresh
+  inventory。

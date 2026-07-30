@@ -11122,3 +11122,28 @@ source occurrence ownershipをpreserveし、167-byte dormant upper routeを
 independently removableにする。repeated read-only boundary/
 source-documentation consistency reviewは**NO FINDINGS**である。
 implementation boundary reviewはseparate later taskのままである。
+
+## Checker Task 258B4B implemented runner boundary
+
+predecessorは
+`b8a7b8257a682f7c88de943ceaa35b67c0585bc4`である。runner changesは
+frozen `type_elaboration/source_statement.rs` `13,629` lines、
+test-only facade owners `type_elaboration.rs` `814` lines /
+`runner.rs` `2,629` lines、test leaf `28,408` linesだけである。checker
+3 ownersと合わせたwrite setはexact seven filesである。
+`source_formula_composition.rs`は1,853 linesのno-opで、validated
+Task-257B2 helper、lower rows、parser/resolver/binding ownersに変更はない。
+
+private routeはraw label-free resolverをB4B branchだけでguardし、
+generic theorem-label enrichmentを変更せず`1/1/1/1/0`へenrichする。
+rootless 124-node lower arenaと`42/1/81` partition、upper
+`1/1/1/0/1`、private `0/0/[]` telemetryをpublishする。public runner
+schema/semantic/active/corpus/trace ownershipはunchangedである。separate
+implementation reviewは**NO FINDINGS**、split/ownership transferは不要
+である。final boundary/source-documentation/bilingual consistency repeatも
+**NO FINDINGS**で、broad verification、exact count/hash reproduction、
+seven-file scope、audit no-op、unchanged-stash gatesはPASSした。
+independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、
+valid `100/100`（`20/20/15/15/10/10/5/5`）である。exact
+staging/cached-diff review、implementation commit、post-commit
+invariants、fresh-B4C inventoryはpendingである。

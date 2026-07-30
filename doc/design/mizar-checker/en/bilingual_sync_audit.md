@@ -1174,3 +1174,30 @@ test names, raw/enriched label distinction, `1/1/1/1/0`, `0/0/[]`, B4A
 `1/1/[1,1]`, and the two test-only facade exceptions. Independent final
 quality is synchronized as **NO FINDINGS**, all nine gates PASS, and valid
 `100/100`. Staging, commit, and post-commit inventory remain pending.
+
+## Task 258B4B Implementation Synchronization Completion
+
+The canonical English implementation inventory now records prerequisite
+commit `b8a7b8257a682f7c88de943ceaa35b67c0585bc4`, clean ahead 8/behind 0
+post-commit state, unchanged stash fingerprint, the exact seven changed
+files, private 167-byte route, raw label-free then enriched `1/1/1/1/0`
+resolver environment, Task-257B2 lower handoff, rootless 124-node
+`42/1/81` ownership, upper `1/1/1/0/1` with both `Composite(0)` links,
+B1/A versus B2/B pairing, `0/0/[]`, active 166-byte exclusion, and focused
+checker `4/4` plus runner `5/5`.
+
+The paired Japanese companions preserve these exact identifiers, counts,
+hashes, owner sizes, no-op boundaries, and completed test/implementation
+reviews. Final pairwise synchronization and repeated source/documentation,
+bilingual, and boundary reviews report **NO FINDINGS**; no synchronization
+exception exists.
+
+Both languages record focused checker `4/4` and runner `5/5`, full
+`cargo test --offline`, `cargo fmt --all -- --check`, full offline Clippy
+with warnings denied, five unchanged CLI outputs, library counts `418/481`,
+production counts `23/140821` and `30/56007`, exact production/test-list
+hashes, exact seven-file scope, audit no-op, forbidden-artifact no-ops, and
+unchanged stash. Independent final quality is synchronized as **NO
+FINDINGS**; all nine hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Staging/cached-diff review, the implementation
+commit, post-commit inventory, and B4C remain pending in both languages.

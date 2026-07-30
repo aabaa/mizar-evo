@@ -4358,3 +4358,37 @@ matricesをcoverする。paired checker suiteがsyntax-free corruption/final
 allowlist checksをownする。active fixture、sidecar、trace、diagnostic、
 public runner schema、connective truth、repetition expansion、theorem
 acceptance、proof resultは追加しない。
+
+## Checker Task 258B4B implemented harness route
+
+documentation prerequisite
+`b8a7b8257a682f7c88de943ceaa35b67c0585bc4`後、dormant runner selectorは
+exact 167 bytesと124 Surface nodes/root 123をauthenticateし、raw
+label-free resolverをB4B専用guardで検査してからmatching theorem labelを
+enrichする。resulting resolver cardinalitiesは`1/1/1/1/0`である。
+generic enrichmentとTask-257B2 lower helperはunchangedである。
+
+routeはlower Task-257B2 transactionをreuseしてrootless 124-node arenaを
+constructし、ownership `42/1/81`、upper `1/1/1/0/1`と両
+`Composite(0)`をpublishする。zero-reference telemetryは`0/0/[]`で、
+profile-aware guardはB1/B4Aの`1/1/[1,1]`と混同しない。active 166-byte
+sourceはlower-onlyである。
+
+exact runner 5 testsとchecker 4 testsはPASSした。complete
+surface/resolver/lower/upper/ownership/isolation/order/replay/final-empty
+matricesに対するtest-sufficiency/implementation reviewsは**NO FINDINGS**
+である。runner libraryは`481`、production 30 paths/56,007 linesである。
+public route/schema、semantic result、corpus、sidecar、trace、coverage
+creditは追加しない。final source/documentation、bilingual、boundary
+consistency repeatは**NO FINDINGS**である。focused checker `4/4` /
+runner `5/5`、full `cargo test --offline`、
+`cargo fmt --all -- --check`、warnings deny付きfull offline Clippyは
+PASSした。checker/runner countsは`418/481`、production/test-listと5 CLI
+counts/hashesはrecorded valuesを再現し、plan/requirements `419/387`、
+pass/fail `228/191`、parse/declaration/type/proof `101/5/198/1`、
+warnings/errors `23/0`である。seven-file scope、spec coverage audit
+no-op、unchanged stash gatesもPASSした。independent final qualityは
+**NO FINDINGS**、全9 hard gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）である。exact staging/cached-diff review、
+implementation commit、post-commit invariants、fresh-B4C inventoryは
+pendingである。

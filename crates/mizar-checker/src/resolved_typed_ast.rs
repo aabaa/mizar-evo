@@ -1561,11 +1561,13 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
     fn assemble(self) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
         let source_id = self.inputs.typed_ast.source_id();
         let module_id = self.inputs.typed_ast.module_id().clone();
-        let has_task_258b4a_statement = self
-            .inputs
-            .typed_ast
-            .source_statement()
-            .is_some_and(SourceStatementHandoff::is_task_258b4a_profile);
+        let has_task_258b4_statement =
+            self.inputs
+                .typed_ast
+                .source_statement()
+                .is_some_and(|statement| {
+                    statement.is_task_258b4a_profile() || statement.is_task_258b4b_profile()
+                });
         if self.inputs.typed_ast.source_statement().is_some()
             && !source_statement_inputs_are_syntax_only(&self.inputs)
         {
@@ -1671,7 +1673,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 self.inputs
                     .typed_ast
                     .source_term()
-                    .ok_or(if has_task_258b4a_statement {
+                    .ok_or(if has_task_258b4_statement {
                         ResolvedTypedAstError::InvalidSourceStatement
                     } else {
                         ResolvedTypedAstError::InvalidSourceAtomicFormula
@@ -1687,7 +1689,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     self.inputs.typed_ast.nodes(),
                 )
                 .map_err(|_| {
-                    if has_task_258b4a_statement {
+                    if has_task_258b4_statement {
                         ResolvedTypedAstError::InvalidSourceStatement
                     } else {
                         ResolvedTypedAstError::InvalidSourceAtomicFormula
@@ -1697,7 +1699,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         let source_composite_formula = self.inputs.typed_ast.source_composite_formula().cloned();
         if let Some(source_composite_formula) = &source_composite_formula {
             if self.inputs.typed_ast.source_context().is_some() {
-                return Err(if has_task_258b4a_statement {
+                return Err(if has_task_258b4_statement {
                     ResolvedTypedAstError::InvalidSourceStatement
                 } else {
                     ResolvedTypedAstError::InvalidSourceCompositeFormula
@@ -1706,7 +1708,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_composite_formula
                 .validate_installation(source_id, &module_id, self.inputs.typed_ast.nodes())
                 .map_err(|_| {
-                    if has_task_258b4a_statement {
+                    if has_task_258b4_statement {
                         ResolvedTypedAstError::InvalidSourceStatement
                     } else {
                         ResolvedTypedAstError::InvalidSourceCompositeFormula
@@ -1720,7 +1722,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 self.inputs
                     .typed_ast
                     .source_term()
-                    .ok_or(if has_task_258b4a_statement {
+                    .ok_or(if has_task_258b4_statement {
                         ResolvedTypedAstError::InvalidSourceStatement
                     } else {
                         ResolvedTypedAstError::InvalidSourceFormulaComposition
@@ -1728,7 +1730,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let source_atomic_formula =
                 source_atomic_formula
                     .as_ref()
-                    .ok_or(if has_task_258b4a_statement {
+                    .ok_or(if has_task_258b4_statement {
                         ResolvedTypedAstError::InvalidSourceStatement
                     } else {
                         ResolvedTypedAstError::InvalidSourceFormulaComposition
@@ -1736,7 +1738,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let source_composite_formula =
                 source_composite_formula
                     .as_ref()
-                    .ok_or(if has_task_258b4a_statement {
+                    .ok_or(if has_task_258b4_statement {
                         ResolvedTypedAstError::InvalidSourceStatement
                     } else {
                         ResolvedTypedAstError::InvalidSourceFormulaComposition
@@ -1751,7 +1753,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     self.inputs.typed_ast.nodes(),
                 )
                 .map_err(|_| {
-                    if has_task_258b4a_statement {
+                    if has_task_258b4_statement {
                         ResolvedTypedAstError::InvalidSourceStatement
                     } else {
                         ResolvedTypedAstError::InvalidSourceFormulaComposition
@@ -1762,7 +1764,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 || handoff.is_task_257b2_profile()
                 || handoff.is_task_257b3_profile()
         }) {
-            return Err(if has_task_258b4a_statement {
+            return Err(if has_task_258b4_statement {
                 ResolvedTypedAstError::InvalidSourceStatement
             } else {
                 ResolvedTypedAstError::InvalidSourceFormulaComposition
@@ -1839,7 +1841,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         let source_statement_witnesses =
             self.inputs.typed_ast.source_statement_witnesses().cloned();
         if let Some(source_statement) = &source_statement {
-            let is_task_258b4a = source_statement.is_task_258b4a_profile();
+            let is_task_258b4 = source_statement.is_task_258b4a_profile()
+                || source_statement.is_task_258b4b_profile();
             if self.inputs.typed_ast.source_context().is_some()
                 || self.inputs.typed_ast.source_type().is_some()
                 || self.inputs.typed_ast.source_attribute().is_some()
@@ -1854,9 +1857,9 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     && !source_statement.is_task_258b3m2b2b3c_profile()
                     && !source_statement.is_task_258b3m2b2b3d_profile()
                     && !source_statement.is_task_258b3m2b2b3e_profile())
-                || (source_composite_formula.is_some() && !is_task_258b4a)
-                || (source_formula_composition.is_some() && !is_task_258b4a)
-                || (is_task_258b4a
+                || (source_composite_formula.is_some() && !is_task_258b4)
+                || (source_formula_composition.is_some() && !is_task_258b4)
+                || (is_task_258b4
                     && (source_composite_formula.is_none()
                         || source_formula_composition.is_none()
                         || source_application.is_some()
@@ -1875,7 +1878,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let source_atomic_formula = source_atomic_formula
                 .as_ref()
                 .ok_or(ResolvedTypedAstError::InvalidSourceStatement)?;
-            if is_task_258b4a {
+            if is_task_258b4 {
                 source_statement
                     .validate_installation_with_formula_composition(
                         source_id,
@@ -1993,7 +1996,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     if source_application.is_none()
                         && (source_statement.is_task_258a_profile()
                             || source_statement.is_task_258b2_profile()
-                            || is_task_258b4a) => {}
+                            || is_task_258b4) => {}
                 _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
             }
         } else if source_statement_references.is_some() || source_statement_witnesses.is_some() {

@@ -12370,3 +12370,25 @@ preserves lower source occurrence ownership and makes the 167-byte dormant
 upper route independently removable. Repeated read-only boundary and
 source/documentation consistency review reports **NO FINDINGS**.
 Implementation boundary review remains a separate later task.
+
+## Checker Task 258B4B Implemented Runner Boundary
+
+Implementation changes only runner
+`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
+and `runner/tests/type_elaboration/source_statement.rs`, plus the frozen
+three checker consumers. Their runner sizes are `13,629`, `814`, `2,629`,
+and `28,408` lines. `source_formula_composition.rs` remains an explicit
+1,853-line no-op. Checker owners measure `46,466`, `5,004`, and `7,350`;
+there are exactly seven changed source files.
+
+The change reuses the existing Task-257B2 handoff without moving lower
+ownership, adds no public facade/API, and preserves every parser, resolver,
+binding, corpus, expectation, sidecar, trace, and semantic owner. Separate
+implementation review reports **NO FINDINGS**. Final read-only
+boundary/source-documentation and bilingual review repeats also report
+**NO FINDINGS**. Broad verification, exact count/hash reproduction,
+seven-file scope, audit no-op, and unchanged-stash gates pass. Independent
+final quality reports **NO FINDINGS**; all nine hard gates PASS with no cap
+at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff
+review, the implementation commit, post-commit invariants, and fresh-B4C
+inventory remain pending.

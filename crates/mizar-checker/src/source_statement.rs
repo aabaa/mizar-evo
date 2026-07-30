@@ -782,7 +782,7 @@ impl SourceStatementHandoff {
                 })
     }
 
-    pub(crate) fn is_task_258b4a_profile(&self) -> bool {
+    fn has_task_258b4_shape(&self) -> bool {
         self.binding_env.contexts().len() == 2
             && self.binding_env.bindings().len() == 1
             && self.binding_env.diagnostics().len() == 4
@@ -793,6 +793,28 @@ impl SourceStatementHandoff {
             && self.candidate_facts.len() == 1
             && self.composite_formula_fingerprint.is_some()
             && self.formula_composition_fingerprint.is_some()
+    }
+
+    pub(crate) fn is_task_258b4a_profile(&self) -> bool {
+        self.has_task_258b4_shape()
+            && self
+                .owners
+                .get(SourceTheoremOwnerId::new(0))
+                .is_some_and(|owner| {
+                    owner.source_range == range(self.source_id, 0, 78)
+                        && owner.spelling == "FormulaQuantifierBoundUsePayloadBoundary"
+                })
+    }
+
+    pub(crate) fn is_task_258b4b_profile(&self) -> bool {
+        self.has_task_258b4_shape()
+            && self
+                .owners
+                .get(SourceTheoremOwnerId::new(0))
+                .is_some_and(|owner| {
+                    owner.source_range == range(self.source_id, 0, 165)
+                        && owner.spelling == "FormulaConnectiveGroupingPayloadBoundary"
+                })
     }
 
     pub fn debug_text(&self) -> String {
@@ -1006,7 +1028,9 @@ impl SourceStatementHandoff {
         {
             return Err(SourceStatementError::DependencyMismatch);
         }
-        validate_task_258b4a_dependencies(
+        let profile = task_258b4_profile(self).ok_or(SourceStatementError::DependencyMismatch)?;
+        validate_task_258b4_dependencies(
+            profile,
             source_id,
             module_id,
             &self.binding_env,
@@ -1016,7 +1040,8 @@ impl SourceStatementHandoff {
             formula_composition,
             arena,
         )?;
-        validate_task_258b4a_rows(
+        validate_task_258b4_rows(
+            profile,
             self.source_id,
             &self.module_id,
             &self.owners,
@@ -2069,7 +2094,10 @@ impl SourceStatementProducer {
         formula_composition: &SourceFormulaCompositionHandoff,
         arena: &TypedArena,
     ) -> Result<SourceStatementHandoff, SourceStatementError> {
-        validate_task_258b4a_dependencies(
+        let profile =
+            task_258b4_input_profile(&input).ok_or(SourceStatementError::DependencyMismatch)?;
+        validate_task_258b4_dependencies(
+            profile,
             input.source_id,
             &input.module_id,
             bindings,
@@ -2163,7 +2191,8 @@ impl SourceStatementProducer {
                 })
                 .collect(),
         };
-        validate_task_258b4a_rows(
+        validate_task_258b4_rows(
+            profile,
             input.source_id,
             &input.module_id,
             &owners,
@@ -4555,8 +4584,51 @@ fn exact_atomic_profile(
     true
 }
 
-#[allow(clippy::too_many_arguments)] // Rationale: B4A must reauthenticate the complete frozen lower-family tuple.
-fn validate_task_258b4a_dependencies(
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Task258B4Profile {
+    QuantifierBoundUse,
+    ConnectiveGrouping,
+}
+
+fn task_258b4_profile(statement: &SourceStatementHandoff) -> Option<Task258B4Profile> {
+    if statement.is_task_258b4a_profile() {
+        Some(Task258B4Profile::QuantifierBoundUse)
+    } else if statement.is_task_258b4b_profile() {
+        Some(Task258B4Profile::ConnectiveGrouping)
+    } else {
+        None
+    }
+}
+
+fn task_258b4_input_profile(input: &SourceStatementHandoffInput) -> Option<Task258B4Profile> {
+    let owner = input.owners.first();
+    let statement = input.statements.first();
+    if owner.is_some_and(|owner| {
+        owner.source_range == range(input.source_id, 0, 78)
+            && owner.spelling == "FormulaQuantifierBoundUsePayloadBoundary"
+    }) || statement.is_some_and(|statement| {
+        statement.spelling
+            == "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;"
+    })
+    {
+        Some(Task258B4Profile::QuantifierBoundUse)
+    } else if owner.is_some_and(|owner| {
+        owner.source_range == range(input.source_id, 0, 165)
+            && owner.spelling == "FormulaConnectiveGroupingPayloadBoundary"
+    }) || statement.is_some_and(|statement| {
+        statement.spelling
+            == "theorem FormulaConnectiveGroupingPayloadBoundary : for x being set holds ( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;"
+    })
+    {
+        Some(Task258B4Profile::ConnectiveGrouping)
+    } else {
+        None
+    }
+}
+
+#[allow(clippy::too_many_arguments)] // Rationale: B4A/B4B must reauthenticate the complete matched lower-family tuple.
+fn validate_task_258b4_dependencies(
+    profile: Task258B4Profile,
     source_id: SourceId,
     module_id: &ModuleId,
     bindings: &BindingEnv,
@@ -4566,6 +4638,20 @@ fn validate_task_258b4a_dependencies(
     formula_composition: &SourceFormulaCompositionHandoff,
     arena: &TypedArena,
 ) -> Result<(), SourceStatementError> {
+    let (
+        primary_terms_len,
+        primary_references_len,
+        numeric_requests_len,
+        atomic_formulas_len,
+        atomic_edges_len,
+        atomic_requests_len,
+        composition_edges_len,
+        composition_bound_uses_len,
+        arena_len,
+    ) = match profile {
+        Task258B4Profile::QuantifierBoundUse => (2, 2, 0, 1, 2, 2, 1, 2, 26),
+        Task258B4Profile::ConnectiveGrouping => (16, 0, 16, 8, 16, 16, 8, 0, 124),
+    };
     if bindings.source_id() != source_id
         || bindings.module_id() != module_id
         || bindings != composite_formulas.binding_env()
@@ -4574,28 +4660,31 @@ fn validate_task_258b4a_dependencies(
         || bindings.diagnostics().len() != 4
         || primary_terms.source_id() != source_id
         || primary_terms.module_id() != module_id
-        || primary_terms.terms().len() != 2
-        || primary_terms.references().len() != 2
-        || !primary_terms.numeric_type_requests().is_empty()
+        || primary_terms.terms().len() != primary_terms_len
+        || primary_terms.references().len() != primary_references_len
+        || primary_terms.numeric_type_requests().len() != numeric_requests_len
         || atomic_formulas.source_id() != source_id
         || atomic_formulas.module_id() != module_id
-        || atomic_formulas.formulas().len() != 1
+        || atomic_formulas.formulas().len() != atomic_formulas_len
         || !atomic_formulas.wrappers().is_empty()
         || !atomic_formulas.predicate_segments().is_empty()
         || !atomic_formulas.predicate_heads().is_empty()
         || !atomic_formulas.candidates().is_empty()
         || !atomic_formulas.type_sites().is_empty()
         || !atomic_formulas.attributes().is_empty()
-        || atomic_formulas.edges().len() != 2
-        || atomic_formulas.requests().len() != 2
+        || atomic_formulas.edges().len() != atomic_edges_len
+        || atomic_formulas.requests().len() != atomic_requests_len
         || composite_formulas.source_id() != source_id
         || composite_formulas.module_id() != module_id
-        || !composite_formulas.is_task_257b1_profile()
+        || match profile {
+            Task258B4Profile::QuantifierBoundUse => !composite_formulas.is_task_257b1_profile(),
+            Task258B4Profile::ConnectiveGrouping => !composite_formulas.is_task_257b2_profile(),
+        }
         || formula_composition.source_id() != source_id
         || formula_composition.module_id() != module_id
-        || formula_composition.atomic_edges().len() != 1
-        || formula_composition.bound_uses().len() != 2
-        || arena.len() != 26
+        || formula_composition.atomic_edges().len() != composition_edges_len
+        || formula_composition.bound_uses().len() != composition_bound_uses_len
+        || arena.len() != arena_len
         || arena.root().is_some()
     {
         return Err(SourceStatementError::DependencyMismatch);
@@ -4619,18 +4708,10 @@ fn validate_task_258b4a_dependencies(
             arena,
         )
         .map_err(|_| SourceStatementError::DependencyMismatch)?;
-    let left = primary_terms
-        .terms()
-        .get(SourcePrimaryTermId::new(0))
-        .ok_or(SourceStatementError::DependencyMismatch)?;
-    let right = primary_terms
-        .terms()
-        .get(SourcePrimaryTermId::new(1))
-        .ok_or(SourceStatementError::DependencyMismatch)?;
-    let atomic = atomic_formulas
-        .formulas()
-        .get(SourceAtomicFormulaId::new(0))
-        .ok_or(SourceStatementError::DependencyMismatch)?;
+    if !validate_task_258b4_primary_atomic_sites(profile, source_id, primary_terms, atomic_formulas)
+    {
+        return Err(SourceStatementError::DependencyMismatch);
+    }
     let formula = composite_formulas
         .formulas()
         .get(SourceCompositeFormulaId::new(0))
@@ -4647,14 +4728,19 @@ fn validate_task_258b4a_dependencies(
         .type_sites()
         .get(crate::source_composite_formula::SourceBinderTypeSiteId::new(0))
         .ok_or(SourceStatementError::DependencyMismatch)?;
-    if left.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(15))
-        || left.source_range() != range(source_id, 72, 73)
-        || right.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(17))
-        || right.source_range() != range(source_id, 76, 77)
-        || atomic.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(19))
-        || atomic.source_range() != range(source_id, 72, 77)
-        || formula.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(20))
-        || formula.source_range() != range(source_id, 50, 77)
+    let (
+        formula_site,
+        formula_range,
+        binder_segment_site,
+        binder_identifier_site,
+        type_site_id,
+        type_head_site,
+    ) = match profile {
+        Task258B4Profile::QuantifierBoundUse => (20, (50, 77), 14, 4, 13, 12),
+        Task258B4Profile::ConnectiveGrouping => (118, (50, 164), 58, 4, 57, 56),
+    };
+    if formula.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(formula_site))
+        || formula.source_range() != range(source_id, formula_range.0, formula_range.1)
         || formula.source_ordinal() != 0
         || formula.context() != BindingContextId::new(0)
         || formula.recovery() != SourceCompositeFormulaRecovery::Normal
@@ -4663,13 +4749,16 @@ fn validate_task_258b4a_dependencies(
         || root.formula() != SourceCompositeFormulaId::new(0)
         || root.ordinal() != 0
         || root.ownership() != SourceFormulaRootOwnership::UnassignedStatement
-        || binder.segment_site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(14))
+        || binder.segment_site()
+            != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(binder_segment_site))
         || binder.segment_range() != range(source_id, 54, 65)
-        || binder.identifier_site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(4))
+        || binder.identifier_site()
+            != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(binder_identifier_site))
         || binder.identifier_range() != range(source_id, 54, 55)
-        || type_site.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(13))
+        || type_site.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(type_site_id))
         || type_site.source_range() != range(source_id, 62, 65)
-        || type_site.head_site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(12))
+        || type_site.head_site()
+            != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(type_head_site))
         || type_site.head_range() != range(source_id, 62, 65)
     {
         return Err(SourceStatementError::DependencyMismatch);
@@ -4677,8 +4766,81 @@ fn validate_task_258b4a_dependencies(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)] // Rationale: the frozen one-row profile is validated as one indivisible publication boundary.
-fn validate_task_258b4a_rows(
+fn validate_task_258b4_primary_atomic_sites(
+    profile: Task258B4Profile,
+    source_id: SourceId,
+    primary_terms: &SourcePrimaryTermHandoff,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+) -> bool {
+    struct SiteProfile {
+        term_sites: &'static [usize],
+        term_ranges: &'static [(usize, usize)],
+        atomic_sites: &'static [usize],
+        atomic_ranges: &'static [(usize, usize)],
+    }
+    let sites = match profile {
+        Task258B4Profile::QuantifierBoundUse => SiteProfile {
+            term_sites: &[15, 17],
+            term_ranges: &[(72, 73), (76, 77)],
+            atomic_sites: &[19],
+            atomic_ranges: &[(72, 77)],
+        },
+        Task258B4Profile::ConnectiveGrouping => SiteProfile {
+            term_sites: &[
+                59, 61, 64, 66, 72, 74, 77, 79, 88, 90, 93, 95, 101, 103, 106, 108,
+            ],
+            term_ranges: &[
+                (74, 75),
+                (78, 79),
+                (88, 89),
+                (92, 93),
+                (99, 100),
+                (103, 104),
+                (115, 116),
+                (119, 120),
+                (129, 130),
+                (133, 134),
+                (137, 138),
+                (141, 142),
+                (148, 149),
+                (152, 153),
+                (157, 158),
+                (161, 162),
+            ],
+            atomic_sites: &[63, 68, 76, 81, 92, 97, 105, 110],
+            atomic_ranges: &[
+                (74, 79),
+                (88, 93),
+                (99, 104),
+                (115, 120),
+                (129, 134),
+                (137, 142),
+                (148, 153),
+                (157, 162),
+            ],
+        },
+    };
+    primary_terms
+        .terms()
+        .iter()
+        .zip(sites.term_sites.iter().zip(sites.term_ranges))
+        .all(|((_, term), (site, (start, end)))| {
+            term.site() == &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(*site))
+                && term.source_range() == range(source_id, *start, *end)
+        })
+        && atomic_formulas
+            .formulas()
+            .iter()
+            .zip(sites.atomic_sites.iter().zip(sites.atomic_ranges))
+            .all(|((_, formula), (site, (start, end)))| {
+                formula.site() == &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(*site))
+                    && formula.source_range() == range(source_id, *start, *end)
+            })
+}
+
+#[allow(clippy::too_many_arguments)] // Rationale: each frozen one-row profile is validated as one indivisible publication boundary.
+fn validate_task_258b4_rows(
+    profile: Task258B4Profile,
     source_id: SourceId,
     module_id: &ModuleId,
     owners: &SourceTheoremOwnerTable,
@@ -4703,14 +4865,33 @@ fn validate_task_258b4a_rows(
     let owner = owners
         .get(owner_id)
         .ok_or(SourceStatementError::InvalidOwner { owner: owner_id })?;
-    let owner_range = range(source_id, 0, 78);
+    let (owner_end, owner_site, owner_spelling, statement_spelling, composite_site, composite_end) =
+        match profile {
+            Task258B4Profile::QuantifierBoundUse => (
+                78,
+                22,
+                "FormulaQuantifierBoundUsePayloadBoundary",
+                "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;",
+                20,
+                77,
+            ),
+            Task258B4Profile::ConnectiveGrouping => (
+                165,
+                120,
+                "FormulaConnectiveGroupingPayloadBoundary",
+                "theorem FormulaConnectiveGroupingPayloadBoundary : for x being set holds ( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;",
+                118,
+                164,
+            ),
+        };
+    let owner_range = range(source_id, 0, owner_end);
     if owner.symbol != *checked_owner.symbol()
         || owner.contribution != authenticated_contribution
         || owner.contribution.index() != 0
-        || owner.site != TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(22))
+        || owner.site != TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(owner_site))
         || owner.source_range != owner_range
         || owner.source_range != checked_owner.source_range()
-        || owner.spelling != "FormulaQuantifierBoundUsePayloadBoundary"
+        || owner.spelling != owner_spelling
         || owner.role != SourceTheoremRole::Theorem
         || owner.status != SourceTheoremStatus::Unmodified
         || owner.recovery != SourceStatementRecovery::Normal
@@ -4740,8 +4921,7 @@ fn validate_task_258b4a_rows(
         || statement.site != owner.site
         || statement.source_range != owner_range
         || statement.source_ordinal != 0
-        || statement.spelling
-            != "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;"
+        || statement.spelling != statement_spelling
         || statement.kind != SourceStatementKind::TheoremProposition
         || statement.recovery != SourceStatementRecovery::Normal
     {
@@ -4783,10 +4963,10 @@ fn validate_task_258b4a_rows(
         .formulas()
         .get(SourceCompositeFormulaId::new(0))
         .ok_or(SourceStatementError::DependencyMismatch)?;
-    if composite.site().node() != crate::typed_ast::TypedNodeId::new(20)
-        || composite.source_range() != range(source_id, 50, 77)
+    if composite.site().node() != crate::typed_ast::TypedNodeId::new(composite_site)
+        || composite.source_range() != range(source_id, 50, composite_end)
         || arena.iter().any(|(id, node)| {
-            id != crate::typed_ast::TypedNodeId::new(22)
+            id != crate::typed_ast::TypedNodeId::new(owner_site)
                 && (node.kind.as_str().starts_with("source.statement.")
                     || node.kind.as_str().contains("proof")
                     || node.kind.as_str().contains("justification"))
@@ -4861,6 +5041,7 @@ fn validate_resolver_owner(
     let label = labels.as_slice().first().copied().ok_or_else(invalid)?;
     let expected_contribution_range = match owner.spelling.as_str() {
         "FormulaQuantifierBoundUsePayloadBoundary" => range(input.source_id, 0, 78),
+        "FormulaConnectiveGroupingPayloadBoundary" => range(input.source_id, 0, 165),
         "FormulaStatementApplicationWitnessSmoke"
         | "FormulaStatementParenthesizedApplicationWitnessSmoke"
         | "FormulaStatementStructureConstructorWitnessSmoke"
@@ -44419,6 +44600,361 @@ mod tests {
         }
     }
 
+    #[derive(Clone)]
+    struct Task258B4BFixture {
+        source: SourceId,
+        module: ModuleId,
+        symbol: SymbolId,
+        contribution: SourceContributionId,
+        symbols: SymbolEnv,
+        bindings: BindingEnv,
+        primary: SourcePrimaryTermHandoff,
+        atomic: SourceAtomicFormulaHandoff,
+        composite: SourceCompositeFormulaHandoff,
+        composition: SourceFormulaCompositionHandoff,
+        arena: TypedArena,
+    }
+
+    impl Task258B4BFixture {
+        fn new() -> Self {
+            let lower = crate::source_composite_formula::tests::task_257b2_composite_fixture();
+            let source = lower.source;
+            let module = lower.module.clone();
+            let arena = task258b4b_arena(source);
+            let mut composite_input = lower.input.clone();
+            for (row, site) in composite_input
+                .formulas
+                .iter_mut()
+                .zip([118, 117, 85, 69, 82, 114, 98, 111])
+            {
+                row.site = node(site);
+            }
+            for (row, site) in composite_input
+                .wrappers
+                .iter_mut()
+                .zip([87, 71, 84, 116, 100, 113])
+            {
+                row.site = node(site);
+            }
+            composite_input.binders[0].segment_site = node(58);
+            composite_input.binders[0].identifier_site = node(4);
+            composite_input.type_sites[0].site = node(57);
+            composite_input.type_sites[0].head_site = node(56);
+            let bindings = SourceCompositeFormulaProducer::extend_bindings(
+                &composite_input,
+                &lower.base,
+                &arena,
+            )
+            .expect("Task258B4B bindings");
+            let composite =
+                SourceCompositeFormulaProducer::build(composite_input, &bindings, &arena)
+                    .expect("Task258B4B composite");
+
+            let numeral_ranges = [
+                (74, 75),
+                (78, 79),
+                (88, 89),
+                (92, 93),
+                (99, 100),
+                (103, 104),
+                (115, 116),
+                (119, 120),
+                (129, 130),
+                (133, 134),
+                (137, 138),
+                (141, 142),
+                (148, 149),
+                (152, 153),
+                (157, 158),
+                (161, 162),
+            ];
+            let numeral_sites = [
+                59, 61, 64, 66, 72, 74, 77, 79, 88, 90, 93, 95, 101, 103, 106, 108,
+            ];
+            let numeral_spellings = [
+                "0", "0", "0", "3", "0", "0", "0", "3", "0", "0", "0", "0", "0", "0", "0", "0",
+            ];
+            let terms = numeral_ranges
+                .into_iter()
+                .zip(numeral_sites)
+                .zip(numeral_spellings)
+                .enumerate()
+                .map(
+                    |(source_ordinal, (((start, end), site), spelling))| SourcePrimaryTermInput {
+                        site: node(site),
+                        source_range: range(source, start, end),
+                        source_ordinal,
+                        context: BindingContextId::new(1),
+                        recovery: SourcePrimaryTermRecovery::Normal,
+                        spelling: spelling.to_owned(),
+                        kind: SourcePrimaryTermKind::Numeral,
+                        role: SourcePrimaryTermRole::Value,
+                        parent: None,
+                    },
+                )
+                .collect::<Vec<_>>();
+            let numeric_type_requests = terms
+                .iter()
+                .enumerate()
+                .map(|(request_ordinal, term)| SourceNumericTypeRequestInput {
+                    term: SourcePrimaryTermId::new(request_ordinal),
+                    owner: term.site.clone(),
+                    source_range: term.source_range,
+                    spelling: term.spelling.clone(),
+                    request_ordinal,
+                })
+                .collect();
+            let primary = SourcePrimaryTermProducer::build(
+                SourcePrimaryTermHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    terms,
+                    references: Vec::new(),
+                    numeric_type_requests,
+                },
+                &bindings,
+                &arena,
+            )
+            .expect("Task258B4B primary");
+
+            let equality_ranges = [
+                (74, 79),
+                (88, 93),
+                (99, 104),
+                (115, 120),
+                (129, 134),
+                (137, 142),
+                (148, 153),
+                (157, 162),
+            ];
+            let equality_sites = [63, 68, 76, 81, 92, 97, 105, 110];
+            let equality_spellings = [
+                "0 = 0", "0 = 3", "0 = 0", "0 = 3", "0 = 0", "0 = 0", "0 = 0", "0 = 0",
+            ];
+            let formulas = equality_ranges
+                .into_iter()
+                .zip(equality_sites)
+                .zip(equality_spellings)
+                .enumerate()
+                .map(|(source_ordinal, (((start, end), site), spelling))| {
+                    SourceAtomicFormulaInput {
+                        site: node(site),
+                        source_range: range(source, start, end),
+                        source_ordinal,
+                        context: BindingContextId::new(1),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: spelling.to_owned(),
+                        kind: SourceAtomicFormulaKind::Equality,
+                    }
+                })
+                .collect::<Vec<_>>();
+            let edges = (0..8)
+                .flat_map(|formula| {
+                    [
+                        SourceAtomicEdgeInput {
+                            formula: SourceAtomicFormulaId::new(formula),
+                            ordinal: 0,
+                            role: SourceAtomicEdgeRole::BuiltinLeftOperand,
+                            target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(
+                                formula * 2,
+                            )),
+                        },
+                        SourceAtomicEdgeInput {
+                            formula: SourceAtomicFormulaId::new(formula),
+                            ordinal: 1,
+                            role: SourceAtomicEdgeRole::BuiltinRightOperand,
+                            target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(
+                                formula * 2 + 1,
+                            )),
+                        },
+                    ]
+                })
+                .collect::<Vec<_>>();
+            let requests = edges
+                .iter()
+                .enumerate()
+                .map(|(index, edge)| SourceAtomicRequestInput {
+                    formula: edge.formula,
+                    ordinal: edge.ordinal,
+                    kind: SourceAtomicRequestKind::OperandExpectedType,
+                    edge: Some(SourceAtomicEdgeId::new(index)),
+                    candidate: None,
+                    type_site: None,
+                    attribute: None,
+                })
+                .collect();
+            let atomic = SourceAtomicFormulaProducer::build(
+                SourceAtomicFormulaHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    formulas,
+                    wrappers: Vec::new(),
+                    predicate_segments: Vec::new(),
+                    predicate_heads: Vec::new(),
+                    candidates: Vec::new(),
+                    type_sites: Vec::new(),
+                    attributes: Vec::new(),
+                    edges,
+                    requests,
+                },
+                &bindings,
+                &SymbolEnv::new(module.clone(), SymbolEnvIndexes::default()),
+                &primary,
+                None,
+                None,
+                None,
+                &arena,
+            )
+            .expect("Task258B4B atomic");
+            let composition = SourceFormulaCompositionProducer::build(
+                SourceFormulaCompositionHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    atomic_edges: [
+                        (3, 0, SourceFormulaAtomicEdgeRole::ConjunctionLeft, 0),
+                        (3, 1, SourceFormulaAtomicEdgeRole::ConjunctionRight, 1),
+                        (4, 0, SourceFormulaAtomicEdgeRole::DisjunctionLeft, 2),
+                        (4, 1, SourceFormulaAtomicEdgeRole::DisjunctionRight, 3),
+                        (6, 0, SourceFormulaAtomicEdgeRole::ConjunctionLeft, 4),
+                        (6, 1, SourceFormulaAtomicEdgeRole::ConjunctionRight, 5),
+                        (7, 0, SourceFormulaAtomicEdgeRole::DisjunctionLeft, 6),
+                        (7, 1, SourceFormulaAtomicEdgeRole::DisjunctionRight, 7),
+                    ]
+                    .into_iter()
+                    .map(
+                        |(formula, ordinal, role, child)| SourceFormulaAtomicEdgeInput {
+                            formula: SourceCompositeFormulaId::new(formula),
+                            ordinal,
+                            role,
+                            child: SourceAtomicFormulaId::new(child),
+                        },
+                    )
+                    .collect(),
+                    bound_uses: Vec::new(),
+                },
+                &primary,
+                &atomic,
+                &composite,
+                &arena,
+            )
+            .expect("Task258B4B composition");
+            let (symbol, contribution, symbols) = task258b4b_symbol_env(source, &module);
+            Self {
+                source,
+                module,
+                symbol,
+                contribution,
+                symbols,
+                bindings,
+                primary,
+                atomic,
+                composite,
+                composition,
+                arena,
+            }
+        }
+
+        fn input(&self) -> SourceStatementHandoffInput {
+            SourceStatementHandoffInput {
+                source_id: self.source,
+                module_id: self.module.clone(),
+                owners: vec![SourceTheoremOwnerInput {
+                    symbol: self.symbol.clone(),
+                    contribution: self.contribution,
+                    site: node(120),
+                    source_range: range(self.source, 0, 165),
+                    spelling: "FormulaConnectiveGroupingPayloadBoundary".to_owned(),
+                    role: SourceTheoremRole::Theorem,
+                    status: SourceTheoremStatus::Unmodified,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+                statements: vec![SourceStatementInput {
+                    owner: SourceTheoremOwnerId::new(0),
+                    context: SourceStatementContextId::new(0),
+                    formula: SourceStatementFormulaTarget::Composite(
+                        SourceCompositeFormulaId::new(0),
+                    ),
+                    site: node(120),
+                    source_range: range(self.source, 0, 165),
+                    source_ordinal: 0,
+                    spelling: "theorem FormulaConnectiveGroupingPayloadBoundary : for x being set holds ( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;".to_owned(),
+                    kind: SourceStatementKind::TheoremProposition,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+                contexts: vec![SourceStatementContextInput {
+                    statement: SourceStatementId::new(0),
+                    binding_context: BindingContextId::new(0),
+                    source_range: range(self.source, 0, 165),
+                    visible_bindings: Vec::new(),
+                }],
+                input_facts: Vec::new(),
+                candidate_facts: vec![SourceStatementCandidateFactInput {
+                    statement: SourceStatementId::new(0),
+                    context: SourceStatementContextId::new(0),
+                    ordinal: 0,
+                    kind: SourceStatementCandidateFactKind::UnverifiedProposition,
+                    formula: SourceStatementFormulaTarget::Composite(
+                        SourceCompositeFormulaId::new(0),
+                    ),
+                }],
+            }
+        }
+
+        fn build_statement(
+            &self,
+            input: SourceStatementHandoffInput,
+        ) -> Result<SourceStatementHandoff, SourceStatementError> {
+            SourceStatementProducer::build_with_formula_composition(
+                input,
+                &self.symbols,
+                &self.bindings,
+                &self.primary,
+                &self.atomic,
+                &self.composite,
+                &self.composition,
+                &self.arena,
+            )
+        }
+
+        fn statement(&self) -> SourceStatementHandoff {
+            self.build_statement(self.input())
+                .expect("Task258B4B statement")
+        }
+
+        fn typed_base(&self) -> TypedAst {
+            TypedAst::try_new(TypedAstParts {
+                source_id: self.source,
+                module_id: self.module.clone(),
+                resolved_root: None,
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: self.arena.clone(),
+                contexts: LocalTypeContextTable::new(),
+                types: TypeTable::new(),
+                facts: TypeFactTable::new(),
+                coercions: CoercionTable::new(),
+                initial_obligations: InitialObligationTable::new(),
+                diagnostics: TypeDiagnosticTable::new(),
+            })
+            .expect("Task258B4B typed base")
+            .with_source_term(self.primary.clone())
+            .expect("Task258B4B primary install")
+            .with_source_atomic_formula(self.atomic.clone())
+            .expect("Task258B4B atomic install")
+        }
+
+        fn typed(&self) -> TypedAst {
+            self.typed_base()
+                .with_source_formula_composition_statement(
+                    self.composite.clone(),
+                    self.composition.clone(),
+                    self.statement(),
+                )
+                .expect("Task258B4B paired install")
+        }
+    }
+
     #[test]
     fn task_258b4a_composite_root_profile_and_debug_are_exact() {
         let fixture = Task258B4AFixture::new(50_000);
@@ -45097,6 +45633,460 @@ mod tests {
                 .debug_text(),
             resolved.debug_text()
         );
+    }
+
+    #[test]
+    fn task_258b4b_connective_grouping_root_profile_and_debug_are_exact() {
+        let fixture = Task258B4BFixture::new();
+        let statement = fixture.statement();
+        assert!(statement.is_task_258b4b_profile());
+        assert!(!statement.is_task_258b4a_profile());
+        assert_eq!(statement.owners().len(), 1);
+        assert_eq!(statement.statements().len(), 1);
+        assert_eq!(statement.contexts().len(), 1);
+        assert!(statement.input_facts().is_empty());
+        assert_eq!(statement.candidate_facts().len(), 1);
+        assert_eq!(
+            statement.composite_formula_fingerprint(),
+            Some(fixture.composite.debug_text().as_str())
+        );
+        assert_eq!(
+            statement.formula_composition_fingerprint(),
+            Some(fixture.composition.debug_text().as_str())
+        );
+        let owner = statement
+            .owners()
+            .get(SourceTheoremOwnerId::new(0))
+            .expect("Task258B4B owner");
+        assert_eq!(owner.symbol(), &fixture.symbol);
+        assert_eq!(owner.contribution(), fixture.contribution);
+        assert_eq!(owner.site(), &node(120));
+        assert_eq!(owner.source_range(), range(fixture.source, 0, 165));
+        assert_eq!(owner.spelling(), "FormulaConnectiveGroupingPayloadBoundary");
+        let row = statement
+            .statements()
+            .get(SourceStatementId::new(0))
+            .expect("Task258B4B statement");
+        assert_eq!(
+            row.formula(),
+            SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0))
+        );
+        assert_eq!(row.site(), &node(120));
+        assert_eq!(row.source_range(), range(fixture.source, 0, 165));
+        assert_eq!(
+            row.spelling(),
+            "theorem FormulaConnectiveGroupingPayloadBoundary : for x being set holds ( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;"
+        );
+        assert_eq!(
+            statement
+                .candidate_facts()
+                .get(SourceStatementCandidateFactId::new(0))
+                .expect("Task258B4B candidate")
+                .formula(),
+            row.formula()
+        );
+        assert_eq!(
+            fixture
+                .composite
+                .roots()
+                .get(crate::source_composite_formula::SourceFormulaRootId::new(0))
+                .expect("Task258B4B lower root")
+                .ownership(),
+            SourceFormulaRootOwnership::UnassignedStatement
+        );
+        let owned = fixture
+            .arena
+            .iter()
+            .filter_map(|(id, node)| {
+                (!node.kind.as_str().ends_with(".unowned")).then_some(id.index())
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(owned.len(), 43);
+        assert!(owned.contains(&120));
+        assert!(statement.debug_text().contains("formula=composite:0"));
+    }
+
+    #[test]
+    fn task_258b4b_connective_grouping_root_corruption_matrix_fails_atomically() {
+        let fixture = Task258B4BFixture::new();
+        let baseline = fixture.statement();
+        for mutation in 0..24 {
+            let mut input = fixture.input();
+            match mutation {
+                0 => input.owners.clear(),
+                1 => input.owners.push(input.owners[0].clone()),
+                2 => input.owners[0].site = node(119),
+                3 => input.owners[0].source_range.end -= 1,
+                4 => input.owners[0].spelling.push('!'),
+                5 => {
+                    input.owners[0].symbol = SymbolId::new(
+                        fixture.module.clone(),
+                        LocalSymbolId::new("Other"),
+                        FullyQualifiedName::new("pkg::statement.task258b4b.fixture::Other"),
+                    )
+                }
+                6 => input.owners[0].source_range = range(source_id(50_999), 0, 165),
+                7 => input.owners[0].recovery = SourceStatementRecovery::Degraded,
+                8 => input.statements.clear(),
+                9 => input.statements.push(input.statements[0].clone()),
+                10 => {
+                    input.statements[0].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
+                }
+                11 => input.statements[0].site = node(119),
+                12 => input.statements[0].source_range.end -= 1,
+                13 => input.statements[0].source_ordinal = 1,
+                14 => input.statements[0].spelling.push('!'),
+                15 => input.statements[0].kind = SourceStatementKind::Conclusion,
+                16 => input.statements[0].recovery = SourceStatementRecovery::Degraded,
+                17 => input.contexts.clear(),
+                18 => input.contexts[0].binding_context = BindingContextId::new(1),
+                19 => input.contexts[0].visible_bindings.push(BindingId::new(0)),
+                20 => input.input_facts.push(SourceStatementInputFactInput {
+                    statement: SourceStatementId::new(0),
+                    context: SourceStatementContextId::new(0),
+                    ordinal: 0,
+                    kind: SourceStatementInputFactKind::ReservedTypeGuard,
+                    binding: BindingId::new(0),
+                    uses: Vec::new(),
+                }),
+                21 => input.candidate_facts.clear(),
+                22 => input.candidate_facts[0].ordinal = 1,
+                23 => {
+                    input.candidate_facts[0].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
+                }
+                _ => unreachable!(),
+            }
+            let run = || fixture.build_statement(input.clone());
+            assert!(run().is_err(), "upper mutation {mutation}");
+            assert_eq!(run(), run(), "upper mutation {mutation} replay");
+        }
+
+        for mutation in 0..5 {
+            let mut corrupted = baseline.clone();
+            match mutation {
+                0 => corrupted.composite_formula_fingerprint = None,
+                1 => corrupted.formula_composition_fingerprint = None,
+                2 => corrupted.composite_formula_fingerprint = Some("stale".to_owned()),
+                3 => corrupted.formula_composition_fingerprint = Some("stale".to_owned()),
+                4 => corrupted.owners.rows[0].site = node(119),
+                _ => unreachable!(),
+            }
+            let run = || {
+                corrupted.validate_installation_with_formula_composition(
+                    fixture.source,
+                    &fixture.module,
+                    &fixture.primary,
+                    &fixture.atomic,
+                    &fixture.composite,
+                    &fixture.composition,
+                    &fixture.arena,
+                )
+            };
+            let expected = if mutation == 4 {
+                SourceStatementError::InvalidOwner {
+                    owner: SourceTheoremOwnerId::new(0),
+                }
+            } else {
+                SourceStatementError::DependencyMismatch
+            };
+            assert_eq!(run(), Err(expected), "stored mutation {mutation}");
+            assert_eq!(run(), run(), "stored mutation {mutation} replay");
+        }
+
+        let mut nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        nodes[120].kind = "source.formula.composition.unowned".into();
+        let arena = TypedArena::try_new(None, nodes).expect("Task258B4B corrupt arena");
+        let run = || {
+            SourceStatementProducer::build_with_formula_composition(
+                fixture.input(),
+                &fixture.symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.composite,
+                &fixture.composition,
+                &arena,
+            )
+        };
+        assert!(run().is_err());
+        assert_eq!(run(), run(), "arena replay");
+        assert_eq!(fixture.statement().debug_text(), baseline.debug_text());
+    }
+
+    #[test]
+    fn task_258b4b_cross_family_and_b4a_installation_orders_are_atomic() {
+        let fixture = Task258B4BFixture::new();
+        let b4a = Task258B4AFixture::new(50_004);
+        let base = fixture.typed_base();
+        let paired = fixture.typed();
+        assert!(
+            paired
+                .source_statement()
+                .is_some_and(SourceStatementHandoff::is_task_258b4b_profile)
+        );
+        assert_eq!(
+            base.clone()
+                .with_source_formula_composition(
+                    fixture.composite.clone(),
+                    fixture.composition.clone(),
+                )
+                .expect("Task258B4B lower-only")
+                .with_source_statement(fixture.statement()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            base.clone().with_source_statement(fixture.statement()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            base.clone().with_source_formula_composition_statement(
+                fixture.composite.clone(),
+                fixture.composition.clone(),
+                b4a.statement(),
+            ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            b4a.typed_base().with_source_formula_composition_statement(
+                b4a.composite.clone(),
+                b4a.composition.clone(),
+                fixture.statement(),
+            ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        let before = paired.debug_text();
+        assert_eq!(
+            paired.clone().with_source_statement(b4a.statement()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(paired.debug_text(), before);
+        assert_eq!(fixture.typed().debug_text(), before);
+        assert!(b4a.statement().is_task_258b4a_profile());
+        assert!(!b4a.statement().is_task_258b4b_profile());
+    }
+
+    #[test]
+    fn task_258b4b_final_clone_revalidates_connective_grouping_root_and_empty_semantics() {
+        let fixture = Task258B4BFixture::new();
+        let typed = fixture.typed();
+        let resolved = assemble_empty_resolved(&typed).expect("Task258B4B final");
+        assert_eq!(typed.source_statement(), resolved.source_statement());
+        assert_eq!(
+            typed.source_composite_formula(),
+            resolved.source_composite_formula()
+        );
+        assert_eq!(
+            typed.source_formula_composition(),
+            resolved.source_formula_composition()
+        );
+        assert_eq!(resolved.clone(), resolved);
+        assert_eq!(resolved.clone().debug_text(), resolved.debug_text());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+
+        for mutation in 0..7 {
+            let mut stale = fixture.statement();
+            match mutation {
+                0 => stale.composite_formula_fingerprint = None,
+                1 => stale.formula_composition_fingerprint = None,
+                2 => stale.owners.rows.clear(),
+                3 => {
+                    stale.statements.rows[0].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
+                }
+                4 => stale.contexts.rows[0]
+                    .visible_bindings
+                    .push(BindingId::new(0)),
+                5 => stale.candidate_facts.rows[0].ordinal = 1,
+                6 => stale.source_id = source_id(50_104),
+                _ => unreachable!(),
+            }
+            let mut stale_typed = typed.clone();
+            stale_typed.inject_source_statement_for_test(stale);
+            let run = || assemble_empty_resolved(&stale_typed);
+            assert_eq!(
+                run(),
+                Err(ResolvedTypedAstError::InvalidSourceStatement),
+                "final mutation {mutation}"
+            );
+            assert_eq!(run(), run(), "final mutation {mutation} replay");
+        }
+        for partial in 0..3 {
+            let mut stale = typed.clone();
+            match partial {
+                0 => stale.remove_source_composite_formula_for_test(),
+                1 => stale.remove_source_formula_composition_for_test(),
+                2 => stale.remove_source_atomic_formula_for_test(),
+                _ => unreachable!(),
+            }
+            assert_eq!(
+                assemble_empty_resolved(&stale),
+                Err(ResolvedTypedAstError::InvalidSourceStatement)
+            );
+        }
+        assert_eq!(
+            assemble_empty_resolved(&typed)
+                .expect("Task258B4B clean replay")
+                .debug_text(),
+            resolved.debug_text()
+        );
+    }
+
+    fn task258b4b_arena(source: SourceId) -> TypedArena {
+        let mut nodes = (0..124)
+            .map(|_| {
+                TypedNode::new(
+                    "source.formula.composition.unowned",
+                    SourceAnchor::Range(range(source, 0, 165)),
+                )
+            })
+            .collect::<Vec<_>>();
+        let owned = [
+            (4, (54, 55), "source.formula.quantifier-binder"),
+            (56, (62, 65), "source.formula.binder-type-head"),
+            (57, (62, 65), "source.formula.binder-type"),
+            (58, (54, 65), "source.formula.quantifier-binder"),
+            (59, (74, 75), "source.term.numeral"),
+            (61, (78, 79), "source.term.numeral"),
+            (63, (74, 79), "source.formula.atomic.equality"),
+            (64, (88, 89), "source.term.numeral"),
+            (66, (92, 93), "source.term.numeral"),
+            (68, (88, 93), "source.formula.atomic.equality"),
+            (
+                69,
+                (74, 93),
+                "source.formula.composite.repeated-conjunction",
+            ),
+            (71, (73, 94), "source.formula.parenthesized"),
+            (72, (99, 100), "source.term.numeral"),
+            (74, (103, 104), "source.term.numeral"),
+            (76, (99, 104), "source.formula.atomic.equality"),
+            (77, (115, 116), "source.term.numeral"),
+            (79, (119, 120), "source.term.numeral"),
+            (81, (115, 120), "source.formula.atomic.equality"),
+            (
+                82,
+                (99, 120),
+                "source.formula.composite.repeated-disjunction",
+            ),
+            (84, (98, 121), "source.formula.parenthesized"),
+            (85, (73, 121), "source.formula.composite.disjunction"),
+            (87, (72, 122), "source.formula.parenthesized"),
+            (88, (129, 130), "source.term.numeral"),
+            (90, (133, 134), "source.term.numeral"),
+            (92, (129, 134), "source.formula.atomic.equality"),
+            (93, (137, 138), "source.term.numeral"),
+            (95, (141, 142), "source.term.numeral"),
+            (97, (137, 142), "source.formula.atomic.equality"),
+            (98, (129, 142), "source.formula.composite.conjunction"),
+            (100, (128, 143), "source.formula.parenthesized"),
+            (101, (148, 149), "source.term.numeral"),
+            (103, (152, 153), "source.term.numeral"),
+            (105, (148, 153), "source.formula.atomic.equality"),
+            (106, (157, 158), "source.term.numeral"),
+            (108, (161, 162), "source.term.numeral"),
+            (110, (157, 162), "source.formula.atomic.equality"),
+            (111, (148, 162), "source.formula.composite.disjunction"),
+            (113, (147, 163), "source.formula.parenthesized"),
+            (114, (128, 163), "source.formula.composite.disjunction"),
+            (116, (127, 164), "source.formula.parenthesized"),
+            (117, (72, 164), "source.formula.composite.biconditional"),
+            (118, (50, 164), "source.formula.composite.universal"),
+            (120, (0, 165), "source.statement.theorem"),
+        ];
+        for (site, (start, end), kind) in owned {
+            nodes[site] = TypedNode::new(kind, SourceAnchor::Range(range(source, start, end)));
+        }
+        TypedArena::try_new(None, nodes).expect("Task258B4B arena")
+    }
+
+    fn task258b4b_symbol_env(
+        source: SourceId,
+        module: &ModuleId,
+    ) -> (SymbolId, SourceContributionId, SymbolEnv) {
+        const LABEL: &str = "FormulaConnectiveGroupingPayloadBoundary";
+        let symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(LABEL),
+            FullyQualifiedName::new(format!("pkg::statement.task258b4b.fixture::{LABEL}")),
+        );
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 0, 165)),
+            vec![2, 0],
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 165)),
+        );
+        let namespace = NamespacePath::new(module.path().as_str());
+        let mut symbols = SymbolIndex::new();
+        symbols.insert(
+            SymbolEntry::new(
+                symbol.clone(),
+                SymbolKind::Theorem,
+                namespace.clone(),
+                LABEL,
+                origin.clone(),
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let definition = definitions.insert(
+            DefinitionShell::new(
+                symbol.clone(),
+                DefinitionKind::Theorem,
+                origin.clone(),
+                contribution,
+            )
+            .with_visibility(Visibility::Public),
+        );
+        let origin_path = LabelOriginPath::new("statement.task258b4b.fixture.theorem.0");
+        let mut labels = LabelIndex::new();
+        labels.insert(
+            LabelEntry::new(
+                origin_path.clone(),
+                LabelKind::Theorem,
+                namespace,
+                LABEL,
+                origin,
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        contributions.add_symbol(contribution, symbol.clone());
+        contributions.add_definition(contribution, definition);
+        contributions.add_label(contribution, origin_path);
+        (
+            symbol,
+            contribution,
+            SymbolEnv::new(
+                module.clone(),
+                SymbolEnvIndexes {
+                    symbols,
+                    labels,
+                    definitions,
+                    contributions,
+                    ..SymbolEnvIndexes::default()
+                },
+            ),
+        )
     }
 
     fn task258b4a_arena(source: SourceId) -> TypedArena {

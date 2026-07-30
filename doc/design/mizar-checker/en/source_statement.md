@@ -3706,3 +3706,29 @@ zero-reference profile. Those zeros are sentinels, not reference ordinals;
 the transport-detail guard must accept them only for the exact matched
 Task-257B2/B4B profile and must keep B4A at `1/1/[1,1]`. No public checker
 DTO or statement semantic is changed by this dormant runner convention.
+
+## Task 258B4B Implemented Connective/Grouping Statement Root
+
+The private 167-byte/double-LF source now selects the frozen route only after
+raw label-free resolver provenance is enriched to exact `1/1/1/1/0`. The
+producer reuses the Task-257B2 lower transaction in a rootless 124-node
+arena, retains the `42/1/81` ownership split, and installs exactly one owner,
+one statement, one context, zero input facts, and one candidate
+(`1/1/1/0/1`). Both statement associations target `Composite(0)`.
+
+The exact profile predicates and their call sites pair Task-257B1 only with
+B4A and Task-257B2 only with B4B. Runner telemetry `0/0/[]` is accepted only
+for the matched B2/B4B profile; B1/B4A remains `1/1/[1,1]`. The active
+166-byte route and all coherent profile hybrids fail closed. Four checker
+and five runner focused tests pass, and separate test-sufficiency and
+implementation reviews report **NO FINDINGS**. No public DTO, debug grammar,
+lower owner, semantic table, corpus artifact, or trace state changes.
+
+Final source/documentation, bilingual, and boundary consistency reviews now
+report **NO FINDINGS**. Focused checker `4/4` and runner `5/5`, full
+`cargo test --offline`, `cargo fmt --all -- --check`, full offline Clippy
+with warnings denied, five CLI, all count/hash, exact-scope, audit-no-op,
+forbidden-artifact, and unchanged-stash gates PASS. Independent final
+quality reports **NO FINDINGS**; all nine hard gates PASS with no cap at
+valid `100/100` (`20/20/15/15/10/10/5/5`). Staging/cached-diff review,
+the implementation commit, post-commit inventory, and B4C remain pending.

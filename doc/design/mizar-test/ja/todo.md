@@ -2693,6 +2693,35 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] repeated documentation reviewを**NO FINDINGS**でcomplete。
 - [x] docs-only verificationと全no-op/count/hash/stash gatesをPASS。
 - [x] independent final qualityを全hard gates、score `>=90/100`でPASS。
-- [ ] dedicated B4B documentation commitをstage/inspect/create。
-- [ ] post-commit invariantsをverifyし、B4B implementationをfresh
+- [x] dedicated B4B documentation commitをstage/inspectし、
+  `b8a7b8257a682f7c88de943ceaa35b67c0585bc4`としてcreate。
+- [x] clean ahead-8/behind-0 post-commit stateとunchanged stash
+  fingerprintをverifyし、B4B implementationをfresh
   inventory。
+
+## Checker Task 258B4B implementation ledger
+
+- [x] frozen runner 4/checker 3、合計7 consumersだけをimplement。
+- [x] private 167-byte/double-LF source、124 Surface nodes/root 123、
+  raw label-free resolverからenriched `1/1/1/1/0`へのtransitionを
+  authenticate。
+- [x] Task-257B2 lower profiles、rootless 124-node arena、
+  `42/1/81` ownership、upper `1/1/1/0/1`と両`Composite(0)`をpublish。
+- [x] B1/B4A対B2/B4B pairingとprivate telemetry `0/0/[]`を
+  profile-aware guardでisolateし、B4A `1/1/[1,1]`をpreserve。
+- [x] exact runner `5/5` / checker `4/4` testsとactive 166-byte
+  lower-only negativeをPASS。
+- [x] separate test-sufficiency/implementation reviewsを
+  **NO FINDINGS**でcomplete。
+- [x] public runner API、semantics、corpus、expectation、sidecar、traceを
+  no-opのまま保持。
+- [x] final source/documentation、bilingual、boundary consistency reviewを
+  **NO FINDINGS**でclose。
+- [x] focused/package、full workspace、fmt、Clippy、5 CLI、
+  count/hash/scope/audit-no-op/stash verificationをPASS。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  score capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）でclose。
+- [ ] exact B4B implementation scopeをstage/inspectし、dedicated commitを
+  create。
+- [ ] clean post-commit/stash invariantsをverifyし、B4Cをfresh inventory。

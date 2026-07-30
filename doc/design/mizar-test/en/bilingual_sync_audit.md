@@ -1202,3 +1202,27 @@ distinction, `0/0/[]` sentinel, and test-only facade exceptions. No
 synchronization exception exists. Independent final quality is synchronized
 as **NO FINDINGS**, all nine gates PASS, and valid `100/100`. Staging,
 commit, and post-commit inventory remain pending.
+
+## Checker Task 258B4B Implementation Synchronization
+
+Canonical English now records prerequisite commit
+`b8a7b8257a682f7c88de943ceaa35b67c0585bc4`, its clean ahead-8/behind-0
+post-commit inventory, unchanged stash, the exact four runner plus three
+checker files, private 167-byte source, raw label-free then enriched
+`1/1/1/1/0` resolver profile, Task-257B2 lower/rootless
+`42/1/81` ownership, upper `1/1/1/0/1` with both `Composite(0)` links,
+B1/A versus B2/B pairing, `0/0/[]`, active 166-byte exclusion, and focused
+runner `5/5` plus checker `4/4`.
+
+The paired Japanese companions preserve the implementation measurements,
+hashes, owner sizes, no-op boundaries, completed test/implementation
+reviews, and final verification state exactly. Final source/documentation,
+bilingual, and boundary review repeats report **NO FINDINGS** in both
+languages. Focused `4/4 + 5/5`, full offline workspace tests, formatting,
+Clippy, all five unchanged CLI counts/hashes, production/test-list hashes,
+scope/audit no-op, and stash gates pass. No synchronization exception
+exists. Independent final quality is synchronized as **NO FINDINGS** with
+all nine hard gates PASS, no score cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, the
+implementation commit, post-commit invariants, and fresh B4C inventory
+remain pending in both languages.

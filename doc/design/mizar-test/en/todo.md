@@ -2895,5 +2895,34 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Pass docs-only verification and all no-op/count/hash/stash gates.
 - [x] Pass independent final quality with all hard gates and score
   `>=90/100`.
-- [ ] Stage/inspect and create the dedicated B4B documentation commit.
-- [ ] Verify post-commit invariants and fresh-inventory B4B implementation.
+- [x] Stage/inspect and create the dedicated B4B documentation commit
+  `b8a7b8257a682f7c88de943ceaa35b67c0585bc4`.
+- [x] Verify clean ahead-8/behind-0 post-commit state, unchanged stash
+  fingerprint, and fresh-inventory B4B implementation.
+
+## Checker Task 258B4B Implementation Ledger
+
+- [x] Change exactly four runner and three checker files; leave
+  `source_formula_composition.rs=1,853` and every lower owner unchanged.
+- [x] Authenticate the private 167-byte route, raw label-free and enriched
+  `1/1/1/1/0` resolver profiles, Task-257B2 lower transaction, rootless
+  124-node `42/1/81` arena, and upper `1/1/1/0/1` `Composite(0)` links.
+- [x] Pair B1/A versus B2/B exactly; retain B4B `0/0/[]`, B4A
+  `1/1/[1,1]`, and the active 166-byte lower-only negative.
+- [x] Pass focused runner `5/5` and checker `4/4`.
+- [x] Complete test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Measure runner library `481`, production `30/56007`, exact owner
+  sizes and path/content/test-list hashes; reproduce checker `418` and
+  `23/140821`.
+- [x] Preserve public runner schemas, active behavior, semantics, corpus,
+  expectations, sidecars, trace status/count/backlinks, and specifications.
+- [x] Repeat source/documentation, bilingual, and boundary consistency
+  reviews to **NO FINDINGS**.
+- [x] Run complete crate/workspace, fmt, Clippy, CLI, count/hash, scope, and
+  stash verification.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage/inspect and commit only the exact B4B implementation scope.
+- [ ] Verify post-commit invariants and fresh-inventory B4C.
