@@ -1586,3 +1586,35 @@ The clone preserves byte-identical B1/B5A local behavior and the exact B5B
 accepted statements, proofs, proof nodes, terminal goals, diagnostics,
 status propagation, and downstream IR remain empty. No public final-owner
 schema or semantic API changes.
+
+## Task 258B5C Frozen Final-Assembly Exclusion
+
+Both B5C candidates resolve to `UnresolvedLabelRef` with
+`has_unresolved = true`. The source-statement handoff therefore rejects them
+before typed installation, and final assembly receives no B5C state to
+clone. The R-032A structural mirror remains
+`NodeResolutionState::NotApplicable` with no key and is not a semantic
+success; there is no `LabelResolution::Resolved` result,
+label/citation/reference DTO,
+checked formula, fact, accepted statement, proof node, goal, diagnostic
+carrier, or downstream IR row.
+
+Final assembly must not turn an active resolver failure into an empty or
+partial checker profile. B1/B5A/B5B clone validation and every existing
+debug byte remain unchanged; all Surface nodes in the two negative sources
+stay syntax-owned.
+
+The default-deny R-032B traversal requires exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`, exact-one normal Root/CompilationUnit structural children, and
+direct-normal theorem scanning. It leaves other item children and excluded
+formula/token/wrapper,
+unsupported/recovered/malformed, qualified/grouped/bulk, and template nodes
+without a collected row, ordinal, or descent, so none can become a
+`ResolvedTypedAst` owner. Its positive-edge, forbidden-relocation, and
+mixed-list tests remain resolver-owned.
+
+Runner mutations of environment module, projection module/namespace/
+contribution, or contribution cardinality/id/kind/record module/source id
+must stop at `proof_scope_input`; they cannot reach final assembly or be
+reclassified as authenticated confinement.

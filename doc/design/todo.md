@@ -3611,5 +3611,48 @@ or semantic owner changed. B3M2B2B remains next before B4.
   final count/hash/scope gates.
 - [x] Pass independent final quality with **NO FINDINGS**, all nine hard
   gates, no cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
-- [ ] Stage/inspect and create one B5B upper implementation commit, verify
-  clean post-commit/stash state, and fresh-inventory the next task.
+- [x] Stage/inspect and create B5B upper implementation commit
+  `f27d2c9169b08078f00b75c4a57f94e30fa28f59`, verify clean
+  post-commit/stash state, and fresh-inventory the next task.
+
+## Checker Task 258B5C Frozen-Contract Documentation Prerequisite
+
+- [x] Freeze the canonical Chapter 15 §15.10 and Chapter 16
+  §§16.4.2/16.5.1 proof-label confinement contract and the exact
+  inner-to-outer/sibling normal-source transactions.
+- [x] Record Medium resolver `source_drift` with potential
+  `boundary_violation`, `design_drift`, bounded `test_gap`, and the Low
+  deferred nonblocking public-diagnostic `spec_gap`; record no current
+  `repo_metadata_conflict`.
+- [x] Order four independent commits: synchronized frozen documentation,
+  resolver R-032A validated structural Surface-to-resolved arena/map,
+  resolver R-032B proof-label source collection, then active B5C
+  declaration-symbol fixtures/sidecars/trace/runner assertions.
+- [x] Freeze both exact resolver APIs/errors, completion visibility ordinal
+  3, general theorem-root scopes, narrow collection boundaries, exact
+  provenance paths, and same-block/own-proof/cross-theorem tests.
+- [x] Keep this prerequisite documentation-only: no production, `.miz`,
+  expectation, sidecar, trace row/status/count/backlink/credit, public schema,
+  or semantic change.
+- [x] Complete repeated specification, test-contract, source/documentation,
+  boundary, and bilingual reviews with **NO FINDINGS**.
+- [x] Reproduce unchanged focused/crate/workspace, formatting, Clippy,
+  five-CLI, count/hash, forbidden-artifact, repository-state, authority
+  no-op, and protected-stash gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [x] Complete task-only staging, the dedicated documentation commit,
+  post-commit invariants, and fresh R-032A inventory.
+- [x] Freeze the canonical R-032B exact
+  `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+  ProofBlock` upper chain, exact-one normal Root/CompilationUnit children,
+  direct-normal theorem scanning, positive coverage of every edge, and
+  missing/additional/wrong/direct-relocation/`VisibleItem`/mixed-list
+  rejection without ordinal, descent, or partial output.
+- [x] Freeze full active-runner provenance authentication and independent
+  mutation coverage for env/projection/contribution module, namespace, id,
+  cardinality, kind, and source id; all corruptions emit only
+  `declaration_symbol.label.proof_scope_input`.
+- [x] Preserve source-bytes-plus-normal-AST selection, expectation
+  non-selection, empty public codes, and the exact 48-file scope.

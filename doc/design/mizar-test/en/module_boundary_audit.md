@@ -12538,3 +12538,75 @@ Post-format owner sizes are
 `34915`. Production remains 30 paths/59745 lines. These measured increases
 are cohesive with the existing private runner owner and do not alter the
 boundary decision.
+
+## Checker Task 258B5C Frozen Resolver/Runner Boundary
+
+Resolver R-032A exclusively owns the structural Surface-to-resolved map.
+`SurfaceResolvedArena::lower(&SurfaceAst, &ModuleId)` returns a validated,
+one-to-one same-index arena or `SurfaceResolvedArenaError`; its total
+accessors and `validate_against` fail closed on wrong source/module/shape/
+node, stale state, recovery/root mismatch, and checked structural-path
+overflow, including `ResolutionStateMismatch` and
+`ReferenceKeyMismatch`. All node/child payloads are `SurfaceNodeId`. Its
+later write scope is only `resolved_ast.rs` and its tests.
+
+Proof scope, ordinal, and label provenance derivation belongs exclusively to
+resolver R-032B. Exact `impl<'a> ProofLabelSourceCollector<'a>::new` borrows
+ast/resolved under `'a`, treats module as validation-only/not stored, owns
+namespace/contribution, and returns `Result<Self, ...>`; `collect(&self)`
+returns the collection. The public non-exhaustive error wraps the arena
+error and its checked scope/path overflow nodes are `SurfaceNodeId`.
+`projections()` and `references()` expose the result. Its later write scope
+is only `labels.rs` and `labels/tests.rs`. Neither collector nor runner may
+fabricate a resolved node, scope component, ordinal, or origin.
+
+The later `mizar-test` owner is only the private declaration-symbol consumer:
+`runner/declaration_symbol.rs`, `runner/tests.rs`, and new
+`runner/tests/declaration_symbol.rs`. It invokes R-032A validation, R-032B
+collection, and `LabelResolver`, authenticates the exact unresolved result,
+and maps that result to
+`declaration_symbol.label.proof_scope_confinement`. It does not walk proof
+topology, assign scope components or statement ordinals, construct origins,
+or reimplement visibility.
+
+The consumer branch is source-byte-plus-normal-AST selected, never metadata
+selected. Shared resolver output must prove env/module, namespace derivation,
+and exact single local-source contribution/source-id/id-0 provenance.
+Corruption maps only to `proof_scope_input`; authenticated unresolved
+confinement alone maps to `proof_scope_confinement`.
+
+Checker source-statement, resolved/typed installation, statement/citation
+DTOs, parser/frontend production, public runner/CLI API, and type/proof/
+Core/CFG/VC owners are excluded. In particular, checker
+`SourceStatementReferenceHandoff` rejects unresolved input and cannot consume
+either negative. The structural map is a known R-032A prerequisite, not a
+conditional runner concern.
+
+The current documentation task owns exactly 48 paired/global design files.
+R-032A and R-032B each own their separate two-source-file implementation
+commit. The active B5C task owns only the two new fixture/sidecar pairs, two
+trace rows, three runner files, and synchronized derived documents. This
+four-task split avoids the inventoried potential `boundary_violation`; no
+module split or ownership transfer is authorized.
+
+R-032B exclusively owns the exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock` upper chain, the remaining closed Surface edge allowlist, and its
+positive-edge, forbidden-relocation, and mixed-reference-list tests. Root and
+CompilationUnit each require exactly one normal structural child; ItemList
+scans only direct normal theorem children and skips/no-descends all others.
+Upper negatives cover missing/additional/wrong children, direct Root/
+Compilation theorem relocation, and `VisibleItem` wrapping. Default-denied
+formula/token/wrapper, unsupported/recovered/malformed,
+qualified/grouped/bulk, and template nodes receive neither an ordinal nor
+descent. The runner consumes the result but never broadens that table.
+
+The runner boundary authenticates `env.module_id() == resolver.module`,
+module-path-derived namespace, exactly one id-0 LocalSource contribution
+with matching record module and public `ast.source_id`, and every
+projection's module/namespace/contribution. Independent mutations of the
+environment module; projection module/namespace/contribution; contribution
+zero/multiple cardinality, id, `ImportedSource`/`Summary`/`Builtin` kind,
+record module, and LocalSource source id all map only to
+`declaration_symbol.label.proof_scope_input`. They never map to confinement
+or a public code. Selection remains source-bytes-plus-normal-AST only.

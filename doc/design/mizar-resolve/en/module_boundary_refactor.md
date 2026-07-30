@@ -67,3 +67,35 @@ cargo clippy -p mizar-resolve --all-targets --all-features -- -D warnings
 ```
 
 Crate-wide close-out must run the full workspace and `mizar-test` plan gates.
+
+## Planned R-032A / R-032B Ownership Recheck
+
+R-032 does not reopen the completed R-029 refactor gate. It is split across
+existing public module owners without changing public module layout:
+
+- R-032A production/test: `src/resolved_ast.rs` and
+  `src/resolved_ast/tests.rs`;
+- R-032B production/test: `src/labels.rs` and `src/labels/tests.rs`;
+- synchronized design records; no new module is planned.
+
+R-032A owns the complete validated structural map and exact public error table
+in `resolved_ast.md`, including typed resolution-state/reference-key
+mismatches. R-032B's exact `'a` impl stores only AST/arena borrows, owns
+namespace/contribution, does not store module, validates module in `new`, and
+uses `resolved.module()` in `collect`. Both operations return the exact public
+error enum. No callback, unmapped side channel, fabricated id, unchecked
+conversion, or panic crosses this seam. Its module-global ordinal walk and
+exact `proof-step-v1` identity remain label-owned. The exhaustive direct-edge
+table is default-deny: an unlisted/recovered/malformed/wrapped edge cannot leak
+syntax or semantic traversal across the boundary and produces no row/ordinal.
+Its upper boundary is exact `Root` -> `CompilationUnit` -> `ItemList`;
+theorems outside direct item-list children are unreachable.
+R-032A's per-node arena
+origin `[surface_id]` and R-032B's richer table origins are intentionally
+distinct and independently validated.
+
+Parser/frontend production, Cargo/workspace metadata, other resolver modules,
+public checker handoffs, and checker/type/proof/Core/CFG/VC responsibilities
+are excluded. If implementation pressure requires another source owner, public
+boundary, or mapping owner, stop and re-review the frozen R-032A/R-032B contract
+instead of broadening the change.

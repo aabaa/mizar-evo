@@ -1332,5 +1332,58 @@ focused B5B checker `4/4`、upper runner `5/5`、isolated lower runner `2/2`、
 preserved B5A/B1 checker `4/4`は各PASS。両languageは
 `spec.en.checker.formula_statement.source_payloads`を`deferred`、
 `tests = []`のまま維持し、trace status/count/backlink/creditを変更しない。
-task-only staging、dedicated upper commit、post-commit inventoryだけが
-synchronized pending。
+task-only staging、upper commit
+`f27d2c9169b08078f00b75c4a57f94e30fa28f59`、clean post-commit
+inventoryはsynchronized complete。
+
+## Task 258B5C frozen-contract synchronization
+
+canonical English checker documentsとJapanese companionsは同じtwo
+specification-derived proof-label confinement negativesをfreezeする。
+両languageはexact 173/197-byte source/hash、61/root-60・71/root-70
+normal Surface identity、scope/range/ordinal provenance、raw resolver
+`1/0/1/1/0`、one local-only `A` projection、one unqualified reference
+candidate、sourceごとのexact unresolved resultをrecordする。
+
+両languageはfour-commit dependency boundaryもsynchronizeする:
+documentation only、resolver R-032A validated `SurfaceResolvedArena`、
+resolver R-032B `ProofLabelSourceCollector`、その後active
+declaration-symbol fixture/runner/trace coverage。両exact
+`Result`-returning API/fail-closed error、completion visibility ordinal 3、
+generic theorem-root path、collector inclusion/exclusion、exact
+`LabelOriginPath`/`SemanticOrigin` provenance、positive/own-proof/
+cross-theorem test obligationも同期する。same `'a` ast/resolved borrow、
+validation-only module、`Self` return、`SurfaceNodeId` error payload/state-key
+mismatch、module-global one-based ordinal、`ConclusionStatement`/exact
+justification-reference chain、canonical `proof-step-v1` framing、
+source-byte-plus-normal-AST runner selection、`proof_scope_input`/
+`proof_scope_confinement` split、48-file docs scopeも同期する。checker
+handoffはunresolved
+referenceをrejectするため、B5Cはchecker DTO/row/profile/binding context/
+typed-final installation/cross-family edge/semantic resultを作らない。
+future artifact names、detail key、empty public diagnostic-code list、
+trace ids、count deltaもidentical。
+
+このprerequisiteはauthority/coverage stateを変更しない。両languageはcurrent
+count/hashを維持し、public diagnostic-code/proof semanticsをdeferし、same
+review/verification/dedicated commit/post-commit exit gatesを要求する。
+
+両companionは同じR-032B default-deny edge tableもfreezeする。exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`、direct normal compact/conclusion
+statement、compact proposition-label inspection、direct proof/justification
+child、sole simple-reference identifier chainである。両文書ともforbidden
+両方ともRoot/CompilationUnitのexact-one normal child、direct theorem scan、
+other ItemList childのskip/no-descend、全upper edgeのpositive coverageを
+requireする。missing/additional/wrong upper child、direct Root/Compilation
+theorem relocation、`VisibleItem` wrapping、other forbidden relocationを
+rejectする。mixed listはexact simple-reference siblingをsource orderで保持し、
+unsupported siblingはrow/descentを追加しない。
+
+runner authenticationも両languageで同一である。env/resolver module、
+module-path-derived namespace、exact one id-0 LocalSource contribution
+record/source id、全projection module/namespace/contributionを検証する。
+各field、両cardinality failure、全`ImportedSource`/`Summary`/`Builtin` kind
+substitutionのindependent mutationは`proof_scope_input`だけへmapし、
+authenticated confinementだけが`proof_scope_confinement`へmapする。
+source-byte-plus-normal-AST selectorとexact 48-file scopeはunchanged。

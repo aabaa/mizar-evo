@@ -1382,5 +1382,62 @@ Focused B5B checker `4/4`, upper runner `5/5`, isolated lower runner `2/2`,
 and preserved B5A/B1 checker `4/4` each PASS. Both languages retain
 `spec.en.checker.formula_statement.source_payloads` as `deferred` with
 `tests = []`; no trace status, count, backlink, or credit changes.
-Task-only staging, the dedicated upper commit, and post-commit inventory
-remain synchronized and pending.
+Task-only staging, upper commit
+`f27d2c9169b08078f00b75c4a57f94e30fa28f59`, and clean post-commit
+inventory are synchronized and complete.
+
+## Task 258B5C Frozen-Contract Synchronization
+
+The canonical English checker documents and Japanese companions freeze the
+same two specification-derived proof-label confinement negatives. Both
+languages record the exact 173/197-byte sources and hashes, 61/root-60 and
+71/root-70 normal Surface identities, scope/range/ordinal provenance, raw
+resolver `1/0/1/1/0`, one local-only `A` projection, one unqualified
+reference candidate, and the exact unresolved result per source.
+
+Both languages also synchronize the four-commit dependency boundary:
+documentation only; resolver R-032A validated `SurfaceResolvedArena`;
+resolver R-032B `ProofLabelSourceCollector`; then active declaration-symbol
+fixture/runner/trace coverage. They synchronize both exact `Result`-returning
+APIs and fail-closed errors, completion visibility ordinal 3, generic
+theorem-root paths, collector inclusion/exclusion, exact
+`LabelOriginPath`/`SemanticOrigin` provenance, and positive/own-proof/
+cross-theorem test obligations. Exact synchronization includes the shared
+`'a` ast/resolved borrows with validation-only module, `Self` return,
+`SurfaceNodeId` error payloads/state-key mismatches, module-global one-based
+ordinals, `ConclusionStatement` and exact justification/reference chain,
+canonical `proof-step-v1` framing, source-byte-plus-normal-AST runner
+selection, the
+`proof_scope_input`/`proof_scope_confinement` split, and 48-file docs scope.
+They record that checker handoffs reject
+unresolved references, so B5C creates no checker DTO, row, profile, binding
+context, typed/final installation, cross-family edge, or semantic result.
+The two future artifact names, detail key, empty public diagnostic-code
+lists, trace ids, and count deltas are identical.
+
+This prerequisite changes neither authority nor coverage state. Both
+languages retain current counts and hashes, defer public diagnostic-code and
+proof semantics, and require the same review, verification, dedicated
+commit, and post-commit exit gates.
+
+Both companions now also freeze the same R-032B default-deny edge table:
+exact `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`, direct normal compact/
+conclusion statements, compact proposition-label inspection, direct proof/
+justification children, and the sole simple-reference identifier chain.
+Both require exact-one normal Root/CompilationUnit children, direct theorem
+scanning with other ItemList children skipped/no-descended, and positive
+coverage of every upper edge. Both reject missing/additional/wrong upper
+children, direct Root/Compilation theorem relocation, `VisibleItem`
+wrapping, and other forbidden relocation. In mixed lists both preserve exact
+simple-reference siblings in source order while unsupported siblings add no
+row or descent.
+
+Runner authentication is identical in both languages: env/resolver module,
+module-path-derived namespace, exactly one id-0 LocalSource contribution
+record/source id, and every projection module/namespace/contribution.
+Independent mutations of each field, both cardinality failures, and all
+`ImportedSource`/`Summary`/`Builtin` kind substitutions map only to
+`proof_scope_input`; only authenticated confinement maps to
+`proof_scope_confinement`. The source-byte-plus-normal-AST selector and exact
+48-file scope are unchanged.

@@ -165,7 +165,9 @@ label は ordinary symbol とは別 scope なので、`LabelRefTable` は `NameR
   `Unresolved(UnresolvedLabelRef)`。expected family は具体的な label kind、または
   `by` reference 用の proof-step-or-theorem のような mixed citation family でよい。
 
-`LabelRef` は正規化された label-origin path と use-site range を記録する。
+`LabelRef` は canonical serialization の label-origin path と use-site range を
+記録する。canonical serialization は identifier spelling を normalize せず、
+exact parser token byte を保持する。
 label-origin path は後続の `ObligationAnchor` 構築に十分な安定性を持たなければ
 ならないが、resolver が obligation を生成することを意味しない。
 
@@ -262,6 +264,7 @@ task R-026 は frontend task 25 の public-enum decision procedure をこの mod
 - `NodeResolutionState`
 - `NodeReferenceKey`
 - `ResolvedArenaError`
+- 計画済み `SurfaceResolvedArenaError`
 - `NameLookupClass`
 - `NameResolution`
 - `LabelKind`
@@ -292,3 +295,91 @@ Task R-004 は以下の focused unit test を追加しなければならない�
 - 同等入力の再解決でも安定する node-to-table key と node-to-import key
 - recovered-shell flag と origin preservation
 - candidate list と table iteration の deterministic ordering
+
+## R-032A frozen Surface structural-arena contract
+
+R-032A は Checker Task 258B5C の最初の implementation prerequisite である。
+parser-owned `SurfaceAst` node と resolver-owned structural node の間に欠けている
+validated production mapping を修復する。canonical resolver responsibility、本書と
+architecture の resolved-AST contract、既存 `SurfaceAst` / `ResolvedArena` API
+は十分な authority である。以前の checker 作業で観測した private structural clone
+は inventory evidence にすぎず、authority ではない。
+
+exact API は次である。
+
+```rust
+SurfaceResolvedArena::lower(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<SurfaceResolvedArena, SurfaceResolvedArenaError>
+
+source_id(&self) -> SourceId
+module(&self) -> &ModuleId
+arena(&self) -> &ResolvedArena
+resolved_node_for(&self, source: SurfaceNodeId) -> Option<ResolvedNodeId>
+validate_against(
+    &self,
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<(), SurfaceResolvedArenaError>
+```
+
+`SurfaceResolvedArena` は complete one-to-one、child-first、same-index の
+structural arena を所有する。各 surface node について exact kind、ordered
+children、range、recovery state、root、source、canonical module を保持する。
+structural node の `SemanticOrigin` は exact surface range を anchor とし、
+`structural_path = [surface_node_id.index()]`、semantic key なし、
+`NodeResolutionState::NotApplicable`、`reference_key = None` とする。この arena
+は structural provenance であり、semantic resolution を主張しない。
+
+`SurfaceResolvedArena` は `Debug`, `Clone`, `PartialEq`, `Eq` を derive し、
+`Copy` は要求しない。`SurfaceResolvedArenaError` は `Debug` を derive して
+`Display` / `std::error::Error` を実装し、`Clone` / `Eq` / `Copy` は要求しない。
+
+exact public declaration は次である。
+
+```rust
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum SurfaceResolvedArenaError {
+    MissingRoot,
+    StructuralPathComponentOverflow { node: SurfaceNodeId },
+    InvalidChildOrder {
+        node: SurfaceNodeId,
+        child: SurfaceNodeId,
+    },
+    InvalidArena(ResolvedArenaError),
+    SourceMismatch,
+    ModuleMismatch,
+    NodeCountMismatch,
+    RootMismatch,
+    NodeKindMismatch { node: SurfaceNodeId },
+    ChildListMismatch { node: SurfaceNodeId },
+    RangeMismatch { node: SurfaceNodeId },
+    RecoveryMismatch { node: SurfaceNodeId },
+    ResolutionStateMismatch { node: SurfaceNodeId },
+    ReferenceKeyMismatch { node: SurfaceNodeId },
+    OriginMismatch { node: SurfaceNodeId },
+    StructuralPathMismatch { node: SurfaceNodeId },
+}
+```
+
+downstream match は wildcard arm を持つ。structural node state が exact
+`NodeResolutionState::NotApplicable` でない場合は
+`ResolutionStateMismatch`、reference key が non-`None` の場合は
+`ReferenceKeyMismatch`。surface `usize` index から公開 path `u32` component
+への変換は checked で、unwrap/saturation/truncation/panic を禁止する。test は
+wrong source/module/arena、missing/stale node、shape/recovery、state/key injection、
+root、overflow を含む全 declared mismatch を個別に拒否する。同等入力は complete
+mapping と deterministic id を保持する。
+
+R-032A implementation ownership は exact に
+`crates/mizar-resolve/src/resolved_ast.rs`、
+`crates/mizar-resolve/src/resolved_ast/tests.rs`、同期した resolver design record
+だけである。R-032B より前の1 commit とする。label collection、runner、fixture、
+sidecar、trace status/count、parser/frontend production、checker/type/proof
+semantics、Cargo/workspace metadata は変更しない。
+
+arena node の minimal structural origin `[surface_node_id.index()]` と R-032B
+`labels.md` の richer projection/reference table origin は意図的に異なる。
+R-032A は前者、R-032B は後者を validate し、相互に代用しない。

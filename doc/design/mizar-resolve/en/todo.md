@@ -24,7 +24,7 @@ Autonomous crate development preparation is tracked in
 | imports | `imports.md` (task 8) | `src/imports.rs` | [~] |
 | declarations | `declarations.md` (task 11) | `src/declarations.rs` | [x] |
 | names | `names.md` (task 12) | `src/names.rs` | [~] |
-| labels | `labels.md` (task 17) | `src/labels.rs` | [x] |
+| labels | `labels.md` (tasks 17 and 32) | `src/labels.rs` | [~] |
 | symbols | `symbols.md` (task 19) | `src/symbols.rs` | [~] |
 | recovered syntax policy | `recovery.md` (task 22) | `src/recovery.rs` helper plus stage-specific call sites | [x] |
 
@@ -91,6 +91,12 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
   spec chapter 15 forbids inner-scope label shadowing. R-017 classifies that
   note as `design_drift` in this derived TODO and repairs the target to
   duplicate/conflict rejection across visible label scopes.
+- **Normal-source proof-label projection: planned as task 32.** R-018's
+  `LabelResolver` correctly enforces scope-prefix visibility over explicit
+  projections. R-023 added declaration-symbol corpus collection, not the
+  production `SurfaceAst` proof-label declaration/reference collector. The
+  missing lower path is Medium `source_drift`, and the older full-source-walk
+  attribution to R-023 is `design_drift`.
 
 ## Ordered Task List
 
@@ -584,6 +590,45 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       same-return seed through the active declaration-symbol runner. The sole
       trace row is covered; the different-return expectation is unchanged.
 
+32A. **Validated Surface structural arena.** [ ]
+    - Implement the exact `SurfaceResolvedArena` / public non-exhaustive
+      `SurfaceResolvedArenaError` contract in `resolved_ast.md`.
+    - Own only `resolved_ast.rs`, `resolved_ast/tests.rs`, and paired docs.
+      Prove complete child-first same-index mapping, exact structural/origin
+      preservation, every named mismatch/error variant including
+      `ResolutionStateMismatch` / `ReferenceKeyMismatch`, checked overflow,
+      and downstream wildcard compatibility.
+    - This is one lower-prerequisite commit after the B5C documentation commit.
+      It changes no labels, runner, fixtures, sidecars, trace, or other phase.
+
+32B. **Normal-source proof-label confinement projections.** [ ]
+    - After fresh inventory of R-032A, implement the exact
+      `ProofLabelSourceCollector` / public non-exhaustive
+      `ProofLabelSourceCollectionError` contract in `labels.md`.
+      Use the exact `'a` impl lifetime: store only AST/arena borrows, own
+      namespace/contribution, and do not store the validated module argument.
+    - Own only `labels.rs`, `labels/tests.rs`, and paired docs. Use only the
+      validated R-032A map; no callback, unmapped side channel, fabricated id,
+      unchecked conversion, or semantic descendant collection.
+    - Prove exact supported-subtree/exclusion behavior, root `[0]`, `[1]`, ...
+      and nested scopes, the shared module-global one-based ordinal walk,
+      completion boundaries, exact `proof-step-v1` origin serialization,
+      `[0] -> [0,1]` visibility, inner/sibling/cross-theorem confinement,
+      own-proof pre-completion rejection, same-block post-completion success,
+      overflow/recovery, and deterministic mutation matrices.
+      Implement the exhaustive default-deny direct Surface edge table from
+      `labels.md`: positive evidence per permitted edge, exact mixed-list
+      filtering, relocation/wrapper/formula/computation/qualified/grouped/bulk/
+      template/owner/recovery negatives, and every row's all-other action.
+      Prove `Root` -> `CompilationUnit` -> `ItemList` -> `TheoremItem` one edge
+      at a time and reject missing/additional/wrong/relocated/wrapped upper
+      shapes, including theorem-under-root/compilation-unit/visible-item.
+    - This is a second lower-prerequisite commit before private `mizar-test`
+      active key `declaration_symbol.label.proof_scope_confinement`. Public
+      checker handoff and active artifacts remain excluded.
+    - Deps: R-018/R-023, B5C docs, R-032A; authority Chapter 15 §15.10 and
+      Chapter 16 §§16.4.2/16.5.1.
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records
@@ -593,7 +638,9 @@ Keep `cargo test -p mizar-resolve` green after each task (see
   R-030 is a later integration follow-up opened by the spec-coverage audit; it
   does not reopen the completed R-001 through R-029 milestone. R-031 is an
   independently authorized Step-5 corpus increment and likewise does not
-  rewrite that completed milestone.
+  rewrite that completed milestone. Planned R-032A/R-032B are separate lower
+  prerequisites; their documentation and implementation commits do not reuse or
+  reopen the original 94/100 score.
 
 ## Recommended Verification
 

@@ -1100,3 +1100,53 @@ The lower helper is a prior dependency rather than an eighth upper file.
 Current checker owners measure `50732/5008/7356`; production remains 23
 paths. The files remain large but cohesive, and this task requires no module
 split or ownership transfer.
+
+## Task 258B5C Frozen Non-Consumer Boundary
+
+This commit owns synchronized design documentation only. The next two
+prerequisites are owned by `mizar-resolve`: R-032A owns the validated
+one-to-one structural `SurfaceResolvedArena` in `resolved_ast.rs` and its
+tests; R-032B owns proof-step projections, simple unqualified candidates,
+proof-scope paths, ordinals, and provenance collection in `labels.rs` and
+its tests. R-032A exact state/key errors and all node payloads use
+`SurfaceNodeId`; R-032B borrows ast/resolved under one `'a`, validates but
+does not store module, owns namespace/contribution, and returns `Self`.
+Only R-032B may consume the R-032A map. A later `mizar-test`
+declaration-symbol task owns the
+two active fixtures, sidecars, trace rows, runner observations, and tests.
+
+`mizar-checker` is explicitly not a B5C implementation consumer.
+`SourceStatementReferenceHandoff` rejects unresolved results and requires a
+keyed `Resolved` node, so no checker statement, reference, citation,
+binding, typed, or final owner may accept these negative routes. Parser,
+artifact, Tasks 252/253, B1/B5A/B5B, and all semantic phases remain
+unchanged. No module split or ownership transfer is required; moving scope
+derivation, resolved ids, or ordinals into the runner would be a
+`boundary_violation`.
+
+The later runner is selected only by frozen source bytes plus normal AST,
+then authenticates shared resolver env/module and one id-0 matching
+local-source contribution. Input corruption and authenticated confinement
+use separate private detail keys. Current documentation ownership is exactly
+48 design files.
+
+R-032B's owner boundary is further closed by its default-deny edge table:
+exact `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`; then
+only direct normal `CompactStatement`/`ConclusionStatement`, compact
+proposition-label inspection, direct statement proof/justification children,
+and the exact simple-reference chain. Forbidden formula/token/wrapper,
+unsupported/recovered/malformed, qualified/grouped/bulk, and template
+subtrees receive no ordinal and no descent. Root and CompilationUnit each
+require their exact one normal structural child; ItemList scans only direct
+normal theorem children and skips/no-descends other item children. Positive
+upper edges and negative missing/additional/wrong, direct Root/Compilation
+theorem relocation, and `VisibleItem` wrapping, plus lower forbidden
+relocation and mixed-list tests, belong to resolver.
+
+The later runner owns only independent authentication of environment module,
+derived namespace, the exact one id-0 LocalSource contribution record and
+source id, and every projection's module/namespace/contribution. Its
+field-by-field mutation matrix maps exclusively to `proof_scope_input`;
+authenticated confinement alone maps to `proof_scope_confinement`. Neither
+boundary adds a checker consumer or changes the 48-file scope.

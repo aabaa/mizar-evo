@@ -38,6 +38,8 @@ Still excluded:
   resolver diagnostics stay crate-local/internal.
 - Broader semantic `.miz` assertions for import/name/dot-chain/label facts
   remain R-G007 `test_gap`.
+- Planned R-032A/R-032B structural-map/proof-label projection and the later Checker
+  Task 258B5C active confinement cases are post-close-out logical tasks.
 
 ## Milestone Gates
 
@@ -212,3 +214,54 @@ trace row is covered, and the different-return sidecar remains unchanged. The
 original 94/100 milestone score is not reused as a post-extension score; the
 required independent read-only implementation/consistency reviews and full
 verification for this extension are recorded in its task handoff.
+
+## Planned R-032A / R-032B / Checker Task 258B5C Lower Extension
+
+R-032 is a post-close-out prerequisite umbrella and does not reopen or rescore
+the completed R-001 through R-029 milestone. Canonical Chapter 15 §15.10 and
+Chapter 16 §§16.4.2/16.5.1 authorize proof-label confinement. The core
+`LabelResolver` prefix behavior is correct; the missing normal-source
+`SurfaceAst` proof-step declaration/simple-unqualified reference collector is
+Medium `source_drift`, while the older R-023 full-source-walk attribution is
+`design_drift`. Missing active B5C coverage remains R-G007 `test_gap`; absent
+public codes remain the Low deferred R-G001 `spec_gap`.
+
+The four-step order is documentation, R-032A, R-032B, and active B5C, each a
+separate commit. R-032A owns only `resolved_ast.rs` /
+`resolved_ast/tests.rs` and implements the exact validated
+`SurfaceResolvedArena` plus named public non-exhaustive error table from
+`resolved_ast.md`, including state/reference-key mismatch payloads. R-032B owns
+only `labels.rs` / `labels/tests.rs` and
+implements the exact validated collector, public error table, subtree,
+completion, scope, and provenance contract from `labels.md`.
+
+Top-level theorem roots are `[0]`, `[1]`, ... in stable module source order;
+nested supported proof scopes are owner-relative. Labels become visible after
+their whole labelled compact subtree, including own proof, completes.
+One module-global one-based statement counter is never reset per theorem, and
+the exact length-framed `proof-step-v1` grammar owns identity. R-032B's exact
+`'a` impl stores only AST/arena borrows, owns namespace/contribution, validates
+but does not store module, and later uses `resolved.module()`. It uses only the
+R-032A map and has no callback, unmapped side channel,
+fabricated id, unchecked conversion, or panic. R-032A arena origin
+`[surface_id]` and R-032B richer table origins are intentionally distinct.
+The R-032B Surface walk is the exhaustive default-deny direct-edge table in
+`labels.md`; its upper chain is exactly `Root` -> `CompilationUnit` ->
+`ItemList` -> direct theorem, and every unlisted or invalid edge yields no
+row/ordinal/descent.
+Tests cover the exact named-error/mismatch/overflow matrix, inner/sibling and
+correctly directed earlier-theorem-to-later-theorem confinement, own-proof
+pre-completion rejection, post-completion success, inclusion/exclusion,
+recovery, provenance, deterministic mutations, positive-per-edge coverage,
+mixed-list filtering, representative all-other actions, and missing/additional/
+wrong/relocated/wrapped upper-chain negatives.
+
+R-032A/R-032B exclude parser/frontend production, Cargo/workspace metadata, all other
+resolver modules, checker/type/proof/Core/CFG/VC semantics, public diagnostic
+codes, grouped/qualified/bulk/imported/definition/registration label work,
+`.miz`, sidecar, trace status/count, and active runner changes. After both land
+with fresh inventory, the later private `mizar-test`
+`declaration_symbol` consumer may own exact key
+`declaration_symbol.label.proof_scope_confinement`. Public checker
+`SourceStatementReferenceHandoff` stays excluded because it rejects unresolved
+references.

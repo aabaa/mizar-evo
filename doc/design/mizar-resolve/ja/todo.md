@@ -23,7 +23,7 @@
 | imports | `imports.md`（task 8） | `src/imports.rs` | [~] |
 | declarations | `declarations.md`（task 11） | `src/declarations.rs` | [x] |
 | names | `names.md`（task 12） | `src/names.rs` | [~] |
-| labels | `labels.md`（task 17） | `src/labels.rs` | [x] |
+| labels | `labels.md`（task 17、32） | `src/labels.rs` | [~] |
 | symbols | `symbols.md`（task 19） | `src/symbols.rs` | [~] |
 | recovered 構文ポリシー | `recovery.md`（task 22） | `src/recovery.rs` helper と stage 別 call site | [x] |
 
@@ -89,6 +89,12 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   spec chapter 15 は inner-scope label shadowing を禁止する。R-017 はこの note を
   derived TODO の `design_drift` として分類し、visible label scope をまたぐ
   duplicate / conflict の拒否へ修正する。
+- **normal-source proof-label projection: task 32 として計画済み。**
+  R-018 の `LabelResolver` は explicit projection 上で scope-prefix visibility を
+  正しく強制する。R-023 が追加したのは declaration-symbol corpus collection であり、
+  production `SurfaceAst` proof-label declaration/reference collector ではない。
+  欠けた lower path は Medium `source_drift`、R-023 への旧 full-source-walk
+  attribution は `design_drift` である。
 
 ## 順序付きタスク一覧
 
@@ -547,6 +553,42 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       既存exact same-return seedはactive declaration-symbol runnerで実行され、sole trace rowは
       coveredとなり、different-return expectationは変更していない。
 
+32A. **validated Surface structural arena。** [ ]
+    - `resolved_ast.md` の exact `SurfaceResolvedArena` / public
+      non-exhaustive `SurfaceResolvedArenaError` contract を実装する。
+    - owner は `resolved_ast.rs` / `resolved_ast/tests.rs` / paired docs。
+      complete child-first same-index mapping、exact structure/origin、state/key
+      mismatch を含む全 named error variant、checked overflow、downstream
+      wildcard を証明する。
+    - B5C docs 後の1 lower-prerequisite commit。labels/runner/artifact/trace は
+      変更しない。
+
+32B. **normal-source proof-label confinement projection。** [ ]
+    - R-032A fresh inventory 後、`labels.md` の exact collector / public
+      non-exhaustive error contract を実装する。
+      exact `'a` impl とし AST/arena borrow だけを store、namespace/contribution
+      を own、validated module argument は store しない。
+    - owner は `labels.rs` / `labels/tests.rs` / paired docs。validated map だけを
+      使い callback/unmapped side channel/fabricated id/unchecked conversion/
+      semantic descendant collection を禁止する。
+    - supported subtree/exclusion、root `[0]`, `[1]`, ...、nested scope、
+      module-global one-based ordinal、completion、exact `proof-step-v1` origin、
+      inner/sibling/cross-theorem
+      confinement、own-proof rejection/post-completion success、overflow/recovery、
+      deterministic mutation を証明する。
+      `labels.md` exhaustive default-deny direct Surface edge tableについて、
+      permitted edge ごとのpositive、mixed-list filtering、relocation/wrapper/
+      formula/computation/qualified/grouped/bulk/template/owner/recovery negative、
+      各 row の all-other action を証明する。
+      `Root` -> `CompilationUnit` -> `ItemList` -> `TheoremItem` を1 edgeずつ
+      positive にし、missing/additional/wrong/relocated/wrapped upper shape と
+      theorem-under-root/compilation-unit/visible-item を拒否する。
+    - private `mizar-test` key
+      `declaration_symbol.label.proof_scope_confinement` より前の2つ目の lower
+      commit。public checker handoff / active artifact は除外。
+    - deps: R-018/R-023、B5C docs、R-032A。authority Chapter 15 §15.10 /
+      Chapter 16 §§16.4.2/16.5.1。
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、
@@ -555,7 +597,9 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   next-task handoff を記録した。R-030 は spec coverage audit により開かれた
   後続 integration follow-up であり、完了済みの R-001 から R-029 milestone を
   再オープンしない。R-031も独立にauthorizedされたStep-5 corpus incrementであり、
-  完了milestoneを書き換えない。
+  完了milestoneを書き換えない。計画済み R-032A/R-032B も別の lower prerequisite であり、
+  documentation / implementation commit は元の 94/100 score を再利用または
+  再オープンしない。
 
 ## 推奨検証
 

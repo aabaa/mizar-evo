@@ -11282,3 +11282,75 @@ post-format owner sizeは
 `type_elaboration.rs=834`、`runner.rs=2658`、statement test leaf
 `34915`。productionは30 paths/59745 lines。measured increaseはexisting
 private runner owner内でcohesiveで、boundary decisionを変更しない。
+
+## Checker Task 258B5C frozen resolver/runner boundary
+
+resolver R-032Aだけがstructural Surface-to-resolved mapをownする。
+`SurfaceResolvedArena::lower(&SurfaceAst, &ModuleId)`はvalidated
+one-to-one same-index arenaまたは`SurfaceResolvedArenaError`を返し、total
+accessor/`validate_against`はwrong source/module/shape/node、stale state、
+recovery/root mismatch、checked structural-path overflowをfail closedする。
+`ResolutionStateMismatch`/`ReferenceKeyMismatch`を含み、全node/child
+payloadは`SurfaceNodeId`。
+later write scopeは`resolved_ast.rs`とそのtestsだけ。
+
+proof scope、ordinal、label provenance derivationはresolver R-032Bだけが
+ownする。exact `impl<'a> ProofLabelSourceCollector<'a>::new`はast/resolvedを
+`'a`でborrowし、moduleをvalidation-only/not stored、namespace/contributionを
+ownedとして`Result<Self, ...>`を返す。`collect(&self)`がcollectionを返す。
+public non-exhaustive errorはarena errorをwrapし、checked scope/path
+overflow nodeは`SurfaceNodeId`。
+`projections()`/`references()`がresultをexposeする。later write scopeは
+`labels.rs`/`labels/tests.rs`だけ。collector/runnerはresolved node、scope
+component、ordinal、originをfabricateできない。
+
+later `mizar-test` ownerはprivate declaration-symbol consumer、
+`runner/declaration_symbol.rs`、`runner/tests.rs`、new
+`runner/tests/declaration_symbol.rs`だけ。R-032A validation、R-032B
+collection、`LabelResolver`をinvokeし、exact unresolved resultをauthenticate
+して`declaration_symbol.label.proof_scope_confinement`へmapする。proof
+topology walk、scope component/statement ordinal assignment、origin
+construction、visibility reimplementationは行わない。
+
+consumer branchはsource byte+normal ASTだけでselectしmetadataではselect
+しない。shared resolver outputからenv/module、namespace derivation、exact
+single local-source contribution/source-id/id-0 provenanceをproveする。
+corruptionは`proof_scope_input`だけ、authenticated unresolved confinement
+だけを`proof_scope_confinement`へmapする。
+
+checker source-statement、resolved/typed installation、statement/citation
+DTO、parser/frontend production、public runner/CLI API、type/proof/
+Core/CFG/VC ownerはexcluded。特にchecker
+`SourceStatementReferenceHandoff`はunresolved inputをrejectするため、
+negative 2件をconsumeできない。structural mapはknown R-032A
+prerequisiteで、conditional runner concernではない。
+
+current documentation taskはexact 48 paired/global design filesをownする。
+R-032A/R-032Bは各々separate two-source-file implementation commitをownする。
+active B5C taskはnew fixture/sidecar pair 2件、trace row 2件、runner files
+3件、synchronized derived documentsだけをownする。このfour-task splitは
+inventoried potential `boundary_violation`を回避し、module split/ownership
+transferをauthorizeしない。
+
+R-032Bはexact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock` upper chain、remaining closed Surface edge allowlist、positive
+edge/forbidden-relocation/mixed-reference-list testをexclusiveにownする。
+Root/CompilationUnitは各exact one normal structural childをrequireし、
+ItemListはdirect normal theorem childだけをscanしてall otherをskip/
+no-descendする。upper negativeはmissing/additional/wrong child、direct Root/
+Compilation theorem relocation、`VisibleItem` wrappingをcoverする。
+default-denied formula/
+token/wrapper、unsupported/recovered/malformed、qualified/grouped/bulk、
+template nodeはordinalもdescentも受けない。runnerはresultをconsumeするが
+tableをbroadenしない。
+
+runner boundaryは`env.module_id() == resolver.module`、module-path-derived
+namespace、matching record module/public `ast.source_id`を持つexact one id-0
+LocalSource contribution、全projection module/namespace/contributionを
+authenticateする。environment module、projection module/namespace/
+contribution、contribution cardinality zero/multiple、id、
+`ImportedSource`/`Summary`/`Builtin` kind、record module、LocalSource source
+idのindependent mutationはすべて
+`declaration_symbol.label.proof_scope_input`だけへmapし、confinement/public
+codeへmapしない。selectionはsource-bytes-plus-normal-ASTだけのまま。

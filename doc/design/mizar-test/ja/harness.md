@@ -4546,3 +4546,99 @@ full librariesはrunner `500/500`/checker `430/430`をPASSする。B1/B5A
 selector、target wrapping、public debug bytes、cross-profile atomicityは
 unchanged。public harness/CLI field、corpus case、expectation、sidecar、
 trace row、diagnostic、semantic acceptance、proof、IR outputはpromoteしない。
+
+## Checker Task 258B5C frozen declaration-symbol route
+
+B5Cはactive fail routeであり、別のprivate checker statement profileではない。
+separate commitされるresolver R-032A structural lowering、次にR-032B
+proof-label collectionへblockされる。runnerは
+`SurfaceResolvedArena::lower(&ast, &module)`/
+`validate_against(&ast, &module)`後、linked exact
+`impl<'a> ProofLabelSourceCollector<'a>` declarationの
+`new(ast: &'a SurfaceAst, module: &ModuleId, namespace, contribution,
+resolved: &'a SurfaceResolvedArena) -> Result<Self, ...>`でconstructし、
+`collect(&self)`をcallする。same `'a`でstoreするのは
+ast/resolvedだけ、moduleはvalidation-only/not stored、namespace/
+contributionはowned。returned
+`projections()`/`references()`だけを`LabelResolver`へ渡す。両lower APIは
+canonical exact resolver enumでfail closedし、R-032A state/key mismatchを含み
+全node/child/overflow payloadは`SurfaceNodeId`。runnerは`LabelScopePath`、source ordinal、
+structural origin、`ResolvedNodeId`をcompute/fabricateしない。
+
+exact 173-byte inner-to-outer/197-byte sibling source、hash、normal Surface
+nodes、scope `[0,0]`/visible-after ordinal 3のprojection `A`、scope
+`[0]`/ordinal 5と`[0,1]`/ordinal 6のcandidateはcrate planでfreeze済み。
+各observationは`1/1/[0]`、zero resolver diagnostics、
+`has_unresolved = true`、one `UnresolvedLabelRef` `A`/expectation
+`ProofOrTheorem`をrequireする。exact projection/reference structural pathは
+`[57,42,8]`/`[57,55,52]`と`[67,47,8]`/`[67,63,60]`。
+structural-map/overflow/resolved/ambiguous/additional/recovered/
+provenance-mismatched resultはrouteをfailさせる。
+
+R-032B collectionはparserよりnarrowで、normal top-level theorem/direct-proof
+owner、exact labelled compact statement、`by`配下のsimple unqualified
+`JustificationClause -> ReferenceList -> Reference` chain、supported nested
+proof、normal `CompactStatement`/`ConclusionStatement` ordinalだけ。
+module-global one-based counterはtheorem rootでresetせず、theorem/
+transparent/excluded subtreeはconsumeしない。referenceはowning-statement
+ordinal、visibilityはlabelled-subtree最大。B5C offsetは`2/3/3/4/5`、
+sibling reference 6。
+same-block completion後はpositive、own-proof self-reference、
+inner-to-enclosing、sibling、earlier theorem `[0]` labelをlater theorem
+`[1]`からciteするrouteはunresolved。distinct theorem rootのsame-spelling
+declarationはconflictしない。これらboundaryとorigin
+stability/uniquenessはlower testでありrunner-derived logicではない。
+originはresolver `labels.md` canonical collision-free `proof-step-v1`
+length-framed grammar、exact token bytes、zero-based occurrence、
+owner-relative proof pathだけを使う。
+
+branch selectionは`FrontendRun.source_text` frozen constant byte equalityと
+exact normal AST profileだけで、metadata/expectationを使わない。shared
+`resolver_symbol_collection`後はenv/module一致、module pathだけからnamespace、
+matching local-source contribution/source id exact one、B5C contribution 0を
+要求する。input/provenance corruptionは
+`declaration_symbol.label.proof_scope_input`だけ、fully authenticated
+unresolved confinementだけが
+`declaration_symbol.label.proof_scope_confinement`をemitする。public codeは
+emptyで、expectation copy/mutationがselection不能なtestを持つ。
+
+future sidecarはempty public diagnostic code、tag
+`active_declaration_symbol`、private detail key
+`declaration_symbol.label.proof_scope_confinement`を持つ
+declaration-symbol/resolve failureで、rejection reason 2件はdistinct。
+write scopeは`declaration_symbol.rs`、`runner/tests.rs`、new
+`runner/tests/declaration_symbol.rs`、new fixture/sidecar pair 2件、trace
+row 2件、synchronized derived documentsだけ。public harness/CLI schema、
+checker/type/proof/Core/CFG/VC outputはno-op。このexact 48-file documentation
+prerequisiteはactive case/coverage creditを作らない。
+
+collectorはresolver closed Surface edge tableにもfreezeする。exact upper
+chain
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> ProofBlock`、
+その後はdirect normal
+`CompactStatement`/`ConclusionStatement`だけ、compact proposition-label
+inspectionだけ、両statementからはdirect `ProofBlock`/
+`JustificationClause`だけである。candidateはexact
+`JustificationClause -> ReferenceList -> simple Reference -> sole identifier
+token` chainを要求する。formula、token、wrapper、unsupported/recovered/
+malformed node、qualified/grouped/bulk citation、templateはordinal/descent
+なしでskipする。positive testは全upper edgeを含む各allowed edgeをcover
+する。upper negativeはRoot/CompilationUnit childのmissing/additional/wrong、
+direct Root/CompilationUnit theorem relocation、`VisibleItem` wrappingを
+coverし、other forbidden relocationはdefault denialを証明する。mixed-list
+testはexact simple `Reference` siblingだけをsource orderで保持し、
+unsupported siblingはrow/descentを追加しない。
+
+runner authenticationはfield-by-fieldである。
+`env.module_id() == resolver.module`を要求し、
+`NamespacePath::new(module.path().as_str())`をderiveして全projection
+namespaceをvalidateする。contributionをexact one acquireし、id 0、
+`LocalSource`、record module、LocalSource source idをpublic field
+`ast.source_id`に対してvalidateする。全projection module/namespace/
+contributionはauthenticated valueと一致する。independent mutationは
+environment module、projection module/namespace/contribution id、
+contribution zero/multiple、contribution id、`ImportedSource`/`Summary`/
+`Builtin`の各kind、contribution record module、LocalSource source idをcover
+する。各mutationは`declaration_symbol.label.proof_scope_input`だけをemitし、
+confinement/public codeはemitしない。copied/mutated expectation下でもsource
+bytes+normal ASTだけがselectorである。

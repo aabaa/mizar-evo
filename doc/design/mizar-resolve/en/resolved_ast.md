@@ -170,7 +170,9 @@ Required result variants:
   expected scope family. The expected family may be a concrete label kind or a
   mixed citation family such as proof-step-or-theorem for `by` references.
 
-`LabelRef` records the normalized label-origin path and the use-site range.
+`LabelRef` records the canonically serialized label-origin path and use-site
+range. Canonical serialization does not normalize identifier spelling; the
+contained spelling remains exact parser token bytes.
 The label-origin path must be stable enough for downstream `ObligationAnchor`
 construction, but it must not imply that the resolver generates obligations.
 
@@ -273,6 +275,7 @@ API surfaces and must remain `#[non_exhaustive]`:
 - `NodeResolutionState`
 - `NodeReferenceKey`
 - `ResolvedArenaError`
+- planned `SurfaceResolvedArenaError`
 - `NameLookupClass`
 - `NameResolution`
 - `LabelKind`
@@ -305,3 +308,95 @@ Task R-004 must add focused unit tests for:
   of equivalent inputs;
 - recovered-shell flags and origin preservation;
 - deterministic ordering for candidate lists and table iteration.
+
+## R-032A Frozen Surface Structural-Arena Contract
+
+R-032A is the first implementation prerequisite for Checker Task 258B5C. It
+repairs the missing validated production mapping between parser-owned
+`SurfaceAst` nodes and resolver-owned structural nodes. Canonical resolver
+responsibility, the architecture/resolved-AST contracts in this document, and
+the existing `SurfaceAst`/`ResolvedArena` APIs are sufficient authority.
+Private structural clones observed in earlier checker work are inventory
+evidence only and are not authority.
+
+The exact API is:
+
+```rust
+SurfaceResolvedArena::lower(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<SurfaceResolvedArena, SurfaceResolvedArenaError>
+
+source_id(&self) -> SourceId
+module(&self) -> &ModuleId
+arena(&self) -> &ResolvedArena
+resolved_node_for(&self, source: SurfaceNodeId) -> Option<ResolvedNodeId>
+validate_against(
+    &self,
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<(), SurfaceResolvedArenaError>
+```
+
+`SurfaceResolvedArena` owns a complete one-to-one, child-first,
+same-index structural arena. For every surface node it preserves the exact
+kind, ordered children, range, recovery state, root, source, and canonical
+module. Its structural node has `SemanticOrigin` anchored to the exact surface
+range, `structural_path = [surface_node_id.index()]`, no semantic key,
+`NodeResolutionState::NotApplicable`, and `reference_key = None`. This arena
+is structural provenance; it does not claim semantic resolution.
+
+`SurfaceResolvedArena` derives `Debug`, `Clone`, `PartialEq`, and `Eq`; it is
+not required to be `Copy`. `SurfaceResolvedArenaError` derives `Debug`,
+implements `Display` and `std::error::Error`, and is not required to be
+`Clone`, `Eq`, or `Copy`.
+
+The exact public declaration is:
+
+```rust
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum SurfaceResolvedArenaError {
+    MissingRoot,
+    StructuralPathComponentOverflow { node: SurfaceNodeId },
+    InvalidChildOrder {
+        node: SurfaceNodeId,
+        child: SurfaceNodeId,
+    },
+    InvalidArena(ResolvedArenaError),
+    SourceMismatch,
+    ModuleMismatch,
+    NodeCountMismatch,
+    RootMismatch,
+    NodeKindMismatch { node: SurfaceNodeId },
+    ChildListMismatch { node: SurfaceNodeId },
+    RangeMismatch { node: SurfaceNodeId },
+    RecoveryMismatch { node: SurfaceNodeId },
+    ResolutionStateMismatch { node: SurfaceNodeId },
+    ReferenceKeyMismatch { node: SurfaceNodeId },
+    OriginMismatch { node: SurfaceNodeId },
+    StructuralPathMismatch { node: SurfaceNodeId },
+}
+```
+
+Downstream matches retain a wildcard arm. A structural node whose state is not
+exactly `NodeResolutionState::NotApplicable` maps to
+`ResolutionStateMismatch`; any non-`None` reference key maps to
+`ReferenceKeyMismatch`. Conversion from the surface `usize` index to the
+public path's `u32` component is checked: no unwrap, saturation, truncation, or
+panic is allowed. Tests reject every declared mismatch independently,
+including wrong source/module/arena, missing/stale nodes, changed shape or
+recovery, state/key injection, root mismatch, and overflow. Equivalent input
+preserves complete mapping and deterministic ids.
+
+R-032A implementation ownership is exactly
+`crates/mizar-resolve/src/resolved_ast.rs`,
+`crates/mizar-resolve/src/resolved_ast/tests.rs`, and synchronized resolver
+design records. It is one commit before R-032B. It changes no label collection,
+runner, fixture, sidecar, trace status/count, parser/frontend production,
+checker/type/proof semantics, or Cargo/workspace metadata.
+
+The arena node's minimal structural origin path `[surface_node_id.index()]` is
+intentionally different from the richer projection/reference table origins
+specified by R-032B in `labels.md`. R-032A validates the former and R-032B
+validates the latter; neither is substituted for the other.

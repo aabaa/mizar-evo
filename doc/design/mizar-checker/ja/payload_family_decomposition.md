@@ -1479,3 +1479,41 @@ B5B imported provenanceはpairできない。
 qualified/grouped/bulk import、private-import diagnostic、fact、proof
 progress、truth、theorem acceptance/publication、status propagation、ATP、
 Core、CFG、VCはdeferred。
+
+## Task 258B5C active negative decomposition
+
+B5Cはfourth checker reference profileではない。resolver failure
+two件だけからなる。proof scope `[0,0]`でdeclareしたlabelはenclosing
+`[0]` scopeからvisibleでなく、sibling `[0,1]`からもvisibleでない。各routeは
+one private/local-only proof-step projectionとone unqualified
+proof-or-theorem candidateを含み、exact `UnresolvedLabelRef`でterminateする。
+
+workはdocumentation、resolver R-032A structural arena、resolver R-032B
+proof-label collection、active declaration-symbol fixtures/runner/traceへ
+decomposeし、各commitをseparateにする。R-032Aはsame-index structural
+provenanceだけ、R-032Bだけがproof scope、module-global one-based completion
+ordinal、canonical `proof-step-v1` origin、exact `CompactStatement`/
+`ConclusionStatement`+justification/reference-chain candidateをestablishする。
+checker base/reference pair、local/imported
+citation target、label/citation row、typed installation、final cloneはない。
+structure construction、selector access、functional/field update、
+Tasks 252/253、ancestor B5A、imported B5B、B1へのcross-family edgeは
+すべてempty。
+qualified/grouped/bulk citation、public diagnostic code、proof discharge、
+fact、acceptance、downstream IRはdeferred。
+
+lower resolver familyはexact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock -> CompactStatement/ConclusionStatement`
+allowlist、compact proposition-label inspection、direct statement proof/
+justification child、sole simple-reference identifier chainへexplicitにclose
+する。Root/CompilationUnit exact-one structural childとItemList direct-normal
+theorem scanはmandatory。その他のsubtreeはno-row/no-ordinal/no-descentで、
+positive upper/lower edge、negative missing/additional/wrong、direct Root/
+Compilation relocation、`VisibleItem` wrapping、other forbidden-relocation/
+mixed-list testはchecker ownershipより下位である。
+
+env/module、derived namespace、exact one id-0 LocalSource record/source id、
+全projection fieldのrunner provenance authenticationはseparate input-only
+familyのまま。complete independent mutation matrixはchecker payload/
+confinement resultを作れない。

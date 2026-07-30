@@ -694,3 +694,37 @@ The imported theorem `Ref` is resolver label provenance, not a BindingEnv
 binding or statement fact. The separate import-summary prerequisite and the
 later upper implementation change no binding source, row, fingerprint,
 scope rule, diagnostic, or BindingEnv API.
+
+## Task 258B5C Frozen Unresolved-Label Binding Boundary
+
+The two B5C negatives stop in resolver declaration-symbol handling before
+checker binding transport. Their raw resolver environments each remain
+`1/0/1/1/0`; that count is not a BindingEnv profile. R-032A first provides
+the validated structural arena, and R-032B derives proof scopes `[0]`,
+`[0,0]`, and `[0,1]` and returns one
+`UnresolvedLabelRef`, while no `BindingContextId`, `BindingId`, visible
+binding, statement fact, or checker binding fingerprint is constructed.
+
+The active runner must consume this resolver-owned failure and may not
+synthesize a binding context to route it through the checker. B5C therefore
+changes no BindingEnv source, row, public API, diagnostic, scope rule, or
+test. Tasks 252/253 and B1/B5A/B5B remain exact and disjoint.
+
+R-032B's module-global one-based statement counter, completion maximum, and
+canonical `proof-step-v1` origin are resolver label data, never BindingEnv
+ordinals or fingerprints. Source-byte runner selection and private
+`proof_scope_input`/`proof_scope_confinement` details likewise add no
+BindingEnv consumer. The current documentation transaction spans 48 design
+files only.
+
+The R-032B default-deny edge table begins with exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`: Root/CompilationUnit each require exact-one normal structural
+children, and ItemList scans only direct normal theorem children. It assigns
+no ordinal and performs no descent for other item children,
+formula/token/wrapper, unsupported/recovered/malformed,
+qualified/grouped/bulk, or template forms; none can create a BindingEnv
+context. Likewise, env/module, projection namespace/module/contribution, and
+exact id-0 LocalSource record/source-id mutations are runner input
+authentication only. Their sole `proof_scope_input` output does not enter
+this crate.

@@ -4813,3 +4813,102 @@ B1/B5A selectors, target wrapping, public debug bytes, and cross-profile
 atomicity remain unchanged. No public harness/CLI field, corpus case,
 expectation, sidecar, trace row, diagnostic, semantic acceptance, proof, or
 IR output is promoted.
+
+## Checker Task 258B5C Frozen Declaration-Symbol Route
+
+B5C is an active fail route, not another private checker statement profile.
+It is blocked first on separately committed resolver R-032A structural
+lowering, then R-032B proof-label collection. The runner calls
+`SurfaceResolvedArena::lower(&ast, &module)` and
+`validate_against(&ast, &module)`, then uses the exact linked
+`impl<'a> ProofLabelSourceCollector<'a>` declaration:
+`new(ast: &'a SurfaceAst, module: &ModuleId, namespace, contribution,
+resolved: &'a SurfaceResolvedArena) -> Result<Self, ...>`, followed by
+`collect(&self)`. Only ast/resolved share and store `'a`; module is
+validation-only/not stored, and namespace/contribution are owned. It feeds
+only returned
+`projections()`/`references()` to `LabelResolver`. Both lower APIs fail
+closed with the exact canonical resolver enums: R-032A includes state/key
+mismatch variants and all node/child/overflow payloads are `SurfaceNodeId`.
+The runner never computes a
+`LabelScopePath`, source ordinal, structural origin, or `ResolvedNodeId`.
+
+The exact 173-byte inner-to-outer and 197-byte sibling sources, hashes,
+normal Surface nodes, projection `A` at scope `[0,0]`/visible-after ordinal
+3, and candidates at `[0]`/ordinal 5 and `[0,1]`/ordinal 6 are frozen in the
+crate plan. Each observation requires `1/1/[0]`, zero resolver diagnostics,
+`has_unresolved = true`, and one `UnresolvedLabelRef` for `A` with
+`ProofOrTheorem` expectation. Exact projection/reference structural paths
+are `[57,42,8]`/`[57,55,52]` and
+`[67,47,8]`/`[67,63,60]`. Any structural-map, overflow, resolved,
+ambiguous, additional, recovered, or provenance-mismatched result fails the
+route.
+
+R-032B collection is deliberately narrower than the parser: normal
+top-level theorem/direct-proof owners, exact labelled compact statements,
+self unqualified `JustificationClause -> ReferenceList -> Reference` chains
+under `by`, supported nested proofs, and normal `CompactStatement`/
+`ConclusionStatement` ordinals only. The module-global one-based counter is
+not reset across theorem roots; theorem/transparent/excluded subtrees
+consume none, references use owning-statement ordinals, and visibility is
+the labelled-subtree maximum. Exact B5C offsets are `2/3/3/4/5` and sibling
+reference 6. Same-block post-completion is positive; own-proof
+self-reference, inner-to-enclosing, sibling, and an earlier theorem `[0]`
+label cited from later theorem `[1]` are unresolved. Same-spelling
+declarations in distinct theorem roots do not conflict. These boundaries
+and origin stability/uniqueness are lower tests, not runner-derived logic.
+Origins use only resolver `labels.md`'s collision-free `proof-step-v1`
+length-framed grammar, exact token bytes, zero-based occurrences, and
+owner-relative proof paths.
+
+The branch is selected solely by `FrontendRun.source_text` byte equality to
+a frozen constant plus its exact normal AST profile—never metadata or
+expectations. After shared `resolver_symbol_collection`, it requires matching
+env/module, derives namespace only from the module path, and selects exactly
+one matching local-source contribution/source id, with B5C contribution 0.
+Input/provenance corruption emits only
+`declaration_symbol.label.proof_scope_input`; only fully authenticated
+unresolved confinement emits
+`declaration_symbol.label.proof_scope_confinement`. Public codes stay empty,
+and tests copy/mutate expectations to prove they cannot select the route.
+
+The future sidecars are declaration-symbol/resolve failures with empty public
+diagnostic codes, tag `active_declaration_symbol`, and private detail key
+`declaration_symbol.label.proof_scope_confinement`; the two rejection reasons
+remain distinct. The write scope is only `declaration_symbol.rs`,
+`runner/tests.rs`, new `runner/tests/declaration_symbol.rs`, the two new
+fixture/sidecar pairs, two trace rows, and synchronized derived documents.
+Public harness/CLI schemas and checker, type, proof, Core/CFG/VC output are
+no-ops. This exactly 48-file documentation prerequisite creates no active
+case or coverage credit.
+
+The collector is additionally frozen to the resolver's closed Surface edge
+table: exact upper chain
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> ProofBlock`,
+then only direct normal
+`CompactStatement`/`ConclusionStatement`; compact proposition-label
+inspection only; and from either statement only direct `ProofBlock` and
+`JustificationClause`. A candidate requires the exact
+`JustificationClause -> ReferenceList -> simple Reference -> sole identifier
+token` chain. Formulae, tokens, wrappers, unsupported/recovered/malformed
+nodes, qualified/grouped/bulk citations, and templates are skipped without
+an ordinal or descent. Positive tests cover every allowed edge, including
+each upper edge. Upper negatives cover missing/additional/wrong Root and
+CompilationUnit children, direct Root/CompilationUnit theorem relocation,
+and `VisibleItem` wrapping; other forbidden relocation proves default
+denial. Mixed-list tests preserve only exact simple `Reference` siblings in
+source order while unsupported siblings add no row or descent.
+
+Runner authentication is field-by-field. It requires
+`env.module_id() == resolver.module`, derives
+`NamespacePath::new(module.path().as_str())`, validates every projection
+namespace, acquires exactly one contribution, and validates id 0,
+`LocalSource`, record module, and LocalSource source id against public field
+`ast.source_id`. Every projection module, namespace, and contribution must
+equal those authenticated values. Independent mutations cover environment
+module; projection module/namespace/contribution id; zero and multiple
+contributions; contribution id; each of `ImportedSource`, `Summary`, and
+`Builtin`; contribution record module; and LocalSource source id. Each
+mutation emits only `declaration_symbol.label.proof_scope_input`, never
+confinement or a public code. Source bytes plus normal AST remain the only
+selector, including under copied or mutated expectations.

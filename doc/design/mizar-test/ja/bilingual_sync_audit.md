@@ -1321,3 +1321,49 @@ design filesがupper logical taskのderived outputである点も一致する。
 spec-coverage updateはnarrative onlyで、`tests = []`と全trace
 status/count/backlink/owner/credit fieldはunchanged。synchronization
 exceptionは残らない。
+
+## Checker Task 258B5C frozen-contract synchronization
+
+paired runner plan/harness/boundary audit/TODOはsame B5B commit
+`f27d2c9169b08078f00b75c4a57f94e30fa28f59`、Chapter 15/16 authority、
+classification、strict docs/R-032A/R-032B/active order、resolver-owned
+`SurfaceResolvedArena`/`ProofLabelSourceCollector` APIをfreezeする。
+両languageはsame exact `Result` signature、non-exhaustive fail-closed error
+boundary、total arena/collection accessorをfreezeする。runner-fabricated
+`LabelScopePath`/ordinal/`SemanticOrigin`/`ResolvedNodeId`を禁止し、
+checker unresolved installationをexcludeする。exact lifetime storage、
+validation-only module、`Self` return、`SurfaceNodeId` payload/state-key
+error、overflow nodeもidentical。
+
+exact 173/197-byte source/hash、61/71-node frontend identity、
+declaration/citation node/range/ordinal/scope path、raw environment、one
+projection/candidate、unresolved `1/1/[0]` resultを同期する。completion
+visibility ordinal 3、general theorem-root indexing、narrow collector
+inclusion/exclusion、exact structural path/`LabelOriginPath` field、
+same-block positive、own-proof/enclosing/sibling/later-theorem negative、
+distinct-root non-conflict、provenance stability/uniqueness testも同期する。
+module-global one-based ordinal、`ConclusionStatement`、exact justification/
+reference chain、canonical `proof-step-v1` framing、source-byte+normal-AST
+selection、shared resolver/contribution authentication、input/confinement
+detail separation、expectation-copy guard、exact 48-file scopeも同期する。future
+fixture/sidecar path 2件、declaration-symbol metadata/private detail key、
+trace ID 2件、active consumer files、mutation/isolation tests、projected
+count change、semantic deferral、audit no-credit rule、exit criteriaも同期。
+
+このdocumentation prerequisiteにsynchronization exceptionはなく、
+production、fixture、expectation、sidecar、trace row/status/count、public
+schema、semantic outputを変更しない。review/verification resultは実測後
+だけ追記する。
+
+EN/JAはexact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock` upper chain、Root/CompilationUnit exact-one normal child、
+direct-normal theorem scan、remaining default-deny Surface edge table、
+positive-edge/missing/additional/wrong/forbidden-relocation/`VisibleItem`/
+mixed-list test、全excluded formのno-ordinal/no-descent behavior
+も同期する。field-by-field runner provenance matrixも同じで、environment
+module、全projection module/namespace/contribution、exact one id-0
+LocalSource contribution kind/record module/public `ast.source_id`、
+zero/multiple cardinality、`ImportedSource`/`Summary`/`Builtin` substitution
+を含む。全mutationはinput-onlyでconfinement/public-code outputではない。
+selectionはfrozen source bytes+normal AST、scopeは48 filesのまま。

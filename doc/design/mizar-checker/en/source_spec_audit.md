@@ -5017,3 +5017,47 @@ There is no blocking `spec_gap`, `source_undocumented_behavior`,
 `test_expectation_drift`, `boundary_violation`, or
 `repo_metadata_conflict`; the stale implementation-status prose repaired in
 this logical task was `design_drift`.
+
+## Task 258B5C Frozen Authority Result
+
+`doc/spec/en/15.statements.md` section 15.10 and
+`doc/spec/en/16.theorems_and_proofs.md` sections 16.4.2 and 16.5.1
+authorize both active negatives: proof-step labels are local to their
+enclosing reasoning block, and a citation may use an earlier proposition
+only from the lexical declaring proof scope or one of its descendants;
+inner-to-enclosing and sibling citations are forbidden. Chapter 11 section
+11.2 is contextual ordinary-symbol authority, not the proof-label rule.
+
+Fresh inventory classifies the missing production source walk as medium
+`source_drift` and a potential `boundary_violation` if implemented in the
+runner, stale B5C/B5B design status as medium `design_drift`, and absent
+active fixtures as medium `test_gap`. The unspecified public resolver
+diagnostic code is a low deferred `spec_gap`; the frozen internal key
+`declaration_symbol.label.proof_scope_confinement` and empty public
+diagnostic-code lists make it nonblocking. There is no current
+`boundary_violation`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `repo_metadata_conflict`.
+
+This documentation commit changes no authority artifact or coverage state.
+R-032A structural lowering and R-032B proof-label collection must separately
+precede the two active declaration-symbol fixtures and trace requirements.
+Their exact lifetime/error/ordinal/subtree/provenance contracts remain
+derived in the linked resolver documents; source-byte-plus-normal-AST runner
+selection and the private input/confinement details add no language rule.
+Only that later active task may move cases `419 -> 421`,
+requirements `387 -> 389`, failures `191 -> 193`, and active declaration
+cases `5 -> 7`. Type requirements stay `253/241`, R-G007 closes only
+partially, and `spec.en.checker.formula_statement.source_payloads` remains
+`deferred` with `tests = []`.
+
+The frozen lower default-deny table and provenance authentication add no
+specification rule or coverage credit. The former starts with exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`, exact-one normal Root/CompilationUnit structural children, and
+direct-normal theorem scanning, then admits only the supported-statement
+edges and exact simple-reference
+identifier chain, with all other forms no-ordinal/no-descent; the latter
+validates env/module, derived namespace, exact one id-0 LocalSource record/
+source id, and every projection field. All independent corruptions are
+`proof_scope_input`, never confinement or public diagnostics. The exact
+48-file scope is unchanged.

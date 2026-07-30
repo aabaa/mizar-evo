@@ -671,3 +671,35 @@ imported theorem `Ref`はBindingEnv binding/statement factではなくresolver
 label provenanceである。separate import-summary prerequisiteとlater upper
 implementationはbinding source/row/fingerprint/scope rule/diagnostic/
 BindingEnv APIを変更しない。
+
+## Task 258B5C frozen unresolved-label binding boundary
+
+two B5C negativesはchecker binding transportより前のresolver
+declaration-symbol handlingでstopする。各raw resolver environmentの
+`1/0/1/1/0`はBindingEnv profileではない。R-032Aがvalidated structural
+arenaを先に提供し、R-032Bはproof scope `[0]`、`[0,0]`、`[0,1]`をderiveし
+one `UnresolvedLabelRef`を返す一方、
+`BindingContextId`、`BindingId`、visible binding、statement fact、checker
+binding fingerprintをconstructしない。
+
+active runnerはresolver-owned failureをconsumeし、checker経由にrouteする
+binding contextをsynthesizeしてはならない。したがってB5CはBindingEnv
+source/row/public API/diagnostic/scope rule/testを変更しない。Tasks 252/253と
+B1/B5A/B5Bはexactかつdisjointのまま。
+
+R-032B module-global one-based statement counter、completion maximum、
+canonical `proof-step-v1` originはresolver label dataで、BindingEnv ordinal/
+fingerprintではない。source-byte runner selectionとprivate
+`proof_scope_input`/`proof_scope_confinement` detailもBindingEnv consumerを
+追加しない。current documentation transactionは48 design filesだけ。
+
+R-032B default-deny edge tableはexact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`から始まり、Root/CompilationUnitは各exact-one normal structural
+child、ItemListはdirect normal theorem childだけをscanする。other item
+child、formula/token/wrapper、unsupported/
+recovered/malformed、qualified/grouped/bulk、template formにordinal/descentを
+与えず、いずれもBindingEnv contextを作れない。同様にenv/module、
+projection namespace/module/contribution、exact id-0 LocalSource record/
+source-id mutationはrunner input authenticationだけである。sole
+`proof_scope_input` outputはこのcrateへ入らない。

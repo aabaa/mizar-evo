@@ -6144,6 +6144,62 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage and inspect only Task-258B5B upper, create the dedicated
-  implementation commit, verify post-commit invariants, and fresh-inventory
-  the next dependency-ready task.
+- [x] Stage and inspect only Task-258B5B upper, create dedicated
+  implementation commit
+  `f27d2c9169b08078f00b75c4a57f94e30fa28f59`, verify clean post-commit
+  invariants, and fresh-inventory the next dependency-ready task.
+
+## Checker Task 258B5C Frozen-Contract Documentation Prerequisite
+
+- [x] Classify the absent production proof-label source walk as medium
+  `source_drift` and potential `boundary_violation`, the placeholder/stale
+  status as `design_drift`, absent active fixtures as `test_gap`, and the
+  unspecified public resolver diagnostic code as low deferred `spec_gap`.
+- [x] Freeze the exact 173/197-byte sources and hashes, normal
+  61/root-60 and 71/root-70 Surface identities, label/citation ranges,
+  proof scopes `[0]`, `[0,0]`, `[0,1]`, and source-statement ordinals.
+- [x] Record the known-absent structural Surface-to-resolved provider as an
+  authorized resolver prerequisite, not a conditional after collection.
+- [x] Freeze R-032A `SurfaceResolvedArena` lowering/accessors, same-index
+  structural invariants, fail-closed validation/overflow errors, dedicated
+  `resolved_ast.rs` ownership, and tests.
+- [x] Freeze R-032B exact `Result`-returning collector API, narrow source
+  inclusion/exclusion, generic theorem-root scopes, completion visibility
+  ordinal 3, exact origin paths, dedicated `labels.rs` ownership, and
+  positive/negative/provenance/cross-theorem tests.
+- [x] Freeze same-`'a` ast/resolved storage, validation-only module, owned
+  namespace/contribution, `Self` return, `SurfaceNodeId` state/key/overflow
+  errors, module-global one-based ordinals, `ConclusionStatement` chain, and
+  canonical `proof-step-v1` identity.
+- [x] Freeze the separate dependency order: documentation, resolver R-032A,
+  resolver R-032B, then active declaration-symbol fixtures/runner/trace.
+- [x] Freeze the two future fixture/sidecar contracts, detail key
+  `declaration_symbol.label.proof_scope_confinement`, empty public
+  diagnostic codes, two trace ids, and future count impact.
+- [x] Freeze source-byte-plus-normal-AST runner selection, exact shared
+  resolver/contribution-0 authentication, separate private input/confinement
+  details, expectation-copy guards, and measured 48-file docs scope.
+- [x] Exclude checker profile/DTO/reference/citation rows, binding contexts,
+  keyed semantic label-resolution results, typed/final installation, every
+  cross-family edge, and all semantic output.
+- [x] Complete independent specification, test-contract, boundary,
+  source/documentation, and bilingual reviews with **NO FINDINGS**.
+- [x] Reproduce the unchanged focused/crate/workspace, formatting, Clippy,
+  five-CLI, count/hash, forbidden-artifact, repository-state, and stash
+  gates.
+- [x] Complete independent final quality with all nine hard gates PASS and
+  a valid score of at least `90/100`.
+- [x] Stage only synchronized B5C design documentation, create one
+  prerequisite commit, verify post-commit invariants, and fresh-inventory
+  the `mizar-resolve` R-032A prerequisite.
+- [x] Freeze R-032B's exact
+  `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+  ProofBlock` upper chain, exact-one normal Root/CompilationUnit children,
+  direct-normal theorem scanning, no ordinal/no descent for excluded forms,
+  and positive-edge plus missing/additional/wrong/direct-relocation/
+  `VisibleItem`/mixed-list tests.
+- [x] Freeze runner authentication of env/module, derived namespace, exact
+  one id-0 LocalSource record/source id, and every projection provenance
+  field, with the complete independent input-only mutation matrix.
+- [x] Preserve source-bytes-plus-normal-AST selection, expectation
+  non-selection, empty public codes, and the exact 48-file scope.

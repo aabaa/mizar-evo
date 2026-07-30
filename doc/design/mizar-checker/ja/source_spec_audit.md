@@ -4808,3 +4808,47 @@ blocking `spec_gap`、`source_undocumented_behavior`、
 `test_expectation_drift`、`boundary_violation`、
 `repo_metadata_conflict`はなく、このlogical taskがrepairするstale
 implementation-status proseは`design_drift`。
+
+## Task 258B5C frozen authority result
+
+`doc/spec/en/15.statements.md` section 15.10と
+`doc/spec/en/16.theorems_and_proofs.md` sections 16.4.2、16.5.1はboth
+active negativeをauthorizeする。proof-step labelはenclosing reasoning
+block localで、citationがearlier propositionを使えるのはlexical declaring
+proof scopeまたはそのdescendantだけであり、inner-to-enclosing/sibling
+citationは禁止。Chapter 11 section 11.2はordinary symbolのcontextual
+authorityで、proof-label ruleではない。
+
+fresh inventoryではmissing production source walkをmedium `source_drift`、
+runnerでimplementした場合のpotential `boundary_violation`、stale B5C/B5B
+design statusをmedium `design_drift`、absent active fixtureをmedium
+`test_gap`とclassifyする。unspecified public resolver diagnostic codeはlow
+deferred `spec_gap`だが、frozen internal key
+`declaration_symbol.label.proof_scope_confinement`とempty public
+diagnostic-code listによりnonblocking。current `boundary_violation`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`repo_metadata_conflict`はない。
+
+このdocumentation commitはauthority artifact/coverage stateを変更しない。
+R-032A structural loweringとR-032B proof-label collectionが別commitで
+two active declaration-symbol fixture/trace requirementに先行する。
+exact lifetime/error/ordinal/subtree/provenance contractはlinked resolver
+documentsのderived contractで、source-byte-plus-normal-AST runner
+selectionとprivate input/confinement detailはlanguage ruleを追加しない。
+そのlater active taskだけがcases `419 -> 421`、requirements
+`387 -> 389`、failures `191 -> 193`、active declaration cases `5 -> 7`
+を変更できる。type requirementsは`253/241`のまま、R-G007はpartial
+closureのみ、
+`spec.en.checker.formula_statement.source_payloads`は`tests = []`の
+`deferred`を維持する。
+
+frozen lower default-deny table/provenance authenticationはspecification
+rule/coverage creditを追加しない。前者はexact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`、Root/CompilationUnit exact-one normal structural child、
+direct-normal theorem scanから始まり、supported-statement edgeとexact
+simple-reference identifier chainだけを
+admitし、全other formはno-ordinal/no-descent。後者はenv/module、derived
+namespace、exact one id-0 LocalSource record/source id、全projection fieldを
+validateする。全independent corruptionは`proof_scope_input`で、
+confinement/public diagnosticではない。exact 48-file scopeはunchanged。

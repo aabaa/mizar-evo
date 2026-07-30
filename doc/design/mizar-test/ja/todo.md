@@ -2912,6 +2912,64 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   count/hash/scope gateをPASS。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] B5B upper logical taskだけをstage/inspectし、implementation commitを
-  1件作り、clean post-commit/stash invariantをverifyしてnext taskをfresh
+- [x] B5B upper logical taskだけをstage/inspectし、implementation commit
+  `f27d2c9169b08078f00b75c4a57f94e30fa28f59`を作り、clean
+  post-commit/stash invariantをverifyしてnext taskをfresh inventory。
+
+## Checker Task 258B5C frozen-contract documentation prerequisite
+
+- [x] clean post-B5B inventoryからB5Cをselectし、Chapter 15 §15.10と
+  Chapter 16 §§16.4.2/16.5.1をlabel-scope authority、Chapter 11 §11.2を
+  contextual onlyとしてfreeze。
+- [x] normal-source proof-label projection path欠如をpotential
+  `boundary_violation`を伴うMedium `source_drift`、stale derived ownershipを
+  `design_drift`、active confinement case欠如を`test_gap`、public resolver
+  code未規定をLow deferred/nonblocking `spec_gap`とclassify。
+- [x] exact 173-byte inner-to-outer/197-byte sibling source、hash、normal
+  frontend identity、proof scope、statement ordinal、declaration/reference
+  node/range、expected unresolved resolver outcomeをfreeze。
+- [x] structurally validated Surface-to-resolved providerをarchitecture
+  authority十分なknown resolver prerequisiteとしてrecord。
+- [x] dependency orderをdocumentation-only commit、resolver R-032A
+  structural arena/map、resolver R-032B proof-label source collector、
+  active B5C declaration-symbol fixture/sidecar/trace/runner commitとして
+  freeze。
+- [x] 両exact `Result`-returning API/error、narrow R-032B
+  inclusion/exclusion、theorem-root path、completion visibility ordinal 3、
+  exact label/semantic origin、lower positive/negative/provenance testをfreeze。
+- [x] same-`'a` ast/resolved storage、validation-only module、owned
+  namespace/contribution、`Self` return、exact `SurfaceNodeId` error payload、
+  global one-based ordinal、`ConclusionStatement`/reference chain、
+  canonical `proof-step-v1` identityをfreeze。
+- [x] active runnerにはvalidated resolver-owned projection/candidateの
+  consumeを要求し、checker installationとrunner-fabricated id/semantic
+  proof scope/ordinal/originを禁止。
+- [x] source-byte+normal-AST-only selection、shared env/moduleとexact
+  local-source contribution-0 authentication、separate private
+  input/confinement detail、expectation-copy guard、exact 48-file docs
+  scopeをfreeze。
+- [x] future fail fixture 2件、sidecar stage/domain/phase/category、empty
+  public diagnostic codes、private detail key、trace requirement ID 2件、
+  projected count change、exact consumers/tests/exclusion/audit impact/exit
+  criteriaをfreeze。
+- [x] repeated specification、test-contract、source/documentation、
+  bilingual、final-quality reviewをno findings、全hard gates PASS、valid
+  quality `90/100`以上でcomplete。
+- [x] production/corpus/expectation/sidecar/trace status/countを変更せず、
+  current crate/workspace、format、Clippy、five CLI、count/hash/scope、
+  authority no-op、repository-state、protected-stash gateをreproduce。
+- [x] synchronized B5C frozen-contract documentationだけをstage/commitし、
+  clean post-commit/stash invariantをverifyしてresolver R-032Aをfresh
   inventory。
+- [x] resolver exact
+  `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+  ProofBlock` upper chain、exact-one normal upper child、direct-normal theorem
+  scan、remaining default-deny no-ordinal/no-descent form、positive-edge/
+  missing/additional/wrong/direct-relocation/`VisibleItem`/mixed-list testを
+  freeze。
+- [x] environment module、projection module/namespace/contribution、
+  contribution zero/multiple cardinality、id、全non-local kind、record
+  module、LocalSource source idのindependent mutationをfreezeし、すべて
+  `proof_scope_input`だけへmap。
+- [x] source-bytes-plus-normal-AST selection、expectation non-selection、
+  empty public code、exact 48-file scopeをunchangedに維持。

@@ -1527,3 +1527,31 @@ cloneはbyte-identical B1/B5A local behaviorとexact B5B
 formula、fact、accepted statement、proof、proof node、terminal goal、
 diagnostic、status propagation、downstream IRはempty。public final-owner
 schema/semantic APIを変更しない。
+
+## Task 258B5C frozen final-assembly exclusion
+
+両B5C candidateは`has_unresolved = true`の`UnresolvedLabelRef`へresolve
+する。このためsource-statement handoffがtyped installation前にrejectし、
+final assemblyがcloneするB5C stateはない。R-032A structural mirrorは
+`NodeResolutionState::NotApplicable`/no keyのままでsemantic successでは
+なく、`LabelResolution::Resolved` result、label/citation/reference DTO、
+checked formula、fact、accepted statement、
+proof node、goal、diagnostic carrier、downstream IR rowはない。
+
+final assemblyはactive resolver failureをempty/partial checker profileへ
+変換してはならない。B1/B5A/B5B clone validationと全existing debug byteは
+unchangedで、two negative sourceの全Surface nodeはsyntax-ownedのまま。
+
+default-deny R-032B traversalはexact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`、Root/CompilationUnit exact-one normal structural child、
+direct-normal theorem scanをrequireする。other item childとexcluded
+formula/token/wrapper、
+unsupported/recovered/malformed、qualified/grouped/bulk、template nodeに
+collected row/ordinal/descentがなく、`ResolvedTypedAst` ownerにはなれない。
+positive-edge/forbidden-relocation/mixed-list testはresolver-ownedのまま。
+
+environment module、projection module/namespace/contribution、
+contribution cardinality/id/kind/record module/source idのrunner mutationは
+`proof_scope_input`で停止し、final assemblyへ到達したりauthenticated
+confinementへreclassifyされたりできない。

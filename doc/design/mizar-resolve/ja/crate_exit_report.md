@@ -35,6 +35,8 @@ milestone scope: `mizar-resolve` task R-001〜R-029。
   diagnostics は crate-local/internal に保つ。
 - import / name / dot-chain / label fact についてのより広い semantic `.miz` assertion は
   R-G007 `test_gap` のまま。
+- 計画済み R-032A/R-032B structural-map/proof-label projection と後続 Checker Task
+  258B5C active confinement case は post-close-out logical task である。
 
 ## milestone gate
 
@@ -205,3 +207,49 @@ same-return sourceはexactなnew internal keyでactiveとなり、trace row 1件
 different-return sidecarは不変である。元の94/100 milestone scoreをpost-extension scoreとして
 再利用せず、このextensionに必要な独立read-only implementation/consistency reviewとfull
 verificationはtask handoffに記録する。
+
+## 計画済み R-032A / R-032B / Checker Task 258B5C lower extension
+
+R-032 は post-close-out prerequisite umbrella であり、完了済み R-001〜R-029
+milestone を再オープンまたは再採点しない。canonical Chapter 15 §15.10 と
+Chapter 16 §§16.4.2/16.5.1 が proof-label confinement を authorize する。
+core `LabelResolver` prefix behavior は正しい。欠けた normal-source
+`SurfaceAst` proof-step declaration/simple-unqualified reference collector は
+Medium `source_drift`、旧 R-023 full-source-walk attribution は
+`design_drift`。active B5C coverage 欠如は R-G007 `test_gap`、public code 欠如は
+Low deferred R-G001 `spec_gap` のまま。
+
+順序は docs、R-032A、R-032B、active B5C の4 separate commit。R-032A は
+`resolved_ast.rs` / `resolved_ast/tests.rs` だけを所有し、`resolved_ast.md`
+exact validated arena/error table（state/reference-key mismatch を含む）を実装する。
+R-032B は `labels.rs` /
+`labels/tests.rs` だけを所有し、`labels.md` exact collector/error/subtree/
+completion/scope/provenance contract を実装する。
+
+top-level theorem root は stable module source-order `[0]`, `[1]`, ...。
+nested scope は owner-relative。label は own proof を含む labelled compact
+subtree completion 後に visible。module-global one-based statement counter は
+theorem ごとに reset せず、exact length-framed `proof-step-v1` が identity。
+R-032B exact `'a` impl は AST/arena borrow だけを store、namespace/contribution
+を own、module を validate するが store せず、`resolved.module()` を使う。
+R-032A map だけを使い、callback、
+unmapped side channel、fabricated id、unchecked conversion、panic はない。
+R-032A arena origin `[surface_id]` と R-032B richer table origin は意図的に
+異なる。R-032B Surface walk は `labels.md` exhaustive default-deny direct-edge
+table で、upper chain は exact `Root` -> `CompilationUnit` -> `ItemList` ->
+direct theorem、unlisted/invalid edge は no row/ordinal/descent。test は
+named-error/mismatch/overflow matrix、inner/sibling と correctly
+directed earlier-theorem-to-later-theorem confinement、own-proof rejection /
+post-completion success、inclusion/exclusion/recovery/provenance/mutation、
+positive-per-edge、mixed-list filtering、representative all-other を覆う。
+missing/additional/wrong/relocated/wrapped upper-chain negative も覆う。
+
+R-032A/R-032B は parser/frontend production、Cargo/workspace metadata、他 resolver
+module、checker/type/proof/Core/CFG/VC semantics、public diagnostic code、
+grouped/qualified/bulk/imported/definition/registration label work、`.miz`、
+sidecar、trace status/count、active runner change を除外する。両方 land 後に
+fresh inventory が pass した場合だけ、後続 private `mizar-test`
+`declaration_symbol` consumer は exact key
+`declaration_symbol.label.proof_scope_confinement` を所有してよい。public
+checker `SourceStatementReferenceHandoff` は unresolved reference を拒否するため
+除外したままにする。

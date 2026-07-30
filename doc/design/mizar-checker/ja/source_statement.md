@@ -3449,3 +3449,47 @@ pre-existing statement profileは従来のimmediate-child ordering ruleを
 維持する。exact-profile testはこの区別をrecordする。fact、acceptance、
 proof、goal、diagnostic、downstream IRはempty、B5Cとactive corpus/trace
 coverageはdeferred。
+
+## Task 258B5C frozen unresolved-reference exclusion
+
+R-032Aはvalidated structural arena、R-032Bは`A`についてscope `[0,0]`/
+completion後ordinal 3 visibleのone private/local-only proof-step
+projectionと、enclosing scope `[0]`またはsibling scope `[0,1]`のone simple
+unqualified reference candidateをsupplyする。両resolution resultは
+`has_unresolved = true`でexact one `UnresolvedLabelRef`を持つ。
+
+`SourceStatementReferenceHandoff`はこのstateを意図的にrejectし、reference
+nodeにkeyed `Resolved` resultを要求する。したがってtwo B5C negativesは
+`SourceStatementLabelInput`、`SourceStatementCitationInput`、immutable
+label/citation row、resolver projection replay、statement/reference profile、
+owned-node partition、debug outputをpublishしない。declaration-symbol
+runnerはR-032A structural validationとR-032B collection後にresolver failureを
+直接observeし、local label id、resolved node、scope、imported target、
+citation ordinal、statement contextをmanufactureしない。
+
+全Surface nodeはsyntax-ownedのまま。structure constructor、selector、
+functional/field update、Task-252 term、Task-253 formula、B1/B5A/B5B
+profile、fact、proof progress、acceptance、downstream semanticsへのB5C edgeは
+ない。
+
+resolver source formはnormal
+`ConclusionStatement -> JustificationClause -> ReferenceList -> Reference`
+pathに限定する。module-global owning-statement ordinalとcanonical
+`proof-step-v1` provenanceはhandoffより下位に留まり、source-byte runner
+selection/`proof_scope_input` failureはsource-statement rowをpublishしない。
+
+complete lower allowlistはexact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`から始まり、direct normal compact/
+conclusion statementだけをadmitし、compact proposition labelだけをinspectし、
+supported statementからdirect proof/justification childだけへdescendする。
+exact simple-reference chainは上記の通り。Root/CompilationUnitは各exact
+one normal structural child、ItemListはdirect normal theorem childだけをscan
+する。missing/additional/wrong upper child、direct Root/Compilation theorem
+relocation、`VisibleItem` wrapping、all other excluded/mixed formは
+no-row/no-ordinal/no-descentである。
+
+runnerはenv/module、module-derived namespace、exact one id-0 LocalSource
+contribution record/public `ast.source_id`、各projection module/namespace/
+contributionをindependently validateする。全field mutationはinput-onlyで、
+このDTOをpublishできない。

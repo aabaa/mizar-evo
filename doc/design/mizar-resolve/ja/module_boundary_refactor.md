@@ -65,3 +65,30 @@ cargo clippy -p mizar-resolve --all-targets --all-features -- -D warnings
 ```
 
 crate-wide close-out では full workspace と `mizar-test` plan gate を実行する。
+
+## 計画済み R-032A / R-032B ownership recheck
+
+R-032 は完了済み R-029 refactor gate を再オープンしない。既存 module owner に
+split し、public module layout を変えない。
+
+- R-032A: `src/resolved_ast.rs` / `src/resolved_ast/tests.rs`。
+- R-032B: `src/labels.rs` / `src/labels/tests.rs`。
+- paired docs。新 module は計画しない。
+
+R-032A は complete validated structural map と state/key mismatch を含む exact
+public error table を所有する。R-032B exact `'a` impl は AST/arena borrow だけを
+store、namespace/contribution を own、module を store せず `new` で validate、
+`collect` で `resolved.module()` を使う。両 operation は exact public error
+enum を返す。module-global ordinal と exact `proof-step-v1` identity は label owner。
+exhaustive direct-edge table は default-deny で、unlisted/recovered/malformed/
+wrapped edge は syntax/semantic traversal を漏らさず row/ordinal を出さない。
+upper boundary は exact `Root` -> `CompilationUnit` -> `ItemList` で、direct
+item-list child 以外の theorem は unreachable。
+callback、unmapped side channel、fabricated id、unchecked conversion、panic はない。
+R-032A node origin `[surface_id]` と R-032B richer table-origin path は意図的に
+異なり、それぞれ validate する。
+
+parser/frontend production、Cargo/workspace metadata、他 resolver module、public
+checker handoff、checker/type/proof/Core/CFG/VC responsibility は除外する。
+implementation pressure が別 source owner、public boundary、mapping owner を必要と
+する場合は、変更を広げず frozen R-032A/R-032B contract を停止・再 review する。

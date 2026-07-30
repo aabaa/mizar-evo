@@ -1581,3 +1581,29 @@ row, and owned-node partition. It rejects every B1/B5A/B5B cross-pair,
 partial or duplicate installation, and occupied semantic state atomically.
 No public installer, semantic table, runner-facing schema, or diagnostic is
 added.
+
+## Task 258B5C Frozen Typed-Installation Exclusion
+
+B5C ends at an unresolved resolver result and never satisfies the
+source-statement reference handoff. `TypedAst` consequently installs no
+B5C base/reference profile, label/citation row, binding context, owned
+Surface node, checked formula, fact, proof, or semantic table. It must not
+interpret an unresolved result as a B1, B5A, or B5B near match.
+
+The later active declaration-symbol runner task consumes validated R-032A
+and R-032B output directly. Existing B1/B5A/B5B installation predicates, mutation
+atomicity/replay, debug bytes, public installers, and error variants remain
+unchanged.
+
+R-032B's closed edge table starts with exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`, exact-one normal Root/CompilationUnit structural children, and
+direct-normal theorem scanning. Its no-ordinal/no-descent default deny
+prevents every excluded, relocated, or mixed form from reaching typed
+installation. Positive edge and negative relocation/mixed-list tests remain
+lower-stage tests.
+
+The runner's independent env/projection/contribution provenance mutations
+all terminate at `proof_scope_input`; even a structurally coherent mutation
+cannot become confinement or a `TypedAst` row. Source bytes plus exact normal
+AST remain the only selector, and the 48-file scope remains unchanged.

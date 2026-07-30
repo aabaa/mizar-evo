@@ -1547,3 +1547,43 @@ B1/B4A, B2/B4B, and B3/B4C; every hybrid fails atomically. Quantifier
 truth, restriction discharge, witness semantics, capture, implicit theorem
 closure, facts, theorem acceptance, proof, Core/CFG/VC, and B5 remain
 deferred.
+
+## Task 258B5C Active Negative Decomposition
+
+B5C is not a fourth checker reference profile. It consists of two resolver
+failures only: a label declared at proof scope `[0,0]` is not visible from
+the enclosing `[0]` scope and is not visible from sibling `[0,1]`. Each
+route contains one private/local-only proof-step projection and one
+unqualified proof-or-theorem candidate, then terminates with an exact
+`UnresolvedLabelRef`.
+
+The work is decomposed into documentation, resolver R-032A structural arena,
+resolver R-032B proof-label collection, and active declaration-symbol
+fixtures/runner/trace, each in its own commit. R-032A establishes only
+same-index structural provenance; R-032B alone establishes proof scopes,
+module-global one-based completion ordinals, canonical `proof-step-v1`
+origins, and candidates from exact `CompactStatement`/
+`ConclusionStatement` plus justification/reference-chain forms. There is no checker
+base/reference pair, local or imported citation target, label/citation row,
+typed installation, or final clone. Cross-family edges to structure
+construction, selector access, functional/field update, Tasks 252/253,
+ancestor B5A, imported B5B, and B1 are all empty.
+Qualified/grouped/bulk citations, public diagnostic codes, proof discharge,
+facts, acceptance, and downstream IR remain deferred.
+
+The lower resolver family is now explicitly closed to the exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock -> CompactStatement/ConclusionStatement`
+allowlist, compact proposition-label inspection, direct statement proof/
+justification children, and the sole simple-reference identifier chain.
+Root/CompilationUnit exact-one structural children and ItemList direct-normal
+theorem scanning are mandatory. Every other subtree is
+no-row/no-ordinal/no-descent, with positive upper/lower edges and negative
+missing/additional/wrong, direct Root/Compilation relocation,
+`VisibleItem` wrapping, other forbidden-relocation, and mixed-list tests
+below checker ownership.
+
+Runner provenance authentication of env/module, derived namespace, exact
+one id-0 LocalSource record/source id, and every projection field remains a
+separate input-only family. Its complete independent mutation matrix cannot
+create a checker payload or confinement result.

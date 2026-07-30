@@ -1366,3 +1366,52 @@ code boundary. They also agree that the synchronized design files are
 derived outputs in the upper logical task. The spec-coverage update is
 narrative only; `tests = []` and every trace status/count/backlink/owner/
 credit field remain unchanged. No synchronization exception remains.
+
+## Checker Task 258B5C Frozen-Contract Synchronization
+
+The paired runner plan, harness, boundary audit, and TODO freeze the same
+B5B commit `f27d2c9169b08078f00b75c4a57f94e30fa28f59`, Chapter
+15/16 authority, classifications, strict docs/R-032A/R-032B/active order,
+and resolver-owned `SurfaceResolvedArena` and `ProofLabelSourceCollector`
+APIs. Both languages freeze the same exact `Result` signatures,
+non-exhaustive fail-closed error boundaries, and total arena/collection
+accessors. They forbid runner-fabricated `LabelScopePath`, ordinal,
+`SemanticOrigin`, or `ResolvedNodeId` and exclude checker unresolved
+installation. Exact lifetime storage, validation-only module, `Self` return,
+`SurfaceNodeId` payload/state-key errors, and overflow nodes are identical.
+
+They synchronize the exact 173/197-byte sources and hashes, 61/71-node
+frontend identities, declaration/citation nodes, ranges, ordinals and scope
+paths, raw environments, one projection/candidate, and unresolved
+`1/1/[0]` result. They synchronize completion visibility ordinal 3,
+general theorem-root indexing, narrow collector inclusion/exclusion, exact
+structural paths and `LabelOriginPath` fields, same-block positive,
+own-proof/enclosing/sibling/later-theorem negative, distinct-root
+non-conflict, and provenance stability/uniqueness tests. They also
+synchronize module-global one-based ordinals, `ConclusionStatement`, exact
+justification/reference chains, canonical `proof-step-v1` framing,
+source-byte-plus-normal-AST selection, shared resolver/contribution
+authentication, input/confinement detail separation, expectation-copy
+guards, and exact 48-file scope. They also synchronize both future fixture/sidecar paths,
+declaration-symbol metadata and private detail key, two trace IDs, active
+consumer files, mutation/isolation tests, projected count changes, semantic
+deferrals, audit no-credit rule, and exit criteria.
+
+This documentation prerequisite has no synchronization exception and changes
+no production, fixture, expectation, sidecar, trace row/status/count, public
+schema, or semantic output. Review and verification results will be appended
+only after they are measured.
+
+EN and JA additionally agree on the exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock` upper chain, exact-one normal Root/CompilationUnit children,
+direct-normal theorem scanning, the remaining default-deny Surface edge
+table, its positive-edge/missing/additional/wrong/forbidden-relocation/
+`VisibleItem`/mixed-list tests, and no-ordinal/
+no-descent behavior for every excluded form. They also agree on the
+field-by-field runner provenance matrix: environment module, every
+projection module/namespace/contribution, exact one id-0 LocalSource
+contribution kind/record module/public `ast.source_id`, zero/multiple
+cardinality, and `ImportedSource`/`Summary`/`Builtin` substitutions. Every
+mutation is input-only, never confinement or public-code output. Selection
+remains frozen source bytes plus normal AST, and the scope remains 48 files.

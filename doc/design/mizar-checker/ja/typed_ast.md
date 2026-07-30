@@ -1516,3 +1516,28 @@ key、import/projection/reference provenance、citation row、owned-node
 partitionを再検証する。全B1/B5A/B5B cross-pair、partial/duplicate
 installation、occupied semantic stateをatomically reject。public installer、
 semantic table、runner-facing schema、diagnosticを追加しない。
+
+## Task 258B5C frozen typed-installation exclusion
+
+B5Cはunresolved resolver resultで終了し、source-statement reference
+handoffを満たさない。そのため`TypedAst`はB5C base/reference profile、
+label/citation row、binding context、owned Surface node、checked formula、
+fact、proof、semantic tableをinstallしない。unresolved resultをB1/B5A/B5B
+near matchとしてinterpretしてはならない。
+
+later active declaration-symbol runner taskはvalidated R-032A/B outputを
+直接consumeする。
+existing B1/B5A/B5B installation predicates、mutation atomicity/replay、
+debug bytes、public installers、error variantsはunchanged。
+
+R-032B closed edge tableはexact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`、Root/CompilationUnit exact-one normal structural child、
+direct-normal theorem scanから始まる。no-ordinal/no-descent default denyに
+より、全excluded/relocated/mixed formはtyped installationへ到達しない。
+positive edge/negative relocation/mixed-list testはlower-stage testのまま。
+
+runnerのindependent env/projection/contribution provenance mutationはすべて
+`proof_scope_input`で停止し、structurally coherentなmutationでも
+confinement/`TypedAst` rowになれない。source bytes+exact normal ASTだけが
+selectorで、48-file scopeはunchanged。

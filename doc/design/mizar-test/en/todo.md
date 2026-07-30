@@ -3127,6 +3127,67 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage and inspect only the B5B upper logical task, create one
-  implementation commit, verify clean post-commit/stash invariants, and
-  fresh-inventory the next dependency-ready task.
+- [x] Stage and inspect only the B5B upper logical task, create implementation
+  commit `f27d2c9169b08078f00b75c4a57f94e30fa28f59`, verify clean
+  post-commit/stash invariants, and fresh-inventory the next dependency-ready
+  task.
+
+## Checker Task 258B5C Frozen-Contract Documentation Prerequisite
+
+- [x] Select B5C from the clean post-B5B inventory and freeze Chapter 15
+  §15.10 plus Chapter 16 §§16.4.2/16.5.1 as the controlling label-scope
+  authority; keep Chapter 11 §11.2 contextual only.
+- [x] Classify the absent normal-source proof-label projection path as Medium
+  `source_drift` with potential `boundary_violation`, stale derived ownership
+  as `design_drift`, missing active confinement cases as `test_gap`, and
+  unspecified public resolver codes as a Low deferred, nonblocking `spec_gap`.
+- [x] Freeze the exact 173-byte inner-to-outer and 197-byte sibling sources,
+  hashes, normal frontend identities, proof scopes, statement ordinals,
+  declaration/reference nodes and ranges, and expected unresolved resolver
+  outcomes.
+- [x] Record the structurally validated Surface-to-resolved provider as a
+  known resolver prerequisite with sufficient architecture authority.
+- [x] Freeze strict dependency order: this documentation-only commit,
+  resolver R-032A structural arena/map, resolver R-032B proof-label source
+  collector, then active B5C declaration-symbol fixtures/sidecars/trace/
+  runner commit.
+- [x] Freeze both exact `Result`-returning APIs/errors, narrow R-032B
+  inclusion/exclusion, theorem-root paths, completion visibility ordinal 3,
+  exact label/semantic origins, and lower positive/negative/provenance tests.
+- [x] Freeze same-`'a` ast/resolved storage, validation-only module, owned
+  namespace/contribution, `Self` return, exact `SurfaceNodeId` error payloads,
+  global one-based ordinals, `ConclusionStatement`/reference chain, and
+  canonical `proof-step-v1` identity.
+- [x] Require the active runner to consume validated resolver-owned
+  projections and candidates; forbid checker installation and
+  runner-fabricated ids, semantic proof scopes, ordinals, or origins.
+- [x] Freeze source-byte-plus-normal-AST-only route selection, shared
+  env/module and exact local-source contribution-0 authentication, separate
+  private input/confinement details, expectation-copy guards, and exact
+  48-file documentation scope.
+- [x] Freeze the two future fail fixtures, sidecar stage/domain/phase/category,
+  empty public diagnostic codes, private detail key, two trace requirement
+  IDs, projected count changes, exact consumers, tests, exclusions, audit
+  impact, and exit criteria.
+- [x] Complete repeated specification, test-contract, source/documentation,
+  bilingual, and final-quality reviews with no findings and all hard gates
+  PASS at valid quality at least `90/100`.
+- [x] Reproduce current crate/workspace, format, Clippy, five-CLI,
+  count/hash/scope, authority no-op, repository-state, and protected-stash
+  gates without changing production, corpus, expectation, sidecar, or trace
+  status/count.
+- [x] Stage and commit only synchronized B5C frozen-contract documentation,
+  verify clean post-commit/stash invariants, and fresh-inventory resolver
+  R-032A.
+- [x] Freeze the resolver's exact
+  `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+  ProofBlock` upper chain, exact-one normal upper children, direct-normal
+  theorem scan, remaining default-deny no-ordinal/no-descent forms, and
+  positive-edge/missing/additional/wrong/direct-relocation/`VisibleItem`/
+  mixed-list tests.
+- [x] Freeze independent runner mutations for environment module; projection
+  module/namespace/contribution; contribution zero/multiple cardinality, id,
+  all non-local kinds, record module, and LocalSource source id, all mapping
+  only to `proof_scope_input`.
+- [x] Keep source-bytes-plus-normal-AST selection, expectation
+  non-selection, empty public codes, and the exact 48-file scope unchanged.

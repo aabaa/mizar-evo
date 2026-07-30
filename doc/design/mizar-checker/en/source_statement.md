@@ -3968,3 +3968,49 @@ pre-existing statement profile retains its immediate-child ordering rule,
 and the exact-profile test records this distinction. Facts, acceptance,
 proofs, goals, diagnostics, and downstream IR remain empty, while B5C and
 active corpus/trace coverage remain deferred.
+
+## Task 258B5C Frozen Unresolved-Reference Exclusion
+
+R-032A supplies the validated structural arena; R-032B supplies one
+private/local-only proof-step projection for `A` at scope `[0,0]`, visible
+after completion ordinal 3, and one simple unqualified reference candidate
+at either enclosing scope `[0]` or sibling scope `[0,1]`. Both resolution results have
+`has_unresolved = true` and exactly one `UnresolvedLabelRef`.
+
+`SourceStatementReferenceHandoff` intentionally rejects that state and
+requires the reference node to have a keyed `Resolved` result. Therefore
+the two B5C negatives publish no `SourceStatementLabelInput`,
+`SourceStatementCitationInput`, immutable label/citation row, resolver
+projection replay, statement/reference profile, owned-node partition, or
+debug output. The declaration-symbol runner observes the resolver failure
+directly after R-032A structural validation and R-032B collection; it must
+not manufacture a local label id, resolved node, scope, imported target,
+citation ordinal, or statement context.
+
+All Surface nodes remain syntax-owned. Structure constructors, selectors,
+functional/field updates, Task-252 terms, Task-253 formulas, B1/B5A/B5B
+profiles, facts, proof progress, acceptance, and downstream semantics have
+no B5C edge.
+
+The resolver source form is specifically a normal
+`ConclusionStatement -> JustificationClause -> ReferenceList -> Reference`
+path. Its module-global owning-statement ordinal and canonical
+`proof-step-v1` provenance remain below this handoff. Source-byte runner
+selection and `proof_scope_input` failures publish no source-statement row.
+
+The complete lower allowlist starts at exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`, and admits only direct normal compact/
+conclusion statements, inspects only a compact proposition label, and
+descends from a supported statement only to direct proof/justification
+children. Its exact simple-reference chain is the one shown above. All
+Root and CompilationUnit each require exactly one normal structural child,
+and ItemList scans only direct normal theorem children. Missing/additional/
+wrong upper children, direct Root/Compilation theorem relocation,
+`VisibleItem` wrapping, and all other excluded and mixed forms are
+no-row/no-ordinal/no-descent.
+
+The runner independently validates env/module, module-derived namespace,
+exact one id-0 LocalSource contribution record/public `ast.source_id`, and
+each projection's module/namespace/contribution. Every field mutation is
+input-only and therefore cannot publish this DTO.

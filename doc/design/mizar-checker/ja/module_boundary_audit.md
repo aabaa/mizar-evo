@@ -1077,3 +1077,51 @@ runner/CLI、corpus、expectation、sidecar、trace、semantic ownerをmoveし�
 lower helperはeighth upper fileでなくprior dependency。current checker
 ownersは`50732/5008/7356`、productionは23 paths。各fileはlargeだが
 cohesiveで、このtaskにmodule split/ownership transferは不要。
+
+## Task 258B5C frozen non-consumer boundary
+
+このcommitはsynchronized design documentationだけをownする。next two
+prerequisiteは`mizar-resolve` ownedで、R-032Aが`resolved_ast.rs`/testsの
+validated one-to-one structural `SurfaceResolvedArena`、R-032Bが
+`labels.rs`/testsのproof-step projection、simple unqualified candidate、
+proof-scope path、ordinal、provenance collectionをownする。両APIは
+fail-closed `Result`を返す。R-032A exact state/key errorと全node payloadは
+`SurfaceNodeId`。R-032Bはast/resolvedをsame `'a`でborrowしmoduleをvalidate
+するがstoreせず、namespace/contributionをownして`Self`を返す。
+R-032BだけがR-032A mapをconsumeできる。
+later `mizar-test` declaration-symbol taskがtwo active fixtures、sidecars、
+trace rows、runner observation、testsをownする。
+
+`mizar-checker`は明示的にB5C implementation consumerではない。
+`SourceStatementReferenceHandoff`はunresolved resultをrejectしkeyed
+`Resolved` nodeを要求するため、checker statement/reference/citation/
+binding/typed/final ownerはこのnegative routeをacceptできない。parser、
+artifact、Tasks 252/253、B1/B5A/B5B、全semantic phaseはunchanged。
+module split/ownership transferは不要で、scope derivationをrunnerへ移すと
+resolved id/ordinalと同様に`boundary_violation`になる。
+
+later runnerはfrozen source bytes+normal ASTだけでselectし、shared resolver
+env/moduleとmatching id-0 local-source contribution exact oneをauthenticate
+する。input corruptionとauthenticated confinementは別private detail key。
+current documentation ownershipはexact 48 design files。
+
+R-032B owner boundaryはdefault-deny edge tableでもcloseする。exact
+`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`へ進み、その後は
+direct normal `CompactStatement`/`ConclusionStatement`、compact
+proposition-label inspection、direct statement proof/justification child、
+exact simple-reference chainだけをadmitする。forbidden formula/token/
+wrapper、unsupported/recovered/malformed、qualified/grouped/bulk、template
+subtreeはordinal/descentなし。Root/CompilationUnitは各exact one normal
+structural childをrequireし、ItemListはdirect normal theorem childだけをscan、
+other item childをskip/no-descendする。positive upper edge、negative
+missing/additional/wrong、direct Root/Compilation theorem relocation、
+`VisibleItem` wrapping、lower forbidden relocation/mixed-list testはresolver
+ownershipである。
+
+later runnerがownするのはenvironment module、derived namespace、exact one
+id-0 LocalSource contribution record/source id、全projection
+module/namespace/contributionのindependent authenticationだけ。field-by-field
+mutation matrixは`proof_scope_input`だけへmapし、authenticated confinement
+だけが`proof_scope_confinement`へmapする。どちらのboundaryもchecker
+consumerを追加せず48-file scopeを変えない。

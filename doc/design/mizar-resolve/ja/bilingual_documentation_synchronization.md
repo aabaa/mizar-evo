@@ -5,7 +5,8 @@
 
 状態: task R-028 audit complete; task R-029 and close-out scopes re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
-overlay complete。
+overlay complete; planned R-032A/R-032B / Checker Task 258B5C lower prerequisite pair
+recheck complete。
 
 ## 範囲
 
@@ -35,6 +36,9 @@ sidecar は変更しない。
   `test_gap`、R-G003 R-024 で解消済み、R-G004 `boundary_violation` risk、
   R-G005 resolved `design_drift`、R-G006 `external_dependency_gap`、そして R-G002 の
   現在の具体的な精緻化である R-G007 `test_gap`。
+- R-032A/R-032B pair は Medium normal-source proof-label `source_drift`、stale R-023
+  attribution `design_drift`、R-G007 B5C `test_gap`、Low deferred R-G001
+  public-code `spec_gap` を同期する。
 - この監査により新しい `spec_gap`、`test_gap`、`design_drift`、`source_drift`、
   `source_undocumented_behavior`、`test_expectation_drift`、`boundary_violation`、
   `repo_metadata_conflict` は導入されていない。
@@ -43,21 +47,21 @@ sidecar は変更しない。
 
 | 英語正本 document | 日本語 companion | 同期結果 |
 |---|---|---|
-| [00.crate_plan.md](../en/00.crate_plan.md) | [./00.crate_plan.md](./00.crate_plan.md) | responsibility、spec/test inventory、design/source inventory、gap table、R-024 implementation status、R-027 audit result、R-028 audit result、R-029 refactor result、follow-up handoff が同期している。 |
+| [00.crate_plan.md](../en/00.crate_plan.md) | [./00.crate_plan.md](./00.crate_plan.md) | responsibility、inventory、gap table、completed extension、four-step B5C/R-032A/R-032B contract が同期。 |
 | [declarations.md](../en/declarations.md) | [./declarations.md](./declarations.md) | declaration shell kind、excluded / transparent node、visibility、recovery、identity / provenance、public enum policy が同期している。 |
 | [env.md](../en/env.md) | [./env.md](./env.md) | `SymbolEnv` index family、contribution tracking、invalidation note、determinism、public enum policy が同期している。 |
 | [imports.md](../en/imports.md) | [./imports.md](./imports.md) | import input/output、two-pass contract、path resolution、alias / export / cycle / unresolved policy、determinism、boundary note、public enum policy が同期している。 |
-| [labels.md](../en/labels.md) | [./labels.md](./labels.md) | label scope family、proof-block scope、forward-reference policy、citation lookup、origin path、diagnostics / recovery、determinism、public enum policy が同期している。 |
+| [labels.md](../en/labels.md) | [./labels.md](./labels.md) | existing label policy と planned R-032B API/subtree/origin/error contract が同期。 |
 | [module_summary_reuse.md](../en/module_summary_reuse.md) | [./module_summary_reuse.md](./module_summary_reuse.md) | R-024 summary reuse scope、known-field identity validation、fallback policy、source-backed agreement、determinism、public enum policy が同期している。 |
 | [names.md](../en/names.md) | [./names.md](./names.md) | name-use site、scope model、namespace-before-symbol lookup、visibility / shadowing、unresolved / ambiguous record、dot-chain finalization、diagnostics、public enum policy が同期している。 |
 | [recovery.md](../en/recovery.md) | [./recovery.md](./recovery.md) | recovered syntax stage disposition、boundary rule、test intent が同期している。 |
 | [resolved_ast.md](../en/resolved_ast.md) | [./resolved_ast.md](./resolved_ast.md) | top-level `ResolvedAst` shape、stable identity、node / name / label / import table、recovered shell、provenance、determinism、public enum policy が同期している。 |
-| [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [./source_spec_correspondence.md](./source_spec_correspondence.md) | R-027 の public API、behavior-boundary、task-requirement、follow-up record が、R-G002 と R-G007 の関係を含めて同期している。R-029 の moved-source scope re-run も同期している。 |
+| [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [./source_spec_correspondence.md](./source_spec_correspondence.md) | existing audit と planned R-032A/R-032B correspondence が同期。 |
 | [symbols.md](../en/symbols.md) | [./symbols.md](./symbols.md) | symbol-bearing shell、collection order、identity / origin、signature、duplicate / overload、visibility / export / summary policy、dependency relation、recovery / diagnostics、determinism、public enum policy が同期している。 |
-| [todo.md](../en/todo.md) | [./todo.md](./todo.md) | ordered task state、R-024 completion note、recommended verification、follow-up handoff wording が同期している。 |
+| [todo.md](../en/todo.md) | [./todo.md](./todo.md) | ordered task state と split R-032A/R-032B ownership/dependency が同期。 |
 | [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [./bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この R-028 audit、R-029 scope re-run、close-out re-run、roadmap synchronization overlay は、同じ scope、result、pair checklist、handoff note を両言語で記録している。 |
-| [module_boundary_refactor.md](../en/module_boundary_refactor.md) | [./module_boundary_refactor.md](./module_boundary_refactor.md) | R-029 source-layout audit、private helper / test split list、re-run audit note、verification requirement が同期している。 |
-| [crate_exit_report.md](../en/crate_exit_report.md) | [./crate_exit_report.md](./crate_exit_report.md) | close-out status、quality score、hard gate、deferred item、human-review surface、verification、task commit、next-task handoff が同期している。 |
+| [module_boundary_refactor.md](../en/module_boundary_refactor.md) | [./module_boundary_refactor.md](./module_boundary_refactor.md) | R-029 source-layout audit、private helper / test split list、re-run audit note、verification requirement、bounded R-032 ownership recheck が同期している。 |
+| [crate_exit_report.md](../en/crate_exit_report.md) | [./crate_exit_report.md](./crate_exit_report.md) | close-out status、quality score、hard gate、deferred item、human-review surface、verification、task commit、next-task handoff、planned R-032 extension が同期している。 |
 
 ## R-031 pair recheck
 
@@ -69,10 +73,28 @@ detail key、mixed-group priority、candidate/range/order behavior、sidecar/tra
 coverage impact、禁止するsemantic/public-code/phase boundaryを記録する。R-031 extensionに
 bilingual driftは残らない。
 
+## R-032A / R-032B pair recheck
+
+paired docs は同じ four-step order/classification、R-032A arena API/error
+variant/derive、R-032B collector API/error variant/derive、`u32` overflow、
+file ownership、collector lifetime/storage/module rule、theorem-root、
+module-global ordinal/completion、exact length-framed `proof-step-v1` grammar、
+B5C origin path、subtree/exclusion、cross-theorem direction、own-proof boundary、
+mutation matrix、private key、forbidden change を freeze する。R-032A
+resolution-state/reference-key mismatch variant も同期する。R-032A arena
+origin `[surface_id]` と R-032B richer table origin の意図的差も同期する。
+exhaustive default-deny direct Surface edge table semantics と
+positive-per-edge/negative mutation/mixed-list/representative all-other test
+obligation も同期する。upper hierarchy は同じ `Root` -> `CompilationUnit` ->
+`ItemList` -> direct theorem で、missing/additional/wrong/relocated/wrapped test
+も同期する。
+rejected callback/unmapped contract は両言語に残さない。
+
 ## handoff
 
 post-close-out の resolver update は、この監査を二言語同期状態の baseline として扱う。
-次の roadmap task は `mizar-test` foundation cleanup sequence である。将来 design file を
-追加する場合は、両言語 directory に同時に追加する。挙動 cleanup、public API change、
-新しい diagnostics は完了済み resolver milestone の範囲外であり、独立した spec/test
+次は R-032A、その後 R-032B で、各 fresh inventory 後にだけ active B5C へ進む。
+将来 design file を追加する場合は、
+両言語 directory に同時に追加する。挙動 cleanup、public API change、新しい
+diagnostics は完了済み resolver milestone の範囲外であり、独立した spec/test
 authority を要求する。

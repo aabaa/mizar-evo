@@ -5588,3 +5588,82 @@ owner-crate field, active mapping, or coverage-credit field changes.
 `tests/coverage/spec_trace.toml`, specifications, existing `.miz`,
 expectations, and sidecars remain intentional no-ops. The implementation
 narrative grants no coverage credit.
+
+## Task 258B5C Frozen Proof-Label Confinement Follow-Up
+
+Task 258B5B upper implementation is committed as
+`f27d2c9169b08078f00b75c4a57f94e30fa28f59`. Fresh B5C inventory derives
+two active negative obligations from Chapter 15 §15.10 and Chapter 16
+§§16.4.2/16.5.1: a proof-step label declared in nested scope `[0,0]` is
+unavailable from enclosing scope `[0]` and sibling scope `[0,1]`.
+
+The resolver core already enforces the correct prefix rule over supplied
+`LabelProjection` and `LabelReferenceCandidate` values. Missing normal-source
+collection is Medium `source_drift` with potential `boundary_violation`;
+stale derived ownership is `design_drift`; missing active cases are R-G007
+`test_gap`; and unspecified public resolver codes remain a Low deferred,
+nonblocking `spec_gap`. The structural Surface-to-resolved provider is also
+known absent, with sufficient resolver/architecture authority. Separate
+resolver R-032A and R-032B commits must add the validated
+`SurfaceResolvedArena` and then `ProofLabelSourceCollector` before the
+private declaration-symbol runner may consume these cases. R-032B visibility
+starts at completion ordinal 3, not declaration ordinal 2; theorem-root
+scope, narrow inclusion/exclusion, exact label/semantic origins, and
+positive/own-proof/cross-theorem boundaries are frozen in the crate plans.
+The runner may not fabricate ids, scope, ordinals, or provenance, and
+checker unresolved installation is excluded.
+
+The later active task may add exactly these requirements:
+
+- `spec.en.15.statements.proof_label_scope_confinement`;
+- `spec.en.16.theorems_and_proofs.labels.proof_scope_confinement`.
+
+Both future rows use stage `declaration_symbol`, status `covered`, fail
+coverage, and both exact new inner-to-outer/sibling `.miz` tests. The future
+sidecars use phase `resolve`, empty public diagnostic codes, and private key
+`declaration_symbol.label.proof_scope_confinement`. Only that later active
+commit may change cases `419 -> 421`, requirements `387 -> 389`, pass/fail
+`228/191 -> 228/193`, and active declaration-symbol cases `5 -> 7`;
+parse/type/proof and type-requirement counts remain unchanged.
+
+This documentation prerequisite is prospective narrative only. It does not
+add either trace row, test, backlink, owner mapping, status, count, active
+outcome, or coverage credit. `tests/coverage/spec_trace.toml`, `.miz`,
+expectations, and sidecars remain unchanged. Requirement
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`. R-G007 remains open beyond these two future negatives for
+import graph, namespace/name resolution, dot-chain, qualified/grouped/bulk
+citations, and other label-reference facts.
+
+R-032B collection is further frozen as a closed Surface edge table:
+exact `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
+ProofBlock`, then
+only direct normal `CompactStatement`/`ConclusionStatement`; compact
+proposition-label inspection; direct statement `ProofBlock`/
+`JustificationClause`; and exact
+`JustificationClause -> ReferenceList -> simple Reference -> sole identifier
+token`. Formula/token/wrapper, unsupported/recovered/malformed,
+qualified/grouped/bulk, and template forms receive no row, ordinal, or
+descent. Root and CompilationUnit each require exactly one normal structural
+child; ItemList scans only direct normal theorem children and skips/
+no-descends all other item children. Resolver tests cover every allowed
+upper and lower edge and reject missing/additional/wrong upper children,
+direct Root/Compilation theorem relocation, `VisibleItem` wrapping, and other
+forbidden relocation. Mixed reference lists preserve only exact simple
+siblings in source order; unsupported siblings add no row or descent.
+
+The active runner's prospective coverage is also provenance-authenticated,
+not metadata-selected. It requires env/resolver module equality,
+module-path-derived namespace, exactly one id-0 LocalSource contribution
+whose record module and source id match public `ast.source_id`, and every
+projection's module/namespace/contribution. Independent mutations cover the
+environment module; projection module, namespace, and contribution;
+contribution zero/multiple cardinality, id, `ImportedSource`, `Summary`,
+`Builtin`, record module, and LocalSource source id. Each corruption can
+produce only `declaration_symbol.label.proof_scope_input`; only the fully
+authenticated unresolved result can produce confinement, and public codes
+remain empty. Expectation copies/mutations cannot select the branch.
+
+These refinements remain prospective narrative within the exact 48-file
+documentation scope. They change no trace row, status, count, backlink,
+owner, active mapping, test, or coverage credit.
