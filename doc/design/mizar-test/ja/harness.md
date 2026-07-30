@@ -4178,3 +4178,25 @@ bytes/LF、各node/rootのfour surface axes、resolver、
 non-vacuous zero-edge、choice target/request order、ownership、family
 isolation、clone/rollback/debug stability、empty semanticsをexhaustする。
 corpus/expectation/sidecar/trace count/CLI/active routeは変更しない。
+
+## Task 258B3M2B2B3C implemented runner harness
+
+dormant selectorとfrozen runner tests 5件はexact 110-byte source/final LF、
+全52 nodes/root 51のkind/range/recovery/children axes、base 8 + label 10
+resolver mutationsのtyped/resolved replay、全currently mutable
+Task-48/252/255/256/258/witness fieldsのexact
+`32/55/39/72/62/21` matricesをauthenticateする。exact
+`Task256:`/`Task258:`/`B3C:` failure prefixとgeneric-guard rejectionは
+fallback acceptanceを防ぐ。
+
+suiteはnon-vacuous zero-edge rejection、choice target/request order、
+ownership/subtree near miss、全6 B3A/B3B/B3C family orders、active-route
+isolation、immediate replay/rollback、final clone/debug stability、empty
+semanticsもcheckする。initial test gaps 2件とB3A-hard-coded route findingは
+remediateし、repeat test/implementation reviewsは**NO FINDINGS**。
+
+final sizesはstatement `10305`、unchanged set leaf `4517`、facade `779`、
+root `2595`、statement tests `23583`、unchanged set tests `2528`。runner
+library `461`、focused `5/5`とpackage `461+3/14/137/2/21`はPASS。active
+fixture/expectation/sidecar/trace/CLI/diagnostic/semantic harness surfaceは
+変更しない。

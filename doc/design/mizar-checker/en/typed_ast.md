@@ -1349,3 +1349,14 @@ plus one SetTerm witness atomically. Choice target/type-site/request
 authentication precedes witness publication; failed mutation, stale replay,
 or family hybrid leaves the typed AST unchanged. This prerequisite changes no
 typed-AST source, public schema, semantic table, or debug bytes.
+
+## Task 258B3M2B2B3C Implemented Typed-AST Installation
+
+`TypedAst` installs only the authenticated B3C source-set/statement/witness
+bundle through the existing atomic transaction. It preserves the exact
+choice set fingerprint, validates the complete dependency tuple again, and
+rolls back on stale, reordered, hybrid, or generic-guard state. B3A and B3B
+remain independently installable in either family order. No public schema,
+error text, debug grammar, dependency, or semantic table changed; the private
+dormant runner selector is outside this typed/final owner and leaves existing
+active-corpus outcomes unchanged.

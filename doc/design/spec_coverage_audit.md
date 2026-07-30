@@ -5160,3 +5160,43 @@ remains `deferred`, `tests = []`; the existing Task-255 covered row remains
 unchanged. Choice nonemptiness/stability/generated-symbol/type-fact
 semantics, existential matching/substitution/proof acceptance, facts,
 Core/CFG/VC, comprehension/`qua`, B4/B5, and active coverage remain deferred.
+
+### Task 258B3M2B2B3C implemented narrative-only ownership
+
+The documentation prerequisite closed at
+`ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2` with clean
+ahead-15/behind-0 state and unchanged stash. Fresh inventory found no
+lower-stage prerequisite. The exact seven source consumers now implement
+the dormant 110-byte/52-node choice-witness transport and its four checker
+plus five runner tests.
+
+Implementation preserves the frozen Task-255 `1/0/0/1/0/0/2` tables,
+ordered `ChoiceNonempty`/`ResultType`, zero child edges, owner partition,
+and sole upper `Witness(0) -> SetTerm(0)` edge. Exact
+`32/55/39/72/62/21` field matrices plus source/node/resolver/family/
+replay/clone/empty-semantics coverage close bounded `test_gap`. Two initial
+medium resolver/upper-prefix findings were remediated. One B3A-hard-coded
+B3C `source_drift`/`test_gap` was restricted to B3C while preserving both
+enumeration siblings. Repeated test-sufficiency and implementation reviews
+report **NO FINDINGS**.
+
+This is still narrative implementation ownership only. The
+`spec.en.checker.formula_statement.source_payloads` row remains
+`deferred`, `tests = []`; Task-111/255 credit, trace status/count/backlinks,
+and the existing Task-255 covered row remain unchanged. No specification,
+`.miz`, expectation, sidecar, existing active-corpus route selection/outcome,
+diagnostic, or semantic intent changed; implementation adds only the private
+dormant exact selector branch. Choice nonemptiness/stability/generated-symbol/type-fact
+semantics, existential matching, substitution, proof acceptance, facts,
+Core/CFG/VC, comprehension/`qua`, B4/B5, and active coverage remain
+deferred.
+
+Final measured source state is checker library `402`, 23 production paths /
+133,092 lines with content hash
+`ca90a6d42566160255b56f84cb88348ed12f9e657265282eb4984bb6ad138529`,
+and runner library `461`, 30 paths / 52,614 lines with content hash
+`122720d787bccbdc70965ff88e88c1c21c9b06860be3dc7439e6e3e64b3e9883`.
+Path hashes, five CLI hashes/counts, authority files, and trace metadata are
+unchanged. Final source/documentation consistency and independent quality
+report **NO FINDINGS**; all nine hard gates PASS without a cap at valid
+`98/100`. Commit, post-commit, and fresh-next-task gates remain pending.

@@ -5398,7 +5398,37 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] independent final read-only quality reviewを**NO FINDINGS**、全9
   hard gates PASS、score capなし、valid `98/100`
   （`20/20/15/14/10/10/5/4`）でcomplete。
-- [ ] synchronized documentation scopeだけをstageしcached diffをinspect。
-- [ ] dedicated B3C documentation-only commitを作成。
-- [ ] clean post-commit/stash invariantsとfresh B3C implementation inventoryを
+- [x] synchronized documentation scopeだけをstageしcached diffをinspect。
+- [x] dedicated B3C documentation-only commit
+  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`を作成。
+- [x] clean ahead-15/behind-0 post-commit/stash invariantsとfresh B3C
+  implementation inventoryを
   verify。
+
+## Checker Task 258B3M2B2B3C implementation ledger
+
+- [x] prerequisite
+  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`をclean
+  ahead-15/behind-0、stash fingerprint `f65cf4a...` unchangedでclose。
+- [x] lower-stage prerequisite不要をconfirmし、frozen checker 3 + runner 4
+  source consumersだけをimplement。
+- [x] 両`source_set_term.rs`、public API/error/debug、dependency、authority
+  artifacts、semantics、全existing active-corpus route/outcomeをpreserveし、
+  frozen private dormant exact selector branchだけを追加。
+- [x] 110-byte、52-node/root-51 choice witnessと
+  `32/55/39/72/62/21`をexact checker 4 + runner 5 testsで実装。
+- [x] resolver replay、exact upper stage prefix、generic-guard rejectionで
+  medium `test_gap` 2件をremediate。
+- [x] 両enumeration siblingをpreserveしB3A-hard-coded B3C
+  `source_drift`/`test_gap`をremediate。
+- [x] repeat test-sufficiency/implementation reviewsを**NO FINDINGS**で
+  complete。
+- [x] focused checker `4/4`、runner `5/5`、runner library `461`、formatを
+  PASS。
+- [x] final checker/runner count、size、production/test-list hashes、
+  unchanged 5 CLI hashes、deliberate trace no-opをrecord。
+- [x] workspace Clippy/testsとfinal count/hash rerunをcomplete。
+- [x] final source/docs consistencyとindependent quality reviewをcomplete。
+- [ ] exact 39 synchronized task filesをstageしcached diffをinspect。
+- [ ] implementation commit 1件をcreateしclean post-commit/stashをverify。
+- [ ] fresh inventoryで次のdependency-minimal taskをselect。

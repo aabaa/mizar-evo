@@ -935,3 +935,23 @@ exact checker 4 + runner 5 names、future source consumers 7、semantic
 deferrals、`398/456 -> 402/461` projection、trace/authority no-opで一致する。
 initial ownership/matrix findingsはfix済みでrepeat specification reviewは
 **NO FINDINGS**。consistency/quality/commit/post-commitはpending。
+
+## Task 258B3M2B2B3C implementation synchronization
+
+EN canonical/JA companionはprerequisite
+`ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`、clean
+ahead-15/behind-0、stash unchangedを同期し、exact seven-file
+implementationと32-document closure scopeをrecordする。両言語は同じ
+110-byte/hash、52-node/root-51 choice profile、Task-255
+`1/0/0/1/0/0/2`、ownership、checker 4 + runner 5 tests、
+`32/55/39/72/62/21` matricesを保持する。
+
+両言語はinitial test review 2件を`test_gap`、B3A-hard-coded findingを
+`source_drift` + `test_gap`とclassifyし、resolver replay、exact upper
+stage prefix/non-generic rejection、siblingを変えないB3C-only routeで
+remediateした。repeat test/implementation reviewsは**NO FINDINGS**。
+final checker/runner measurements、unchanged CLI/trace/authority boundary、
+全semantic deferralsをsyncする。verificationとdormant-selector wordingを
+sync後のfinal source/docs consistency repeatは**NO FINDINGS**。
+independent qualityも**NO FINDINGS**、全9 hard gates PASS、score capなし、
+valid `98/100`。commit、post-commit、fresh-next inventoryはpending。

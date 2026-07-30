@@ -1800,7 +1800,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     && !source_statement.is_task_258b3m2b2b2c_profile())
                 || (source_set_term.is_some()
                     && !source_statement.is_task_258b3m2b2b3a_profile()
-                    && !source_statement.is_task_258b3m2b2b3b_profile())
+                    && !source_statement.is_task_258b3m2b2b3b_profile()
+                    && !source_statement.is_task_258b3m2b2b3c_profile())
                 || source_composite_formula.is_some()
                 || source_formula_composition.is_some()
                 || source_condition_formula_composition.is_some()
@@ -1893,7 +1894,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 }
                 (None, Some(witnesses))
                     if (source_statement.is_task_258b3m2b2b3a_profile()
-                        || source_statement.is_task_258b3m2b2b3b_profile())
+                        || source_statement.is_task_258b3m2b2b3b_profile()
+                        || source_statement.is_task_258b3m2b2b3c_profile())
                         && source_application.is_none()
                         && source_structure.is_none()
                         && source_set_term.is_some() =>

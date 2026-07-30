@@ -994,3 +994,25 @@ seven future source consumers, semantic deferrals, `398/456 -> 402/461`
 projection, and trace/authority no-op. Initial ownership and matrix findings
 are fixed; repeated specification review is **NO FINDINGS**. Consistency,
 quality, commit, and post-commit reviews remain pending.
+
+## Task 258B3M2B2B3C Implementation Synchronization
+
+The EN canonical and JA companion synchronously close prerequisite
+`ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2` at clean ahead-15/behind-0
+state with unchanged stash, then record the exact seven-file implementation
+and 32-document closure scope. Both record the same 110-byte/hash,
+52-node/root-51 choice profile, `1/0/0/1/0/0/2` Task-255 tables, ownership
+partition, four checker plus five runner tests, and
+`32/55/39/72/62/21` matrices.
+
+Both languages classify the two initial test-review findings as `test_gap`
+and the B3A-hard-coded implementation finding as `source_drift` plus
+`test_gap`; the synchronized remediations add resolver replay, exact upper
+stage prefixes/non-generic rejection, and B3C-only routing without changing
+sibling behavior. Repeated test and implementation reviews are
+**NO FINDINGS**. Final checker/runner measurements, unchanged CLI/trace/
+authority boundaries, and all semantic deferrals are synchronized. The final
+source/documentation consistency repeat is **NO FINDINGS** after synchronizing
+verification and dormant-selector wording. Independent quality is also
+**NO FINDINGS**; all nine hard gates PASS without a cap at valid `98/100`.
+Commit, post-commit, and fresh-next-task inventory remain pending.

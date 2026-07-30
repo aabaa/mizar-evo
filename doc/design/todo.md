@@ -3209,5 +3209,31 @@ or semantic owner changed. B3M2B2B remains next before B4.
   verification.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine
   hard gates PASS, no score cap, and valid `98/100`.
-- [ ] Create one dedicated documentation commit, verify clean/stash
+- [x] Create dedicated documentation commit
+  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`, verify clean/stash
   invariants, and fresh-inventory B3C implementation.
+
+## Checker Task 258B3M2B2B3C Implementation Completion
+
+- [x] Close the documentation prerequisite at clean ahead-15/behind-0 with
+  stash fingerprint `f65cf4a...` unchanged.
+- [x] Fresh-inventory authority/API and confirm no lower-stage prerequisite.
+- [x] Implement only the exact checker three plus runner four source
+  consumers; preserve both Task-255 source owners.
+- [x] Implement the frozen checker four plus runner five tests and exact
+  `32/55/39/72/62/21` matrices.
+- [x] Remediate two medium resolver/upper-prefix `test_gap` findings.
+- [x] Remediate the B3A-hard-coded B3C `source_drift`/`test_gap` without
+  changing either enumeration sibling.
+- [x] Complete repeated test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused `4/4 + 5/5`, runner package
+  `461+3/14/137/2/21`, and formatting.
+- [x] Record final module counts, production/test-list hashes, unchanged
+  five CLI hashes/counts, and deliberate trace no-op.
+- [x] Complete workspace Clippy/tests and final measurement reruns.
+- [x] Complete final source/documentation consistency and independent
+  quality reviews.
+- [ ] Stage only exact 39 synchronized task files and inspect cached diff.
+- [ ] Create one implementation commit and verify clean post-commit/stash.
+- [ ] Fresh-inventory and select the next dependency-minimal task.

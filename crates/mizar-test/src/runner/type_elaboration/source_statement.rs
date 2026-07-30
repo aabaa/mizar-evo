@@ -246,6 +246,14 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3B_TEXT: &str = concat!(
     "end;\n",
 );
 
+pub(in crate::runner) const SOURCE_STATEMENT_B3M2B2B3C_TEXT: &str = concat!(
+    "reserve x for set;\n",
+    "theorem FormulaStatementChoiceWitnessSmoke: x = x proof\n",
+    "  take the set;\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
 const SOURCE_STATEMENT_LABEL: &str = "FormulaStatementReservedVariableEqualitySmoke";
 const SOURCE_STATEMENT_SPELLING: &str =
     "theorem FormulaStatementReservedVariableEqualitySmoke : x = x ;";
@@ -326,6 +334,11 @@ const SOURCE_STATEMENT_B3M2B2B3A_SPELLINGS: [&str; 2] = [
 const SOURCE_STATEMENT_B3M2B2B3B_LABEL: &str = "FormulaStatementEmptySetEnumerationWitnessSmoke";
 const SOURCE_STATEMENT_B3M2B2B3B_SPELLINGS: [&str; 2] = [
     "theorem FormulaStatementEmptySetEnumerationWitnessSmoke : x = x proof take { } ; thus x = x ; end ;",
+    "thus x = x ;",
+];
+const SOURCE_STATEMENT_B3M2B2B3C_LABEL: &str = "FormulaStatementChoiceWitnessSmoke";
+const SOURCE_STATEMENT_B3M2B2B3C_SPELLINGS: [&str; 2] = [
+    "theorem FormulaStatementChoiceWitnessSmoke : x = x proof take the set ; thus x = x ; end ;",
     "thus x = x ;",
 ];
 const SOURCE_STATEMENT_CONFIG: SourceReservedVariableBinaryFormulaConfig =
@@ -616,6 +629,25 @@ pub(in crate::runner) struct SourceStatementB3M2B2B3AExtraction {
 
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB3M2B2B3BExtraction {
+    pub(in crate::runner) theorem_site: TypedSiteRef,
+    pub(in crate::runner) theorem_range: SourceRange,
+    pub(in crate::runner) label_range: SourceRange,
+    pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) statement_ranges: [SourceRange; 2],
+    pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
+    pub(in crate::runner) formula_ranges: [SourceRange; 2],
+    pub(in crate::runner) term_sites: [TypedSiteRef; 4],
+    pub(in crate::runner) term_ranges: [SourceRange; 4],
+    pub(in crate::runner) take_site: TypedSiteRef,
+    pub(in crate::runner) take_range: SourceRange,
+    pub(in crate::runner) witness_site: TypedSiteRef,
+    pub(in crate::runner) witness_range: SourceRange,
+    pub(in crate::runner) set_term_node: usize,
+    pub(in crate::runner) proof_range: SourceRange,
+}
+
+#[derive(Debug, Clone)]
+pub(in crate::runner) struct SourceStatementB3M2B2B3CExtraction {
     pub(in crate::runner) theorem_site: TypedSiteRef,
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
@@ -1187,6 +1219,45 @@ impl From<SourceStatementB3M2B2B3BExtraction> for SourceStatementWitnessExtracti
     }
 }
 
+impl From<SourceStatementB3M2B2B3CExtraction> for SourceStatementWitnessExtraction {
+    fn from(extracted: SourceStatementB3M2B2B3CExtraction) -> Self {
+        Self {
+            theorem_site: extracted.theorem_site,
+            theorem_range: extracted.theorem_range,
+            label_range: extracted.label_range,
+            statement_sites: extracted.statement_sites,
+            statement_ranges: extracted.statement_ranges,
+            formula_sites: extracted.formula_sites,
+            formula_ranges: extracted.formula_ranges,
+            term_sites: extracted.term_sites.into(),
+            term_ranges: extracted.term_ranges.into(),
+            take_site: extracted.take_site,
+            take_range: extracted.take_range,
+            witnesses: vec![SourceStatementWitnessItemExtraction {
+                site: extracted.witness_site,
+                range: extracted.witness_range,
+                name: None,
+                spelling: "the set",
+            }],
+            proof_range: extracted.proof_range,
+            label: SOURCE_STATEMENT_B3M2B2B3C_LABEL,
+            spellings: &SOURCE_STATEMENT_B3M2B2B3C_SPELLINGS,
+            task: "Task258B3M2B2B3C",
+            node_count: 52,
+            root: 51,
+            atomic_term_starts: [0, 2],
+            input_fact_reference_starts: [0, 2],
+            application_node: None,
+            application_wrapper_node: None,
+            structure_node: None,
+            structure_selector_node: None,
+            structure_update_node: None,
+            set_term_node: Some(extracted.set_term_node),
+            source_text: SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementRouteInputs {
     pub(in crate::runner) binding_env: BindingEnv,
@@ -1235,6 +1306,7 @@ pub(in crate::runner) type SourceStatementB3M2B2B2BRouteInputs = SourceStatement
 pub(in crate::runner) type SourceStatementB3M2B2B2CRouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B3ARouteInputs = SourceStatementB3RouteInputs;
 pub(in crate::runner) type SourceStatementB3M2B2B3BRouteInputs = SourceStatementB3RouteInputs;
+pub(in crate::runner) type SourceStatementB3M2B2B3CRouteInputs = SourceStatementB3RouteInputs;
 
 // Rationale: these variants type the exhaustive test-only lower-stage mutation seam and are intentionally dormant in non-test builds.
 #[cfg_attr(not(test), allow(dead_code))]
@@ -1247,6 +1319,8 @@ pub(in crate::runner) enum SourceStatementB3M2B2B3AStage {
 
 #[cfg(test)]
 pub(in crate::runner) type SourceStatementB3M2B2B3BStage = SourceStatementB3M2B2B3AStage;
+#[cfg(test)]
+pub(in crate::runner) type SourceStatementB3M2B2B3CStage = SourceStatementB3M2B2B3AStage;
 
 #[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1255,6 +1329,8 @@ pub(in crate::runner) enum SourceStatementB3M2B2B3BLowerStage {
     Task252,
     Task255,
 }
+#[cfg(test)]
+pub(in crate::runner) type SourceStatementB3M2B2B3CLowerStage = SourceStatementB3M2B2B3BLowerStage;
 
 #[cfg(test)]
 pub(in crate::runner) const TASK258B3M2B2B3A_TASK256_FIELD_COUNT: usize = 72;
@@ -1277,6 +1353,23 @@ pub(in crate::runner) const TASK258B3M2B2B3B_TASK48_FIELD_COUNT: usize = 32;
 pub(in crate::runner) const TASK258B3M2B2B3B_TASK252_FIELD_COUNT: usize = 55;
 #[cfg(test)]
 pub(in crate::runner) const TASK258B3M2B2B3B_TASK255_FIELD_COUNT: usize = 23;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3C_TASK48_FIELD_COUNT: usize =
+    TASK258B3M2B2B3B_TASK48_FIELD_COUNT;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3C_TASK252_FIELD_COUNT: usize =
+    TASK258B3M2B2B3B_TASK252_FIELD_COUNT;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3C_TASK255_FIELD_COUNT: usize = 39;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3C_TASK256_FIELD_COUNT: usize =
+    TASK258B3M2B2B3A_TASK256_FIELD_COUNT;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3C_TASK258_FIELD_COUNT: usize =
+    TASK258B3M2B2B3A_TASK258_FIELD_COUNT;
+#[cfg(test)]
+pub(in crate::runner) const TASK258B3M2B2B3C_WITNESS_FIELD_COUNT: usize =
+    TASK258B3M2B2B3A_WITNESS_FIELD_COUNT;
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceStatementRouteOutput {
@@ -3644,6 +3737,8 @@ pub(in crate::runner) enum SourceStatementB3M2B2B3ASurfaceMutation {
 
 pub(in crate::runner) type SourceStatementB3M2B2B3BSurfaceMutation =
     SourceStatementB3M2B2B3ASurfaceMutation;
+pub(in crate::runner) type SourceStatementB3M2B2B3CSurfaceMutation =
+    SourceStatementB3M2B2B3ASurfaceMutation;
 
 fn exact_set_enumeration_witness_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
     exact_set_enumeration_witness_surface_profile_with_mutation(
@@ -4293,6 +4388,326 @@ pub(in crate::runner) fn extract_empty_set_enumeration_witness_source_statement(
     })
 }
 
+fn exact_choice_witness_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
+    exact_choice_witness_surface_profile_with_mutation(
+        ast,
+        source_text,
+        SourceStatementB3M2B2B3CSurfaceMutation::None,
+    )
+}
+
+fn exact_choice_witness_surface_profile_with_mutation(
+    ast: &SurfaceAst,
+    source_text: &str,
+    mutation: SourceStatementB3M2B2B3CSurfaceMutation,
+) -> bool {
+    const KINDS: [&str; 52] = [
+        "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"FormulaStatementChoiceWitnessSmoke\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"proof\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"take\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"the\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"end\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "TypeHead",
+        "TypeExpression",
+        "ReserveSegment",
+        "ReserveItem",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "TypeHead",
+        "TypeExpression",
+        "ChoiceTerm",
+        "TermExpression",
+        "Witness",
+        "TakeStatement",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "Proposition",
+        "ConclusionStatement",
+        "ProofBlock",
+        "TheoremItem",
+        "ItemList",
+        "CompilationUnit",
+        "Root",
+    ];
+    const RANGES: [(usize, usize); 52] = [
+        (0, 7),
+        (8, 9),
+        (10, 13),
+        (14, 17),
+        (17, 18),
+        (19, 26),
+        (27, 61),
+        (61, 62),
+        (63, 64),
+        (65, 66),
+        (67, 68),
+        (69, 74),
+        (77, 81),
+        (82, 85),
+        (86, 89),
+        (89, 90),
+        (93, 97),
+        (98, 99),
+        (100, 101),
+        (102, 103),
+        (103, 104),
+        (105, 108),
+        (108, 109),
+        (14, 17),
+        (14, 17),
+        (8, 17),
+        (0, 18),
+        (63, 64),
+        (63, 64),
+        (67, 68),
+        (67, 68),
+        (63, 68),
+        (63, 68),
+        (86, 89),
+        (86, 89),
+        (82, 89),
+        (82, 89),
+        (82, 89),
+        (77, 90),
+        (98, 99),
+        (98, 99),
+        (102, 103),
+        (102, 103),
+        (98, 103),
+        (98, 103),
+        (98, 103),
+        (93, 104),
+        (69, 108),
+        (19, 109),
+        (0, 109),
+        (0, 109),
+        (0, 109),
+    ];
+    const CHILDREN: [&[usize]; 52] = [
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[3],
+        &[23],
+        &[1, 2, 24],
+        &[0, 25, 4],
+        &[8],
+        &[27],
+        &[10],
+        &[29],
+        &[28, 9, 30],
+        &[31],
+        &[14],
+        &[33],
+        &[13, 34],
+        &[35],
+        &[36],
+        &[12, 37, 15],
+        &[17],
+        &[39],
+        &[19],
+        &[41],
+        &[40, 18, 42],
+        &[43],
+        &[44],
+        &[16, 45, 20],
+        &[11, 38, 46, 21],
+        &[5, 6, 7, 32, 47, 22],
+        &[26, 48],
+        &[49],
+        &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 50,
+        ],
+    ];
+    let mut kinds = KINDS
+        .iter()
+        .map(|kind| (*kind).to_owned())
+        .collect::<Vec<_>>();
+    let mut ranges = RANGES.to_vec();
+    let mut recoveries = [false; 52];
+    let mut children = CHILDREN
+        .iter()
+        .map(|children| children.to_vec())
+        .collect::<Vec<_>>();
+    let mut root = Some(51);
+    match mutation {
+        SourceStatementB3M2B2B3CSurfaceMutation::None => {}
+        SourceStatementB3M2B2B3CSurfaceMutation::NodeKind(index) => {
+            if let Some(kind) = kinds.get_mut(index) {
+                kind.push('!');
+            }
+        }
+        SourceStatementB3M2B2B3CSurfaceMutation::NodeRange(index) => {
+            if let Some(range) = ranges.get_mut(index) {
+                range.1 = range.1.saturating_add(1);
+            }
+        }
+        SourceStatementB3M2B2B3CSurfaceMutation::NodeRecovery(index) => {
+            if let Some(recovered) = recoveries.get_mut(index) {
+                *recovered = !*recovered;
+            }
+        }
+        SourceStatementB3M2B2B3CSurfaceMutation::NodeChildren(index) => {
+            if let Some(node_children) = children.get_mut(index) {
+                if node_children.len() > 1 {
+                    node_children.rotate_left(1);
+                } else {
+                    node_children.push(index);
+                }
+            }
+        }
+        SourceStatementB3M2B2B3CSurfaceMutation::RootIdentity => root = None,
+    }
+    source_text == SOURCE_STATEMENT_B3M2B2B3C_TEXT
+        && source_text.len() == 110
+        && source_text.ends_with('\n')
+        && ast.nodes().len() == 52
+        && ast.root().map(|root| root.index()) == root
+        && ast.nodes().iter().enumerate().all(|(index, node)| {
+            format!("{:?}", node.kind) == kinds[index]
+                && (node.range.start, node.range.end) == ranges[index]
+                && node.range.source_id == ast.source_id
+                && node.recovered == recoveries[index]
+                && node
+                    .children
+                    .iter()
+                    .map(|child| child.index())
+                    .eq(children[index].iter().copied())
+        })
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn extract_choice_witness_source_statement_with_surface_mutation(
+    ast: &SurfaceAst,
+    source_text: &str,
+    mutation: SourceStatementB3M2B2B3CSurfaceMutation,
+) -> Option<SourceStatementB3M2B2B3CExtraction> {
+    if !exact_choice_witness_surface_profile_with_mutation(ast, source_text, mutation) {
+        return None;
+    }
+    extract_choice_witness_source_statement(ast, source_text)
+}
+
+pub(in crate::runner) fn extract_choice_witness_source_statement(
+    ast: &SurfaceAst,
+    source_text: &str,
+) -> Option<SourceStatementB3M2B2B3CExtraction> {
+    if !exact_choice_witness_surface_profile(ast, source_text) {
+        return None;
+    }
+    let (theorem_id, theorem) = exact_surface_node(ast, SurfaceNodeKind::TheoremItem, 19, 109)?;
+    let (proof_id, proof) = exact_surface_node(ast, SurfaceNodeKind::ProofBlock, 69, 108)?;
+    let (take_id, take) = exact_surface_node(ast, SurfaceNodeKind::TakeStatement, 77, 90)?;
+    let (witness_id, witness) = exact_surface_node(ast, SurfaceNodeKind::Witness, 82, 89)?;
+    let (choice_id, choice) = exact_surface_node(ast, SurfaceNodeKind::ChoiceTerm, 82, 89)?;
+    let (type_expression_id, _) = exact_surface_node(ast, SurfaceNodeKind::TypeExpression, 86, 89)?;
+    let (type_head_id, _) = exact_surface_node(ast, SurfaceNodeKind::TypeHead, 86, 89)?;
+    let (conclusion_id, _) =
+        exact_surface_node(ast, SurfaceNodeKind::ConclusionStatement, 93, 104)?;
+    let formula_ids = [
+        exact_surface_node(ast, SurfaceNodeKind::BuiltinPredicateApplication, 63, 68)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::BuiltinPredicateApplication, 98, 103)?.0,
+    ];
+    let term_ids = [
+        exact_surface_node(ast, SurfaceNodeKind::TermReference, 63, 64)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::TermReference, 67, 68)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::TermReference, 98, 99)?.0,
+        exact_surface_node(ast, SurfaceNodeKind::TermReference, 102, 103)?.0,
+    ];
+    let label_id = ast
+        .token_nodes()
+        .iter()
+        .copied()
+        .find(|id| id.index() == 6)?;
+    if !surface_is_descendant(ast, theorem_id, proof_id)
+        || !surface_is_descendant(ast, proof_id, take_id)
+        || !surface_is_descendant(ast, take_id, witness_id)
+        || !surface_is_descendant(ast, witness_id, choice_id)
+        || !surface_is_descendant(ast, choice_id, type_expression_id)
+        || !surface_is_descendant(ast, type_expression_id, type_head_id)
+        || !surface_is_descendant(ast, theorem_id, formula_ids[0])
+        || !surface_is_descendant(ast, proof_id, formula_ids[1])
+        || surface_is_descendant(ast, choice_id, formula_ids[1])
+        || ast.node(choice_id).is_none_or(|node| {
+            node.children
+                .iter()
+                .map(|id| id.index())
+                .ne([13, type_expression_id.index()])
+        })
+        || direct_token_texts(ast, choice).as_slice() != ["the"]
+    {
+        return None;
+    }
+    Some(SourceStatementB3M2B2B3CExtraction {
+        theorem_site: surface_site(theorem_id),
+        theorem_range: theorem.range,
+        label_range: ast.node(label_id)?.range,
+        statement_sites: [theorem_id, conclusion_id].map(surface_site),
+        statement_ranges: [range(ast.source_id, 19, 109), range(ast.source_id, 93, 104)],
+        formula_sites: formula_ids.map(surface_site),
+        formula_ranges: [range(ast.source_id, 63, 68), range(ast.source_id, 98, 103)],
+        term_sites: term_ids.map(surface_site),
+        term_ranges: [
+            range(ast.source_id, 63, 64),
+            range(ast.source_id, 67, 68),
+            range(ast.source_id, 98, 99),
+            range(ast.source_id, 102, 103),
+        ],
+        take_site: surface_site(take_id),
+        take_range: take.range,
+        witness_site: surface_site(witness_id),
+        witness_range: witness.range,
+        set_term_node: choice_id.index(),
+        proof_range: proof.range,
+    })
+}
+
 const TASK258B3M2B2A_SURFACE_RANGES: [(usize, usize); 57] = [
     (0, 7),
     (8, 9),
@@ -4708,6 +5123,15 @@ pub(in crate::runner) fn source_statement_output_with_source(
     symbols: &SymbolEnv,
     source_text: &str,
 ) -> Option<Result<SourceStatementRouteOutput, String>> {
+    if source_text == SOURCE_STATEMENT_B3M2B2B3C_TEXT {
+        return source_statement_b3m2b2b3c_output_with_source_and_mutation_impl(
+            ast,
+            module,
+            symbols,
+            source_text,
+            |_| {},
+        );
+    }
     if source_text == SOURCE_STATEMENT_B3M2B2B3B_TEXT {
         return source_statement_b3m2b2b3b_output_with_source_and_mutation_impl(
             ast,
@@ -4844,6 +5268,288 @@ pub(in crate::runner) fn source_statement_output_with_source(
         );
     }
     source_statement_output_with_source_and_mutation_impl(ast, module, symbols, source_text, |_| {})
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3CRouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    source_statement_b3m2b2b3c_output_with_source_and_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        mutate,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_stage_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    stage: SourceStatementB3M2B2B3CStage,
+    field: usize,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_choice_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_witness_output_with_controls(
+        ast,
+        module,
+        &symbols,
+        extracted.into(),
+        |_| {},
+        Some((stage, field)),
+        |_| {},
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_lower_stage_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    stage: SourceStatementB3M2B2B3CLowerStage,
+    field: usize,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let baseline = match source_statement_b3m2b2b3c_output_with_source_and_mutation_impl(
+        ast,
+        module.clone(),
+        symbols,
+        source_text,
+        |_| {},
+    )? {
+        Ok(output) => output,
+        Err(error) => return Some(Err(error)),
+    };
+
+    match stage {
+        SourceStatementB3M2B2B3CLowerStage::Task48 => {
+            let parts = match mutate_task258b3m2b2b3b_binding_env(
+                baseline
+                    .typed_ast
+                    .source_statement()
+                    .expect("Task258B3M2B2B3C statement")
+                    .binding_env(),
+                field,
+            ) {
+                Ok(parts) => parts,
+                Err(error) => return Some(Err(error)),
+            };
+            let binding_env = match BindingEnv::try_new(parts) {
+                Ok(binding_env) => binding_env,
+                Err(error) => return Some(Err(format!("Task48: {error}"))),
+            };
+            source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
+                ast,
+                module,
+                symbols,
+                source_text,
+                move |input| input.binding_env = binding_env,
+            )
+            .map(|result| {
+                result.map_err(|error| {
+                    if error.starts_with("Task48:") {
+                        error
+                    } else {
+                        format!("Task48: {error}")
+                    }
+                })
+            })
+        }
+        SourceStatementB3M2B2B3CLowerStage::Task252 => {
+            let mut input = task258b3m2b2b3b_primary_input(
+                baseline
+                    .typed_ast
+                    .source_term()
+                    .expect("Task258B3M2B2B3C primary terms"),
+            );
+            if let Err(error) = mutate_task258b3m2b2b3b_primary_input(&mut input, field) {
+                return Some(Err(error));
+            }
+            let primary = match SourcePrimaryTermProducer::build(
+                input,
+                baseline
+                    .typed_ast
+                    .source_statement()
+                    .expect("Task258B3M2B2B3C statement")
+                    .binding_env(),
+                baseline.typed_ast.nodes(),
+            ) {
+                Ok(primary) => primary,
+                Err(error) => return Some(Err(format!("Task252: {error}"))),
+            };
+            source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
+                ast,
+                module,
+                symbols,
+                source_text,
+                move |input| input.primary = primary,
+            )
+            .map(|result| {
+                result.map_err(|error| {
+                    if error.starts_with("Task252:") {
+                        error
+                    } else {
+                        format!("Task252: {error}")
+                    }
+                })
+            })
+        }
+        SourceStatementB3M2B2B3CLowerStage::Task255 => {
+            let mut input = task258b3m2b2b3c_set_input(
+                baseline
+                    .typed_ast
+                    .source_set_term()
+                    .expect("Task258B3M2B2B3C set term"),
+            );
+            if let Err(error) = mutate_task258b3m2b2b3c_set_input(&mut input, field) {
+                return Some(Err(error));
+            }
+            let binding_env = baseline
+                .typed_ast
+                .source_statement()
+                .expect("Task258B3M2B2B3C statement")
+                .binding_env();
+            let primary = baseline
+                .typed_ast
+                .source_term()
+                .expect("Task258B3M2B2B3C primary terms");
+            let set_term = match SourceSetTermProducer::build(
+                input,
+                binding_env,
+                primary,
+                None,
+                None,
+                baseline.typed_ast.nodes(),
+            ) {
+                Ok(set_term) => set_term,
+                Err(error) => return Some(Err(format!("Task255: {error}"))),
+            };
+            source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
+                ast,
+                module,
+                symbols,
+                source_text,
+                move |input| input.set_term = Some(set_term),
+            )
+            .map(|result| {
+                result.map_err(|error| {
+                    if error.starts_with("Task255:") {
+                        error
+                    } else {
+                        format!("Task255: {error}")
+                    }
+                })
+            })
+        }
+    }
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3CRouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_choice_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_witness_output_with_controls(
+        ast,
+        module,
+        &symbols,
+        extracted.into(),
+        |_| {},
+        None,
+        mutate,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_choice_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => mutate(symbols),
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b3m2b2b3c_output(
+        ast,
+        module,
+        &symbols,
+        extracted,
+        |_| {},
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b3m2b2b3c_resolver_env_for_test(
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    label_range: SourceRange,
+) -> Result<SymbolEnv, String> {
+    enrich_source_statement_resolver_env_for_owner(
+        module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_LABEL,
+        label_range,
+    )
+}
+
+fn source_statement_b3m2b2b3c_output_with_source_and_mutation_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3CRouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    let extracted = extract_choice_witness_source_statement(ast, source_text)?;
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_LABEL,
+        extracted.label_range,
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b3m2b2b3c_output(
+        ast, module, &symbols, extracted, mutate,
+    ))
 }
 
 #[cfg(test)]
@@ -6737,6 +7443,16 @@ fn build_source_statement_b3m2b2b3b_output(
     build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
 }
 
+fn build_source_statement_b3m2b2b3c_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    extracted: SourceStatementB3M2B2B3CExtraction,
+    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3CRouteInputs),
+) -> Result<SourceStatementRouteOutput, String> {
+    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+}
+
 fn task258b3m2b2b3a_mutated_module(module: &ModuleId) -> ModuleId {
     ModuleId::new(
         module.package().clone(),
@@ -7138,6 +7854,167 @@ fn mutate_task258b3m2b2b3b_set_input(
         20 => input.requests[0].kind = SourceSetRequestKind::ChoiceNonempty,
         21 => input.requests[0].generator = Some(SourceSetGeneratorId::new(0)),
         22 => input.requests[0].type_site = Some(SourceSetTypeSiteId::new(0)),
+        _ => return Err(format!("Task255: unknown mutation field {field}")),
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+fn task258b3m2b2b3c_set_input(input: &SourceSetTermHandoff) -> SourceSetTermHandoffInput {
+    SourceSetTermHandoffInput {
+        source_id: input.source_id(),
+        module_id: input.module_id().clone(),
+        terms: input
+            .terms()
+            .iter()
+            .map(|(_, row)| SourceSetTermInput {
+                site: row.site().clone(),
+                source_range: row.source_range(),
+                source_ordinal: row.source_ordinal(),
+                context: row.context(),
+                recovery: row.recovery(),
+                spelling: row.spelling().to_owned(),
+                kind: row.kind(),
+            })
+            .collect(),
+        wrappers: Vec::new(),
+        generators: Vec::new(),
+        type_sites: input
+            .type_sites()
+            .iter()
+            .map(|(_, row)| SourceSetTypeSiteInput {
+                owner: row.owner(),
+                site: row.site().clone(),
+                source_range: row.source_range(),
+                spelling: row.spelling().to_owned(),
+                head_site: row.head_site().clone(),
+                head_range: row.head_range(),
+                head_spelling: row.head_spelling().to_owned(),
+                context: row.context(),
+                recovery: row.recovery(),
+                head: row.head(),
+            })
+            .collect(),
+        conditions: Vec::new(),
+        edges: Vec::new(),
+        requests: input
+            .requests()
+            .iter()
+            .map(|(_, row)| SourceSetRequestInput {
+                term: row.term(),
+                ordinal: row.ordinal(),
+                kind: row.kind(),
+                generator: row.generator(),
+                type_site: row.type_site(),
+            })
+            .collect(),
+    }
+}
+
+#[cfg(test)]
+fn mutate_task258b3m2b2b3c_set_input(
+    input: &mut SourceSetTermHandoffInput,
+    field: usize,
+) -> Result<(), String> {
+    match field {
+        0 => input.source_id = task258b3m2b2b3a_mutated_source_id(input.source_id),
+        1 => input.module_id = task258b3m2b2b3a_mutated_module(&input.module_id),
+        2 => input.terms.clear(),
+        3 => input.terms.push(input.terms[0].clone()),
+        4 => {
+            input.terms[0].site = TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(27))
+        }
+        5 => input.terms[0].source_range.start += 1,
+        6 => input.terms[0].source_ordinal += 1,
+        7 => input.terms[0].context = BindingContextId::new(0),
+        8 => input.terms[0].recovery = SourceSetTermRecovery::Degraded,
+        9 => input.terms[0].spelling.push('!'),
+        10 => input.terms[0].kind = SourceSetTermKind::Enumeration,
+        11 => input.wrappers.push(SourceSetWrapperInput {
+            term: SourceSetTermId::new(0),
+            ordinal: 0,
+            site: input.terms[0].site.clone(),
+            source_range: input.terms[0].source_range,
+            context: input.terms[0].context,
+            recovery: SourceSetTermRecovery::Normal,
+            spelling: "( the set )".to_owned(),
+        }),
+        12 => input.generators.push(SourceSetGeneratorInput {
+            term: SourceSetTermId::new(0),
+            ordinal: 0,
+            site: input.terms[0].site.clone(),
+            source_range: input.terms[0].source_range,
+            spelling: "x being set".to_owned(),
+            context: input.terms[0].context,
+            recovery: SourceSetTermRecovery::Normal,
+            type_site: SourceSetTypeSiteId::new(0),
+        }),
+        13 => input.type_sites.clear(),
+        14 => input.type_sites.push(input.type_sites[0].clone()),
+        15 => {
+            input.type_sites[0].owner = SourceSetTypeOwner::Term {
+                term: SourceSetTermId::new(0),
+                role: SourceSetTypeRole::QuaTarget,
+            }
+        }
+        16 => {
+            input.type_sites[0].site =
+                TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(33))
+        }
+        17 => input.type_sites[0].source_range.start += 1,
+        18 => input.type_sites[0].spelling.push('!'),
+        19 => {
+            input.type_sites[0].head_site =
+                TypedSiteRef::Node(mizar_checker::typed_ast::TypedNodeId::new(34))
+        }
+        20 => input.type_sites[0].head_range.start += 1,
+        21 => input.type_sites[0].head_spelling.push('!'),
+        22 => input.type_sites[0].context = BindingContextId::new(0),
+        23 => input.type_sites[0].recovery = SourceSetTermRecovery::Degraded,
+        24 => input.type_sites[0].head = SourceSetTypeHead::BuiltinObject,
+        25 => input.conditions.push(SourceSetConditionInput {
+            term: SourceSetTermId::new(0),
+            ordinal: 0,
+            colon_site: input.terms[0].site.clone(),
+            colon_range: input.terms[0].source_range,
+            colon_spelling: ":".to_owned(),
+            condition_site: input.terms[0].site.clone(),
+            source_range: input.terms[0].source_range,
+            spelling: "x = x".to_owned(),
+            recovery: SourceSetTermRecovery::Normal,
+        }),
+        26 => input.edges.push(SourceSetEdgeInput {
+            term: SourceSetTermId::new(0),
+            ordinal: 0,
+            role: SourceSetEdgeRole::EnumerationElement,
+            target: SourceSetTarget::Primary(SourcePrimaryTermId::new(0)),
+        }),
+        27 => input.requests.clear(),
+        28 => input.requests.push(input.requests[0].clone()),
+        29..39 => {
+            let offset = field - 29;
+            let request = offset / 5;
+            match offset % 5 {
+                0 => input.requests[request].term = SourceSetTermId::new(1),
+                1 => input.requests[request].ordinal = 1 - input.requests[request].ordinal,
+                2 => {
+                    input.requests[request].kind = if request == 0 {
+                        SourceSetRequestKind::ResultType
+                    } else {
+                        SourceSetRequestKind::ChoiceNonempty
+                    }
+                }
+                3 => input.requests[request].generator = Some(SourceSetGeneratorId::new(0)),
+                4 => {
+                    input.requests[request].type_site = if request == 0 {
+                        None
+                    } else {
+                        Some(SourceSetTypeSiteId::new(0))
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
         _ => return Err(format!("Task255: unknown mutation field {field}")),
     }
     Ok(())
@@ -8085,7 +8962,12 @@ fn build_source_statement_witness_output_with_controls(
             stage_mutation,
             Some((SourceStatementB3M2B2B3AStage::Witness, _))
         ) {
-            format!("B3A: {error}")
+            let stage = if extracted.task == "Task258B3M2B2B3C" {
+                "B3C"
+            } else {
+                "B3A"
+            };
+            format!("{stage}: {error}")
         } else {
             error.to_string()
         }

@@ -1012,3 +1012,18 @@ checker 4 + runner 5 tests、future seven-file boundary、semantic deferral、
 `398/456 -> 402/461`、trace no-op contractを同期する。repeat
 specification reviewは**NO FINDINGS**。later consistency/quality/commit/
 fresh implementation inventoryはpending。
+
+## Task 258B3M2B2B3C bilingual implementation synchronization
+
+EN/JAは同じprerequisite commit、exact seven-file source scope、private
+110-byte/52-node choice route、unchanged Task-255 producer、checker 4 +
+runner 5 tests、`32/55/39/72/62/21` exhaustive matricesをrecordする。
+両言語はresolver/upper-prefix `test_gap` 2件とB3A-hard-coded
+`source_drift`/`test_gap`のremediationをrecordし、repeat test/
+implementation reviewsは**NO FINDINGS**。
+
+両言語はrunner library `461`、final module sizes、production/test-list
+hashes、unchanged 5 CLI hashes、trace/authority no-op、全semantic
+deferralsを同期する。final source/docs consistencyとindependent qualityは
+**NO FINDINGS**、全9 hard gates PASS、score capなし、valid `98/100`。
+commit、post-commit、fresh-next inventoryはpending。

@@ -2497,6 +2497,30 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   PASS、score capなし、valid `98/100`でcomplete。
 - [x] exact docs-only scope、crate/workspace checks、5 CLIs、全count/hash/
   no-op gatesをverify。
-- [ ] dedicated B3C documentation commit 1件を作りclean post-commit/stashを
+- [x] dedicated B3C documentation commit
+  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`を作りclean post-commit/stashを
   verify。
-- [ ] B3C implementationをfresh inventory。
+- [x] B3C implementationをfresh inventory。
+
+## Checker Task 258B3M2B2B3C implementation ledger
+
+- [x] prerequisiteをclean ahead-15/behind-0、stash unchangedでcloseし、
+  lower-stage prerequisite不要をconfirm。
+- [x] frozen runner 4 + checker 3 source filesだけをimplementし、両
+  `source_set_term.rs` ownersをpreserve。
+- [x] exact runner 5/checker 4 testsと`32/55/39/72/62/21` field
+  matricesをimplement。
+- [x] resolver replayとupper-family prefix/non-generic `test_gap`を
+  remediate。
+- [x] enumeration siblingを変えずB3A-hard-coded B3C
+  `source_drift`/`test_gap`をremediate。
+- [x] repeat test-sufficiency/implementation reviewsを**NO FINDINGS**で
+  complete。
+- [x] focused `5/5 + 4/4`、runner package
+  `461+3/14/137/2/21`、formatをPASS。
+- [x] final sizes、production/test hashes、unchanged CLI hashes、
+  trace/authority no-opをrecord。
+- [x] workspace Clippy/testsとfinal measurementsをcomplete。
+- [x] final source/docs consistencyとquality reviewsをcomplete。
+- [ ] exact 39 synchronized task filesをstage/commitしpost-commit verify。
+- [ ] next dependency-minimal taskをfresh inventory。

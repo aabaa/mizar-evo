@@ -396,3 +396,13 @@ Task-255 source changeは不要。frozen handoffは`1/0/0/1/0/0/2`。
 application/structure fingerprintsはabsent。future B3C testsは全`39`
 safely mutable input fieldsをmutate/replayし、generic dependency failureで
 なくTask-255 stage errorをrequireする。
+
+## Task 258B3M2B2B3C reused choice consumer
+
+B3Cはunchanged exact Task-255 handoff、すなわち`Choice` 1、builtin-set
+`ChoiceTarget` type site 1、wrapper/generator/condition/edge 0、ordered
+`ChoiceNonempty`/`ResultType` requestsをconsumeする。両
+`source_set_term.rs` owner/schema/producer/testは変更しない。upper witnessは
+existing set fingerprintと`SetTerm(0)` targetだけをrecordし、exact 39-field
+replay matrixはTask-255-owned error precedenceをconfirmする。choice
+nonemptiness/stable symbol/type factと全semantic creditはdeferred。

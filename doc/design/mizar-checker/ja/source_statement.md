@@ -2959,3 +2959,23 @@ complete cross-family graph/owner partitionはcrate planでfreeze済み。
 implementationはexisting SetTerm target/fingerprint/install/clone APIを
 reuseしpublic/error/debug/semantic surfaceを追加しない。exact checker 4 +
 runner 5 testsと`32/55/39/72/62/21` matricesをfreezeした。
+
+## Task 258B3M2B2B3C implemented choice statement
+
+source-statement producerはexact 110-byte、52-node/root-51
+`take the set;` profileだけをacceptし、target `SetTerm(0)`のunnamed witness
+1件をinstallする。syntax-free handoff publish前にcomplete
+Task-48/252/255/256/258 tables、exact owner partition、local resolver
+provenance、Task-255 edge 0、set fingerprint、choice/witness subtree
+exclusionをvalidateする。
+
+frozen checker 4 + runner 5 testsは全bytes/final LF、`52 x 4` node
+surfaces/root、resolver mutation、`32/55/39/72/62/21` fields、family
+orders、immediate replay、clone/rollback/debug、empty semanticsをexercise
+する。resolver replayとexact upper stage prefix/non-generic rejectionで
+initial medium `test_gap` 2件をcloseした。B3A-hard-coded branchは両
+enumeration siblingをretainしてB3Cへ限定し、`source_drift`/`test_gap`を
+closeした。repeat reviewsは**NO FINDINGS**。public API/error/debug grammar/
+semanticsはunchanged。new private dormant exact selector branchをactive
+corpus sourceはselectしないため、existing active-corpus routing/outcomeは
+unchanged。

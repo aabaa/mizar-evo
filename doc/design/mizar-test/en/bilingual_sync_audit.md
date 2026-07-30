@@ -1059,3 +1059,18 @@ EN/JA synchronously record B3B commit/post-commit closure and B3C's exact
 semantic deferral, `398/456 -> 402/461`, and trace no-op contract. The
 repeated specification review is **NO FINDINGS**. Later consistency, quality,
 commit, and fresh-implementation inventory remain pending.
+
+## Task 258B3M2B2B3C Bilingual Implementation Synchronization
+
+EN/JA now record the same prerequisite commit, exact seven-file source scope,
+private 110-byte/52-node choice route, unchanged Task-255 producer, checker
+four/runner five tests, and `32/55/39/72/62/21` exhaustive matrices. Both
+record the two remediated resolver/upper-prefix `test_gap` findings and the
+remediated B3A-hard-coded `source_drift`/`test_gap`; repeated test and
+implementation reviews are **NO FINDINGS**.
+
+Both languages record runner library `461`, final module sizes, production
+and test-list hashes, unchanged five CLI hashes, trace/authority no-op, and
+all semantic deferrals. Final source/documentation consistency and independent
+quality are **NO FINDINGS**; all nine hard gates PASS without a cap at valid
+`98/100`. Commit, post-commit, and fresh-next-task inventory remain pending.

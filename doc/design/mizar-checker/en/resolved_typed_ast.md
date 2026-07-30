@@ -1348,3 +1348,13 @@ Task-48/252/255/256/258/witness tuple before cloning into
 `Witness(0) -> SetTerm(0)`; choice nonemptiness, stable choice symbols, facts,
 proofs, and every semantic table remain empty. This documentation task makes
 no resolved-AST source or public-API change.
+
+## Task 258B3M2B2B3C Implemented Final-AST Closure
+
+`ResolvedTypedAst` now admits only the exact B3C choice statement/witness/
+set-only tuple, revalidates all Task-48/252/255/256/258 and witness fields,
+and clones the authenticated source set, statement, and witness state.
+Lower set/atomic error precedence is preserved; stale, hybrid, or
+non-generic-guard upper state fails with the existing statement error.
+Replay preserves debug bytes and empty semantic/proof/goal tables. No error,
+public route, dependency, or semantic result was added.

@@ -1225,7 +1225,9 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceStatement)?;
-        if !statements.is_task_258b3m2b2b3a_profile() && !statements.is_task_258b3m2b2b3b_profile()
+        if !statements.is_task_258b3m2b2b3a_profile()
+            && !statements.is_task_258b3m2b2b3b_profile()
+            && !statements.is_task_258b3m2b2b3c_profile()
         {
             return Err(TypedAstError::InvalidSourceStatement);
         }

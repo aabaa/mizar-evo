@@ -10989,3 +10989,17 @@ post-commit、fresh inventoryはpending。
 `tests/type_elaboration/source_statement.rs`のexact 4 files、checkerは
 paired 3 files。`source_set_term.rs`、fixture、expectation、trace metadata、
 active routing、public API、semanticsはboundary外。
+
+## Task 258B3M2B2B3C implemented runner boundary
+
+frozen runner 4 ownersとpaired checker 3 ownersだけを変更した。generic
+Task-255 producer、parser/resolver、active corpus/metadata、expectation、
+sidecar、trace row、semantic/proof/goal runnerはunchanged。private dormant
+routeはpublic API/error/debug/dependency/active discovery surfaceを追加しない。
+
+final runner sizesはstatement `10305`、unchanged set leaf `4517`、facade
+`779`、root `2595`、statement tests `23583`、unchanged set tests `2528`。
+productionは30 paths/52,614 lines。bounded finding remediationはauthorized
+source/test owners内に留まり、repeat test/implementation reviewsは
+**NO FINDINGS**。final documentation/boundaryとindependent quality reviewsも
+**NO FINDINGS**、全9 hard gates PASS、valid `98/100`。

@@ -1279,3 +1279,13 @@ SetTerm witness 1件をatomic installする。choice target/type-site/request
 authenticationはwitness publicationより先で、mutation/stale replay/family
 hybrid failure後もtyped ASTはunchanged。このprerequisiteはtyped-AST
 source/public schema/semantic table/debug bytesを変更しない。
+
+## Task 258B3M2B2B3C implemented typed-AST installation
+
+`TypedAst`はauthenticated B3C source-set/statement/witness bundleだけを
+existing atomic transactionでinstallする。exact choice set fingerprintを
+preserveし、complete dependency tupleを再validateし、stale/reordered/
+hybrid/generic-guard stateでrollbackする。B3A/B3Bは両family orderで
+independently installableのまま。public schema/error text/debug grammar/
+dependency/semantic tableは変更しない。private dormant runner selectorは
+このtyped/final ownerの外にあり、existing active-corpus outcomeを変更しない。

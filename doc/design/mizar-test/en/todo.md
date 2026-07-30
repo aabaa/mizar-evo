@@ -2709,6 +2709,30 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   nine hard gates PASS, no score cap, and valid `98/100`.
 - [x] Verify exact docs-only scope, crate/workspace checks, five CLIs, and
   all count/hash/no-op gates.
-- [ ] Create one dedicated B3C documentation commit and verify clean
+- [x] Create dedicated B3C documentation commit
+  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2` and verify clean
   post-commit/stash state.
-- [ ] Fresh-inventory B3C implementation.
+- [x] Fresh-inventory B3C implementation.
+
+## Checker Task 258B3M2B2B3C Implementation Ledger
+
+- [x] Close the prerequisite at clean ahead-15/behind-0 with stash
+  unchanged; confirm no lower-stage prerequisite.
+- [x] Implement only the frozen runner four and checker three source files;
+  preserve both `source_set_term.rs` owners.
+- [x] Implement exact runner five/checker four tests and
+  `32/55/39/72/62/21` field matrices.
+- [x] Remediate resolver replay and upper-family prefix/non-generic
+  `test_gap` findings.
+- [x] Remediate the B3A-hard-coded B3C `source_drift`/`test_gap` without
+  changing enumeration siblings.
+- [x] Complete repeated test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused `5/5 + 4/4`, runner package
+  `461+3/14/137/2/21`, and formatting.
+- [x] Record final sizes, production/test hashes, unchanged CLI hashes, and
+  trace/authority no-op.
+- [x] Complete workspace Clippy/tests and final measurements.
+- [x] Complete final source/documentation consistency and quality reviews.
+- [ ] Stage exact 39 synchronized task files, commit, and verify post-commit.
+- [ ] Fresh-inventory the next dependency-minimal task.

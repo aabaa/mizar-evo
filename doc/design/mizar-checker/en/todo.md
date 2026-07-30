@@ -5663,8 +5663,40 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final read-only quality review with
   **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
   `98/100` (`20/20/15/14/10/10/5/4`).
-- [ ] Stage only the synchronized documentation scope and inspect cached
+- [x] Stage only the synchronized documentation scope and inspect cached
   diff.
-- [ ] Create the dedicated B3C documentation-only commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B3C
+- [x] Create dedicated B3C documentation-only commit
+  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`.
+- [x] Verify clean ahead-15/behind-0 post-commit/stash invariants and
+  fresh-inventory B3C
   implementation.
+
+## Checker Task 258B3M2B2B3C Implementation Ledger
+
+- [x] Close prerequisite
+  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`, clean
+  ahead-15/behind-0, with stash fingerprint `f65cf4a...` unchanged.
+- [x] Confirm no lower-stage prerequisite and implement only the frozen
+  checker 3 + runner 4 source consumers.
+- [x] Preserve both `source_set_term.rs` owners, public APIs/errors/debug,
+  dependencies, authority artifacts, semantics, and every existing
+  active-corpus route/outcome while adding only the frozen private dormant
+  exact selector branch.
+- [x] Implement exact checker 4 + runner 5 tests for the 110-byte,
+  52-node/root-51 choice witness and `32/55/39/72/62/21` matrices.
+- [x] Remediate two medium `test_gap` findings with resolver replay, exact
+  upper stage prefixes, and generic-guard rejection.
+- [x] Remediate the B3A-hard-coded B3C `source_drift`/`test_gap` while
+  preserving both enumeration siblings.
+- [x] Complete repeated test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused checker `4/4`, runner `5/5`, runner library `461`, and
+  formatting checks.
+- [x] Record exact final checker/runner counts, sizes, production/test-list
+  hashes, unchanged five CLI hashes, and deliberate trace no-op.
+- [x] Complete workspace Clippy/tests and final count/hash reruns.
+- [x] Complete final source/documentation consistency and independent
+  quality reviews.
+- [ ] Stage exact 39 synchronized task files and inspect cached diff.
+- [ ] Create one implementation commit and verify clean post-commit/stash.
+- [ ] Fresh-inventory and select the next dependency-minimal task.

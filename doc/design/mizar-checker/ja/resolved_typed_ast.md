@@ -1277,3 +1277,13 @@ exact Task-48/252/255/256/258/witness tupleを再検証してから
 `Witness(0) -> SetTerm(0)`だけ。choice nonemptiness、stable choice
 symbols、facts/proofsと全semantic tablesはemptyのまま。このdocumentation
 taskはresolved-AST source/public APIを変更しない。
+
+## Task 258B3M2B2B3C implemented final-AST closure
+
+`ResolvedTypedAst`はexact B3C choice statement/witness/set-only tupleだけを
+admitし、全Task-48/252/255/256/258とwitness fieldsをrevalidateして
+authenticated source set/statement/witness stateをcloneする。lower
+set/atomic error precedenceをpreserveし、stale/hybrid/non-generic-guard
+upper stateはexisting statement errorでfailする。replayはdebug bytesと
+empty semantic/proof/goal tablesをpreserveする。error/public route/
+dependency/semantic resultは追加していない。

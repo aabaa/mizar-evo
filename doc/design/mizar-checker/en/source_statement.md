@@ -3503,3 +3503,24 @@ cross-family graph and owner partition are frozen in the crate plan.
 Implementation must reuse the existing SetTerm target/fingerprint/install/
 clone APIs and add no public/error/debug/semantic surface. Exact four checker
 and five runner tests plus `32/55/39/72/62/21` mutation matrices are frozen.
+
+## Task 258B3M2B2B3C Implemented Choice Statement
+
+The source-statement producer now accepts only the exact 110-byte,
+52-node/root-51 `take the set;` profile and installs one unnamed witness
+whose target is `SetTerm(0)`. It validates the complete Task-48/252/255/256/
+258 tables, exact owner partition, local resolver provenance, zero
+Task-255 edges, set fingerprint, and choice/witness subtree exclusion before
+publishing the syntax-free handoff.
+
+All bytes/final LF, `52 x 4` node surfaces/root, resolver mutations,
+`32/55/39/72/62/21` fields, family orders, immediate replay, clone/
+rollback/debug, and empty semantics are exercised by the frozen four checker
+plus five runner tests. Resolver replay and exact upper stage-prefix/
+non-generic rejection close two initial medium `test_gap` findings. A
+B3A-hard-coded branch was restricted to B3C while retaining both enumeration
+siblings, closing `source_drift`/`test_gap`; repeated reviews report
+**NO FINDINGS**. Public APIs/errors/debug grammar and semantics remain
+unchanged. The new private dormant exact selector branch is not selected by
+active corpus sources, so existing active-corpus routing and outcomes remain
+unchanged.

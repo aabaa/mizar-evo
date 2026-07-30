@@ -4,8 +4,8 @@ use super::{
     SOURCE_STATEMENT_B3M2B2A_TEXT, SOURCE_STATEMENT_B3M2B2B1A_TEXT,
     SOURCE_STATEMENT_B3M2B2B1B1_TEXT, SOURCE_STATEMENT_B3M2B2B2A_TEXT,
     SOURCE_STATEMENT_B3M2B2B2B_TEXT, SOURCE_STATEMENT_B3M2B2B2C_TEXT,
-    SOURCE_STATEMENT_B3M2B2B3A_TEXT, SOURCE_STATEMENT_B3M2B2B3B_TEXT, SOURCE_STATEMENT_B3N_TEXT,
-    SOURCE_STATEMENT_TEXT,
+    SOURCE_STATEMENT_B3M2B2B3A_TEXT, SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+    SOURCE_STATEMENT_B3M2B2B3C_TEXT, SOURCE_STATEMENT_B3N_TEXT, SOURCE_STATEMENT_TEXT,
     SourceStatementB1Extraction, SourceStatementB2Extraction, SourceStatementB3Extraction,
     SourceStatementB3M1Extraction, SourceStatementB3M1RouteInputs, SourceStatementB3M2AExtraction,
     SourceStatementB3M2ARouteInputs, SourceStatementB3M2B1Extraction,
@@ -20,10 +20,13 @@ use super::{
     SourceStatementB3M2B2B3ASurfaceMutation, SourceStatementB3M2B2B3BExtraction,
     SourceStatementB3M2B2B3BLowerStage, SourceStatementB3M2B2B3BRouteInputs,
     SourceStatementB3M2B2B3BStage, SourceStatementB3M2B2B3BSurfaceMutation,
-    SourceStatementB3NExtraction,
+    SourceStatementB3M2B2B3CExtraction, SourceStatementB3M2B2B3CLowerStage,
+    SourceStatementB3M2B2B3CRouteInputs, SourceStatementB3M2B2B3CStage,
+    SourceStatementB3M2B2B3CSurfaceMutation, SourceStatementB3NExtraction,
     SourceStatementB3NRouteInputs, SourceStatementB3RouteInputs, SourceStatementExtraction,
     SourceStatementRouteInputs, SourceStatementRouteOutput,
-    extract_application_witness_source_statement,
+    extract_application_witness_source_statement, extract_choice_witness_source_statement,
+    extract_choice_witness_source_statement_with_surface_mutation,
     extract_empty_set_enumeration_witness_source_statement,
     extract_empty_set_enumeration_witness_source_statement_with_surface_mutation,
     extract_multiple_witness_source_statement,
@@ -74,7 +77,13 @@ use super::{
     source_statement_b3m2b2b3b_output_with_post_auth_family_mutation,
     source_statement_b3m2b2b3b_output_with_resolver_mutation,
     source_statement_b3m2b2b3b_output_with_stage_mutation,
-    source_statement_b3m2b2b3b_resolver_env_for_test, source_statement_b3n_output_with_mutation,
+    source_statement_b3m2b2b3b_resolver_env_for_test,
+    source_statement_b3m2b2b3c_output_with_lower_stage_mutation,
+    source_statement_b3m2b2b3c_output_with_mutation,
+    source_statement_b3m2b2b3c_output_with_post_auth_family_mutation,
+    source_statement_b3m2b2b3c_output_with_resolver_mutation,
+    source_statement_b3m2b2b3c_output_with_stage_mutation,
+    source_statement_b3m2b2b3c_resolver_env_for_test, source_statement_b3n_output_with_mutation,
     source_statement_b3n_output_with_resolver_mutation, source_statement_b3n_resolver_env_for_test,
     source_statement_output_with_resolver_mutation, source_statement_output_with_source,
     source_statement_output_with_source_and_mutation, source_statement_resolver_env_for_test,
@@ -83,6 +92,9 @@ use super::{
     TASK258B3M2B2B3B_TASK48_FIELD_COUNT, TASK258B3M2B2B3B_TASK252_FIELD_COUNT,
     TASK258B3M2B2B3B_TASK255_FIELD_COUNT, TASK258B3M2B2B3B_TASK256_FIELD_COUNT,
     TASK258B3M2B2B3B_TASK258_FIELD_COUNT, TASK258B3M2B2B3B_WITNESS_FIELD_COUNT,
+    TASK258B3M2B2B3C_TASK48_FIELD_COUNT, TASK258B3M2B2B3C_TASK252_FIELD_COUNT,
+    TASK258B3M2B2B3C_TASK255_FIELD_COUNT, TASK258B3M2B2B3C_TASK256_FIELD_COUNT,
+    TASK258B3M2B2B3C_TASK258_FIELD_COUNT, TASK258B3M2B2B3C_WITNESS_FIELD_COUNT,
 };
 
 fn sha256_text(text: &str) -> String {
@@ -22304,6 +22316,1193 @@ fn task258b3m2b2b3b_typed_final_clone_debug_rollback_and_empty_semantics_are_sta
         module,
         &symbols,
         SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        |input| input.witness.witnesses.clear(),
+    )
+    .expect("rollback selector")
+    .expect_err("empty witness aggregate must roll back");
+    assert!(error.to_ascii_lowercase().contains("aggregate"), "{error}");
+    assert_eq!(output.typed_ast.debug_text(), baseline);
+
+    assert_eq!(
+        output.typed_ast.source_term(),
+        output.resolved.source_term()
+    );
+    assert_eq!(
+        output.typed_ast.source_set_term(),
+        output.resolved.source_set_term()
+    );
+    assert_eq!(
+        output.typed_ast.source_atomic_formula(),
+        output.resolved.source_atomic_formula()
+    );
+    assert_eq!(
+        output.typed_ast.source_statement(),
+        output.resolved.source_statement()
+    );
+    assert_eq!(
+        output.typed_ast.source_statement_witnesses(),
+        output.resolved.source_statement_witnesses()
+    );
+    assert!(
+        output
+            .typed_ast
+            .source_set_term()
+            .expect("set term")
+            .edges()
+            .is_empty()
+    );
+    assert!(output.typed_ast.source_application().is_none());
+    assert!(output.typed_ast.source_structure().is_none());
+    assert!(output.typed_ast.source_statement_references().is_none());
+    assert!(output.typed_ast.source_context().is_none());
+    assert!(output.typed_ast.source_type().is_none());
+    assert!(output.typed_ast.source_attribute().is_none());
+    assert!(output.typed_ast.source_evidence().is_none());
+    assert!(output.typed_ast.source_composite_formula().is_none());
+    assert!(output.typed_ast.source_formula_composition().is_none());
+    assert!(
+        output
+            .typed_ast
+            .source_condition_formula_composition()
+            .is_none()
+    );
+    assert!(
+        output
+            .typed_ast
+            .source_predicate_chain_composition()
+            .is_none()
+    );
+    assert!(output.typed_ast.types().is_empty());
+    assert!(output.typed_ast.facts().is_empty());
+    assert!(output.typed_ast.coercions().is_empty());
+    assert!(output.typed_ast.initial_obligations().is_empty());
+    assert!(output.typed_ast.diagnostics().is_empty());
+    assert!(output.resolved.expr_metadata().is_empty());
+    assert!(output.resolved.collection_candidates().is_empty());
+    assert!(output.resolved.expanded_candidates().is_empty());
+    assert!(output.resolved.template_expansions().is_empty());
+    assert!(output.resolved.viable_candidates().is_empty());
+    assert!(output.resolved.viability_decisions().is_empty());
+    assert!(output.resolved.specificity_graphs().is_empty());
+    assert!(output.resolved.resolved_overloads().is_empty());
+    assert!(output.resolved.inserted_coercions().is_empty());
+    assert!(output.resolved.cluster_facts().is_empty());
+    assert!(output.resolved.diagnostics().is_empty());
+    assert!(output.resolved.statement_semantics().is_empty());
+    assert!(output.resolved.checked_formulas().is_empty());
+    assert!(output.resolved.checked_proofs().is_empty());
+    assert!(output.resolved.checked_proof_nodes().is_empty());
+    assert!(output.resolved.checked_terminal_goals().is_empty());
+}
+fn task258b3m2b2b3c_fixture(
+    source_ordinal: usize,
+) -> (
+    mizar_syntax::ast::SurfaceAst,
+    mizar_resolve::resolved_ast::ModuleId,
+    mizar_resolve::env::SymbolEnv,
+) {
+    let (ast, module, _, symbols, diagnostics) = task253_ast_from_source_text_with_diagnostic_count(
+        SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+        source_ordinal,
+    );
+    assert_eq!(diagnostics, 0);
+    (ast, module, symbols)
+}
+
+fn task258b3m2b2b3c_output(
+    source_ordinal: usize,
+) -> (
+    mizar_syntax::ast::SurfaceAst,
+    mizar_resolve::resolved_ast::ModuleId,
+    mizar_resolve::env::SymbolEnv,
+    SourceStatementRouteOutput,
+) {
+    let (ast, module, symbols) = task258b3m2b2b3c_fixture(source_ordinal);
+    let output = source_statement_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+    )
+    .expect("Task258B3M2B2B3C selector")
+    .unwrap_or_else(|error| panic!("Task258B3M2B2B3C route failed: {error}"));
+    (ast, module, symbols, output)
+}
+
+#[test]
+fn task258b3m2b2b3c_real_frontend_freezes_choice_witness_contract() {
+    use mizar_checker::{
+        source_set_term::{
+            SourceSetRequestKind, SourceSetTermId, SourceSetTermKind, SourceSetTypeHead,
+            SourceSetTypeOwner, SourceSetTypeRole, SourceSetTypeSiteId,
+        },
+        source_statement::{
+            SourceStatementId, SourceStatementKind, SourceStatementWitnessId,
+            SourceStatementWitnessKind, SourceStatementWitnessTermTarget,
+        },
+        source_term::SourcePrimaryTermKind,
+    };
+
+    assert_eq!(SOURCE_STATEMENT_B3M2B2B3C_TEXT.len(), 110);
+    assert!(SOURCE_STATEMENT_B3M2B2B3C_TEXT.ends_with('\n'));
+    assert_eq!(
+        sha256_text(SOURCE_STATEMENT_B3M2B2B3C_TEXT),
+        "aad2fcc20f6e9da957a71a7a239164f7d405a8be25a43bbe64ae1fcf4e027370"
+    );
+    let (ast, module, symbols, output) = task258b3m2b2b3c_output(260_300);
+    assert_eq!(
+        (ast.nodes().len(), ast.root().map(|root| root.index())),
+        (52, Some(51))
+    );
+    let extracted: SourceStatementB3M2B2B3CExtraction =
+        extract_choice_witness_source_statement(&ast, SOURCE_STATEMENT_B3M2B2B3C_TEXT)
+            .expect("exact choice-witness extraction");
+    assert_eq!(
+        (
+            extracted.theorem_site.node().index(),
+            extracted.theorem_range,
+            extracted.label_range,
+            extracted.take_site.node().index(),
+            extracted.take_range,
+            extracted.witness_site.node().index(),
+            extracted.witness_range,
+            extracted.set_term_node,
+            extracted.proof_range,
+        ),
+        (
+            48,
+            range(ast.source_id, 19, 109),
+            range(ast.source_id, 27, 61),
+            38,
+            range(ast.source_id, 77, 90),
+            37,
+            range(ast.source_id, 82, 89),
+            35,
+            range(ast.source_id, 69, 108),
+        )
+    );
+    assert_eq!(
+        extracted
+            .term_sites
+            .iter()
+            .map(|site| site.node().index())
+            .collect::<Vec<_>>(),
+        [27, 29, 39, 41]
+    );
+    assert_eq!(
+        extracted
+            .formula_sites
+            .iter()
+            .map(|site| site.node().index())
+            .collect::<Vec<_>>(),
+        [31, 43]
+    );
+
+    let resolver =
+        source_statement_b3m2b2b3c_resolver_env_for_test(&module, &symbols, extracted.label_range)
+            .expect("resolver");
+    assert_eq!(resolver.module_id(), &module);
+    assert!(resolver.imports().is_empty());
+    let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+    let owners = resolver
+        .symbols()
+        .visible_candidates(&namespace, "FormulaStatementChoiceWitnessSmoke");
+    let [owner] = owners.as_slice() else {
+        panic!("one exact theorem owner");
+    };
+    assert_eq!(owner.contribution().index(), 0);
+    assert_eq!(
+        owner.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(range(ast.source_id, 19, 109))
+    );
+    assert_eq!(owner.origin().structural_path(), [2, 1]);
+    assert_eq!(owner.visibility(), mizar_resolve::env::Visibility::Public);
+    assert_eq!(
+        owner.export_status(),
+        mizar_resolve::env::ExportStatus::Exported
+    );
+    assert_eq!(owner.origin().source_id(), ast.source_id);
+    assert_eq!(owner.origin().module_id(), &module);
+    assert!(owner.origin().import_edge().is_none());
+    assert!(!owner.origin().is_recovered());
+    let labels = resolver
+        .labels()
+        .visible_candidates(&namespace, "FormulaStatementChoiceWitnessSmoke");
+    let [label] = labels.as_slice() else {
+        panic!("one exact theorem label");
+    };
+    assert_eq!(label.origin(), owner.origin());
+    assert_eq!(label.contribution(), owner.contribution());
+    assert_eq!(
+        label.recovery(),
+        mizar_resolve::resolved_ast::RecoveryState::Normal
+    );
+    let contribution = resolver
+        .contributions()
+        .get(owner.contribution())
+        .expect("contribution");
+    assert_eq!(
+        contribution.anchor(),
+        &mizar_session::SourceAnchor::Range(range(ast.source_id, 0, 18))
+    );
+    assert_eq!(
+        contribution.effects().labels(),
+        [label.origin_path().clone()]
+    );
+
+    let statements = output.typed_ast.source_statement().expect("Task258");
+    let bindings = statements.binding_env();
+    assert_eq!(
+        (
+            bindings.contexts().len(),
+            bindings.bindings().len(),
+            bindings.diagnostics().len(),
+        ),
+        (2, 1, 0)
+    );
+    let proof = bindings
+        .contexts()
+        .get(mizar_checker::binding_env::BindingContextId::new(1))
+        .expect("proof context");
+    assert!(matches!(
+        proof.owner,
+        mizar_checker::binding_env::BindingContextOwner::SourceStatement { source_range }
+            if source_range == range(ast.source_id, 69, 108)
+    ));
+    assert_eq!(
+        proof.parent,
+        Some(mizar_checker::binding_env::BindingContextId::new(0))
+    );
+    assert_eq!(
+        proof
+            .lexical_scope
+            .as_ref()
+            .map(mizar_resolve::names::LocalTermScope::path),
+        Some(&[0][..])
+    );
+    assert_eq!(
+        proof.visible_bindings,
+        [mizar_checker::binding_env::BindingId::new(0)]
+    );
+
+    let primary = output.typed_ast.source_term().expect("Task252");
+    assert_eq!(
+        (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ),
+        (4, 4, 0)
+    );
+    assert_eq!(
+        primary
+            .terms()
+            .iter()
+            .map(|(_, term)| (
+                term.site().node().index(),
+                term.source_range(),
+                term.source_ordinal(),
+                term.context().index(),
+                term.spelling(),
+                term.kind(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                27,
+                range(ast.source_id, 63, 64),
+                0,
+                0,
+                "x",
+                SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                29,
+                range(ast.source_id, 67, 68),
+                1,
+                0,
+                "x",
+                SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                39,
+                range(ast.source_id, 98, 99),
+                2,
+                1,
+                "x",
+                SourcePrimaryTermKind::VariableReference,
+            ),
+            (
+                41,
+                range(ast.source_id, 102, 103),
+                3,
+                1,
+                "x",
+                SourcePrimaryTermKind::VariableReference,
+            ),
+        ]
+    );
+    assert_eq!(
+        primary
+            .references()
+            .iter()
+            .map(|(_, row)| (row.term().index(), row.binding().index(), row.use_ordinal()))
+            .collect::<Vec<_>>(),
+        [(0, 0, 1), (1, 0, 1), (2, 0, 1), (3, 0, 1)]
+    );
+
+    let set = output.typed_ast.source_set_term().expect("Task255");
+    assert_eq!(
+        (
+            set.terms().len(),
+            set.wrappers().len(),
+            set.generators().len(),
+            set.type_sites().len(),
+            set.conditions().len(),
+            set.edges().len(),
+            set.requests().len(),
+        ),
+        (1, 0, 0, 1, 0, 0, 2)
+    );
+    let set_row = set.terms().get(SourceSetTermId::new(0)).expect("choice");
+    assert_eq!(set_row.site().node().index(), 35);
+    assert_eq!(set_row.source_range(), range(ast.source_id, 82, 89));
+    assert_eq!(set_row.source_ordinal(), 0);
+    assert_eq!(set_row.context().index(), 1);
+    assert_eq!(set_row.spelling(), "the set");
+    assert_eq!(set_row.kind(), SourceSetTermKind::Choice);
+    let type_site = set
+        .type_sites()
+        .get(SourceSetTypeSiteId::new(0))
+        .expect("choice target");
+    assert_eq!(
+        type_site.owner(),
+        SourceSetTypeOwner::Term {
+            term: SourceSetTermId::new(0),
+            role: SourceSetTypeRole::ChoiceTarget,
+        }
+    );
+    assert_eq!(type_site.site().node().index(), 34);
+    assert_eq!(type_site.source_range(), range(ast.source_id, 86, 89));
+    assert_eq!(type_site.spelling(), "set");
+    assert_eq!(type_site.head_site().node().index(), 33);
+    assert_eq!(type_site.head_range(), range(ast.source_id, 86, 89));
+    assert_eq!(type_site.head_spelling(), "set");
+    assert_eq!(type_site.context().index(), 1);
+    assert_eq!(type_site.head(), SourceSetTypeHead::BuiltinSet);
+    assert!(set.edges().is_empty());
+    assert_eq!(
+        set.requests()
+            .iter()
+            .map(|(_, row)| (
+                row.term().index(),
+                row.ordinal(),
+                row.kind(),
+                row.generator(),
+                row.type_site(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                0,
+                SourceSetRequestKind::ChoiceNonempty,
+                None,
+                Some(SourceSetTypeSiteId::new(0)),
+            ),
+            (0, 1, SourceSetRequestKind::ResultType, None, None),
+        ]
+    );
+
+    let atomic = output.typed_ast.source_atomic_formula().expect("Task256");
+    assert_eq!(
+        (
+            atomic.formulas().len(),
+            atomic.wrappers().len(),
+            atomic.predicate_segments().len(),
+            atomic.predicate_heads().len(),
+            atomic.candidates().len(),
+            atomic.type_sites().len(),
+            atomic.attributes().len(),
+            atomic.edges().len(),
+            atomic.requests().len(),
+        ),
+        (2, 0, 0, 0, 0, 0, 0, 4, 4)
+    );
+    assert_eq!(
+        atomic
+            .formulas()
+            .iter()
+            .map(|(_, row)| (
+                row.site().node().index(),
+                row.source_range(),
+                row.context().index()
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (31, range(ast.source_id, 63, 68), 0),
+            (43, range(ast.source_id, 98, 103), 1),
+        ]
+    );
+    assert_eq!(
+        atomic
+            .edges()
+            .iter()
+            .map(|(_, edge)| match edge.target() {
+                mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(id) => {
+                    id.index()
+                }
+                _ => usize::MAX,
+            })
+            .collect::<Vec<_>>(),
+        [0, 1, 2, 3]
+    );
+
+    assert_eq!(
+        (
+            statements.owners().len(),
+            statements.statements().len(),
+            statements.contexts().len(),
+            statements.input_facts().len(),
+            statements.candidate_facts().len(),
+        ),
+        (1, 2, 2, 2, 2)
+    );
+    assert_eq!(statements.checked_owner().symbol(), owner.symbol());
+    assert_eq!(
+        statements
+            .statements()
+            .iter()
+            .map(|(id, row)| (
+                id.index(),
+                row.site().node().index(),
+                row.source_range(),
+                row.source_ordinal(),
+                row.kind(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                0,
+                48,
+                range(ast.source_id, 19, 109),
+                0,
+                SourceStatementKind::TheoremProposition,
+            ),
+            (
+                1,
+                46,
+                range(ast.source_id, 93, 104),
+                2,
+                SourceStatementKind::Conclusion,
+            ),
+        ]
+    );
+    assert_eq!(
+        statements
+            .input_facts()
+            .iter()
+            .map(|(_, row)| row.uses().iter().map(|id| id.index()).collect::<Vec<_>>())
+            .collect::<Vec<_>>(),
+        [vec![0, 1], vec![2, 3]]
+    );
+    for index in 0..2 {
+        assert_eq!(
+            statements
+                .statements()
+                .get(SourceStatementId::new(index))
+                .expect("statement")
+                .context()
+                .index(),
+            index
+        );
+    }
+
+    let witnesses = output
+        .typed_ast
+        .source_statement_witnesses()
+        .expect("witness");
+    assert_eq!(
+        (witnesses.witnesses().len(), witnesses.names().len()),
+        (1, 0)
+    );
+    let witness = witnesses
+        .witnesses()
+        .get(SourceStatementWitnessId::new(0))
+        .expect("witness row");
+    assert_eq!(
+        witness.term(),
+        SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId::new(0))
+    );
+    assert_eq!(witness.owner().index(), 0);
+    assert_eq!(witness.take_site().node().index(), 38);
+    assert_eq!(witness.take_range(), range(ast.source_id, 77, 90));
+    assert_eq!(witness.site().node().index(), 37);
+    assert_eq!(witness.source_range(), range(ast.source_id, 82, 89));
+    assert_eq!(witness.binding_context().index(), 1);
+    assert_eq!(witness.source_ordinal(), 1);
+    assert_eq!(witness.ordinal(), 0);
+    assert_eq!(witness.spelling(), "the set");
+    assert_eq!(witness.kind(), SourceStatementWitnessKind::Unnamed);
+    assert!(witness.name().is_none());
+
+    assert_eq!(
+        output
+            .typed_ast
+            .nodes()
+            .iter()
+            .filter(|(_, node)| node.kind.as_str() != "source.surface.unowned")
+            .map(|(id, node)| (id.index(), node.kind.as_str()))
+            .collect::<Vec<_>>(),
+        [
+            (27, "source.term.variable-reference"),
+            (29, "source.term.variable-reference"),
+            (31, "source.formula.atomic.equality"),
+            (33, "source.term.set.target-type-head"),
+            (34, "source.term.set.target-type"),
+            (35, "source.term.set.choice"),
+            (37, "source.statement-witness.item"),
+            (38, "source.statement-witness.take"),
+            (39, "source.term.variable-reference"),
+            (41, "source.term.variable-reference"),
+            (43, "source.formula.atomic.equality"),
+            (46, "source.statement.conclusion"),
+            (48, "source.statement.theorem"),
+        ]
+    );
+    assert_eq!(output.reference_use_ordinals, [1; 4]);
+    assert_eq!(
+        output.typed_ast.source_set_term(),
+        output.resolved.source_set_term()
+    );
+    assert_eq!(
+        output.typed_ast.source_statement_witnesses(),
+        output.resolved.source_statement_witnesses()
+    );
+}
+
+#[test]
+fn task258b3m2b2b3c_validation_precedence_mutation_and_replay_fail_closed() {
+    let (ast, module, symbols, baseline) = task258b3m2b2b3c_output(260_310);
+    let (_, _, _, stale) = task258b3m2b2b3c_output(260_311);
+
+    for mutation in 0..5 {
+        let error = source_statement_b3m2b2b3c_output_with_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+            |input: &mut SourceStatementB3M2B2B3CRouteInputs| match mutation {
+                0 => {
+                    input.arena = mizar_checker::typed_ast::TypedArena::try_new(None, Vec::new())
+                        .expect("empty arena")
+                }
+                1 => {
+                    input.binding_env = stale
+                        .typed_ast
+                        .source_statement()
+                        .expect("statement")
+                        .binding_env()
+                        .clone()
+                }
+                2 => input.primary = stale.typed_ast.source_term().expect("primary").clone(),
+                3 => {
+                    input.atomic = stale
+                        .typed_ast
+                        .source_atomic_formula()
+                        .expect("atomic")
+                        .clone()
+                }
+                4 => input.set_term = None,
+                _ => unreachable!(),
+            },
+        )
+        .expect("selector")
+        .expect_err("lower mutation must fail");
+        assert!(
+            error.to_ascii_lowercase().contains("dependency")
+                || error.to_ascii_lowercase().contains("invalid"),
+            "mutation {mutation}: {error}"
+        );
+    }
+
+    for mutation in [
+        Task258B2ResolverMutation::Imported,
+        Task258B2ResolverMutation::Missing,
+        Task258B2ResolverMutation::Duplicate,
+        Task258B2ResolverMutation::WrongPath,
+        Task258B2ResolverMutation::WrongKind,
+        Task258B2ResolverMutation::Private,
+        Task258B2ResolverMutation::LocalOnly,
+        Task258B2ResolverMutation::Recovered,
+    ] {
+        let error = source_statement_b3m2b2b3c_output_with_resolver_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+            |symbols| task258b2_mutate_resolver(symbols, mutation),
+        )
+        .expect("resolver selector")
+        .expect_err("resolver mutation must fail");
+        assert!(
+            error.starts_with("Task258B3M2B2B3C resolver"),
+            "{mutation:?}: {error}"
+        );
+        let replay = source_statement_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+        )
+        .expect("resolver replay selector")
+        .expect("resolver replay");
+        assert_eq!(
+            replay.typed_ast.debug_text(),
+            baseline.typed_ast.debug_text(),
+            "{mutation:?} typed replay"
+        );
+        assert_eq!(
+            replay.resolved.debug_text(),
+            baseline.resolved.debug_text(),
+            "{mutation:?} resolved replay"
+        );
+    }
+    for mutation in [
+        Task258B3M2B2B3ALabelMutation::Namespace,
+        Task258B3M2B2B3ALabelMutation::PrimarySpelling,
+        Task258B3M2B2B3ALabelMutation::Contribution,
+        Task258B3M2B2B3ALabelMutation::OriginSource,
+        Task258B3M2B2B3ALabelMutation::OriginModule,
+        Task258B3M2B2B3ALabelMutation::OriginAnchor,
+        Task258B3M2B2B3ALabelMutation::OriginStructuralPath,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsMissing,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsExtra,
+        Task258B3M2B2B3ALabelMutation::ContributionEffectsWrongPath,
+    ] {
+        let error = source_statement_b3m2b2b3c_output_with_resolver_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+            |symbols| task258b3m2b2b3a_mutate_label_resolver(symbols, mutation),
+        )
+        .expect("selector")
+        .expect_err("label mutation must fail");
+        assert!(
+            error.to_ascii_lowercase().contains("resolver")
+                || error.to_ascii_lowercase().contains("owner"),
+            "{mutation:?}: {error}"
+        );
+        let replay = source_statement_output_with_source(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+        )
+        .expect("label replay selector")
+        .expect("label replay");
+        assert_eq!(
+            replay.typed_ast.debug_text(),
+            baseline.typed_ast.debug_text(),
+            "{mutation:?} typed replay"
+        );
+        assert_eq!(
+            replay.resolved.debug_text(),
+            baseline.resolved.debug_text(),
+            "{mutation:?} resolved replay"
+        );
+    }
+
+    let set = baseline
+        .typed_ast
+        .source_set_term()
+        .expect("baseline set term");
+    assert_eq!(
+        (
+            set.terms().len(),
+            set.wrappers().len(),
+            set.generators().len(),
+            set.type_sites().len(),
+            set.conditions().len(),
+            set.edges().len(),
+            set.requests().len(),
+        ),
+        (1, 0, 0, 1, 0, 0, 2)
+    );
+    assert_eq!(
+        (
+            TASK258B3M2B2B3C_TASK48_FIELD_COUNT,
+            TASK258B3M2B2B3C_TASK252_FIELD_COUNT,
+            TASK258B3M2B2B3C_TASK255_FIELD_COUNT,
+            TASK258B3M2B2B3C_TASK256_FIELD_COUNT,
+            TASK258B3M2B2B3C_TASK258_FIELD_COUNT,
+            TASK258B3M2B2B3C_WITNESS_FIELD_COUNT,
+        ),
+        (32, 55, 39, 72, 62, 21)
+    );
+    for (stage, fields, error_prefix) in [
+        (
+            SourceStatementB3M2B2B3CLowerStage::Task48,
+            TASK258B3M2B2B3C_TASK48_FIELD_COUNT,
+            "Task48:",
+        ),
+        (
+            SourceStatementB3M2B2B3CLowerStage::Task252,
+            TASK258B3M2B2B3C_TASK252_FIELD_COUNT,
+            "Task252:",
+        ),
+        (
+            SourceStatementB3M2B2B3CLowerStage::Task255,
+            TASK258B3M2B2B3C_TASK255_FIELD_COUNT,
+            "Task255:",
+        ),
+    ] {
+        for field in 0..fields {
+            let error = source_statement_b3m2b2b3c_output_with_lower_stage_mutation(
+                &ast,
+                module.clone(),
+                &symbols,
+                SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+                stage,
+                field,
+            )
+            .expect("lower-stage selector")
+            .expect_err("lower-stage mutation must fail");
+            assert!(
+                error.starts_with(error_prefix),
+                "lower stage {stage:?} field {field}: {error}"
+            );
+            assert!(
+                !error.contains("lower dependency mismatch"),
+                "lower stage {stage:?} field {field} stopped at generic guard: {error}"
+            );
+            let replay = source_statement_output_with_source(
+                &ast,
+                module.clone(),
+                &symbols,
+                SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+            )
+            .expect("replay selector")
+            .expect("replay");
+            assert_eq!(
+                replay.typed_ast.debug_text(),
+                baseline.typed_ast.debug_text(),
+                "lower stage {stage:?} field {field}"
+            );
+            assert_eq!(
+                replay.resolved.debug_text(),
+                baseline.resolved.debug_text(),
+                "lower stage {stage:?} field {field}"
+            );
+        }
+    }
+
+    for (stage, fields, error_prefix) in [
+        (
+            SourceStatementB3M2B2B3CStage::Task256,
+            TASK258B3M2B2B3C_TASK256_FIELD_COUNT,
+            "Task256:",
+        ),
+        (
+            SourceStatementB3M2B2B3CStage::Task258,
+            TASK258B3M2B2B3C_TASK258_FIELD_COUNT,
+            "Task258:",
+        ),
+        (
+            SourceStatementB3M2B2B3CStage::Witness,
+            TASK258B3M2B2B3C_WITNESS_FIELD_COUNT,
+            "B3C:",
+        ),
+    ] {
+        for field in 0..fields {
+            let error = source_statement_b3m2b2b3c_output_with_stage_mutation(
+                &ast,
+                module.clone(),
+                &symbols,
+                SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+                stage,
+                field,
+            )
+            .expect("selector")
+            .expect_err("stage mutation must fail");
+            assert!(
+                error.starts_with(error_prefix),
+                "stage {stage:?} field {field}: {error}"
+            );
+            assert!(
+                !error.contains("lower dependency mismatch"),
+                "stage {stage:?} field {field} stopped at generic guard: {error}"
+            );
+            let replay = source_statement_output_with_source(
+                &ast,
+                module.clone(),
+                &symbols,
+                SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+            )
+            .expect("replay selector")
+            .expect("replay");
+            assert_eq!(
+                replay.typed_ast.debug_text(),
+                baseline.typed_ast.debug_text()
+            );
+            assert_eq!(replay.resolved.debug_text(), baseline.resolved.debug_text());
+        }
+    }
+
+    let (_, _, _, nonempty) = task258b3m2b2b3a_output(260_312);
+    let nonempty_set = nonempty
+        .typed_ast
+        .source_set_term()
+        .expect("nonempty set")
+        .clone();
+    assert_eq!(nonempty_set.edges().len(), 2);
+    let error = source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
+        &ast,
+        module,
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+        |input| input.set_term = Some(nonempty_set),
+    )
+    .expect("selector")
+    .expect_err("nonzero child edges must fail the choice profile");
+    assert!(
+        error.to_ascii_lowercase().contains("dependency")
+            || error.to_ascii_lowercase().contains("set"),
+        "{error}"
+    );
+}
+
+#[test]
+fn task258b3m2b2b3c_choice_and_byte_subtree_near_misses_are_exact() {
+    let (ast, module, symbols) = task258b3m2b2b3c_fixture(260_320);
+    assert!(
+        extract_choice_witness_source_statement(&ast, SOURCE_STATEMENT_B3M2B2B3C_TEXT).is_some()
+    );
+
+    for byte_index in 0..SOURCE_STATEMENT_B3M2B2B3C_TEXT.len() {
+        let mut bytes = SOURCE_STATEMENT_B3M2B2B3C_TEXT.as_bytes().to_vec();
+        bytes[byte_index] = b'?';
+        let source = String::from_utf8(bytes).expect("ASCII source");
+        assert!(
+            source_statement_output_with_source(&ast, module.clone(), &symbols, &source).is_none(),
+            "byte {byte_index}"
+        );
+    }
+    for node in 0..52 {
+        for mutation in [
+            SourceStatementB3M2B2B3CSurfaceMutation::NodeKind(node),
+            SourceStatementB3M2B2B3CSurfaceMutation::NodeRange(node),
+            SourceStatementB3M2B2B3CSurfaceMutation::NodeRecovery(node),
+            SourceStatementB3M2B2B3CSurfaceMutation::NodeChildren(node),
+        ] {
+            assert!(
+                extract_choice_witness_source_statement_with_surface_mutation(
+                    &ast,
+                    SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+                    mutation,
+                )
+                .is_none(),
+                "{mutation:?}"
+            );
+        }
+    }
+    assert!(
+        extract_choice_witness_source_statement_with_surface_mutation(
+            &ast,
+            SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+            SourceStatementB3M2B2B3CSurfaceMutation::RootIdentity,
+        )
+        .is_none()
+    );
+
+    let changed_label = SOURCE_STATEMENT_B3M2B2B3C_TEXT.replacen(
+        "FormulaStatementChoiceWitnessSmoke",
+        "FormulaStatementChoiceWitnessNearMiss",
+        1,
+    );
+    let mut near_misses = vec![changed_label];
+    for replacement in [
+        "set",
+        "the object",
+        "the non empty set",
+        "the set attr",
+        "the set(x)",
+        "(the set)",
+        "{}",
+        "{1, 2}",
+        "{x where x is set : x = x}",
+        "the set qua set",
+        "x",
+        "1 ++ 2",
+        "TypeCaseStruct(x: 1, y: 2)",
+    ] {
+        near_misses.push(SOURCE_STATEMENT_B3M2B2B3C_TEXT.replacen("the set", replacement, 1));
+    }
+    near_misses.push(SOURCE_STATEMENT_B3M2B2B3C_TEXT.replacen(
+        "take the set",
+        "take y = the set",
+        1,
+    ));
+    near_misses.push(SOURCE_STATEMENT_B3M2B2B3C_TEXT.replacen(
+        "take the set",
+        "take the set, the set",
+        1,
+    ));
+    near_misses.push(SOURCE_STATEMENT_B3M2B2B3C_TEXT.replace('\n', "\r\n"));
+    near_misses.push(SOURCE_STATEMENT_B3M2B2B3C_TEXT.trim_end().to_owned());
+    near_misses.push(format!("{SOURCE_STATEMENT_B3M2B2B3C_TEXT}\n"));
+
+    for (index, source) in near_misses.into_iter().enumerate() {
+        let (near_ast, near_module, _, near_symbols, _) =
+            task253_ast_from_source_text_with_diagnostic_count(&source, 260_400 + index);
+        assert!(
+            source_statement_output_with_source(
+                &near_ast,
+                near_module.clone(),
+                &near_symbols,
+                &source,
+            )
+            .is_none(),
+            "near miss {index}: {source:?}"
+        );
+        assert!(
+            source_statement_transport_detail_keys(&near_ast, near_module, &near_symbols, &source)
+                .is_none(),
+            "near-miss detail route {index}"
+        );
+    }
+}
+
+fn task258b3m2b2b3_family_debug(family: usize, ordinal: usize) -> String {
+    let source = match family {
+        0 => SOURCE_STATEMENT_B3M2B2B3A_TEXT,
+        1 => SOURCE_STATEMENT_B3M2B2B3B_TEXT,
+        2 => SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+        _ => unreachable!(),
+    };
+    let (ast, module, _, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(source, ordinal);
+    assert_eq!(diagnostics, 0);
+    source_statement_output_with_source(&ast, module, &symbols, source)
+        .expect("family selector")
+        .expect("family route")
+        .typed_ast
+        .debug_text()
+        .replace(&ordinal.to_string(), "<ordinal>")
+}
+
+#[test]
+fn task258b3m2b2b3c_family_and_active_route_isolation_is_atomic() {
+    let (ast, module, symbols, b3c) = task258b3m2b2b3c_output(260_500);
+    let baselines = [
+        task258b3m2b2b3_family_debug(0, 260_501),
+        task258b3m2b2b3_family_debug(1, 260_502),
+        task258b3m2b2b3_family_debug(2, 260_505),
+    ];
+    assert_ne!(baselines[0], baselines[1]);
+    assert_ne!(baselines[0], baselines[2]);
+    assert_ne!(baselines[1], baselines[2]);
+    assert_eq!(
+        b3c.typed_ast
+            .source_set_term()
+            .expect("B3C set")
+            .edges()
+            .len(),
+        0
+    );
+
+    let (application_ast, application_module, _, application_symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+            260_503,
+        );
+    assert_eq!(diagnostics, 0);
+    let application_symbols = augment_type_elaboration_import_summaries(
+        &application_ast,
+        &application_module,
+        application_symbols,
+    );
+    let application = source_statement_output_with_source(
+        &application_ast,
+        application_module,
+        &application_symbols,
+        SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+    )
+    .expect("application selector")
+    .expect("application route")
+    .typed_ast
+    .source_application()
+    .expect("application")
+    .clone();
+
+    let (structure_ast, structure_module, _, structure_symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_STATEMENT_B3M2B2B2A_TEXT,
+            260_504,
+        );
+    assert_eq!(diagnostics, 0);
+    let structure_symbols = augment_type_elaboration_import_summaries(
+        &structure_ast,
+        &structure_module,
+        structure_symbols,
+    );
+    let structure = source_statement_output_with_source(
+        &structure_ast,
+        structure_module,
+        &structure_symbols,
+        SOURCE_STATEMENT_B3M2B2B2A_TEXT,
+    )
+    .expect("structure selector")
+    .expect("structure route")
+    .typed_ast
+    .source_structure()
+    .expect("structure")
+    .clone();
+    let set = b3c.typed_ast.source_set_term().expect("B3C set").clone();
+
+    for tuple in 0u8..8 {
+        let result = source_statement_b3m2b2b3c_output_with_post_auth_family_mutation(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+            |input| {
+                input.application = (tuple & 0b001 != 0).then(|| application.clone());
+                input.structure = (tuple & 0b010 != 0).then(|| structure.clone());
+                input.set_term = (tuple & 0b100 != 0).then(|| set.clone());
+            },
+        )
+        .expect("selector");
+        if tuple == 0b100 {
+            assert!(result.is_ok(), "set-only tuple: {result:?}");
+        } else {
+            let error = result.expect_err("all non-set-only tuples must fail");
+            assert!(
+                error.to_ascii_lowercase().contains("dependency")
+                    || error.to_ascii_lowercase().contains("exclusive")
+                    || error.to_ascii_lowercase().contains("invalid"),
+                "tuple {tuple:03b}: {error}"
+            );
+        }
+    }
+
+    for (order_index, order) in [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        for (position, family) in order.into_iter().enumerate() {
+            assert_eq!(
+                task258b3m2b2b3_family_debug(family, 260_600 + order_index * 10 + position,),
+                baselines[family],
+                "order {order_index} position {position} family {family}"
+            );
+        }
+    }
+
+    for (source, expects_application, expects_structure, expects_set) in [
+        (SOURCE_STATEMENT_B3M2B2B1A_TEXT, true, false, false),
+        (SOURCE_STATEMENT_B3M2B2B2A_TEXT, false, true, false),
+        (SOURCE_STATEMENT_B3M2B2B2B_TEXT, false, true, false),
+        (SOURCE_STATEMENT_B3M2B2B2C_TEXT, false, true, false),
+        (SOURCE_STATEMENT_B3M2B2B3A_TEXT, false, false, true),
+        (SOURCE_STATEMENT_B3M2B2B3B_TEXT, false, false, true),
+        (SOURCE_STATEMENT_B3M2B2B3C_TEXT, false, false, true),
+    ] {
+        let (case_ast, case_module, _, case_symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(source, 260_700 + source.len());
+        assert_eq!(diagnostics, 0);
+        let case_symbols =
+            augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
+        let output =
+            source_statement_output_with_source(&case_ast, case_module, &case_symbols, source)
+                .expect("dormant selector")
+                .expect("dormant route");
+        assert_eq!(
+            output.typed_ast.source_application().is_some(),
+            expects_application
+        );
+        assert_eq!(
+            output.typed_ast.source_structure().is_some(),
+            expects_structure
+        );
+        assert_eq!(output.typed_ast.source_set_term().is_some(), expects_set);
+    }
+
+    assert!(
+        source_statement_transport_detail_keys(
+            &ast,
+            module,
+            &symbols,
+            SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+        )
+        .expect("exact private detail route")
+        .is_empty()
+    );
+}
+
+#[test]
+fn task258b3m2b2b3c_typed_final_clone_debug_rollback_and_choice_semantics_are_stable() {
+    let (ast, module, symbols, output) = task258b3m2b2b3c_output(260_800);
+    let replay = source_statement_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+    )
+    .expect("selector")
+    .expect("replay");
+    assert_eq!(output.typed_ast.debug_text(), replay.typed_ast.debug_text());
+    assert_eq!(output.resolved.debug_text(), replay.resolved.debug_text());
+    assert_eq!(
+        output.typed_ast.clone().debug_text(),
+        output.typed_ast.debug_text()
+    );
+    assert_eq!(
+        output.resolved.clone().debug_text(),
+        output.resolved.debug_text()
+    );
+
+    let witnesses = output
+        .typed_ast
+        .source_statement_witnesses()
+        .expect("witnesses");
+    let debug = witnesses.debug_text();
+    let lines = debug.lines().collect::<Vec<_>>();
+    let statement = lines
+        .iter()
+        .position(|line| line.starts_with("statement-fingerprint:"))
+        .expect("statement fingerprint");
+    let primary = lines
+        .iter()
+        .position(|line| line.starts_with("primary-term-fingerprint:"))
+        .expect("primary fingerprint");
+    let set = lines
+        .iter()
+        .position(|line| line.starts_with("set-term-fingerprint:"))
+        .expect("set fingerprint");
+    let row = lines
+        .iter()
+        .position(|line| line.starts_with("witness#0 "))
+        .expect("witness row");
+    assert!(statement < primary && primary < set && set < row);
+    assert!(!debug.contains("\napplication-fingerprint:"));
+    assert!(!debug.contains("\nstructure-fingerprint:"));
+    assert!(debug.contains(" term=set-term#0 "));
+
+    let baseline = output.typed_ast.debug_text();
+    let error = source_statement_b3m2b2b3c_output_with_mutation(
+        &ast,
+        module,
+        &symbols,
+        SOURCE_STATEMENT_B3M2B2B3C_TEXT,
         |input| input.witness.witnesses.clear(),
     )
     .expect("rollback selector")

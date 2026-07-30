@@ -4449,3 +4449,26 @@ non-vacuous zero-edge corruption, choice target/request ordering, ownership,
 family isolation, clone/rollback/debug stability, and empty semantic tables.
 No corpus case, expectation, sidecar, trace count, CLI output, or active route
 changes in this prerequisite or future transport.
+
+## Task 258B3M2B2B3C Implemented Runner Harness
+
+The dormant selector and frozen five runner tests now authenticate the exact
+110-byte source and final LF, all 52 nodes/root 51 across kind/range/
+recovery/children axes, eight base and ten label resolver mutations with
+typed/resolved replay, and all safely mutable Task-48/252/255/256/258/
+witness fields in exact `32/55/39/72/62/21` matrices. Exact
+`Task256:`/`Task258:`/`B3C:` failure prefixes and generic-guard rejection
+prevent fallback acceptance.
+
+The suite also checks non-vacuous zero-edge rejection, choice target/request
+order, ownership/subtree near misses, all six B3A/B3B/B3C family orders,
+active-route isolation, immediate replay/rollback, final clone/debug
+stability, and empty semantics. Initial two test gaps and the
+B3A-hard-coded route finding are remediated; repeated test-sufficiency and
+implementation reviews report **NO FINDINGS**.
+
+Final measured sizes are statement `10305`, unchanged set leaf `4517`,
+facade `779`, root `2595`, statement tests `23583`, and unchanged set tests
+`2528`. Runner library is `461`; focused `5/5` and package
+`461+3/14/137/2/21` pass. No active fixture, expectation, sidecar, trace,
+CLI, diagnostic, or semantic harness surface changes.

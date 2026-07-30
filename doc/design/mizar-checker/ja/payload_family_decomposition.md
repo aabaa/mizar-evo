@@ -1274,3 +1274,15 @@ B3C ownershipはtake/witness `{38,37}`と
 Task 252は`{27,29,39,41}`、Task 256は`{31,43}`、Task 258 baseは
 `{46,48}`をretainする。comprehension、`qua`、nonemptiness discharge、
 generated choice semantics、B4/B5、proof acceptanceはseparate families。
+
+### Task 258B3M2B2B3C implemented choice-witness edge
+
+implementationはownershipをexactにrealizeする: Task-252
+`{27,29,39,41}`、Task-255 `{33,34,35}`、Task-256 `{31,43}`、
+Task-258 `{46,48}`、B3C `{37,38}`。choiceのTask-255 child edgeは0で、
+upper edgeは`Witness(0) -> SetTerm(0)`だけ。全6 B3A/B3B/B3C
+installation ordersはindependent exact familyとしてのみacceptし、
+application/structure hybridとgeneric fallbackはatomicにfailする。choice
+semantics、comprehension、`qua`、B4/B5、proof acceptanceはdeferred。
+bounded replay/prefixとB3C-only route correction後のrepeat test/
+implementation reviewsは**NO FINDINGS**。

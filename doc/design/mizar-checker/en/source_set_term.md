@@ -442,3 +442,14 @@ then `ChoiceNonempty(type-site 0)` and `ResultType`. Context is proof context
 `1`; application/structure fingerprints are absent. Future B3C tests mutate
 all `39` safely mutable input fields, replay each result, and require Task-255
 stage errors rather than a generic dependency failure.
+
+## Task 258B3M2B2B3C Reused Choice Consumer
+
+B3C consumes the unchanged exact Task-255 handoff: one `Choice`, one
+`ChoiceTarget` builtin-set type site, zero wrappers/generators/conditions/
+edges, and ordered `ChoiceNonempty` then `ResultType` requests. Neither
+`source_set_term.rs` owner, schema, producer, or test changed. The upper
+witness records only its existing set fingerprint and `SetTerm(0)` target;
+the exact 39-field replay matrix confirms Task-255-owned error precedence.
+Choice nonemptiness, stable symbols, type facts, and every semantic credit
+remain deferred.

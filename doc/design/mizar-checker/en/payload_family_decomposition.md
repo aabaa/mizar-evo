@@ -1358,3 +1358,16 @@ requests with zero child edges. Task 252 retains `{27,29,39,41}`, Task 256
 `{31,43}`, and Task 258 base `{46,48}`. Comprehension, `qua`, nonemptiness
 discharge, generated choice semantics, B4/B5, and proof acceptance remain
 separate families.
+
+### Task 258B3M2B2B3C Implemented Choice-Witness Edge
+
+The implementation realizes the frozen ownership exactly: Task-252
+`{27,29,39,41}`, Task-255 `{33,34,35}`, Task-256 `{31,43}`, Task-258
+`{46,48}`, and B3C `{37,38}`. The choice contributes zero Task-255 child
+edges; the only upper edge is `Witness(0) -> SetTerm(0)`. All six
+B3A/B3B/B3C installation orders are accepted only as independent exact
+families, while application/structure hybrids and generic fallbacks fail
+atomically. Choice semantics, comprehension, `qua`, B4/B5, and proof
+acceptance remain deferred. Repeated test-sufficiency and implementation
+reviews report **NO FINDINGS** after the bounded replay/prefix and B3C-only
+route corrections.

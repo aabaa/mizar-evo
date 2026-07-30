@@ -4656,3 +4656,20 @@ Accordingly, no specification, `.miz`, expectation, sidecar, or trace row is
 edited; `spec.en.checker.formula_statement.source_payloads` remains
 `deferred`, `tests = []`, and existing Task-255 coverage remains unchanged.
 The repeated specification review is **NO FINDINGS**.
+
+## Task 258B3M2B2B3C Implementation Source/Spec Closure
+
+Prerequisite `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2` froze the
+spec-derived choice-witness contract. The implementation changes only the
+seven private statement consumers and exact four checker/five runner tests.
+It transports the 110-byte/52-node source, Task-255
+`1/0/0/1/0/0/2` profile, exact ownership, and empty semantics without
+altering specification behavior or test intent.
+
+The implementation closes bounded `source_drift` and `test_gap`. Two medium
+test gaps and one B3A-hard-coded source/test finding were remediated; repeated
+test and implementation reviews report **NO FINDINGS**. No `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict` exists. The formula-
+statement trace row remains `deferred`, `tests = []`; Task-111/255 credit,
+all trace counts/backlinks, and every semantic deferral remain unchanged.

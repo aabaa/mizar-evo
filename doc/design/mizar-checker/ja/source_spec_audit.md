@@ -4438,3 +4438,19 @@ spec/`.miz`/expectation/sidecar/trace rowは編集せず、
 `spec.en.checker.formula_statement.source_payloads`は`deferred`,
 `tests = []`、existing Task-255 coverageもunchanged。repeat specification
 reviewは**NO FINDINGS**。
+
+## Task 258B3M2B2B3C implementation source/spec closure
+
+prerequisite `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`はspec-derived
+choice-witness contractをfreezeした。implementationはprivate statement
+consumer 7件とexact checker 4/runner 5 testsだけを変更し、110-byte/
+52-node source、Task-255 `1/0/0/1/0/0/2`、exact ownership、empty
+semanticsをlanguage behavior/test intent変更なしにtransportする。
+
+implementationはbounded `source_drift`/`test_gap`をcloseする。medium test
+gap 2件とB3A-hard-coded source/test finding 1件はremediateし、repeat
+test/implementation reviewsは**NO FINDINGS**。`spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`はない。formula-statement
+trace rowは`deferred`, `tests = []`のまま、Task-111/255 credit、全trace
+count/backlink、全semantic deferralはunchanged。

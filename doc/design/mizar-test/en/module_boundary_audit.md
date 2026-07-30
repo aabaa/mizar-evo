@@ -12246,3 +12246,19 @@ This task is docs-only. Future runner ownership is exactly four files:
 and `tests/type_elaboration/source_statement.rs`; checker ownership is three
 paired files. `source_set_term.rs`, fixtures, expectations, trace metadata,
 active routing, public APIs, and semantics remain outside the boundary.
+
+## Task 258B3M2B2B3C Implemented Runner Boundary
+
+Only the frozen four runner owners and paired three checker owners changed.
+The generic Task-255 producer, parser/resolver, active corpus/metadata,
+expectations, sidecars, trace rows, and semantic/proof/goal runners remain
+unchanged. The private dormant route adds no public API, error/debug,
+dependency, or active discovery surface.
+
+Final runner sizes are statement `10305`, unchanged set leaf `4517`,
+facade `779`, root `2595`, statement tests `23583`, and unchanged set tests
+`2528`; production remains 30 paths and is now 52,614 lines. Bounded finding
+remediation remained within the authorized source/test owners, and repeated
+test/implementation reviews report **NO FINDINGS**. Final documentation/
+boundary and independent quality reviews also report **NO FINDINGS**; all
+nine hard gates PASS at valid `98/100`.
