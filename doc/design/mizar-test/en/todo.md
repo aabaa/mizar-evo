@@ -3065,5 +3065,42 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage and inspect only B5A, create one implementation commit, verify
-  post-commit invariants, and fresh-inventory the next dependency-ready task.
+- [x] Stage and inspect only B5A, create implementation commit
+  `4a79116c1a6f71155e4f366950fee8335b4dc8f1`, verify post-commit
+  invariants, and fresh-inventory the next dependency-ready task.
+
+## Checker Task 258B5B Frozen-Contract Documentation Prerequisite
+
+- [x] Record B5A commit
+  `4a79116c1a6f71155e4f366950fee8335b4dc8f1` as superseding its historical
+  pending line and fresh-inventory B5B.
+- [x] Classify the unfrozen API as `design_drift`, opt-in imported-label
+  population as separate lower `source_drift`, and active coverage as
+  bounded `test_gap`, with no blocking gap.
+- [x] Freeze the 146-byte source/hash, 57-node frontend/resolver, raw
+  `1/0/1/1/0`, opt-in `8/1/1/3/1`, all lower profiles, Task-258
+  `1/2/2/2/2 + 0/1`, and `8/49` ownership.
+- [x] Freeze the two-file lower prerequisite and two tests, exact imported
+  `Ref` provenance, citation target/API, telemetry, seven upper consumers,
+  four checker/five runner tests, and B1/B5A debug stability.
+- [x] Preserve all authority/test/trace/public/semantic boundaries and B5C.
+- [x] Complete specification review with no blocking finding and pass
+  crate/workspace tests, format, Clippy, and five CLIs.
+- [x] Complete test-contract, source/documentation, and bilingual reviews
+  with **NO FINDINGS**.
+- [x] Complete final scope/repository/stash gates.
+- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
+  no cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Stage/commit only synchronized B5B documentation, verify invariants,
+  and fresh-inventory the mandatory lower task.
+
+## Checker Task 258B5B Lower-Stage Prerequisite
+
+- [ ] Change only `runner/import_fixtures.rs` and the statement test leaf;
+  add the opt-in `Ref` label helper and two tests in a separate commit.
+
+## Checker Task 258B5B Upper Implementation
+
+- [ ] After the lower commit, change only the frozen three checker and four
+  runner consumers; implement and verify the exact imported citation
+  transaction in a separate commit.

@@ -12495,3 +12495,24 @@ Post-format runner owners measure
 `type_elaboration.rs=826`, `runner.rs=2642`, and the statement test leaf
 `32282`; the production boundary remains 30 paths and 58333 lines. These
 measurements do not change the ownership decision.
+
+## Checker Task 258B5B Frozen Three-Commit Boundary
+
+The documentation prerequisite owns design only. The mandatory lower-stage
+prerequisite then owns exactly
+`crates/mizar-test/src/runner/import_fixtures.rs` and the statement test
+leaf, adds one crate-private opt-in imported `Ref` label helper, and leaves
+normal import augmentation and every checker file unchanged.
+
+Only after that separate commit may the upper task change the same three
+checker and four runner consumers as B5A. The upper producer owns exact
+source/Surface/import/resolver/lower authentication and constructs
+`1/2/2/2/2 + 0/1`. Checker source-statement APIs own
+`SourceStatementCitationTarget::{Local, Imported}`, `SimpleImported`,
+imported projection validation, immutable installation, and final clone
+revalidation. Runner facades remain test-only; the public runner/CLI schema
+does not change.
+
+Parser, resolver, artifact, BindingEnv, Tasks 252/256, fixtures,
+expectations, sidecars, trace metadata, active behavior, B5C, semantics,
+proof, and downstream IR remain outside all three write scopes.

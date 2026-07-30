@@ -5527,3 +5527,36 @@ confinement remain separate follow-ups and retain the bounded active
 coverage-credit field changes. `tests/coverage/spec_trace.toml`,
 specifications, existing `.miz`, expectations, and sidecars remain
 unchanged; this implementation narrative grants no active coverage credit.
+
+## Task 258B5B Frozen Imported-Public Citation Follow-up
+
+Task 258B5A implementation is committed at
+`4a79116c1a6f71155e4f366950fee8335b4dc8f1`. Task 258B5B freezes only the
+derived imported-public theorem citation transport for the private 146-byte
+`FormulaStatementImportedPublicTheoremCitationSmoke` source. The contract
+authenticates 57 Surface/resolver nodes, one opt-in imported `Ref` theorem
+label with public/exported provenance, syntax-free lower profiles,
+Task-258 `1/2/2/2/2 + 0/1`, `8/49` ownership, and one
+`SimpleImported` citation without fabricating a local label row.
+
+The missing opt-in import-label helper is bounded lower-stage
+`source_drift` and must be implemented first as its own two-file task and
+commit. Missing active B5B corpus coverage remains a bounded `test_gap`;
+the previously unfrozen API/ownership mapping is corrected as
+`design_drift`. B5C confinement negatives and qualified/grouped/bulk
+citations remain distinct deferred work.
+
+This is narrative ownership and dependency mapping only. Requirement
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`. No trace status, test list, backlink, requirement count,
+owner-crate field, active mapping, or coverage credit changes.
+`tests/coverage/spec_trace.toml`, specifications, existing `.miz`,
+expectations, and sidecars are intentional no-ops. Repeated specification,
+test-contract, source/documentation boundary, and bilingual reviews report
+**NO FINDINGS**. Focused/crate/workspace, format, Clippy, five-CLI, every
+frozen count/hash, exact scope, authority no-op, repository-state, and
+protected-stash gates PASS without changing those fields. Independent final
+quality reports **NO FINDINGS**; all nine hard gates PASS, no score cap
+applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit inventory
+remain, and none grant credit.

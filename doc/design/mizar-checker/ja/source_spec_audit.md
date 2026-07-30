@@ -4757,3 +4757,26 @@ expectation、sidecar、trace metadata、public API、diagnostic、fact、
 accepted statement、proof、goal、downstream IRはunchanged。
 requirement `spec.en.checker.formula_statement.source_payloads`はactive test
 mapping/coverage creditなしの`deferred`を維持する。
+
+## Task 258B5B frozen authority result
+
+Chapters 11, 15, 16はvisible imported public theoremへのsimple citationを
+authorizeする。existing parser fixturesはsimple-citation/imported-`Ref`
+syntaxをindependently authenticateし、resolver label tests、artifact
+exported-label schema、module-summary-reuse loweringはderived provenanceを
+authenticateする。active B5B coverageではない。
+
+missing frozen B5B/API ownershipは`design_drift`、missing opt-in imported
+label populationはbounded lower-stage `source_drift`、missing active B5B
+corpusはbounded `test_gap`。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、current `repo_metadata_conflict`はない。
+
+documentationはone private 146-byte route、separate two-file lower
+prerequisite、later seven-consumer upper implementationをfreezeし、language/
+test intentを変更しない。B5Cと全citation proof/justification semanticsは
+deferred。
+requirement `spec.en.checker.formula_statement.source_payloads`は
+`deferred`、`tests = []`のまま。specification、existing `.miz`、
+expectation、sidecar、trace metadata、status/count/backlink、coverage
+creditはno-op。

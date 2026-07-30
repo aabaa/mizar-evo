@@ -1325,3 +1325,27 @@ languages.
 
 B5B/B5C ownership and every active/corpus/expectation/sidecar/trace/public/
 diagnostic/semantic no-op remain synchronized without an exception.
+
+## Checker Task 258B5B Frozen-Contract Synchronization
+
+The paired runner documents synchronize B5A implementation commit
+`4a79116c1a6f71155e4f366950fee8335b4dc8f1`, the exact 146-byte source and
+57-node/root-56 identities, raw `1/0/1/1/0` and opt-in `8/1/1/3/1`
+resolver profiles, the two-file lower prerequisite and its two tests, upper
+Binding `2/1/0`, Task-252 `4/4/0`, Task-256
+`2/0/0/0/0/0/0/4/4`, Task-258 `1/2/2/2/2 + 0/1`, `8/49`
+ownership, imported public/exported `Ref` provenance, and telemetry
+`1/1/[1,1,1,1]`.
+
+Both languages freeze the same
+`SourceStatementCitationTarget::{Local, Imported}` and
+`SimpleImported` API, exact consumers/tests, B1/B5A debug stability,
+classifications, baselines, exclusions, deferrals, and three-commit order.
+Repeated specification, test-contract, source/documentation boundary, and
+bilingual reviews report **NO FINDINGS**. Crate/workspace, format, Clippy,
+five-CLI, every frozen count/hash, exact 32-document scope, authority
+no-op, repository-state, and protected-stash gates PASS. Independent final
+quality reports **NO FINDINGS**; all nine hard gates PASS, no score cap
+applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit remain.
+No synchronization exception or trace/coverage credit exists.

@@ -3559,5 +3559,38 @@ or semantic owner changed. B3M2B2B remains next before B4.
   verification.
 - [x] Pass independent final quality with **NO FINDINGS**, all nine hard
   gates, no cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
-- [ ] Stage/inspect and create one B5A implementation commit, verify clean
+- [x] Stage/inspect and create B5A implementation commit
+  `4a79116c1a6f71155e4f366950fee8335b4dc8f1`, verify clean
   post-commit/stash state, and fresh-inventory the next dependency-ready task.
+
+## Checker Task 258B5B Frozen-Contract Documentation Prerequisite
+
+- [x] Record B5A commit
+  `4a79116c1a6f71155e4f366950fee8335b4dc8f1` and fresh-inventory B5B.
+- [x] Classify the unfrozen contract/API as `design_drift`, mandatory opt-in
+  imported-label helper as separate lower `source_drift`, and absent active
+  B5B coverage as bounded `test_gap`, with no blocking gap.
+- [x] Freeze source/hash, 57-node frontend/resolver, imported `Ref`
+  provenance, lower/upper rows, `8/49`, citation API, telemetry, consumers,
+  tests, deferrals, baselines, and exit criteria.
+- [x] Preserve specification, fixture, expectation, sidecar, trace
+  status/count/backlinks/credit, public runner schema, B5C, and semantics.
+- [x] Complete specification review with no blocking finding and pass
+  crate/workspace, format, Clippy, and five-CLI verification.
+- [x] Complete test-contract, source/documentation, and bilingual reviews
+  with **NO FINDINGS**.
+- [x] Pass final scope/repository/stash gates.
+- [x] Pass final quality with **NO FINDINGS**, all nine hard gates PASS, no
+  cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Commit only synchronized B5B documentation and fresh-inventory the
+  mandatory lower-stage prerequisite.
+
+## Checker Task 258B5B Lower-Stage Prerequisite
+
+- [ ] Change only `runner/import_fixtures.rs` and the statement test leaf;
+  add the opt-in `Ref` helper and two tests in one separate commit.
+
+## Checker Task 258B5B Upper Implementation
+
+- [ ] After the lower commit, implement only the exact seven upper consumers
+  and four checker/five runner tests in one separate commit.

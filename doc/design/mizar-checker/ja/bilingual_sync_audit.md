@@ -1278,3 +1278,24 @@ closeする。
 両languageはB5B/B5C `test_gap` ownershipと全specification、corpus、
 expectation、sidecar、trace status/count/backlink、coverage、public API、
 diagnostic、semantic no-op boundaryをexceptionなしで同期維持する。
+
+## Task 258B5B frozen-contract synchronization
+
+paired checker documentsはB5A implementation commit
+`4a79116c1a6f71155e4f366950fee8335b4dc8f1`、146-byte sourceと
+57-node/root-56 identity、raw/opt-in resolver profile、two-file lower
+prerequisite、upper `1/2/2/2/2 + 0/1`、`8/49` ownership、imported
+public/exported `Ref` provenance、public citation-target enum、debug branch、
+exact consumer/test、classification、baseline、exclusion、deferral、exit
+criteriaをsynchronizeする。
+
+両languageはrepeated specification、test-contract、source/documentation
+boundary、bilingual reviewを**NO FINDINGS**としてrecordする。
+focused/crate/workspace、formatting、Clippy、five CLI、全frozen
+count/hash、exact 32-document scope、authority no-op、repository-state、
+protected-stash gateはPASS。independent final quality、staging、commit、
+post-commit inventoryはthen-pending gateであった。independent final qualityは**NO
+FINDINGS**、全9 hard gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）として同期する。残るのはstaging、commit、
+post-commit inventoryだけ。active test mapping、trace backlink、
+status/count change、coverage creditを付与しない。

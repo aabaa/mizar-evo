@@ -1461,3 +1461,21 @@ formulaはTask-256 `Atomic(0..4)`で、全candidateは
 cross-family installはexact B1 base/reference pairまたはexact B5A
 base/reference pairだけを認める。B5B/B5C、qualified/grouped/bulk
 citation、fact、proof progress、theorem acceptance、IRはdeferredである。
+
+## Task 258B5B imported-citation decomposition
+
+B5Bはpositive imported-public-theorem profileだけをownする。B5Aに続くが、
+このfrozen documentation prerequisite、two-file lower opt-in imported-label
+prerequisite、seven-consumer upper implementationのthree commitsに分離する。
+B5C active confinement negativeはseparateのまま。
+
+upper profileはtheorem owner 1、statement/context/input/candidate rows 2、
+local-label row 0、imported citation 1。Task-256 formulasは
+`Atomic(0..1)`、both candidateは`UnverifiedProposition`。exact ownershipは
+terms 4/formulas 2/statements 2（`8/49`）。cross-family installationはmatched
+B1/B5A/B5B base/reference pairだけをadmitし、B5A local-label profileと
+B5B imported provenanceはpairできない。
+
+qualified/grouped/bulk import、private-import diagnostic、fact、proof
+progress、truth、theorem acceptance/publication、status propagation、ATP、
+Core、CFG、VCはdeferred。

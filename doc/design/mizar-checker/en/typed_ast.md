@@ -1543,3 +1543,25 @@ relocation or recovery, wrong range/origin/scope/contribution/key,
 Task-248 or another family, and altered ownership fail before mutation.
 Failed installation leaves the typed AST replayable. The implementation adds
 no public installer, error variant, semantic table, or B1 debug change.
+
+## Task 258B5B Frozen Imported-Target Installation
+
+After the separate lower-stage opt-in label prerequisite, paired
+installation admits a third exact reference profile: B5B base
+`1/2/2/2/2`, local labels/citations `0/1`, 57-node/root-56 arena, and
+`8/49` ownership. The citation target is
+`SourceStatementCitationTarget::Imported`, its kind is `SimpleImported`,
+and the singular projection is an imported/public/exported theorem `Ref`.
+
+The public target enum is necessary because a mandatory local
+`SourceStatementLabelId` would fabricate a row that the resolver does not
+contain. Existing B1 and B5A citations become `Local(id)` without changing
+their debug bytes or behavior. The installer must match B1, B5A, or B5B
+base/reference fingerprints exactly and reject every cross-pair, including
+B5A-local with B5B-imported state.
+
+Duplicate or partial installation, absent or extra local labels, wrong
+import visibility/export/kind/module/namespace/contribution/origin/anchor/
+range/path, recovered or relocated rows, wrong node 48 key, Task-248 or
+other-family occupancy, and altered ownership fail before mutation and leave
+replay available. No semantic table or runner-facing public schema is added.

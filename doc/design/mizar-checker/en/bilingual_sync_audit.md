@@ -1327,3 +1327,25 @@ Both languages keep B5B/B5C `test_gap` ownership and every specification,
 corpus, expectation, sidecar, trace status/count/backlink, coverage,
 public-API, diagnostic, and semantic no-op boundary synchronized without an
 exception.
+
+## Task 258B5B Frozen-Contract Synchronization
+
+The paired checker documents synchronize B5A implementation commit
+`4a79116c1a6f71155e4f366950fee8335b4dc8f1`, the 146-byte source and
+57-node/root-56 identities, raw/opt-in resolver profiles, two-file lower
+prerequisite, upper `1/2/2/2/2 + 0/1`, `8/49` ownership, imported
+public/exported `Ref` provenance, public citation-target enum, debug branch,
+exact consumers/tests, classifications, baselines, exclusions, deferrals,
+and exit criteria.
+
+Both languages record repeated specification, test-contract,
+source/documentation boundary, and bilingual reviews as **NO FINDINGS**.
+Focused/crate/workspace, formatting, Clippy, five-CLI, every frozen
+count/hash, exact 32-document scope, authority no-op, repository-state, and
+protected-stash gates PASS. Independent final quality, staging, commit, and
+post-commit inventory were the then-pending gates. Independent final quality is now
+synchronized as **NO FINDINGS**: all nine hard gates PASS, no score cap
+applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit inventory
+remain. They grant no active test mapping, trace backlink, status/count
+change, or coverage credit.

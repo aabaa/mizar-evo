@@ -5809,5 +5809,51 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] final scope/forbidden-artifact、repository-state、stash gateをcomplete。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] Task-258B5Aだけをstage/inspectしone implementation commitを作り、
-  post-commit invariantをverifyしてnext taskをfresh inventory。
+- [x] Task-258B5Aだけをstage/inspectしimplementation commit
+  `4a79116c1a6f71155e4f366950fee8335b4dc8f1`を作り、post-commit
+  invariantをverifyしてnext taskをfresh inventory。
+
+## Checker Task 258B5B frozen-contract documentation prerequisite
+
+- [x] stale B5A post-commit ledgerをcorrectし、missing frozen B5B/API
+  ownershipを`design_drift`、missing opt-in imported-label populationを
+  lower-owned `source_drift`、missing active B5B corpusをbounded
+  `test_gap`とclassify。
+- [x] exact 146-byte source/hash、57-node/root-56 frontend/resolver
+  identities、raw `1/0/1/1/0`、opt-in `8/1/1/3/1`、lower profile、
+  upper `1/2/2/2/2 + 0/1`、`8/49` ownershipをfreeze。
+- [x] separate two-file lower prerequisite、one opt-in public/exported
+  theorem label、exact two lower tests、unchanged default augmentation
+  routeをfreeze。
+- [x] `SourceStatementCitationTarget::{Local, Imported}`、
+  `SimpleImported`、local-label row 0、imported projection/debug branch、
+  exact seven upper consumers、four checker/five runner testsをfreeze。
+- [x] B5C/semantic deferralと全specification、fixture、expectation、
+  sidecar、trace status/count/backlink/credit、active outcome、public
+  runner-schema boundaryをpreserve。
+- [x] independent specification/documentation、test-contract、
+  source/documentation boundary、bilingual reviewを**NO FINDINGS**でcomplete。
+- [x] focused/crate/workspace test、formatting、Clippy、five CLI、exact
+  count/hash/scope、authority no-op、repository-state、stash gateをreproduce。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] synchronized B5B documentationだけをstageしone prerequisite commitを
+  作り、post-commit invariantをverifyしてmandatory lower-stage
+  prerequisiteをfresh inventory。
+
+## Checker Task 258B5B lower-stage prerequisite
+
+- [ ] docs commit後、
+  `crates/mizar-test/src/runner/import_fixtures.rs`とexisting statement
+  test leafだけを変更。
+- [ ] normal augmentation/existing callerを変更せずcrate-private opt-in
+  `Ref` label augmentationを追加し、exact two frozen lower testsと全protocol
+  gatesをseparate commitでPASS。
+
+## Checker Task 258B5B upper implementation
+
+- [ ] lower commitとfresh inventory後、frozen three checker/four runner
+  consumersだけを変更。
+- [ ] exact imported target/API、profile、resolver replay、mutation matrix、
+  four checker/five runner testsをimplementし、全review/hard gatesを
+  separate commitでPASS。

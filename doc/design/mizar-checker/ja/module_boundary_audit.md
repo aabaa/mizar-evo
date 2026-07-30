@@ -1045,3 +1045,19 @@ active fixture、expectation、sidecar、trace metadata、semantic phaseは
 unchanged。exact `20/73` ownershipにより全label/citation/proof-block/
 wrapper nodeをarena provenanceに保持する。B5B/B5Cはboundary外のままで、
 split/ownership transferは不要。
+
+## Task 258B5B frozen three-commit boundary
+
+このprerequisiteはsynchronized design documentationだけを変更する。next
+lower-stage commitはrunner `import_fixtures.rs`とexisting statement test
+leafだけに限定し、crate-private opt-in imported `Ref` labelとexact two
+testsを追加する。normal augmentation function/checker fileは変更しない。
+
+そのcommit後だけ、upper taskはB5Aと同じseven consumersを変更できる:
+checker `source_statement.rs`、`typed_ast.rs`、`resolved_typed_ast.rs`;
+runner `type_elaboration/source_statement.rs`、`type_elaboration.rs`、
+`runner.rs`、statement test leaf。public checker citation target/kind
+changeはupper commitに属する。parser、resolver、artifact schema、
+BindingEnv、Tasks 252/256、public runner/CLI、fixture、expectation、
+sidecar、trace metadata、semanticsはboth implementation scope外。module
+split/ownership transferは不要。

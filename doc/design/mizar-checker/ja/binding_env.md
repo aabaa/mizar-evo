@@ -658,3 +658,16 @@ Task-252 term-reference contextsは`0,0,1,1,2,2,1,1,3,3`で、ten usesは
 すべてbinding 0をproducer-stored use ordinal 1でselectする。proof labelは
 BindingEnv bindingではなくresolver provenanceである。B5Aはbinding
 producer/row/fingerprint/scope rule/diagnostic/source/public APIを変更しない。
+
+## Task 258B5B frozen import-proof binding boundary
+
+imported-citation routeはreserved binding 1件とexact two normal contexts、
+diagnostic 0をreuseする。context 0はmodule、context 1はproof
+`114..144`、parent 0、lexical scope `[0]`。both contextはbinding 0だけを
+exposeする。Task-252 term-reference contextsは`0,0,1,1`で、four usesは
+existing producer-stored use ordinalによりbinding 0をselectする。
+
+imported theorem `Ref`はBindingEnv binding/statement factではなくresolver
+label provenanceである。separate import-summary prerequisiteとlater upper
+implementationはbinding source/row/fingerprint/scope rule/diagnostic/
+BindingEnv APIを変更しない。

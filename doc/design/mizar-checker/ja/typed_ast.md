@@ -1482,3 +1482,22 @@ relocation/recovery、wrong range/origin/scope/contribution/key、Task-248/
 other family、altered ownershipはmutation前にfailする。failed installation
 後もtyped ASTはreplay可能。public installer、error variant、semantic table、
 B1 debug changeを追加しない。
+
+## Task 258B5B frozen imported-target installation
+
+separate lower-stage opt-in label prerequisite後、paired installationはthird
+exact reference profileとしてB5B base `1/2/2/2/2`、local labels/citations
+`0/1`、57-node/root-56 arena、`8/49` ownershipをadmitする。citation targetは
+`SourceStatementCitationTarget::Imported`、kindは`SimpleImported`、singular
+projectionはimported/public/exported theorem `Ref`。
+
+mandatory local `SourceStatementLabelId`はresolverにないrowをfabricateする
+ためpublic target enumが必要。existing B1/B5A citationはdebug bytes/behaviorを
+変えず`Local(id)`になる。installerはB1/B5A/B5B base/reference fingerprintを
+exact matchし、B5A-localとB5B-imported stateを含む全cross-pairをrejectする。
+
+duplicate/partial installation、absent/extra local label、wrong import
+visibility/export/kind/module/namespace/contribution/origin/anchor/range/
+path、recovered/relocated row、wrong node 48 key、Task-248/other-family
+occupancy、altered ownershipはmutation前にfailしreplay可能なままにする。
+semantic table/public runner-facing schemaを追加しない。

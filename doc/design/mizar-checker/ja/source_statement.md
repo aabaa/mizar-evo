@@ -3313,3 +3313,101 @@ citationはstatement/context 4、`170..171`、scope `[0,1]`、resolver node
 identityをbypassできない。B1/B5A cross-pair、row、scope、ownership、
 fingerprint、relocation/recovery、replay mismatchはatomically failする。
 fact、acceptance、proof、goal、diagnostic、public APIを追加しない。
+
+## Task 258B5B frozen imported citation transaction
+
+private 146-byte/final-LF B5B sourceは57 normal Surface rows/root 56を持つ。
+mandatory separate import-summary prerequisite後、producerはraw resolver
+`1/0/1/1/0`、opt-in augmented resolver `8/1/1/3/1`、BindingEnv
+`2/1/0`、Task-252 `4/4/0`、Task-256
+`2/0/0/0/0/0/0/4/4`、Task-258 base `1/2/2/2/2`、reference local-label/
+citation `0/1`をauthenticateする。
+
+owner 0はtheorem node 53/range `48..145`。statement 0はcontext 0のその
+theorem、`Atomic(0)`、references `[0,1]`。statement 1はproof context 1/
+scope `[0]`のconclusion node 51/range `122..140`、`Atomic(1)`、
+references `[2,3]`。各rowはreserved-type-guard input 1件とunverified
+candidate 1件を持つ。transactionはterms `35,37,41,43`、formulas
+`40,46`、statements `51,53`だけをownし、exact `8/49` ownershipを維持する。
+
+primary term/ref ids 0..3はnode/range/context/source-ordinal
+`35/108..109/0/0`、`37/112..113/0/1`、`41/127..128/1/2`、
+`43/131..132/1/3`で、全て`x`、binding 0/stored use ordinal 1、normal。
+全てmatching reference id、`VariableReference`/`Value`、reference role
+`Variable`、scope none/none/`[0]`/`[0]`。
+atomic formulas 0/1はnormal equality nodes `40/108..113`と
+`46/127..132`、context/source ordinal `0/0`と`1/1`、spelling `x = x`で、
+crate planでfreezeしたpaired left/right primary edgeとexact request
+triples `(0,0,0), (0,1,1), (1,0,2), (1,1,3)`を持つ。
+
+ownerはcontribution 0のcurrent-module public/exported theorem symbolで、
+current-source/current-module origin anchor `48..145`、path `[2,1]`、
+import edgeなし、normal recovery。statement source ordinalは0/1、
+normalized spellingは
+`theorem FormulaStatementImportedPublicTheoremCitationSmoke : x = x proof thus x = x by Ref ; end ;`
+と`thus x = x by Ref ;`。input-fact/candidate table idは0/1だが各row自身の
+ordinal fieldは0。input usesは`[0,1]`/`[2,3]`、candidate targetは
+`Atomic(0)`/`Atomic(1)`。
+
+local label rowは0件。citation id 0はstatement/context 1、node/range
+`48 / 136..139`、scope `[0]`、dense citation-row ordinal 0。resolver
+reference candidateは独立にsource-statement ordinal 1を持つ。citationは
+`LabelRefId(0)`、`ProofOrTheorem`、spelling `Ref`、normal recovery。
+singular resolver
+projectionは`parser.type_fixtures`由来のimported/public/exported theorem
+provenanceで、exact opt-in origin path
+`summary:parser.type_fixtures::Ref:label:Ref`、structural path `[1,0]`、
+current-module namespace、imported contribution 2、anchor `7..27`を持つ。
+
+resolved import id 0はresolver node 29（`ImportAliasDecl`）がownし、range
+`7..27`、exact spelling `import parser.type_fixtures;`、aliasなし、
+resolution `Resolved(<package>::parser.type_fixtures)`。originはcurrent
+source/current module、range anchor `7..27`、path `[0]`、import edgeなし、
+normal recovery。nodes 28/29/30はそれぞれ
+`ModulePath`/`ImportAliasDecl`/import-item identity、range
+`7..27`/`7..27`/`0..28`、path `[28]`/`[29]`/`[30]`、normal recovery、
+`NotApplicable`、reference keyなしを維持する。node 48だけがkeyed node。
+
+imported projection declaration rangeは`7..27`、semantic originはcurrent
+source、declaring module `<package>::parser.type_fixtures`、range anchor
+`7..27`、path `[1,0]`、import edgeなし、normal recovery。reference
+candidate originはcurrent source/current module、range anchor
+`136..139`、path `[48]`、import edgeなし、normal recovery。producer/
+final-clone testsは全import-row fieldと両origin tupleを独立にmutateする。
+
+imported citationにはlocal label idがないため、later upper taskは
+non-exhaustive public
+`SourceStatementCitationTarget::{Local(SourceStatementLabelId), Imported}`
+を追加する。citation input/immutable row/getterはmandatory
+`label`/`label()`の代わりに`target`/`target()`を使い、B1/B5Aはunchanged
+`Local`を使う。`SourceStatementCitationKind::SimpleImported`を追加する。
+B5B debugはimported projectionと`target=imported`をrenderし、absent local
+label nodeを表し、`label#0` lineを出さない。B1/B5A debug bytesはexact維持。
+
+B5B public debug schemaの全体は次の通り:
+
+```text
+source-statement-reference-debug-v1
+module: <package>::<module>
+statement-fingerprint: <quoted source-statement debug>
+resolver-ast root=56 nodes=57 name_refs=0 label_refs=1 imports=1 exports=0 label_node=absent reference_node=48 reference_state=resolved reference_key=label#0
+resolver-projection source=imported origin=summary:parser.type_fixtures::Ref:label:Ref module=parser.type_fixtures namespace=<module> range=7..27 contribution=2 path=[1,0] kind=theorem visibility=public export=exported spelling="Ref"
+resolver-reference node=48 range=136..139 source_ordinal=1 scope=[0] expectation=proof-or-theorem spelling="Ref"
+resolver-result index=1 references=1 ids=[0] diagnostics=0
+citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136..139 ordinal=0 kind=simple-imported recovery=normal
+```
+
+placeholderはvalidate済みruntime module/fingerprint valueを表し、他の全token、
+field order、line orderはliteral。`label#0` lineは存在しない。checker test 1、
+runner test 1、final-clone coverageはschema全体をassertし、B1/B5A outputを
+byte-identicalに維持する。
+
+producerはabsent/duplicate/private/local-only/re-exportedまたは他のwrong
+export status/wrong-kind/module/namespace/contribution/origin/range/path、
+recovered/stale/relocated/cross-profile/wrong dense citation-row ordinal/
+wrong resolver source-statement ordinal/partial/wrongly-keyed rowを
+atomically rejectする。checker test 2、runner test 2、final-clone
+coverageは`Exported`から`ReExported`へのmutationを独立に実行する。
+B5Cと全semantic resultは
+deferred。このprerequisiteはsource、fixture、expectation、trace row、
+public runner schemaを変更しない。

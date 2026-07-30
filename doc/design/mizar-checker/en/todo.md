@@ -6084,5 +6084,53 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage and inspect only Task-258B5A, create one implementation commit,
-  then verify post-commit invariants and fresh-inventory the next task.
+- [x] Stage and inspect only Task-258B5A, create implementation commit
+  `4a79116c1a6f71155e4f366950fee8335b4dc8f1`, verify post-commit
+  invariants, and fresh-inventory the next task.
+
+## Checker Task 258B5B Frozen-Contract Documentation Prerequisite
+
+- [x] Correct stale B5A post-commit ledger state and classify missing frozen
+  B5B/API ownership as `design_drift`, missing opt-in imported-label
+  population as lower-owned `source_drift`, and missing active B5B corpus as
+  bounded `test_gap`.
+- [x] Freeze the exact 146-byte source/hash, 57-node/root-56 frontend and
+  resolver identities, raw `1/0/1/1/0`, opt-in `8/1/1/3/1`, lower
+  profiles, upper `1/2/2/2/2 + 0/1`, and `8/49` ownership.
+- [x] Freeze the separate two-file lower prerequisite, one opt-in
+  public/exported theorem label, exact two lower tests, and unchanged
+  default augmentation route.
+- [x] Freeze `SourceStatementCitationTarget::{Local, Imported}`,
+  `SimpleImported`, zero local-label rows, imported projection/debug branch,
+  exact seven upper consumers, four checker tests, and five runner tests.
+- [x] Preserve B5C and semantic deferrals plus all specification, fixture,
+  expectation, sidecar, trace status/count/backlink/credit, active-outcome,
+  and public runner-schema boundaries.
+- [x] Complete independent specification/documentation, test-contract,
+  source/documentation boundary, and bilingual reviews with **NO FINDINGS**.
+- [x] Reproduce focused/crate/workspace tests, formatting, Clippy, five
+  CLIs, exact count/hash/scope, authority no-op, repository-state, and stash
+  gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage only synchronized B5B documentation, create one prerequisite
+  commit, verify post-commit invariants, and fresh-inventory the mandatory
+  lower-stage prerequisite.
+
+## Checker Task 258B5B Lower-Stage Prerequisite
+
+- [ ] After the documentation commit, change only
+  `crates/mizar-test/src/runner/import_fixtures.rs` and the existing
+  statement test leaf.
+- [ ] Add the crate-private opt-in `Ref` label augmentation without changing
+  normal augmentation or its existing callers; pass the exact two frozen
+  lower tests and all protocol gates in a separate commit.
+
+## Checker Task 258B5B Upper Implementation
+
+- [ ] After the lower commit and fresh inventory, change only the frozen
+  three checker and four runner consumers.
+- [ ] Implement the exact imported target/API, profiles, resolver replay,
+  mutation matrix, four checker and five runner tests, then pass all reviews
+  and hard gates in a separate commit.

@@ -961,6 +961,25 @@ Cross-family installation is legal only for the exact B1 base/reference pair
 or the exact B5A base/reference pair. B5B/B5C, qualified/grouped/bulk
 citations, facts, proof progress, theorem acceptance, and IR remain deferred.
 
+## Task 258B5B Imported-Citation Decomposition
+
+B5B is the positive imported-public-theorem profile only. It follows B5A but
+is split into three commits: this frozen documentation prerequisite, a
+two-file lower opt-in imported-label prerequisite, and a seven-consumer upper
+implementation. B5C active confinement negatives remain separate.
+
+The upper profile is one theorem owner, two statement/context/input/candidate
+rows, zero local-label rows, and one imported citation. Task-256 formulas are
+`Atomic(0..1)` and both candidates remain `UnverifiedProposition`. Exact
+ownership is four terms, two formulas, and two statements (`8/49`).
+Cross-family installation admits only a matched B1, B5A, or B5B
+base/reference pair; a B5A local-label profile cannot pair with B5B imported
+provenance.
+
+Qualified/grouped/bulk imports, private-import diagnostics, facts, proof
+progress, truth, theorem acceptance/publication, status propagation, ATP,
+Core, CFG, and VC remain deferred.
+
 ### Task 258B3M2B2B1A Frozen Cross-Family Edge
 
 B1A adds one directed ownership edge only:

@@ -1283,3 +1283,24 @@ closeする。
 
 B5B/B5C ownershipと全active/corpus/expectation/sidecar/trace/public/
 diagnostic/semantic no-opはexceptionなしで同期維持する。
+
+## Checker Task 258B5B frozen-contract synchronization
+
+paired runner documentsはB5A commit
+`4a79116c1a6f71155e4f366950fee8335b4dc8f1`、146-byte source、
+57-node/root-56、raw `1/0/1/1/0`/opt-in `8/1/1/3/1`、two-file
+lower prerequisiteと2 tests、upper `2/1/0`、`4/4/0`、
+`2/0/0/0/0/0/0/4/4`、`1/2/2/2/2 + 0/1`、`8/49`、
+imported public/exported `Ref`、telemetry `1/1/[1,1,1,1]`を同期する。
+
+両languageは同じ`SourceStatementCitationTarget::{Local, Imported}`、
+`SimpleImported`、consumers/tests、B1/B5A debug、classification、baseline、
+deferral、three-commit orderをfreezeする。repeated specification、
+test-contract、source/documentation boundary、bilingual reviewは
+**NO FINDINGS**。crate/workspace、format、Clippy、five CLI、全frozen
+count/hash、exact 32-document scope、authority no-op、repository-state、
+protected-stash gateはPASS。independent final quality、staging、commit、
+post-commitはthen-pending gateであった。independent final qualityは**NO FINDINGS**、全9 hard
+gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。残るのはstaging、commit、post-commitだけ。
+synchronization exceptionもcoverage creditもない。

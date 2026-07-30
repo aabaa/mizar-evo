@@ -1480,3 +1480,34 @@ relocated、recovered、wrongly keyed、semantically occupied stateはpublicatio
 前にfailし、replay可能なままにする。checked formula、accepted statement、
 proof、proof node、terminal goal、fact、downstream IRはemptyのままで、
 public schema/APIを変更しない。
+
+## Task 258B5B frozen imported final-assembly boundary
+
+final assemblyはlower opt-in environmentがexact `8/1/1/3/1`で、typed ASTが
+matched base `1/2/2/2/2`、reference `0/1`、全dependency fingerprint、
+57-node/root-56 arena、`8/49` ownershipを保持する場合だけB5Bをrecognize
+できる。resolver node 48だけがkeyed resolved nodeで、replayはresolved
+import 1、resolved label reference/id 1、export/name reference/diagnostic 0。
+
+resolved import id 0はunkeyed `ImportAliasDecl` node 29がownし、range
+`7..27`、spelling `import parser.type_fixtures;`、alias `None`、
+`<package>::parser.type_fixtures`へresolveする。current-source/
+current-module originはanchor `7..27`、path `[0]`、import edgeなし、
+normal recovery。nodes 28/29/30はexact Surface identityのunkeyed
+`NotApplicable` nodeを維持し、node 48だけがlabel key 0を持つ。imported
+projection originは独立にcurrent source、declaring imported module、
+anchor `7..27`、path `[1,0]`、import edgeなし、normal recovery。
+reference originはcurrent source/current module、anchor `136..139`、
+path `[48]`、import edgeなし、normal recovery。
+
+immutable cloneはimported/public/exported theorem projection、
+`target=Imported`、`SimpleImported`、scope `[0]`、全origin/module/
+namespace/contribution/anchor/structural path/range/ordinal/node kind/child
+order/recovery state/resolver keyを再検証する。exact B1/B5A local behaviorを
+preserveし、全B1/B5A/B5B cross-pair、partial/stale/recovered state、
+occupied semanticsをpublication前にrejectする。
+
+checked formula、fact、accepted statement、proof、proof node、goal、status
+propagation、downstream IRはemptyのまま。public checker surface changeは
+crate planでfreezeしたcitation-target enum/field/getterとimported citation
+kindだけ。

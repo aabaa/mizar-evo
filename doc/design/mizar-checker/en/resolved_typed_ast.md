@@ -1538,3 +1538,35 @@ cross-profile, stale, relocated, recovered, wrongly keyed, or semantically
 occupied state fails before publication and leaves replay available. Checked
 formulas, accepted statements, proofs, proof nodes, terminal goals, facts,
 and all downstream IR remain empty; no public schema or API changed.
+
+## Task 258B5B Frozen Imported Final-Assembly Boundary
+
+Final assembly may recognize B5B only after the lower opt-in environment is
+exactly `8/1/1/3/1` and the typed AST retains matched base
+`1/2/2/2/2`, reference `0/1`, all dependency fingerprints,
+57-node/root-56 arena, and `8/49` ownership. Resolver node 48 is the sole
+keyed resolved node; the replay has one resolved import, one resolved label
+reference/id, and zero exports, name references, and diagnostics.
+
+Resolved import id 0 is owned by unkeyed `ImportAliasDecl` node 29, range
+`7..27`, spelling `import parser.type_fixtures;`, alias `None`, and resolves
+to `<package>::parser.type_fixtures`. Its current-source/current-module
+origin has anchor `7..27`, path `[0]`, no import edge, and normal recovery.
+Nodes 28/29/30 remain unkeyed `NotApplicable` nodes with their exact
+Surface identities; node 48 alone carries label key 0. The imported
+projection origin independently uses the current source, declaring imported
+module, anchor `7..27`, path `[1,0]`, no import edge, and normal recovery;
+the reference origin uses the current source/current module, anchor
+`136..139`, path `[48]`, no import edge, and normal recovery.
+
+The immutable clone revalidates the imported/public/exported theorem
+projection, `target=Imported`, `SimpleImported`, scope `[0]`, every origin,
+module, namespace, contribution, anchor, structural path, range, ordinal,
+node kind, child order, recovery state, and resolver key. It also preserves
+exact B1/B5A local behavior and rejects all B1/B5A/B5B cross-pairs,
+partial/stale/recovered state, and occupied semantics before publication.
+
+Checked formulas, facts, accepted statements, proofs, proof nodes, goals,
+status propagation, and downstream IR remain empty. The only public checker
+surface change is the citation-target enum/field/getter and imported citation
+kind frozen in the crate plan.

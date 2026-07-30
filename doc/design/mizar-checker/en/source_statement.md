@@ -3827,3 +3827,104 @@ node kind so a coherent arena-kind mutation cannot bypass the frozen
 Surface/resolver identity. B1/B5A cross-pairing, row, scope, ownership,
 fingerprint, relocation/recovery, and replay mismatches fail atomically.
 No fact, acceptance, proof, goal, diagnostic, or public API is added.
+
+## Task 258B5B Frozen Imported Citation Transaction
+
+The private 146-byte/final-LF B5B source has 57 normal Surface rows/root 56.
+After the mandatory separate import-summary prerequisite, the producer must
+authenticate raw resolver `1/0/1/1/0`, opt-in augmented resolver
+`8/1/1/3/1`, BindingEnv `2/1/0`, Task-252 `4/4/0`, Task-256
+`2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and reference
+local-label/citation `0/1`.
+
+Owner 0 is theorem node 53/range `48..145`. Statement 0 is that theorem in
+context 0 over `Atomic(0)` and references `[0,1]`; statement 1 is conclusion
+node 51/range `122..140` in proof context 1/scope `[0]` over `Atomic(1)` and
+references `[2,3]`. Each has one reserved-type-guard input and one
+unverified candidate. The transaction owns only terms `35,37,41,43`,
+formulas `40,46`, and statements `51,53`, preserving exact `8/49`
+ownership.
+
+Primary term/ref ids 0..3 are node/range/context/source-ordinal
+`35/108..109/0/0`, `37/112..113/0/1`, `41/127..128/1/2`, and
+`43/131..132/1/3`; all spell `x`, select binding 0 at stored use ordinal 1,
+and are normal `VariableReference`/`Value` rows with matching reference ids,
+role `Variable`, and scopes none/none/`[0]`/`[0]`. Atomic formulas 0/1 are
+normal equality nodes
+`40/108..113` and `46/127..132`, context/source ordinal `0/0` and `1/1`,
+spelling `x = x`, with paired left/right primary edges and exact request
+triples `(0,0,0), (0,1,1), (1,0,2), (1,1,3)` exactly as frozen in the
+crate plan.
+
+The owner is the current-module public/exported theorem symbol at
+contribution 0 with current-source/current-module origin anchor `48..145`,
+path `[2,1]`, no import edge, and normal recovery. Statement source ordinals
+are 0/1; their normalized spellings are
+`theorem FormulaStatementImportedPublicTheoremCitationSmoke : x = x proof thus x = x by Ref ; end ;`
+and `thus x = x by Ref ;`. Input-fact and candidate table ids are 0/1, but
+each row's own ordinal field is 0; inputs use `[0,1]`/`[2,3]`, and
+candidates target `Atomic(0)`/`Atomic(1)`.
+
+There is no local label row. Citation id 0 belongs to statement/context 1,
+node/range `48 / 136..139`, scope `[0]`, and dense citation-row ordinal 0.
+The resolver reference candidate independently has source-statement ordinal
+1. The citation uses `LabelRefId(0)`, `ProofOrTheorem`, spelling `Ref`, and
+normal recovery. Its
+singular resolver projection is imported/public/exported theorem provenance
+from `parser.type_fixtures`, with the exact opt-in origin path
+`summary:parser.type_fixtures::Ref:label:Ref`, structural path `[1,0]`,
+current-module namespace, imported contribution 2, and anchor `7..27`.
+
+Resolved import id 0 is owned by resolver node 29 (`ImportAliasDecl`), has
+range `7..27`, exact spelling `import parser.type_fixtures;`, no alias, and
+resolution `Resolved(<package>::parser.type_fixtures)`. Its origin is the
+current source/current module, range anchor `7..27`, path `[0]`, no import
+edge, and normal recovery. Nodes 28/29/30 retain their own
+`ModulePath`/`ImportAliasDecl`/import-item identities, ranges
+`7..27`/`7..27`/`0..28`, paths `[28]`/`[29]`/`[30]`, normal recovery,
+`NotApplicable`, and no reference key. Node 48 remains the sole keyed node.
+
+The imported projection declaration range is `7..27`; its semantic origin
+uses the current source, declaring module
+`<package>::parser.type_fixtures`, range anchor `7..27`, path `[1,0]`, no
+import edge, and normal recovery. The reference candidate origin uses the
+current source/current module, range anchor `136..139`, path `[48]`, no
+import edge, and normal recovery. Producer and final-clone tests mutate
+every import-row and both origin tuples independently.
+
+Because an imported citation has no local label id, the later upper task
+adds non-exhaustive public
+`SourceStatementCitationTarget::{Local(SourceStatementLabelId), Imported}`.
+Citation input, immutable row, and getter use `target`/`target()` in place
+of mandatory `label`/`label()`; B1/B5A use `Local` unchanged.
+`SourceStatementCitationKind::SimpleImported` is added. B5B debug prints the
+imported projection and `target=imported`, represents the absent local label
+node, and emits no `label#0` line; B1/B5A debug bytes remain exact.
+
+The complete B5B public debug schema is:
+
+```text
+source-statement-reference-debug-v1
+module: <package>::<module>
+statement-fingerprint: <quoted source-statement debug>
+resolver-ast root=56 nodes=57 name_refs=0 label_refs=1 imports=1 exports=0 label_node=absent reference_node=48 reference_state=resolved reference_key=label#0
+resolver-projection source=imported origin=summary:parser.type_fixtures::Ref:label:Ref module=parser.type_fixtures namespace=<module> range=7..27 contribution=2 path=[1,0] kind=theorem visibility=public export=exported spelling="Ref"
+resolver-reference node=48 range=136..139 source_ordinal=1 scope=[0] expectation=proof-or-theorem spelling="Ref"
+resolver-result index=1 references=1 ids=[0] diagnostics=0
+citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136..139 ordinal=0 kind=simple-imported recovery=normal
+```
+
+The placeholders denote validated runtime module/fingerprint values; every
+other token, field order, and line order is literal. No `label#0` line is
+present. Checker test 1, runner test 1, and final-clone coverage assert the
+whole schema while retaining byte-identical B1/B5A output.
+
+The producer rejects absent, duplicate, private/local-only, re-exported or
+otherwise wrong export status, wrong-kind,
+wrong-module/namespace/contribution/origin/range/path, recovered, stale,
+relocated, wrong dense citation-row ordinal, wrong resolver source-statement
+ordinal, cross-profile, partial, and wrongly keyed rows atomically. Checker
+test 2, runner test 2, and final-clone coverage independently mutate
+`Exported` to `ReExported`.
+B5C and every semantic result remain deferred. This prerequisite changes no
+source, fixture, expectation, trace row, or public runner schema.

@@ -2857,5 +2857,36 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] final scope/forbidden-artifact、repository-state、stash gateをcomplete。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] B5Aだけをstage/inspectしone implementation commitを作り、
-  post-commit invariantをverifyしてnext dependency-ready taskをfresh inventory。
+- [x] B5Aだけをstage/inspectしimplementation commit
+  `4a79116c1a6f71155e4f366950fee8335b4dc8f1`を作り、post-commit
+  invariantをverifyしてnext dependency-ready taskをfresh inventory。
+
+## Checker Task 258B5B frozen-contract documentation prerequisite
+
+- [x] B5A commit `4a79116c1a6f71155e4f366950fee8335b4dc8f1`がhistorical
+  pending lineをsupersedeするとrecordし、B5Bをfresh inventory。
+- [x] unfrozen API=`design_drift`、opt-in imported-label=`source_drift`、
+  active coverage=`test_gap`とclassifyし、blocking gapなしを確認。
+- [x] 146-byte source/hash、57-node frontend/resolver、raw/opt-in env、
+  lower profiles、Task-258 `1/2/2/2/2 + 0/1`、`8/49`をfreeze。
+- [x] two-file lower task/2 tests、exact `Ref` provenance、citation API、
+  telemetry、7 consumers、checker 4/runner 5 tests、B1/B5A debugをfreeze。
+- [x] authority/test/trace/public/semantic no-opとB5C deferralをpreserve。
+- [x] specification reviewをblocking findingなしでcompleteし、crate/
+  workspace、format、Clippy、five CLIをPASS。
+- [x] test-contract、source/documentation、bilingual reviewを
+  **NO FINDINGS**でcomplete。
+- [x] final scope/repository/stash gateをcomplete。
+- [x] final qualityを**NO FINDINGS**、全9 hard gates PASS、capなし、valid
+  `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] synchronized docsだけをcommitし、mandatory lower taskをfresh inventory。
+
+## Checker Task 258B5B lower-stage prerequisite
+
+- [ ] `runner/import_fixtures.rs`とstatement test leafだけを変更し、opt-in
+  `Ref` helperと2 testsをseparate commit。
+
+## Checker Task 258B5B upper implementation
+
+- [ ] lower commit後、frozen checker 3/runner 4 consumersだけでexact
+  imported citation transactionをseparate commit。

@@ -11245,3 +11245,20 @@ post-format runner ownerは
 `type_elaboration.rs=826`、`runner.rs=2642`、statement test leaf
 `32282`をmeasureし、production boundaryは30 paths/58333 linesを維持する。
 これらのmeasurementはownership decisionを変更しない。
+
+## Checker Task 258B5B frozen three-commit boundary
+
+documentation prerequisiteはdesignだけをownする。mandatory lower taskは
+`runner/import_fixtures.rs`とstatement test leafだけをownし、crate-private
+opt-in `Ref` helperを追加してnormal augmentation/checkerをunchangedに保つ。
+そのcommit後だけ、upper taskはB5Aと同じchecker 3/runner 4 consumersを
+変更できる。
+
+upper producerはsource/Surface/import/resolver/lower authenticationと
+`1/2/2/2/2 + 0/1`をownする。checker APIは
+`SourceStatementCitationTarget::{Local, Imported}`、`SimpleImported`、
+projection validation、installation/final revalidationをownする。runner
+facadeはtest-only、public runner/CLI schemaはunchanged。parser、resolver、
+artifact、BindingEnv、Tasks 252/256、fixtures、expectations、sidecars、
+trace metadata、active behavior、B5C、semantics、proof、downstream IRは
+全3 write scope外。

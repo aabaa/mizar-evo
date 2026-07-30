@@ -1063,3 +1063,21 @@ semantic phases remain unchanged. Exact `20/73` ownership retains all
 label, citation, proof-block, and wrapper nodes as arena provenance. B5B and
 B5C remain outside this boundary; no split or ownership transfer is
 required.
+
+## Task 258B5B Frozen Three-Commit Boundary
+
+This prerequisite changes synchronized design documentation only. The next
+lower-stage commit is restricted to runner `import_fixtures.rs` and the
+existing statement test leaf, adding a crate-private opt-in imported `Ref`
+label plus exactly two tests. It must not change the normal augmentation
+function or any checker file.
+
+Only after that commit may the upper task change the same seven consumers as
+B5A: checker `source_statement.rs`, `typed_ast.rs`,
+`resolved_typed_ast.rs`; runner `type_elaboration/source_statement.rs`,
+`type_elaboration.rs`, `runner.rs`, and the statement test leaf. Public
+checker citation target/kind changes belong to that upper commit. Parser,
+resolver, artifact schema, BindingEnv, Tasks 252/256, public runner/CLI,
+fixtures, expectations, sidecars, trace metadata, and semantics remain
+outside both implementation scopes. No module split or ownership transfer is
+required.

@@ -4740,3 +4740,53 @@ and empty semantic tables. Source, Surface, resolver, lower, row, scope,
 ownership, cross-profile, replay, and clone near misses remain isolated at
 their owning boundary. Public harness fields, active selectors, diagnostics,
 facts, accepted statements, proofs, goals, and IR remain unchanged.
+
+## Checker Task 258B5B Frozen Imported Route
+
+The harness must not install B5B until a separately committed crate-private
+opt-in import helper authenticates the exact public/exported imported
+theorem label `Ref`. That helper is restricted to `import_fixtures.rs` and
+the statement test leaf, produces exact resolver profile `8/1/1/3/1` from
+normal `8/0/1/3/1`, preserves default callers, and is protected by the two
+frozen `task258b5b_opt_in_*` tests.
+
+After the lower commit, the private selector may admit only the exact
+146-byte/final-LF source with SHA-256
+`671e940c9dc749757dc8fddcc30a1a230aecb650058e64d6f1e73c1c66e93e9e`.
+It authenticates all 57 Surface/resolver rows, Binding `2/1/0`, Task-252
+`4/4/0`, Task-256 `2/0/0/0/0/0/0/4/4`, Task-258
+`1/2/2/2/2 + 0/1`, and exact `8/49` ownership before final assembly.
+
+Citation id 0 has dense citation-row ordinal 0, node/range `48 / 136..139`,
+scope `[0]`, `LabelRefId(0)`, and the singular
+imported/public/exported theorem projection with contribution 2, anchor
+`7..27`, path `[1,0]`, and origin
+`summary:parser.type_fixtures::Ref:label:Ref`. Telemetry is exact
+`1/1/[1,1,1,1]`; the resolver reference candidate independently has
+source-statement ordinal 1. The five runner tests cover exact output, all
+lower/import/resolver/upper corruption, including independent citation-row
+and resolver source-statement ordinal mutations and the coherent
+`Exported`-to-`ReExported` near miss in runner test 2 and final-clone
+coverage, fixture and visibility isolation, B5A cross-profile atomicity,
+replay/debug stability, and empty semantics.
+
+The upper runner reconstructs exact resolved import id 0: owner node 29,
+range `7..27`, spelling `import parser.type_fixtures;`, alias `None`,
+resolved module `<package>::parser.type_fixtures`, current-source/
+current-module origin anchor `7..27`, path `[0]`, no import edge, and normal
+recovery. Nodes 28/29/30 remain unkeyed `NotApplicable`; node 48 alone is
+keyed. The imported projection origin is current-source/imported-module,
+anchor `7..27`, path `[1,0]`, no import edge, normal; the reference origin
+is current-source/current-module, anchor `136..139`, path `[48]`, no import
+edge, normal. Runner test 2 and final-clone coverage mutate every field
+independently.
+
+Tests 1 and 5 assert the full ordered debug schema frozen by the checker
+plan: literal `label_node=absent` and `source=imported`, complete imported
+projection fields, resolver-ast/reference/result lines, the
+`target=imported` citation line, and no `label#0` line. B1/B5A bytes remain
+unchanged.
+
+No public runner field, active selector, fixture, expectation, trace row,
+diagnostic, fact, theorem acceptance, proof result, or downstream IR
+changes. B5C and qualified/grouped/bulk citations remain deferred.

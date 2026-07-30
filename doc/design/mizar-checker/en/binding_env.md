@@ -681,3 +681,16 @@ Task-252 term-reference contexts are
 ordinal 1. Proof labels are resolver provenance, not BindingEnv bindings.
 B5A changes no binding producer, row, fingerprint, scope rule, diagnostic,
 source file, or public API.
+
+## Task 258B5B Frozen Import-Proof Binding Boundary
+
+The imported-citation route reuses one reserved binding and exactly two
+normal contexts with zero diagnostics. Context 0 is the module; context 1 is
+proof `114..144`, parent 0, lexical scope `[0]`. Both expose only binding 0.
+Task-252 term-reference contexts are `0,0,1,1`; all four uses select binding
+0 at the existing producer-stored use ordinal.
+
+The imported theorem `Ref` is resolver label provenance, not a BindingEnv
+binding or statement fact. The separate import-summary prerequisite and the
+later upper implementation change no binding source, row, fingerprint,
+scope rule, diagnostic, or BindingEnv API.

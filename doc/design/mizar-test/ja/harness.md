@@ -4485,3 +4485,42 @@ tableを維持する。source、Surface、resolver、lower、row、scope、owner
 cross-profile、replay、clone near missはowning boundaryでisolateする。
 public harness field、active selector、diagnostic、fact、accepted statement、
 proof、goal、IRはunchanged。
+
+## Checker Task 258B5B frozen imported route
+
+harnessはseparate commitされたcrate-private opt-in helperがpublic/exported
+imported theorem label `Ref`をauthenticateするまでB5Bをinstallしない。
+helperは`import_fixtures.rs`とstatement test leafだけをownし、normal
+`8/0/1/3/1`から`8/1/1/3/1`を作り、default callerを維持し、2 frozen
+`task258b5b_opt_in_*` testsでguardする。
+
+lower commit後、selectorはSHA
+`671e940c9dc749757dc8fddcc30a1a230aecb650058e64d6f1e73c1c66e93e9e`
+の146-byte sourceだけをadmitし、57 Surface/resolver、Binding `2/1/0`、
+Task-252 `4/4/0`、Task-256 `2/0/0/0/0/0/0/4/4`、Task-258
+`1/2/2/2/2 + 0/1`、`8/49`をauthenticateする。citation id 0/dense
+citation-row ordinal 0はnode/range `48 / 136..139`、scope `[0]`、
+`LabelRefId(0)`、
+contribution 2、anchor `7..27`、path `[1,0]`、exact imported originを
+持ち、resolver reference candidateは独立にsource-statement ordinal 1、
+telemetryは`1/1/[1,1,1,1]`。5 runner testsがcitation-row/resolver
+source-statement ordinalの独立mutationとrunner test 2/final-cloneでの
+coherent `Exported`から`ReExported`へのnear missを含むcorruption、
+isolation、B5A atomicity、replay/debug、empty semanticsをcoverする。
+upper runnerはexact resolved import id 0をreconstructする: owner node 29、
+range `7..27`、spelling `import parser.type_fixtures;`、alias `None`、
+resolved module `<package>::parser.type_fixtures`、current-source/
+current-module origin anchor `7..27`、path `[0]`、import edgeなし、normal
+recovery。nodes 28/29/30はunkeyed `NotApplicable`、node 48だけがkeyed。
+imported projection originはcurrent-source/imported-module、anchor
+`7..27`、path `[1,0]`、import edgeなし、normal、reference originは
+current-source/current-module、anchor `136..139`、path `[48]`、import
+edgeなし、normal。runner test 2/final-clone coverageは全fieldを独立に
+mutateする。
+tests 1/5はchecker planでfreezeしたordered debug schema全体、literal
+`label_node=absent`/`source=imported`、complete imported projection fields、
+resolver-ast/reference/result line、`target=imported` citation line、
+`label#0` lineなしをassertし、B1/B5A bytesをunchangedに維持する。
+
+public runner、active fixture/selector、expectation、trace、diagnostic、
+semantic/proof/IR outputはno-op。B5Cとqualified/grouped/bulkはdeferred。

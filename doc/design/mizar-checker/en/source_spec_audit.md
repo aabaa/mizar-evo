@@ -4965,3 +4965,26 @@ expectations, sidecars, trace metadata, public APIs, diagnostics, facts,
 accepted statements, proofs, goals, and downstream IR remain unchanged.
 Requirement `spec.en.checker.formula_statement.source_payloads` remains
 deferred with no active test mapping or coverage credit.
+
+## Task 258B5B Frozen Authority Result
+
+Chapters 11, 15, and 16 authorize a simple citation to a visible imported
+public theorem. Existing parser fixtures authenticate simple-citation and
+imported-`Ref` syntax independently; resolver label tests, artifact
+exported-label schema, and module-summary-reuse lowering authenticate the
+derived provenance. They do not constitute active B5B coverage.
+
+Missing frozen B5B/API ownership is `design_drift`; missing opt-in imported
+label population is bounded lower-stage `source_drift`; missing active B5B
+corpus is bounded `test_gap`. No blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or current `repo_metadata_conflict` was found.
+
+The documentation freezes one private 146-byte route, a separate two-file
+lower prerequisite, and a later seven-consumer upper implementation. It does
+not change language or test intent. B5C and all citation proof/justification
+semantics remain deferred. Requirement
+`spec.en.checker.formula_statement.source_payloads`
+therefore stays `deferred` with `tests = []`; specifications, existing
+`.miz`, expectations, sidecars, trace metadata, status/count/backlinks, and
+coverage credit are no-ops.
