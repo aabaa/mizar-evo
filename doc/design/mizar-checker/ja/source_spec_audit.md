@@ -4586,3 +4586,27 @@ earlier `test_expectation_drift`はintentを変更せず解消される。bounde
 closeした。new `spec_gap`、`boundary_violation`、undocumented semantic
 behaviorはない。truth、theorem acceptance、proof、facts、later root
 familiesはdeferredのままである。
+
+## Task 258B4B authority audit
+
+Chapter 14 §§14.1、14.3.1-14.3.2、14.3.4、14.4.1、14.4.4、
+14.5.2、14.5.4、14.6、14.7.3-14.7.5、14.8、Chapter 13
+§13.1.4、Chapter 4 §§4.1/4.5/4.6、Chapter 16
+§§16.1/16.2/16.7.1はfrozen source shapesとtheorem
+role/status/ownershipをauthorizeするが、connective truth、repetition
+expansion、formula checking、theorem acceptanceはauthorizeしない。parser
+connectives fixturesとcomplete Task-257B2 lower contractがexecutable
+syntax/source-transport intentを供給する。
+
+active 166-byte sidecarとcovered trace rowはtheorem ownershipを明示的に
+deferし、upper reuseは`test_expectation_drift`である。distinct private
+167-byte/hash routeはauthority artifactを編集せずそのconflictを解消する。
+missing B4B documentationは`design_drift`、future exact
+selector/allowlistと9 testsはbounded `source_drift` / `test_gap`である。
+source driftにはcardinality-only B4A profile predicateとB4A-hardcoded
+typed/final call sitesを含み、implementationはそのambiguityをexact
+B4A/B4B statement identityとmatched B1/B2 lower profile dispatchへ置き換え
+なければならない。external origin movementはreport-only
+`repo_metadata_conflict`のままである。blocking `spec_gap`、
+`source_undocumented_behavior`、`boundary_violation`、authority-less
+lower-stage repairはない。

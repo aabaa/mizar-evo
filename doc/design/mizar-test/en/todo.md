@@ -2873,5 +2873,27 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Pass independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`.
 - [x] Stage the exact B4A scope and inspect the cached diff.
-- [ ] Create the dedicated B4A implementation commit.
-- [ ] Verify post-commit invariants and fresh-inventory B4B.
+- [x] Create the dedicated B4A implementation commit
+  `662adbde71e665ab37504ac476e94c935c493535`.
+- [x] Verify clean ahead-7/behind-0 post-commit state, unchanged stash, and
+  fresh-inventory B4B.
+
+## Checker Task 258B4B Documentation Ledger
+
+- [x] Freeze private 167-byte/double-LF source/hash, 124 nodes/root 123, and
+  exact local theorem resolver provenance.
+- [x] Freeze lower Task-252/256/257/B2/binding profiles, rootless arena,
+  42/1/81 ownership, and upper `1/1/1/0/1` `Composite(0)` links.
+- [x] Preserve the active 166-byte fixture as lower-only and forbid every
+  corpus/expectation/sidecar/trace/active-route edit.
+- [x] Freeze exactly four runner consumers, five runner tests, complete
+  mutation/isolation/replay/final matrices, and semantic/coverage deferrals.
+- [x] Record baseline runner `476`, projection `481`, production
+  `30/55109`, unchanged manifests/CLIs, narrative audit impact, and exit
+  gates.
+- [x] Complete repeated documentation review with **NO FINDINGS**.
+- [x] Pass docs-only verification and all no-op/count/hash/stash gates.
+- [x] Pass independent final quality with all hard gates and score
+  `>=90/100`.
+- [ ] Stage/inspect and create the dedicated B4B documentation commit.
+- [ ] Verify post-commit invariants and fresh-inventory B4B implementation.

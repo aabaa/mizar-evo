@@ -1390,3 +1390,21 @@ exclusionをrevalidateする。statement corruptions 19件、absent-lower tuples
 replayを許す。successful clone/debug bytesはstableで、contexts、types、
 facts、coercions、obligations、diagnostics、theorem acceptance、proof stateは
 emptyのままである。
+
+## Task 258B4B frozen final boundary
+
+final constructionがcomposite-statement familyをacceptできるのはmatched
+B4A/Task-257B1またはB4B/Task-257B2 tupleとしてだけである。B4Bはclone前に
+exact 124-node rootless lower arena、Task-252/256/257/B2
+profiles/fingerprints、`0..165`/origin `[2,0]`のresolver owner 1件、upper
+`1/1/1/0/1`、両`Composite(0)` linksをrevalidateする。final dispatchは
+shared cardinality shapeではなくexact crate-private statement predicates
+2件を使用する。B4B statementはB4AのTask-257B1 branchへ、またはその逆へ
+決して入ってはならない。
+
+全cross-profile hybrid、stale fingerprint、missing lower handoff、
+rooted/relocated coherent near miss、atomic-statement coexistence、occupied
+semantic stateは`ResolvedTypedAstError::InvalidSourceStatement`でpartial
+outputなしにfailし、replayを許す。B4A bytesと全lower-owned error
+precedenceはunchangedである。final-AST schema、debug grammar、semantic
+tableは追加しない。

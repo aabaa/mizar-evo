@@ -1394,3 +1394,20 @@ duplicate owners、stale/reordered/partial handoffs、rooted/relocated lower
 near misses、cross-family hybridsは`InvalidSourceStatement`を返し、ASTを
 byte-identicalに保ってclean replayを許す。lower-only installerと全semantic
 tableはunchangedである。
+
+## Task 258B4B frozen paired installation
+
+`with_source_formula_composition_statement`はpublic signatureをreuseする。
+exact Task-257B2 composite/composition handoffs、B4B statement handoff、
+Task-252/256 state、source/module identity、fingerprints、rootless 124-node
+arena、empty incompatible familiesがすべて一致するときだけB4Bをpublish
+できる。B4AはTask-257B1 statement profileだけのままである。existing B4A
+crate-private predicateはshared cardinalitiesからexact B4A identityへ先に
+narrowしなければならず、new exact B4B predicateとinterchangeableではない。
+
+installerは全B4A/B4B pairing hybrid、duplicate/partial state、active
+atomic statement family、Task-248 context、semantic table、rooted arena、
+relocated owned site、stale fingerprintをmutation前にrejectする。全
+installation ordersはatomic/replayableである。lower-only
+`with_source_formula_composition`はunchangedのままで、B1、B2、B3をlower
+transportとしてだけ引き続きacceptする。

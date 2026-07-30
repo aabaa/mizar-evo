@@ -5880,5 +5880,37 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`.
 - [x] Stage and inspect only the exact B4A implementation scope.
-- [ ] Create one dedicated B4A implementation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4B.
+- [x] Create one dedicated B4A implementation commit
+  `662adbde71e665ab37504ac476e94c935c493535`.
+- [x] Verify clean ahead-7/behind-0 post-commit state, unchanged stash
+  fingerprint, and fresh-inventory B4B.
+
+## Checker Task 258B4B Documentation Prerequisite
+
+- [x] Select only the Task-257B2 connective/grouping root; retain B4C and B5.
+- [x] Classify active 166-byte upper-route reuse as
+  `test_expectation_drift` and freeze the private 167-byte/double-LF source,
+  hash, 124 Surface nodes/root 123, and resolver contribution 0/origin
+  `[2,0]`.
+- [x] Freeze lower `16/0/16`,
+  `8/0/0/0/0/0/0/16/16`, `8/6/1/1/1/7/9`, `8/0`, binding `2/1/4`,
+  rootless 124-node arena, and exact 42/1/81 ownership partition.
+- [x] Freeze upper `1/1/1/0/1`, both `Composite(0)` edges, zero input facts,
+  statement spelling/context, resolver provenance, and subtree exclusions.
+- [x] Reuse the B4A public API/debug grammar, freeze only seven future
+  consumers and four checker/five runner tests, and forbid every lower
+  owner, source-formula-composition helper, corpus, sidecar, and trace edit.
+- [x] Freeze cross-family/profile isolation, error precedence, semantic
+  deferrals, baseline/projection, narrative-only audit impact, and exit
+  criteria.
+- [x] Complete repeated specification/documentation review with
+  **NO FINDINGS**.
+- [x] Pass documentation-only scope, forbidden-artifact, count/hash, CLI,
+  crate/workspace, and stash verification.
+- [x] Complete independent final quality with all nine hard gates and valid
+  score `>=90/100`.
+- [ ] Stage only synchronized Task-258B4B documentation and inspect cached
+  diff.
+- [ ] Create one dedicated B4B documentation prerequisite commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4B
+  implementation.

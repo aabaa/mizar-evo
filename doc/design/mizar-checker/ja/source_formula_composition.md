@@ -655,3 +655,21 @@ statement/candidateから`Composite(0)`へのlinksとpaired Task-258
 transactionだけを追加する。runner visibility editはexisting validated
 lower outputを`crate::runner`内だけにexposeし、public APIまたはlower
 behaviorを変更しない。
+
+## Task 258B4B downstream statement consumer
+
+B4Bはexisting Task-257B2 composite/composition pairをunchangedにconsume
+する。Task 257 `8/6/1/1/1/7/9` plus Task-257B2 `8/0`、Task-252
+`16/0/16`、Task-256 `8/0/0/0/0/0/0/16/16`、binding `2/1/4`、
+wrapper 6件、same-family edge 7件、atomic edge 8件、bound use 0件、
+`UnassignedStatement` root ownershipである。private double-LF selectorは
+lower range、row、fingerprint、debug byte、active 166-byte behaviorを
+変更しない。equivalent historical Task-257B2 shorthandは
+`8/0/0/0/0/0/16/16`で、上記の追加zeroはcurrent explicit empty
+predicate-segment slotである。
+
+upper statement/candidateだけがroot `Composite(0)`をreferenceする。inner
+biconditional/disjunction/conjunction/repetition rows、wrappers、
+equalities、numeralsはupper ownership/semantic resultを得ない。runner
+helperはB4Aのcrate-private seam経由ですでにavailableなので、B4Bではこの
+lower ownerはrequired no-opである。

@@ -12354,3 +12354,19 @@ Final source/documentation and boundary consistency reports **NO FINDINGS**
 after the bounded documentation corrections. Complete verification PASSes.
 Independent final quality reports **NO FINDINGS**, all nine hard gates PASS,
 and valid `100/100`; only staging, commit, and post-commit inventory remain.
+
+## Checker Task 258B4B Runner Boundary Freeze
+
+The runner may change only `type_elaboration/source_statement.rs`, its
+test-only facade re-exports in `type_elaboration.rs` and `runner.rs`, and the
+existing statement test leaf. The Task-257B2 output helper is already
+crate-private from B4A; `source_formula_composition.rs` and every lower
+extractor/producer are explicit no-ops. Checker ownership is confined to its
+three existing statement/typed/final consumers.
+
+Corpus, expectations, sidecars, trace, parser/resolver/binding modules,
+public runner API, and semantic phases are outside scope. This separation
+preserves lower source occurrence ownership and makes the 167-byte dormant
+upper route independently removable. Repeated read-only boundary and
+source/documentation consistency review reports **NO FINDINGS**.
+Implementation boundary review remains a separate later task.

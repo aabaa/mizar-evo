@@ -1186,3 +1186,19 @@ Low `design_drift` corrections. Complete verification PASSes, and
 independent final quality is synchronized as **NO FINDINGS** with all nine
 hard gates PASS, no cap, and valid `100/100`. Only staging, commit, and
 post-commit B4B inventory remain pending in both languages.
+
+## Checker Task 258B4B Frozen Runner Synchronization
+
+Canonical English freezes the private 167-byte/hash source, 124 nodes/root
+123, resolver contribution 0/origin `[2,0]`, exact Task-252/256/257/B2
+profiles, rootless arena, 42/1/81 ownership, Task-258 `1/1/1/0/1`,
+seven total consumers, and four-checker/five-runner test contract. The
+Japanese runner plan, harness, module audit, and ledger must preserve every
+identifier, number, hash, source spelling, test name, active 166-byte
+exclusion, no-op boundary, deferral, and exit gate. Fresh pair
+synchronization and review report **NO FINDINGS**; all 15 pairs preserve the
+frozen source/hash, identifiers, numbers, nine test names, raw/enriched label
+distinction, `0/0/[]` sentinel, and test-only facade exceptions. No
+synchronization exception exists. Independent final quality is synchronized
+as **NO FINDINGS**, all nine gates PASS, and valid `100/100`. Staging,
+commit, and post-commit inventory remain pending.

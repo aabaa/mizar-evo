@@ -3144,3 +3144,45 @@ isolation、replayがfailure boundaryを証明する。lower typed arenaはrootl
 Surface root 25はauthenticatedのままで、`UnassignedStatement`を書き換えない。
 truth、fact、theorem acceptance、proof、goal、justification、diagnostic、
 semantic resultは追加しない。
+
+## Task 258B4B frozen connective/grouping statement root
+
+exact private sourceは167 bytes、末尾LF 2件、hashは
+`3145e60413841ae005977400f1acd21f0974c7bad635f37fe3df6eeae7700748`
+で、zero diagnostics、124 Surface nodes/root 123としてparseする。theorem
+ownerはnode 120/range `0..165`、label node 1/range `8..48`、universal
+root node 118/range `50..164`である。raw real-frontend resolver ownershipは
+public/exported local theorem contribution 0、origin `[2,0]`で、label
+projection/import/recoveryを持たない。runnerはhandoff前にexactly one
+public/exported theorem `LabelProjection`をenrichする。そのspelling、
+namespace、origin、range anchor、contribution、normal recovery、
+contribution label effectはすべてownerとmatchし、exact enriched resolver
+cardinalitiesは`1/1/1/1/0`である。
+
+statement handoffはexactly owner 1件、statement 1件、context 1件、input
+facts 0件、candidate 1件である。owner spellingは
+`FormulaConnectiveGroupingPayloadBoundary`である。statement/candidateは
+`Composite(0)`をtargetとし、statement spellingは
+`theorem FormulaConnectiveGroupingPayloadBoundary : for x being set holds ( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;`
+である。context 0はbinding context 0/range `0..165`とvisible `[]`を
+referenceする。
+
+public DTO、producer、accessor、installer、error、debug grammarは追加しない。
+`build_with_formula_composition`とexisting optional lower fingerprints
+2件はexact matched Task-257B2 profileだけへextendする。crate-private
+cardinality-only `is_task_258b4a_profile`はB4Aのexact owner
+spelling/rangeへnarrowし、symmetric exact `is_task_258b4b_profile`を追加
+する。call sitesはB4AをTask-257B1だけに、B4BをTask-257B2だけにpair
+しなければならない。lower-owned nodes 42件と`UnassignedStatement` rootは
+unchangedで、Task 258がownするのはtheorem node 120とupper root links
+2件だけである。active 166-byte source、B4A、atomic statement families、
+rooted/relocated lower near misses、全profile hybridはmandatory fail-closed
+negativesである。runner mutation matrixはこのenriched theorem label
+projectionの全fieldとcontribution label effectをauthenticateし、
+independently corruptする。raw preflightがlabel-freeであることは
+checker-consumed label contractを免除しない。
+runner-private route outputはこのzero-reference profileにlookup telemetry
+`0/0/[]`を使用する。zero 2件はreference ordinalではなくsentinelである。
+transport-detail guardはexact matched Task-257B2/B4B profileだけでそれを
+acceptし、B4Aを`1/1/[1,1]`のまま保たなければならない。このdormant
+runner conventionはpublic checker DTO/statement semanticを変更しない。

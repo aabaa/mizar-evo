@@ -1150,3 +1150,27 @@ Low `design_drift` corrections. Complete verification PASSes, and
 independent final quality is synchronized as **NO FINDINGS** with all nine
 hard gates PASS, no cap, and valid `100/100`. Only staging, commit, and
 post-commit B4B inventory remain pending in both languages.
+
+## Task 258B4B Frozen Bilingual Contract
+
+B4A implementation commit
+`662adbde71e665ab37504ac476e94c935c493535` and its clean
+ahead-7/behind-0 post-commit inventory are the shared predecessor. Canonical
+English freezes B4B as only the private 167-byte/double-LF Task-257B2
+connective/grouping theorem-root consumer: 124 Surface nodes/root 123,
+resolver contribution 0/origin `[2,0]`, lower
+`16/0/16`, `8/0/0/0/0/0/0/16/16`, `8/6/1/1/1/7/9`,
+`8/0`, binding `2/1/4`, rootless arena, and upper `1/1/1/0/1`.
+
+The paired Japanese documents must preserve the exact source/hash, node ids
+and ranges, 42/1/81 ownership split, normalized statement spelling,
+`Composite(0)` links, reused B4A API/debug grammar, seven consumers, nine
+test names, active 166-byte exclusion, classifications, deferrals,
+baselines, narrative-only audit impact, and exit criteria. No translation
+may convert source transport into connective truth or theorem acceptance.
+Fresh pair synchronization and bilingual review report **NO FINDINGS**.
+All 15 EN/JA pairs preserve the critical numeric/identifier tokens, nine
+test names, raw/enriched label distinction, `1/1/1/1/0`, `0/0/[]`, B4A
+`1/1/[1,1]`, and the two test-only facade exceptions. Independent final
+quality is synchronized as **NO FINDINGS**, all nine gates PASS, and valid
+`100/100`. Staging, commit, and post-commit inventory remain pending.

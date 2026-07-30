@@ -2672,5 +2672,27 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`でcomplete。
 - [x] exact B4A scopeをstageし、cached diffをinspect。
-- [ ] dedicated B4A implementation commitをcreate。
-- [ ] post-commit invariantsをverifyし、B4Bをfresh inventory。
+- [x] dedicated B4A implementation commit
+  `662adbde71e665ab37504ac476e94c935c493535`をcreate。
+- [x] clean ahead-7/behind-0 post-commit state、unchanged stashをverifyし、
+  B4Bをfresh inventory。
+
+## Checker Task 258B4B documentation ledger
+
+- [x] private 167-byte/double-LF source/hash、124 nodes/root 123、exact
+  local theorem resolver provenanceをfreeze。
+- [x] lower Task-252/256/257/B2/binding profiles、rootless arena、42/1/81
+  ownership、upper `1/1/1/0/1` `Composite(0)` linksをfreeze。
+- [x] active 166-byte fixtureをlower-onlyとしてpreserveし、全
+  corpus/expectation/sidecar/trace/active-route editをforbid。
+- [x] exactly runner consumers 4件、runner tests 5件、complete
+  mutation/isolation/replay/final matrices、semantic/coverage deferralsを
+  freeze。
+- [x] baseline runner `476`、projection `481`、production `30/55109`、
+  unchanged manifests/CLIs、narrative audit impact、exit gatesをrecord。
+- [x] repeated documentation reviewを**NO FINDINGS**でcomplete。
+- [x] docs-only verificationと全no-op/count/hash/stash gatesをPASS。
+- [x] independent final qualityを全hard gates、score `>=90/100`でPASS。
+- [ ] dedicated B4B documentation commitをstage/inspect/create。
+- [ ] post-commit invariantsをverifyし、B4B implementationをfresh
+  inventory。

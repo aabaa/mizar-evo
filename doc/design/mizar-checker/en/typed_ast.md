@@ -1452,3 +1452,21 @@ stale/reordered/partial handoffs, rooted or relocated lower near misses, and
 cross-family hybrids return `InvalidSourceStatement`, leave the AST
 byte-identical, and permit clean replay. The lower-only installer and every
 semantic table remain unchanged.
+
+## Task 258B4B Frozen Paired Installation
+
+`with_source_formula_composition_statement` reuses its public signature.
+It may publish B4B only when the exact Task-257B2 composite/composition
+handoffs, the B4B statement handoff, Task-252/256 state, source/module
+identity, fingerprints, rootless 124-node arena, and empty incompatible
+families all agree. B4A remains the only Task-257B1 statement profile.
+The existing B4A crate-private predicate must first be narrowed from shared
+cardinalities to exact B4A identity; the new exact B4B predicate is not
+interchangeable with it.
+
+The installer rejects every B4A/B4B pairing hybrid, duplicate or partial
+state, active atomic statement family, Task-248 context, semantic table,
+rooted arena, relocated owned site, and stale fingerprint before mutation.
+All installation orders are atomic and replayable. The lower-only
+`with_source_formula_composition` remains unchanged and still accepts B1,
+B2, and B3 only as lower transport.

@@ -1469,3 +1469,19 @@ primary/reference ownership, Task 256 retains atomic equality leaves, Task
 rootless lower typed arena prevent coherent cross-family substitution
 without transferring ownership. Truth, binder guard discharge, facts,
 acceptance, proof semantics, B4B/B4C, and B5 remain deferred.
+
+## Task 258B4B Frozen Composite-Root Edge
+
+B4B is the second B4 node and consumes only Task-257B2. The unchanged lower
+graph is Task 252 `16/0/16`, Task 256
+`8/0/0/0/0/0/0/16/16`, Task 257 `8/6/1/1/1/7/9`, and
+Task-257B2 `8/0`; its explicit binder is unused and its one root remains
+`UnassignedStatement`. Task 258 adds only statement 0 and candidate 0 to
+`Composite(0)`, using one owner/context, zero input facts, and no edge to an
+inner connective, wrapper, equality, or numeral.
+
+The private 167-byte route is isolated from the active 166-byte lower-only
+fixture and B4A's 80-byte route. B4A/B4B profile hybrids fail atomically.
+B4C continues to own Task-257B3 restricted/existential/nested roots, and B5
+continues to own broader visibility. Connective/repetition semantics, truth,
+facts, acceptance, and proof remain deferred.

@@ -5615,5 +5615,37 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`でcomplete。
 - [x] exact B4A implementation scopeだけをstage/inspect。
-- [ ] dedicated B4A implementation commit 1件をcreate。
-- [ ] clean post-commit/stash invariantsをverifyし、B4Bをfresh inventory。
+- [x] dedicated B4A implementation commit
+  `662adbde71e665ab37504ac476e94c935c493535`をcreate。
+- [x] clean ahead-7/behind-0 post-commit state、unchanged stash
+  fingerprintをverifyし、B4Bをfresh inventory。
+
+## Checker Task 258B4B documentation prerequisite
+
+- [x] Task-257B2 connective/grouping rootだけをselectし、B4C/B5をretain。
+- [x] active 166-byte upper-route reuseを`test_expectation_drift`と分類し、
+  private 167-byte/double-LF source、hash、124 Surface nodes/root 123、
+  resolver contribution 0/origin `[2,0]`をfreeze。
+- [x] lower `16/0/16`、`8/0/0/0/0/0/0/16/16`、
+  `8/6/1/1/1/7/9`、`8/0`、binding `2/1/4`、rootless 124-node arena、
+  exact 42/1/81 ownership partitionをfreeze。
+- [x] upper `1/1/1/0/1`、両`Composite(0)` edges、zero input facts、
+  statement spelling/context、resolver provenance、subtree exclusionsを
+  freeze。
+- [x] B4A public API/debug grammarをreuseし、future consumers 7件とchecker
+  4/runner 5 testsだけをfreezeし、全lower owner、
+  source-formula-composition helper、corpus、sidecar、trace editをforbid。
+- [x] cross-family/profile isolation、error precedence、semantic
+  deferrals、baseline/projection、narrative-only audit impact、exit
+  criteriaをfreeze。
+- [x] repeated specification/documentation reviewを**NO FINDINGS**で
+  complete。
+- [x] documentation-only scope、forbidden-artifact、count/hash、CLI、
+  crate/workspace、stash verificationをPASS。
+- [x] independent final qualityを全9 hard gates、valid score
+  `>=90/100`でcomplete。
+- [ ] synchronized Task-258B4B documentationだけをstageしcached diffを
+  inspect。
+- [ ] dedicated B4B documentation prerequisite commit 1件をcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、B4B implementationを
+  fresh inventory。

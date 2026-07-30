@@ -1448,3 +1448,21 @@ tuples, stale/hybrid inputs, and occupied incompatible state fail through
 permit replay. Successful clone and debug bytes are stable; contexts, types,
 facts, coercions, obligations, diagnostics, theorem acceptance, and proof
 state remain empty.
+
+## Task 258B4B Frozen Final Boundary
+
+Final construction may accept the composite-statement family only as a
+matched B4A/Task-257B1 or B4B/Task-257B2 tuple. B4B revalidates the exact
+124-node rootless lower arena, the Task-252/256/257/B2 profiles and
+fingerprints, one resolver owner at `0..165`/origin `[2,0]`, upper
+`1/1/1/0/1`, and both `Composite(0)` links before cloning.
+Final dispatch uses the two exact crate-private statement predicates rather
+than the shared cardinality shape; a B4B statement may never enter B4A's
+Task-257B1 branch or vice versa.
+
+Every cross-profile hybrid, stale fingerprint, missing lower handoff,
+rooted/relocated coherent near miss, atomic-statement coexistence, or
+occupied semantic state fails through
+`ResolvedTypedAstError::InvalidSourceStatement` without partial output and
+permits replay. B4A bytes and all lower-owned error precedence remain
+unchanged. No final-AST schema, debug grammar, or semantic table is added.

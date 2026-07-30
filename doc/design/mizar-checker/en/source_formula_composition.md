@@ -710,3 +710,21 @@ statement/candidate links to `Composite(0)` and the paired Task-258
 transaction. The runner visibility edit exposes the existing validated
 lower output only within `crate::runner`; it changes no public API or lower
 behavior.
+
+## Task 258B4B Downstream Statement Consumer
+
+B4B consumes the existing Task-257B2 composite/composition pair unchanged:
+`8/6/1/1/1/7/9` plus `8/0`, with Task-252 `16/0/16`,
+Task-256 `8/0/0/0/0/0/0/16/16`, binding `2/1/4`, six
+wrappers, seven same-family edges, eight atomic edges, no bound use, and
+`UnassignedStatement` root ownership. Its private double-LF selector changes
+no lower range, row, fingerprint, debug byte, or active 166-byte behavior.
+The equivalent historical Task-257B2 shorthand is
+`8/0/0/0/0/0/16/16`; the extra zero above is the current explicit,
+empty predicate-segment slot.
+
+The upper statement and candidate alone reference root `Composite(0)`.
+Inner biconditional/disjunction/conjunction/repetition rows, wrappers,
+equalities, and numerals acquire no upper ownership or semantic result. The
+runner helper is already available through B4A's crate-private seam, so this
+lower owner is a required no-op in B4B.

@@ -4791,3 +4791,27 @@ closed by the eight authorized consumers and nine exact tests. There is no
 new `spec_gap`, `boundary_violation`, or undocumented semantic behavior;
 truth, theorem acceptance, proof, facts, and later root families remain
 deferred.
+
+## Task 258B4B Authority Audit
+
+Chapter 14 §§14.1, 14.3.1-14.3.2, 14.3.4, 14.4.1,
+14.4.4, 14.5.2, 14.5.4, 14.6, 14.7.3-14.7.5, and 14.8,
+Chapter 13 §13.1.4, Chapter 4 §§4.1/4.5/4.6, and Chapter 16
+§§16.1/16.2/16.7.1 authorize the frozen source shapes and theorem
+role/status/ownership, but
+not connective truth, repetition expansion, formula checking, or theorem
+acceptance. Parser connectives fixtures and the complete Task-257B2 lower
+contract supply executable syntax and source-transport intent.
+
+The active 166-byte sidecar and covered trace row explicitly defer theorem
+ownership; upper reuse is `test_expectation_drift`. The distinct private
+167-byte/hash route resolves that conflict without editing authority
+artifacts. Missing B4B documentation is `design_drift`; the future exact
+selector/allowlist and nine tests are bounded `source_drift`/`test_gap`.
+The source drift includes the cardinality-only B4A profile predicate and its
+B4A-hardcoded typed/final call sites; implementation must replace that
+ambiguity with exact B4A/B4B statement identity plus matched B1/B2 lower
+profile dispatch.
+External origin movement remains report-only `repo_metadata_conflict`.
+There is no blocking `spec_gap`, `source_undocumented_behavior`,
+`boundary_violation`, or authority-less lower-stage repair.

@@ -898,3 +898,24 @@ bounded documentation correction後のfinal source/documentation/boundary
 consistencyは**NO FINDINGS**である。complete verificationはPASSした。
 independent final qualityは**NO FINDINGS**、全9 hard gates PASS、valid
 `100/100`で、remainingはstaging、commit、post-commit inventoryだけである。
+
+## Task 258B4B boundary freeze
+
+B4BはB4A checker-owned composite-statement APIとalready crate-privateな
+runner Task-257B2 outputをreuseする。future write setはexactly checker
+`source_statement.rs`、`typed_ast.rs`、`resolved_typed_ast.rs`とrunner
+`type_elaboration/source_statement.rs`、`type_elaboration.rs`、
+`runner.rs`、`runner/tests/type_elaboration/source_statement.rs`である。
+B4Aがrequired validated helperをすでにexposeしたため、
+`source_formula_composition.rs`はedit不要である。
+
+Task 252はnumeral occurrences、Task 256はequality occurrences、
+Task 257/257B2はconnective/wrapper/binder/composition occurrencesを保持し、
+Task 258だけがtheorem node 120とupper `Composite(0)` associations 2件を
+ownする。parser、resolver、binding、lower checker/runner owners、
+specification、corpus、expectations、sidecars、trace、public runner
+schemas、semantic phasesは禁止である。このseven-file boundaryには
+required ownership transfer/lower-stage prerequisiteはない。repeated
+read-only boundary/source-documentation consistency reviewは**NO
+FINDINGS**である。implementation boundary reviewはseparate later taskの
+ままである。

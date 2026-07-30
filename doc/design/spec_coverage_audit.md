@@ -5384,4 +5384,37 @@ Low `design_drift` corrections. Complete verification PASSes, and
 independent final quality reports **NO FINDINGS** with all nine hard gates
 PASS, no cap, and valid `100/100`. None of these results changes the
 deferred trace row, its empty test list, any count/backlink, or coverage
-credit. Only staging, commit, and post-commit B4B inventory remain.
+credit. Staging and the implementation commit subsequently closed at
+`662adbde71e665ab37504ac476e94c935c493535`; post-commit inventory was
+clean and selected Task 258B4B.
+
+### Task 258B4B narrative-only connective/grouping-root ownership
+
+Task 258B4B freezes the syntax-free upper association between one theorem
+statement and the existing Task-257B2 connective/grouping composite root.
+The private 167-byte/double-LF source is distinct from the active 166-byte
+lower-only fixture whose expectation and covered trace row explicitly defer
+theorem ownership. The lower `8/6/1/1/1/7/9` plus `8/0` transaction and
+`UnassignedStatement` ownership remain unchanged; the future upper route
+adds only Task-258 `1/1/1/0/1` with two `Composite(0)` references.
+
+This documentation is narrative ownership only.
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`; the existing
+`spec.en.checker.type_elaboration.source_connective_grouping_payload` row
+remains covered solely for lower transport. No trace status, test list,
+backlink, requirement count, corpus artifact, active outcome, or coverage
+credit changes. Connective/repetition/equality/quantified truth, formula
+results/facts, theorem acceptance/publication, proof, Core/CFG/VC, B4C, B5,
+and MT10-FS remain deferred.
+
+The prerequisite baseline is checker/runner libraries `414/476`, production
+`23/139828` and `30/55109`, with the recorded B4A manifests and five CLI
+hashes unchanged. The separate implementation projects `418/481`. Repeated
+specification, test-boundary, bilingual, and source/documentation reviews
+report **NO FINDINGS** after the bounded contract corrections. Broad
+docs-only verification PASSes with exactly 32 design documents changed and
+all authority, corpus, trace, production, count, and hash no-op gates
+preserved. Independent final quality reports **NO FINDINGS**; all nine hard
+gates PASS with no cap at valid `100/100`. Staging, commit, and post-commit
+inventory remain pending; none may change trace credit.

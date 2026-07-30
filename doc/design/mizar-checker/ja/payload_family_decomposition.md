@@ -1402,3 +1402,19 @@ ownershipを保持する。exact lower owned-site/range checksとrootless lower
 typed arenaはownership transferなしにcoherent cross-family substitutionを
 防ぐ。truth、binder guard discharge、facts、acceptance、proof semantics、
 B4B/B4C/B5はdeferredのままである。
+
+## Task 258B4B frozen composite-root edge
+
+B4Bはsecond B4 nodeで、Task-257B2だけをconsumeする。unchanged lower
+graphはTask 252 `16/0/16`、Task 256 `8/0/0/0/0/0/0/16/16`、
+Task 257 `8/6/1/1/1/7/9`、Task-257B2 `8/0`である。そのexplicit
+binderはunusedで、one rootは`UnassignedStatement`のままである。Task 258が
+追加するのはstatement 0/candidate 0から`Composite(0)`へのassociation
+だけで、owner/contextは1件、input factは0件、inner connective、
+wrapper、equality、numeralへのedgeはない。
+
+private 167-byte routeはactive 166-byte lower-only fixtureおよびB4A
+80-byte routeからisolateする。B4A/B4B profile hybridはatomically failする。
+B4CはTask-257B3 restricted/existential/nested rootsを引き続きownし、B5は
+broader visibilityを引き続きownする。connective/repetition semantics、
+truth、facts、acceptance、proofはdeferredのままである。

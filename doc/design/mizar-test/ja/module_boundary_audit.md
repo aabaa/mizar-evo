@@ -11106,3 +11106,19 @@ bounded documentation correction後のfinal source/documentation/boundary
 consistencyは**NO FINDINGS**である。complete verificationはPASSした。
 independent final qualityは**NO FINDINGS**、全9 hard gates PASS、valid
 `100/100`で、remainingはstaging、commit、post-commit inventoryだけである。
+
+## Checker Task 258B4B runner boundary freeze
+
+runnerが変更できるのは`type_elaboration/source_statement.rs`、その
+test-only facade re-exportsである`type_elaboration.rs`/`runner.rs`、
+existing statement test leafだけである。Task-257B2 output helperはB4Aに
+よってalready crate-privateで、`source_formula_composition.rs`と全lower
+extractor/producerはexplicit no-opである。checker ownershipはexisting
+statement/typed/final consumers 3件に限定する。
+
+corpus、expectations、sidecars、trace、parser/resolver/binding modules、
+public runner API、semantic phasesはscope外である。このseparationはlower
+source occurrence ownershipをpreserveし、167-byte dormant upper routeを
+independently removableにする。repeated read-only boundary/
+source-documentation consistency reviewは**NO FINDINGS**である。
+implementation boundary reviewはseparate later taskのままである。

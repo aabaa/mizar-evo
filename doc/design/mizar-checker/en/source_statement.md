@@ -3664,3 +3664,45 @@ tuples, route isolation, and replay prove the failure boundary. The lower
 typed arena remains rootless while Surface root 25 remains authenticated;
 `UnassignedStatement` is not rewritten. No truth, fact, theorem acceptance,
 proof, goal, justification, diagnostic, or semantic result is added.
+
+## Task 258B4B Frozen Connective/Grouping Statement Root
+
+The exact private source is 167 bytes, ends in two LFs, hashes to
+`3145e60413841ae005977400f1acd21f0974c7bad635f37fe3df6eeae7700748`,
+and parses with zero diagnostics as 124 Surface nodes/root 123. The theorem
+owner is node 120/range `0..165`, label node 1/range `8..48`, and universal
+root node 118/range `50..164`. Raw real-frontend resolver ownership is
+public/exported local theorem contribution 0, origin `[2,0]`, with no label
+projection, import, or recovery. The runner enriches it before handoff with
+exactly one public/exported theorem `LabelProjection` for contribution 0
+whose spelling, namespace, origin, range anchor, contribution, normal
+recovery, and contribution label effect all match the owner; exact enriched
+resolver cardinalities are `1/1/1/1/0`.
+
+The statement handoff is exactly one owner, one statement, one context, zero
+input facts, and one candidate. Owner spelling is
+`FormulaConnectiveGroupingPayloadBoundary`. Statement and candidate target
+`Composite(0)`; the statement spelling is
+`theorem FormulaConnectiveGroupingPayloadBoundary : for x being set holds ( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;`.
+Context 0 references binding context 0/range `0..165` with visible `[]`.
+
+No public DTO, producer, accessor, installer, error, or debug grammar is
+added. `build_with_formula_composition` and the two existing optional lower
+fingerprints are extended only to the exact matched Task-257B2 profile.
+The crate-private cardinality-only `is_task_258b4a_profile` is narrowed to
+B4A's exact owner spelling/range, and a symmetric exact
+`is_task_258b4b_profile` is added. Their call sites must pair B4A only with
+Task-257B1 and B4B only with Task-257B2.
+The 42 lower-owned nodes and `UnassignedStatement` root remain unchanged;
+Task 258 owns only theorem node 120 and the two upper root links. The active
+166-byte source, B4A, atomic statement families, rooted/relocated lower
+near misses, and every profile hybrid are mandatory fail-closed negatives.
+The runner mutation matrix authenticates and independently corrupts every
+field of that enriched theorem label projection and its contribution label
+effect; describing the raw preflight as label-free does not waive the
+checker-consumed label contract.
+The runner-private route output uses lookup telemetry `0/0/[]` for this
+zero-reference profile. Those zeros are sentinels, not reference ordinals;
+the transport-detail guard must accept them only for the exact matched
+Task-257B2/B4B profile and must keep B4A at `1/1/[1,1]`. No public checker
+DTO or statement semantic is changed by this dormant runner convention.

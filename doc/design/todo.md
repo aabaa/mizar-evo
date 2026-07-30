@@ -3383,5 +3383,25 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Pass independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`.
 - [x] Stage/inspect the exact B4A implementation scope.
-- [ ] Create one B4A implementation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4B.
+- [x] Create B4A implementation commit
+  `662adbde71e665ab37504ac476e94c935c493535`.
+- [x] Verify clean ahead-7/behind-0 post-commit state, unchanged stash, and
+  fresh-inventory B4B.
+
+## Checker Task 258B4B Documentation Prerequisite
+
+- [x] Freeze canonical authority and the distinct private
+  167-byte/double-LF connective/grouping source, all 124 Surface nodes/root
+  123, and local resolver owner provenance.
+- [x] Freeze the complete Task-252/256/257/B2/binding transaction, exact
+  42/1/81 ownership partition, and upper `1/1/1/0/1` `Composite(0)`
+  association.
+- [x] Reuse the B4A public API and debug grammar; freeze exactly seven
+  future consumers and four checker/five runner tests.
+- [x] Preserve the active 166-byte lower-only fixture, every corpus/trace
+  artifact and semantic/coverage deferral, with narrative-only audit impact.
+- [x] Complete repeated reviews, docs-only verification, and final quality
+  with all nine hard gates and score `>=90/100`.
+- [ ] Stage/inspect and create one dedicated B4B documentation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4B
+  implementation.

@@ -4336,3 +4336,25 @@ relocated-term near missをseparately coverする。focused runner `5/5`と
 separate test-sufficiency/implementation reviewsは**NO FINDINGS**である。
 harnessはactive route、truth、fact、acceptance、proof、coverage claimを
 追加しない。
+
+## Checker Task 258B4B frozen harness route
+
+dormant selectorはexact 167-byte/double-LF hash、124 Surface nodes/root
+123の全kind/range/recovery/ordered-child fields、raw local theorem
+resolver provenance、one theorem label projectionとcontribution label
+effectを含むenriched `1/1/1/1/0` resolver environmentをauthenticateする。
+Task-257B2 lower handoffsをone rootless arena内でrebuildし、両
+`Composite(0)` linksを持つupper `1/1/1/0/1`だけをpublishする。private
+route telemetryはexact zero-reference sentinel `0/0/[]`で、profile-aware
+detail guardはmatched Task-257B2/B4Bだけでこれをacceptし、B4Aを
+`1/1/[1,1]`のまま保つ。
+
+checker planでnamedされたexact runner tests 5件はcomplete byte/LF、
+`124 x 4` node、raw/enriched resolver、label-effect、`0/0/[]`
+telemetry/detail-guard、lower-row、upper-row、42/1/81 ownership、
+cardinality/fingerprint、coherent lower near-miss、active 166-byte/B4A/
+atomic-family、order、rollback/replay、clone/debug、empty-semantic
+matricesをcoverする。paired checker suiteがsyntax-free corruption/final
+allowlist checksをownする。active fixture、sidecar、trace、diagnostic、
+public runner schema、connective truth、repetition expansion、theorem
+acceptance、proof resultは追加しない。

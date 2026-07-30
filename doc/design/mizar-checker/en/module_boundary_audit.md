@@ -914,3 +914,23 @@ Final source/documentation and boundary consistency reports **NO FINDINGS**
 after the bounded documentation corrections. Complete verification PASSes.
 Independent final quality reports **NO FINDINGS**, all nine hard gates PASS,
 and valid `100/100`; only staging, commit, and post-commit inventory remain.
+
+## Task 258B4B Boundary Freeze
+
+B4B reuses the B4A checker-owned composite-statement API and the already
+crate-private runner Task-257B2 output. The future write set is exactly
+checker `source_statement.rs`, `typed_ast.rs`, `resolved_typed_ast.rs`, and
+runner `type_elaboration/source_statement.rs`, `type_elaboration.rs`,
+`runner.rs`, and `runner/tests/type_elaboration/source_statement.rs`.
+`source_formula_composition.rs` requires no edit because B4A already exposed
+the required validated helper.
+
+Task 252 retains numeral occurrences, Task 256 retains equality occurrences,
+Task 257/257B2 retain connective/wrapper/binder/composition occurrences, and
+Task 258 alone owns theorem node 120 plus the two upper `Composite(0)`
+associations. Parser, resolver, binding, lower checker/runner owners,
+specification, corpus, expectations, sidecars, trace, public runner schemas,
+and semantic phases are forbidden. This seven-file boundary has no required
+ownership transfer or lower-stage prerequisite. Repeated read-only boundary
+and source/documentation consistency review reports **NO FINDINGS**.
+Implementation boundary review remains a separate later task.

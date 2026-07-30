@@ -1102,3 +1102,27 @@ final source/documentation consistencyはLow `design_drift` 3件のcorrection
 final qualityも両言語で**NO FINDINGS**、全9 hard gates PASS、capなし、
 valid `100/100`として同期する。両言語でpendingなのはstaging、commit、
 post-commit B4B inventoryだけである。
+
+## Task 258B4B frozen bilingual contract
+
+B4A implementation commit
+`662adbde71e665ab37504ac476e94c935c493535`とclean ahead-7/behind-0
+post-commit inventoryがshared predecessorである。canonical ENはB4Bを
+private 167-byte/double-LF Task-257B2 connective/grouping theorem-root
+consumerだけとしてfreezeする。124 Surface nodes/root 123、resolver
+contribution 0/origin `[2,0]`、lower `16/0/16`、
+`8/0/0/0/0/0/0/16/16`、`8/6/1/1/1/7/9`、`8/0`、binding
+`2/1/4`、rootless arena、upper `1/1/1/0/1`である。
+
+paired JA documentsはexact source/hash、node ids/ranges、42/1/81 ownership
+split、normalized statement spelling、`Composite(0)` links、reused B4A
+API/debug grammar、7 consumers、9 test names、active 166-byte exclusion、
+classifications、deferrals、baselines、narrative-only audit impact、exit
+criteriaをpreserveしなければならない。translationはsource transportを
+connective truth/theorem acceptanceへ変換してはならない。fresh pair
+synchronization/bilingual reviewは**NO FINDINGS**である。全15 EN/JA
+pairsはcritical numeric/identifier tokens、test names 9件、
+raw/enriched label distinction、`1/1/1/1/0`、`0/0/[]`、B4A
+`1/1/[1,1]`、test-only facade exceptions 2件をpreserveする。independent
+final qualityは**NO FINDINGS**、全9 gates PASS、valid `100/100`として
+synchronizeする。staging、commit、post-commit inventoryはpendingである。

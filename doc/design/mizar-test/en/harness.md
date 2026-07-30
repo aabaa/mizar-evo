@@ -4593,3 +4593,25 @@ separately covers the coherent relocated-term near miss. Focused runner
 `5/5` and separate test-sufficiency and implementation reviews report
 **NO FINDINGS**. The harness adds no active route, truth, fact, acceptance,
 proof, or coverage claim.
+
+## Checker Task 258B4B Frozen Harness Route
+
+The dormant selector authenticates the exact 167-byte/double-LF hash, all
+kind/range/recovery/ordered-child fields for 124 Surface nodes and root 123,
+the raw local theorem resolver provenance, and the enriched
+`1/1/1/1/0` resolver environment including its one theorem label projection
+and contribution label effect. It rebuilds the Task-257B2 lower handoffs in
+one rootless arena and publishes only upper `1/1/1/0/1` with two
+`Composite(0)` links. Its private route telemetry is the exact zero-reference
+sentinel `0/0/[]`; the profile-aware detail guard accepts it only for matched
+Task-257B2/B4B and leaves B4A at `1/1/[1,1]`.
+
+The five exact runner tests named in the checker plan cover the complete
+byte/LF, `124 x 4` node, raw/enriched resolver, label-effect, `0/0/[]`
+telemetry/detail-guard, lower-row, upper-row, 42/1/81 ownership,
+cardinality/fingerprint, coherent lower near-miss, active 166-byte/B4A/
+atomic-family, order, rollback/replay, clone/debug, and empty-semantic
+matrices. The paired checker suite owns the syntax-free corruption and final
+allowlist checks. No active fixture, sidecar, trace, diagnostic, public
+runner schema, connective truth, repetition expansion, theorem acceptance,
+or proof result is added.
