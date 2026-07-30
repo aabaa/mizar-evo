@@ -4739,3 +4739,21 @@ next-task-owned `source_drift`をrecord後、全8 protocol classificationで
 **NO FINDINGS**。independent test sufficiencyも**NO FINDINGS**。full
 verificationはspecification/corpus/expectation/sidecar/trace/production/
 public API ownerを変更せずPASSする。
+
+## Task 258B5A implementation authority result
+
+documentation prerequisite
+`59021f764f146d669f84877042f0512882c9c5ff`はexact
+ancestor-label/descendant-citation transactionをfreezeする。seven private
+consumersはそのauthorized 185-byte sourceだけをexisting parser、resolver
+provenance、BindingEnv、Task-252、Task-256、Task-258 boundary経由でtransport
+する。language ruleをinferせずtest intentを変更せず、bounded B5A
+`source_drift`をcloseする。
+
+implementationはfrozen Rust mutation matrixだけを追加する。B5B imported
+public visibilityとB5C active inner-to-outer/sibling confinementはseparate
+task ownedのbounded `test_gap`のまま。specification、existing `.miz`、
+expectation、sidecar、trace metadata、public API、diagnostic、fact、
+accepted statement、proof、goal、downstream IRはunchanged。
+requirement `spec.en.checker.formula_statement.source_payloads`はactive test
+mapping/coverage creditなしの`deferred`を維持する。

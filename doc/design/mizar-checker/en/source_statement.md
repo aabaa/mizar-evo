@@ -3809,3 +3809,21 @@ names statement/context 4, range `170..171`, `LabelRefId(0)`, scope `[0,1]`,
 simple-local kind, and resolver node 82/SemanticOrigin `[82]`. Exact prefix
 visibility is provenance only: the task creates no fact, acceptance, proof,
 goal, or other semantic output.
+
+## Task 258B5A Implemented Ancestor/Descendant Statement Transaction
+
+The private producer now authenticates the exact 185-byte source, all 93
+normal Surface rows/root 92, raw and enriched resolver provenance, and the
+unchanged BindingEnv, Task-252, and Task-256 handoffs before constructing the
+frozen base `1/5/5/5/5` and reference `1/1` profiles. It owns only the ten
+term, five formula, and five statement nodes; the label, citation,
+proof-block, wrapper, and other 73 nodes remain arena provenance.
+
+The label remains statement/context/candidate 1 at `95..96`, scope `[0]`,
+visible-after ordinal 1, private/local-only contribution 0. The citation
+remains statement/context 4 at `170..171`, scope `[0,1]`, resolver node 82,
+and `LabelRefId(0)`. Reference validation also authenticates every resolver
+node kind so a coherent arena-kind mutation cannot bypass the frozen
+Surface/resolver identity. B1/B5A cross-pairing, row, scope, ownership,
+fingerprint, relocation/recovery, and replay mismatches fail atomically.
+No fact, acceptance, proof, goal, diagnostic, or public API is added.

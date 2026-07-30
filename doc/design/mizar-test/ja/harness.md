@@ -4469,3 +4469,19 @@ resolver/lower mutation、owning-stage scope/range/ordinal/ownership
 corruption、B1/B5A cross-pair/order、replay/debug、selector isolation、
 empty semanticsをcoverする。public harness field/error/debug grammarは
 変更しない。
+
+## Checker Task 258B5A implemented private route
+
+private selectorはexact 185-byte/final-LF sourceだけをadmitし、real resolver
+two-pass replay前に全93 Surface rowをauthenticateする。unchanged
+BindingEnv/Task-252/Task-256 producerをreuseし、exact base/reference
+handoffをconstructし、matched B5A stateだけをinstallし、syntax fallback
+なしでimmutable final cloneを再検証する。
+
+outputはexact `20/73` ownership、scope `[0]`のprivate/local label 1件、
+scope `[0,1]`のsimple-local citation 1件、resolver node 82からlabel key
+0、lookup ordinal `1/1`、10 reference-use ordinalを全て1、empty semantic
+tableを維持する。source、Surface、resolver、lower、row、scope、ownership、
+cross-profile、replay、clone near missはowning boundaryでisolateする。
+public harness field、active selector、diagnostic、fact、accepted statement、
+proof、goal、IRはunchanged。

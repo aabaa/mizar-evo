@@ -3296,3 +3296,20 @@ row 0はstatement/context 4、range `170..171`、`LabelRefId(0)`、scope
 `[0,1]`、simple-local、resolver node 82/SemanticOrigin `[82]`をnameする。
 exact prefix visibilityはprovenanceだけで、fact/acceptance/proof/goal/
 semantic outputを作らない。
+
+## Task 258B5A implemented ancestor/descendant statement transaction
+
+private producerはfrozen base `1/5/5/5/5`とreference `1/1` profileをconstruct
+する前に、exact 185-byte source、全93 normal Surface row/root 92、raw/enriched
+resolver provenance、unchanged BindingEnv/Task-252/Task-256 handoffを
+authenticateする。ownするのはterm 10、formula 5、statement 5 nodesだけで、
+label/citation/proof-block/wrapperとother 73 nodesはarena provenanceのまま。
+
+labelはstatement/context/candidate 1、`95..96`、scope `[0]`、
+visible-after ordinal 1、private/local-only contribution 0を維持する。
+citationはstatement/context 4、`170..171`、scope `[0,1]`、resolver node
+82、`LabelRefId(0)`を維持する。reference validationは全resolver node kind
+もauthenticateし、coherent arena-kind mutationがfrozen Surface/resolver
+identityをbypassできない。B1/B5A cross-pair、row、scope、ownership、
+fingerprint、relocation/recovery、replay mismatchはatomically failする。
+fact、acceptance、proof、goal、diagnostic、public APIを追加しない。

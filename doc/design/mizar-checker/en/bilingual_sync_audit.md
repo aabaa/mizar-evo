@@ -1313,3 +1313,17 @@ Both languages record repeated final quality as **NO FINDINGS**, all nine
 hard gates PASS, no cap, and valid `100/100`
 (`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit inventory
 remain synchronized and pending.
+
+## Task 258B5A Implementation Synchronization
+
+The paired checker documents now synchronize prerequisite commit
+`59021f764f146d669f84877042f0512882c9c5ff`, the exact seven consumers,
+185-byte source, 93-node/root-92 identities, raw/enriched resolver profiles,
+all lower/base/reference rows, `20/73` ownership, label `[0]` to citation
+`[0,1]` provenance, resolver-node-kind revalidation, and atomic B1/B5A
+installation. The bounded B5A `source_drift` is closed in both languages.
+
+Both languages keep B5B/B5C `test_gap` ownership and every specification,
+corpus, expectation, sidecar, trace status/count/backlink, coverage,
+public-API, diagnostic, and semantic no-op boundary synchronized without an
+exception.

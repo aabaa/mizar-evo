@@ -4724,3 +4724,19 @@ identity, raw/enriched resolver and lower mutations, scope/range/ordinal/
 ownership corruption at the owning stage, B1/B5A cross-pairing and
 installation order, replay/debug stability, selector isolation, and empty
 semantics. No public harness field or error/debug grammar changes.
+
+## Checker Task 258B5A Implemented Private Route
+
+The private selector now admits only the exact 185-byte/final-LF source and
+authenticates all 93 Surface rows before running the real resolver two-pass
+replay. It reuses unchanged BindingEnv, Task-252, and Task-256 producers,
+constructs exact base/reference handoffs, installs only matched B5A state,
+and revalidates the immutable final clone without a syntax fallback.
+
+The output preserves exact `20/73` ownership, one private/local label at
+scope `[0]`, one simple-local citation at scope `[0,1]`, resolver node 82 to
+label key 0, lookup ordinals `1/1`, ten reference-use ordinals equal to 1,
+and empty semantic tables. Source, Surface, resolver, lower, row, scope,
+ownership, cross-profile, replay, and clone near misses remain isolated at
+their owning boundary. Public harness fields, active selectors, diagnostics,
+facts, accepted statements, proofs, goals, and IR remain unchanged.

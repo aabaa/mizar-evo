@@ -5506,3 +5506,24 @@ quality reports **NO FINDINGS**. All nine hard gates PASS, no score cap
 applies, and the valid score is `100/100`
 (`20/20/15/15/10/10/5/5`). This status update does not alter the deferred
 row or create coverage credit.
+
+## Task 258B5A Implemented Ancestor/Descendant Citation Follow-up
+
+Documentation prerequisite
+`59021f764f146d669f84877042f0512882c9c5ff` is followed by the exact
+seven-consumer private implementation. It authenticates the frozen
+185-byte source, 93-node/root-92 Surface and resolver identities, existing
+Binding/Task-252/Task-256 handoffs, Task-258 base `1/5/5/5/5` and
+reference `1/1`, one local-only label at scope `[0]`, one simple-local
+citation at scope `[0,1]`, resolver node 82 to label key 0, and exact
+`20/73` syntax-free ownership. This closes the bounded B5A
+`source_drift`.
+
+B5B imported-public visibility and B5C active inner-to-outer/sibling
+confinement remain separate follow-ups and retain the bounded active
+`test_gap`. Requirement
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`. No status, count, backlink, owner-crate, active mapping, or
+coverage-credit field changes. `tests/coverage/spec_trace.toml`,
+specifications, existing `.miz`, expectations, and sidecars remain
+unchanged; this implementation narrative grants no active coverage credit.

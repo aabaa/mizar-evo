@@ -422,6 +422,21 @@ impl SourceStatementHandoff {
             && self.candidate_facts.len() == 4
     }
 
+    pub(crate) fn is_task_258b5a_profile(&self) -> bool {
+        self.binding_env.contexts().len() == 4
+            && self.statements.len() == 5
+            && self.contexts.len() == 5
+            && self.input_facts.len() == 5
+            && self.candidate_facts.len() == 5
+            && self
+                .owners
+                .get(SourceTheoremOwnerId::new(0))
+                .is_some_and(|owner| {
+                    owner.source_range == range(self.source_id, 19, 184)
+                        && owner.spelling == "FormulaStatementAncestorLabelDescendantCitationSmoke"
+                })
+    }
+
     pub(crate) fn is_task_258b2_profile(&self) -> bool {
         self.binding_env.contexts().len() == 2
             && self.statements.len() == 3
@@ -2642,6 +2657,7 @@ impl Error for SourceStatementReferenceError {}
 enum StatementProfile {
     Task258A,
     Task258B1,
+    Task258B5A,
     Task258B2,
     Task258B3,
     Task258B3N,
@@ -2659,6 +2675,24 @@ enum StatementProfile {
     Task258B3M2B2B3C,
     Task258B3M2B2B3D,
     Task258B3M2B2B3E,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StatementReferenceProfile {
+    Task258B1,
+    Task258B5A,
+}
+
+fn statement_reference_profile(
+    statements: &SourceStatementHandoff,
+) -> Option<StatementReferenceProfile> {
+    if statements.is_task_258b1_profile() {
+        Some(StatementReferenceProfile::Task258B1)
+    } else if statements.is_task_258b5a_profile() {
+        Some(StatementReferenceProfile::Task258B5A)
+    } else {
+        None
+    }
 }
 
 fn validate_dependencies(
@@ -2709,6 +2743,17 @@ fn validate_dependencies(
     );
     if b1_binding && b1_primary && b1_atomic {
         return Ok(StatementProfile::Task258B1);
+    }
+    let b5a_binding = exact_binding_profile(StatementProfile::Task258B5A, source_id, bindings);
+    let b5a_primary = exact_primary_profile(StatementProfile::Task258B5A, primary_terms);
+    let b5a_atomic = exact_atomic_profile(
+        StatementProfile::Task258B5A,
+        atomic_formulas,
+        primary_terms,
+        arena,
+    );
+    if b5a_binding && b5a_primary && b5a_atomic && exact_task258b5a_shared_arena(source_id, arena) {
+        return Ok(StatementProfile::Task258B5A);
     }
     let b2_binding = exact_binding_profile(StatementProfile::Task258B2, source_id, bindings);
     let b2_primary = exact_primary_profile(StatementProfile::Task258B2, primary_terms);
@@ -2930,6 +2975,7 @@ fn exact_binding_profile(
     let expected_contexts = match profile {
         StatementProfile::Task258A => 1,
         StatementProfile::Task258B1 => 3,
+        StatementProfile::Task258B5A => 4,
         StatementProfile::Task258B2 => 2,
         StatementProfile::Task258B3 => 2,
         StatementProfile::Task258B3N => 2,
@@ -3005,6 +3051,62 @@ fn exact_binding_profile(
                 || !nested.bindings.is_empty()
                 || nested.visible_bindings != [BindingId::new(0)]
                 || nested.recovery != BindingContextRecovery::Normal
+            {
+                return false;
+            }
+        }
+        StatementProfile::Task258B5A => {
+            let Some(outer) = bindings.contexts().get(BindingContextId::new(1)) else {
+                return false;
+            };
+            let Some(first_descendant) = bindings.contexts().get(BindingContextId::new(2)) else {
+                return false;
+            };
+            let Some(second_descendant) = bindings.contexts().get(BindingContextId::new(3)) else {
+                return false;
+            };
+            if outer.id != BindingContextId::new(1)
+                || outer.owner
+                    != (BindingContextOwner::SourceStatement {
+                        source_range: range(source_id, 87, 183),
+                    })
+                || outer.parent != Some(BindingContextId::new(0))
+                || outer.layer != BindingContextLayer::Proof
+                || outer
+                    .lexical_scope
+                    .as_ref()
+                    .is_none_or(|scope| scope.path() != [0])
+                || !outer.bindings.is_empty()
+                || outer.visible_bindings != [BindingId::new(0)]
+                || outer.recovery != BindingContextRecovery::Normal
+                || first_descendant.id != BindingContextId::new(2)
+                || first_descendant.owner
+                    != (BindingContextOwner::SourceStatement {
+                        source_range: range(source_id, 104, 131),
+                    })
+                || first_descendant.parent != Some(BindingContextId::new(1))
+                || first_descendant.layer != BindingContextLayer::Proof
+                || first_descendant
+                    .lexical_scope
+                    .as_ref()
+                    .is_none_or(|scope| scope.path() != [0, 0])
+                || !first_descendant.bindings.is_empty()
+                || first_descendant.visible_bindings != [BindingId::new(0)]
+                || first_descendant.recovery != BindingContextRecovery::Normal
+                || second_descendant.id != BindingContextId::new(3)
+                || second_descendant.owner
+                    != (BindingContextOwner::SourceStatement {
+                        source_range: range(source_id, 146, 178),
+                    })
+                || second_descendant.parent != Some(BindingContextId::new(1))
+                || second_descendant.layer != BindingContextLayer::Proof
+                || second_descendant
+                    .lexical_scope
+                    .as_ref()
+                    .is_none_or(|scope| scope.path() != [0, 1])
+                || !second_descendant.bindings.is_empty()
+                || second_descendant.visible_bindings != [BindingId::new(0)]
+                || second_descendant.recovery != BindingContextRecovery::Normal
             {
                 return false;
             }
@@ -3475,6 +3577,18 @@ fn exact_primary_profile(
             (122, 123),
             (126, 127),
         ],
+        StatementProfile::Task258B5A => &[
+            (81, 82),
+            (85, 86),
+            (98, 99),
+            (102, 103),
+            (119, 120),
+            (123, 124),
+            (140, 141),
+            (144, 145),
+            (161, 162),
+            (165, 166),
+        ],
         StatementProfile::Task258B2 => &[
             (66, 67),
             (70, 71),
@@ -3511,6 +3625,7 @@ fn exact_primary_profile(
     let expected_contexts: &[usize] = match profile {
         StatementProfile::Task258A => &[0, 0],
         StatementProfile::Task258B1 => &[0, 0, 1, 1, 2, 2, 1, 1],
+        StatementProfile::Task258B5A => &[0, 0, 1, 1, 2, 2, 1, 1, 3, 3],
         StatementProfile::Task258B2 => &[0, 0, 1, 1, 1, 1],
         StatementProfile::Task258B3 => &[0, 0, 1, 1, 1],
         StatementProfile::Task258B3N => &[0, 0, 1, 1, 1],
@@ -3533,6 +3648,18 @@ fn exact_primary_profile(
     let expected_scopes: &[&[u32]] = match profile {
         StatementProfile::Task258A => &[&[], &[]],
         StatementProfile::Task258B1 => &[&[], &[], &[0], &[0], &[0, 0], &[0, 0], &[0], &[0]],
+        StatementProfile::Task258B5A => &[
+            &[],
+            &[],
+            &[0],
+            &[0],
+            &[0, 0],
+            &[0, 0],
+            &[0],
+            &[0],
+            &[0, 1],
+            &[0, 1],
+        ],
         StatementProfile::Task258B2 => &[&[], &[], &[0], &[0], &[0], &[0]],
         StatementProfile::Task258B3 => &[&[], &[], &[0], &[0], &[0]],
         StatementProfile::Task258B3N => &[&[], &[], &[0], &[0], &[0]],
@@ -4447,6 +4574,7 @@ fn exact_atomic_profile(
     let expected_ranges: &[(usize, usize)] = match profile {
         StatementProfile::Task258A => &[(74, 79)],
         StatementProfile::Task258B1 => &[(63, 68), (80, 85), (101, 106), (122, 127)],
+        StatementProfile::Task258B5A => &[(81, 86), (98, 103), (119, 124), (140, 145), (161, 166)],
         StatementProfile::Task258B2 => &[(66, 71), (87, 92), (101, 106)],
         StatementProfile::Task258B3 => &[(63, 68), (92, 97)],
         StatementProfile::Task258B3N => &[(62, 67), (95, 100)],
@@ -4468,6 +4596,7 @@ fn exact_atomic_profile(
     let expected_contexts: &[usize] = match profile {
         StatementProfile::Task258A => &[0],
         StatementProfile::Task258B1 => &[0, 1, 2, 1],
+        StatementProfile::Task258B5A => &[0, 1, 2, 1, 3],
         StatementProfile::Task258B2 => &[0, 1, 1],
         StatementProfile::Task258B3 => &[0, 1],
         StatementProfile::Task258B3N => &[0, 1],
@@ -5192,6 +5321,7 @@ fn validate_aggregate_lengths(
     let expected = match profile {
         StatementProfile::Task258A => (1, 1, 1, 1, 1),
         StatementProfile::Task258B1 => (1, 4, 4, 4, 4),
+        StatementProfile::Task258B5A => (1, 5, 5, 5, 5),
         StatementProfile::Task258B2 => (1, 3, 3, 3, 3),
         StatementProfile::Task258B3 => (1, 2, 2, 2, 2),
         StatementProfile::Task258B3N => (1, 2, 2, 2, 2),
@@ -5309,6 +5439,10 @@ fn validate_owner_rows(
             range(source_id, 19, 138),
             "FormulaStatementNestedContextSmoke",
         ),
+        StatementProfile::Task258B5A => (
+            range(source_id, 19, 184),
+            "FormulaStatementAncestorLabelDescendantCitationSmoke",
+        ),
         StatementProfile::Task258B2 => (
             range(source_id, 19, 112),
             "FormulaStatementSingleAssumptionSmoke",
@@ -5396,6 +5530,7 @@ fn validate_owner_rows(
         || (matches!(
             profile,
             StatementProfile::Task258B2
+                | StatementProfile::Task258B5A
                 | StatementProfile::Task258B3
                 | StatementProfile::Task258B3N
                 | StatementProfile::Task258B3M1
@@ -5467,6 +5602,48 @@ fn validate_statement_rows(
                 3,
                 117,
                 133,
+                SourceStatementKind::Conclusion,
+                "source.statement.conclusion",
+                "thus x = x by A ;",
+            ),
+        ],
+        StatementProfile::Task258B5A => &[
+            (
+                0,
+                19,
+                184,
+                SourceStatementKind::TheoremProposition,
+                "source.statement.theorem",
+                "theorem FormulaStatementAncestorLabelDescendantCitationSmoke : x = x proof A : x = x proof thus x = x ; end ; thus x = x proof thus x = x by A ; end ; end ;",
+            ),
+            (
+                1,
+                95,
+                132,
+                SourceStatementKind::ProofStepProposition,
+                "source.statement.proof-step",
+                "A : x = x proof thus x = x ; end ;",
+            ),
+            (
+                2,
+                114,
+                125,
+                SourceStatementKind::Conclusion,
+                "source.statement.conclusion",
+                "thus x = x ;",
+            ),
+            (
+                3,
+                135,
+                179,
+                SourceStatementKind::Conclusion,
+                "source.statement.conclusion",
+                "thus x = x proof thus x = x by A ; end ;",
+            ),
+            (
+                4,
+                156,
+                172,
                 SourceStatementKind::Conclusion,
                 "source.statement.conclusion",
                 "thus x = x by A ;",
@@ -5882,6 +6059,7 @@ fn validate_statement_rows(
     }
     let rows = match profile {
         StatementProfile::Task258B1 => 4,
+        StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B2 => 3,
         StatementProfile::Task258B3 => 2,
         StatementProfile::Task258B3N => 2,
@@ -5927,6 +6105,13 @@ fn validate_statement_rows(
             &[false, false, false, false],
             &[false, false, false, false],
         ],
+        StatementProfile::Task258B5A => &[
+            &[false, true, true, true, true],
+            &[false, false, true, false, false],
+            &[false, false, false, false, false],
+            &[false, false, false, false, true],
+            &[false, false, false, false, false],
+        ],
         StatementProfile::Task258B2 => &[
             &[false, true, true],
             &[false, false, false],
@@ -5956,6 +6141,13 @@ fn validate_statement_rows(
             &[false, true, true, false],
             &[false, false, true, false],
             &[false, false, false, true],
+        ],
+        StatementProfile::Task258B5A => &[
+            &[true, true, true, true, true],
+            &[false, true, true, false, false],
+            &[false, false, true, false, false],
+            &[false, false, false, true, true],
+            &[false, false, false, false, true],
         ],
         StatementProfile::Task258B2 => &[
             &[true, true, true],
@@ -6028,6 +6220,13 @@ fn validate_context_rows(
     let expected: &[(usize, usize, usize)] = match profile {
         StatementProfile::Task258A => &[(0, 19, 80)],
         StatementProfile::Task258B1 => &[(0, 19, 138), (1, 77, 114), (2, 96, 107), (1, 117, 133)],
+        StatementProfile::Task258B5A => &[
+            (0, 19, 184),
+            (1, 95, 132),
+            (2, 114, 125),
+            (1, 135, 179),
+            (3, 156, 172),
+        ],
         StatementProfile::Task258B2 => &[(0, 19, 112), (1, 80, 93), (1, 96, 107)],
         StatementProfile::Task258B3 => &[(0, 19, 103), (1, 87, 98)],
         StatementProfile::Task258B3N => &[(0, 19, 106), (1, 90, 101)],
@@ -6078,6 +6277,7 @@ fn validate_input_fact_rows(
     let rows = match profile {
         StatementProfile::Task258A => 1,
         StatementProfile::Task258B1 => 4,
+        StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B2 => 3,
         StatementProfile::Task258B3 => 2,
         StatementProfile::Task258B3N => 2,
@@ -6180,6 +6380,7 @@ fn validate_candidate_fact_rows(
     let rows = match profile {
         StatementProfile::Task258A => 1,
         StatementProfile::Task258B1 => 4,
+        StatementProfile::Task258B5A => 5,
         StatementProfile::Task258B2 => 3,
         StatementProfile::Task258B3 => 2,
         StatementProfile::Task258B3N => 2,
@@ -6223,6 +6424,276 @@ fn validate_candidate_fact_rows(
         }
     }
     Ok(())
+}
+
+const TASK258B5A_NODE_RANGES: [(usize, usize); 93] = [
+    (0, 7),
+    (8, 9),
+    (10, 13),
+    (14, 17),
+    (17, 18),
+    (19, 26),
+    (27, 79),
+    (79, 80),
+    (81, 82),
+    (83, 84),
+    (85, 86),
+    (87, 92),
+    (95, 96),
+    (96, 97),
+    (98, 99),
+    (100, 101),
+    (102, 103),
+    (104, 109),
+    (114, 118),
+    (119, 120),
+    (121, 122),
+    (123, 124),
+    (124, 125),
+    (128, 131),
+    (131, 132),
+    (135, 139),
+    (140, 141),
+    (142, 143),
+    (144, 145),
+    (146, 151),
+    (156, 160),
+    (161, 162),
+    (163, 164),
+    (165, 166),
+    (167, 169),
+    (170, 171),
+    (171, 172),
+    (175, 178),
+    (178, 179),
+    (180, 183),
+    (183, 184),
+    (14, 17),
+    (14, 17),
+    (8, 17),
+    (0, 18),
+    (81, 82),
+    (81, 82),
+    (85, 86),
+    (85, 86),
+    (81, 86),
+    (81, 86),
+    (98, 99),
+    (98, 99),
+    (102, 103),
+    (102, 103),
+    (98, 103),
+    (98, 103),
+    (95, 103),
+    (119, 120),
+    (119, 120),
+    (123, 124),
+    (123, 124),
+    (119, 124),
+    (119, 124),
+    (119, 124),
+    (114, 125),
+    (104, 131),
+    (95, 132),
+    (140, 141),
+    (140, 141),
+    (144, 145),
+    (144, 145),
+    (140, 145),
+    (140, 145),
+    (140, 145),
+    (161, 162),
+    (161, 162),
+    (165, 166),
+    (165, 166),
+    (161, 166),
+    (161, 166),
+    (161, 166),
+    (170, 171),
+    (170, 171),
+    (167, 171),
+    (156, 172),
+    (146, 178),
+    (135, 179),
+    (87, 183),
+    (19, 184),
+    (0, 184),
+    (0, 184),
+    (0, 184),
+];
+
+fn task258b5a_node_children(index: usize) -> &'static [usize] {
+    match index {
+        41 => &[3],
+        42 => &[41],
+        43 => &[1, 2, 42],
+        44 => &[0, 43, 4],
+        45 => &[8],
+        46 => &[45],
+        47 => &[10],
+        48 => &[47],
+        49 => &[46, 9, 48],
+        50 => &[49],
+        51 => &[14],
+        52 => &[51],
+        53 => &[16],
+        54 => &[53],
+        55 => &[52, 15, 54],
+        56 => &[55],
+        57 => &[12, 13, 56],
+        58 => &[19],
+        59 => &[58],
+        60 => &[21],
+        61 => &[60],
+        62 => &[59, 20, 61],
+        63 => &[62],
+        64 => &[63],
+        65 => &[18, 64, 22],
+        66 => &[17, 65, 23],
+        67 => &[57, 66, 24],
+        68 => &[26],
+        69 => &[68],
+        70 => &[28],
+        71 => &[70],
+        72 => &[69, 27, 71],
+        73 => &[72],
+        74 => &[73],
+        75 => &[31],
+        76 => &[75],
+        77 => &[33],
+        78 => &[77],
+        79 => &[76, 32, 78],
+        80 => &[79],
+        81 => &[80],
+        82 => &[35],
+        83 => &[82],
+        84 => &[34, 83],
+        85 => &[30, 81, 84, 36],
+        86 => &[29, 85, 37],
+        87 => &[25, 74, 86, 38],
+        88 => &[11, 67, 87, 39],
+        89 => &[5, 6, 7, 50, 88, 40],
+        90 => &[44, 89],
+        91 => &[90],
+        92 => &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 91,
+        ],
+        _ => &[],
+    }
+}
+
+fn task258b5a_node_kind(index: usize) -> &'static str {
+    match index {
+        45 | 47 | 51 | 53 | 58 | 60 | 68 | 70 | 75 | 77 => "source.term.variable-reference",
+        49 | 55 | 62 | 72 | 79 => "source.formula.atomic.equality",
+        65 | 85 | 87 => "source.statement.conclusion",
+        67 => "source.statement.proof-step",
+        89 => "source.statement.theorem",
+        _ => "source.surface.unowned",
+    }
+}
+
+fn task258b5a_resolver_node_kind(index: usize) -> &'static str {
+    match index {
+        0 => r#"Token(SurfaceToken { kind: ReservedWord, text: "reserve" })"#,
+        1 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        2 => r#"Token(SurfaceToken { kind: ReservedWord, text: "for" })"#,
+        3 => r#"Token(SurfaceToken { kind: ReservedWord, text: "set" })"#,
+        4 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: ";" })"#,
+        5 => r#"Token(SurfaceToken { kind: ReservedWord, text: "theorem" })"#,
+        6 => {
+            r#"Token(SurfaceToken { kind: Identifier, text: "FormulaStatementAncestorLabelDescendantCitationSmoke" })"#
+        }
+        7 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: ":" })"#,
+        8 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        9 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#,
+        10 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        11 => r#"Token(SurfaceToken { kind: ReservedWord, text: "proof" })"#,
+        12 => r#"Token(SurfaceToken { kind: Identifier, text: "A" })"#,
+        13 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: ":" })"#,
+        14 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        15 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#,
+        16 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        17 => r#"Token(SurfaceToken { kind: ReservedWord, text: "proof" })"#,
+        18 => r#"Token(SurfaceToken { kind: ReservedWord, text: "thus" })"#,
+        19 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        20 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#,
+        21 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        22 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: ";" })"#,
+        23 => r#"Token(SurfaceToken { kind: ReservedWord, text: "end" })"#,
+        24 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: ";" })"#,
+        25 => r#"Token(SurfaceToken { kind: ReservedWord, text: "thus" })"#,
+        26 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        27 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#,
+        28 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        29 => r#"Token(SurfaceToken { kind: ReservedWord, text: "proof" })"#,
+        30 => r#"Token(SurfaceToken { kind: ReservedWord, text: "thus" })"#,
+        31 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        32 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#,
+        33 => r#"Token(SurfaceToken { kind: Identifier, text: "x" })"#,
+        34 => r#"Token(SurfaceToken { kind: ReservedWord, text: "by" })"#,
+        35 => r#"Token(SurfaceToken { kind: Identifier, text: "A" })"#,
+        36 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: ";" })"#,
+        37 => r#"Token(SurfaceToken { kind: ReservedWord, text: "end" })"#,
+        38 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: ";" })"#,
+        39 => r#"Token(SurfaceToken { kind: ReservedWord, text: "end" })"#,
+        40 => r#"Token(SurfaceToken { kind: ReservedSymbol, text: ";" })"#,
+        41 => "TypeHead",
+        42 => "TypeExpression",
+        43 => "ReserveSegment",
+        44 => "ReserveItem",
+        45 | 47 | 51 | 53 | 58 | 60 | 68 | 70 | 75 | 77 => "TermReference",
+        46 | 48 | 52 | 54 | 59 | 61 | 69 | 71 | 76 | 78 => "TermExpression",
+        49 | 55 | 62 | 72 | 79 => "BuiltinPredicateApplication",
+        50 | 56 | 63 | 73 | 80 => "FormulaExpression",
+        57 | 64 | 74 | 81 => "Proposition",
+        65 | 85 | 87 => "ConclusionStatement",
+        66 | 86 | 88 => "ProofBlock",
+        67 => "CompactStatement",
+        82 => "Reference",
+        83 => "ReferenceList",
+        84 => "JustificationClause",
+        89 => "TheoremItem",
+        90 => "ItemList",
+        91 => "CompilationUnit",
+        92 => "Root",
+        _ => unreachable!("Task258B5A has exactly 93 resolver nodes"),
+    }
+}
+
+fn exact_task258b5a_shared_arena(source_id: SourceId, arena: &TypedArena) -> bool {
+    if arena.len() != TASK258B5A_NODE_RANGES.len()
+        || arena.root() != Some(crate::typed_ast::TypedNodeId::new(92))
+    {
+        return false;
+    }
+    TASK258B5A_NODE_RANGES
+        .iter()
+        .copied()
+        .enumerate()
+        .all(|(index, (start, end))| {
+            arena
+                .node(crate::typed_ast::TypedNodeId::new(index))
+                .is_some_and(|node| {
+                    node.anchor == SourceAnchor::Range(range(source_id, start, end))
+                        && node.kind.as_str() == task258b5a_node_kind(index)
+                        && node.resolved_node.is_none()
+                        && node.typing == TypingState::Unknown
+                        && node.recovery == NodeRecoveryState::Normal
+                        && node.links.context.is_none()
+                        && node.links.type_entry.is_none()
+                        && node.links.facts.is_empty()
+                        && node.links.coercions.is_empty()
+                        && node.links.initial_obligations.is_empty()
+                        && node.links.diagnostics.is_empty()
+                        && node
+                            .children
+                            .iter()
+                            .map(|child| child.index())
+                            .eq(task258b5a_node_children(index).iter().copied())
+                })
+        })
 }
 
 const TASK258B3_NODE_RANGES: [(usize, usize); 49] = [
@@ -11819,20 +12290,29 @@ fn validate_reference_dependencies(
     resolution: &LabelResolutionResult,
     arena: &TypedArena,
 ) -> Result<(), SourceStatementReferenceError> {
+    let Some(profile) = statement_reference_profile(statements) else {
+        return Err(SourceStatementReferenceError::DependencyMismatch);
+    };
+    let (arena_len, root_index, reference_node_index, reference_start, reference_end) =
+        match profile {
+            StatementReferenceProfile::Task258B1 => (77, 76, 68, 131, 132),
+            StatementReferenceProfile::Task258B5A => (93, 92, 82, 170, 171),
+        };
     if statements.source_id() != source_id
         || statements.module_id() != module_id
-        || !statements.is_task_258b1_profile()
         || statement_fingerprint != statements.debug_text()
         || resolver_ast.source_id() != source_id
         || resolver_ast.module_id() != module_id
-        || resolver_ast.nodes().len() != 77
-        || resolver_ast.nodes().root().index() != 76
+        || resolver_ast.nodes().len() != arena_len
+        || resolver_ast.nodes().root().index() != root_index
         || !resolver_ast.name_refs().is_empty()
         || resolver_ast.label_refs() != resolution.table()
         || resolver_ast.imports().imports().next().is_some()
         || resolver_ast.imports().exports().next().is_some()
-        || arena.len() != 77
-        || arena.root().is_none_or(|root| root.index() != 76)
+        || arena.len() != arena_len
+        || arena.root().is_none_or(|root| root.index() != root_index)
+        || (profile == StatementReferenceProfile::Task258B5A
+            && !exact_task258b5a_shared_arena(source_id, arena))
     {
         return Err(SourceStatementReferenceError::DependencyMismatch);
     }
@@ -11862,7 +12342,10 @@ fn validate_reference_dependencies(
         else {
             return Err(SourceStatementReferenceError::DependencyMismatch);
         };
-        if resolved_node.origin().source_id() != source_id
+        if (profile == StatementReferenceProfile::Task258B5A
+            && format!("{:?}", resolved_node.kind())
+                != task258b5a_resolver_node_kind(resolved_id.index()))
+            || resolved_node.origin().source_id() != source_id
             || resolved_node.origin().module_id() != module_id
             || resolved_node.origin().import_edge().is_some()
             || resolved_node.origin().structural_path() != [resolved_id.index() as u32]
@@ -11877,7 +12360,7 @@ fn validate_reference_dependencies(
         {
             return Err(SourceStatementReferenceError::DependencyMismatch);
         }
-        let is_reference = resolved_id.index() == 68;
+        let is_reference = resolved_id.index() == reference_node_index;
         if is_reference {
             if resolved_node.resolution() != NodeResolutionState::Resolved
                 || resolved_node.reference_key() != Some(NodeReferenceKey::Label(reference_id))
@@ -11893,16 +12376,18 @@ fn validate_reference_dependencies(
     let Some((_, label_node)) = resolved_node_by_index(resolver_ast.nodes(), 12) else {
         return Err(SourceStatementReferenceError::DependencyMismatch);
     };
-    let Some((_, reference_node)) = resolved_node_by_index(resolver_ast.nodes(), 68) else {
+    let Some((_, reference_node)) =
+        resolved_node_by_index(resolver_ast.nodes(), reference_node_index)
+    else {
         return Err(SourceStatementReferenceError::DependencyMismatch);
     };
     if label_node.origin() != projection.origin()
         || reference_node.origin() != reference.origin()
-        || reference.site().node().index() != 68
-        || reference.site().range() != range(source_id, 131, 132)
+        || reference.site().node().index() != reference_node_index
+        || reference.site().range() != range(source_id, reference_start, reference_end)
         || arena
             .iter()
-            .find_map(|(id, node)| (id.index() == 68).then_some(node))
+            .find_map(|(id, node)| (id.index() == reference_node_index).then_some(node))
             .is_none_or(|node| node.anchor != SourceAnchor::Range(reference.site().range()))
     {
         return Err(SourceStatementReferenceError::DependencyMismatch);
@@ -11928,6 +12413,13 @@ fn validate_label_rows(
     projection: &LabelProjection,
 ) -> Result<(), SourceStatementReferenceError> {
     let id = SourceStatementLabelId::new(0);
+    let Some(profile) = statement_reference_profile(statements) else {
+        return Err(SourceStatementReferenceError::InvalidLabel { label: id });
+    };
+    let (label_start, label_end) = match profile {
+        StatementReferenceProfile::Task258B1 => (77, 78),
+        StatementReferenceProfile::Task258B5A => (95, 96),
+    };
     let Some(label) = labels.get(id) else {
         return Err(SourceStatementReferenceError::InvalidAggregate);
     };
@@ -11956,7 +12448,7 @@ fn validate_label_rows(
         || statements.candidate_facts().get(label.candidate).is_none()
         || label.origin_path.as_str() != expected_origin
         || label.proof_scope.path() != [0]
-        || label.source_range != range(source_id, 77, 78)
+        || label.source_range != range(source_id, label_start, label_end)
         || label.source_ordinal != 0
         || label.visible_after_ordinal != 1
         || label.spelling != "A"
@@ -11998,6 +12490,21 @@ fn validate_citation_rows(
     let Some(citation) = citations.get(id) else {
         return Err(SourceStatementReferenceError::InvalidAggregate);
     };
+    let Some(profile) = statement_reference_profile(statements) else {
+        return Err(SourceStatementReferenceError::InvalidCitation { citation: id });
+    };
+    let (
+        statement_index,
+        context_index,
+        proof_scope_path,
+        citation_start,
+        citation_end,
+        reference_ordinal,
+        reference_node_index,
+    ) = match profile {
+        StatementReferenceProfile::Task258B1 => (3, 3, &[0][..], 131, 132, 3, 68),
+        StatementReferenceProfile::Task258B5A => (4, 4, &[0, 1][..], 170, 171, 4, 82),
+    };
     let LabelReferenceScope::Unqualified { proof_scope } = reference.scope() else {
         return Err(SourceStatementReferenceError::InvalidCitation { citation: id });
     };
@@ -12008,21 +12515,21 @@ fn validate_citation_rows(
             LabelResolution::Resolved(label) => Some(label),
             _ => None,
         });
-    if citation.statement != SourceStatementId::new(3)
+    if citation.statement != SourceStatementId::new(statement_index)
         || statements.statements().get(citation.statement).is_none()
-        || citation.context != SourceStatementContextId::new(3)
+        || citation.context != SourceStatementContextId::new(context_index)
         || statements.contexts().get(citation.context).is_none()
         || citation.label != SourceStatementLabelId::new(0)
         || labels.get(citation.label).is_none()
         || citation.label_ref.index() != 0
-        || citation.proof_scope.path() != [0]
-        || citation.source_range != range(source_id, 131, 132)
+        || citation.proof_scope.path() != proof_scope_path
+        || citation.source_range != range(source_id, citation_start, citation_end)
         || citation.ordinal != 0
         || citation.kind != SourceStatementCitationKind::SimpleLocal
         || citation.recovery != SourceStatementRecovery::Normal
         || reference.site().range() != citation.source_range
         || reference.site().spelling() != "A"
-        || reference.ordinal() != 3
+        || reference.ordinal() != reference_ordinal
         || reference.expectation() != LabelExpectation::ProofOrTheorem
         || proof_scope.as_ref() != Some(&citation.proof_scope)
         || !exact_semantic_origin(
@@ -12030,7 +12537,7 @@ fn validate_citation_rows(
             source_id,
             statements.module_id(),
             citation.source_range,
-            68,
+            reference_node_index as u32,
         )
         || resolution.ids() != [citation.label_ref]
         || resolution
@@ -20621,6 +21128,621 @@ mod tests {
             .with_source_atomic_formula(self.atomic.clone())
             .expect("Task256")
         }
+    }
+
+    #[derive(Clone)]
+    struct B5AFixture {
+        source: SourceId,
+        module: ModuleId,
+        bindings: BindingEnv,
+        primary: SourcePrimaryTermHandoff,
+        atomic: SourceAtomicFormulaHandoff,
+        arena: TypedArena,
+        statement: SourceStatementHandoff,
+        resolver_ast: ResolvedAst,
+        projection: LabelProjection,
+        reference: LabelReferenceCandidate,
+        resolution: LabelResolutionResult,
+    }
+
+    impl B5AFixture {
+        fn new(source_ordinal: usize) -> Self {
+            let source = source_id(source_ordinal);
+            let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("statement.fixture"));
+            let (symbol, contribution, symbols) = b5a_symbol_env(source, &module);
+            let bindings = b5a_binding_env(source, &module);
+            let arena = b5a_typed_arena(source);
+            let term_sites = [45, 47, 51, 53, 58, 60, 68, 70, 75, 77];
+            let term_ranges = [
+                (81, 82),
+                (85, 86),
+                (98, 99),
+                (102, 103),
+                (119, 120),
+                (123, 124),
+                (140, 141),
+                (144, 145),
+                (161, 162),
+                (165, 166),
+            ];
+            let term_contexts = [0, 0, 1, 1, 2, 2, 1, 1, 3, 3];
+            let primary = SourcePrimaryTermProducer::build(
+                SourcePrimaryTermHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    terms: (0..10)
+                        .map(|index| SourcePrimaryTermInput {
+                            site: node(term_sites[index]),
+                            source_range: range(source, term_ranges[index].0, term_ranges[index].1),
+                            source_ordinal: index,
+                            context: BindingContextId::new(term_contexts[index]),
+                            recovery: SourcePrimaryTermRecovery::Normal,
+                            spelling: "x".to_owned(),
+                            kind: SourcePrimaryTermKind::VariableReference,
+                            role: SourcePrimaryTermRole::Value,
+                            parent: None,
+                        })
+                        .collect(),
+                    references: (0..10)
+                        .map(|index| SourcePrimaryTermReferenceInput {
+                            term: SourcePrimaryTermId::new(index),
+                            binding: BindingId::new(0),
+                            role: SourcePrimaryTermReferenceRole::Variable,
+                        })
+                        .collect(),
+                    numeric_type_requests: Vec::new(),
+                },
+                &bindings,
+                &arena,
+            )
+            .expect("Task258B5A primary terms");
+            let formula_sites = [49, 55, 62, 72, 79];
+            let formula_ranges = [(81, 86), (98, 103), (119, 124), (140, 145), (161, 166)];
+            let formula_contexts = [0, 1, 2, 1, 3];
+            let mut edges = Vec::new();
+            let mut requests = Vec::new();
+            for formula in 0..5 {
+                for ordinal in 0..2 {
+                    let edge = SourceAtomicEdgeId::new(formula * 2 + ordinal);
+                    edges.push(SourceAtomicEdgeInput {
+                        formula: SourceAtomicFormulaId::new(formula),
+                        ordinal,
+                        role: if ordinal == 0 {
+                            SourceAtomicEdgeRole::BuiltinLeftOperand
+                        } else {
+                            SourceAtomicEdgeRole::BuiltinRightOperand
+                        },
+                        target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(
+                            formula * 2 + ordinal,
+                        )),
+                    });
+                    requests.push(SourceAtomicRequestInput {
+                        formula: SourceAtomicFormulaId::new(formula),
+                        ordinal,
+                        kind: SourceAtomicRequestKind::OperandExpectedType,
+                        edge: Some(edge),
+                        candidate: None,
+                        type_site: None,
+                        attribute: None,
+                    });
+                }
+            }
+            let atomic = SourceAtomicFormulaProducer::build(
+                SourceAtomicFormulaHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    formulas: (0..5)
+                        .map(|index| SourceAtomicFormulaInput {
+                            site: node(formula_sites[index]),
+                            source_range: range(
+                                source,
+                                formula_ranges[index].0,
+                                formula_ranges[index].1,
+                            ),
+                            source_ordinal: index,
+                            context: BindingContextId::new(formula_contexts[index]),
+                            recovery: SourceAtomicFormulaRecovery::Normal,
+                            spelling: "x = x".to_owned(),
+                            kind: SourceAtomicFormulaKind::Equality,
+                        })
+                        .collect(),
+                    wrappers: Vec::new(),
+                    predicate_segments: Vec::new(),
+                    predicate_heads: Vec::new(),
+                    candidates: Vec::new(),
+                    type_sites: Vec::new(),
+                    attributes: Vec::new(),
+                    edges,
+                    requests,
+                },
+                &bindings,
+                &symbols,
+                &primary,
+                None,
+                None,
+                None,
+                &arena,
+            )
+            .expect("Task258B5A atomic formulas");
+            let statement_sites = [89, 67, 65, 87, 85];
+            let statement_ranges = [(19, 184), (95, 132), (114, 125), (135, 179), (156, 172)];
+            let statement_kinds = [
+                SourceStatementKind::TheoremProposition,
+                SourceStatementKind::ProofStepProposition,
+                SourceStatementKind::Conclusion,
+                SourceStatementKind::Conclusion,
+                SourceStatementKind::Conclusion,
+            ];
+            let binding_contexts = [0, 1, 2, 1, 3];
+            let spellings = [
+                "theorem FormulaStatementAncestorLabelDescendantCitationSmoke : x = x proof A : x = x proof thus x = x ; end ; thus x = x proof thus x = x by A ; end ; end ;",
+                "A : x = x proof thus x = x ; end ;",
+                "thus x = x ;",
+                "thus x = x proof thus x = x by A ; end ;",
+                "thus x = x by A ;",
+            ];
+            let statement = SourceStatementProducer::build(
+                SourceStatementHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    owners: vec![SourceTheoremOwnerInput {
+                        symbol,
+                        contribution,
+                        site: node(89),
+                        source_range: range(source, 19, 184),
+                        spelling: "FormulaStatementAncestorLabelDescendantCitationSmoke".to_owned(),
+                        role: SourceTheoremRole::Theorem,
+                        status: SourceTheoremStatus::Unmodified,
+                        recovery: SourceStatementRecovery::Normal,
+                    }],
+                    statements: (0..5)
+                        .map(|index| SourceStatementInput {
+                            owner: SourceTheoremOwnerId::new(0),
+                            context: SourceStatementContextId::new(index),
+                            formula: SourceStatementFormulaTarget::Atomic(
+                                SourceAtomicFormulaId::new(index),
+                            ),
+                            site: node(statement_sites[index]),
+                            source_range: range(
+                                source,
+                                statement_ranges[index].0,
+                                statement_ranges[index].1,
+                            ),
+                            source_ordinal: index,
+                            spelling: spellings[index].to_owned(),
+                            kind: statement_kinds[index],
+                            recovery: SourceStatementRecovery::Normal,
+                        })
+                        .collect(),
+                    contexts: (0..5)
+                        .map(|index| SourceStatementContextInput {
+                            statement: SourceStatementId::new(index),
+                            binding_context: BindingContextId::new(binding_contexts[index]),
+                            source_range: range(
+                                source,
+                                statement_ranges[index].0,
+                                statement_ranges[index].1,
+                            ),
+                            visible_bindings: vec![BindingId::new(0)],
+                        })
+                        .collect(),
+                    input_facts: (0..5)
+                        .map(|index| SourceStatementInputFactInput {
+                            statement: SourceStatementId::new(index),
+                            context: SourceStatementContextId::new(index),
+                            ordinal: 0,
+                            kind: SourceStatementInputFactKind::ReservedTypeGuard,
+                            binding: BindingId::new(0),
+                            uses: vec![
+                                SourcePrimaryTermReferenceId::new(index * 2),
+                                SourcePrimaryTermReferenceId::new(index * 2 + 1),
+                            ],
+                        })
+                        .collect(),
+                    candidate_facts: (0..5)
+                        .map(|index| SourceStatementCandidateFactInput {
+                            statement: SourceStatementId::new(index),
+                            context: SourceStatementContextId::new(index),
+                            ordinal: 0,
+                            kind: SourceStatementCandidateFactKind::UnverifiedProposition,
+                            formula: SourceStatementFormulaTarget::Atomic(
+                                SourceAtomicFormulaId::new(index),
+                            ),
+                        })
+                        .collect(),
+                },
+                &symbols,
+                &bindings,
+                &primary,
+                &atomic,
+                &arena,
+            )
+            .expect("Task258B5A base statement");
+            let preliminary = b5a_resolved_arena(source, &module, None);
+            let reference_node = preliminary
+                .iter()
+                .find_map(|(id, _)| (id.index() == 82).then_some(id))
+                .expect("Task258B5A reference node");
+            let namespace = NamespacePath::new(module.path().as_str());
+            let projection = LabelProjection::proof_step(
+                mizar_resolve::labels::LabelProjectionData {
+                    origin_path: LabelOriginPath::new("pkg::statement.fixture::proof::A"),
+                    module: module.clone(),
+                    namespace: namespace.clone(),
+                    primary_spelling: "A".to_owned(),
+                    kind: LabelKind::ProofStep,
+                    declaration_range: range(source, 95, 96),
+                    origin: SemanticOrigin::new(
+                        source,
+                        module.clone(),
+                        SourceAnchor::Range(range(source, 95, 96)),
+                        vec![12],
+                    ),
+                    contribution,
+                },
+                1,
+                LabelScopePath::new(vec![0]),
+            );
+            let reference = LabelReferenceCandidate::unqualified_citation(
+                mizar_resolve::resolved_ast::ReferenceSite::new(
+                    reference_node,
+                    range(source, 170, 171),
+                    "A",
+                ),
+                SemanticOrigin::new(
+                    source,
+                    module.clone(),
+                    SourceAnchor::Range(range(source, 170, 171)),
+                    vec![82],
+                ),
+                4,
+                Some(LabelScopePath::new(vec![0, 1])),
+            );
+            let resolution = LabelResolver::new(std::slice::from_ref(&projection)).resolve(
+                &module,
+                &namespace,
+                std::slice::from_ref(&reference),
+            );
+            let resolver_ast = ResolvedAst::try_new(
+                source,
+                module.clone(),
+                b5a_resolved_arena(source, &module, Some(resolution.ids()[0])),
+                mizar_resolve::resolved_ast::NameRefTable::new(),
+                resolution.table().clone(),
+                mizar_resolve::resolved_ast::ResolvedImports::new(),
+            )
+            .expect("Task258B5A resolver AST");
+            Self {
+                source,
+                module,
+                bindings,
+                primary,
+                atomic,
+                arena,
+                statement,
+                resolver_ast,
+                projection,
+                reference,
+                resolution,
+            }
+        }
+
+        fn reference_input(&self) -> SourceStatementReferenceHandoffInput {
+            SourceStatementReferenceHandoffInput {
+                source_id: self.source,
+                module_id: self.module.clone(),
+                labels: vec![SourceStatementLabelInput {
+                    statement: SourceStatementId::new(1),
+                    context: SourceStatementContextId::new(1),
+                    candidate: SourceStatementCandidateFactId::new(1),
+                    origin_path: self.projection.origin_path().clone(),
+                    proof_scope: LabelScopePath::new(vec![0]),
+                    source_range: range(self.source, 95, 96),
+                    source_ordinal: 0,
+                    visible_after_ordinal: 1,
+                    spelling: "A".to_owned(),
+                    kind: SourceStatementLabelKind::ProofStep,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+                citations: vec![SourceStatementCitationInput {
+                    statement: SourceStatementId::new(4),
+                    context: SourceStatementContextId::new(4),
+                    label: SourceStatementLabelId::new(0),
+                    label_ref: self.resolution.ids()[0],
+                    proof_scope: LabelScopePath::new(vec![0, 1]),
+                    source_range: range(self.source, 170, 171),
+                    ordinal: 0,
+                    kind: SourceStatementCitationKind::SimpleLocal,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+            }
+        }
+
+        fn references(
+            &self,
+            input: SourceStatementReferenceHandoffInput,
+        ) -> Result<SourceStatementReferenceHandoff, SourceStatementReferenceError> {
+            SourceStatementReferenceProducer::build(
+                input,
+                &self.statement,
+                &self.resolver_ast,
+                &self.projection,
+                &self.reference,
+                &self.resolution,
+                &self.arena,
+            )
+        }
+
+        fn empty_typed(&self) -> TypedAst {
+            TypedAst::try_new(TypedAstParts {
+                source_id: self.source,
+                module_id: self.module.clone(),
+                resolved_root: None,
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: self.arena.clone(),
+                contexts: LocalTypeContextTable::new(),
+                types: TypeTable::new(),
+                facts: TypeFactTable::new(),
+                coercions: CoercionTable::new(),
+                initial_obligations: InitialObligationTable::new(),
+                diagnostics: TypeDiagnosticTable::new(),
+            })
+            .expect("Task258B5A empty typed AST")
+            .with_source_term(self.primary.clone())
+            .expect("Task258B5A Task252")
+            .with_source_atomic_formula(self.atomic.clone())
+            .expect("Task258B5A Task256")
+        }
+    }
+
+    #[test]
+    fn task_258b5a_ancestor_label_descendant_citation_profile_and_debug_are_exact() {
+        let fixture = B5AFixture::new(250);
+        let references = fixture
+            .references(fixture.reference_input())
+            .expect("Task258B5A references");
+        assert!(fixture.statement.is_task_258b5a_profile());
+        assert!(exact_task258b5a_shared_arena(
+            fixture.source,
+            &fixture.arena
+        ));
+        assert_eq!(fixture.arena.len(), 93);
+        assert_eq!(fixture.arena.root(), Some(TypedNodeId::new(92)));
+        assert_eq!(fixture.bindings.contexts().len(), 4);
+        assert_eq!(fixture.primary.terms().len(), 10);
+        assert_eq!(fixture.atomic.formulas().len(), 5);
+        assert_eq!(fixture.statement.statements().len(), 5);
+        assert_eq!(references.labels().len(), 1);
+        assert_eq!(references.citations().len(), 1);
+        assert_eq!(
+            references
+                .labels()
+                .get(SourceStatementLabelId::new(0))
+                .expect("label")
+                .proof_scope()
+                .path(),
+            [0]
+        );
+        assert_eq!(
+            references
+                .citations()
+                .get(SourceStatementCitationId::new(0))
+                .expect("citation")
+                .proof_scope()
+                .path(),
+            [0, 1]
+        );
+        let debug = references.debug_text();
+        for line in [
+            "resolver-ast root=92 nodes=93 name_refs=0 label_refs=1 imports=0 exports=0 label_node=12 reference_node=82 reference_state=resolved reference_key=label#0\n",
+            "resolver-projection origin=pkg::statement.fixture::proof::A namespace=statement.fixture range=95..96 visible_after=1 scope=[0] kind=proof-step visibility=private export=local-only spelling=\"A\"\n",
+            "resolver-reference node=82 range=170..171 source_ordinal=4 scope=[0, 1] expectation=proof-or-theorem spelling=\"A\"\n",
+            "resolver-result index=1 references=1 ids=[0] diagnostics=0\n",
+            "label#0 statement=1 context=1 candidate=1 origin=pkg::statement.fixture::proof::A scope=[0] range=95..96 source_ordinal=0 visible_after=1 kind=proof-step recovery=normal spelling=\"A\"\n",
+            "citation#0 statement=4 context=4 label=0 label_ref=0 scope=[0, 1] range=170..171 ordinal=0 kind=simple-local recovery=normal\n",
+        ] {
+            assert!(debug.contains(line), "missing exact debug line: {line:?}");
+        }
+        assert_eq!(references.clone(), references);
+    }
+
+    #[test]
+    fn task_258b5a_scope_provenance_and_row_corruption_fail_atomically() {
+        let fixture = B5AFixture::new(251);
+        let valid = fixture
+            .references(fixture.reference_input())
+            .expect("Task258B5A baseline");
+
+        let mut invalid_statement = fixture.statement.clone();
+        invalid_statement.contexts.rows[4].binding_context = BindingContextId::new(2);
+        assert_eq!(
+            invalid_statement.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena,
+            ),
+            Err(SourceStatementError::InvalidContext {
+                context: SourceStatementContextId::new(4)
+            })
+        );
+        let mut invalid_facts = fixture.statement.clone();
+        invalid_facts.input_facts.rows[4].uses.swap(0, 1);
+        assert_eq!(
+            invalid_facts.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.arena,
+            ),
+            Err(SourceStatementError::InvalidInputFact {
+                fact: SourceStatementInputFactId::new(4)
+            })
+        );
+        let invalid_arena = mutate_arena(&fixture.arena, |id, row| {
+            if id == TypedNodeId::new(82) {
+                row.anchor = SourceAnchor::Range(range(fixture.source, 169, 171));
+            }
+        });
+        assert_eq!(
+            fixture.statement.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                &fixture.atomic,
+                &invalid_arena,
+            ),
+            Err(SourceStatementError::DependencyMismatch)
+        );
+
+        let mut invalid_label = fixture.reference_input();
+        invalid_label.labels[0].proof_scope = LabelScopePath::new(vec![0, 0]);
+        assert_eq!(
+            fixture.references(invalid_label),
+            Err(SourceStatementReferenceError::InvalidLabel {
+                label: SourceStatementLabelId::new(0)
+            })
+        );
+        let mut invalid_citation = fixture.reference_input();
+        invalid_citation.citations[0].proof_scope = LabelScopePath::new(vec![0]);
+        assert_eq!(
+            fixture.references(invalid_citation),
+            Err(SourceStatementReferenceError::InvalidCitation {
+                citation: SourceStatementCitationId::new(0)
+            })
+        );
+        let wrong_kind_resolver = ResolvedAst::try_new(
+            fixture.source,
+            fixture.module.clone(),
+            b5a_resolved_arena_with_kind_mutation(
+                fixture.source,
+                &fixture.module,
+                Some(fixture.resolution.ids()[0]),
+                Some(0),
+            ),
+            mizar_resolve::resolved_ast::NameRefTable::new(),
+            fixture.resolution.table().clone(),
+            mizar_resolve::resolved_ast::ResolvedImports::new(),
+        )
+        .expect("coherent resolver kind mutation");
+        assert_eq!(
+            SourceStatementReferenceProducer::build(
+                fixture.reference_input(),
+                &fixture.statement,
+                &wrong_kind_resolver,
+                &fixture.projection,
+                &fixture.reference,
+                &fixture.resolution,
+                &fixture.arena,
+            ),
+            Err(SourceStatementReferenceError::DependencyMismatch)
+        );
+        let mut stale = valid;
+        stale.statement_fingerprint.push_str(":stale");
+        stale.labels.rows[0].visible_after_ordinal = 0;
+        assert_eq!(
+            stale.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.statement,
+                &fixture.arena,
+            ),
+            Err(SourceStatementReferenceError::DependencyMismatch)
+        );
+    }
+
+    #[test]
+    fn task_258b5a_b1_same_scope_cross_profile_installation_is_atomic() {
+        let b1 = B1Fixture::new(252);
+        let b5a = B5AFixture::new(252);
+        let b1_references = b1
+            .references(b1.reference_input())
+            .expect("Task258B1 references");
+        let b5a_references = b5a
+            .references(b5a.reference_input())
+            .expect("Task258B5A references");
+        let b1_base = b1.empty_typed();
+        let b5a_base = b5a.empty_typed();
+        assert_eq!(
+            b5a_base
+                .clone()
+                .with_source_statement_references(b5a.statement.clone(), b1_references.clone(),),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            b1_base
+                .clone()
+                .with_source_statement_references(b1.statement.clone(), b5a_references.clone(),),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(b1_base, b1.empty_typed());
+        assert_eq!(b5a_base, b5a.empty_typed());
+        assert!(
+            b1.empty_typed()
+                .with_source_statement_references(b1.statement.clone(), b1_references)
+                .is_ok()
+        );
+        assert!(
+            b5a.empty_typed()
+                .with_source_statement_references(b5a.statement.clone(), b5a_references)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn task_258b5a_final_clone_revalidates_descendant_visibility_and_empty_semantics() {
+        let fixture = B5AFixture::new(253);
+        let references = fixture
+            .references(fixture.reference_input())
+            .expect("Task258B5A references");
+        let typed = fixture
+            .empty_typed()
+            .with_source_statement_references(fixture.statement.clone(), references.clone())
+            .expect("Task258B5A typed AST");
+        let resolved = assemble_empty_resolved(&typed).expect("Task258B5A final assembly");
+        assert_eq!(resolved.source_statement(), Some(&fixture.statement));
+        assert_eq!(resolved.source_statement_references(), Some(&references));
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+        assert_eq!(resolved.clone(), resolved);
+        let debug = resolved.debug_text();
+        assert!(
+            debug
+                .find("source-statement-debug-v1\n")
+                .expect("statement debug")
+                < debug
+                    .find("source-statement-reference-debug-v1\n")
+                    .expect("reference debug")
+        );
+
+        let mut wrong_descendant = references.clone();
+        wrong_descendant.citations.rows[0].proof_scope = LabelScopePath::new(vec![0, 0]);
+        let mut corrupted = typed.clone();
+        corrupted
+            .inject_source_statement_bundle_for_test(fixture.statement.clone(), wrong_descendant);
+        assert_eq!(
+            assemble_empty_resolved(&corrupted),
+            Err(ResolvedTypedAstError::InvalidSourceStatement)
+        );
+        let mut missing_references = fixture.empty_typed();
+        missing_references.inject_source_statement_for_test(fixture.statement.clone());
+        assert_eq!(
+            assemble_empty_resolved(&missing_references),
+            Err(ResolvedTypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            assemble_empty_resolved(&typed)
+                .expect("Task258B5A replay")
+                .debug_text(),
+            debug
+        );
     }
 
     #[test]
@@ -37697,6 +38819,312 @@ mod tests {
                 LabelKind::Theorem,
                 namespace,
                 B2_LABEL,
+                origin,
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        contributions.add_symbol(contribution, symbol.clone());
+        contributions.add_definition(contribution, definition);
+        contributions.add_label(contribution, origin_path);
+        (
+            symbol,
+            contribution,
+            SymbolEnv::new(
+                module.clone(),
+                SymbolEnvIndexes {
+                    symbols,
+                    labels,
+                    definitions,
+                    contributions,
+                    ..SymbolEnvIndexes::default()
+                },
+            ),
+        )
+    }
+
+    fn b5a_surface_kind(index: usize) -> syntax::SurfaceNodeKind {
+        let token = match index {
+            0 => Some((syntax::SurfaceTokenKind::ReservedWord, "reserve")),
+            1 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            2 => Some((syntax::SurfaceTokenKind::ReservedWord, "for")),
+            3 => Some((syntax::SurfaceTokenKind::ReservedWord, "set")),
+            4 => Some((syntax::SurfaceTokenKind::ReservedSymbol, ";")),
+            5 => Some((syntax::SurfaceTokenKind::ReservedWord, "theorem")),
+            6 => Some((
+                syntax::SurfaceTokenKind::Identifier,
+                "FormulaStatementAncestorLabelDescendantCitationSmoke",
+            )),
+            7 => Some((syntax::SurfaceTokenKind::ReservedSymbol, ":")),
+            8 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            9 => Some((syntax::SurfaceTokenKind::ReservedSymbol, "=")),
+            10 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            11 => Some((syntax::SurfaceTokenKind::ReservedWord, "proof")),
+            12 => Some((syntax::SurfaceTokenKind::Identifier, "A")),
+            13 => Some((syntax::SurfaceTokenKind::ReservedSymbol, ":")),
+            14 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            15 => Some((syntax::SurfaceTokenKind::ReservedSymbol, "=")),
+            16 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            17 => Some((syntax::SurfaceTokenKind::ReservedWord, "proof")),
+            18 => Some((syntax::SurfaceTokenKind::ReservedWord, "thus")),
+            19 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            20 => Some((syntax::SurfaceTokenKind::ReservedSymbol, "=")),
+            21 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            22 => Some((syntax::SurfaceTokenKind::ReservedSymbol, ";")),
+            23 => Some((syntax::SurfaceTokenKind::ReservedWord, "end")),
+            24 => Some((syntax::SurfaceTokenKind::ReservedSymbol, ";")),
+            25 => Some((syntax::SurfaceTokenKind::ReservedWord, "thus")),
+            26 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            27 => Some((syntax::SurfaceTokenKind::ReservedSymbol, "=")),
+            28 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            29 => Some((syntax::SurfaceTokenKind::ReservedWord, "proof")),
+            30 => Some((syntax::SurfaceTokenKind::ReservedWord, "thus")),
+            31 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            32 => Some((syntax::SurfaceTokenKind::ReservedSymbol, "=")),
+            33 => Some((syntax::SurfaceTokenKind::Identifier, "x")),
+            34 => Some((syntax::SurfaceTokenKind::ReservedWord, "by")),
+            35 => Some((syntax::SurfaceTokenKind::Identifier, "A")),
+            36 => Some((syntax::SurfaceTokenKind::ReservedSymbol, ";")),
+            37 => Some((syntax::SurfaceTokenKind::ReservedWord, "end")),
+            38 => Some((syntax::SurfaceTokenKind::ReservedSymbol, ";")),
+            39 => Some((syntax::SurfaceTokenKind::ReservedWord, "end")),
+            40 => Some((syntax::SurfaceTokenKind::ReservedSymbol, ";")),
+            _ => None,
+        };
+        if let Some((kind, text)) = token {
+            return syntax::SurfaceNodeKind::Token(syntax::SurfaceToken::new(kind, text));
+        }
+        match index {
+            41 => syntax::SurfaceNodeKind::TypeHead,
+            42 => syntax::SurfaceNodeKind::TypeExpression,
+            43 => syntax::SurfaceNodeKind::ReserveSegment,
+            44 => syntax::SurfaceNodeKind::ReserveItem,
+            45 | 47 | 51 | 53 | 58 | 60 | 68 | 70 | 75 | 77 => {
+                syntax::SurfaceNodeKind::TermReference
+            }
+            46 | 48 | 52 | 54 | 59 | 61 | 69 | 71 | 76 | 78 => {
+                syntax::SurfaceNodeKind::TermExpression
+            }
+            49 | 55 | 62 | 72 | 79 => syntax::SurfaceNodeKind::BuiltinPredicateApplication,
+            50 | 56 | 63 | 73 | 80 => syntax::SurfaceNodeKind::FormulaExpression,
+            57 | 64 | 74 | 81 => syntax::SurfaceNodeKind::Proposition,
+            65 | 85 | 87 => syntax::SurfaceNodeKind::ConclusionStatement,
+            66 | 86 | 88 => syntax::SurfaceNodeKind::ProofBlock,
+            67 => syntax::SurfaceNodeKind::CompactStatement,
+            82 => syntax::SurfaceNodeKind::Reference,
+            83 => syntax::SurfaceNodeKind::ReferenceList,
+            84 => syntax::SurfaceNodeKind::JustificationClause,
+            89 => syntax::SurfaceNodeKind::TheoremItem,
+            90 => syntax::SurfaceNodeKind::ItemList,
+            91 => syntax::SurfaceNodeKind::CompilationUnit,
+            92 => syntax::SurfaceNodeKind::Root,
+            _ => unreachable!("Task258B5A has exactly 93 nodes"),
+        }
+    }
+
+    fn b5a_typed_arena(source: SourceId) -> TypedArena {
+        let mut builder = TypedArenaBuilder::new();
+        let mut ids = Vec::with_capacity(TASK258B5A_NODE_RANGES.len());
+        for (index, (start, end)) in TASK258B5A_NODE_RANGES.iter().copied().enumerate() {
+            let children = task258b5a_node_children(index)
+                .iter()
+                .copied()
+                .map(|child| ids[child])
+                .collect();
+            let id = builder
+                .push(
+                    TypedNode::new(
+                        task258b5a_node_kind(index),
+                        SourceAnchor::Range(range(source, start, end)),
+                    )
+                    .with_children(children),
+                )
+                .expect("Task258B5A typed node");
+            assert_eq!(id.index(), index);
+            ids.push(id);
+        }
+        builder.finish(Some(ids[92])).expect("Task258B5A arena")
+    }
+
+    fn b5a_resolved_arena(
+        source: SourceId,
+        module: &ModuleId,
+        label_ref: Option<LabelRefId>,
+    ) -> ResolvedArena {
+        b5a_resolved_arena_with_kind_mutation(source, module, label_ref, None)
+    }
+
+    fn b5a_resolved_arena_with_kind_mutation(
+        source: SourceId,
+        module: &ModuleId,
+        label_ref: Option<LabelRefId>,
+        kind_mutation: Option<usize>,
+    ) -> ResolvedArena {
+        let mut builder = mizar_resolve::resolved_ast::ResolvedArenaBuilder::new();
+        let mut ids = Vec::with_capacity(TASK258B5A_NODE_RANGES.len());
+        for (index, (start, end)) in TASK258B5A_NODE_RANGES.iter().copied().enumerate() {
+            let children = task258b5a_node_children(index)
+                .iter()
+                .copied()
+                .map(|child| ids[child])
+                .collect();
+            let origin = SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, start, end)),
+                vec![index as u32],
+            );
+            let kind = if kind_mutation == Some(index) {
+                syntax::SurfaceNodeKind::Root
+            } else {
+                b5a_surface_kind(index)
+            };
+            let mut row = ResolvedNode::new(kind, children, origin);
+            if index == 82
+                && let Some(label_ref) = label_ref
+            {
+                row = row
+                    .with_resolution(NodeResolutionState::Resolved)
+                    .with_reference_key(NodeReferenceKey::Label(label_ref));
+            }
+            let id = builder.push(row).expect("Task258B5A resolver node");
+            assert_eq!(id.index(), index);
+            ids.push(id);
+        }
+        builder.finish(ids[92]).expect("Task258B5A resolver arena")
+    }
+
+    fn b5a_binding_env(source: SourceId, module: &ModuleId) -> BindingEnv {
+        let binding = BindingId::new(0);
+        let mut contexts = BindingContextTable::new();
+        for draft in [
+            BindingContextDraft {
+                owner: BindingContextOwner::Module,
+                parent: None,
+                layer: BindingContextLayer::Module,
+                lexical_scope: None,
+                bindings: vec![binding],
+                visible_bindings: vec![binding],
+                recovery: BindingContextRecovery::Normal,
+            },
+            BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(source, 87, 183),
+                },
+                parent: Some(BindingContextId::new(0)),
+                layer: BindingContextLayer::Proof,
+                lexical_scope: Some(LocalTermScope::new(vec![0])),
+                bindings: Vec::new(),
+                visible_bindings: vec![binding],
+                recovery: BindingContextRecovery::Normal,
+            },
+            BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(source, 104, 131),
+                },
+                parent: Some(BindingContextId::new(1)),
+                layer: BindingContextLayer::Proof,
+                lexical_scope: Some(LocalTermScope::new(vec![0, 0])),
+                bindings: Vec::new(),
+                visible_bindings: vec![binding],
+                recovery: BindingContextRecovery::Normal,
+            },
+            BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(source, 146, 178),
+                },
+                parent: Some(BindingContextId::new(1)),
+                layer: BindingContextLayer::Proof,
+                lexical_scope: Some(LocalTermScope::new(vec![0, 1])),
+                bindings: Vec::new(),
+                visible_bindings: vec![binding],
+                recovery: BindingContextRecovery::Normal,
+            },
+        ] {
+            contexts.insert(draft);
+        }
+        let mut rows = BindingTable::new();
+        rows.insert(BindingDraft {
+            spelling: "x".to_owned(),
+            kind: BindingKind::ReservedVariable,
+            identity: BinderIdentity::ReservedVariable {
+                spelling: "x".to_owned(),
+                declaration_range: range(source, 8, 9),
+            },
+            owner_context: BindingContextId::new(0),
+            declaration_range: range(source, 8, 9),
+            visible_after_ordinal: 0,
+            type_site: BindingTypeSite::Source(range(source, 14, 17)),
+            status: BindingStatus::Reserved,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module.clone(),
+            contexts,
+            bindings: rows,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("Task258B5A binding env")
+    }
+
+    fn b5a_symbol_env(
+        source: SourceId,
+        module: &ModuleId,
+    ) -> (SymbolId, SourceContributionId, SymbolEnv) {
+        const LABEL: &str = "FormulaStatementAncestorLabelDescendantCitationSmoke";
+        let symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(LABEL),
+            FullyQualifiedName::new(format!("pkg::statement.fixture::theorem::{LABEL}")),
+        );
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 19, 184)),
+            vec![2, 1],
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let namespace = NamespacePath::new(module.path().as_str());
+        let mut symbols = SymbolIndex::new();
+        symbols.insert(
+            SymbolEntry::new(
+                symbol.clone(),
+                SymbolKind::Theorem,
+                namespace.clone(),
+                LABEL,
+                origin.clone(),
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let definition = definitions.insert(
+            DefinitionShell::new(
+                symbol.clone(),
+                DefinitionKind::Theorem,
+                origin.clone(),
+                contribution,
+            )
+            .with_visibility(Visibility::Public),
+        );
+        let origin_path = LabelOriginPath::new("statement.fixture.theorem.b5a");
+        let mut labels = LabelIndex::new();
+        labels.insert(
+            LabelEntry::new(
+                origin_path.clone(),
+                LabelKind::Theorem,
+                namespace,
+                LABEL,
                 origin,
                 contribution,
             )

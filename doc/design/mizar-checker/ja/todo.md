@@ -5783,6 +5783,31 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] repeated independent final qualityを**NO FINDINGS**、全9 hard gates
   PASS、capなし、valid `100/100`
   （`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] synchronized B5A documentationだけをstageしてone prerequisite
-  commitをcreateし、post-commit invariants後にimplementationをfresh
-  inventory。
+- [x] synchronized B5A documentationだけをstageしてprerequisite commit
+  `59021f764f146d669f84877042f0512882c9c5ff`をcreateし、post-commit
+  invariants後にimplementationをfresh inventory。
+
+## Checker Task 258B5A implementation ledger
+
+- [x] frozen three checker/four runner source/test filesだけを変更。
+- [x] exact source/Surface/raw/enriched resolver provenance、Binding/
+  Task-252/Task-256 lower profile、Task-258 base/reference row、`20/73`
+  ownership、label `[0]`、citation `[0,1]`、resolver node 82をauthenticate。
+- [x] full resolver-node-kind identityとatomic rollback/replayを含め、
+  unchanged B1またはexact B5A paired stateだけをadmit。
+- [x] B5B/B5C ownership、public API、active/corpus authority、expectation、
+  sidecar、trace status/count/backlink、coverage credit、diagnostic、全
+  semantic outputをpreserve。
+- [x] frozen focused checker `4/4`、runner `5/5`、preserved B1 runner
+  `6/6` testsをrun。
+- [x] separate test-sufficiency/implementation reviewを**NO FINDINGS**で
+  complete。
+- [x] final source-documentation consistency reviewを**NO FINDINGS**で
+  complete。
+- [x] checker `426/426`、runner `493/493`、full workspace test、formatting、
+  exact Clippy、five CLI、count/hash、diff gateをPASS。
+- [x] final scope/forbidden-artifact、repository-state、stash gateをcomplete。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] Task-258B5Aだけをstage/inspectしone implementation commitを作り、
+  post-commit invariantをverifyしてnext taskをfresh inventory。

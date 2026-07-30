@@ -11224,3 +11224,24 @@ nodeをchecker-owned syntax-free tableへ移動しない。
 independent source/documentation boundary reviewは**NO FINDINGS**。全future
 production changeはfrozen seven consumers内でfeasibleで、public harness/
 lower-owner/module split/ownership transferは不要である。
+
+## Checker Task 258B5A implemented runner boundary
+
+runner implementationは`type_elaboration/source_statement.rs`、private
+facadeの`type_elaboration.rs`/`runner.rs`、existing statement test leaf、
+three checker consumersに限定する。frozen source/resolver/lower/upper
+transactionをauthenticateするためのexact private route、mutation seam、
+test-only facadeだけを追加する。
+
+parser、resolver、BindingEnv、Task-252/256 producer module、sibling lower
+family、CLI/public harness、corpus、expectation、sidecar、trace metadata、
+semanticsはunchanged。exact `20/73` ownershipによりlabel/citation/
+proof-block/wrapper nodeをsyntax-free ownerへ移動しない。B5B/B5Cは
+excludedのままで、public facade/module split/ownership transferを
+導入しない。
+
+post-format runner ownerは
+`type_elaboration/source_statement.rs=15927`、
+`type_elaboration.rs=826`、`runner.rs=2642`、statement test leaf
+`32282`をmeasureし、production boundaryは30 paths/58333 linesを維持する。
+これらのmeasurementはownership decisionを変更しない。

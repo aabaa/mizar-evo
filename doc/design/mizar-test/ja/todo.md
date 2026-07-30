@@ -2830,5 +2830,32 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] repeated independent final qualityを**NO FINDINGS**、全9 hard gates
   PASS、capなし、valid `100/100`
   （`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] synchronized documentationだけをcommitし、post-commit invariantsを
-  verifyしてB5A implementationをfresh inventory。
+- [x] synchronized documentationだけを
+  `59021f764f146d669f84877042f0512882c9c5ff`としてcommitし、
+  post-commit invariantsをverifyしてB5A implementationをfresh inventory。
+
+## Checker Task 258B5A implementation ledger
+
+- [x] exact four runner/three checker consumersを変更し、全parser/resolver/
+  lower production ownerとpublic harness schemaをunchangedに維持。
+- [x] 185-byte source、exact Surface/raw/enriched resolver profile、lower
+  handoff、Task-258 base/reference row、`20/73` ownership、label `[0]`、
+  citation `[0,1]`、resolver node 82をauthenticate。
+- [x] exact telemetry `1/1/[1,1,1,1,1,1,1,1,1,1]`、B1/B5A atomic
+  installation、selector isolation、replay、clone、empty semanticsをpreserve。
+- [x] B5B/B5C、active fixture、specification、expectation、sidecar、
+  trace status/count/backlink/credit、public result、diagnostic、semantic
+  outputをunchangedに維持。
+- [x] frozen focused runner `5/5`、checker `4/4`、preserved B1 runner
+  `6/6` testsをrun。
+- [x] separate test-sufficiency/implementation reviewを**NO FINDINGS**で
+  complete。
+- [x] final source-documentation consistency reviewを**NO FINDINGS**で
+  complete。
+- [x] checker `426/426`、runner `493/493`、full workspace test、formatting、
+  exact Clippy、five CLI、count/hash、diff gateをPASS。
+- [x] final scope/forbidden-artifact、repository-state、stash gateをcomplete。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] B5Aだけをstage/inspectしone implementation commitを作り、
+  post-commit invariantをverifyしてnext dependency-ready taskをfresh inventory。

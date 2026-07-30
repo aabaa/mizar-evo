@@ -4947,3 +4947,21 @@ the bounded, next-task-owned `source_drift`. Independent test sufficiency
 also reports **NO FINDINGS**. Full verification passes without changing
 specification, corpus, expectation, sidecar, trace, production, or public
 API owners.
+
+## Task 258B5A Implementation Authority Result
+
+Documentation prerequisite
+`59021f764f146d669f84877042f0512882c9c5ff` freezes the exact
+ancestor-label/descendant-citation transaction. The seven private consumers
+now transport only that authorized 185-byte source through the existing
+parser, resolver provenance, BindingEnv, Task-252, Task-256, and Task-258
+boundaries. This closes the bounded B5A `source_drift` without inferring a
+language rule or changing test intent.
+
+The implementation adds only the frozen Rust mutation matrix. B5B imported
+public visibility and B5C active inner-to-outer/sibling confinement remain a
+bounded `test_gap` owned by separate tasks. Specifications, existing `.miz`,
+expectations, sidecars, trace metadata, public APIs, diagnostics, facts,
+accepted statements, proofs, goals, and downstream IR remain unchanged.
+Requirement `spec.en.checker.formula_statement.source_payloads` remains
+deferred with no active test mapping or coverage credit.

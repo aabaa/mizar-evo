@@ -3035,5 +3035,35 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete repeated independent final quality with **NO FINDINGS**, all
   nine hard gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Commit only synchronized documentation, verify post-commit invariants,
-  and fresh-inventory B5A implementation.
+- [x] Commit only synchronized documentation as
+  `59021f764f146d669f84877042f0512882c9c5ff`, verify post-commit
+  invariants, and fresh-inventory B5A implementation.
+
+## Checker Task 258B5A Implementation Ledger
+
+- [x] Change exactly four runner and three checker consumers; keep every
+  parser/resolver/lower production owner and public harness schema unchanged.
+- [x] Authenticate the 185-byte source, exact Surface/raw/enriched resolver
+  profiles, lower handoffs, Task-258 base/reference rows, `20/73`
+  ownership, label `[0]`, citation `[0,1]`, and resolver node 82.
+- [x] Preserve exact telemetry
+  `1/1/[1,1,1,1,1,1,1,1,1,1]`, B1/B5A atomic installation,
+  selector isolation, replay, clone, and empty semantics.
+- [x] Keep B5B/B5C, active fixtures, specifications, expectations, sidecars,
+  trace status/count/backlinks and credit, public results, diagnostics, and
+  semantic outputs unchanged.
+- [x] Run the frozen focused runner `5/5`, checker `4/4`, and preserved B1
+  runner `6/6` tests.
+- [x] Complete separate test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Complete final source/documentation consistency review with
+  **NO FINDINGS**.
+- [x] Pass checker `426/426`, runner `493/493`, full workspace tests,
+  formatting, exact Clippy, five CLIs, count/hash, and diff gates.
+- [x] Complete final scope/forbidden-artifact, repository-state, and stash
+  gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage and inspect only B5A, create one implementation commit, verify
+  post-commit invariants, and fresh-inventory the next dependency-ready task.

@@ -1522,3 +1522,19 @@ Partial or cross-profile installation, stale fingerprints, relocation,
 recovery, wrong contribution or keyed node, Task-248/other-family
 coexistence, and any occupied semantic output fail atomically. B1 debug
 bytes and public APIs remain unchanged.
+
+## Task 258B5A Implemented Final-Assembly Boundary
+
+Final assembly now recognizes the frozen B5A transaction only when the typed
+AST retains the exact matched base/reference profiles, all dependency
+fingerprints, the 93-node/root-92 arena, `20/73` ownership, label scope
+`[0]`, citation scope `[0,1]`, and resolver node 82 mapped to label key 0.
+It revalidates every resolver node kind, range, child order, recovery state,
+origin, ordinal, contribution, and scope-prefix relation before cloning.
+
+The unchanged B1 same-scope transaction and B5A ancestor/descendant
+transaction remain the only admitted reference profiles. Partial,
+cross-profile, stale, relocated, recovered, wrongly keyed, or semantically
+occupied state fails before publication and leaves replay available. Checked
+formulas, accepted statements, proofs, proof nodes, terminal goals, facts,
+and all downstream IR remain empty; no public schema or API changed.

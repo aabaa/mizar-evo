@@ -1467,3 +1467,18 @@ resolver keyを維持する。cross-pair、partial/duplicate install、stale rep
 relocation/recovery、wrong scope/provenance、Task-248/other-family
 occupancy、altered ownershipはmutation前にfailする。semantic tableを追加せず、
 B1 debug output/public signatureを変更しない。
+
+## Task 258B5A implemented paired installation
+
+private paired installerはunchanged B1 same-scope transactionまたはexact B5A
+ancestor/descendant transactionだけをadmitする。B5A installationはbase
+`1/5/5/5/5`、reference `1/1`、全lower handoff/fingerprint、全93-node arena
+identity、`20/73` ownership partition、label scope `[0]`、citation scope
+`[0,1]`、statement ordinal `1/4`、contribution 0、resolver key node 82を
+再検証する。
+
+duplicate/partial state、B1/B5A cross-pair、stale fingerprint、
+relocation/recovery、wrong range/origin/scope/contribution/key、Task-248/
+other family、altered ownershipはmutation前にfailする。failed installation
+後もtyped ASTはreplay可能。public installer、error variant、semantic table、
+B1 debug changeを追加しない。

@@ -1464,3 +1464,19 @@ cross-profile install、stale fingerprint、relocation、recovery、wrong
 contribution/keyed node、Task-248/other-family coexistence、occupied
 semantic outputはatomically failする。B1 debug bytesとpublic APIは
 unchangedである。
+
+## Task 258B5A implemented final-assembly boundary
+
+final assemblyはtyped ASTがexact matched base/reference profile、全dependency
+fingerprint、93-node/root-92 arena、`20/73` ownership、label scope `[0]`、
+citation scope `[0,1]`、resolver node 82からlabel key 0へのmappingを保持する
+場合だけfrozen B5A transactionをrecognizeする。clone前に全resolver node
+kind/range/child order/recovery state/origin/ordinal/contribution/
+scope-prefix relationを再検証する。
+
+unchanged B1 same-scope transactionとB5A ancestor/descendant transactionだけが
+admitted reference profileである。partial、cross-profile、stale、
+relocated、recovered、wrongly keyed、semantically occupied stateはpublication
+前にfailし、replay可能なままにする。checked formula、accepted statement、
+proof、proof node、terminal goal、fact、downstream IRはemptyのままで、
+public schema/APIを変更しない。

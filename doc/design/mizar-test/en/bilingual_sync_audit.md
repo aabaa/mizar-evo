@@ -1312,3 +1312,16 @@ Both runner languages record repeated final quality as **NO FINDINGS**, all
 nine hard gates PASS, no cap, and valid `100/100`
 (`20/20/15/15/10/10/5/5`). Staging, commit, and post-commit inventory are
 the only pending synchronized gates.
+
+## Checker Task 258B5A Implementation Synchronization
+
+The paired runner documents now synchronize prerequisite commit
+`59021f764f146d669f84877042f0512882c9c5ff`, the exact four runner and
+three checker consumers, source/Surface/resolver/lower/base/reference
+identity, `20/73` ownership, label `[0]` to citation `[0,1]`, resolver node
+82, telemetry `1/1/[1,1,1,1,1,1,1,1,1,1]`, B1/B5A atomic installation,
+and empty semantics. The bounded B5A `source_drift` is closed in both
+languages.
+
+B5B/B5C ownership and every active/corpus/expectation/sidecar/trace/public/
+diagnostic/semantic no-op remain synchronized without an exception.

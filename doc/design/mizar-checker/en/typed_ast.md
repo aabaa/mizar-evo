@@ -1528,3 +1528,18 @@ partial/duplicate installation, stale replay, relocation/recovery, wrong
 scope or provenance, Task-248/other-family occupancy, and altered ownership
 fail before mutation. The operation adds no semantic table and does not
 change B1 debug output or a public signature.
+
+## Task 258B5A Implemented Paired Installation
+
+The private paired installer now admits exactly the unchanged B1 same-scope
+transaction or the exact B5A ancestor/descendant transaction. B5A
+installation revalidates base `1/5/5/5/5`, reference `1/1`, all lower
+handoffs and fingerprints, every 93-node arena identity, the `20/73`
+ownership partition, label scope `[0]`, citation scope `[0,1]`, statement
+ordinals `1/4`, contribution 0, and resolver key node 82.
+
+Duplicate or partial state, B1/B5A cross-pairing, stale fingerprints,
+relocation or recovery, wrong range/origin/scope/contribution/key,
+Task-248 or another family, and altered ownership fail before mutation.
+Failed installation leaves the typed AST replayable. The implementation adds
+no public installer, error variant, semantic table, or B1 debug change.

@@ -6056,5 +6056,33 @@ implementation commit does not satisfy a producer task.
 - [x] Complete repeated independent final quality with **NO FINDINGS**, all
   nine hard gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage only synchronized B5A documentation, create one prerequisite
-  commit, verify post-commit invariants, and fresh-inventory implementation.
+- [x] Stage only synchronized B5A documentation, create prerequisite commit
+  `59021f764f146d669f84877042f0512882c9c5ff`, verify post-commit
+  invariants, and fresh-inventory implementation.
+
+## Checker Task 258B5A Implementation Ledger
+
+- [x] Change only the frozen three checker and four runner source/test files.
+- [x] Authenticate exact source/Surface/raw/enriched resolver provenance,
+  Binding/Task-252/Task-256 lower profiles, Task-258 base/reference rows,
+  `20/73` ownership, label `[0]`, citation `[0,1]`, and resolver node 82.
+- [x] Admit only unchanged B1 or exact B5A paired state, including full
+  resolver-node-kind identity and atomic rollback/replay.
+- [x] Preserve B5B/B5C ownership, public APIs, active/corpus authority,
+  expectations, sidecars, trace status/count/backlinks, coverage credit,
+  diagnostics, and all semantic outputs.
+- [x] Run the frozen focused checker `4/4`, runner `5/5`, and preserved B1
+  runner `6/6` tests.
+- [x] Complete separate test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Complete final source/documentation consistency review with
+  **NO FINDINGS**.
+- [x] Pass checker `426/426`, runner `493/493`, full workspace tests,
+  formatting, exact Clippy, five CLIs, count/hash, and diff gates.
+- [x] Complete final scope/forbidden-artifact, repository-state, and stash
+  gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage and inspect only Task-258B5A, create one implementation commit,
+  then verify post-commit invariants and fresh-inventory the next task.

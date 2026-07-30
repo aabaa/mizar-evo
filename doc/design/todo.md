@@ -3531,5 +3531,33 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete repeated independent final quality with **NO FINDINGS**, all
   nine hard gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Create one documentation-only commit, verify post-commit invariants,
-  and continue automatically into fresh Task-258B5A implementation inventory.
+- [x] Create documentation-only commit
+  `59021f764f146d669f84877042f0512882c9c5ff`, verify post-commit
+  invariants, and continue into fresh Task-258B5A implementation inventory.
+
+## Checker Task 258B5A Implementation
+
+- [x] Implement exactly three checker and four runner consumers; preserve
+  parser/resolver/lower production owners and every public boundary.
+- [x] Authenticate the exact source, Surface and resolver identities, lower
+  handoffs, Task-258 base/reference profiles, `20/73` ownership, label
+  `[0]`, citation `[0,1]`, resolver node 82, and B1/B5A atomic pairing.
+- [x] Close bounded B5A `source_drift` while retaining B5B/B5C as separate
+  bounded `test_gap` ownership.
+- [x] Preserve specifications, existing `.miz`, expectations, sidecars,
+  trace status/count/backlinks and credit, public APIs, diagnostics, and all
+  semantic outputs.
+- [x] Run focused checker `4/4`, runner `5/5`, and preserved B1 runner
+  `6/6` tests; record the stable library/test-list inventory.
+- [x] Complete separate test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Complete final source/documentation and bilingual consistency reviews
+  with **NO FINDINGS**.
+- [x] Pass checker `426/426`, runner `493/493`, full workspace, formatting,
+  exact Clippy, five-CLI, count/hash, and diff verification.
+- [x] Complete final scope/forbidden-artifact, repository-state, and stash
+  verification.
+- [x] Pass independent final quality with **NO FINDINGS**, all nine hard
+  gates, no cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Stage/inspect and create one B5A implementation commit, verify clean
+  post-commit/stash state, and fresh-inventory the next dependency-ready task.

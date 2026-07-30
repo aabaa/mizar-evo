@@ -12473,3 +12473,25 @@ Independent source/documentation boundary review reports **NO FINDINGS**.
 All production changes remain feasible inside the frozen seven consumers;
 no public harness, lower-owner, module split, or ownership transfer is
 required.
+
+## Checker Task 258B5A Implemented Runner Boundary
+
+Runner implementation is confined to
+`type_elaboration/source_statement.rs`, its private facades
+`type_elaboration.rs` and `runner.rs`, and the existing statement test leaf,
+plus the three checker consumers. It adds only the exact private route,
+mutation seams, and test-only facades needed to authenticate the frozen
+source/resolver/lower/upper transaction.
+
+Parser, resolver, BindingEnv, Task-252/256 producer modules, sibling lower
+families, CLI/public harness, corpus, expectations, sidecars, trace metadata,
+and semantics remain unchanged. Exact `20/73` ownership prevents any label,
+citation, proof-block, or wrapper node from moving into a syntax-free owner.
+B5B/B5C remain excluded; no public facade, module split, or ownership
+transfer is introduced.
+
+Post-format runner owners measure
+`type_elaboration/source_statement.rs=15927`,
+`type_elaboration.rs=826`, `runner.rs=2642`, and the statement test leaf
+`32282`; the production boundary remains 30 paths and 58333 lines. These
+measurements do not change the ownership decision.
