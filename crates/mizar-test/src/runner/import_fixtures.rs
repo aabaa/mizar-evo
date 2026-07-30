@@ -8,13 +8,13 @@ use mizar_frontend::lexical_env::{
     UserSymbolKind,
 };
 use mizar_resolve::env::{
-    ContributionKind, ExportStatus, ImportIndexEntry, NamespacePath, SymbolEntry, SymbolEnv,
-    SymbolEnvIndexes, SymbolKind, Visibility,
+    ContributionKind, ExportStatus, ImportIndexEntry, LabelEntry, NamespacePath, SymbolEntry,
+    SymbolEnv, SymbolEnvIndexes, SymbolKind, Visibility,
 };
 use mizar_resolve::resolved_ast::{
-    FullyQualifiedName, ImportResolution, LocalSymbolId, ModuleId as ResolverModuleId,
-    ResolvedArenaBuilder, ResolvedImport as ResolverImport, ResolvedImports as ResolverImports,
-    ResolvedNode, SemanticOrigin, SymbolId as ResolverSymbolId,
+    FullyQualifiedName, ImportResolution, LabelKind, LabelOriginPath, LocalSymbolId,
+    ModuleId as ResolverModuleId, ResolvedArenaBuilder, ResolvedImport as ResolverImport,
+    ResolvedImports as ResolverImports, ResolvedNode, SemanticOrigin, SymbolId as ResolverSymbolId,
 };
 use mizar_session::{ModulePath, SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind};
@@ -144,6 +144,65 @@ pub(super) fn augment_type_elaboration_import_summaries(
             indexes.contributions.add_symbol(contribution, symbol);
         }
     }
+    SymbolEnv::new(module.clone(), indexes)
+}
+
+#[allow(dead_code)] // Rationale: B5B Lower freezes a crate-private seam whose sole production consumer is the separately scoped B5B Upper task.
+pub(super) fn augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: SymbolEnv,
+) -> SymbolEnv {
+    let symbols = augment_type_elaboration_import_summaries(ast, module, symbols);
+    if !symbols.labels().is_empty() {
+        return symbols;
+    }
+    let Some((imported_module, import_range)) =
+        type_elaboration_imported_fixture_modules(ast, module)
+            .into_iter()
+            .find(|(imported_module, _)| imported_module.path().as_str() == "parser.type_fixtures")
+    else {
+        return symbols;
+    };
+    let matching = symbols
+        .contributions()
+        .iter()
+        .filter(|record| {
+            record.module() == &imported_module
+                && matches!(
+                    record.kind(),
+                    ContributionKind::ImportedSource { source_id }
+                        if *source_id == ast.source_id
+                )
+                && record.anchor() == &SourceAnchor::Range(import_range)
+                && record.effects().labels().is_empty()
+        })
+        .map(|record| record.id())
+        .collect::<Vec<_>>();
+    let [contribution] = matching.as_slice() else {
+        return symbols;
+    };
+    let contribution = *contribution;
+    let mut indexes = clone_symbol_env_indexes(&symbols);
+    let label = LabelEntry::new(
+        LabelOriginPath::new("summary:parser.type_fixtures::Ref:label:Ref"),
+        LabelKind::Theorem,
+        NamespacePath::new(module.path().as_str()),
+        "Ref",
+        SemanticOrigin::new(
+            ast.source_id,
+            imported_module,
+            SourceAnchor::Range(import_range),
+            vec![1, 0],
+        ),
+        contribution,
+    )
+    .with_visibility(Visibility::Public)
+    .with_export_status(ExportStatus::Exported);
+    indexes
+        .contributions
+        .add_label(contribution, label.origin_path().clone());
+    indexes.labels.insert(label);
     SymbolEnv::new(module.clone(), indexes)
 }
 

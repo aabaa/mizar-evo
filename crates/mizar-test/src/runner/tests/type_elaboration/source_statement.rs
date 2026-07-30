@@ -32280,3 +32280,426 @@ fn task258b5a_final_clone_debug_replay_and_empty_semantics_are_stable() {
             .contains("AncestorLabelDescendant")
     );
 }
+
+const SOURCE_STATEMENT_B5B_LOWER_TEXT: &str = concat!(
+    "import parser.type_fixtures;\n",
+    "reserve x for set;\n",
+    "theorem FormulaStatementImportedPublicTheoremCitationSmoke: x = x proof\n",
+    "  thus x = x by Ref;\n",
+    "end;\n",
+);
+
+fn task258b5b_lower_resolver_profile(symbols: &mizar_resolve::env::SymbolEnv) -> [usize; 5] {
+    [
+        symbols.symbols().len(),
+        symbols.labels().len(),
+        symbols.definitions().len(),
+        symbols.contributions().len(),
+        symbols.imports().len(),
+    ]
+}
+
+fn task258b5b_imported_label_contract_is_exact(
+    ast: &mizar_syntax::SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    symbols: &mizar_resolve::env::SymbolEnv,
+) -> bool {
+    if task258b5b_lower_resolver_profile(symbols) != [8, 1, 1, 3, 1]
+        || !symbols.module_summaries().is_empty()
+    {
+        return false;
+    }
+    let mut labels = symbols.labels().iter();
+    let Some(label) = labels.next() else {
+        return false;
+    };
+    if labels.next().is_some() {
+        return false;
+    }
+    let imported_module = mizar_resolve::resolved_ast::ModuleId::new(
+        module.package().clone(),
+        mizar_session::ModulePath::new("parser.type_fixtures"),
+    );
+    let expected_range = mizar_session::SourceRange {
+        source_id: ast.source_id,
+        start: 7,
+        end: 27,
+    };
+    let expected_origin_path = "summary:parser.type_fixtures::Ref:label:Ref";
+    if label.origin_path().as_str() != expected_origin_path
+        || label.kind() != mizar_resolve::resolved_ast::LabelKind::Theorem
+        || label.visibility() != mizar_resolve::env::Visibility::Public
+        || label.export_status() != mizar_resolve::env::ExportStatus::Exported
+        || label.namespace().as_str() != module.path().as_str()
+        || label.primary_spelling() != "Ref"
+        || label.contribution().index() != 2
+        || label.recovery() != mizar_resolve::resolved_ast::RecoveryState::Normal
+        || label.origin().source_id() != ast.source_id
+        || label.origin().module_id() != &imported_module
+        || label.origin().anchor() != &mizar_session::SourceAnchor::Range(expected_range)
+        || label.origin().structural_path() != [1, 0]
+        || label.origin().import_edge().is_some()
+        || label.origin().is_recovered()
+    {
+        return false;
+    }
+    let Some(contribution) = symbols.contributions().get(label.contribution()) else {
+        return false;
+    };
+    contribution.module() == &imported_module
+        && matches!(
+            contribution.kind(),
+            mizar_resolve::env::ContributionKind::ImportedSource { source_id }
+                if *source_id == ast.source_id
+        )
+        && contribution.anchor() == &mizar_session::SourceAnchor::Range(expected_range)
+        && contribution.effects().labels().len() == 1
+        && contribution.effects().labels()[0].as_str() == expected_origin_path
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Task258B5BImportedLabelMutation {
+    Missing,
+    Duplicate,
+    Private,
+    LocalOnly,
+    ReExported,
+    WrongKind,
+    WrongSpelling,
+    WrongModule,
+    WrongNamespace,
+    WrongContribution,
+    Recovered,
+    WrongOriginPath,
+    WrongSource,
+    WrongRange,
+    WrongStructuralPath,
+    MissingEffect,
+    ExtraEffect,
+    WrongEffect,
+}
+
+fn task258b5b_mutate_imported_label(
+    symbols: &mizar_resolve::env::SymbolEnv,
+    current_module: &mizar_resolve::resolved_ast::ModuleId,
+    foreign_source: mizar_session::SourceId,
+    mutation: Task258B5BImportedLabelMutation,
+) -> mizar_resolve::env::SymbolEnv {
+    let label = symbols
+        .labels()
+        .iter()
+        .next()
+        .expect("Task258B5B exact imported label")
+        .clone();
+    let origin_path = if matches!(mutation, Task258B5BImportedLabelMutation::WrongOriginPath) {
+        mizar_resolve::resolved_ast::LabelOriginPath::new(
+            "summary:parser.type_fixtures::Other:label:Other",
+        )
+    } else {
+        label.origin_path().clone()
+    };
+    let kind = if matches!(mutation, Task258B5BImportedLabelMutation::WrongKind) {
+        mizar_resolve::resolved_ast::LabelKind::ProofStep
+    } else {
+        label.kind()
+    };
+    let namespace = if matches!(mutation, Task258B5BImportedLabelMutation::WrongNamespace) {
+        mizar_resolve::env::NamespacePath::new("parser.type_fixtures")
+    } else {
+        label.namespace().clone()
+    };
+    let spelling = if matches!(mutation, Task258B5BImportedLabelMutation::WrongSpelling) {
+        "Other"
+    } else {
+        label.primary_spelling()
+    };
+    let contribution = if matches!(
+        mutation,
+        Task258B5BImportedLabelMutation::WrongContribution
+    ) {
+        symbols
+            .contributions()
+            .iter()
+            .find(|record| record.id() != label.contribution())
+            .expect("Task258B5B foreign contribution")
+            .id()
+    } else {
+        label.contribution()
+    };
+    let origin_source = if matches!(mutation, Task258B5BImportedLabelMutation::WrongSource) {
+        foreign_source
+    } else {
+        label.origin().source_id()
+    };
+    let origin_module = if matches!(mutation, Task258B5BImportedLabelMutation::WrongModule) {
+        current_module.clone()
+    } else {
+        label.origin().module_id().clone()
+    };
+    let origin_anchor = if matches!(mutation, Task258B5BImportedLabelMutation::WrongRange) {
+        mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+            source_id: label.origin().source_id(),
+            start: 8,
+            end: 27,
+        })
+    } else {
+        label.origin().anchor().clone()
+    };
+    let structural_path = if matches!(
+        mutation,
+        Task258B5BImportedLabelMutation::WrongStructuralPath
+    ) {
+        vec![1, 1]
+    } else {
+        label.origin().structural_path().to_vec()
+    };
+    let mut origin = mizar_resolve::resolved_ast::SemanticOrigin::new(
+        origin_source,
+        origin_module,
+        origin_anchor,
+        structural_path,
+    );
+    if matches!(mutation, Task258B5BImportedLabelMutation::Recovered) {
+        origin = origin.recovered();
+    }
+    let visibility = if matches!(mutation, Task258B5BImportedLabelMutation::Private) {
+        mizar_resolve::env::Visibility::Private
+    } else {
+        label.visibility()
+    };
+    let export_status = match mutation {
+        Task258B5BImportedLabelMutation::LocalOnly => {
+            mizar_resolve::env::ExportStatus::LocalOnly
+        }
+        Task258B5BImportedLabelMutation::ReExported => {
+            mizar_resolve::env::ExportStatus::ReExported
+        }
+        _ => label.export_status(),
+    };
+    let mut labels = mizar_resolve::env::LabelIndex::new();
+    if !matches!(mutation, Task258B5BImportedLabelMutation::Missing) {
+        labels.insert(
+            mizar_resolve::env::LabelEntry::new(
+                origin_path,
+                kind,
+                namespace,
+                spelling,
+                origin,
+                contribution,
+            )
+            .with_visibility(visibility)
+            .with_export_status(export_status),
+        );
+    }
+    if matches!(mutation, Task258B5BImportedLabelMutation::Duplicate) {
+        labels.insert(
+            mizar_resolve::env::LabelEntry::new(
+                mizar_resolve::resolved_ast::LabelOriginPath::new(
+                    "summary:parser.type_fixtures::Ref:label:Ref:duplicate",
+                ),
+                label.kind(),
+                label.namespace().clone(),
+                label.primary_spelling(),
+                label.origin().clone(),
+                label.contribution(),
+            )
+            .with_visibility(label.visibility())
+            .with_export_status(label.export_status()),
+        );
+    }
+    let contributions = match mutation {
+        Task258B5BImportedLabelMutation::MissingEffect => {
+            task258b3m2b2b3a_rebuild_contributions_with_label_effects(
+                symbols,
+                label.contribution(),
+                &[],
+            )
+        }
+        Task258B5BImportedLabelMutation::ExtraEffect => {
+            task258b3m2b2b3a_rebuild_contributions_with_label_effects(
+                symbols,
+                label.contribution(),
+                &[
+                    label.origin_path().clone(),
+                    mizar_resolve::resolved_ast::LabelOriginPath::new(
+                        "summary:parser.type_fixtures::Other:label:Other",
+                    ),
+                ],
+            )
+        }
+        Task258B5BImportedLabelMutation::WrongEffect => {
+            task258b3m2b2b3a_rebuild_contributions_with_label_effects(
+                symbols,
+                label.contribution(),
+                &[mizar_resolve::resolved_ast::LabelOriginPath::new(
+                    "summary:parser.type_fixtures::Other:label:Other",
+                )],
+            )
+        }
+        _ => symbols.contributions().clone(),
+    };
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(symbols);
+    indexes.labels = labels;
+    indexes.contributions = contributions;
+    mizar_resolve::env::SymbolEnv::new(symbols.module_id().clone(), indexes)
+}
+
+#[test]
+fn task258b5b_opt_in_imported_public_theorem_label_is_exact() {
+    assert_eq!(SOURCE_STATEMENT_B5B_LOWER_TEXT.len(), 146);
+    assert!(SOURCE_STATEMENT_B5B_LOWER_TEXT.ends_with('\n'));
+    assert_eq!(
+        sha256_text(SOURCE_STATEMENT_B5B_LOWER_TEXT),
+        "671e940c9dc749757dc8fddcc30a1a230aecb650058e64d6f1e73c1c66e93e9e"
+    );
+    let (ast, module, _, raw) =
+        task253_ast_from_source_text(SOURCE_STATEMENT_B5B_LOWER_TEXT, 258_550);
+    assert_eq!(task258b5b_lower_resolver_profile(&raw), [1, 0, 1, 1, 0]);
+    let normal = augment_type_elaboration_import_summaries(&ast, &module, raw.clone());
+    assert_eq!(
+        task258b5b_lower_resolver_profile(&normal),
+        [8, 0, 1, 3, 1]
+    );
+    let opt_in = super::import_fixtures::
+        augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
+            &ast, &module, raw,
+        );
+    assert!(task258b5b_imported_label_contract_is_exact(
+        &ast, &module, &opt_in
+    ));
+    assert_eq!(normal.imports(), opt_in.imports());
+    assert_eq!(normal.exports(), opt_in.exports());
+    assert_eq!(normal.symbols(), opt_in.symbols());
+    assert_eq!(normal.definitions(), opt_in.definitions());
+    assert_eq!(normal.overloads(), opt_in.overloads());
+    assert_eq!(normal.registrations(), opt_in.registrations());
+    assert_eq!(normal.lexical_summaries(), opt_in.lexical_summaries());
+    assert_eq!(normal.namespace_graph(), opt_in.namespace_graph());
+    assert_eq!(
+        normal.declaration_dependencies(),
+        opt_in.declaration_dependencies()
+    );
+    assert_eq!(normal.module_summaries(), opt_in.module_summaries());
+    for (normal_record, opt_in_record) in normal
+        .contributions()
+        .iter()
+        .zip(opt_in.contributions().iter())
+    {
+        assert_eq!(normal_record.id(), opt_in_record.id());
+        assert_eq!(normal_record.module(), opt_in_record.module());
+        assert_eq!(normal_record.kind(), opt_in_record.kind());
+        assert_eq!(normal_record.anchor(), opt_in_record.anchor());
+        assert_eq!(
+            normal_record.effects().symbols(),
+            opt_in_record.effects().symbols()
+        );
+        assert_eq!(
+            normal_record.effects().definitions(),
+            opt_in_record.effects().definitions()
+        );
+        assert_eq!(
+            normal_record.effects().overload_groups(),
+            opt_in_record.effects().overload_groups()
+        );
+        assert_eq!(
+            normal_record.effects().registrations(),
+            opt_in_record.effects().registrations()
+        );
+        assert_eq!(
+            normal_record.effects().lexical_summaries(),
+            opt_in_record.effects().lexical_summaries()
+        );
+        assert_eq!(
+            normal_record.effects().namespace_edges(),
+            opt_in_record.effects().namespace_edges()
+        );
+        assert_eq!(
+            normal_record.effects().declaration_dependencies(),
+            opt_in_record.effects().declaration_dependencies()
+        );
+        assert_eq!(
+            normal_record.effects().imports(),
+            opt_in_record.effects().imports()
+        );
+        assert_eq!(
+            normal_record.effects().exports(),
+            opt_in_record.effects().exports()
+        );
+        assert_eq!(
+            normal_record.effects().diagnostics(),
+            opt_in_record.effects().diagnostics()
+        );
+        if opt_in_record.id().index() != 2 {
+            assert_eq!(
+                normal_record.effects().labels(),
+                opt_in_record.effects().labels()
+            );
+        } else {
+            assert!(normal_record.effects().labels().is_empty());
+            assert_eq!(
+                opt_in_record.effects().labels()[0].as_str(),
+                "summary:parser.type_fixtures::Ref:label:Ref"
+            );
+        }
+    }
+}
+
+#[test]
+fn task258b5b_opt_in_imported_label_corruption_and_default_routes_stay_isolated() {
+    let (ast, module, _, raw) =
+        task253_ast_from_source_text(SOURCE_STATEMENT_B5B_LOWER_TEXT, 258_551);
+    let normal = augment_type_elaboration_import_summaries(&ast, &module, raw.clone());
+    assert!(normal.labels().is_empty());
+    assert_eq!(
+        normal,
+        augment_type_elaboration_import_summaries(&ast, &module, raw.clone())
+    );
+    let opt_in = super::import_fixtures::
+        augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
+            &ast, &module, raw,
+        );
+    assert!(task258b5b_imported_label_contract_is_exact(
+        &ast, &module, &opt_in
+    ));
+    let foreign_source = task258b3m2b2b3a_foreign_source_id(ast.source_id);
+    for mutation in [
+        Task258B5BImportedLabelMutation::Missing,
+        Task258B5BImportedLabelMutation::Duplicate,
+        Task258B5BImportedLabelMutation::Private,
+        Task258B5BImportedLabelMutation::LocalOnly,
+        Task258B5BImportedLabelMutation::ReExported,
+        Task258B5BImportedLabelMutation::WrongKind,
+        Task258B5BImportedLabelMutation::WrongSpelling,
+        Task258B5BImportedLabelMutation::WrongModule,
+        Task258B5BImportedLabelMutation::WrongNamespace,
+        Task258B5BImportedLabelMutation::WrongContribution,
+        Task258B5BImportedLabelMutation::Recovered,
+        Task258B5BImportedLabelMutation::WrongOriginPath,
+        Task258B5BImportedLabelMutation::WrongSource,
+        Task258B5BImportedLabelMutation::WrongRange,
+        Task258B5BImportedLabelMutation::WrongStructuralPath,
+        Task258B5BImportedLabelMutation::MissingEffect,
+        Task258B5BImportedLabelMutation::ExtraEffect,
+        Task258B5BImportedLabelMutation::WrongEffect,
+    ] {
+        let corrupted =
+            task258b5b_mutate_imported_label(&opt_in, &module, foreign_source, mutation);
+        assert!(
+            !task258b5b_imported_label_contract_is_exact(&ast, &module, &corrupted),
+            "corruption remained exact: {mutation:?}"
+        );
+    }
+    let (b5a_ast, b5a_module, _, b5a_raw) =
+        task253_ast_from_source_text(SOURCE_STATEMENT_B5A_TEXT, 258_553);
+    let b5a_default =
+        augment_type_elaboration_import_summaries(&b5a_ast, &b5a_module, b5a_raw.clone());
+    assert_eq!(
+        super::import_fixtures::
+            augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
+                &b5a_ast,
+                &b5a_module,
+                b5a_raw,
+            ),
+        b5a_default
+    );
+}
