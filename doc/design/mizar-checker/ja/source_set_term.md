@@ -406,3 +406,15 @@ B3Cはunchanged exact Task-255 handoff、すなわち`Choice` 1、builtin-set
 existing set fingerprintと`SetTerm(0)` targetだけをrecordし、exact 39-field
 replay matrixはTask-255-owned error precedenceをconfirmする。choice
 nonemptiness/stable symbol/type factと全semantic creditはdeferred。
+
+## Task 258B3M2B2B3D qua reuse contract
+
+Task-255 source changeは不要。frozen handoffは
+`1/0/0/1/0/1/2`: `37/79..88`の`Qua` term 1件、
+expression/head `36/35/85..88`のterm-owned `QuaTarget`
+`BuiltinSet` type site 1件、`QuaBase -> Primary(2)` edge 1件、その後
+ordered `QuaWidening(type-site 0)`と`ResultType`。contextはproof
+context `1`、application/structure fingerprintsはabsent。future B3D
+testsは全`44` safely mutable Task-255 fieldsをmutateし、各resultを
+replayしてTask-255-owned errorsをrequireする。両
+`source_set_term.rs` ownersはunchangedで、wideningはdischargeしない。

@@ -1360,3 +1360,12 @@ remain independently installable in either family order. No public schema,
 error text, debug grammar, dependency, or semantic table changed; the private
 dormant runner selector is outside this typed/final owner and leaves existing
 active-corpus outcomes unchanged.
+
+## Task 258B3M2B2B3D Frozen Atomic Installation
+
+The future installer atomically combines the exact Task-255 qua handoff,
+statement base, and one unnamed SetTerm witness, validates the existing
+set-only fingerprint tuple, and rolls back on stale, reordered, hybrid, or
+generic-guard state. B3A/B3B/B3C remain independently installable in every
+family order. No public schema, error text, debug grammar, dependency,
+semantic table, or active route changes.

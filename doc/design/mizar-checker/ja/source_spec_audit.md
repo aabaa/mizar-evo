@@ -4454,3 +4454,20 @@ test/implementation reviewsは**NO FINDINGS**。`spec_gap`、
 `boundary_violation`、`repo_metadata_conflict`はない。formula-statement
 trace rowは`deferred`, `tests = []`のまま、Task-111/255 credit、全trace
 count/backlink、全semantic deferralはunchanged。
+
+## Task 258B3M2B2B3D authority audit
+
+Specs 13.6、4.4.3、15.4.4、16.3.3、existing qua parser fixture、
+exact Task-255 `4 qua set` source/expectation/traceがfrozen
+source-transport sliceをauthorizeする。exact sourceはlanguage behaviorを
+追加せず、`qua` reachability、inheritance/cluster widening、overload、
+coercion、typing、witness、proof、theorem semanticsをclaimしない。
+missing upper contract/route/testsは`design_drift`/future
+`source_drift`/`test_gap`、task-selection disagreementはclosed
+`design_drift`である。blocking `spec_gap`、undocumented behavior、
+expectation drift、boundary violationはない。origin movementはreport-only
+`repo_metadata_conflict`のままである。
+
+repeated authority/source/documentation reviewは**NO FINDINGS**。exact
+forbidden diffsは0、trace blobはunchangedで、5 metadata CLIsと全
+count/hash gatesはfrozen no-op baselineを再現した。

@@ -2979,3 +2979,15 @@ closeした。repeat reviewsは**NO FINDINGS**。public API/error/debug grammar/
 semanticsはunchanged。new private dormant exact selector branchをactive
 corpus sourceはselectしないため、existing active-corpus routing/outcomeは
 unchanged。
+
+## Task 258B3M2B2B3D frozen qua statement profile
+
+exact 109-byte/54-node qua sourceはtheorem owner 1件、statement/context/
+guard/candidate rows各2件、unnamed witness 1件/name 0件をcontributeする。
+Task 258は`{50,48}`、B3Dは`{40,39}`をownし、`39/79..88`のwitnessは
+proof context `1`の`SetTerm(0)`をtargetする。Task 255は
+`{35,36,37}`と`QuaBase -> Primary(2)` edgeをownし、complete
+owner/unowned graphはcrate planでfreezeする。existing SetTerm
+fingerprint、producer、typed install、final replay、error、debug APIsを
+reuseする。checker 4 + runner 5 testsと`32/70/44/72/62/21` matricesを
+freezeする。

@@ -1287,3 +1287,12 @@ set/atomic error precedenceをpreserveし、stale/hybrid/non-generic-guard
 upper stateはexisting statement errorでfailする。replayはdebug bytesと
 empty semantic/proof/goal tablesをpreserveする。error/public route/
 dependency/semantic resultは追加していない。
+
+## Task 258B3M2B2B3D frozen final boundary
+
+future final projectionはindependent exact B3D set-only fingerprint tuple
+だけをacceptし、Task-48/252/255/256/258と
+`SetTerm(0)` witness 1件をrevalidateしてauthenticated stateをcloneする。
+stale/hybrid/family mixとwrong `QuaBase`/`QuaWidening` stateはexisting
+errorsでfailする。schema、error、debug、dependency、active route、
+semantic tableは変更しない。

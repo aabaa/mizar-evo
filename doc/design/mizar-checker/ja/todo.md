@@ -5429,6 +5429,40 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   unchanged 5 CLI hashes、deliberate trace no-opをrecord。
 - [x] workspace Clippy/testsとfinal count/hash rerunをcomplete。
 - [x] final source/docs consistencyとindependent quality reviewをcomplete。
-- [ ] exact 39 synchronized task filesをstageしcached diffをinspect。
-- [ ] implementation commit 1件をcreateしclean post-commit/stashをverify。
-- [ ] fresh inventoryで次のdependency-minimal taskをselect。
+- [x] exact 39 synchronized task filesをstageしcached diffをinspect。
+- [x] implementation commit
+  `7988a50934656ff90b31e06b883225f86196103b`をcreate。
+- [x] clean ahead-1/behind-0 post-commit stateとunchanged stashをverifyし、
+  external origin movementを`repo_metadata_conflict`としてreportのみ。
+- [x] fresh inventoryでB3D qua witnessをselect。
+
+## Checker Task 258B3M2B2B3D frozen-contract ledger
+
+- [x] B3Cを
+  `7988a50934656ff90b31e06b883225f86196103b`、clean worktree、
+  current originに対するahead-1/behind-0、unchanged stashでclose。
+- [x] comprehension-versus-`qua` task-decomposition
+  `design_drift`をresolveし、strictly smallerなqua profileをselect。
+- [x] final-LF `109`-byte/hash、24-token、54-node/root-53 source、
+  exact sites、local resolver owner/label provenanceをfreeze。
+- [x] Task-48 `2/1/0`、Task-252 `5/4/1`、Tasks 253/254 empty、
+  Task-255 `1/0/0/1/0/1/2`、Task-256
+  `2/0/0/0/0/0/0/4/4`、Task-258 `1/2/2/2/2`、witness `1/0`を
+  freeze。
+- [x] exact ownership/unowned partition、complete graph、
+  `QuaBase -> Primary(2)`、witness-to-SetTerm edgeをfreeze。
+- [x] existing SetTerm APIsとfuture source consumers exact 7をreuseし、
+  両`source_set_term.rs` ownersと全authority artifactsをforbid。
+- [x] exact checker 4/runner 5 test namesとexhaustive byte/LF、
+  `54 x 4`+root、resolver、`32/70/44/72/62/21`、
+  family-order、replay/rollback/clone matricesをfreeze。
+- [x] parser/Task-255 fixtures、expectations、sidecars、trace
+  status/count/tests、active behavior、semantic deferralsをpreserve。
+- [x] repeated specification、test-sufficiency、implementation-boundary、
+  source/documentation consistency reviewsをno findingsでcomplete。
+- [x] documentation-only count/hash/scope/no-op verificationをPASS。
+- [x] 全hard gatesとvalid score `>=90/100`でfinal read-only quality reviewを
+  complete。
+- [ ] synchronized 32-document scopeだけをstageしprerequisiteをcommit、
+  clean post-commit/stash invariantsをverify。
+- [ ] B3D implementationをfresh inventory。

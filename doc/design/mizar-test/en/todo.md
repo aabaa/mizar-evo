@@ -2734,5 +2734,32 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   trace/authority no-op.
 - [x] Complete workspace Clippy/tests and final measurements.
 - [x] Complete final source/documentation consistency and quality reviews.
-- [ ] Stage exact 39 synchronized task files, commit, and verify post-commit.
-- [ ] Fresh-inventory the next dependency-minimal task.
+- [x] Stage exact 39 synchronized task files and create implementation commit
+  `7988a50934656ff90b31e06b883225f86196103b`.
+- [x] Verify clean ahead-1/behind-0 post-commit state, unchanged stash, and
+  report-only external origin movement.
+- [x] Fresh-inventory and select B3D qua witness.
+
+## Checker Task 258B3M2B2B3D Documentation Ledger
+
+- [x] Freeze exact 109-byte/hash, 24-token, 54-node/root-53 qua source and
+  local resolver owner/label provenance.
+- [x] Freeze lower profiles `2/1/0`, `5/4/1`, empty Tasks 253/254,
+  `1/0/0/1/0/1/2`, `2/0/0/0/0/0/0/4/4`, base
+  `1/2/2/2/2`, witness `1/0`.
+- [x] Freeze owner/unowned graph, `QuaBase -> Primary(2)`, and
+  witness-to-SetTerm edge.
+- [x] Freeze exact four checker/five runner names and
+  `32/70/44/72/62/21` plus byte/node/resolver/family/replay matrices.
+- [x] Keep future runner scope at four files and both `source_set_term.rs`
+  owners unchanged.
+- [x] Preserve authority, fixtures, expectations, sidecars, trace
+  status/count/tests, active behavior, semantics, and coverage credit.
+- [x] Complete all repeated reviews with **NO FINDINGS**.
+- [x] Pass exact docs-only scope, crate/workspace checks, five CLIs, and all
+  count/hash/no-op gates.
+- [x] Complete independent final quality with all nine hard gates and valid
+  score `>=90/100`.
+- [ ] Create one dedicated B3D documentation commit and verify clean
+  post-commit/stash state.
+- [ ] Fresh-inventory B3D implementation.

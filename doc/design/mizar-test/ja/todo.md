@@ -2522,5 +2522,32 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   trace/authority no-opをrecord。
 - [x] workspace Clippy/testsとfinal measurementsをcomplete。
 - [x] final source/docs consistencyとquality reviewsをcomplete。
-- [ ] exact 39 synchronized task filesをstage/commitしpost-commit verify。
-- [ ] next dependency-minimal taskをfresh inventory。
+- [x] exact 39 synchronized task filesをstageしimplementation commit
+  `7988a50934656ff90b31e06b883225f86196103b`をcreate。
+- [x] clean ahead-1/behind-0 post-commit state、unchanged stashをverifyし、
+  external origin movementをreport-onlyとする。
+- [x] fresh inventoryでB3D qua witnessをselect。
+
+## Checker Task 258B3M2B2B3D documentation ledger
+
+- [x] exact 109-byte/hash、24-token、54-node/root-53 qua sourceとlocal
+  resolver owner/label provenanceをfreeze。
+- [x] lower profiles `2/1/0`、`5/4/1`、Tasks 253/254 empty、
+  `1/0/0/1/0/1/2`、`2/0/0/0/0/0/0/4/4`、base
+  `1/2/2/2/2`、witness `1/0`をfreeze。
+- [x] owner/unowned graph、`QuaBase -> Primary(2)`、witness-to-SetTerm
+  edgeをfreeze。
+- [x] exact checker 4/runner 5 namesと`32/70/44/72/62/21`に加え、
+  byte/node/resolver/family/replay matricesをfreeze。
+- [x] future runner scopeを4 filesに固定し、両`source_set_term.rs` ownersを
+  unchangedに保つ。
+- [x] authority、fixtures、expectations、sidecars、trace
+  status/count/tests、active behavior、semantics、coverage creditをpreserve。
+- [x] 全repeated reviewsを**NO FINDINGS**でcomplete。
+- [x] exact docs-only scope、crate/workspace checks、5 CLIs、全
+  count/hash/no-op gatesをPASS。
+- [x] 全9 hard gatesとvalid score `>=90/100`でindependent final qualityを
+  complete。
+- [ ] dedicated B3D documentation commit 1件をcreateし、clean
+  post-commit/stash stateをverify。
+- [ ] B3D implementationをfresh inventory。

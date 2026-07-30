@@ -5697,6 +5697,39 @@ implementation commit does not satisfy a producer task.
 - [x] Complete workspace Clippy/tests and final count/hash reruns.
 - [x] Complete final source/documentation consistency and independent
   quality reviews.
-- [ ] Stage exact 39 synchronized task files and inspect cached diff.
-- [ ] Create one implementation commit and verify clean post-commit/stash.
-- [ ] Fresh-inventory and select the next dependency-minimal task.
+- [x] Stage exact 39 synchronized task files and inspect cached diff.
+- [x] Create implementation commit
+  `7988a50934656ff90b31e06b883225f86196103b`.
+- [x] Verify clean ahead-1/behind-0 post-commit state and unchanged stash;
+  report the external origin movement as `repo_metadata_conflict` only.
+- [x] Fresh-inventory and select B3D qua witness.
+
+## Checker Task 258B3M2B2B3D Frozen-Contract Ledger
+
+- [x] Close B3C at
+  `7988a50934656ff90b31e06b883225f86196103b` with clean worktree,
+  ahead-1/behind-0 current origin state, and unchanged stash.
+- [x] Resolve comprehension-versus-`qua` task-decomposition
+  `design_drift`; select the strictly smaller qua profile.
+- [x] Freeze final-LF `109`-byte/hash, 24-token, 54-node/root-53 source,
+  exact sites, and local resolver owner/label provenance.
+- [x] Freeze Task-48 `2/1/0`, Task-252 `5/4/1`, empty Tasks 253/254,
+  Task-255 `1/0/0/1/0/1/2`, Task-256
+  `2/0/0/0/0/0/0/4/4`, Task-258 `1/2/2/2/2`, and witness `1/0`.
+- [x] Freeze exact ownership/unowned partition, complete graph,
+  `QuaBase -> Primary(2)`, and witness-to-SetTerm edge.
+- [x] Reuse existing SetTerm APIs and exact seven future source consumers;
+  forbid both `source_set_term.rs` owners and all authority artifacts.
+- [x] Freeze four checker/five runner test names and exhaustive
+  byte/LF, `54 x 4`+root, resolver, `32/70/44/72/62/21`,
+  family-order, replay/rollback/clone matrices.
+- [x] Preserve parser/Task-255 fixtures, expectations, sidecars, trace
+  status/count/tests, active behavior, and semantic deferrals.
+- [x] Complete repeated specification, test-sufficiency, implementation-
+  boundary, and source/documentation consistency reviews with no findings.
+- [x] Pass documentation-only count/hash/scope/no-op verification.
+- [x] Complete final read-only quality review with all hard gates and valid
+  score `>=90/100`.
+- [ ] Stage only the synchronized 32-document scope, commit the prerequisite,
+  and verify clean post-commit/stash invariants.
+- [ ] Fresh-inventory B3D implementation.

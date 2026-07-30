@@ -5200,3 +5200,39 @@ Path hashes, five CLI hashes/counts, authority files, and trace metadata are
 unchanged. Final source/documentation consistency and independent quality
 report **NO FINDINGS**; all nine hard gates PASS without a cap at valid
 `98/100`. Commit, post-commit, and fresh-next-task gates remain pending.
+
+### Task 258B3M2B2B3D narrative-only ownership
+
+B3C implementation closed at
+`7988a50934656ff90b31e06b883225f86196103b`; the B3C
+post-commit/fresh-inventory snapshot was clean and ahead-1/behind-0 with
+unchanged stash. External movement of
+`origin/main` to the prerequisite is report-only `repo_metadata_conflict`.
+Fresh inventory selects the exact 109-byte qua-witness documentation
+prerequisite as the smallest remaining Task-255 sibling.
+
+Specs 13.6, 4.4.3, 15.4.4, and 16.3.3 plus existing parser and Task-255
+artifacts authorize only dormant syntax-free `take 4 qua set;` transport.
+The frozen profile is 54 nodes/root 53, Task-255
+`1/0/0/1/0/1/2` with `QuaTarget`, `QuaBase -> Primary(2)`, ordered
+`QuaWidening`/`ResultType`, and one witness-to-SetTerm edge. Exact owner/
+unowned boundaries, four checker/five runner tests, and exhaustive
+`32/70/44/72/62/21` matrices are documented in the paired crate plans.
+
+This prerequisite is narrative-only. It changes no specification, `.miz`,
+expectation, sidecar, trace row/status/count/tests list, active route,
+diagnostic, semantic behavior, or coverage credit.
+`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
+`tests = []`; the existing Task-255 covered row remains unchanged. Qua
+reachability/widening/type-view semantics, result typing, overload/coercion,
+existential matching, proof acceptance, Core/CFG/VC, comprehension, B4/B5,
+and active coverage remain deferred.
+
+Repeated consistency review is **NO FINDINGS** after the historical B3C
+snapshot wording correction. The exact trace diff remains zero, all five
+metadata CLI counts/hashes reproduce the frozen values, and no coverage row,
+credit, test backlink, or deferred owner changes.
+
+Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
+without a cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Commit and
+post-commit/fresh-implementation inventory remain pending.

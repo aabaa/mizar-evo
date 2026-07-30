@@ -3524,3 +3524,14 @@ siblings, closing `source_drift`/`test_gap`; repeated reviews report
 unchanged. The new private dormant exact selector branch is not selected by
 active corpus sources, so existing active-corpus routing and outcomes remain
 unchanged.
+
+## Task 258B3M2B2B3D Frozen Qua Statement Profile
+
+The exact 109-byte/54-node qua source contributes one theorem owner, two
+statement/context/guard/candidate rows, and one unnamed witness/no name.
+Task 258 owns `{50,48}` and B3D owns `{40,39}`; the witness at
+`39/79..88` targets `SetTerm(0)` in proof context `1`. Task 255 owns
+`{35,36,37}` and its `QuaBase -> Primary(2)` edge; the complete owner/
+unowned graph is frozen in the crate plan. Existing SetTerm fingerprint,
+producer, typed install, final replay, error, and debug APIs are reused.
+Four checker/five runner tests and `32/70/44/72/62/21` matrices are frozen.

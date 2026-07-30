@@ -12262,3 +12262,15 @@ remediation remained within the authorized source/test owners, and repeated
 test/implementation reviews report **NO FINDINGS**. Final documentation/
 boundary and independent quality reviews also report **NO FINDINGS**; all
 nine hard gates PASS at valid `98/100`.
+
+## Task 258B3M2B2B3D Documentation Boundary
+
+The future change remains within the existing four runner statement/facade/
+root/test consumers and paired three checker owners. The generic set-term
+leaf, parser/resolver/binding modules, active dispatcher, corpus metadata,
+and semantic phases remain unchanged. Current sizes/manifests stay exactly
+at the B3C closure baseline; no split or ownership transfer is authorized.
+
+Final measurements reproduce all six frozen runner file sizes,
+`30/52614`, and both production hashes. Focused, package, formatting,
+Clippy, and workspace verification pass without touching a forbidden owner.

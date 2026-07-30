@@ -11003,3 +11003,15 @@ productionは30 paths/52,614 lines。bounded finding remediationはauthorized
 source/test owners内に留まり、repeat test/implementation reviewsは
 **NO FINDINGS**。final documentation/boundaryとindependent quality reviewsも
 **NO FINDINGS**、全9 hard gates PASS、valid `98/100`。
+
+## Task 258B3M2B2B3D documentation boundary
+
+future changeはexisting runner statement/facade/root/test consumers 4件と
+paired checker owners 3件の範囲内に留まる。generic set-term leaf、
+parser/resolver/binding modules、active dispatcher、corpus metadata、
+semantic phasesはunchanged。current sizes/manifestsはexact B3C closure
+baselineのままで、splitまたはownership transferをauthorizeしない。
+
+final measurementsはrunner 6 file sizes、`30/52614`、production hashes
+2件を再現した。focused、package、format、Clippy、workspace verificationは
+forbidden ownerに触れずPASSした。

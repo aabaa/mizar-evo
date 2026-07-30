@@ -1289,3 +1289,12 @@ hybrid/generic-guard stateでrollbackする。B3A/B3Bは両family orderで
 independently installableのまま。public schema/error text/debug grammar/
 dependency/semantic tableは変更しない。private dormant runner selectorは
 このtyped/final ownerの外にあり、existing active-corpus outcomeを変更しない。
+
+## Task 258B3M2B2B3D frozen atomic installation
+
+future installerはexact Task-255 qua handoff、statement base、unnamed
+SetTerm witness 1件をatomically combineし、existing set-only
+fingerprint tupleをvalidateして、stale/reordered/hybrid/generic-guard
+stateではrollbackする。B3A/B3B/B3Cは全family orderでindependently
+installableのままである。public schema、error text、debug grammar、
+dependency、semantic table、active routeは変更しない。

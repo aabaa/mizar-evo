@@ -3234,6 +3234,27 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete workspace Clippy/tests and final measurement reruns.
 - [x] Complete final source/documentation consistency and independent
   quality reviews.
-- [ ] Stage only exact 39 synchronized task files and inspect cached diff.
-- [ ] Create one implementation commit and verify clean post-commit/stash.
-- [ ] Fresh-inventory and select the next dependency-minimal task.
+- [x] Stage only exact 39 synchronized task files and create implementation
+  commit `7988a50934656ff90b31e06b883225f86196103b`.
+- [x] Verify clean ahead-1/behind-0 post-commit/stash invariants and report
+  external origin movement as `repo_metadata_conflict` only.
+- [x] Fresh-inventory and select B3D qua witness.
+
+## Checker Task 258B3M2B2B3D Documentation Prerequisite
+
+- [x] Freeze exact 109-byte/hash, 54-node qua witness, resolver/lower
+  profiles, ownership graph, and semantic exclusions.
+- [x] Freeze exact checker 4 + runner 5 tests and
+  `32/70/44/72/62/21` exhaustive matrices.
+- [x] Limit future implementation to seven source consumers; keep both
+  Task-255 source owners, specs, corpus, expectations, trace metadata,
+  active behavior, and semantics unchanged.
+- [x] Resolve comprehension-versus-`qua` task-decomposition `design_drift`
+  in favor of the strictly smaller qua handoff.
+- [x] Complete synchronized reviews with **NO FINDINGS**.
+- [x] Pass docs-only scope/count/hash/no-op, crate/workspace, and five-CLI
+  verification.
+- [x] Complete independent final quality with all hard gates and valid
+  score `>=90/100`.
+- [ ] Create one dedicated documentation commit, verify clean/stash
+  invariants, and fresh-inventory B3D implementation.

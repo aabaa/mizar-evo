@@ -4200,3 +4200,15 @@ root `2595`、statement tests `23583`、unchanged set tests `2528`。runner
 library `461`、focused `5/5`とpackage `461+3/14/137/2/21`はPASS。active
 fixture/expectation/sidecar/trace/CLI/diagnostic/semantic harness surfaceは
 変更しない。
+
+## Task 258B3M2B2B3D frozen harness
+
+dormant harness selectorはexisting context-1 Task-255 handoffをassemble
+する前に、exact 109-byte、54-node/root-53 qua sourceとlocal theorem/
+label provenanceだけをauthenticateしなければならない。future testsは
+bytes/LF、各node/rootのfour surface axes、resolver、exact
+`32/70/44/72/62/21` lower/upper matricesとreplay/owning prefixes、
+`QuaBase`とordered requests、ownership/subtree isolation、全4 B3
+family orders、clone/rollback/debug stability、empty semantic tablesを
+exhaustする。active fixture、expectation、sidecar、trace、CLI、
+diagnostic、semantic harness surfaceは変更しない。

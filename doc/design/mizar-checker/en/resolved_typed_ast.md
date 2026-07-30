@@ -1358,3 +1358,11 @@ Lower set/atomic error precedence is preserved; stale, hybrid, or
 non-generic-guard upper state fails with the existing statement error.
 Replay preserves debug bytes and empty semantic/proof/goal tables. No error,
 public route, dependency, or semantic result was added.
+
+## Task 258B3M2B2B3D Frozen Final Boundary
+
+The future final projection accepts only the independent exact B3D set-only
+fingerprint tuple, revalidates Task-48/252/255/256/258 and the one
+`SetTerm(0)` witness, and clones the authenticated state. Stale/hybrid/family
+mixes and wrong `QuaBase`/`QuaWidening` state fail through existing errors.
+No schema, error, debug, dependency, active route, or semantic table changes.

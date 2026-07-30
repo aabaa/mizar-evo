@@ -453,3 +453,15 @@ witness records only its existing set fingerprint and `SetTerm(0)` target;
 the exact 39-field replay matrix confirms Task-255-owned error precedence.
 Choice nonemptiness, stable symbols, type facts, and every semantic credit
 remain deferred.
+
+## Task 258B3M2B2B3D Qua Reuse Contract
+
+No Task-255 source change is needed. The frozen handoff is
+`1/0/0/1/0/1/2`: one `Qua` term at `37/79..88`, one term-owned
+`QuaTarget` `BuiltinSet` type site at expression/head `36/35/85..88`,
+one `QuaBase -> Primary(2)` edge, then ordered
+`QuaWidening(type-site 0)` and `ResultType`. Context is proof context `1`;
+application/structure fingerprints are absent. Future B3D tests mutate all
+`44` safely mutable Task-255 fields, replay each result, and require
+Task-255-owned errors. Both `source_set_term.rs` owners remain unchanged;
+widening is not discharged.

@@ -1016,3 +1016,25 @@ source/documentation consistency repeat is **NO FINDINGS** after synchronizing
 verification and dormant-selector wording. Independent quality is also
 **NO FINDINGS**; all nine hard gates PASS without a cap at valid `98/100`.
 Commit, post-commit, and fresh-next-task inventory remain pending.
+
+## Task 258B3M2B2B3D Frozen-Contract Synchronization
+
+The canonical English and Japanese companions synchronize B3C implementation
+commit `7988a50934656ff90b31e06b883225f86196103b`, the report-only external
+origin movement, and the exact B3D qua-witness contract. Both record the
+109-byte/hash, 54-node/root-53 source, resolver provenance,
+`2/1/0`, `5/4/1`, empty Tasks 253/254,
+`1/0/0/1/0/1/2`, Task-256 `2/.../4/4`, Task-258 `1/2/2/2/2`,
+witness `1/0`, exact ownership/graph, and
+`32/70/44/72/62/21` matrices. Both preserve the 32-document-only scope,
+seven future source consumers, unchanged authority/trace/active behavior,
+and complete semantic deferrals.
+
+Repeated bilingual consistency review reports **NO FINDINGS** after the
+historical-snapshot tense correction was synchronized in the runner plans.
+Exact-token, changed-path, and `git diff --check` verification pass; commit
+remains pending.
+
+Independent final quality confirms bilingual synchronization with
+**NO FINDINGS**, all nine hard gates PASS, and valid `100/100`; commit remains
+pending.

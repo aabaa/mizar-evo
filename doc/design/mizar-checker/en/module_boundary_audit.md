@@ -802,3 +802,19 @@ to 133,092 lines. The two test-review gaps and one implementation finding
 were remediated within the frozen owners; repeated reviews report
 **NO FINDINGS**. Final documentation/boundary review reports **NO FINDINGS**,
 and independent quality passes all nine hard gates at valid `98/100`.
+
+## Task 258B3M2B2B3D Documentation Boundary
+
+B3D freezes another private exact consumer of the existing cohesive
+`source_statement`/typed/final ownership. The future seven-file change may
+select one `Qua` set term, publish one witness-to-SetTerm edge, and revalidate
+the existing set fingerprint only. Both `source_set_term.rs` owners,
+parser/resolver/binding code, public schemas/errors/debug grammar,
+dependencies, active routing, and every semantic owner remain unchanged.
+Current module sizes and production manifests remain the B3C closure values;
+no split or boundary migration is authorized.
+
+Final read-only measurements reproduce `38891/6806/4932/7268`,
+`23/133092`, and the frozen checker production path/content hashes. Focused,
+crate, Clippy, formatting, and workspace verification pass without a source
+or boundary change.

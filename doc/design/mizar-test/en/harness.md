@@ -4472,3 +4472,15 @@ facade `779`, root `2595`, statement tests `23583`, and unchanged set tests
 `2528`. Runner library is `461`; focused `5/5` and package
 `461+3/14/137/2/21` pass. No active fixture, expectation, sidecar, trace,
 CLI, diagnostic, or semantic harness surface changes.
+
+## Task 258B3M2B2B3D Frozen Harness
+
+The dormant harness selector must authenticate only the exact 109-byte,
+54-node/root-53 qua source and local theorem/label provenance before
+assembling the existing context-1 Task-255 handoff. Future tests exhaust
+bytes/LF, four surface axes per node/root, resolver, the exact
+`32/70/44/72/62/21` lower/upper matrices with replay and owning prefixes,
+`QuaBase` and ordered requests, ownership/subtree isolation, all four B3
+family orders, clone/rollback/debug stability, and empty semantic tables.
+No active fixture, expectation, sidecar, trace, CLI, diagnostic, or semantic
+harness surface changes.

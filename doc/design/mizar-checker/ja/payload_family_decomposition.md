@@ -1286,3 +1286,14 @@ application/structure hybridとgeneric fallbackはatomicにfailする。choice
 semantics、comprehension、`qua`、B4/B5、proof acceptanceはdeferred。
 bounded replay/prefixとB3C-only route correction後のrepeat test/
 implementation reviewsは**NO FINDINGS**。
+
+### Task 258B3M2B2B3D frozen qua-witness edge
+
+B3Dはremaining Task-255 set-family witnessで最小のものである:
+`Qua` term 1件、term-owned `QuaTarget` builtin-set site 1件、
+`QuaBase -> Primary(2)` edge 1件、ordered unresolved
+`QuaWidening`/`ResultType`、upper witness-to-SetTerm edge 1件。
+condition-free comprehensionはgenerator/sethood rowを追加するため後続と
+する。B3D edgeはtransportのみであり、inheritance/cluster widening、
+overload/coercion、result typing、proof acceptance、comprehension、
+B4/B5、active creditはseparate ownersのままである。

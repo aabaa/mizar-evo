@@ -1371,3 +1371,13 @@ atomically. Choice semantics, comprehension, `qua`, B4/B5, and proof
 acceptance remain deferred. Repeated test-sufficiency and implementation
 reviews report **NO FINDINGS** after the bounded replay/prefix and B3C-only
 route corrections.
+
+### Task 258B3M2B2B3D Frozen Qua-Witness Edge
+
+B3D is the smallest remaining Task-255 set-family witness: one `Qua` term,
+one term-owned `QuaTarget` builtin-set site, one
+`QuaBase -> Primary(2)` edge, ordered unresolved `QuaWidening`/`ResultType`,
+and one upper witness-to-SetTerm edge. Condition-free comprehension follows
+because it adds a generator/sethood row. The B3D edge is transport only;
+inheritance/cluster widening, overload/coercion, result typing, proof
+acceptance, comprehension, B4/B5, and active credit remain separate owners.

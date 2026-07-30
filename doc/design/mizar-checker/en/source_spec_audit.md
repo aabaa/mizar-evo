@@ -4673,3 +4673,19 @@ test and implementation reviews report **NO FINDINGS**. No `spec_gap`,
 `boundary_violation`, or `repo_metadata_conflict` exists. The formula-
 statement trace row remains `deferred`, `tests = []`; Task-111/255 credit,
 all trace counts/backlinks, and every semantic deferral remain unchanged.
+
+## Task 258B3M2B2B3D Authority Audit
+
+Specs 13.6, 4.4.3, 15.4.4, and 16.3.3, the existing qua parser fixture, and
+the exact Task-255 `4 qua set` source/expectation/trace authorize the frozen
+source-transport slice. The exact source adds no language behavior and does
+not claim `qua` reachability, inheritance/cluster widening, overload,
+coercion, typing, witness, proof, or theorem semantics. Missing upper
+contract/route/tests are `design_drift`/future `source_drift`/`test_gap`;
+the task-selection disagreement is closed `design_drift`. No blocking
+`spec_gap`, undocumented behavior, expectation drift, or boundary violation.
+The origin movement remains report-only `repo_metadata_conflict`.
+
+Repeated authority/source/documentation review is **NO FINDINGS**. Exact
+forbidden diffs and the trace blob are zero/unchanged; the five metadata CLIs
+and all count/hash gates reproduce the frozen no-op baseline.
