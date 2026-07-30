@@ -70,7 +70,7 @@ or expectation sidecars to match implementation behavior.
 
 | Spec | Public API checked | Source | Test evidence | Finding |
 |---|---|---|---|---|
-| [resolved_ast.md](./resolved_ast.md) stable identity and node arena | Existing ids/arena/AST plus planned R-032A `SurfaceResolvedArena` and exact public error table | `crates/mizar-resolve/src/resolved_ast.rs` and planned `resolved_ast/tests.rs` | Existing arena tests plus R-032A complete-map, mismatch, stale, root, recovery, and checked-overflow matrix | R-032A planned prerequisite |
+| [resolved_ast.md](./resolved_ast.md) stable identity and node arena | Existing ids/arena/AST plus planned R-032A `SurfaceResolvedArena` and exact public error table | `crates/mizar-resolve/src/resolved_ast.rs`, planned `resolved_ast/tests.rs`, and the sole `tests/lint_policy.rs` R-026 owning-spec entry for `SurfaceResolvedArenaError` | Existing arena tests plus R-032A complete-map, mismatch, stale, root, recovery, checked-overflow, and public-enum decision guards | R-032A planned prerequisite |
 | [resolved_ast.md](./resolved_ast.md) name/label/import/export reference tables | `NameRefTable`, `LabelRefTable`, `ResolvedImports`, name/label/import/export resolution records, ambiguity/unresolved records, deferred selector records | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/validation.rs` | `name_ref_table_round_trips_all_current_result_kinds`, `ambiguous_name_candidates_tie_break_by_range_before_local_symbol_id`, `label_ref_table_round_trips_all_current_result_kinds`, `resolved_imports_round_trip_and_project_canonical_modules`, `table_and_import_export_iteration_is_stable`, `node_reference_keys_are_stable_for_equivalent_builds` | No finding |
 | [resolved_ast.md](./resolved_ast.md) deterministic debug rendering | `ResolvedAst::snapshot_text` and stable variant-name rendering for resolver snapshot baselines | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/snapshot.rs`, crate-root determinism test | `resolved_ast_snapshot_text_is_stable_and_covers_tables`, `resolved_ast_snapshot_text_covers_payload_escaping_and_non_range_anchors`, `resolver_public_seams_are_deterministic_for_equivalent_inputs` | No finding |
 | [env.md](./env.md) symbol environment indexes | `SymbolEnv`, `SymbolEnvIndexes`, symbol, label, definition, overload, registration, lexical-summary, namespace, declaration-dependency, module-summary, diagnostic-anchor, and source-contribution index families | `crates/mizar-resolve/src/env.rs` | `index_families_round_trip_insertions_and_lookups`, `index_iteration_is_deterministic_for_all_families`, `contribution_tracking_covers_sources_summaries_builtins_and_invalidation`, `equivalent_construction_is_stable_and_checker_facts_are_absent` | No finding |
@@ -146,12 +146,20 @@ following lower-only repair:
 |---|---|---|---|
 | R-032A exact `SurfaceResolvedArena` API and enum declaration from `resolved_ast.md` | `crates/mizar-resolve/src/resolved_ast.rs` | complete map; exact structure/origin/path; every typed mismatch including `ResolutionStateMismatch` and `ReferenceKeyMismatch`; checked overflow | labels, runner, fixtures, trace, semantic resolution |
 | R-032A tests | `crates/mizar-resolve/src/resolved_ast/tests.rs` | exact error matrix, deterministic mapping, wildcard compatibility, no unchecked conversion/panic | other resolver test owners |
+| R-032A R-026 enum decision guard | `crates/mizar-resolve/tests/lint_policy.rs` | exactly one `SurfaceResolvedArenaError` owning-spec decision entry | every other lint decision, lint behavior, or source owner |
 | R-032B exact lifetime/error/origin/default-deny direct-edge contract from `labels.md` | `crates/mizar-resolve/src/labels.rs` | exact `Root` -> `CompilationUnit` -> `ItemList` -> theorem chain; only AST/arena borrows; global ordinals; `proof-step-v1`; every unlisted edge skips | callback, unmapped side channel, unsupported/recovered/semantic forms |
 | R-032B tests | `crates/mizar-resolve/src/labels/tests.rs` | positive per upper/lower edge; missing/additional/wrong/relocated/wrapped upper negatives; confinement/origin; other negative mutations; mixed-list and all-other matrices | `.miz`, expectations, trace status/counts, active runner |
 
 R-032A and R-032B are planned separate commits before the active B5C consumer.
 This documentation record neither claims implementation nor changes the
 original milestone score.
+
+R-032A implementation preflight classified the earlier two-Rust-file scope as
+High `design_drift`: the new public enum is necessarily scanned by the
+existing R-026 guard. The authority in `resolved_ast.md` plus the existing
+R-026 correspondence is sufficient for a separate synchronized docs-only
+scope correction and the sole lint decision entry in the later exact
+three-Rust-file implementation. No test intent or semantic authority changes.
 
 The inserted S-026 dependency is infrastructure-only. It changes no Chapter 15
 or 16 requirement, `.miz` intent, expectation, trace row, or coverage credit.

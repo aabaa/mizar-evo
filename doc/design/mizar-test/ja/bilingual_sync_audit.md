@@ -1371,6 +1371,15 @@ zero/multiple cardinality、`ImportedSource`/`Summary`/`Builtin` substitution
 selectionはfrozen source bytes+normal AST、scopeは48 filesのまま。
 
 EN/JA は挿入した S-026 docs/implementation prerequisite、exact 45-design-file
-documentation scope、effective five-task order も同期する。lower-stage work
+documentation scope、R-032A lint-policy docs correctionを含むeffective
+six-task orderも同期する。lower-stage work
 中の exact runner selector、provenance、detail、projected count、exclusionを
 保持する。
+
+EN/JAはR-032A lint-policy scope correctionも同期する。両言語はomitted
+mandatory R-026 enum-decision ownerをsemantic `spec_gap`ではなくHigh
+`design_drift`と分類し、later Rust 3 filesをexactにfreezeする。
+`tests/lint_policy.rs` changeは`SurfaceResolvedArenaError` owning-spec
+decision entryだけ。separate docs-only correctionとlater resolver
+implementationは`mizar-test` runner consumer、fixture、sidecar、trace、
+diagnostic、semantics、coverage stateを変更しない。

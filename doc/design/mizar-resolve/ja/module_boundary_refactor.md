@@ -71,7 +71,9 @@ crate-wide close-out では full workspace と `mizar-test` plan gate を実行�
 R-032 は完了済み R-029 refactor gate を再オープンしない。既存 module owner に
 split し、public module layout を変えない。
 
-- R-032A: `src/resolved_ast.rs` / `src/resolved_ast/tests.rs`。
+- R-032A: `src/resolved_ast.rs` / `src/resolved_ast/tests.rs` /
+  sole R-026 `SurfaceResolvedArenaError` owning-spec decision entry 用
+  `tests/lint_policy.rs`。
 - R-032B: `src/labels.rs` / `src/labels/tests.rs`。
 - paired docs。新 module は計画しない。
 
@@ -97,3 +99,10 @@ R-032A preflight はこの stop rule を正しく発火した。dense
 `SurfaceNodeId`-bearing iteration は mizar-syntax S-026 が所有し別 commit で
 land する。R-032A は frozen resolver files からその accessor を consume するだけ。
 unsafe / dummy-AST id fabrication は禁止のまま。
+
+R-032A implementation preflight は、two-Rust-file wording が mandatory
+R-026 public-enum decision owner を欠いた時にも stop rule を発火した。この
+欠落は High `design_drift` で semantic `spec_gap` はない。existing enum policy
+と source/spec correspondence が exact `tests/lint_policy.rs` entry をすでに
+authorizeする。したがって別同期docs-only correctionはimplementationをexact
+Rust 3 filesへfreezeし、他lint/module-layout changeはauthorizeしない。

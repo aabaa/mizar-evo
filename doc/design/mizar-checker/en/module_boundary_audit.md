@@ -1105,8 +1105,9 @@ split or ownership transfer.
 
 This commit owns synchronized design documentation only. The next two
 prerequisites are owned by `mizar-resolve`: R-032A owns the validated
-one-to-one structural `SurfaceResolvedArena` in `resolved_ast.rs` and its
-tests; R-032B owns proof-step projections, simple unqualified candidates,
+one-to-one structural `SurfaceResolvedArena` in `resolved_ast.rs`, its tests,
+and the sole `tests/lint_policy.rs` R-026 owning-spec entry for
+`SurfaceResolvedArenaError`; R-032B owns proof-step projections, simple unqualified candidates,
 proof-scope paths, ordinals, and provenance collection in `labels.rs` and
 its tests. R-032A exact state/key errors and all node payloads use
 `SurfaceNodeId`; R-032B borrows ast/resolved under one `'a`, validates but
@@ -1123,6 +1124,12 @@ artifact, Tasks 252/253, B1/B5A/B5B, and all semantic phases remain
 unchanged. No module split or ownership transfer is required; moving scope
 derivation, resolved ids, or ordinals into the runner would be a
 `boundary_violation`.
+
+R-032A implementation preflight corrected only its ownership accounting:
+omitting the mandatory R-026 enum-decision owner was High `design_drift`,
+not a semantic `spec_gap`. The correction is a separate docs-only commit;
+the later exact three-Rust-file resolver implementation does not add a
+checker consumer or move any boundary above.
 
 The later runner is selected only by frozen source bytes plus normal AST,
 then authenticates shared resolver env/module and one id-0 matching

@@ -460,8 +460,10 @@ R-032B production/test ownership is exactly:
 - `crates/mizar-resolve/src/labels/tests.rs`; and
 - synchronized resolver design records.
 
-R-032A owns only `resolved_ast.rs`, `resolved_ast/tests.rs`, and paired design
-records in the preceding commit. The later active consumer belongs to the private
+R-032A owns exactly `resolved_ast.rs`, `resolved_ast/tests.rs`, the sole
+`tests/lint_policy.rs` R-026 owning-spec entry for
+`SurfaceResolvedArenaError`, and paired design records in its preceding
+implementation commit. The later active consumer belongs to the private
 `mizar-test` `declaration_symbol` route and uses the exact internal detail key
 `declaration_symbol.label.proof_scope_confinement`. The public checker
 `SourceStatementReferenceHandoff` is not a consumer because its boundary
@@ -530,5 +532,6 @@ R-032A preflight subsequently inserted the separate mizar-syntax S-026
 documentation and implementation prerequisites before R-032A because complete
 dense Surface ids cannot otherwise include a valid disconnected node. This
 does not change any R-032B label contract or active B5C test intent. The
-effective order is S-026 docs, S-026 implementation, R-032A, R-032B, active
-B5C, with fresh inventory between commits.
+effective order is S-026 docs, S-026 implementation, R-032A lint-policy docs
+correction, R-032A implementation, R-032B, active B5C, with fresh inventory
+between commits.

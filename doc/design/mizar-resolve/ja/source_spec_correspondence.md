@@ -68,7 +68,7 @@ source loading は追加しない。
 
 | Spec | 確認した公開 API | Source | Test evidence | Finding |
 |---|---|---|---|---|
-| [resolved_ast.md](./resolved_ast.md) stable identity / arena | existing API と planned R-032A `SurfaceResolvedArena` / exact public error table | `resolved_ast.rs` と planned `resolved_ast/tests.rs` | existing tests + complete map/mismatch/stale/root/recovery/overflow matrix | R-032A planned |
+| [resolved_ast.md](./resolved_ast.md) stable identity / arena | existing API と planned R-032A `SurfaceResolvedArena` / exact public error table | `resolved_ast.rs`、planned `resolved_ast/tests.rs`、sole R-026 `SurfaceResolvedArenaError` owning-spec entry 用 `tests/lint_policy.rs` | existing tests + complete map/mismatch/stale/root/recovery/overflow/public-enum decision guard | R-032A planned |
 | [resolved_ast.md](./resolved_ast.md) name / label / import / export reference table | `NameRefTable`, `LabelRefTable`, `ResolvedImports`, name/label/import/export resolution record, ambiguity/unresolved record, deferred selector record | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/validation.rs` | `name_ref_table_round_trips_all_current_result_kinds`, `ambiguous_name_candidates_tie_break_by_range_before_local_symbol_id`, `label_ref_table_round_trips_all_current_result_kinds`, `resolved_imports_round_trip_and_project_canonical_modules`, `table_and_import_export_iteration_is_stable`, `node_reference_keys_are_stable_for_equivalent_builds` | No finding |
 | [resolved_ast.md](./resolved_ast.md) deterministic debug rendering | `ResolvedAst::snapshot_text` と resolver snapshot baseline 用の stable variant-name rendering | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/snapshot.rs`, crate-root determinism test | `resolved_ast_snapshot_text_is_stable_and_covers_tables`, `resolved_ast_snapshot_text_covers_payload_escaping_and_non_range_anchors`, `resolver_public_seams_are_deterministic_for_equivalent_inputs` | No finding |
 | [env.md](./env.md) symbol environment index | `SymbolEnv`, `SymbolEnvIndexes`, symbol, label, definition, overload, registration, lexical-summary, namespace, declaration-dependency, module-summary, diagnostic-anchor, source-contribution index family | `crates/mizar-resolve/src/env.rs` | `index_families_round_trip_insertions_and_lookups`, `index_iteration_is_deterministic_for_all_families`, `contribution_tracking_covers_sources_summaries_builtins_and_invalidation`, `equivalent_construction_is_stable_and_checker_facts_are_absent` | No finding |
@@ -143,11 +143,19 @@ lower-only repair を authorize する。
 |---|---|---|---|
 | R-032A exact structural arena/error declaration | `resolved_ast.rs` | complete map、state/key を含む全 typed mismatch、checked overflow | labels/runner/artifact/semantic resolution |
 | R-032A test | `resolved_ast/tests.rs` | deterministic map、wrong/stale matrix、wildcard/no panic | other test owners |
+| R-032A R-026 enum decision guard | `tests/lint_policy.rs` | exact one `SurfaceResolvedArenaError` owning-spec decision entry | other lint decision/behavior/source owner |
 | R-032B exact lifetime/error/origin/default-deny direct edge | `labels.rs` | exact `Root` -> `CompilationUnit` -> `ItemList` -> theorem、global ordinal、`proof-step-v1`、unlisted edge skip | callback/unmapped/unsupported forms |
 | R-032B test | `labels/tests.rs` | upper/lower edge positive、missing/additional/wrong/relocated/wrapped upper negative、confinement/origin、other mutation、mixed-list/all-other | `.miz`/expect/trace/runner |
 
 R-032A/R-032B は planned で、active B5C consumer より前の別々の commit とする。この
 documentation record は implementation を主張せず、元の milestone score を変更しない。
+
+R-032A implementation preflightは旧two-Rust-file scopeをHigh
+`design_drift`と分類した。new public enumはexisting R-026 guardに必ず
+scanされる。`resolved_ast.md` authorityとexisting R-026 correspondenceは、
+separate同期docs-only scope correctionと、later exact three-Rust-file
+implementationでのsole lint decision entryに十分である。test intent/
+semantic authorityは変更しない。
 
 挿入した S-026 dependency は infrastructure-only。Chapter 15/16 requirement、
 `.miz` intent、expectation、trace row、coverage credit は変更しない。すでに

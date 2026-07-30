@@ -404,7 +404,9 @@ emit しない。
 
 R-032B ownership は `crates/mizar-resolve/src/labels.rs`、
 `crates/mizar-resolve/src/labels/tests.rs`、paired design record だけ。R-032A は
-preceding commit の `resolved_ast.rs` / `resolved_ast/tests.rs` owner である。
+preceding implementation commit の `resolved_ast.rs` /
+`resolved_ast/tests.rs` / sole R-026 `SurfaceResolvedArenaError`
+owning-spec entry 用 `tests/lint_policy.rs` owner である。
 
 test は `[0] -> [0,1]` success、`[0,0] -> [0]` inner-to-outer と
 `[0,0] -> [0,1]` sibling unresolved、cross-theorem same-spelling nonconflict、
@@ -443,5 +445,5 @@ status/count を変更しない。
 Surface id が既存 API だけでは得られないため、R-032A 前に別 mizar-syntax
 S-026 documentation/implementation prerequisite を挿入した。R-032B label
 contract と active B5C test intent は変わらない。effective order は S-026 docs、
-S-026 implementation、R-032A、R-032B、active B5C で、commit 間に fresh
-inventory を挟む。
+S-026 implementation、R-032A lint-policy docs correction、R-032A
+implementation、R-032B、active B5C で、commit 間に fresh inventory を挟む。

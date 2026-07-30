@@ -12548,7 +12548,9 @@ accessors and `validate_against` fail closed on wrong source/module/shape/
 node, stale state, recovery/root mismatch, and checked structural-path
 overflow, including `ResolutionStateMismatch` and
 `ReferenceKeyMismatch`. All node/child payloads are `SurfaceNodeId`. Its
-later write scope is only `resolved_ast.rs` and its tests.
+later write scope is exactly `resolved_ast.rs`, `resolved_ast/tests.rs`, and
+the sole `tests/lint_policy.rs` R-026 owning-spec entry for
+`SurfaceResolvedArenaError`.
 
 Proof scope, ordinal, and label provenance derivation belongs exclusively to
 resolver R-032B. Exact `impl<'a> ProofLabelSourceCollector<'a>::new` borrows
@@ -12587,12 +12589,18 @@ files. The S-026 documentation prerequisite owned exactly 45 design files, and
 its separate implementation owns exactly 25 files: two dense syntax Rust
 files, 12 paired syntax design files, four paired resolver design files, two
 paired checker TODO files, four paired `mizar-test` design files, and the
-global design TODO. R-032A and R-032B then each own their separate
-two-source-file implementation commit. The active B5C task owns only the two
+global design TODO. R-032A then owns its separate exact three-Rust-file
+implementation commit; R-032B retains its separate two-source-file
+implementation commit. The active B5C task owns only the two
 new fixture/sidecar pairs, two trace rows, three runner files, and synchronized
-derived documents. This effective five-task split avoids the inventoried
+derived documents. This effective six-task split avoids the inventoried
 potential `boundary_violation`; no module split or ownership transfer is
 authorized.
+
+The added R-032A lint-policy owner corrects High `design_drift` discovered in
+implementation preflight; it is not a semantic `spec_gap` and adds no runtime
+or runner ownership. A separate synchronized documentation commit must land
+before fresh inventory and that implementation.
 
 R-032B exclusively owns the exact
 `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct

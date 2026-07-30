@@ -3701,5 +3701,26 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] After the dedicated S-026 implementation commit, fresh-inventory and
-  execute resolver R-032A only.
+- [x] After the dedicated S-026 implementation commit, fresh-inventory
+  resolver R-032A authority, public APIs, baselines, and exact consumers.
+- [x] Classify the newly observed mandatory R-026 public-enum owner omission
+  as High `design_drift`, with no blocking `spec_gap`, test-intent ambiguity,
+  or `repo_metadata_conflict`.
+- [x] Freeze a separate synchronized R-032A docs-only scope correction before
+  implementation: later ownership is exactly
+  `crates/mizar-resolve/src/resolved_ast.rs`,
+  `crates/mizar-resolve/src/resolved_ast/tests.rs`, and
+  `crates/mizar-resolve/tests/lint_policy.rs`, where the last file may receive
+  only the `SurfaceResolvedArenaError` R-026 owning-spec decision entry.
+- [x] Freeze this correction to exactly 31 design files: eight paired
+  resolver families, four paired checker families, three paired `mizar-test`
+  families, and this global TODO. Keep production, test source, fixtures,
+  expectations, sidecars, trace rows/status/counts, specifications, Cargo
+  metadata, and `doc/design/spec_coverage_audit.md` unchanged.
+- [x] Complete docs-only specification/test/source-documentation reviews with
+  **NO FINDINGS**, full verification and exact count/hash/no-op gates, and
+  independent final quality with all nine hard gates PASS at valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete exact-scope staging, the dedicated correction commit,
+  post-commit repository/stash invariants, and fresh inventory; then execute
+  the exact three-Rust-file resolver R-032A implementation without stopping.

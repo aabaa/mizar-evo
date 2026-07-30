@@ -1391,3 +1391,11 @@ source-byte-plus-normal-AST selectorとexact 48-file scopeはunchanged。
 S-026 dependency overlay は EN/JA 同期済み。両言語は同じ boundary
 classification/effective commit order と、checker consumer、B5C artifact、
 diagnostic、semantics、coverage state への no-op impact を記録する。
+
+R-032A lint-policy scope correctionも同期済み。両言語はomitted mandatory
+R-026 enum-decision ownerをsemantic `spec_gap`ではなくHigh
+`design_drift`と分類し、same exact Rust 3 filesを記録する。
+`tests/lint_policy.rs`が受けるのは`SurfaceResolvedArenaError` owning-spec
+decision entryだけ。separate documentation correctionとlater resolver
+implementationはchecker consumerを追加せず、B5C intent/artifact/diagnostic/
+semantic boundary/coverage stateを変更しない。

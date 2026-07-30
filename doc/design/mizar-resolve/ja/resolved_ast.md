@@ -375,7 +375,9 @@ mapping と deterministic id を保持する。
 
 R-032A implementation ownership は exact に
 `crates/mizar-resolve/src/resolved_ast.rs`、
-`crates/mizar-resolve/src/resolved_ast/tests.rs`、同期した resolver design record
+`crates/mizar-resolve/src/resolved_ast/tests.rs`、
+sole R-026 `SurfaceResolvedArenaError` owning-spec decision entry 用
+`crates/mizar-resolve/tests/lint_policy.rs`、同期した resolver design record
 だけである。R-032B より前の1 commit とする。label collection、runner、fixture、
 sidecar、trace status/count、parser/frontend production、checker/type/proof
 semantics、Cargo/workspace metadata は変更しない。
@@ -393,7 +395,7 @@ API が十分という以前の主張は `design_drift`。したがって R-032A
 exact dense `SurfaceAst::node_views()` accessor を追加する別 mizar-syntax
 S-026 documentation/implementation task まで未実装だった。その dependency は
 実装・検証済みで、dedicated commit と fresh inventory 後に R-032A は
-unblocked。R-032A ownership 自体は上記 resolver 2 files のままで、S-026 を
+unblocked。R-032A ownership 自体は上記 Rust 3 files のままで、S-026 を
 consume し syntax を変更しない。
 
 `SurfaceResolvedArena` は exact に `source_id: SourceId`、
@@ -432,3 +434,22 @@ earlier dense node が later node の全 fault より先であることもfreeze
 private checked-helper test は exact payload
 `InvalidChildOrder { node, child }` と
 `StructuralPathComponentOverflow { node }` をfreezeする。
+
+### R-032A lint-policy ownership correction
+
+implementation preflight で、frozen public `SurfaceResolvedArenaError` は
+existing R-026 public-enum decision guard に必ずscanされることが判明した。
+`crates/mizar-resolve/tests/lint_policy.rs` を除外すると、implementation は
+mandatory guard failure または frozen ownership boundary 越境のどちらかになる。
+これは High `design_drift` であり、`spec_gap`、`test_gap`、semantic decision
+ではない。この文書はenumへR-026をすでに要求し、
+`source_spec_correspondence.md`もguard ownerを`tests/lint_policy.rs`へ
+割り当て済みである。
+
+したがって prerequisite correction は later R-032A implementation scope に
+`SurfaceResolvedArenaError` exact owning-spec decision entry だけを追加する。
+別lint-policy change、runtime behavior、label collection、fixture、sidecar、
+expectation、trace、specification、parser/frontend/checker source、
+diagnostic code、Cargo changeはauthorizeしない。この同期documentation
+correctionはseparate commitとし、three-Rust-file R-032A implementation commit
+の前にfresh inventoryを要求する。

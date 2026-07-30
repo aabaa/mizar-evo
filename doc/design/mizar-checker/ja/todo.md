@@ -5883,7 +5883,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   conditionでなくauthority十分なresolver prerequisiteとしてrecord。
 - [x] R-032A `SurfaceResolvedArena` lowering/accessor、same-index structural
   invariant、fail-closed validation/overflow error、dedicated
-  `resolved_ast.rs` ownership/testsをfreeze。
+  `resolved_ast.rs` / `resolved_ast/tests.rs` ownership、sole
+  `tests/lint_policy.rs` R-026 `SurfaceResolvedArenaError` owning-spec entry、
+  testsをfreeze。
+- [x] preflight two-Rust-file omissionをsemantic `spec_gap`なしのHigh
+  `design_drift`と分類し、separate同期docs-only correction、fresh inventory、
+  exact three-Rust-file R-032A implementationを要求。
 - [x] R-032B exact `Result`-returning collector API、narrow source
   inclusion/exclusion、generic theorem-root scope、completion visibility
   ordinal 3、exact origin path、dedicated `labels.rs` ownership、
@@ -5930,6 +5935,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] separate mizar-syntax S-026 frozen-documentation commitを完了。
 - [x] exact dense accessor と passing review/verification gate を持つ
   separate S-026 implementation を完了。
-- [ ] dedicated commit 後に R-032A を fresh inventory。
+- [x] dedicated commit 後に R-032A を fresh inventoryし、mandatory R-026
+  enum-decision owner omissionをHigh `design_drift`として特定。
+- [x] separate R-032A lint-policy docs correctionをfindings-free review、
+  full verification、valid `100/100` final qualityまで完了。
+- [ ] post-commit invariant checkとfresh inventoryをR-032A
+  implementation前に完了。
 - [x] lower prerequisite 中も全 frozen checker consumer、B5C fixture/
   expectation/trace、public diagnostic、semantic deferral を維持。

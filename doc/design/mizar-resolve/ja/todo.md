@@ -556,12 +556,18 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 32A. **validated Surface structural arena。** [ ]
     - `resolved_ast.md` の exact `SurfaceResolvedArena` / public
       non-exhaustive `SurfaceResolvedArenaError` contract を実装する。
-    - owner は `resolved_ast.rs` / `resolved_ast/tests.rs` / paired docs。
+    - owner は exact に `resolved_ast.rs` / `resolved_ast/tests.rs` /
+      sole R-026 `SurfaceResolvedArenaError` owning-spec decision entry 用
+      `tests/lint_policy.rs` / paired docs。
       complete child-first same-index mapping、exact structure/origin、state/key
       mismatch を含む全 named error variant、checked overflow、downstream
       wildcard を証明する。
     - B5C docs 後の1 lower-prerequisite commit。labels/runner/artifact/trace は
       変更しない。
+    - implementation preflightは旧two-Rust-file scopeをHigh
+      `design_drift`と分類した。mandatory R-026 public-enum guardがnew enumを
+      scanするため、同期docs-only scope correctionをseparate commitで完了し、
+      exact three-Rust-file implementation前にfresh inventoryする。
 
 32B. **normal-source proof-label confinement projection。** [ ]
     - R-032A fresh inventory 後、`labels.md` の exact collector / public
@@ -645,8 +651,13 @@ cargo test -p mizar-vc
   contract を freeze。
 - [x] exact dense accessor、complete unit/rustdoc matrix、passing
   review/verification gate を持つ separate S-026 implementation を完了。
-- [ ] dedicated commit 後に R-032A を fresh inventory。
-- [ ] S-026 後だけ `SurfaceAst::node_views()` と
+- [x] dedicated commit 後に R-032A を fresh inventoryし、mandatory R-026
+  enum-decision owner omissionをHigh `design_drift`として特定。
+- [x] separate R-032A lint-policy docs correctionをfindings-free review、
+  full verification、valid `100/100` final qualityまで完了。
+- [ ] dedicated commit後にrepository/stash invariantをverifyし、R-032A
+  implementationをfresh inventory。
+- [ ] correction 後だけ `SurfaceAst::node_views()` と
   [resolved_ast.md](./resolved_ast.md) exact validation precedence を使って
   R-032A を実装。
 - [x] unsafe id、dummy-AST id minting、resolver-side syntax mutation、

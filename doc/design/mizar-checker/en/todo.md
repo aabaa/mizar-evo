@@ -6162,7 +6162,13 @@ implementation commit does not satisfy a producer task.
   authorized resolver prerequisite, not a conditional after collection.
 - [x] Freeze R-032A `SurfaceResolvedArena` lowering/accessors, same-index
   structural invariants, fail-closed validation/overflow errors, dedicated
-  `resolved_ast.rs` ownership, and tests.
+  `resolved_ast.rs` / `resolved_ast/tests.rs` ownership, the sole
+  `tests/lint_policy.rs` R-026 `SurfaceResolvedArenaError` owning-spec entry,
+  and tests.
+- [x] Classify the preflight two-Rust-file omission as High `design_drift`
+  with no semantic `spec_gap`; require a separate synchronized docs-only
+  correction, fresh inventory, then the exact three-Rust-file R-032A
+  implementation.
 - [x] Freeze R-032B exact `Result`-returning collector API, narrow source
   inclusion/exclusion, generic theorem-root scopes, completion visibility
   ordinal 3, exact origin paths, dedicated `labels.rs` ownership, and
@@ -6209,7 +6215,12 @@ implementation commit does not satisfy a producer task.
 - [x] Complete the separate mizar-syntax S-026 frozen-documentation commit.
 - [x] Complete the separate S-026 implementation with its exact dense accessor
   and passing review/verification gates.
-- [ ] After its dedicated commit, fresh-inventory R-032A.
+- [x] After its dedicated commit, fresh-inventory R-032A and identify the
+  mandatory R-026 enum-decision owner omission as High `design_drift`.
+- [x] Complete the separate R-032A lint-policy docs correction through
+  findings-free reviews, full verification, and valid `100/100` final quality.
+- [ ] Complete its post-commit invariant check and fresh inventory before
+  R-032A implementation.
 - [x] Preserve all frozen checker consumers, B5C fixtures/expectations/trace,
   public diagnostics, and semantic deferrals while the lower prerequisite
   lands.

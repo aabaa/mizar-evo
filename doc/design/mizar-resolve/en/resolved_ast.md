@@ -391,8 +391,10 @@ preserves complete mapping and deterministic ids.
 
 R-032A implementation ownership is exactly
 `crates/mizar-resolve/src/resolved_ast.rs`,
-`crates/mizar-resolve/src/resolved_ast/tests.rs`, and synchronized resolver
-design records. It is one commit before R-032B. It changes no label collection,
+`crates/mizar-resolve/src/resolved_ast/tests.rs`,
+`crates/mizar-resolve/tests/lint_policy.rs` for only the R-026
+`SurfaceResolvedArenaError` owning-spec decision entry, and synchronized
+resolver design records. It is one commit before R-032B. It changes no label collection,
 runner, fixture, sidecar, trace status/count, parser/frontend production,
 checker/type/proof semantics, or Cargo/workspace metadata.
 
@@ -411,7 +413,7 @@ already sufficient. R-032A therefore remained source-unimplemented until the
 separate mizar-syntax S-026 documentation and implementation tasks appended
 the exact dense `SurfaceAst::node_views()` accessor. That dependency is now
 implemented and verified; after its dedicated commit and fresh inventory,
-R-032A is unblocked. R-032A ownership remains exactly the two resolver files
+R-032A is unblocked. R-032A ownership remains exactly the three Rust files
 above; it consumes S-026 and does not modify syntax.
 
 `SurfaceResolvedArena` stores exactly `source_id: SourceId`,
@@ -449,3 +451,23 @@ earlier dense node beats every fault on a later node. Private checked-helper
 tests freeze the exact payloads
 `InvalidChildOrder { node, child }` and
 `StructuralPathComponentOverflow { node }`.
+
+### R-032A lint-policy ownership correction
+
+Implementation preflight found that the frozen public
+`SurfaceResolvedArenaError` is necessarily scanned by the existing R-026
+public-enum decision guard. Excluding
+`crates/mizar-resolve/tests/lint_policy.rs` would make implementation either
+fail that mandatory guard or cross its frozen ownership boundary. This is
+High `design_drift`, not a `spec_gap`, `test_gap`, or semantic decision: this
+document already requires the enum to follow R-026, and
+`source_spec_correspondence.md` already assigns that guard to
+`tests/lint_policy.rs`.
+
+The prerequisite correction therefore adds only the exact owning-spec
+decision entry for `SurfaceResolvedArenaError` to the later R-032A
+implementation scope. It does not authorize another lint-policy change,
+runtime behavior, label collection, fixture, sidecar, expectation, trace,
+specification, parser/frontend/checker source, diagnostic code, or Cargo
+change. This synchronized documentation correction is a separate commit;
+fresh inventory must precede the three-Rust-file R-032A implementation commit.

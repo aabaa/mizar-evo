@@ -73,8 +73,9 @@ Crate-wide close-out must run the full workspace and `mizar-test` plan gates.
 R-032 does not reopen the completed R-029 refactor gate. It is split across
 existing public module owners without changing public module layout:
 
-- R-032A production/test: `src/resolved_ast.rs` and
-  `src/resolved_ast/tests.rs`;
+- R-032A production/test/policy: `src/resolved_ast.rs`,
+  `src/resolved_ast/tests.rs`, and `tests/lint_policy.rs` for only the R-026
+  `SurfaceResolvedArenaError` owning-spec decision entry;
 - R-032B production/test: `src/labels.rs` and `src/labels/tests.rs`;
 - synchronized design records; no new module is planned.
 
@@ -104,3 +105,11 @@ R-032A preflight triggered that stop rule correctly. Dense
 `SurfaceNodeId`-bearing iteration belongs to mizar-syntax S-026 and must land
 there in separate commits; R-032A may only consume the accessor from its
 frozen resolver files. Unsafe or dummy-AST id fabrication remains forbidden.
+
+R-032A implementation preflight also exercised the stop rule when the
+two-Rust-file wording omitted the mandatory R-026 public-enum decision owner.
+The omission is High `design_drift`, with no semantic `spec_gap`: the existing
+enum policy and source/spec correspondence already authorize the exact
+`tests/lint_policy.rs` entry. A separate synchronized docs-only correction
+therefore freezes exactly three Rust files for implementation; no other lint
+or module-layout change is authorized.

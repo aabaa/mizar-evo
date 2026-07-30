@@ -221,9 +221,12 @@ Low deferred R-G001 `spec_gap` のまま。
 
 pre-S-026 record の順序は docs、R-032A、R-032B、active B5C の4 separate
 commit だった。後続 S-026 dependency overlay は execution order を S-026
-docs、S-026 implementation、R-032A、R-032B、active B5C に supersede する。
-R-032A は
-`resolved_ast.rs` / `resolved_ast/tests.rs` だけを所有し、`resolved_ast.md`
+docs、S-026 implementation、R-032A lint-policy docs correction、R-032A
+implementation、R-032B、active B5C に supersede する。
+R-032A は exact に
+`resolved_ast.rs` / `resolved_ast/tests.rs` / sole R-026
+`SurfaceResolvedArenaError` owning-spec entry 用 `tests/lint_policy.rs` を
+所有し、`resolved_ast.md`
 exact validated arena/error table（state/reference-key mismatch を含む）を実装する。
 R-032B は `labels.rs` /
 `labels/tests.rs` だけを所有し、`labels.md` exact collector/error/subtree/

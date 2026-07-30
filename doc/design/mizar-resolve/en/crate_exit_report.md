@@ -228,9 +228,11 @@ public codes remain the Low deferred R-G001 `spec_gap`.
 
 The pre-S-026 record used the four-step order documentation, R-032A, R-032B,
 and active B5C, each a separate commit. The later S-026 dependency overlay
-supersedes that execution order with S-026 docs, S-026 implementation, R-032A,
-R-032B, and active B5C. R-032A owns only `resolved_ast.rs` /
-`resolved_ast/tests.rs` and implements the exact validated
+plus the lint-policy correction supersede that execution order with S-026
+docs, S-026 implementation, R-032A lint-policy docs correction, R-032A
+implementation, R-032B, and active B5C. R-032A owns exactly `resolved_ast.rs`,
+`resolved_ast/tests.rs`, and the sole `tests/lint_policy.rs` R-026
+owning-spec entry for `SurfaceResolvedArenaError`; it implements the exact validated
 `SurfaceResolvedArena` plus named public non-exhaustive error table from
 `resolved_ast.md`, including state/reference-key mismatch payloads. R-032B owns
 only `labels.rs` / `labels/tests.rs` and

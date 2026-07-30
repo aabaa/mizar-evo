@@ -593,13 +593,20 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 32A. **Validated Surface structural arena.** [ ]
     - Implement the exact `SurfaceResolvedArena` / public non-exhaustive
       `SurfaceResolvedArenaError` contract in `resolved_ast.md`.
-    - Own only `resolved_ast.rs`, `resolved_ast/tests.rs`, and paired docs.
+    - Own exactly `resolved_ast.rs`, `resolved_ast/tests.rs`,
+      `tests/lint_policy.rs` for the sole R-026
+      `SurfaceResolvedArenaError` owning-spec decision entry, and paired docs.
       Prove complete child-first same-index mapping, exact structural/origin
       preservation, every named mismatch/error variant including
       `ResolutionStateMismatch` / `ReferenceKeyMismatch`, checked overflow,
       and downstream wildcard compatibility.
     - This is one lower-prerequisite commit after the B5C documentation commit.
       It changes no labels, runner, fixtures, sidecars, trace, or other phase.
+    - Implementation preflight classified the previous two-Rust-file scope as
+      High `design_drift`: the mandatory R-026 public-enum guard scans the new
+      enum. Complete the synchronized docs-only scope correction in a separate
+      commit, then fresh-inventory before the exact three-Rust-file
+      implementation.
 
 32B. **Normal-source proof-label confinement projections.** [ ]
     - After fresh inventory of R-032A, implement the exact
@@ -686,8 +693,14 @@ Check the task off here once tests pass.
   including disconnected nodes.
 - [x] Complete the separate S-026 implementation with the exact dense accessor,
   complete unit/rustdoc matrix, and passing review/verification gates.
-- [ ] After its dedicated commit, fresh-inventory R-032A.
-- [ ] Implement R-032A only after S-026, using `SurfaceAst::node_views()` and
+- [x] After its dedicated commit, fresh-inventory R-032A; identify the
+  mandatory R-026 enum-decision owner omission as High `design_drift`.
+- [x] Complete the separate R-032A lint-policy docs correction through
+  findings-free reviews, full verification, and valid `100/100` final quality.
+- [ ] After its dedicated commit, verify repository/stash invariants and
+  fresh-inventory R-032A implementation.
+- [ ] Implement R-032A only after that correction, using
+  `SurfaceAst::node_views()` and
   the exact validation precedence in [resolved_ast.md](./resolved_ast.md).
 - [x] Reject unsafe ids, dummy-AST id minting, resolver-side syntax mutation,
   and any combined syntax/resolver commit as `boundary_violation`.

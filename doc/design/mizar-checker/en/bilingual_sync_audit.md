@@ -1445,3 +1445,12 @@ Independent mutations of each field, both cardinality failures, and all
 The S-026 dependency overlay is synchronized in EN/JA: both languages record
 the same boundary classification, effective commit order, and no-op effect on
 checker consumers, B5C artifacts, diagnostics, semantics, and coverage state.
+
+The R-032A lint-policy scope correction is also synchronized. Both languages
+classify the omitted mandatory R-026 enum-decision owner as High
+`design_drift`, not a semantic `spec_gap`, and name the same exact three Rust
+files. `tests/lint_policy.rs` may receive only the
+`SurfaceResolvedArenaError` owning-spec decision entry. The separate
+documentation correction and later resolver implementation add no checker
+consumer and change no B5C intent, artifact, diagnostic, semantic boundary,
+or coverage state.

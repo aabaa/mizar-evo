@@ -11292,7 +11292,9 @@ accessor/`validate_against`はwrong source/module/shape/node、stale state、
 recovery/root mismatch、checked structural-path overflowをfail closedする。
 `ResolutionStateMismatch`/`ReferenceKeyMismatch`を含み、全node/child
 payloadは`SurfaceNodeId`。
-later write scopeは`resolved_ast.rs`とそのtestsだけ。
+later write scopeはexact `resolved_ast.rs` / `resolved_ast/tests.rs` /
+sole R-026 `SurfaceResolvedArenaError` owning-spec entry用
+`tests/lint_policy.rs`。
 
 proof scope、ordinal、label provenance derivationはresolver R-032Bだけが
 ownする。exact `impl<'a> ProofLabelSourceCollector<'a>::new`はast/resolvedを
@@ -11330,11 +11332,17 @@ ownした。S-026 documentation prerequisite は exact 45 design files をownし
 separate implementation は exact 25 files、すなわち dense syntax Rust 2 files、
 paired syntax design 12、paired resolver design 4、paired checker TODO 2、
 paired `mizar-test` design 4、global design TODO 1をownする。その後
-R-032A/R-032B は各々 separate two-source-file implementation commit をownする。
+R-032Aはseparate exact three-Rust-file implementation commit、
+R-032Bはseparate two-source-file implementation commitをownする。
 active B5C task はnew fixture/sidecar pair 2件、trace row 2件、runner files
-3件、synchronized derived documentsだけをownする。このeffective five-task
+3件、synchronized derived documentsだけをownする。このeffective six-task
 split はinventoried potential `boundary_violation`を回避し、module split/
 ownership transferをauthorizeしない。
+
+追加したR-032A lint-policy ownerはimplementation preflightで見つかったHigh
+`design_drift`をcorrectする。semantic `spec_gap`ではなくruntime/runner
+ownershipを追加しない。fresh inventoryとimplementationの前にseparate同期
+documentation commitをlandする。
 
 R-032Bはexact
 `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct

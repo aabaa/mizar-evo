@@ -1081,8 +1081,10 @@ cohesiveで、このtaskにmodule split/ownership transferは不要。
 ## Task 258B5C frozen non-consumer boundary
 
 このcommitはsynchronized design documentationだけをownする。next two
-prerequisiteは`mizar-resolve` ownedで、R-032Aが`resolved_ast.rs`/testsの
-validated one-to-one structural `SurfaceResolvedArena`、R-032Bが
+prerequisiteは`mizar-resolve` ownedで、R-032Aが`resolved_ast.rs`/testsと
+sole R-026 `SurfaceResolvedArenaError` owning-spec entry用
+`tests/lint_policy.rs`のvalidated one-to-one structural
+`SurfaceResolvedArena`、R-032Bが
 `labels.rs`/testsのproof-step projection、simple unqualified candidate、
 proof-scope path、ordinal、provenance collectionをownする。両APIは
 fail-closed `Result`を返す。R-032A exact state/key errorと全node payloadは
@@ -1099,6 +1101,12 @@ binding/typed/final ownerはこのnegative routeをacceptできない。parser�
 artifact、Tasks 252/253、B1/B5A/B5B、全semantic phaseはunchanged。
 module split/ownership transferは不要で、scope derivationをrunnerへ移すと
 resolved id/ordinalと同様に`boundary_violation`になる。
+
+R-032A implementation preflightはownership accountingだけをcorrectした。
+mandatory R-026 enum-decision ownerのomissionはHigh `design_drift`で、
+semantic `spec_gap`ではない。correctionはseparate docs-only commitであり、
+later exact three-Rust-file resolver implementationはchecker consumerを
+追加せず、上記boundaryをmoveしない。
 
 later runnerはfrozen source bytes+normal ASTだけでselectし、shared resolver
 env/moduleとmatching id-0 local-source contribution exact oneをauthenticate

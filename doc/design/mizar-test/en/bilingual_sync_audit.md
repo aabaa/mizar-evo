@@ -1374,8 +1374,9 @@ B5B commit `f27d2c9169b08078f00b75c4a57f94e30fa28f59`, Chapter
 15/16 authority, classifications, historical
 docs/R-032A/R-032B/active order, and resolver-owned `SurfaceResolvedArena` and
 `ProofLabelSourceCollector` APIs. The synchronized S-026 overlay supersedes
-that execution order with strict S-026 docs/S-026 implementation/R-032A/
-R-032B/active B5C. Both languages freeze the same exact `Result` signatures,
+that execution order with strict S-026 docs/S-026 implementation/R-032A
+lint-policy docs correction/R-032A implementation/R-032B/active B5C. Both
+languages freeze the same exact `Result` signatures,
 non-exhaustive fail-closed error boundaries, and total arena/collection
 accessors. They forbid runner-fabricated `LabelScopePath`, ordinal,
 `SemanticOrigin`, or `ResolvedNodeId` and exclude checker unresolved
@@ -1420,6 +1421,15 @@ remains frozen source bytes plus normal AST, and the scope remains 48 files.
 
 EN/JA now also synchronize the inserted S-026 docs/implementation
 prerequisites, their exact 45-design-file documentation scope, and the
-effective five-task order. They preserve the exact runner selector,
+effective six-task order including the R-032A lint-policy docs correction.
+They preserve the exact runner selector,
 provenance, details, projected counts, and exclusions while lower-stage work
 lands.
+
+EN/JA also synchronize the R-032A lint-policy scope correction. Both classify
+the omitted mandatory R-026 enum-decision owner as High `design_drift`, not a
+semantic `spec_gap`, and freeze exactly three later Rust files. The
+`tests/lint_policy.rs` change is limited to the
+`SurfaceResolvedArenaError` owning-spec decision entry. The separate docs-only
+correction and later resolver implementation change no `mizar-test` runner
+consumer, fixture, sidecar, trace, diagnostic, semantics, or coverage state.
