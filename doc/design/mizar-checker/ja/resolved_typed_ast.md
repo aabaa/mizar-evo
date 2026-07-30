@@ -1343,3 +1343,20 @@ final projectionに追加しない。public API/error/debug grammar変更、
 lower-stage prerequisite、active semantic creditはない。implementation
 前のdocumentation-only final-boundary reviewは**NO FINDINGS**である。
 future implementation reviewはseparate implementation taskに残す。
+
+## Task 258B3M2B2B3E implemented final-AST inventory
+
+`ResolvedTypedAst`はauthenticated exact B3E tupleだけをacceptし、
+Task-48/252/255/256/258とone `SetTerm(0)` witnessをrevalidateして、
+generator/type-site、set-term、atomic、statement、witness stateをcloneする。
+wrong rows、partial/extra ownership、stale/hybrid/occupied semanticsはexisting
+errorでfailし、replay/cloneはdebug bytesを保持する。
+
+final ownerはprivate allowlistだけで7,270から7,272 linesへ増える。public
+schema、error/debug、dependency、active route、semantic/proof/goal tableは
+unchanged。implementation reviewは**NO FINDINGS**。bounded design
+correction後のfinal source/docs consistencyも**NO FINDINGS**で、full
+verificationはPASSした。independent final qualityは**NO FINDINGS**、
+全9 gates PASS、valid `100/100`。pendingはstaging/cached-diff review、
+implementation commit、post-commit invariants、fresh next-task inventory
+だけである。

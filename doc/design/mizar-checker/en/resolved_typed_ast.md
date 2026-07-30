@@ -1397,3 +1397,23 @@ Clone/revalidation must preserve the generator/type-site tables while
 semantic tables remain empty. Stale fingerprints, partial publication,
 sibling hybrids, and any generator binding/capture state fail atomically.
 No final-AST public schema changes.
+
+## Task 258B3M2B2B3E Implemented Final-AST Inventory
+
+`ResolvedTypedAst` now accepts only the authenticated exact B3E tuple,
+revalidates Task-48/252/255/256/258 plus the one `SetTerm(0)` witness, and
+clones generator/type-site, set-term, atomic-formula, statement, and witness
+state. Wrong generator/type-site/request state, partial/extra ownership,
+stale fingerprints, sibling hybrids, occupied semantic tables, and
+proof/expression coexistence fail through existing errors. Replay and clone
+preserve debug bytes.
+
+The final owner grows from 7,270 to 7,272 lines solely for the private
+allowlist. No public schema, error/debug grammar, dependency, active route,
+or semantic/proof/goal table changed. Independent implementation review
+reports **NO FINDINGS**. Final source/documentation consistency also reports
+**NO FINDINGS** after the bounded design corrections. Full verification
+PASSes; independent final quality reports **NO FINDINGS**, all nine hard
+gates PASS, valid `100/100`. Only staging/cached-diff review,
+implementation commit, post-commit invariants, and fresh-next-task inventory
+remain pending.

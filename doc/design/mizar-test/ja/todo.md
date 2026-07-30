@@ -2610,8 +2610,23 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] relevant verificationとforbidden-path/no-op checksをcomplete。
 - [x] independent final quality reviewを全hard gatesとvalid score
   `>=90/100`でcomplete。
-- [ ] exact synchronized documentation scopeだけをstageしcached diffを
-  inspect。
-- [ ] dedicated B3E documentation commitをcreate。
-- [ ] clean post-commit/stash invariantsをverifyしB3E implementationを
-  fresh inventory。
+- [x] B3E documentation commit
+  `8075000bf79be3fdea6b22f366fb6d9e59781fe7`をcreateしfresh inventory。
+
+## Checker Task 258B3M2B2B3E implementation ledger
+
+- [x] frozen runner 4＋checker 3 consumersだけをimplement。
+- [x] runner 5/checker 4 testsとmatrices/ordersを追加。
+- [x] same-provenance successful coherent Task-255 negativesを使用。
+- [x] test/implementation reviewを**NO FINDINGS**で完了。
+- [x] focused `5/5 + 4/4`、libraries `471/410`をPASS。
+- [x] final size/hash、CLI、all no-op boundariesを記録。
+- [x] 3件の`design_drift`修正後、source/docs、bilingual、boundary
+  consistencyを**NO FINDINGS**で完了。
+- [x] independent qualityを**NO FINDINGS**、全9 gates PASS、capなし、
+  valid `100/100`で完了。
+- [x] focused/package、fmt、full Clippy、root workspace、5 CLI、
+  count/hash/scope/forbidden/stash gatesをPASS。
+- [ ] exact scopeをstageしcached diffをinspect。
+- [ ] B3E implementation commitをcreate。
+- [ ] post-commit/stash invariantsをverifyしnext taskをfresh inventory。

@@ -5301,3 +5301,34 @@ source/count/hash rerun PASS. The trace blob is unchanged. Independent final
 quality reports **NO FINDINGS**; all nine hard gates PASS with valid
 `100/100` and no cap. Staging/commit and
 post-commit/fresh-implementation inventory remain pending.
+
+### Task 258B3M2B2B3E implemented narrative-only ownership inventory
+
+Documentation prerequisite
+`8075000bf79be3fdea6b22f366fb6d9e59781fe7` closed before the exact
+seven private consumers implemented the dormant 139-byte/60-node
+condition-free comprehension witness and four checker/five runner tests.
+The graph remains Task-255 `1/0/1/1/0/1/2`,
+`ComprehensionMapper -> Primary(2)`, unresolved
+`GeneratorSethood`/`ResultType`, and `Witness(0) -> SetTerm(0)`, with
+`32/70/53/72/62/21` and all 120 orders. Reviews report **NO FINDINGS**.
+
+This is narrative source-transport ownership only. The formula-statement row
+stays `deferred`, `tests = []`; existing Task-255/255C1 credit, trace
+status/count/backlinks, authority artifacts, and active coverage are
+unchanged. Binding/capture, conditioned/multiple/nested/generator-reference
+semantics, sethood/result typing, proof, Core/CFG/VC, and B4/B5 remain
+deferred.
+
+Measured state is checker library `410`, 23 paths/137,805 lines, content hash
+`84473c194afd5059caf808c89d44a45c4806b9e4dac69dd8bec24c036b075b3d`,
+and runner library `471`, 30 paths/54,571 lines, content hash
+`1ff008388aba7bdf972203477b61e60da47b15be15275c90f233613f9f180f73`.
+Paired plans record path/test-list hashes; five CLI counts/hashes pass
+unchanged. After the three bounded `design_drift` corrections, final
+source/documentation consistency reports **NO FINDINGS**. Independent final
+quality reports **NO FINDINGS**; all nine gates PASS at valid `100/100`
+with no cap, and complete verification PASSes. Only staging/cached-diff
+review, implementation commit, post-commit invariants, and fresh-next-task
+inventory remain pending.
+None of these results changes trace status/count/backlinks or audit credit.

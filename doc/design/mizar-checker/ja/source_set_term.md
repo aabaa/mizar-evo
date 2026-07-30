@@ -477,3 +477,21 @@ generator-referencing mapper、wrong/extra generatorまたはtype-site rows、
 nonzero condition cardinality、complete `38..46` subtreeのincomplete/
 additional ownershipを明示的にrejectする。これらはB3E boundary
 negativesであり、Task-255C1 creditのwithdrawalではない。
+
+## Task 258B3M2B2B3E reused comprehension consumer
+
+B3Eは両`source_set_term.rs`を変更せずexisting Task-255
+`1/0/1/1/0/1/2`をconsumeする。comprehension `43/89..118`、
+generator `16/98..110`、builtin-set expression/head
+`41/40/114..117`、`ComprehensionMapper -> Primary(2)`、ordered
+`GeneratorSethood`/`ResultType`は不変である。
+
+post-auth negativesはsame provenance上のsuccessful coherent Task-255
+handoff（B3A zero、B3C wrong type、Task-255C1 condition、synthetic valid
+multiple/nested、successful empty generator-reference exclusion）である。
+Task-255 semantics/binding/sethood/result typingは追加せず、generic ownerは
+6,806 lines、public APIはunchangedである。final source/docs consistencyと
+qualityは**NO FINDINGS**、complete verificationと全9 gatesはvalid
+`100/100`でPASSした。pendingはstaging/cached-diff review、
+implementation commit、post-commit invariants、fresh next-task inventory
+だけである。

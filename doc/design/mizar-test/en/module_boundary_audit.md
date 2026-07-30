@@ -12307,3 +12307,16 @@ test module. The set-term leaf/test owners are read-only dependencies.
 Production, public enums/errors/keys, parser/resolver/binding ownership,
 corpus artifacts, trace, and active behavior do not change in this
 documentation prerequisite.
+
+## Task 258B3M2B2B3E Implemented Runner Boundary Inventory
+
+Only the frozen four runner and paired three checker owners change. Final
+runner sizes are `12206/4517/807/2623/26141/2528`; production remains
+30 paths/54,571 lines and the set-term leaf/test remain `4517/2528`.
+Parser/resolver/binding, Task-255 leaves, active/corpus/public/error/debug/
+dependency/trace/semantic owners remain unchanged. Reviews report
+**NO FINDINGS**; no split or transfer is required. Final consistency after
+the three design corrections and independent quality both report
+**NO FINDINGS**; complete verification and all nine gates PASS at valid
+`100/100`. Only staging/cached-diff review, implementation commit,
+post-commit invariants, and fresh-next-task inventory remain pending.

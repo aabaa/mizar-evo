@@ -4278,3 +4278,25 @@ broader multiple/nested/generator-reference semantics、goal/proof/theorem
 semanticsをfabricateしない。documentation-only test-sufficiency reviewは
 **NO FINDINGS**、focused/package/workspace/CLI/count/hash verificationは
 PASSした。future implementation test reviewはseparate taskに残す。
+
+## Task 258B3M2B2B3E implemented runner harness inventory
+
+dormant selectorと5 testsは139 bytes/final LF、60 nodes/root 59の4 axes、
+resolver、全frozen fieldsをauthenticateする。post-auth negativesはsame
+provenanceのsuccessful coherent Task-255 handoff（B3A zero、B3C wrong
+type、Task-255C1 condition、synthetic valid multiple/nested、successful
+empty generator-reference exclusion）で、authenticated source/module
+identity、repeated B3E dependency/invalid failure、clean replayを検査する。
+別の`32/70/53/72/62/21` mutation matricesがowning-stage prefixと
+generic-guard-only failure rejectionを検査する。
+
+120 orders、ownership/subtree、active isolation、clone/rollback/debug、
+empty semanticsがPASSする。statement tests 26,141 lines、focused `5/5`、
+library `471` PASS。corpus/trace/CLI/semanticはunchangedで、reviewは
+**NO FINDINGS**。
+
+harness responsibility overclaimと同期docs drift 2件の修正後、final
+consistency repeatは**NO FINDINGS**である。complete verificationはPASSし、
+independent qualityも**NO FINDINGS**、全9 gates PASS、valid `100/100`。
+pendingはstaging/cached-diff review、implementation commit、post-commit
+invariants、fresh next-task inventoryだけである。

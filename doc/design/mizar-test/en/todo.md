@@ -2809,5 +2809,23 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Pass documentation-only scope/count/hash/no-op verification.
 - [x] Pass independent final quality with all nine hard gates and valid
   score `>=90/100`.
-- [ ] Create one 32-document prerequisite commit and fresh-inventory B3E
-  implementation.
+- [x] Create prerequisite commit
+  `8075000bf79be3fdea6b22f366fb6d9e59781fe7` and fresh-inventory B3E.
+
+## Checker Task 258B3M2B2B3E Implementation Ledger
+
+- [x] Implement only the frozen runner four and checker three consumers.
+- [x] Add exact five runner/four checker tests and frozen matrices/orders.
+- [x] Use coherent same-provenance successful Task-255 post-auth negatives.
+- [x] Complete test and implementation reviews with **NO FINDINGS**.
+- [x] Pass focused `5/5 + 4/4` and libraries `471/410`.
+- [x] Record final sizes/hashes, CLI pass, and all no-op boundaries.
+- [x] Complete source/documentation, bilingual, and boundary consistency
+  with **NO FINDINGS** after three `design_drift` corrections.
+- [x] Complete independent quality with **NO FINDINGS**, all nine gates
+  PASS, no cap, and valid `100/100`.
+- [x] Pass focused/package tests, formatting, full Clippy, root workspace
+  tests, five CLIs, and count/hash/scope/forbidden/stash gates.
+- [ ] Stage exact scope and inspect cached diff.
+- [ ] Create the B3E implementation commit.
+- [ ] Verify post-commit/stash invariants and fresh-inventory next task.

@@ -11061,3 +11061,16 @@ verificationは**NO FINDINGS** / PASSでcloseした。future implementation
 boundary reviewはseparate taskに残す。independent final qualityは
 **NO FINDINGS**、全9 hard gates PASS、valid `100/100`である。
 staging/commit、post-commitだけがpendingである。
+
+## Task 258B3M2B2B3E implemented runner boundary inventory
+
+frozen runner 4＋paired checker 3 ownersだけを変更する。final sizeは
+`12206/4517/807/2623/26141/2528`、productionは30 paths/54,571
+lines、set leaf/testは`4517/2528`でunchanged。
+parser/resolver/binding、Task-255 leaves、active/corpus/public/error/debug/
+dependency/trace/semantic ownersはunchanged。reviewは**NO FINDINGS**で、
+split/ownership transferは不要である。3件のdesign correction後のfinal
+consistencyとindependent qualityは**NO FINDINGS**、complete verificationと
+全9 gatesはvalid `100/100`でPASSした。pendingはstaging/cached-diff
+review、implementation commit、post-commit invariants、fresh next-task
+inventoryだけである。

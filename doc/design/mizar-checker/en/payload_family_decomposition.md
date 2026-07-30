@@ -1415,3 +1415,27 @@ comprehension with one generator/type site, one
 segment `42` remains unowned. All five B3A-E families remain independent
 across 120 orders. Binding/capture, sethood discharge, conditions, semantics,
 B4/B5, and coverage credit remain deferred.
+
+### Task 258B3M2B2B3E Implemented Comprehension-Witness Edge
+
+The private exact route realizes the frozen graph without changing the
+Task-255 producer. Task-252 owns `{32,34,38,47,49}`, Task-255
+`{16,40,41,43}`, Task-256 `{36,51}`, Task-258 `{54,56}`, and B3E
+`{45,46}`; generator segment `42` remains unowned. Task 255 retains
+`ComprehensionMapper -> Primary(2)` and unresolved
+`GeneratorSethood`/`ResultType`; B3E adds only
+`Witness(0) -> SetTerm(0)`.
+
+All five-family pairings and 120 orders, complete-subtree exclusions,
+same-provenance coherent Task-255 near misses, and exact
+`32/70/53/72/62/21` matrices are covered. Independent test-sufficiency and
+implementation reviews report **NO FINDINGS**. Binding/capture,
+conditioned/multiple/nested/generator-reference semantics, sethood/type/
+proof/fact/Core/CFG/VC behavior, B4/B5, and coverage credit remain deferred.
+
+Final source/documentation consistency reports **NO FINDINGS** after the
+three bounded design corrections. Complete verification PASSes, and
+independent final quality reports **NO FINDINGS**, all nine hard gates PASS,
+valid `100/100` with no cap. Only staging/cached-diff review,
+implementation commit, post-commit invariants, and fresh-next-task inventory
+remain pending.

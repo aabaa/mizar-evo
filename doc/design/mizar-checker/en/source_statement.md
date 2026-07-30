@@ -3571,3 +3571,25 @@ Task-252 owns `{32,34,38,47,49}`, Task-255 `{16,40,41,43}`, Task-256
 the two equality pairs, comprehension mapper to `Primary(2)`, and witness to
 the set term. No generator binding, semantic witness, proof acceptance, or
 fact edge is introduced.
+
+## Task 258B3M2B2B3E Implemented Comprehension Statement Inventory
+
+The private selector authenticates the exact final-LF 139-byte/60-node
+source and theorem/label provenance before accepting the exact
+Task-48/252/255/256/258 tuple. B3E publishes one unnamed
+`SourceStatementWitnessInput` at witness/take nodes `{45,46}`, targeting
+`SetTerm(0)`. Existing public witness DTOs and producer APIs are reused; only
+private profile cases and validators are added.
+
+The four frozen checker tests cover exact profile/legacy compatibility,
+owning-stage precedence/all nodes, combined ownership/120 family orders, and
+final clone/semantic deferrals. Exact matrices, coherent post-auth Task-255
+near misses, non-generic guards, repeated failure, and clean replay pass. No
+witness matching, substitution, goal progress, proof acceptance, facts,
+Core/CFG/VC, B4/B5, or active-route behavior is added.
+
+Final source/documentation consistency reports **NO FINDINGS** after the
+bounded design corrections. Full verification PASSes; independent final
+quality reports **NO FINDINGS**, all nine hard gates PASS, valid `100/100`.
+Only staging/cached-diff review, implementation commit, post-commit
+invariants, and fresh-next-task inventory remain pending.

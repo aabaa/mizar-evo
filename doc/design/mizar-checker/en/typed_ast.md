@@ -1398,3 +1398,20 @@ type site, mapper edge, two requests, and one unnamed set-target witness.
 Every stage mutation, stale replay, partial publication, or B3A-E hybrid must
 roll back atomically. No type/fact/coercion/obligation/diagnostic or public
 schema is added.
+
+## Task 258B3M2B2B3E Implemented Atomic Installation Inventory
+
+`TypedAst` now admits the exact B3E Task-252/255/256/258/witness tuple only
+after all binding, primary, shared-arena, set, atomic, statement, and witness
+fingerprints match. One condition-free comprehension, one generator/type
+site, zero conditions, and one unnamed set-target witness install atomically.
+Partial publication, extra ownership, stale lower state, or sibling hybrids
+leave the original AST unchanged.
+
+The owner grows from 4,933 to 4,934 lines for the private allowlist. All five
+B3A-E families remain independent across 120 orders. No public typed-AST
+API, semantic table, proof state, diagnostic, or debug grammar changes.
+Final source/documentation consistency and independent quality report
+**NO FINDINGS**; full verification and all nine hard gates PASS at valid
+`100/100`. Only staging/cached-diff review, implementation commit,
+post-commit invariants, and fresh-next-task inventory remain pending.

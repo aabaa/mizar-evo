@@ -1081,3 +1081,24 @@ reviews report **NO FINDINGS** after the classified corrections, and full
 verification PASSes. Independent final quality also reports
 **NO FINDINGS**; all nine hard gates PASS with valid `100/100` and no cap.
 Only staging/commit and post-commit gates remain pending.
+
+## Task 258B3M2B2B3E Implementation Synchronization Inventory
+
+The English canonical and Japanese companion synchronize documentation
+commit `8075000bf79be3fdea6b22f366fb6d9e59781fe7`, the exact seven-file
+implementation, four checker/five runner tests, 139-byte/60-node profile,
+`32/70/53/72/62/21` matrices, node `42` unowned, and all 120 family
+orders. Both record unchanged public APIs and private/test-only new
+selectors, profiles, and mutation seams.
+
+Both languages also synchronize checker/runner libraries `410/471`, final
+module sizes, production/test-list hashes, coherent same-provenance post-auth
+Task-255 handoffs, independent test and implementation reviews with
+**NO FINDINGS**, and unchanged authority/corpus/trace/active/semantic
+boundaries. After synchronizing the three `design_drift` corrections, the
+source/documentation, bilingual, and boundary re-review reports
+**NO FINDINGS**. Independent final quality reports **NO FINDINGS**; all nine
+hard gates PASS at valid `100/100` (`20/20/15/15/10/10/5/5`) with no
+cap, and complete parent verification PASSes. Only staging/cached-diff,
+implementation commit, post-commit, and fresh-next-task gates remain pending
+in both languages.

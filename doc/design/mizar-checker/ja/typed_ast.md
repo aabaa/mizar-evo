@@ -1344,3 +1344,18 @@ existing set-aware installerをreuseし、public schema/error/debug
 grammarを変えない。documentation-only atomic-boundary reviewは
 **NO FINDINGS**である。future implementation/atomicity reviewはseparate
 implementation taskに残す。
+
+## Task 258B3M2B2B3E implemented atomic installation inventory
+
+`TypedAst`はbinding/primary/shared-arena/set/atomic/statement/witness
+fingerprintが全てmatchしたexact B3E tupleだけをinstallする。condition-free
+comprehension 1、generator/type site 1、condition 0、unnamed set witness 1を
+atomicにpublishし、partial/extra/stale/hybridではoriginal ASTを保持する。
+
+private allowlistでownerは4,933から4,934 linesへ増える。全five familiesは
+120 ordersでindependent。public typed-AST API、semantic/proof state、
+diagnostic/debug grammarはunchangedである。
+final source/docs consistencyとindependent qualityは**NO FINDINGS**、
+full verificationと全9 gatesはvalid `100/100`でPASSした。pendingは
+staging/cached-diff review、implementation commit、post-commit
+invariants、fresh next-task inventoryだけである。

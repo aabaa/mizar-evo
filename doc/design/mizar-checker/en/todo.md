@@ -5796,7 +5796,34 @@ implementation commit does not satisfy a producer task.
 - [x] Pass documentation-only source/count/hash/scope/no-op verification.
 - [x] Pass independent final quality with all nine hard gates and valid
   score `>=90/100`.
-- [ ] Stage only the synchronized 32-document scope and create one dedicated
-  documentation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B3E
+- [x] Create the 32-document prerequisite commit
+  `8075000bf79be3fdea6b22f366fb6d9e59781fe7`.
+- [x] Verify clean post-commit/stash invariants and fresh-inventory B3E
   implementation.
+
+## Checker Task 258B3M2B2B3E Implementation Ledger
+
+- [x] Implement only the exact checker three plus runner four consumers;
+  preserve both `source_set_term.rs` owners.
+- [x] Add the exact four checker/five runner tests and
+  `32/70/53/72/62/21` matrices.
+- [x] Use coherent successful same-provenance Task-255 handoffs for all
+  post-auth zero/multiple/type-site/condition/nested/generator-reference
+  negatives, with repeated failure and clean replay.
+- [x] Complete independent test-sufficiency and implementation re-reviews
+  with **NO FINDINGS**.
+- [x] Pass focused checker `4/4`, runner `5/5`, checker library `410`, and
+  runner library `471`.
+- [x] Record final module counts, production/test-list hashes, unchanged
+  authority/corpus/trace/active/semantic boundaries, and public-API no-op.
+- [x] Complete source/documentation, bilingual, and boundary consistency
+  re-review with **NO FINDINGS** after three `design_drift` corrections.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [x] Pass focused/package tests, formatting, full workspace Clippy, root
+  workspace tests, five CLIs, count/hash/scope/forbidden/stash gates.
+- [ ] Stage the exact implementation scope and inspect the cached diff.
+- [ ] Create one B3E implementation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory the next
+  dependency-ordered task.

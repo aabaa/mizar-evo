@@ -4530,3 +4530,27 @@ nonzero condition cardinality, and partial/extra ownership in the complete
 fields. Every Task-48/252/255/256/258/B3E mutation asserts its owning-stage
 prefix, rejects generic-guard-only failure, and repeats the failure
 immediately against the authenticated baseline.
+
+## Task 258B3M2B2B3E Implemented Runner Harness Inventory
+
+The dormant selector and five tests authenticate all 139 bytes/final LF, 60
+nodes/root 59 on four axes, resolver provenance, and every frozen field.
+Post-auth negatives are successful coherent same-provenance Task-255
+handoffs: B3A zero-generator, B3C wrong type-site, Task-255C1 condition,
+synthetic valid multiple/nested, and successful empty generator-reference
+exclusion. Each asserts the authenticated source/module identity, repeats
+the B3E dependency/invalid failure, and cleanly replays. The separate
+`32/70/53/72/62/21` mutation matrices assert owning-stage prefixes and
+reject generic-guard-only failure.
+
+All 120 orders, ownership/subtree and active isolation, clone/rollback/debug,
+and empty semantics pass. Statement tests are 26,141 lines; focused `5/5`
+and library `471` pass. Corpus/trace/CLI/semantics remain unchanged. Reviews
+report **NO FINDINGS**.
+
+The final consistency repeat reports **NO FINDINGS** after correcting the
+harness responsibility overclaim and two synchronized documentation drifts.
+Complete verification PASSes; independent quality reports **NO FINDINGS**,
+all nine gates PASS, valid `100/100`. Only staging/cached-diff review,
+implementation commit, post-commit invariants, and fresh-next-task inventory
+remain pending.

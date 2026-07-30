@@ -507,3 +507,23 @@ or type-site rows, nonzero condition cardinality, and incomplete or
 additionally owned nodes in the complete `38..46` subtree after lower
 authentication; these are B3E boundary negatives, not semantic
 implementation or a withdrawal of Task-255C1 credit.
+
+## Task 258B3M2B2B3E Reused Comprehension Consumer
+
+B3E consumes the unchanged Task-255 handoff without modifying either
+`source_set_term.rs` owner. The profile stays `1/0/1/1/0/1/2`:
+comprehension `43/89..118`, generator `16/98..110`, generator-owned
+builtin-set expression/head `41/40/114..117`,
+`ComprehensionMapper -> Primary(2)`, and ordered
+`GeneratorSethood(generator 0, type-site 0)`/`ResultType`.
+
+Post-auth negatives are coherent successful Task-255 handoffs under the
+authenticated B3E provenance: B3A zero-generator, B3C wrong type-site,
+Task-255C1 present-condition, synthetic valid multiple/nested
+comprehensions, and successful empty generator-reference exclusion. They add
+no Task-255 semantics, binding/capture, sethood discharge, or result typing.
+The generic owner remains 6,806 lines and its public APIs are unchanged.
+Final source/documentation consistency and quality report **NO FINDINGS**;
+all nine hard gates and complete verification PASS at valid `100/100`.
+Only staging/cached-diff review, implementation commit, post-commit
+invariants, and fresh-next-task inventory remain pending.

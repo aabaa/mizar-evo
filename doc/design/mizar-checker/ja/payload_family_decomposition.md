@@ -1351,3 +1351,24 @@ generator-referencing comprehension、sethood/result/numeric typing、
 existential/proof/goal semantics、B4/B5、active creditはseparate ownersに
 deferする。B3Eはtransport-onlyであり、lower-stage prerequisiteまたは
 semantic ownership expansionを導入しない。
+
+### Task 258B3M2B2B3E implemented comprehension-witness edge
+
+private exact routeはTask-255 producerを変更せずfrozen graphを実装する。
+Task-252 `{32,34,38,47,49}`、Task-255 `{16,40,41,43}`、Task-256
+`{36,51}`、Task-258 `{54,56}`、B3E `{45,46}`、segment `42`
+unownedである。Task 255は`ComprehensionMapper -> Primary(2)`と
+`GeneratorSethood`/`ResultType`を保持し、B3Eは
+`Witness(0) -> SetTerm(0)`だけを追加する。
+
+全120 orders、subtree exclusion、coherent same-provenance near misses、
+`32/70/53/72/62/21`をcoverし、test/implementation reviewは
+**NO FINDINGS**。binding/capture、condition/multiple/nested/
+generator-reference semantics、sethood/type/proof/Core/CFG/VC、B4/B5、
+coverage creditはdeferredである。
+
+3件のbounded design correction後のfinal source/docs consistencyは
+**NO FINDINGS**である。complete verificationはPASSし、independent final
+qualityも**NO FINDINGS**、全9 gates PASS、capなし、valid `100/100`。
+pendingはstaging/cached-diff review、implementation commit、post-commit
+invariants、fresh next-task inventoryだけである。

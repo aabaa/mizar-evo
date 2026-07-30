@@ -3316,7 +3316,29 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Pass documentation-only source/count/hash/scope/no-op verification.
 - [x] Pass all nine hard gates and independent final quality with valid
   score `>=90/100`.
-- [ ] Stage only the synchronized 32-document scope and create one dedicated
-  documentation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B3E
+- [x] Create dedicated documentation commit
+  `8075000bf79be3fdea6b22f366fb6d9e59781fe7`.
+- [x] Verify clean post-commit/stash invariants and fresh-inventory B3E
   implementation.
+
+## Checker Task 258B3M2B2B3E Implementation Completion Inventory
+
+- [x] Implement exact checker three plus runner four consumers only.
+- [x] Add checker four/runner five tests and exact matrices/orders.
+- [x] Use successful coherent same-provenance Task-255 post-auth negatives.
+- [x] Complete test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused `4/4 + 5/5`, libraries `410/471`, five CLIs, and final
+  production/test-list count/hash measurements.
+- [x] Preserve specifications, corpus artifacts, trace status/count/
+  backlinks, active behavior/coverage, public API, and semantics.
+- [x] Complete source/docs, bilingual, and boundary consistency re-review
+  with **NO FINDINGS** after three `design_drift` corrections.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine
+  gates PASS, no cap, and valid `100/100`.
+- [x] Pass focused/package, formatting, full Clippy, workspace, five-CLI,
+  count/hash/scope/forbidden/stash verification.
+- [ ] Stage the exact scope and inspect cached diff.
+- [ ] Create one B3E implementation commit.
+- [ ] Verify clean post-commit/stash state and fresh-inventory the next
+  dependency-ordered task.

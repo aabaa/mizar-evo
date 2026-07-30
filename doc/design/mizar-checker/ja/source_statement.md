@@ -3054,3 +3054,23 @@ empty semantic deferralsをcoverする。private selector/build pathはexisting
 debug grammarを変更しない。documentation-only test-sufficiencyと
 implementation-boundary reviewsは**NO FINDINGS**である。future source
 implementation/test reviewはseparate implementation taskに残す。
+
+## Task 258B3M2B2B3E implemented comprehension statement inventory
+
+private selectorはexact final-LF 139-byte/60-node sourceとtheorem/label
+provenanceをauthenticateし、exact Task-48/252/255/256/258 tupleから
+witness/take `{45,46}`、target `SetTerm(0)`のunnamed witness 1件をpublish
+する。existing public witness DTO/producerをreuseし、new profile/validatorは
+privateである。
+
+checker 4 testsはexact/legacy、stage precedence/all nodes、ownership/120
+orders、clone/deferralsをcoverする。matrices、coherent near miss、
+non-generic guard、repeated failure、clean replayがPASSする。witness
+matching、substitution/goal、proof/facts、Core/CFG/VC、B4/B5、active routeは
+追加しない。
+
+bounded design correction後のfinal source/docs consistencyは
+**NO FINDINGS**、full verificationはPASSした。independent final qualityは
+**NO FINDINGS**、全9 gates PASS、valid `100/100`。pendingは
+staging/cached-diff review、implementation commit、post-commit invariants、
+fresh next-task inventoryだけである。

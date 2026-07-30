@@ -5534,8 +5534,31 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] relevant verificationとforbidden-path/no-op checksを実行。
 - [x] independent final quality reviewを全hard gatesとvalid score
   `>=90/100`でcomplete。
-- [ ] exact synchronized documentation scopeだけをstageしcached diffを
+- [x] exact synchronized documentation scopeだけをstageしcached diffを
   inspect。
-- [ ] dedicated B3E documentation commitをcreate。
-- [ ] clean post-commit/stash invariantsをverifyし、B3E implementationを
+- [x] B3E documentation commit
+  `8075000bf79be3fdea6b22f366fb6d9e59781fe7`をcreate。
+- [x] clean post-commit/stash invariantsをverifyし、B3E implementationを
   fresh inventory。
+
+## Checker Task 258B3M2B2B3E implementation ledger
+
+- [x] exact checker 3＋runner 4 consumersだけを実装し、両
+  `source_set_term.rs`を保持。
+- [x] checker 4/runner 5 testsと`32/70/53/72/62/21`を追加。
+- [x] post-auth negativesへsame-provenance successful coherent Task-255
+  handoffを使い、repeated failure/clean replayを検査。
+- [x] test-sufficiency/implementation re-reviewを**NO FINDINGS**で完了。
+- [x] focused `4/4 + 5/5`、libraries `410/471`をPASS。
+- [x] final module/production/test-list hashesとauthority/trace/active/
+  semantic/public-API no-opを記録。
+- [x] 3件の`design_drift`修正後、source/docs、bilingual、boundary
+  consistency re-reviewを**NO FINDINGS**で完了。
+- [x] independent final qualityを**NO FINDINGS**、全9 gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）で完了。
+- [x] focused/package、fmt、full workspace Clippy、root tests、5 CLI、
+  count/hash/scope/forbidden/stash gatesをPASS。
+- [ ] exact implementation scopeをstageしcached diffをinspect。
+- [ ] B3E implementation commitをcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、next taskをfresh
+  inventory。
