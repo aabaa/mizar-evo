@@ -1705,9 +1705,12 @@ resolution state、proof scope、proof-reuse identity は追加しない。既�
 `nodes()` / `node()` / `node_view()`、parser construction、green tree、
 snapshot text、trivia、recovery、syntax-kind numbering は unchanged。
 
-後続 implementation ownership は exact に
-`crates/mizar-syntax/src/ast.rs`、
-`crates/mizar-syntax/src/ast/tests.rs`、同期 design/ledger record だけ。
+implementation ownership は exact 25 files:
+`crates/mizar-syntax/src/ast.rs`、`crates/mizar-syntax/src/ast/tests.rs`、
+`mizar-syntax` の paired EN/JA plan/AST/bilingual-audit/exit/
+source-correspondence/TODO（design 12 files）、resolver paired
+`resolved_ast`/TODO（4）、checker paired TODO（2）、`mizar-test` paired
+module-boundary/TODO（4）、global design TODO（1）。
 unit matrix は次の exact role / iterator law を freeze する。
 
 - empty / connected arena。
@@ -1727,3 +1730,14 @@ focused hard gate とする。現在 authorize された唯一の production con
 resolver R-032A complete same-index structural lowering であり、S-026 自体は
 lowering を行わない。parser/frontend production、`.miz` fixture、expectation、
 sidecar、trace metadata、language specification、Cargo metadata は変更しない。
+
+### S-026 implementation result
+
+`SurfaceAst::node_views()` は `self.nodes.iter().enumerate()` を private
+positional id 付き borrowed view へ直接 map する。4 unit test は
+disconnected/recovered arena の全-field lookup round-trip を含む frozen role /
+iterator matrix 全体を覆う。rustdoc は external callability、private
+`SurfaceNodeId::new`、private tuple construction を独立に証明する。syntax
+library/lint/rustdoc は `59/8/3`、focused downstream、formatting、
+warning-denied workspace Clippy、full workspace test はPASS。consumer、
+language behavior、forbidden artifact は変更していない。

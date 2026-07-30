@@ -148,10 +148,9 @@ parser/syntax boundary promise を確認する。
   source/test mismatch はなかった。
 - S-021 は re-entry trigger が満たされるまで rustdoc summary について明示的に
   deferred のまま残る。
-- S-022 から S-025 は完了済みで、その predicate-label / AST-refactor audit は
-  follow-up を作らなかった。後続 S-026 docs/implementation prerequisite は
-  resolver R-032A preflight が独立に発見した active post-exit infrastructure。
-  S-021 は sole deferred syntax task のまま。
+- S-022 から S-026 は完了済み。predicate-label / AST-refactor audit は follow-up
+  を作らず、S-026 は resolver R-032A preflight が独立に発見した post-exit
+  infrastructure を完了した。S-021 は sole deferred syntax task のまま。
 
 ## Parser Task 48 post-exit 対応
 
@@ -170,6 +169,8 @@ milestone を作るのではなく、S-025 source/spec audit を historical crat
 S-026 は language-specification construct を追加せず、grammar、recovery、
 snapshot、fixture、expectation、trace status、coverage credit を変更しない。
 authority は semantic-free accessor を許す既存 syntax design と resolver
-R-032A structural consumer。future source/test evidence は `src/ast.rs` の
-`SurfaceAst::node_views()` と `src/ast/tests.rs` の dense/disconnected iterator
-unit matrix だけ。したがって `doc/design/spec_coverage_audit.md` は意図的 no-op。
+R-032A structural consumer。source/test evidence は `src/ast.rs` の
+`SurfaceAst::node_views()`、public/private-id rustdoc case、
+`src/ast/tests.rs` の dense/disconnected iterator unit matrix だけ。実測
+library/lint/rustdoc は `59/8/3`。したがって
+`doc/design/spec_coverage_audit.md` は意図的 no-op。

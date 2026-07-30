@@ -1791,8 +1791,12 @@ resolution state, proof scope, or proof-reuse identity. Existing
 `nodes()`/`node()`/`node_view()` behavior, parser construction, green trees,
 snapshot text, trivia, recovery, and syntax-kind numbering remain unchanged.
 
-The later implementation owns exactly `crates/mizar-syntax/src/ast.rs`,
-`crates/mizar-syntax/src/ast/tests.rs`, and synchronized design/ledger records.
+The implementation owns exactly 25 files:
+`crates/mizar-syntax/src/ast.rs`, `crates/mizar-syntax/src/ast/tests.rs`, the
+six paired EN/JA `mizar-syntax` plan/AST/bilingual-audit/exit/
+source-correspondence/TODO families (12 design files), the paired resolver
+`resolved_ast`/TODO files (4), paired checker TODO files (2), paired
+`mizar-test` module-boundary/TODO files (4), and the global design TODO (1).
 The unit matrix freezes these exact roles and iterator laws:
 
 - empty and connected arenas;
@@ -1813,3 +1817,14 @@ consumer is resolver R-032A complete same-index structural lowering; S-026
 itself performs no lowering. It changes no parser/frontend production, `.miz`
 fixture, expectation, sidecar, trace metadata, language specification, or
 Cargo metadata.
+
+### S-026 implementation result
+
+`SurfaceAst::node_views()` now maps `self.nodes.iter().enumerate()` directly to
+borrowed views with the private positional id. The four unit tests cover the
+complete frozen role and iterator matrix, including all-field lookup
+round-trips for the disconnected/recovered arena. Rustdoc independently proves
+external callability, private `SurfaceNodeId::new`, and private tuple
+construction. Syntax library/lint/rustdoc are `59/8/3`; focused downstream,
+formatting, workspace Clippy with warnings denied, and full workspace tests
+pass. No consumer, language behavior, or forbidden artifact changed.

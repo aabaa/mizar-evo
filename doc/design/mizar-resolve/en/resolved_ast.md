@@ -403,15 +403,16 @@ validates the latter; neither is substituted for the other.
 
 ### S-026 lower-stage dependency and validation order
 
-Fresh post-documentation preflight found that the existing syntax consumer API
-cannot enumerate a valid disconnected `SurfaceAst` node together with its
+Fresh post-documentation preflight found that the then-existing syntax
+consumer API could not enumerate a valid disconnected `SurfaceAst` node with its
 `SurfaceNodeId`. This is a High `boundary_violation` if worked around inside
 the resolver and a `design_drift` in the earlier claim that existing APIs were
-already sufficient. R-032A therefore remains source-unimplemented until the
-separate mizar-syntax S-026 documentation and implementation commits append
-the exact dense `SurfaceAst::node_views()` accessor. R-032A ownership itself
-remains exactly the two resolver files above; it consumes S-026 and does not
-modify syntax.
+already sufficient. R-032A therefore remained source-unimplemented until the
+separate mizar-syntax S-026 documentation and implementation tasks appended
+the exact dense `SurfaceAst::node_views()` accessor. That dependency is now
+implemented and verified; after its dedicated commit and fresh inventory,
+R-032A is unblocked. R-032A ownership remains exactly the two resolver files
+above; it consumes S-026 and does not modify syntax.
 
 `SurfaceResolvedArena` stores exactly `source_id: SourceId`,
 `module: ModuleId`, and `arena: ResolvedArena`; the complete same-index mapping

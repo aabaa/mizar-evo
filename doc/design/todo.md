@@ -90,7 +90,7 @@ is its task 1). "Next work" points into the
 |---|---|---|---|---|
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | — | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [~] historical milestone complete plus parser Tasks 48/46 increments; S-026 frozen docs complete and implementation active | S-026 implementation; S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
+| mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] historical milestone plus parser Tasks 48/46 increments and S-026 dense views complete | S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
@@ -3687,6 +3687,19 @@ or semantic owner changed. B3M2B2B remains next before B4.
   source/documentation reviews with **NO FINDINGS**; pass focused and full
   offline verification, exact count/hash/scope/no-op gates, and independent
   final quality with all nine hard gates PASS at valid `100/100`.
-- [ ] After the dedicated S-026 frozen-contract documentation commit, verify
+- [x] After the dedicated S-026 frozen-contract documentation commit, verify
   clean post-commit/stash invariants, fresh-inventory authority/API, and then
   execute the separate S-026 implementation task.
+- [x] Implement only the dense accessor, four-test role/iterator matrix, and
+  three public/private-id rustdoc cases; pass syntax `59/8/3`, downstream,
+  workspace, CLI, count/hash, and independent specification/test/
+  implementation/source-documentation review gates without changing coverage
+  credit.
+- [x] Freeze the exact implementation scope to 25 files: two Rust files,
+  syntax design 12, resolver design 4, checker TODO 2, `mizar-test` design 4,
+  and this global TODO.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] After the dedicated S-026 implementation commit, fresh-inventory and
+  execute resolver R-032A only.

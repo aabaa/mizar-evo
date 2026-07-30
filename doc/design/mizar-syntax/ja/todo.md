@@ -12,7 +12,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [~] historical rowan/task-35/S-025 milestone と Parser Tasks 48/46 increment は完了済み。S-026 dense-view frozen documentation は complete、separate implementation は active。S-021 は sole deferred syntax task、semantic Task 39 は crate 外のまま |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] historical rowan/task-35/S-025 milestone、Parser Tasks 48/46 increment、S-026 dense-view documentation/implementation は完了済み。S-021 は sole deferred syntax task、semantic Task 39 は crate 外のまま |
 
 ## Parser Task 46 post-exit vocabulary addendum
 
@@ -702,14 +702,14 @@ S-025 exit status と S-021 policy-triggered rustdoc deferral はそのまま保
 
 ## S-026 dense compatibility-node view
 
-26. **dense immutable node-view iteration。** [~]
+26. **dense immutable node-view iteration。** [x]
     - [x] この同期 frozen-contract documentation prerequisite を専用 commit
       として完了し、production、test、fixture、expectation、trace metadata、
       specification、snapshot、Cargo file は変更しない。repeated
       specification、test-contract、source/documentation review は
       **NO FINDINGS**、全 verification と quality 9 hard gates は valid
       `100/100` でPASS。
-    - [ ] 次に [ast.md](./ast.md) の exact `SurfaceAst::node_views()` API を
+    - [x] 次に [ast.md](./ast.md) の exact `SurfaceAst::node_views()` API を
       `src/ast.rs`、complete unit matrix を `src/ast/tests.rs` にだけ追加し、
       同期 design ledger と別 implementation commit にする。
     - dense arena order、全 stored node exactly once、disconnected、token、
@@ -734,3 +734,10 @@ S-025 exit status と S-021 policy-triggered rustdoc deferral はそのまま保
       paired families、`mizar-resolve` eight paired families、
       `mizar-checker` four paired families、`mizar-test` four paired
       families、global `doc/design/todo.md`。`spec_coverage_audit.md` は no-op。
+    - implementation verification は syntax library/lint/rustdoc `59/8/3`、
+      全 downstream/workspace/CLI/count/hash gate、finding-free
+      specification/test-sufficiency/implementation/repeated
+      source-documentation review でPASS。この commit 後の fresh-inventory
+      task は R-032A。
+    - independent final quality は **NO FINDINGS**。9 hard gates は全PASS、
+      cap なしの valid `100/100`（`20/20/15/15/10/10/5/5`）。

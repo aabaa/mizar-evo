@@ -12583,13 +12583,16 @@ either negative. The structural map is a known R-032A prerequisite, not a
 conditional runner concern.
 
 The committed B5C frozen-contract task owned exactly 48 paired/global design
-files. The current S-026 documentation prerequisite owns exactly 45 design
-files, followed by an S-026 implementation commit. R-032A and R-032B then
-each own their separate two-source-file implementation commit. The active B5C
-task owns only the two new fixture/sidecar pairs, two trace rows, three runner
-files, and synchronized derived documents. This effective five-task split
-avoids the inventoried potential `boundary_violation`; no module split or
-ownership transfer is authorized.
+files. The S-026 documentation prerequisite owned exactly 45 design files, and
+its separate implementation owns exactly 25 files: two dense syntax Rust
+files, 12 paired syntax design files, four paired resolver design files, two
+paired checker TODO files, four paired `mizar-test` design files, and the
+global design TODO. R-032A and R-032B then each own their separate
+two-source-file implementation commit. The active B5C task owns only the two
+new fixture/sidecar pairs, two trace rows, three runner files, and synchronized
+derived documents. This effective five-task split avoids the inventoried
+potential `boundary_violation`; no module split or ownership transfer is
+authorized.
 
 R-032B exclusively owns the exact
 `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct

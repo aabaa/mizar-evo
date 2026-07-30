@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [~] historical rowan/task-35/S-025 milestone and Parser Tasks 48/46 increments are complete; S-026 dense-view frozen documentation is complete and its separate implementation is active; S-021 remains the sole deferred syntax task and semantic Task 39 remains outside this crate |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] historical rowan/task-35/S-025 milestone, Parser Tasks 48/46 increments, and S-026 dense-view documentation/implementation are complete; S-021 remains the sole deferred syntax task and semantic Task 39 remains outside this crate |
 
 ## Parser Task 46 Post-Exit Vocabulary Addendum
 
@@ -738,14 +738,14 @@ remain intact.
 
 ## S-026 Dense Compatibility-Node Views
 
-26. **Dense immutable node-view iteration.** [~]
+26. **Dense immutable node-view iteration.** [x]
     - [x] Complete this synchronized frozen-contract documentation
       prerequisite as its own commit with no production, tests, fixtures,
       expectations, trace metadata, specifications, snapshots, or Cargo
       changes. Repeated specification, test-contract, and
       source/documentation reviews report **NO FINDINGS**; all verification
       and nine quality hard gates pass at valid `100/100`.
-    - [ ] Append only the exact `SurfaceAst::node_views()` API frozen in
+    - [x] Append only the exact `SurfaceAst::node_views()` API frozen in
       [ast.md](./ast.md) to `src/ast.rs` and its complete unit matrix to
       `src/ast/tests.rs`, with synchronized design ledgers in a separate
       implementation commit.
@@ -772,3 +772,11 @@ remain intact.
       `mizar-syntax` families, eight paired `mizar-resolve` families, four
       paired `mizar-checker` families, four paired `mizar-test` families, and
       the global `doc/design/todo.md`; `spec_coverage_audit.md` is a no-op.
+    - Implementation verification passes with syntax library/lint/rustdoc
+      `59/8/3`, all downstream/workspace/CLI/count/hash gates, and
+      finding-free specification, test-sufficiency, implementation, and
+      repeated source/documentation reviews. R-032A is the next
+      fresh-inventory task after this commit.
+    - Independent final quality reports **NO FINDINGS**; all nine hard gates
+      PASS with no cap at valid `100/100`
+      (`20/20/15/15/10/10/5/5`).

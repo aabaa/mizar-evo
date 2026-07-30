@@ -643,8 +643,9 @@ cargo test -p mizar-vc
 - [x] separate mizar-syntax S-026 frozen-documentation commit を完了し、
   disconnected node を含む全 stored compatibility node の planned dense-id
   contract を freeze。
-- [ ] separate S-026 implementation commit を完了してから R-032A を fresh
-  inventory。
+- [x] exact dense accessor、complete unit/rustdoc matrix、passing
+  review/verification gate を持つ separate S-026 implementation を完了。
+- [ ] dedicated commit 後に R-032A を fresh inventory。
 - [ ] S-026 後だけ `SurfaceAst::node_views()` と
   [resolved_ast.md](./resolved_ast.md) exact validation precedence を使って
   R-032A を実装。

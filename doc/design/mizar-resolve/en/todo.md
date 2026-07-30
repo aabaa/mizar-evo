@@ -684,8 +684,9 @@ Check the task off here once tests pass.
 - [x] Complete the separate mizar-syntax S-026 frozen-documentation commit,
   proving the planned dense-id contract for every stored compatibility node,
   including disconnected nodes.
-- [ ] Complete the separate S-026 implementation commit, then
-  fresh-inventory R-032A.
+- [x] Complete the separate S-026 implementation with the exact dense accessor,
+  complete unit/rustdoc matrix, and passing review/verification gates.
+- [ ] After its dedicated commit, fresh-inventory R-032A.
 - [ ] Implement R-032A only after S-026, using `SurfaceAst::node_views()` and
   the exact validation precedence in [resolved_ast.md](./resolved_ast.md).
 - [x] Reject unsafe ids, dummy-AST id minting, resolver-side syntax mutation,

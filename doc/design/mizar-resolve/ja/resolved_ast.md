@@ -386,13 +386,15 @@ R-032A は前者、R-032B は後者を validate し、相互に代用しない�
 
 ### S-026 lower-stage dependency と validation order
 
-documentation 後の fresh preflight で、existing syntax consumer API は valid
-disconnected `SurfaceAst` node をその `SurfaceNodeId` と共に列挙できないことが
-判明した。resolver 内で workaround すれば High `boundary_violation`、existing
+documentation 後の fresh preflight で、then-existing syntax consumer API は valid
+disconnected `SurfaceAst` node をその `SurfaceNodeId` と共に列挙できなかった。
+resolver 内で workaround すれば High `boundary_violation`、existing
 API が十分という以前の主張は `design_drift`。したがって R-032A source は、
 exact dense `SurfaceAst::node_views()` accessor を追加する別 mizar-syntax
-S-026 documentation/implementation commit まで未実装のまま。R-032A ownership
-自体は上記 resolver 2 files のままで、S-026 を consume し syntax を変更しない。
+S-026 documentation/implementation task まで未実装だった。その dependency は
+実装・検証済みで、dedicated commit と fresh inventory 後に R-032A は
+unblocked。R-032A ownership 自体は上記 resolver 2 files のままで、S-026 を
+consume し syntax を変更しない。
 
 `SurfaceResolvedArena` は exact に `source_id: SourceId`、
 `module: ModuleId`、`arena: ResolvedArena` を store する。complete same-index

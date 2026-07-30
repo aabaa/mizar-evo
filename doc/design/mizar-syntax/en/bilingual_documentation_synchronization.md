@@ -11,8 +11,10 @@ increment and does not rescore the historical syntax milestone.
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md).
 
-Status: completed through S-025 after the AST module-boundary refactor
-follow-up audit.
+Status: the historical audit is complete through S-025 after the AST
+module-boundary refactor follow-up; the Parser Tasks 46/48 post-exit
+increments and the S-026 documentation/implementation pair are complete and
+synchronized. Resolver R-032A is the next fresh-inventory consumer.
 
 ## Scope
 
@@ -48,10 +50,9 @@ English and Japanese readers.
 - No remaining public API, enum, diagnostic, or method-level drift was found
   between the English canonical module specs and the Japanese companions.
 - Module and task statuses are synchronized: S-001 through S-020 and S-022
-  through S-025 are complete, S-026 frozen documentation is complete and its
-  separate implementation is the active post-exit prerequisite, S-021 remains
-  the sole explicitly deferred syntax task, parser tasks 4-36 are complete
-  where paired with `mizar-syntax`, and existing follow-ups
+  through S-026 are complete, S-021 remains the sole explicitly deferred
+  syntax task, parser tasks 4-36 are complete where paired with
+  `mizar-syntax`, and existing follow-ups
   `MSYN-GAP-001`, `MSYN-GAP-003`, and `MSYN-GAP-013` remain classified.
 - Terminology is synchronized for `SurfaceAst`, `SurfaceAstBuilder`,
   `SurfaceNodeView`, `SyntaxKind`, `SurfaceNodeKind`, `SurfaceTokenKind`,
@@ -93,25 +94,25 @@ English and Japanese readers.
   helpers moved under `src/ast/`. English and Japanese companions now agree
   that tasks 24-25 are complete, the source split is private implementation
   layout, and at that S-025 checkpoint only S-021 remained deferred. The later
-  S-026 overlay now records its active post-exit docs/implementation
-  prerequisite without changing S-021's sole-deferred status.
+  S-026 overlay now records its completed post-exit documentation and
+  implementation pair without changing S-021's sole-deferred status.
 
 ## Pair Checklist
 
 | English canonical | Japanese companion | Synchronization status |
 |---|---|---|
-| [README.md](./README.md) | [../ja/README.md](../ja/README.md) | Module index, crate boundary, status through S-025 plus the Parser Task 48 post-exit addendum, and cross-cutting audit links are synchronized. |
-| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Crate responsibility, specification/test references, parser task pairing, gap classification, task decomposition, S-020 result, exit criteria, Parser Task 48 addendum, and active S-026 exact 45-file prerequisite are synchronized. |
-| [ast.md](./ast.md) | [../ja/ast.md](../ja/ast.md) | Public API, private source layout, rowan storage boundary, syntax vocabulary through task 35 plus task-22/Task-48 follow-through, compatibility-view policy, append-only raw-kind policy through 192, identity/reuse rules, and the exact S-026 dense iterator/test/rustdoc contract are synchronized. |
+| [README.md](./README.md) | [../ja/README.md](../ja/README.md) | Module index, crate boundary, status through S-025 plus the Parser Tasks 46/48 post-exit addenda, and cross-cutting audit links are synchronized. |
+| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Crate responsibility, specification/test references, parser task pairing, gap classification, task decomposition, S-020 result, exit criteria, Parser Tasks 46/48 addenda, and the completed S-026 documentation/implementation pair are synchronized. |
+| [ast.md](./ast.md) | [../ja/ast.md](../ja/ast.md) | Public API, private source layout, rowan storage boundary, syntax vocabulary through task 35 plus task-22/Task-46/Task-48 follow-through, compatibility-view policy, append-only raw-kind policy through 193, identity/reuse rules, and the exact S-026 dense iterator/test/rustdoc contract are synchronized. |
 | [trivia.md](./trivia.md) | [../ja/trivia.md](../ja/trivia.md) | Public API, trivia side-table ownership, sorting, attachment, snapshot behavior, and parser/frontend responsibility boundary are synchronized. |
 | [recovery.md](./recovery.md) | [../ja/recovery.md](../ja/recovery.md) | Public API, recovery kinds, diagnostic codes, active and vocabulary-only producer status, malformed annotation recovery, and source/test evidence are synchronized. |
-| [grammar_audit.md](./grammar_audit.md) | [../ja/grammar_audit.md](../ja/grammar_audit.md) | Grammar gate findings, parser task map, gap classifications, close-out status, and the syntax-only Task 48 placement follow-through are synchronized. |
+| [grammar_audit.md](./grammar_audit.md) | [../ja/grammar_audit.md](../ja/grammar_audit.md) | Grammar gate findings, parser task map, gap classifications, close-out status, and the syntax-only Parser Tasks 46/48 placement follow-through are synchronized. |
 | [parse_only_acceptance_matrix.md](./parse_only_acceptance_matrix.md) | [../ja/parse_only_acceptance_matrix.md](../ja/parse_only_acceptance_matrix.md) | Acceptance categories, active/deferred status, grammar-position references, and parser-facing ownership notes are synchronized. |
 | [parse_only_fixture_seed.md](./parse_only_fixture_seed.md) | [../ja/parse_only_fixture_seed.md](../ja/parse_only_fixture_seed.md) | Seed fixture intent, activation rules, deferred rows, and parser ownership references are synchronized. |
-| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | S-019, S-023, and S-025 source/spec/test correspondence, public API and method traceability, follow-up records, and the Parser Task 48 post-exit correspondence are synchronized. |
-| [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This S-020/S-023/S-025 audit and the Parser Task 48 post-exit synchronization record are mirrored in both languages. |
-| [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Historical task-35 exit status plus refreshed S-025 close-out status and the non-rescoring Parser Task 48 syntax-only addendum are synchronized. |
-| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized through S-025 plus the parser-owned Task 48 increment and active S-026 prerequisite; S-021 is the sole deferred syntax task and semantic Task 39 remains outside the crate in both languages. |
+| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | S-019, S-023, and S-025 source/spec/test correspondence, public API and method traceability, follow-up records, Parser Tasks 46/48 post-exit correspondence, and the S-026 documentation/implementation split are synchronized. |
+| [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This S-020/S-023/S-025 audit, the Parser Tasks 46/48 post-exit records, and the S-026 documentation/implementation split are mirrored in both languages. |
+| [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Historical task-35 exit status, refreshed S-025 close-out status, non-rescoring Parser Tasks 46/48 syntax-only addenda, and the S-026 documentation/implementation split are synchronized. |
+| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized through S-026 plus the parser-owned Tasks 46/48 increments; S-021 is the sole deferred syntax task and semantic Task 39 remains outside the crate in both languages. |
 
 ## Link Policy
 
@@ -159,3 +160,11 @@ milestone. The English canonical and Japanese companion freeze the same
 `SurfaceAst::node_views()` signature, dense/exact-size/double-ended guarantees,
 disconnected-node obligation, syntax-only boundary, tests, ownership,
 baselines, exclusions, and two-commit documentation/implementation order.
+Both now also record the completed source/test/rustdoc implementation, measured
+`59/8/3` syntax result, synchronized production/test-list hashes, passing
+downstream/workspace/CLI gates, unchanged coverage ownership, and R-032A as the
+next consumer.
+
+Independent final quality is synchronized as **NO FINDINGS**: all nine hard
+gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`).

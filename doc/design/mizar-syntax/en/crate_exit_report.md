@@ -283,3 +283,16 @@ accessor prerequisite for resolver R-032A with its own documentation and
 implementation commits, reviews, verification, and quality score. It does not
 reuse or alter the historical 94/100 exit score and grants no language or
 coverage completion credit.
+
+The S-026 accessor and complete unit/rustdoc matrix are implemented. Syntax
+library/lint/rustdoc are `59/8/3`; focused downstream suites, formatting,
+warning-denied workspace Clippy, full workspace tests, five CLI, and
+count/hash gates pass. Specification, test-sufficiency, and implementation
+reviews plus the repeated source/documentation review report **NO FINDINGS**.
+R-032A is the next consumer after the dedicated S-026 commit and fresh
+inventory.
+
+Independent final quality reports **NO FINDINGS**. All nine protocol hard
+gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). This post-exit score does not alter the historical
+crate-exit score above.

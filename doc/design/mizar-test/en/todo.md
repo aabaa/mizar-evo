@@ -3195,7 +3195,9 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 ## B5C R-032A Preflight Overlay
 
 - [x] Complete the separate mizar-syntax S-026 frozen-documentation commit.
-- [ ] Wait for the separate S-026 implementation commit, then resolver
-  R-032A/R-032B, before adding active B5C artifacts.
+- [x] Complete the separate S-026 implementation and its review/verification
+  gates.
+- [ ] Wait for its dedicated commit and resolver R-032A/R-032B before adding
+  active B5C artifacts.
 - [x] Preserve the exact source-only selector, provenance authentication,
   private details, empty public codes, and projected active count impact.

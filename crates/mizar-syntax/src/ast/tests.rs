@@ -65,6 +65,198 @@ fn builder_round_trips_into_rowan_backed_tree() {
 }
 
 #[test]
+fn node_views_cover_empty_and_connected_arenas_in_dense_order() {
+    let source_id = source_id(61);
+    let empty = SurfaceAstBuilder::new(source_id).finish(None, None);
+    let mut empty_views = empty.node_views();
+    assert_eq!(empty_views.len(), 0);
+    assert_eq!(empty_views.size_hint(), (0, Some(0)));
+    assert!(empty_views.next().is_none());
+    assert!(empty_views.next_back().is_none());
+
+    let ast = expression_ast(source_id);
+    assert_eq!(
+        ast.node_views()
+            .map(|view| view.id().index())
+            .collect::<Vec<_>>(),
+        vec![0, 1, 2, 3, 4]
+    );
+    assert_eq!(
+        ast.node_views()
+            .rev()
+            .map(|view| view.id().index())
+            .collect::<Vec<_>>(),
+        vec![4, 3, 2, 1, 0]
+    );
+}
+
+#[test]
+fn node_views_include_disconnected_and_overlapping_roles_exactly_once() {
+    let source_id = source_id(62);
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let disconnected = builder.add_node(
+        SurfaceNodeKind::PlaceholderItem,
+        range(source_id, 0, 1),
+        Vec::new(),
+    );
+    let recovered_token =
+        builder.add_recovered_token(SurfaceTokenKind::ErrorRecovery, "?", range(source_id, 2, 3));
+    let expression = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 2, 3),
+        vec![recovered_token],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 2, 3),
+        vec![recovered_token, expression],
+    );
+    let ast = builder.finish(Some(root), Some(expression));
+
+    let views = ast.node_views().collect::<Vec<_>>();
+    assert_eq!(
+        views
+            .iter()
+            .map(|view| view.id().index())
+            .collect::<Vec<_>>(),
+        vec![0, 1, 2, 3]
+    );
+    for (position, view) in views.iter().copied().enumerate() {
+        assert_eq!(view.id().index(), position);
+        let lookup = ast.node_view(view.id()).unwrap();
+        assert_eq!(lookup.id(), view.id());
+        assert_eq!(lookup.kind(), view.kind());
+        assert_eq!(lookup.range(), view.range());
+        assert_eq!(lookup.children(), view.children());
+        assert_eq!(lookup.is_recovered(), view.is_recovered());
+    }
+    assert_eq!(views[0].id(), sid(disconnected));
+    assert_eq!(views[0].kind(), &SurfaceNodeKind::PlaceholderItem);
+    assert!(
+        !ast.root_view()
+            .unwrap()
+            .child_views()
+            .any(|view| view.id() == sid(disconnected)),
+        "the ordinary node must remain disconnected while dense iteration exposes it"
+    );
+
+    assert_eq!(views[1].id(), sid(recovered_token));
+    assert!(views[1].as_token().is_some());
+    assert!(views[1].is_recovered());
+    assert_eq!(
+        ast.node_views()
+            .filter(|view| view.id() == sid(recovered_token))
+            .count(),
+        1,
+        "one node overlapping token and recovered roles must yield one row"
+    );
+    assert_eq!(ast.expression_root(), Some(sid(expression)));
+    assert_eq!(ast.root(), Some(sid(root)));
+    assert_ne!(ast.expression_root(), ast.root());
+
+    let mut overlap_builder = SurfaceAstBuilder::new(source_id);
+    let shared =
+        overlap_builder.add_node(SurfaceNodeKind::Root, range(source_id, 4, 5), Vec::new());
+    let overlap_ast = overlap_builder.finish(Some(shared), Some(shared));
+    assert_eq!(overlap_ast.root(), overlap_ast.expression_root());
+    assert_eq!(
+        overlap_ast
+            .node_views()
+            .map(|view| view.id())
+            .collect::<Vec<_>>(),
+        vec![sid(shared)],
+        "one node overlapping root and expression-root roles must yield one row"
+    );
+}
+
+#[test]
+fn node_views_report_exact_remaining_length_while_alternating_ends() {
+    let ast = expression_ast(source_id(63));
+    assert_eq!(
+        ast.node_views()
+            .map(|view| view.id().index())
+            .collect::<Vec<_>>(),
+        vec![0, 1, 2, 3, 4]
+    );
+    assert_eq!(
+        ast.node_views()
+            .rev()
+            .map(|view| view.id().index())
+            .collect::<Vec<_>>(),
+        vec![4, 3, 2, 1, 0]
+    );
+
+    let mut views = ast.node_views();
+    assert_eq!(views.len(), 5);
+    assert_eq!(views.size_hint(), (5, Some(5)));
+
+    assert_eq!(views.next().map(|view| view.id().index()), Some(0));
+    assert_eq!(views.len(), 4);
+    assert_eq!(views.size_hint(), (4, Some(4)));
+
+    assert_eq!(views.next_back().map(|view| view.id().index()), Some(4));
+    assert_eq!(views.len(), 3);
+    assert_eq!(views.size_hint(), (3, Some(3)));
+
+    assert_eq!(views.next().map(|view| view.id().index()), Some(1));
+    assert_eq!(views.len(), 2);
+    assert_eq!(views.size_hint(), (2, Some(2)));
+
+    assert_eq!(views.next_back().map(|view| view.id().index()), Some(3));
+    assert_eq!(views.len(), 1);
+    assert_eq!(views.size_hint(), (1, Some(1)));
+
+    assert_eq!(views.next().map(|view| view.id().index()), Some(2));
+    assert_eq!(views.len(), 0);
+    assert_eq!(views.size_hint(), (0, Some(0)));
+    assert!(views.next_back().is_none());
+    assert!(views.next().is_none());
+}
+
+#[test]
+fn node_views_round_trip_and_preserve_equivalent_observable_sequences() {
+    let source_id = source_id(64);
+    let left = expression_ast(source_id);
+    let right = expression_ast(source_id);
+
+    for (position, view) in left.node_views().enumerate() {
+        assert_eq!(view.id().index(), position);
+        let lookup = left.node_view(view.id()).unwrap();
+        assert_eq!(lookup.id(), view.id());
+        assert_eq!(lookup.kind(), view.kind());
+        assert_eq!(lookup.range(), view.range());
+        assert_eq!(lookup.children(), view.children());
+        assert_eq!(lookup.is_recovered(), view.is_recovered());
+    }
+
+    let left_sequence = left
+        .node_views()
+        .map(|view| {
+            (
+                view.id().index(),
+                view.kind().clone(),
+                view.range(),
+                view.children().to_vec(),
+                view.is_recovered(),
+            )
+        })
+        .collect::<Vec<_>>();
+    let right_sequence = right
+        .node_views()
+        .map(|view| {
+            (
+                view.id().index(),
+                view.kind().clone(),
+                view.range(),
+                view.children().to_vec(),
+                view.is_recovered(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(left_sequence, right_sequence);
+}
+
+#[test]
 fn typed_accessors_cover_current_node_and_token_kinds() {
     let source_id = source_id(2);
     let mut builder = SurfaceAstBuilder::new(source_id);

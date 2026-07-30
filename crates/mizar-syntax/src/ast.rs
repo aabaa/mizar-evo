@@ -696,6 +696,47 @@ impl SurfaceAst {
         })
     }
 
+    /// Iterates over every stored compatibility node in dense arena order.
+    ///
+    /// External consumers can recover each opaque node id through its view:
+    ///
+    /// ```
+    /// use mizar_syntax::SurfaceAst;
+    ///
+    /// fn dense_indices(ast: &SurfaceAst) -> Vec<usize> {
+    ///     ast.node_views()
+    ///         .map(|view| view.id().index())
+    ///         .collect()
+    /// }
+    /// ```
+    ///
+    /// Node ids remain opaque: neither the internal associated constructor nor
+    /// tuple-struct construction is available to external code.
+    ///
+    /// ```compile_fail
+    /// use mizar_syntax::SurfaceNodeId;
+    ///
+    /// let _ = SurfaceNodeId::new(0);
+    /// ```
+    ///
+    /// ```compile_fail
+    /// use mizar_syntax::SurfaceNodeId;
+    ///
+    /// let _ = SurfaceNodeId(0);
+    /// ```
+    pub fn node_views(
+        &self,
+    ) -> impl ExactSizeIterator<Item = SurfaceNodeView<'_>> + DoubleEndedIterator + '_ {
+        self.nodes
+            .iter()
+            .enumerate()
+            .map(|(index, node)| SurfaceNodeView {
+                ast: self,
+                id: SurfaceNodeId::new(index),
+                node,
+            })
+    }
+
     pub fn root_view(&self) -> Option<SurfaceNodeView<'_>> {
         self.root.and_then(|root| self.node_view(root))
     }

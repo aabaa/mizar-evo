@@ -2977,7 +2977,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 ## B5C R-032A preflight overlay
 
 - [x] separate mizar-syntax S-026 frozen-documentation commit を完了。
-- [ ] separate S-026 implementation、resolver R-032A/R-032B の完了後だけ
-  active B5C artifact を追加。
+- [x] separate S-026 implementation と review/verification gate を完了。
+- [ ] dedicated commit と resolver R-032A/R-032B の完了後だけ active B5C
+  artifact を追加。
 - [x] exact source-only selector、provenance authentication、private detail、
   empty public code、projected active count impact を維持。

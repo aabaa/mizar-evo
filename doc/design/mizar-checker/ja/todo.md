@@ -5928,7 +5928,8 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 ## B5C R-032A preflight overlay
 
 - [x] separate mizar-syntax S-026 frozen-documentation commitを完了。
-- [ ] separate S-026 implementation commitを完了してからR-032Aをfresh
-  inventory。
+- [x] exact dense accessor と passing review/verification gate を持つ
+  separate S-026 implementation を完了。
+- [ ] dedicated commit 後に R-032A を fresh inventory。
 - [x] lower prerequisite 中も全 frozen checker consumer、B5C fixture/
   expectation/trace、public diagnostic、semantic deferral を維持。

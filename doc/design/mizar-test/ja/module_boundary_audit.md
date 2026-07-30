@@ -11326,13 +11326,15 @@ negative 2件をconsumeできない。structural mapはknown R-032A
 prerequisiteで、conditional runner concernではない。
 
 committed B5C frozen-contract task は exact 48 paired/global design files を
-ownした。current S-026 documentation prerequisite は exact 45 design files、
-続く S-026 implementation は別 commit をownする。その後 R-032A/R-032B は
-各々 separate two-source-file implementation commit をownする。active B5C task
-はnew fixture/sidecar pair 2件、trace row 2件、runner files 3件、
-synchronized derived documentsだけをownする。このeffective five-task split
-はinventoried potential `boundary_violation`を回避し、module split/ownership
-transferをauthorizeしない。
+ownした。S-026 documentation prerequisite は exact 45 design files をownし、
+separate implementation は exact 25 files、すなわち dense syntax Rust 2 files、
+paired syntax design 12、paired resolver design 4、paired checker TODO 2、
+paired `mizar-test` design 4、global design TODO 1をownする。その後
+R-032A/R-032B は各々 separate two-source-file implementation commit をownする。
+active B5C task はnew fixture/sidecar pair 2件、trace row 2件、runner files
+3件、synchronized derived documentsだけをownする。このeffective five-task
+split はinventoried potential `boundary_violation`を回避し、module split/
+ownership transferをauthorizeしない。
 
 R-032Bはexact
 `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
