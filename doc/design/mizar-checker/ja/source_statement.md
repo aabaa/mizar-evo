@@ -3257,3 +3257,24 @@ public API/error/debug grammarは変更しない。B4Bと同じseven eventual
 upper consumers、checker 4/runner 5 testsをfreezeする。truth、
 restriction discharge、existential witness、implicit closure、facts、
 theorem acceptance/publication、proof、downstream IRはdeferredである。
+
+## Task 258B4C 実装済み Nested-Quantifier Statement Root
+
+別 commit の selector prerequisite
+`42356f38ed0e679d7b878caf0e647c6aa8148d82` が exact private 139-byte
+lower transaction を供給する。producer は全66 Surface row、raw
+`1/0/1/1/0` provenance、enriched `1/1/1/1/0`、matched Task-257B3
+handoff を認証してから upper `1/1/1/0/1` を publish する。statement と
+candidate はともに `Composite(0)`、context 0 は exact `[0]` を expose
+し、input fact はない。
+
+checker revalidation は全 lower fingerprint、exact B1/A-B2/B-B3/C
+pairing、rootless arena の全 anchor と normal recovery state、exact
+`24/1/41` ownership を cover する。resolver、row、arena、
+family/Task-248、telemetry、rollback/replay、clone/debug、empty-semantic
+matrix は exact checker 4 test / runner 5 test で cover される。
+test-sufficiency と implementation review は **NO FINDINGS** である。
+
+これは syntax/provenance transport のみである。public API、debug/error
+grammar、active artifact、trace/coverage state、truth、restriction/witness
+semantics、fact、theorem acceptance、proof、IR は変更しない。

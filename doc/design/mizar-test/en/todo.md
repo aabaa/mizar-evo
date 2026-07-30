@@ -2967,6 +2967,53 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Pass independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage/inspect and create the dedicated B4C documentation commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory the
+- [x] Stage/inspect and create the dedicated B4C documentation commit
+  `3c723316ae632a867d29e8f4fc36348be30df202`.
+- [x] Verify clean post-commit/stash invariants and fresh-inventory the
   mandatory lower-stage prerequisite.
+
+## Task 257B3 Private Double-LF Selector Prerequisite Ledger
+
+- [x] Limit the prerequisite to `runner/type_elaboration/source_formula.rs`
+  and the runner `source_formula_composition` test owner.
+- [x] Admit exactly the active 138-byte and private 139-byte identities;
+  reject zero/triple LF and source/AST identity spoofing.
+- [x] Preserve identical Task-257B3 lower tables/fingerprints, production
+  `source_formula_composition.rs`, active CLI/trace behavior, and every
+  upper owner.
+- [x] Complete independent reviews, focused and broad verification, and
+  final quality with **NO FINDINGS** and all hard gates PASS.
+- [x] Stage/inspect and create the dedicated lower-stage prerequisite
+  commit `42356f38ed0e679d7b878caf0e647c6aa8148d82`.
+- [x] Verify clean post-commit/stash invariants and fresh-inventory B4C
+  implementation.
+
+## Checker Task 258B4C Implementation Ledger
+
+- [x] Change exactly four runner and three checker files; leave every lower
+  production owner, fixture, sidecar, expectation, trace row, and
+  specification unchanged.
+- [x] Authenticate the private 139-byte route, exact Surface/raw/enriched
+  resolver profiles, Task-257B3 lower transaction, rootless 66-node
+  `24/1/41` arena, and upper `1/1/1/0/1` `Composite(0)` links.
+- [x] Pair B1/A versus B2/B versus B3/C exactly; retain the active 138-byte
+  route as lower-only and publish telemetry `2/2/[2,2,4,4,4,4]`.
+- [x] Pass focused runner `5/5` and checker `4/4`.
+- [x] Complete test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Measure runner library `488`, production `30/56872`, checker library
+  `422`, checker production `23/141952`, and exact production/test-list
+  hashes.
+- [x] Preserve public schemas, active behavior, semantics, corpus,
+  expectations, sidecars, trace status/count/backlinks, and specifications.
+- [x] Complete final source/documentation, bilingual, and boundary
+  consistency reviews with **NO FINDINGS** after correcting one Medium
+  `design_drift`.
+- [x] Run complete crate/workspace, fmt, Clippy, CLI, count/hash, scope, and
+  stash verification; reproduce every frozen count and hash.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine
+  hard gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage/inspect and commit only the exact B4C implementation scope.
+- [ ] Verify clean post-commit state, unchanged stash, and fresh-inventory
+  the next dependency-ready logical task.

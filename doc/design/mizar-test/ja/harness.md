@@ -4434,3 +4434,22 @@ restriction semantics、theorem acceptance、fact、proof/Core/CFG/VC result、
 coverage creditは変更しない。baselineはlibraries `418/481`、checker
 production `23/140821`、runner production `30/56007`、および既記録の
 production/test-list/five-CLI hashesのままである。
+
+## Checker Task 258B4C 実装済み Harness Route
+
+runner は exact 139-byte/two-LF source、全66 Surface row/root 65、raw
+owner/contribution provenance、enriched `1/1/1/1/0` を認証する。別 commit
+で admit 済みの Task-257B3 lower handoff を reuse し、upper-owned は theorem
+node 62 のみ、両 link が `Composite(0)` の exact `1/1/1/0/1` を publish
+する。
+
+frozen runner 5 test は raw/enriched resolver mutation、全 Surface axis、
+全 lower/upper fingerprint と row、unowned anchor/recovery corruption を含む
+exact `24/1/41` ownership、zero/triple-LF と active-route isolation、
+B4A/B4B/atomic/Task-248 order、transport-detail telemetry hybrid、replay、
+clone/debug、empty semantic output を cover する。shared production guard
+は exact matched profile ごとに B4A `1/1/[1,1]`、B4B `0/0/[]`、B4C
+`2/2/[2,2,4,4,4,4]` だけを accept する。
+
+public harness schema、active route、fixture、expectation、sidecar、
+trace/coverage state、diagnostic、semantic result は変更しない。

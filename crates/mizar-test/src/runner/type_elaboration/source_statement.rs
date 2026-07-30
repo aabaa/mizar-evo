@@ -290,6 +290,15 @@ const SOURCE_STATEMENT_B4B_SPELLING: &str = concat!(
     "( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ",
     "( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;",
 );
+pub(in crate::runner) const SOURCE_STATEMENT_B4C_TEXT: &str = concat!(
+    "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: ",
+    "for x being set st x = x ex y being set st for r st r = y holds x = r;\n\n",
+);
+const SOURCE_STATEMENT_B4C_LABEL: &str = "FormulaNestedQuantifierPayloadBoundary";
+const SOURCE_STATEMENT_B4C_SPELLING: &str = concat!(
+    "theorem FormulaNestedQuantifierPayloadBoundary : ",
+    "for x being set st x = x ex y being set st for r st r = y holds x = r ;",
+);
 const TASK258B4A_SURFACE_KINDS: [&str; 26] = [
     "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
     "Token(SurfaceToken { kind: Identifier, text: \"FormulaQuantifierBoundUsePayloadBoundary\" })",
@@ -754,6 +763,237 @@ fn exact_task258b4b_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool
         })
 }
 
+const TASK258B4C_SURFACE_KINDS: [&str; 66] = [
+    "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"r\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+    "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"FormulaNestedQuantifierPayloadBoundary\" })",
+    "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"being\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"st\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+    "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"ex\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"y\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"being\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"st\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"r\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"st\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"r\" })",
+    "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"y\" })",
+    "Token(SurfaceToken { kind: ReservedWord, text: \"holds\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+    "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+    "Token(SurfaceToken { kind: Identifier, text: \"r\" })",
+    "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+    "TypeHead",
+    "TypeExpression",
+    "ReserveSegment",
+    "ReserveItem",
+    "TypeHead",
+    "TypeExpression",
+    "QuantifierVariableSegment",
+    "TermReference",
+    "TermExpression",
+    "TermReference",
+    "TermExpression",
+    "BuiltinPredicateApplication",
+    "TypeHead",
+    "TypeExpression",
+    "QuantifierVariableSegment",
+    "QuantifierVariableSegment",
+    "TermReference",
+    "TermExpression",
+    "TermReference",
+    "TermExpression",
+    "BuiltinPredicateApplication",
+    "TermReference",
+    "TermExpression",
+    "TermReference",
+    "TermExpression",
+    "BuiltinPredicateApplication",
+    "QuantifiedFormula(Universal)",
+    "QuantifiedFormula(Existential)",
+    "QuantifiedFormula(Universal)",
+    "FormulaExpression",
+    "TheoremItem",
+    "ItemList",
+    "CompilationUnit",
+    "Root",
+];
+const TASK258B4C_SURFACE_RANGES: [(usize, usize); 66] = [
+    (0, 7),
+    (8, 9),
+    (10, 13),
+    (14, 17),
+    (17, 18),
+    (19, 26),
+    (27, 65),
+    (65, 66),
+    (67, 70),
+    (71, 72),
+    (73, 78),
+    (79, 82),
+    (83, 85),
+    (86, 87),
+    (88, 89),
+    (90, 91),
+    (92, 94),
+    (95, 96),
+    (97, 102),
+    (103, 106),
+    (107, 109),
+    (110, 113),
+    (114, 115),
+    (116, 118),
+    (119, 120),
+    (121, 122),
+    (123, 124),
+    (125, 130),
+    (131, 132),
+    (133, 134),
+    (135, 136),
+    (136, 137),
+    (14, 17),
+    (14, 17),
+    (8, 17),
+    (0, 18),
+    (79, 82),
+    (79, 82),
+    (71, 82),
+    (86, 87),
+    (86, 87),
+    (90, 91),
+    (90, 91),
+    (86, 91),
+    (103, 106),
+    (103, 106),
+    (95, 106),
+    (114, 115),
+    (119, 120),
+    (119, 120),
+    (123, 124),
+    (123, 124),
+    (119, 124),
+    (131, 132),
+    (131, 132),
+    (135, 136),
+    (135, 136),
+    (131, 136),
+    (110, 136),
+    (92, 136),
+    (67, 136),
+    (67, 136),
+    (19, 137),
+    (0, 137),
+    (0, 137),
+    (0, 137),
+];
+const TASK258B4C_SURFACE_CHILDREN: [&[usize]; 66] = [
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[],
+    &[3],
+    &[32],
+    &[1, 2, 33],
+    &[0, 34, 4],
+    &[11],
+    &[36],
+    &[9, 10, 37],
+    &[13],
+    &[39],
+    &[15],
+    &[41],
+    &[40, 14, 42],
+    &[19],
+    &[44],
+    &[17, 18, 45],
+    &[22],
+    &[24],
+    &[48],
+    &[26],
+    &[50],
+    &[49, 25, 51],
+    &[28],
+    &[53],
+    &[30],
+    &[55],
+    &[54, 29, 56],
+    &[21, 47, 23, 52, 27, 57],
+    &[16, 46, 20, 58],
+    &[8, 38, 12, 43, 59],
+    &[60],
+    &[5, 6, 7, 61, 31],
+    &[35, 62],
+    &[63],
+    &[
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 64,
+    ],
+];
+
+fn exact_task258b4c_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
+    source_text == SOURCE_STATEMENT_B4C_TEXT
+        && source_text.len() == 139
+        && source_text.ends_with("\n\n")
+        && ast.nodes().len() == TASK258B4C_SURFACE_KINDS.len()
+        && ast.root().map(|root| root.index()) == Some(65)
+        && ast.nodes().iter().enumerate().all(|(index, node)| {
+            format!("{:?}", node.kind) == TASK258B4C_SURFACE_KINDS[index]
+                && node.range
+                    == range(
+                        ast.source_id,
+                        TASK258B4C_SURFACE_RANGES[index].0,
+                        TASK258B4C_SURFACE_RANGES[index].1,
+                    )
+                && !node.recovered
+                && node
+                    .children
+                    .iter()
+                    .map(|child| child.index())
+                    .eq(TASK258B4C_SURFACE_CHILDREN[index].iter().copied())
+        })
+}
+
 #[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::runner) enum SourceStatementB4ASurfaceMutation {
@@ -868,6 +1108,68 @@ pub(in crate::runner) fn task258b4b_surface_profile_with_mutation_for_test(
     }
     source_text == SOURCE_STATEMENT_B4B_TEXT
         && ast.nodes().len() == 124
+        && ast.root().map(|root| root.index()) == root
+        && ast.nodes().iter().enumerate().all(|(index, node)| {
+            format!("{:?}", node.kind) == kinds[index]
+                && (node.range.start, node.range.end) == ranges[index]
+                && node.range.source_id == ast.source_id
+                && node.recovered == recoveries[index]
+                && node
+                    .children
+                    .iter()
+                    .map(|child| child.index())
+                    .eq(children[index].iter().copied())
+        })
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceStatementB4CSurfaceMutation {
+    None,
+    NodeKind(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    RootIdentity,
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn task258b4c_surface_profile_with_mutation_for_test(
+    ast: &SurfaceAst,
+    source_text: &str,
+    mutation: SourceStatementB4CSurfaceMutation,
+) -> bool {
+    let mut kinds = TASK258B4C_SURFACE_KINDS
+        .iter()
+        .map(|kind| (*kind).to_owned())
+        .collect::<Vec<_>>();
+    let mut ranges = TASK258B4C_SURFACE_RANGES.to_vec();
+    let mut recoveries = [false; 66];
+    let mut children = TASK258B4C_SURFACE_CHILDREN
+        .iter()
+        .map(|children| children.to_vec())
+        .collect::<Vec<_>>();
+    let mut root = Some(65);
+    match mutation {
+        SourceStatementB4CSurfaceMutation::None => {}
+        SourceStatementB4CSurfaceMutation::NodeKind(index) => kinds[index].push('!'),
+        SourceStatementB4CSurfaceMutation::NodeRange(index) => {
+            ranges[index].1 = ranges[index].1.saturating_add(1);
+        }
+        SourceStatementB4CSurfaceMutation::NodeRecovery(index) => {
+            recoveries[index] = !recoveries[index];
+        }
+        SourceStatementB4CSurfaceMutation::NodeChildren(index) => {
+            if children[index].len() > 1 {
+                children[index].rotate_left(1);
+            } else {
+                children[index].push(index);
+            }
+        }
+        SourceStatementB4CSurfaceMutation::RootIdentity => root = None,
+    }
+    source_text == SOURCE_STATEMENT_B4C_TEXT
+        && ast.nodes().len() == 66
         && ast.root().map(|root| root.index()) == root
         && ast.nodes().iter().enumerate().all(|(index, node)| {
             format!("{:?}", node.kind) == kinds[index]
@@ -2033,6 +2335,7 @@ pub(in crate::runner) struct SourceStatementB4ARouteInputs {
 }
 
 pub(in crate::runner) type SourceStatementB4BRouteInputs = SourceStatementB4ARouteInputs;
+pub(in crate::runner) type SourceStatementB4CRouteInputs = SourceStatementB4ARouteInputs;
 
 #[derive(Debug, Clone)]
 pub(in crate::runner) struct SourceStatementB1RouteInputs {
@@ -2181,6 +2484,95 @@ pub(in crate::runner) struct SourceStatementRouteOutput {
     pub(in crate::runner) reference_use_ordinals: Vec<usize>,
 }
 
+fn source_statement_transport_output_is_valid(
+    source_text: &str,
+    output: &SourceStatementRouteOutput,
+) -> bool {
+    output.typed_ast.source_statement().is_some()
+        && output.typed_ast.source_statement() == output.resolved.source_statement()
+        && ((output.typed_ast.source_statement_references().is_none()
+            && output.typed_ast.source_statement_witnesses().is_none()
+            && output
+                .typed_ast
+                .source_statement()
+                .is_some_and(|statement| {
+                    statement.statements().len() == 1
+                        && statement.composite_formula_fingerprint().is_some()
+                        && statement.formula_composition_fingerprint().is_some()
+                })
+            && output.typed_ast.source_composite_formula().is_some()
+            && output.typed_ast.source_formula_composition().is_some()
+            && output.typed_ast.source_composite_formula()
+                == output.resolved.source_composite_formula()
+            && output.typed_ast.source_formula_composition()
+                == output.resolved.source_formula_composition()
+            && ((source_text == SOURCE_STATEMENT_B4A_TEXT
+                && output.left_lookup_ordinal == 1
+                && output.right_lookup_ordinal == 1
+                && output.reference_use_ordinals == [1, 1])
+                || (source_text == SOURCE_STATEMENT_B4B_TEXT
+                    && output.left_lookup_ordinal == 0
+                    && output.right_lookup_ordinal == 0
+                    && output.reference_use_ordinals.is_empty())
+                || (source_text == SOURCE_STATEMENT_B4C_TEXT
+                    && output.left_lookup_ordinal == 2
+                    && output.right_lookup_ordinal == 2
+                    && output.reference_use_ordinals == [2, 2, 4, 4, 4, 4])))
+            || (output.typed_ast.source_statement_references().is_none()
+                && output.typed_ast.source_statement_witnesses().is_none()
+                && output
+                    .typed_ast
+                    .source_statement()
+                    .is_some_and(|statement| {
+                        statement.statements().len() == 1
+                            && statement.composite_formula_fingerprint().is_none()
+                            && statement.formula_composition_fingerprint().is_none()
+                    })
+                && output.typed_ast.source_composite_formula().is_none()
+                && output.typed_ast.source_formula_composition().is_none()
+                && output.left_lookup_ordinal == 1
+                && output.right_lookup_ordinal == 2
+                && output.reference_use_ordinals == [1, 2])
+            || (output.typed_ast.source_statement_references().is_none()
+                && output.typed_ast.source_statement_witnesses().is_none()
+                && output
+                    .typed_ast
+                    .source_statement()
+                    .is_some_and(|statement| statement.statements().len() == 3)
+                && output.left_lookup_ordinal == 1
+                && output.right_lookup_ordinal == 1
+                && output.reference_use_ordinals == [1; 6])
+            || (output.typed_ast.source_statement_references().is_some()
+                && output.typed_ast.source_statement_witnesses().is_none()
+                && output.left_lookup_ordinal == 1
+                && output.right_lookup_ordinal == 1
+                && output.reference_use_ordinals == [1; 8])
+            || (output.typed_ast.source_statement_references().is_none()
+                && output.typed_ast.source_statement_witnesses().is_some()
+                && output.typed_ast.source_statement_witnesses()
+                    == output.resolved.source_statement_witnesses()
+                && output
+                    .typed_ast
+                    .source_statement()
+                    .is_some_and(|statement| statement.statements().len() == 2)
+                && output.left_lookup_ordinal == 1
+                && output.right_lookup_ordinal == 1
+                && (output.reference_use_ordinals == [1; 4]
+                    || output.reference_use_ordinals == [1; 5]
+                    || output.reference_use_ordinals == [1; 6])))
+}
+
+fn source_statement_transport_detail_keys_for_output(
+    source_text: &str,
+    output: &SourceStatementRouteOutput,
+) -> Vec<String> {
+    if source_statement_transport_output_is_valid(source_text, output) {
+        Vec::new()
+    } else {
+        vec!["type_elaboration.checker.typed_ast_invalid".to_owned()]
+    }
+}
+
 pub(in crate::runner) fn source_statement_transport_detail_keys(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -2189,79 +2581,34 @@ pub(in crate::runner) fn source_statement_transport_detail_keys(
 ) -> Option<Vec<String>> {
     match source_statement_output_with_source(ast, module, symbols, source_text) {
         None => None,
-        Some(Ok(output))
-            if output.typed_ast.source_statement().is_some()
-                && output.typed_ast.source_statement() == output.resolved.source_statement()
-                && ((output.typed_ast.source_statement_references().is_none()
-                    && output.typed_ast.source_statement_witnesses().is_none()
-                    && output
-                        .typed_ast
-                        .source_statement()
-                        .is_some_and(|statement| {
-                            statement.statements().len() == 1
-                                && statement.composite_formula_fingerprint().is_some()
-                                && statement.formula_composition_fingerprint().is_some()
-                        })
-                    && output.typed_ast.source_composite_formula().is_some()
-                    && output.typed_ast.source_formula_composition().is_some()
-                    && output.typed_ast.source_composite_formula()
-                        == output.resolved.source_composite_formula()
-                    && output.typed_ast.source_formula_composition()
-                        == output.resolved.source_formula_composition()
-                    && ((source_text == SOURCE_STATEMENT_B4A_TEXT
-                        && output.left_lookup_ordinal == 1
-                        && output.right_lookup_ordinal == 1
-                        && output.reference_use_ordinals == [1, 1])
-                        || (source_text == SOURCE_STATEMENT_B4B_TEXT
-                            && output.left_lookup_ordinal == 0
-                            && output.right_lookup_ordinal == 0
-                            && output.reference_use_ordinals.is_empty())))
-                    || (output.typed_ast.source_statement_references().is_none()
-                        && output.typed_ast.source_statement_witnesses().is_none()
-                        && output
-                            .typed_ast
-                            .source_statement()
-                            .is_some_and(|statement| {
-                                statement.statements().len() == 1
-                                    && statement.composite_formula_fingerprint().is_none()
-                                    && statement.formula_composition_fingerprint().is_none()
-                            })
-                        && output.typed_ast.source_composite_formula().is_none()
-                        && output.typed_ast.source_formula_composition().is_none()
-                        && output.left_lookup_ordinal == 1
-                        && output.right_lookup_ordinal == 2
-                        && output.reference_use_ordinals == [1, 2])
-                    || (output.typed_ast.source_statement_references().is_none()
-                        && output.typed_ast.source_statement_witnesses().is_none()
-                        && output
-                            .typed_ast
-                            .source_statement()
-                            .is_some_and(|statement| statement.statements().len() == 3)
-                        && output.left_lookup_ordinal == 1
-                        && output.right_lookup_ordinal == 1
-                        && output.reference_use_ordinals == [1; 6])
-                    || (output.typed_ast.source_statement_references().is_some()
-                        && output.typed_ast.source_statement_witnesses().is_none()
-                        && output.left_lookup_ordinal == 1
-                        && output.right_lookup_ordinal == 1
-                        && output.reference_use_ordinals == [1; 8])
-                    || (output.typed_ast.source_statement_references().is_none()
-                        && output.typed_ast.source_statement_witnesses().is_some()
-                        && output.typed_ast.source_statement_witnesses()
-                            == output.resolved.source_statement_witnesses()
-                        && output
-                            .typed_ast
-                            .source_statement()
-                            .is_some_and(|statement| statement.statements().len() == 2)
-                        && output.left_lookup_ordinal == 1
-                        && output.right_lookup_ordinal == 1
-                        && (output.reference_use_ordinals == [1; 4]
-                            || output.reference_use_ordinals == [1; 5]
-                            || output.reference_use_ordinals == [1; 6]))) =>
-        {
-            Some(Vec::new())
+        Some(Ok(output)) => Some(source_statement_transport_detail_keys_for_output(
+            source_text,
+            &output,
+        )),
+        Some(Err(_)) => Some(vec![
+            "type_elaboration.checker.typed_ast_invalid".to_owned(),
+        ]),
+    }
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_transport_detail_keys_with_output_mutation_for_test(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementRouteOutput),
+) -> Option<Vec<String>> {
+    match source_statement_output_with_source(ast, module, symbols, source_text) {
+        None => None,
+        Some(Ok(mut output)) => {
+            mutate(&mut output);
+            Some(source_statement_transport_detail_keys_for_output(
+                source_text,
+                &output,
+            ))
         }
-        Some(Ok(_)) | Some(Err(_)) => Some(vec![
+        Some(Err(_)) => Some(vec![
             "type_elaboration.checker.typed_ast_invalid".to_owned(),
         ]),
     }
@@ -5958,6 +6305,15 @@ pub(in crate::runner) fn source_statement_output_with_source(
     symbols: &SymbolEnv,
     source_text: &str,
 ) -> Option<Result<SourceStatementRouteOutput, String>> {
+    if source_text == SOURCE_STATEMENT_B4C_TEXT {
+        return source_statement_b4c_output_with_source_and_mutation_impl(
+            ast,
+            module,
+            symbols,
+            source_text,
+            |_| {},
+        );
+    }
     if source_text == SOURCE_STATEMENT_B4B_TEXT {
         return source_statement_b4b_output_with_source_and_mutation_impl(
             ast,
@@ -8175,6 +8531,128 @@ fn source_statement_b3_output_with_source_and_mutation_impl(
     ))
 }
 
+fn source_statement_b4c_output_with_source_and_mutation_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB4CRouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    if source_text != SOURCE_STATEMENT_B4C_TEXT {
+        return None;
+    }
+    if !exact_task258b4c_surface_profile(ast, source_text) {
+        return Some(Err("Task258B4C exact surface identity mismatch".to_owned()));
+    }
+    if let Err(error) = validate_task258b4c_raw_resolver_env(ast, &module, symbols) {
+        return Some(Err(error));
+    }
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B4C_LABEL,
+        range(ast.source_id, 27, 65),
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b4c_output(
+        ast,
+        module,
+        &symbols,
+        source_text,
+        mutate,
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b4c_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB4CRouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    source_statement_b4c_output_with_source_and_mutation_impl(
+        ast,
+        module,
+        symbols,
+        source_text,
+        mutate,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b4c_output_with_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    if source_text != SOURCE_STATEMENT_B4C_TEXT {
+        return None;
+    }
+    if !exact_task258b4c_surface_profile(ast, source_text) {
+        return Some(Err("Task258B4C exact surface identity mismatch".to_owned()));
+    }
+    if let Err(error) = validate_task258b4c_raw_resolver_env(ast, &module, symbols) {
+        return Some(Err(error));
+    }
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        symbols,
+        SOURCE_STATEMENT_B4C_LABEL,
+        range(ast.source_id, 27, 65),
+    ) {
+        Ok(symbols) => mutate(symbols),
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b4c_output(
+        ast,
+        module,
+        &symbols,
+        source_text,
+        |_| {},
+    ))
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_statement_b4c_output_with_raw_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    if source_text != SOURCE_STATEMENT_B4C_TEXT {
+        return None;
+    }
+    if !exact_task258b4c_surface_profile(ast, source_text) {
+        return Some(Err("Task258B4C exact surface identity mismatch".to_owned()));
+    }
+    let symbols = mutate(symbols.clone());
+    if let Err(error) = validate_task258b4c_raw_resolver_env(ast, &module, &symbols) {
+        return Some(Err(error));
+    }
+    let symbols = match enrich_source_statement_resolver_env_for_owner(
+        &module,
+        &symbols,
+        SOURCE_STATEMENT_B4C_LABEL,
+        range(ast.source_id, 27, 65),
+    ) {
+        Ok(symbols) => symbols,
+        Err(error) => return Some(Err(error)),
+    };
+    Some(build_source_statement_b4c_output(
+        ast,
+        module,
+        &symbols,
+        source_text,
+        |_| {},
+    ))
+}
+
 fn source_statement_b4b_output_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -8746,6 +9224,87 @@ pub(in crate::runner) fn source_statement_b4a_resolver_env_for_test(
 }
 
 #[cfg(test)]
+pub(in crate::runner) fn source_statement_b4c_resolver_env_for_test(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Result<SymbolEnv, String> {
+    if source_text != SOURCE_STATEMENT_B4C_TEXT
+        || !exact_task258b4c_surface_profile(ast, source_text)
+    {
+        return Err("Task258B4C exact surface identity mismatch".to_owned());
+    }
+    validate_task258b4c_raw_resolver_env(ast, module, symbols)?;
+    enrich_source_statement_resolver_env_for_owner(
+        module,
+        symbols,
+        SOURCE_STATEMENT_B4C_LABEL,
+        range(ast.source_id, 27, 65),
+    )
+}
+
+fn validate_task258b4c_raw_resolver_env(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+) -> Result<(), String> {
+    if symbols.module_id() != module
+        || (
+            symbols.symbols().len(),
+            symbols.labels().len(),
+            symbols.definitions().len(),
+            symbols.contributions().len(),
+            symbols.imports().len(),
+        ) != (1, 0, 1, 1, 0)
+    {
+        return Err("Task258B4C raw resolver profile mismatch".to_owned());
+    }
+    let namespace = NamespacePath::new(module.path().as_str());
+    let owners = symbols
+        .symbols()
+        .visible_candidates(&namespace, SOURCE_STATEMENT_B4C_LABEL)
+        .into_iter()
+        .filter(|entry| entry.kind() == SymbolKind::Theorem)
+        .collect::<Vec<_>>();
+    let [owner] = owners.as_slice() else {
+        return Err("Task258B4C raw resolver theorem owner mismatch".to_owned());
+    };
+    let checked_owner = CheckedStatementOwner::validate_exact_local_theorem(
+        symbols,
+        owner.symbol().clone(),
+        ast.source_id,
+        module,
+    )
+    .map_err(|error| error.to_string())?;
+    let contribution = symbols
+        .contributions()
+        .get(owner.contribution())
+        .ok_or_else(|| "Task258B4C raw resolver contribution is missing".to_owned())?;
+    if owner.primary_spelling() != SOURCE_STATEMENT_B4C_LABEL
+        || owner.visibility() != Visibility::Public
+        || owner.export_status() != ExportStatus::Exported
+        || owner.contribution().index() != 0
+        || checked_owner.source_range() != range(ast.source_id, 19, 137)
+        || checked_owner.origin().structural_path() != [2, 1]
+        || checked_owner.origin().import_edge().is_some()
+        || checked_owner.origin().is_recovered()
+        || contribution.module() != module
+        || !matches!(
+            contribution.kind(),
+            ContributionKind::LocalSource { source_id } if *source_id == ast.source_id
+        )
+        || contribution.anchor() != &SourceAnchor::Range(range(ast.source_id, 0, 18))
+        || contribution.effects().symbols() != [owner.symbol().clone()]
+        || contribution.effects().definitions().len() != 1
+        || !contribution.effects().labels().is_empty()
+    {
+        return Err("Task258B4C raw resolver provenance mismatch".to_owned());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
 pub(in crate::runner) fn source_statement_b4b_resolver_env_for_test(
     ast: &SurfaceAst,
     module: &ModuleId,
@@ -8822,6 +9381,297 @@ fn validate_task258b4b_raw_resolver_env(
         return Err("Task258B4B raw resolver provenance mismatch".to_owned());
     }
     Ok(())
+}
+
+fn build_source_statement_b4c_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(&mut SourceStatementB4CRouteInputs),
+) -> Result<SourceStatementRouteOutput, String> {
+    if source_text != SOURCE_STATEMENT_B4C_TEXT || symbols.module_id() != &module {
+        return Err("Task258B4C source or symbol module mismatch".to_owned());
+    }
+    let lower =
+        source_formula_composition_output_with_source(ast, module.clone(), symbols, source_text)
+            .ok_or_else(|| "Task258B4C lower Task257B3 route is missing".to_owned())??;
+    let lower_typed = &lower.typed_ast;
+    let primary = lower_typed
+        .source_term()
+        .ok_or_else(|| "Task258B4C primary handoff is missing".to_owned())?;
+    let atomic = lower_typed
+        .source_atomic_formula()
+        .ok_or_else(|| "Task258B4C atomic handoff is missing".to_owned())?;
+    let composite = lower_typed
+        .source_composite_formula()
+        .ok_or_else(|| "Task258B4C composite handoff is missing".to_owned())?;
+    let composition = lower_typed
+        .source_formula_composition()
+        .ok_or_else(|| "Task258B4C composition handoff is missing".to_owned())?;
+    if lower_typed.nodes().len() != 66
+        || lower_typed.nodes().root().is_some()
+        || lower_typed.source_statement().is_some()
+        || (
+            primary.terms().len(),
+            primary.references().len(),
+            primary.numeric_type_requests().len(),
+        ) != (6, 6, 0)
+        || (
+            atomic.formulas().len(),
+            atomic.wrappers().len(),
+            atomic.predicate_segments().len(),
+            atomic.predicate_heads().len(),
+            atomic.candidates().len(),
+            atomic.type_sites().len(),
+            atomic.attributes().len(),
+            atomic.edges().len(),
+            atomic.requests().len(),
+        ) != (3, 0, 0, 0, 0, 0, 0, 6, 6)
+        || (
+            composite.formulas().len(),
+            composite.wrappers().len(),
+            composite.roots().len(),
+            composite.binders().len(),
+            composite.type_sites().len(),
+            composite.edges().len(),
+            composite.requests().len(),
+        ) != (3, 0, 1, 3, 3, 2, 6)
+        || (
+            composition.atomic_edges().len(),
+            composition.bound_uses().len(),
+        ) != (3, 6)
+        || (
+            composite.binding_env().contexts().len(),
+            composite.binding_env().bindings().len(),
+            composite.binding_env().diagnostics().len(),
+        ) != (4, 4, 0)
+    {
+        return Err("Task258B4C lower Task257B3 profile mismatch".to_owned());
+    }
+    const LOWER_OWNED_NODES: [usize; 24] = [
+        9, 17, 22, 32, 33, 36, 37, 38, 39, 41, 43, 44, 45, 46, 47, 48, 50, 52, 53, 55, 57, 58, 59,
+        60,
+    ];
+    if lower_typed.nodes().iter().any(|(id, node)| {
+        let lower_owned = LOWER_OWNED_NODES.contains(&id.index());
+        lower_owned == (node.kind.as_str() == "source.formula.composition.unowned")
+            || node.anchor != SourceAnchor::Range(ast.nodes()[id.index()].range)
+            || node.recovery != mizar_checker::typed_ast::NodeRecoveryState::Normal
+    }) {
+        return Err("Task258B4C lower owned-site partition mismatch".to_owned());
+    }
+    let nodes = lower_typed
+        .nodes()
+        .iter()
+        .map(|(id, node)| {
+            let mut node = node.clone();
+            if id == TypedNodeId::new(62) {
+                if node.kind.as_str() != "source.formula.composition.unowned" {
+                    return Err("Task258B4C theorem node is already lower-owned".to_owned());
+                }
+                node.kind = "source.statement.theorem".into();
+            }
+            Ok(node)
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    let arena = TypedArena::try_new(None, nodes).map_err(|error| error.to_string())?;
+
+    let namespace = NamespacePath::new(module.path().as_str());
+    let owners = symbols
+        .symbols()
+        .visible_candidates(&namespace, SOURCE_STATEMENT_B4C_LABEL)
+        .into_iter()
+        .filter(|entry| entry.kind() == SymbolKind::Theorem)
+        .collect::<Vec<_>>();
+    let [owner] = owners.as_slice() else {
+        return Err("Task258B4C requires one exact resolver theorem owner".to_owned());
+    };
+    let checked_owner = CheckedStatementOwner::validate_exact_local_theorem(
+        symbols,
+        owner.symbol().clone(),
+        ast.source_id,
+        &module,
+    )
+    .map_err(|error| error.to_string())?;
+    let labels = symbols
+        .labels()
+        .visible_candidates(&namespace, SOURCE_STATEMENT_B4C_LABEL);
+    let [label] = labels.as_slice() else {
+        return Err("Task258B4C resolver theorem label mismatch".to_owned());
+    };
+    let expected_origin_path = LabelOriginPath::new(format!(
+        "{}::{}::theorem::{}",
+        module.package().as_str(),
+        module.path().as_str(),
+        SOURCE_STATEMENT_B4C_LABEL,
+    ));
+    let contribution = symbols
+        .contributions()
+        .get(owner.contribution())
+        .ok_or_else(|| "Task258B4C resolver contribution is missing".to_owned())?;
+    if (
+        symbols.symbols().len(),
+        symbols.labels().len(),
+        symbols.definitions().len(),
+        symbols.contributions().len(),
+        symbols.imports().len(),
+    ) != (1, 1, 1, 1, 0)
+        || checked_owner.source_range() != range(ast.source_id, 19, 137)
+        || checked_owner.origin().structural_path() != [2, 1]
+        || checked_owner.origin().import_edge().is_some()
+        || owner.contribution().index() != 0
+        || label.origin_path() != &expected_origin_path
+        || label.kind() != LabelKind::Theorem
+        || label.visibility() != Visibility::Public
+        || label.export_status() != ExportStatus::Exported
+        || label.namespace() != &namespace
+        || label.primary_spelling() != SOURCE_STATEMENT_B4C_LABEL
+        || label.origin() != checked_owner.origin()
+        || label.contribution() != owner.contribution()
+        || label.recovery() != RecoveryState::Normal
+        || contribution.anchor() != &SourceAnchor::Range(range(ast.source_id, 0, 18))
+        || contribution.effects().symbols() != [owner.symbol().clone()]
+        || contribution.effects().definitions().len() != 1
+        || contribution.effects().labels() != [expected_origin_path]
+    {
+        return Err("Task258B4C resolver theorem provenance mismatch".to_owned());
+    }
+
+    let mut inputs = SourceStatementB4CRouteInputs {
+        binding_env: composite.binding_env().clone(),
+        arena,
+        primary: primary.clone(),
+        atomic: atomic.clone(),
+        composite: composite.clone(),
+        composition: composition.clone(),
+        statement: SourceStatementHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            owners: vec![SourceTheoremOwnerInput {
+                symbol: owner.symbol().clone(),
+                contribution: owner.contribution(),
+                site: TypedSiteRef::Node(TypedNodeId::new(62)),
+                source_range: range(ast.source_id, 19, 137),
+                spelling: SOURCE_STATEMENT_B4C_LABEL.to_owned(),
+                role: SourceTheoremRole::Theorem,
+                status: SourceTheoremStatus::Unmodified,
+                recovery: SourceStatementRecovery::Normal,
+            }],
+            statements: vec![SourceStatementInput {
+                owner: SourceTheoremOwnerId::new(0),
+                context: SourceStatementContextId::new(0),
+                formula: SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
+                site: TypedSiteRef::Node(TypedNodeId::new(62)),
+                source_range: range(ast.source_id, 19, 137),
+                source_ordinal: 0,
+                spelling: SOURCE_STATEMENT_B4C_SPELLING.to_owned(),
+                kind: SourceStatementKind::TheoremProposition,
+                recovery: SourceStatementRecovery::Normal,
+            }],
+            contexts: vec![SourceStatementContextInput {
+                statement: SourceStatementId::new(0),
+                binding_context: BindingContextId::new(0),
+                source_range: range(ast.source_id, 19, 137),
+                visible_bindings: vec![BindingId::new(0)],
+            }],
+            input_facts: Vec::new(),
+            candidate_facts: vec![SourceStatementCandidateFactInput {
+                statement: SourceStatementId::new(0),
+                context: SourceStatementContextId::new(0),
+                ordinal: 0,
+                kind: SourceStatementCandidateFactKind::UnverifiedProposition,
+                formula: SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
+            }],
+        },
+    };
+    mutate(&mut inputs);
+    let statement = SourceStatementProducer::build_with_formula_composition(
+        inputs.statement,
+        symbols,
+        &inputs.binding_env,
+        &inputs.primary,
+        &inputs.atomic,
+        &inputs.composite,
+        &inputs.composition,
+        &inputs.arena,
+    )
+    .map_err(|error| error.to_string())?;
+    let reference_use_ordinals = inputs
+        .primary
+        .references()
+        .iter()
+        .map(|(_, row)| row.use_ordinal())
+        .collect::<Vec<_>>();
+    let [left_lookup_ordinal, right_lookup_ordinal, 4, 4, 4, 4] = reference_use_ordinals.as_slice()
+    else {
+        return Err("Task258B4C lower reference profile mismatch".to_owned());
+    };
+    if *left_lookup_ordinal != 2 || *right_lookup_ordinal != 2 {
+        return Err("Task258B4C lower reference profile mismatch".to_owned());
+    }
+    let typed_ast = TypedAst::try_new(TypedAstParts {
+        source_id: ast.source_id,
+        module_id: module,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: inputs.arena,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())?
+    .with_source_term(inputs.primary)
+    .map_err(|error| error.to_string())?
+    .with_source_atomic_formula(inputs.atomic)
+    .map_err(|error| error.to_string())?
+    .with_source_formula_composition_statement(inputs.composite, inputs.composition, statement)
+    .map_err(|error| error.to_string())?;
+    let node_hints = typed_ast
+        .nodes()
+        .iter()
+        .map(|(typed_node, _)| ResolvedNodeKindHint {
+            typed_node,
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.statement.transport"),
+            },
+        })
+        .collect();
+    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
+    if typed_ast.source_statement() != resolved.source_statement()
+        || typed_ast.source_composite_formula() != resolved.source_composite_formula()
+        || typed_ast.source_formula_composition() != resolved.source_formula_composition()
+        || typed_ast.source_statement_references().is_some()
+        || typed_ast.source_statement_witnesses().is_some()
+        || !typed_ast.contexts().is_empty()
+        || !typed_ast.types().is_empty()
+        || !typed_ast.facts().is_empty()
+        || !typed_ast.coercions().is_empty()
+        || !typed_ast.initial_obligations().is_empty()
+        || !typed_ast.diagnostics().is_empty()
+        || !resolved.expr_metadata().is_empty()
+        || !resolved.cluster_facts().is_empty()
+        || !resolved.diagnostics().is_empty()
+        || !resolved.checked_formulas().is_empty()
+        || !resolved.statement_semantics().is_empty()
+        || !resolved.checked_proofs().is_empty()
+        || !resolved.checked_proof_nodes().is_empty()
+        || !resolved.checked_terminal_goals().is_empty()
+    {
+        return Err("Task258B4C immutable final handoff mismatch".to_owned());
+    }
+    Ok(SourceStatementRouteOutput {
+        typed_ast,
+        resolved,
+        left_lookup_ordinal: *left_lookup_ordinal,
+        right_lookup_ordinal: *right_lookup_ordinal,
+        reference_use_ordinals,
+    })
 }
 
 fn build_source_statement_b4b_output(

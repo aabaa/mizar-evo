@@ -2764,6 +2764,52 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] docs-only verificationと全no-op/count/hash/stash gatesをPASS。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
-- [ ] dedicated B4C documentation commitをstage/inspect/create。
-- [ ] clean post-commit/stash invariantsをverifyし、mandatory lower-stage
+- [x] dedicated B4C documentation commitをstage/inspectし、
+  `3c723316ae632a867d29e8f4fc36348be30df202`としてcreate。
+- [x] clean post-commit/stash invariantsをverifyし、mandatory lower-stage
   prerequisiteをfresh inventory。
+
+## Task 257B3 private double-LF selector prerequisite ledger
+
+- [x] prerequisiteを`runner/type_elaboration/source_formula.rs`とrunner
+  `source_formula_composition` test ownerだけに限定。
+- [x] exact active 138-byte/private 139-byte identitiesだけをadmitし、
+  zero/triple LFとsource/AST identity spoofingをreject。
+- [x] identical Task-257B3 lower tables/fingerprints、production
+  `source_formula_composition.rs`、active CLI/trace behavior、全upper
+  ownerをpreserve。
+- [x] independent reviews、focused/broad verification、final qualityを
+  **NO FINDINGS**、全hard gates PASSでcomplete。
+- [x] dedicated lower-stage prerequisiteをstage/inspectし、
+  `42356f38ed0e679d7b878caf0e647c6aa8148d82`としてcommit。
+- [x] clean post-commit/stash invariantsをverifyし、B4C implementationを
+  fresh inventory。
+
+## Checker Task 258B4C implementation ledger
+
+- [x] exact runner 4/checker 3 filesだけをchangeし、全lower production
+  owner、fixture、sidecar、expectation、trace row、specificationを
+  unchangedで保持。
+- [x] private 139-byte route、exact Surface/raw/enriched resolver profiles、
+  Task-257B3 lower transaction、rootless 66-node `24/1/41` arena、upper
+  `1/1/1/0/1`と両`Composite(0)`をauthenticate。
+- [x] B1/A対B2/B対B3/Cをexactにpairし、active 138-byte routeを
+  lower-onlyとして保持し、telemetry `2/2/[2,2,4,4,4,4]`をpublish。
+- [x] focused runner `5/5` / checker `4/4` testsをPASS。
+- [x] test-sufficiency/implementation reviewsを**NO FINDINGS**で
+  complete。
+- [x] runner library `488`、production `30/56872`、checker library
+  `422`、checker production `23/141952`、exact production/test-list
+  hashesをmeasure。
+- [x] public schemas、active behavior、semantics、corpus、expectation、
+  sidecar、trace status/count/backlinks、specificationをpreserve。
+- [x] Medium `design_drift` 1件をcorrect後、final
+  source/documentation、bilingual、boundary consistency reviewsを
+  **NO FINDINGS**でcomplete。
+- [x] complete crate/workspace、fmt、Clippy、CLI、count/hash/scope/stash
+  verificationをrunし、全frozen count/hashをreproduce。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] exact B4C implementation scopeだけをstage/inspect/commit。
+- [ ] clean post-commit state、unchanged stashをverifyし、次の
+  dependency-ready logical taskをfresh inventory。

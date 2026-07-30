@@ -1438,3 +1438,17 @@ mandatory lower-selector compatibility prerequisiteはinstaller変更前の
 separate logical task/commitである。B4C transactionはpublic installer、
 error variant、debug grammar、fact、theorem acceptance、proof、semantic
 tableを追加せず、lower-only installerはunchangedである。
+
+## Task 258B4C 実装済み Paired Installation
+
+既存 paired installer は exact B3/B4C transaction のみを admit する。
+binding `4/4/0`、primary `6/6/0`、atomic `3/0/0/0/0/0/0/6/6`、
+composite `3/0/1/3/3/2/6`、composition `3/6`、upper `1/1/1/0/1`、
+全 fingerprint、rootless 66-node arena を再検証する。全 anchor と recovery
+state は exact で、24 node は lower-owned、statement-owned は theorem node
+62 のみ、41 node は unowned のままである。
+
+cross-pairing、duplicate/partial または atomic state、Task-248 occupancy、
+stale fingerprint、rooted/relocated arena、altered ownership は mutation
+前に既存 error で fail し、deterministic replay を許す。public installer
+と semantic table は追加しない。

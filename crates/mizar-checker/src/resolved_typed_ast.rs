@@ -1566,7 +1566,9 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 .typed_ast
                 .source_statement()
                 .is_some_and(|statement| {
-                    statement.is_task_258b4a_profile() || statement.is_task_258b4b_profile()
+                    statement.is_task_258b4a_profile()
+                        || statement.is_task_258b4b_profile()
+                        || statement.is_task_258b4c_profile()
                 });
         if self.inputs.typed_ast.source_statement().is_some()
             && !source_statement_inputs_are_syntax_only(&self.inputs)
@@ -1842,7 +1844,8 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             self.inputs.typed_ast.source_statement_witnesses().cloned();
         if let Some(source_statement) = &source_statement {
             let is_task_258b4 = source_statement.is_task_258b4a_profile()
-                || source_statement.is_task_258b4b_profile();
+                || source_statement.is_task_258b4b_profile()
+                || source_statement.is_task_258b4c_profile();
             if self.inputs.typed_ast.source_context().is_some()
                 || self.inputs.typed_ast.source_type().is_some()
                 || self.inputs.typed_ast.source_attribute().is_some()

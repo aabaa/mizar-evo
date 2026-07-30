@@ -1493,3 +1493,16 @@ This frozen path adds no final-AST schema, public API, debug/error grammar,
 fact, theorem-acceptance, proof, or IR table. The separately committed
 lower-selector prerequisite must complete before this final projection is
 implemented.
+
+## Task 258B4C Implemented Final Boundary
+
+Final assembly recognizes B4C only when the typed AST retains exact B3 lower
+handoffs, B4C upper rows, matching fingerprints, the rootless exact 66-node
+arena, and `24/1/41` ownership. It validates all anchors and normal recovery
+states before cloning. Partial/cross-family state, stale fingerprints,
+relocation, atomic statement coexistence, or occupied semantic tables fail
+without partial publication and permit deterministic replay.
+
+The final AST remains a clone-preserving syntax/provenance projection:
+checked formulas, statement semantics, proofs, proof nodes, and terminal
+goals stay empty, and no schema or public API changed.

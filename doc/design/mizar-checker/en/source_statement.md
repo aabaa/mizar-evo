@@ -3771,3 +3771,23 @@ No public API, error, or debug grammar changes. The same seven eventual upper
 consumers as B4B are frozen, with four checker and five runner tests. Truth,
 restriction discharge, existential witnesses, implicit closure, facts,
 theorem acceptance/publication, proofs, and downstream IR remain deferred.
+
+## Task 258B4C Implemented Nested-Quantifier Statement Root
+
+The separately committed selector prerequisite
+`42356f38ed0e679d7b878caf0e647c6aa8148d82` supplies the exact private
+139-byte lower transaction. The producer authenticates all 66 Surface rows,
+raw `1/0/1/1/0` provenance, enriched `1/1/1/1/0`, and matched Task-257B3
+handoffs before publishing upper `1/1/1/0/1`. Statement and candidate both
+target `Composite(0)`; context 0 exposes exactly `[0]`, with no input fact.
+
+Checker revalidation covers all lower fingerprints, exact B1/A-B2/B-B3/C
+pairing, every rootless-arena anchor and normal recovery state, and exact
+`24/1/41` ownership. Resolver, row, arena, family/Task-248, telemetry,
+rollback/replay, clone/debug, and empty-semantic matrices are covered by
+exactly four checker and five runner tests. Test-sufficiency and
+implementation reviews report **NO FINDINGS**.
+
+This remains syntax/provenance transport only. Public APIs, debug/error
+grammar, active artifacts, trace/coverage state, truth, restriction or
+witness semantics, facts, theorem acceptance, proof, and IR are unchanged.

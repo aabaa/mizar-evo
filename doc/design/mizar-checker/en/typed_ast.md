@@ -1498,3 +1498,17 @@ logical task and commit before this installer changes. The B4C transaction
 adds no public installer, error variant, debug grammar, fact, theorem
 acceptance, proof, or semantic table; the lower-only installer remains
 unchanged.
+
+## Task 258B4C Implemented Paired Installation
+
+The existing paired installer now admits only the exact B3/B4C transaction.
+It revalidates binding `4/4/0`, primary `6/6/0`, atomic
+`3/0/0/0/0/0/0/6/6`, composite `3/0/1/3/3/2/6`, composition `3/6`,
+upper `1/1/1/0/1`, all fingerprints, and the rootless 66-node arena. Every
+anchor and recovery state is exact; 24 nodes remain lower-owned, theorem
+node 62 is the only statement-owned node, and 41 nodes remain unowned.
+
+Cross-pairings, duplicate/partial or atomic state, Task-248 occupancy, stale
+fingerprints, rooted/relocated arenas, and altered ownership fail before
+mutation with the existing error and replay deterministically. No public
+installer or semantic table was added.

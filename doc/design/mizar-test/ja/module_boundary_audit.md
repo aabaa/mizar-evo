@@ -11191,3 +11191,16 @@ scope、future two-file then seven-file separation、forbidden no-op、
 verification、counts/hashes、stash invarianceはPASS。independent final
 qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、valid
 `100/100`。pendingはstaging/commit/post-commit gatesである。
+
+## Checker Task 258B4C 実装済み Runner Boundary
+
+runner change は `type_elaboration/source_statement.rs`（`14,479` lines）、
+test-only facade `type_elaboration.rs`（`820`）と `runner.rs`（`2,635`）、
+statement test leaf（`29,948`）、および frozen checker 3 consumer に限定
+される。production lower composition は `1,853` lines のまま unchanged。
+
+route は parser、resolver、binding、lower semantics の owner を移さずに
+Task-257B3 ownership を reuse する。public facade、corpus artifact、
+expectation、sidecar、trace mapping、diagnostic、semantic result は追加しない。
+independent test-sufficiency/implementation review は **NO FINDINGS** で、
+module split と ownership transfer は不要である。

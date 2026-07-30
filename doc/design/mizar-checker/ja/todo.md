@@ -5715,23 +5715,47 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   crate/workspace、diff、stash verificationをPASS。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] synchronized Task-258B4C documentationだけをstageしcached diffを
-  inspectしてdedicated documentation prerequisite commitをcreate。
-- [ ] clean post-commit/stash invariantsをverifyし、mandatory lower-stage
+- [x] synchronized Task-258B4C documentationだけをstageしcached diffを
+  inspectしてdedicated documentation prerequisite commit
+  `3c723316ae632a867d29e8f4fc36348be30df202`をcreate。
+- [x] clean post-commit/stash invariantsをverifyし、mandatory lower-stage
   prerequisiteをfresh inventory。
 
 ## Checker Task 258B4C lower-stage prerequisite ledger
 
-- [ ] authority、exact 138/139-byte routes、selector ownership、tests、
+- [x] authority、exact 138/139-byte routes、selector ownership、tests、
   counts、hashes、clean documentation commitをfresh inventory。
-- [ ] prerequisite specification reviewを**NO FINDINGS**でclose。
-- [ ] frozen runner selector/composition test ownerだけを変更し、
+- [x] prerequisite specification reviewを**NO FINDINGS**でclose。
+- [x] frozen runner selector/composition test ownerだけを変更し、
   production `source_formula_composition.rs`を変更しない。
-- [ ] test sufficiency、implementation、source/document consistencyを
+- [x] test sufficiency、implementation、source/document consistencyを
   separateに**NO FINDINGS**までreview。
-- [ ] focused/package/workspace、formatting、Clippy、CLI、count/hash、
+- [x] focused/package/workspace、formatting、Clippy、CLI、count/hash、
   scope、forbidden-artifact、audit-no-op、stash gatesをPASS。
-- [ ] independent final quality `>=90/100`、two-file staging/cached diff、
-  dedicated prerequisite commitをcomplete。
-- [ ] clean post-commit/stash invariantsをverifyし、B4C upper
+- [x] independent final quality `>=90/100`、two-file staging/cached diff、
+  dedicated prerequisite commit
+  `42356f38ed0e679d7b878caf0e647c6aa8148d82`をcomplete。
+- [x] clean post-commit/stash invariantsをverifyし、B4C upper
   implementationをfresh inventory。
+
+## Checker Task 258B4C implementation ledger
+
+- [x] frozen checker 3 / runner 4 source/test filesだけを変更。
+- [x] exact source/Surface/raw/enriched resolver provenance、lower profiles、
+  rootless `24/1/41`、upper `1/1/1/0/1`、両 `Composite(0)` link、`[0]`、
+  no input fact、telemetry `2/2/[2,2,4,4,4,4]`をauthenticate。
+- [x] exact checker `4/4` / runner `5/5`をPASSし、independent
+  test-sufficiency/implementation reviewを**NO FINDINGS**でclose。
+- [x] libraries `422/488`、production `23/141952` と `30/56872`、
+  owner sizes、production/test-list hashesをmeasure。
+- [x] public API、active/corpus authority、expectation、sidecar、
+  trace/coverage state、semantic output、lower-owner boundaryをpreserve。
+- [x] Medium `design_drift` 1件をcorrect後、final
+  source/documentation、bilingual、boundary reviewを**NO FINDINGS**で
+  complete。
+- [x] broad workspace/fmt/Clippy/CLI/count/hash/scope/stash gatesをPASSし、
+  全frozen count/hashをreproduce。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] Task-258B4Cだけをstage/inspectしimplementation commitをcreate後、
+  post-commit invariantsとnext task fresh inventoryをverify。

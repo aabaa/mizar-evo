@@ -761,7 +761,8 @@ impl TypedAst {
             || !self.initial_obligations.is_empty()
             || !self.diagnostics.is_empty()
             || !((composite.is_task_257b1_profile() && statement.is_task_258b4a_profile())
-                || (composite.is_task_257b2_profile() && statement.is_task_258b4b_profile()))
+                || (composite.is_task_257b2_profile() && statement.is_task_258b4b_profile())
+                || (composite.is_task_257b3_profile() && statement.is_task_258b4c_profile()))
         {
             return Err(TypedAstError::InvalidSourceStatement);
         }

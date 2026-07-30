@@ -1257,3 +1257,24 @@ origin movement to 0/0 is synchronized as report-only
 **NO FINDINGS**, all nine hard gates PASS, no cap, and valid `100/100`
 (`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit
 synchronization remain.
+
+## Task 258B4C Implementation Synchronization
+
+Canonical English and Japanese companions now record prerequisite commits
+`3c723316ae632a867d29e8f4fc36348be30df202` and
+`42356f38ed0e679d7b878caf0e647c6aa8148d82`, the exact seven-file
+implementation, `66/root65`, resolver `1/0/1/1/0 -> 1/1/1/1/0`, lower
+profiles, `24/1/41`, upper `1/1/1/0/1`, `[0]`, empty input facts,
+`Composite(0)`, telemetry `2/2/[2,2,4,4,4,4]`, nine exact tests, and
+unchanged semantic/trace/coverage boundaries. Both languages preserve
+libraries `422/488`, production `23/141952` and `30/56872`, owner sizes,
+and all production/test-list hashes without a synchronization exception.
+
+## Task 258B4C Implementation Final-Quality Synchronization
+
+Both languages record the corrected typed-AST and JA crate-plan placement,
+final source/documentation **NO FINDINGS**, all focused/crate/workspace,
+format, Clippy, five-CLI, count/hash/scope/stash PASSes, and independent
+final quality **NO FINDINGS**. All nine hard gates PASS with no cap at valid
+`100/100` (`20/20/15/15/10/10/5/5`). Only staging, commit, and
+post-commit inventory remain in both languages.

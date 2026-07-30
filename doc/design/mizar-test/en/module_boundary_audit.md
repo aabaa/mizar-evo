@@ -12437,3 +12437,17 @@ Exact docs-only scope, future two-file then seven-file separation, forbidden
 no-ops, verification, counts/hashes, and stash invariance PASS. Independent
 final quality reports **NO FINDINGS**, all nine hard gates PASS, no cap, and
 valid `100/100`; only staging, commit, and post-commit gates remain.
+
+## Checker Task 258B4C Implemented Runner Boundary
+
+The runner change is confined to `type_elaboration/source_statement.rs`
+(`14,479` lines), its test-only facades `type_elaboration.rs` (`820`) and
+`runner.rs` (`2,635`), and the statement test leaf (`29,948`), plus the
+three frozen checker consumers. Production lower composition remains
+unchanged at `1,853` lines.
+
+The route reuses Task-257B3 ownership without moving parser, resolver,
+binding, or lower semantics. It adds no public facade, corpus artifact,
+expectation, sidecar, trace mapping, diagnostic, or semantic result.
+Independent test-sufficiency and implementation reviews report **NO
+FINDINGS**; no module split or ownership transfer is required.

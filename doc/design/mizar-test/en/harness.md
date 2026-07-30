@@ -4688,3 +4688,22 @@ witness or restriction semantics, theorem acceptance, fact, proof/Core/CFG/
 VC result, or coverage credit changes. Baselines remain libraries
 `418/481`, checker production `23/140821`, runner production `30/56007`,
 and the previously recorded production/test-list/five-CLI hashes.
+
+## Checker Task 258B4C Implemented Harness Route
+
+The runner now authenticates the exact 139-byte/two-LF source, all 66
+Surface rows/root 65, raw owner/contribution provenance, and enriched
+`1/1/1/1/0`. It reuses the separately admitted Task-257B3 lower handoffs,
+marks only theorem node 62 as upper-owned, and publishes exact
+`1/1/1/0/1` with both links `Composite(0)`.
+
+The five frozen runner tests cover raw and enriched resolver mutations,
+every Surface axis, all lower/upper fingerprints and rows, exact
+`24/1/41` ownership including unowned anchor/recovery corruption, zero/
+triple-LF and active-route isolation, B4A/B4B/atomic/Task-248 orders,
+transport-detail telemetry hybrids, replay, clone/debug, and empty semantic
+outputs. The shared production guard accepts only B4A `1/1/[1,1]`, B4B
+`0/0/[]`, and B4C `2/2/[2,2,4,4,4,4]` for their exact matched profiles.
+
+No public harness schema, active route, fixture, expectation, sidecar,
+trace/coverage state, diagnostic, or semantic result changed.

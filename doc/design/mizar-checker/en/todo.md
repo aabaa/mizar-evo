@@ -5986,23 +5986,48 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage only synchronized Task-258B4C documentation, inspect the cached
-  diff, and create one dedicated documentation prerequisite commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory the
+- [x] Stage only synchronized Task-258B4C documentation, inspect the cached
+  diff, and create dedicated prerequisite commit
+  `3c723316ae632a867d29e8f4fc36348be30df202`.
+- [x] Verify clean post-commit/stash invariants and fresh-inventory the
   mandatory lower-stage prerequisite.
 
 ## Checker Task 258B4C Lower-Stage Prerequisite Ledger
 
-- [ ] Reinventory authority, exact 138/139-byte routes, selector ownership,
+- [x] Reinventory authority, exact 138/139-byte routes, selector ownership,
   tests, counts, hashes, and the clean documentation commit.
-- [ ] Review the prerequisite specification to **NO FINDINGS**.
-- [ ] Change only the frozen runner selector and its composition test owner;
+- [x] Review the prerequisite specification to **NO FINDINGS**.
+- [x] Change only the frozen runner selector and its composition test owner;
   do not change production `source_formula_composition.rs`.
-- [ ] Review test sufficiency, implementation, and source/document
+- [x] Review test sufficiency, implementation, and source/document
   consistency separately to **NO FINDINGS**.
-- [ ] Pass focused/package/workspace, formatting, Clippy, CLI, count/hash,
+- [x] Pass focused/package/workspace, formatting, Clippy, CLI, count/hash,
   scope, forbidden-artifact, audit-no-op, and stash gates.
-- [ ] Complete independent final quality at `>=90/100`, stage only the two
-  files, inspect cached diff, and create one dedicated prerequisite commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4C
+- [x] Complete independent final quality at `>=90/100`, stage only the two
+  files, inspect cached diff, and create dedicated prerequisite commit
+  `42356f38ed0e679d7b878caf0e647c6aa8148d82`.
+- [x] Verify clean post-commit/stash invariants and fresh-inventory B4C
   upper implementation.
+
+## Checker Task 258B4C Implementation Ledger
+
+- [x] Change only the frozen three checker and four runner source/test files.
+- [x] Authenticate exact source/Surface/raw/enriched resolver provenance,
+  lower profiles, rootless `24/1/41`, upper `1/1/1/0/1`, both
+  `Composite(0)` links, `[0]`, no input fact, and telemetry
+  `2/2/[2,2,4,4,4,4]`.
+- [x] Pass exact checker `4/4` and runner `5/5`; close independent
+  test-sufficiency and implementation reviews with **NO FINDINGS**.
+- [x] Measure libraries `422/488`, production `23/141952` and `30/56872`,
+  owner sizes, and production/test-list hashes.
+- [x] Preserve public APIs, active/corpus authority, expectations, sidecars,
+  trace/coverage state, semantic outputs, and lower-owner boundaries.
+- [x] Complete final source/documentation, bilingual, and boundary review
+  with **NO FINDINGS** after correcting one Medium `design_drift`.
+- [x] Pass broad workspace/fmt/Clippy/CLI/count/hash/scope/stash gates and
+  reproduce every frozen count and hash.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine
+  hard gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage and inspect only Task-258B4C, create one implementation commit,
+  then verify post-commit invariants and fresh-inventory the next task.

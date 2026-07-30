@@ -1436,3 +1436,16 @@ failし、replayを許す。
 fact、theorem-acceptance、proof、IR tableを追加しない。separately
 committed lower-selector prerequisiteを完了してからfinal projectionを
 implementする。
+
+## Task 258B4C 実装済み Final Boundary
+
+final assembly は typed AST が exact B3 lower handoff、B4C upper row、
+matching fingerprint、rootless exact 66-node arena、`24/1/41` ownership を
+保持する場合にだけ B4C を認識する。clone 前に全 anchor と normal recovery
+state を検証する。partial/cross-family state、stale fingerprint、
+relocation、atomic statement coexistence、occupied semantic table は
+partial publication なしで fail し、deterministic replay を許す。
+
+final AST は clone-preserving syntax/provenance projection のままである。
+checked formula、statement semantics、proof、proof node、terminal goal は空で、
+schema と public API は変更しない。

@@ -1210,3 +1210,24 @@ movementによる0/0はreport-only `repo_metadata_conflict`として同期した
 independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、
 valid `100/100`（`20/20/15/15/10/10/5/5`）として同期した。pendingは
 staging、commit、post-commit synchronizationだけ。
+
+## Task 258B4C Implementation Synchronization
+
+canonical English と Japanese companion は prerequisite commits
+`3c723316ae632a867d29e8f4fc36348be30df202` と
+`42356f38ed0e679d7b878caf0e647c6aa8148d82`、exact seven-file
+implementation、`66/root65`、resolver `1/0/1/1/0 -> 1/1/1/1/0`、
+lower profiles、`24/1/41`、upper `1/1/1/0/1`、`[0]`、empty input facts、
+`Composite(0)`、telemetry `2/2/[2,2,4,4,4,4]`、exact nine tests、
+unchanged semantic/trace/coverage boundary を同期した。両 language は
+libraries `422/488`、production `23/141952` と `30/56872`、owner sizes、
+全 production/test-list hashes を synchronization exception なしで保持する。
+
+## Task 258B4C implementation final-quality synchronization
+
+両 language は corrected typed-AST/JA crate-plan placement、final
+source/documentation **NO FINDINGS**、全 focused/crate/workspace、format、
+Clippy、five-CLI、count/hash/scope/stash PASS、independent final quality
+**NO FINDINGS**を同期する。全9 hard gatesはPASS、capなし、valid
+`100/100`（`20/20/15/15/10/10/5/5`）。両languageで残るのはstaging、
+commit、post-commit inventoryだけである。
