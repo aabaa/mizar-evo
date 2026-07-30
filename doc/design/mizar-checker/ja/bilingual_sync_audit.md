@@ -1387,3 +1387,7 @@ record/source id、全projection module/namespace/contributionを検証する。
 substitutionのindependent mutationは`proof_scope_input`だけへmapし、
 authenticated confinementだけが`proof_scope_confinement`へmapする。
 source-byte-plus-normal-AST selectorとexact 48-file scopeはunchanged。
+
+S-026 dependency overlay は EN/JA 同期済み。両言語は同じ boundary
+classification/effective commit order と、checker consumer、B5C artifact、
+diagnostic、semantics、coverage state への no-op impact を記録する。

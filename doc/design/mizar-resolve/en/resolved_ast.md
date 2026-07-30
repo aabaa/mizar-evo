@@ -400,3 +400,51 @@ The arena node's minimal structural origin path `[surface_node_id.index()]` is
 intentionally different from the richer projection/reference table origins
 specified by R-032B in `labels.md`. R-032A validates the former and R-032B
 validates the latter; neither is substituted for the other.
+
+### S-026 lower-stage dependency and validation order
+
+Fresh post-documentation preflight found that the existing syntax consumer API
+cannot enumerate a valid disconnected `SurfaceAst` node together with its
+`SurfaceNodeId`. This is a High `boundary_violation` if worked around inside
+the resolver and a `design_drift` in the earlier claim that existing APIs were
+already sufficient. R-032A therefore remains source-unimplemented until the
+separate mizar-syntax S-026 documentation and implementation commits append
+the exact dense `SurfaceAst::node_views()` accessor. R-032A ownership itself
+remains exactly the two resolver files above; it consumes S-026 and does not
+modify syntax.
+
+`SurfaceResolvedArena` stores exactly `source_id: SourceId`,
+`module: ModuleId`, and `arena: ResolvedArena`; the complete same-index mapping
+is intrinsic and has no parallel mutable map. `lower` consumes
+`ast.node_views()` in dense forward order. `resolved_node_for` returns the
+same-index resolved id only when the source index exists in the arena.
+
+Validation is fail-closed in this exact precedence:
+
+1. wrapper source;
+2. wrapper module;
+3. contained-arena child/root validity;
+4. node count;
+5. root;
+6. each dense node in order: kind, ordered children, range/anchor, recovery,
+   resolution state, reference key, origin core, then structural path.
+
+`RangeMismatch` means the origin anchor is not exactly
+`SourceAnchor::Range(surface.range)`. `RecoveryMismatch` covers disagreement
+between surface recovery, node `RecoveryState`, or origin recovered flag.
+`OriginMismatch` covers origin source, module, or nonempty import edge after
+range and recovery checks. `StructuralPathMismatch` is reserved for the final
+exact one-component checked path. Public builder inputs are child-first and a
+real `u32` overflow is impractical, so `InvalidChildOrder` and
+`StructuralPathComponentOverflow` are exercised through private checked-core
+helpers without weakening public behavior or using unsafe construction.
+
+R-032A tests must prove this precedence with simultaneous faults, not only
+independent mutations: wrapper source beats wrapper module/arena/count/root;
+wrapper module beats arena/count/root; invalid contained arena beats
+count/root; count beats root; and root beats node-field mismatches. Adjacent
+per-node fields are paired so each earlier field beats the next, and an
+earlier dense node beats every fault on a later node. Private checked-helper
+tests freeze the exact payloads
+`InvalidChildOrder { node, child }` and
+`StructuralPathComponentOverflow { node }`.

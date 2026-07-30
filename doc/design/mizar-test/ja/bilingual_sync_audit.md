@@ -1326,8 +1326,10 @@ exceptionは残らない。
 
 paired runner plan/harness/boundary audit/TODOはsame B5B commit
 `f27d2c9169b08078f00b75c4a57f94e30fa28f59`、Chapter 15/16 authority、
-classification、strict docs/R-032A/R-032B/active order、resolver-owned
-`SurfaceResolvedArena`/`ProofLabelSourceCollector` APIをfreezeする。
+classification、historical docs/R-032A/R-032B/active order、resolver-owned
+`SurfaceResolvedArena`/`ProofLabelSourceCollector` APIをfreezeする。同期
+S-026 overlay は execution order を strict S-026 docs/S-026 implementation/
+R-032A/R-032B/active B5C に supersede する。
 両languageはsame exact `Result` signature、non-exhaustive fail-closed error
 boundary、total arena/collection accessorをfreezeする。runner-fabricated
 `LabelScopePath`/ordinal/`SemanticOrigin`/`ResolvedNodeId`を禁止し、
@@ -1367,3 +1369,8 @@ LocalSource contribution kind/record module/public `ast.source_id`、
 zero/multiple cardinality、`ImportedSource`/`Summary`/`Builtin` substitution
 を含む。全mutationはinput-onlyでconfinement/public-code outputではない。
 selectionはfrozen source bytes+normal AST、scopeは48 filesのまま。
+
+EN/JA は挿入した S-026 docs/implementation prerequisite、exact 45-design-file
+documentation scope、effective five-task order も同期する。lower-stage work
+中の exact runner selector、provenance、detail、projected count、exclusionを
+保持する。

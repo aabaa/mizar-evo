@@ -148,3 +148,8 @@ lower-only repair を authorize する。
 
 R-032A/R-032B は planned で、active B5C consumer より前の別々の commit とする。この
 documentation record は implementation を主張せず、元の milestone score を変更しない。
+
+挿入した S-026 dependency は infrastructure-only。Chapter 15/16 requirement、
+`.miz` intent、expectation、trace row、coverage credit は変更しない。すでに
+freeze された R-032A structural mapping 用 complete syntax id だけを供給するため、
+`doc/design/spec_coverage_audit.md` は unchanged。

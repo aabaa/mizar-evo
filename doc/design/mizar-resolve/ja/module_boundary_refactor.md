@@ -92,3 +92,8 @@ parser/frontend production、Cargo/workspace metadata、他 resolver module、pu
 checker handoff、checker/type/proof/Core/CFG/VC responsibility は除外する。
 implementation pressure が別 source owner、public boundary、mapping owner を必要と
 する場合は、変更を広げず frozen R-032A/R-032B contract を停止・再 review する。
+
+R-032A preflight はこの stop rule を正しく発火した。dense
+`SurfaceNodeId`-bearing iteration は mizar-syntax S-026 が所有し別 commit で
+land する。R-032A は frozen resolver files からその accessor を consume するだけ。
+unsafe / dummy-AST id fabrication は禁止のまま。

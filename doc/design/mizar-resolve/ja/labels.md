@@ -433,6 +433,15 @@ case で覆う exhaustive default-deny matrix を持つ。
 
 後続 active consumer は private `mizar-test` `declaration_symbol` の
 `declaration_symbol.label.proof_scope_confinement`。public checker handoff は
-unresolved input を拒否するため除外する。docs prerequisite、R-032A、R-032B、
-active B5C の4 logical task/4 commit とし、各 fresh inventory を挟む。docs
-prerequisite は production、fixture、sidecar、trace status/count を変更しない。
+unresolved input を拒否するため除外する。historical pre-S-026 record は docs
+prerequisite、R-032A、R-032B、active B5C の4 logical task/4 commit だった。
+下記 effective order がその execution count を supersede する。各 fresh
+inventory を挟み、docs prerequisite は production、fixture、sidecar、trace
+status/count を変更しない。
+
+後続 R-032A preflight は、valid disconnected node を含む complete dense
+Surface id が既存 API だけでは得られないため、R-032A 前に別 mizar-syntax
+S-026 documentation/implementation prerequisite を挿入した。R-032B label
+contract と active B5C test intent は変わらない。effective order は S-026 docs、
+S-026 implementation、R-032A、R-032B、active B5C で、commit 間に fresh
+inventory を挟む。

@@ -2973,3 +2973,11 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   `proof_scope_input`だけへmap。
 - [x] source-bytes-plus-normal-AST selection、expectation non-selection、
   empty public code、exact 48-file scopeをunchangedに維持。
+
+## B5C R-032A preflight overlay
+
+- [x] separate mizar-syntax S-026 frozen-documentation commit を完了。
+- [ ] separate S-026 implementation、resolver R-032A/R-032B の完了後だけ
+  active B5C artifact を追加。
+- [x] exact source-only selector、provenance authentication、private detail、
+  empty public code、projected active count impact を維持。

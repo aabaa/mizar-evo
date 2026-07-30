@@ -383,3 +383,50 @@ semantics、Cargo/workspace metadata は変更しない。
 arena node の minimal structural origin `[surface_node_id.index()]` と R-032B
 `labels.md` の richer projection/reference table origin は意図的に異なる。
 R-032A は前者、R-032B は後者を validate し、相互に代用しない。
+
+### S-026 lower-stage dependency と validation order
+
+documentation 後の fresh preflight で、existing syntax consumer API は valid
+disconnected `SurfaceAst` node をその `SurfaceNodeId` と共に列挙できないことが
+判明した。resolver 内で workaround すれば High `boundary_violation`、existing
+API が十分という以前の主張は `design_drift`。したがって R-032A source は、
+exact dense `SurfaceAst::node_views()` accessor を追加する別 mizar-syntax
+S-026 documentation/implementation commit まで未実装のまま。R-032A ownership
+自体は上記 resolver 2 files のままで、S-026 を consume し syntax を変更しない。
+
+`SurfaceResolvedArena` は exact に `source_id: SourceId`、
+`module: ModuleId`、`arena: ResolvedArena` を store する。complete same-index
+mapping は intrinsic で parallel mutable map はない。`lower` は
+`ast.node_views()` を dense forward order で consume する。
+`resolved_node_for` は source index が arena に存在する場合だけ same-index
+resolved id を返す。
+
+validation は次の exact precedence で fail closed する。
+
+1. wrapper source
+2. wrapper module
+3. contained-arena child/root validity
+4. node count
+5. root
+6. dense node order ごとに kind、ordered children、range/anchor、recovery、
+   resolution state、reference key、origin core、structural path
+
+`RangeMismatch` は origin anchor が exact
+`SourceAnchor::Range(surface.range)` でない場合。`RecoveryMismatch` は
+surface recovery、node `RecoveryState`、origin recovered flag の不一致。
+`OriginMismatch` は range/recovery check 後の origin source/module/nonempty
+import edge。`StructuralPathMismatch` は最後の exact one-component checked
+path 専用。public builder input は child-first で real `u32` overflow は非現実的
+なため、`InvalidChildOrder` と `StructuralPathComponentOverflow` は public
+behavior を弱めたり unsafe construction を使わず private checked-core helper
+から試験する。
+
+R-032A test は independent mutation だけでなく simultaneous fault でこの
+precedence を証明する。wrapper source は wrapper module/arena/count/root より
+先、wrapper module は arena/count/root より先、invalid contained arena は
+count/root より先、count は root より先、root は node-field mismatch より先。
+adjacent per-node field を pair にして各 earlier field が next より先であること、
+earlier dense node が later node の全 fault より先であることもfreezeする。
+private checked-helper test は exact payload
+`InvalidChildOrder { node, child }` と
+`StructuralPathComponentOverflow { node }` をfreezeする。

@@ -152,8 +152,10 @@ This audit did not add a new follow-up task. Existing classified records remain:
   it found only documentation `design_drift` and no source/test mismatch.
 - S-021 remains explicitly deferred for rustdoc summaries until its re-entry
   trigger is met.
-- S-022 through S-025 are now closed. No new follow-up task was created by the
-  predicate-label or AST-refactor audits.
+- S-022 through S-025 are closed. Those predicate-label and AST-refactor audits
+  created no follow-up. The later S-026 docs/implementation prerequisite is
+  active post-exit infrastructure discovered independently by resolver R-032A
+  preflight; S-021 remains the sole deferred syntax task.
 
 ## Parser Task 48 Post-Exit Correspondence
 
@@ -166,3 +168,13 @@ This addendum records the syntax side of `SPEC-07-PI-PLACEMENT`. It gives no
 semantic completion credit: semantic Task 39 remains deferred. It also
 preserves the S-025 source/spec audit as the historical crate-exit record
 rather than inventing a new syntax milestone.
+
+## S-026 Infrastructure Correspondence
+
+S-026 adds no language-specification construct and changes no grammar,
+recovery, snapshot, fixture, expectation, trace status, or coverage credit.
+Its authority is the existing syntax-design permission for semantic-free
+accessors plus the resolver R-032A structural consumer. The future source/test
+evidence is limited to `SurfaceAst::node_views()` in `src/ast.rs` and the
+dense/disconnected iterator unit matrix in `src/ast/tests.rs`.
+`doc/design/spec_coverage_audit.md` therefore remains a deliberate no-op.

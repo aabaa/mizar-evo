@@ -5924,3 +5924,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   input-only mutation matrixのrunner authenticationをfreeze。
 - [x] source-bytes-plus-normal-AST selection、expectation non-selection、
   empty public code、exact 48-file scopeを維持。
+
+## B5C R-032A preflight overlay
+
+- [x] separate mizar-syntax S-026 frozen-documentation commitを完了。
+- [ ] separate S-026 implementation commitを完了してからR-032Aをfresh
+  inventory。
+- [x] lower prerequisite 中も全 frozen checker consumer、B5C fixture/
+  expectation/trace、public diagnostic、semantic deferral を維持。

@@ -99,3 +99,8 @@ public checker handoffs, and checker/type/proof/Core/CFG/VC responsibilities
 are excluded. If implementation pressure requires another source owner, public
 boundary, or mapping owner, stop and re-review the frozen R-032A/R-032B contract
 instead of broadening the change.
+
+R-032A preflight triggered that stop rule correctly. Dense
+`SurfaceNodeId`-bearing iteration belongs to mizar-syntax S-026 and must land
+there in separate commits; R-032A may only consume the accessor from its
+frozen resolver files. Unsafe or dummy-AST id fabrication remains forbidden.

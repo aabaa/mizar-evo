@@ -275,3 +275,11 @@ This addendum records syntax-only completion for `SPEC-07-PI-PLACEMENT`. It does
 not claim semantic property validation, which remains deferred to semantic
 Task 39, and it does not introduce a new `mizar-syntax` task ID. The historical
 94/100 score and S-025 exit determination above therefore remain unchanged.
+
+## S-026 Post-Exit Prerequisite
+
+The historical crate exit remains closed. S-026 is a bounded semantic-free
+accessor prerequisite for resolver R-032A with its own documentation and
+implementation commits, reviews, verification, and quality score. It does not
+reuse or alter the historical 94/100 exit score and grants no language or
+coverage completion credit.

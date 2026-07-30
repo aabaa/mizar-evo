@@ -49,7 +49,7 @@ not change `doc/spec`, `.miz` sources, or expectation sidecars.
 
 | English canonical document | Japanese companion | Synchronization result |
 |---|---|---|
-| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Responsibility, inventory, gap table, completed extensions, and planned four-step B5C/R-032A/R-032B contract are synchronized. |
+| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Responsibility, inventory, gap table, completed extensions, historical pre-S-026 four-task record, and effective S-026-docs/S-026-implementation/R-032A/R-032B/B5C five-task order are synchronized. |
 | [declarations.md](./declarations.md) | [../ja/declarations.md](../ja/declarations.md) | Declaration shell kinds, excluded/transparent nodes, visibility, recovery, identity/provenance, and public enum policy are synchronized. |
 | [env.md](./env.md) | [../ja/env.md](../ja/env.md) | `SymbolEnv` index families, contribution tracking, invalidation notes, determinism, and public enum policy are synchronized. |
 | [imports.md](./imports.md) | [../ja/imports.md](../ja/imports.md) | Import inputs/outputs, two-pass contract, path resolution, alias/export/cycle/unresolved policy, determinism, boundary notes, and public enum policy are synchronized. |
@@ -78,8 +78,11 @@ the R-031 extension.
 
 ## R-032A / R-032B Pair Recheck
 
-The paired documents freeze the same four-step order and classifications. They
-name identical R-032A arena API/error variants/derives, R-032B collector
+The paired documents freeze the same historical pre-S-026 four-task record,
+the same effective five-task order
+S-026 docs -> S-026 implementation -> R-032A -> R-032B -> active B5C, and the
+same classifications. They name identical R-032A arena API/error
+variants/derives, R-032B collector
 API/error variants/derives, `u32` overflow policy, exact file ownership,
 collector lifetime/storage/module rule, theorem-root and module-global ordinal
 walk, completion rules, exact length-framed `proof-step-v1` grammar, B5C
@@ -98,8 +101,14 @@ rejected callback/unmapped contract.
 ## Handoff
 
 Post-close-out resolver updates should treat this audit as the baseline
-bilingual sync state. The next resolver-owned dependencies are R-032A then
-R-032B, each followed by fresh inventory, before the active B5C consumer. Add
-future design files in both language directories in the same change. Behavior
-cleanup, public API changes, or new diagnostics remain outside the completed
-resolver milestone and require separate spec/test authority.
+bilingual sync state. The effective next dependencies are S-026 docs, S-026
+implementation, R-032A, and R-032B, each followed by fresh inventory, before
+the active B5C consumer. Add future design files in both language directories
+in the same change. Behavior cleanup, public API changes, or new diagnostics
+remain outside the completed resolver milestone and require separate spec/test
+authority.
+
+The S-026/R-032A dependency overlay is synchronized in EN/JA: both languages
+classify the same boundary defect, defer R-032A source until the separate
+syntax commits, preserve resolver ownership, and freeze the same validation
+precedence and exclusions.

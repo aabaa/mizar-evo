@@ -1754,3 +1754,62 @@ Means-form conditions are ordered mandatory `existence`, mandatory
 `ProofBlock` shapes remain syntax-only. Neither the new node nor its typed view
 contains resolved property identities, mode facts, proof acceptance, payload
 extraction, or coherence decisions.
+
+## S-026 Frozen Dense Compatibility-Node Iteration Contract
+
+S-026 is a post-exit, semantic-free accessor prerequisite discovered by
+resolver R-032A preflight. `SurfaceAst::nodes()` exposes all stored
+compatibility nodes but not their ids, while root, expression-root, token, and
+child views do not necessarily cover every stored node:
+`SurfaceAstBuilder` permits an otherwise valid disconnected ordinary node.
+Minting a `SurfaceNodeId` in a consumer, using `unsafe`, or constructing a
+dummy AST solely to borrow its ids would violate the syntax ownership boundary.
+
+The exact appended API is:
+
+```rust
+pub fn node_views(
+    &self,
+) -> impl ExactSizeIterator<Item = SurfaceNodeView<'_>>
+       + DoubleEndedIterator
+       + '_
+```
+
+The iterator enumerates `self.nodes` densely in immutable arena order. It
+yields every stored compatibility node exactly once, including disconnected
+ordinary nodes, tokens, recovered nodes, the root, and the expression root.
+For every yielded view, `view.id().index()` equals its zero-based position,
+`self.node_view(view.id())` reproduces the same id, kind, range, children, and
+recovery state, and `len()`/`size_hint()` report the exact remaining count.
+Forward and reverse iteration are deterministic; an empty AST yields no row.
+Equivalent ASTs yield equal observable `(index, kind, range, children,
+recovered)` sequences.
+
+This is a compatibility-view accessor only. It adds no public id constructor,
+mutation, serialization, raw rowan traversal, semantic identity, owner path,
+resolution state, proof scope, or proof-reuse identity. Existing
+`nodes()`/`node()`/`node_view()` behavior, parser construction, green trees,
+snapshot text, trivia, recovery, and syntax-kind numbering remain unchanged.
+
+The later implementation owns exactly `crates/mizar-syntax/src/ast.rs`,
+`crates/mizar-syntax/src/ast/tests.rs`, and synchronized design/ledger records.
+The unit matrix freezes these exact roles and iterator laws:
+
+- empty and connected arenas;
+- a disconnected ordinary node;
+- a proper non-root expression root;
+- one node that is both root and expression root;
+- one token/recovered role overlap, still emitted exactly once;
+- initial and post-step `len()` / `size_hint()` while alternating `next()` and
+  `next_back()` through exhaustion, with exact forward/reverse ids;
+- lookup round-trip and equivalent-input observable-sequence equality.
+
+The implementation also adds a compile-pass rustdoc example on `node_views()`
+that uses only the public API to read `view.id().index()`, and compile-fail
+rustdoc evidence that external code cannot construct `SurfaceNodeId`.
+`cargo test --doc -p mizar-syntax` is therefore a focused hard gate in addition
+to unit and downstream tests. The sole currently authorized production
+consumer is resolver R-032A complete same-index structural lowering; S-026
+itself performs no lowering. It changes no parser/frontend production, `.miz`
+fixture, expectation, sidecar, trace metadata, language specification, or
+Cargo metadata.

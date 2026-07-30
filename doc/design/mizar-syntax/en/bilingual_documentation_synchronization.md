@@ -48,8 +48,10 @@ English and Japanese readers.
 - No remaining public API, enum, diagnostic, or method-level drift was found
   between the English canonical module specs and the Japanese companions.
 - Module and task statuses are synchronized: S-001 through S-020 and S-022
-  through S-025 are complete, S-021 remains explicitly deferred, parser tasks
-  4-36 are complete where paired with `mizar-syntax`, and existing follow-ups
+  through S-025 are complete, S-026 frozen documentation is complete and its
+  separate implementation is the active post-exit prerequisite, S-021 remains
+  the sole explicitly deferred syntax task, parser tasks 4-36 are complete
+  where paired with `mizar-syntax`, and existing follow-ups
   `MSYN-GAP-001`, `MSYN-GAP-003`, and `MSYN-GAP-013` remain classified.
 - Terminology is synchronized for `SurfaceAst`, `SurfaceAstBuilder`,
   `SurfaceNodeView`, `SyntaxKind`, `SurfaceNodeKind`, `SurfaceTokenKind`,
@@ -90,15 +92,17 @@ English and Japanese readers.
   some source/test inventories still named only `src/ast.rs` after AST tests and
   helpers moved under `src/ast/`. English and Japanese companions now agree
   that tasks 24-25 are complete, the source split is private implementation
-  layout, and only S-021 remains deferred in `mizar-syntax`.
+  layout, and at that S-025 checkpoint only S-021 remained deferred. The later
+  S-026 overlay now records its active post-exit docs/implementation
+  prerequisite without changing S-021's sole-deferred status.
 
 ## Pair Checklist
 
 | English canonical | Japanese companion | Synchronization status |
 |---|---|---|
 | [README.md](./README.md) | [../ja/README.md](../ja/README.md) | Module index, crate boundary, status through S-025 plus the Parser Task 48 post-exit addendum, and cross-cutting audit links are synchronized. |
-| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Crate responsibility, specification/test references, parser task pairing, gap classification, task decomposition, S-020 result, exit criteria, and the Parser Task 48 post-exit addendum are synchronized. |
-| [ast.md](./ast.md) | [../ja/ast.md](../ja/ast.md) | Public API, private source layout, rowan storage boundary, syntax vocabulary through task 35 plus task-22 predicate redefinition label follow-through and Parser Task 48 `PropertyImplementation`, compatibility view policy, append-only raw-kind policy through 192, identity/reuse rules, and task status are synchronized. |
+| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Crate responsibility, specification/test references, parser task pairing, gap classification, task decomposition, S-020 result, exit criteria, Parser Task 48 addendum, and active S-026 exact 45-file prerequisite are synchronized. |
+| [ast.md](./ast.md) | [../ja/ast.md](../ja/ast.md) | Public API, private source layout, rowan storage boundary, syntax vocabulary through task 35 plus task-22/Task-48 follow-through, compatibility-view policy, append-only raw-kind policy through 192, identity/reuse rules, and the exact S-026 dense iterator/test/rustdoc contract are synchronized. |
 | [trivia.md](./trivia.md) | [../ja/trivia.md](../ja/trivia.md) | Public API, trivia side-table ownership, sorting, attachment, snapshot behavior, and parser/frontend responsibility boundary are synchronized. |
 | [recovery.md](./recovery.md) | [../ja/recovery.md](../ja/recovery.md) | Public API, recovery kinds, diagnostic codes, active and vocabulary-only producer status, malformed annotation recovery, and source/test evidence are synchronized. |
 | [grammar_audit.md](./grammar_audit.md) | [../ja/grammar_audit.md](../ja/grammar_audit.md) | Grammar gate findings, parser task map, gap classifications, close-out status, and the syntax-only Task 48 placement follow-through are synchronized. |
@@ -107,7 +111,7 @@ English and Japanese readers.
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | S-019, S-023, and S-025 source/spec/test correspondence, public API and method traceability, follow-up records, and the Parser Task 48 post-exit correspondence are synchronized. |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This S-020/S-023/S-025 audit and the Parser Task 48 post-exit synchronization record are mirrored in both languages. |
 | [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Historical task-35 exit status plus refreshed S-025 close-out status and the non-rescoring Parser Task 48 syntax-only addendum are synchronized. |
-| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized through S-025 plus the parser-owned Task 48 vocabulary increment; S-021 and semantic Task 39 remain deferred in both languages. |
+| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized through S-025 plus the parser-owned Task 48 increment and active S-026 prerequisite; S-021 is the sole deferred syntax task and semantic Task 39 remains outside the crate in both languages. |
 
 ## Link Policy
 
@@ -149,3 +153,9 @@ kind and accessor, snapshot/raw-kind/node-kind/rowan support, and the
 source-shaped `DefinitionParameter` path through `TypeHead`. Both languages
 also state that the credit is syntax-only, semantic Task 39 remains deferred,
 and the historical S-025 exit record is not a newly numbered syntax milestone.
+
+S-026 is a new post-exit resolver prerequisite, not a reopened syntax-language
+milestone. The English canonical and Japanese companion freeze the same
+`SurfaceAst::node_views()` signature, dense/exact-size/double-ended guarantees,
+disconnected-node obligation, syntax-only boundary, tests, ownership,
+baselines, exclusions, and two-commit documentation/implementation order.

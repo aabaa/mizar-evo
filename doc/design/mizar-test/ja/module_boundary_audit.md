@@ -11325,11 +11325,13 @@ Core/CFG/VC ownerはexcluded。特にchecker
 negative 2件をconsumeできない。structural mapはknown R-032A
 prerequisiteで、conditional runner concernではない。
 
-current documentation taskはexact 48 paired/global design filesをownする。
-R-032A/R-032Bは各々separate two-source-file implementation commitをownする。
-active B5C taskはnew fixture/sidecar pair 2件、trace row 2件、runner files
-3件、synchronized derived documentsだけをownする。このfour-task splitは
-inventoried potential `boundary_violation`を回避し、module split/ownership
+committed B5C frozen-contract task は exact 48 paired/global design files を
+ownした。current S-026 documentation prerequisite は exact 45 design files、
+続く S-026 implementation は別 commit をownする。その後 R-032A/R-032B は
+各々 separate two-source-file implementation commit をownする。active B5C task
+はnew fixture/sidecar pair 2件、trace row 2件、runner files 3件、
+synchronized derived documentsだけをownする。このeffective five-task split
+はinventoried potential `boundary_violation`を回避し、module split/ownership
 transferをauthorizeしない。
 
 R-032Bはexact
@@ -11354,3 +11356,7 @@ contribution、contribution cardinality zero/multiple、id、
 idのindependent mutationはすべて
 `declaration_symbol.label.proof_scope_input`だけへmapし、confinement/public
 codeへmapしない。selectionはsource-bytes-plus-normal-ASTだけのまま。
+
+S-026 は dense syntax view だけを所有し runner を select/execute できない。
+R-032A/R-032B は resolver owner、active B5C は後続 mizar-test consumer。
+separate commit が3 boundary を保持する。

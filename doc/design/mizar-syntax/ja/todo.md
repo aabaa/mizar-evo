@@ -12,7 +12,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage 境界、task-35 vocabulary、task 22 の predicate-label follow-through、task 24 の挙動維持 source split、S-025 refactor audit、Parser Tasks 48/46 の post-exit `PropertyImplementation` / `OperatorDeclaration` vocabulary increment は完了済み。S-021 rustdoc summary と semantic Task 39 は deferred のまま残る |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [~] historical rowan/task-35/S-025 milestone と Parser Tasks 48/46 increment は完了済み。S-026 dense-view frozen documentation は complete、separate implementation は active。S-021 は sole deferred syntax task、semantic Task 39 は crate 外のまま |
 
 ## Parser Task 46 post-exit vocabulary addendum
 
@@ -696,5 +696,41 @@ cargo test -p mizar-frontend
   semantic property validation はこの syntax addendum の範囲外であり、semantic
   Task 39 に deferred のまま残る。
 
-新しい `mizar-syntax` task ID は導入しない。historical な S-025 exit status と
-S-021 の policy-triggered rustdoc deferral はそのまま保持する。
+historical Parser Task 48 addendum は新しい `mizar-syntax` task ID を導入しなかった。
+下記 S-026 は後に独立して発見した post-exit prerequisite である。historical
+S-025 exit status と S-021 policy-triggered rustdoc deferral はそのまま保持する。
+
+## S-026 dense compatibility-node view
+
+26. **dense immutable node-view iteration。** [~]
+    - [x] この同期 frozen-contract documentation prerequisite を専用 commit
+      として完了し、production、test、fixture、expectation、trace metadata、
+      specification、snapshot、Cargo file は変更しない。repeated
+      specification、test-contract、source/documentation review は
+      **NO FINDINGS**、全 verification と quality 9 hard gates は valid
+      `100/100` でPASS。
+    - [ ] 次に [ast.md](./ast.md) の exact `SurfaceAst::node_views()` API を
+      `src/ast.rs`、complete unit matrix を `src/ast/tests.rs` にだけ追加し、
+      同期 design ledger と別 implementation commit にする。
+    - dense arena order、全 stored node exactly once、disconnected、token、
+      recovered、root、proper non-root expression-root、root/expression-root
+      overlap、token/recovered role overlap、empty、exact-size、double-ended、
+      lookup round-trip、equivalent-input behavior を証明する。role overlap
+      は1 rowだけをemitする。
+    - `next()` / `next_back()` を交互に exhaustion まで進め、initial と各 step
+      後の `len()` / `size_hint()`、exact forward/reverse id order をfreezeする。
+    - external consumer が `node_views()` を呼び `view.id().index()` を読める
+      compile-pass rustdoc evidence と、external code が `SurfaceNodeId` を
+      construct できない compile-fail rustdoc evidence を追加し、
+      `cargo test --doc -p mizar-syntax` を実行する。
+    - id constructor、mutation、serialization、semantic field、raw rowan
+      traversal、parser behavior、snapshot change、language behavior は追加しない。
+    - finding-free review と protocol verification 後に fresh inventory し、
+      resolver R-032A へ戻る。
+    - deps: B5C docs commit `1527ca611d3ea33af22675a31cc2d7eaa2bdb07e`。
+      authority は [ast.md](./ast.md) semantic-free accessor boundary と
+      resolver R-032A complete same-index consumer。
+    - documentation ownership は exact 45 design files: `mizar-syntax` six
+      paired families、`mizar-resolve` eight paired families、
+      `mizar-checker` four paired families、`mizar-test` four paired
+      families、global `doc/design/todo.md`。`spec_coverage_audit.md` は no-op。

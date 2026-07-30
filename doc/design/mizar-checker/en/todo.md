@@ -6203,3 +6203,12 @@ implementation commit does not satisfy a producer task.
   field, with the complete independent input-only mutation matrix.
 - [x] Preserve source-bytes-plus-normal-AST selection, expectation
   non-selection, empty public codes, and the exact 48-file scope.
+
+## B5C R-032A Preflight Overlay
+
+- [x] Complete the separate mizar-syntax S-026 frozen-documentation commit.
+- [ ] Complete the separate S-026 implementation commit, then
+  fresh-inventory R-032A.
+- [x] Preserve all frozen checker consumers, B5C fixtures/expectations/trace,
+  public diagnostics, and semantic deferrals while the lower prerequisite
+  lands.

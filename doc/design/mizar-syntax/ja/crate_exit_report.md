@@ -269,3 +269,10 @@ recovery path を覆う。
 semantic property validation は主張せず、semantic Task 39 に deferred のまま残す。
 また、新しい `mizar-syntax` task ID を導入しない。したがって、上記の historical
 94/100 score と S-025 exit determination は変更しない。
+
+## S-026 post-exit prerequisite
+
+historical crate exit は closed のまま。S-026 は resolver R-032A 用 bounded
+semantic-free accessor prerequisite で、独自 documentation/implementation commit、
+review、verification、quality score を持つ。historical 94/100 exit score を再利用/
+変更せず、language/coverage completion credit を与えない。

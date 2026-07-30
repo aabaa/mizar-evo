@@ -219,7 +219,10 @@ Medium `source_drift`、旧 R-023 full-source-walk attribution は
 `design_drift`。active B5C coverage 欠如は R-G007 `test_gap`、public code 欠如は
 Low deferred R-G001 `spec_gap` のまま。
 
-順序は docs、R-032A、R-032B、active B5C の4 separate commit。R-032A は
+pre-S-026 record の順序は docs、R-032A、R-032B、active B5C の4 separate
+commit だった。後続 S-026 dependency overlay は execution order を S-026
+docs、S-026 implementation、R-032A、R-032B、active B5C に supersede する。
+R-032A は
 `resolved_ast.rs` / `resolved_ast/tests.rs` だけを所有し、`resolved_ast.md`
 exact validated arena/error table（state/reference-key mismatch を含む）を実装する。
 R-032B は `labels.rs` /
@@ -253,3 +256,7 @@ fresh inventory が pass した場合だけ、後続 private `mizar-test`
 `declaration_symbol.label.proof_scope_confinement` を所有してよい。public
 checker `SourceStatementReferenceHandoff` は unresolved reference を拒否するため
 除外したままにする。
+
+historical resolver exit は closed のまま。S-026 は external syntax
+prerequisite、R-032A/R-032B は独自 commit/quality gate を持つ bounded post-exit
+follow-up で、historical score を再利用・変更しない。

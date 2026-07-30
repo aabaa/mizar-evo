@@ -1125,3 +1125,8 @@ module/namespace/contributionのindependent authenticationだけ。field-by-fiel
 mutation matrixは`proof_scope_input`だけへmapし、authenticated confinement
 だけが`proof_scope_confinement`へmapする。どちらのboundaryもchecker
 consumerを追加せず48-file scopeを変えない。
+
+R-032A preflight は prospective resolver-side workaround を正しく停止した。
+dense compatibility-node id は mizar-syntax S-026 ownership、R-032A は後で
+accessor を consume するだけ。checker/runner/resolver ownership leak を防ぎ、
+全 frozen B5C consumer boundary は unchanged。

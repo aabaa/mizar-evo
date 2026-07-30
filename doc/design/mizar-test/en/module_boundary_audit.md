@@ -12582,12 +12582,14 @@ Core/CFG/VC owners are excluded. In particular, checker
 either negative. The structural map is a known R-032A prerequisite, not a
 conditional runner concern.
 
-The current documentation task owns exactly 48 paired/global design files.
-R-032A and R-032B each own their separate two-source-file implementation
-commit. The active B5C task owns only the two new fixture/sidecar pairs, two
-trace rows, three runner files, and synchronized derived documents. This
-four-task split avoids the inventoried potential `boundary_violation`; no
-module split or ownership transfer is authorized.
+The committed B5C frozen-contract task owned exactly 48 paired/global design
+files. The current S-026 documentation prerequisite owns exactly 45 design
+files, followed by an S-026 implementation commit. R-032A and R-032B then
+each own their separate two-source-file implementation commit. The active B5C
+task owns only the two new fixture/sidecar pairs, two trace rows, three runner
+files, and synchronized derived documents. This effective five-task split
+avoids the inventoried potential `boundary_violation`; no module split or
+ownership transfer is authorized.
 
 R-032B exclusively owns the exact
 `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
@@ -12610,3 +12612,7 @@ zero/multiple cardinality, id, `ImportedSource`/`Summary`/`Builtin` kind,
 record module, and LocalSource source id all map only to
 `declaration_symbol.label.proof_scope_input`. They never map to confinement
 or a public code. Selection remains source-bytes-plus-normal-AST only.
+
+S-026 owns only dense syntax views and cannot select or execute the runner.
+R-032A/R-032B remain resolver owners; active B5C remains the later mizar-test
+consumer. Separate commits preserve all three boundaries.

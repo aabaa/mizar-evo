@@ -522,5 +522,13 @@ The documentation prerequisite changes no production source, `.miz` fixture,
 expectation sidecar, trace status/count, or public API. R-032A and R-032B must
 be later separate commits and must not change parser/frontend production,
 Cargo/workspace metadata, checker/type/proof/Core/CFG/VC behavior, public
-diagnostic codes, or the active runner. The downstream B5C active consumer is
-the fourth logical task after fresh inventory.
+diagnostic codes, or the active runner. In the historical pre-S-026 record,
+the downstream B5C active consumer was the fourth logical task after fresh
+inventory; the effective order below supersedes that execution count.
+
+R-032A preflight subsequently inserted the separate mizar-syntax S-026
+documentation and implementation prerequisites before R-032A because complete
+dense Surface ids cannot otherwise include a valid disconnected node. This
+does not change any R-032B label contract or active B5C test intent. The
+effective order is S-026 docs, S-026 implementation, R-032A, R-032B, active
+B5C, with fresh inventory between commits.

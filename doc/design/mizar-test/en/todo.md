@@ -3191,3 +3191,11 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   only to `proof_scope_input`.
 - [x] Keep source-bytes-plus-normal-AST selection, expectation
   non-selection, empty public codes, and the exact 48-file scope unchanged.
+
+## B5C R-032A Preflight Overlay
+
+- [x] Complete the separate mizar-syntax S-026 frozen-documentation commit.
+- [ ] Wait for the separate S-026 implementation commit, then resolver
+  R-032A/R-032B, before adding active B5C artifacts.
+- [x] Preserve the exact source-only selector, provenance authentication,
+  private details, empty public codes, and projected active count impact.

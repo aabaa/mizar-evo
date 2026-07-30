@@ -152,3 +152,8 @@ following lower-only repair:
 R-032A and R-032B are planned separate commits before the active B5C consumer.
 This documentation record neither claims implementation nor changes the
 original milestone score.
+
+The inserted S-026 dependency is infrastructure-only. It changes no Chapter 15
+or 16 requirement, `.miz` intent, expectation, trace row, or coverage credit.
+It supplies only complete syntax ids required by the already frozen R-032A
+structural mapping, so `doc/design/spec_coverage_audit.md` remains unchanged.

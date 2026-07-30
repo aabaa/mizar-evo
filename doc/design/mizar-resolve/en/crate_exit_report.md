@@ -226,8 +226,10 @@ Medium `source_drift`, while the older R-023 full-source-walk attribution is
 `design_drift`. Missing active B5C coverage remains R-G007 `test_gap`; absent
 public codes remain the Low deferred R-G001 `spec_gap`.
 
-The four-step order is documentation, R-032A, R-032B, and active B5C, each a
-separate commit. R-032A owns only `resolved_ast.rs` /
+The pre-S-026 record used the four-step order documentation, R-032A, R-032B,
+and active B5C, each a separate commit. The later S-026 dependency overlay
+supersedes that execution order with S-026 docs, S-026 implementation, R-032A,
+R-032B, and active B5C. R-032A owns only `resolved_ast.rs` /
 `resolved_ast/tests.rs` and implements the exact validated
 `SurfaceResolvedArena` plus named public non-exhaustive error table from
 `resolved_ast.md`, including state/reference-key mismatch payloads. R-032B owns
@@ -265,3 +267,7 @@ with fresh inventory, the later private `mizar-test`
 `declaration_symbol.label.proof_scope_confinement`. Public checker
 `SourceStatementReferenceHandoff` stays excluded because it rejects unresolved
 references.
+
+The historical resolver exit remains closed. S-026 is an external syntax
+prerequisite and R-032A/R-032B remain bounded post-exit follow-ups with their
+own commits and quality gates; none reuses or changes the historical score.

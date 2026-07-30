@@ -678,3 +678,15 @@ Check the task off here once tests pass.
   resolves; unresolved/ambiguous nodes stay explicit for diagnostics.
 - Resolution breadth is paced by `mizar-parser` grammar tasks; do not build
   resolution for syntax the parser cannot yet produce.
+
+## R-032A Lower-Stage Prerequisite Overlay
+
+- [x] Complete the separate mizar-syntax S-026 frozen-documentation commit,
+  proving the planned dense-id contract for every stored compatibility node,
+  including disconnected nodes.
+- [ ] Complete the separate S-026 implementation commit, then
+  fresh-inventory R-032A.
+- [ ] Implement R-032A only after S-026, using `SurfaceAst::node_views()` and
+  the exact validation precedence in [resolved_ast.md](./resolved_ast.md).
+- [x] Reject unsafe ids, dummy-AST id minting, resolver-side syntax mutation,
+  and any combined syntax/resolver commit as `boundary_violation`.

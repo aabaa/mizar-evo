@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage boundary, task-35 vocabulary, task-22 predicate-label follow-through, task-24 behavior-preserving source split, S-025 refactor audit, and Parser Tasks 48/46 post-exit `PropertyImplementation` / `OperatorDeclaration` vocabulary increments are complete; S-021 rustdoc summaries and semantic Task 39 remain deferred |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [~] historical rowan/task-35/S-025 milestone and Parser Tasks 48/46 increments are complete; S-026 dense-view frozen documentation is complete and its separate implementation is active; S-021 remains the sole deferred syntax task and semantic Task 39 remains outside this crate |
 
 ## Parser Task 46 Post-Exit Vocabulary Addendum
 
@@ -731,5 +731,44 @@ Check the task off here once tests pass.
   `SPEC-07-PI-PLACEMENT`. Semantic property validation is not part of this
   syntax addendum and remains deferred to semantic Task 39.
 
-No new `mizar-syntax` task ID is introduced. The historical S-025 exit status
-and the S-021 policy-triggered rustdoc deferral remain intact.
+The historical Parser Task 48 addendum introduced no new `mizar-syntax` task
+ID. S-026 below is a later, independently discovered post-exit prerequisite;
+the historical S-025 exit status and S-021 policy-triggered rustdoc deferral
+remain intact.
+
+## S-026 Dense Compatibility-Node Views
+
+26. **Dense immutable node-view iteration.** [~]
+    - [x] Complete this synchronized frozen-contract documentation
+      prerequisite as its own commit with no production, tests, fixtures,
+      expectations, trace metadata, specifications, snapshots, or Cargo
+      changes. Repeated specification, test-contract, and
+      source/documentation reviews report **NO FINDINGS**; all verification
+      and nine quality hard gates pass at valid `100/100`.
+    - [ ] Append only the exact `SurfaceAst::node_views()` API frozen in
+      [ast.md](./ast.md) to `src/ast.rs` and its complete unit matrix to
+      `src/ast/tests.rs`, with synchronized design ledgers in a separate
+      implementation commit.
+    - Prove dense arena order, every stored node exactly once, disconnected,
+      token, recovered, root, proper non-root expression-root,
+      root/expression-root overlap, token/recovered role overlap, empty,
+      exact-size, double-ended, lookup round-trip, and equivalent-input
+      behavior. Overlapping roles still emit one row.
+    - Freeze initial and post-step `len()` / `size_hint()` while alternating
+      `next()` and `next_back()` through exhaustion, with exact forward and
+      reverse id order.
+    - Add compile-pass rustdoc evidence that an external consumer can call
+      `node_views()` and read `view.id().index()`, plus compile-fail rustdoc
+      evidence that external code cannot construct a `SurfaceNodeId`; run
+      `cargo test --doc -p mizar-syntax`.
+    - Add no id constructor, mutation, serialization, semantic field, raw
+      rowan traversal, parser behavior, snapshot change, or language behavior.
+    - After finding-free reviews and protocol verification, fresh-inventory
+      and return to resolver R-032A.
+    - Deps: B5C docs commit `1527ca611d3ea33af22675a31cc2d7eaa2bdb07e`;
+      authority: [ast.md](./ast.md) semantic-free accessor boundary and
+      resolver R-032A's complete same-index consumer.
+    - Documentation ownership is exactly 45 design files: six paired
+      `mizar-syntax` families, eight paired `mizar-resolve` families, four
+      paired `mizar-checker` families, four paired `mizar-test` families, and
+      the global `doc/design/todo.md`; `spec_coverage_audit.md` is a no-op.

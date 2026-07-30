@@ -1371,9 +1371,11 @@ credit field remain unchanged. No synchronization exception remains.
 
 The paired runner plan, harness, boundary audit, and TODO freeze the same
 B5B commit `f27d2c9169b08078f00b75c4a57f94e30fa28f59`, Chapter
-15/16 authority, classifications, strict docs/R-032A/R-032B/active order,
-and resolver-owned `SurfaceResolvedArena` and `ProofLabelSourceCollector`
-APIs. Both languages freeze the same exact `Result` signatures,
+15/16 authority, classifications, historical
+docs/R-032A/R-032B/active order, and resolver-owned `SurfaceResolvedArena` and
+`ProofLabelSourceCollector` APIs. The synchronized S-026 overlay supersedes
+that execution order with strict S-026 docs/S-026 implementation/R-032A/
+R-032B/active B5C. Both languages freeze the same exact `Result` signatures,
 non-exhaustive fail-closed error boundaries, and total arena/collection
 accessors. They forbid runner-fabricated `LabelScopePath`, ordinal,
 `SemanticOrigin`, or `ResolvedNodeId` and exclude checker unresolved
@@ -1415,3 +1417,9 @@ contribution kind/record module/public `ast.source_id`, zero/multiple
 cardinality, and `ImportedSource`/`Summary`/`Builtin` substitutions. Every
 mutation is input-only, never confinement or public-code output. Selection
 remains frozen source bytes plus normal AST, and the scope remains 48 files.
+
+EN/JA now also synchronize the inserted S-026 docs/implementation
+prerequisites, their exact 45-design-file documentation scope, and the
+effective five-task order. They preserve the exact runner selector,
+provenance, details, projected counts, and exclusions while lower-stage work
+lands.

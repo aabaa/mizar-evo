@@ -90,7 +90,7 @@ is its task 1). "Next work" points into the
 |---|---|---|---|---|
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | — | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] complete plus parser Tasks 48/46 post-exit vocabulary increments | parked task 21 | [todo](./mizar-syntax/en/todo.md) |
+| mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [~] historical milestone complete plus parser Tasks 48/46 increments; S-026 frozen docs complete and implementation active | S-026 implementation; S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
@@ -3656,3 +3656,37 @@ or semantic owner changed. B3M2B2B remains next before B4.
   `declaration_symbol.label.proof_scope_input`.
 - [x] Preserve source-bytes-plus-normal-AST selection, expectation
   non-selection, empty public codes, and the exact 48-file scope.
+
+## mizar-syntax S-026 Dense Node-View Lower Prerequisite
+
+- [x] From clean post-B5C-docs inventory, classify the missing complete
+  id-bearing syntax traversal as a High prospective `boundary_violation` and
+  the prior existing-API-sufficiency claim as `design_drift`; confirm no
+  blocking semantic `spec_gap` or `repo_metadata_conflict`.
+- [x] Freeze `SurfaceAst::node_views()` as an immutable dense
+  `ExactSizeIterator + DoubleEndedIterator` over every stored node, including
+  disconnected, token, recovered, root, and expression-root nodes.
+- [x] Forbid public id construction, unsafe/dummy-AST id minting, mutation,
+  serialization, semantic identity, raw rowan traversal, parser behavior,
+  snapshot, fixture, expectation, trace, specification, or Cargo changes.
+- [x] Freeze implementation ownership to syntax `ast.rs` / `ast/tests.rs`,
+  exact test obligations, baselines, R-032A as sole current production
+  consumer, and no-op `spec_coverage_audit` impact.
+- [x] Refine R-032A to store only source/module/arena and validate in exact
+  source/module/arena/count/root then per-node
+  kind/children/range/recovery/state/key/origin/path order.
+- [x] Freeze this documentation task to exactly 45 design files: six paired
+  EN/JA families under `mizar-syntax` (plan, AST, bilingual audit, exit,
+  source/spec correspondence, TODO), eight paired families under
+  `mizar-resolve` (plan, bilingual audit, exit, labels, module boundary,
+  resolved AST, source/spec correspondence, TODO), four paired families each
+  under `mizar-checker` and `mizar-test` (plan, bilingual audit, module
+  boundary, TODO), plus this global TODO. Do not edit
+  `doc/design/spec_coverage_audit.md`.
+- [x] Complete independent specification, test-contract, and
+  source/documentation reviews with **NO FINDINGS**; pass focused and full
+  offline verification, exact count/hash/scope/no-op gates, and independent
+  final quality with all nine hard gates PASS at valid `100/100`.
+- [ ] After the dedicated S-026 frozen-contract documentation commit, verify
+  clean post-commit/stash invariants, fresh-inventory authority/API, and then
+  execute the separate S-026 implementation task.

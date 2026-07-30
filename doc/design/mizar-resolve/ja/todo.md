@@ -637,3 +637,16 @@ cargo test -p mizar-vc
   使う。未解決・曖昧なノードは診断のため明示的なまま残す。
 - 解決の網羅性は `mizar-parser` の文法タスクが律速する。パーサーがまだ
   生成できない構文に対する解決を先行して作らない。
+
+## R-032A lower-stage prerequisite overlay
+
+- [x] separate mizar-syntax S-026 frozen-documentation commit を完了し、
+  disconnected node を含む全 stored compatibility node の planned dense-id
+  contract を freeze。
+- [ ] separate S-026 implementation commit を完了してから R-032A を fresh
+  inventory。
+- [ ] S-026 後だけ `SurfaceAst::node_views()` と
+  [resolved_ast.md](./resolved_ast.md) exact validation precedence を使って
+  R-032A を実装。
+- [x] unsafe id、dummy-AST id minting、resolver-side syntax mutation、
+  combined syntax/resolver commit を `boundary_violation` として拒否。

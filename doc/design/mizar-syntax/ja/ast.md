@@ -1669,3 +1669,61 @@ means-form condition は ordered mandatory `existence`、mandatory `uniqueness`�
 `CorrectnessCondition`、justification、`ProofBlock` shape は syntax-only のままである。
 new node / typed view は resolved property identity、mode fact、proof acceptance、payload
 extraction、coherence decision を持たない。
+
+## S-026 frozen dense compatibility-node iteration contract
+
+S-026 は resolver R-032A preflight で発見した post-exit の semantic-free
+accessor prerequisite である。`SurfaceAst::nodes()` は stored compatibility
+node 全体を公開するが id を返さず、root / expression-root / token / child view
+だけでは全 stored node を必ずしも覆えない。`SurfaceAstBuilder` は otherwise
+valid な disconnected ordinary node を許す。consumer が `SurfaceNodeId` を
+mint すること、`unsafe`、id 借用だけの dummy AST construction は syntax
+ownership boundary 違反である。
+
+exact appended API は次である。
+
+```rust
+pub fn node_views(
+    &self,
+) -> impl ExactSizeIterator<Item = SurfaceNodeView<'_>>
+       + DoubleEndedIterator
+       + '_
+```
+
+iterator は `self.nodes` を immutable arena order で dense に列挙する。
+disconnected ordinary node、token、recovered node、root、expression root を
+含む全 stored compatibility node を exactly once 返す。各 view について
+`view.id().index()` は zero-based position と一致し、
+`self.node_view(view.id())` は同じ id/kind/range/children/recovery state を再現し、
+`len()` / `size_hint()` は exact remaining count を返す。forward/reverse
+iteration は deterministic、empty AST は row なし。同等 AST は observable
+`(index, kind, range, children, recovered)` sequence が等しい。
+
+これは compatibility-view accessor だけである。public id constructor、
+mutation、serialization、raw rowan traversal、semantic identity、owner path、
+resolution state、proof scope、proof-reuse identity は追加しない。既存
+`nodes()` / `node()` / `node_view()`、parser construction、green tree、
+snapshot text、trivia、recovery、syntax-kind numbering は unchanged。
+
+後続 implementation ownership は exact に
+`crates/mizar-syntax/src/ast.rs`、
+`crates/mizar-syntax/src/ast/tests.rs`、同期 design/ledger record だけ。
+unit matrix は次の exact role / iterator law を freeze する。
+
+- empty / connected arena。
+- disconnected ordinary node。
+- proper non-root expression root。
+- root と expression root を兼ねる1 node。
+- token/recovered role overlap 1件。exactly once だけ emit する。
+- `next()` / `next_back()` を交互に exhaustion まで進めた initial/各 step 後の
+  `len()` / `size_hint()` と exact forward/reverse id。
+- lookup round-trip と equivalent-input observable-sequence equality。
+
+implementation はさらに `node_views()` 上に、public API だけで
+`view.id().index()` を読む compile-pass rustdoc example と、external code が
+`SurfaceNodeId` を construct できない compile-fail rustdoc evidence を追加する。
+したがって unit/downstream test に加えて `cargo test --doc -p mizar-syntax` を
+focused hard gate とする。現在 authorize された唯一の production consumer は
+resolver R-032A complete same-index structural lowering であり、S-026 自体は
+lowering を行わない。parser/frontend production、`.miz` fixture、expectation、
+sidecar、trace metadata、language specification、Cargo metadata は変更しない。

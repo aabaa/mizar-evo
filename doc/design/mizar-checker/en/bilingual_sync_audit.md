@@ -1441,3 +1441,7 @@ Independent mutations of each field, both cardinality failures, and all
 `proof_scope_input`; only authenticated confinement maps to
 `proof_scope_confinement`. The source-byte-plus-normal-AST selector and exact
 48-file scope are unchanged.
+
+The S-026 dependency overlay is synchronized in EN/JA: both languages record
+the same boundary classification, effective commit order, and no-op effect on
+checker consumers, B5C artifacts, diagnostics, semantics, and coverage state.

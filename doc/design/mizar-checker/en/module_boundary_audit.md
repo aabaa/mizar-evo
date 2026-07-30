@@ -1150,3 +1150,8 @@ source id, and every projection's module/namespace/contribution. Its
 field-by-field mutation matrix maps exclusively to `proof_scope_input`;
 authenticated confinement alone maps to `proof_scope_confinement`. Neither
 boundary adds a checker consumer or changes the 48-file scope.
+
+R-032A preflight correctly stopped a prospective resolver-side workaround.
+Dense compatibility-node ids belong to mizar-syntax S-026; R-032A only
+consumes that accessor later. This prevents a new checker, runner, or resolver
+ownership leak and leaves every frozen B5C consumer boundary unchanged.
