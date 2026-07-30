@@ -4471,3 +4471,29 @@ expectation drift、boundary violationはない。origin movementはreport-only
 repeated authority/source/documentation reviewは**NO FINDINGS**。exact
 forbidden diffsは0、trace blobはunchangedで、5 metadata CLIsと全
 count/hash gatesはfrozen no-op baselineを再現した。
+
+## Task 258B3M2B2B3D implementation authority closure
+
+implementationはSpecs 13.6/4.4.3/15.4.4/16.3.3、existing qua parser、
+Task-255 `4 qua set` source/expectation/traceがauthorizeするsyntax-free
+transportだけをrealizeする。specification、`.miz`、expectation、sidecar、
+trace row/status/count/tests、active resultは変更していない。
+`spec.en.checker.formula_statement.source_payloads`は`deferred`,
+`tests = []`、Task-255 covered rowはunchanged。
+
+frozen checker 4 + runner 5 testsと`32/70/44/72/62/21` matricesに対する
+test-sufficiency reviewは**NO FINDINGS**。Qua reachability/widening、
+type-view、typing、overload/coercion、witness/proof/theorem acceptance、
+Core/CFG/VCなど全semantic deferralsを保持する。independent implementation
+reviewも**NO FINDINGS**。stale review stateのMedium `design_drift`と
+24-order/EN qua-edge wordingのLow 2件を同期修正後、final
+source/documentation consistency、bilingual、boundary reviewsも
+**NO FINDINGS**。full workspace testsと5 CLI/count/hash rerunsを含むfinal
+verificationはPASS。
+
+independent final read-only quality reviewは**NO FINDINGS**。全9 hard
+gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。metadata CLI warnings/errors `23/0`と
+large repeated-test diff review volumeはauthority/trace creditを変えない
+nonblocking residual。staging/cached diff、commit、post-commit/fresh-next
+だけがpending。

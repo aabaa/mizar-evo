@@ -1297,3 +1297,29 @@ condition-free comprehensionはgenerator/sethood rowを追加するため後続�
 する。B3D edgeはtransportのみであり、inheritance/cluster widening、
 overload/coercion、result typing、proof acceptance、comprehension、
 B4/B5、active creditはseparate ownersのままである。
+
+### Task 258B3M2B2B3D implemented qua-witness edge
+
+private exact routeはfrozen graphをrealizeする: Task-252
+`{28,30,34,41,43}`、Task-255 `{35,36,37}`、Task-256 `{32,45}`、
+Task-258 `{48,50}`、B3D `{39,40}`。Task-255
+`SetTerm(0) -> Primary(2)` through `QuaBase`と、B3D
+`Witness(0) -> SetTerm(0)`だけをpublishする。`QuaTarget`、ordered
+unresolved requests、set-only fingerprintはunchanged lower producerと
+existing upper APIからcomposeする。B3A/B3B/B3C/B3Dのpairingsと24
+family ordersはindependent exact profilesとしてのみacceptし、hybrid、
+stale、reordered、generic fallbackはatomicにfailする。
+
+checker 4 + runner 5 testsと`32/70/44/72/62/21` matricesがedge/owner/
+family isolationをcoverし、test-sufficiency reviewとindependent
+implementation reviewは**NO FINDINGS**。inheritance/cluster widening、
+overload/coercion、result typing、proof acceptance、comprehension、B4/B5、
+active creditは引き続きdeferred。24-order/qua-edge wordingとreview-state
+driftの同期修正後、source/docs consistencyとboundary repeatも
+**NO FINDINGS**、final verificationもPASS。
+
+independent final read-only quality reviewも**NO FINDINGS**、全9 hard
+gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。CLI warnings `23`/errors `0`とlarge
+repeated-test diff review volumeはnonblocking residual。残るのは
+staging/cached diff、commit、post-commit/fresh-nextだけ。

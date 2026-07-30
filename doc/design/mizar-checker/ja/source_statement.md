@@ -2991,3 +2991,30 @@ owner/unowned graphはcrate planでfreezeする。existing SetTerm
 fingerprint、producer、typed install、final replay、error、debug APIsを
 reuseする。checker 4 + runner 5 testsと`32/70/44/72/62/21` matricesを
 freezeする。
+
+## Task 258B3M2B2B3D implemented qua statement profile
+
+private exact selectorは109-byte/54-node source、local theorem/label
+provenance、Task-48/252/255/256/258 rowsをauthenticateし、proof context
+`1`のunnamed witness 1件を`SetTerm(0)`へpublishする。ownershipはfrozen
+partitionのまま、graphはformula-to-primary、`QuaBase` set-to-primary、
+witness-to-set edgesだけを含む。existing `SetTerm` target/fingerprint/
+producer APIをreuseし、legacy/application/structure siblingsを変更しない。
+
+checker tests 4件は全nodes、dependencies、hybrids/24 family orders、final
+clone/semantic deferralsをcoverし、全field matricesは
+`32/70/44/72/62/21`。focused `4/4`、checker package `406+15`はPASSし、
+test-sufficiency reviewは**NO FINDINGS**。statement moduleは`41452`
+lines、raw/normalized test-list hashesは
+`11a6c54d3b0190c5b929565bf264dd4170c1e02d66c957c47e308764ec6f4b09` /
+`d50e4a826c3cfe8d482f04e0dc4819af92d9f3ce9b7fb8ff52bf2f62f3378081`。
+independent implementation reviewは**NO FINDINGS**。source/docs
+consistencyとboundary repeatも24-order/qua-edge/review-state wording修正後に
+**NO FINDINGS**。package/fmt/full Clippy/workspace tests/5 CLI/count/hash
+final rerunsはPASS。
+
+independent final read-only quality reviewは**NO FINDINGS**、全9 hard
+gates PASS、no cap、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
+repeated-test diff review volumeはnonblocking residual。残るのはexact
+staging/cached diff、implementation commit、post-commit/fresh-nextだけ。

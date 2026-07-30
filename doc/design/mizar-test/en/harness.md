@@ -4484,3 +4484,29 @@ bytes/LF, four surface axes per node/root, resolver, the exact
 family orders, clone/rollback/debug stability, and empty semantic tables.
 No active fixture, expectation, sidecar, trace, CLI, diagnostic, or semantic
 harness surface changes.
+
+## Task 258B3M2B2B3D Implemented Runner Harness Inventory
+
+The dormant selector and five frozen runner tests now authenticate the exact
+109-byte/final-LF source, all 54 nodes/root 53 across kind/range/recovery/
+children axes, eight base plus ten label resolver mutations, and every
+safely mutable Task-48/252/255/256/258/witness field in exact
+`32/70/44/72/62/21` matrices. Each field mutation replays the clean route,
+uses its owning stage prefix, and cannot pass through the generic
+lower-dependency guard.
+
+The suite also covers `QuaBase`, target/request and complete-subtree near
+misses, all B3A/B3B/B3C/B3D pairings and 24 orders, active-route isolation,
+clone/rollback/debug stability, and empty semantics. Test-sufficiency review
+reports **NO FINDINGS**. Statement tests are now 24,769 lines; focused
+runner `5/5` and package `466+3/14/137/2/21` pass. No fixture,
+expectation, sidecar, trace, CLI, active diagnostic, or semantic harness
+surface changed. Independent implementation review reports
+**NO FINDINGS**. Source/documentation and boundary review also report
+**NO FINDINGS** after the stale-review, 24-order, and qua-edge documentation
+corrections. Both packages, formatting, full Clippy, workspace tests, five
+CLIs, and count/hash reruns PASS. Independent final read-only quality review
+reports **NO FINDINGS**; all nine hard gates PASS with no cap at valid
+`100/100` (`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff
+review, implementation commit, and post-commit/fresh-next-task gates remain
+pending.

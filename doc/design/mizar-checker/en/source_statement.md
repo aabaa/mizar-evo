@@ -3535,3 +3535,28 @@ Task 258 owns `{50,48}` and B3D owns `{40,39}`; the witness at
 unowned graph is frozen in the crate plan. Existing SetTerm fingerprint,
 producer, typed install, final replay, error, and debug APIs are reused.
 Four checker/five runner tests and `32/70/44/72/62/21` matrices are frozen.
+
+## Task 258B3M2B2B3D Implemented Qua Statement Inventory
+
+The source-statement producer now recognizes only the exact dormant
+109-byte/54-node/root-53 qua source and installs one unnamed witness
+targeting `SetTerm(0)`. It authenticates Task-48/252/255/256/258, the
+complete owner/unowned partition, local resolver provenance, the
+`QuaBase`/ordered-request graph, set fingerprint, and witness/subtree
+exclusions before publication.
+
+The frozen four checker and five runner tests exhaust bytes/final LF,
+`54 x 4` node surfaces/root, resolver provenance, exact
+`32/70/44/72/62/21` fields with replay and owning prefixes, all 24 B3
+family orders, clone/rollback/debug behavior, and empty semantics.
+Test-sufficiency review reports **NO FINDINGS**. Public APIs/errors/debug
+grammar, both Task-255 source owners, active corpus behavior, and semantic
+tables remain unchanged. Independent implementation review also reports
+**NO FINDINGS**. Repeated source/documentation and boundary review reports
+**NO FINDINGS** after correcting the Medium stale-review state and the two
+Low 24-order/qua-edge descriptions. Both packages, formatting, full Clippy,
+workspace tests, five CLIs, and count/hash reruns PASS. Independent final
+read-only quality review reports **NO FINDINGS**; all nine hard gates PASS
+with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
+staging/cached-diff review, implementation commit, and
+post-commit/fresh-next-task gates remain pending.

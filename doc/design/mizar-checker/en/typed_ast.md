@@ -1369,3 +1369,22 @@ set-only fingerprint tuple, and rolls back on stale, reordered, hybrid, or
 generic-guard state. B3A/B3B/B3C remain independently installable in every
 family order. No public schema, error text, debug grammar, dependency,
 semantic table, or active route changes.
+
+## Task 258B3M2B2B3D Implemented Atomic Installation Inventory
+
+`TypedAst` now installs the exact Task-255 qua handoff, Task-258 statement
+base, and unnamed `SetTerm(0)` witness through the existing atomic
+transaction. It revalidates the complete dependency/fingerprint tuple and
+rolls back on stale, reordered, hybrid, generic-guard, or cross-family
+state. B3A/B3B/B3C/B3D remain independent across every family order.
+
+The typed owner grows from 4,932 to 4,933 lines only for the private exact
+allowlist. No public schema, error/debug text, dependency, semantic table, or
+active route changed. Focused/package tests, formatting, and Clippy pass.
+Independent implementation review reports **NO FINDINGS**. Repeated
+source/documentation and boundary review also reports **NO FINDINGS** after
+the three bounded documentation fixes. Full workspace tests, five CLIs, and
+count/hash reruns pass. Independent final read-only quality review reports
+**NO FINDINGS**; all nine hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review,
+implementation commit, and post-commit/fresh-next-task gates remain pending.

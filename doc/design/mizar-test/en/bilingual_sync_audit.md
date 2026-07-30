@@ -1091,3 +1091,24 @@ focused/package/workspace verification, and all frozen hashes pass.
 
 Independent final quality also reports **NO FINDINGS**, all nine hard gates
 PASS, and valid `100/100` without a cap.
+
+## Task 258B3M2B2B3D Bilingual Implementation Inventory
+
+EN/JA record prerequisite commit
+`43af562c2cb84e72658cee059abbe7543ee73fe7`, clean
+ahead-2/behind-0 state, unchanged stash, and the same exact seven-file
+implementation. Both record the 109-byte/54-node qua route, checker
+four/runner five tests, `32/70/44/72/62/21` matrices, libraries
+`406/466`, final module and production/test-list hashes, passing focused/
+package/formatting/Clippy checks, and unchanged authority/trace/CLI/active/
+semantic state.
+
+Test-sufficiency and independent implementation reviews report
+**NO FINDINGS**. Repeated source/documentation, bilingual, and boundary
+review also reports **NO FINDINGS** after synchronizing the three bounded
+documentation fixes. Both packages, formatting, full Clippy, workspace
+tests, five CLIs, and count/hash reruns PASS. Independent final read-only
+quality review reports **NO FINDINGS**; all nine hard gates PASS with no cap
+at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
+staging/cached-diff review, implementation commit, and
+post-commit/fresh-next-task gates remain pending.

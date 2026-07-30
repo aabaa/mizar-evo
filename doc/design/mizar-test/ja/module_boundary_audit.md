@@ -11015,3 +11015,27 @@ baselineのままで、splitまたはownership transferをauthorizeしない。
 final measurementsはrunner 6 file sizes、`30/52614`、production hashes
 2件を再現した。focused、package、format、Clippy、workspace verificationは
 forbidden ownerに触れずPASSした。
+
+## Task 258B3M2B2B3D implemented runner boundary
+
+frozen runner 4 consumersとpaired checker 3 consumersだけを変更する。
+generic Task-255 producer、両`source_set_term.rs`、parser/resolver/binding、
+active corpus/metadata、expectation、sidecar、trace row、semantic/proof/
+goal ownersはunchanged。private dormant routeはpublic API/error/debug/
+dependency/active discovery surfaceを追加しない。
+
+final runner sizesはstatement `11266`、unchanged set leaf `4517`、facade
+`793`、root `2609`、statement tests `24769`、unchanged set tests `2528`。
+productionは30 paths/53,603 lines、path hash unchanged、content hash
+`b51af09030a5b4903b5693fa3808adc613bed65f0a074a2b8b75697c6229a33a`。
+focused/package/format/Clippy checksはPASSし、test-sufficiency reviewは
+**NO FINDINGS**。independent implementation reviewも**NO FINDINGS**。
+bounded wording/status remediation後のsource/docs consistencyとfinal
+boundary repeatも**NO FINDINGS**。full workspace tests、5 CLI/count/hash
+rerunsを含むfinal verificationはPASS。
+
+independent final read-only quality reviewは**NO FINDINGS**、全9 hard
+gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
+repeated-test diff review volumeはnonblocking residual。残るboundary
+gatesはstaging/cached diff、commit、post-commit/fresh-nextだけ。

@@ -2548,6 +2548,38 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   count/hash/no-op gatesをPASS。
 - [x] 全9 hard gatesとvalid score `>=90/100`でindependent final qualityを
   complete。
-- [ ] dedicated B3D documentation commit 1件をcreateし、clean
-  post-commit/stash stateをverify。
-- [ ] B3D implementationをfresh inventory。
+- [x] dedicated B3D documentation commit
+  `43af562c2cb84e72658cee059abbe7543ee73fe7`をcreate。
+- [x] clean ahead-2/behind-0 post-commit stateとunchanged stashをverify。
+- [x] B3D implementationをfresh inventoryし、lower-stage prerequisite
+  不要をconfirm。
+
+## Checker Task 258B3M2B2B3D implementation ledger
+
+- [x] frozen runner 4 + checker 3 Rust consumersだけをimplementし、generic
+  Task-255/source-set ownersをpreserve。
+- [x] exact runner 5 + checker 4 testsと
+  `32/70/44/72/62/21` matricesをimplement。
+- [x] bytes/LF、nodes/root、resolver、owner/graph/subtree、family orders、
+  replay/rollback/clone/debug、empty semanticsをcover。
+- [x] test-sufficiency reviewを**NO FINDINGS**でcomplete。
+- [x] focused `5/5 + 4/4`、runner/checker packages
+  `466+3/14/137/2/21` / `406+15`、format、full ClippyをPASS。
+- [x] final module sizes、production/test hashes、unchanged 5 CLI hashes、
+  authority/trace/active/semantic no-opをrecord。
+- [x] independent implementation reviewを**NO FINDINGS**でcomplete。
+- [x] stale implementation-review stateのMedium `design_drift`、
+  24-order wordingのLow、EN qua-edge table wordingのLowをfix。
+- [x] final source/docs consistency、bilingual、boundary repeatsを
+  **NO FINDINGS**でcomplete。
+- [x] runner/checker packages、format、full Clippy、full workspace tests、
+  5 CLI/count/hash final rerunsをPASS。
+- [x] independent final read-only quality reviewを**NO FINDINGS**、全9
+  hard gates PASS、score capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）でcomplete。
+- [x] metadata CLI warnings/errors `23/0`とlarge repeated-test diff review
+  volumeをnonblocking residualとしてrecord。
+- [ ] exact synchronized implementation scopeだけをstageしcached diffを
+  inspect。
+- [ ] implementation commit 1件をcreate。
+- [ ] clean post-commit/stash invariantsをverifyしnext taskをfresh inventory。

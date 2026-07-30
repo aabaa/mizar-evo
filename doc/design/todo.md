@@ -3256,5 +3256,34 @@ or semantic owner changed. B3M2B2B remains next before B4.
   verification.
 - [x] Complete independent final quality with all hard gates and valid
   score `>=90/100`.
-- [ ] Create one dedicated documentation commit, verify clean/stash
-  invariants, and fresh-inventory B3D implementation.
+- [x] Create dedicated documentation commit
+  `43af562c2cb84e72658cee059abbe7543ee73fe7`.
+- [x] Verify clean ahead-2/behind-0 post-commit/stash invariants with
+  fingerprint `f65cf4a13752ec...` unchanged and fresh-inventory B3D
+  implementation.
+
+## Checker Task 258B3M2B2B3D Implementation Completion Inventory
+
+- [x] Implement only the exact checker three plus runner four source
+  consumers; preserve both Task-255 source owners and all authority artifacts.
+- [x] Add only the frozen checker four plus runner five tests and exact
+  `32/70/44/72/62/21` matrices.
+- [x] Complete test-sufficiency review with **NO FINDINGS**.
+- [x] Pass focused `4/4 + 5/5`, checker `406+15`, runner
+  `466+3/14/137/2/21`, formatting, and full Clippy.
+- [x] Record exact final module counts, production/test-list hashes,
+  unchanged five CLI hashes/counts, and trace/authority/semantic no-ops.
+- [x] Complete repeated independent implementation review with
+  **NO FINDINGS**.
+- [x] Complete repeated source/documentation consistency, bilingual, and
+  boundary review with **NO FINDINGS** after one Medium stale-review and two
+  Low 24-order/qua-edge documentation corrections.
+- [x] Pass checker package `406+15`, runner package
+  `466+3/14/137/2/21`, formatting, full Clippy, full workspace tests, five
+  CLIs, and final count/hash reruns.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
+  `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Stage only the synchronized task scope, inspect cached diff, and create
+  one implementation commit.
+- [ ] Verify clean post-commit/stash state and fresh-inventory the next task.

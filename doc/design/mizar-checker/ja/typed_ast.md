@@ -1298,3 +1298,22 @@ fingerprint tupleをvalidateして、stale/reordered/hybrid/generic-guard
 stateではrollbackする。B3A/B3B/B3Cは全family orderでindependently
 installableのままである。public schema、error text、debug grammar、
 dependency、semantic table、active routeは変更しない。
+
+## Task 258B3M2B2B3D implemented atomic installation
+
+typed installerはauthenticated Task-255 qua handoff、Task-258 base、
+unnamed `SetTerm(0)` witnessをexisting set-only fingerprint APIでatomically
+installする。stale/reordered/hybrid/generic-guard stateではpartial
+publicationなしにrollbackし、B3A/B3B/B3C/B3Dの全family ordersを
+independentにpreserveする。typed moduleは`4933` lines。public schema、
+error text、debug grammar、dependency、active route、semantic tablesは
+unchangedで、typed/final test matrixはPASSする。independent implementation
+reviewは**NO FINDINGS**。bounded wording/status remediation後のsource/docs
+consistencyとboundary repeatも**NO FINDINGS**、full final verificationも
+PASS。
+
+independent final read-only quality reviewは**NO FINDINGS**、全9 hard
+gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
+repeated-test diff review volumeはnonblocking residual。staging/cached
+diff、commit、post-commit/fresh-nextだけがpending。

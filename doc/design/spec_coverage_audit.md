@@ -5236,3 +5236,44 @@ credit, test backlink, or deferred owner changes.
 Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
 without a cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Commit and
 post-commit/fresh-implementation inventory remain pending.
+
+### Task 258B3M2B2B3D implemented narrative-only ownership inventory
+
+Documentation prerequisite
+`43af562c2cb84e72658cee059abbe7543ee73fe7` closed at clean
+ahead-2/behind-0 with stash fingerprint `f65cf4a13752ec...` unchanged.
+The exact seven private source consumers now implement the dormant
+109-byte/54-node qua-witness transport and four checker plus five runner
+tests. The lower/upper profile and graph remain exactly
+Task-255 `1/0/0/1/0/1/2`, `QuaBase -> Primary(2)`, ordered unresolved
+`QuaWidening`/`ResultType`, and `Witness(0) -> SetTerm(0)`, with
+`32/70/44/72/62/21` exhaustive matrices. Independent test-sufficiency
+review reports **NO FINDINGS**.
+
+This remains narrative source-transport ownership only.
+`spec.en.checker.formula_statement.source_payloads` stays `deferred`,
+`tests = []`; the existing Task-255 covered row, Task-111/255 credit, trace
+status/count/backlinks, and every authority artifact remain unchanged. No
+specification, `.miz`, expectation, sidecar, active corpus route/outcome,
+diagnostic, or semantic intent changed. Qua reachability/widening/type views,
+result/numeric typing, overload/coercion, existential matching,
+substitution, proof acceptance, facts, Core/CFG/VC, comprehension, B4/B5,
+and active coverage remain deferred.
+
+Measured source state is checker library `406`, 23 production paths/135,656
+lines with content hash
+`28e80a30f57eedefd657f319c9335f885f3030fcbb60e1a7475f62e346d6740a`,
+and runner library `466`, 30 paths/53,603 lines with content hash
+`b51af09030a5b4903b5693fa3808adc613bed65f0a074a2b8b75697c6229a33a`.
+Path hashes and all five CLI counts/hashes are unchanged. Independent
+implementation review reports **NO FINDINGS**. Repeated source/documentation,
+bilingual, and boundary review also reports **NO FINDINGS** after the
+Medium stale-review and two Low family/boundary corrections. Both packages,
+formatting, full Clippy, full workspace tests, five CLIs, and count/hash
+reruns PASS with trace/authority/coverage no-ops intact. Independent final
+read-only quality review reports **NO FINDINGS**; all nine hard gates PASS
+with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). The known
+CLI `23/0` warnings/errors and large repeated-test diff review volume remain
+nonblocking residuals without coverage credit or score cap. Only exact
+staging/cached-diff review, implementation commit, and
+post-commit/fresh-next-task gates remain pending.

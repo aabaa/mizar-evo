@@ -1296,3 +1296,25 @@ future final projectionはindependent exact B3D set-only fingerprint tuple
 stale/hybrid/family mixとwrong `QuaBase`/`QuaWidening` stateはexisting
 errorsでfailする。schema、error、debug、dependency、active route、
 semantic tableは変更しない。
+
+## Task 258B3M2B2B3D implemented final-AST closure
+
+`ResolvedTypedAst`はexact B3D qua statement/witness/set-only tupleだけを
+admitし、Task-48/252/255/256/258とwitness linkage、set fingerprintを
+revalidateしてsource-term/source-set-term/atomic/statement/witness stateを
+cloneする。wrong `QuaBase`、request order、stale fingerprint、family
+hybrid、occupied semantic tables、proof/expression coexistenceはexisting
+owning errorsでfail closedする。lower set/atomic error precedence、
+debug bytes、empty semantic/proof/goal tablesをpreserveし、schema/error/
+public route/dependency/semantic resultは追加しない。frozen final/replay
+testsとfield matricesはPASSし、test-sufficiency reviewは
+**NO FINDINGS**。independent implementation reviewも**NO FINDINGS**。
+bounded wording/status remediation後のsource/docs consistencyとboundary
+repeatも**NO FINDINGS**。full workspace/CLI/count/hash final verificationは
+PASS。
+
+independent final read-only quality reviewは**NO FINDINGS**、全9 hard
+gates PASS、no cap、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
+repeated-test diff review volumeはnonblocking residual。staging/cached
+diff、commit、post-commit/fresh-nextだけがpending。

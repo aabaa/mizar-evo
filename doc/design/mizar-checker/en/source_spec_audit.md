@@ -4689,3 +4689,28 @@ The origin movement remains report-only `repo_metadata_conflict`.
 Repeated authority/source/documentation review is **NO FINDINGS**. Exact
 forbidden diffs and the trace blob are zero/unchanged; the five metadata CLIs
 and all count/hash gates reproduce the frozen no-op baseline.
+
+## Task 258B3M2B2B3D Implementation Source/Spec Inventory
+
+Prerequisite `43af562c2cb84e72658cee059abbe7543ee73fe7` froze the
+spec-derived qua-witness transport. The implementation changes only the
+seven private statement consumers and exact four checker/five runner tests,
+realizing the 109-byte/54-node source and
+`32/70/44/72/62/21` validation matrices without changing language or test
+intent. Test-sufficiency review reports **NO FINDINGS**.
+
+No specification, `.miz`, expectation, sidecar, trace row/status/count/
+backlink, active diagnostic, or semantic credit changes. The formula-
+statement row remains `deferred`, `tests = []`, and existing Task-255
+coverage remains unchanged. Qua reachability/widening, typing, overload/
+coercion, existential/substitution, proof/theorem acceptance, facts,
+Core/CFG/VC, comprehension, B4, and B5 remain deferred. Independent
+implementation review reports **NO FINDINGS**. Source/documentation,
+bilingual, and boundary consistency review also reports **NO FINDINGS**
+after the three bounded documentation corrections. Both packages,
+formatting, full Clippy, workspace tests, five CLIs, and count/hash reruns
+pass with the authority/trace no-op intact. Independent final read-only
+quality review reports **NO FINDINGS**; all nine hard gates PASS with no cap
+at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
+staging/cached-diff review, implementation commit, and
+post-commit/fresh-next-task gates remain pending.

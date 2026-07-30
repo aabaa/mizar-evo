@@ -1381,3 +1381,25 @@ and one upper witness-to-SetTerm edge. Condition-free comprehension follows
 because it adds a generator/sethood row. The B3D edge is transport only;
 inheritance/cluster widening, overload/coercion, result typing, proof
 acceptance, comprehension, B4/B5, and active credit remain separate owners.
+
+### Task 258B3M2B2B3D Implemented Qua-Witness Edge
+
+The private exact route now realizes the frozen graph: Task-252 owns
+`{28,30,34,41,43}`, Task-255 `{35,36,37}`, Task-256 `{32,45}`,
+Task-258 `{48,50}`, and B3D `{39,40}`. Task 255 retains the sole
+`QuaBase -> Primary(2)` lower edge and unresolved
+`QuaWidening`/`ResultType` requests; B3D adds only
+`Witness(0) -> SetTerm(0)`.
+
+All B3A/B3B/B3C/B3D pairings and 24 family orders, subtree exclusions, and
+the exact `32/70/44/72/62/21` matrices are covered by the frozen tests.
+Test-sufficiency and independent implementation reviews report
+**NO FINDINGS**. No widening, type, proof/fact, Core/CFG/VC,
+comprehension, B4/B5, or active-credit edge is introduced;
+source/documentation consistency and boundary review also report
+**NO FINDINGS** after the family-order/qua-edge wording corrections. Full
+package/workspace/formatting/Clippy/CLI/count-hash verification passes.
+Independent final read-only quality review reports **NO FINDINGS**; all nine
+hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review,
+implementation commit, and post-commit/fresh-next-task gates remain pending.

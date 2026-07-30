@@ -1366,3 +1366,24 @@ fingerprint tuple, revalidates Task-48/252/255/256/258 and the one
 `SetTerm(0)` witness, and clones the authenticated state. Stale/hybrid/family
 mixes and wrong `QuaBase`/`QuaWidening` state fail through existing errors.
 No schema, error, debug, dependency, active route, or semantic table changes.
+
+## Task 258B3M2B2B3D Implemented Final-AST Inventory
+
+`ResolvedTypedAst` now accepts only the authenticated exact B3D set-only
+tuple, revalidates Task-48/252/255/256/258 plus the one `SetTerm(0)`
+witness, and clones source-term, source-set-term, atomic, statement, and
+witness state. Stale fingerprints, wrong `QuaBase`/request state, family
+hybrids, occupied semantic tables, and proof/expression coexistence fail
+through existing errors; replay and clone preserve debug bytes.
+
+The final owner grows from 7,268 to 7,270 lines solely for the private
+allowlist. Public schemas, errors/debug grammar, dependencies, active routes,
+and all semantic/proof/goal tables remain unchanged or empty. Focused and
+package tests, formatting, and Clippy pass. Independent implementation review
+reports **NO FINDINGS**. Source/documentation consistency and boundary review
+also report **NO FINDINGS** after the three bounded documentation fixes.
+Full workspace tests, five CLIs, and count/hash reruns pass. Independent
+final read-only quality review reports **NO FINDINGS**; all nine hard gates
+PASS with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
+exact staging/cached-diff review, implementation commit, and
+post-commit/fresh-next-task gates remain pending.

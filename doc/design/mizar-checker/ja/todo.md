@@ -5463,6 +5463,39 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] documentation-only count/hash/scope/no-op verificationをPASS。
 - [x] 全hard gatesとvalid score `>=90/100`でfinal read-only quality reviewを
   complete。
-- [ ] synchronized 32-document scopeだけをstageしprerequisiteをcommit、
-  clean post-commit/stash invariantsをverify。
-- [ ] B3D implementationをfresh inventory。
+- [x] synchronized 32-document scopeだけをstageしprerequisite commit
+  `43af562c2cb84e72658cee059abbe7543ee73fe7`をcreate。
+- [x] clean ahead-2/behind-0 post-commit stateとunchanged stashをverify。
+- [x] B3D implementationをfresh inventoryし、lower-stage prerequisite
+  不要をconfirm。
+
+## Checker Task 258B3M2B2B3D implementation ledger
+
+- [x] frozen checker 3 + runner 4 Rust consumersだけをimplementし、両
+  `source_set_term.rs` ownersをpreserve。
+- [x] exact checker 4 + runner 5 testsと
+  `32/70/44/72/62/21` field matricesをimplement。
+- [x] exact source/resolver/owner/graph、all-family isolation、
+  replay/rollback/clone、empty semanticsをcover。
+- [x] test-sufficiency reviewを**NO FINDINGS**でcomplete。
+- [x] focused `4/4 + 5/5`、checker/runner packages
+  `406+15` / `466+3/14/137/2/21`、format、full ClippyをPASS。
+- [x] final module sizes、production/test hashes、unchanged 5 CLI hashes、
+  authority/trace/active/semantic no-opをrecord。
+- [x] independent implementation reviewを**NO FINDINGS**でcomplete。
+- [x] stale implementation-review stateのMedium `design_drift`、
+  24-order wordingのLow、EN qua-edge table wordingのLowをfix。
+- [x] final source/documentation consistency、bilingual、documentation/
+  boundary repeatsを**NO FINDINGS**でcomplete。
+- [x] checker/runner packages、format、full Clippy、full workspace tests、
+  5 CLI/count/hash final rerunsをPASS。
+- [x] independent final read-only quality reviewを**NO FINDINGS**、全9
+  hard gates PASS、score capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）でcomplete。
+- [x] metadata CLI warnings/errors `23/0`とlarge repeated-test diff review
+  volumeをnonblocking residualとしてrecord。
+- [ ] exact synchronized implementation scopeだけをstageしcached diffを
+  inspect。
+- [ ] implementation commit 1件をcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、next dependency-minimal
+  taskをfresh inventory。

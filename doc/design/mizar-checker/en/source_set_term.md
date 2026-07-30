@@ -465,3 +465,25 @@ application/structure fingerprints are absent. Future B3D tests mutate all
 `44` safely mutable Task-255 fields, replay each result, and require
 Task-255-owned errors. Both `source_set_term.rs` owners remain unchanged;
 widening is not discharged.
+
+## Task 258B3M2B2B3D Reused Qua Consumer
+
+B3D consumes the existing Task-255 handoff without modifying either
+`source_set_term.rs` owner. The installed profile remains exactly
+`1/0/0/1/0/1/2`, with `QuaTarget` builtin-set expression/head
+`36/35/85..88`, `QuaBase -> Primary(2)`, and ordered
+`QuaWidening(type-site 0)`/`ResultType`. The upper witness stores only the
+existing set fingerprint and `SetTerm(0)` target.
+
+All 44 safely mutable Task-255 fields are replayed with `Task255:` ownership
+and non-generic rejection; test-sufficiency review reports **NO FINDINGS**.
+No reachability, widening discharge, type-view, result/numeric typing,
+overload/coercion, fact, or proof semantics is added. Independent
+implementation review reports **NO FINDINGS**. Source/documentation
+consistency and boundary review also report **NO FINDINGS** after the
+bounded review-state/family/qua-edge corrections. Both packages, formatting,
+full Clippy, workspace tests, five CLIs, and count/hash reruns pass.
+Independent final read-only quality review reports **NO FINDINGS**; all nine
+hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review,
+implementation commit, and post-commit/fresh-next-task gates remain pending.

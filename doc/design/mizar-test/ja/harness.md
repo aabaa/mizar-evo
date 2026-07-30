@@ -4212,3 +4212,30 @@ bytes/LF、各node/rootのfour surface axes、resolver、exact
 family orders、clone/rollback/debug stability、empty semantic tablesを
 exhaustする。active fixture、expectation、sidecar、trace、CLI、
 diagnostic、semantic harness surfaceは変更しない。
+
+## Task 258B3M2B2B3D implemented runner harness
+
+dormant selectorとfrozen runner tests 5件はexact 109-byte source/final LF、
+全54 nodes/root 53のkind/range/recovery/children axes、base resolver 8 +
+label resolver 10 mutations、全currently mutable
+Task-48/252/255/256/258/witness fieldsのexact
+`32/70/44/72/62/21` matricesをauthenticateする。replayは
+`Task48:`/`Task252:`/`Task255:`/`Task256:`/`Task258:`/`B3D:` owning
+prefixとnon-generic-guard rejectionをrequireする。
+
+suiteは`QuaBase`/`QuaTarget`/ordered request corruption、owner/unowned/
+subtree near misses、B3A/B3B/B3C/B3D pairingsと24 orders、active-route
+isolation、immediate replay/rollback、final clone/debug stability、empty
+semantic tablesもcheckする。test-sufficiency reviewは**NO FINDINGS**。
+focused runner `5/5`、package `466+3/14/137/2/21`、format/full Clippyは
+PASS。active fixture/expectation/sidecar/trace/CLI/diagnostic/semantic
+harness surfaceはunchanged。independent implementation reviewは
+**NO FINDINGS**。3件のbounded wording/status修正後、source/docs
+consistencyとboundary repeatも**NO FINDINGS**。package/fmt/full Clippy/
+workspace tests/5 CLI/count/hash final rerunsはPASS。
+
+independent final read-only quality reviewは**NO FINDINGS**、全9 hard
+gates PASS、no cap、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
+repeated-test diff review volumeはharness behaviorを変えないnonblocking
+residual。staging/cached diff、commit、post-commit/fresh-nextだけがpending。

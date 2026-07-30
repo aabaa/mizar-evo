@@ -12274,3 +12274,27 @@ at the B3C closure baseline; no split or ownership transfer is authorized.
 Final measurements reproduce all six frozen runner file sizes,
 `30/52614`, and both production hashes. Focused, package, formatting,
 Clippy, and workspace verification pass without touching a forbidden owner.
+
+## Task 258B3M2B2B3D Implemented Runner Boundary Inventory
+
+Only runner `type_elaboration/source_statement.rs`,
+`type_elaboration.rs`, `runner.rs`, and
+`tests/type_elaboration/source_statement.rs`, plus the paired three checker
+owners, change. Final runner sizes are
+`11266/4517/793/2609/24769/2528`; production remains 30 paths/53,603
+lines with the unchanged path hash. The generic set-term leaf remains 4,517
+lines.
+
+Parser/resolver/binding modules, both Task-255 leaves, active dispatcher and
+corpus metadata, public APIs/errors/debug/dependencies, fixtures/
+expectations/sidecars/trace, and semantic phases remain unchanged. The exact
+test matrices stay within the authorized statement test owner and
+test-sufficiency and independent implementation reviews report
+**NO FINDINGS**. Repeated source/documentation and boundary review also
+reports **NO FINDINGS** after the three bounded documentation corrections.
+Both packages, formatting, full Clippy, workspace tests, five CLIs, and
+count/hash reruns PASS without changing the boundary. Independent final
+read-only quality review reports **NO FINDINGS**; all nine hard gates PASS
+with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
+staging/cached-diff review, implementation commit, and
+post-commit/fresh-next-task gates remain pending.

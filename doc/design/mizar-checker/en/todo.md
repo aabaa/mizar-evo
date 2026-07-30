@@ -5730,6 +5730,40 @@ implementation commit does not satisfy a producer task.
 - [x] Pass documentation-only count/hash/scope/no-op verification.
 - [x] Complete final read-only quality review with all hard gates and valid
   score `>=90/100`.
-- [ ] Stage only the synchronized 32-document scope, commit the prerequisite,
-  and verify clean post-commit/stash invariants.
-- [ ] Fresh-inventory B3D implementation.
+- [x] Stage only the synchronized 32-document scope and create prerequisite
+  commit `43af562c2cb84e72658cee059abbe7543ee73fe7`.
+- [x] Verify clean ahead-2/behind-0 post-commit state, unchanged stash
+  fingerprint `f65cf4a13752ec...`, and fresh-inventory B3D implementation.
+
+## Checker Task 258B3M2B2B3D Implementation Ledger
+
+- [x] Close prerequisite
+  `43af562c2cb84e72658cee059abbe7543ee73fe7` at clean
+  ahead-2/behind-0 with stash fingerprint `f65cf4a13752ec...` unchanged.
+- [x] Confirm no lower-stage prerequisite and implement only the frozen
+  checker three plus runner four source consumers.
+- [x] Preserve both `source_set_term.rs` owners, authority/corpus artifacts,
+  public APIs/errors/debug, dependencies, active behavior, and semantics.
+- [x] Implement the exact checker four plus runner five tests and
+  `32/70/44/72/62/21` field matrices.
+- [x] Complete independent test-sufficiency review with **NO FINDINGS**.
+- [x] Pass focused checker `4/4`, runner `5/5`, checker package `406+15`,
+  runner package `466+3/14/137/2/21`, formatting, and full Clippy.
+- [x] Record exact checker/runner module sizes, production/test-list hashes,
+  unchanged five CLI hashes/counts, and deliberate authority/trace no-op.
+- [x] Complete repeated independent implementation review with
+  **NO FINDINGS**.
+- [x] Complete repeated source/documentation consistency, bilingual, and
+  boundary review with **NO FINDINGS** after fixing one Medium stale-review
+  `design_drift` and two Low 24-order/qua-edge `design_drift` findings.
+- [x] Pass checker package `406+15`, runner package
+  `466+3/14/137/2/21`, `cargo fmt --check`, all-target/all-feature
+  Clippy with warnings denied, full workspace tests, five CLIs, and final
+  count/hash reruns.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
+  `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Stage only the exact synchronized implementation scope, inspect cached
+  diff, and create one implementation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory the next
+  dependency-minimal task.

@@ -1228,6 +1228,7 @@ impl TypedAst {
         if !statements.is_task_258b3m2b2b3a_profile()
             && !statements.is_task_258b3m2b2b3b_profile()
             && !statements.is_task_258b3m2b2b3c_profile()
+            && !statements.is_task_258b3m2b2b3d_profile()
         {
             return Err(TypedAstError::InvalidSourceStatement);
         }

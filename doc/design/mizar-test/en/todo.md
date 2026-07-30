@@ -2760,6 +2760,34 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   count/hash/no-op gates.
 - [x] Complete independent final quality with all nine hard gates and valid
   score `>=90/100`.
-- [ ] Create one dedicated B3D documentation commit and verify clean
-  post-commit/stash state.
-- [ ] Fresh-inventory B3D implementation.
+- [x] Create dedicated B3D documentation commit
+  `43af562c2cb84e72658cee059abbe7543ee73fe7`.
+- [x] Verify clean ahead-2/behind-0 post-commit state, unchanged stash
+  fingerprint `f65cf4a13752ec...`, and fresh-inventory B3D implementation.
+
+## Checker Task 258B3M2B2B3D Implementation Ledger
+
+- [x] Implement only the frozen runner four and paired checker three source
+  consumers; preserve both `source_set_term.rs` owners.
+- [x] Implement exact runner five/checker four tests and
+  `32/70/44/72/62/21` mutation matrices with replay and owning prefixes.
+- [x] Complete independent test-sufficiency review with **NO FINDINGS**.
+- [x] Pass focused `5/5 + 4/4`, runner package
+  `466+3/14/137/2/21`, checker package `406+15`, formatting, and full
+  Clippy.
+- [x] Record final runner/checker sizes, production/test-list hashes,
+  unchanged CLI hashes/counts, and authority/trace/active/semantic no-ops.
+- [x] Complete repeated independent implementation review with
+  **NO FINDINGS**.
+- [x] Complete repeated source/documentation consistency, bilingual, and
+  boundary review with **NO FINDINGS** after the Medium stale-review and two
+  Low 24-order/qua-edge corrections.
+- [x] Pass checker package `406+15`, runner package
+  `466+3/14/137/2/21`, formatting, full Clippy, full workspace tests, five
+  CLIs, and final count/hash reruns.
+- [x] Complete independent final read-only quality review with
+  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
+  `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Stage the exact synchronized implementation scope, inspect cached diff,
+  and create one implementation commit.
+- [ ] Verify post-commit/stash invariants and fresh-inventory the next task.
