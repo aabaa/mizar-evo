@@ -553,7 +553,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       既存exact same-return seedはactive declaration-symbol runnerで実行され、sole trace rowは
       coveredとなり、different-return expectationは変更していない。
 
-32A. **validated Surface structural arena。** [ ]
+32A. **validated Surface structural arena。** [x]
     - `resolved_ast.md` の exact `SurfaceResolvedArena` / public
       non-exhaustive `SurfaceResolvedArenaError` contract を実装する。
     - owner は exact に `resolved_ast.rs` / `resolved_ast/tests.rs` /
@@ -568,6 +568,12 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       `design_drift`と分類した。mandatory R-026 public-enum guardがnew enumを
       scanするため、同期docs-only scope correctionをseparate commitで完了し、
       exact three-Rust-file implementation前にfresh inventoryする。
+    - 完了: `SurfaceResolvedArena` は全 dense surface node を same-index
+      structural node へ lower し、frozen exact precedence、accessor/error
+      surface を validate し、semantic resolution は持たない。complete
+      mismatch/precedence/helper/determinism matrix と sole R-026 enum
+      decision は、labels、active artifact、trace state、coverage credit を
+      変更せず pass する。
 
 32B. **normal-source proof-label confinement projection。** [ ]
     - R-032A fresh inventory 後、`labels.md` の exact collector / public
@@ -655,9 +661,9 @@ cargo test -p mizar-vc
   enum-decision owner omissionをHigh `design_drift`として特定。
 - [x] separate R-032A lint-policy docs correctionをfindings-free review、
   full verification、valid `100/100` final qualityまで完了。
-- [ ] dedicated commit後にrepository/stash invariantをverifyし、R-032A
+- [x] dedicated commit後にrepository/stash invariantをverifyし、R-032A
   implementationをfresh inventory。
-- [ ] correction 後だけ `SurfaceAst::node_views()` と
+- [x] correction 後だけ `SurfaceAst::node_views()` と
   [resolved_ast.md](./resolved_ast.md) exact validation precedence を使って
   R-032A を実装。
 - [x] unsafe id、dummy-AST id minting、resolver-side syntax mutation、

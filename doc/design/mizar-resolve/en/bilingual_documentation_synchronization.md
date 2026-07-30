@@ -5,8 +5,8 @@
 
 Status: task R-028 audit complete; task R-029 and close-out scopes re-run
 complete; 2026-07-02 roadmap synchronization overlay complete; task R-024
-implementation overlay complete; planned R-032A/R-032B / Checker Task 258B5C lower
-prerequisite pair recheck complete.
+implementation overlay complete; R-032A implementation synchronization
+complete, with R-032B / Checker Task 258B5C still planned.
 
 ## Scope
 
@@ -37,7 +37,7 @@ not change `doc/spec`, `.miz` sources, or expectation sidecars.
   `boundary_violation` risk, R-G005 resolved `design_drift`, R-G006
   `external_dependency_gap`, and R-G007 `test_gap` as the current concrete
   refinement of R-G002.
-- The R-032A/R-032B pair synchronizes the Medium normal-source proof-label
+- The implemented R-032A and planned R-032B synchronize the Medium normal-source proof-label
   `source_drift`, stale R-023 attribution `design_drift`, R-G007 B5C
   `test_gap`, and Low deferred R-G001 public-code `spec_gap`.
 - No new `spec_gap`, `test_gap`, `design_drift`, `source_drift`,
@@ -58,7 +58,7 @@ not change `doc/spec`, `.miz` sources, or expectation sidecars.
 | [names.md](./names.md) | [../ja/names.md](../ja/names.md) | Name-use sites, scope model, namespace-before-symbol lookup, visibility/shadowing, unresolved/ambiguous records, dot-chain finalization, diagnostics, and public enum policy are synchronized. |
 | [recovery.md](./recovery.md) | [../ja/recovery.md](../ja/recovery.md) | Recovered syntax stage disposition, boundary rules, and test intent are synchronized. |
 | [resolved_ast.md](./resolved_ast.md) | [../ja/resolved_ast.md](../ja/resolved_ast.md) | Top-level `ResolvedAst` shape, stable identity, node/name/label/import tables, recovered shells, provenance, determinism, and public enum policy are synchronized. |
-| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Existing audit and planned R-032A/R-032B repair correspondence are synchronized. |
+| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Existing audit, implemented R-032A, and planned R-032B repair correspondence are synchronized. |
 | [symbols.md](./symbols.md) | [../ja/symbols.md](../ja/symbols.md) | Symbol-bearing shells, collection order, identities/origins, signatures, duplicates/overloads, visibility/export/summary policy, dependency relations, recovery/diagnostics, determinism, and public enum policy are synchronized. |
 | [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Ordered task states and split R-032A/R-032B ownership/dependencies are synchronized. |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This R-028 audit, R-029 scope re-run, close-out re-run, and roadmap synchronization overlay are recorded in both languages with the same scope, result, pair checklist, and handoff notes. |
@@ -103,19 +103,18 @@ rejected callback/unmapped contract.
 
 Post-close-out resolver updates should treat this audit as the baseline
 bilingual sync state. S-026 documentation and implementation are complete.
-The current dependency sequence is this R-032A lint-policy docs correction,
-R-032A implementation, R-032B, then the active B5C consumer, with fresh
-inventory after each commit. Add future design files in both language
+The R-032A lint-policy docs correction and R-032A implementation are complete.
+The current dependency sequence is R-032B, then the active B5C consumer, with
+fresh inventory after each commit. Add future design files in both language
 directories in the same change. Behavior cleanup, public API changes, or new
 diagnostics remain outside the completed resolver milestone and require
 separate spec/test authority.
 
 The S-026/R-032A dependency overlay is synchronized in EN/JA: both languages
 historically classified the same boundary defect and deferred R-032A source
-until the separate syntax commits. Those commits are now complete; R-032A
-source is currently deferred only until this lint-policy correction commit
-and its fresh inventory. Resolver ownership, validation precedence, and
-exclusions remain synchronized.
+until the separate syntax commits. Those commits, the lint-policy correction,
+and R-032A implementation are now complete. Resolver ownership, validation
+precedence, and exclusions remain synchronized; R-032B remains pending.
 
 ## R-032A lint-policy scope correction
 
@@ -127,3 +126,14 @@ may receive only the `SurfaceResolvedArenaError` owning-spec decision entry.
 Both preserve every runtime/API/test contract and forbidden boundary. This
 paired correction is documentation-only, precedes implementation as its own
 commit, changes no coverage state, and requires fresh inventory afterward.
+
+## R-032A implementation synchronization
+
+EN and JA now record the same implemented `SurfaceResolvedArena` API, exact
+three-field ownership, complete dense same-index lowering, fail-closed
+validation precedence, public non-exhaustive error surface, helper payloads,
+equivalent-input determinism, and sole R-026 decision. Both record the same
+three Rust owners and the same prohibited label/runner/artifact/trace/semantic
+scope. R-032B remains pending. `spec_coverage_audit.md` remains a deliberate
+no-op because no active mapping, trace status/count, owner, deferral, or
+coverage credit changed.

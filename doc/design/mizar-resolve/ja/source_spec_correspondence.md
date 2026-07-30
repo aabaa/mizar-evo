@@ -6,7 +6,7 @@
 状態: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendumとR-031 implementationはcomplete。
-planned R-032A/R-032B / Checker Task 258B5C prerequisite を記録済み。
+R-032Aは実装済み、R-032B / Checker Task 258B5C prerequisiteは計画中。
 
 ## 範囲
 
@@ -68,7 +68,7 @@ source loading は追加しない。
 
 | Spec | 確認した公開 API | Source | Test evidence | Finding |
 |---|---|---|---|---|
-| [resolved_ast.md](./resolved_ast.md) stable identity / arena | existing API と planned R-032A `SurfaceResolvedArena` / exact public error table | `resolved_ast.rs`、planned `resolved_ast/tests.rs`、sole R-026 `SurfaceResolvedArenaError` owning-spec entry 用 `tests/lint_policy.rs` | existing tests + complete map/mismatch/stale/root/recovery/overflow/public-enum decision guard | R-032A planned |
+| [resolved_ast.md](./resolved_ast.md) stable identity / arena | existing API と implemented R-032A `SurfaceResolvedArena` / exact public error table | `crates/mizar-resolve/src/resolved_ast.rs`、`crates/mizar-resolve/src/resolved_ast/tests.rs`、sole R-026 `SurfaceResolvedArenaError` owning-spec entry 用 `crates/mizar-resolve/tests/lint_policy.rs` | existing tests + implemented complete map/mismatch/stale/root/recovery/overflow/precedence/equivalent-input determinism/public-enum decision guard | R-032A後findingなし |
 | [resolved_ast.md](./resolved_ast.md) name / label / import / export reference table | `NameRefTable`, `LabelRefTable`, `ResolvedImports`, name/label/import/export resolution record, ambiguity/unresolved record, deferred selector record | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/validation.rs` | `name_ref_table_round_trips_all_current_result_kinds`, `ambiguous_name_candidates_tie_break_by_range_before_local_symbol_id`, `label_ref_table_round_trips_all_current_result_kinds`, `resolved_imports_round_trip_and_project_canonical_modules`, `table_and_import_export_iteration_is_stable`, `node_reference_keys_are_stable_for_equivalent_builds` | No finding |
 | [resolved_ast.md](./resolved_ast.md) deterministic debug rendering | `ResolvedAst::snapshot_text` と resolver snapshot baseline 用の stable variant-name rendering | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/snapshot.rs`, crate-root determinism test | `resolved_ast_snapshot_text_is_stable_and_covers_tables`, `resolved_ast_snapshot_text_covers_payload_escaping_and_non_range_anchors`, `resolver_public_seams_are_deterministic_for_equivalent_inputs` | No finding |
 | [env.md](./env.md) symbol environment index | `SymbolEnv`, `SymbolEnvIndexes`, symbol, label, definition, overload, registration, lexical-summary, namespace, declaration-dependency, module-summary, diagnostic-anchor, source-contribution index family | `crates/mizar-resolve/src/env.rs` | `index_families_round_trip_insertions_and_lookups`, `index_iteration_is_deterministic_for_all_families`, `contribution_tracking_covers_sources_summaries_builtins_and_invalidation`, `equivalent_construction_is_stable_and_checker_facts_are_absent` | No finding |
@@ -131,15 +131,15 @@ source loading は追加しない。
 | R-G002 | `test_gap` | lexical/parser の import/export syntax を超える semantic resolver corpus coverage が歴史的に不足していたこと。 | R-023 の active declaration-symbol smoke/fail fixture、post-task-20 R-G007 parser-backed signature-conflict active seed、exact SymbolEnv-derived pass payload assertion により部分的に解消済み。残る具体的な corpus assertion work は R-G007 が精緻化し、implemented behavior は unit tests が cover しているため R-027 には non-blocking。 |
 | R-G003 | R-024 で解消済み | canonical `ModuleSummary` artifact から dependency module を消費する経路。 | resolver-owned artifact schema、shim、writer、hash framing、source loading を追加せず、canonical な `mizar-artifact` summary consumption として完了済み。 |
 | R-G006 | `external_dependency_gap` | parser/syntax が owning source role を公開した後の module-level scheme/template declaration shell。 | represented source role については non-blocking。現 resolver は direct template role を owning signature payload に保持し、scheme/template module symbol を創作しない。 |
-| R-G007 | `test_gap` | active signature-conflict 後に残る label-reference corpus gap。B5C が次の bounded increment。 | R-032A/R-032B を別々の lower commit で完了後、private `mizar-test` に spec-derived confinement case だけを追加する。 |
+| R-G007 | `test_gap` | active signature-conflict 後に残る label-reference corpus gap。B5C が次の bounded increment。 | R-032Aは完了済み。残るR-032B lower commit完了後、private `mizar-test` に spec-derived confinement case だけを追加する。 |
 | R-G008 | R-031で解消 | Chapter 19 §19.1は同じsymbol kind、spelling、arity、argument signatureを持つordinary declarationがreturn signature一致時もconflictすることを要求する。pre-R-031 sourceはall-return-identical groupをskipし、exact seedはdeferredで、designにはdistinct same-return class/detail keyとmixed-group priorityがなかった。 | ordinary functor definitionをexact resolver-syntactic keyでgroup化する。appendした`SameSignatureDefinitionConflict` diagnostic/definition variantがall-return-identical groupをcoverし、mixed/different-return groupでは既存`SameSignatureReturnConflict`が優先する。exact unit/near-miss/order/recovery/snapshot testとactive declaration-symbol sidecarがnew keyをcoverし、first shell/range、全candidate identity/order、byte-identicalなdifferent-return sidecar、checker-owned semantic equality/selection boundaryを保存する。 |
 
-## 計画済み R-032A / R-032B 対応
+## 実装済み R-032A / 計画中 R-032B 対応
 
 canonical Chapter 15 §15.10 と Chapter 16 §§16.4.2/16.5.1 は次の
 lower-only repair を authorize する。
 
-| task / contract | Planned source | Required evidence | Excluded |
+| task / contract | Source | Required evidence | Excluded |
 |---|---|---|---|
 | R-032A exact structural arena/error declaration | `resolved_ast.rs` | complete map、state/key を含む全 typed mismatch、checked overflow | labels/runner/artifact/semantic resolution |
 | R-032A test | `resolved_ast/tests.rs` | deterministic map、wrong/stale matrix、wildcard/no panic | other test owners |
@@ -147,8 +147,9 @@ lower-only repair を authorize する。
 | R-032B exact lifetime/error/origin/default-deny direct edge | `labels.rs` | exact `Root` -> `CompilationUnit` -> `ItemList` -> theorem、global ordinal、`proof-step-v1`、unlisted edge skip | callback/unmapped/unsupported forms |
 | R-032B test | `labels/tests.rs` | upper/lower edge positive、missing/additional/wrong/relocated/wrapped upper negative、confinement/origin、other mutation、mixed-list/all-other | `.miz`/expect/trace/runner |
 
-R-032A/R-032B は planned で、active B5C consumer より前の別々の commit とする。この
-documentation record は implementation を主張せず、元の milestone score を変更しない。
+R-032Aはseparate lower-prerequisite logical taskとして実装済み。R-032Bは
+active B5C consumer前の次のseparate commitとして残る。このbounded post-exit
+implementationは元のmilestone scoreを変更しない。
 
 R-032A implementation preflightは旧two-Rust-file scopeをHigh
 `design_drift`と分類した。new public enumはexisting R-026 guardに必ず
@@ -161,3 +162,5 @@ semantic authorityは変更しない。
 `.miz` intent、expectation、trace row、coverage credit は変更しない。すでに
 freeze された R-032A structural mapping 用 complete syntax id だけを供給するため、
 `doc/design/spec_coverage_audit.md` は unchanged。
+R-032Aもactive `.miz` mapping、trace/backlink/status/count、owner crate、
+deferred status、coverage creditを変更しないため、auditはdeliberate no-op。

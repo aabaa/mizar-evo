@@ -590,7 +590,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       same-return seed through the active declaration-symbol runner. The sole
       trace row is covered; the different-return expectation is unchanged.
 
-32A. **Validated Surface structural arena.** [ ]
+32A. **Validated Surface structural arena.** [x]
     - Implement the exact `SurfaceResolvedArena` / public non-exhaustive
       `SurfaceResolvedArenaError` contract in `resolved_ast.md`.
     - Own exactly `resolved_ast.rs`, `resolved_ast/tests.rs`,
@@ -607,6 +607,12 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       enum. Complete the synchronized docs-only scope correction in a separate
       commit, then fresh-inventory before the exact three-Rust-file
       implementation.
+    - Completed: `SurfaceResolvedArena` now lowers every dense surface node to
+      its same-index structural node, validates the exact frozen precedence,
+      exposes the frozen accessors/error surface, and carries no semantic
+      resolution. The complete mismatch/precedence/helper/determinism matrix
+      and the sole R-026 enum decision pass without changing labels, active
+      artifacts, trace state, or coverage credit.
 
 32B. **Normal-source proof-label confinement projections.** [ ]
     - After fresh inventory of R-032A, implement the exact
@@ -697,9 +703,9 @@ Check the task off here once tests pass.
   mandatory R-026 enum-decision owner omission as High `design_drift`.
 - [x] Complete the separate R-032A lint-policy docs correction through
   findings-free reviews, full verification, and valid `100/100` final quality.
-- [ ] After its dedicated commit, verify repository/stash invariants and
+- [x] After its dedicated commit, verify repository/stash invariants and
   fresh-inventory R-032A implementation.
-- [ ] Implement R-032A only after that correction, using
+- [x] Implement R-032A only after that correction, using
   `SurfaceAst::node_views()` and
   the exact validation precedence in [resolved_ast.md](./resolved_ast.md).
 - [x] Reject unsafe ids, dummy-AST id minting, resolver-side syntax mutation,

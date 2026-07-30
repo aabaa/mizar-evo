@@ -6,7 +6,7 @@ mod validation;
 use mizar_session::{
     GeneratedSpanAnchor, ModulePath, PackageId, SourceAnchor, SourceId, SourceRange,
 };
-use mizar_syntax::SurfaceNodeKind;
+use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind};
 use std::cmp::Ordering;
 use std::error::Error;
 use std::fmt;
@@ -558,6 +558,346 @@ impl fmt::Display for ResolvedArenaError {
 }
 
 impl Error for ResolvedArenaError {}
+
+/// Validated same-index structural projection of every stored surface node.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SurfaceResolvedArena {
+    source_id: SourceId,
+    module: ModuleId,
+    arena: ResolvedArena,
+}
+
+impl SurfaceResolvedArena {
+    /// Lowers every stored surface node into a child-first structural arena.
+    pub fn lower(ast: &SurfaceAst, module: &ModuleId) -> Result<Self, SurfaceResolvedArenaError> {
+        let root = ast.root().ok_or(SurfaceResolvedArenaError::MissingRoot)?;
+        let mut nodes = Vec::with_capacity(ast.node_views().len());
+
+        for surface in ast.node_views() {
+            let source = surface.id();
+            let children = checked_surface_children(source, surface.children())?;
+            let structural_path = checked_surface_structural_path(source, source.index())?;
+            let mut origin = SemanticOrigin::new(
+                ast.source_id,
+                module.clone(),
+                SourceAnchor::Range(surface.range()),
+                structural_path,
+            );
+            if surface.is_recovered() {
+                origin = origin.recovered();
+            }
+            nodes.push(ResolvedNode::new(surface.kind().clone(), children, origin));
+        }
+
+        let arena = ResolvedArena::try_new(ResolvedNodeId::new(root.index()), nodes)
+            .map_err(SurfaceResolvedArenaError::InvalidArena)?;
+        let lowered = Self {
+            source_id: ast.source_id,
+            module: module.clone(),
+            arena,
+        };
+        lowered.validate_against(ast, module)?;
+        Ok(lowered)
+    }
+
+    /// Returns the source represented by the structural arena.
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    /// Returns the canonical module represented by the structural arena.
+    pub const fn module(&self) -> &ModuleId {
+        &self.module
+    }
+
+    /// Returns the validated resolver-owned structural arena.
+    pub const fn arena(&self) -> &ResolvedArena {
+        &self.arena
+    }
+
+    /// Returns the same-index resolved node when the surface id is in range.
+    pub fn resolved_node_for(&self, source: SurfaceNodeId) -> Option<ResolvedNodeId> {
+        (source.index() < self.arena.len()).then(|| ResolvedNodeId::new(source.index()))
+    }
+
+    /// Validates the complete structural projection against its surface input.
+    pub fn validate_against(
+        &self,
+        ast: &SurfaceAst,
+        module: &ModuleId,
+    ) -> Result<(), SurfaceResolvedArenaError> {
+        if self.source_id != ast.source_id {
+            return Err(SurfaceResolvedArenaError::SourceMismatch);
+        }
+        if &self.module != module {
+            return Err(SurfaceResolvedArenaError::ModuleMismatch);
+        }
+
+        validate_nodes(&self.arena.nodes).map_err(SurfaceResolvedArenaError::InvalidArena)?;
+        if self.arena.node(self.arena.root()).is_none() {
+            return Err(SurfaceResolvedArenaError::InvalidArena(
+                ResolvedArenaError::InvalidRoot {
+                    root: self.arena.root(),
+                },
+            ));
+        }
+
+        if self.arena.len() != ast.node_views().len() {
+            return Err(SurfaceResolvedArenaError::NodeCountMismatch);
+        }
+
+        let surface_root = ast.root().ok_or(SurfaceResolvedArenaError::MissingRoot)?;
+        if self.arena.root().index() != surface_root.index() {
+            return Err(SurfaceResolvedArenaError::RootMismatch);
+        }
+
+        for surface in ast.node_views() {
+            let source = surface.id();
+            let resolved_id = ResolvedNodeId::new(source.index());
+            let resolved = self
+                .arena
+                .node(resolved_id)
+                .ok_or(SurfaceResolvedArenaError::NodeCountMismatch)?;
+
+            if resolved.kind() != surface.kind() {
+                return Err(SurfaceResolvedArenaError::NodeKindMismatch { node: source });
+            }
+
+            let expected_children = checked_surface_children(source, surface.children())?;
+            if resolved.children() != expected_children {
+                return Err(SurfaceResolvedArenaError::ChildListMismatch { node: source });
+            }
+
+            if resolved.origin().anchor() != &SourceAnchor::Range(surface.range()) {
+                return Err(SurfaceResolvedArenaError::RangeMismatch { node: source });
+            }
+
+            let expected_recovery = if surface.is_recovered() {
+                RecoveryState::Recovered
+            } else {
+                RecoveryState::Normal
+            };
+            if resolved.recovery() != expected_recovery
+                || resolved.origin().is_recovered() != surface.is_recovered()
+            {
+                return Err(SurfaceResolvedArenaError::RecoveryMismatch { node: source });
+            }
+
+            if resolved.resolution() != NodeResolutionState::NotApplicable {
+                return Err(SurfaceResolvedArenaError::ResolutionStateMismatch { node: source });
+            }
+
+            if resolved.reference_key().is_some() {
+                return Err(SurfaceResolvedArenaError::ReferenceKeyMismatch { node: source });
+            }
+
+            if resolved.origin().source_id() != ast.source_id
+                || resolved.origin().module_id() != module
+                || resolved.origin().import_edge().is_some()
+            {
+                return Err(SurfaceResolvedArenaError::OriginMismatch { node: source });
+            }
+
+            let expected_path = checked_surface_structural_path(source, source.index())?;
+            if resolved.origin().structural_path() != expected_path {
+                return Err(SurfaceResolvedArenaError::StructuralPathMismatch { node: source });
+            }
+        }
+
+        Ok(())
+    }
+}
+
+fn checked_surface_children(
+    node: SurfaceNodeId,
+    children: &[SurfaceNodeId],
+) -> Result<Vec<ResolvedNodeId>, SurfaceResolvedArenaError> {
+    let mut resolved = Vec::with_capacity(children.len());
+    for child in children {
+        if child.index() >= node.index() {
+            return Err(SurfaceResolvedArenaError::InvalidChildOrder {
+                node,
+                child: *child,
+            });
+        }
+        resolved.push(ResolvedNodeId::new(child.index()));
+    }
+    Ok(resolved)
+}
+
+fn checked_surface_structural_path(
+    node: SurfaceNodeId,
+    index: usize,
+) -> Result<Vec<u32>, SurfaceResolvedArenaError> {
+    let component = u32::try_from(index)
+        .map_err(|_| SurfaceResolvedArenaError::StructuralPathComponentOverflow { node })?;
+    Ok(vec![component])
+}
+
+/// Failure while lowering or validating a surface structural arena.
+///
+/// Downstream code must retain a wildcard arm so later variants remain
+/// forward-compatible.
+///
+/// ```
+/// use mizar_resolve::resolved_ast::SurfaceResolvedArenaError;
+///
+/// fn classify(error: &SurfaceResolvedArenaError) -> &'static str {
+///     match error {
+///         SurfaceResolvedArenaError::MissingRoot => "missing-root",
+///         _ => "other",
+///     }
+/// }
+/// ```
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum SurfaceResolvedArenaError {
+    /// The surface AST has no root node.
+    MissingRoot,
+    /// A surface index cannot be represented by the public structural path.
+    StructuralPathComponentOverflow {
+        /// Surface node whose index overflowed.
+        node: SurfaceNodeId,
+    },
+    /// A surface child does not precede its parent in dense arena order.
+    InvalidChildOrder {
+        /// Parent surface node.
+        node: SurfaceNodeId,
+        /// Child surface node that does not precede the parent.
+        child: SurfaceNodeId,
+    },
+    /// The contained resolved arena is structurally invalid.
+    InvalidArena(ResolvedArenaError),
+    /// The wrapper source does not match the surface AST.
+    SourceMismatch,
+    /// The wrapper module does not match the requested module.
+    ModuleMismatch,
+    /// The surface and resolved arenas have different node counts.
+    NodeCountMismatch,
+    /// The surface and resolved arenas have different roots.
+    RootMismatch,
+    /// A same-index node has a different surface kind.
+    NodeKindMismatch {
+        /// Surface node whose kind differs.
+        node: SurfaceNodeId,
+    },
+    /// A same-index node has different ordered children.
+    ChildListMismatch {
+        /// Surface node whose child list differs.
+        node: SurfaceNodeId,
+    },
+    /// A same-index node has a different exact range anchor.
+    RangeMismatch {
+        /// Surface node whose range differs.
+        node: SurfaceNodeId,
+    },
+    /// Surface, node, and origin recovery state disagree.
+    RecoveryMismatch {
+        /// Surface node whose recovery state differs.
+        node: SurfaceNodeId,
+    },
+    /// A structural node carries a resolver outcome.
+    ResolutionStateMismatch {
+        /// Surface node carrying the unexpected state.
+        node: SurfaceNodeId,
+    },
+    /// A structural node carries a semantic reference key.
+    ReferenceKeyMismatch {
+        /// Surface node carrying the unexpected key.
+        node: SurfaceNodeId,
+    },
+    /// A structural origin has a different source, module, or import edge.
+    OriginMismatch {
+        /// Surface node whose origin differs.
+        node: SurfaceNodeId,
+    },
+    /// A structural origin has a different exact same-index path.
+    StructuralPathMismatch {
+        /// Surface node whose path differs.
+        node: SurfaceNodeId,
+    },
+}
+
+impl fmt::Display for SurfaceResolvedArenaError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingRoot => formatter.write_str("surface AST has no root"),
+            Self::StructuralPathComponentOverflow { node } => write!(
+                formatter,
+                "surface node {} cannot be represented in a structural path",
+                node.index()
+            ),
+            Self::InvalidChildOrder { node, child } => write!(
+                formatter,
+                "surface node {} has non-child-first child {}",
+                node.index(),
+                child.index()
+            ),
+            Self::InvalidArena(error) => write!(formatter, "invalid resolved arena: {error}"),
+            Self::SourceMismatch => {
+                formatter.write_str("surface structural arena source does not match")
+            }
+            Self::ModuleMismatch => {
+                formatter.write_str("surface structural arena module does not match")
+            }
+            Self::NodeCountMismatch => {
+                formatter.write_str("surface and resolved node counts do not match")
+            }
+            Self::RootMismatch => formatter.write_str("surface and resolved roots do not match"),
+            Self::NodeKindMismatch { node } => {
+                write!(
+                    formatter,
+                    "surface node {} kind does not match",
+                    node.index()
+                )
+            }
+            Self::ChildListMismatch { node } => write!(
+                formatter,
+                "surface node {} ordered children do not match",
+                node.index()
+            ),
+            Self::RangeMismatch { node } => write!(
+                formatter,
+                "surface node {} exact range anchor does not match",
+                node.index()
+            ),
+            Self::RecoveryMismatch { node } => write!(
+                formatter,
+                "surface node {} recovery state does not match",
+                node.index()
+            ),
+            Self::ResolutionStateMismatch { node } => write!(
+                formatter,
+                "surface node {} resolution state is not structural",
+                node.index()
+            ),
+            Self::ReferenceKeyMismatch { node } => write!(
+                formatter,
+                "surface node {} unexpectedly carries a reference key",
+                node.index()
+            ),
+            Self::OriginMismatch { node } => write!(
+                formatter,
+                "surface node {} structural origin does not match",
+                node.index()
+            ),
+            Self::StructuralPathMismatch { node } => write!(
+                formatter,
+                "surface node {} structural path does not match",
+                node.index()
+            ),
+        }
+    }
+}
+
+impl Error for SurfaceResolvedArenaError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::InvalidArena(error) => Some(error),
+            _ => None,
+        }
+    }
+}
 
 /// Reference use site shared by name and label tables.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -5939,7 +5939,9 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   enum-decision owner omissionをHigh `design_drift`として特定。
 - [x] separate R-032A lint-policy docs correctionをfindings-free review、
   full verification、valid `100/100` final qualityまで完了。
-- [ ] post-commit invariant checkとfresh inventoryをR-032A
+- [x] post-commit invariant checkとfresh inventoryをR-032A
   implementation前に完了。
+- [x] checker consumer / B5C artifactを変更せずexact resolver R-032A
+  implementationを完了。次のlower prerequisiteはR-032B。
 - [x] lower prerequisite 中も全 frozen checker consumer、B5C fixture/
   expectation/trace、public diagnostic、semantic deferral を維持。

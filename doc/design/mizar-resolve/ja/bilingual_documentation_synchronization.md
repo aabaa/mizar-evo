@@ -5,8 +5,8 @@
 
 状態: task R-028 audit complete; task R-029 and close-out scopes re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
-overlay complete; planned R-032A/R-032B / Checker Task 258B5C lower prerequisite pair
-recheck complete。
+overlay complete; R-032A implementation synchronization complete、R-032B /
+Checker Task 258B5Cは計画中。
 
 ## 範囲
 
@@ -36,7 +36,7 @@ sidecar は変更しない。
   `test_gap`、R-G003 R-024 で解消済み、R-G004 `boundary_violation` risk、
   R-G005 resolved `design_drift`、R-G006 `external_dependency_gap`、そして R-G002 の
   現在の具体的な精緻化である R-G007 `test_gap`。
-- R-032A/R-032B pair は Medium normal-source proof-label `source_drift`、stale R-023
+- implemented R-032A / planned R-032B pair は Medium normal-source proof-label `source_drift`、stale R-023
   attribution `design_drift`、R-G007 B5C `test_gap`、Low deferred R-G001
   public-code `spec_gap` を同期する。
 - この監査により新しい `spec_gap`、`test_gap`、`design_drift`、`source_drift`、
@@ -56,7 +56,7 @@ sidecar は変更しない。
 | [names.md](../en/names.md) | [./names.md](./names.md) | name-use site、scope model、namespace-before-symbol lookup、visibility / shadowing、unresolved / ambiguous record、dot-chain finalization、diagnostics、public enum policy が同期している。 |
 | [recovery.md](../en/recovery.md) | [./recovery.md](./recovery.md) | recovered syntax stage disposition、boundary rule、test intent が同期している。 |
 | [resolved_ast.md](../en/resolved_ast.md) | [./resolved_ast.md](./resolved_ast.md) | top-level `ResolvedAst` shape、stable identity、node / name / label / import table、recovered shell、provenance、determinism、public enum policy が同期している。 |
-| [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [./source_spec_correspondence.md](./source_spec_correspondence.md) | existing audit と planned R-032A/R-032B correspondence が同期。 |
+| [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [./source_spec_correspondence.md](./source_spec_correspondence.md) | existing audit、implemented R-032A、planned R-032B correspondence が同期。 |
 | [symbols.md](../en/symbols.md) | [./symbols.md](./symbols.md) | symbol-bearing shell、collection order、identity / origin、signature、duplicate / overload、visibility / export / summary policy、dependency relation、recovery / diagnostics、determinism、public enum policy が同期している。 |
 | [todo.md](../en/todo.md) | [./todo.md](./todo.md) | ordered task state と split R-032A/R-032B ownership/dependency が同期。 |
 | [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [./bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この R-028 audit、R-029 scope re-run、close-out re-run、roadmap synchronization overlay は、同じ scope、result、pair checklist、handoff note を両言語で記録している。 |
@@ -96,18 +96,18 @@ rejected callback/unmapped contract は両言語に残さない。
 ## handoff
 
 post-close-out の resolver update は、この監査を二言語同期状態の baseline として扱う。
-S-026 documentation/implementationは完了済み。current dependency
-sequenceはthis R-032A lint-policy docs correction、R-032A implementation、
-R-032B、active B5Cで、各commit後にfresh inventoryを挟む。将来 design fileを
+S-026 documentation/implementation、R-032A lint-policy docs correction、
+R-032A implementationは完了済み。current dependency sequenceはR-032B、
+active B5Cで、各commit後にfresh inventoryを挟む。将来 design fileを
 追加する場合は両言語 directory に同時に追加する。挙動 cleanup、public API
 change、新しいdiagnosticsは完了済み resolver milestone の範囲外であり、
 独立した spec/test authority を要求する。
 
 S-026/R-032A dependency overlay は EN/JA 同期済み。両言語はhistorically
 同じboundary defectを分類し、separate syntax commitまでR-032A sourceを
-deferした。それらのcommitは完了済みで、R-032A sourceは現在this lint-policy
-correction commitとそのfresh inventoryまでだけdeferする。resolver ownership、
-validation precedence、exclusionは同期したまま。
+deferした。それらのcommit、lint-policy correction、R-032A implementationは
+完了済み。resolver ownership、validation precedence、exclusionは同期したままで、
+R-032Bはpending。
 
 ## R-032A lint-policy scope correction
 
@@ -119,3 +119,13 @@ implementationはexact `src/resolved_ast.rs`、
 runtime/API/test contractと全forbidden boundaryは維持する。このpaired
 correctionはdocs-only separate prerequisite commitで、coverage stateを変更せず、
 implementation前のfresh inventoryを要求する。
+
+## R-032A implementation synchronization
+
+EN/JAはimplemented `SurfaceResolvedArena` API、exact three-field ownership、
+complete dense same-index lowering、fail-closed validation precedence、public
+non-exhaustive error surface、helper payload、equivalent-input determinism、
+sole R-026 decisionを同一に記録する。両言語は同じRust 3 ownerと
+label/runner/artifact/trace/semantic prohibited scopeを記録する。R-032Bは
+pending。active mapping、trace status/count、owner、deferral、coverage creditを
+変更しないため`spec_coverage_audit.md`はdeliberate no-op。

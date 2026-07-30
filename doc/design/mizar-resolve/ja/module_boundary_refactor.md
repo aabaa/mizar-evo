@@ -106,3 +106,12 @@ R-026 public-enum decision owner を欠いた時にも stop rule を発火した
 と source/spec correspondence が exact `tests/lint_policy.rs` entry をすでに
 authorizeする。したがって別同期docs-only correctionはimplementationをexact
 Rust 3 filesへfreezeし、他lint/module-layout changeはauthorizeしない。
+
+## R-032A implementation result
+
+R-032Aは上記でauthorizeしたexact `src/resolved_ast.rs`、private
+`src/resolved_ast/tests.rs`、sole `tests/lint_policy.rs` owning-spec
+decision entryだけを使用した。existing `resolved_ast` public moduleがownerの
+ままで、module split、ownership transfer、callback、parallel map、
+syntax/checker/runner source changeはない。R-032Bは次のseparate logical task
+としてexisting `labels` ownerに残る。

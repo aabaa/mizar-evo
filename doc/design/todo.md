@@ -3721,6 +3721,9 @@ or semantic owner changed. B3M2B2B remains next before B4.
   **NO FINDINGS**, full verification and exact count/hash/no-op gates, and
   independent final quality with all nine hard gates PASS at valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete exact-scope staging, the dedicated correction commit,
-  post-commit repository/stash invariants, and fresh inventory; then execute
-  the exact three-Rust-file resolver R-032A implementation without stopping.
+- [x] Complete exact-scope staging, correction commit
+  `4184872a4c36b2fedce37d0fb626191270096273`, post-commit repository/stash
+  invariants, and fresh inventory; then complete the exact three-Rust-file
+  resolver R-032A implementation with synchronized status records.
+- [ ] Fresh-inventory and implement resolver R-032B as the next separate
+  lower-prerequisite logical task.

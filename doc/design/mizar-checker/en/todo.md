@@ -6219,8 +6219,10 @@ implementation commit does not satisfy a producer task.
   mandatory R-026 enum-decision owner omission as High `design_drift`.
 - [x] Complete the separate R-032A lint-policy docs correction through
   findings-free reviews, full verification, and valid `100/100` final quality.
-- [ ] Complete its post-commit invariant check and fresh inventory before
+- [x] Complete its post-commit invariant check and fresh inventory before
   R-032A implementation.
+- [x] Complete the exact resolver R-032A implementation without changing any
+  checker consumer or B5C artifact; R-032B is the next lower prerequisite.
 - [x] Preserve all frozen checker consumers, B5C fixtures/expectations/trace,
   public diagnostics, and semantic deferrals while the lower prerequisite
   lands.

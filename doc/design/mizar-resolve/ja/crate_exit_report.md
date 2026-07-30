@@ -263,3 +263,17 @@ checker `SourceStatementReferenceHandoff` は unresolved reference を拒否す�
 historical resolver exit は closed のまま。S-026 は external syntax
 prerequisite、R-032A/R-032B は独自 commit/quality gate を持つ bounded post-exit
 follow-up で、historical score を再利用・変更しない。
+
+## R-032A bounded post-exit implementation result
+
+R-032Aは独立lower-prerequisite logical taskとしてcomplete。exact frozen
+`SurfaceResolvedArena` / `SurfaceResolvedArenaError`、complete focused test
+matrix、sole R-026 owning-spec decision、同期live status recordを追加する。
+label collector、runner、fixture、sidecar、expectation、trace status/count、
+public diagnostic、Cargo metadata、checker/type/proof behaviorは変更しない。
+historical R-001〜R-029 exit / scoreはunchanged。R-032Bが次のpending
+post-exit taskで、その後にactive B5C consumerが続く。
+
+R-032Aはactive `.miz` mapping、traceability backlink/status/count、owner
+crate、deferred status、coverage creditを変更しないため、
+`doc/design/spec_coverage_audit.md`はdeliberately unchanged。

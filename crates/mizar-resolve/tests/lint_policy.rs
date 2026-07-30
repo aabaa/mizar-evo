@@ -184,6 +184,11 @@ const PUBLIC_ENUM_DECISIONS: &[PublicEnumDecision] = &[
     },
     PublicEnumDecision {
         relative_path: "src/resolved_ast.rs",
+        enum_name: "SurfaceResolvedArenaError",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
         enum_name: "NameLookupClass",
         spec_name: "resolved_ast.md",
     },

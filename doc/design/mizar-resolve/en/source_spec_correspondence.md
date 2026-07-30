@@ -6,7 +6,7 @@
 Status: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendum and R-031 implementation
-complete; planned R-032A/R-032B / Checker Task 258B5C prerequisites recorded.
+complete; R-032A implemented, with R-032B / Checker Task 258B5C still planned.
 
 ## Scope
 
@@ -70,7 +70,7 @@ or expectation sidecars to match implementation behavior.
 
 | Spec | Public API checked | Source | Test evidence | Finding |
 |---|---|---|---|---|
-| [resolved_ast.md](./resolved_ast.md) stable identity and node arena | Existing ids/arena/AST plus planned R-032A `SurfaceResolvedArena` and exact public error table | `crates/mizar-resolve/src/resolved_ast.rs`, planned `resolved_ast/tests.rs`, and the sole `tests/lint_policy.rs` R-026 owning-spec entry for `SurfaceResolvedArenaError` | Existing arena tests plus R-032A complete-map, mismatch, stale, root, recovery, checked-overflow, and public-enum decision guards | R-032A planned prerequisite |
+| [resolved_ast.md](./resolved_ast.md) stable identity and node arena | Existing ids/arena/AST plus implemented R-032A `SurfaceResolvedArena` and exact public error table | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/tests.rs`, and the sole `crates/mizar-resolve/tests/lint_policy.rs` R-026 owning-spec entry for `SurfaceResolvedArenaError` | Existing arena tests plus implemented R-032A complete-map, mismatch, stale, root, recovery, checked-overflow, precedence, equivalent-input determinism, and public-enum decision guards | No finding after R-032A |
 | [resolved_ast.md](./resolved_ast.md) name/label/import/export reference tables | `NameRefTable`, `LabelRefTable`, `ResolvedImports`, name/label/import/export resolution records, ambiguity/unresolved records, deferred selector records | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/validation.rs` | `name_ref_table_round_trips_all_current_result_kinds`, `ambiguous_name_candidates_tie_break_by_range_before_local_symbol_id`, `label_ref_table_round_trips_all_current_result_kinds`, `resolved_imports_round_trip_and_project_canonical_modules`, `table_and_import_export_iteration_is_stable`, `node_reference_keys_are_stable_for_equivalent_builds` | No finding |
 | [resolved_ast.md](./resolved_ast.md) deterministic debug rendering | `ResolvedAst::snapshot_text` and stable variant-name rendering for resolver snapshot baselines | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/snapshot.rs`, crate-root determinism test | `resolved_ast_snapshot_text_is_stable_and_covers_tables`, `resolved_ast_snapshot_text_covers_payload_escaping_and_non_range_anchors`, `resolver_public_seams_are_deterministic_for_equivalent_inputs` | No finding |
 | [env.md](./env.md) symbol environment indexes | `SymbolEnv`, `SymbolEnvIndexes`, symbol, label, definition, overload, registration, lexical-summary, namespace, declaration-dependency, module-summary, diagnostic-anchor, and source-contribution index families | `crates/mizar-resolve/src/env.rs` | `index_families_round_trip_insertions_and_lookups`, `index_iteration_is_deterministic_for_all_families`, `contribution_tracking_covers_sources_summaries_builtins_and_invalidation`, `equivalent_construction_is_stable_and_checker_facts_are_absent` | No finding |
@@ -134,15 +134,15 @@ after R-024 are:
 | R-G002 | `test_gap` | Historical lack of semantic resolver corpus coverage beyond lexical/parser import/export syntax. | Partially closed by R-023's active declaration-symbol smoke/fail fixtures, the post-task-20 R-G007 parser-backed signature-conflict active seed, and exact SymbolEnv-derived pass payload assertions. The remaining concrete corpus assertion work is refined by R-G007 and remains non-blocking for R-027 because unit tests cover the implemented behavior. |
 | R-G003 | resolved by R-024 | Consume dependency modules from canonical `ModuleSummary` artifacts. | Completed in resolver as canonical `mizar-artifact` summary consumption without resolver-owned artifact schemas, shims, writers, hash framing, or source loading. |
 | R-G006 | `external_dependency_gap` | Module-level scheme/template declaration shell once parser/syntax exposes an owning source role. | Non-blocking for represented source roles. Current resolver preserves direct template roles in owning signature payloads and does not fabricate scheme/template module symbols. |
-| R-G007 | `test_gap` | Concrete remainder of R-G002 after the active signature-conflict and pass-payload increments: broader active semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and label-reference facts from tasks R-009 to R-019. Checker Task 258B5C is the next bounded label-reference increment. | Complete R-032A and R-032B as separate lower prerequisites, then add only spec-derived confinement cases through private `mizar-test`. Keep public codes empty and checker handoff narrow. |
+| R-G007 | `test_gap` | Concrete remainder of R-G002 after the active signature-conflict and pass-payload increments: broader active semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and label-reference facts from tasks R-009 to R-019. Checker Task 258B5C is the next bounded label-reference increment. | R-032A is complete. Complete R-032B as the remaining lower prerequisite, then add only spec-derived confinement cases through private `mizar-test`. Keep public codes empty and checker handoff narrow. |
 | R-G008 | resolved by R-031 | Chapter 19 §19.1 requires ordinary declarations with the same symbol kind, spelling, arity, and argument signature to conflict even when return signatures match. Pre-R-031 source skipped all-return-identical groups, the exact seed was deferred, and design lacked a distinct same-return class/detail key plus mixed-group priority. | Ordinary functor definitions are grouped by the exact resolver-syntactic key. Appended `SameSignatureDefinitionConflict` diagnostic/definition variants cover all-return-identical groups; existing `SameSignatureReturnConflict` wins for mixed/different-return groups. Exact unit/near-miss/order/recovery/snapshot tests and the active declaration-symbol sidecar cover the new key while preserving first shell/range, all candidate identities/order, the byte-identical different-return sidecar, and checker-owned semantic equality/selection boundaries. |
 
-## Planned R-032A / R-032B Correspondence
+## Implemented R-032A / Planned R-032B Correspondence
 
 Canonical Chapter 15 §15.10 and Chapter 16 §§16.4.2/16.5.1 authorize the
 following lower-only repair:
 
-| Task and contract | Planned source | Required evidence | Excluded |
+| Task and contract | Source | Required evidence | Excluded |
 |---|---|---|---|
 | R-032A exact `SurfaceResolvedArena` API and enum declaration from `resolved_ast.md` | `crates/mizar-resolve/src/resolved_ast.rs` | complete map; exact structure/origin/path; every typed mismatch including `ResolutionStateMismatch` and `ReferenceKeyMismatch`; checked overflow | labels, runner, fixtures, trace, semantic resolution |
 | R-032A tests | `crates/mizar-resolve/src/resolved_ast/tests.rs` | exact error matrix, deterministic mapping, wildcard compatibility, no unchecked conversion/panic | other resolver test owners |
@@ -150,9 +150,9 @@ following lower-only repair:
 | R-032B exact lifetime/error/origin/default-deny direct-edge contract from `labels.md` | `crates/mizar-resolve/src/labels.rs` | exact `Root` -> `CompilationUnit` -> `ItemList` -> theorem chain; only AST/arena borrows; global ordinals; `proof-step-v1`; every unlisted edge skips | callback, unmapped side channel, unsupported/recovered/semantic forms |
 | R-032B tests | `crates/mizar-resolve/src/labels/tests.rs` | positive per upper/lower edge; missing/additional/wrong/relocated/wrapped upper negatives; confinement/origin; other negative mutations; mixed-list and all-other matrices | `.miz`, expectations, trace status/counts, active runner |
 
-R-032A and R-032B are planned separate commits before the active B5C consumer.
-This documentation record neither claims implementation nor changes the
-original milestone score.
+R-032A is implemented as its separate lower-prerequisite logical task.
+R-032B remains the next separate commit before the active B5C consumer. This
+bounded post-exit implementation does not change the original milestone score.
 
 R-032A implementation preflight classified the earlier two-Rust-file scope as
 High `design_drift`: the new public enum is necessarily scanned by the
@@ -165,3 +165,6 @@ The inserted S-026 dependency is infrastructure-only. It changes no Chapter 15
 or 16 requirement, `.miz` intent, expectation, trace row, or coverage credit.
 It supplies only complete syntax ids required by the already frozen R-032A
 structural mapping, so `doc/design/spec_coverage_audit.md` remains unchanged.
+R-032A likewise changes no active `.miz` mapping, trace/backlink/status/count,
+owner crate, deferred status, or coverage credit, so the audit remains a
+deliberate no-op.

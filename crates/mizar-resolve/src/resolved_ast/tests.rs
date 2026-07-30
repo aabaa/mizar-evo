@@ -4,7 +4,9 @@ use mizar_session::{
     SessionIdAllocator, SourceAnchor,
 };
 use mizar_syntax::ast::SurfaceNodeKind;
-use mizar_syntax::{SurfaceFormulaConstant, SurfaceTokenKind, SyntaxRecoveryKind};
+use mizar_syntax::{
+    SurfaceAst, SurfaceAstBuilder, SurfaceFormulaConstant, SurfaceTokenKind, SyntaxRecoveryKind,
+};
 
 #[test]
 fn module_and_symbol_ids_are_deterministic_and_alias_independent() {
@@ -80,6 +82,413 @@ fn arena_rejects_cycles() {
         ResolvedArena::try_new(ResolvedNodeId::new(0), vec![first, second]),
         Err(ResolvedArenaError::Cycle { .. })
     ));
+}
+
+#[test]
+fn surface_structural_arena_lowers_every_dense_node_same_index_and_deterministically() {
+    let source_id = source_id(31);
+    let module = module_id("pkg", "surface");
+    let ast = surface_ast_fixture(source_id);
+    let lowered = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let repeated = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let equivalent_ast = surface_ast_fixture(source_id);
+    let equivalent_module = module_id("pkg", "surface");
+    let equivalent = SurfaceResolvedArena::lower(&equivalent_ast, &equivalent_module).unwrap();
+    let surface = ast.node_views().collect::<Vec<_>>();
+
+    assert_eq!(lowered, repeated);
+    assert_eq!(lowered, equivalent);
+    assert_eq!(lowered.source_id(), source_id);
+    assert_eq!(lowered.module(), &module);
+    assert_eq!(lowered.arena().len(), surface.len());
+    assert_eq!(lowered.arena().root().index(), 3);
+    assert_eq!(surface.last().unwrap().id().index(), 4);
+
+    for view in surface {
+        let resolved_id = lowered.resolved_node_for(view.id()).unwrap();
+        let resolved = lowered.arena().node(resolved_id).unwrap();
+        assert_eq!(resolved_id.index(), view.id().index());
+        assert_eq!(resolved.kind(), view.kind());
+        assert_eq!(
+            resolved
+                .children()
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>(),
+            view.children()
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            resolved.origin().anchor(),
+            &SourceAnchor::Range(view.range())
+        );
+        assert_eq!(
+            resolved.origin().structural_path(),
+            &[u32::try_from(view.id().index()).unwrap()]
+        );
+        assert_eq!(resolved.origin().source_id(), source_id);
+        assert_eq!(resolved.origin().module_id(), &module);
+        assert_eq!(resolved.origin().import_edge(), None);
+        assert_eq!(
+            resolved.recovery(),
+            if view.is_recovered() {
+                RecoveryState::Recovered
+            } else {
+                RecoveryState::Normal
+            }
+        );
+        assert_eq!(resolved.origin().is_recovered(), view.is_recovered());
+        assert_eq!(resolved.resolution(), NodeResolutionState::NotApplicable);
+        assert_eq!(resolved.reference_key(), None);
+    }
+
+    let foreign = larger_surface_ast_fixture(source_id)
+        .node_views()
+        .last()
+        .unwrap()
+        .id();
+    assert!(foreign.index() >= lowered.arena().len());
+    assert_eq!(lowered.resolved_node_for(foreign), None);
+}
+
+#[test]
+fn surface_structural_arena_rejects_missing_root() {
+    let source_id = source_id(32);
+    let module = module_id("pkg", "surface");
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    builder.add_node(
+        SurfaceNodeKind::PlaceholderItem,
+        range(source_id, 0, 1),
+        Vec::new(),
+    );
+    let ast = builder.finish(None, None);
+
+    assert!(matches!(
+        SurfaceResolvedArena::lower(&ast, &module),
+        Err(SurfaceResolvedArenaError::MissingRoot)
+    ));
+
+    let rooted = surface_ast_fixture(source_id);
+    let lowered = SurfaceResolvedArena::lower(&rooted, &module).unwrap();
+    assert!(matches!(
+        lowered.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::NodeCountMismatch)
+    ));
+
+    let mut same_count_builder = SurfaceAstBuilder::new(source_id);
+    for index in 0..rooted.node_views().len() {
+        same_count_builder.add_node(
+            SurfaceNodeKind::PlaceholderItem,
+            range(source_id, index, index + 1),
+            Vec::new(),
+        );
+    }
+    let same_count_without_root = same_count_builder.finish(None, None);
+    assert!(matches!(
+        lowered.validate_against(&same_count_without_root, &module),
+        Err(SurfaceResolvedArenaError::MissingRoot)
+    ));
+}
+
+#[test]
+fn surface_structural_arena_rejects_each_top_level_and_node_mismatch() {
+    let (source_id, other_source_id) = source_id_pair(33);
+    let module = module_id("pkg", "surface");
+    let other_module = module_id("pkg", "other");
+    let ast = surface_ast_fixture(source_id);
+    let lowered = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+
+    let mut changed = lowered.clone();
+    changed.source_id = other_source_id;
+    assert!(matches!(
+        changed.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::SourceMismatch)
+    ));
+
+    let mut changed = lowered.clone();
+    changed.module = other_module.clone();
+    assert!(matches!(
+        changed.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::ModuleMismatch)
+    ));
+
+    let mut changed = lowered.clone();
+    changed.arena.nodes.pop();
+    assert!(matches!(
+        changed.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::NodeCountMismatch)
+    ));
+
+    let mut changed = lowered.clone();
+    changed.arena.root = ResolvedNodeId::new(2);
+    assert!(matches!(
+        changed.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::RootMismatch)
+    ));
+
+    let ids = ast.node_views().map(|node| node.id()).collect::<Vec<_>>();
+    assert_surface_fault(
+        &lowered,
+        &ast,
+        &module,
+        ids[2],
+        SurfaceArenaFault::Kind,
+        "kind",
+    );
+    assert_surface_fault(
+        &lowered,
+        &ast,
+        &module,
+        ids[2],
+        SurfaceArenaFault::Children,
+        "children",
+    );
+    assert_surface_fault(
+        &lowered,
+        &ast,
+        &module,
+        ids[2],
+        SurfaceArenaFault::Range,
+        "range",
+    );
+    assert_surface_fault(
+        &lowered,
+        &ast,
+        &module,
+        ids[2],
+        SurfaceArenaFault::Recovery,
+        "recovery",
+    );
+    assert_surface_fault(
+        &lowered,
+        &ast,
+        &module,
+        ids[2],
+        SurfaceArenaFault::Resolution,
+        "resolution",
+    );
+    assert_surface_fault(
+        &lowered,
+        &ast,
+        &module,
+        ids[2],
+        SurfaceArenaFault::ReferenceKey,
+        "reference-key",
+    );
+    assert_surface_fault(
+        &lowered,
+        &ast,
+        &module,
+        ids[2],
+        SurfaceArenaFault::OriginSource(other_source_id),
+        "origin",
+    );
+    assert_surface_fault(
+        &lowered,
+        &ast,
+        &module,
+        ids[2],
+        SurfaceArenaFault::StructuralPath,
+        "structural-path",
+    );
+
+    for fault in [
+        SurfaceArenaFault::OriginSource(other_source_id),
+        SurfaceArenaFault::OriginModule(other_module),
+        SurfaceArenaFault::OriginImport,
+    ] {
+        assert_surface_fault(&lowered, &ast, &module, ids[2], fault, "origin");
+    }
+
+    let mut changed = lowered.clone();
+    changed.arena.nodes[1].origin.recovered = false;
+    assert!(matches!(
+        changed.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::RecoveryMismatch { node })
+            if node == ids[1]
+    ));
+}
+
+#[test]
+fn surface_structural_arena_rejects_invalid_contained_arena_shapes() {
+    let source_id = source_id(34);
+    let module = module_id("pkg", "surface");
+    let ast = surface_ast_fixture(source_id);
+    let lowered = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+
+    let mut invalid_child = lowered.clone();
+    invalid_child.arena.nodes[0].children = vec![ResolvedNodeId::new(99)];
+    assert!(matches!(
+        invalid_child.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::InvalidArena(
+            ResolvedArenaError::InvalidChild { node, child }
+        )) if node.index() == 0 && child.index() == 99
+    ));
+
+    let mut invalid_root = lowered.clone();
+    invalid_root.arena.root = ResolvedNodeId::new(99);
+    assert!(matches!(
+        invalid_root.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::InvalidArena(
+            ResolvedArenaError::InvalidRoot { root }
+        )) if root.index() == 99
+    ));
+
+    let mut cycle = lowered;
+    cycle.arena.nodes[0].children = vec![ResolvedNodeId::new(0)];
+    assert!(matches!(
+        cycle.validate_against(&ast, &module),
+        Err(SurfaceResolvedArenaError::InvalidArena(
+            ResolvedArenaError::Cycle { node }
+        )) if node.index() == 0
+    ));
+}
+
+#[test]
+fn surface_structural_arena_validation_freezes_top_level_precedence() {
+    let (source_id, other_source_id) = source_id_pair(35);
+    let module = module_id("pkg", "surface");
+    let other_module = module_id("pkg", "other");
+    let ast = surface_ast_fixture(source_id);
+    let lowered = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+
+    let mut changed = lowered.clone();
+    changed.source_id = other_source_id;
+    changed.module = other_module.clone();
+    changed.arena.nodes[0].children = vec![ResolvedNodeId::new(99)];
+    changed.arena.nodes.pop();
+    changed.arena.root = ResolvedNodeId::new(2);
+    assert_eq!(
+        surface_error_class(changed.validate_against(&ast, &module).unwrap_err()),
+        "source"
+    );
+
+    let mut changed = lowered.clone();
+    changed.module = other_module;
+    changed.arena.nodes[0].children = vec![ResolvedNodeId::new(99)];
+    changed.arena.nodes.pop();
+    changed.arena.root = ResolvedNodeId::new(2);
+    assert_eq!(
+        surface_error_class(changed.validate_against(&ast, &module).unwrap_err()),
+        "module"
+    );
+
+    let mut changed = lowered.clone();
+    changed.arena.nodes[0].children = vec![ResolvedNodeId::new(99)];
+    changed.arena.nodes.pop();
+    changed.arena.root = ResolvedNodeId::new(2);
+    assert_eq!(
+        surface_error_class(changed.validate_against(&ast, &module).unwrap_err()),
+        "arena"
+    );
+
+    let mut changed = lowered.clone();
+    changed.arena.nodes.pop();
+    changed.arena.root = ResolvedNodeId::new(2);
+    assert_eq!(
+        surface_error_class(changed.validate_against(&ast, &module).unwrap_err()),
+        "count"
+    );
+
+    let mut changed = lowered;
+    changed.arena.root = ResolvedNodeId::new(2);
+    changed.arena.nodes[0].kind = SurfaceNodeKind::ItemList;
+    assert_eq!(
+        surface_error_class(changed.validate_against(&ast, &module).unwrap_err()),
+        "root"
+    );
+}
+
+#[test]
+fn surface_structural_arena_validation_freezes_per_node_precedence() {
+    let (source_id, other_source_id) = source_id_pair(36);
+    let module = module_id("pkg", "surface");
+    let ast = surface_ast_fixture(source_id);
+    let lowered = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let node = ast.node_views().nth(2).unwrap().id();
+    let ordered_faults = [
+        SurfaceArenaFault::Kind,
+        SurfaceArenaFault::Children,
+        SurfaceArenaFault::Range,
+        SurfaceArenaFault::Recovery,
+        SurfaceArenaFault::Resolution,
+        SurfaceArenaFault::ReferenceKey,
+        SurfaceArenaFault::OriginSource(other_source_id),
+        SurfaceArenaFault::StructuralPath,
+    ];
+    let expected = [
+        "kind",
+        "children",
+        "range",
+        "recovery",
+        "resolution",
+        "reference-key",
+        "origin",
+    ];
+
+    for (faults, expected) in ordered_faults.windows(2).zip(expected) {
+        let mut changed = lowered.clone();
+        apply_surface_fault(&mut changed, node, faults[1].clone());
+        apply_surface_fault(&mut changed, node, faults[0].clone());
+        assert_eq!(
+            surface_error_class(changed.validate_against(&ast, &module).unwrap_err()),
+            expected
+        );
+    }
+}
+
+#[test]
+fn surface_structural_arena_reports_earlier_dense_node_before_later_faults() {
+    let (source_id, other_source_id) = source_id_pair(37);
+    let module = module_id("pkg", "surface");
+    let ast = surface_ast_fixture(source_id);
+    let lowered = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let ids = ast.node_views().map(|node| node.id()).collect::<Vec<_>>();
+
+    for later_fault in [
+        SurfaceArenaFault::Kind,
+        SurfaceArenaFault::Children,
+        SurfaceArenaFault::Range,
+        SurfaceArenaFault::Recovery,
+        SurfaceArenaFault::Resolution,
+        SurfaceArenaFault::ReferenceKey,
+        SurfaceArenaFault::OriginSource(other_source_id),
+        SurfaceArenaFault::StructuralPath,
+    ] {
+        let mut changed = lowered.clone();
+        apply_surface_fault(&mut changed, ids[4], later_fault);
+        apply_surface_fault(&mut changed, ids[0], SurfaceArenaFault::Kind);
+        assert!(matches!(
+            changed.validate_against(&ast, &module),
+            Err(SurfaceResolvedArenaError::NodeKindMismatch { node })
+                if node == ids[0]
+        ));
+    }
+}
+
+#[test]
+fn surface_structural_arena_checked_helpers_report_exact_payloads() {
+    let source_id = source_id(38);
+    let ast = surface_ast_fixture(source_id);
+    let ids = ast.node_views().map(|node| node.id()).collect::<Vec<_>>();
+
+    assert!(matches!(
+        checked_surface_children(ids[0], &[ids[1]]),
+        Err(SurfaceResolvedArenaError::InvalidChildOrder { node, child })
+            if node == ids[0] && child == ids[1]
+    ));
+
+    #[cfg(target_pointer_width = "64")]
+    {
+        let overflowing_index = usize::try_from(u64::from(u32::MAX) + 1).unwrap();
+        assert!(matches!(
+            checked_surface_structural_path(ids[0], overflowing_index),
+            Err(SurfaceResolvedArenaError::StructuralPathComponentOverflow { node })
+                if node == ids[0]
+        ));
+    }
 }
 
 #[test]
@@ -1779,6 +2188,152 @@ fn reference_key_snapshot(source_id: SourceId, module: ModuleId) -> Vec<Option<N
         .take(4)
         .map(|(_, node)| node.reference_key())
         .collect()
+}
+
+#[derive(Clone)]
+enum SurfaceArenaFault {
+    Kind,
+    Children,
+    Range,
+    Recovery,
+    Resolution,
+    ReferenceKey,
+    OriginSource(SourceId),
+    OriginModule(ModuleId),
+    OriginImport,
+    StructuralPath,
+}
+
+fn apply_surface_fault(
+    lowered: &mut SurfaceResolvedArena,
+    source: SurfaceNodeId,
+    fault: SurfaceArenaFault,
+) {
+    let resolved = &mut lowered.arena.nodes[source.index()];
+    match fault {
+        SurfaceArenaFault::Kind => {
+            resolved.kind = if resolved.kind == SurfaceNodeKind::ItemList {
+                SurfaceNodeKind::PlaceholderItem
+            } else {
+                SurfaceNodeKind::ItemList
+            };
+        }
+        SurfaceArenaFault::Children => {
+            if resolved.children.is_empty() {
+                assert!(source.index() > 0);
+                resolved.children.push(ResolvedNodeId::new(0));
+            } else {
+                resolved.children.clear();
+            }
+        }
+        SurfaceArenaFault::Range => {
+            let origin_source = resolved.origin.source_id;
+            resolved.origin.anchor = SourceAnchor::Range(range(origin_source, 900, 901));
+        }
+        SurfaceArenaFault::Recovery => {
+            resolved.recovery = match resolved.recovery {
+                RecoveryState::Normal => RecoveryState::Recovered,
+                RecoveryState::Recovered => RecoveryState::Normal,
+            };
+        }
+        SurfaceArenaFault::Resolution => {
+            resolved.resolution = NodeResolutionState::Resolved;
+        }
+        SurfaceArenaFault::ReferenceKey => {
+            resolved.reference_key = Some(NodeReferenceKey::Name(NameRefId::new(0)));
+        }
+        SurfaceArenaFault::OriginSource(source_id) => {
+            resolved.origin.source_id = source_id;
+        }
+        SurfaceArenaFault::OriginModule(module) => {
+            resolved.origin.module_id = module;
+        }
+        SurfaceArenaFault::OriginImport => {
+            resolved.origin.import_edge = Some(ResolvedImportId::new(0));
+        }
+        SurfaceArenaFault::StructuralPath => {
+            resolved.origin.structural_path = vec![999];
+        }
+    }
+}
+
+fn assert_surface_fault(
+    lowered: &SurfaceResolvedArena,
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    node: SurfaceNodeId,
+    fault: SurfaceArenaFault,
+    expected: &str,
+) {
+    let mut changed = lowered.clone();
+    apply_surface_fault(&mut changed, node, fault);
+    let error = changed.validate_against(ast, module).unwrap_err();
+    assert_eq!(surface_error_class(error), expected);
+}
+
+fn surface_error_class(error: SurfaceResolvedArenaError) -> &'static str {
+    match error {
+        SurfaceResolvedArenaError::MissingRoot => "missing-root",
+        SurfaceResolvedArenaError::StructuralPathComponentOverflow { .. } => "overflow",
+        SurfaceResolvedArenaError::InvalidChildOrder { .. } => "child-order",
+        SurfaceResolvedArenaError::InvalidArena(_) => "arena",
+        SurfaceResolvedArenaError::SourceMismatch => "source",
+        SurfaceResolvedArenaError::ModuleMismatch => "module",
+        SurfaceResolvedArenaError::NodeCountMismatch => "count",
+        SurfaceResolvedArenaError::RootMismatch => "root",
+        SurfaceResolvedArenaError::NodeKindMismatch { .. } => "kind",
+        SurfaceResolvedArenaError::ChildListMismatch { .. } => "children",
+        SurfaceResolvedArenaError::RangeMismatch { .. } => "range",
+        SurfaceResolvedArenaError::RecoveryMismatch { .. } => "recovery",
+        SurfaceResolvedArenaError::ResolutionStateMismatch { .. } => "resolution",
+        SurfaceResolvedArenaError::ReferenceKeyMismatch { .. } => "reference-key",
+        SurfaceResolvedArenaError::OriginMismatch { .. } => "origin",
+        SurfaceResolvedArenaError::StructuralPathMismatch { .. } => "structural-path",
+    }
+}
+
+fn surface_ast_fixture(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let constructor_name = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "Example",
+        range(source_id, 0, 7),
+    );
+    let recovered_argument =
+        builder.add_recovered_token(SurfaceTokenKind::ErrorRecovery, "?", range(source_id, 8, 9));
+    let constructor = builder.add_node(
+        SurfaceNodeKind::StructureConstructor,
+        range(source_id, 0, 9),
+        vec![constructor_name, recovered_argument],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 9),
+        vec![constructor],
+    );
+    builder.add_node(
+        SurfaceNodeKind::SelectorAccess,
+        range(source_id, 20, 24),
+        Vec::new(),
+    );
+    builder.finish(Some(root), None)
+}
+
+fn larger_surface_ast_fixture(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    for index in 0..6 {
+        builder.add_node(
+            SurfaceNodeKind::PlaceholderItem,
+            range(source_id, index, index + 1),
+            Vec::new(),
+        );
+    }
+    let root = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 6),
+        Vec::new(),
+    );
+    builder.finish(Some(root), None)
 }
 
 fn source_id(seed: u8) -> SourceId {

@@ -264,7 +264,7 @@ task R-026 は frontend task 25 の public-enum decision procedure をこの mod
 - `NodeResolutionState`
 - `NodeReferenceKey`
 - `ResolvedArenaError`
-- 計画済み `SurfaceResolvedArenaError`
+- `SurfaceResolvedArenaError`
 - `NameLookupClass`
 - `NameResolution`
 - `LabelKind`
@@ -453,3 +453,15 @@ expectation、trace、specification、parser/frontend/checker source、
 diagnostic code、Cargo changeはauthorizeしない。この同期documentation
 correctionはseparate commitとし、three-Rust-file R-032A implementation commit
 の前にfresh inventoryを要求する。
+
+### R-032A implementation result
+
+implementationはfrozen `SurfaceResolvedArena` API、public non-exhaustive
+error table、exact three stored fieldsを提供する。全dense
+`SurfaceAst::node_views()` entryをchild-first same-indexでlowerし、frozen
+top-level/per-node precedenceをvalidateし、semantic state/keyなしのstructural
+provenanceだけを保持する。focused evidenceはdisconnected/recovered/
+root-not-last node、全named mismatch、invalid contained arena、simultaneous
+precedence fault、exact helper payload、independent equivalent-input
+determinism、out-of-range foreign id、downstream wildcard compatibilityを
+coverする。R-032Bはseparateかつpending。

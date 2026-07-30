@@ -273,3 +273,18 @@ references.
 The historical resolver exit remains closed. S-026 is an external syntax
 prerequisite and R-032A/R-032B remain bounded post-exit follow-ups with their
 own commits and quality gates; none reuses or changes the historical score.
+
+## R-032A bounded post-exit implementation result
+
+R-032A is complete as its own lower-prerequisite logical task. It adds the
+exact frozen `SurfaceResolvedArena` and `SurfaceResolvedArenaError`, the
+complete focused test matrix, the sole R-026 owning-spec decision, and
+synchronized live status records. It changes no label collector, runner,
+fixture, sidecar, expectation, trace status/count, public diagnostic, Cargo
+metadata, or checker/type/proof behavior. The historical R-001 through R-029
+exit and score remain unchanged. R-032B is the next pending post-exit task,
+followed by the active B5C consumer.
+
+`doc/design/spec_coverage_audit.md` is deliberately unchanged: R-032A changes
+no active `.miz` mapping, traceability backlink/status/count, owner crate,
+deferred status, or coverage credit.

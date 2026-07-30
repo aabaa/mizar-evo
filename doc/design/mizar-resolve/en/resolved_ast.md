@@ -275,7 +275,7 @@ API surfaces and must remain `#[non_exhaustive]`:
 - `NodeResolutionState`
 - `NodeReferenceKey`
 - `ResolvedArenaError`
-- planned `SurfaceResolvedArenaError`
+- `SurfaceResolvedArenaError`
 - `NameLookupClass`
 - `NameResolution`
 - `LabelKind`
@@ -471,3 +471,15 @@ runtime behavior, label collection, fixture, sidecar, expectation, trace,
 specification, parser/frontend/checker source, diagnostic code, or Cargo
 change. This synchronized documentation correction is a separate commit;
 fresh inventory must precede the three-Rust-file R-032A implementation commit.
+
+### R-032A implementation result
+
+The implementation now provides the frozen `SurfaceResolvedArena` API and
+public non-exhaustive error table with exactly the three stored fields. It
+lowers every dense `SurfaceAst::node_views()` entry child-first at the same
+index, validates the frozen top-level and per-node precedence, and preserves
+only structural provenance with no semantic state or key. Focused evidence
+covers disconnected/recovered/root-not-last nodes, all named mismatches,
+invalid contained arenas, simultaneous precedence faults, exact helper
+payloads, independent equivalent-input determinism, out-of-range foreign ids,
+and downstream wildcard compatibility. R-032B remains separate and pending.

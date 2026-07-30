@@ -113,3 +113,13 @@ enum policy and source/spec correspondence already authorize the exact
 `tests/lint_policy.rs` entry. A separate synchronized docs-only correction
 therefore freezes exactly three Rust files for implementation; no other lint
 or module-layout change is authorized.
+
+## R-032A implementation result
+
+R-032A used exactly `src/resolved_ast.rs`, its private
+`src/resolved_ast/tests.rs`, and the sole
+`tests/lint_policy.rs` owning-spec decision entry authorized above. The
+existing `resolved_ast` public module remains the owner; no module split,
+ownership transfer, callback, parallel map, or syntax/checker/runner source
+change was introduced. R-032B remains in the existing `labels` owner as the
+next separate logical task.
