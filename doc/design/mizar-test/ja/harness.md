@@ -4453,3 +4453,19 @@ clone/debug、empty semantic output を cover する。shared production guard
 
 public harness schema、active route、fixture、expectation、sidecar、
 trace/coverage state、diagnostic、semantic result は変更しない。
+
+## Checker Task 258B5A frozen private route
+
+runner selectorはexact 185-byte/final-LF private sourceだけをadmitし、
+near-miss bytesとunchanged authoritative fixtures 2件をrejectする。real
+parser、resolver two-pass replay、BindingEnv、Task-252/256/258 producerを
+runし、全rowをauthenticateしてからpaired base/reference handoffをinstallし、
+syntax fallbackなしでfinal cloneをassembleする。
+
+outputはexact one proof-step label、one simple-local citation、left/right
+lookup ordinals `1/1`、all-one ten reference-use ordinals、empty semantic
+tablesである。frozen runner five testsはsource identity、raw/enriched
+resolver/lower mutation、owning-stage scope/range/ordinal/ownership
+corruption、B1/B5A cross-pair/order、replay/debug、selector isolation、
+empty semanticsをcoverする。public harness field/error/debug grammarは
+変更しない。

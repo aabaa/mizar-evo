@@ -11204,3 +11204,23 @@ Task-257B3 ownership を reuse する。public facade、corpus artifact、
 expectation、sidecar、trace mapping、diagnostic、semantic result は追加しない。
 independent test-sufficiency/implementation review は **NO FINDINGS** で、
 module split と ownership transfer は不要である。
+
+## Checker Task 258B5A frozen runner boundary
+
+future runner changeはprivate statement producer
+`type_elaboration/source_statement.rs`、re-export
+`type_elaboration.rs`/`runner.rs`、existing statement test leaf、および
+frozen checker 3 consumersに限定する。parser、resolver、BindingEnv、
+Task-252/256 producer module、他lower family、CLI/public harness、corpus、
+expectation、sidecar、trace metadata、semanticsはno-op。
+
+routeはrunnerでname resolutionを実装せず、existing resolver scope-prefix
+evidenceをconsumeする。B5B imported summaryとB5C negative diagnosticは
+excludeする。exact 20/73 ownershipによりlabel/citation/proof-block/wrapper
+nodeをchecker-owned syntax-free tableへ移動しない。
+
+### Checker Task 258B5A boundary review result
+
+independent source/documentation boundary reviewは**NO FINDINGS**。全future
+production changeはfrozen seven consumers内でfeasibleで、public harness/
+lower-owner/module split/ownership transferは不要である。

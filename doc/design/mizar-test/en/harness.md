@@ -4707,3 +4707,20 @@ outputs. The shared production guard accepts only B4A `1/1/[1,1]`, B4B
 
 No public harness schema, active route, fixture, expectation, sidecar,
 trace/coverage state, diagnostic, or semantic result changed.
+
+## Checker Task 258B5A Frozen Private Route
+
+The runner selector may admit only the exact 185-byte/final-LF private source
+and must reject near-miss bytes and both unchanged authoritative fixtures.
+It runs the real parser, resolver two-pass replay, BindingEnv, Task-252,
+Task-256, and Task-258 producers; authenticates every row before installing
+the paired base/reference handoffs; and assembles the final clone without
+syntax fallback.
+
+The output is exact one proof-step label, one simple-local citation,
+left/right lookup ordinals `1/1`, ten reference-use ordinals all equal to
+1, and empty semantic tables. The five frozen runner tests cover source
+identity, raw/enriched resolver and lower mutations, scope/range/ordinal/
+ownership corruption at the owning stage, B1/B5A cross-pairing and
+installation order, replay/debug stability, selector isolation, and empty
+semantics. No public harness field or error/debug grammar changes.

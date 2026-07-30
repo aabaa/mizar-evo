@@ -666,3 +666,18 @@ module context 0, proof context 1 over `82..119`, one reserved binding 0,
 proof scope `[0]`, and no diagnostic. Only leaf term 4 has the proof-local
 reference; both wrappers remain reference-free, and the unnamed witness adds
 no binding or symbol. No binding source or public API changed.
+
+## Task 258B5A Frozen Nested-Proof Binding Boundary
+
+The private route reuses one reserved binding and exactly four normal
+contexts with zero diagnostics. Context 0 is the module. Context 1 is outer
+proof `87..183`, parent 0, lexical scope `[0]`; context 2 is first descendant
+proof `104..131`, parent 1, scope `[0,0]`; context 3 is second descendant
+proof `146..178`, parent 1, scope `[0,1]`. Every context exposes only binding
+0.
+
+Task-252 term-reference contexts are
+`0,0,1,1,2,2,1,1,3,3`; all ten uses select binding 0 at producer-stored use
+ordinal 1. Proof labels are resolver provenance, not BindingEnv bindings.
+B5A changes no binding producer, row, fingerprint, scope rule, diagnostic,
+source file, or public API.

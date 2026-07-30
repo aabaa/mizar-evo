@@ -5757,5 +5757,32 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   全frozen count/hashをreproduce。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] Task-258B4Cだけをstage/inspectしimplementation commitをcreate後、
-  post-commit invariantsとnext task fresh inventoryをverify。
+- [x] Task-258B4Cだけをstage/inspectしimplementation commit
+  `50ab1ebc747e912fff1f0cf111832e3c2c81ba01`をcreate。
+- [x] clean post-commit state、unchanged protected stash、next
+  dependency-ready taskのfresh inventoryをverify。
+
+## Checker Task 258B5A frozen-contract documentation prerequisite
+
+- [x] stale B4C ledger/unsafe B5 aggregationを`design_drift`、missing
+  imported/confinement active routeをbounded `test_gap`、absent B5A
+  implementationをimmediate-next-task-owned bounded `source_drift`にclassify。
+- [x] exact 185-byte source/hash、93-node/root-92 frontend、resolver、
+  Binding/252/256/258 base/reference rows、20/73 ownershipをfreeze。
+- [x] proof label scope `[0]`、descendant citation scope `[0,1]`、
+  local-only provenance、exact seven consumers、checker 4 tests、runner
+  5 testsをfreeze。
+- [x] later B5B imported-public/B5C negative-confinement workをsplitし、
+  semantic/public API/corpus/expectation/sidecar/trace boundaryをpreserve。
+- [x] independent specification/documentation、test-sufficiency、
+  source/documentation boundary、bilingual reviewsを**NO FINDINGS**で
+  complete。
+- [x] checker/runner/workspace tests、fmt、Clippy、five CLI、exact
+  32-document scope、全counts/hashes、authority no-op、repository/stash
+  invariantsをreproduce。
+- [x] repeated independent final qualityを**NO FINDINGS**、全9 hard gates
+  PASS、capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] synchronized B5A documentationだけをstageしてone prerequisite
+  commitをcreateし、post-commit invariants後にimplementationをfresh
+  inventory。

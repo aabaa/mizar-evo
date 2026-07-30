@@ -1512,3 +1512,19 @@ Cross-pairings, duplicate/partial or atomic state, Task-248 occupancy, stale
 fingerprints, rooted/relocated arenas, and altered ownership fail before
 mutation with the existing error and replay deterministically. No public
 installer or semantic table was added.
+
+## Task 258B5A Frozen Paired Installation
+
+The existing reference installer may be generalized privately to accept two
+and only two authenticated transactions: the unchanged B1 same-scope profile
+and the B5A ancestor/descendant profile. B5A requires exact base
+`1/5/5/5/5`, reference `1/1`, lower handoffs, all fingerprints, the
+93-node/root-92 arena, and 20-owned/73-unowned partition.
+
+The label and citation must retain scopes `[0]` and `[0,1]`, respectively,
+with statement ordinals 1 and 4, private/local-only contribution 0, exact
+ranges and origins, and the matching resolver key at node 82. Cross-pairing,
+partial/duplicate installation, stale replay, relocation/recovery, wrong
+scope or provenance, Task-248/other-family occupancy, and altered ownership
+fail before mutation. The operation adds no semantic table and does not
+change B1 debug output or a public signature.

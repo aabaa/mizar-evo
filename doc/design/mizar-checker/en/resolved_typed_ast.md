@@ -1506,3 +1506,19 @@ without partial publication and permit deterministic replay.
 The final AST remains a clone-preserving syntax/provenance projection:
 checked formulas, statement semantics, proofs, proof nodes, and terminal
 goals stay empty, and no schema or public API changed.
+
+## Task 258B5A Frozen Final-Assembly Boundary
+
+Final assembly may recognize B5A only when the typed AST contains the exact
+93-node/root-92 arena, matched B5A base/reference fingerprints, 20/73
+ownership, label scope `[0]`, citation scope `[0,1]`, and the resolver's sole
+keyed node 82 mapped to label key 0. The preliminary resolver has no keyed
+node; the final resolver has exactly one resolved id and no diagnostic,
+name, import, or export entry.
+
+Clone/replay must revalidate every row, range, origin, ordinal, recovery
+state, scope-prefix relation, and empty semantic table before publication.
+Partial or cross-profile installation, stale fingerprints, relocation,
+recovery, wrong contribution or keyed node, Task-248/other-family
+coexistence, and any occupied semantic output fail atomically. B1 debug
+bytes and public APIs remain unchanged.

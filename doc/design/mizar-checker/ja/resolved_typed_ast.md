@@ -1449,3 +1449,18 @@ partial publication なしで fail し、deterministic replay を許す。
 final AST は clone-preserving syntax/provenance projection のままである。
 checked formula、statement semantics、proof、proof node、terminal goal は空で、
 schema と public API は変更しない。
+
+## Task 258B5A frozen final-assembly boundary
+
+final assemblyはexact 93-node/root-92 arena、matched B5A base/reference
+fingerprints、20/73 ownership、label scope `[0]`、citation scope `[0,1]`、
+resolver sole keyed node 82 -> label key 0をtyped ASTが保持する場合だけ
+B5Aを認識できる。preliminary resolverはkeyed nodeなし、final resolverは
+exact one resolved idを持ち、diagnostic/name/import/export entryはない。
+
+clone/replayはpublication前に全row/range/origin/ordinal/recovery state、
+scope-prefix relation、empty semantic tableを再検証する。partial/
+cross-profile install、stale fingerprint、relocation、recovery、wrong
+contribution/keyed node、Task-248/other-family coexistence、occupied
+semantic outputはatomically failする。B1 debug bytesとpublic APIは
+unchangedである。

@@ -3278,3 +3278,21 @@ test-sufficiency と implementation review は **NO FINDINGS** である。
 これは syntax/provenance transport のみである。public API、debug/error
 grammar、active artifact、trace/coverage state、truth、restriction/witness
 semantics、fact、theorem acceptance、proof、IR は変更しない。
+
+## Task 258B5A frozen ancestor/descendant statement transaction
+
+private 185-byte sourceはexact one theorem ownerとfive syntax-free rowsを
+publishする。theorem node 89/context 0/`Atomic(0)`、labeled proof-step
+node 67/context 1/`Atomic(1)`、conclusion node 65/context 2/`Atomic(2)`、
+outer conclusion node 87/context 1/`Atomic(3)`、descendant conclusion
+node 85/context 3/`Atomic(4)`である。source ordinalは`0..4`、各contextは
+reserved binding `[0]`、各inputはTask-252 references `[2i,2i+1]`を
+consumeし、各candidateはunverifiedである。
+
+reference handoff label row 0はstatement/context/candidate 1、range
+`95..96`、origin `<package>::<module>::proof::A`、visible-after ordinal 1、
+scope `[0]`、private/local-only SemanticOrigin `[12]`をnameする。citation
+row 0はstatement/context 4、range `170..171`、`LabelRefId(0)`、scope
+`[0,1]`、simple-local、resolver node 82/SemanticOrigin `[82]`をnameする。
+exact prefix visibilityはprovenanceだけで、fact/acceptance/proof/goal/
+semantic outputを作らない。

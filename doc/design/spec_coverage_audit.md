@@ -5464,3 +5464,45 @@ any backlink/count, or coverage credit. Independent final quality reports
 **NO FINDINGS**, all nine hard gates PASS, no cap, and valid `100/100`
 (`20/20/15/15/10/10/5/5`). Only staging, the documentation commit, and
 post-commit inventory remain.
+
+## Task 258B5A Frozen Ancestor/Descendant Citation Follow-up
+
+The Task-258 B5 visibility family is now explicitly decomposed. B5A owns
+only the private proof-step label declared at resolver scope `[0]` and cited
+from the later descendant scope `[0,1]`. B5B retains imported public theorem
+visibility and requires an imported-summary/public-provenance contract. B5C
+retains active inner-to-outer and sibling-confinement rejection and requires
+separate test-first negative routes. This split corrects `design_drift`;
+missing B5B/B5C active coverage remains a bounded `test_gap`.
+The absent seven-consumer B5A implementation is bounded `source_drift`
+owned by the immediate next implementation task.
+
+B5A's 185-byte private source is derived from existing Chapters 4, 11, 14,
+15, and 16 authority, the unchanged two-descendant-proof parser fixture, and
+the resolver scope-confinement test. It freezes 93 Surface/resolver nodes,
+Task-48/252/256/258 provenance, one local-only proof label, one simple-local
+citation, and 20/73 syntax-free ownership. It adds no language rule, active
+fixture, expectation, trace backlink, or semantic result.
+
+Requirement `spec.en.checker.formula_statement.source_payloads` therefore
+remains `deferred` with `tests = []`. No status, count, backlink, owner-crate,
+or coverage-credit field changes. `tests/coverage/spec_trace.toml`, existing
+`.miz`, expectations, and sidecars are intentional no-ops; this narrative
+records only follow-up ownership and the B5A/B5B/B5C boundary.
+
+### Task 258B5A Documentation Review Evidence
+
+Independent specification/documentation, test-contract, and
+source/documentation boundary reviews report **NO FINDINGS**. Exact
+32-document scope, forbidden authority/production no-ops, checker/runner and
+full-workspace tests, formatting, Clippy, five metadata CLIs, all frozen
+counts/hashes, repository state, and protected-stash invariance PASS. This
+evidence still grants no active trace backlink or coverage credit.
+
+### Task 258B5A Documentation Final Quality
+
+After correcting the JA placement `design_drift`, repeated independent final
+quality reports **NO FINDINGS**. All nine hard gates PASS, no score cap
+applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). This status update does not alter the deferred
+row or create coverage credit.

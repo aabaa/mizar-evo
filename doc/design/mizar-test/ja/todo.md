@@ -2810,6 +2810,25 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   verificationをrunし、全frozen count/hashをreproduce。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [ ] exact B4C implementation scopeだけをstage/inspect/commit。
-- [ ] clean post-commit state、unchanged stashをverifyし、次の
+- [x] exact B4C implementation scopeだけをstage/inspectし、
+  `50ab1ebc747e912fff1f0cf111832e3c2c81ba01`としてcommit。
+- [x] clean post-commit state、unchanged protected stashをverifyし、次の
   dependency-ready logical taskをfresh inventory。
+
+## Checker Task 258B5A frozen-contract documentation prerequisite
+
+- [x] exact source/hash、Surface/resolver/lower/base/reference rows、
+  proof-label `[0]` -> descendant-citation `[0,1]`、20/73 ownershipをfreeze。
+- [x] private route telemetry `1/1/[1,1,1,1,1,1,1,1,1,1]`、runner five
+  tests、exact consumers、atomic B1/B5A pairingをfreeze。
+- [x] B5B import、B5C active negative、public/corpus/trace change、全
+  semantic outputをexclude。
+- [x] independent specification、test-sufficiency、source/documentation
+  boundary、bilingual reviewsを**NO FINDINGS**でcomplete。
+- [x] crate/workspace、fmt、Clippy、CLI、exact scope/count/hash、authority
+  no-op、repository-state、stash gatesをreproduce。
+- [x] repeated independent final qualityを**NO FINDINGS**、全9 hard gates
+  PASS、capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）でcomplete。
+- [ ] synchronized documentationだけをcommitし、post-commit invariantsを
+  verifyしてB5A implementationをfresh inventory。

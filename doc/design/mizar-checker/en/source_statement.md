@@ -3791,3 +3791,21 @@ implementation reviews report **NO FINDINGS**.
 This remains syntax/provenance transport only. Public APIs, debug/error
 grammar, active artifacts, trace/coverage state, truth, restriction or
 witness semantics, facts, theorem acceptance, proof, and IR are unchanged.
+
+## Task 258B5A Frozen Ancestor/Descendant Statement Transaction
+
+The private 185-byte source publishes exactly one theorem owner and five
+syntax-free rows: theorem node 89/context 0/`Atomic(0)`, labeled proof-step
+node 67/context 1/`Atomic(1)`, conclusion node 65/context 2/`Atomic(2)`,
+outer conclusion node 87/context 1/`Atomic(3)`, and descendant conclusion
+node 85/context 3/`Atomic(4)`. Source ordinals are `0..4`; each context sees
+reserved binding `[0]`, each input consumes Task-252 references
+`[2i,2i+1]`, and each candidate is unverified.
+
+Reference handoff label row 0 names statement/context/candidate 1, range
+`95..96`, origin `<package>::<module>::proof::A`, visible-after ordinal 1,
+scope `[0]`, and private/local-only SemanticOrigin `[12]`. Citation row 0
+names statement/context 4, range `170..171`, `LabelRefId(0)`, scope `[0,1]`,
+simple-local kind, and resolver node 82/SemanticOrigin `[82]`. Exact prefix
+visibility is provenance only: the task creates no fact, acceptance, proof,
+goal, or other semantic output.

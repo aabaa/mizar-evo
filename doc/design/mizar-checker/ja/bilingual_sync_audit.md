@@ -1231,3 +1231,36 @@ Clippy、five-CLI、count/hash/scope/stash PASS、independent final quality
 **NO FINDINGS**を同期する。全9 hard gatesはPASS、capなし、valid
 `100/100`（`20/20/15/15/10/10/5/5`）。両languageで残るのはstaging、
 commit、post-commit inventoryだけである。
+
+## Task 258B5A frozen-contract synchronization
+
+paired checker documentsはsame 185-byte/final-LF private
+ancestor-label/descendant-citation source（SHA-256
+`ce9639d454169ffb49452bd4a4b6b15767ff590cef2b3ed0210946132c5d26c7`）、
+93-node/root-92 Surface/resolver arena、Binding/Task-252/Task-256/Task-258
+profile `4/1/0`、`10/10/0`、`5/0/0/0/0/0/0/10/10`、
+`1/5/5/5/5`、reference `1/1`をfreezeする。両languageはsame five
+statement rows、exact 20-owned/73-unowned partition、proof label scope
+`[0]`、descendant citation scope `[0,1]`、empty semantic resultをrecordする。
+
+両languageはB5 splitもfreezeする。B5Aはpositive local
+ancestor-to-descendant edgeだけ、B5Bはimported public theorem visibility、
+B5Cはactive inner-to-outer/sibling-confinement negativeをownする。same
+absent B5A implementationは両languageでnext-task-owned bounded
+`source_drift`にclassifyする。
+seven implementation consumers、checker 4 tests、runner 5 tests、
+no-public-API rule、semantic deferrals、baselines/hashes、trace/corpus no-op
+boundaryをexceptionなしで同期する。
+
+### Task 258B5A review synchronization
+
+両languageはspecification、test-contract、source/documentation reviewsを
+**NO FINDINGS**、checker/runner/full-workspace、format、Clippy、five-CLI、
+exact scope/count/hash、authority no-op、HEAD/ahead、stash gatesをPASSとして
+recordする。independent final quality/commit gatesは両languageでpending。
+
+### Task 258B5A final-quality synchronization
+
+両languageはrepeated final qualityを**NO FINDINGS**、全9 hard gates PASS、
+capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）としてrecordする。
+staging/commit/post-commit inventoryだけがsynchronized pendingである。

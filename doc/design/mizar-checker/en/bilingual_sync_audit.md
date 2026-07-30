@@ -1278,3 +1278,38 @@ format, Clippy, five-CLI, count/hash/scope/stash PASSes, and independent
 final quality **NO FINDINGS**. All nine hard gates PASS with no cap at valid
 `100/100` (`20/20/15/15/10/10/5/5`). Only staging, commit, and
 post-commit inventory remain in both languages.
+
+## Task 258B5A Frozen-Contract Synchronization
+
+The paired checker documents freeze the same 185-byte/final-LF private
+ancestor-label/descendant-citation source (SHA-256
+`ce9639d454169ffb49452bd4a4b6b15767ff590cef2b3ed0210946132c5d26c7`),
+93-node/root-92 Surface and resolver arenas, Binding/Task-252/Task-256/Task-258
+profiles `4/1/0`, `10/10/0`, `5/0/0/0/0/0/0/10/10`,
+`1/5/5/5/5`, and reference `1/1`. Both languages record the same five
+statement rows, exact 20-owned/73-unowned partition, proof label scope `[0]`,
+descendant citation scope `[0,1]`, and empty semantic result.
+
+Both languages also freeze the B5 split: B5A owns only the positive local
+ancestor-to-descendant edge, B5B retains imported public theorem visibility,
+and B5C retains active inner-to-outer and sibling-confinement negatives.
+Both languages classify the absent B5A implementation as bounded
+next-task-owned `source_drift`.
+The same seven implementation consumers, four checker tests, five runner
+tests, no-public-API rule, semantic deferrals, baselines, hashes, and
+trace/corpus no-op boundary are synchronized without exception.
+
+### Task 258B5A Review Synchronization
+
+Both languages record specification, test-contract, and source/documentation
+reviews as **NO FINDINGS**, with checker/runner/full-workspace, format,
+Clippy, five-CLI, exact scope/count/hash, authority no-op, HEAD/ahead, and
+stash gates PASS. Independent final quality and commit gates remain pending
+in both languages.
+
+### Task 258B5A Final-Quality Synchronization
+
+Both languages record repeated final quality as **NO FINDINGS**, all nine
+hard gates PASS, no cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit inventory
+remain synchronized and pending.

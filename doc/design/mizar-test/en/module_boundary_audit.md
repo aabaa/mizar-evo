@@ -12451,3 +12451,25 @@ binding, or lower semantics. It adds no public facade, corpus artifact,
 expectation, sidecar, trace mapping, diagnostic, or semantic result.
 Independent test-sufficiency and implementation reviews report **NO
 FINDINGS**; no module split or ownership transfer is required.
+
+## Checker Task 258B5A Frozen Runner Boundary
+
+The future runner change is confined to private statement production in
+`type_elaboration/source_statement.rs`, re-exports in
+`type_elaboration.rs` and `runner.rs`, and the existing statement test leaf,
+plus the three frozen checker consumers. Parser, resolver, BindingEnv,
+Task-252/256 producer modules, other lower families, CLI/public harness,
+corpus, expectations, sidecars, trace metadata, and semantics are no-ops.
+
+The route consumes existing resolver scope-prefix evidence rather than
+implementing name resolution in the runner. B5B imported summaries and B5C
+negative diagnostics are excluded. Exact 20/73 ownership prevents moving
+label, citation, proof-block, or wrapper nodes into checker-owned syntax-free
+tables.
+
+### Checker Task 258B5A Boundary Review Result
+
+Independent source/documentation boundary review reports **NO FINDINGS**.
+All production changes remain feasible inside the frozen seven consumers;
+no public harness, lower-owner, module split, or ownership transfer is
+required.

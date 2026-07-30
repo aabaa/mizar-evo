@@ -1443,3 +1443,21 @@ rejectする。upper dispatchはB1/B4A、B2/B4B、B3/B4Cだけをmatchし、全
 hybridはatomically failする。quantifier truth、restriction discharge、
 witness semantics、capture、implicit theorem closure、facts、theorem
 acceptance、proof、Core/CFG/VC、B5はdeferredである。
+
+## Task 258B5 decomposition と B5A frozen profile
+
+B5 umbrellaをimplementation前にdecomposeする。
+
+| task | owned edge | remaining prerequisite |
+| --- | --- | --- |
+| `258B5A` | `[0]`のlocal proof-step labelをlater descendant conclusion `[0,1]`がcite | this frozen contract |
+| `258B5B` | imported public theorem visibility | imported-summary/public provenance contract |
+| `258B5C` | active inner-to-outer/sibling rejection | test-first negative route/diagnostic contract |
+
+B5Aはone theorem owner、five statement/context/input/candidate rows、one
+private/local-only proof-step label、one simple-local citationを使う。five
+formulaはTask-256 `Atomic(0..4)`で、全candidateは
+`UnverifiedProposition`のまま。accepted fact/proof resultは作らない。
+cross-family installはexact B1 base/reference pairまたはexact B5A
+base/reference pairだけを認める。B5B/B5C、qualified/grouped/bulk
+citation、fact、proof progress、theorem acceptance、IRはdeferredである。

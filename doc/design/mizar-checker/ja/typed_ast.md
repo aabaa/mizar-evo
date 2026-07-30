@@ -1452,3 +1452,18 @@ cross-pairing、duplicate/partial または atomic state、Task-248 occupancy、
 stale fingerprint、rooted/relocated arena、altered ownership は mutation
 前に既存 error で fail し、deterministic replay を許す。public installer
 と semantic table は追加しない。
+
+## Task 258B5A frozen paired installation
+
+existing reference installerはprivateにgeneralizeし、unchanged B1
+same-scope profileとB5A ancestor/descendant profileのexact two
+authenticated transactionだけをacceptできる。B5Aはexact base
+`1/5/5/5/5`、reference `1/1`、lower handoff、全fingerprint、
+93-node/root-92 arena、20-owned/73-unowned partitionを要求する。
+
+label/citationはscope `[0]`/`[0,1]`、statement ordinal 1/4、
+private/local-only contribution 0、exact range/origin、node 82のmatching
+resolver keyを維持する。cross-pair、partial/duplicate install、stale replay、
+relocation/recovery、wrong scope/provenance、Task-248/other-family
+occupancy、altered ownershipはmutation前にfailする。semantic tableを追加せず、
+B1 debug output/public signatureを変更しない。

@@ -3014,6 +3014,26 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine
   hard gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage/inspect and commit only the exact B4C implementation scope.
-- [ ] Verify clean post-commit state, unchanged stash, and fresh-inventory
-  the next dependency-ready logical task.
+- [x] Stage/inspect and commit only the exact B4C implementation scope as
+  `50ab1ebc747e912fff1f0cf111832e3c2c81ba01`.
+- [x] Verify clean post-commit state, unchanged protected stash, and
+  fresh-inventory the next dependency-ready logical task.
+
+## Checker Task 258B5A Frozen-Contract Documentation Prerequisite
+
+- [x] Freeze exact source/hash, Surface/resolver/lower/base/reference rows,
+  proof-label `[0]` to descendant-citation `[0,1]`, and 20/73 ownership.
+- [x] Freeze private route telemetry
+  `1/1/[1,1,1,1,1,1,1,1,1,1]`, five runner tests, exact consumers, and
+  atomic B1/B5A pairing.
+- [x] Exclude B5B imports, B5C active negatives, public/corpus/trace changes,
+  and all semantic outputs.
+- [x] Complete independent specification, test-sufficiency,
+  source/documentation boundary, and bilingual reviews with **NO FINDINGS**.
+- [x] Reproduce crate/workspace, fmt, Clippy, CLI, exact scope/count/hash,
+  authority no-op, repository-state, and stash gates.
+- [x] Complete repeated independent final quality with **NO FINDINGS**, all
+  nine hard gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Commit only synchronized documentation, verify post-commit invariants,
+  and fresh-inventory B5A implementation.

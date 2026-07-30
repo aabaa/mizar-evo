@@ -1023,3 +1023,26 @@ Parser, resolver, binding, other lower owners, corpus, expectations,
 sidecars, trace, public schemas, and semantic phases remain unchanged.
 Independent implementation and test-sufficiency reviews report **NO
 FINDINGS**; no split or ownership transfer is required.
+
+## Task 258B5A Frozen Consumer Boundary
+
+The implementation boundary is exactly checker
+`source_statement.rs`, `typed_ast.rs`, and `resolved_typed_ast.rs`, plus
+runner `type_elaboration/source_statement.rs`, its two private facades
+`type_elaboration.rs` and `runner.rs`, and the existing statement test leaf.
+The runner may construct one crate-private B5A transaction and checker may
+generalize exact B1/B5A pairing validation; no public DTO, enum, accessor,
+producer/installer signature, error variant, or debug grammar changes.
+
+Parser, resolver, BindingEnv, Task-252 and Task-256 producers, all other
+lower families, active fixtures, expectations, sidecars, trace metadata, and
+semantic phases are exclusion boundaries. The 93-node arena assigns only ten
+term, five formula, and five statement nodes; label/reference/proof structure
+and the other 73 nodes remain Surface-owned. B5B imports and B5C negative
+routes are separate dependency-ordered tasks, not extensions of B5A.
+
+### Task 258B5A Boundary Review Result
+
+Independent source/documentation boundary review reports **NO FINDINGS**:
+the seven consumers are sufficient, every excluded owner remains unchanged,
+and no module split or ownership transfer is required.

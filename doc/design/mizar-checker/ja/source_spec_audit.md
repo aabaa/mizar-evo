@@ -4712,3 +4712,30 @@ implementation review は **NO FINDINGS**。truth、restriction discharge、
 witness semantics、closure、fact、acceptance、proof、IR は deferred のまま
 なので、`doc/design/spec_coverage_audit.md` の status/count/backlink edit は
 不要である。
+
+## Task 258B5A frozen authority audit
+
+Chapters 4/11/14/15/16はreserved-variable equality、inward local-scope
+visibility、labeled proof step、nested proof blocks、simple local citationを
+authorizeする。unchanged positive parser fixtureはtwo-descendant-proof
+source shape、unchanged type-elaboration gap fixtureはexisting
+checker-boundary intentを保持し、resolver confinement testはscope prefix
+`[0] -> [0,1]`をauthenticateする。
+
+reviewはstale B4C ledgerとformer undivided B5 descriptionを
+`design_drift`、missing imported-public/active confinement coverageをB5B/B5C
+owned bounded `test_gap`と分類する。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、current `repo_metadata_conflict`はない。B5Aはlanguage
+rule/test intentを変更せず、specification、existing `.miz`、expectation、
+sidecar、trace artifactをeditしない。
+absent seven-consumer B5A implementationはbounded `source_drift`であり、
+immediate next implementation taskへ意図的にdeferする。
+
+### Task 258B5A reviewed authority result
+
+independent specification/source-documentation reviewsはbounded
+next-task-owned `source_drift`をrecord後、全8 protocol classificationで
+**NO FINDINGS**。independent test sufficiencyも**NO FINDINGS**。full
+verificationはspecification/corpus/expectation/sidecar/trace/production/
+public API ownerを変更せずPASSする。

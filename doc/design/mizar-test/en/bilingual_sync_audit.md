@@ -1287,3 +1287,28 @@ focused/crate/workspace/format/Clippy/CLI/count/hash/scope/stash PASSes,
 and independent final quality **NO FINDINGS**. All nine hard gates PASS
 without a cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
 staging, commit, and post-commit inventory remain; no exception exists.
+
+## Checker Task 258B5A Frozen-Contract Synchronization
+
+The paired runner documents freeze the same 185-byte source/hash,
+93-node/root-92 arenas, raw/enriched resolver profiles, all lower and
+statement/reference rows, 20/73 ownership, label `[0]` to citation `[0,1]`
+provenance, telemetry `1/1/[1,1,1,1,1,1,1,1,1,1]`, five exact runner
+tests, seven-consumer boundary, and empty semantics. They also preserve the
+same B5A/B5B/B5C task split, public/active/corpus/trace no-op rule,
+bounded next-task-owned B5A `source_drift`, baselines, and hashes without a
+synchronization exception.
+
+### Checker Task 258B5A Review Synchronization
+
+Both runner languages record all three independent reviews as
+**NO FINDINGS** and the complete crate/workspace, format, Clippy, CLI,
+scope/count/hash, authority-no-op, repository-state, and stash verification
+as PASS. Final quality and commit gates remain synchronized and pending.
+
+### Checker Task 258B5A Final-Quality Synchronization
+
+Both runner languages record repeated final quality as **NO FINDINGS**, all
+nine hard gates PASS, no cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`). Staging, commit, and post-commit inventory are
+the only pending synchronized gates.

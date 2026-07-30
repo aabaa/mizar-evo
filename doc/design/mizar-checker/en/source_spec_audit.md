@@ -4919,3 +4919,31 @@ implementation reviews report **NO FINDINGS**. Truth, restriction
 discharge, witness semantics, closure, fact, acceptance, proof, and IR
 remain deferred; `doc/design/spec_coverage_audit.md` therefore requires no
 status/count/backlink edit.
+
+## Task 258B5A Frozen Authority Audit
+
+Chapters 4, 11, 14, 15, and 16 authorize the reserved-variable equalities,
+inward local-scope visibility, labeled proof step, nested proof blocks, and
+simple local citation. The unchanged positive parser fixture supplies the
+two-descendant-proof source shape; the unchanged type-elaboration gap fixture
+preserves its existing checker-boundary intent; and the resolver confinement
+test authenticates scope prefix `[0] -> [0,1]`.
+
+Review classifies stale B4C ledgers and the former undivided B5 description as
+`design_drift`. Missing imported-public and active confinement coverage is a
+bounded `test_gap` owned by B5B/B5C. There is no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or current `repo_metadata_conflict`. B5A changes no
+language rule or test intent and may not edit specification, existing `.miz`,
+expectation, sidecar, or trace artifacts.
+The absent seven-consumer B5A implementation is bounded `source_drift`,
+intentionally left to the immediate next implementation task.
+
+### Task 258B5A Reviewed Authority Result
+
+Independent specification and source/documentation reviews report
+**NO FINDINGS** across all eight protocol classifications after recording
+the bounded, next-task-owned `source_drift`. Independent test sufficiency
+also reports **NO FINDINGS**. Full verification passes without changing
+specification, corpus, expectation, sidecar, trace, production, or public
+API owners.

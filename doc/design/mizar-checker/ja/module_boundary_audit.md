@@ -1006,3 +1006,27 @@ unowned のままである。parser、resolver、binding、他 lower owner、cor
 expectation、sidecar、trace、public schema、semantic phase は変更しない。
 independent implementation/test-sufficiency review は **NO FINDINGS** で、
 split と ownership transfer は不要である。
+
+## Task 258B5A frozen consumer boundary
+
+implementation boundaryはchecker `source_statement.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs`、runner
+`type_elaboration/source_statement.rs`、private facade
+`type_elaboration.rs`/`runner.rs`、existing statement test leafのexact
+seven consumersである。runnerはone crate-private B5A transactionを構築でき、
+checkerはexact B1/B5A pairing validationをgeneralizeできるが、public
+DTO/enum/accessor/producer・installer signature/error variant/debug grammarは
+変更しない。
+
+parser、resolver、BindingEnv、Task-252/256 producer、他lower family、
+active fixture、expectation、sidecar、trace metadata、semantic phaseは
+exclusion boundaryである。93-node arenaではten term、five formula、five
+statementだけをassignし、label/reference/proof structureと他73 nodeは
+Surface-ownedのまま。B5B importとB5C negative routeはseparate
+dependency-ordered taskである。
+
+### Task 258B5A boundary review result
+
+independent source/documentation boundary reviewは**NO FINDINGS**。seven
+consumersはsufficient、全excluded ownerはunchangedで、module split/
+ownership transferは不要である。

@@ -943,6 +943,24 @@ edge. The application-to-witness edge remains wholly owned by the next
 B1A frozen contract and implementation; all B1B+/B2+/B3+ ownership remains
 deferred.
 
+## Task 258B5 Decomposition And B5A Frozen Profile
+
+The B5 umbrella is decomposed before implementation:
+
+| task | owned edge | prerequisite still required |
+| --- | --- | --- |
+| `258B5A` | local proof-step label at `[0]` cited by a later descendant conclusion at `[0,1]` | this frozen contract |
+| `258B5B` | imported public theorem visibility | imported-summary/public provenance contract |
+| `258B5C` | active inner-to-outer and sibling rejection | test-first negative route and diagnostic contract |
+
+B5A uses one theorem owner, five statement/context/input/candidate rows, one
+private/local-only proof-step label, and one simple-local citation. All five
+formulas are Task-256 `Atomic(0..4)` values and every candidate remains
+`UnverifiedProposition`; no accepted fact or proof result is created.
+Cross-family installation is legal only for the exact B1 base/reference pair
+or the exact B5A base/reference pair. B5B/B5C, qualified/grouped/bulk
+citations, facts, proof progress, theorem acceptance, and IR remain deferred.
+
 ### Task 258B3M2B2B1A Frozen Cross-Family Edge
 
 B1A adds one directed ownership edge only:

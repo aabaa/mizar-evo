@@ -3508,6 +3508,28 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Pass independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage/inspect and create one dedicated B4C implementation commit.
-- [ ] Verify clean post-commit state, unchanged stash, and fresh-inventory
-  the next dependency-ready logical task.
+- [x] Stage/inspect and create dedicated B4C implementation commit
+  `50ab1ebc747e912fff1f0cf111832e3c2c81ba01`.
+- [x] Verify clean post-commit state, unchanged protected stash, and
+  fresh-inventory the next dependency-ready logical task.
+
+## Checker Task 258B5A Frozen-Contract Documentation Prerequisite
+
+- [x] Freeze the exact private ancestor-label/descendant-citation source,
+  authority, resolver/lower/statement/reference provenance, 20/73 ownership,
+  exact consumers, tests, baselines, and exit criteria.
+- [x] Correct stale B4C ledger state and decompose B5A positive local
+  visibility from B5B imported-public and B5C active negative confinement.
+- [x] Classify the absent seven-consumer B5A implementation as bounded
+  `source_drift` owned by the immediate next implementation task.
+- [x] Keep production, specifications, existing `.miz`, expectations,
+  sidecars, trace status/count/backlinks, and semantic results unchanged.
+- [x] Complete independent specification, test-sufficiency,
+  source/documentation boundary, and bilingual reviews with **NO FINDINGS**.
+- [x] Reproduce crate/workspace, fmt, Clippy, five-CLI, exact
+  scope/count/hash, authority-no-op, repository-state, and stash gates.
+- [x] Complete repeated independent final quality with **NO FINDINGS**, all
+  nine hard gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Create one documentation-only commit, verify post-commit invariants,
+  and continue automatically into fresh Task-258B5A implementation inventory.

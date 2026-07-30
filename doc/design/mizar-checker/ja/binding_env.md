@@ -644,3 +644,17 @@ module context 0、proof context 1 `82..119`、reserved binding 0、proof
 scope `[0]`、diagnostic 0。proof-local referenceはleaf term 4だけで、
 both wrappersはreference-free、unnamed witnessはbinding/symbolを追加しない。
 binding source/public API changeなし。
+
+## Task 258B5A frozen nested-proof binding boundary
+
+private routeはone reserved bindingとexact four normal contexts、
+diagnostic 0をreuseする。context 0はmodule。context 1はouter proof
+`87..183`、parent 0、lexical scope `[0]`。context 2はfirst descendant
+proof `104..131`、parent 1、scope `[0,0]`。context 3はsecond descendant
+proof `146..178`、parent 1、scope `[0,1]`。全contextはbinding 0だけを
+exposeする。
+
+Task-252 term-reference contextsは`0,0,1,1,2,2,1,1,3,3`で、ten usesは
+すべてbinding 0をproducer-stored use ordinal 1でselectする。proof labelは
+BindingEnv bindingではなくresolver provenanceである。B5Aはbinding
+producer/row/fingerprint/scope rule/diagnostic/source/public APIを変更しない。

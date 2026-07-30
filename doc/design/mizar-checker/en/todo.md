@@ -6029,5 +6029,32 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine
   hard gates PASS, no cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage and inspect only Task-258B4C, create one implementation commit,
-  then verify post-commit invariants and fresh-inventory the next task.
+- [x] Stage and inspect only Task-258B4C and create implementation commit
+  `50ab1ebc747e912fff1f0cf111832e3c2c81ba01`.
+- [x] Verify clean post-commit state, unchanged protected stash, and
+  fresh-inventory the next dependency-ready task.
+
+## Checker Task 258B5A Frozen-Contract Documentation Prerequisite
+
+- [x] Classify stale B4C ledgers and unsafe B5 aggregation as
+  `design_drift`; classify absent imported/confinement active routes as
+  bounded `test_gap`; classify the absent B5A implementation as bounded
+  `source_drift` owned by the immediate next task.
+- [x] Freeze the exact 185-byte source/hash, 93-node/root-92 frontend,
+  resolver, Binding/252/256/258 base/reference rows, and 20/73 ownership.
+- [x] Freeze proof label scope `[0]`, descendant citation scope `[0,1]`,
+  local-only provenance, exact seven consumers, four checker tests, and five
+  runner tests.
+- [x] Split later B5B imported-public and B5C negative-confinement work;
+  preserve all semantic, public API, corpus, expectation, sidecar, and trace
+  boundaries.
+- [x] Complete independent specification/documentation, test-sufficiency,
+  source/documentation boundary, and bilingual reviews with **NO FINDINGS**.
+- [x] Reproduce checker/runner/workspace tests, fmt, Clippy, five CLIs,
+  exact 32-document scope, all counts/hashes, authority no-ops, and
+  repository/stash invariants.
+- [x] Complete repeated independent final quality with **NO FINDINGS**, all
+  nine hard gates PASS, no cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage only synchronized B5A documentation, create one prerequisite
+  commit, verify post-commit invariants, and fresh-inventory implementation.
