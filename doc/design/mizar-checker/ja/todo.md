@@ -5891,15 +5891,19 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   exact three-Rust-file R-032A implementationを要求。
 - [x] R-032B exact `Result`-returning collector API、narrow source
   inclusion/exclusion、generic theorem-root scope、completion visibility
-  ordinal 3、exact origin path、dedicated `labels.rs` ownership、
+  ordinal 3、exact origin path、exact `labels.rs` / `labels/tests.rs`
+  ownership、sole `tests/lint_policy.rs` R-026
+  `ProofLabelSourceCollectionError` / `labels.md` owning-spec decision、
   positive/negative/provenance/cross-theorem testsをfreeze。
 - [x] same-`'a` ast/resolved storage、validation-only module、owned
   namespace/contribution、`Self` return、`SurfaceNodeId` state/key/overflow
   error、module-global one-based ordinal、`ConclusionStatement` chain、
   canonical `proof-step-v1` identityをfreeze。
-- [x] documentation、resolver R-032A、resolver R-032B、active
-  declaration-symbol fixture/runner/traceというseparate dependency orderを
-  freeze。
+- [x] S-026 documentation、S-026 implementation、R-032A lint-policy
+  documentation correction、R-032A implementation、R-032B lint-policy
+  documentation correction、R-032B implementation、active
+  declaration-symbol fixture/runner/traceというeffective seven-task
+  dependency orderをfreeze。
 - [x] future two fixture/sidecar contract、detail key
   `declaration_symbol.label.proof_scope_confinement`、empty public
   diagnostic codes、two trace ids、future count impactをfreeze。
@@ -5945,3 +5949,24 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   implementationを完了。次のlower prerequisiteはR-032B。
 - [x] lower prerequisite 中も全 frozen checker consumer、B5C fixture/
   expectation/trace、public diagnostic、semantic deferral を維持。
+
+## B5C R-032B lint-policy preflight overlay
+
+- [x] R-032A dedicated commit後にR-032Bをfresh inventoryし、mandatory
+  R-026 enum-decision owner omissionをsemantic `spec_gap`または
+  `test_gap`ではないHigh `design_drift`として特定。
+- [x] current docs-only correctionをexactly 31 design files、すなわち
+  eight paired resolver families、four paired checker families、three paired
+  `mizar-test` families、global design TODOにfreeze。
+- [ ] separate R-032B lint-policy documentation correctionを
+  findings-free review、full verification、dedicated commit、post-commit
+  fresh inventoryまで完了してからR-032B implementationへ進む。
+- [ ] correction後に限りR-032Bをexactly
+  `crates/mizar-resolve/src/labels.rs`、
+  `crates/mizar-resolve/src/labels/tests.rs`、
+  `crates/mizar-resolve/tests/lint_policy.rs`でimplementし、最後のfileには
+  R-026 `ProofLabelSourceCollectionError` / `labels.md` owning-spec
+  decisionだけを追加。
+- [x] 全frozen checker consumer、B5C fixture/expectation/trace、public
+  diagnostic code、semantics、`spec_coverage_audit.md`を維持し、mapping、
+  owner、deferral、coverage creditを変更しない。

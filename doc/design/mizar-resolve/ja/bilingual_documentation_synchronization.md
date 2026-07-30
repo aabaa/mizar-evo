@@ -5,7 +5,8 @@
 
 状態: task R-028 audit complete; task R-029 and close-out scopes re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
-overlay complete; R-032A implementation synchronization complete、R-032B /
+overlay complete; R-032A implementation synchronization complete。R-032B
+lint-policy docs correctionがcurrent prerequisiteで、R-032B implementation /
 Checker Task 258B5Cは計画中。
 
 ## 範囲
@@ -47,7 +48,7 @@ sidecar は変更しない。
 
 | 英語正本 document | 日本語 companion | 同期結果 |
 |---|---|---|
-| [00.crate_plan.md](../en/00.crate_plan.md) | [./00.crate_plan.md](./00.crate_plan.md) | responsibility、inventory、gap table、completed extension、historical pre-S-026 four-task record、effective S-026-docs/S-026-implementation/R-032A-lint-docs/R-032A-implementation/R-032B/B5C six-task order が同期。 |
+| [00.crate_plan.md](../en/00.crate_plan.md) | [./00.crate_plan.md](./00.crate_plan.md) | responsibility、inventory、gap table、completed extension、historical pre-S-026 four-task record、effective S-026-docs/S-026-implementation/R-032A-lint-docs/R-032A-implementation/R-032B-lint-docs/R-032B-implementation/B5C seven-task order が同期。 |
 | [declarations.md](../en/declarations.md) | [./declarations.md](./declarations.md) | declaration shell kind、excluded / transparent node、visibility、recovery、identity / provenance、public enum policy が同期している。 |
 | [env.md](../en/env.md) | [./env.md](./env.md) | `SymbolEnv` index family、contribution tracking、invalidation note、determinism、public enum policy が同期している。 |
 | [imports.md](../en/imports.md) | [./imports.md](./imports.md) | import input/output、two-pass contract、path resolution、alias / export / cycle / unresolved policy、determinism、boundary note、public enum policy が同期している。 |
@@ -77,8 +78,9 @@ bilingual driftは残らない。
 
 paired docs は同じ historical pre-S-026 four-task record、effective
 S-026 docs -> S-026 implementation -> R-032A lint-policy docs correction ->
-R-032A implementation -> R-032B -> active B5C
-six-task order/classification、R-032A arena API/error variant/derive、
+R-032A implementation -> R-032B lint-policy docs correction ->
+R-032B implementation -> active B5C
+seven-task order/classification、R-032A arena API/error variant/derive、
 R-032B collector API/error variant/derive、`u32` overflow、
 file ownership、collector lifetime/storage/module rule、theorem-root、
 module-global ordinal/completion、exact length-framed `proof-step-v1` grammar、
@@ -97,8 +99,9 @@ rejected callback/unmapped contract は両言語に残さない。
 
 post-close-out の resolver update は、この監査を二言語同期状態の baseline として扱う。
 S-026 documentation/implementation、R-032A lint-policy docs correction、
-R-032A implementationは完了済み。current dependency sequenceはR-032B、
-active B5Cで、各commit後にfresh inventoryを挟む。将来 design fileを
+R-032A implementationは完了済み。current dependency sequenceはR-032B
+lint-policy docs correction、R-032B implementation、active B5Cで、
+各commit後にfresh inventoryを挟む。将来 design fileを
 追加する場合は両言語 directory に同時に追加する。挙動 cleanup、public API
 change、新しいdiagnosticsは完了済み resolver milestone の範囲外であり、
 独立した spec/test authority を要求する。
@@ -129,3 +132,26 @@ sole R-026 decisionを同一に記録する。両言語は同じRust 3 ownerと
 label/runner/artifact/trace/semantic prohibited scopeを記録する。R-032Bは
 pending。active mapping、trace status/count、owner、deferral、coverage creditを
 変更しないため`spec_coverage_audit.md`はdeliberate no-op。
+
+## R-032B lint-policy scope correction（current prerequisite）
+
+EN/JAはomitted mandatory R-026 enum-decision ownerを同じHigh
+`design_drift`として分類し、semantic `spec_gap`、`test_gap`、test-intent
+changeはない。later R-032B implementationはexact
+`crates/mizar-resolve/src/labels.rs`、
+`crates/mizar-resolve/src/labels/tests.rs`、
+`crates/mizar-resolve/tests/lint_policy.rs`の3 filesで、last fileはsole
+`ProofLabelSourceCollectionError` owning-spec decision
+`spec_name: "labels.md"`だけを受けられる。
+
+current docs-only prerequisiteはexact 31 design files、resolver 16、checker 8、
+`mizar-test` 6、global ledger 1。semantic/API/test contractを保存し、source、
+fixture、sidecar、expectation、trace status/count、Cargo metadataを変更しない。
+coverage ownership/statusを変更しないため`spec_coverage_audit.md`はdeliberate
+no-op。independent specification、test/scope、source/documentation
+consistency reviewはすべて**NO FINDINGS**で、docs-only verification/count/hash
+gateはPASS。independent final read-only qualityも**NO FINDINGS**で、全9
+hard gates PASS、capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。task-only staging/cached-diff review、commit、
+post-commit invariant/fresh-inventory gateだけがpendingで、そのseparate
+commit後のfresh inventoryがR-032B implementationをgateする。

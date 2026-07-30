@@ -1373,10 +1373,11 @@ The paired runner plan, harness, boundary audit, and TODO freeze the same
 B5B commit `f27d2c9169b08078f00b75c4a57f94e30fa28f59`, Chapter
 15/16 authority, classifications, historical
 docs/R-032A/R-032B/active order, and resolver-owned `SurfaceResolvedArena` and
-`ProofLabelSourceCollector` APIs. The synchronized S-026 overlay supersedes
-that execution order with strict S-026 docs/S-026 implementation/R-032A
-lint-policy docs correction/R-032A implementation/R-032B/active B5C. Both
-languages freeze the same exact `Result` signatures,
+`ProofLabelSourceCollector` APIs. The synchronized dependency overlays
+supersede that execution order with strict S-026 docs/S-026 implementation/
+R-032A lint-policy docs correction/R-032A implementation/R-032B lint-policy
+docs correction/R-032B implementation/active B5C. Both languages freeze the
+same exact `Result` signatures,
 non-exhaustive fail-closed error boundaries, and total arena/collection
 accessors. They forbid runner-fabricated `LabelScopePath`, ordinal,
 `SemanticOrigin`, or `ResolvedNodeId` and exclude checker unresolved
@@ -1421,8 +1422,8 @@ remains frozen source bytes plus normal AST, and the scope remains 48 files.
 
 EN/JA now also synchronize the inserted S-026 docs/implementation
 prerequisites, their exact 45-design-file documentation scope, and the
-effective six-task order including the R-032A lint-policy docs correction.
-They preserve the exact runner selector,
+effective seven-task order including both R-032A and R-032B lint-policy docs
+corrections. They preserve the exact runner selector,
 provenance, details, projected counts, and exclusions while lower-stage work
 lands.
 
@@ -1433,3 +1434,13 @@ semantic `spec_gap`, and freeze exactly three later Rust files. The
 `SurfaceResolvedArenaError` owning-spec decision entry. The separate docs-only
 correction and later resolver implementation change no `mizar-test` runner
 consumer, fixture, sidecar, trace, diagnostic, semantics, or coverage state.
+
+EN/JA also synchronize the R-032B lint-policy scope correction. Both classify
+the omitted mandatory R-026 enum-decision owner as High `design_drift`, not a
+semantic `spec_gap`, and freeze exactly three later Rust files:
+`labels.rs`, `labels/tests.rs`, and `tests/lint_policy.rs`. The last file is
+limited to the sole `ProofLabelSourceCollectionError` / `labels.md` decision.
+The separate correction spans exactly 31 design records and changes no source,
+behavior, fixture, expectation, sidecar, trace status/count/coverage, public
+diagnostic code, Cargo metadata, or active runner;
+`spec_coverage_audit.md` remains an intentional no-op.

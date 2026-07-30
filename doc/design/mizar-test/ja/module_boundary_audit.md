@@ -11302,9 +11302,11 @@ ownする。exact `impl<'a> ProofLabelSourceCollector<'a>::new`はast/resolved�
 ownedとして`Result<Self, ...>`を返す。`collect(&self)`がcollectionを返す。
 public non-exhaustive errorはarena errorをwrapし、checked scope/path
 overflow nodeは`SurfaceNodeId`。
-`projections()`/`references()`がresultをexposeする。later write scopeは
-`labels.rs`/`labels/tests.rs`だけ。collector/runnerはresolved node、scope
-component、ordinal、originをfabricateできない。
+`projections()`/`references()`がresultをexposeする。implementation write
+scopeはexact `labels.rs`、`labels/tests.rs`、`tests/lint_policy.rs`で、last
+fileはsole `ProofLabelSourceCollectionError` / `labels.md` R-026 owning-spec
+decisionに限定する。collector/runnerはresolved node、scope component、
+ordinal、originをfabricateできない。
 
 later `mizar-test` ownerはprivate declaration-symbol consumer、
 `runner/declaration_symbol.rs`、`runner/tests.rs`、new
@@ -11332,10 +11334,11 @@ ownした。S-026 documentation prerequisite は exact 45 design files をownし
 separate implementation は exact 25 files、すなわち dense syntax Rust 2 files、
 paired syntax design 12、paired resolver design 4、paired checker TODO 2、
 paired `mizar-test` design 4、global design TODO 1をownする。その後
-R-032Aはseparate exact three-Rust-file implementation commit、
-R-032Bはseparate two-source-file implementation commitをownする。
+R-032Aはseparate exact three-Rust-file implementation commit。R-032Bは
+separate lint-policy docs correction、その後exact three-Rust-file
+implementation commitをownする。
 active B5C task はnew fixture/sidecar pair 2件、trace row 2件、runner files
-3件、synchronized derived documentsだけをownする。このeffective six-task
+3件、synchronized derived documentsだけをownする。このeffective seven-task
 split はinventoried potential `boundary_violation`を回避し、module split/
 ownership transferをauthorizeしない。
 
@@ -11343,6 +11346,14 @@ ownership transferをauthorizeしない。
 `design_drift`をcorrectする。semantic `spec_gap`ではなくruntime/runner
 ownershipを追加しない。fresh inventoryとimplementationの前にseparate同期
 documentation commitをlandする。
+
+R-032B preflightもomitted mandatory R-026 enum-decision ownerをsemantic
+`spec_gap`ではなくHigh `design_drift`と分類する。separate synchronized
+correctionはexact 31 design filesをownし、source、behavior、fixture、
+expectation、sidecar、trace/status/count/coverage、public diagnostic code、
+Cargo metadata、active runnerを変更しない。coverage auditはintentional
+no-op。そのcorrectionとfresh inventory後、R-032B implementationは上記exact
+three Rust ownerだけを変更できる。
 
 R-032Bはexact
 `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct

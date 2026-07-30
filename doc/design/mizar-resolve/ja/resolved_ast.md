@@ -465,3 +465,29 @@ root-not-last node、全named mismatch、invalid contained arena、simultaneous
 precedence fault、exact helper payload、independent equivalent-input
 determinism、out-of-range foreign id、downstream wildcard compatibilityを
 coverする。R-032Bはseparateかつpending。
+
+### R-032B lint-policy ownership dependency（current prerequisite）
+
+fresh R-032B inventoryは、`labels.md`でfreezeしたpublic
+`ProofLabelSourceCollectionError`にも同じmandatory R-026 ruleを適用する。
+旧two-Rust-file R-032B wordingはdecision-table ownerを欠き、High
+`design_drift`であり、semantic `spec_gap`、`test_gap`、test-intent changeでは
+ない。later R-032B implementationはexact
+`crates/mizar-resolve/src/labels.rs`、
+`crates/mizar-resolve/src/labels/tests.rs`、
+`crates/mizar-resolve/tests/lint_policy.rs`で、policy fileはsole
+`ProofLabelSourceCollectionError` owning-spec decision
+`spec_name: "labels.md"`だけを受けられる。このcross-family noteはimplemented
+R-032A arenaを再オープンまたは変更しない。
+
+current docs-only correctionはexact 31 design files、resolver 16、checker 8、
+`mizar-test` 6、global ledger 1。source、specification、fixture、sidecar、
+expectation、trace status/count、Cargo metadata、semantic contract、test intentは
+変更しない。`spec_coverage_audit.md`はdeliberate no-op。independent
+specification、test/scope、source/documentation consistency
+reviewはすべて**NO FINDINGS**で、docs-only verification/count/hash gateはPASS。
+independent final read-only qualityも**NO FINDINGS**で、全9 hard gates
+PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。task-only
+staging/cached-diff review、commit、post-commit invariant/fresh-inventory
+gateだけがpendingで、その後のfresh inventoryがseparate R-032B
+implementationをgateする。

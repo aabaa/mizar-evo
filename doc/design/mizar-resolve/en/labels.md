@@ -457,7 +457,10 @@ shapes; and all semantic descendants. Those forms emit no collector rows.
 R-032B production/test ownership is exactly:
 
 - `crates/mizar-resolve/src/labels.rs`;
-- `crates/mizar-resolve/src/labels/tests.rs`; and
+- `crates/mizar-resolve/src/labels/tests.rs`;
+- `crates/mizar-resolve/tests/lint_policy.rs`, only for the sole R-026
+  `ProofLabelSourceCollectionError` owning-spec decision with
+  `spec_name: "labels.md"`; and
 - synchronized resolver design records.
 
 R-032A owns exactly `resolved_ast.rs`, `resolved_ast/tests.rs`, the sole
@@ -533,5 +536,29 @@ documentation and implementation prerequisites before R-032A because complete
 dense Surface ids cannot otherwise include a valid disconnected node. This
 does not change any R-032B label contract or active B5C test intent. The
 effective order is S-026 docs, S-026 implementation, R-032A lint-policy docs
-correction, R-032A implementation, R-032B, active B5C, with fresh inventory
-between commits.
+correction, R-032A implementation, R-032B lint-policy frozen-scope
+documentation correction, R-032B implementation, active B5C, with fresh
+inventory between commits.
+
+### R-032B lint-policy frozen-scope correction (current prerequisite)
+
+Implementation preflight found that the public
+`ProofLabelSourceCollectionError` frozen above is necessarily scanned by the
+mandatory R-026 guard. Omitting that guard owner from the earlier
+two-Rust-file wording is High `design_drift`, not a semantic `spec_gap`,
+`test_gap`, or test-intent change. The later implementation may change only
+the three Rust files listed under Ownership And Consumers, and the policy file
+may gain only the sole decision named there.
+
+This synchronized docs-only prerequisite has an exact total correction scope
+of 31 design files: 16 resolver, eight checker, six `mizar-test`, and one
+global ledger. It changes no source, specification, fixture, sidecar,
+expectation, trace status/count, Cargo metadata, runtime/API contract, or
+test intent. `doc/design/spec_coverage_audit.md` is a deliberate no-op.
+The independent specification, test/scope, and source/documentation
+consistency reviews report **NO FINDINGS**, and the docs-only
+verification/count/hash gates PASS. Independent final read-only quality also
+reports **NO FINDINGS**; all nine hard gates PASS with no cap at valid
+`100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff
+review, commit, and post-commit invariant/fresh-inventory gates remain pending;
+fresh inventory after that separate commit must precede R-032B implementation.

@@ -1086,7 +1086,9 @@ sole R-026 `SurfaceResolvedArenaError` owning-spec entry用
 `tests/lint_policy.rs`のvalidated one-to-one structural
 `SurfaceResolvedArena`、R-032Bが
 `labels.rs`/testsのproof-step projection、simple unqualified candidate、
-proof-scope path、ordinal、provenance collectionをownする。両APIは
+proof-scope path、ordinal、provenance collectionに加え、
+`ProofLabelSourceCollectionError`を`labels.md`へmapするsole
+`tests/lint_policy.rs` R-026 decisionだけをownする。両APIは
 fail-closed `Result`を返す。R-032A exact state/key errorと全node payloadは
 `SurfaceNodeId`。R-032Bはast/resolvedをsame `'a`でborrowしmoduleをvalidate
 するがstoreせず、namespace/contributionをownして`Self`を返す。
@@ -1107,6 +1109,18 @@ mandatory R-026 enum-decision ownerのomissionはHigh `design_drift`で、
 semantic `spec_gap`ではない。correctionはseparate docs-only commitであり、
 later exact three-Rust-file resolver implementationはchecker consumerを
 追加せず、上記boundaryをmoveしない。
+
+R-032B implementation preflightも同種のmandatory public-enum owner
+omissionを発見した。prior two-Rust-file scopeはsemantic `spec_gap`/
+`test_gap`ではなくHigh `design_drift`。current separate docs-only
+correctionはlater implementationをexact `labels.rs`、`labels/tests.rs`、
+上記sole `tests/lint_policy.rs` decisionへfreezeする。correction自体のownerは
+exact 31 design files、すなわちresolver pair 8組、checker pair 4組、
+`mizar-test` pair 3組、global design TODO 1件。active B5Cまでのeffective
+seven-task orderでR-032B implementationに先行し、production source、test
+intent、fixture、expectation、sidecar、trace row/status/count、public
+diagnostic code、semantic behavior、coverage stateを変更しない。mapping、
+owner、deferral、creditを変更しないためcoverage auditはdeliberate no-op。
 
 later runnerはfrozen source bytes+normal ASTだけでselectし、shared resolver
 env/moduleとmatching id-0 local-source contribution exact oneをauthenticate

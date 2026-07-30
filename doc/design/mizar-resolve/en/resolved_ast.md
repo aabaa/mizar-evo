@@ -483,3 +483,30 @@ covers disconnected/recovered/root-not-last nodes, all named mismatches,
 invalid contained arenas, simultaneous precedence faults, exact helper
 payloads, independent equivalent-input determinism, out-of-range foreign ids,
 and downstream wildcard compatibility. R-032B remains separate and pending.
+
+### R-032B lint-policy ownership dependency (current prerequisite)
+
+Fresh R-032B inventory applies the same mandatory R-026 rule to the public
+`ProofLabelSourceCollectionError` frozen in `labels.md`. The former
+two-Rust-file R-032B wording omitted its decision-table owner and is High
+`design_drift`, not a semantic `spec_gap`, `test_gap`, or test-intent change.
+Later R-032B implementation is therefore exactly
+`crates/mizar-resolve/src/labels.rs`,
+`crates/mizar-resolve/src/labels/tests.rs`, and
+`crates/mizar-resolve/tests/lint_policy.rs`; the policy file may receive only
+the sole `ProofLabelSourceCollectionError` owning-spec decision with
+`spec_name: "labels.md"`. This cross-family note does not reopen or alter the
+implemented R-032A arena.
+
+The current docs-only correction spans exactly 31 design files: 16 resolver,
+eight checker, six `mizar-test`, and one global ledger. It changes no source,
+specification, fixture, sidecar, expectation, trace status/count, Cargo
+metadata, semantic contract, or test intent. `spec_coverage_audit.md` is a
+deliberate no-op. The independent specification, test/scope, and
+source/documentation consistency reviews report **NO FINDINGS**, and the
+docs-only verification/count/hash gates PASS. Independent final read-only
+quality also reports **NO FINDINGS**; all nine hard gates PASS with no cap at
+valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff
+review, commit, and post-commit invariant/fresh-inventory gates remain pending;
+fresh inventory afterward gates the separate R-032B
+implementation.

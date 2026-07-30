@@ -74,7 +74,9 @@ split し、public module layout を変えない。
 - R-032A: `src/resolved_ast.rs` / `src/resolved_ast/tests.rs` /
   sole R-026 `SurfaceResolvedArenaError` owning-spec decision entry 用
   `tests/lint_policy.rs`。
-- R-032B: `src/labels.rs` / `src/labels/tests.rs`。
+- R-032B: `src/labels.rs` / `src/labels/tests.rs` / sole R-026
+  `ProofLabelSourceCollectionError` / `labels.md` owning-spec decision用
+  `tests/lint_policy.rs`。
 - paired docs。新 module は計画しない。
 
 R-032A は complete validated structural map と state/key mismatch を含む exact
@@ -113,5 +115,30 @@ R-032Aは上記でauthorizeしたexact `src/resolved_ast.rs`、private
 `src/resolved_ast/tests.rs`、sole `tests/lint_policy.rs` owning-spec
 decision entryだけを使用した。existing `resolved_ast` public moduleがownerの
 ままで、module split、ownership transfer、callback、parallel map、
-syntax/checker/runner source changeはない。R-032Bは次のseparate logical task
-としてexisting `labels` ownerに残る。
+syntax/checker/runner source changeはない。R-032A完了時にR-032B streamは
+existing `labels` ownerの次workとして残り、そのcurrent first logical taskは
+下記separate lint-policy docs correction。
+
+## R-032B lint-policy frozen-scope correction（current prerequisite）
+
+R-032B implementation inventoryでもstop ruleが発火した。frozen public
+`ProofLabelSourceCollectionError`はR-026 guardに必ずscanされる。omitted
+policy ownerはHigh `design_drift`であり、semantic `spec_gap`、`test_gap`、
+test-intent changeではない。later implementation ownerはexact
+`src/labels.rs`、`src/labels/tests.rs`、`tests/lint_policy.rs`で、last fileは
+sole `ProofLabelSourceCollectionError` owning-spec decision
+`spec_name: "labels.md"`だけを受けられる。module split / ownership transferは
+authorizeしない。
+
+current synchronized docs-only prerequisiteはexact 31 design files、
+resolver 16、checker 8、`mizar-test` 6、global ledger 1を対象にする。source、
+specification、fixture、sidecar、expectation、trace status/count、Cargo
+metadata、semantic contract、test intentは変更しない。
+`spec_coverage_audit.md`はdeliberate no-op。independent specification、
+test/scope、source/documentation consistency reviewはすべて**NO FINDINGS**で、
+docs-only verification/count/hash gateはPASS。independent final read-only
+qualityも**NO FINDINGS**で、全9 hard gates PASS、capなし、valid
+`100/100`（`20/20/15/15/10/10/5/5`）。task-only staging/cached-diff review、
+commit、post-commit invariant/fresh-inventory gateだけがpendingで、その
+separate commit後のfresh inventoryがthree-Rust-file R-032B implementationを
+gateする。

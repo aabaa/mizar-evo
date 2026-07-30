@@ -403,7 +403,10 @@ emit しない。
 ### Ownership、test、exit
 
 R-032B ownership は `crates/mizar-resolve/src/labels.rs`、
-`crates/mizar-resolve/src/labels/tests.rs`、paired design record だけ。R-032A は
+`crates/mizar-resolve/src/labels/tests.rs`、sole R-026
+`ProofLabelSourceCollectionError` owning-spec decision
+`spec_name: "labels.md"`だけを許す
+`crates/mizar-resolve/tests/lint_policy.rs`、paired design record。R-032A は
 preceding implementation commit の `resolved_ast.rs` /
 `resolved_ast/tests.rs` / sole R-026 `SurfaceResolvedArenaError`
 owning-spec entry 用 `tests/lint_policy.rs` owner である。
@@ -446,4 +449,27 @@ Surface id が既存 API だけでは得られないため、R-032A 前に別 mi
 S-026 documentation/implementation prerequisite を挿入した。R-032B label
 contract と active B5C test intent は変わらない。effective order は S-026 docs、
 S-026 implementation、R-032A lint-policy docs correction、R-032A
-implementation、R-032B、active B5C で、commit 間に fresh inventory を挟む。
+implementation、R-032B lint-policy frozen-scope documentation correction、
+R-032B implementation、active B5C で、commit 間に fresh inventory を挟む。
+
+### R-032B lint-policy frozen-scope correction（current prerequisite）
+
+implementation preflightで、上記frozen public
+`ProofLabelSourceCollectionError`はmandatory R-026 guardに必ずscanされることが
+判明した。旧two-Rust-file wordingからguard ownerが欠けたことはHigh
+`design_drift`であり、semantic `spec_gap`、`test_gap`、test-intent changeでは
+ない。later implementationが変更できるのはOwnership節のexact Rust 3 files
+だけで、policy fileにはそこで指定したsole decisionだけを追加できる。
+
+current synchronized docs-only prerequisiteのexact total correction scopeは
+31 design files、resolver 16、checker 8、`mizar-test` 6、global ledger 1。
+source、specification、fixture、sidecar、expectation、trace status/count、
+Cargo metadata、runtime/API contract、test intentは変更しない。
+`doc/design/spec_coverage_audit.md`はdeliberate no-op。independent
+specification、test/scope、source/documentation consistency reviewはすべて
+**NO FINDINGS**で、docs-only verification/count/hash gateはPASS。
+independent final read-only qualityも**NO FINDINGS**で、全9 hard gates
+PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。task-only
+staging/cached-diff review、commit、post-commit invariant/fresh-inventory
+gateだけがpendingで、そのseparate commit後のfresh inventoryをR-032B
+implementationより先に行う。

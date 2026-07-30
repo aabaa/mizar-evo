@@ -6171,14 +6171,18 @@ implementation commit does not satisfy a producer task.
   implementation.
 - [x] Freeze R-032B exact `Result`-returning collector API, narrow source
   inclusion/exclusion, generic theorem-root scopes, completion visibility
-  ordinal 3, exact origin paths, dedicated `labels.rs` ownership, and
+  ordinal 3, exact origin paths, exact `labels.rs` / `labels/tests.rs`
+  ownership, the sole `tests/lint_policy.rs` R-026
+  `ProofLabelSourceCollectionError` / `labels.md` owning-spec decision, and
   positive/negative/provenance/cross-theorem tests.
 - [x] Freeze same-`'a` ast/resolved storage, validation-only module, owned
   namespace/contribution, `Self` return, `SurfaceNodeId` state/key/overflow
   errors, module-global one-based ordinals, `ConclusionStatement` chain, and
   canonical `proof-step-v1` identity.
-- [x] Freeze the separate dependency order: documentation, resolver R-032A,
-  resolver R-032B, then active declaration-symbol fixtures/runner/trace.
+- [x] Freeze the effective seven-task dependency order: S-026 documentation,
+  S-026 implementation, R-032A lint-policy documentation correction, R-032A
+  implementation, R-032B lint-policy documentation correction, R-032B
+  implementation, then active declaration-symbol fixtures/runner/trace.
 - [x] Freeze the two future fixture/sidecar contracts, detail key
   `declaration_symbol.label.proof_scope_confinement`, empty public
   diagnostic codes, two trace ids, and future count impact.
@@ -6226,3 +6230,25 @@ implementation commit does not satisfy a producer task.
 - [x] Preserve all frozen checker consumers, B5C fixtures/expectations/trace,
   public diagnostics, and semantic deferrals while the lower prerequisite
   lands.
+
+## B5C R-032B Lint-Policy Preflight Overlay
+
+- [x] After the R-032A dedicated commit, fresh-inventory R-032B and identify
+  the mandatory R-026 enum-decision owner omission as High `design_drift`,
+  with no semantic `spec_gap` or `test_gap`.
+- [x] Freeze the current docs-only correction to exactly 31 design files:
+  eight paired resolver families, four paired checker families, three paired
+  `mizar-test` families, and the global design TODO.
+- [ ] Complete the separate R-032B lint-policy documentation correction
+  through findings-free reviews, full verification, a dedicated commit, and
+  post-commit fresh inventory before R-032B implementation.
+- [ ] Implement R-032B only after that correction in exactly
+  `crates/mizar-resolve/src/labels.rs`,
+  `crates/mizar-resolve/src/labels/tests.rs`, and
+  `crates/mizar-resolve/tests/lint_policy.rs`, where the last file receives
+  only the R-026 `ProofLabelSourceCollectionError` / `labels.md` owning-spec
+  decision.
+- [x] Preserve all frozen checker consumers, B5C
+  fixtures/expectations/trace, public diagnostic codes, semantics, and
+  `spec_coverage_audit.md`; no mapping, owner, deferral, or coverage-credit
+  change occurs.

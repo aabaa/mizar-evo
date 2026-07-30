@@ -1454,3 +1454,28 @@ files. `tests/lint_policy.rs` may receive only the
 documentation correction and later resolver implementation add no checker
 consumer and change no B5C intent, artifact, diagnostic, semantic boundary,
 or coverage state.
+
+The R-032B lint-policy scope correction is likewise synchronized and remains
+the current docs-only prerequisite. Its independent specification,
+test/scope, and source/documentation consistency reviews report **NO
+FINDINGS**, and the docs-only verification/count/hash gates PASS. The
+independent final read-only quality review also reports **NO FINDINGS**; all
+nine hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff review, commit,
+and post-commit invariant/fresh-inventory gates remain pending. EN and JA
+classify the omitted
+mandatory R-026 enum-decision owner as High `design_drift`, not a semantic
+`spec_gap` or `test_gap`, and freeze the same exact later Rust files:
+`labels.rs`, `labels/tests.rs`, and `tests/lint_policy.rs`. The last file may
+receive only the `ProofLabelSourceCollectionError` / `labels.md` owning-spec
+decision. The effective seven-task order is S-026 docs, S-026 implementation,
+R-032A lint-policy docs correction, R-032A implementation, R-032B lint-policy
+docs correction, R-032B implementation, then active B5C.
+
+The correction scope is exactly 31 design files: eight paired resolver
+families, four paired checker families, three paired `mizar-test` families,
+and the global design TODO. It changes no production source, test intent,
+fixture, expectation, sidecar, trace row/status/count, public diagnostic
+code, semantic behavior, or coverage state. No
+`doc/design/spec_coverage_audit.md` edit is required because no mapping,
+owner, deferral, or coverage credit changes.

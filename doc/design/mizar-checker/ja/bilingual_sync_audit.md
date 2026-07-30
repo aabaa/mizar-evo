@@ -1399,3 +1399,27 @@ R-026 enum-decision ownerをsemantic `spec_gap`ではなくHigh
 decision entryだけ。separate documentation correctionとlater resolver
 implementationはchecker consumerを追加せず、B5C intent/artifact/diagnostic/
 semantic boundary/coverage stateを変更しない。
+
+R-032B lint-policy scope correctionも同期し、current docs-only
+prerequisiteのままである。independent specification、test/scope、
+source/documentation consistency reviewはすべて**NO FINDINGS**で、docs-only
+verification/count/hash gateはPASS。independent final read-only quality
+reviewも**NO FINDINGS**で、全9 hard gates PASS、capなし、valid
+`100/100`（`20/20/15/15/10/10/5/5`）。task-only staging/cached-diff review、
+commit、post-commit invariant/fresh-inventory gateだけがpending。EN/JAは
+omitted mandatory R-026
+enum-decision ownerをsemantic `spec_gap`/`test_gap`ではなくHigh
+`design_drift`と分類し、later Rust filesをsame exact
+`labels.rs`、`labels/tests.rs`、`tests/lint_policy.rs`へfreezeする。last
+fileが受けられるのは`ProofLabelSourceCollectionError` / `labels.md`
+owning-spec decisionだけである。effective seven-task orderはS-026 docs、
+S-026 implementation、R-032A lint-policy docs correction、R-032A
+implementation、R-032B lint-policy docs correction、R-032B implementation、
+active B5Cである。
+
+correction scopeはexact 31 design files、すなわちresolver pair 8組、
+checker pair 4組、`mizar-test` pair 3組、global design TODO 1件である。
+production source、test intent、fixture、expectation、sidecar、trace
+row/status/count、public diagnostic code、semantic behavior、coverage stateは
+変更しない。mapping、owner、deferral、coverage creditを変更しないため、
+`doc/design/spec_coverage_audit.md` editは不要。

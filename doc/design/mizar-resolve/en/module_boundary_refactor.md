@@ -76,7 +76,9 @@ existing public module owners without changing public module layout:
 - R-032A production/test/policy: `src/resolved_ast.rs`,
   `src/resolved_ast/tests.rs`, and `tests/lint_policy.rs` for only the R-026
   `SurfaceResolvedArenaError` owning-spec decision entry;
-- R-032B production/test: `src/labels.rs` and `src/labels/tests.rs`;
+- R-032B production/test/policy: `src/labels.rs`,
+  `src/labels/tests.rs`, and `tests/lint_policy.rs` for only the R-026
+  `ProofLabelSourceCollectionError` / `labels.md` owning-spec decision;
 - synchronized design records; no new module is planned.
 
 R-032A owns the complete validated structural map and exact public error table
@@ -121,5 +123,30 @@ R-032A used exactly `src/resolved_ast.rs`, its private
 `tests/lint_policy.rs` owning-spec decision entry authorized above. The
 existing `resolved_ast` public module remains the owner; no module split,
 ownership transfer, callback, parallel map, or syntax/checker/runner source
-change was introduced. R-032B remains in the existing `labels` owner as the
-next separate logical task.
+change was introduced. At R-032A completion the R-032B stream remained in the
+existing `labels` owner as the next work; its current first logical task is
+the separate lint-policy docs correction below.
+
+## R-032B lint-policy frozen-scope correction (current prerequisite)
+
+R-032B implementation inventory exercised the stop rule again: its frozen
+public `ProofLabelSourceCollectionError` is necessarily scanned by the R-026
+guard. The omitted policy owner is High `design_drift`, not a semantic
+`spec_gap`, `test_gap`, or test-intent change. The later implementation owns
+exactly `src/labels.rs`, `src/labels/tests.rs`, and
+`tests/lint_policy.rs`, where the last file may receive only the sole
+`ProofLabelSourceCollectionError` owning-spec decision with
+`spec_name: "labels.md"`. No module split or ownership transfer is authorized.
+
+The current synchronized docs-only prerequisite covers exactly 31 design
+files: 16 resolver, eight checker, six `mizar-test`, and one global ledger.
+It changes no source, specification, fixture, sidecar, expectation, trace
+status/count, Cargo metadata, semantic contract, or test intent.
+`spec_coverage_audit.md` is a deliberate no-op. The independent
+specification, test/scope, and source/documentation consistency reviews
+report **NO FINDINGS**, and the docs-only verification/count/hash gates PASS.
+Independent final read-only quality also reports **NO FINDINGS**; all nine
+hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff review, commit,
+and post-commit invariant/fresh-inventory gates remain pending; fresh inventory
+after that separate commit gates the three-Rust-file R-032B implementation.

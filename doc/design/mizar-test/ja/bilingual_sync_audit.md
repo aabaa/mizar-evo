@@ -1328,8 +1328,9 @@ paired runner plan/harness/boundary audit/TODOはsame B5B commit
 `f27d2c9169b08078f00b75c4a57f94e30fa28f59`、Chapter 15/16 authority、
 classification、historical docs/R-032A/R-032B/active order、resolver-owned
 `SurfaceResolvedArena`/`ProofLabelSourceCollector` APIをfreezeする。同期
-S-026 overlay は execution order を strict S-026 docs/S-026 implementation/
-R-032A/R-032B/active B5C に supersede する。
+dependency overlayはexecution orderをstrict S-026 docs/S-026 implementation/
+R-032A lint-policy docs correction/R-032A implementation/R-032B lint-policy
+docs correction/R-032B implementation/active B5Cにsupersedeする。
 両languageはsame exact `Result` signature、non-exhaustive fail-closed error
 boundary、total arena/collection accessorをfreezeする。runner-fabricated
 `LabelScopePath`/ordinal/`SemanticOrigin`/`ResolvedNodeId`を禁止し、
@@ -1371,8 +1372,8 @@ zero/multiple cardinality、`ImportedSource`/`Summary`/`Builtin` substitution
 selectionはfrozen source bytes+normal AST、scopeは48 filesのまま。
 
 EN/JA は挿入した S-026 docs/implementation prerequisite、exact 45-design-file
-documentation scope、R-032A lint-policy docs correctionを含むeffective
-six-task orderも同期する。lower-stage work
+documentation scope、R-032A/R-032B両lint-policy docs correctionを含むeffective
+seven-task orderも同期する。lower-stage work
 中の exact runner selector、provenance、detail、projected count、exclusionを
 保持する。
 
@@ -1383,3 +1384,13 @@ mandatory R-026 enum-decision ownerをsemantic `spec_gap`ではなくHigh
 decision entryだけ。separate docs-only correctionとlater resolver
 implementationは`mizar-test` runner consumer、fixture、sidecar、trace、
 diagnostic、semantics、coverage stateを変更しない。
+
+EN/JAはR-032B lint-policy scope correctionも同期する。両言語はomitted
+mandatory R-026 enum-decision ownerをsemantic `spec_gap`ではなくHigh
+`design_drift`と分類し、later Rust 3 files、`labels.rs`、
+`labels/tests.rs`、`tests/lint_policy.rs`をexactにfreezeする。last fileはsole
+`ProofLabelSourceCollectionError` / `labels.md` decisionだけ。separate
+correctionはexact 31 design recordsをownし、source、behavior、fixture、
+expectation、sidecar、trace status/count/coverage、public diagnostic code、
+Cargo metadata、active runnerを変更しない。`spec_coverage_audit.md`は
+intentional no-op。

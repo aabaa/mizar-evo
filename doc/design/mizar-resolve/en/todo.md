@@ -620,9 +620,12 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       `ProofLabelSourceCollectionError` contract in `labels.md`.
       Use the exact `'a` impl lifetime: store only AST/arena borrows, own
       namespace/contribution, and do not store the validated module argument.
-    - Own only `labels.rs`, `labels/tests.rs`, and paired docs. Use only the
-      validated R-032A map; no callback, unmapped side channel, fabricated id,
-      unchecked conversion, or semantic descendant collection.
+    - Own exactly `labels.rs`, `labels/tests.rs`,
+      `tests/lint_policy.rs` for the sole R-026
+      `ProofLabelSourceCollectionError` owning-spec decision with
+      `spec_name: "labels.md"`, and paired docs. Use only the validated R-032A
+      map; no callback, unmapped side channel, fabricated id, unchecked
+      conversion, or semantic descendant collection.
     - Prove exact supported-subtree/exclusion behavior, root `[0]`, `[1]`, ...
       and nested scopes, the shared module-global one-based ordinal walk,
       completion boundaries, exact `proof-step-v1` origin serialization,
@@ -710,3 +713,31 @@ Check the task off here once tests pass.
   the exact validation precedence in [resolved_ast.md](./resolved_ast.md).
 - [x] Reject unsafe ids, dummy-AST id minting, resolver-side syntax mutation,
   and any combined syntax/resolver commit as `boundary_violation`.
+
+## R-032B Lint-Policy Frozen-Scope Prerequisite
+
+- [x] Fresh-inventory the mandatory R-026 guard and classify the omitted
+  `tests/lint_policy.rs` owner as High `design_drift`, with no semantic
+  `spec_gap`, `test_gap`, or test-intent change.
+- [x] Complete the current synchronized docs-only prerequisite across exactly
+  31 design files: 16 resolver, eight checker, six `mizar-test`, and one
+  global ledger.
+- [x] Complete independent specification, test/scope, and
+  source/documentation consistency reviews with **NO FINDINGS** and pass the
+  docs-only verification/count/hash gates.
+- [x] Complete independent final read-only quality with **NO FINDINGS**, all
+  nine hard gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete task-only staging and commit.
+- [ ] After that separate commit, fresh-inventory R-032B and implement exactly
+  `src/labels.rs`, `src/labels/tests.rs`, and the sole R-026
+  `ProofLabelSourceCollectionError` / `labels.md` decision in
+  `tests/lint_policy.rs`.
+- [ ] Continue only afterward to the active B5C consumer. The effective order
+  remains S-026 docs, S-026 implementation, R-032A lint docs, R-032A
+  implementation, R-032B lint docs, R-032B implementation, active B5C, with
+  fresh inventory between commits.
+- [x] Keep specification, semantics, test intent, source, fixtures, sidecars,
+  expectations, trace status/counts, and Cargo metadata unchanged in this
+  prerequisite. `spec_coverage_audit.md` is a deliberate no-op because no
+  chapter coverage, traceability, owner, deferral, or coverage credit changes.

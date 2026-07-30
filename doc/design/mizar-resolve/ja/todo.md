@@ -580,9 +580,11 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       non-exhaustive error contract を実装する。
       exact `'a` impl とし AST/arena borrow だけを store、namespace/contribution
       を own、validated module argument は store しない。
-    - owner は `labels.rs` / `labels/tests.rs` / paired docs。validated map だけを
-      使い callback/unmapped side channel/fabricated id/unchecked conversion/
-      semantic descendant collection を禁止する。
+    - owner は exact `labels.rs` / `labels/tests.rs` / sole R-026
+      `ProofLabelSourceCollectionError` owning-spec decision
+      `spec_name: "labels.md"`用 `tests/lint_policy.rs` / paired docs。
+      validated map だけを使い callback/unmapped side channel/fabricated id/
+      unchecked conversion/semantic descendant collection を禁止する。
     - supported subtree/exclusion、root `[0]`, `[1]`, ...、nested scope、
       module-global one-based ordinal、completion、exact `proof-step-v1` origin、
       inner/sibling/cross-theorem
@@ -668,3 +670,29 @@ cargo test -p mizar-vc
   R-032A を実装。
 - [x] unsafe id、dummy-AST id minting、resolver-side syntax mutation、
   combined syntax/resolver commit を `boundary_violation` として拒否。
+
+## R-032B lint-policy frozen-scope prerequisite
+
+- [x] mandatory R-026 guardをfresh inventoryし、omitted
+  `tests/lint_policy.rs` ownerをHigh `design_drift`と分類。semantic
+  `spec_gap`、`test_gap`、test-intent changeはない。
+- [x] current synchronized docs-only prerequisiteをexact 31 design files、
+  resolver 16、checker 8、`mizar-test` 6、global ledger 1で完了する。
+- [x] independent specification、test/scope、source/documentation consistency
+  reviewを**NO FINDINGS**で完了し、docs-only verification/count/hash gateを
+  PASSする。
+- [x] independent final read-only qualityを**NO FINDINGS**、全9 hard gates
+  PASS、score capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）で完了する。
+- [ ] task-only stagingとcommitを完了する。
+- [ ] そのseparate commit後にR-032Bをfresh inventoryし、exact
+  `src/labels.rs`、`src/labels/tests.rs`、`tests/lint_policy.rs`のsole R-026
+  `ProofLabelSourceCollectionError` / `labels.md` decisionだけを実装する。
+- [ ] その後だけactive B5C consumerへ進む。effective orderはS-026 docs、
+  S-026 implementation、R-032A lint docs、R-032A implementation、
+  R-032B lint docs、R-032B implementation、active B5Cで、commit間にfresh
+  inventoryを挟む。
+- [x] このprerequisiteではspecification、semantics、test intent、source、
+  fixture、sidecar、expectation、trace status/count、Cargo metadataを変更しない。
+  chapter coverage、traceability、owner、deferral、coverage creditが変わらない
+  ため`spec_coverage_audit.md`はdeliberate no-op。

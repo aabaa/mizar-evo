@@ -228,14 +228,17 @@ public codes remain the Low deferred R-G001 `spec_gap`.
 
 The pre-S-026 record used the four-step order documentation, R-032A, R-032B,
 and active B5C, each a separate commit. The later S-026 dependency overlay
-plus the lint-policy correction supersede that execution order with S-026
+plus the lint-policy corrections supersede that execution order with S-026
 docs, S-026 implementation, R-032A lint-policy docs correction, R-032A
-implementation, R-032B, and active B5C. R-032A owns exactly `resolved_ast.rs`,
+implementation, R-032B lint-policy docs correction, R-032B implementation,
+and active B5C. R-032A owns exactly `resolved_ast.rs`,
 `resolved_ast/tests.rs`, and the sole `tests/lint_policy.rs` R-026
 owning-spec entry for `SurfaceResolvedArenaError`; it implements the exact validated
 `SurfaceResolvedArena` plus named public non-exhaustive error table from
 `resolved_ast.md`, including state/reference-key mismatch payloads. R-032B owns
-only `labels.rs` / `labels/tests.rs` and
+exactly `labels.rs`, `labels/tests.rs`, and the sole
+`tests/lint_policy.rs` R-026 owning-spec decision for
+`ProofLabelSourceCollectionError` / `labels.md`, and
 implements the exact validated collector, public error table, subtree,
 completion, scope, and provenance contract from `labels.md`.
 
@@ -282,9 +285,31 @@ complete focused test matrix, the sole R-026 owning-spec decision, and
 synchronized live status records. It changes no label collector, runner,
 fixture, sidecar, expectation, trace status/count, public diagnostic, Cargo
 metadata, or checker/type/proof behavior. The historical R-001 through R-029
-exit and score remain unchanged. R-032B is the next pending post-exit task,
-followed by the active B5C consumer.
+exit and score remain unchanged. At R-032A completion the R-032B stream became
+next; its current first post-exit task is the lint-policy docs correction,
+followed by R-032B implementation and the active B5C consumer.
 
 `doc/design/spec_coverage_audit.md` is deliberately unchanged: R-032A changes
 no active `.miz` mapping, traceability backlink/status/count, owner crate,
 deferred status, or coverage credit.
+
+## R-032B lint-policy frozen-scope correction (current prerequisite)
+
+Fresh inventory identifies the omitted R-026 decision owner as High
+`design_drift`, with no semantic `spec_gap`, `test_gap`, or test-intent
+change. Later R-032B implementation is restricted to the exact three Rust
+files above; `tests/lint_policy.rs` may receive only the sole
+`ProofLabelSourceCollectionError` / `labels.md` decision.
+
+The synchronized docs-only correction covers exactly 31 design files
+(16 resolver, eight checker, six `mizar-test`, one global ledger) and changes
+no source, specification, fixture, sidecar, expectation, trace status/count,
+Cargo metadata, or historical exit score. `spec_coverage_audit.md` is a
+deliberate no-op. The independent specification, test/scope, and
+source/documentation consistency reviews report **NO FINDINGS**, and the
+docs-only verification/count/hash gates PASS. Independent final read-only
+quality also reports **NO FINDINGS**; all nine hard gates PASS with no cap at
+valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff
+review, commit, and post-commit invariant/fresh-inventory gates remain pending;
+fresh inventory afterward gates the separate R-032B
+implementation.

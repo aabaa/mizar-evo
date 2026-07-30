@@ -220,16 +220,18 @@ Medium `source_drift`、旧 R-023 full-source-walk attribution は
 Low deferred R-G001 `spec_gap` のまま。
 
 pre-S-026 record の順序は docs、R-032A、R-032B、active B5C の4 separate
-commit だった。後続 S-026 dependency overlay は execution order を S-026
-docs、S-026 implementation、R-032A lint-policy docs correction、R-032A
-implementation、R-032B、active B5C に supersede する。
+commit だった。後続 S-026 dependency overlay とlint-policy correctionsは
+execution order を S-026 docs、S-026 implementation、R-032A lint-policy docs
+correction、R-032A implementation、R-032B lint-policy docs correction、
+R-032B implementation、active B5C に supersede する。
 R-032A は exact に
 `resolved_ast.rs` / `resolved_ast/tests.rs` / sole R-026
 `SurfaceResolvedArenaError` owning-spec entry 用 `tests/lint_policy.rs` を
 所有し、`resolved_ast.md`
 exact validated arena/error table（state/reference-key mismatch を含む）を実装する。
-R-032B は `labels.rs` /
-`labels/tests.rs` だけを所有し、`labels.md` exact collector/error/subtree/
+R-032B は exact `labels.rs` / `labels/tests.rs` / sole R-026
+`ProofLabelSourceCollectionError` / `labels.md` owning-spec decision用
+`tests/lint_policy.rs`を所有し、`labels.md` exact collector/error/subtree/
 completion/scope/provenance contract を実装する。
 
 top-level theorem root は stable module source-order `[0]`, `[1]`, ...。
@@ -271,9 +273,29 @@ R-032Aは独立lower-prerequisite logical taskとしてcomplete。exact frozen
 matrix、sole R-026 owning-spec decision、同期live status recordを追加する。
 label collector、runner、fixture、sidecar、expectation、trace status/count、
 public diagnostic、Cargo metadata、checker/type/proof behaviorは変更しない。
-historical R-001〜R-029 exit / scoreはunchanged。R-032Bが次のpending
-post-exit taskで、その後にactive B5C consumerが続く。
+historical R-001〜R-029 exit / scoreはunchanged。R-032A完了時にR-032B streamが
+次となり、そのcurrent first post-exit taskはlint-policy docs correction。
+R-032B implementation、active B5C consumerが続く。
 
 R-032Aはactive `.miz` mapping、traceability backlink/status/count、owner
 crate、deferred status、coverage creditを変更しないため、
 `doc/design/spec_coverage_audit.md`はdeliberately unchanged。
+
+## R-032B lint-policy frozen-scope correction（current prerequisite）
+
+fresh inventoryはomitted R-026 decision ownerをHigh `design_drift`と分類し、
+semantic `spec_gap`、`test_gap`、test-intent changeはない。later R-032B
+implementationは上記exact Rust 3 filesに限定し、`tests/lint_policy.rs`はsole
+`ProofLabelSourceCollectionError` / `labels.md` decisionだけを受けられる。
+
+synchronized docs-only correctionはexact 31 design files（resolver 16、
+checker 8、`mizar-test` 6、global ledger 1）を対象にし、source、
+specification、fixture、sidecar、expectation、trace status/count、Cargo
+metadata、historical exit scoreを変更しない。`spec_coverage_audit.md`は
+deliberate no-op。independent specification、test/scope、
+source/documentation consistency reviewはすべて**NO FINDINGS**で、docs-only
+verification/count/hash gateはPASS。independent final read-only qualityも
+**NO FINDINGS**で、全9 hard gates PASS、capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。task-only staging/cached-diff review、commit、
+post-commit invariant/fresh-inventory gateだけがpendingで、その後のfresh
+inventoryがseparate R-032B implementationをgateする。

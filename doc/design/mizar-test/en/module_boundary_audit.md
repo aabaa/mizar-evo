@@ -12558,9 +12558,12 @@ ast/resolved under `'a`, treats module as validation-only/not stored, owns
 namespace/contribution, and returns `Result<Self, ...>`; `collect(&self)`
 returns the collection. The public non-exhaustive error wraps the arena
 error and its checked scope/path overflow nodes are `SurfaceNodeId`.
-`projections()` and `references()` expose the result. Its later write scope
-is only `labels.rs` and `labels/tests.rs`. Neither collector nor runner may
-fabricate a resolved node, scope component, ordinal, or origin.
+`projections()` and `references()` expose the result. Its implementation write
+scope is exactly `labels.rs`, `labels/tests.rs`, and
+`tests/lint_policy.rs`, with the last file limited to the sole
+`ProofLabelSourceCollectionError` / `labels.md` R-026 owning-spec decision.
+Neither collector nor runner may fabricate a resolved node, scope component,
+ordinal, or origin.
 
 The later `mizar-test` owner is only the private declaration-symbol consumer:
 `runner/declaration_symbol.rs`, `runner/tests.rs`, and new
@@ -12590,10 +12593,10 @@ its separate implementation owns exactly 25 files: two dense syntax Rust
 files, 12 paired syntax design files, four paired resolver design files, two
 paired checker TODO files, four paired `mizar-test` design files, and the
 global design TODO. R-032A then owns its separate exact three-Rust-file
-implementation commit; R-032B retains its separate two-source-file
-implementation commit. The active B5C task owns only the two
+implementation commit. R-032B has a separate lint-policy docs correction and
+then its exact three-Rust-file implementation commit. The active B5C task owns only the two
 new fixture/sidecar pairs, two trace rows, three runner files, and synchronized
-derived documents. This effective six-task split avoids the inventoried
+derived documents. This effective seven-task split avoids the inventoried
 potential `boundary_violation`; no module split or ownership transfer is
 authorized.
 
@@ -12601,6 +12604,14 @@ The added R-032A lint-policy owner corrects High `design_drift` discovered in
 implementation preflight; it is not a semantic `spec_gap` and adds no runtime
 or runner ownership. A separate synchronized documentation commit must land
 before fresh inventory and that implementation.
+
+R-032B preflight independently classifies its omitted mandatory R-026
+enum-decision owner as High `design_drift`, not a semantic `spec_gap`. Its
+separate synchronized correction owns exactly 31 design files and changes no
+source, behavior, fixture, expectation, sidecar, trace/status/count/coverage,
+public diagnostic code, Cargo metadata, or active runner. The coverage audit
+is an intentional no-op. After that correction and fresh inventory, only the
+exact three Rust owners above may change for R-032B implementation.
 
 R-032B exclusively owns the exact
 `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct

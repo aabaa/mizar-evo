@@ -1107,9 +1107,12 @@ This commit owns synchronized design documentation only. The next two
 prerequisites are owned by `mizar-resolve`: R-032A owns the validated
 one-to-one structural `SurfaceResolvedArena` in `resolved_ast.rs`, its tests,
 and the sole `tests/lint_policy.rs` R-026 owning-spec entry for
-`SurfaceResolvedArenaError`; R-032B owns proof-step projections, simple unqualified candidates,
-proof-scope paths, ordinals, and provenance collection in `labels.rs` and
-its tests. R-032A exact state/key errors and all node payloads use
+`SurfaceResolvedArenaError`; R-032B owns proof-step projections, simple
+unqualified candidates, proof-scope paths, ordinals, and provenance
+collection in `labels.rs` and its tests, plus only the
+`tests/lint_policy.rs` R-026 decision mapping
+`ProofLabelSourceCollectionError` to `labels.md`. R-032A exact state/key
+errors and all node payloads use
 `SurfaceNodeId`; R-032B borrows ast/resolved under one `'a`, validates but
 does not store module, owns namespace/contribution, and returns `Self`.
 Only R-032B may consume the R-032A map. A later `mizar-test`
@@ -1130,6 +1133,19 @@ omitting the mandatory R-026 enum-decision owner was High `design_drift`,
 not a semantic `spec_gap`. The correction is a separate docs-only commit;
 the later exact three-Rust-file resolver implementation does not add a
 checker consumer or move any boundary above.
+
+R-032B implementation preflight found the analogous mandatory public-enum
+owner omission. The prior two-Rust-file scope is High `design_drift`, not a
+semantic `spec_gap` or `test_gap`. Its current separate docs-only correction
+freezes later implementation to exactly `labels.rs`, `labels/tests.rs`, and
+the sole `tests/lint_policy.rs` decision above. The correction itself owns
+exactly 31 design files: eight paired resolver families, four paired checker
+families, three paired `mizar-test` families, and the global design TODO.
+It precedes R-032B implementation in the effective seven-task order through
+active B5C and changes no production source, test intent, fixture,
+expectation, sidecar, trace row/status/count, public diagnostic code,
+semantic behavior, or coverage state. The coverage audit remains a
+deliberate no-op because no mapping, owner, deferral, or credit changes.
 
 The later runner is selected only by frozen source bytes plus normal AST,
 then authenticates shared resolver env/module and one id-0 matching

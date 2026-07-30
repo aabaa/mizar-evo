@@ -6,7 +6,8 @@
 状態: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendumとR-031 implementationはcomplete。
-R-032Aは実装済み、R-032B / Checker Task 258B5C prerequisiteは計画中。
+R-032Aは実装済み。R-032B lint-policy docs correctionがcurrent prerequisiteで、
+R-032B implementation / Checker Task 258B5C prerequisiteは計画中。
 
 ## 範囲
 
@@ -146,10 +147,12 @@ lower-only repair を authorize する。
 | R-032A R-026 enum decision guard | `tests/lint_policy.rs` | exact one `SurfaceResolvedArenaError` owning-spec decision entry | other lint decision/behavior/source owner |
 | R-032B exact lifetime/error/origin/default-deny direct edge | `labels.rs` | exact `Root` -> `CompilationUnit` -> `ItemList` -> theorem、global ordinal、`proof-step-v1`、unlisted edge skip | callback/unmapped/unsupported forms |
 | R-032B test | `labels/tests.rs` | upper/lower edge positive、missing/additional/wrong/relocated/wrapped upper negative、confinement/origin、other mutation、mixed-list/all-other | `.miz`/expect/trace/runner |
+| R-032B R-026 enum decision guard | `tests/lint_policy.rs` | exact one `ProofLabelSourceCollectionError` owning-spec decision、`spec_name: "labels.md"` | other lint decision/behavior/source owner |
 
-R-032Aはseparate lower-prerequisite logical taskとして実装済み。R-032Bは
-active B5C consumer前の次のseparate commitとして残る。このbounded post-exit
-implementationは元のmilestone scoreを変更しない。
+R-032Aはseparate lower-prerequisite logical taskとして実装済み。current
+R-032B lint-policy docs correction、separate R-032B implementation commit、
+active B5C consumerの順に進む。このbounded post-exit implementationは元の
+milestone scoreを変更しない。
 
 R-032A implementation preflightは旧two-Rust-file scopeをHigh
 `design_drift`と分類した。new public enumはexisting R-026 guardに必ず
@@ -164,3 +167,17 @@ freeze された R-032A structural mapping 用 complete syntax id だけを供�
 `doc/design/spec_coverage_audit.md` は unchanged。
 R-032Aもactive `.miz` mapping、trace/backlink/status/count、owner crate、
 deferred status、coverage creditを変更しないため、auditはdeliberate no-op。
+
+fresh R-032B inventoryはomitted mandatory decision ownerをHigh
+`design_drift`と分類し、semantic `spec_gap`、`test_gap`、test-intent changeは
+ない。later implementationは上記R-032B 3 rowsだけを所有する。current
+synchronized docs-only prerequisiteのexact total scopeは31 design files、
+resolver 16、checker 8、`mizar-test` 6、global ledger 1。source、fixture、
+sidecar、expectation、trace status/count、Cargo metadata、coverage stateは
+変更しないため、`spec_coverage_audit.md`はdeliberate no-op。independent
+specification、test/scope、source/documentation consistency
+reviewはすべて**NO FINDINGS**で、docs-only verification/count/hash gateはPASS。
+independent final read-only qualityも**NO FINDINGS**で、全9 hard gates
+PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。task-only
+staging/cached-diff review、commit、post-commit invariant/fresh-inventory
+gateだけがpendingで、その後のfresh inventoryがimplementationをgateする。

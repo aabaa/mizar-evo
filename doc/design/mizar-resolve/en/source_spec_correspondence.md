@@ -6,7 +6,9 @@
 Status: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendum and R-031 implementation
-complete; R-032A implemented, with R-032B / Checker Task 258B5C still planned.
+complete; R-032A implemented; the R-032B lint-policy docs correction is the
+current prerequisite, with R-032B implementation / Checker Task 258B5C still
+planned.
 
 ## Scope
 
@@ -149,9 +151,11 @@ following lower-only repair:
 | R-032A R-026 enum decision guard | `crates/mizar-resolve/tests/lint_policy.rs` | exactly one `SurfaceResolvedArenaError` owning-spec decision entry | every other lint decision, lint behavior, or source owner |
 | R-032B exact lifetime/error/origin/default-deny direct-edge contract from `labels.md` | `crates/mizar-resolve/src/labels.rs` | exact `Root` -> `CompilationUnit` -> `ItemList` -> theorem chain; only AST/arena borrows; global ordinals; `proof-step-v1`; every unlisted edge skips | callback, unmapped side channel, unsupported/recovered/semantic forms |
 | R-032B tests | `crates/mizar-resolve/src/labels/tests.rs` | positive per upper/lower edge; missing/additional/wrong/relocated/wrapped upper negatives; confinement/origin; other negative mutations; mixed-list and all-other matrices | `.miz`, expectations, trace status/counts, active runner |
+| R-032B R-026 enum decision guard | `crates/mizar-resolve/tests/lint_policy.rs` | exactly one `ProofLabelSourceCollectionError` owning-spec decision with `spec_name: "labels.md"` | every other lint decision, lint behavior, or source owner |
 
 R-032A is implemented as its separate lower-prerequisite logical task.
-R-032B remains the next separate commit before the active B5C consumer. This
+The current R-032B lint-policy docs correction precedes the separate R-032B
+implementation commit, which precedes the active B5C consumer. This
 bounded post-exit implementation does not change the original milestone score.
 
 R-032A implementation preflight classified the earlier two-Rust-file scope as
@@ -168,3 +172,19 @@ structural mapping, so `doc/design/spec_coverage_audit.md` remains unchanged.
 R-032A likewise changes no active `.miz` mapping, trace/backlink/status/count,
 owner crate, deferred status, or coverage credit, so the audit remains a
 deliberate no-op.
+
+Fresh R-032B inventory classifies the omitted mandatory decision owner as High
+`design_drift`, with no semantic `spec_gap`, `test_gap`, or test-intent
+change. Later implementation owns exactly the three R-032B rows above. The
+current synchronized docs-only prerequisite has an exact total scope of 31
+design files: 16 resolver, eight checker, six `mizar-test`, and one global
+ledger. It changes no source, fixture, sidecar, expectation, trace
+status/count, Cargo metadata, or coverage state; therefore
+`spec_coverage_audit.md` remains a deliberate no-op. The independent
+specification, test/scope, and source/documentation consistency reviews
+report **NO FINDINGS**, and the docs-only verification/count/hash gates PASS.
+Independent final read-only quality also reports **NO FINDINGS**; all nine
+hard gates PASS with no cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff review, commit,
+and post-commit invariant/fresh-inventory gates remain pending; fresh inventory
+afterward gates implementation.

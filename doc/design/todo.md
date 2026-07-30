@@ -3725,5 +3725,33 @@ or semantic owner changed. B3M2B2B remains next before B4.
   `4184872a4c36b2fedce37d0fb626191270096273`, post-commit repository/stash
   invariants, and fresh inventory; then complete the exact three-Rust-file
   resolver R-032A implementation with synchronized status records.
-- [ ] Fresh-inventory and implement resolver R-032B as the next separate
-  lower-prerequisite logical task.
+- [x] Fresh-inventory resolver R-032B and classify the omitted mandatory
+  R-026 `ProofLabelSourceCollectionError` owning-spec decision as High
+  `design_drift`, with no blocking semantic `spec_gap`, test-intent ambiguity,
+  or `repo_metadata_conflict`.
+- [x] Freeze a separate synchronized R-032B docs-only scope correction before
+  implementation. Later Rust ownership is exactly
+  `crates/mizar-resolve/src/labels.rs`,
+  `crates/mizar-resolve/src/labels/tests.rs`, and
+  `crates/mizar-resolve/tests/lint_policy.rs`; the last file may receive only
+  the sole `ProofLabelSourceCollectionError` / `labels.md` R-026 decision.
+- [x] Freeze the effective seven-task order through active B5C: S-026 docs,
+  S-026 implementation, R-032A lint-policy docs correction, R-032A
+  implementation, R-032B lint-policy docs correction, R-032B implementation,
+  then active B5C, with fresh inventory between commits.
+- [x] Freeze this correction to exactly 31 design files: eight paired
+  resolver families, four paired checker families, three paired `mizar-test`
+  families, and this global TODO. Keep production/test source, behavior,
+  fixtures, expectations, sidecars, trace rows/status/counts/backlinks,
+  coverage credit, public diagnostic codes, Cargo/workspace metadata, and
+  `doc/design/spec_coverage_audit.md` unchanged.
+- [x] Complete repeated specification, test-contract, and
+  source/documentation consistency reviews with **NO FINDINGS**.
+- [x] Pass docs-only diff/scope, focused and workspace verification, and all
+  count/hash preservation gates.
+- [x] Complete the final independent read-only quality review with **NO
+  FINDINGS**, all nine hard gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage and commit only the exact 31-file correction, verify clean
+  post-commit/stash invariants, then fresh-inventory and implement the exact
+  three-Rust-file resolver R-032B task.

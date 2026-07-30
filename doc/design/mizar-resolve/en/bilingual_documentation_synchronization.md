@@ -6,7 +6,8 @@
 Status: task R-028 audit complete; task R-029 and close-out scopes re-run
 complete; 2026-07-02 roadmap synchronization overlay complete; task R-024
 implementation overlay complete; R-032A implementation synchronization
-complete, with R-032B / Checker Task 258B5C still planned.
+complete; the R-032B lint-policy docs correction is the current prerequisite,
+with R-032B implementation / Checker Task 258B5C still planned.
 
 ## Scope
 
@@ -49,7 +50,7 @@ not change `doc/spec`, `.miz` sources, or expectation sidecars.
 
 | English canonical document | Japanese companion | Synchronization result |
 |---|---|---|
-| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Responsibility, inventory, gap table, completed extensions, historical pre-S-026 four-task record, and effective S-026-docs/S-026-implementation/R-032A-lint-docs/R-032A-implementation/R-032B/B5C six-task order are synchronized. |
+| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Responsibility, inventory, gap table, completed extensions, historical pre-S-026 four-task record, and effective S-026-docs/S-026-implementation/R-032A-lint-docs/R-032A-implementation/R-032B-lint-docs/R-032B-implementation/B5C seven-task order are synchronized. |
 | [declarations.md](./declarations.md) | [../ja/declarations.md](../ja/declarations.md) | Declaration shell kinds, excluded/transparent nodes, visibility, recovery, identity/provenance, and public enum policy are synchronized. |
 | [env.md](./env.md) | [../ja/env.md](../ja/env.md) | `SymbolEnv` index families, contribution tracking, invalidation notes, determinism, and public enum policy are synchronized. |
 | [imports.md](./imports.md) | [../ja/imports.md](../ja/imports.md) | Import inputs/outputs, two-pass contract, path resolution, alias/export/cycle/unresolved policy, determinism, boundary notes, and public enum policy are synchronized. |
@@ -79,9 +80,10 @@ the R-031 extension.
 ## R-032A / R-032B Pair Recheck
 
 The paired documents freeze the same historical pre-S-026 four-task record,
-the same effective six-task order
+the same effective seven-task order
 S-026 docs -> S-026 implementation -> R-032A lint-policy docs correction ->
-R-032A implementation -> R-032B -> active B5C, and the
+R-032A implementation -> R-032B lint-policy docs correction ->
+R-032B implementation -> active B5C, and the
 same classifications. They name identical R-032A arena API/error
 variants/derives, R-032B collector
 API/error variants/derives, `u32` overflow policy, exact file ownership,
@@ -104,8 +106,9 @@ rejected callback/unmapped contract.
 Post-close-out resolver updates should treat this audit as the baseline
 bilingual sync state. S-026 documentation and implementation are complete.
 The R-032A lint-policy docs correction and R-032A implementation are complete.
-The current dependency sequence is R-032B, then the active B5C consumer, with
-fresh inventory after each commit. Add future design files in both language
+The current dependency sequence is the R-032B lint-policy docs correction,
+R-032B implementation, then the active B5C consumer, with fresh inventory
+after each commit. Add future design files in both language
 directories in the same change. Behavior cleanup, public API changes, or new
 diagnostics remain outside the completed resolver milestone and require
 separate spec/test authority.
@@ -137,3 +140,28 @@ three Rust owners and the same prohibited label/runner/artifact/trace/semantic
 scope. R-032B remains pending. `spec_coverage_audit.md` remains a deliberate
 no-op because no active mapping, trace status/count, owner, deferral, or
 coverage credit changed.
+
+## R-032B lint-policy scope correction (current prerequisite)
+
+EN and JA classify the omitted mandatory R-026 enum-decision owner as the same
+High `design_drift`, with no semantic `spec_gap`, `test_gap`, or test-intent
+change. Both freeze later R-032B implementation to exactly
+`crates/mizar-resolve/src/labels.rs`,
+`crates/mizar-resolve/src/labels/tests.rs`, and
+`crates/mizar-resolve/tests/lint_policy.rs`; the last file may receive only
+the sole `ProofLabelSourceCollectionError` owning-spec decision with
+`spec_name: "labels.md"`.
+
+The current docs-only prerequisite spans exactly 31 design files: 16 resolver,
+eight checker, six `mizar-test`, and one global ledger. It preserves every
+semantic/API/test contract and changes no source, fixture, sidecar,
+expectation, trace status/count, or Cargo metadata.
+`spec_coverage_audit.md` is a deliberate no-op because coverage ownership and
+status do not change. The independent specification, test/scope, and
+source/documentation consistency reviews report **NO FINDINGS**, and the
+docs-only verification/count/hash gates PASS. Independent final read-only
+quality also reports **NO FINDINGS**; all nine hard gates PASS with no cap at
+valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff
+review, commit, and post-commit invariant/fresh-inventory gates remain pending;
+fresh inventory after that separate commit gates R-032B
+implementation.
