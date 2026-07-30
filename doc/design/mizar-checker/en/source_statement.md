@@ -3644,3 +3644,23 @@ double-LF 80-byte source can select B4A.
 Repeated read-only documentation review reports **NO FINDINGS**. Independent
 final quality passes all nine hard gates with no cap at valid `100/100`;
 only staging, commit, and post-commit inventory remain.
+
+## Task 258B4A Implemented Composite Statement Root
+
+`SourceStatementFormulaTarget` now admits `Composite(0)`, and statement
+handoffs optionally fingerprint both the Task-257 composite and composition
+dependencies. The dedicated producer authenticates the frozen 80-byte
+route's syntax-free input, resolver owner contribution 0/origin `[2,0]`,
+lower profiles, exact owned lower sites/ranges, and the complete
+`1/1/1/0/1` upper tables before publication. The runner selector separately
+authenticates the source bytes and all 26 Surface rows/root 25. Atomic
+statement routes retain absent optional fingerprints and byte-identical
+debug text.
+
+The B4A debug text adds only the two frozen quoted fingerprint lines.
+Thirty-eight upper-input mutations, coherent rooted-arena and relocated-term
+lower near misses, nineteen final statement corruptions, missing-lower
+tuples, route isolation, and replay prove the failure boundary. The lower
+typed arena remains rootless while Surface root 25 remains authenticated;
+`UnassignedStatement` is not rewritten. No truth, fact, theorem acceptance,
+proof, goal, justification, diagnostic, or semantic result is added.

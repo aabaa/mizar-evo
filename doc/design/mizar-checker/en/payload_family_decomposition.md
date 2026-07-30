@@ -1458,3 +1458,14 @@ nor converts lower `UnassignedStatement` ownership into semantic acceptance.
 Repeated read-only documentation review reports **NO FINDINGS**. Independent
 final quality passes all nine hard gates with no cap at valid `100/100`;
 only staging, commit, and post-commit inventory remain.
+
+## Task 258B4A Implemented Composite-Root Edge
+
+B4A closes only the syntax-free upper edge from theorem statement 0 and
+candidate 0 to the existing Task-257B1 `Composite(0)`. Task 252 retains
+primary/reference ownership, Task 256 retains atomic equality leaves, Task
+257 retains the explicit binder and composite/composition graph, and Task
+258 retains statement ownership. Exact lower owned-site/range checks and a
+rootless lower typed arena prevent coherent cross-family substitution
+without transferring ownership. Truth, binder guard discharge, facts,
+acceptance, proof semantics, B4B/B4C, and B5 remain deferred.

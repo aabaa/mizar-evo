@@ -1382,3 +1382,15 @@ rowは変更しない。
 repeated read-only documentation reviewは**NO FINDINGS**である。
 independent final qualityは全9 hard gatesをcapなし、valid `100/100`で
 PASSした。remainingはstaging、commit、post-commit inventoryだけである。
+
+## Task 258B4A implemented paired installation
+
+`with_source_formula_composition_statement`はexact Task-257B1
+composite/composition pairとTask-258 B4A statementをone transactionとして
+revalidate/installする。mutation前に両optional statement fingerprints、
+`Composite(0)` links、source identity、lower fingerprints、table profiles、
+family exclusivityが一致しなければならない。atomic-statement families、
+duplicate owners、stale/reordered/partial handoffs、rooted/relocated lower
+near misses、cross-family hybridsは`InvalidSourceStatement`を返し、ASTを
+byte-identicalに保ってclean replayを許す。lower-only installerと全semantic
+tableはunchangedである。

@@ -5852,8 +5852,33 @@ implementation commit does not satisfy a producer task.
   crate/workspace, and stash verification.
 - [x] Complete independent final quality with all nine hard gates and valid
   score `>=90/100`.
-- [ ] Stage only the synchronized documentation scope and inspect cached
+- [x] Stage only the synchronized documentation scope and inspect cached
   diff.
-- [ ] Create one dedicated B4A documentation prerequisite commit.
-- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4A
+- [x] Create dedicated B4A documentation prerequisite commit
+  `9da1ac13e811c78359d8d64e740832b2a30dae24`.
+- [x] Verify clean ahead-6/behind-0 post-commit state, unchanged stash
+  fingerprint, and fresh-inventory B4A
   implementation.
+
+## Checker Task 258B4A Implementation Ledger
+
+- [x] Implement only the frozen checker three and runner five consumers.
+- [x] Add the exact four checker/five runner tests and frozen lower/upper
+  mutation, coherent-near-miss, cross-family, replay, and clone matrices.
+- [x] Preserve lower Task-257 `UnassignedStatement` ownership and distinguish
+  Surface root 25 from the rootless lower typed arena.
+- [x] Complete separate test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused checker `4/4` and runner `5/5`; measure libraries
+  `414/476` and production `23/139828`, `30/55109`.
+- [x] Preserve specifications, existing corpus/expectation/sidecar/trace
+  artifacts, active behavior, semantic tables, and public runner schemas.
+- [x] Complete source/documentation, bilingual, and boundary consistency
+  review with **NO FINDINGS**.
+- [x] Pass focused/package, formatting, full Clippy, workspace, five-CLI,
+  count/hash/scope/forbidden/stash verification.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`.
+- [x] Stage and inspect only the exact B4A implementation scope.
+- [ ] Create one dedicated B4A implementation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4B.

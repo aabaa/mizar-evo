@@ -5589,7 +5589,31 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   crate/workspace、stash verificationをPASS。
 - [x] independent final qualityを全9 hard gatesとvalid score
   `>=90/100`でcomplete。
-- [ ] synchronized documentation scopeだけをstageしcached diffをinspect。
-- [ ] dedicated B4A documentation prerequisite commit 1件をcreate。
-- [ ] clean post-commit/stash invariantsをverifyし、B4A implementationを
-  fresh inventory。
+- [x] synchronized documentation scopeだけをstageしcached diffをinspect。
+- [x] dedicated B4A documentation prerequisite commit
+  `9da1ac13e811c78359d8d64e740832b2a30dae24`をcreate。
+- [x] clean ahead-6/behind-0 post-commit state、unchanged stash
+  fingerprintをverifyし、B4A implementationをfresh inventory。
+
+## Checker Task 258B4A implementation ledger
+
+- [x] frozen checker 3/runner 5 consumersだけをimplement。
+- [x] exact checker 4/runner 5 testsとfrozen lower/upper mutation、
+  coherent-near-miss、cross-family、replay、clone matricesを追加。
+- [x] lower Task-257 `UnassignedStatement` ownershipを保持し、Surface root
+  25とrootless lower typed arenaを区別。
+- [x] separate test-sufficiency/implementation reviewsを
+  **NO FINDINGS**でcomplete。
+- [x] focused checker `4/4` / runner `5/5`をPASSし、libraries
+  `414/476`、production `23/139828` / `30/55109`をmeasure。
+- [x] specifications、existing corpus/expectation/sidecar/trace artifacts、
+  active behavior、semantic tables、public runner schemasをpreserve。
+- [x] source/documentation、bilingual、boundary consistency reviewを
+  **NO FINDINGS**でcomplete。
+- [x] focused/package、formatting、full Clippy、workspace、5 CLI、
+  count/hash/scope/forbidden/stash verificationをPASS。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`でcomplete。
+- [x] exact B4A implementation scopeだけをstage/inspect。
+- [ ] dedicated B4A implementation commit 1件をcreate。
+- [ ] clean post-commit/stash invariantsをverifyし、B4Bをfresh inventory。

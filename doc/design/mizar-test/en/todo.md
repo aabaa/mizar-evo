@@ -2848,5 +2848,30 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete repeated documentation review with **NO FINDINGS**.
 - [x] Pass docs-only verification and all no-op/count/hash/stash gates.
 - [x] Complete final quality with all hard gates and score `>=90/100`.
-- [ ] Stage/inspect and create the dedicated B4A documentation commit.
-- [ ] Verify post-commit invariants and fresh-inventory B4A implementation.
+- [x] Stage/inspect and create dedicated B4A documentation commit
+  `9da1ac13e811c78359d8d64e740832b2a30dae24`.
+- [x] Verify clean ahead-6/behind-0 post-commit state, unchanged stash, and
+  fresh-inventory B4A implementation.
+
+## Checker Task 258B4A Implementation Ledger
+
+- [x] Implement only the frozen five runner and three checker consumers.
+- [x] Authenticate all 80 bytes, 26 Surface rows/root 25, resolver
+  provenance, lower profiles/owned sites, and upper `1/1/1/0/1`.
+- [x] Add five runner/four checker tests with exact mutation, coherent-near-
+  miss, route-isolation, family-order, rollback, clone, and semantic-empty
+  coverage.
+- [x] Complete test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused runner `5/5` and checker `4/4`; measure libraries
+  `476/414` and runner production 30 paths/55,109 lines.
+- [x] Preserve corpus/expectation/sidecar/trace/active/public-runner/
+  semantic no-op boundaries.
+- [x] Complete final source/documentation and bilingual consistency with
+  **NO FINDINGS** after three Low `design_drift` corrections.
+- [x] Pass package/workspace/Clippy/fmt/CLI/count/hash/stash gates.
+- [x] Pass independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`.
+- [x] Stage the exact B4A scope and inspect the cached diff.
+- [ ] Create the dedicated B4A implementation commit.
+- [ ] Verify post-commit invariants and fresh-inventory B4B.

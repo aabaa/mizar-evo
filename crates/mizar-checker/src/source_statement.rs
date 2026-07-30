@@ -12,6 +12,11 @@ use crate::{
         SourceAtomicFormulaKind, SourceAtomicFormulaRecovery, SourceAtomicRequestKind,
         SourceAtomicTermTarget,
     },
+    source_composite_formula::{
+        SourceCompositeFormulaHandoff, SourceCompositeFormulaId, SourceCompositeFormulaKind,
+        SourceCompositeFormulaRecovery, SourceFormulaRootOwnership,
+    },
+    source_formula_composition::SourceFormulaCompositionHandoff,
     source_set_term::{
         SourceSetEdgeRole, SourceSetGeneratorId, SourceSetRequestKind, SourceSetTarget,
         SourceSetTermHandoff, SourceSetTermId, SourceSetTermKind, SourceSetTermRecovery,
@@ -253,6 +258,7 @@ pub enum SourceStatementRecovery {
 #[non_exhaustive]
 pub enum SourceStatementFormulaTarget {
     Atomic(SourceAtomicFormulaId),
+    Composite(SourceCompositeFormulaId),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -304,6 +310,8 @@ pub struct SourceStatementHandoff {
     binding_fingerprint: String,
     primary_term_fingerprint: String,
     atomic_formula_fingerprint: String,
+    composite_formula_fingerprint: Option<String>,
+    formula_composition_fingerprint: Option<String>,
     checked_owner: CheckedStatementOwner,
     owner_contribution: SourceContributionId,
     owners: SourceTheoremOwnerTable,
@@ -364,6 +372,14 @@ impl SourceStatementHandoff {
 
     pub fn atomic_formula_fingerprint(&self) -> &str {
         &self.atomic_formula_fingerprint
+    }
+
+    pub fn composite_formula_fingerprint(&self) -> Option<&str> {
+        self.composite_formula_fingerprint.as_deref()
+    }
+
+    pub fn formula_composition_fingerprint(&self) -> Option<&str> {
+        self.formula_composition_fingerprint.as_deref()
     }
 
     pub const fn checked_owner(&self) -> &CheckedStatementOwner {
@@ -766,6 +782,19 @@ impl SourceStatementHandoff {
                 })
     }
 
+    pub(crate) fn is_task_258b4a_profile(&self) -> bool {
+        self.binding_env.contexts().len() == 2
+            && self.binding_env.bindings().len() == 1
+            && self.binding_env.diagnostics().len() == 4
+            && self.owners.len() == 1
+            && self.statements.len() == 1
+            && self.contexts.len() == 1
+            && self.input_facts.is_empty()
+            && self.candidate_facts.len() == 1
+            && self.composite_formula_fingerprint.is_some()
+            && self.formula_composition_fingerprint.is_some()
+    }
+
     pub fn debug_text(&self) -> String {
         let mut output = String::from("source-statement-debug-v1\n");
         let _ = writeln!(
@@ -789,6 +818,20 @@ impl SourceStatementHandoff {
             "atomic-formula-fingerprint: {:?}",
             self.atomic_formula_fingerprint
         );
+        if let Some(composite_formula_fingerprint) = &self.composite_formula_fingerprint {
+            let _ = writeln!(
+                output,
+                "composite-formula-fingerprint: {:?}",
+                composite_formula_fingerprint
+            );
+        }
+        if let Some(formula_composition_fingerprint) = &self.formula_composition_fingerprint {
+            let _ = writeln!(
+                output,
+                "formula-composition-fingerprint: {:?}",
+                formula_composition_fingerprint
+            );
+        }
         for (id, row) in self.owners.iter() {
             let _ = writeln!(
                 output,
@@ -877,6 +920,8 @@ impl SourceStatementHandoff {
             || self.binding_fingerprint != self.binding_env.debug_text()
             || self.primary_term_fingerprint != primary_terms.debug_text()
             || self.atomic_formula_fingerprint != atomic_formulas.debug_text()
+            || self.composite_formula_fingerprint.is_some()
+            || self.formula_composition_fingerprint.is_some()
         {
             return Err(SourceStatementError::DependencyMismatch);
         }
@@ -935,6 +980,54 @@ impl SourceStatementHandoff {
             &self.statements,
             &self.contexts,
             atomic_formulas,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)] // Rationale: revalidate the complete frozen paired lower-family transaction.
+    pub(crate) fn validate_installation_with_formula_composition(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        primary_terms: &SourcePrimaryTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        composite_formulas: &SourceCompositeFormulaHandoff,
+        formula_composition: &SourceFormulaCompositionHandoff,
+        arena: &TypedArena,
+    ) -> Result<(), SourceStatementError> {
+        if self.source_id != source_id
+            || &self.module_id != module_id
+            || self.binding_fingerprint != self.binding_env.debug_text()
+            || self.primary_term_fingerprint != primary_terms.debug_text()
+            || self.atomic_formula_fingerprint != atomic_formulas.debug_text()
+            || self.composite_formula_fingerprint.as_deref()
+                != Some(composite_formulas.debug_text().as_str())
+            || self.formula_composition_fingerprint.as_deref()
+                != Some(formula_composition.debug_text().as_str())
+        {
+            return Err(SourceStatementError::DependencyMismatch);
+        }
+        validate_task_258b4a_dependencies(
+            source_id,
+            module_id,
+            &self.binding_env,
+            primary_terms,
+            atomic_formulas,
+            composite_formulas,
+            formula_composition,
+            arena,
+        )?;
+        validate_task_258b4a_rows(
+            self.source_id,
+            &self.module_id,
+            &self.owners,
+            &self.checked_owner,
+            self.owner_contribution,
+            &self.statements,
+            &self.contexts,
+            &self.input_facts,
+            &self.candidate_facts,
+            composite_formulas,
+            arena,
         )
     }
 }
@@ -1953,6 +2046,145 @@ impl SourceStatementProducer {
             binding_fingerprint: bindings.debug_text(),
             primary_term_fingerprint: primary_terms.debug_text(),
             atomic_formula_fingerprint: atomic_formulas.debug_text(),
+            composite_formula_fingerprint: None,
+            formula_composition_fingerprint: None,
+            checked_owner,
+            owner_contribution,
+            owners,
+            statements,
+            contexts,
+            input_facts,
+            candidate_facts,
+        })
+    }
+
+    #[allow(clippy::too_many_arguments)] // Rationale: the composite-root transaction must reauthenticate every frozen lower-family dependency explicitly.
+    pub fn build_with_formula_composition(
+        input: SourceStatementHandoffInput,
+        symbols: &SymbolEnv,
+        bindings: &BindingEnv,
+        primary_terms: &SourcePrimaryTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        composite_formulas: &SourceCompositeFormulaHandoff,
+        formula_composition: &SourceFormulaCompositionHandoff,
+        arena: &TypedArena,
+    ) -> Result<SourceStatementHandoff, SourceStatementError> {
+        validate_task_258b4a_dependencies(
+            input.source_id,
+            &input.module_id,
+            bindings,
+            primary_terms,
+            atomic_formulas,
+            composite_formulas,
+            formula_composition,
+            arena,
+        )?;
+        if (
+            input.owners.len(),
+            input.statements.len(),
+            input.contexts.len(),
+            input.input_facts.len(),
+            input.candidate_facts.len(),
+        ) != (1, 1, 1, 0, 1)
+        {
+            return Err(SourceStatementError::InvalidAggregate);
+        }
+        let checked_owner = validate_resolver_owner(&input, symbols)?;
+        let owner_contribution = input.owners[0].contribution;
+        let owners = SourceTheoremOwnerTable {
+            rows: input
+                .owners
+                .into_iter()
+                .map(|row| SourceTheoremOwner {
+                    symbol: row.symbol,
+                    contribution: row.contribution,
+                    site: row.site,
+                    source_range: row.source_range,
+                    spelling: row.spelling,
+                    role: row.role,
+                    status: row.status,
+                    recovery: row.recovery,
+                })
+                .collect(),
+        };
+        let statements = SourceStatementTable {
+            rows: input
+                .statements
+                .into_iter()
+                .map(|row| SourceStatement {
+                    owner: row.owner,
+                    context: row.context,
+                    formula: row.formula,
+                    site: row.site,
+                    source_range: row.source_range,
+                    source_ordinal: row.source_ordinal,
+                    spelling: row.spelling,
+                    kind: row.kind,
+                    recovery: row.recovery,
+                })
+                .collect(),
+        };
+        let contexts = SourceStatementContextTable {
+            rows: input
+                .contexts
+                .into_iter()
+                .map(|row| SourceStatementContext {
+                    statement: row.statement,
+                    binding_context: row.binding_context,
+                    source_range: row.source_range,
+                    visible_bindings: row.visible_bindings,
+                })
+                .collect(),
+        };
+        let input_facts = SourceStatementInputFactTable {
+            rows: input
+                .input_facts
+                .into_iter()
+                .map(|row| SourceStatementInputFact {
+                    statement: row.statement,
+                    context: row.context,
+                    ordinal: row.ordinal,
+                    kind: row.kind,
+                    binding: row.binding,
+                    uses: row.uses,
+                })
+                .collect(),
+        };
+        let candidate_facts = SourceStatementCandidateFactTable {
+            rows: input
+                .candidate_facts
+                .into_iter()
+                .map(|row| SourceStatementCandidateFact {
+                    statement: row.statement,
+                    context: row.context,
+                    ordinal: row.ordinal,
+                    kind: row.kind,
+                    formula: row.formula,
+                })
+                .collect(),
+        };
+        validate_task_258b4a_rows(
+            input.source_id,
+            &input.module_id,
+            &owners,
+            &checked_owner,
+            owner_contribution,
+            &statements,
+            &contexts,
+            &input_facts,
+            &candidate_facts,
+            composite_formulas,
+            arena,
+        )?;
+        Ok(SourceStatementHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            binding_env: bindings.clone(),
+            binding_fingerprint: bindings.debug_text(),
+            primary_term_fingerprint: primary_terms.debug_text(),
+            atomic_formula_fingerprint: atomic_formulas.debug_text(),
+            composite_formula_fingerprint: Some(composite_formulas.debug_text()),
+            formula_composition_fingerprint: Some(formula_composition.debug_text()),
             checked_owner,
             owner_contribution,
             owners,
@@ -4323,6 +4555,250 @@ fn exact_atomic_profile(
     true
 }
 
+#[allow(clippy::too_many_arguments)] // Rationale: B4A must reauthenticate the complete frozen lower-family tuple.
+fn validate_task_258b4a_dependencies(
+    source_id: SourceId,
+    module_id: &ModuleId,
+    bindings: &BindingEnv,
+    primary_terms: &SourcePrimaryTermHandoff,
+    atomic_formulas: &SourceAtomicFormulaHandoff,
+    composite_formulas: &SourceCompositeFormulaHandoff,
+    formula_composition: &SourceFormulaCompositionHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceStatementError> {
+    if bindings.source_id() != source_id
+        || bindings.module_id() != module_id
+        || bindings != composite_formulas.binding_env()
+        || bindings.contexts().len() != 2
+        || bindings.bindings().len() != 1
+        || bindings.diagnostics().len() != 4
+        || primary_terms.source_id() != source_id
+        || primary_terms.module_id() != module_id
+        || primary_terms.terms().len() != 2
+        || primary_terms.references().len() != 2
+        || !primary_terms.numeric_type_requests().is_empty()
+        || atomic_formulas.source_id() != source_id
+        || atomic_formulas.module_id() != module_id
+        || atomic_formulas.formulas().len() != 1
+        || !atomic_formulas.wrappers().is_empty()
+        || !atomic_formulas.predicate_segments().is_empty()
+        || !atomic_formulas.predicate_heads().is_empty()
+        || !atomic_formulas.candidates().is_empty()
+        || !atomic_formulas.type_sites().is_empty()
+        || !atomic_formulas.attributes().is_empty()
+        || atomic_formulas.edges().len() != 2
+        || atomic_formulas.requests().len() != 2
+        || composite_formulas.source_id() != source_id
+        || composite_formulas.module_id() != module_id
+        || !composite_formulas.is_task_257b1_profile()
+        || formula_composition.source_id() != source_id
+        || formula_composition.module_id() != module_id
+        || formula_composition.atomic_edges().len() != 1
+        || formula_composition.bound_uses().len() != 2
+        || arena.len() != 26
+        || arena.root().is_some()
+    {
+        return Err(SourceStatementError::DependencyMismatch);
+    }
+    primary_terms
+        .validate_installation(source_id, module_id, arena)
+        .map_err(|_| SourceStatementError::DependencyMismatch)?;
+    atomic_formulas
+        .validate_installation(source_id, module_id, primary_terms, None, None, None, arena)
+        .map_err(|_| SourceStatementError::DependencyMismatch)?;
+    composite_formulas
+        .validate_installation(source_id, module_id, arena)
+        .map_err(|_| SourceStatementError::DependencyMismatch)?;
+    formula_composition
+        .validate_installation(
+            source_id,
+            module_id,
+            primary_terms,
+            atomic_formulas,
+            composite_formulas,
+            arena,
+        )
+        .map_err(|_| SourceStatementError::DependencyMismatch)?;
+    let left = primary_terms
+        .terms()
+        .get(SourcePrimaryTermId::new(0))
+        .ok_or(SourceStatementError::DependencyMismatch)?;
+    let right = primary_terms
+        .terms()
+        .get(SourcePrimaryTermId::new(1))
+        .ok_or(SourceStatementError::DependencyMismatch)?;
+    let atomic = atomic_formulas
+        .formulas()
+        .get(SourceAtomicFormulaId::new(0))
+        .ok_or(SourceStatementError::DependencyMismatch)?;
+    let formula = composite_formulas
+        .formulas()
+        .get(SourceCompositeFormulaId::new(0))
+        .ok_or(SourceStatementError::DependencyMismatch)?;
+    let root = composite_formulas
+        .roots()
+        .get(crate::source_composite_formula::SourceFormulaRootId::new(0))
+        .ok_or(SourceStatementError::DependencyMismatch)?;
+    let binder = composite_formulas
+        .binders()
+        .get(crate::source_composite_formula::SourceQuantifierBinderId::new(0))
+        .ok_or(SourceStatementError::DependencyMismatch)?;
+    let type_site = composite_formulas
+        .type_sites()
+        .get(crate::source_composite_formula::SourceBinderTypeSiteId::new(0))
+        .ok_or(SourceStatementError::DependencyMismatch)?;
+    if left.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(15))
+        || left.source_range() != range(source_id, 72, 73)
+        || right.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(17))
+        || right.source_range() != range(source_id, 76, 77)
+        || atomic.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(19))
+        || atomic.source_range() != range(source_id, 72, 77)
+        || formula.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(20))
+        || formula.source_range() != range(source_id, 50, 77)
+        || formula.source_ordinal() != 0
+        || formula.context() != BindingContextId::new(0)
+        || formula.recovery() != SourceCompositeFormulaRecovery::Normal
+        || formula.spelling() != "for holds"
+        || formula.kind() != SourceCompositeFormulaKind::Universal
+        || root.formula() != SourceCompositeFormulaId::new(0)
+        || root.ordinal() != 0
+        || root.ownership() != SourceFormulaRootOwnership::UnassignedStatement
+        || binder.segment_site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(14))
+        || binder.segment_range() != range(source_id, 54, 65)
+        || binder.identifier_site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(4))
+        || binder.identifier_range() != range(source_id, 54, 55)
+        || type_site.site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(13))
+        || type_site.source_range() != range(source_id, 62, 65)
+        || type_site.head_site() != &TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(12))
+        || type_site.head_range() != range(source_id, 62, 65)
+    {
+        return Err(SourceStatementError::DependencyMismatch);
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)] // Rationale: the frozen one-row profile is validated as one indivisible publication boundary.
+fn validate_task_258b4a_rows(
+    source_id: SourceId,
+    module_id: &ModuleId,
+    owners: &SourceTheoremOwnerTable,
+    checked_owner: &CheckedStatementOwner,
+    authenticated_contribution: SourceContributionId,
+    statements: &SourceStatementTable,
+    contexts: &SourceStatementContextTable,
+    input_facts: &SourceStatementInputFactTable,
+    candidate_facts: &SourceStatementCandidateFactTable,
+    composite_formulas: &SourceCompositeFormulaHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceStatementError> {
+    if owners.len() != 1
+        || statements.len() != 1
+        || contexts.len() != 1
+        || !input_facts.is_empty()
+        || candidate_facts.len() != 1
+    {
+        return Err(SourceStatementError::InvalidAggregate);
+    }
+    let owner_id = SourceTheoremOwnerId::new(0);
+    let owner = owners
+        .get(owner_id)
+        .ok_or(SourceStatementError::InvalidOwner { owner: owner_id })?;
+    let owner_range = range(source_id, 0, 78);
+    if owner.symbol != *checked_owner.symbol()
+        || owner.contribution != authenticated_contribution
+        || owner.contribution.index() != 0
+        || owner.site != TypedSiteRef::Node(crate::typed_ast::TypedNodeId::new(22))
+        || owner.source_range != owner_range
+        || owner.source_range != checked_owner.source_range()
+        || owner.spelling != "FormulaQuantifierBoundUsePayloadBoundary"
+        || owner.role != SourceTheoremRole::Theorem
+        || owner.status != SourceTheoremStatus::Unmodified
+        || owner.recovery != SourceStatementRecovery::Normal
+        || checked_owner.origin().source_id() != source_id
+        || checked_owner.origin().module_id() != module_id
+        || checked_owner.origin().anchor() != &SourceAnchor::Range(owner_range)
+        || checked_owner.origin().structural_path() != [2, 0]
+        || checked_owner.origin().import_edge().is_some()
+        || checked_owner.origin().is_recovered()
+        || checked_owner.visibility() != Visibility::Public
+        || checked_owner.export_status() != ExportStatus::Exported
+        || !validate_theorem_site(&owner.site, owner_range, arena)
+    {
+        return Err(SourceStatementError::InvalidOwner { owner: owner_id });
+    }
+
+    let statement_id = SourceStatementId::new(0);
+    let statement = statements
+        .get(statement_id)
+        .ok_or(SourceStatementError::InvalidStatement {
+            statement: statement_id,
+        })?;
+    if statement.owner != owner_id
+        || statement.context != SourceStatementContextId::new(0)
+        || statement.formula
+            != SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0))
+        || statement.site != owner.site
+        || statement.source_range != owner_range
+        || statement.source_ordinal != 0
+        || statement.spelling
+            != "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;"
+        || statement.kind != SourceStatementKind::TheoremProposition
+        || statement.recovery != SourceStatementRecovery::Normal
+    {
+        return Err(SourceStatementError::InvalidStatement {
+            statement: statement_id,
+        });
+    }
+
+    let context_id = SourceStatementContextId::new(0);
+    let context = contexts
+        .get(context_id)
+        .ok_or(SourceStatementError::InvalidContext {
+            context: context_id,
+        })?;
+    if context.statement != statement_id
+        || context.binding_context != BindingContextId::new(0)
+        || context.source_range != owner_range
+        || !context.visible_bindings.is_empty()
+    {
+        return Err(SourceStatementError::InvalidContext {
+            context: context_id,
+        });
+    }
+
+    let candidate_id = SourceStatementCandidateFactId::new(0);
+    let candidate = candidate_facts
+        .get(candidate_id)
+        .ok_or(SourceStatementError::InvalidCandidateFact { fact: candidate_id })?;
+    if candidate.statement != statement_id
+        || candidate.context != context_id
+        || candidate.ordinal != 0
+        || candidate.kind != SourceStatementCandidateFactKind::UnverifiedProposition
+        || candidate.formula != statement.formula
+    {
+        return Err(SourceStatementError::InvalidCandidateFact { fact: candidate_id });
+    }
+
+    let composite = composite_formulas
+        .formulas()
+        .get(SourceCompositeFormulaId::new(0))
+        .ok_or(SourceStatementError::DependencyMismatch)?;
+    if composite.site().node() != crate::typed_ast::TypedNodeId::new(20)
+        || composite.source_range() != range(source_id, 50, 77)
+        || arena.iter().any(|(id, node)| {
+            id != crate::typed_ast::TypedNodeId::new(22)
+                && (node.kind.as_str().starts_with("source.statement.")
+                    || node.kind.as_str().contains("proof")
+                    || node.kind.as_str().contains("justification"))
+        })
+    {
+        return Err(SourceStatementError::InvalidStatement {
+            statement: statement_id,
+        });
+    }
+    Ok(())
+}
+
 fn validate_aggregate_lengths(
     profile: StatementProfile,
     owners: usize,
@@ -4383,17 +4859,14 @@ fn validate_resolver_owner(
         .ok_or_else(invalid)?;
     let labels = symbols.labels().by_contribution(owner.contribution);
     let label = labels.as_slice().first().copied().ok_or_else(invalid)?;
-    let expected_contribution_range = if matches!(
-        owner.spelling.as_str(),
+    let expected_contribution_range = match owner.spelling.as_str() {
+        "FormulaQuantifierBoundUsePayloadBoundary" => range(input.source_id, 0, 78),
         "FormulaStatementApplicationWitnessSmoke"
-            | "FormulaStatementParenthesizedApplicationWitnessSmoke"
-            | "FormulaStatementStructureConstructorWitnessSmoke"
-            | "FormulaStatementStructureSelectorWitnessSmoke"
-            | "FormulaStatementStructureUpdateWitnessSmoke"
-    ) {
-        range(input.source_id, 29, 47)
-    } else {
-        range(input.source_id, 0, 18)
+        | "FormulaStatementParenthesizedApplicationWitnessSmoke"
+        | "FormulaStatementStructureConstructorWitnessSmoke"
+        | "FormulaStatementStructureSelectorWitnessSmoke"
+        | "FormulaStatementStructureUpdateWitnessSmoke" => range(input.source_id, 29, 47),
+        _ => range(input.source_id, 0, 18),
     };
     if labels.len() != 1
         || owner.contribution != symbol.contribution()
@@ -11384,6 +11857,7 @@ fn statement_recovery_key(recovery: SourceStatementRecovery) -> &'static str {
 fn formula_target_key(target: SourceStatementFormulaTarget) -> String {
     match target {
         SourceStatementFormulaTarget::Atomic(id) => format!("atomic:{}", id.index()),
+        SourceStatementFormulaTarget::Composite(id) => format!("composite:{}", id.index()),
     }
 }
 
@@ -11538,6 +12012,17 @@ mod tests {
             SourcePredicateHeadId, SourcePredicateHeadInput, SourcePredicateSegmentInput,
             SourcePredicateSegmentPolarityInput,
         },
+        source_composite_formula::{
+            SourceBinderTypeHead, SourceBinderTypeSiteId, SourceBinderTypeSiteInput,
+            SourceCompositeFormulaHandoffInput, SourceCompositeFormulaInput,
+            SourceCompositeFormulaProducer, SourceFormulaRequestInput, SourceFormulaRequestKind,
+            SourceFormulaRootInput, SourceQuantifierBinderId, SourceQuantifierBinderInput,
+        },
+        source_formula_composition::{
+            SourceFormulaAtomicEdgeId, SourceFormulaAtomicEdgeInput, SourceFormulaAtomicEdgeRole,
+            SourceFormulaCompositionHandoffInput, SourceFormulaCompositionProducer,
+            SourceQuantifierBoundUseInput,
+        },
         source_set_term::{
             SourceSetConditionInput, SourceSetEdgeInput, SourceSetGeneratorInput,
             SourceSetRequestInput, SourceSetTermHandoffInput, SourceSetTermInput,
@@ -11568,7 +12053,7 @@ mod tests {
             LabelIndex, NamespacePath, SourceContributionIndex, SymbolEntry, SymbolEnvIndexes,
             SymbolIndex, SymbolKind,
         },
-        names::LocalTermScope,
+        names::{LocalTermBinding, LocalTermScope},
         resolved_ast::{
             FullyQualifiedName, ImportResolution, LabelOriginPath, LocalSymbolId,
             ResolvedArenaBuilder, ResolvedImport, ResolvedImports, ResolvedNode, SemanticOrigin,
@@ -43448,6 +43933,1399 @@ mod tests {
             .with_visibility(Visibility::Public),
         );
         let origin_path = LabelOriginPath::new("statement.fixture.theorem.b3m2b2b3a");
+        let mut labels = LabelIndex::new();
+        labels.insert(
+            LabelEntry::new(
+                origin_path.clone(),
+                LabelKind::Theorem,
+                namespace,
+                LABEL,
+                origin,
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        contributions.add_symbol(contribution, symbol.clone());
+        contributions.add_definition(contribution, definition);
+        contributions.add_label(contribution, origin_path);
+        (
+            symbol,
+            contribution,
+            SymbolEnv::new(
+                module.clone(),
+                SymbolEnvIndexes {
+                    symbols,
+                    labels,
+                    definitions,
+                    contributions,
+                    ..SymbolEnvIndexes::default()
+                },
+            ),
+        )
+    }
+
+    #[derive(Clone)]
+    struct Task258B4AFixture {
+        source: SourceId,
+        module: ModuleId,
+        symbol: SymbolId,
+        contribution: SourceContributionId,
+        symbols: SymbolEnv,
+        bindings: BindingEnv,
+        primary: SourcePrimaryTermHandoff,
+        atomic: SourceAtomicFormulaHandoff,
+        composite: SourceCompositeFormulaHandoff,
+        composition: SourceFormulaCompositionHandoff,
+        arena: TypedArena,
+    }
+
+    impl Task258B4AFixture {
+        fn new(source_ordinal: usize) -> Self {
+            let source = source_id(source_ordinal);
+            let module = ModuleId::new(
+                PackageId::new("pkg"),
+                ModulePath::new("statement.task258b4a.fixture"),
+            );
+            let arena = task258b4a_arena(source);
+            let (symbol, contribution, symbols) = task258b4a_symbol_env(source, &module);
+            let base = task258b4a_binding_base(source, &module);
+            let composite_input = task258b4a_composite_input(source, &module);
+            let bindings =
+                SourceCompositeFormulaProducer::extend_bindings(&composite_input, &base, &arena)
+                    .expect("Task258B4A bindings");
+            let composite =
+                SourceCompositeFormulaProducer::build(composite_input, &bindings, &arena)
+                    .expect("Task258B4A composite");
+            let primary = SourcePrimaryTermProducer::build(
+                SourcePrimaryTermHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    terms: vec![
+                        SourcePrimaryTermInput {
+                            site: node(15),
+                            source_range: range(source, 72, 73),
+                            source_ordinal: 0,
+                            context: BindingContextId::new(1),
+                            recovery: SourcePrimaryTermRecovery::Normal,
+                            spelling: "x".to_owned(),
+                            kind: SourcePrimaryTermKind::VariableReference,
+                            role: SourcePrimaryTermRole::Value,
+                            parent: None,
+                        },
+                        SourcePrimaryTermInput {
+                            site: node(17),
+                            source_range: range(source, 76, 77),
+                            source_ordinal: 1,
+                            context: BindingContextId::new(1),
+                            recovery: SourcePrimaryTermRecovery::Normal,
+                            spelling: "x".to_owned(),
+                            kind: SourcePrimaryTermKind::VariableReference,
+                            role: SourcePrimaryTermRole::Value,
+                            parent: None,
+                        },
+                    ],
+                    references: vec![
+                        SourcePrimaryTermReferenceInput {
+                            term: SourcePrimaryTermId::new(0),
+                            binding: BindingId::new(0),
+                            role: SourcePrimaryTermReferenceRole::Variable,
+                        },
+                        SourcePrimaryTermReferenceInput {
+                            term: SourcePrimaryTermId::new(1),
+                            binding: BindingId::new(0),
+                            role: SourcePrimaryTermReferenceRole::Variable,
+                        },
+                    ],
+                    numeric_type_requests: Vec::new(),
+                },
+                &bindings,
+                &arena,
+            )
+            .expect("Task258B4A primary");
+            let atomic = SourceAtomicFormulaProducer::build(
+                SourceAtomicFormulaHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    formulas: vec![SourceAtomicFormulaInput {
+                        site: node(19),
+                        source_range: range(source, 72, 77),
+                        source_ordinal: 0,
+                        context: BindingContextId::new(1),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "x = x".to_owned(),
+                        kind: SourceAtomicFormulaKind::Equality,
+                    }],
+                    wrappers: Vec::new(),
+                    predicate_segments: Vec::new(),
+                    predicate_heads: Vec::new(),
+                    candidates: Vec::new(),
+                    type_sites: Vec::new(),
+                    attributes: Vec::new(),
+                    edges: vec![
+                        SourceAtomicEdgeInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal: 0,
+                            role: SourceAtomicEdgeRole::BuiltinLeftOperand,
+                            target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(0)),
+                        },
+                        SourceAtomicEdgeInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal: 1,
+                            role: SourceAtomicEdgeRole::BuiltinRightOperand,
+                            target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(1)),
+                        },
+                    ],
+                    requests: vec![
+                        SourceAtomicRequestInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal: 0,
+                            kind: SourceAtomicRequestKind::OperandExpectedType,
+                            edge: Some(SourceAtomicEdgeId::new(0)),
+                            candidate: None,
+                            type_site: None,
+                            attribute: None,
+                        },
+                        SourceAtomicRequestInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal: 1,
+                            kind: SourceAtomicRequestKind::OperandExpectedType,
+                            edge: Some(SourceAtomicEdgeId::new(1)),
+                            candidate: None,
+                            type_site: None,
+                            attribute: None,
+                        },
+                    ],
+                },
+                &bindings,
+                &symbols,
+                &primary,
+                None,
+                None,
+                None,
+                &arena,
+            )
+            .expect("Task258B4A atomic");
+            let composition = SourceFormulaCompositionProducer::build(
+                SourceFormulaCompositionHandoffInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    atomic_edges: vec![SourceFormulaAtomicEdgeInput {
+                        formula: SourceCompositeFormulaId::new(0),
+                        ordinal: 0,
+                        role: SourceFormulaAtomicEdgeRole::UniversalBody,
+                        child: SourceAtomicFormulaId::new(0),
+                    }],
+                    bound_uses: vec![
+                        SourceQuantifierBoundUseInput {
+                            binder: SourceQuantifierBinderId::new(0),
+                            ordinal: 0,
+                            body_edge: SourceFormulaAtomicEdgeId::new(0),
+                            term: SourcePrimaryTermId::new(0),
+                            reference: SourcePrimaryTermReferenceId::new(0),
+                        },
+                        SourceQuantifierBoundUseInput {
+                            binder: SourceQuantifierBinderId::new(0),
+                            ordinal: 1,
+                            body_edge: SourceFormulaAtomicEdgeId::new(0),
+                            term: SourcePrimaryTermId::new(1),
+                            reference: SourcePrimaryTermReferenceId::new(1),
+                        },
+                    ],
+                },
+                &primary,
+                &atomic,
+                &composite,
+                &arena,
+            )
+            .expect("Task258B4A composition");
+            Self {
+                source,
+                module,
+                symbol,
+                contribution,
+                symbols,
+                bindings,
+                primary,
+                atomic,
+                composite,
+                composition,
+                arena,
+            }
+        }
+
+        fn input(&self) -> SourceStatementHandoffInput {
+            SourceStatementHandoffInput {
+                source_id: self.source,
+                module_id: self.module.clone(),
+                owners: vec![SourceTheoremOwnerInput {
+                    symbol: self.symbol.clone(),
+                    contribution: self.contribution,
+                    site: node(22),
+                    source_range: range(self.source, 0, 78),
+                    spelling: "FormulaQuantifierBoundUsePayloadBoundary".to_owned(),
+                    role: SourceTheoremRole::Theorem,
+                    status: SourceTheoremStatus::Unmodified,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+                statements: vec![SourceStatementInput {
+                    owner: SourceTheoremOwnerId::new(0),
+                    context: SourceStatementContextId::new(0),
+                    formula: SourceStatementFormulaTarget::Composite(
+                        SourceCompositeFormulaId::new(0),
+                    ),
+                    site: node(22),
+                    source_range: range(self.source, 0, 78),
+                    source_ordinal: 0,
+                    spelling: "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;".to_owned(),
+                    kind: SourceStatementKind::TheoremProposition,
+                    recovery: SourceStatementRecovery::Normal,
+                }],
+                contexts: vec![SourceStatementContextInput {
+                    statement: SourceStatementId::new(0),
+                    binding_context: BindingContextId::new(0),
+                    source_range: range(self.source, 0, 78),
+                    visible_bindings: Vec::new(),
+                }],
+                input_facts: Vec::new(),
+                candidate_facts: vec![SourceStatementCandidateFactInput {
+                    statement: SourceStatementId::new(0),
+                    context: SourceStatementContextId::new(0),
+                    ordinal: 0,
+                    kind: SourceStatementCandidateFactKind::UnverifiedProposition,
+                    formula: SourceStatementFormulaTarget::Composite(
+                        SourceCompositeFormulaId::new(0),
+                    ),
+                }],
+            }
+        }
+
+        fn statement(&self) -> SourceStatementHandoff {
+            self.build_statement(self.input())
+                .expect("Task258B4A statement")
+        }
+
+        fn build_statement(
+            &self,
+            input: SourceStatementHandoffInput,
+        ) -> Result<SourceStatementHandoff, SourceStatementError> {
+            SourceStatementProducer::build_with_formula_composition(
+                input,
+                &self.symbols,
+                &self.bindings,
+                &self.primary,
+                &self.atomic,
+                &self.composite,
+                &self.composition,
+                &self.arena,
+            )
+        }
+
+        fn coherent_relocated_primary_lower(
+            &self,
+        ) -> (
+            TypedArena,
+            SourcePrimaryTermHandoff,
+            SourceAtomicFormulaHandoff,
+            SourceFormulaCompositionHandoff,
+        ) {
+            let mut nodes = self
+                .arena
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            nodes[18].kind = "source.term.variable-reference".into();
+            nodes[18].anchor = SourceAnchor::Range(range(self.source, 72, 73));
+            let arena = TypedArena::try_new(None, nodes).expect("coherent near-miss arena");
+            let primary = SourcePrimaryTermProducer::build(
+                SourcePrimaryTermHandoffInput {
+                    source_id: self.source,
+                    module_id: self.module.clone(),
+                    terms: vec![
+                        SourcePrimaryTermInput {
+                            site: node(18),
+                            source_range: range(self.source, 72, 73),
+                            source_ordinal: 0,
+                            context: BindingContextId::new(1),
+                            recovery: SourcePrimaryTermRecovery::Normal,
+                            spelling: "x".to_owned(),
+                            kind: SourcePrimaryTermKind::VariableReference,
+                            role: SourcePrimaryTermRole::Value,
+                            parent: None,
+                        },
+                        SourcePrimaryTermInput {
+                            site: node(17),
+                            source_range: range(self.source, 76, 77),
+                            source_ordinal: 1,
+                            context: BindingContextId::new(1),
+                            recovery: SourcePrimaryTermRecovery::Normal,
+                            spelling: "x".to_owned(),
+                            kind: SourcePrimaryTermKind::VariableReference,
+                            role: SourcePrimaryTermRole::Value,
+                            parent: None,
+                        },
+                    ],
+                    references: vec![
+                        SourcePrimaryTermReferenceInput {
+                            term: SourcePrimaryTermId::new(0),
+                            binding: BindingId::new(0),
+                            role: SourcePrimaryTermReferenceRole::Variable,
+                        },
+                        SourcePrimaryTermReferenceInput {
+                            term: SourcePrimaryTermId::new(1),
+                            binding: BindingId::new(0),
+                            role: SourcePrimaryTermReferenceRole::Variable,
+                        },
+                    ],
+                    numeric_type_requests: Vec::new(),
+                },
+                &self.bindings,
+                &arena,
+            )
+            .expect("coherent near-miss primary");
+            let atomic = SourceAtomicFormulaProducer::build(
+                SourceAtomicFormulaHandoffInput {
+                    source_id: self.source,
+                    module_id: self.module.clone(),
+                    formulas: vec![SourceAtomicFormulaInput {
+                        site: node(19),
+                        source_range: range(self.source, 72, 77),
+                        source_ordinal: 0,
+                        context: BindingContextId::new(1),
+                        recovery: SourceAtomicFormulaRecovery::Normal,
+                        spelling: "x = x".to_owned(),
+                        kind: SourceAtomicFormulaKind::Equality,
+                    }],
+                    wrappers: Vec::new(),
+                    predicate_segments: Vec::new(),
+                    predicate_heads: Vec::new(),
+                    candidates: Vec::new(),
+                    type_sites: Vec::new(),
+                    attributes: Vec::new(),
+                    edges: vec![
+                        SourceAtomicEdgeInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal: 0,
+                            role: SourceAtomicEdgeRole::BuiltinLeftOperand,
+                            target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(0)),
+                        },
+                        SourceAtomicEdgeInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal: 1,
+                            role: SourceAtomicEdgeRole::BuiltinRightOperand,
+                            target: SourceAtomicTermTarget::Primary(SourcePrimaryTermId::new(1)),
+                        },
+                    ],
+                    requests: vec![
+                        SourceAtomicRequestInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal: 0,
+                            kind: SourceAtomicRequestKind::OperandExpectedType,
+                            edge: Some(SourceAtomicEdgeId::new(0)),
+                            candidate: None,
+                            type_site: None,
+                            attribute: None,
+                        },
+                        SourceAtomicRequestInput {
+                            formula: SourceAtomicFormulaId::new(0),
+                            ordinal: 1,
+                            kind: SourceAtomicRequestKind::OperandExpectedType,
+                            edge: Some(SourceAtomicEdgeId::new(1)),
+                            candidate: None,
+                            type_site: None,
+                            attribute: None,
+                        },
+                    ],
+                },
+                &self.bindings,
+                &self.symbols,
+                &primary,
+                None,
+                None,
+                None,
+                &arena,
+            )
+            .expect("coherent near-miss atomic");
+            self.composite
+                .validate_installation(self.source, &self.module, &arena)
+                .expect("coherent near-miss composite");
+            let composition = SourceFormulaCompositionProducer::build(
+                SourceFormulaCompositionHandoffInput {
+                    source_id: self.source,
+                    module_id: self.module.clone(),
+                    atomic_edges: vec![SourceFormulaAtomicEdgeInput {
+                        formula: SourceCompositeFormulaId::new(0),
+                        ordinal: 0,
+                        role: SourceFormulaAtomicEdgeRole::UniversalBody,
+                        child: SourceAtomicFormulaId::new(0),
+                    }],
+                    bound_uses: vec![
+                        SourceQuantifierBoundUseInput {
+                            binder: SourceQuantifierBinderId::new(0),
+                            ordinal: 0,
+                            body_edge: SourceFormulaAtomicEdgeId::new(0),
+                            term: SourcePrimaryTermId::new(0),
+                            reference: SourcePrimaryTermReferenceId::new(0),
+                        },
+                        SourceQuantifierBoundUseInput {
+                            binder: SourceQuantifierBinderId::new(0),
+                            ordinal: 1,
+                            body_edge: SourceFormulaAtomicEdgeId::new(0),
+                            term: SourcePrimaryTermId::new(1),
+                            reference: SourcePrimaryTermReferenceId::new(1),
+                        },
+                    ],
+                },
+                &primary,
+                &atomic,
+                &self.composite,
+                &arena,
+            )
+            .expect("coherent near-miss composition");
+            (arena, primary, atomic, composition)
+        }
+
+        fn typed_base(&self) -> TypedAst {
+            TypedAst::try_new(TypedAstParts {
+                source_id: self.source,
+                module_id: self.module.clone(),
+                resolved_root: None,
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes: self.arena.clone(),
+                contexts: LocalTypeContextTable::new(),
+                types: TypeTable::new(),
+                facts: TypeFactTable::new(),
+                coercions: CoercionTable::new(),
+                initial_obligations: InitialObligationTable::new(),
+                diagnostics: TypeDiagnosticTable::new(),
+            })
+            .expect("Task258B4A typed base")
+            .with_source_term(self.primary.clone())
+            .expect("Task258B4A primary install")
+            .with_source_atomic_formula(self.atomic.clone())
+            .expect("Task258B4A atomic install")
+        }
+
+        fn typed(&self) -> TypedAst {
+            self.typed_base()
+                .with_source_formula_composition_statement(
+                    self.composite.clone(),
+                    self.composition.clone(),
+                    self.statement(),
+                )
+                .expect("Task258B4A paired install")
+        }
+    }
+
+    #[test]
+    fn task_258b4a_composite_root_profile_and_debug_are_exact() {
+        let fixture = Task258B4AFixture::new(50_000);
+        let statement = fixture.statement();
+        assert!(statement.is_task_258b4a_profile());
+        assert_eq!(
+            statement.composite_formula_fingerprint(),
+            Some(fixture.composite.debug_text().as_str())
+        );
+        assert_eq!(
+            statement.formula_composition_fingerprint(),
+            Some(fixture.composition.debug_text().as_str())
+        );
+        assert_eq!(statement.owners().len(), 1);
+        assert_eq!(statement.statements().len(), 1);
+        assert_eq!(statement.contexts().len(), 1);
+        assert!(statement.input_facts().is_empty());
+        assert_eq!(statement.candidate_facts().len(), 1);
+        let owner = statement
+            .owners()
+            .get(SourceTheoremOwnerId::new(0))
+            .expect("owner");
+        assert_eq!(owner.symbol(), &fixture.symbol);
+        assert_eq!(owner.contribution(), fixture.contribution);
+        assert_eq!(owner.contribution().index(), 0);
+        assert_eq!(owner.site(), &node(22));
+        assert_eq!(owner.source_range(), range(fixture.source, 0, 78));
+        assert_eq!(owner.spelling(), "FormulaQuantifierBoundUsePayloadBoundary");
+        assert_eq!(owner.role(), SourceTheoremRole::Theorem);
+        assert_eq!(owner.status(), SourceTheoremStatus::Unmodified);
+        assert_eq!(owner.recovery(), SourceStatementRecovery::Normal);
+        assert_eq!(statement.checked_owner().symbol(), &fixture.symbol);
+        assert_eq!(
+            statement.checked_owner().source_range(),
+            range(fixture.source, 0, 78)
+        );
+        assert_eq!(statement.checked_owner().origin().structural_path(), [2, 0]);
+        assert!(statement.checked_owner().origin().import_edge().is_none());
+        assert!(!statement.checked_owner().origin().is_recovered());
+        assert_eq!(statement.checked_owner().visibility(), Visibility::Public);
+        assert_eq!(
+            statement.checked_owner().export_status(),
+            ExportStatus::Exported
+        );
+        let statement_row = statement
+            .statements()
+            .get(SourceStatementId::new(0))
+            .expect("statement");
+        assert_eq!(statement_row.owner(), SourceTheoremOwnerId::new(0));
+        assert_eq!(statement_row.context(), SourceStatementContextId::new(0));
+        assert_eq!(
+            statement_row.formula(),
+            SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0))
+        );
+        assert_eq!(statement_row.site(), &node(22));
+        assert_eq!(statement_row.source_range(), range(fixture.source, 0, 78));
+        assert_eq!(statement_row.source_ordinal(), 0);
+        assert_eq!(
+            statement_row.spelling(),
+            "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;"
+        );
+        assert_eq!(
+            statement_row.kind(),
+            SourceStatementKind::TheoremProposition
+        );
+        assert_eq!(statement_row.recovery(), SourceStatementRecovery::Normal);
+        let context = statement
+            .contexts()
+            .get(SourceStatementContextId::new(0))
+            .expect("context");
+        assert_eq!(context.statement(), SourceStatementId::new(0));
+        assert_eq!(context.binding_context(), BindingContextId::new(0));
+        assert_eq!(context.source_range(), range(fixture.source, 0, 78));
+        assert!(context.visible_bindings().is_empty());
+        let candidate = statement
+            .candidate_facts()
+            .get(SourceStatementCandidateFactId::new(0))
+            .expect("candidate");
+        assert_eq!(candidate.statement(), SourceStatementId::new(0));
+        assert_eq!(candidate.context(), SourceStatementContextId::new(0));
+        assert_eq!(candidate.ordinal(), 0);
+        assert_eq!(
+            candidate.kind(),
+            SourceStatementCandidateFactKind::UnverifiedProposition
+        );
+        assert_eq!(
+            candidate.formula(),
+            SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0))
+        );
+        let debug = statement.debug_text();
+        let atomic = debug
+            .find("atomic-formula-fingerprint:")
+            .expect("atomic fingerprint");
+        let composite = debug
+            .find("composite-formula-fingerprint:")
+            .expect("composite fingerprint");
+        let composition = debug
+            .find("formula-composition-fingerprint:")
+            .expect("composition fingerprint");
+        let owner = debug.find("owner#0 ").expect("owner");
+        assert!(atomic < composite && composite < composition && composition < owner);
+        assert!(debug.contains("formula=composite:0"));
+    }
+
+    #[test]
+    fn task_258b4a_composite_root_corruption_matrix_fails_atomically() {
+        let fixture = Task258B4AFixture::new(50_001);
+        let other = Task258B4AFixture::new(50_101);
+        let foreign = Fixture::new(50_201);
+        let baseline = fixture.statement();
+        for mutation in 0..38 {
+            let mut input = fixture.input();
+            let expected = match mutation {
+                0 => {
+                    input.source_id = other.source;
+                    SourceStatementError::DependencyMismatch
+                }
+                1 => {
+                    input.module_id = ModuleId::new(
+                        PackageId::new("pkg"),
+                        ModulePath::new("statement.task258b4a.other"),
+                    );
+                    SourceStatementError::DependencyMismatch
+                }
+                2 => {
+                    input.owners.clear();
+                    SourceStatementError::InvalidAggregate
+                }
+                3 => {
+                    input.owners.push(input.owners[0].clone());
+                    SourceStatementError::InvalidAggregate
+                }
+                4 => {
+                    input.owners[0].symbol = foreign.symbol.clone();
+                    SourceStatementError::InvalidOwner {
+                        owner: SourceTheoremOwnerId::new(0),
+                    }
+                }
+                5 => {
+                    input.owners[0].site = node(21);
+                    SourceStatementError::InvalidOwner {
+                        owner: SourceTheoremOwnerId::new(0),
+                    }
+                }
+                6 => {
+                    input.owners[0].source_range.end -= 1;
+                    SourceStatementError::InvalidOwner {
+                        owner: SourceTheoremOwnerId::new(0),
+                    }
+                }
+                7 => {
+                    input.owners[0].spelling.push('!');
+                    SourceStatementError::InvalidOwner {
+                        owner: SourceTheoremOwnerId::new(0),
+                    }
+                }
+                8 => {
+                    input.owners[0].recovery = SourceStatementRecovery::Degraded;
+                    SourceStatementError::InvalidOwner {
+                        owner: SourceTheoremOwnerId::new(0),
+                    }
+                }
+                9 => {
+                    input.statements.clear();
+                    SourceStatementError::InvalidAggregate
+                }
+                10 => {
+                    input.statements.push(input.statements[0].clone());
+                    SourceStatementError::InvalidAggregate
+                }
+                11 => {
+                    input.statements[0].owner = SourceTheoremOwnerId::new(1);
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                12 => {
+                    input.statements[0].context = SourceStatementContextId::new(1);
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                13 => {
+                    input.statements[0].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0));
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                14 => {
+                    input.statements[0].site = node(21);
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                15 => {
+                    input.statements[0].source_range.end -= 1;
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                16 => {
+                    input.statements[0].source_ordinal = 1;
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                17 => {
+                    input.statements[0].spelling.push('!');
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                18 => {
+                    input.statements[0].kind = SourceStatementKind::Conclusion;
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                19 => {
+                    input.statements[0].recovery = SourceStatementRecovery::Degraded;
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                20 => {
+                    input.contexts.clear();
+                    SourceStatementError::InvalidAggregate
+                }
+                21 => {
+                    input.contexts.push(input.contexts[0].clone());
+                    SourceStatementError::InvalidAggregate
+                }
+                22 => {
+                    input.contexts[0].statement = SourceStatementId::new(1);
+                    SourceStatementError::InvalidContext {
+                        context: SourceStatementContextId::new(0),
+                    }
+                }
+                23 => {
+                    input.contexts[0].binding_context = BindingContextId::new(1);
+                    SourceStatementError::InvalidContext {
+                        context: SourceStatementContextId::new(0),
+                    }
+                }
+                24 => {
+                    input.contexts[0].source_range.end -= 1;
+                    SourceStatementError::InvalidContext {
+                        context: SourceStatementContextId::new(0),
+                    }
+                }
+                25 => {
+                    input.contexts[0].visible_bindings.push(BindingId::new(0));
+                    SourceStatementError::InvalidContext {
+                        context: SourceStatementContextId::new(0),
+                    }
+                }
+                26 => {
+                    input.input_facts.push(SourceStatementInputFactInput {
+                        statement: SourceStatementId::new(0),
+                        context: SourceStatementContextId::new(0),
+                        ordinal: 0,
+                        kind: SourceStatementInputFactKind::ReservedTypeGuard,
+                        binding: BindingId::new(0),
+                        uses: vec![
+                            SourcePrimaryTermReferenceId::new(0),
+                            SourcePrimaryTermReferenceId::new(1),
+                        ],
+                    });
+                    SourceStatementError::InvalidAggregate
+                }
+                27 => {
+                    input.candidate_facts.clear();
+                    SourceStatementError::InvalidAggregate
+                }
+                28 => {
+                    input.candidate_facts.push(input.candidate_facts[0].clone());
+                    SourceStatementError::InvalidAggregate
+                }
+                29 => {
+                    input.candidate_facts[0].statement = SourceStatementId::new(1);
+                    SourceStatementError::InvalidCandidateFact {
+                        fact: SourceStatementCandidateFactId::new(0),
+                    }
+                }
+                30 => {
+                    input.candidate_facts[0].context = SourceStatementContextId::new(1);
+                    SourceStatementError::InvalidCandidateFact {
+                        fact: SourceStatementCandidateFactId::new(0),
+                    }
+                }
+                31 => {
+                    input.candidate_facts[0].ordinal = 1;
+                    SourceStatementError::InvalidCandidateFact {
+                        fact: SourceStatementCandidateFactId::new(0),
+                    }
+                }
+                32 => {
+                    input.candidate_facts[0].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0));
+                    SourceStatementError::InvalidCandidateFact {
+                        fact: SourceStatementCandidateFactId::new(0),
+                    }
+                }
+                33 => {
+                    input.owners[0].source_range.start += 1;
+                    input.statements[0].source_range.start += 1;
+                    input.contexts[0].source_range.start += 1;
+                    SourceStatementError::InvalidOwner {
+                        owner: SourceTheoremOwnerId::new(0),
+                    }
+                }
+                34 => {
+                    input.statements[0].formula =
+                        SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(1));
+                    input.candidate_facts[0].formula =
+                        SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(1));
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                35 => {
+                    input.statements[0].context = SourceStatementContextId::new(1);
+                    input.contexts[0].statement = SourceStatementId::new(1);
+                    input.candidate_facts[0].context = SourceStatementContextId::new(1);
+                    SourceStatementError::InvalidStatement {
+                        statement: SourceStatementId::new(0),
+                    }
+                }
+                36 => {
+                    input.owners.clear();
+                    input.candidate_facts.clear();
+                    SourceStatementError::InvalidAggregate
+                }
+                37 => {
+                    input.statements.clear();
+                    input.contexts.clear();
+                    SourceStatementError::InvalidAggregate
+                }
+                _ => unreachable!(),
+            };
+            let run = || fixture.build_statement(input.clone());
+            assert_eq!(run(), Err(expected.clone()), "input mutation {mutation}");
+            assert_eq!(run(), run(), "input mutation {mutation} replay");
+        }
+
+        for mutation in 0..8 {
+            let mut corrupted = baseline.clone();
+            match mutation {
+                0 => corrupted.composite_formula_fingerprint = None,
+                1 => corrupted.formula_composition_fingerprint = None,
+                2 => corrupted.composite_formula_fingerprint = Some("stale".to_owned()),
+                3 => corrupted.formula_composition_fingerprint = Some("stale".to_owned()),
+                4 => {
+                    corrupted.composite_formula_fingerprint =
+                        Some(fixture.composition.debug_text());
+                    corrupted.formula_composition_fingerprint =
+                        Some(fixture.composite.debug_text());
+                }
+                5 => {
+                    corrupted.composite_formula_fingerprint =
+                        Some(fixture.composition.debug_text());
+                    corrupted.formula_composition_fingerprint =
+                        Some(fixture.composition.debug_text());
+                }
+                6 => {
+                    corrupted.binding_fingerprint.push_str("stale");
+                    corrupted.composite_formula_fingerprint = None;
+                }
+                7 => {
+                    corrupted.primary_term_fingerprint.push_str("stale");
+                    corrupted.atomic_formula_fingerprint.push_str("stale");
+                    corrupted.formula_composition_fingerprint = None;
+                }
+                _ => unreachable!(),
+            }
+            let run = || {
+                corrupted.validate_installation_with_formula_composition(
+                    fixture.source,
+                    &fixture.module,
+                    &fixture.primary,
+                    &fixture.atomic,
+                    &fixture.composite,
+                    &fixture.composition,
+                    &fixture.arena,
+                )
+            };
+            assert_eq!(
+                run(),
+                Err(SourceStatementError::DependencyMismatch),
+                "fingerprint mutation {mutation}"
+            );
+            assert_eq!(run(), run(), "mutation {mutation} replay");
+        }
+
+        let rooted_arena = TypedArena::try_new(
+            Some(TypedNodeId::new(25)),
+            fixture.arena.iter().map(|(_, node)| node.clone()).collect(),
+        )
+        .expect("coherent rooted lower arena");
+        fixture
+            .primary
+            .validate_installation(fixture.source, &fixture.module, &rooted_arena)
+            .expect("rooted Task252 remains valid");
+        fixture
+            .atomic
+            .validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                None,
+                None,
+                None,
+                &rooted_arena,
+            )
+            .expect("rooted Task256 remains valid");
+        fixture
+            .composite
+            .validate_installation(fixture.source, &fixture.module, &rooted_arena)
+            .expect("rooted Task257 remains valid");
+        fixture
+            .composition
+            .validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.composite,
+                &rooted_arena,
+            )
+            .expect("rooted Task257B1 remains valid");
+        let rooted_run = || {
+            SourceStatementProducer::build_with_formula_composition(
+                fixture.input(),
+                &fixture.symbols,
+                &fixture.bindings,
+                &fixture.primary,
+                &fixture.atomic,
+                &fixture.composite,
+                &fixture.composition,
+                &rooted_arena,
+            )
+        };
+        assert_eq!(rooted_run(), Err(SourceStatementError::DependencyMismatch));
+        assert_eq!(rooted_run(), rooted_run(), "rooted lower replay");
+
+        let (relocated_arena, relocated_primary, relocated_atomic, relocated_composition) =
+            fixture.coherent_relocated_primary_lower();
+        let relocated_run = || {
+            SourceStatementProducer::build_with_formula_composition(
+                fixture.input(),
+                &fixture.symbols,
+                &fixture.bindings,
+                &relocated_primary,
+                &relocated_atomic,
+                &fixture.composite,
+                &relocated_composition,
+                &relocated_arena,
+            )
+        };
+        assert_eq!(
+            relocated_run(),
+            Err(SourceStatementError::DependencyMismatch)
+        );
+        assert_eq!(relocated_run(), relocated_run(), "relocated lower replay");
+        assert_eq!(fixture.statement().debug_text(), baseline.debug_text());
+    }
+
+    #[test]
+    fn task_258b4a_cross_family_installation_and_route_isolation_are_atomic() {
+        let fixture = Task258B4AFixture::new(50_002);
+        let base = fixture.typed_base();
+        let paired = base
+            .clone()
+            .with_source_formula_composition_statement(
+                fixture.composite.clone(),
+                fixture.composition.clone(),
+                fixture.statement(),
+            )
+            .expect("paired install");
+        assert!(paired.source_statement().is_some());
+        assert!(paired.source_composite_formula().is_some());
+        assert!(paired.source_formula_composition().is_some());
+        assert_eq!(
+            paired.clone().with_source_formula_composition(
+                fixture.composite.clone(),
+                fixture.composition.clone(),
+            ),
+            Err(TypedAstError::InvalidSourceFormulaComposition)
+        );
+        assert_eq!(
+            base.clone()
+                .with_source_formula_composition(
+                    fixture.composite.clone(),
+                    fixture.composition.clone(),
+                )
+                .expect("lower-only install")
+                .with_source_statement(fixture.statement()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            base.clone().with_source_statement(fixture.statement()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        let atomic = Fixture::new(50_102);
+        let atomic_statement = atomic
+            .build(atomic.input())
+            .expect("atomic Task258 statement");
+        let atomic_debug = atomic_statement.debug_text();
+        assert_eq!(atomic_statement.composite_formula_fingerprint(), None);
+        assert_eq!(atomic_statement.formula_composition_fingerprint(), None);
+        assert!(!atomic_debug.contains("composite-formula-fingerprint:"));
+        assert!(!atomic_debug.contains("formula-composition-fingerprint:"));
+        let atomic_typed = TypedAst::try_new(TypedAstParts {
+            source_id: atomic.source,
+            module_id: atomic.module.clone(),
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: atomic.arena.clone(),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("atomic Task258 typed base")
+        .with_source_term(atomic.primary.clone())
+        .expect("atomic Task252")
+        .with_source_atomic_formula(atomic.atomic.clone())
+        .expect("atomic Task256")
+        .with_source_statement(atomic_statement.clone())
+        .expect("atomic Task258 family");
+        let atomic_before = atomic_typed.debug_text();
+        assert_eq!(
+            atomic_typed
+                .clone()
+                .with_source_formula_composition_statement(
+                    fixture.composite.clone(),
+                    fixture.composition.clone(),
+                    fixture.statement(),
+                ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(atomic_typed.debug_text(), atomic_before);
+        let paired_before = paired.debug_text();
+        assert_eq!(
+            paired.clone().with_source_statement(atomic_statement),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(paired.debug_text(), paired_before);
+        let replay = fixture.typed();
+        assert_eq!(paired.debug_text(), replay.debug_text());
+        assert_eq!(
+            atomic
+                .build(atomic.input())
+                .expect("atomic clean replay")
+                .debug_text(),
+            atomic_debug
+        );
+    }
+
+    #[test]
+    fn task_258b4a_final_clone_revalidates_composite_root_and_empty_semantics() {
+        let fixture = Task258B4AFixture::new(50_003);
+        let typed = fixture.typed();
+        let resolved = assemble_empty_resolved(&typed).expect("Task258B4A final");
+        assert_eq!(typed.source_statement(), resolved.source_statement());
+        assert_eq!(
+            typed.source_composite_formula(),
+            resolved.source_composite_formula()
+        );
+        assert_eq!(
+            typed.source_formula_composition(),
+            resolved.source_formula_composition()
+        );
+        assert_eq!(resolved.clone(), resolved);
+        assert_eq!(resolved.clone().debug_text(), resolved.debug_text());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+
+        let other = Task258B4AFixture::new(50_103);
+        for mutation in 0..19 {
+            let mut stale_statement = fixture.statement();
+            match mutation {
+                0 => stale_statement.composite_formula_fingerprint = None,
+                1 => stale_statement.formula_composition_fingerprint = None,
+                2 => stale_statement.composite_formula_fingerprint = Some("stale".to_owned()),
+                3 => stale_statement.formula_composition_fingerprint = Some("stale".to_owned()),
+                4 => stale_statement.checked_owner = other.statement().checked_owner,
+                5 => {
+                    stale_statement.binding_env = other.bindings.clone();
+                    stale_statement.binding_fingerprint = other.bindings.debug_text();
+                }
+                6 => stale_statement.owners.rows.clear(),
+                7 => stale_statement.statements.rows.clear(),
+                8 => stale_statement.contexts.rows.clear(),
+                9 => stale_statement.candidate_facts.rows.clear(),
+                10 => stale_statement.owners.rows[0].source_range.end -= 1,
+                11 => {
+                    stale_statement.statements.rows[0].formula =
+                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
+                }
+                12 => stale_statement.contexts.rows[0]
+                    .visible_bindings
+                    .push(BindingId::new(0)),
+                13 => stale_statement.candidate_facts.rows[0].ordinal = 1,
+                14 => stale_statement.source_id = other.source,
+                15 => {
+                    stale_statement.module_id = ModuleId::new(
+                        PackageId::new("pkg"),
+                        ModulePath::new("statement.task258b4a.other"),
+                    )
+                }
+                16 => stale_statement
+                    .input_facts
+                    .rows
+                    .push(SourceStatementInputFact {
+                        statement: SourceStatementId::new(0),
+                        context: SourceStatementContextId::new(0),
+                        ordinal: 0,
+                        kind: SourceStatementInputFactKind::ReservedTypeGuard,
+                        binding: BindingId::new(0),
+                        uses: vec![
+                            SourcePrimaryTermReferenceId::new(0),
+                            SourcePrimaryTermReferenceId::new(1),
+                        ],
+                    }),
+                17 => {
+                    let row = stale_statement.candidate_facts.rows[0].clone();
+                    stale_statement.candidate_facts.rows.push(row);
+                }
+                18 => {
+                    stale_statement.composite_formula_fingerprint =
+                        Some(fixture.composition.debug_text());
+                    stale_statement.formula_composition_fingerprint =
+                        Some(fixture.composite.debug_text());
+                }
+                _ => unreachable!(),
+            }
+            let mut stale_typed = typed.clone();
+            stale_typed.inject_source_statement_for_test(stale_statement);
+            let run = || assemble_empty_resolved(&stale_typed);
+            assert_eq!(
+                run(),
+                Err(ResolvedTypedAstError::InvalidSourceStatement),
+                "final statement mutation {mutation}"
+            );
+            assert_eq!(run(), run(), "final statement mutation {mutation} replay");
+        }
+        for partial in 0..3 {
+            let mut stale_typed = typed.clone();
+            match partial {
+                0 => stale_typed.remove_source_composite_formula_for_test(),
+                1 => stale_typed.remove_source_formula_composition_for_test(),
+                2 => stale_typed.remove_source_atomic_formula_for_test(),
+                _ => unreachable!(),
+            }
+            let run = || assemble_empty_resolved(&stale_typed);
+            assert_eq!(
+                run(),
+                Err(ResolvedTypedAstError::InvalidSourceStatement),
+                "partial lower tuple {partial}"
+            );
+            assert_eq!(run(), run(), "partial lower tuple {partial} replay");
+        }
+        assert_eq!(
+            assemble_empty_resolved(&typed)
+                .expect("clean replay")
+                .debug_text(),
+            resolved.debug_text()
+        );
+    }
+
+    fn task258b4a_arena(source: SourceId) -> TypedArena {
+        let anchors = [
+            (0, 7),
+            (8, 48),
+            (48, 49),
+            (50, 53),
+            (54, 55),
+            (56, 61),
+            (62, 65),
+            (66, 71),
+            (72, 73),
+            (74, 75),
+            (76, 77),
+            (77, 78),
+            (62, 65),
+            (62, 65),
+            (54, 65),
+            (72, 73),
+            (72, 73),
+            (76, 77),
+            (76, 77),
+            (72, 77),
+            (50, 77),
+            (50, 77),
+            (0, 78),
+            (0, 78),
+            (0, 78),
+            (0, 78),
+        ];
+        let kinds = [
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.quantifier-binder",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.binder-type-head",
+            "source.formula.binder-type",
+            "source.formula.quantifier-binder",
+            "source.term.variable-reference",
+            "source.formula.composition.unowned",
+            "source.term.variable-reference",
+            "source.formula.composition.unowned",
+            "source.formula.atomic.equality",
+            "source.formula.composite.universal",
+            "source.formula.composition.unowned",
+            "source.statement.theorem",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+            "source.formula.composition.unowned",
+        ];
+        TypedArena::try_new(
+            None,
+            kinds
+                .into_iter()
+                .zip(anchors)
+                .map(|(kind, (start, end))| {
+                    TypedNode::new(kind, SourceAnchor::Range(range(source, start, end)))
+                })
+                .collect(),
+        )
+        .expect("Task258B4A arena")
+    }
+
+    fn task258b4a_binding_base(source: SourceId, module: &ModuleId) -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let mut diagnostics = BindingDiagnosticTable::new();
+        for message_key in [
+            "checker.binding.external.local_bindings",
+            "checker.binding.external.use_site_scope",
+            "checker.binding.external.reserve_payload",
+            "checker.binding.external.closure_payload",
+        ] {
+            diagnostics.insert(BindingDiagnosticDraft {
+                source_range: None,
+                class: BindingDiagnosticClass::ExternalDependencyGap,
+                severity: BindingDiagnosticSeverity::Note,
+                message_key: message_key.to_owned(),
+                recovery: BindingDiagnosticRecovery::Degraded,
+            });
+        }
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module.clone(),
+            contexts,
+            bindings: BindingTable::new(),
+            diagnostics,
+        })
+        .expect("Task258B4A binding base")
+    }
+
+    fn task258b4a_composite_input(
+        source: SourceId,
+        module: &ModuleId,
+    ) -> SourceCompositeFormulaHandoffInput {
+        SourceCompositeFormulaHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            formulas: vec![SourceCompositeFormulaInput {
+                site: node(20),
+                source_range: range(source, 50, 77),
+                source_ordinal: 0,
+                context: BindingContextId::new(0),
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                spelling: "for holds".to_owned(),
+                kind: SourceCompositeFormulaKind::Universal,
+            }],
+            wrappers: Vec::new(),
+            roots: vec![SourceFormulaRootInput {
+                formula: SourceCompositeFormulaId::new(0),
+                ordinal: 0,
+                ownership: SourceFormulaRootOwnership::UnassignedStatement,
+            }],
+            binders: vec![SourceQuantifierBinderInput {
+                formula: SourceCompositeFormulaId::new(0),
+                ordinal: 0,
+                segment_site: node(14),
+                segment_range: range(source, 54, 65),
+                segment_spelling: "x being".to_owned(),
+                identifier_site: node(4),
+                identifier_range: range(source, 54, 55),
+                identifier_spelling: "x".to_owned(),
+                local: LocalTermBinding::new(
+                    "x",
+                    LocalTermScope::new(vec![0]),
+                    range(source, 54, 55),
+                    0,
+                ),
+                binding: BindingId::new(0),
+                body_context: BindingContextId::new(1),
+                type_site: SourceBinderTypeSiteId::new(0),
+                recovery: SourceCompositeFormulaRecovery::Normal,
+            }],
+            type_sites: vec![SourceBinderTypeSiteInput {
+                binder: SourceQuantifierBinderId::new(0),
+                site: node(13),
+                source_range: range(source, 62, 65),
+                spelling: "set".to_owned(),
+                head_site: node(12),
+                head_range: range(source, 62, 65),
+                head_spelling: "set".to_owned(),
+                context: BindingContextId::new(0),
+                recovery: SourceCompositeFormulaRecovery::Normal,
+                head: SourceBinderTypeHead::BuiltinSet,
+            }],
+            edges: Vec::new(),
+            requests: vec![
+                SourceFormulaRequestInput {
+                    formula: SourceCompositeFormulaId::new(0),
+                    ordinal: 0,
+                    kind: SourceFormulaRequestKind::QuantifierSemantics,
+                    binder: None,
+                    type_site: None,
+                },
+                SourceFormulaRequestInput {
+                    formula: SourceCompositeFormulaId::new(0),
+                    ordinal: 1,
+                    kind: SourceFormulaRequestKind::BinderType,
+                    binder: Some(SourceQuantifierBinderId::new(0)),
+                    type_site: Some(SourceBinderTypeSiteId::new(0)),
+                },
+            ],
+        }
+    }
+
+    fn task258b4a_symbol_env(
+        source: SourceId,
+        module: &ModuleId,
+    ) -> (SymbolId, SourceContributionId, SymbolEnv) {
+        const LABEL: &str = "FormulaQuantifierBoundUsePayloadBoundary";
+        let symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(LABEL),
+            FullyQualifiedName::new(format!("pkg::statement.task258b4a.fixture::{LABEL}")),
+        );
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 0, 78)),
+            vec![2, 0],
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 78)),
+        );
+        let namespace = NamespacePath::new(module.path().as_str());
+        let mut symbols = SymbolIndex::new();
+        symbols.insert(
+            SymbolEntry::new(
+                symbol.clone(),
+                SymbolKind::Theorem,
+                namespace.clone(),
+                LABEL,
+                origin.clone(),
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let definition = definitions.insert(
+            DefinitionShell::new(
+                symbol.clone(),
+                DefinitionKind::Theorem,
+                origin.clone(),
+                contribution,
+            )
+            .with_visibility(Visibility::Public),
+        );
+        let origin_path = LabelOriginPath::new("statement.task258b4a.fixture.theorem.0");
         let mut labels = LabelIndex::new();
         labels.insert(
             LabelEntry::new(

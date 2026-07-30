@@ -1391,3 +1391,14 @@ copyせず、lower `UnassignedStatement` ownershipをsemantic acceptanceへ
 **NO FINDINGS**である。independent final qualityは全9 hard gatesを
 capなし、valid `100/100`でPASSした。remainingはstaging、commit、
 post-commit inventoryだけである。
+
+## Task 258B4A implemented composite-root edge
+
+B4Aがcloseするのはtheorem statement 0/candidate 0からexisting Task-257B1
+`Composite(0)`へのsyntax-free upper edgeだけである。Task 252は
+primary/reference ownership、Task 256はatomic equality leaves、Task 257は
+explicit binderとcomposite/composition graph、Task 258はstatement
+ownershipを保持する。exact lower owned-site/range checksとrootless lower
+typed arenaはownership transferなしにcoherent cross-family substitutionを
+防ぐ。truth、binder guard discharge、facts、acceptance、proof semantics、
+B4B/B4C/B5はdeferredのままである。

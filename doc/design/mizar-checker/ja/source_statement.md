@@ -3124,3 +3124,23 @@ upper-route negativeで、private double-LF 80-byte sourceだけがB4Aをselect
 できる。repeated read-only documentation reviewは**NO FINDINGS**である。
 independent final qualityは全9 hard gatesをcapなし、valid `100/100`で
 PASSした。remainingはstaging、commit、post-commit inventoryだけである。
+
+## Task 258B4A implemented composite statement root
+
+`SourceStatementFormulaTarget`は`Composite(0)`をadmitし、statement
+handoffはTask-257 composite/composition dependenciesをoptionalに
+fingerprintする。dedicated producerはpublication前にfrozen 80-byte
+routeのsyntax-free input、resolver owner contribution 0/origin `[2,0]`、
+lower profiles、exact owned lower sites/ranges、complete
+`1/1/1/0/1` upper tablesをauthenticateする。runner selectorがsource
+bytesと全26 Surface rows/root 25をseparately authenticateする。atomic
+statement routeはoptional fingerprint absentとbyte-identical debug textを
+保持する。
+
+B4A debug textが追加するのはfrozen quoted fingerprint lines 2件だけである。
+upper-input mutations 38件、coherent rooted-arena/relocated-term lower near
+misses、final statement corruptions 19件、missing-lower tuples、route
+isolation、replayがfailure boundaryを証明する。lower typed arenaはrootless、
+Surface root 25はauthenticatedのままで、`UnassignedStatement`を書き換えない。
+truth、fact、theorem acceptance、proof、goal、justification、diagnostic、
+semantic resultは追加しない。

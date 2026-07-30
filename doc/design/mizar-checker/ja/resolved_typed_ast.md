@@ -1378,3 +1378,15 @@ stateを保持する。repeated read-only documentation reviewは
 **NO FINDINGS**である。independent final qualityは全9 hard gatesを
 capなし、valid `100/100`でPASSした。remainingはstaging、commit、
 post-commit inventoryだけである。
+
+## Task 258B4A implemented final boundary
+
+final constructionはclone前にinstalled composite、composition、statement
+fingerprints、exact `Composite(0)` statement/candidate links、
+resolver-backed owner、lower rootless-arena contract、atomic-family
+exclusionをrevalidateする。statement corruptions 19件、absent-lower tuples
+3件、stale/hybrid inputs、occupied incompatible stateは
+`ResolvedTypedAstError::InvalidSourceStatement`でpublicationなしにfailし、
+replayを許す。successful clone/debug bytesはstableで、contexts、types、
+facts、coercions、obligations、diagnostics、theorem acceptance、proof stateは
+emptyのままである。

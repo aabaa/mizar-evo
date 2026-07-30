@@ -4576,3 +4576,20 @@ formula-statement coverage.
 
 Documentation-only test-sufficiency review reports **NO FINDINGS**. The
 future implementation test review remains a separate task.
+
+## Checker Task 258B4A Implemented Harness Route
+
+The dormant selector now authenticates every frozen source byte and Surface
+row, exact resolver owner, complete lower profiles, rootless lower typed
+arena, and lower owned sites/ranges before publishing the composite
+statement transaction. It reuses the production Task-257B1 handoff through
+the crate-private seam rather than copying lower rows.
+
+Five tests cover exact output; 142 lower mutations; 34 upper statement
+mutations and owned-node substitutions; the coherent rooted-arena near
+miss; resolver and active 79-byte isolation; family-order atomicity;
+failure/replay; and final clone/debug/empty semantics. The checker suite
+separately covers the coherent relocated-term near miss. Focused runner
+`5/5` and separate test-sufficiency and implementation reviews report
+**NO FINDINGS**. The harness adds no active route, truth, fact, acceptance,
+proof, or coverage claim.

@@ -12338,3 +12338,19 @@ Fresh read-only documentation boundary review reports **NO FINDINGS**. The
 single visibility seam exposes an existing validated handoff only and does
 not move lower ownership; implementation boundary review remains a separate
 later task.
+
+## Checker Task 258B4A Implemented Runner Boundary
+
+The exact five runner owners now measure `1,853`, `12,737`, `810`, `2,627`,
+and `27,349` lines. The first contains only the frozen crate-private
+visibility change; the other four own selector, orchestration, and tests.
+Runner production totals 30 paths/55,109 lines. No public runner enum,
+error, key, dependency, parser/resolver/binding owner, lower row, corpus
+artifact, trace owner, or semantic phase changed. Independent
+implementation review reports **NO FINDINGS** and no ownership transfer or
+module split is required.
+
+Final source/documentation and boundary consistency reports **NO FINDINGS**
+after the bounded documentation corrections. Complete verification PASSes.
+Independent final quality reports **NO FINDINGS**, all nine hard gates PASS,
+and valid `100/100`; only staging, commit, and post-commit inventory remain.

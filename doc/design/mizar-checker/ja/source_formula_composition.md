@@ -644,3 +644,14 @@ binder semantics、coverage creditを本moduleへ追加しない。documentation
 reviewは**NO FINDINGS**である。independent final qualityは全9 hard gatesを
 capなし、valid `100/100`でPASSした。remainingはstaging、commit、
 post-commit inventoryだけである。
+
+## Task 258B4A implemented downstream statement consumer
+
+upper producerはalready validated Task-257B1 composite/composition pairを
+public checker handoff経由でconsumeする。lower
+`1/0/1/1/1/0/2` / `1/2` rows、fingerprints、debug text、selector、
+`UnassignedStatement` ownershipはunchangedである。B4Aはupper
+statement/candidateから`Composite(0)`へのlinksとpaired Task-258
+transactionだけを追加する。runner visibility editはexisting validated
+lower outputを`crate::runner`内だけにexposeし、public APIまたはlower
+behaviorを変更しない。

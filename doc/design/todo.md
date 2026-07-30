@@ -3360,7 +3360,28 @@ or semantic owner changed. B3M2B2B remains next before B4.
   findings.
 - [x] Pass docs-only verification and all no-op/count/hash/stash gates.
 - [x] Pass all hard gates and independent quality score `>=90/100`.
-- [ ] Stage the exact bilingual documentation scope and create one
-  prerequisite commit.
-- [ ] Verify post-commit/stash invariants and fresh-inventory B4A
+- [x] Stage the exact bilingual documentation scope and create prerequisite
+  commit `9da1ac13e811c78359d8d64e740832b2a30dae24`.
+- [x] Verify clean ahead-6/behind-0 post-commit state, unchanged stash, and
+  fresh-inventory B4A
   implementation.
+
+## Checker Task 258B4A Implementation Completion
+
+- [x] Implement the frozen three checker/five runner files only.
+- [x] Add four checker/five runner tests and exact lower/upper/coherent/
+  family-order/replay/final matrices.
+- [x] Preserve lower root ownership, corpus/trace/active/public-runner/
+  semantic boundaries, and all later-task deferrals.
+- [x] Complete test-sufficiency and implementation reviews with
+  **NO FINDINGS**.
+- [x] Pass focused `4/4 + 5/5`; measure libraries `414/476` and production
+  `23/139828`, `30/55109`.
+- [x] Complete source/docs and bilingual consistency with **NO FINDINGS**
+  after three Low `design_drift` corrections.
+- [x] Pass full verification and final count/hash/CLI/stash gates.
+- [x] Pass independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no cap, and valid `100/100`.
+- [x] Stage/inspect the exact B4A implementation scope.
+- [ ] Create one B4A implementation commit.
+- [ ] Verify clean post-commit/stash invariants and fresh-inventory B4B.

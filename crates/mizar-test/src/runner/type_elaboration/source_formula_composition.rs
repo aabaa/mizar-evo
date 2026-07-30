@@ -241,7 +241,7 @@ pub(in crate::runner) fn source_formula_composition_output_with_source(
 }
 
 #[cfg(not(test))]
-fn source_formula_composition_output_with_source(
+pub(in crate::runner) fn source_formula_composition_output_with_source(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,

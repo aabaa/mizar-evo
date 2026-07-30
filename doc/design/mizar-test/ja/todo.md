@@ -2648,6 +2648,29 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] repeated documentation reviewを**NO FINDINGS**でcomplete。
 - [x] docs-only verificationと全no-op/count/hash/stash gatesをPASS。
 - [x] final qualityを全hard gatesとscore `>=90/100`でcomplete。
-- [ ] dedicated B4A documentation commitをstage/inspect/create。
-- [ ] post-commit invariantsをverifyし、B4A implementationをfresh
-  inventory。
+- [x] dedicated B4A documentation commitをstage/inspect/createし、
+  `9da1ac13e811c78359d8d64e740832b2a30dae24`としてcommit。
+- [x] clean ahead-6/behind-0 post-commit state、unchanged stashをverifyし、
+  B4A implementationをfresh inventory。
+
+## Checker Task 258B4A implementation ledger
+
+- [x] frozen runner 5/checker 3 consumersだけをimplement。
+- [x] 全80 bytes、26 Surface rows/root 25、resolver provenance、lower
+  profiles/owned sites、upper `1/1/1/0/1`をauthenticate。
+- [x] exact mutation、coherent-near-miss、route-isolation、family-order、
+  rollback、clone、semantic-empty coverageを持つrunner 5/checker 4 testsを
+  追加。
+- [x] test-sufficiency/implementation reviewsを**NO FINDINGS**でcomplete。
+- [x] focused runner `5/5` / checker `4/4`をPASSし、libraries
+  `476/414`、runner production 30 paths/55,109 linesをmeasure。
+- [x] corpus/expectation/sidecar/trace/active/public-runner/semantic no-op
+  boundariesをpreserve。
+- [x] Low `design_drift` 3件のcorrection後、final
+  source/documentation/bilingual consistencyを**NO FINDINGS**でcomplete。
+- [x] package/workspace/Clippy/fmt/CLI/count/hash/stash gatesをPASS。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  capなし、valid `100/100`でcomplete。
+- [x] exact B4A scopeをstageし、cached diffをinspect。
+- [ ] dedicated B4A implementation commitをcreate。
+- [ ] post-commit invariantsをverifyし、B4Bをfresh inventory。

@@ -5356,3 +5356,32 @@ Complete docs-only verification PASSes, and independent final quality reports
 **NO FINDINGS** with all nine hard gates PASS and valid `100/100`. This
 review outcome changes no trace row, count, backlink, test, or coverage
 credit. Only staging, commit, and post-commit inventory remain.
+
+### Task 258B4A implemented narrative-only composite-root ownership
+
+Documentation prerequisite commit `9da1ac13` closed before the exact eight
+private consumers implemented the dormant 80-byte/26-node
+explicit-universal theorem association. Task-252/256/257 profiles and lower
+`UnassignedStatement` ownership remain unchanged; Task 258 adds only one
+owner, statement, context, and unverified `Composite(0)` candidate with zero
+input facts. Exact lower site/range and rootless-arena authentication reject
+coherent substitutions without moving lower ownership. Four checker and
+five runner tests close the bounded source/test gap, and their separate
+reviews report **NO FINDINGS**.
+
+This remains narrative transport ownership only.
+`spec.en.checker.formula_statement.source_payloads` stays `deferred` with
+`tests = []`; no trace status, test list, backlink, requirement count, or
+coverage credit changes. Existing specifications, `.miz`, expectations,
+sidecars, and active outcomes remain unchanged. Binder guard discharge,
+equality/quantified truth, theorem acceptance/publication, proof, facts,
+Core/CFG/VC, B4B/B4C, B5, and MT10-FS remain deferred. Measured state is
+checker library `414`, 23 production paths/139,828 lines, and runner library
+`476`, 30 production paths/55,109 lines.
+
+Final source/documentation consistency reports **NO FINDINGS** after three
+Low `design_drift` corrections. Complete verification PASSes, and
+independent final quality reports **NO FINDINGS** with all nine hard gates
+PASS, no cap, and valid `100/100`. None of these results changes the
+deferred trace row, its empty test list, any count/backlink, or coverage
+credit. Only staging, commit, and post-commit B4B inventory remain.

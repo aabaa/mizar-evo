@@ -733,6 +733,76 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_formula_composition_statement(
+        mut self,
+        composite: SourceCompositeFormulaHandoff,
+        composition: SourceFormulaCompositionHandoff,
+        statement: SourceStatementHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_composite_formula.is_some()
+            || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
+            || self.source_statement.is_some()
+            || self.source_statement_references.is_some()
+            || self.source_statement_witnesses.is_some()
+            || self.resolved_root.is_some()
+            || self.source_context.is_some()
+            || self.source_type.is_some()
+            || self.source_attribute.is_some()
+            || self.source_evidence.is_some()
+            || self.source_application.is_some()
+            || self.source_structure.is_some()
+            || self.source_set_term.is_some()
+            || !self.contexts.is_empty()
+            || !self.types.is_empty()
+            || !self.facts.is_empty()
+            || !self.coercions.is_empty()
+            || !self.initial_obligations.is_empty()
+            || !self.diagnostics.is_empty()
+            || !composite.is_task_257b1_profile()
+            || !statement.is_task_258b4a_profile()
+        {
+            return Err(TypedAstError::InvalidSourceStatement);
+        }
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStatement)?;
+        composite
+            .validate_installation(self.source_id, &self.module_id, &self.nodes)
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        composition
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_atomic_formula,
+                &composite,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        statement
+            .validate_installation_with_formula_composition(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_atomic_formula,
+                &composite,
+                &composition,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStatement)?;
+        self.source_composite_formula = Some(composite);
+        self.source_formula_composition = Some(composition);
+        self.source_statement = Some(statement);
+        Ok(self)
+    }
+
     pub fn with_source_condition_formula_composition(
         mut self,
         composition: SourceConditionFormulaCompositionHandoff,

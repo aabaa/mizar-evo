@@ -1440,3 +1440,15 @@ row changes.
 Repeated read-only documentation review reports **NO FINDINGS**. Independent
 final quality passes all nine hard gates with no cap at valid `100/100`;
 only staging, commit, and post-commit inventory remain.
+
+## Task 258B4A Implemented Paired Installation
+
+`with_source_formula_composition_statement` now revalidates and installs the
+exact Task-257B1 composite/composition pair and Task-258 B4A statement as one
+transaction. Both optional statement fingerprints, `Composite(0)` links,
+source identity, lower fingerprints, table profiles, and family exclusivity
+must agree before mutation. Atomic-statement families, duplicate owners,
+stale/reordered/partial handoffs, rooted or relocated lower near misses, and
+cross-family hybrids return `InvalidSourceStatement`, leave the AST
+byte-identical, and permit clean replay. The lower-only installer and every
+semantic table remain unchanged.

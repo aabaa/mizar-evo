@@ -699,3 +699,14 @@ debug grammar, truth, binder semantics, or coverage credit is added here.
 Repeated read-only documentation review reports **NO FINDINGS**. Independent
 final quality passes all nine hard gates with no cap at valid `100/100`;
 only staging, commit, and post-commit inventory remain.
+
+## Task 258B4A Implemented Downstream Statement Consumer
+
+The upper producer now consumes the already validated Task-257B1
+composite/composition pair through its public checker handoffs. The lower
+`1/0/1/1/1/0/2` and `1/2` rows, fingerprints, debug text, selector, and
+`UnassignedStatement` ownership are unchanged. B4A adds only the upper
+statement/candidate links to `Composite(0)` and the paired Task-258
+transaction. The runner visibility edit exposes the existing validated
+lower output only within `crate::runner`; it changes no public API or lower
+behavior.

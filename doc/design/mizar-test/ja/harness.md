@@ -4319,3 +4319,20 @@ orders、clone/debug、empty semantic outputをexhaustする。harnessはtheorem
 truth、acceptance、proof、fact、formula-statement coverageをclaimしない。
 documentation-only test-sufficiency reviewは**NO FINDINGS**である。future
 implementation test reviewはseparate taskに残す。
+
+## Checker Task 258B4A implemented harness route
+
+dormant selectorはcomposite statement transactionをpublishする前に全frozen
+source byte/Surface row、exact resolver owner、complete lower profiles、
+rootless lower typed arena、lower owned sites/rangesをauthenticateする。lower
+rowをcopyせず、crate-private seamを通じてproduction Task-257B1 handoffを
+reuseする。
+
+5 testsはexact output、lower mutations 142件、upper statement mutations
+34件/owned-node substitutions、coherent rooted-arena near miss、
+resolver/active 79-byte isolation、family-order atomicity、failure/replay、
+final clone/debug/empty semanticsをcoverする。checker suiteがcoherent
+relocated-term near missをseparately coverする。focused runner `5/5`と
+separate test-sufficiency/implementation reviewsは**NO FINDINGS**である。
+harnessはactive route、truth、fact、acceptance、proof、coverage claimを
+追加しない。

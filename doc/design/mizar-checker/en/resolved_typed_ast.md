@@ -1436,3 +1436,15 @@ leaves replay available.
 Repeated read-only documentation review reports **NO FINDINGS**. Independent
 final quality passes all nine hard gates with no cap at valid `100/100`;
 only staging, commit, and post-commit inventory remain.
+
+## Task 258B4A Implemented Final Boundary
+
+Final construction revalidates the installed composite, composition, and
+statement fingerprints, exact `Composite(0)` statement/candidate links,
+resolver-backed owner, lower rootless-arena contract, and atomic-family
+exclusion before cloning. Nineteen statement corruptions, three absent-lower
+tuples, stale/hybrid inputs, and occupied incompatible state fail through
+`ResolvedTypedAstError::InvalidSourceStatement` without publication and
+permit replay. Successful clone and debug bytes are stable; contexts, types,
+facts, coercions, obligations, diagnostics, theorem acceptance, and proof
+state remain empty.
