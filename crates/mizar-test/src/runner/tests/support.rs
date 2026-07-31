@@ -180,7 +180,8 @@
         extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
         extract_source_two_edge_local_object_mode_two_hop_asserted_head, resolve_visible_attribute,
         resolve_visible_type_head, resolver_symbol_collection, run_frontend,
-        source_binding_context_output, source_builtin_type_assertion_formula_output,
+        source_binding_context_detail_keys, source_binding_context_output,
+        source_builtin_type_assertion_formula_output,
         source_type_application_output,
         source_chained_local_mode_asserted_head_output,
         source_chained_local_mode_radix_asserted_head_output,
@@ -282,6 +283,13 @@
         source_evidence_output_with_mutation, source_type_elaboration_detail_keys,
         SourceEvidenceRouteKind, structural_child_ids,
         surface_nodes_with_kind, surface_site, synthetic_source_attribute_output,
+        type_elaboration::{
+            SourceTwoParameterDefinitionContextAuthenticationMutation,
+            SourceTwoParameterDefinitionContextSites, assemble_empty_resolved_typed_ast,
+            source_two_parameter_definition_context_projection,
+            source_two_parameter_definition_context_projection_with_authentication_mutation,
+            validate_source_context_shell_for_test,
+        },
     };
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
     use mizar_checker::binding_env::{BindingContextId, BindingId};

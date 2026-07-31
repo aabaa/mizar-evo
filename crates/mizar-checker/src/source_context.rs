@@ -576,15 +576,22 @@ fn validate_input(input: &SourceBindingContextInput) -> Result<ValidatedInput, S
             return Err(SourceContextError::PartialItem { index });
         }
     }
-    if input.items.len() != 2
-        || input.items[0].role != SourceItemRole::Reserve
-        || input.items[1].role != SourceItemRole::DefinitionBlock
-        || counts[0] != 1
-        || (input.items[1].recovery == SourceItemRecovery::Normal && counts[1] != 1)
-    {
+    let is_profile_a = input.items.len() == 2
+        && input.items[0].role == SourceItemRole::Reserve
+        && input.items[1].role == SourceItemRole::DefinitionBlock
+        && counts[0] == 1
+        && (input.items[1].recovery != SourceItemRecovery::Normal || counts[1] == 1);
+    let is_profile_b = input.items.len() == 1
+        && input.items[0].role == SourceItemRole::DefinitionBlock
+        && input.items[0].recovery == SourceItemRecovery::Normal
+        && counts[0] == 2
+        && input.bindings[0].declaration_range != input.bindings[1].declaration_range
+        && input.bindings[0].written_type_range != input.bindings[1].written_type_range;
+    if !is_profile_a && !is_profile_b {
         return Err(SourceContextError::UnsupportedTaskShape);
     }
-    if input.items[1].recovery == SourceItemRecovery::Normal
+    if is_profile_a
+        && input.items[1].recovery == SourceItemRecovery::Normal
         && input.bindings[0].spelling != input.bindings[1].spelling
     {
         return Err(SourceContextError::MissingRequiredShadow);

@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use mizar_checker::{
     resolved_typed_ast::{
         ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
@@ -15,8 +17,8 @@ use mizar_checker::{
     type_checker::TypeHeadInput,
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState,
-        TypeDiagnosticTable, TypeFactTable, TypeRole, TypeTable, TypedArenaBuilder, TypedAst,
-        TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
+        TypeDiagnosticTable, TypeFactTable, TypeRole, TypeTable, TypedArena, TypedArenaBuilder,
+        TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
     },
 };
 use mizar_resolve::{
@@ -43,6 +45,20 @@ use super::{
 };
 
 const INVALID_PAYLOAD_KEY: &str = "type_elaboration.checker.source_binding_context.invalid_payload";
+
+#[cfg(test)]
+macro_rules! test_mutable {
+    ($name:ident = $value:expr) => {
+        let mut $name = $value;
+    };
+}
+
+#[cfg(not(test))]
+macro_rules! test_mutable {
+    ($name:ident = $value:expr) => {
+        let $name = $value;
+    };
+}
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceBindingContextRouteOutput {
@@ -76,6 +92,935 @@ pub(in crate::runner) fn source_binding_context_output(
 ) -> Option<Result<SourceBindingContextRouteOutput, String>> {
     let candidate = candidate_items(ast)?;
     Some(build_output(ast, module, shells, symbols, candidate))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+// Rationale: Task 248 freezes these caller-owned sites before the Task-259 production caller.
+#[cfg_attr(not(test), allow(dead_code))]
+pub(in crate::runner) struct SourceTwoParameterDefinitionContextSites {
+    pub module: TypedSiteRef,
+    pub definition: TypedSiteRef,
+    pub parameters: [TypedSiteRef; 2],
+}
+
+// Rationale: Task 248 freezes this private lower-stage seam before its Task-259 production caller.
+#[cfg_attr(not(test), allow(dead_code))]
+pub(in crate::runner) fn source_two_parameter_definition_context_projection(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    definition_node: SurfaceNodeId,
+    nodes: &TypedArena,
+    sites: SourceTwoParameterDefinitionContextSites,
+) -> Result<SourceBindingContextProjection, String> {
+    #[cfg(test)]
+    {
+        source_two_parameter_definition_context_projection_impl(
+            ast,
+            module,
+            shells,
+            symbols,
+            definition_node,
+            nodes,
+            sites,
+            None,
+        )
+    }
+    #[cfg(not(test))]
+    {
+        source_two_parameter_definition_context_projection_impl(
+            ast,
+            module,
+            shells,
+            symbols,
+            definition_node,
+            nodes,
+            sites,
+        )
+    }
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceTwoParameterDefinitionContextAuthenticationMutation {
+    RootMissing,
+    RootRecovery,
+    RootRange,
+    CompilationItemListMissing,
+    CompilationItemListEmpty,
+    CompilationItemListDuplicated,
+    DefinitionKind,
+    DefinitionRecovery,
+    DefinitionRange,
+    DefinitionTokenText { index: usize },
+    DefinitionChildMissing,
+    DefinitionChildReordered,
+    DefinitionChildDuplicated,
+    DefinitionChildThird,
+    DefinitionChildNonLeading,
+    DefinitionChildNonDirectParameter,
+    DefinitionChildNestedParameter,
+    ParameterNodeId { index: usize },
+    ParameterKind { index: usize },
+    ParameterRange { index: usize },
+    ParameterRecovery { index: usize },
+    ParameterLetText { index: usize },
+    ParameterLetRange { index: usize },
+    ParameterSemicolonText { index: usize },
+    ParameterSemicolonRange { index: usize },
+    ParameterSegmentMissing { index: usize },
+    ParameterSegmentDuplicated { index: usize },
+    SegmentKind { index: usize },
+    SegmentRecovery { index: usize },
+    SegmentChildCardinality { index: usize },
+    SegmentNameText { index: usize },
+    SegmentNameRange { index: usize },
+    SegmentBeText { index: usize },
+    SegmentBeRange { index: usize },
+    TypeKind { index: usize },
+    TypeRange { index: usize },
+    TypeChildCardinality { index: usize },
+    TypeHeadKind { index: usize },
+    TypeHeadRecovery { index: usize },
+    TypeHeadRange { index: usize },
+    TypeHeadChildCardinality { index: usize },
+    TypeTokenText { index: usize },
+    TypeTokenRange { index: usize },
+    TypeTokenRecovery { index: usize },
+    ExtractedTypeRange { index: usize },
+    ExtractedTypeSpelling { index: usize },
+    ExtractedTypeHead { index: usize },
+    ExtractedTypeAttributes { index: usize },
+    ConstructedScope,
+    ConstructedSourceOrdinal { index: usize },
+    ConstructedLocalSpelling { index: usize },
+    ConstructedLocalRange { index: usize },
+    ConstructedLocalScope { index: usize },
+    ConstructedLocalVisibleOrdinal { index: usize },
+}
+
+#[cfg(test)]
+// Rationale: the test seam preserves the frozen seven-argument caller shape and adds one mutation.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::runner) fn source_two_parameter_definition_context_projection_with_authentication_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    definition_node: SurfaceNodeId,
+    nodes: &TypedArena,
+    sites: SourceTwoParameterDefinitionContextSites,
+    mutation: SourceTwoParameterDefinitionContextAuthenticationMutation,
+) -> Result<SourceBindingContextProjection, String> {
+    source_two_parameter_definition_context_projection_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        definition_node,
+        nodes,
+        sites,
+        Some(mutation),
+    )
+}
+
+// Rationale: test builds add one mutation argument to the frozen seven-argument production seam.
+#[cfg_attr(test, allow(clippy::too_many_arguments))]
+fn source_two_parameter_definition_context_projection_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    definition_node: SurfaceNodeId,
+    nodes: &TypedArena,
+    sites: SourceTwoParameterDefinitionContextSites,
+    #[cfg(test)] mutation: Option<SourceTwoParameterDefinitionContextAuthenticationMutation>,
+) -> Result<SourceBindingContextProjection, String> {
+    if symbols.module_id() != &module {
+        return Err("two-parameter source binding context uses another symbol module".to_owned());
+    }
+    test_mutable!(root = ast.root().and_then(|root| ast.node(root)));
+    #[cfg(test)]
+    if matches!(
+        mutation,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::RootMissing)
+    ) {
+        root = None;
+    }
+    let root =
+        root.ok_or_else(|| "two-parameter source binding context root disappeared".to_owned())?;
+    let definition_range = source_range(ast, 0, 164);
+    test_mutable!(root_recovered = root.recovered);
+    test_mutable!(root_range = root.range);
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::RootRecovery) => {
+            root_recovered = true;
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::RootRange) => {
+            root_range.start += 1;
+        }
+        _ => {}
+    }
+    if root_recovered || root_range != definition_range {
+        return Err("two-parameter source binding context root is not exact".to_owned());
+    }
+    test_mutable!(item_list = exact_compilation_item_list(ast));
+    #[cfg(test)]
+    if matches!(
+        mutation,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::CompilationItemListMissing)
+    ) {
+        item_list = None;
+    }
+    let item_list = item_list
+        .ok_or_else(|| "two-parameter source binding context item list is not exact".to_owned())?;
+    test_mutable!(item_ids = structural_child_ids(ast, item_list));
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::CompilationItemListEmpty) => {
+            item_ids.clear();
+        }
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::CompilationItemListDuplicated,
+        ) if !item_ids.is_empty() => item_ids.push(item_ids[0]),
+        _ => {}
+    }
+    let [item_id] = item_ids.as_slice() else {
+        return Err(
+            "two-parameter source binding context requires one top-level source item".to_owned(),
+        );
+    };
+    if *item_id != definition_node || definition_node.index() != 67 {
+        return Err(
+            "two-parameter source binding context definition identity is not exact".to_owned(),
+        );
+    }
+    let definition = ast
+        .node(definition_node)
+        .ok_or_else(|| "two-parameter source binding context definition disappeared".to_owned())?;
+    test_mutable!(
+        definition_kind_is_exact = matches!(definition.kind, SurfaceNodeKind::DefinitionBlockItem)
+    );
+    test_mutable!(definition_recovered = definition.recovered);
+    test_mutable!(observed_definition_range = definition.range);
+    test_mutable!(definition_tokens = direct_token_texts(ast, definition));
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionKind) => {
+            definition_kind_is_exact = false;
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionRecovery) => {
+            definition_recovered = true;
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionRange) => {
+            observed_definition_range.start += 1;
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionTokenText {
+            index,
+        }) if index < definition_tokens.len() => definition_tokens[index] = "mutated".to_owned(),
+        _ => {}
+    }
+    if !definition_kind_is_exact
+        || definition_recovered
+        || observed_definition_range != definition_range
+        || definition_tokens.as_slice() != ["definition", "end", ";"]
+        || !shells.exports().is_empty()
+    {
+        return Err("two-parameter source binding context definition item is not exact".to_owned());
+    }
+
+    let top_level_shells = shells
+        .declarations()
+        .iter()
+        .filter(|shell| shell.parent().is_none())
+        .collect::<Vec<_>>();
+    let [definition_shell] = top_level_shells.as_slice() else {
+        return Err(
+            "two-parameter source binding context requires one top-level declaration shell"
+                .to_owned(),
+        );
+    };
+    validate_shell(
+        definition_shell,
+        0,
+        DeclarationShellKind::DefinitionBlock,
+        &module,
+        definition_node,
+        definition,
+    )?;
+
+    test_mutable!(definition_children = structural_child_ids(ast, definition));
+    #[cfg(test)]
+    mutate_two_parameter_definition_children(ast, &mut definition_children, mutation.as_ref());
+    if definition_children.len() < 2 {
+        return Err(
+            "two-parameter source binding context requires two leading parameters".to_owned(),
+        );
+    }
+    if definition_children[2..].iter().any(|id| {
+        ast.node(*id)
+            .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::DefinitionParameter))
+    }) {
+        return Err(
+            "two-parameter source binding context contains an additional or non-leading parameter"
+                .to_owned(),
+        );
+    }
+
+    let parameter_specs = [
+        TwoParameterDefinitionParameterSpec {
+            node_index: 41,
+            parameter_start: 13,
+            parameter_end: 26,
+            let_start: 13,
+            let_end: 16,
+            spelling: "x",
+            name_start: 17,
+            name_end: 18,
+            be_start: 19,
+            be_end: 21,
+            type_start: 22,
+            type_end: 25,
+            semicolon_start: 25,
+            semicolon_end: 26,
+        },
+        TwoParameterDefinitionParameterSpec {
+            node_index: 45,
+            parameter_start: 29,
+            parameter_end: 42,
+            let_start: 29,
+            let_end: 32,
+            spelling: "y",
+            name_start: 33,
+            name_end: 34,
+            be_start: 35,
+            be_end: 37,
+            type_start: 38,
+            type_end: 41,
+            semicolon_start: 41,
+            semicolon_end: 42,
+        },
+    ];
+    let mut parameters = Vec::with_capacity(2);
+    for (ordinal, spec) in parameter_specs.iter().enumerate() {
+        #[cfg(test)]
+        let parameter = extract_two_parameter_definition_parameter(
+            ast,
+            &module,
+            symbols,
+            definition_children[ordinal],
+            *spec,
+            ordinal,
+            mutation.as_ref(),
+        )?;
+        #[cfg(not(test))]
+        let parameter = extract_two_parameter_definition_parameter(
+            ast,
+            &module,
+            symbols,
+            definition_children[ordinal],
+            *spec,
+        )?;
+        parameters.push(parameter);
+    }
+
+    validate_two_parameter_definition_sites(
+        nodes,
+        &sites,
+        definition_range,
+        [
+            parameters[0].declaration_range,
+            parameters[1].declaration_range,
+        ],
+    )?;
+
+    let shell = definition_shell.id();
+    test_mutable!(local_scope = LocalTermScope::new(vec![shell.index() as u32]));
+    #[cfg(test)]
+    if matches!(
+        mutation,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ConstructedScope)
+    ) {
+        local_scope = LocalTermScope::new(vec![1]);
+    }
+    if local_scope.path() != [0] {
+        return Err("two-parameter source binding context scope is not [0]".to_owned());
+    }
+    let input = SourceBindingContextInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        module_site: sites.module,
+        items: vec![SourceItemInput {
+            shell,
+            shell_ordinal: definition_shell.ordinal(),
+            role: SourceItemRole::DefinitionBlock,
+            module_id: module,
+            source_range: definition_range,
+            parent: None,
+            visibility: SourceItemVisibility::Unspecified,
+            site: sites.definition,
+            local_scope: Some(local_scope.clone()),
+            recovery: SourceItemRecovery::Normal,
+        }],
+        bindings: parameters
+            .into_iter()
+            .zip(sites.parameters)
+            .enumerate()
+            .map(|(ordinal, (parameter, site))| {
+                test_mutable!(source_ordinal = ordinal);
+                let spelling = parameter.spelling.to_owned();
+                test_mutable!(local_spelling = parameter.spelling);
+                test_mutable!(local_range = parameter.declaration_range);
+                test_mutable!(local_scope_for_binding = local_scope.clone());
+                test_mutable!(local_visible_ordinal = ordinal);
+                #[cfg(test)]
+                mutate_two_parameter_constructed_binding(
+                    ordinal,
+                    mutation.as_ref(),
+                    &mut source_ordinal,
+                    &mut local_spelling,
+                    &mut local_range,
+                    &mut local_scope_for_binding,
+                    &mut local_visible_ordinal,
+                );
+                SourceBindingSiteInput {
+                    shell,
+                    context_owner: SourceBindingContextOwner::Shell(shell),
+                    source_ordinal,
+                    spelling,
+                    declaration_range: parameter.declaration_range,
+                    written_type_range: parameter.written_type_range,
+                    site,
+                    role: SourceBindingSiteRole::DefinitionParameter {
+                        local: LocalTermBinding::new(
+                            local_spelling,
+                            local_scope_for_binding,
+                            local_range,
+                            local_visible_ordinal,
+                        ),
+                    },
+                    recovery: mizar_checker::binding_env::BindingRecoveryState::Normal,
+                }
+            })
+            .collect(),
+    };
+    match SourceBindingContextProducer::build(input).map_err(|error| error.to_string())? {
+        SourceBindingContextBuild::Complete(projection) => Ok(projection),
+        SourceBindingContextBuild::Incomplete(_) => {
+            Err("two-parameter source binding context unexpectedly remained incomplete".to_owned())
+        }
+        _ => Err(
+            "two-parameter source binding context returned an unsupported build state".to_owned(),
+        ),
+    }
+}
+
+#[cfg(test)]
+fn mutate_two_parameter_definition_children(
+    ast: &SurfaceAst,
+    children: &mut Vec<SurfaceNodeId>,
+    mutation: Option<&SourceTwoParameterDefinitionContextAuthenticationMutation>,
+) {
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionChildMissing) => {
+            children.truncate(1);
+        }
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionChildReordered,
+        ) if children.len() >= 2 => {
+            children.swap(0, 1);
+        }
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionChildDuplicated,
+        ) if children.len() >= 2 => {
+            children[1] = children[0];
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionChildThird)
+            if !children.is_empty() =>
+        {
+            children.push(children[0]);
+        }
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionChildNonLeading,
+        ) if children.len() >= 3 => {
+            children.swap(0, 2);
+        }
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionChildNonDirectParameter,
+        ) if !children.is_empty() => {
+            if let Some(descendant) = ast
+                .node(children[0])
+                .and_then(|parameter| structural_child_ids(ast, parameter).into_iter().next())
+            {
+                children[0] = descendant;
+            }
+        }
+        _ => {}
+    }
+}
+
+#[cfg(test)]
+fn mutate_two_parameter_constructed_binding(
+    ordinal: usize,
+    mutation: Option<&SourceTwoParameterDefinitionContextAuthenticationMutation>,
+    source_ordinal: &mut usize,
+    local_spelling: &mut &'static str,
+    local_range: &mut SourceRange,
+    local_scope: &mut LocalTermScope,
+    local_visible_ordinal: &mut usize,
+) {
+    match mutation {
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ConstructedSourceOrdinal {
+                index,
+            },
+        ) if *index == ordinal => *source_ordinal += 10,
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ConstructedLocalSpelling {
+                index,
+            },
+        ) if *index == ordinal => *local_spelling = "mutated",
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ConstructedLocalRange {
+                index,
+            },
+        ) if *index == ordinal => local_range.start += 1,
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ConstructedLocalScope {
+                index,
+            },
+        ) if *index == ordinal => *local_scope = LocalTermScope::new(vec![9]),
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ConstructedLocalVisibleOrdinal {
+                index,
+            },
+        ) if *index == ordinal => *local_visible_ordinal += 10,
+        _ => {}
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+// Rationale: Task 248 freezes this exact source-shape descriptor before Task 259 calls it.
+#[cfg_attr(not(test), allow(dead_code))]
+struct TwoParameterDefinitionParameterSpec {
+    node_index: usize,
+    parameter_start: usize,
+    parameter_end: usize,
+    let_start: usize,
+    let_end: usize,
+    spelling: &'static str,
+    name_start: usize,
+    name_end: usize,
+    be_start: usize,
+    be_end: usize,
+    type_start: usize,
+    type_end: usize,
+    semicolon_start: usize,
+    semicolon_end: usize,
+}
+
+// Rationale: Task 248 keeps this authenticated parameter transport dormant until Task 259.
+#[cfg_attr(not(test), allow(dead_code))]
+struct TwoParameterDefinitionParameter {
+    spelling: &'static str,
+    declaration_range: SourceRange,
+    written_type_range: SourceRange,
+}
+
+// Rationale: Task 248 freezes this private parameter extractor before its Task-259 caller.
+#[cfg_attr(not(test), allow(dead_code))]
+fn extract_two_parameter_definition_parameter(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    parameter_id: SurfaceNodeId,
+    spec: TwoParameterDefinitionParameterSpec,
+    #[cfg(test)] ordinal: usize,
+    #[cfg(test)] mutation: Option<&SourceTwoParameterDefinitionContextAuthenticationMutation>,
+) -> Result<TwoParameterDefinitionParameter, String> {
+    let parameter = ast.node(parameter_id).ok_or_else(|| {
+        format!(
+            "two-parameter source binding context parameter {} disappeared",
+            spec.spelling
+        )
+    })?;
+    test_mutable!(parameter_node_index = parameter_id.index());
+    test_mutable!(
+        parameter_kind_is_exact = matches!(parameter.kind, SurfaceNodeKind::DefinitionParameter)
+    );
+    test_mutable!(parameter_range = parameter.range);
+    test_mutable!(parameter_has_recovery = subtree_has_recovery(ast, parameter));
+    test_mutable!(parameter_tokens = direct_token_texts(ast, parameter));
+    test_mutable!(let_range = token_range(ast, parameter, "let")?);
+    test_mutable!(semicolon_range = token_range(ast, parameter, ";")?);
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterNodeId {
+            index,
+        }) if *index == ordinal => parameter_node_index += 1,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterKind {
+            index,
+        }) if *index == ordinal => parameter_kind_is_exact = false,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterRange {
+            index,
+        }) if *index == ordinal => parameter_range.start += 1,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterRecovery {
+            index,
+        }) if *index == ordinal => parameter_has_recovery = true,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterLetText {
+            index,
+        }) if *index == ordinal => parameter_tokens[0] = "LET".to_owned(),
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterLetRange {
+            index,
+        }) if *index == ordinal => let_range.start += 1,
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterSemicolonText {
+                index,
+            },
+        ) if *index == ordinal => parameter_tokens[1] = ".".to_owned(),
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterSemicolonRange {
+                index,
+            },
+        ) if *index == ordinal => semicolon_range.start += 1,
+        _ => {}
+    }
+    if parameter_node_index != spec.node_index
+        || !parameter_kind_is_exact
+        || parameter_range != source_range(ast, spec.parameter_start, spec.parameter_end)
+        || parameter_has_recovery
+        || parameter_tokens.as_slice() != ["let", ";"]
+        || let_range != source_range(ast, spec.let_start, spec.let_end)
+        || semicolon_range != source_range(ast, spec.semicolon_start, spec.semicolon_end)
+    {
+        return Err(format!(
+            "two-parameter source binding context parameter {} is not exact",
+            spec.spelling
+        ));
+    }
+    test_mutable!(parameter_children = structural_child_ids(ast, parameter));
+    #[cfg(test)]
+    match mutation {
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::DefinitionChildNestedParameter,
+        ) if ordinal == 0 => parameter_children.push(parameter_id),
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterSegmentMissing {
+                index,
+            },
+        ) if *index == ordinal => parameter_children.clear(),
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ParameterSegmentDuplicated {
+                index,
+            },
+        ) if *index == ordinal && !parameter_children.is_empty() => {
+            parameter_children.push(parameter_children[0]);
+        }
+        _ => {}
+    }
+    let [segment_id] = parameter_children.as_slice() else {
+        return Err(format!(
+            "two-parameter source binding context parameter {} requires one segment",
+            spec.spelling
+        ));
+    };
+    let segment = ast.node(*segment_id).ok_or_else(|| {
+        format!(
+            "two-parameter source binding context segment {} disappeared",
+            spec.spelling
+        )
+    })?;
+    test_mutable!(
+        segment_kind_is_exact = matches!(segment.kind, SurfaceNodeKind::QualifiedVariableSegment)
+    );
+    test_mutable!(segment_has_recovery = subtree_has_recovery(ast, segment));
+    test_mutable!(segment_tokens = direct_token_texts(ast, segment));
+    test_mutable!(name_range = token_range(ast, segment, spec.spelling)?);
+    test_mutable!(be_range = token_range(ast, segment, "be")?);
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::SegmentKind { index })
+            if *index == ordinal =>
+        {
+            segment_kind_is_exact = false;
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::SegmentRecovery {
+            index,
+        }) if *index == ordinal => segment_has_recovery = true,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::SegmentNameText {
+            index,
+        }) if *index == ordinal => segment_tokens[0] = "mutated".to_owned(),
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::SegmentNameRange {
+            index,
+        }) if *index == ordinal => name_range.start += 1,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::SegmentBeText {
+            index,
+        }) if *index == ordinal => segment_tokens[1] = "BE".to_owned(),
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::SegmentBeRange {
+            index,
+        }) if *index == ordinal => be_range.start += 1,
+        _ => {}
+    }
+    if !segment_kind_is_exact
+        || segment_has_recovery
+        || segment_tokens.as_slice() != [spec.spelling, "be"]
+        || name_range != source_range(ast, spec.name_start, spec.name_end)
+        || be_range != source_range(ast, spec.be_start, spec.be_end)
+    {
+        return Err(format!(
+            "two-parameter source binding context segment {} is not exact",
+            spec.spelling
+        ));
+    }
+    test_mutable!(segment_children = structural_child_ids(ast, segment));
+    #[cfg(test)]
+    if matches!(
+        mutation,
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::SegmentChildCardinality {
+                index
+            }
+        ) if *index == ordinal
+    ) {
+        segment_children.push(segment_children[0]);
+    }
+    let [type_id] = segment_children.as_slice() else {
+        return Err(format!(
+            "two-parameter source binding context parameter {} requires one written type",
+            spec.spelling
+        ));
+    };
+    let type_node = ast.node(*type_id).ok_or_else(|| {
+        format!(
+            "two-parameter source binding context type {} disappeared",
+            spec.spelling
+        )
+    })?;
+    let expected_type_range = source_range(ast, spec.type_start, spec.type_end);
+    test_mutable!(type_kind_is_exact = matches!(type_node.kind, SurfaceNodeKind::TypeExpression));
+    test_mutable!(type_range = type_node.range);
+    test_mutable!(type_children = type_node.children.clone());
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeKind { index })
+            if *index == ordinal =>
+        {
+            type_kind_is_exact = false;
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeRange { index })
+            if *index == ordinal =>
+        {
+            type_range.start += 1;
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeChildCardinality {
+            index,
+        }) if *index == ordinal => type_children.push(type_children[0]),
+        _ => {}
+    }
+    if !type_kind_is_exact || type_range != expected_type_range || type_children.len() != 1 {
+        return Err(format!(
+            "two-parameter source binding context type {} has the wrong shape",
+            spec.spelling
+        ));
+    }
+    let type_head = ast
+        .node(type_children[0])
+        .ok_or_else(|| "two-parameter source binding context type head disappeared".to_owned())?;
+    test_mutable!(type_head_kind_is_exact = matches!(type_head.kind, SurfaceNodeKind::TypeHead));
+    test_mutable!(type_head_recovered = type_head.recovered);
+    test_mutable!(type_head_range = type_head.range);
+    test_mutable!(type_head_children = type_head.children.clone());
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeHeadKind { index })
+            if *index == ordinal =>
+        {
+            type_head_kind_is_exact = false;
+        }
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeHeadRecovery {
+            index,
+        }) if *index == ordinal => type_head_recovered = true,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeHeadRange {
+            index,
+        }) if *index == ordinal => {
+            type_head_range.start += 1;
+        }
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::TypeHeadChildCardinality {
+                index,
+            },
+        ) if *index == ordinal => type_head_children.push(type_head_children[0]),
+        _ => {}
+    }
+    let [type_token_id] = type_head_children.as_slice() else {
+        return Err("two-parameter source binding context type head is not bare".to_owned());
+    };
+    let type_token = ast
+        .node(*type_token_id)
+        .ok_or_else(|| "two-parameter source binding context type token disappeared".to_owned())?;
+    test_mutable!(type_token_recovered = type_token.recovered);
+    test_mutable!(type_token_range = type_token.range);
+    test_mutable!(type_token_text = type_token.token_text());
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeTokenText {
+            index,
+        }) if *index == ordinal => type_token_text = Some("object"),
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeTokenRange {
+            index,
+        }) if *index == ordinal => type_token_range.start += 1,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::TypeTokenRecovery {
+            index,
+        }) if *index == ordinal => type_token_recovered = true,
+        _ => {}
+    }
+    if !type_head_kind_is_exact
+        || type_head_recovered
+        || type_head_range != expected_type_range
+        || type_token_recovered
+        || type_token_range != expected_type_range
+        || type_token_text != Some("set")
+    {
+        return Err("two-parameter source binding context type is not bare set".to_owned());
+    }
+    let written_type = extract_builtin_source_type_expression(ast, type_node, module, symbols)
+        .map_err(|()| {
+            format!(
+                "two-parameter source binding context type {} extraction failed",
+                spec.spelling
+            )
+        })?;
+    test_mutable!(extracted_range_is_exact = written_type.range == expected_type_range);
+    test_mutable!(extracted_spelling_is_exact = written_type.spelling == "set");
+    test_mutable!(extracted_head_is_exact = written_type.head == TypeHeadInput::BuiltinSet);
+    test_mutable!(extracted_attributes_are_empty = written_type.attributes.is_empty());
+    #[cfg(test)]
+    match mutation {
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ExtractedTypeRange {
+            index,
+        }) if *index == ordinal => extracted_range_is_exact = false,
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ExtractedTypeSpelling {
+                index,
+            },
+        ) if *index == ordinal => extracted_spelling_is_exact = false,
+        Some(SourceTwoParameterDefinitionContextAuthenticationMutation::ExtractedTypeHead {
+            index,
+        }) if *index == ordinal => extracted_head_is_exact = false,
+        Some(
+            SourceTwoParameterDefinitionContextAuthenticationMutation::ExtractedTypeAttributes {
+                index,
+            },
+        ) if *index == ordinal => extracted_attributes_are_empty = false,
+        _ => {}
+    }
+    if !extracted_range_is_exact
+        || !extracted_spelling_is_exact
+        || !extracted_head_is_exact
+        || !extracted_attributes_are_empty
+    {
+        return Err(format!(
+            "two-parameter source binding context type {} is not builtin set",
+            spec.spelling
+        ));
+    }
+    Ok(TwoParameterDefinitionParameter {
+        spelling: spec.spelling,
+        declaration_range: source_range(ast, spec.name_start, spec.name_end),
+        written_type_range: expected_type_range,
+    })
+}
+
+// Rationale: Task 248 validates the future caller-owned shared arena before Task 259 uses it.
+#[cfg_attr(not(test), allow(dead_code))]
+fn validate_two_parameter_definition_sites(
+    nodes: &TypedArena,
+    sites: &SourceTwoParameterDefinitionContextSites,
+    definition_range: SourceRange,
+    parameter_ranges: [SourceRange; 2],
+) -> Result<(), String> {
+    let all_sites = [
+        &sites.module,
+        &sites.definition,
+        &sites.parameters[0],
+        &sites.parameters[1],
+    ];
+    if all_sites
+        .iter()
+        .map(|site| (*site).clone())
+        .collect::<BTreeSet<_>>()
+        .len()
+        != all_sites.len()
+    {
+        return Err("two-parameter source binding context sites are not distinct".to_owned());
+    }
+    let root = nodes
+        .root()
+        .ok_or_else(|| "two-parameter source binding context arena has no root".to_owned())?;
+    if sites.module != TypedSiteRef::Node(root) {
+        return Err(
+            "two-parameter source binding context module site is not the arena root".to_owned(),
+        );
+    }
+    validate_two_parameter_definition_site(
+        nodes,
+        &sites.module,
+        definition_range,
+        LocalTypeContextId::new(0),
+        "module",
+    )?;
+    validate_two_parameter_definition_site(
+        nodes,
+        &sites.definition,
+        definition_range,
+        LocalTypeContextId::new(1),
+        "definition",
+    )?;
+    for (index, (site, range)) in sites.parameters.iter().zip(parameter_ranges).enumerate() {
+        validate_two_parameter_definition_site(
+            nodes,
+            site,
+            range,
+            LocalTypeContextId::new(1),
+            &format!("parameter {index}"),
+        )?;
+    }
+    Ok(())
+}
+
+// Rationale: Task 248 keeps per-site validation dormant until the Task-259 production caller.
+#[cfg_attr(not(test), allow(dead_code))]
+fn validate_two_parameter_definition_site(
+    nodes: &TypedArena,
+    site: &TypedSiteRef,
+    expected_range: SourceRange,
+    expected_context: LocalTypeContextId,
+    role: &str,
+) -> Result<(), String> {
+    let node = nodes.node(site.node()).ok_or_else(|| {
+        format!("two-parameter source binding context {role} site does not resolve")
+    })?;
+    if node.anchor != SourceAnchor::Range(expected_range)
+        || node.links.context != Some(expected_context)
+        || node.recovery != NodeRecoveryState::Normal
+    {
+        return Err(format!(
+            "two-parameter source binding context {role} site is not exact"
+        ));
+    }
+    Ok(())
+}
+
+// Rationale: Task 248 uses this exact-source range helper only in its dormant lower extractor.
+#[cfg_attr(not(test), allow(dead_code))]
+fn source_range(ast: &SurfaceAst, start: usize, end: usize) -> SourceRange {
+    SourceRange {
+        source_id: ast.source_id,
+        start,
+        end,
+    }
 }
 
 struct CandidateItems<'a> {
@@ -347,6 +1292,18 @@ fn validate_shell(
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn validate_source_context_shell_for_test(
+    shell: &DeclarationShell,
+    ordinal: usize,
+    kind: DeclarationShellKind,
+    module: &ModuleId,
+    node_id: SurfaceNodeId,
+    node: &SurfaceNode,
+) -> Result<(), String> {
+    validate_shell(shell, ordinal, kind, module, node_id, node)
 }
 
 fn token_range(

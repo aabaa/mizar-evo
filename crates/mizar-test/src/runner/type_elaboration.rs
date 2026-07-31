@@ -231,8 +231,8 @@ pub(super) use binary_routes::{
 };
 #[cfg(test)]
 pub(super) use checker_handoff::{
-    SourceContradictionHandoffCorruption, assemble_source_checker_handoff,
-    source_contradiction_handoff_corruption_error,
+    SourceContradictionHandoffCorruption, assemble_empty_resolved_typed_ast,
+    assemble_source_checker_handoff, source_contradiction_handoff_corruption_error,
     source_contradiction_handoff_with_extra_expression,
 };
 pub(super) use checker_handoff::{
@@ -361,8 +361,12 @@ pub(super) use source_composite_formula::{
 pub(super) use source_context::source_binding_context_detail_keys;
 #[cfg(test)]
 pub(super) use source_context::{
-    SourceBindingContextRouteOutput, source_binding_context_output,
+    SourceBindingContextRouteOutput, SourceTwoParameterDefinitionContextAuthenticationMutation,
+    SourceTwoParameterDefinitionContextSites, source_binding_context_output,
     source_binding_context_token_shape_is_exact,
+    source_two_parameter_definition_context_projection,
+    source_two_parameter_definition_context_projection_with_authentication_mutation,
+    validate_source_context_shell_for_test,
 };
 pub(super) use source_evidence::source_evidence_detail_keys;
 #[cfg(test)]
