@@ -1555,3 +1555,17 @@ environment module、projection module/namespace/contribution、
 contribution cardinality/id/kind/record module/source idのrunner mutationは
 `proof_scope_input`で停止し、final assemblyへ到達したりauthenticated
 confinementへreclassifyされたりできない。
+
+## Task 259 Frozen Final Handoff
+
+future final assemblyはone optional `SourcePredicateDefinitionHandoff`を
+持つ。exact Task-248/249/252/256 lower handoffとatomically installed complete
+obligation tableがある場合だけappearできる。`ResolvedTypedAst`はpublish前に
+four fingerprint、five dense table、resolver-derived predicate origin、全
+cross-family ID、sole `Pending` `PredicatePropertyCorrectness` rowを
+revalidateする。
+
+clone/debug renderingはexact ID、order、string、anchor、dependency bytesを
+preserveする。final assemblyはhandoffをreplaceせず、guard/propertyを
+reinterpretせず、justification subtreeをconsumeせず、FOL goalをconstruct
+せず、pending obligationをfact/proof/VC/accepted definition/axiomへ変えない。

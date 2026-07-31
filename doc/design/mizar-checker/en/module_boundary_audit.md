@@ -1191,3 +1191,29 @@ owner.
 No checker file, public API, diagnostic code, binding/type/proof/goal result,
 or Core/CFG/VC boundary changes. The checker remains an explicit
 non-consumer of both unresolved confinement cases.
+
+## Task 259 Frozen Module Boundary
+
+Future `mizar-checker::source_predicate_definition` owns only the syntax-free
+five-table predicate-definition handoff and the transactional insertion of
+one pending predicate-property obligation. `mizar-test` owns raw
+`SurfaceAst` inspection, exact-source selection, direct-sibling association,
+and construction of syntax-free inputs. Resolver owns the predicate
+`SymbolEntry`, `DefinitionEntry`, source contribution, and origin. Task 259
+does not take parser/resolver ownership.
+
+The resolver's generic `PropertyClause` Attribute/Attribute projection is
+not a semantic predicate-property input. The private runner authenticates
+`symmetry` from the exact normal same-block/later-sibling source shape, and
+the checker validates only the resulting source-keyed property site. The
+definition-local assumption is a Task-259 guard, not a Task-258 statement.
+The justification subtree is retained for future Task 272; Task 259 stores
+only its `SourceAnchor` and performs no proof work.
+
+Current Task 248 cannot publish the two definition parameters. A separate
+Task-248 extension must widen its exact admitted profile while preserving
+the existing public `SourceBindingContextHandoff`. Reconstructing
+`BindingEnv` in Task 259 or in the runner would be a `boundary_violation`.
+Tasks 249, 252, and 256 remain lower owners of type, term, and equality rows.
+Task 260 owns functor-definition intake. No Core, CFG, VC, fact, axiom,
+accepted definition, public diagnostic, or proof owner moves.

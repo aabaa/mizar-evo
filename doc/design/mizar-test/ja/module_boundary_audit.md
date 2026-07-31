@@ -11400,3 +11400,19 @@ checker handoffはどちらのunresolved referenceもacceptしない。
 parser/frontend、resolver、checker、public harness/CLI schema、type/proof/
 Core/CFG/VC、semantic-result ownerはunchanged。したがってboundary reviewは
 ownership transfer/`boundary_violation`なしと記録する。
+
+## Checker Task 259 Frozen Consumer Boundary
+
+`mizar-test`はexact source/AST selectionとparser/resolver observationからの
+syntax-free Task-259 input extractionだけをownする。authenticated
+`BindingEnv`をownするextended Task-248 `SourceBindingContextHandoff`とreal
+Task-249/252/256 handoffをreuseしなければならない。binding
+reconstruction、empty resolver parameter shellからのpredicate arity
+inference、generic property projectionの再解釈、obligation semantics作成、
+proof/fact/VC result publicationは禁止する。
+
+checkerはfive immutable table、dependency-fingerprint validation、
+obligation insertion、atomic typed/final installationをすべてownする。
+Task 272はproperty-justification proof ownershipをretainする。public runner
+facade、CLI schema、diagnostic、parser、resolver、mixed Task-260 routeはこの
+documentation prerequisiteで変更しない。

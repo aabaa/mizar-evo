@@ -1618,3 +1618,18 @@ Runner mutations of environment module, projection module/namespace/
 contribution, or contribution cardinality/id/kind/record module/source id
 must stop at `proof_scope_input`; they cannot reach final assembly or be
 reclassified as authenticated confinement.
+
+## Task 259 Frozen Final Handoff
+
+Future final assembly has one optional
+`SourcePredicateDefinitionHandoff`. It may appear only with the exact
+Task-248/249/252/256 lower handoffs and the atomically installed complete
+obligation table. `ResolvedTypedAst` revalidates the four fingerprints, all
+five dense tables, resolver-derived predicate origin, every cross-family ID,
+and the sole `Pending` `PredicatePropertyCorrectness` row before publishing.
+
+Clone and debug rendering preserve exact IDs, order, strings, anchors, and
+dependency bytes. Final assembly cannot replace the handoff, reinterpret the
+guard or property, consume the justification subtree, construct a FOL goal,
+or turn the pending obligation into a fact, proof, VC, accepted definition,
+or axiom.

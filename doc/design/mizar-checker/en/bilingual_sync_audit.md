@@ -47,6 +47,7 @@ after this task.
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 and Task-257C2/256C1 lower-compatibility authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, condition-container gate, exclusions, public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary, seven-table composite-formula/binder/type/edge/request transport, source-derived binding extension, exact consumer, exclusions, public enum policy | none |
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3 plus frozen Task-257C2 authority/boundary, composite-to-atomic/bound-use transport, dedicated condition-to-atomic transport, dependency fingerprints, atomic installation, exact consumers, exclusions, public enum policy | none |
+| `source_predicate_definition.md` | `../ja/source_predicate_definition.md` | `../en/source_predicate_definition.md` | Task-259 authority/boundary, predicate-definition/parameter/guard/property/correctness tables, resolver provenance, Task-248/249/252/256 association, baseline-preserving initial-obligation append, TypedAst/ResolvedTypedAst installation, exact consumer, exclusions, public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary, seven-table set/choice/qua/generator/type-site/condition/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary, seven-table structure/member/FieldUpdate/edge/request transport, Task-252/253 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Tasks 258A/258B1 authority/boundary, five-table theorem/statement transport plus local-label/citation composition, BindingEnv and Task-252/256 fingerprints, replay-authenticated resolver inputs, ownership exclusions, exact dormant consumers, semantic deferrals, public enum policy | none |
@@ -1488,3 +1489,19 @@ active fail fixtures/two covered rows, the corrected metadata count consumer,
 `421/389`, `228/193`, `101/7/198/1`, empty public codes, and the unchanged
 checker non-consumer boundary. Both languages grant active credit only to the
 two confinement requirements and retain all broader deferrals.
+
+## Task 259 Frozen-Contract Synchronization
+
+Canonical EN and companion JA synchronize the exact 165-byte source/hash,
+71-node frontend identity, three-shell/two-projection resolver profile,
+five-table `1/2/1/1/1` contract, exact lower Task-249/252/256 profiles, and
+mandatory Task-248 profile extension. They agree that only predicate resolver
+provenance is semantic, the generic property projection is not reinterpreted,
+and the property proof subtree remains future Task-272 ownership.
+
+Both languages freeze one pending
+`PredicatePropertyCorrectness` obligation with empty assumptions and opaque
+goal/provenance, the pass sidecar/trace intent, identical corruption and
+installation matrices, all semantic deferrals, and unchanged baseline
+counts. There is no synchronization exception. No production/test/trace
+artifact changes in this documentation prerequisite.

@@ -4659,3 +4659,35 @@ resolver resultがすべて
 `declaration_symbol.label.proof_scope_input`だけをemitすることをproveする。
 expectation fieldはrouteをselectできず、replay/orderはdeterministicで、
 earlier active declaration-symbol 5 caseのresultも維持される。
+
+## Checker Task 259 Frozen Runner Route
+
+future type-elaboration leafはexact 165-byte sourceとnormal
+71-row/root-70 ASTだけをselectする。current source/module、definition-block
+shell 0配下predicate shell ordinal 1、predicate Symbol/Definition id/kind、
+contribution、normal origin `61..122`、structural path `[4,0,8,0]`、notation
+spelling、same-block property shell `125..159`をauthenticateする。resolver
+generic property Attribute/Attribute projectionはraw-profile evidenceとして
+observeするだけで、predicate-property semanticsとしてsupplyしない。
+
+separate Task-248 extension後、leafはdefinition parameter `x`/`y`にexisting
+handoffをreuseし、Task 249 `2/2/0`、Task 252 `4/4/0`、Task 256
+`2/0/0/0/0/0/0/4/4`をbuildする。Task 259へone predicate、two parameters、
+one guard、one property、one correctness rowをsupplyする。one pending
+obligationはempty diagnosticsのpass resultである。computation
+justificationをrun/accept/dischargeしない。
+
+focused testはexact payload/range/order、全independent resolver/lower-handoff
+field mutation、missing/duplicate/reordered/cross-owner row、guard/definiens
+swap、property kind/range/owner change、obligation id/kind/owner/range/
+assumptions/goal/provenance/status mutation、transactional failure、
+typed/final clone/debug preservation、same/reverse corpus order、
+exact-source/AST near miss、expectation non-selection、absent
+Tasks 253--255、257、258、260+からのisolationをcoverする。
+`Blocked`/`Invalidated`を`Pending`の代わりにしてはならない。existing
+mixed predicate-plus-functor routeはold extraction gapを維持し、このleafを
+selectしない。
+
+later implementationだけがone pass sidecar、one trace row、mechanical
+active-type metadata incrementを追加する。このfrozen runner contractはrunner
+source、fixture、sidecar、trace、diagnostic、countを変更しない。

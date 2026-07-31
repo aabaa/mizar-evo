@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker Tasks 248-257C3 consumer increments complete | step 5 task 10, dependency-paced later consumers beginning with Checker Task 258, future `MT10-FS`/`MT10-AS`, and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, and Tasks 248-257C3 source-payload/composition producers complete | Checker Task 258, then Tasks 259-264/269-279 in dependency order; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 258B5C complete; Task-259 future consumer frozen | Task-248 two-parameter prerequisite pair, then Checker Task-259 consumer, future `MT10-FS`/`MT10-AS`, and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, source producers through Task 258B5C complete, and Task-259 contract frozen | Task-248 two-parameter profile-extension prerequisite pair, then Task 259 implementation and Tasks 260-264/269-279 in dependency order; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -3786,3 +3786,27 @@ or semantic owner changed. B3M2B2B remains next before B4.
   (`20/20/15/15/10/10/5/5`).
 - [ ] Complete the task-only commit, post-commit invariants, and next-task
   fresh inventory.
+
+## Checker Task 259 Frozen Predicate-Definition Prerequisite
+
+- [x] Close Task 258B5C at
+  `33ac57e96f048dc40559565f54369cac854409a7` and select Task 259 from clean
+  fresh inventory with the protected stash unchanged.
+- [x] Freeze the exact 165-byte pass source, parser/resolver identities,
+  five-table `1/2/1/1/1` syntax-free ABI, lower Tasks 248/249/252/256
+  dependencies, and one pending `PredicatePropertyCorrectness` obligation.
+- [x] Preserve the property justification for Task 272, keep Task 258 absent,
+  defer guard-conditioned FOL goal construction, and leave the mixed
+  predicate-plus-functor case with Task 260.
+- [x] Record current Task-248 profile rejection as a mandatory, separately
+  committed two-parameter profile-extension documentation prerequisite and
+  implementation; prohibit Task-259-private binding reconstruction.
+- [x] Keep the current logical task documentation-only with no source,
+  fixture, sidecar, trace, expectation, status/count/backlink/credit, or
+  public diagnostic change.
+- [x] Complete all four findings-free reviews, full verification and
+  count/hash reproduction, and independent final quality with all nine hard
+  gates PASS at valid `100/100`.
+- [ ] Complete the exact-scope commit and post-commit fresh inventory.
+- [ ] Continue automatically to the Task-248 extension prerequisite pair,
+  then return to Task 259 implementation.

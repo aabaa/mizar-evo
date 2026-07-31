@@ -4929,3 +4929,36 @@ environment, contribution, projection, reference, or resolver result emits
 only `declaration_symbol.label.proof_scope_input`. Expectation fields cannot
 select the route, replay/order is deterministic, and all five earlier active
 declaration-symbol cases retain their results.
+
+## Checker Task 259 Frozen Runner Route
+
+The future type-elaboration leaf selects only the exact 165-byte source and
+its normal 71-row/root-70 AST. It authenticates the current source/module,
+predicate shell ordinal 1 beneath definition-block shell 0, predicate
+Symbol/Definition ids and kinds, contribution, normal origin `61..122`,
+structural path `[4,0,8,0]`, notation spelling, and the same-block property
+shell at `125..159`. The resolver's generic property Attribute/Attribute
+projection is observed only as raw-profile evidence and is never supplied as
+predicate-property semantics.
+
+After the separate Task-248 extension, the leaf reuses its existing handoff
+for definition parameters `x` and `y`, then builds Task 249 `2/2/0`, Task 252
+`4/4/0`, and Task 256 `2/0/0/0/0/0/0/4/4`. It supplies Task 259 with one
+predicate, two parameters, one guard, one property, and one correctness row.
+The one pending obligation is a pass result with empty diagnostics. The
+computation justification is not run, accepted, or discharged.
+
+Focused tests must cover the exact payload/ranges/order, every independent
+resolver and lower-handoff field mutation, missing/duplicate/reordered/
+cross-owner rows, guard/definiens swaps, property kind/range/owner changes,
+obligation id/kind/owner/range/assumptions/goal/provenance/status mutations,
+transactional failure, typed/final clone/debug preservation, same and reverse
+corpus order, exact-source/AST near misses, expectation non-selection, and
+isolation from absent Tasks 253--255, 257, 258, and 260+. `Blocked` or
+`Invalidated` may not substitute for `Pending`. The existing mixed
+predicate-plus-functor route must keep its old extraction gap and never
+select this leaf.
+
+Only the later implementation adds one pass sidecar, one trace row, and the
+mechanical active-type metadata increments. This frozen runner contract
+changes no runner source, fixture, sidecar, trace, diagnostic, or count.

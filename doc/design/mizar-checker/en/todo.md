@@ -6280,3 +6280,38 @@ implementation commit does not satisfy a producer task.
   no score cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
 - [ ] Complete the task-only commit, post-commit invariants, and next-task
   fresh inventory.
+
+## Checker Task 259 Frozen-Contract Documentation Prerequisite
+
+- [x] Close active B5C at
+  `33ac57e96f048dc40559565f54369cac854409a7`, verify clean post-commit
+  invariants and protected-stash identity, and select Task 259 by fresh
+  canonical/API inventory.
+- [x] Freeze the exact 165-byte/final-LF pass source and SHA-256, 71-row
+  frontend identity, three-shell/two-projection resolver profile, exact
+  ranges, and source-order/same-block predicate/property association.
+- [x] Freeze five syntax-free dense tables with exact `1/2/1/1/1`
+  cardinality, Task-248/249/252/256 fingerprints, absent
+  Tasks-253--255/257/258 families, and immutable typed/final installation.
+- [x] Freeze exactly one pending
+  `PredicatePropertyCorrectness` obligation with empty assumptions and
+  opaque deterministic goal/provenance; preserve the guard separately and
+  defer its FOL property-VC composition.
+- [x] Preserve the property proof subtree for Task 272 without consuming it
+  in Task 259; do not move it to Task 258 or treat the computation
+  justification as accepted/discharged.
+- [x] Classify the current Task-248 exact-profile rejection as bounded
+  `source_drift`/dependency `design_drift`; prohibit private `BindingEnv`
+  reconstruction and require separate Task-248 profile-extension
+  documentation and implementation commits before Task 259 implementation.
+- [x] Freeze the future pass sidecar/trace intent and test/corruption/
+  installation/determinism matrices while preserving the mixed
+  predicate-plus-functor Task-260 gap unchanged.
+- [x] Complete repeated findings-free documentation, test-contract,
+  implementation-boundary, and source/documentation reviews; full
+  docs/count/hash verification; and independent final quality with all nine
+  hard gates PASS and valid `100/100`.
+- [ ] Complete the task-only commit and post-commit fresh inventory.
+- [ ] Fresh-inventory and complete the separate Task-248 two-parameter
+  profile-extension documentation prerequisite and implementation, each as
+  one logical task/commit, then return to Task 259 implementation.

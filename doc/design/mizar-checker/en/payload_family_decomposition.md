@@ -100,7 +100,7 @@ not reused.
 | 256 | Atomic formulas: predicate applications, equality/inequality, membership, type assertions, and attribute assertions with complete term/type/attribute links and expected-input requests. Specs 09 and 14.2/14.5; MC-G017/MC-G020. | Tasks 249-255; Task-10 exact atomic-formula consumers. | No truth, theorem acceptance, inequality proof, or assertion fact without checker evidence. |
 | 257 | Composite formulas and binders: constants, negation, binary connectives, quantified variables, child graph, contexts, roles, and source order. Specs 04.5 and 14.3-14.4; MC-G011/MC-G017/MC-G020. | Tasks 248-256; Task-10 connective/quantifier consumer. | No flattening that loses child identity, implicit closure, truth value, or theorem status. |
 | 258 | General theorem-owner and statement-semantic shells, assumptions, conclusions, witnesses, labels/citations as resolver identities, local contexts, visibility-scoped input facts, and candidate fact inputs. Specs 15 and 16; MC-G019/MC-G020. | Tasks 248-257; resolver label facts; prepared `MT10-FS` consumer. | Records input/candidate assumptions and facts only; no verified premise publication, checked theorem fact, discharge, theorem acceptance, or proof closure is inferred. |
-| 259 | Predicate-definition payloads: parameters, guards, definiens graph, properties/correctness-condition identity, `InitialObligationId`, source anchor input, and declaration provenance. Specs 09 and 16.6. | Tasks 248-258; Task-10 definition consumer. | No recursive unfolding, property proof, obligation discharge, `VcId`, accepted obligation, overload selection, or axiom publication. |
+| 259 | Predicate-definition payloads: parameters, guards, definiens graph, properties/correctness-condition identity, `InitialObligationId`, source anchor input, and declaration provenance. Specs 09 and 16.6. | Exact Tasks 248/249/252/256 handoffs after a separate Task-248 two-parameter profile extension; pass Task-10 definition consumer. Tasks 253-255/257/258 are absent for the frozen source. | No recursive unfolding, guard-conditioned FOL property-VC construction, property proof, obligation discharge, `VcId`, accepted obligation, overload selection, or axiom publication. Future Task 272 retains the unconsumed justification subtree. |
 | 260 | Functor-definition payloads: `equals`/`means`, parameters, guards, result type, definiens, properties/correctness-condition identity, `InitialObligationId`, source anchor input, and declaration provenance. Specs 10 and 16.6. | Tasks 248-259; Task-10 definition consumer. | No existence/uniqueness proof, obligation discharge, `VcId`, recursive unfolding, accepted result, or overload winner. |
 | 261 | Attribute-definition payloads: subject/parameters, positive or negative definiens, guards, radix/qualification, and correctness obligation requests. Specs 06, 09, and 16.6. | Tasks 248-260; Task-10 attribute-definition consumer. | No attribute truth, cluster fact, existential evidence, accepted proof, or redefinition selection. |
 | 262 | Mode-definition payloads: parameters, mode application, expansion/RHS, definiens, sethood/existence obligation requests, and declaration context. Specs 07 and 16.6. | Tasks 248-261; Task-10 mode-definition consumer. | Property implementations are Task 264; no accepted existence, expansion fact, or registration activation. |
@@ -1587,3 +1587,27 @@ Runner provenance authentication of env/module, derived namespace, exact
 one id-0 LocalSource record/source id, and every projection field remains a
 separate input-only family. Its complete independent mutation matrix cannot
 create a checker payload or confinement result.
+
+## Task 259 Frozen Predicate-Definition Decomposition
+
+Task 259 is decomposed as one predicate-definition row, two ordered parameter
+rows, one guard row, one symmetry-property row, and one correctness-condition
+row. The exact lower graph is Task 249 `2/2/0`, Task 252 `4/4/0`, and
+Task 256 `2/0/0/0/0/0/0/4/4`; the existing Task-248 handoff becomes available
+only after the independent one-block/two-parameter profile extension.
+Tasks 253--255, 257, and 258 contribute no row or fingerprint.
+
+The definition points to the equality definiens, each parameter points to one
+`BindingId` and one `SourceTypeApplicationId`, and the guard points to the
+other equality. The property points only to its owner, source site, source
+order, `Symmetry` kind, and explicit justification anchor. The correctness
+row points to exactly one `Pending`
+`InitialObligationKind::PredicatePropertyCorrectness`. Its assumptions are
+empty and its goal/provenance are deterministic opaque identities.
+
+The runner authenticates the property as the direct normal later sibling of
+the predicate in the same definition block. The resolver's generic
+Attribute/Attribute property projection is not consumed as semantic
+evidence. Task 259 does not descend into or interpret the computation
+justification; Task 272 retains that future proof/justification ownership.
+Task 260 separately retains the mixed predicate-plus-functor gap.

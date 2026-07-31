@@ -1165,3 +1165,29 @@ ownerは追加しない。
 checker file、public API、diagnostic code、binding/type/proof/goal result、
 Core/CFG/VC boundaryは変更しない。checkerは両unresolved confinement caseの
 explicit non-consumerのまま。
+
+## Task 259 Frozen Module Boundary
+
+future `mizar-checker::source_predicate_definition`はsyntax-free five-table
+predicate-definition handoffとone pending predicate-property obligationの
+transactional insertionだけをownする。`mizar-test`はraw `SurfaceAst`
+inspection、exact-source selection、direct-sibling association、syntax-free
+input constructionをownする。resolverはpredicate `SymbolEntry`、
+`DefinitionEntry`、source contribution、originをownする。Task 259は
+parser/resolver ownershipをtake overしない。
+
+resolver generic `PropertyClause` Attribute/Attribute projectionはsemantic
+predicate-property inputではない。private runnerはexact normal
+same-block/later-sibling source shapeから`symmetry`をauthenticateし、checker
+はresulting source-keyed property siteだけをvalidateする。definition-local
+assumptionはTask-259 guardでありTask-258 statementではない。justification
+subtreeはfuture Task 272用にretainし、Task 259はその`SourceAnchor`だけを
+storeしてproof workを行わない。
+
+current Task 248はtwo definition parametersをpublishできない。separate
+Task-248 extensionはexisting public `SourceBindingContextHandoff`を維持して
+exact admitted profileをwidenしなければならない。Task 259またはrunnerで
+`BindingEnv`をreconstructするのは`boundary_violation`である。Tasks 249、
+252、256はtype/term/equality rowのlower ownerのまま。Task 260はfunctor
+definition intakeをownする。Core、CFG、VC、fact、axiom、accepted
+definition、public diagnostic、proof ownerは移動しない。

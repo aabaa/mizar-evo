@@ -5697,3 +5697,49 @@ resolution, dot-chain, qualified/grouped/bulk citations, and other label
 reference facts remain deferred. Requirement
 `spec.en.checker.formula_statement.source_payloads` remains `deferred` with
 `tests = []`, and checker/type/proof/Core/CFG/VC ownership remains unchanged.
+
+## Checker Task 259 Frozen Predicate-Definition Coverage Ownership
+
+Fresh post-B5C inventory selects a bounded predicate-definition transport
+slice derived from Chapter 9 Sections 9.1, 9.3--9.5, and 9.9.3--9.9.5 and
+Chapter 16 Section 16.6. The future pass case will cover two ordered typed
+parameters, one pre-definition guard, one equality definiens, one explicit
+symmetry property, exact predicate resolver provenance, and exactly one
+pending predicate-property correctness obligation. It will map only to
+future requirement
+`spec.en.checker.type_elaboration.source_predicate_definition_payload`.
+
+This ownership is transport-only. Chapter 9 does not specify how the guard is
+composed into the symmetry FOL VC, so goal construction, proof, discharge,
+acceptance, facts/axioms, and VC/IR remain deferred. The generic resolver
+PropertyClause Attribute/Attribute projection is not semantic evidence.
+Future Task 272 retains the property-justification subtree. The mixed
+predicate-plus-functor diagnostic case and its existing trace arrays remain
+unchanged until Task 260.
+
+Task 259 depends on a separate Task-248 two-definition-parameter profile
+extension before implementation. The current documentation prerequisite does
+not add the future fixture, sidecar, or trace row and changes no mapping,
+owner field, backlink, status, count, active outcome, or coverage credit.
+`tests/coverage/spec_trace.toml` remains byte-unchanged. Current metadata
+therefore remains cases/requirements `421/389`, pass/fail `228/193`, active
+parse/declaration/type/proof `101/7/198/1`, declaration requirements
+`12 = 7 covered + 5 partial`, type requirements
+`253 = 241 covered + 12 deferred`, and warnings/errors `23/0`.
+
+Only the later implementation may add one pass case and one covered
+requirement, projecting `422/390`, `229/193`, `101/7/199/1`, and type
+requirements `254/242`. This section is narrative-only frozen ownership, not
+present coverage.
+
+Final documentation verification confirms an exact 32-design-file scope and
+no fixture, expectation, sidecar, trace, production/test source, or Cargo
+metadata change. All four independent reviews finish with **NO FINDINGS**;
+focused checker/runner tests, formatting, warnings-denied workspace Clippy,
+and the full workspace test suite pass. Current CLI counts and all five CLI,
+four test-list, and four production-manifest hashes reproduce the frozen
+B5C values. The trace file is therefore a deliberate byte-level no-op:
+Task 259 remains prospective narrative ownership only.
+Independent final read-only quality reports **NO FINDINGS**, all nine hard
+gates PASS without a cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`).

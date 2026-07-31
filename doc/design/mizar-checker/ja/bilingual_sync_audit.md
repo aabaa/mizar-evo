@@ -46,6 +46,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1とTask-257C2/256C1 lower-compatibility authority/boundary、nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport、Task-252/253/254/255 fingerprint association、base consumer 8件とexact C1 consumer、condition-container gate、exclusion、public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary、seven-table composite-formula/binder/type/edge/request transport、source-derived binding extension、exact consumer、exclusion、public enum policy | none |
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3とfrozen Task-257C2 authority/boundary、composite-to-atomic/bound-use transport、dedicated condition-to-atomic transport、dependency fingerprint、atomic installation、exact consumer、exclusion、public enum policy | none |
+| `source_predicate_definition.md` | `../ja/source_predicate_definition.md` | `../en/source_predicate_definition.md` | Task-259 authority/boundary、predicate-definition/parameter/guard/property/correctness table、resolver provenance、Task-248/249/252/256 association、baseline-preserving initial-obligation append、TypedAst/ResolvedTypedAst installation、exact consumer、exclusion、public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary、seven-table set/choice/qua/generator/type-site/condition/edge/request transport、Task-252/253/254 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Tasks 258A/258B1 authority/boundary、five-table theorem/statement transportとlocal-label/citation composition、BindingEnv/Task-252/256 fingerprint、replay-authenticated resolver input、ownership exclusion、exact dormant consumer、semantic deferral、public enum policy | none |
@@ -1432,3 +1433,18 @@ fail fixture 2件/covered row 2件、corrected metadata count consumer、
 `421/389`、`228/193`、`101/7/198/1`、empty public code、unchanged checker
 non-consumer boundaryを同期する。両言語は2 confinement requirementだけに
 active creditを与え、broader deferralをすべて維持する。
+
+## Task 259 Frozen-Contract Synchronization
+
+canonical ENとcompanion JAはexact 165-byte source/hash、71-node frontend
+identity、three-shell/two-projection resolver profile、five-table
+`1/2/1/1/1` contract、exact lower Task-249/252/256 profile、mandatory
+Task-248 profile extensionを同期する。predicate resolver provenanceだけが
+semanticで、generic property projectionを再解釈せず、property proof
+subtreeをfuture Task-272 ownershipとして保持する点も一致する。
+
+両言語はempty assumptionsとopaque goal/provenanceを持つone pending
+`PredicatePropertyCorrectness` obligation、pass sidecar/trace intent、同一の
+corruption/installation matrix、全semantic deferral、unchanged baseline
+countを凍結する。synchronization exceptionはなく、このdocumentation
+prerequisiteでproduction/test/trace artifactは変更しない。

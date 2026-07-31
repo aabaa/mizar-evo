@@ -1541,3 +1541,32 @@ runnerのindependent env/projection/contribution provenance mutationはすべて
 `proof_scope_input`で停止し、structurally coherentなmutationでも
 confinement/`TypedAst` rowになれない。source bytes+exact normal ASTだけが
 selectorで、48-file scopeはunchanged。
+
+## Task 259 Frozen Typed-AST Transaction
+
+future Task-259 projectionはauthenticated baseline
+`InitialObligationTable`のclone、`SourcePredicateDefinitionHandoff`、
+そのcloneをpreserveしてexactly one `PredicatePropertyCorrectness` rowを
+appendしたcompleted tableを含む。handoffはsource/module identityと
+`SourceBindingContextHandoff`、`SourceTypeApplicationHandoff`、
+`SourcePrimaryTermHandoff`、`SourceAtomicFormulaHandoff`のexact debug
+fingerprintをstoreする。
+
+`TypedAst::with_source_predicate_definition`はone-shotでhandoffとobligation
+tableをatomically publishする。four lower handoffをrequireし、全fingerprint、
+dense target、source site/range/context、predicate resolver identity、
+correctness link、obligation owner/kind/range/assumptions/goal/provenance/
+statusをrevalidateし、partial/stale transactionをすべてrejectする。さらに
+current obligation tableがretained baselineとexactly equalであることもrequire
+し、不一致ならwhole projectionをrejectする。failureはTask-259 rowも
+obligation linkageも残さない。`TypedAstParts`はTask-259 fieldを追加せず
+alternate install pathにならない。`ResolvedTypedAst`は同じhandoff、
+obligation、ID、order、fingerprint、debug bytesをreconstructせず
+revalidate/clone-preserveする。
+
+frozen exact transactionのtable cardinalityは`1/2/1/1/1`で、
+available-for-handoff `Pending` obligationはexactly oneである。type fact、
+coercion、diagnostic、`VcId`、proof status、accepted result、axiom、IR node
+は追加しない。guardはobligation assumptionではなくsource-formula linkの
+ままである。future semantic consumerはここで凍結したopaque stringからFOL
+goalをinferしてはならない。

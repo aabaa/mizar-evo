@@ -3002,3 +3002,29 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   （`20/20/15/15/10/10/5/5`）で完了。
 - [ ] task fileだけをstageしdedicated commitを作成、repository/stash
   invariantをverifyして次のexecutable taskをfresh-inventory。
+
+## Checker Task 259 Frozen Consumer Prerequisite
+
+- [x] Task 259選択前にB5C commit
+  `33ac57e96f048dc40559565f54369cac854409a7`とsuccessful post-commit
+  invariantを記録する。
+- [x] future exact pass fixture/sidecar name、source bytes/hash、
+  pass/type-check/empty-diagnostic expectation、one-row trace intentを凍結。
+- [x] lower build order/exact profileを凍結: extended Task 248、Task 249
+  `2/2/0`、Task 252 `4/4/0`、Task 256 `2/0/0/0/0/0/0/4/4`、Task 259
+  `1/2/1/1/1` plus one pending obligation。
+- [x] exact-source/normal-AST selection、resolver predicate authentication、
+  lower-handoff corruption、all-or-nothing install、deterministic
+  replay/order、expectation non-selection、family isolation testを凍結。
+- [x] mixed predicate-plus-functor fixture/sidecar/trace row、generic gap
+  detail、全Task-260 ownershipをunchangedに保つ。
+- [x] このprerequisiteをdocumentation-onlyの`421/389`、`228/193`、
+  `101/7/198/1`、type `253/241`、warnings/errors `23/0`に保つ。
+- [x] 4つすべてのfindings-free review、full verificationとcount/hash
+  reproduction、全9 hard gate PASSのindependent final quality
+  `100/100`をcompleteする。
+- [ ] task-only documentation commitとpost-commit fresh inventoryを
+  completeする。
+- [ ] docs commit後にseparate Task-248 extension prerequisite pairをcomplete
+  し、Checker Task-259 consumerをimplementしてprojected `422/390`、
+  `229/193`、`101/7/199/1`、`254/242` metadataだけを更新する。

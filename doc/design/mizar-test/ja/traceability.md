@@ -1985,3 +1985,22 @@ outcome、phase、active tag、diagnostic、semantic detailは不変。creditは
 syntax-free conjunction/negation associationだけに限定し、signature
 applicability、truth、fact、theorem acceptance、proof、IR/VCはdeferred。
 plan/type coverageは`419/387` / `253/241`。
+
+## Checker Task 259 Frozen Trace Intent
+
+documentation prerequisiteはtrace row/backlinkを追加しない。later executable
+consumerだけが
+`spec.en.checker.type_elaboration.source_predicate_definition_payload`を
+required/covered pass coverageとしてappendし、sole backlinkをsame-stem
+`pass_type_elaboration_predicate_definition_payload_001.expect.toml`とする。exact
+metadataは
+`source = "doc/design/mizar-checker/en/source_predicate_definition.md"`、
+`section = "Dedicated Consumer And Trace Intent"`、
+`stage = "type_elaboration"`、`status = "covered"`、`required = true`、
+`coverage = "pass"`である。creditはfrozen predicate-definition transportと
+one pending property obligationだけに限定する。guard-conditioned FOL
+construction、proof、discharge、acceptance、fact/axiom、mixed Task-260 caseは
+deferredのまま。
+
+current metadataは`421/389`とtype `253/241`を維持し、projected
+implementation valueは`422/390`とtype `254/242`である。

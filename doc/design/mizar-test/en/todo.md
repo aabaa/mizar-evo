@@ -3221,3 +3221,31 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   (`20/20/15/15/10/10/5/5`).
 - [ ] Stage only task files, create the dedicated commit, verify repository
   and stash invariants, then fresh-inventory the next executable task.
+
+## Checker Task 259 Frozen Consumer Prerequisite
+
+- [x] Record B5C commit
+  `33ac57e96f048dc40559565f54369cac854409a7` and successful post-commit
+  invariants before selecting Task 259.
+- [x] Freeze the future exact pass fixture/sidecar name, source bytes/hash,
+  pass/type-check/empty-diagnostic expectation, and one-row trace intent.
+- [x] Freeze lower build order and exact profiles:
+  extended Task 248, Task 249 `2/2/0`, Task 252 `4/4/0`, Task 256
+  `2/0/0/0/0/0/0/4/4`, and Task 259 `1/2/1/1/1` plus one pending obligation.
+- [x] Freeze exact-source/normal-AST selection, resolver predicate
+  authentication, lower-handoff corruption, all-or-nothing install,
+  deterministic replay/order, expectation non-selection, and family
+  isolation tests.
+- [x] Keep the mixed predicate-plus-functor fixture, sidecar, trace rows,
+  generic gap detail, and all Task-260 ownership unchanged.
+- [x] Keep this prerequisite documentation-only at `421/389`, `228/193`,
+  `101/7/198/1`, type `253/241`, and warnings/errors `23/0`.
+- [x] Complete all four findings-free reviews, full verification and
+  count/hash reproduction, and independent final quality with all nine hard
+  gates PASS at valid `100/100`.
+- [ ] Complete the task-only documentation commit and post-commit fresh
+  inventory.
+- [ ] After the docs commit, complete the separate Task-248 extension
+  prerequisite pair, then implement the Checker Task-259 consumer and update
+  exactly the projected `422/390`, `229/193`, `101/7/199/1`, and
+  `254/242` metadata.

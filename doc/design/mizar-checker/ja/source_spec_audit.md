@@ -4868,3 +4868,34 @@ semantic installationはexcludedのまま。pre-existing
 consumer（`5 -> 7`）。requirement
 `spec.en.checker.formula_statement.source_payloads`は`tests = []`の
 `deferred`を維持し、全non-confinement R-G007 familyもdeferredのまま。
+
+## Task 259 Frozen Authority Audit
+
+Chapter 9はtyped predicate parameter、pre-definition `assume` guard、
+ordinary `means` definiens、explicit predicate propertyをauthorizeする。
+Section 9.5はordinary predicateにexistence/uniqueness conditionがなく、
+各explicit propertyがproof obligationを作ると規定する。Chapter 16
+Section 16.6はgeneral correctness-condition boundaryを与える。これは
+transport-only pass caseとexactly one pending symmetry-property obligation
+に十分なauthorityである。
+
+authorityはpre-definition guardをsymmetry FOL verification conditionへ
+composeする方法を規定しない。これはlater semantic constructionに対する
+nonblocking `spec_gap`であり、goalをinventするauthorityではない。Task 259
+はguard/propertyをseparately transportし、obligation assumptionsをemptyに
+保ち、opaque goal/provenance identityを使う。proof、discharge、VC
+construction、accepted-definition publicationはdeferredのままである。
+
+fresh lower inspectionはmissing predicate-definition handoffを
+`source_drift`、missing real consumer/corruption coverageを`test_gap`、
+previously broad Task-259 proseとcurrent Task-248 profile mismatchを
+`design_drift`に分類する。parser/resolver source shapeはadequateである。
+blocking canonical contradiction、unsafe test-intent inference、
+`test_expectation_drift`、`boundary_violation`、
+`repo_metadata_conflict`はない。
+
+このdocumentation prerequisiteはnarrative ownershipだけを追加する。
+specification、`.miz`、sidecar、expectation、trace row、mapping、backlink、
+status、count、coverage creditを変更しない。existing Chapter-9 diagnostic
+gapとmixed predicate-plus-functor gapは不変で、後者はTask 260を引き続き
+必要とする。

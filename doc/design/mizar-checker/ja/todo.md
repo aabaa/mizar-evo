@@ -5995,3 +5995,36 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   valid `100/100`（`20/20/15/15/10/10/5/5`）で完了。
 - [ ] task-only commit、post-commit invariant、next-task fresh inventoryを
   完了。
+
+## Checker Task 259 Frozen-Contract Documentation Prerequisite
+
+- [x] active B5Cを
+  `33ac57e96f048dc40559565f54369cac854409a7`でcloseし、clean post-commit
+  invariantとprotected-stash identityを確認し、fresh canonical/API
+  inventoryでTask 259を選択する。
+- [x] exact 165-byte/final-LF pass sourceとSHA-256、71-row frontend
+  identity、three-shell/two-projection resolver profile、exact range、
+  source-order/same-block predicate/property associationを凍結する。
+- [x] exact `1/2/1/1/1` cardinality、Task-248/249/252/256 fingerprint、
+  Tasks-253--255/257/258 family absent、immutable typed/final installation
+  を持つ5 syntax-free dense tableを凍結する。
+- [x] empty assumptionsとopaque deterministic goal/provenanceを持つexactly
+  one pending `PredicatePropertyCorrectness` obligationを凍結し、guardを
+  separately preserveしてそのFOL property-VC compositionをdeferする。
+- [x] property proof subtreeをTask 259ではconsumeせずTask 272用に保持する。
+  Task 258へ移したりcomputation justificationをaccepted/dischargedとして
+  扱わない。
+- [x] 現行Task-248 exact-profile rejectionをbounded `source_drift`/
+  dependency `design_drift`に分類する。private `BindingEnv`
+  reconstructionを禁止し、Task 259 implementation前に別Task-248
+  profile-extension documentation/implementation commitを必須とする。
+- [x] mixed predicate-plus-functor Task-260 gapを不変にしたまま、future
+  pass sidecar/trace intentとtest/corruption/installation/determinism
+  matrixを凍結する。
+- [x] findings-free documentation、test-contract、implementation-boundary、
+  source/documentation reviewを繰り返し、full docs/count/hash verification、
+  全9 hard gate PASSのindependent final quality `100/100`をcompleteする。
+- [ ] task-only commitとpost-commit fresh inventoryをcompleteする。
+- [ ] separate Task-248 two-parameter profile-extension documentation
+  prerequisiteとimplementationをfresh-inventoryし、それぞれone logical
+  task/commitでcompleteしてからTask 259 implementationへ戻る。

@@ -2079,3 +2079,22 @@ unchanged. Credit is limited to syntax-free conjunction/negation
 association; signature applicability, truth, facts, theorem acceptance,
 proof, and IR/VC remain deferred. Plan/type coverage is `419/387` /
 `253/241`.
+
+## Checker Task 259 Frozen Trace Intent
+
+The documentation prerequisite adds no trace row or backlink. Only the later
+executable consumer may append
+`spec.en.checker.type_elaboration.source_predicate_definition_payload` as
+required/covered pass coverage with the sole same-stem
+`pass_type_elaboration_predicate_definition_payload_001.expect.toml`
+backlink. Its exact metadata is
+`source = "doc/design/mizar-checker/en/source_predicate_definition.md"`,
+`section = "Dedicated Consumer And Trace Intent"`,
+`stage = "type_elaboration"`, `status = "covered"`, `required = true`, and
+`coverage = "pass"`. Credit is limited to the frozen predicate-definition
+transport and one pending property obligation. Guard-conditioned FOL
+construction, proof, discharge, acceptance, facts/axioms, and the mixed
+Task-260 case remain deferred.
+
+Current metadata stays `421/389` and type `253/241`; the projected
+implementation values are `422/390` and type `254/242`.

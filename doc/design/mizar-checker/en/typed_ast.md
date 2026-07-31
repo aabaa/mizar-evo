@@ -1607,3 +1607,34 @@ The runner's independent env/projection/contribution provenance mutations
 all terminate at `proof_scope_input`; even a structurally coherent mutation
 cannot become confinement or a `TypedAst` row. Source bytes plus exact normal
 AST remain the only selector, and the 48-file scope remains unchanged.
+
+## Task 259 Frozen Typed-AST Transaction
+
+The future Task-259 projection contains a
+clone of the authenticated baseline `InitialObligationTable`, a
+`SourcePredicateDefinitionHandoff`, and the completed table produced by
+preserving that clone and appending exactly one
+`PredicatePropertyCorrectness` row. The
+handoff stores source/module identity and exact debug fingerprints for
+`SourceBindingContextHandoff`, `SourceTypeApplicationHandoff`,
+`SourcePrimaryTermHandoff`, and `SourceAtomicFormulaHandoff`.
+
+`TypedAst::with_source_predicate_definition` is one-shot and publishes the
+handoff and obligation table atomically. It requires the four lower handoffs,
+revalidates every fingerprint, dense target, source site/range/context,
+predicate resolver identity, correctness link, obligation owner/kind/range/
+assumptions/goal/provenance/status, and rejects every partial or stale
+transaction. It additionally requires its current obligation table to equal
+the retained baseline exactly; mismatch rejects the whole projection.
+Failure leaves neither Task-259 rows nor obligation linkage.
+`TypedAstParts` gains no Task-259 field and is not an alternate installation
+path. `ResolvedTypedAst` revalidates and clone-preserves the same handoff,
+obligations, IDs, order, fingerprints, and debug bytes without
+reconstruction.
+
+The frozen exact transaction has table cardinality `1/2/1/1/1` and exactly
+one available-for-handoff `Pending` obligation. It adds no type fact,
+coercion, diagnostic, `VcId`, proof status, accepted result, axiom, or IR
+node. The guard remains a source-formula link rather than an obligation
+assumption. Future semantic consumers must not infer a FOL goal from the
+opaque strings frozen here.

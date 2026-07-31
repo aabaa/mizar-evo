@@ -92,7 +92,7 @@ expectation rebaseline、Steps 6/7昇格を禁止する。
 | 256 | completeなterm/type/attribute linkとexpected-input requestを持つpredicate application、equality/inequality、membership、type/attribute assertion。Specs 09/14.2/14.5、MC-G017/020。 | Tasks 249-255、Task-10 exact atomic-formula consumer。 | checker evidenceなしのtruth/theorem acceptance/inequality proof/assertion factなし。 |
 | 257 | constant、negation、binary connective、quantified variable、child graph、context、role、source order。Specs 04.5/14.3-14.4、MC-G011/017/020。 | Tasks 248-256、Task-10 connective/quantifier consumer。 | child identityを失うflattening、implicit closure、truth value、theorem statusなし。 |
 | 258 | general theorem owner/statement-semantic shell、assumption/conclusion/witness、resolver identityとしてのlabel/citation、local context、visibility-scoped input fact、candidate fact input。Specs 15/16、MC-G019/020。 | Tasks 248-257、resolver label fact、準備済み`MT10-FS` consumer。 | input/candidate assumption/factのみ。verified premise publication、checked theorem fact、discharge、theorem acceptance、proof closureなし。 |
-| 259 | parameter、guard、definiens graph、property/correctness-condition identity、`InitialObligationId`、source anchor input、declaration provenanceを持つpredicate definition。Specs 09/16.6。 | Tasks 248-258、Task-10 definition consumer。 | recursive unfolding、property proof、obligation discharge、`VcId`、accepted obligation、overload selection、axiom publicationなし。 |
+| 259 | parameter、guard、definiens graph、property/correctness-condition identity、`InitialObligationId`、source anchor input、declaration provenanceを持つpredicate definition。Specs 09/16.6。 | separate Task-248 two-parameter profile extension後のexact Tasks 248/249/252/256 handoffとpass Task-10 definition consumer。frozen sourceではTasks 253-255/257/258はabsent。 | recursive unfolding、guard-conditioned FOL property-VC construction、property proof、obligation discharge、`VcId`、accepted obligation、overload selection、axiom publicationなし。future Task 272はunconsumed justification subtreeを保持。 |
 | 260 | `equals`/`means`、parameter、guard、result type、definiens、property/correctness-condition identity、`InitialObligationId`、source anchor input、declaration provenanceを持つfunctor definition。Specs 10/16.6。 | Tasks 248-259、Task-10 definition consumer。 | existence/uniqueness proof、obligation discharge、`VcId`、recursive unfolding、accepted result、overload winnerなし。 |
 | 261 | subject/parameter、positive/negative definiens、guard、radix/qualification、correctness obligation requestを持つattribute definition。Specs 06/09/16.6。 | Tasks 248-260、Task-10 attribute-definition consumer。 | attribute truth、cluster fact、existential evidence、accepted proof、redefinition selectionなし。 |
 | 262 | parameter、mode application、expansion/RHS、definiens、sethood/existence obligation request、declaration contextを持つmode definition。Specs 07/16.6。 | Tasks 248-261、Task-10 mode-definition consumer。 | property implementationはTask 264。accepted existence、expansion fact、registration activationなし。 |
@@ -1517,3 +1517,26 @@ env/module、derived namespace、exact one id-0 LocalSource record/source id、
 全projection fieldのrunner provenance authenticationはseparate input-only
 familyのまま。complete independent mutation matrixはchecker payload/
 confinement resultを作れない。
+
+## Task 259 Frozen Predicate-Definition Decomposition
+
+Task 259はone predicate-definition row、two ordered parameter rows、one
+guard row、one symmetry-property row、one correctness-condition rowへ
+decomposeする。exact lower graphはTask 249 `2/2/0`、Task 252 `4/4/0`、
+Task 256 `2/0/0/0/0/0/0/4/4`である。existing Task-248 handoffは独立した
+one-block/two-parameter profile extension後だけ利用可能になる。
+Tasks 253--255、257、258はrow/fingerprintを供給しない。
+
+definitionはequality definiensを指し、各parameterはone `BindingId`とone
+`SourceTypeApplicationId`を指し、guardはother equalityを指す。propertyは
+owner、source site/order、`Symmetry` kind、explicit justification anchor
+だけを指す。correctness rowはexactly one `Pending`
+`InitialObligationKind::PredicatePropertyCorrectness`を指す。assumptionsは
+emptyで、goal/provenanceはdeterministic opaque identityである。
+
+runnerはpropertyをsame definition block内でpredicateより後にあるdirect
+normal siblingとしてauthenticateする。resolver generic
+Attribute/Attribute property projectionをsemantic evidenceとしてconsume
+しない。Task 259はcomputation justificationをdescend/interpretせず、
+Task 272がfuture proof/justification ownershipを保持する。Task 260はmixed
+predicate-plus-functor gapをseparately retainする。

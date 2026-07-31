@@ -1454,3 +1454,17 @@ input/confinement keys, empty public codes, `421/389` metadata,
 checker/public semantic boundaries. The central coverage audit changes from
 prospective narrative to active credit only for the two confinement
 requirements; all broader R-G007 deferrals remain synchronized.
+
+## Checker Task 259 Frozen-Consumer Synchronization
+
+Canonical EN and companion JA synchronize the exact future pass fixture and
+sidecar path, 165-byte source/hash, normal parser/resolver identities, lower
+build order/profiles, Task-259 `1/2/1/1/1` oracle, one pending obligation,
+pass/empty-diagnostic expectation, and implementation-time count delta.
+They also synchronize expectation non-selection, mutation/isolation/
+determinism tests, generic property-projection non-consumption, Task-272
+justification ownership, and the unchanged mixed Task-260 gap.
+
+Both languages record that the present prerequisite changes documentation
+only and preserves `421/389`, `228/193`, `101/7/198/1`, type `253/241`, and
+warnings/errors `23/0`. There is no synchronization exception.

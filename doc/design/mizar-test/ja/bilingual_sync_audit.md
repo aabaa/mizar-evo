@@ -1404,3 +1404,17 @@ public code、`421/389` metadata、`228/193` pass/fail、
 記録する。central coverage auditは2 confinement requirementだけについて
 prospective narrativeからactive creditへ変わり、broader R-G007 deferralは
 すべて同期して残る。
+
+## Checker Task 259 Frozen-Consumer Synchronization
+
+canonical ENとcompanion JAはexact future pass fixture/sidecar path、
+165-byte source/hash、normal parser/resolver identity、lower build
+order/profile、Task-259 `1/2/1/1/1` oracle、one pending obligation、
+pass/empty-diagnostic expectation、implementation-time count deltaを同期する。
+expectation non-selection、mutation/isolation/determinism test、generic
+property-projection non-consumption、Task-272 justification ownership、
+unchanged mixed Task-260 gapも同期する。
+
+両言語はpresent prerequisiteがdocumentationだけを変更し、`421/389`、
+`228/193`、`101/7/198/1`、type `253/241`、warnings/errors `23/0`を
+preserveすることを記録する。synchronization exceptionはない。

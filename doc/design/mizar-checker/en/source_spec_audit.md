@@ -5078,3 +5078,35 @@ consumer (`5 -> 7`) found as `test_expectation_drift`/`design_drift`.
 Requirement `spec.en.checker.formula_statement.source_payloads` remains
 `deferred` with `tests = []`, and all non-confinement R-G007 families remain
 deferred.
+
+## Task 259 Frozen Authority Audit
+
+Chapter 9 authorizes typed predicate parameters, pre-definition `assume`
+guards, ordinary `means` definientia, and explicit predicate properties.
+Section 9.5 states that an ordinary predicate has no existence/uniqueness
+condition and that every explicit property creates a proof obligation.
+Chapter 16 Section 16.6 supplies the general correctness-condition boundary.
+This is sufficient authority for a transport-only pass case and exactly one
+pending symmetry-property obligation.
+
+The authority does not specify how a pre-definition guard is composed into
+the symmetry FOL verification condition. That is a nonblocking `spec_gap`
+for later semantic construction, not authority to invent a goal. Task 259
+therefore transports the guard and property separately, keeps obligation
+assumptions empty, and uses opaque goal/provenance identities. Proof,
+discharge, VC construction, and accepted-definition publication remain
+deferred.
+
+Fresh lower inspection classifies the absent predicate-definition handoff
+as `source_drift`, the absent real consumer/corruption coverage as
+`test_gap`, and the previously broad Task-259 prose plus current Task-248
+profile mismatch as `design_drift`. The parser/resolver source shape is
+adequate. There is no blocking canonical contradiction, unsafe test-intent
+inference, `test_expectation_drift`, `boundary_violation`, or
+`repo_metadata_conflict`.
+
+This documentation prerequisite adds narrative ownership only. It changes
+no specification, `.miz`, sidecar, expectation, trace row, mapping,
+backlink, status, count, or coverage credit. The existing Chapter-9
+diagnostic gap and mixed predicate-plus-functor gap remain unchanged; the
+latter still requires Task 260.

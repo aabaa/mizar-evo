@@ -12657,3 +12657,19 @@ No checker handoff accepts either unresolved reference. Parser/frontend,
 resolver, checker, public harness/CLI schema, type/proof/Core/CFG/VC, and
 semantic-result owners are unchanged. The boundary review therefore records
 no ownership transfer or `boundary_violation`.
+
+## Checker Task 259 Frozen Consumer Boundary
+
+`mizar-test` owns only exact source/AST selection and extraction of
+syntax-free Task-259 input from parser/resolver observations. It must reuse
+the extended Task-248 `SourceBindingContextHandoff`, which owns the
+authenticated `BindingEnv`, and the real Task-249/252/256 handoffs. It may
+not reconstruct bindings, infer predicate arity from empty
+resolver parameter shells, reinterpret the generic property projection,
+create obligation semantics, or publish proof/fact/VC results.
+
+The checker owns all five immutable tables, dependency-fingerprint
+validation, obligation insertion, and atomic typed/final installation.
+Task 272 retains property-justification proof ownership. The public runner
+facade, CLI schema, diagnostics, parser, resolver, and mixed Task-260 route
+remain unchanged by this documentation prerequisite.
