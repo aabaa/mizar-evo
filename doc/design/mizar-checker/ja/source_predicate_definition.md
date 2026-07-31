@@ -3,9 +3,11 @@
 > 正規言語は英語です。英語版:
 > [../en/source_predicate_definition.md](../en/source_predicate_definition.md)。
 
-状態: Checker Task 259 frozen-contract documentation prerequisite。本書は将来の
-実装境界を凍結するものであり、producer の実装、Task 248 の拡張、fixture や
-sidecar の追加、traceability や coverage credit の変更は行いません。
+状態: Checker Task 259 frozen contract plus post-Task-248 contract correction
+prerequisite。本書は将来の実装境界を凍結するものであり、producer の実装、
+fixture/sidecar の追加、traceability/coverage credit の変更は行いません。
+separately committed Task-248 Profile-B dependency は completed current
+state として下記に記録します。
 
 ## Authority、scope、finding
 
@@ -124,26 +126,31 @@ predicate resolver definitionのparameter/binder collectionは空でsyntactic ar
 ownershipを推測してはいけません。これらはexact private source selectorと、
 別途拡張されたTask-248 handoffだけから得ます。
 
-## 必須の別lower prerequisite
+## 必須の別lower prerequisite — 完了
 
-現行Task-248 producerは意図的に、元のreserve 1件＋同名shadowing parameter 1件
-のprofileだけを受理します。このsourceのnormal definition block 1件＋個別に型を
-記述したparameter 2件を拒否します。Task 259は`BindingEnv`を再構築したり、
-`BindingId`をfabricateしたり、Task-259 implementation commit内でTask 248を暗黙に
-拡張したりしてはいけません。
+元のTask-259 contractをfreezeした時点では、Task-248 producerはreserve 1件＋
+同名shadowing parameter 1件のProfile Aだけを受理し、このsourceのnormal
+definition block 1件＋個別に型を記述したparameter 2件を拒否していました。
+そのためcontractは、Task 259が`BindingEnv`を再構築せず、`BindingId`を
+fabricateせず、Task-259 implementation commit内でTask 248を拡張しないことを
+要求しました。この要求は引き続き有効です。
 
-本documentation prerequisiteのcommit直後に、自律開発は次の2 logical taskを
-別commitとして完成させます。
+必要だった別logical taskは完了済みです。
 
-1. normal `DefinitionBlock` 1件、順序付きで個別に記述された
-   `DefinitionParameter` binding 2件、reserve itemなし、というexact profileだけを
-   許可するTask-248 profile-extension documentation prerequisite。
-2. そのexact profileを検証し、既存の`SourceBindingContextHandoff`をpublishする
-   対応Task-248 implementation。
+1. `f9b47375acc18acebf56a69f5d8a7edec539c2be`が、normal
+   `DefinitionBlock` 1件、順序付きで個別に記述された
+   `DefinitionParameter` binding 2件、reserve itemなし、というProfile Bを
+   freezeしました。
+2. `ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36`が、そのprofileとprivate
+   exact runner selectorを実装し、既存`SourceBindingContextHandoff`を
+   preserveしました。
 
-両commit後のfresh inventoryからTask 259へ戻ります。このprerequisiteは必須です。
-これがなければ2つの`BindingId`、definition-local `BindingContextId`、parameter
-site、shadow/capture boundaryはcheckerによって認証されません。
+post-`ca54135f` fresh inventoryにより、exact 165-byte sourceから
+checker-authenticated `BindingId` 2件、definition-local
+`BindingContextId` 1件、exact parameter site、shadow/capture edgeなしが
+得られることを確認しました。Profile Aは不変です。したがって次の
+dependency-ready logical taskはTask-259 implementationであり、このhandoffを
+consumeしてownershipを重複させてはいけません。
 
 ## Frozen lower consumer bundle
 
@@ -265,6 +272,77 @@ pub enum SourcePredicateDefinitionRecovery {
 }
 ```
 
+## Public immutable output API
+
+immutable row type名と保存fieldはexactに次のとおりです。
+
+| Row type | API順の保存field |
+| --- | --- |
+| `SourcePredicateDefinition` | `id`, `symbol`, `definition`, `contribution`, `site`, `source_range`, `source_ordinal`, `context`, `recovery`, `spelling`, `definiens`, derived `origin` |
+| `SourcePredicateParameter` | `id`, `owner`, `ordinal`, `binding`, `written_type`, `site`, `source_range`, `declaration_range`, `context`, `recovery`, `spelling` |
+| `SourcePredicateGuard` | `id`, `owner`, `ordinal`, `formula`, `site`, `source_range`, `context`, `recovery`, `spelling` |
+| `SourcePredicateProperty` | `id`, `owner`, `ordinal`, `kind`, `site`, `source_range`, `justification`, `recovery`, `spelling` |
+| `SourcePredicateCorrectness` | `id`, `owner`, `property`, `ordinal`, `source_anchor`, derived `obligation` |
+
+各保存fieldは同名のread-only getterを1個持ちます。dense ID、resolver ID、
+ordinal、range、context、recovery/kind enum、obligationはvalueで返します。
+`symbol`、`site`、`origin`、`justification`、`source_anchor`はshared
+reference、`spelling()`は`&str`を返します。setter、mutable getter、public
+constructor、row replacement APIはありません。
+
+table名とsignatureはexactに次のとおりです。
+
+```rust
+pub struct SourcePredicateDefinitionTable { /* private rows */ }
+pub struct SourcePredicateParameterTable { /* private rows */ }
+pub struct SourcePredicateGuardTable { /* private rows */ }
+pub struct SourcePredicatePropertyTable { /* private rows */ }
+pub struct SourcePredicateCorrectnessTable { /* private rows */ }
+```
+
+各tableは`get(id) -> Option<&Row>`、
+`iter() -> impl Iterator<Item = (Id, &Row)>`、`const len() -> usize`、
+`const is_empty() -> bool`だけを公開します。`iter`はdense source orderであり、
+sortしません。
+
+handoffとproducer surfaceはexactに次のとおりです。
+
+```rust
+pub struct SourcePredicateDefinitionHandoff { /* private fields */ }
+
+impl SourcePredicateDefinitionHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn source_context_fingerprint(&self) -> &str;
+    pub fn source_type_fingerprint(&self) -> &str;
+    pub fn source_term_fingerprint(&self) -> &str;
+    pub fn source_atomic_formula_fingerprint(&self) -> &str;
+    pub const fn definitions(&self) -> &SourcePredicateDefinitionTable;
+    pub const fn parameters(&self) -> &SourcePredicateParameterTable;
+    pub const fn guards(&self) -> &SourcePredicateGuardTable;
+    pub const fn properties(&self) -> &SourcePredicatePropertyTable;
+    pub const fn correctness(&self) -> &SourcePredicateCorrectnessTable;
+    pub fn debug_text(&self) -> String;
+}
+
+pub struct SourcePredicateDefinitionProducer;
+```
+
+4 fingerprintは対応するlower handoffの完全な`debug_text()` stringであり、
+caller-supplied digestでもoptional valueでもありません。producerは4つのlower
+handoffがexact source/module identityを共有し、同じtyped arenaに対してinstall
+可能であることをvalidateした後でfingerprintをderiveします。
+
+## Public Enum Policy
+
+| Public enum | compatibility policy |
+| --- | --- |
+| `SourcePredicatePropertyKind` | `#[non_exhaustive]`。callerはlater explicitly-frozen predicate-property kindを許容する。 |
+| `SourcePredicateDefinitionRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |
+| `SourcePredicateDefinitionError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 transactional build result/error surfaceも次のように凍結します。
 
 ```rust
@@ -363,6 +441,37 @@ stable row-family/debug keyは正確に次の5つです。
 
 すべてのenumは`#[non_exhaustive]`です。exact sourceが受理するのはnormal rowだけで、
 `Degraded`はfail-closed extension boundaryとして存在し、このprofileでは拒否します。
+
+## Frozen debug grammar
+
+`SourcePredicateDefinitionHandoff::debug_text()`は唯一のdependency
+fingerprintであり、exactに`source-predicate-definition-debug-v1\n`で
+始まります。その後、次のline familyをこのexact orderで出力し、final LFを1件
+持ち、blank lineは持ちません。
+
+```text
+source-predicate-definition-debug-v1
+module: <ModuleId.path>
+source-context-fingerprint: <Rust-debug String>
+source-type-fingerprint: <Rust-debug String>
+source-term-fingerprint: <Rust-debug String>
+source-atomic-formula-fingerprint: <Rust-debug String>
+definition#<id> symbol=<Rust-debug FQN string> definition=<id> contribution=<id> ordinal=<n> range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> origin_range=<start>..<end> origin_path=<Rust-debug [u32]> spelling=<Rust-debug String> definiens=<id>
+parameter#<id> owner=<id> ordinal=<n> binding=<id> written_type=<id> range=<start>..<end> declaration_range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String>
+guard#<id> owner=<id> ordinal=<n> formula=<id> range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String>
+property#<id> owner=<id> ordinal=<n> kind=<symmetry> range=<start>..<end> site=node#<id> justification=range:<start>..<end> recovery=<normal|degraded> spelling=<Rust-debug String>
+correctness#<id> owner=<id> property=<id> ordinal=<n> anchor=range:<start>..<end> obligation=<id>
+```
+
+`Rust-debug String`はowned stringのstandard escaped `{:?}` renderingを
+意味します。exact admitted profileは`TypedSiteRef::Node`と
+`SourceAnchor::Range`だけを受理します。role site、point/generated anchor、
+imported/recovered origin、extra grammar branchはfail closedです。definition
+origin lineは、validationがsource/moduleをhandoff identity、
+`import_edge = None`、`recovered = false`に固定するため、それらのfieldを
+省略します。row lineはdefinition、parameter、guard、property、correctnessの
+dense table orderで出力します。typed/final debug renderingはこの完全なtextを
+exactly once含み、second Task-259 summaryを出力しません。
 
 ## Exact 5-table / obligation oracle
 
@@ -576,6 +685,48 @@ runner implementationでは次の4 focused testを凍結します。
 subtree exclusion、exact pass sidecar selection、mixed-route preservation、replay、
 mutation ownership、proof acceptance不在を認証します。
 
+## Exact implementation consumer / write scope
+
+implementation logical taskのexact code/test consumerは次のとおりです。
+
+- `crates/mizar-checker/src/source_predicate_definition.rs`: complete
+  producer、5 row/table、handoff/projection、validation、debug grammar、
+  focused checker test 5件
+- `crates/mizar-checker/src/lib.rs`、
+  `crates/mizar-checker/src/typed_ast.rs`、
+  `crates/mizar-checker/src/resolved_typed_ast.rs`: public module、one-shot
+  typed installation、final clone/revalidation、getter、dedicated error、
+  exact debug inclusion
+- `crates/mizar-checker/src/type_checker.rs`と
+  `crates/mizar-checker/src/registration_resolution.rs`: new
+  `InitialObligationKind`の既存exhaustive debug serializerだけ
+- `crates/mizar-checker/tests/lint_policy.rs`: documented-module、
+  public-enum、source/spec-audit allowlist。syntax-boundary testはcheckerの
+  全`.rs` fileを自動scanするためtask-specific allowlist entryを必要としない
+- `crates/mizar-test/src/runner.rs`、
+  `crates/mizar-test/src/runner/type_elaboration.rs`、new private
+  `crates/mizar-test/src/runner/type_elaboration/source_predicate_definition.rs`、
+  `crates/mizar-test/src/runner/tests.rs`、new
+  `crates/mizar-test/src/runner/tests/type_elaboration/source_predicate_definition.rs`:
+  exact selection、syntax-free input construction、lower-stage composition、
+  routing、focused runner test 4件
+- `crates/mizar-test/tests/metadata.rs`: active type countの既存mechanical
+  assertion 4件だけ
+- **Dedicated Consumer And Trace Intent**で命名したnew `.miz` 1件、
+  same-stem sidecar 1件、trace row 1件
+- checker/mizar-test EN/JA crate plan、todo、module-boundary audit、checker
+  EN/JA source/spec audit、このEN/JA module spec、
+  `doc/design/spec_coverage_audit.md`のsynchronized Task-259
+  implementation/closure record
+
+`ResolvedTypedAst`はtyped-owned complete `InitialObligationTable`をprivateに
+clone-preserveしてTask-259 correctness linkをrevalidateしますが、新しいpublic
+table getterやsecond inputは追加しません。Cargo manifestの変更は想定しません。
+既存specification、既存`.miz`、既存sidecar/expectation/trace row、mixed
+Task-260 case、すべてのTask-260+ implementation ownerはwrite scope外です。
+独立監査で発見したmechanical consumerはclassification/review後だけ追加でき、
+languageまたはtest intentをbroadenしてはいけません。
+
 ## Deferral / forbidden scope
 
 Task 259は次を禁止します。
@@ -613,8 +764,10 @@ parse/declaration/type/proof `101/7/199/1`、type coverage requirements 254 /
 covered 242です。これはexpected deltaであり、freshなcount/hash実測の代替では
 ありません。
 
-本documentation taskはcanonical EN/JA同期、findingsなしのreview、docs-only
-verification、exact staging、専用documentation commit 1件、protected stash不変
-かつcleanなpost-commit inventory後にのみexitします。次taskはTask-259 production
-implementationではなく、別Task-248 profile-extension documentation prerequisite
-です。
+元のdocumentation taskはcanonical EN/JA同期、review、verification、dedicated
+commit後にexitしました。別Task-248 documentation/implementation prerequisiteは
+`f9b47375` / `ca54135f`で完了済みです。このcontract-correction prerequisiteは
+EN/JA同期、findingsなしになるまでのrepeated review、docs-only verification、
+exact staging、専用documentation commit 1件、protected stash不変かつcleanな
+post-commit inventory後にのみexitします。次taskはTask-259 production
+implementationです。

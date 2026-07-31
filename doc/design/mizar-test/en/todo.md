@@ -3264,6 +3264,22 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete the dedicated commit and clean post-commit inventory.
-- [ ] Implement the separate Task-248 extension commit, then implement the
-  Checker Task-259 consumer and update only its frozen future metadata.
+- [x] Complete the dedicated documentation commit
+  `f9b47375acc18acebf56a69f5d8a7edec539c2be` and clean post-commit
+  inventory.
+- [x] Implement the separate Task-248 extension commit
+  `ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36`, then return to the Checker
+  Task-259 consumer.
+
+## Checker Task 259 Frozen-Consumer Correction Prerequisite
+
+- [x] Record completed Task-248 Profile B and current runner `508` baseline.
+- [x] Freeze the new private route leaf, parent facade/re-export, test include
+  and leaf, four mechanical metadata assertions, one pass fixture/sidecar,
+  and one trace row as exact future consumers.
+- [x] Keep `BindingEnv`, all lower handoffs, and Task-259 tables checker-owned;
+  keep raw AST/sibling/subtree authentication private to the runner.
+- [ ] Repeat specification/consumer review to no findings and complete
+  docs-only verification with every executable artifact byte-unchanged.
+- [ ] Commit only the correction documents, verify clean/stash-invariant
+  state, and fresh-inventory Task-259 implementation.

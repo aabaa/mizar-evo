@@ -3,10 +3,11 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_predicate_definition.md](../ja/source_predicate_definition.md).
 
-Status: Checker Task 259 frozen-contract documentation prerequisite. This
-document freezes a future implementation boundary; it does not implement the
-producer, extend Task 248, add a fixture or sidecar, or change traceability or
-coverage credit.
+Status: Checker Task 259 frozen contract plus post-Task-248 contract
+correction prerequisite. This document freezes a future implementation
+boundary; it does not implement the producer, add a fixture or sidecar, or
+change traceability or coverage credit. The separately committed Task-248
+Profile-B dependency is recorded below as completed current state.
 
 ## Authority, Scope, And Findings
 
@@ -128,27 +129,30 @@ and no syntactic arity. Task 259 must not infer arity two, parameter identity,
 or guard ownership from resolver fields. Those facts come only from the exact
 private source selector and the separately extended Task-248 handoff.
 
-## Mandatory Separate Lower Prerequisite
+## Mandatory Separate Lower Prerequisite — Completed
 
-The current Task-248 producer intentionally accepts only its original
-reserve-plus-one-shadowing-parameter profile. It rejects this source's one
-normal definition block with two separately typed parameters. Task 259 MUST
-NOT reconstruct a `BindingEnv`, fabricate `BindingId`s, or silently broaden
-Task 248 inside the Task-259 implementation commit.
+At the time the original Task-259 contract was frozen, the Task-248 producer
+accepted only its reserve-plus-one-shadowing-parameter Profile A. It rejected
+this source's one normal definition block with two separately typed
+parameters. The contract therefore required, and still requires, Task 259 not
+to reconstruct a `BindingEnv`, fabricate `BindingId`s, or broaden Task 248
+inside the Task-259 implementation commit.
 
-Immediately after this documentation prerequisite is committed, autonomous
-development must complete two separate logical tasks and commits:
+The required separate logical tasks are now complete:
 
-1. a Task-248 profile-extension documentation prerequisite that admits exactly
-   one normal `DefinitionBlock` with two ordered, separately written
-   `DefinitionParameter` bindings and no reserve item; and
-2. the matching Task-248 implementation, which validates that exact profile
-   and publishes the existing `SourceBindingContextHandoff`.
+1. `f9b47375acc18acebf56a69f5d8a7edec539c2be` freezes Profile B as exactly one
+   normal `DefinitionBlock`, two ordered separately written
+   `DefinitionParameter` bindings, and no reserve item; and
+2. `ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36` implements that profile and the
+   private exact runner selector while preserving the existing
+   `SourceBindingContextHandoff`.
 
-After both commits, fresh inventory returns to Task 259. This prerequisite is
-mandatory: without it the two `BindingId`s, definition-local
-`BindingContextId`, parameter sites, and shadow/capture boundary are not
-checker-authenticated.
+Fresh post-`ca54135f` inventory confirms the exact 165-byte source now yields
+two checker-authenticated `BindingId`s, one definition-local
+`BindingContextId`, exact parameter sites, and no shadow/capture edge. Profile
+A remains unchanged. Task 259 implementation is therefore the next
+dependency-ready logical task; it consumes this handoff and must not duplicate
+its ownership.
 
 ## Frozen Lower Consumer Bundle
 
@@ -272,6 +276,78 @@ pub enum SourcePredicateDefinitionRecovery {
 }
 ```
 
+## Public Immutable Output API
+
+The immutable row type names and stored fields are exact:
+
+| Row type | Stored fields, in API order |
+| --- | --- |
+| `SourcePredicateDefinition` | `id`, `symbol`, `definition`, `contribution`, `site`, `source_range`, `source_ordinal`, `context`, `recovery`, `spelling`, `definiens`, derived `origin` |
+| `SourcePredicateParameter` | `id`, `owner`, `ordinal`, `binding`, `written_type`, `site`, `source_range`, `declaration_range`, `context`, `recovery`, `spelling` |
+| `SourcePredicateGuard` | `id`, `owner`, `ordinal`, `formula`, `site`, `source_range`, `context`, `recovery`, `spelling` |
+| `SourcePredicateProperty` | `id`, `owner`, `ordinal`, `kind`, `site`, `source_range`, `justification`, `recovery`, `spelling` |
+| `SourcePredicateCorrectness` | `id`, `owner`, `property`, `ordinal`, `source_anchor`, derived `obligation` |
+
+Every stored field has one same-named read-only getter. Dense IDs, resolver
+IDs, ordinals, ranges, contexts, recovery/kind enums, and the obligation are
+returned by value. `symbol`, `site`, `origin`, `justification`, and
+`source_anchor` are returned by shared reference; `spelling()` returns
+`&str`. There are no setters, mutable getters, public constructors, or row
+replacement APIs.
+
+The table names and signatures are exact:
+
+```rust
+pub struct SourcePredicateDefinitionTable { /* private rows */ }
+pub struct SourcePredicateParameterTable { /* private rows */ }
+pub struct SourcePredicateGuardTable { /* private rows */ }
+pub struct SourcePredicatePropertyTable { /* private rows */ }
+pub struct SourcePredicateCorrectnessTable { /* private rows */ }
+```
+
+Each table exposes only `get(id) -> Option<&Row>`,
+`iter() -> impl Iterator<Item = (Id, &Row)>`, `const len() -> usize`, and
+`const is_empty() -> bool`. `iter` is dense source order and never sorts.
+
+The handoff and producer surface is exact:
+
+```rust
+pub struct SourcePredicateDefinitionHandoff { /* private fields */ }
+
+impl SourcePredicateDefinitionHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn source_context_fingerprint(&self) -> &str;
+    pub fn source_type_fingerprint(&self) -> &str;
+    pub fn source_term_fingerprint(&self) -> &str;
+    pub fn source_atomic_formula_fingerprint(&self) -> &str;
+    pub const fn definitions(&self) -> &SourcePredicateDefinitionTable;
+    pub const fn parameters(&self) -> &SourcePredicateParameterTable;
+    pub const fn guards(&self) -> &SourcePredicateGuardTable;
+    pub const fn properties(&self) -> &SourcePredicatePropertyTable;
+    pub const fn correctness(&self) -> &SourcePredicateCorrectnessTable;
+    pub fn debug_text(&self) -> String;
+}
+
+pub struct SourcePredicateDefinitionProducer;
+```
+
+The four fingerprints are the complete corresponding lower-handoff
+`debug_text()` strings, not caller-supplied digests and not optional values.
+The producer derives them after validating that all four lower handoffs share
+the exact source/module identity and install correctly against the same typed
+arena.
+
+## Public Enum Policy
+
+| Public enum | Compatibility policy |
+| --- | --- |
+| `SourcePredicatePropertyKind` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen predicate-property kinds. |
+| `SourcePredicateDefinitionRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
+| `SourcePredicateDefinitionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 The transactional build result and error surface is also frozen:
 
 ```rust
@@ -369,6 +445,38 @@ are borrowed and read-only. Stable row-family/debug keys are exactly:
 All enums are `#[non_exhaustive]`. The exact source accepts only normal rows;
 `Degraded` exists as a fail-closed extension boundary and is rejected by this
 profile.
+
+## Frozen Debug Grammar
+
+`SourcePredicateDefinitionHandoff::debug_text()` is the sole dependency
+fingerprint and begins exactly with
+`source-predicate-definition-debug-v1\n`. It then emits these line families
+in this exact order, with one final LF and no blank line:
+
+```text
+source-predicate-definition-debug-v1
+module: <ModuleId.path>
+source-context-fingerprint: <Rust-debug String>
+source-type-fingerprint: <Rust-debug String>
+source-term-fingerprint: <Rust-debug String>
+source-atomic-formula-fingerprint: <Rust-debug String>
+definition#<id> symbol=<Rust-debug FQN string> definition=<id> contribution=<id> ordinal=<n> range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> origin_range=<start>..<end> origin_path=<Rust-debug [u32]> spelling=<Rust-debug String> definiens=<id>
+parameter#<id> owner=<id> ordinal=<n> binding=<id> written_type=<id> range=<start>..<end> declaration_range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String>
+guard#<id> owner=<id> ordinal=<n> formula=<id> range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String>
+property#<id> owner=<id> ordinal=<n> kind=<symmetry> range=<start>..<end> site=node#<id> justification=range:<start>..<end> recovery=<normal|degraded> spelling=<Rust-debug String>
+correctness#<id> owner=<id> property=<id> ordinal=<n> anchor=range:<start>..<end> obligation=<id>
+```
+
+`Rust-debug String` means the standard escaped `{:?}` rendering of the owned
+string. The exact admitted profile accepts only `TypedSiteRef::Node` and
+`SourceAnchor::Range`; role sites, point/generated anchors, imported or
+recovered origins, and any extra grammar branch fail closed. The definition
+origin line omits source/module/import/recovery fields because validation has
+already fixed them to the handoff source/module, `import_edge = None`, and
+`recovered = false`. Row lines are emitted in dense table order:
+definition, parameter, guard, property, correctness. Typed and final debug
+rendering include this complete text exactly once and do not render a second
+Task-259 summary.
 
 ## Exact Five-Table And Obligation Oracle
 
@@ -594,6 +702,52 @@ lower counts and associations, subtree exclusions, exact pass sidecar
 selection, mixed-route preservation, replay, mutation ownership, and absence
 of proof acceptance.
 
+## Exact Implementation Consumers And Write Scope
+
+The implementation logical task has these exact code/test consumers:
+
+- `crates/mizar-checker/src/source_predicate_definition.rs` for the complete
+  producer, five rows/tables, handoff/projection, validation, debug grammar,
+  and the five focused checker tests;
+- `crates/mizar-checker/src/lib.rs`,
+  `crates/mizar-checker/src/typed_ast.rs`, and
+  `crates/mizar-checker/src/resolved_typed_ast.rs` for the public module,
+  one-shot typed installation, final clone/revalidation, getters, dedicated
+  errors, and exact debug inclusion;
+- `crates/mizar-checker/src/type_checker.rs` and
+  `crates/mizar-checker/src/registration_resolution.rs` only for their
+  existing exhaustive debug serializers of the new
+  `InitialObligationKind`;
+- `crates/mizar-checker/tests/lint_policy.rs` for the documented-module,
+  public-enum, and source/spec-audit allowlists; its syntax-boundary test
+  automatically scans every checker `.rs` file and needs no task-specific
+  allowlist entry;
+- `crates/mizar-test/src/runner.rs`,
+  `crates/mizar-test/src/runner/type_elaboration.rs`,
+  new private
+  `crates/mizar-test/src/runner/type_elaboration/source_predicate_definition.rs`,
+  `crates/mizar-test/src/runner/tests.rs`, and new
+  `crates/mizar-test/src/runner/tests/type_elaboration/source_predicate_definition.rs`
+  for exact selection, syntax-free input construction, lower-stage
+  composition, routing, and the four focused runner tests;
+- `crates/mizar-test/tests/metadata.rs` only for the four existing mechanical
+  active-type count assertions;
+- the one new `.miz`, same-stem sidecar, and one trace row named under
+  **Dedicated Consumer And Trace Intent**; and
+- synchronized Task-259 implementation/closure records in checker and
+  mizar-test EN/JA crate plan, todo, module-boundary audit, the checker EN/JA
+  source/spec audit, this EN/JA module spec, and
+  `doc/design/spec_coverage_audit.md`.
+
+`ResolvedTypedAst` privately clone-preserves the typed-owned complete
+`InitialObligationTable` so it can revalidate the Task-259 correctness link;
+it adds no public table getter and no second input. No Cargo manifest is
+expected to change. Existing specifications, existing `.miz` files, existing
+sidecars/expectations/trace rows, the mixed Task-260 case, and every Task-260+
+implementation owner are outside the write scope. An independently discovered
+mechanical consumer may be added only after classification and review; it may
+not broaden language or test intent.
+
 ## Deferrals And Forbidden Scope
 
 Task 259 forbids:
@@ -632,8 +786,11 @@ parse/declaration/type/proof `101/7/199/1`, and type coverage 254 requirements
 / 242 covered. These are expected deltas, not substitutes for fresh measured
 counts and hashes.
 
-This documentation task exits only after canonical EN and JA synchronization,
-review with no findings, docs-only verification, exact staging, one dedicated
-documentation commit, and clean post-commit inventory with the protected stash
-unchanged. The next task is the separate Task-248 profile-extension
-documentation prerequisite, not Task-259 production implementation.
+The original documentation task exited after canonical EN/JA synchronization,
+review, verification, and its dedicated commit. The separate Task-248
+documentation and implementation prerequisites are now complete at
+`f9b47375` and `ca54135f`. This contract-correction prerequisite exits only
+after EN/JA synchronization, repeated review with no findings, docs-only
+verification, exact staging, one dedicated documentation commit, and clean
+post-commit inventory with the protected stash unchanged. Its next task is
+Task-259 production implementation.

@@ -1210,9 +1210,10 @@ definition-local assumption is a Task-259 guard, not a Task-258 statement.
 The justification subtree is retained for future Task 272; Task 259 stores
 only its `SourceAnchor` and performs no proof work.
 
-Current Task 248 cannot publish the two definition parameters. A separate
-Task-248 extension must widen its exact admitted profile while preserving
-the existing public `SourceBindingContextHandoff`. Reconstructing
+At the original Task-259 freeze, Task 248 could not publish the two definition
+parameters. The separate documentation/implementation commits `f9b47375` and
+`ca54135f` now widen exactly that admitted profile while preserving the
+existing public `SourceBindingContextHandoff`. Reconstructing
 `BindingEnv` in Task 259 or in the runner would be a `boundary_violation`.
 Tasks 249, 252, and 256 remain lower owners of type, term, and equality rows.
 Task 260 owns functor-definition intake. No Core, CFG, VC, fact, axiom,
@@ -1234,3 +1235,29 @@ property proof. Guard, predicate, property, and justification descendants are
 no-row/no-descent at the Task-248 helper. This split closes the prospective
 binding-reconstruction `boundary_violation` without moving any semantic
 owner.
+
+## Task 259 Corrected Future Module Boundary
+
+The future public checker module is exactly
+`src/source_predicate_definition.rs`; `src/lib.rs`,
+`src/typed_ast.rs`, and `src/resolved_typed_ast.rs` are its only stateful
+checker consumers. `type_checker.rs` and `registration_resolution.rs` consume
+only the new obligation-kind debug name. `tests/lint_policy.rs` consumes the
+module for its documented-module, public-enum, and source/spec-audit
+allowlists. Its no-syntax boundary guard automatically scans every checker
+`.rs` file and needs no task-specific allowlist entry.
+
+`TypedAst` owns the one-shot atomic replacement of its authenticated baseline
+obligation table with the producer-completed table and the Task-259 handoff.
+`ResolvedTypedAst` receives no runner-replaceable input; it privately clones
+the typed-owned completed table, revalidates the correctness link and four
+lower fingerprints, and clone-preserves the handoff. It publishes no new
+obligation/fact/proof/acceptance getter.
+
+The runner's new private leaf owns whole-source selection, same-block sibling
+authentication, a shared surface-indexed arena, and syntax-free input
+construction. It reuses the completed Task-248 Profile B and lower Tasks
+249/252/256. The facade selects this exact route before generic type-gap
+fallback. Four mechanical active-type count assertions and one new
+fixture/sidecar/trace row are non-semantic consumers. No ownership moves to
+parser, resolver, Core/CFG/VC, facts, proofs, artifacts, or Task 260+.

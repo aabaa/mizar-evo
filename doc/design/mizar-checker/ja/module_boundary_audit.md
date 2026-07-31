@@ -1184,9 +1184,11 @@ assumptionはTask-259 guardでありTask-258 statementではない。justificati
 subtreeはfuture Task 272用にretainし、Task 259はその`SourceAnchor`だけを
 storeしてproof workを行わない。
 
-current Task 248はtwo definition parametersをpublishできない。separate
-Task-248 extensionはexisting public `SourceBindingContextHandoff`を維持して
-exact admitted profileをwidenしなければならない。Task 259またはrunnerで
+original Task-259 freeze時点ではTask 248はtwo definition parametersを
+publishできなかった。separate documentation/implementation commit
+`f9b47375` / `ca54135f`がexisting public
+`SourceBindingContextHandoff`を維持したままexact admitted profileをwiden
+した。Task 259またはrunnerで
 `BindingEnv`をreconstructするのは`boundary_violation`である。Tasks 249、
 252、256はtype/term/equality rowのlower ownerのまま。Task 260はfunctor
 definition intakeをownする。Core、CFG、VC、fact、axiom、accepted
@@ -1207,3 +1209,28 @@ Tasks 249/252/256はtype/term/formula extraction、Task 272はproperty proofをr
 する。guard/predicate/property/justification descendantはTask-248 helperで
 no-row/no-descentである。このsplitはsemantic ownerを移さずprospective
 binding-reconstruction `boundary_violation`をcloseする。
+
+## Task 259 Corrected Future Module Boundary
+
+future public checker moduleはexactに`src/source_predicate_definition.rs`であり、
+`src/lib.rs`、`src/typed_ast.rs`、`src/resolved_typed_ast.rs`だけがstateful
+checker consumerである。`type_checker.rs`と
+`registration_resolution.rs`はnew obligation-kind debug nameだけをconsume
+する。`tests/lint_policy.rs`はdocumented-module、public-enum、
+source/spec-audit allowlistのconsumerである。no-syntax boundary guardはcheckerの
+全`.rs` fileを自動scanするためtask-specific allowlist entryを必要としない。
+
+`TypedAst`はauthenticated baseline obligation tableをproducer-completed table
+とTask-259 handoffへone-shot atomic replacementするownerである。
+`ResolvedTypedAst`はrunner-replaceable inputを受けず、typed-owned complete
+tableをprivate cloneし、correctness linkと4 lower fingerprintをrevalidateし、
+handoffをclone-preserveする。new obligation/fact/proof/acceptance getterは
+publishしない。
+
+runnerのnew private leafはwhole-source selection、same-block sibling
+authentication、shared surface-indexed arena、syntax-free input constructionを
+ownする。completed Task-248 Profile Bとlower Tasks 249/252/256をreuseし、
+facadeはgeneric type-gap fallbackより前にこのexact routeをselectする。
+mechanical active-type count assertion 4件とnew fixture/sidecar/trace row各1件は
+non-semantic consumerである。parser、resolver、Core/CFG/VC、fact、proof、
+artifact、Task 260+へownershipは移動しない。

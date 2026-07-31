@@ -12687,3 +12687,19 @@ Task 259 later owns whole-source dispatch and arena composition; Tasks
 249/252/256 and 272 retain their existing payload/proof boundaries. This
 separate lower commit prevents a runner- or Task-259-owned binding
 reconstruction.
+
+## Checker Task 259 Corrected Consumer Boundary
+
+The completed Task-248 helper remains the sole runner bridge to the
+checker-owned definition-parameter `BindingEnv`; Task 259 cannot reconstruct
+or replace it. The new private Task-259 leaf owns only raw exact-source,
+same-block sibling, resolver, and subtree authentication plus shared-arena
+composition. All five immutable tables, fingerprints, obligation allocation,
+and typed/final installation remain checker-owned.
+
+`runner.rs` adds only an earlier exact-route dispatch. The parent
+`type_elaboration.rs`, test include, and metadata count assertions are
+mechanical consumers; the public runner API, CLI schema, diagnostics, and
+expectation selection do not change. The one new sidecar selects by normal
+source route, never by expected outcome. Mixed Task 260 and proof Task 272
+ownership remain unchanged.

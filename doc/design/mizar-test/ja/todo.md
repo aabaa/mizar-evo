@@ -3044,6 +3044,22 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gate PASS、
   score capなし、有効な `100/100`
   (`20/20/15/15/10/10/5/5`)でcompleteする。
-- [ ] dedicated commitとclean post-commit inventoryをcompleteする。
-- [ ] separate Task-248 extension commitをimplementしてからChecker Task-259
-  consumerをimplementし、そのfrozen future metadataだけを更新する。
+- [x] dedicated documentation commit
+  `f9b47375acc18acebf56a69f5d8a7edec539c2be`とclean post-commit
+  inventoryをcompleteする。
+- [x] separate Task-248 extension commit
+  `ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36`をimplementし、Checker
+  Task-259 consumerへ戻る。
+
+## Checker Task 259 Frozen-Consumer Correction Prerequisite
+
+- [x] completed Task-248 Profile Bとcurrent runner `508` baselineを記録する。
+- [x] new private route leaf、parent facade/re-export、test include/leaf、
+  mechanical metadata assertion 4件、pass fixture/sidecar 1件、trace row
+  1件をexact future consumerとしてfreezeする。
+- [x] `BindingEnv`、全lower handoff、Task-259 tableをchecker-ownedに保ち、
+  raw AST/sibling/subtree authenticationをrunner privateに保つ。
+- [ ] specification/consumer reviewをfindingsなしまでrepeatし、全executable
+  artifact byte-unchangedでdocs-only verificationをcompleteする。
+- [ ] correction documentだけをcommitし、clean/stash-invariant stateをverifyし、
+  Task-259 implementationをfresh-inventoryする。

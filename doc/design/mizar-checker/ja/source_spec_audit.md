@@ -4922,3 +4922,28 @@ siteをauthenticateする。later predicate/guard/property/proof meaningはす�
 excludeする。本docs-only taskはdesign mapping/follow-up ownershipをnarrativeに
 変更するだけでexecutable coverageを与えず、
 `tests/coverage/spec_trace.toml`をbyte-unchangedに保つ。
+
+## Task 259 Corrected Future Public-Surface Audit
+
+`source_predicate_definition.md`はfuture public
+`source_predicate_definition`のowning module specificationである。five dense
+ID、five input row、five immutable output row/table、handoff/projection、
+producer、three `#[non_exhaustive]` enumをfreezeする。その`Public Enum
+Policy`は`SourcePredicatePropertyKind`、
+`SourcePredicateDefinitionRecovery`、
+`SourcePredicateDefinitionError`をclassifyし、exhaustive exceptionを持たない。
+
+implementationは同じlogical task内で、このmoduleを`lib.rs`、本auditの
+module-spec/crate-export/public-surface inventory、
+`tests/lint_policy.rs`の3 allowlistへ追加しなければならない。public row
+surfaceはread-onlyであり、derived `SemanticOrigin`、4 lower debug
+fingerprint、allocated `InitialObligationId`をcallerはsupplyできない。typed
+installationはsole Task-259 publication pathで、final assemblyはtyped-owned
+cloneだけを受ける。
+
+fresh post-`ca54135f` reviewはmissing current moduleをexpected
+`source_drift`、absent executable consumerを`test_gap`、implicit future
+API/policyとstale prerequisite recordを本documentation correctionがrepairする
+`design_drift`にclassifyする。blocking `spec_gap`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`boundary_violation`、`repo_metadata_conflict`はない。

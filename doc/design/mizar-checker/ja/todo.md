@@ -6051,7 +6051,30 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gate PASS、
   score capなし、有効な `100/100`
   (`20/20/15/15/10/10/5/5`)でcompleteする。
-- [ ] exact-scope staging、one dedicated documentation commit、
+- [x] exact-scope staging、one dedicated documentation commit
+  `f9b47375acc18acebf56a69f5d8a7edec539c2be`、
   clean/stash-invariant post-commit inventoryをcompleteする。
-- [ ] separate Task-248 extensionをone logical task/commitでfresh-inventory/
+- [x] separate Task-248 extensionをone logical task/commit
+  `ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36`でfresh-inventory/
   implementし、Task 259 implementationへ戻る。
+
+## Checker Task 259 Frozen-Contract Correction Prerequisite
+
+- [x] pre-implementation findingをmissing public-enum/lint consumer policy、
+  implicit immutable output/debug ABI、stale Task-248 closure stateという
+  nonblocking `design_drift`にclassifyする。
+- [x] exact five output row field/getter、five immutable table API、four
+  complete dependency fingerprint、handoff/producer surface、complete
+  line-family debug grammarをsynchronized EN/JAでfreezeする。
+- [x] `lib.rs`、typed/final、obligation serializer、lint policy、runner
+  facade/new route/new test leaf、metadata count assertion、fixture/sidecar/
+  trace row各1件、derived audit recordをexact future consumerとしてfreezeする。
+- [x] Task-248 commit `f9b47375` / `ca54135f`、Profile-B readiness、runner
+  `508`、current production/test-list hash、Task-259 implementationがnext
+  dependency-ready taskであることを記録する。
+- [x] specification/documentation reviewをfindingsなしまでrepeatし、
+  production source、fixture、sidecar、expectation、trace status/count、
+  Cargo metadataを変更せずdocs-only verificationをcompleteする。
+- [ ] correction documentだけをstageしてdedicated commit 1件を作り、
+  clean/stash-invariant post-commit stateをverifyし、Task-259
+  implementationをfresh-inventoryする。

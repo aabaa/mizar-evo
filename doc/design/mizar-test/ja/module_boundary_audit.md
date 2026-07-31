@@ -11429,3 +11429,18 @@ current active Profile-A functionをwidenまたはselectorとしてreuseしな�
 はlater whole-source dispatch/arena composition、Tasks 249/252/256/272はexisting
 payload/proof boundaryをownする。このseparate lower commitはrunner/Task-259-owned
 binding reconstructionを防ぐ。
+
+## Checker Task 259 Corrected Consumer Boundary
+
+completed Task-248 helperはchecker-owned definition-parameter `BindingEnv`
+へのsole runner bridgeのままであり、Task 259はreconstruct/replaceできない。
+new private Task-259 leafはraw exact-source、same-block sibling、resolver、
+subtree authenticationとshared-arena compositionだけをownする。five immutable
+table、fingerprint、obligation allocation、typed/final installationはすべて
+checker-ownedのままである。
+
+`runner.rs`が追加するのはearlier exact-route dispatchだけ。parent
+`type_elaboration.rs`、test include、metadata count assertionはmechanical
+consumerで、public runner API、CLI schema、diagnostic、expectation selectionは
+変更しない。new sidecar 1件はnormal source routeでselectされ、expected outcome
+では選択されない。mixed Task 260とproof Task 272 ownershipは不変である。

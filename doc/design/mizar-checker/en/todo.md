@@ -6338,7 +6338,32 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete exact-scope staging, one dedicated documentation commit, and
+- [x] Complete exact-scope staging, one dedicated documentation commit
+  `f9b47375acc18acebf56a69f5d8a7edec539c2be`, and
   clean/stash-invariant post-commit inventory.
-- [ ] Fresh-inventory and implement the separate Task-248 extension in one
-  logical task/commit, then return to Task 259 implementation.
+- [x] Fresh-inventory and implement the separate Task-248 extension in one
+  logical task/commit
+  `ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36`, then return to Task 259
+  implementation.
+
+## Checker Task 259 Frozen-Contract Correction Prerequisite
+
+- [x] Reclassify the pre-implementation findings as nonblocking
+  `design_drift`: missing public-enum/lint consumer policy, implicit immutable
+  output/debug ABI, and stale Task-248 closure state.
+- [x] Freeze the exact five output row fields/getters, five immutable table
+  APIs, four complete dependency fingerprints, handoff/producer surface, and
+  complete line-family debug grammar in synchronized EN/JA.
+- [x] Freeze `lib.rs`, typed/final, obligation serializers, lint policy,
+  runner facades/new route/new test leaf, metadata count assertions, one
+  fixture/sidecar/trace row, and derived audit records as exact future
+  consumers.
+- [x] Record Task-248 commits `f9b47375` / `ca54135f`, Profile-B readiness,
+  runner `508`, current production/test-list hashes, and Task-259
+  implementation as the next dependency-ready task.
+- [x] Repeat specification/documentation review to no findings and complete
+  docs-only verification without changing production source, fixtures,
+  sidecars, expectations, trace status/count, or Cargo metadata.
+- [ ] Stage only the correction documents, create one dedicated commit,
+  verify clean/stash-invariant post-commit state, and fresh-inventory
+  Task-259 implementation.

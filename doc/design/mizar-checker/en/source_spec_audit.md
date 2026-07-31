@@ -5133,3 +5133,28 @@ definition shell, and shared-arena sites. All later predicate/guard/property/
 proof meaning stays excluded. This docs-only task changes design mapping and
 follow-up ownership narratively but grants no executable coverage and leaves
 `tests/coverage/spec_trace.toml` byte-unchanged.
+
+## Task 259 Corrected Future Public-Surface Audit
+
+`source_predicate_definition.md` is the owning future module specification
+for public `source_predicate_definition`. It freezes five dense IDs, five
+input rows, five immutable output rows/tables, the handoff and projection,
+the producer, and three `#[non_exhaustive]` enums. Its `Public Enum Policy`
+classifies `SourcePredicatePropertyKind`,
+`SourcePredicateDefinitionRecovery`, and
+`SourcePredicateDefinitionError`, with no exhaustive exception.
+
+The implementation must add this module to `lib.rs`, this audit's module-spec,
+crate-export, and public-surface inventories, and all three allowlists in
+`tests/lint_policy.rs` in the same logical task. The public row surface is
+read-only; derived `SemanticOrigin`, four lower debug fingerprints, and the
+allocated `InitialObligationId` cannot be supplied by callers. Typed
+installation is the sole Task-259 publication path; final assembly receives
+only the typed-owned clone.
+
+Fresh post-`ca54135f` review classifies the missing current module as expected
+`source_drift` and the absent executable consumer as `test_gap`. The implicit
+future API/policy and stale prerequisite records are `design_drift` repaired
+by this documentation correction. There is no blocking `spec_gap`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, or `repo_metadata_conflict`.

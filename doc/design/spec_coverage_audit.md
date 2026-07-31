@@ -5717,10 +5717,12 @@ Future Task 272 retains the property-justification subtree. The mixed
 predicate-plus-functor diagnostic case and its existing trace arrays remain
 unchanged until Task 260.
 
-Task 259 depends on a separate Task-248 two-definition-parameter profile
-extension before implementation. The current documentation prerequisite does
-not add the future fixture, sidecar, or trace row and changes no mapping,
-owner field, backlink, status, count, active outcome, or coverage credit.
+Task 259 depended on a separate Task-248 two-definition-parameter profile
+extension before implementation. That dependency is now complete at
+`f9b47375` / `ca54135f`; it grants no corpus credit. The current
+documentation correction does not add the future fixture, sidecar, or trace
+row and changes no mapping, owner field, backlink, status, count, active
+outcome, or coverage credit.
 `tests/coverage/spec_trace.toml` remains byte-unchanged. Current metadata
 therefore remains cases/requirements `421/389`, pass/fail `228/193`, active
 parse/declaration/type/proof `101/7/198/1`, declaration requirements
@@ -5758,9 +5760,10 @@ The design mapping now names `source_context.md` as the checker owner and the
 private `mizar-test` source-context helper as the exact future lower consumer.
 It returns the existing syntax-free handoff and excludes every predicate,
 guard, property, justification, formula, proof, Task-249+, and semantic row.
-This closes documentation ownership only. The checker profile gate/helper
-remain bounded `source_drift`, and focused Profile-B tests remain `test_gap`
-until the separate implementation commit.
+The documentation ownership was followed by implementation commit
+`ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36`; the checker profile gate/helper
+and four focused Profile-B tests are now complete without executable corpus
+credit.
 
 No specification, `.miz`, sidecar, expectation, trace row, status, backlink,
 owner field inside `spec_trace.toml`, active mapping, or coverage credit
@@ -5775,7 +5778,25 @@ frozen Task-259 consumer may move these values to `422/390`, `229/193`,
 
 The final documentation review closes with **NO FINDINGS**, all nine protocol
 hard gates PASS, no score cap, and valid `100/100`
-(`20/20/15/15/10/10/5/5`). The remaining Profile-B implementation
-`source_drift`/`test_gap`, human-owned same-name re-reservation `spec_gap`,
-and Task-259/272 semantic deferrals are explicit follow-up ownership rather
-than current coverage credit.
+(`20/20/15/15/10/10/5/5`). The human-owned same-name re-reservation
+`spec_gap` and Task-259/272 semantic deferrals remain explicit follow-up
+ownership rather than current coverage credit.
+
+## Checker Task 259 Frozen-Contract Correction Ownership
+
+Fresh post-`ca54135f` review found no canonical contradiction. It classified
+the absent future checker module as expected `source_drift`, the absent
+executable pass consumer as `test_gap`, and the implicit public API/enum
+policy plus stale prerequisite records as repairable `design_drift`. The
+correction freezes the exact future module, immutable rows/tables, lower
+fingerprints, debug ABI, lint/audit consumers, private runner route, one
+fixture/sidecar/trace row, and all mechanical count consumers.
+
+This remains narrative-only ownership. No specification, `.miz`, sidecar,
+expectation, trace row/status/backlink, owner field, active mapping, or
+coverage credit changes in the correction commit. Current metadata stays
+`421/389`, `228/193`, `101/7/198/1`, type `253/241`, and warnings/errors
+`23/0`; `tests/coverage/spec_trace.toml` is deliberately byte-unchanged.
+Only the following Task-259 implementation may add the one covered
+requirement and pass case, moving to `422/390`, `229/193`,
+`101/7/199/1`, and type `254/242`.
