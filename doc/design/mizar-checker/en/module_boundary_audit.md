@@ -1217,3 +1217,20 @@ the existing public `SourceBindingContextHandoff`. Reconstructing
 Tasks 249, 252, and 256 remain lower owners of type, term, and equality rows.
 Task 260 owns functor-definition intake. No Core, CFG, VC, fact, axiom,
 accepted definition, public diagnostic, or proof owner moves.
+
+## Task 248 Two-Parameter Extension Module Boundary
+
+`mizar-checker::source_context` remains the sole owner of Profile-B
+validation, `BindingEnv` construction, dense bindings/contexts, and the
+existing immutable handoff. It imports no syntax and adds no public API.
+`mizar-test` owns only a private exact direct-parameter extractor, real
+resolver-shell authentication, and validation of caller-owned sites against
+the shared typed arena. The helper returns a projection; it cannot allocate a
+competing arena/typed AST or select an active route.
+
+Task 259 owns exact whole-source selection and later predicate tables. Tasks
+249/252/256 retain type/term/formula extraction, and Task 272 retains the
+property proof. Guard, predicate, property, and justification descendants are
+no-row/no-descent at the Task-248 helper. This split closes the prospective
+binding-reconstruction `boundary_violation` without moving any semantic
+owner.

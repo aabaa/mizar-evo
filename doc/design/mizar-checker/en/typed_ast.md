@@ -1638,3 +1638,18 @@ coercion, diagnostic, `VcId`, proof status, accepted result, axiom, or IR
 node. The guard remains a source-formula link rather than an obligation
 assumption. Future semantic consumers must not infer a FOL goal from the
 opaque strings frozen here.
+
+## Task 248 Two-Parameter Profile-B Typed Installation
+
+The lower implementation does not add an installer. It returns the existing
+projection whose local contexts are installed through the current
+`TypedAstParts::source_context` path. Before projection, the private runner
+validates four caller sites against the one shared `TypedArena`: module site
+is the root at context 0; definition and two declaration sites have their
+exact ranges and context 1; all nodes are normal and distinct as sites.
+
+Existing typed validation independently rechecks anchors, contexts, root
+ownership, item/declaration sites, and links. Any stale or duplicate site
+fails without a partial handoff. Profile A installation/debug/recovery and
+all type/fact/coercion/obligation/diagnostic tables remain byte-compatible.
+Task-259 installation is still a later, separate transaction.

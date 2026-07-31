@@ -1633,3 +1633,13 @@ dependency bytes. Final assembly cannot replace the handoff, reinterpret the
 guard or property, consume the justification subtree, construct a FOL goal,
 or turn the pending obligation into a fact, proof, VC, accepted definition,
 or axiom.
+
+## Task 248 Two-Parameter Profile-B Final Clone
+
+Final assembly uses the unchanged source-context clone path. It accepts
+Profile B only after typed validation has retained exact
+`1/2/2/2/2/2/0` state and revalidates the existing handoff invariants; no
+separately replaceable runner input is added. Clone/debug order and bytes are
+deterministic, and invalid Profile-B state cannot be repaired or partially
+published. No Task-249+, Task-259, fact, obligation, proof, or semantic row is
+created by this lower profile.

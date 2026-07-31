@@ -1191,3 +1191,19 @@ exact admitted profileをwidenしなければならない。Task 259またはrun
 252、256はtype/term/equality rowのlower ownerのまま。Task 260はfunctor
 definition intakeをownする。Core、CFG、VC、fact、axiom、accepted
 definition、public diagnostic、proof ownerは移動しない。
+
+## Task 248 Two-Parameter Extension Module Boundary
+
+`mizar-checker::source_context`はProfile-B validation、`BindingEnv`
+construction、dense binding/context、existing immutable handoffのsole ownerの
+ままである。syntaxをimportせずpublic APIを追加しない。`mizar-test`がownするのは
+private exact direct-parameter extractor、real resolver-shell authentication、
+caller-owned siteのshared typed arenaに対するvalidationだけである。helperは
+projectionを返すだけで、competing arena/typed ASTをallocateせずactive routeを
+selectしない。
+
+Task 259はexact whole-source selectionとlater predicate tableをownする。
+Tasks 249/252/256はtype/term/formula extraction、Task 272はproperty proofをretain
+する。guard/predicate/property/justification descendantはTask-248 helperで
+no-row/no-descentである。このsplitはsemantic ownerを移さずprospective
+binding-reconstruction `boundary_violation`をcloseする。

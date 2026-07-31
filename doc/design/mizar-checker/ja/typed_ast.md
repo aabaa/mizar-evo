@@ -1570,3 +1570,18 @@ coercion、diagnostic、`VcId`、proof status、accepted result、axiom、IR nod
 は追加しない。guardはobligation assumptionではなくsource-formula linkの
 ままである。future semantic consumerはここで凍結したopaque stringからFOL
 goalをinferしてはならない。
+
+## Task 248 Two-Parameter Profile-B Typed Installation
+
+lower implementationはinstallerを追加しない。existing
+`TypedAstParts::source_context` pathでlocal contextをinstallする既存projectionを
+返す。projection前にprivate runnerはfour caller siteをone shared
+`TypedArena`に対してvalidateする。module siteはcontext 0のroot、
+definition/two declaration siteはexact range/context 1、全nodeはnormalでsiteは
+distinctである。
+
+existing typed validationはanchor、context、root ownership、item/declaration
+site、linkを独立にrecheckする。stale/duplicate siteはpartial handoffなしでfailする。
+Profile A installation/debug/recoveryと全type/fact/coercion/obligation/diagnostic
+tableはbyte-compatibleのまま。Task-259 installationはlater separate
+transactionである。

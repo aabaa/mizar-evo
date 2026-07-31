@@ -703,3 +703,18 @@ recovered/malformed、qualified/grouped/bulk、template formにordinal/descent�
 projection namespace/module/contribution、exact id-0 LocalSource record/
 source-id mutationはrunner input authenticationだけである。sole
 `proof_scope_input` outputはこのcrateへ入らない。
+
+## Task 248 Two-Parameter Profile-B Binding Boundary
+
+Profile Bはbinding APIを追加しない。existing producerはone normal definition
+item/two ordered `DefinitionParameter` inputを受け、definition context 1に
+binding ids 0/1をpublishする。module context 0はempty、definition context 1は
+parent 0、scope `[0]`、bindings/visible bindings `[0,1]`を持つ。両rowは
+ordinals 0/1、exact declaration/type range、empty capture、no shadowのactive
+resolver-local identityである。declaration 1のpredecessor 0はsource orderだけを
+記録する。
+
+same-scope duplicate、recovery、reserve hybrid、extra item/binding、stale
+scope/ordinal/range/site provenanceはfail-closedのまま。Profile Aのreserve/local
+shadowとrecovered-empty branchは不変。Task 259はこのhandoffをconsumeするだけで
+reconstructできない。

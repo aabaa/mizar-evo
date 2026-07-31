@@ -728,3 +728,18 @@ context. Likewise, env/module, projection namespace/module/contribution, and
 exact id-0 LocalSource record/source-id mutations are runner input
 authentication only. Their sole `proof_scope_input` output does not enter
 this crate.
+
+## Task 248 Two-Parameter Profile-B Binding Boundary
+
+Profile B adds no binding API. The existing producer receives one normal
+definition item and two ordered `DefinitionParameter` inputs, then publishes
+binding ids 0/1 in definition context 1. Module context 0 is empty;
+definition context 1 has parent 0, scope `[0]`, bindings and visible bindings
+`[0,1]`. Both rows are active resolver-local identities with ordinals 0/1,
+exact declaration/type ranges, empty captures, and no shadow. Declaration 1's
+predecessor 0 records source order only.
+
+Same-scope duplicates, recovery, a reserve hybrid, extra items/bindings, and
+stale scope/ordinal/range/site provenance remain fail-closed. Profile A's
+reserve/local shadow and recovered-empty branch are unchanged. Task 259 may
+only consume this handoff and may not reconstruct it.

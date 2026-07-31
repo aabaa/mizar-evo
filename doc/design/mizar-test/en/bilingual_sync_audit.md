@@ -1468,3 +1468,13 @@ justification ownership, and the unchanged mixed Task-260 gap.
 Both languages record that the present prerequisite changes documentation
 only and preserves `421/389`, `228/193`, `101/7/198/1`, type `253/241`, and
 warnings/errors `23/0`. There is no synchronization exception.
+
+## Checker Task 248 Two-Parameter Prerequisite Synchronization
+
+EN and JA synchronize the dormant extractor signature, real shell and direct
+parameter oracle, shared-arena site validation, Profile-A preservation,
+default-deny exclusions, exact five-file/four-test implementation scope,
+runner `504 -> 508` projection, unchanged active metadata, and separate
+documentation/implementation commits. Both record the findings-free,
+nine-gate, uncapped `100/100` documentation-quality result. There is no
+exception.

@@ -3023,8 +3023,27 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 4つすべてのfindings-free review、full verificationとcount/hash
   reproduction、全9 hard gate PASSのindependent final quality
   `100/100`をcompleteする。
-- [ ] task-only documentation commitとpost-commit fresh inventoryを
-  completeする。
-- [ ] docs commit後にseparate Task-248 extension prerequisite pairをcomplete
-  し、Checker Task-259 consumerをimplementしてprojected `422/390`、
-  `229/193`、`101/7/199/1`、`254/242` metadataだけを更新する。
+- [x] task-only documentation commit
+  `d5294b8f4be46a420bbdfa2fc4062384be983ce0`とpost-commit fresh
+  inventoryをcompleteする。
+- [x] separate Task-248 extension documentation prerequisiteをfresh-inventory
+  する。
+
+## Checker Task 248 Two-Parameter Runner Prerequisite
+
+- [x] future Task-259 sourceからexact shell/direct-parameter/range/type/
+  source-order extractionをfreezeし、active routeをselectしない。
+- [x] caller-owned site plus shared-arena anchor/context validationをfreezeし、
+  existing Task-248 projectionだけを返す。
+- [x] Profile Aをpreserveし、全guard/predicate/property/justification
+  descendantとTask 249+/259 semanticsをexcludeする。
+- [x] five-file Rust scope、four-test matrix、runner `504 -> 508`
+  projection、no fixture/sidecar/trace/count deltaをfreezeする。
+- [x] findings-free reviewとfull docs-only focused/crate/workspace/count/hash
+  verificationをcompleteする。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gate PASS、
+  score capなし、有効な `100/100`
+  (`20/20/15/15/10/10/5/5`)でcompleteする。
+- [ ] dedicated commitとclean post-commit inventoryをcompleteする。
+- [ ] separate Task-248 extension commitをimplementしてからChecker Task-259
+  consumerをimplementし、そのfrozen future metadataだけを更新する。

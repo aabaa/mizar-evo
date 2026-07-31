@@ -1505,3 +1505,13 @@ goal/provenance, the pass sidecar/trace intent, identical corruption and
 installation matrices, all semantic deferrals, and unchanged baseline
 counts. There is no synchronization exception. No production/test/trace
 artifact changes in this documentation prerequisite.
+
+## Task 248 Two-Parameter Profile Synchronization
+
+Canonical EN and companion JA synchronize Profile A preservation, normal-only
+Profile B, the exact Task-259 lower ranges, shell/scope/binding/table oracle,
+shared-`TypedArena` private extractor, no-shadow result, subtree exclusions,
+five-file implementation scope, four-test matrix, projected runner
+`504 -> 508`, unchanged metadata/trace credit, and separate commit order.
+There is no synchronization exception. Both record the findings-free,
+nine-gate, uncapped `100/100` documentation-quality result.

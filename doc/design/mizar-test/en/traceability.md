@@ -2098,3 +2098,12 @@ Task-260 case remain deferred.
 
 Current metadata stays `421/389` and type `253/241`; the projected
 implementation values are `422/390` and type `254/242`.
+
+## Checker Task 248 Two-Parameter Prerequisite Trace No-Op
+
+The lower documentation and implementation add no `.miz`, sidecar,
+expectation, requirement, backlink, status, or coverage credit. Profile B is
+exercised only by focused Rust tests until the later Task-259 pass case lands.
+`tests/coverage/spec_trace.toml` therefore remains byte-unchanged, current
+metadata remains `421/389` and type `253/241`, and the future Task-259 delta
+remains owned by its existing frozen trace intent.

@@ -1569,3 +1569,12 @@ clone/debug renderingはexact ID、order、string、anchor、dependency bytesを
 preserveする。final assemblyはhandoffをreplaceせず、guard/propertyを
 reinterpretせず、justification subtreeをconsumeせず、FOL goalをconstruct
 せず、pending obligationをfact/proof/VC/accepted definition/axiomへ変えない。
+
+## Task 248 Two-Parameter Profile-B Final Clone
+
+final assemblyはunchanged source-context clone pathを使う。typed validationが
+exact `1/2/2/2/2/2/0` stateをretainしexisting handoff invariantをrevalidateした
+場合だけProfile Bをacceptし、separately replaceable runner inputを追加しない。
+clone/debug order/bytesはdeterministicで、invalid Profile-B stateをrepairまたは
+partial publishできない。本lower profileはTask-249+、Task-259、fact、
+obligation、proof、semantic rowを作らない。

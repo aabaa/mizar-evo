@@ -6311,7 +6311,34 @@ implementation commit does not satisfy a producer task.
   implementation-boundary, and source/documentation reviews; full
   docs/count/hash verification; and independent final quality with all nine
   hard gates PASS and valid `100/100`.
-- [ ] Complete the task-only commit and post-commit fresh inventory.
-- [ ] Fresh-inventory and complete the separate Task-248 two-parameter
-  profile-extension documentation prerequisite and implementation, each as
-  one logical task/commit, then return to Task 259 implementation.
+- [x] Complete the task-only commit
+  `d5294b8f4be46a420bbdfa2fc4062384be983ce0` and post-commit fresh
+  inventory.
+- [x] Fresh-inventory the separate Task-248 two-parameter profile-extension
+  documentation prerequisite before implementation.
+
+## Checker Task 248 Two-Parameter Profile-Extension Documentation Prerequisite
+
+- [x] Preserve implemented Profile A exactly, including its one shadow link,
+  recovered-empty branch, active route, public errors, and debug grammar.
+- [x] Freeze normal-only Profile B: one top-level definition shell, no
+  reserve, ordered direct `x`/`y` parameters and bare `set` ranges, scope
+  `[0]`, dense bindings `0/1`, and no shadow.
+- [x] Freeze syntax-free checker validation, real shell provenance, the
+  private shared-`TypedArena` extractor, exact `1/2/2/2/2/2/0` tables, and
+  total guard/predicate/property/justification subtree exclusion.
+- [x] Classify `design_drift`, bounded `source_drift`, and `test_gap`;
+  prohibit Task-259-private binding reconstruction and preserve every
+  semantic deferral.
+- [x] Freeze exactly five later Rust files and four runner tests, projected
+  runner `504 -> 508`, unchanged corpus/CLI/trace metadata, and fresh-hash
+  requirements.
+- [x] Complete findings-free documentation/test-boundary/source-consistency
+  reviews and full docs-only focused/crate/workspace/count/hash verification.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete exact-scope staging, one dedicated documentation commit, and
+  clean/stash-invariant post-commit inventory.
+- [ ] Fresh-inventory and implement the separate Task-248 extension in one
+  logical task/commit, then return to Task 259 implementation.

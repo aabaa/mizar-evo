@@ -4691,3 +4691,17 @@ selectしない。
 later implementationだけがone pass sidecar、one trace row、mechanical
 active-type metadata incrementを追加する。このfrozen runner contractはrunner
 source、fixture、sidecar、trace、diagnostic、countを変更しない。
+
+## Checker Task 248 Two-Parameter Dormant Extractor
+
+prerequisiteはactive harness routeを追加しない。later private helperはtests、および
+その後exact Task-259 leafがsource/AST/definition identityをselectした後だけcall
+される。real DefinitionBlock shell 0、direct leading parameter nodes 41/45、
+exact `x`/`y`/bare `set` token/range shape、scope/ordinal、one shared typed
+arena内four siteをauthenticateし、existing Task-248 projectionだけをbuildする。
+
+default denialはthird/non-leading parameter、reserve/extra-item contamination、
+recovery、wrong shell/module/range/type/token/local identity、stale/duplicate
+site、excluded descendantをbindingとして扱う試みをrejectする。existing Profile-A
+selector/output/recovery/debugとactive fixtureはbyte-compatible。expectation fieldは
+dormant helperをselectできずdiagnostic detail keyも追加しない。

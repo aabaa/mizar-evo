@@ -1418,3 +1418,12 @@ unchanged mixed Task-260 gapも同期する。
 両言語はpresent prerequisiteがdocumentationだけを変更し、`421/389`、
 `228/193`、`101/7/198/1`、type `253/241`、warnings/errors `23/0`を
 preserveすることを記録する。synchronization exceptionはない。
+
+## Checker Task 248 Two-Parameter Prerequisite Synchronization
+
+EN/JAはdormant extractor signature、real shell/direct parameter oracle、
+shared-arena site validation、Profile-A preservation、default-deny exclusion、
+exact five-file/four-test implementation scope、runner `504 -> 508`
+projection、unchanged active metadata、separate documentation/implementation
+commitを同期する。両言語はfindings-free、nine-gate、score capなしの
+documentation quality `100/100`も記録する。exceptionはない。

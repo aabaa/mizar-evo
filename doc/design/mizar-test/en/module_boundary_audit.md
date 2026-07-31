@@ -12673,3 +12673,17 @@ validation, obligation insertion, and atomic typed/final installation.
 Task 272 retains property-justification proof ownership. The public runner
 facade, CLI schema, diagnostics, parser, resolver, and mixed Task-260 route
 remain unchanged by this documentation prerequisite.
+
+## Checker Task 248 Two-Parameter Lower Boundary
+
+The runner owns source-shaped authentication only. Its private helper accepts
+the Task-259-selected definition node, real resolver state, and caller-owned
+shared-arena sites, then delegates syntax-free construction to the checker.
+It returns neither a route output nor a typed/final owner. The checker remains
+the sole `BindingEnv` and handoff owner.
+
+The current active Profile-A function is not widened or reused as a selector.
+Task 259 later owns whole-source dispatch and arena composition; Tasks
+249/252/256 and 272 retain their existing payload/proof boundaries. This
+separate lower commit prevents a runner- or Task-259-owned binding
+reconstruction.

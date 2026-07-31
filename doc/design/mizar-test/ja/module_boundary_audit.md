@@ -11416,3 +11416,16 @@ obligation insertion、atomic typed/final installationをすべてownする。
 Task 272はproperty-justification proof ownershipをretainする。public runner
 facade、CLI schema、diagnostic、parser、resolver、mixed Task-260 routeはこの
 documentation prerequisiteで変更しない。
+
+## Checker Task 248 Two-Parameter Lower Boundary
+
+runnerはsource-shaped authenticationだけをownする。private helperは
+Task-259-selected definition node、real resolver state、caller-owned
+shared-arena siteを受け、syntax-free constructionをcheckerへdelegateする。route
+output/typed/final ownerは返さず、checkerがsole `BindingEnv`/handoff ownerの
+ままである。
+
+current active Profile-A functionをwidenまたはselectorとしてreuseしない。Task 259
+はlater whole-source dispatch/arena composition、Tasks 249/252/256/272はexisting
+payload/proof boundaryをownする。このseparate lower commitはrunner/Task-259-owned
+binding reconstructionを防ぐ。

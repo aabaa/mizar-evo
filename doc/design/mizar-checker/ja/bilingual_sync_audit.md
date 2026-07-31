@@ -1448,3 +1448,13 @@ subtreeをfuture Task-272 ownershipとして保持する点も一致する。
 corruption/installation matrix、全semantic deferral、unchanged baseline
 countを凍結する。synchronization exceptionはなく、このdocumentation
 prerequisiteでproduction/test/trace artifactは変更しない。
+
+## Task 248 Two-Parameter Profile Synchronization
+
+canonical EN/companion JAはProfile A preservation、normal-only Profile B、
+exact Task-259 lower range、shell/scope/binding/table oracle、
+shared-`TypedArena` private extractor、no-shadow result、subtree exclusion、
+five-file implementation scope、four-test matrix、projected runner
+`504 -> 508`、unchanged metadata/trace credit、separate commit orderを同期する。
+synchronization exceptionはない。両言語はfindings-free、nine-gate、
+score capなしのdocumentation quality `100/100`も記録する。

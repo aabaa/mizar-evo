@@ -5743,3 +5743,39 @@ Task 259 remains prospective narrative ownership only.
 Independent final read-only quality reports **NO FINDINGS**, all nine hard
 gates PASS without a cap, and valid `100/100`
 (`20/20/15/15/10/10/5/5`).
+
+## Checker Task 248 Two-Parameter Profile-Extension Ownership
+
+Fresh post-`d5294b8f4be46a420bbdfa2fc4062384be983ce0` inventory moves the
+frozen Task-259 dependency from an unnamed future extension to an exact
+Task-248 Profile B. Chapters 4, 9, and 18 authorize two ordered, distinct
+definition parameters in one shared block scope. The existing Profile A
+reserve/local-shadow transaction remains unchanged; Profile B owns only one
+normal definition shell, ordered `x`/`y` bindings, exact written `set`
+ranges, one definition context, and no shadow.
+
+The design mapping now names `source_context.md` as the checker owner and the
+private `mizar-test` source-context helper as the exact future lower consumer.
+It returns the existing syntax-free handoff and excludes every predicate,
+guard, property, justification, formula, proof, Task-249+, and semantic row.
+This closes documentation ownership only. The checker profile gate/helper
+remain bounded `source_drift`, and focused Profile-B tests remain `test_gap`
+until the separate implementation commit.
+
+No specification, `.miz`, sidecar, expectation, trace row, status, backlink,
+owner field inside `spec_trace.toml`, active mapping, or coverage credit
+changes. The trace manifest is a deliberate byte-level no-op. Metadata
+therefore remains cases/requirements `421/389`, pass/fail `228/193`, active
+parse/declaration/type/proof `101/7/198/1`, declaration
+`12 = 7 covered + 5 partial`, type
+`253 = 241 covered + 12 deferred`, and warnings/errors `23/0`.
+The later lower implementation also grants no corpus credit; only the already
+frozen Task-259 consumer may move these values to `422/390`, `229/193`,
+`101/7/199/1`, and type `254/242`.
+
+The final documentation review closes with **NO FINDINGS**, all nine protocol
+hard gates PASS, no score cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`). The remaining Profile-B implementation
+`source_drift`/`test_gap`, human-owned same-name re-reservation `spec_gap`,
+and Task-259/272 semantic deferrals are explicit follow-up ownership rather
+than current coverage credit.

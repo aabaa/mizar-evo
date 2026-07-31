@@ -4899,3 +4899,26 @@ specification、`.miz`、sidecar、expectation、trace row、mapping、backlink�
 status、count、coverage creditを変更しない。existing Chapter-9 diagnostic
 gapとmixed predicate-plus-functor gapは不変で、後者はTask 260を引き続き
 必要とする。
+
+## Task 248 Two-Parameter Profile-Extension Authority Audit
+
+Chapters 4/9/18とAppendix Aはone shared block scope内のtwo ordered leading
+definition parameterを認可する。従ってdistinct `x`/`y` declarationはdistinct
+identityを作り、outer/module bindingがないため互いをshadowしない。dense idと
+source-order predecessor linkはrepresentation invariantでありnew language
+semanticsではない。
+
+previous Profile-A-only designは`design_drift`、hard-coded
+two-item/one-shadow validationとabsent real-source helperはbounded
+`source_drift`、missing focused Profile-B Rust testは`test_gap`である。
+same-name re-reservation `spec_gap`は無関係のまま。blocking authority conflict、
+unsafe test-intent inference、current `boundary_violation`、
+`source_undocumented_behavior`、`test_expectation_drift`、
+`repo_metadata_conflict`はない。
+
+checkerはsyntax-freeのままでbuiltin `set`をinspectせず、private runnerがexact
+direct `x`/`y` parameter subtree、range、real definition shell、shared-arena
+siteをauthenticateする。later predicate/guard/property/proof meaningはすべて
+excludeする。本docs-only taskはdesign mapping/follow-up ownershipをnarrativeに
+変更するだけでexecutable coverageを与えず、
+`tests/coverage/spec_trace.toml`をbyte-unchangedに保つ。

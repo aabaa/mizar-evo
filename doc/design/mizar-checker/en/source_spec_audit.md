@@ -5110,3 +5110,26 @@ no specification, `.miz`, sidecar, expectation, trace row, mapping,
 backlink, status, count, or coverage credit. The existing Chapter-9
 diagnostic gap and mixed predicate-plus-functor gap remain unchanged; the
 latter still requires Task 260.
+
+## Task 248 Two-Parameter Profile-Extension Authority Audit
+
+Chapters 4, 9, and 18 plus Appendix A authorize two ordered leading
+definition parameters in one shared block scope. Distinct `x` and `y`
+declarations therefore create distinct identities; with no outer/module
+binding, neither shadows another. Dense ids and source-order predecessor
+links are representation invariants, not new language semantics.
+
+The previous Profile-A-only design is `design_drift`; the hard-coded
+two-item/one-shadow validation and absent real-source helper are bounded
+`source_drift`; missing focused Profile-B Rust tests are `test_gap`. The
+same-name re-reservation `spec_gap` remains irrelevant. There is no blocking
+authority conflict, unsafe test-intent inference, current
+`boundary_violation`, `source_undocumented_behavior`,
+`test_expectation_drift`, or `repo_metadata_conflict`.
+
+The checker stays syntax-free and does not inspect builtin `set`; the private
+runner authenticates exact direct `x`/`y` parameter subtrees, ranges, real
+definition shell, and shared-arena sites. All later predicate/guard/property/
+proof meaning stays excluded. This docs-only task changes design mapping and
+follow-up ownership narratively but grants no executable coverage and leaves
+`tests/coverage/spec_trace.toml` byte-unchanged.

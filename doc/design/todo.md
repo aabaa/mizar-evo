@@ -3807,6 +3807,33 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete all four findings-free reviews, full verification and
   count/hash reproduction, and independent final quality with all nine hard
   gates PASS at valid `100/100`.
-- [ ] Complete the exact-scope commit and post-commit fresh inventory.
-- [ ] Continue automatically to the Task-248 extension prerequisite pair,
-  then return to Task 259 implementation.
+- [x] Complete the exact-scope commit
+  `d5294b8f4be46a420bbdfa2fc4062384be983ce0` and post-commit fresh
+  inventory.
+- [x] Continue automatically to the Task-248 extension documentation
+  prerequisite.
+
+## Checker Task 248 Two-Parameter Profile-Extension Prerequisite
+
+- [x] Freeze Profile A preservation and exact normal-only Profile B with
+  real shell provenance, ordered `x`/`y` identities, `set` ranges, no
+  reserve/shadow, and `1/2/2/2/2/2/0` output.
+- [x] Freeze syntax-free checker ownership, private shared-arena runner
+  extraction, excluded subtrees/semantics, and the prohibition on
+  Task-259-private binding reconstruction.
+- [x] Classify only `design_drift`, bounded `source_drift`, and `test_gap`;
+  no blocking authority conflict or repository metadata conflict exists.
+- [x] Preserve `421/389`, `228/193`, `101/7/198/1`, type `253/241`,
+  warnings/errors `23/0`, all corpus/trace artifacts, and coverage credit.
+- [x] Freeze exact five-file later implementation scope, four runner tests,
+  projected runner `504 -> 508`, and fresh count/hash verification.
+- [x] Complete findings-free specification, test-sufficiency, and
+  implementation-boundary/source-consistency reviews plus full focused/
+  crate/workspace/count/hash verification.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete staging, the documentation commit, and post-commit invariant
+  gates.
+- [ ] Fresh-inventory the separate Task-248 implementation, commit it, then
+  return automatically to Task 259 implementation.

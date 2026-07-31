@@ -6024,7 +6024,34 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] findings-free documentation、test-contract、implementation-boundary、
   source/documentation reviewを繰り返し、full docs/count/hash verification、
   全9 hard gate PASSのindependent final quality `100/100`をcompleteする。
-- [ ] task-only commitとpost-commit fresh inventoryをcompleteする。
-- [ ] separate Task-248 two-parameter profile-extension documentation
-  prerequisiteとimplementationをfresh-inventoryし、それぞれone logical
-  task/commitでcompleteしてからTask 259 implementationへ戻る。
+- [x] task-only commit
+  `d5294b8f4be46a420bbdfa2fc4062384be983ce0`とpost-commit fresh
+  inventoryをcompleteする。
+- [x] implementation前にseparate Task-248 two-parameter profile-extension
+  documentation prerequisiteをfresh-inventoryする。
+
+## Checker Task 248 Two-Parameter Profile-Extension Documentation Prerequisite
+
+- [x] implemented Profile Aをone shadow link、recovered-empty branch、active
+  route、public error、debug grammarを含めexactにpreserveする。
+- [x] normal-only Profile B、すなわちone top-level definition shell、no
+  reserve、ordered direct `x`/`y` parameter/bare `set` range、scope `[0]`、
+  dense bindings `0/1`、no shadowをfreezeする。
+- [x] syntax-free checker validation、real shell provenance、private
+  shared-`TypedArena` extractor、exact `1/2/2/2/2/2/0` table、完全な
+  guard/predicate/property/justification subtree exclusionをfreezeする。
+- [x] `design_drift`、bounded `source_drift`、`test_gap`をclassifyし、
+  Task-259-private binding reconstructionを禁止して全semantic deferralを
+  preserveする。
+- [x] later exact five Rust files/four runner tests、projected runner
+  `504 -> 508`、unchanged corpus/CLI/trace metadata、fresh-hash requirementを
+  freezeする。
+- [x] findings-free documentation/test-boundary/source-consistency reviewと
+  full docs-only focused/crate/workspace/count/hash verificationをcompleteする。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gate PASS、
+  score capなし、有効な `100/100`
+  (`20/20/15/15/10/10/5/5`)でcompleteする。
+- [ ] exact-scope staging、one dedicated documentation commit、
+  clean/stash-invariant post-commit inventoryをcompleteする。
+- [ ] separate Task-248 extensionをone logical task/commitでfresh-inventory/
+  implementし、Task 259 implementationへ戻る。

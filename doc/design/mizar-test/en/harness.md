@@ -4962,3 +4962,19 @@ select this leaf.
 Only the later implementation adds one pass sidecar, one trace row, and the
 mechanical active-type metadata increments. This frozen runner contract
 changes no runner source, fixture, sidecar, trace, diagnostic, or count.
+
+## Checker Task 248 Two-Parameter Dormant Extractor
+
+The prerequisite adds no active harness route. The later private helper is
+called only by tests and, afterward, by the exact Task-259 leaf after that
+leaf selects source/AST/definition identity. It authenticates real
+DefinitionBlock shell 0, direct leading parameter nodes 41/45, exact
+`x`/`y` and bare `set` token/range shapes, scope/ordinals, and four sites in
+one shared typed arena. It builds only the existing Task-248 projection.
+
+Default denial rejects a third/non-leading parameter, reserve or extra-item
+contamination, recovery, wrong shell/module/range/type/token/local identity,
+stale or duplicate sites, and any attempt to treat excluded descendants as
+bindings. The existing Profile-A selector/output/recovery/debug and active
+fixture remain byte-compatible. No expectation field can select the dormant
+helper, and no diagnostic detail key is added.

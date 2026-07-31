@@ -2004,3 +2004,12 @@ deferredのまま。
 
 current metadataは`421/389`とtype `253/241`を維持し、projected
 implementation valueは`422/390`とtype `254/242`である。
+
+## Checker Task 248 Two-Parameter Prerequisite Trace No-Op
+
+lower documentation/implementationは`.miz`、sidecar、expectation、
+requirement、backlink、status、coverage creditを追加しない。Profile Bはlater
+Task-259 pass caseがlandするまでfocused Rust testだけでexerciseする。従って
+`tests/coverage/spec_trace.toml`はbyte-unchanged、current metadataは
+`421/389`/type `253/241`、future Task-259 deltaはexisting frozen trace intentの
+ownershipに残る。

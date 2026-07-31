@@ -3243,9 +3243,27 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete all four findings-free reviews, full verification and
   count/hash reproduction, and independent final quality with all nine hard
   gates PASS at valid `100/100`.
-- [ ] Complete the task-only documentation commit and post-commit fresh
+- [x] Complete the task-only documentation commit
+  `d5294b8f4be46a420bbdfa2fc4062384be983ce0` and post-commit fresh
   inventory.
-- [ ] After the docs commit, complete the separate Task-248 extension
-  prerequisite pair, then implement the Checker Task-259 consumer and update
-  exactly the projected `422/390`, `229/193`, `101/7/199/1`, and
-  `254/242` metadata.
+- [x] Fresh-inventory the separate Task-248 extension documentation
+  prerequisite.
+
+## Checker Task 248 Two-Parameter Runner Prerequisite
+
+- [x] Freeze exact shell/direct-parameter/range/type/source-order extraction
+  from the future Task-259 source without selecting an active route.
+- [x] Freeze caller-owned sites plus shared-arena anchor/context validation
+  and return only the existing Task-248 projection.
+- [x] Preserve Profile A and exclude every guard/predicate/property/
+  justification descendant plus Task 249+/259 semantics.
+- [x] Freeze the five-file Rust scope, four-test matrix, runner
+  `504 -> 508` projection, and no fixture/sidecar/trace/count delta.
+- [x] Complete findings-free reviews and full docs-only focused/crate/
+  workspace/count/hash verification.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete the dedicated commit and clean post-commit inventory.
+- [ ] Implement the separate Task-248 extension commit, then implement the
+  Checker Task-259 consumer and update only its frozen future metadata.
