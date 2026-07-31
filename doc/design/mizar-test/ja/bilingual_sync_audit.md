@@ -1394,3 +1394,13 @@ correctionはexact 31 design recordsをownし、source、behavior、fixture、
 expectation、sidecar、trace status/count/coverage、public diagnostic code、
 Cargo metadata、active runnerを変更しない。`spec_coverage_audit.md`は
 intentional no-op。
+
+## Checker Task 258B5C active-implementation synchronization
+
+canonical ENとcompanion JAはsame implemented B5C route、R-032B prerequisite
+commit、exact fixture 2件/trace row 2件、private input/confinement key、empty
+public code、`421/389` metadata、`228/193` pass/fail、
+`101/7/198/1` active-stage count、unchanged checker/public semantic boundaryを
+記録する。central coverage auditは2 confinement requirementだけについて
+prospective narrativeからactive creditへ変わり、broader R-G007 deferralは
+すべて同期して残る。

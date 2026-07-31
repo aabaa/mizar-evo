@@ -5061,3 +5061,20 @@ validates env/module, derived namespace, exact one id-0 LocalSource record/
 source id, and every projection field. All independent corruptions are
 `proof_scope_input`, never confinement or public diagnostics. The exact
 48-file scope is unchanged.
+
+## Task 258B5C Active Coverage Result
+
+The current task activates exactly
+`spec.en.15.statements.proof_label_scope_confinement` and
+`spec.en.16.theorems_and_proofs.labels.proof_scope_confinement` with the two
+frozen fail fixtures. This is derived from Chapters 15 §15.10 and 16
+§§16.4.2/16.5.1 and does not alter either specification or any existing
+fixture/expectation.
+
+The private runner consumes resolver provenance and unresolved outcomes;
+checker semantic installation remains excluded. The pre-existing
+`mizar-test/tests/metadata.rs` count assertions are an additional mechanical
+consumer (`5 -> 7`) found as `test_expectation_drift`/`design_drift`.
+Requirement `spec.en.checker.formula_statement.source_payloads` remains
+`deferred` with `tests = []`, and all non-confinement R-G007 families remain
+deferred.

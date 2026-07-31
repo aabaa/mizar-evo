@@ -152,23 +152,46 @@ staging/cached-diff review, commit, and post-commit invariant/fresh-inventory
 gates remained pending. They subsequently completed in correction commit
 `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its fresh inventory.
 
-## R-032B implementation status
+## R-032B implementation result
 
-R-032B remains entirely within the existing `labels` owner. The current
-source changes exactly `src/labels.rs`, its private `src/labels/tests.rs`, and
+R-032B remains entirely within the existing `labels` owner. Commit
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064` changed exactly
+`src/labels.rs`, its private `src/labels/tests.rs`, and
 the sole `tests/lint_policy.rs` decision authorized above. It adds no module
 split, ownership transfer, callback, unmapped side channel, fabricated id,
 syntax/checker/runner source, active artifact, or semantic owner.
 
 The collector consumes the R-032A arena and owns only label projection,
 reference candidate, scope/ordinal/completion, and resolver provenance
-derivation. The later private `mizar-test` B5C route is the sole production
+derivation. The private `mizar-test` B5C route is its current production
 consumer; public checker unresolved-reference handoff remains excluded.
 The Medium third-child and unauthorized `Default` / `From` implementation
 findings and every test-sufficiency finding are fixed. Final fresh
 test-sufficiency, implementation, and source/documentation rereviews report
 **NO FINDINGS**, and all pre-quality verification gates PASS. Independent
 final quality also reports **NO FINDINGS**; all nine hard gates PASS with no
-score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only
+score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Task-only
 restaging/cached-diff review, commit, and post-commit invariant/fresh
-inventory remain pending.
+inventory are complete.
+
+## Checker Task 258B5C boundary status
+
+The current B5C source/test delta is limited to the private `mizar-test`
+consumer, exactly two fail fixtures, two sidecars, two covered trace rows,
+and four frozen active-count/CLI assertions in
+`crates/mizar-test/tests/metadata.rs` from declaration stage `5` to `7`. It
+consumes unchanged R-032A
+`SurfaceResolvedArena` and R-032B
+`ProofLabelSourceCollector` / `LabelResolver` APIs and makes no resolver
+production/API change. Plan/pass/fail counts are `421/389` and `228/193`;
+active parse/declaration/type/proof is `101/7/198/1`; warning/error counts are
+`23/0`.
+
+Public codes remain empty; only private key
+`declaration_symbol.label.proof_scope_confinement` authenticates the route.
+The two confinement negatives close only that R-G007 slice; import, name,
+dot-chain, and other label-reference work remains open. B5C test,
+implementation, source/documentation reviews and all verification gates are
+complete. Independent final quality reports **NO FINDINGS**; all nine hard
+gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
+the dedicated commit, and post-commit fresh inventory remain pending.

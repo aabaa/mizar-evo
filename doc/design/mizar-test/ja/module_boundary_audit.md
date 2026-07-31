@@ -11381,3 +11381,22 @@ codeへmapしない。selectionはsource-bytes-plus-normal-ASTだけのまま。
 S-026 は dense syntax view だけを所有し runner を select/execute できない。
 R-032A/R-032B は resolver owner、active B5C は後続 mizar-test consumer。
 separate commit が3 boundary を保持する。
+
+## Task 258B5C implemented boundary result
+
+R-032A/R-032B prerequisiteはcommit済みで、R-032Bは
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`。B5Cが変更するのはprivate
+`mizar-test` declaration-symbol consumer、そのtest、new fixture/sidecar 2
+組、trace row 2件、synchronized derived recordだけ。resolver-owned
+structural arena、label projection、reference candidate、resolution resultを
+consumeし、そのownershipをbroadenしない。
+
+sole frozen-scope correctionはexisting
+`crates/mizar-test/tests/metadata.rs` count consumerで、summary assertion 4
+箇所をalready-authorized `5 -> 7`へ変更する。これは
+`test_expectation_drift`/`design_drift`をcloseし、runtime ownerは追加しない。
+
+checker handoffはどちらのunresolved referenceもacceptしない。
+parser/frontend、resolver、checker、public harness/CLI schema、type/proof/
+Core/CFG/VC、semantic-result ownerはunchanged。したがってboundary reviewは
+ownership transfer/`boundary_violation`なしと記録する。

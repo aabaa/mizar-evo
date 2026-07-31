@@ -1444,3 +1444,13 @@ The separate correction spans exactly 31 design records and changes no source,
 behavior, fixture, expectation, sidecar, trace status/count/coverage, public
 diagnostic code, Cargo metadata, or active runner;
 `spec_coverage_audit.md` remains an intentional no-op.
+
+## Checker Task 258B5C Active-Implementation Synchronization
+
+Canonical EN and companion JA now record the same implemented B5C route,
+R-032B prerequisite commit, exact two fixtures/two trace rows, private
+input/confinement keys, empty public codes, `421/389` metadata,
+`228/193` pass/fail, `101/7/198/1` active-stage counts, and unchanged
+checker/public semantic boundaries. The central coverage audit changes from
+prospective narrative to active credit only for the two confinement
+requirements; all broader R-G007 deferrals remain synchronized.

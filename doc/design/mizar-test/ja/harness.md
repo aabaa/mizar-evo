@@ -4642,3 +4642,20 @@ contribution zero/multiple、contribution id、`ImportedSource`/`Summary`/
 する。各mutationは`declaration_symbol.label.proof_scope_input`だけをemitし、
 confinement/public codeはemitしない。copied/mutated expectation下でもsource
 bytes+normal ASTだけがselectorである。
+
+## Checker Task 258B5C implemented declaration-symbol route
+
+current implementationはactive fail caseをexact 2件追加する。runner pathは
+unchanged R-032A `SurfaceResolvedArena`、R-032B
+`ProofLabelSourceCollector`、`LabelResolver`をconsumeし、scope、ordinal、
+origin、contribution id、resolved nodeをconstructしない。exact
+source-plus-normal-AST authenticationの後でshared declaration-symbol
+environment、projection/reference provenance、unresolved resultをcheckする。
+
+両caseはempty payload table/public codeなしで
+`declaration_symbol.label.proof_scope_confinement`だけをproduceする。
+corruption matrixはmismatched environment/contribution/projection/reference/
+resolver resultがすべて
+`declaration_symbol.label.proof_scope_input`だけをemitすることをproveする。
+expectation fieldはrouteをselectできず、replay/orderはdeterministicで、
+earlier active declaration-symbol 5 caseのresultも維持される。

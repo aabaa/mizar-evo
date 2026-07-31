@@ -4852,3 +4852,19 @@ admitし、全other formはno-ordinal/no-descent。後者はenv/module、derived
 namespace、exact one id-0 LocalSource record/source id、全projection fieldを
 validateする。全independent corruptionは`proof_scope_input`で、
 confinement/public diagnosticではない。exact 48-file scopeはunchanged。
+
+## Task 258B5C active coverage result
+
+current taskはfrozen fail fixture 2件によりexact
+`spec.en.15.statements.proof_label_scope_confinement`と
+`spec.en.16.theorems_and_proofs.labels.proof_scope_confinement`をactive化する。
+これはChapter 15 §15.10/Chapter 16 §§16.4.2/16.5.1からderiveし、specification
+またはexisting fixture/expectationを変更しない。
+
+private runnerはresolver provenance/unresolved outcomeをconsumeし、checker
+semantic installationはexcludedのまま。pre-existing
+`mizar-test/tests/metadata.rs` count assertionは
+`test_expectation_drift`/`design_drift`として見つかったadditional mechanical
+consumer（`5 -> 7`）。requirement
+`spec.en.checker.formula_statement.source_payloads`は`tests = []`の
+`deferred`を維持し、全non-confinement R-G007 familyもdeferredのまま。

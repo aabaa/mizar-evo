@@ -4912,3 +4912,20 @@ contributions; contribution id; each of `ImportedSource`, `Summary`, and
 mutation emits only `declaration_symbol.label.proof_scope_input`, never
 confinement or a public code. Source bytes plus normal AST remain the only
 selector, including under copied or mutated expectations.
+
+## Checker Task 258B5C Implemented Declaration-Symbol Route
+
+The current implementation adds exactly two active fail cases. Their runner
+path consumes the unchanged R-032A `SurfaceResolvedArena`, R-032B
+`ProofLabelSourceCollector`, and `LabelResolver`; it never constructs a
+scope, ordinal, origin, contribution id, or resolved node. Exact
+source-plus-normal-AST authentication precedes the shared declaration-symbol
+environment, projection/reference provenance, and unresolved-result checks.
+
+Both cases produce only
+`declaration_symbol.label.proof_scope_confinement` with an empty payload
+table and no public code. The corruption matrix proves every mismatched
+environment, contribution, projection, reference, or resolver result emits
+only `declaration_symbol.label.proof_scope_input`. Expectation fields cannot
+select the route, replay/order is deterministic, and all five earlier active
+declaration-symbol cases retain their results.

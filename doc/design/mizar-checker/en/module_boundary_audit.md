@@ -1178,3 +1178,16 @@ R-032A preflight correctly stopped a prospective resolver-side workaround.
 Dense compatibility-node ids belong to mizar-syntax S-026; R-032A only
 consumes that accessor later. This prevents a new checker, runner, or resolver
 ownership leak and leaves every frozen B5C consumer boundary unchanged.
+
+## Task 258B5C Implemented Non-Consumer Result
+
+The active B5C route is confined to `mizar-test`. It consumes resolver-owned
+R-032A/R-032B output and never enters checker statement/reference handoffs.
+The exact source scope additionally includes four count assertions in
+`crates/mizar-test/tests/metadata.rs`, discovered as
+`test_expectation_drift` plus write-scope `design_drift`; this adds no runtime
+owner.
+
+No checker file, public API, diagnostic code, binding/type/proof/goal result,
+or Core/CFG/VC boundary changes. The checker remains an explicit
+non-consumer of both unresolved confinement cases.

@@ -1,0 +1,11 @@
+theorem ProofLabelSiblingConfinement: thesis proof
+  thus thesis proof
+    A: thesis proof
+      thus thesis;
+    end;
+    thus thesis;
+  end;
+  thus thesis proof
+    thus thesis by A;
+  end;
+end;

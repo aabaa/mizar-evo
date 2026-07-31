@@ -5974,8 +5974,24 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   score capなし、valid `100/100`
   （`20/20/15/15/10/10/5/5`）で完了する。
-- [ ] task-only restaging/cached-diff review、dedicated commit、post-commit
-  invariant/fresh inventoryを完了する。
+- [x] task-only restaging/cached-diff reviewとdedicated R-032B commit
+  `b3a7e79a6b60db2974e911c69bb56ff5f4609064`を完了し、post-commit
+  invariant/fresh inventoryをverifyする。
 - [x] 全frozen checker consumer、B5C fixture/expectation/trace、public
   diagnostic code、semantics、`spec_coverage_audit.md`を維持し、mapping、
   owner、deferral、coverage creditを変更しない。
+
+## Checker Task 258B5C active implementation
+
+- [x] private declaration-symbol consumerでexact spec-derived fail case 2件と
+  covered trace row 2件を追加し、public codeをemptyに維持。
+- [x] omitted metadata count consumerのfour `5 -> 7` assertionを修正し、
+  `test_expectation_drift`/scope `design_drift`に分類。
+- [x] 全checker source/API/semantic resultをno-opに保ち、R-G007内の
+  confinement requirement 2件だけをclose。
+- [x] findings-free test/implementation/source-documentation reviewと
+  focused/crate/workspace/count/hash verification gateを完了。
+- [x] final qualityを**NO FINDINGS**、全9 hard gates PASS、score capなし、
+  valid `100/100`（`20/20/15/15/10/10/5/5`）で完了。
+- [ ] task-only commit、post-commit invariant、next-task fresh inventoryを
+  完了。

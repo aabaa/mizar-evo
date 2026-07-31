@@ -6256,9 +6256,27 @@ implementation commit does not satisfy a producer task.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete task-only restaging/cached-diff review, the dedicated commit,
-  and post-commit invariant/fresh inventory.
+- [x] Complete task-only restaging/cached-diff review and the dedicated
+  R-032B commit
+  `b3a7e79a6b60db2974e911c69bb56ff5f4609064`, then verify post-commit
+  invariant/fresh inventory.
 - [x] Preserve all frozen checker consumers, B5C
   fixtures/expectations/trace, public diagnostic codes, semantics, and
   `spec_coverage_audit.md`; no mapping, owner, deferral, or coverage-credit
   change occurs.
+
+## Checker Task 258B5C Active Implementation
+
+- [x] Add exactly two spec-derived fail cases and two covered trace rows
+  through the private declaration-symbol consumer; keep public codes empty.
+- [x] Correct the omitted metadata count consumer in four `5 -> 7`
+  assertions, classified as `test_expectation_drift` and scope
+  `design_drift`.
+- [x] Preserve every checker source/API/semantic result as a no-op and close
+  only the two confinement requirements within R-G007.
+- [x] Complete findings-free test, implementation, and source/documentation
+  reviews plus focused/crate/workspace/count/hash verification gates.
+- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
+  no score cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Complete the task-only commit, post-commit invariants, and next-task
+  fresh inventory.

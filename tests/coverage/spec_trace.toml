@@ -2205,6 +2205,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.15.statements.proof_label_scope_confinement"
+source = "doc/spec/en/15.statements.md"
+section = "15.10 Scoping and Context Rules"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/resolve/fail_resolve_proof_label_inner_to_outer_confinement_001.expect.toml",
+  "tests/miz/fail/resolve/fail_resolve_proof_label_sibling_confinement_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.15.statements.proof_local_declaration_payload_gap"
 source = "doc/spec/en/15.statements.md"
 section = "15.2 Variable and Constant Introduction; 15.3.3 Existential Assumption; 15.3.4 Choice Statement; 15.5.1 Type Reconsideration; 15.12 Complete Syntax"
@@ -2351,6 +2364,19 @@ coverage = "manual_review"
 notes = "Active declaration_symbol pass coverage now exact-compares SymbolEnv-derived theorem and lemma declaration symbol/definition fact keys. Label-reference resolution and proof checking remain out of scope."
 tests = [
   "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.labels.proof_scope_confinement"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.4.2 Scope and Visibility; 16.5.1 Simple Citation"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/resolve/fail_resolve_proof_label_inner_to_outer_confinement_001.expect.toml",
+  "tests/miz/fail/resolve/fail_resolve_proof_label_sibling_confinement_001.expect.toml",
 ]
 
 [[requirement]]

@@ -6,9 +6,9 @@
 Status: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendum and R-031 implementation
-complete; R-032A implemented; the R-032B lint-policy correction committed;
-the exact R-032B implementation is the current pre-commit task and Checker
-Task 258B5C remains next.
+complete; R-032A implemented; R-032B committed at
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`; Checker Task 258B5C is the
+current pre-commit task.
 
 ## Scope
 
@@ -61,12 +61,13 @@ or expectation sidecars to match implementation behavior.
 - R-029 moved only private helper/test modules. Public API paths and behavior
   promises are unchanged; the affected source rows below now include the
   private helper paths introduced by the refactor gate.
-- Checker Task 258B5C inventory found one Medium `source_drift`: no production
-  normal-source `SurfaceAst` collector currently creates proof-step
+- Checker Task 258B5C inventory found one Medium `source_drift`: pre-R-032B
+  production normal-source `SurfaceAst` collection did not create proof-step
   `LabelProjection` and simple unqualified `LabelReferenceCandidate` inputs.
-  The `LabelResolver` prefix behavior itself is correct. R-032A/R-032B own the lower
-  repair; the missing active cases remain R-G007 `test_gap`, and R-G001 public
-  diagnostic adoption remains a Low deferred `spec_gap`.
+  The `LabelResolver` prefix behavior itself was correct, and committed
+  R-032A/R-032B own the lower repair. Current B5C closes its two confinement
+  negatives; the rest of R-G007 and the Low deferred R-G001 public diagnostic
+  adoption remain open.
 
 ## Public API Correspondence
 
@@ -85,7 +86,7 @@ or expectation sidecars to match implementation behavior.
 | [names.md](./names.md) namespace resolution | namespace path candidates/results, partial candidates, import dependencies, namespace roots, candidate targets, and `NamespaceResolver` | `crates/mizar-resolve/src/names.rs` | `resolver_resolves_alias_roots_and_package_names_deterministically`, `longest_namespace_bindings_win_over_shorter_prefixes`, `qualified_lookup_restricts_namespace_and_visibility`, `missing_namespace_records_the_earliest_failing_segment_range`, `malformed_namespace_paths_are_unresolved_in_deterministic_order`, `stale_namespace_bindings_are_provider_errors`, `stale_empty_prefix_reserved_root_bindings_report_the_root_segment` | No finding |
 | [names.md](./names.md) preliminary symbol-name resolution and internal diagnostics | name projections, built-in projections, reference candidates, `SymbolNameResolver`, `NameDiagnosticCollector`, `NameDiagnosticReport`, diagnostic roots/cascades | `crates/mizar-resolve/src/names.rs`, `crates/mizar-resolve/src/names/diagnostics.rs` | `unqualified_lookup_uses_declaration_point_shadowing_and_builtins`, `duplicate_import_aliases_drive_ambiguous_namespace_payloads_deterministically`, `unresolved_import_dependency_produces_one_primary_name_diagnostic`, `name_diagnostics_preserve_ambiguous_candidate_order`, `name_diagnostics_order_same_range_by_class_spelling_and_candidate_key`, `name_diagnostics_use_mixed_root_ordering`, `recovered_inputs_do_not_emit_name_diagnostic_roots` | No finding |
 | [names.md](./names.md) dot-chain finalization | local term scopes/bindings, dot-chain candidates, `DotChainFinalizer`, namespace-vs-selector handoff, `DeferredSelector` results | `crates/mizar-resolve/src/names.rs`, `crates/mizar-resolve/src/resolved_ast.rs` | `dot_chain_uses_innermost_visible_local_binding`, `dot_chain_local_binding_defers_selector_without_namespace_lookup`, `dot_chain_without_visible_local_resolves_namespace_symbol`, `dot_chain_unresolved_namespace_uses_earliest_failed_segment`, `dot_chain_malformed_or_recovered_inputs_stay_unresolved`, `dot_chain_finalizer_orders_out_of_order_inputs` | No finding |
-| [labels.md](./labels.md) label projection and citation resolution | label scopes, projections, reference candidates, diagnostics, result tables, `LabelResolver` | `crates/mizar-resolve/src/labels.rs`, `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/env.rs` | existing explicit-projection label tests; planned R-032B matrix | Core behavior has no finding; R-032A/R-032B repair the structural-map/source-collector gap. |
+| [labels.md](./labels.md) label projection and citation resolution | label scopes, projections, reference candidates, diagnostics, result tables, `LabelResolver` | `crates/mizar-resolve/src/labels.rs`, `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/env.rs` | existing explicit-projection label tests; committed R-032B matrix | Core behavior has no finding; R-032A/R-032B repair the structural-map/source-collector gap. |
 | [labels.md](./labels.md), [recovery.md](./recovery.md) recovered label policy | recovered/failed namespace references remain unresolved and recovered label projections do not emit conflict diagnostics | `crates/mizar-resolve/src/labels.rs`, `crates/mizar-resolve/src/recovery.rs` | `recovered_empty_and_failed_namespace_references_are_unresolved`, `recovered_label_projections_do_not_emit_conflict_diagnostics` | No finding |
 | [symbols.md](./symbols.md) declaration-symbol projection and collection | `SymbolDeclarationProjection`, `SignatureProjectionExtractor`, `SymbolCollector`, `SymbolCollectionResult`, `SymbolDiagnostic`, `SymbolDiagnosticClass`, overload policy, parser-backed signature shells | `crates/mizar-resolve/src/symbols.rs`, `crates/mizar-resolve/src/env.rs`, `crates/mizar-resolve/src/env/snapshot.rs`, `crates/mizar-resolve/src/declarations.rs` | Existing collection/extraction tests plus R-031 `same_signature_same_return_functors_get_definition_conflict_class`, `same_return_conflict_candidates_keep_source_order_past_lexical_ordinal_ten`, `parser_backed_same_signature_same_return_functors_conflict`, `same_return_conflict_requires_the_exact_ordinary_functor_argument_key`, `mixed_return_group_keeps_one_return_conflict_in_canonical_order`, `recovered_same_return_functor_does_not_cascade_a_signature_conflict`, and `same_signature_definition_conflict_snapshot_spelling_is_stable` | No finding after R-031 |
 | [symbols.md](./symbols.md), [recovery.md](./recovery.md) recovered and context-only symbol policy | recovered projections remain local/malformed, context-only shells do not fabricate symbols, recovered diagnostics do not cascade | `crates/mizar-resolve/src/symbols.rs`, `crates/mizar-resolve/src/recovery.rs` | `recovered_shells_stay_local_and_malformed_without_panicking`, `recovered_symbols_do_not_cascade_duplicate_or_overload_diagnostics`, `recovered_context_only_shells_do_not_emit_context_diagnostics`, `context_parent_visibility_and_recovery_propagate_to_child_symbols`, `context_only_shells_do_not_fabricate_symbol_identities`, `parser_backed_recovered_projection_uses_malformed_signature` | No finding |
@@ -136,10 +137,10 @@ after R-024 are:
 | R-G002 | `test_gap` | Historical lack of semantic resolver corpus coverage beyond lexical/parser import/export syntax. | Partially closed by R-023's active declaration-symbol smoke/fail fixtures, the post-task-20 R-G007 parser-backed signature-conflict active seed, and exact SymbolEnv-derived pass payload assertions. The remaining concrete corpus assertion work is refined by R-G007 and remains non-blocking for R-027 because unit tests cover the implemented behavior. |
 | R-G003 | resolved by R-024 | Consume dependency modules from canonical `ModuleSummary` artifacts. | Completed in resolver as canonical `mizar-artifact` summary consumption without resolver-owned artifact schemas, shims, writers, hash framing, or source loading. |
 | R-G006 | `external_dependency_gap` | Module-level scheme/template declaration shell once parser/syntax exposes an owning source role. | Non-blocking for represented source roles. Current resolver preserves direct template roles in owning signature payloads and does not fabricate scheme/template module symbols. |
-| R-G007 | `test_gap` | Concrete remainder of R-G002 after the active signature-conflict and pass-payload increments: broader active semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and label-reference facts from tasks R-009 to R-019. Checker Task 258B5C is the next bounded label-reference increment. | R-032A is complete and the exact R-032B implementation is the current pre-commit lower prerequisite. After its remaining gates and dedicated commit, add only spec-derived confinement cases through private `mizar-test`. Keep public codes empty and checker handoff narrow. |
+| R-G007 | `test_gap` | Concrete remainder of R-G002 after the active signature-conflict/pass-payload increments and B5C's two active confinement negatives: broader semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and other label-reference facts from tasks R-009 to R-019. | R-032A/R-032B are complete. Current B5C adds only the inner-to-outer and sibling confinement negatives through private `mizar-test`. Keep public codes empty and checker handoff narrow. |
 | R-G008 | resolved by R-031 | Chapter 19 §19.1 requires ordinary declarations with the same symbol kind, spelling, arity, and argument signature to conflict even when return signatures match. Pre-R-031 source skipped all-return-identical groups, the exact seed was deferred, and design lacked a distinct same-return class/detail key plus mixed-group priority. | Ordinary functor definitions are grouped by the exact resolver-syntactic key. Appended `SameSignatureDefinitionConflict` diagnostic/definition variants cover all-return-identical groups; existing `SameSignatureReturnConflict` wins for mixed/different-return groups. Exact unit/near-miss/order/recovery/snapshot tests and the active declaration-symbol sidecar cover the new key while preserving first shell/range, all candidate identities/order, the byte-identical different-return sidecar, and checker-owned semantic equality/selection boundaries. |
 
-## Implemented R-032A / Current R-032B Correspondence
+## Implemented R-032A / R-032B Correspondence
 
 Canonical Chapter 15 §15.10 and Chapter 16 §§16.4.2/16.5.1 authorize the
 following lower-only repair:
@@ -154,9 +155,9 @@ following lower-only repair:
 | R-032B R-026 enum decision guard | `crates/mizar-resolve/tests/lint_policy.rs` | exactly one `ProofLabelSourceCollectionError` owning-spec decision with `spec_name: "labels.md"` | every other lint decision, lint behavior, or source owner |
 
 R-032A is implemented as its separate lower-prerequisite logical task. The
-R-032B lint-policy correction is committed, and the exact three-Rust-file
-R-032B implementation is the current pre-commit task before the active B5C
-consumer. This bounded post-exit implementation does not change the original
+R-032B lint-policy correction and exact three-Rust-file implementation are
+committed; the active B5C consumer is the current pre-commit task. This
+bounded post-exit implementation does not change the original
 milestone score.
 
 R-032A implementation preflight classified the earlier two-Rust-file scope as
@@ -191,9 +192,9 @@ staging/cached-diff review, commit, and post-commit invariant/fresh-inventory
 gates remained pending. They subsequently completed in correction commit
 `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its fresh inventory.
 
-## R-032B implementation correspondence status
+## R-032B implementation correspondence result
 
-Current source provides the frozen public collector/collection/error contract
+Committed source provides the frozen public collector/collection/error contract
 in `labels.rs`, the focused matrix in `labels/tests.rs`, and only the
 authorized `ProofLabelSourceCollectionError` R-026 decision in
 `tests/lint_policy.rs`. The collector consumes the validated R-032A arena,
@@ -207,12 +208,39 @@ findings and the initial High/Medium plus two fresh Medium test gaps are
 fixed. Preimplementation specification and final fresh test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Focused/crate/workspace and all count/hash/scope gates PASS. Exact consumers
-remain unit tests now and the later private B5C route; checker unresolved-reference
+remain unit tests and the current private B5C route; checker unresolved-reference
 handoff remains excluded. No fixture, expectation, sidecar, trace, active
 runner, public diagnostic, Cargo metadata, or coverage status changes.
-R-G007 stays open and active B5C is next after the dedicated commit.
+R-G007 stays open beyond the two active B5C confinement negatives.
 `spec_coverage_audit.md` remains a deliberate no-op. Independent final
 quality reports **NO FINDINGS**; all nine hard gates PASS with no score cap at
-valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only
-restaging/cached-diff review, commit, and post-commit invariant/fresh
-inventory remain pending.
+valid `100/100` (`20/20/15/15/10/10/5/5`). Task-only
+restaging/cached-diff review, commit
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`, and post-commit
+invariant/fresh inventory are complete.
+
+## Checker Task 258B5C source correspondence status
+
+The current B5C source privately consumes unchanged R-032A
+`SurfaceResolvedArena` and R-032B `ProofLabelSourceCollector` /
+`LabelResolver` APIs in `mizar-test`. The authority-derived corpus delta is
+exactly two fail fixtures, two expectation sidecars, and two covered trace
+rows. Exact source/test consumers are
+`crates/mizar-test/src/runner/declaration_symbol.rs`,
+`crates/mizar-test/src/runner/tests.rs`,
+`crates/mizar-test/src/runner/tests/declaration_symbol.rs`, and
+`crates/mizar-test/tests/metadata.rs`; the last updates four frozen
+active-count/CLI assertions from declaration stage `5` to `7`. Resolver
+production and public API remain unchanged.
+
+Plan/pass/fail counts are `421/389` and `228/193`; active
+parse/declaration/type/proof is `101/7/198/1`; warning/error counts are
+`23/0`.
+Public codes remain empty and the private route key is
+`declaration_symbol.label.proof_scope_confinement`. This closes only the
+inner-to-outer and sibling confinement negatives in R-G007. Import, name,
+dot-chain, and other label-reference coverage remains open. Test,
+implementation, source/documentation reviews and all verification gates are
+complete. Independent final quality reports **NO FINDINGS**; all nine hard
+gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
+the dedicated B5C commit, and post-commit fresh inventory remain pending.

@@ -5667,3 +5667,33 @@ remain empty. Expectation copies/mutations cannot select the branch.
 These refinements remain prospective narrative within the exact 48-file
 documentation scope. They change no trace row, status, count, backlink,
 owner, active mapping, test, or coverage credit.
+
+## Task 258B5C Active Proof-Label Confinement Coverage
+
+Resolver R-032B is committed as
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`. The current active B5C task now
+adds the two exact fail fixtures and sidecars plus covered declaration-symbol
+trace requirements
+`spec.en.15.statements.proof_label_scope_confinement` and
+`spec.en.16.theorems_and_proofs.labels.proof_scope_confinement`. Both rows
+backlink both fixtures and derive directly from Chapter 15 §15.10 and Chapter
+16 §§16.4.2/16.5.1.
+
+The private `mizar-test` route consumes the unchanged R-032A structural arena,
+R-032B projection/reference collection, and `LabelResolver` result. Exact
+source bytes plus a normal dense AST select the route; resolver provenance
+and the unresolved outcome are authenticated field-by-field. Public
+diagnostic codes remain empty. The existing
+`crates/mizar-test/tests/metadata.rs` summary consumer required four
+mechanical `5 -> 7` changes, classified as `test_expectation_drift` and
+write-scope `design_drift`.
+
+Active metadata changes exactly as projected: cases/requirements
+`419/387 -> 421/389`, pass/fail `228/191 -> 228/193`, and active
+parse/declaration/type/proof `101/5/198/1 -> 101/7/198/1`; warnings/errors
+remain `23/0` and type requirements remain `253/241`. This closes only the
+two confinement negatives within R-G007. Import graph, namespace/name
+resolution, dot-chain, qualified/grouped/bulk citations, and other label
+reference facts remain deferred. Requirement
+`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
+`tests = []`, and checker/type/proof/Core/CFG/VC ownership remains unchanged.

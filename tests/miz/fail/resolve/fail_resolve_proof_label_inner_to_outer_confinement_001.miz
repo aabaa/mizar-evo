@@ -1,0 +1,9 @@
+theorem ProofLabelInnerToOuterConfinement: thesis proof
+  thus thesis proof
+    A: thesis proof
+      thus thesis;
+    end;
+    thus thesis;
+  end;
+  thus thesis by A;
+end;

@@ -35,8 +35,8 @@ milestone scope: `mizar-resolve` task R-001〜R-029。
   diagnostics は crate-local/internal に保つ。
 - import / name / dot-chain / label fact についてのより広い semantic `.miz` assertion は
   R-G007 `test_gap` のまま。
-- 計画済み R-032A/R-032B structural-map/proof-label projection と後続 Checker Task
-  258B5C active confinement case は post-close-out logical task である。
+- 完了済みR-032A/R-032B structural-map/proof-label projectionとcurrent
+  Checker Task 258B5C active confinement caseはpost-close-out logical task。
 
 ## milestone gate
 
@@ -216,8 +216,8 @@ Chapter 16 §§16.4.2/16.5.1 が proof-label confinement を authorize する。
 core `LabelResolver` prefix behavior は正しい。欠けた normal-source
 `SurfaceAst` proof-step declaration/simple-unqualified reference collector は
 Medium `source_drift`、旧 R-023 full-source-walk attribution は
-`design_drift`。active B5C coverage 欠如は R-G007 `test_gap`、public code 欠如は
-Low deferred R-G001 `spec_gap` のまま。
+`design_drift`。このfrozen extension record時点ではactive B5C coverage欠如が
+R-G007 `test_gap`だった。public code欠如はLow deferred R-G001 `spec_gap`のまま。
 
 pre-S-026 record の順序は docs、R-032A、R-032B、active B5C の4 separate
 commit だった。後続 S-026 dependency overlay とlint-policy correctionsは
@@ -263,9 +263,8 @@ checker `SourceStatementReferenceHandoff` は unresolved reference を拒否す�
 除外したままにする。
 
 historical resolver exit は closed のまま。S-026 は external syntax
-prerequisite、R-032Aはcomplete、R-032Bは独自のpending commit/quality gateを
-持つcurrent bounded post-exit follow-upであり、historical score を再利用・
-変更しない。
+prerequisite、R-032A/R-032Bはcomplete bounded post-exit follow-upであり、
+historical score を再利用・変更しない。
 
 ## R-032A bounded post-exit implementation result
 
@@ -302,9 +301,10 @@ staging/cached-diff review、commit、post-commit invariant/fresh-inventory
 gateだけがpendingだった。これらはcorrection commit
 `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
 
-## R-032B bounded post-exit implementation status
+## R-032B bounded post-exit implementation result
 
-exact R-032B source/APIはcurrent pre-commit logical taskとして存在する。
+exact R-032B source/APIは
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済み。
 `labels.rs`、`labels/tests.rs`、sole `tests/lint_policy.rs`
 `ProofLabelSourceCollectionError` / `labels.md` decisionと、同期live status
 recordだけを使う。R-032A mapをvalidateし、frozen default-deny traversal、
@@ -318,14 +318,34 @@ implementation、source/documentation reviewはすべて**NO FINDINGS**。
 focused collector `25/25`、labels `35/35`、resolver `144 + 11 + 1`、
 formatting、workspace Clippy/test、diff、CLI、count/hash、exact 20-file
 scope gateはPASS。independent final qualityは**NO FINDINGS**、全9 hard gates
-PASS、score capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。pendingは
+PASS、score capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。
 task-only restaging/cached-diff review、commit、post-commit
-invariant/fresh inventoryだけ。
+invariant/fresh inventoryはcomplete。
 active artifact、fixture、expectation、sidecar、trace、runner、
 checker handoff、semantic behavior、public diagnostic、Cargo metadata、
-historical exit status、historical scoreは変更しない。R-G007はopenで、
-active B5Cが次。
+historical exit status、historical scoreはR-032Bで変更しなかった。
 
 `doc/design/spec_coverage_audit.md`はactive `.miz` mapping、traceability
 backlink/status/count、owner crate、deferred status、coverage creditのいずれも
 変わらないためdeliberately unchanged。
+
+## Checker Task 258B5C active post-exit status
+
+current B5C implementationはunchanged R-032A `SurfaceResolvedArena`とR-032B
+`ProofLabelSourceCollector` / `LabelResolver` APIを`mizar-test`でprivateに
+consumeする。exact fail fixture 2件、expectation sidecar 2件、covered trace
+row 2件を追加し、`crates/mizar-test/tests/metadata.rs`のfrozen
+active-count/CLI assertion 4件をdeclaration stage `5`から`7`へ更新する。
+resolver productionとpublic APIは変更しない。planは`421/389`、
+pass/failは`228/193`、active
+parse/declaration/type/proofは`101/7/198/1`、warnings/errorsは`23/0`。
+
+public diagnostic codeは空のままで、private keyは
+`declaration_symbol.label.proof_scope_confinement`。閉じるのは
+inner-to-outer/sibling confinement negativeだけ。R-G007は
+import/name/dot-chain/other label-reference coverageについてopenのまま。
+B5Cのtest、implementation、source/documentation reviewと全verification
+gateは完了。independent final qualityは**NO FINDINGS**、全9 hard gates
+PASS、score capなし、valid `100/100`。task-only cached-diff review、
+dedicated commit、post-commit fresh inventoryがpendingのため、ここでは
+committedと記録しない。

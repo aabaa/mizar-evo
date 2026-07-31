@@ -3197,7 +3197,27 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete the separate mizar-syntax S-026 frozen-documentation commit.
 - [x] Complete the separate S-026 implementation and its review/verification
   gates.
-- [ ] Wait for its dedicated commit and resolver R-032A/R-032B before adding
-  active B5C artifacts.
+- [x] Complete the dedicated S-026, R-032A, and R-032B prerequisite commits
+  before adding active B5C artifacts; R-032B is
+  `b3a7e79a6b60db2974e911c69bb56ff5f4609064`.
 - [x] Preserve the exact source-only selector, provenance authentication,
   private details, empty public codes, and projected active count impact.
+
+## Checker Task 258B5C Active Implementation
+
+- [x] Add only the two frozen fail fixture/sidecar pairs and two covered trace
+  rows; reproduce `421/389`, `228/193`, `101/7/198/1`, and `23/0`.
+- [x] Implement only the private declaration-symbol consumer over unchanged
+  R-032A/R-032B APIs, with no runner-derived semantic identity.
+- [x] Cover exact dense profiles, every frozen provenance/result corruption,
+  expectation non-selection, replay/order, and existing-case isolation.
+- [x] Correct the omitted metadata count consumer in exactly four `5 -> 7`
+  assertions; classify it as `test_expectation_drift` plus write-scope
+  `design_drift`, without changing test intent.
+- [x] Complete findings-free test, implementation, and source/documentation
+  reviews plus focused/crate/workspace/count/hash verification gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Stage only task files, create the dedicated commit, verify repository
+  and stash invariants, then fresh-inventory the next executable task.

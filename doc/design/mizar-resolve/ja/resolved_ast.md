@@ -464,9 +464,9 @@ provenanceだけを保持する。focused evidenceはdisconnected/recovered/
 root-not-last node、全named mismatch、invalid contained arena、simultaneous
 precedence fault、exact helper payload、independent equivalent-input
 determinism、out-of-range foreign id、downstream wildcard compatibilityを
-coverする。R-032Bはseparateかつpending。
+coverする。このR-032A snapshot時点ではR-032Bはseparate pending taskだった。
 
-### R-032B lint-policy ownership dependency（current prerequisite）
+### R-032B lint-policy ownership dependency（completed prerequisite record）
 
 fresh R-032B inventoryは、`labels.md`でfreezeしたpublic
 `ProofLabelSourceCollectionError`にも同じmandatory R-026 ruleを適用する。
@@ -480,14 +480,34 @@ fresh R-032B inventoryは、`labels.md`でfreezeしたpublic
 `spec_name: "labels.md"`だけを受けられる。このcross-family noteはimplemented
 R-032A arenaを再オープンまたは変更しない。
 
-current docs-only correctionはexact 31 design files、resolver 16、checker 8、
+docs-only correctionはexact 31 design files、resolver 16、checker 8、
 `mizar-test` 6、global ledger 1。source、specification、fixture、sidecar、
 expectation、trace status/count、Cargo metadata、semantic contract、test intentは
 変更しない。`spec_coverage_audit.md`はdeliberate no-op。independent
 specification、test/scope、source/documentation consistency
 reviewはすべて**NO FINDINGS**で、docs-only verification/count/hash gateはPASS。
 independent final read-only qualityも**NO FINDINGS**で、全9 hard gates
-PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。task-only
-staging/cached-diff review、commit、post-commit invariant/fresh-inventory
-gateだけがpendingで、その後のfresh inventoryがseparate R-032B
-implementationをgateする。
+PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。staging、
+correction commit、post-commit invariant、fresh-inventory gateは後にcomplete。
+R-032B implementationは
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済み。
+
+### Checker Task 258B5C consumer overlay
+
+current B5Cはunchanged R-032A `SurfaceResolvedArena`とcommitted R-032B
+`ProofLabelSourceCollector` / `LabelResolver` APIを`mizar-test`でprivateに
+consumeする。exact fail fixture 2件、sidecar 2件、covered trace row 2件を
+追加し、`crates/mizar-test/tests/metadata.rs`のfrozen active-count/CLI
+assertion 4件をdeclaration stage `5`から`7`へ更新する。このmoduleと全
+resolver production/API surfaceは変更しない。countはplan `421/389`、
+pass/fail `228/193`、active
+parse/declaration/type/proof `101/7/198/1`、warnings/errors `23/0`。
+
+public codeは空のままで、routeはprivate key
+`declaration_symbol.label.proof_scope_confinement`を使う。B5Cはconfinement
+negative 2件だけを閉じ、R-G007はimport/name/dot-chain/other
+label-reference coverageについてopenのまま。test、implementation、
+source/documentation reviewと全verification gateは完了し、independent
+final qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
+`100/100`。task-only cached-diff review、dedicated B5C commit、post-commit
+fresh inventoryがpending。

@@ -10,8 +10,9 @@ rejection、simple / qualified citation candidate、lowered grouped-item candida
 diagnostic をカバーする。R-023 が追加したのは declaration-symbol corpus
 collection だけで、production `SurfaceAst` proof-label declaration/reference
 lowering ではない。bounded R-032B normal-source
-proof-step/simple-unqualified collectorは存在し、そのtest/review gateを完了中。
-Checker Task 258B5C active confinement coverageが次のまま。
+proof-step/simple-unqualified collectorは
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済み。Checker Task
+258B5C active confinement coverageがcurrent consumer。
 grouped shared-prefix container diagnostic と definition/registration label
 extraction は R-032 の外である。
 
@@ -253,9 +254,9 @@ unit test を追加する。
 
 R-023 は active declaration-symbol corpus coverage を導入したが、label-reference
 corpus coverage や production proof-label source projection は導入していない。
-残る active label-reference case は R-G007 `test_gap` である。R-032 は最初の bounded
-Checker Task 258B5C inner-to-outer / sibling confinement increment の独立 lower
-prerequisite である。
+このfrozen-contract snapshot時点ではactive label-reference caseはR-G007
+`test_gap`で、R-032は最初のbounded Checker Task 258B5C inner-to-outer /
+sibling confinement incrementの独立lower prerequisiteだった。
 
 ## R-032B frozen normal-source projection contract
 
@@ -267,8 +268,8 @@ reasoning-block confinement と同じ proof 内の先行 proposition citation �
 projection/reference path は Medium `source_drift`、R-023 attribution は
 `design_drift`、bare mapping callback は validated structural-lowering boundary
 を越える `boundary_violation` である。R-032A が mapping prerequisite を先に
-修復する。active case 欠如は R-G007 `test_gap`、public resolver code 欠如は
-Low deferred R-G001 `spec_gap` のまま。
+修復する。このfrozen-contract snapshot時点ではactive case欠如がR-G007
+`test_gap`だった。public resolver code欠如はLow deferred R-G001 `spec_gap`のまま。
 
 ### Exact lowering contract
 
@@ -475,9 +476,10 @@ record時点ではtask-only staging/cached-diff review、commit、post-commit
 invariant/fresh-inventory gateだけがpendingだった。これらはcorrection commit
 `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
 
-### R-032B implementation status
+### R-032B implementation result
 
-current implementationは上でfreezeしたexact public collector、collection
+committed implementation
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`は上でfreezeしたexact public collector、collection
 accessor、non-exhaustive error declarationを提供する。`new`と`collect`で
 R-032A arenaをvalidateし、`'a`配下でAST/arena borrowだけをstoreし、
 namespace/contributionを所有してvalidated arena経由で全reference nodeを
@@ -493,11 +495,31 @@ test-sufficiency、implementation、source/documentation rereviewは
 **NO FINDINGS**。collector matrix `25/25`、complete labels matrix `35/35`、
 resolver tests `144 + 11 + 1`と全broader verification/count/hash/scope gateは
 PASS。independent final qualityは**NO FINDINGS**、全9 hard gates PASS、
-score capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。pendingは
-task-only restaging/cached-diff review、commit、post-commit
-invariant/fresh inventoryだけ。
+score capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。task-only
+restaging/cached-diff review、commit、post-commit invariant/fresh inventoryは
+complete。
 
 active fixture、expectation、sidecar、trace state、runner、public checker
-handoff、diagnostic code、Cargo metadata、proof semanticsを変更しない。future
+handoff、diagnostic code、Cargo metadata、proof semanticsをR-032Bでは変更しなかった。
 private B5C consumerとR-G007 deferralはfreezeどおりで、
 `spec_coverage_audit.md`はdeliberate no-opのまま。
+
+### Checker Task 258B5C active consumer status
+
+current B5C implementationはunchanged `SurfaceResolvedArena`、
+`ProofLabelSourceCollector`、`LabelResolver` APIを`mizar-test`でprivateに
+consumeする。exact fail fixture 2件、sidecar 2件、covered trace row 2件を
+追加し、`crates/mizar-test/tests/metadata.rs`のfrozen active-count/CLI
+assertion 4件をdeclaration stage `5`から`7`へ更新する。resolver productionと
+public APIは変更しない。
+plan/pass/failは`421/389`と`228/193`、active
+parse/declaration/type/proofは`101/7/198/1`、warnings/errorsは`23/0`。
+
+public codeは空のままで、private route keyは
+`declaration_symbol.label.proof_scope_confinement`。R-G007で閉じるのは
+inner-to-outer/sibling confinement negativeだけ。import/name/dot-chain/other
+label-reference coverageはopenのまま。B5Cのtest、implementation、
+source/documentation reviewと全verification gateは完了。independent final
+qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
+`100/100`。task-only cached-diff review、dedicated commit、post-commit
+fresh inventoryがpending。

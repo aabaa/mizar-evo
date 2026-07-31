@@ -10,9 +10,9 @@ qualified citation candidates, lowered grouped-item candidates, `LabelIndex`
 population, `LabelRefTable` outcomes, and crate-local/internal conflict
 diagnostics. R-023 added declaration-symbol corpus collection only; it did not
 add production `SurfaceAst` proof-label declaration/reference lowering. The
-bounded R-032B normal-source proof-step/simple-unqualified collector is now
-present while its test/review gates are completed; Checker Task 258B5C active
-confinement coverage remains next. Grouped
+bounded R-032B normal-source proof-step/simple-unqualified collector is
+committed at `b3a7e79a6b60db2974e911c69bb56ff5f4609064`; Checker Task
+258B5C active confinement coverage is the current consumer. Grouped
 shared-prefix container diagnostics and definition/registration label
 extraction remain outside R-032.
 
@@ -277,9 +277,9 @@ unit tests for:
 
 R-023 introduced active declaration-symbol corpus coverage, but not
 label-reference corpus coverage or production proof-label source projection.
-The remaining active label-reference cases are an R-G007 `test_gap`. R-032 is
-the separate lower prerequisite for the first bounded Checker Task 258B5C
-inner-to-outer and sibling confinement increment.
+At this frozen-contract snapshot, the active label-reference cases were an
+R-G007 `test_gap`; R-032 was the separate lower prerequisite for the first
+bounded Checker Task 258B5C inner-to-outer and sibling confinement increment.
 
 ## R-032B Frozen Normal-Source Projection Contract
 
@@ -297,7 +297,8 @@ The missing production `SurfaceAst` projection/reference path is Medium
 `source_drift`; assigning that path to R-023 was `design_drift`. The former
 bare mapping callback would have crossed the validated structural-lowering
 boundary and was a `boundary_violation`; R-032A repairs that prerequisite
-first. Missing active Checker Task 258B5C cases remain the R-G007 `test_gap`.
+first. At this frozen-contract snapshot, missing active Checker Task 258B5C
+cases remained the R-G007 `test_gap`.
 The absent public resolver code is the existing Low deferred R-G001
 `spec_gap`. No other disagreement is frozen here.
 
@@ -566,9 +567,10 @@ invariant/fresh-inventory gates remained pending. They subsequently completed
 in correction commit `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its
 fresh inventory.
 
-### R-032B implementation status
+### R-032B implementation result
 
-The current implementation provides the exact public collector, collection
+Committed implementation `b3a7e79a6b60db2974e911c69bb56ff5f4609064`
+provides the exact public collector, collection
 accessors, and non-exhaustive error declaration frozen above. It validates the
 R-032A arena in `new` and `collect`, stores only AST/arena borrows under `'a`,
 owns namespace/contribution, and derives every reference node through the
@@ -585,11 +587,31 @@ source/documentation rereviews report **NO FINDINGS**. The collector matrix
 passes `25/25`, the complete labels matrix passes `35/35`, resolver tests pass
 `144 + 11 + 1`, and every broader verification/count/hash/scope gate passes.
 Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
-with no score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
-task-only restaging/cached-diff review, commit, and post-commit
-invariant/fresh inventory remain pending.
+with no score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Task-only
+restaging/cached-diff review, commit, and post-commit invariant/fresh
+inventory are complete.
 
 No active fixture, expectation, sidecar, trace state, runner, public checker
-handoff, diagnostic code, Cargo metadata, or proof semantics changes. The
-future private B5C consumer and R-G007 deferral remain exactly as frozen, and
+handoff, diagnostic code, Cargo metadata, or proof semantics changed in
+R-032B. The private B5C consumer and R-G007 deferral remain exactly as frozen, and
 `spec_coverage_audit.md` remains a deliberate no-op.
+
+### Checker Task 258B5C active consumer status
+
+The current B5C implementation privately consumes the unchanged
+`SurfaceResolvedArena`, `ProofLabelSourceCollector`, and `LabelResolver` APIs
+in `mizar-test`. It adds exactly two fail fixtures, their two sidecars, and
+two covered trace rows. `crates/mizar-test/tests/metadata.rs` updates four
+frozen active-count/CLI assertions from declaration stage `5` to `7`.
+Resolver production and public API remain unchanged. Plan/pass/fail counts are
+`421/389` and `228/193`; active parse/declaration/type/proof counts are
+`101/7/198/1`; warnings/errors are `23/0`.
+
+Public codes stay empty and the private route key is
+`declaration_symbol.label.proof_scope_confinement`. Only the inner-to-outer
+and sibling confinement negatives close in R-G007; import, name, dot-chain,
+and other label-reference coverage remains open. B5C test, implementation,
+source/documentation reviews and all verification gates are complete.
+Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
+with no score cap at valid `100/100`. Task-only cached-diff review, the
+dedicated commit, and post-commit fresh inventory remain pending.

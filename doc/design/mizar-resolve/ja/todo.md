@@ -703,9 +703,10 @@ cargo test -p mizar-vc
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   score capなし、valid `100/100`
   （`20/20/15/15/10/10/5/5`）で完了する。
-- [ ] task-only restaging/cached-diff review、dedicated commit、post-commit
+- [x] task-only restaging/cached-diff review、dedicated commit
+  `b3a7e79a6b60db2974e911c69bb56ff5f4609064`、post-commit
   invariant/fresh inventoryを完了する。
-- [ ] その後だけactive B5C consumerへ進む。effective orderはS-026 docs、
+- [x] その後だけactive B5C consumerへ進む。effective orderはS-026 docs、
   S-026 implementation、R-032A lint docs、R-032A implementation、
   R-032B lint docs、R-032B implementation、active B5Cで、commit間にfresh
   inventoryを挟む。
@@ -713,3 +714,26 @@ cargo test -p mizar-vc
   fixture、sidecar、expectation、trace status/count、Cargo metadataを変更しない。
   chapter coverage、traceability、owner、deferral、coverage creditが変わらない
   ため`spec_coverage_audit.md`はdeliberate no-op。
+
+## Checker Task 258B5C active consumer
+
+- [x] unchanged R-032A `SurfaceResolvedArena`とR-032B
+  `ProofLabelSourceCollector` / `LabelResolver` APIを`mizar-test`でprivateに
+  consumeし、resolver production/public APIを変更しない。
+- [x] inner-to-outer/sibling confinement用exact fail fixture 2件、expectation
+  sidecar 2件、covered trace row 2件を追加する。
+- [x] `crates/mizar-test/tests/metadata.rs`のfrozen active-count/CLI assertion
+  4件をdeclaration stage `5`から`7`へ更新する。
+- [x] plan `421/389`、pass/fail `228/193`、active
+  parse/declaration/type/proof `101/7/198/1`、warnings/errors `23/0`を記録する。
+- [x] public diagnostic codeを空に保ち、private key
+  `declaration_symbol.label.proof_scope_confinement`だけでauthenticateする。
+- [x] R-G007のこのnegative 2件だけを閉じ、import/name/dot-chain/other
+  label-reference coverageをopenのまま保つ。
+- [x] findings-free test、implementation、source/documentation reviewと
+  focused/crate/workspace/count/hash verification gateを完了する。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  score capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）で完了する。
+- [ ] task-only cached-diff review、dedicated B5C commit、post-commit
+  fresh inventoryを完了する。

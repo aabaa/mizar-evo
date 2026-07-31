@@ -1423,3 +1423,12 @@ production source、test intent、fixture、expectation、sidecar、trace
 row/status/count、public diagnostic code、semantic behavior、coverage stateは
 変更しない。mapping、owner、deferral、coverage creditを変更しないため、
 `doc/design/spec_coverage_audit.md` editは不要。
+
+## Task 258B5C active-implementation synchronization
+
+EN/JAはR-032B commit
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`、private B5C consumer、active
+fail fixture 2件/covered row 2件、corrected metadata count consumer、
+`421/389`、`228/193`、`101/7/198/1`、empty public code、unchanged checker
+non-consumer boundaryを同期する。両言語は2 confinement requirementだけに
+active creditを与え、broader deferralをすべて維持する。

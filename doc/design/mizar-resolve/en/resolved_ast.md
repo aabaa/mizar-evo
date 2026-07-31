@@ -482,9 +482,10 @@ only structural provenance with no semantic state or key. Focused evidence
 covers disconnected/recovered/root-not-last nodes, all named mismatches,
 invalid contained arenas, simultaneous precedence faults, exact helper
 payloads, independent equivalent-input determinism, out-of-range foreign ids,
-and downstream wildcard compatibility. R-032B remains separate and pending.
+and downstream wildcard compatibility. At that R-032A snapshot, R-032B
+remained a separate pending task.
 
-### R-032B lint-policy ownership dependency (current prerequisite)
+### R-032B lint-policy ownership dependency (completed prerequisite record)
 
 Fresh R-032B inventory applies the same mandatory R-026 rule to the public
 `ProofLabelSourceCollectionError` frozen in `labels.md`. The former
@@ -498,7 +499,7 @@ the sole `ProofLabelSourceCollectionError` owning-spec decision with
 `spec_name: "labels.md"`. This cross-family note does not reopen or alter the
 implemented R-032A arena.
 
-The current docs-only correction spans exactly 31 design files: 16 resolver,
+The docs-only correction spanned exactly 31 design files: 16 resolver,
 eight checker, six `mizar-test`, and one global ledger. It changes no source,
 specification, fixture, sidecar, expectation, trace status/count, Cargo
 metadata, semantic contract, or test intent. `spec_coverage_audit.md` is a
@@ -506,7 +507,28 @@ deliberate no-op. The independent specification, test/scope, and
 source/documentation consistency reviews report **NO FINDINGS**, and the
 docs-only verification/count/hash gates PASS. Independent final read-only
 quality also reports **NO FINDINGS**; all nine hard gates PASS with no cap at
-valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff
-review, commit, and post-commit invariant/fresh-inventory gates remain pending;
-fresh inventory afterward gates the separate R-032B
-implementation.
+valid `100/100` (`20/20/15/15/10/10/5/5`). Its staging, correction commit,
+post-commit invariant, and fresh-inventory gates subsequently completed.
+R-032B implementation is committed at
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`.
+
+### Checker Task 258B5C consumer overlay
+
+Current B5C privately consumes the unchanged R-032A
+`SurfaceResolvedArena` and committed R-032B
+`ProofLabelSourceCollector` / `LabelResolver` APIs in `mizar-test`. It adds
+exactly two fail fixtures, two sidecars, two covered trace rows, and updates
+four frozen active-count/CLI assertions in
+`crates/mizar-test/tests/metadata.rs` from declaration stage `5` to `7`. This
+module and all resolver production/API
+surfaces remain unchanged. Counts are plan `421/389`, pass/fail `228/193`,
+active parse/declaration/type/proof `101/7/198/1`, and warnings/errors `23/0`.
+
+Public codes stay empty and the route uses private key
+`declaration_symbol.label.proof_scope_confinement`. B5C closes only the two
+confinement negatives; R-G007 stays open for import, name, dot-chain, and
+other label-reference coverage. Test, implementation, source/documentation
+reviews and all verification gates are complete; the independent
+final quality reports **NO FINDINGS**; all nine hard gates PASS with no score
+cap at valid `100/100`. Task-only cached-diff review, the dedicated B5C
+commit, and post-commit fresh inventory remain pending.

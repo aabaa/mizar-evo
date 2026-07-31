@@ -747,9 +747,10 @@ Check the task off here once tests pass.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete task-only restaging/cached-diff review, the dedicated commit,
-  and post-commit invariant/fresh inventory.
-- [ ] Continue only afterward to the active B5C consumer. The effective order
+- [x] Complete task-only restaging/cached-diff review, dedicated commit
+  `b3a7e79a6b60db2974e911c69bb56ff5f4609064`, and post-commit
+  invariant/fresh inventory.
+- [x] Continue only afterward to the active B5C consumer. The effective order
   remains S-026 docs, S-026 implementation, R-032A lint docs, R-032A
   implementation, R-032B lint docs, R-032B implementation, active B5C, with
   fresh inventory between commits.
@@ -757,3 +758,26 @@ Check the task off here once tests pass.
   expectations, trace status/counts, and Cargo metadata unchanged in this
   prerequisite. `spec_coverage_audit.md` is a deliberate no-op because no
   chapter coverage, traceability, owner, deferral, or coverage credit changes.
+
+## Checker Task 258B5C Active Consumer
+
+- [x] Privately consume unchanged R-032A `SurfaceResolvedArena` and R-032B
+  `ProofLabelSourceCollector` / `LabelResolver` APIs in `mizar-test`, with no
+  resolver production or public API change.
+- [x] Add exactly two fail fixtures, two expectation sidecars, and two covered
+  trace rows for inner-to-outer and sibling confinement.
+- [x] Update four frozen active-count/CLI assertions in
+  `crates/mizar-test/tests/metadata.rs` from declaration stage `5` to `7`.
+- [x] Record plan `421/389`, pass/fail `228/193`, active
+  parse/declaration/type/proof `101/7/198/1`, and warnings/errors `23/0`.
+- [x] Keep public diagnostic codes empty and authenticate only through private
+  key `declaration_symbol.label.proof_scope_confinement`.
+- [x] Close only these two R-G007 negatives; keep import, name, dot-chain, and
+  other label-reference coverage open.
+- [x] Complete findings-free test, implementation, and source/documentation
+  reviews plus focused/crate/workspace/count/hash verification gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete task-only cached-diff review, the dedicated B5C commit, and
+  post-commit fresh inventory.

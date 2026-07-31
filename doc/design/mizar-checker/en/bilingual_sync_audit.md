@@ -1479,3 +1479,12 @@ fixture, expectation, sidecar, trace row/status/count, public diagnostic
 code, semantic behavior, or coverage state. No
 `doc/design/spec_coverage_audit.md` edit is required because no mapping,
 owner, deferral, or coverage credit changes.
+
+## Task 258B5C Active-Implementation Synchronization
+
+EN and JA now synchronize R-032B commit
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`, the private B5C consumer, two
+active fail fixtures/two covered rows, the corrected metadata count consumer,
+`421/389`, `228/193`, `101/7/198/1`, empty public codes, and the unchanged
+checker non-consumer boundary. Both languages grant active credit only to the
+two confinement requirements and retain all broader deferrals.

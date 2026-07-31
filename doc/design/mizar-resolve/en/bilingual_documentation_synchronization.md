@@ -6,9 +6,9 @@
 Status: task R-028 audit complete; task R-029 and close-out scopes re-run
 complete; 2026-07-02 roadmap synchronization overlay complete; task R-024
 implementation overlay complete; R-032A implementation synchronization
-complete; the R-032B lint-policy correction is committed and its exact
-implementation is the current pre-commit task, with active Checker Task
-258B5C next.
+complete; the R-032B implementation is committed at
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`; active Checker Task 258B5C is
+the current pre-commit task.
 
 ## Scope
 
@@ -39,7 +39,7 @@ not change `doc/spec`, `.miz` sources, or expectation sidecars.
   `boundary_violation` risk, R-G005 resolved `design_drift`, R-G006
   `external_dependency_gap`, and R-G007 `test_gap` as the current concrete
   refinement of R-G002.
-- The implemented R-032A and planned R-032B synchronize the Medium normal-source proof-label
+- The implemented R-032A and R-032B synchronize the Medium normal-source proof-label
   `source_drift`, stale R-023 attribution `design_drift`, R-G007 B5C
   `test_gap`, and Low deferred R-G001 public-code `spec_gap`.
 - No new `spec_gap`, `test_gap`, `design_drift`, `source_drift`,
@@ -55,12 +55,12 @@ not change `doc/spec`, `.miz` sources, or expectation sidecars.
 | [declarations.md](./declarations.md) | [../ja/declarations.md](../ja/declarations.md) | Declaration shell kinds, excluded/transparent nodes, visibility, recovery, identity/provenance, and public enum policy are synchronized. |
 | [env.md](./env.md) | [../ja/env.md](../ja/env.md) | `SymbolEnv` index families, contribution tracking, invalidation notes, determinism, and public enum policy are synchronized. |
 | [imports.md](./imports.md) | [../ja/imports.md](../ja/imports.md) | Import inputs/outputs, two-pass contract, path resolution, alias/export/cycle/unresolved policy, determinism, boundary notes, and public enum policy are synchronized. |
-| [labels.md](./labels.md) | [../ja/labels.md](../ja/labels.md) | Existing label policy and planned R-032B API/subtree/origin/error contract are synchronized. |
+| [labels.md](./labels.md) | [../ja/labels.md](../ja/labels.md) | Existing label policy, committed R-032B API/subtree/origin/error contract, and active private B5C consumer status are synchronized. |
 | [module_summary_reuse.md](./module_summary_reuse.md) | [../ja/module_summary_reuse.md](../ja/module_summary_reuse.md) | R-024 summary reuse scope, known-field identity validation, fallback policy, source-backed agreement, determinism, and public enum policy are synchronized. |
 | [names.md](./names.md) | [../ja/names.md](../ja/names.md) | Name-use sites, scope model, namespace-before-symbol lookup, visibility/shadowing, unresolved/ambiguous records, dot-chain finalization, diagnostics, and public enum policy are synchronized. |
 | [recovery.md](./recovery.md) | [../ja/recovery.md](../ja/recovery.md) | Recovered syntax stage disposition, boundary rules, and test intent are synchronized. |
 | [resolved_ast.md](./resolved_ast.md) | [../ja/resolved_ast.md](../ja/resolved_ast.md) | Top-level `ResolvedAst` shape, stable identity, node/name/label/import tables, recovered shells, provenance, determinism, and public enum policy are synchronized. |
-| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Existing audit, implemented R-032A, and planned R-032B repair correspondence are synchronized. |
+| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Existing audit, implemented R-032A/R-032B repair correspondence, and active B5C consumer status are synchronized. |
 | [symbols.md](./symbols.md) | [../ja/symbols.md](../ja/symbols.md) | Symbol-bearing shells, collection order, identities/origins, signatures, duplicates/overloads, visibility/export/summary policy, dependency relations, recovery/diagnostics, determinism, and public enum policy are synchronized. |
 | [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Ordered task states and split R-032A/R-032B ownership/dependencies are synchronized. |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This R-028 audit, R-029 scope re-run, close-out re-run, and roadmap synchronization overlay are recorded in both languages with the same scope, result, pair checklist, and handoff notes. |
@@ -107,9 +107,9 @@ rejected callback/unmapped contract.
 Post-close-out resolver updates should treat this audit as the baseline
 bilingual sync state. S-026 documentation and implementation are complete.
 The R-032A lint-policy docs correction and R-032A implementation are complete.
-The current dependency sequence is completion and dedicated commit of the
-R-032B implementation, then the active B5C consumer, with fresh inventory
-after each commit. Add future design files in both language
+The R-032B implementation and its dedicated commit are complete. The current
+dependency step is the active B5C consumer, with fresh inventory after its
+predecessor commit. Add future design files in both language
 directories in the same change. Behavior cleanup, public API changes, or new
 diagnostics remain outside the completed resolver milestone and require
 separate spec/test authority.
@@ -118,8 +118,12 @@ The S-026/R-032A dependency overlay is synchronized in EN/JA: both languages
 historically classified the same boundary defect and deferred R-032A source
 until the separate syntax commits. Those commits, the lint-policy correction,
 and R-032A implementation are now complete. Resolver ownership, validation
-precedence, and exclusions remain synchronized. R-032B source is now present
-while its remaining test/review/verification gates are completed.
+precedence, and exclusions remain synchronized. R-032B source is committed.
+The current B5C consumer has completed its test, implementation,
+source/documentation reviews and all verification gates. Independent final
+quality reports **NO FINDINGS**; all nine hard gates PASS with no score cap at
+valid `100/100`. Task-only cached-diff review, the dedicated commit, and
+post-commit fresh inventory remain pending.
 
 ## R-032A lint-policy scope correction
 
@@ -172,12 +176,12 @@ fresh inventory.
 
 ## R-032B implementation synchronization
 
-EN and JA now record the same current pre-commit implementation: exact
+EN and JA record the same committed implementation: exact
 three-Rust-file ownership; public collector, collection accessors, and
 non-exhaustive error table; R-032A validation; AST/arena-only borrowing;
 default-deny direct traversal; module-global ordinals; proof scopes;
 completion boundaries; simple citations; structural origins; and
-`proof-step-v1` identity. Both preserve the private future B5C consumer and
+`proof-step-v1` identity. Both preserve the private B5C consumer and
 exclude checker handoff, semantic phases, fixtures, expectations, sidecars,
 trace state, public diagnostics, and Cargo metadata.
 
@@ -189,8 +193,29 @@ implementation, and source/documentation rereviews. Focused, crate,
 formatting, workspace Clippy/test, diff, CLI, test-list, production, and exact
 20-file scope gates PASS. Independent final quality reports **NO FINDINGS**;
 all nine hard gates PASS with no score cap at valid `100/100`
-(`20/20/15/15/10/10/5/5`). Only task-only restaging/cached-diff review,
-commit, and post-commit invariant/fresh inventory remain pending. R-G007
-remains open and active B5C remains next.
+(`20/20/15/15/10/10/5/5`). Task-only restaging/cached-diff review, commit
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`, and post-commit
+invariant/fresh inventory are complete.
 `spec_coverage_audit.md` is still a deliberate no-op because no active
 mapping, trace status/count, owner, deferral, or coverage credit changes.
+
+## Checker Task 258B5C implementation synchronization
+
+EN and JA record the same current, not-yet-committed B5C implementation. It
+privately consumes the unchanged R-032A `SurfaceResolvedArena` and R-032B
+`ProofLabelSourceCollector` / `LabelResolver` APIs in `mizar-test`, adds
+exactly two fail fixtures with two sidecars and two covered trace rows, and
+updates four frozen active-count/CLI assertions in
+`crates/mizar-test/tests/metadata.rs` from declaration stage `5` to `7`.
+Resolver production source and public API remain unchanged.
+
+Both languages record plan `421/389`, pass/fail `228/193`, active
+parse/declaration/type/proof `101/7/198/1`, and warnings/errors `23/0`.
+Public diagnostic codes stay empty and the private route key is
+`declaration_symbol.label.proof_scope_confinement`. B5C closes only the
+inner-to-outer and sibling confinement negatives; R-G007 remains open for
+import, name, dot-chain, and other label-reference coverage. Test,
+implementation, source/documentation reviews and all verification gates are
+complete. Independent final quality reports **NO FINDINGS**; all nine hard
+gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
+the dedicated B5C commit, and post-commit fresh inventory remain pending.

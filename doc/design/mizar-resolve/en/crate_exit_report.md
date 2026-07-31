@@ -38,8 +38,9 @@ Still excluded:
   resolver diagnostics stay crate-local/internal.
 - Broader semantic `.miz` assertions for import/name/dot-chain/label facts
   remain R-G007 `test_gap`.
-- Planned R-032A/R-032B structural-map/proof-label projection and the later Checker
-  Task 258B5C active confinement cases are post-close-out logical tasks.
+- Completed R-032A/R-032B structural-map/proof-label projection and the current
+  Checker Task 258B5C active confinement cases are post-close-out logical
+  tasks.
 
 ## Milestone Gates
 
@@ -223,8 +224,9 @@ Chapter 16 §§16.4.2/16.5.1 authorize proof-label confinement. The core
 `LabelResolver` prefix behavior is correct; the missing normal-source
 `SurfaceAst` proof-step declaration/simple-unqualified reference collector is
 Medium `source_drift`, while the older R-023 full-source-walk attribution is
-`design_drift`. Missing active B5C coverage remains R-G007 `test_gap`; absent
-public codes remain the Low deferred R-G001 `spec_gap`.
+`design_drift`. At this frozen extension record, missing active B5C coverage
+was R-G007 `test_gap`; absent public codes remain the Low deferred R-G001
+`spec_gap`.
 
 The pre-S-026 record used the four-step order documentation, R-032A, R-032B,
 and active B5C, each a separate commit. The later S-026 dependency overlay
@@ -274,9 +276,8 @@ with fresh inventory, the later private `mizar-test`
 references.
 
 The historical resolver exit remains closed. S-026 is an external syntax
-prerequisite, R-032A is complete, and R-032B is the current bounded post-exit
-follow-up with its own pending commit and quality gates; none reuses or
-changes the historical score.
+prerequisite, and R-032A/R-032B are complete bounded post-exit follow-ups;
+none reuses or changes the historical score.
 
 ## R-032A bounded post-exit implementation result
 
@@ -316,9 +317,10 @@ invariant/fresh-inventory gates remained pending. They subsequently completed
 in correction commit `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its
 fresh inventory.
 
-## R-032B bounded post-exit implementation status
+## R-032B bounded post-exit implementation result
 
-The exact R-032B source/API is present as the current pre-commit logical task.
+The exact R-032B source/API is committed at
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`.
 It uses only `labels.rs`, `labels/tests.rs`, and the sole
 `tests/lint_policy.rs` `ProofLabelSourceCollectionError` / `labels.md`
 decision, plus synchronized live status records. It validates the R-032A map
@@ -334,13 +336,34 @@ test-sufficiency, implementation, and source/documentation reviews all report
 `144 + 11 + 1`, formatting, workspace Clippy/test, diff, CLI, count/hash, and
 exact 20-file scope gates PASS. Independent final quality reports **NO
 FINDINGS**; all nine hard gates PASS with no score cap at valid `100/100`
-(`20/20/15/15/10/10/5/5`). Only task-only restaging/cached-diff review,
-commit, and post-commit invariant/fresh inventory remain pending. No active
+(`20/20/15/15/10/10/5/5`). Task-only restaging/cached-diff review, commit,
+and post-commit invariant/fresh inventory are complete. No active
 artifact, fixture, expectation, sidecar,
 trace, runner, checker handoff, semantic behavior, public diagnostic, Cargo
-metadata, historical exit status, or historical score changes. R-G007
-remains open and active B5C is next.
+metadata, historical exit status, or historical score changed in R-032B.
 
 `doc/design/spec_coverage_audit.md` is deliberately unchanged because no
 active `.miz` mapping, traceability backlink/status/count, owner crate,
 deferred status, or coverage credit changes.
+
+## Checker Task 258B5C active post-exit status
+
+The current B5C implementation privately consumes the unchanged R-032A
+`SurfaceResolvedArena` and R-032B `ProofLabelSourceCollector` /
+`LabelResolver` APIs in `mizar-test`. It adds exactly two fail fixtures,
+two expectation sidecars, and two covered trace rows.
+`crates/mizar-test/tests/metadata.rs` updates four frozen active-count/CLI
+assertions from declaration stage `5` to `7`. Resolver production and public
+API remain unchanged. The plan is
+`421/389`, pass/fail is `228/193`, active parse/declaration/type/proof is
+`101/7/198/1`, and warning/error counts are `23/0`.
+
+Public diagnostic codes remain empty; the private key is
+`declaration_symbol.label.proof_scope_confinement`. This closes only the
+inner-to-outer and sibling confinement negatives. R-G007 remains open for
+import, name, dot-chain, and other label-reference coverage. B5C test,
+implementation, source/documentation reviews and all verification gates are
+complete. Independent final quality reports **NO FINDINGS**; all nine hard
+gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
+the dedicated commit, and post-commit fresh inventory remain pending, so it
+is not recorded as committed here.

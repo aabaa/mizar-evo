@@ -143,23 +143,43 @@ task-only staging/cached-diff review、commit、post-commit
 invariant/fresh-inventory gateだけがpendingだった。これらはcorrection commit
 `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
 
-## R-032B implementation status
+## R-032B implementation result
 
-R-032Bはexisting `labels` owner内に完全に留まる。current sourceはexact
-`src/labels.rs`、private `src/labels/tests.rs`、上でauthorizeしたsole
+R-032Bはexisting `labels` owner内に完全に留まる。commit
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`はexact `src/labels.rs`、
+private `src/labels/tests.rs`、上でauthorizeしたsole
 `tests/lint_policy.rs` decisionを変更する。module split、ownership transfer、
 callback、unmapped side channel、fabricated id、syntax/checker/runner source、
 active artifact、semantic ownerを追加しない。
 
 collectorはR-032A arenaをconsumeし、label projection、reference candidate、
 scope/ordinal/completion、resolver provenance derivationだけを所有する。
-later private `mizar-test` B5C routeがsole production consumerで、public
+private `mizar-test` B5C routeがcurrent production consumerで、public
 checker unresolved-reference handoffは除外されたまま。Medium third-childと
 unauthorized `Default` / `From` implementation findings、および全
 test-sufficiency findingはfixed。final fresh test-sufficiency、
 implementation、source/documentation rereviewは**NO FINDINGS**で、全
 pre-quality verification gateはPASS。independent final qualityも
 **NO FINDINGS**、全9 hard gates PASS、score capなし、valid `100/100`
-（`20/20/15/15/10/10/5/5`）。pendingはtask-only
-restaging/cached-diff review、commit、post-commit invariant/fresh inventory
-だけ。
+（`20/20/15/15/10/10/5/5`）。task-only restaging/cached-diff review、
+commit、post-commit invariant/fresh inventoryはcomplete。
+
+## Checker Task 258B5C boundary status
+
+current B5C source/test deltaはprivate `mizar-test` consumer、exact fail
+fixture 2件、sidecar 2件、covered trace row 2件、および
+`crates/mizar-test/tests/metadata.rs`のfrozen active-count/CLI assertion 4件
+（declaration stage `5`から`7`）だけ。unchanged
+R-032A `SurfaceResolvedArena`とR-032B `ProofLabelSourceCollector` /
+`LabelResolver` APIをconsumeし、resolver production/APIは変更しない。
+plan/pass/failは`421/389`と`228/193`、active
+parse/declaration/type/proofは`101/7/198/1`、warnings/errorsは`23/0`。
+
+public codeは空のままで、private key
+`declaration_symbol.label.proof_scope_confinement`だけがrouteをauthenticate
+する。confinement negative 2件はR-G007のこのsliceだけを閉じ、
+import/name/dot-chain/other label-reference workはopenのまま。B5Cのtest、
+implementation、source/documentation reviewと全verification gateは完了し、
+independent final qualityは**NO FINDINGS**、全9 hard gates PASS、score
+capなし、valid `100/100`。task-only cached-diff review、dedicated commit、
+post-commit fresh inventoryがpending。

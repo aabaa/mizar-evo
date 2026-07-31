@@ -3466,8 +3466,8 @@ fn repository_declaration_symbol_runner_executes_active_resolver_seeds() {
     let report = run_declaration_symbol_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 5);
-    assert_eq!(report.passed_count(), 5);
+    assert_eq!(report.results.len(), 7);
+    assert_eq!(report.passed_count(), 7);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_resolve_declaration_symbol_smoke_001"
@@ -9479,8 +9479,8 @@ fn declaration_symbol_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("declaration-symbol cases: 5"));
-    assert!(stdout.contains("passed: 5"));
+    assert!(stdout.contains("declaration-symbol cases: 7"));
+    assert!(stdout.contains("passed: 7"));
     assert!(stdout.contains("failed: 0"));
 }
 

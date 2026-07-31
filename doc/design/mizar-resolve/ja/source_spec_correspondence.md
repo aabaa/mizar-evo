@@ -6,8 +6,9 @@
 状態: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendumとR-031 implementationはcomplete。
-R-032Aは実装済み。R-032B lint-policy correctionはcommit済みで、exact
-R-032B implementationがcurrent pre-commit task、Checker Task 258B5Cが次。
+R-032Aは実装済み。R-032Bは
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済みで、Checker Task
+258B5Cがcurrent pre-commit task。
 
 ## 範囲
 
@@ -59,11 +60,12 @@ source loading は追加しない。
   promise は変更していない。下の該当 source 行は refactor gate で追加された private
   helper path も含む。
 - Checker Task 258B5C inventory は Medium `source_drift` 1件を発見した。
-  production normal-source `SurfaceAst` collector は proof-step
+  pre-R-032B production normal-source `SurfaceAst` collector は proof-step
   `LabelProjection` / simple unqualified `LabelReferenceCandidate` input を
-  現在生成しない。`LabelResolver` prefix behavior 自体は正しい。R-032A/R-032B が lower
-  repair を所有し、active case の欠如は R-G007 `test_gap`、R-G001 public
-  diagnostic adoption は Low deferred `spec_gap` のままである。
+  生成しなかった。`LabelResolver` prefix behavior 自体は正しく、committed
+  R-032A/R-032Bがlower repairを所有する。current B5Cはconfinement negative
+  2件を閉じ、R-G007の残りとLow deferred R-G001 public diagnostic adoptionは
+  openのまま。
 
 ## 公開 API 対応
 
@@ -82,7 +84,7 @@ source loading は追加しない。
 | [names.md](./names.md) namespace resolution | namespace path candidate/result、partial candidate、import dependency、namespace root、candidate target、`NamespaceResolver` | `crates/mizar-resolve/src/names.rs` | `resolver_resolves_alias_roots_and_package_names_deterministically`, `longest_namespace_bindings_win_over_shorter_prefixes`, `qualified_lookup_restricts_namespace_and_visibility`, `missing_namespace_records_the_earliest_failing_segment_range`, `malformed_namespace_paths_are_unresolved_in_deterministic_order`, `stale_namespace_bindings_are_provider_errors`, `stale_empty_prefix_reserved_root_bindings_report_the_root_segment` | No finding |
 | [names.md](./names.md) preliminary symbol-name resolution と internal diagnostics | name projection、built-in projection、reference candidate、`SymbolNameResolver`、`NameDiagnosticCollector`、`NameDiagnosticReport`、diagnostic root/cascade | `crates/mizar-resolve/src/names.rs`, `crates/mizar-resolve/src/names/diagnostics.rs` | `unqualified_lookup_uses_declaration_point_shadowing_and_builtins`, `duplicate_import_aliases_drive_ambiguous_namespace_payloads_deterministically`, `unresolved_import_dependency_produces_one_primary_name_diagnostic`, `name_diagnostics_preserve_ambiguous_candidate_order`, `name_diagnostics_order_same_range_by_class_spelling_and_candidate_key`, `name_diagnostics_use_mixed_root_ordering`, `recovered_inputs_do_not_emit_name_diagnostic_roots` | No finding |
 | [names.md](./names.md) dot-chain finalization | local term scope/binding、dot-chain candidate、`DotChainFinalizer`、namespace-vs-selector handoff、`DeferredSelector` result | `crates/mizar-resolve/src/names.rs`, `crates/mizar-resolve/src/resolved_ast.rs` | `dot_chain_uses_innermost_visible_local_binding`, `dot_chain_local_binding_defers_selector_without_namespace_lookup`, `dot_chain_without_visible_local_resolves_namespace_symbol`, `dot_chain_unresolved_namespace_uses_earliest_failed_segment`, `dot_chain_malformed_or_recovered_inputs_stay_unresolved`, `dot_chain_finalizer_orders_out_of_order_inputs` | No finding |
-| [labels.md](./labels.md) label projection / citation | existing core と planned R-032B collector/error/subtree/origin | `labels.rs` / `resolved_ast.rs` / `env.rs` | existing label tests + planned R-032B matrix | core finding なし。R-032A/R-032B が map/collector gap を修復。 |
+| [labels.md](./labels.md) label projection / citation | existing core と committed R-032B collector/error/subtree/origin | `labels.rs` / `resolved_ast.rs` / `env.rs` | existing label tests + committed R-032B matrix | core finding なし。R-032A/R-032B が map/collector gap を修復。 |
 | [labels.md](./labels.md), [recovery.md](./recovery.md) recovered label policy | recovered / failed namespace reference は unresolved に残り、recovered label projection は conflict diagnostics を出さない | `crates/mizar-resolve/src/labels.rs`, `crates/mizar-resolve/src/recovery.rs` | `recovered_empty_and_failed_namespace_references_are_unresolved`, `recovered_label_projections_do_not_emit_conflict_diagnostics` | No finding |
 | [symbols.md](./symbols.md) declaration-symbol projection と collection | `SymbolDeclarationProjection`, `SignatureProjectionExtractor`, `SymbolCollector`, `SymbolCollectionResult`, `SymbolDiagnostic`, `SymbolDiagnosticClass`, overload policy, parser-backed signature shell | `crates/mizar-resolve/src/symbols.rs`, `crates/mizar-resolve/src/env.rs`, `crates/mizar-resolve/src/env/snapshot.rs`, `crates/mizar-resolve/src/declarations.rs` | 既存collection/extraction testに加え、R-031 `same_signature_same_return_functors_get_definition_conflict_class`、`same_return_conflict_candidates_keep_source_order_past_lexical_ordinal_ten`、`parser_backed_same_signature_same_return_functors_conflict`、`same_return_conflict_requires_the_exact_ordinary_functor_argument_key`、`mixed_return_group_keeps_one_return_conflict_in_canonical_order`、`recovered_same_return_functor_does_not_cascade_a_signature_conflict`、`same_signature_definition_conflict_snapshot_spelling_is_stable` | R-031後findingなし |
 | [symbols.md](./symbols.md), [recovery.md](./recovery.md) recovered / context-only symbol policy | recovered projection は local/malformed に残り、context-only shell は symbol を創作せず、recovered diagnostics は cascade しない | `crates/mizar-resolve/src/symbols.rs`, `crates/mizar-resolve/src/recovery.rs` | `recovered_shells_stay_local_and_malformed_without_panicking`, `recovered_symbols_do_not_cascade_duplicate_or_overload_diagnostics`, `recovered_context_only_shells_do_not_emit_context_diagnostics`, `context_parent_visibility_and_recovery_propagate_to_child_symbols`, `context_only_shells_do_not_fabricate_symbol_identities`, `parser_backed_recovered_projection_uses_malformed_signature` | No finding |
@@ -132,10 +134,10 @@ source loading は追加しない。
 | R-G002 | `test_gap` | lexical/parser の import/export syntax を超える semantic resolver corpus coverage が歴史的に不足していたこと。 | R-023 の active declaration-symbol smoke/fail fixture、post-task-20 R-G007 parser-backed signature-conflict active seed、exact SymbolEnv-derived pass payload assertion により部分的に解消済み。残る具体的な corpus assertion work は R-G007 が精緻化し、implemented behavior は unit tests が cover しているため R-027 には non-blocking。 |
 | R-G003 | R-024 で解消済み | canonical `ModuleSummary` artifact から dependency module を消費する経路。 | resolver-owned artifact schema、shim、writer、hash framing、source loading を追加せず、canonical な `mizar-artifact` summary consumption として完了済み。 |
 | R-G006 | `external_dependency_gap` | parser/syntax が owning source role を公開した後の module-level scheme/template declaration shell。 | represented source role については non-blocking。現 resolver は direct template role を owning signature payload に保持し、scheme/template module symbol を創作しない。 |
-| R-G007 | `test_gap` | active signature-conflict 後に残る label-reference corpus gap。B5C が次の bounded increment。 | R-032Aは完了済みで、exact R-032B implementationがcurrent pre-commit lower prerequisite。残るgateとdedicated commit後、private `mizar-test` に spec-derived confinement case だけを追加する。 |
+| R-G007 | `test_gap` | active signature-conflict/pass-payload incrementとB5C confinement negative 2件の後に残るimport graph、namespace/name、dot-chain、other label-reference corpus gap。 | R-032A/R-032Bはcomplete。current B5Cはprivate `mizar-test`にinner-to-outer/sibling confinement negativeだけを追加し、public codeは空のまま。 |
 | R-G008 | R-031で解消 | Chapter 19 §19.1は同じsymbol kind、spelling、arity、argument signatureを持つordinary declarationがreturn signature一致時もconflictすることを要求する。pre-R-031 sourceはall-return-identical groupをskipし、exact seedはdeferredで、designにはdistinct same-return class/detail keyとmixed-group priorityがなかった。 | ordinary functor definitionをexact resolver-syntactic keyでgroup化する。appendした`SameSignatureDefinitionConflict` diagnostic/definition variantがall-return-identical groupをcoverし、mixed/different-return groupでは既存`SameSignatureReturnConflict`が優先する。exact unit/near-miss/order/recovery/snapshot testとactive declaration-symbol sidecarがnew keyをcoverし、first shell/range、全candidate identity/order、byte-identicalなdifferent-return sidecar、checker-owned semantic equality/selection boundaryを保存する。 |
 
-## 実装済み R-032A / current R-032B 対応
+## 実装済み R-032A / R-032B 対応
 
 canonical Chapter 15 §15.10 と Chapter 16 §§16.4.2/16.5.1 は次の
 lower-only repair を authorize する。
@@ -150,9 +152,9 @@ lower-only repair を authorize する。
 | R-032B R-026 enum decision guard | `tests/lint_policy.rs` | exact one `ProofLabelSourceCollectionError` owning-spec decision、`spec_name: "labels.md"` | other lint decision/behavior/source owner |
 
 R-032Aはseparate lower-prerequisite logical taskとして実装済み。R-032B
-lint-policy correctionはcommit済みで、exact three-Rust-file R-032B
-implementationがactive B5C consumer前のcurrent pre-commit task。このbounded
-post-exit implementationは元のmilestone scoreを変更しない。
+lint-policy correctionとexact three-Rust-file implementationはcommit済みで、
+active B5C consumerがcurrent pre-commit task。このbounded post-exit
+implementationは元のmilestone scoreを変更しない。
 
 R-032A implementation preflightは旧two-Rust-file scopeをHigh
 `design_drift`と分類した。new public enumはexisting R-026 guardに必ず
@@ -183,9 +185,9 @@ record時点ではtask-only staging/cached-diff review、commit、post-commit
 invariant/fresh-inventory gateだけがpendingだった。これらはcorrection commit
 `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
 
-## R-032B implementation correspondence status
+## R-032B implementation correspondence result
 
-current sourceは`labels.rs`のfrozen public collector/collection/error
+committed sourceは`labels.rs`のfrozen public collector/collection/error
 contract、`labels/tests.rs`のfocused matrix、`tests/lint_policy.rs`の
 authorized `ProofLabelSourceCollectionError` R-026 decisionだけを提供する。
 collectorはvalidated R-032A arenaをconsumeし、closed Surface edge allowlistを
@@ -197,12 +199,38 @@ Medium third-childとunauthorized `Default` / `From` implementation findings、
 initial High/Mediumとfresh 2件のMedium test gapはfixed。preimplementation
 specificationとfinal fresh test-sufficiency、implementation、
 source/documentation reviewは**NO FINDINGS**。focused/crate/workspaceと全
-count/hash/scope gateはPASS。exact consumerは現時点のunit testとlater
-private B5C routeで、checker unresolved-reference handoffは除外されたまま。
+count/hash/scope gateはPASS。exact consumerはunit testとcurrent private
+B5C routeで、checker unresolved-reference handoffは除外されたまま。
 fixture、expectation、sidecar、trace、active runner、public diagnostic、Cargo
-metadata、coverage statusを変更しない。R-G007はopenで、dedicated commit後の
-active B5Cが次。`spec_coverage_audit.md`はdeliberate no-opのまま。pendingは
-task-only restaging/cached-diff review、commit、post-commit
-invariant/fresh inventoryだけ。independent final qualityは**NO FINDINGS**、
+metadata、coverage statusをR-032Bでは変更しなかった。R-G007はactive B5C
+confinement negative 2件を越えてopenのまま。
+`spec_coverage_audit.md`はdeliberate no-op。task-only
+restaging/cached-diff review、commit
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`、post-commit
+invariant/fresh inventoryはcomplete。independent final qualityは**NO FINDINGS**、
 全9 hard gates PASS、score capなし、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。
+
+## Checker Task 258B5C source correspondence status
+
+current B5C sourceはunchanged R-032A `SurfaceResolvedArena`とR-032B
+`ProofLabelSourceCollector` / `LabelResolver` APIを`mizar-test`でprivateに
+consumeする。authority-derived corpus deltaはexact fail fixture 2件、
+expectation sidecar 2件、covered trace row 2件。exact source/test consumerは
+`crates/mizar-test/src/runner/declaration_symbol.rs`、
+`crates/mizar-test/src/runner/tests.rs`、
+`crates/mizar-test/src/runner/tests/declaration_symbol.rs`、
+`crates/mizar-test/tests/metadata.rs`で、last fileのfrozen active-count/CLI
+assertion 4件はdeclaration stage `5`から`7`へ更新する。resolver productionと
+public APIは変更しない。
+
+plan/pass/failは`421/389`と`228/193`、active
+parse/declaration/type/proofは`101/7/198/1`、warnings/errorsは`23/0`。
+public codeは空のままで、private route keyは
+`declaration_symbol.label.proof_scope_confinement`。R-G007で閉じるのは
+inner-to-outer/sibling confinement negativeだけ。import/name/dot-chain/other
+label-reference coverageはopenのまま。test、implementation、
+source/documentation reviewと全verification gateは完了し、independent
+final qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
+`100/100`。task-only cached-diff review、dedicated B5C commit、post-commit
+fresh inventoryがpending。

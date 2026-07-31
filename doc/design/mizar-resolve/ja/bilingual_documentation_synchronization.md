@@ -6,8 +6,8 @@
 状態: task R-028 audit complete; task R-029 and close-out scopes re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; R-032A implementation synchronization complete。R-032B
-lint-policy correctionはcommit済みで、exact implementationがcurrent
-pre-commit task、active Checker Task 258B5Cが次。
+implementationは`b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済みで、
+active Checker Task 258B5Cがcurrent pre-commit task。
 
 ## 範囲
 
@@ -37,7 +37,7 @@ sidecar は変更しない。
   `test_gap`、R-G003 R-024 で解消済み、R-G004 `boundary_violation` risk、
   R-G005 resolved `design_drift`、R-G006 `external_dependency_gap`、そして R-G002 の
   現在の具体的な精緻化である R-G007 `test_gap`。
-- implemented R-032A / planned R-032B pair は Medium normal-source proof-label `source_drift`、stale R-023
+- implemented R-032A / R-032B pair は Medium normal-source proof-label `source_drift`、stale R-023
   attribution `design_drift`、R-G007 B5C `test_gap`、Low deferred R-G001
   public-code `spec_gap` を同期する。
 - この監査により新しい `spec_gap`、`test_gap`、`design_drift`、`source_drift`、
@@ -52,12 +52,12 @@ sidecar は変更しない。
 | [declarations.md](../en/declarations.md) | [./declarations.md](./declarations.md) | declaration shell kind、excluded / transparent node、visibility、recovery、identity / provenance、public enum policy が同期している。 |
 | [env.md](../en/env.md) | [./env.md](./env.md) | `SymbolEnv` index family、contribution tracking、invalidation note、determinism、public enum policy が同期している。 |
 | [imports.md](../en/imports.md) | [./imports.md](./imports.md) | import input/output、two-pass contract、path resolution、alias / export / cycle / unresolved policy、determinism、boundary note、public enum policy が同期している。 |
-| [labels.md](../en/labels.md) | [./labels.md](./labels.md) | existing label policy と planned R-032B API/subtree/origin/error contract が同期。 |
+| [labels.md](../en/labels.md) | [./labels.md](./labels.md) | existing label policy、committed R-032B API/subtree/origin/error contract、active private B5C consumer statusが同期。 |
 | [module_summary_reuse.md](../en/module_summary_reuse.md) | [./module_summary_reuse.md](./module_summary_reuse.md) | R-024 summary reuse scope、known-field identity validation、fallback policy、source-backed agreement、determinism、public enum policy が同期している。 |
 | [names.md](../en/names.md) | [./names.md](./names.md) | name-use site、scope model、namespace-before-symbol lookup、visibility / shadowing、unresolved / ambiguous record、dot-chain finalization、diagnostics、public enum policy が同期している。 |
 | [recovery.md](../en/recovery.md) | [./recovery.md](./recovery.md) | recovered syntax stage disposition、boundary rule、test intent が同期している。 |
 | [resolved_ast.md](../en/resolved_ast.md) | [./resolved_ast.md](./resolved_ast.md) | top-level `ResolvedAst` shape、stable identity、node / name / label / import table、recovered shell、provenance、determinism、public enum policy が同期している。 |
-| [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [./source_spec_correspondence.md](./source_spec_correspondence.md) | existing audit、implemented R-032A、planned R-032B correspondence が同期。 |
+| [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [./source_spec_correspondence.md](./source_spec_correspondence.md) | existing audit、implemented R-032A/R-032B correspondence、active B5C consumer statusが同期。 |
 | [symbols.md](../en/symbols.md) | [./symbols.md](./symbols.md) | symbol-bearing shell、collection order、identity / origin、signature、duplicate / overload、visibility / export / summary policy、dependency relation、recovery / diagnostics、determinism、public enum policy が同期している。 |
 | [todo.md](../en/todo.md) | [./todo.md](./todo.md) | ordered task state と split R-032A/R-032B ownership/dependency が同期。 |
 | [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [./bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この R-028 audit、R-029 scope re-run、close-out re-run、roadmap synchronization overlay は、同じ scope、result、pair checklist、handoff note を両言語で記録している。 |
@@ -99,9 +99,9 @@ rejected callback/unmapped contract は両言語に残さない。
 
 post-close-out の resolver update は、この監査を二言語同期状態の baseline として扱う。
 S-026 documentation/implementation、R-032A lint-policy docs correction、
-R-032A implementationは完了済み。current dependency sequenceはR-032B
-implementationの完了とdedicated commit、active B5Cで、
-各commit後にfresh inventoryを挟む。将来 design fileを
+R-032A implementationとR-032B dedicated commitは完了済み。current
+dependency stepはactive B5Cで、predecessor commit後にfresh inventoryを
+挟んだ。将来 design fileを
 追加する場合は両言語 directory に同時に追加する。挙動 cleanup、public API
 change、新しいdiagnosticsは完了済み resolver milestone の範囲外であり、
 独立した spec/test authority を要求する。
@@ -110,7 +110,11 @@ S-026/R-032A dependency overlay は EN/JA 同期済み。両言語はhistoricall
 同じboundary defectを分類し、separate syntax commitまでR-032A sourceを
 deferした。それらのcommit、lint-policy correction、R-032A implementationは
 完了済み。resolver ownership、validation precedence、exclusionは同期したままで、
-R-032B sourceは存在し、残るtest/review/verification gateを完了中。
+R-032B sourceはcommitted。current B5C consumerのtest、implementation、
+source/documentation reviewと全verification gateは完了。independent final
+qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
+`100/100`。task-only cached-diff review、dedicated commit、post-commit
+fresh inventoryがpending。
 
 ## R-032A lint-policy scope correction
 
@@ -160,12 +164,12 @@ gateだけがpendingだった。これらはcorrection commit
 
 ## R-032B implementation synchronization
 
-EN/JAは同じcurrent pre-commit implementationを記録する。すなわちexact
+EN/JAは同じcommitted implementationを記録する。すなわちexact
 three-Rust-file ownership、public collector、collection accessor、
 non-exhaustive error table、R-032A validation、AST/arena-only borrow、
 default-deny direct traversal、module-global ordinal、proof scope、completion
 boundary、simple citation、structural origin、`proof-step-v1` identityである。
-両言語ともfuture private B5C consumerを維持し、checker handoff、semantic
+両言語ともprivate B5C consumerを維持し、checker handoff、semantic
 phase、fixture、expectation、sidecar、trace state、public diagnostic、Cargo
 metadataを除外する。
 
@@ -176,8 +180,30 @@ test-sufficiency、implementation、source/documentation rereviewはすべて
 **NO FINDINGS**。focused、crate、formatting、workspace Clippy/test、diff、
 CLI、test-list、production、exact 20-file scope gateはPASS。independent final
 qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
-`100/100`（`20/20/15/15/10/10/5/5`）。pendingはtask-only
-restaging/cached-diff review、commit、post-commit invariant/fresh inventory
-だけ。R-G007はopenで、active B5Cが次。
+`100/100`（`20/20/15/15/10/10/5/5`）。task-only
+restaging/cached-diff review、commit
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`、post-commit
+invariant/fresh inventoryはcomplete。
 `spec_coverage_audit.md`はactive mapping、trace status/count、owner、
 deferral、coverage creditが変わらないためdeliberate no-opのまま。
+
+## Checker Task 258B5C implementation synchronization
+
+EN/JAは同じcurrent、未commitのB5C implementationを記録する。unchanged R-032A
+`SurfaceResolvedArena`とR-032B `ProofLabelSourceCollector` /
+`LabelResolver` APIを`mizar-test`でprivateにconsumeし、exact fail fixture
+2件、sidecar 2件、covered trace row 2件を追加する。
+`crates/mizar-test/tests/metadata.rs`のfrozen active-count/CLI assertion
+4件はdeclaration stage `5`から`7`へ更新する。
+resolver production sourceとpublic APIは変更しない。
+
+両言語ともplan `421/389`、pass/fail `228/193`、active
+parse/declaration/type/proof `101/7/198/1`、warnings/errors `23/0`を記録する。
+public diagnostic codeは空のままで、private route keyは
+`declaration_symbol.label.proof_scope_confinement`。B5Cが閉じるのは
+inner-to-outer/sibling confinement negativeだけで、R-G007は
+import/name/dot-chain/other label-reference coverageについてopenのまま。
+test、implementation、source/documentation reviewと全verification gateは
+完了。independent final qualityは**NO FINDINGS**、全9 hard gates PASS、
+score capなし、valid `100/100`。task-only cached-diff review、dedicated
+B5C commit、post-commit fresh inventoryがpending。

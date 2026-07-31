@@ -1,5 +1,7 @@
 include!("tests/support.rs");
 
+include!("tests/declaration_symbol.rs");
+
 include!("tests/proof_verification.rs");
 
 include!("tests/parse_only.rs");

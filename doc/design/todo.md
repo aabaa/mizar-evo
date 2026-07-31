@@ -3763,6 +3763,26 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete task-only restaging/cached-diff review, the dedicated commit,
-  and post-commit invariant/fresh inventory.
-- [ ] Fresh-inventory and continue only afterward to active B5C.
+- [x] Complete task-only restaging/cached-diff review, dedicated R-032B commit
+  `b3a7e79a6b60db2974e911c69bb56ff5f4609064`, and post-commit
+  invariant/fresh inventory.
+- [x] Fresh-inventory and continue afterward to active B5C.
+
+## Checker Task 258B5C Active Proof-Label Confinement
+
+- [x] Add the exact two fail fixture/sidecar pairs and two covered trace rows
+  derived from Chapters 15 §15.10 and 16 §§16.4.2/16.5.1.
+- [x] Consume only unchanged R-032A/R-032B output in the private
+  declaration-symbol runner; retain empty public codes and all semantic
+  deferrals.
+- [x] Close the findings for complete result-field mutation and exact-source/
+  mismatched-AST selector coverage.
+- [x] Correct exactly four stale metadata assertions from `5` to `7`,
+  classified as `test_expectation_drift` and scope `design_drift`.
+- [x] Complete repeated no-findings test, implementation, and
+  source/documentation reviews plus full verification/count/hash gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete the task-only commit, post-commit invariants, and next-task
+  fresh inventory.

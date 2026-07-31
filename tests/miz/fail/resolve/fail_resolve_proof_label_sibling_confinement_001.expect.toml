@@ -1,0 +1,21 @@
+schema_version = 1
+id = "fail_resolve_proof_label_sibling_confinement_001"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "fail_resolve_proof_label_sibling_confinement_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+rejection_reason = "proof_label_not_visible_across_sibling_scopes"
+stable_detail_key = "declaration_symbol.label.proof_scope_confinement"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "declaration_symbol.label.proof_scope_confinement",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = [
+  "spec.en.15.statements.proof_label_scope_confinement",
+  "spec.en.16.theorems_and_proofs.labels.proof_scope_confinement",
+]
+notes = "Active declaration_symbol fail coverage for a proof label that is not visible across sibling reasoning blocks."

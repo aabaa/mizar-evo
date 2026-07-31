@@ -2978,7 +2978,27 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 
 - [x] separate mizar-syntax S-026 frozen-documentation commit を完了。
 - [x] separate S-026 implementation と review/verification gate を完了。
-- [ ] dedicated commit と resolver R-032A/R-032B の完了後だけ active B5C
-  artifact を追加。
+- [x] active B5C artifact追加前にdedicated S-026、R-032A、R-032B
+  prerequisite commitを完了。R-032Bは
+  `b3a7e79a6b60db2974e911c69bb56ff5f4609064`。
 - [x] exact source-only selector、provenance authentication、private detail、
   empty public code、projected active count impact を維持。
+
+## Checker Task 258B5C active implementation
+
+- [x] frozen fail fixture/sidecar 2組とcovered trace row 2件だけを追加し、
+  `421/389`、`228/193`、`101/7/198/1`、`23/0`をreproduce。
+- [x] unchanged R-032A/R-032B API上のprivate declaration-symbol consumerだけを
+  implementし、runner-derived semantic identityを追加しない。
+- [x] exact dense profile、全frozen provenance/result corruption、
+  expectation non-selection、replay/order、existing-case isolationをcover。
+- [x] omitted metadata count consumerのexact four `5 -> 7` assertionを修正し、
+  test intentを変えず`test_expectation_drift`とwrite-scope
+  `design_drift`に分類。
+- [x] findings-free test/implementation/source-documentation reviewと
+  focused/crate/workspace/count/hash verification gateを完了。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  score capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）で完了。
+- [ ] task fileだけをstageしdedicated commitを作成、repository/stash
+  invariantをverifyして次のexecutable taskをfresh-inventory。

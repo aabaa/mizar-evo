@@ -12638,3 +12638,22 @@ or a public code. Selection remains source-bytes-plus-normal-AST only.
 S-026 owns only dense syntax views and cannot select or execute the runner.
 R-032A/R-032B remain resolver owners; active B5C remains the later mizar-test
 consumer. Separate commits preserve all three boundaries.
+
+## Task 258B5C Implemented Boundary Result
+
+The R-032A and R-032B prerequisites are committed, with R-032B at
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`. B5C changes only the private
+`mizar-test` declaration-symbol consumer, its tests, two new fixture/sidecar
+pairs, two trace rows, and synchronized derived records. It consumes the
+resolver-owned structural arena, label projections, reference candidates,
+and resolution result without broadening their ownership.
+
+The only frozen-scope correction is the existing
+`crates/mizar-test/tests/metadata.rs` count consumer: four summary assertions
+must move from `5` to the already-authorized `7`. This closes
+`test_expectation_drift` and `design_drift`; it adds no runtime owner.
+
+No checker handoff accepts either unresolved reference. Parser/frontend,
+resolver, checker, public harness/CLI schema, type/proof/Core/CFG/VC, and
+semantic-result owners are unchanged. The boundary review therefore records
+no ownership transfer or `boundary_violation`.
