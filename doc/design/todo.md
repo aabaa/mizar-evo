@@ -3752,6 +3752,17 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete the final independent read-only quality review with **NO
   FINDINGS**, all nine hard gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Stage and commit only the exact 31-file correction, verify clean
-  post-commit/stash invariants, then fresh-inventory and implement the exact
-  three-Rust-file resolver R-032B task.
+- [x] Complete the exact 31-file correction commit
+  `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`, verify clean
+  post-commit/stash invariants, and fresh-inventory R-032B.
+- [x] Complete the exact three-Rust-file resolver R-032B source, fix the
+  initial High/Medium and two fresh Medium test gaps plus the Medium
+  third-child and unauthorized `Default` / `From` implementation findings,
+  complete all final fresh rereviews with **NO FINDINGS**, and pass focused,
+  full, CLI, count/hash, and exact 20-file scope gates.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete task-only restaging/cached-diff review, the dedicated commit,
+  and post-commit invariant/fresh inventory.
+- [ ] Fresh-inventory and continue only afterward to active B5C.

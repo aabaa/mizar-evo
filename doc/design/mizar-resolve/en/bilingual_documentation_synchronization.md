@@ -6,8 +6,9 @@
 Status: task R-028 audit complete; task R-029 and close-out scopes re-run
 complete; 2026-07-02 roadmap synchronization overlay complete; task R-024
 implementation overlay complete; R-032A implementation synchronization
-complete; the R-032B lint-policy docs correction is the current prerequisite,
-with R-032B implementation / Checker Task 258B5C still planned.
+complete; the R-032B lint-policy correction is committed and its exact
+implementation is the current pre-commit task, with active Checker Task
+258B5C next.
 
 ## Scope
 
@@ -106,7 +107,7 @@ rejected callback/unmapped contract.
 Post-close-out resolver updates should treat this audit as the baseline
 bilingual sync state. S-026 documentation and implementation are complete.
 The R-032A lint-policy docs correction and R-032A implementation are complete.
-The current dependency sequence is the R-032B lint-policy docs correction,
+The current dependency sequence is completion and dedicated commit of the
 R-032B implementation, then the active B5C consumer, with fresh inventory
 after each commit. Add future design files in both language
 directories in the same change. Behavior cleanup, public API changes, or new
@@ -117,7 +118,8 @@ The S-026/R-032A dependency overlay is synchronized in EN/JA: both languages
 historically classified the same boundary defect and deferred R-032A source
 until the separate syntax commits. Those commits, the lint-policy correction,
 and R-032A implementation are now complete. Resolver ownership, validation
-precedence, and exclusions remain synchronized; R-032B remains pending.
+precedence, and exclusions remain synchronized. R-032B source is now present
+while its remaining test/review/verification gates are completed.
 
 ## R-032A lint-policy scope correction
 
@@ -137,11 +139,12 @@ three-field ownership, complete dense same-index lowering, fail-closed
 validation precedence, public non-exhaustive error surface, helper payloads,
 equivalent-input determinism, and sole R-026 decision. Both record the same
 three Rust owners and the same prohibited label/runner/artifact/trace/semantic
-scope. R-032B remains pending. `spec_coverage_audit.md` remains a deliberate
+scope. At that prerequisite record, R-032B remained pending.
+`spec_coverage_audit.md` remains a deliberate
 no-op because no active mapping, trace status/count, owner, deferral, or
 coverage credit changed.
 
-## R-032B lint-policy scope correction (current prerequisite)
+## R-032B lint-policy scope correction (completed prerequisite record)
 
 EN and JA classify the omitted mandatory R-026 enum-decision owner as the same
 High `design_drift`, with no semantic `spec_gap`, `test_gap`, or test-intent
@@ -152,7 +155,7 @@ change. Both freeze later R-032B implementation to exactly
 the sole `ProofLabelSourceCollectionError` owning-spec decision with
 `spec_name: "labels.md"`.
 
-The current docs-only prerequisite spans exactly 31 design files: 16 resolver,
+The completed docs-only correction spans exactly 31 design files: 16 resolver,
 eight checker, six `mizar-test`, and one global ledger. It preserves every
 semantic/API/test contract and changes no source, fixture, sidecar,
 expectation, trace status/count, or Cargo metadata.
@@ -161,7 +164,33 @@ status do not change. The independent specification, test/scope, and
 source/documentation consistency reviews report **NO FINDINGS**, and the
 docs-only verification/count/hash gates PASS. Independent final read-only
 quality also reports **NO FINDINGS**; all nine hard gates PASS with no cap at
-valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff
-review, commit, and post-commit invariant/fresh-inventory gates remain pending;
-fresh inventory after that separate commit gates R-032B
-implementation.
+valid `100/100` (`20/20/15/15/10/10/5/5`). At that pre-commit record, only
+task-only staging/cached-diff review, commit, and post-commit
+invariant/fresh-inventory gates remained pending. They subsequently completed
+in correction commit `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its
+fresh inventory.
+
+## R-032B implementation synchronization
+
+EN and JA now record the same current pre-commit implementation: exact
+three-Rust-file ownership; public collector, collection accessors, and
+non-exhaustive error table; R-032A validation; AST/arena-only borrowing;
+default-deny direct traversal; module-global ordinals; proof scopes;
+completion boundaries; simple citations; structural origins; and
+`proof-step-v1` identity. Both preserve the private future B5C consumer and
+exclude checker handoff, semantic phases, fixtures, expectations, sidecars,
+trace state, public diagnostics, and Cargo metadata.
+
+Both languages record the initial High/Medium plus two fresh Medium test gaps,
+the Medium third-child implementation defect, and the two Medium unauthorized
+`Default` / `From` findings as fixed. They record **NO FINDINGS** for the
+preimplementation specification review and the final fresh test-sufficiency,
+implementation, and source/documentation rereviews. Focused, crate,
+formatting, workspace Clippy/test, diff, CLI, test-list, production, and exact
+20-file scope gates PASS. Independent final quality reports **NO FINDINGS**;
+all nine hard gates PASS with no score cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only task-only restaging/cached-diff review,
+commit, and post-commit invariant/fresh inventory remain pending. R-G007
+remains open and active B5C remains next.
+`spec_coverage_audit.md` is still a deliberate no-op because no active
+mapping, trace status/count, owner, deferral, or coverage credit changes.

@@ -128,6 +128,11 @@ const PUBLIC_ENUM_DECISIONS: &[PublicEnumDecision] = &[
         spec_name: "labels.md",
     },
     PublicEnumDecision {
+        relative_path: "src/labels.rs",
+        enum_name: "ProofLabelSourceCollectionError",
+        spec_name: "labels.md",
+    },
+    PublicEnumDecision {
         relative_path: "src/names.rs",
         enum_name: "NamespaceResolutionOrigin",
         spec_name: "names.md",

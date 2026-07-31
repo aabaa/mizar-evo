@@ -602,6 +602,14 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       commit。public checker handoff / active artifact は除外。
     - deps: R-018/R-023、B5C docs、R-032A。authority Chapter 15 §15.10 /
       Chapter 16 §§16.4.2/16.5.1。
+    - In progress: exact public collector/collection/error sourceとsole R-026
+      decisionは存在する。全specification/test/implementation/
+      source-documentation findingはfixed、final fresh rereviewは
+      **NO FINDINGS**、focused/full/count/hash/scope gateはPASS。pendingは
+      task-only restaging/cached-diff review、commit、post-commit/fresh
+      inventoryだけ。independent final qualityは**NO FINDINGS**、全9 hard
+      gates PASS、score capなし、valid `100/100`
+      （`20/20/15/15/10/10/5/5`）。
 
 ## crate close-out
 
@@ -684,10 +692,19 @@ cargo test -p mizar-vc
 - [x] independent final read-only qualityを**NO FINDINGS**、全9 hard gates
   PASS、score capなし、valid `100/100`
   （`20/20/15/15/10/10/5/5`）で完了する。
-- [ ] task-only stagingとcommitを完了する。
-- [ ] そのseparate commit後にR-032Bをfresh inventoryし、exact
+- [x] task-only staging、correction commit
+  `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`、post-commit invariant、
+  fresh implementation inventoryを完了する。
+- [x] current R-032B implementationをexact
   `src/labels.rs`、`src/labels/tests.rs`、`tests/lint_policy.rs`のsole R-026
-  `ProofLabelSourceCollectionError` / `labels.md` decisionだけを実装する。
+  `ProofLabelSourceCollectionError` / `labels.md` decisionだけで完了し、
+  全finding修正、final fresh no-findings rereview、
+  focused/full/count/hash/scope verificationを完了する。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  score capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）で完了する。
+- [ ] task-only restaging/cached-diff review、dedicated commit、post-commit
+  invariant/fresh inventoryを完了する。
 - [ ] その後だけactive B5C consumerへ進む。effective orderはS-026 docs、
   S-026 implementation、R-032A lint docs、R-032A implementation、
   R-032B lint docs、R-032B implementation、active B5Cで、commit間にfresh

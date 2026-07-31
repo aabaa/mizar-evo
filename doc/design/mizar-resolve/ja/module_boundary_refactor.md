@@ -116,10 +116,10 @@ R-032Aは上記でauthorizeしたexact `src/resolved_ast.rs`、private
 decision entryだけを使用した。existing `resolved_ast` public moduleがownerの
 ままで、module split、ownership transfer、callback、parallel map、
 syntax/checker/runner source changeはない。R-032A完了時にR-032B streamは
-existing `labels` ownerの次workとして残り、そのcurrent first logical taskは
-下記separate lint-policy docs correction。
+existing `labels` ownerの次workとして残り、下記separate lint-policy
+correctionはcommit済み。
 
-## R-032B lint-policy frozen-scope correction（current prerequisite）
+## R-032B lint-policy frozen-scope correction（completed prerequisite record）
 
 R-032B implementation inventoryでもstop ruleが発火した。frozen public
 `ProofLabelSourceCollectionError`はR-026 guardに必ずscanされる。omitted
@@ -130,7 +130,7 @@ sole `ProofLabelSourceCollectionError` owning-spec decision
 `spec_name: "labels.md"`だけを受けられる。module split / ownership transferは
 authorizeしない。
 
-current synchronized docs-only prerequisiteはexact 31 design files、
+completed synchronized docs-only correctionはexact 31 design files、
 resolver 16、checker 8、`mizar-test` 6、global ledger 1を対象にする。source、
 specification、fixture、sidecar、expectation、trace status/count、Cargo
 metadata、semantic contract、test intentは変更しない。
@@ -138,7 +138,28 @@ metadata、semantic contract、test intentは変更しない。
 test/scope、source/documentation consistency reviewはすべて**NO FINDINGS**で、
 docs-only verification/count/hash gateはPASS。independent final read-only
 qualityも**NO FINDINGS**で、全9 hard gates PASS、capなし、valid
-`100/100`（`20/20/15/15/10/10/5/5`）。task-only staging/cached-diff review、
-commit、post-commit invariant/fresh-inventory gateだけがpendingで、その
-separate commit後のfresh inventoryがthree-Rust-file R-032B implementationを
-gateする。
+`100/100`（`20/20/15/15/10/10/5/5`）。そのpre-commit record時点では
+task-only staging/cached-diff review、commit、post-commit
+invariant/fresh-inventory gateだけがpendingだった。これらはcorrection commit
+`f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
+
+## R-032B implementation status
+
+R-032Bはexisting `labels` owner内に完全に留まる。current sourceはexact
+`src/labels.rs`、private `src/labels/tests.rs`、上でauthorizeしたsole
+`tests/lint_policy.rs` decisionを変更する。module split、ownership transfer、
+callback、unmapped side channel、fabricated id、syntax/checker/runner source、
+active artifact、semantic ownerを追加しない。
+
+collectorはR-032A arenaをconsumeし、label projection、reference candidate、
+scope/ordinal/completion、resolver provenance derivationだけを所有する。
+later private `mizar-test` B5C routeがsole production consumerで、public
+checker unresolved-reference handoffは除外されたまま。Medium third-childと
+unauthorized `Default` / `From` implementation findings、および全
+test-sufficiency findingはfixed。final fresh test-sufficiency、
+implementation、source/documentation rereviewは**NO FINDINGS**で、全
+pre-quality verification gateはPASS。independent final qualityも
+**NO FINDINGS**、全9 hard gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。pendingはtask-only
+restaging/cached-diff review、commit、post-commit invariant/fresh inventory
+だけ。

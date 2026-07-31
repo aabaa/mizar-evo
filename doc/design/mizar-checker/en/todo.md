@@ -6239,15 +6239,25 @@ implementation commit does not satisfy a producer task.
 - [x] Freeze the current docs-only correction to exactly 31 design files:
   eight paired resolver families, four paired checker families, three paired
   `mizar-test` families, and the global design TODO.
-- [ ] Complete the separate R-032B lint-policy documentation correction
+- [x] Complete the separate R-032B lint-policy documentation correction
   through findings-free reviews, full verification, a dedicated commit, and
   post-commit fresh inventory before R-032B implementation.
-- [ ] Implement R-032B only after that correction in exactly
+- [x] Implement R-032B only after that correction in exactly
   `crates/mizar-resolve/src/labels.rs`,
   `crates/mizar-resolve/src/labels/tests.rs`, and
   `crates/mizar-resolve/tests/lint_policy.rs`, where the last file receives
   only the R-026 `ProofLabelSourceCollectionError` / `labels.md` owning-spec
   decision.
+- [x] Fix the initial and fresh test gaps plus every implementation finding;
+  complete final fresh test-sufficiency, implementation, and
+  source/documentation rereviews with **NO FINDINGS**; and pass all
+  focused/full/count/hash/scope verification gates. No checker consumer or
+  B5C artifact is added by this lower task.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete task-only restaging/cached-diff review, the dedicated commit,
+  and post-commit invariant/fresh inventory.
 - [x] Preserve all frozen checker consumers, B5C
   fixtures/expectations/trace, public diagnostic codes, semantics, and
   `spec_coverage_audit.md`; no mapping, owner, deferral, or coverage-credit

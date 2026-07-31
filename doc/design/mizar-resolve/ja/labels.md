@@ -9,8 +9,9 @@ rejection、simple / qualified citation candidate、lowered grouped-item candida
 `LabelIndex` population、`LabelRefTable` outcome、crate-local/internal conflict
 diagnostic をカバーする。R-023 が追加したのは declaration-symbol corpus
 collection だけで、production `SurfaceAst` proof-label declaration/reference
-lowering ではない。bounded normal-source proof-step/simple-unqualified collector は
-Checker Task 258B5C active confinement coverage より前の R-032 として計画する。
+lowering ではない。bounded R-032B normal-source
+proof-step/simple-unqualified collectorは存在し、そのtest/review gateを完了中。
+Checker Task 258B5C active confinement coverageが次のまま。
 grouped shared-prefix container diagnostic と definition/registration label
 extraction は R-032 の外である。
 
@@ -231,7 +232,7 @@ task R-026 は frontend task 25 の public-enum decision procedure をこの mod
 - `LabelProjectionSource`
 - `LabelReferenceScope`
 - `LabelDiagnosticKind`
-- 計画済み `ProofLabelSourceCollectionError`
+- `ProofLabelSourceCollectionError`
 
 この module は exhaustive な公開 enum 例外を所有しない。下流 consumer は wildcard
 または fallback arm を持たなければならない。resolver 内部の match は、仕様化済みの
@@ -452,7 +453,7 @@ S-026 implementation、R-032A lint-policy docs correction、R-032A
 implementation、R-032B lint-policy frozen-scope documentation correction、
 R-032B implementation、active B5C で、commit 間に fresh inventory を挟む。
 
-### R-032B lint-policy frozen-scope correction（current prerequisite）
+### R-032B lint-policy frozen-scope correction（completed prerequisite record）
 
 implementation preflightで、上記frozen public
 `ProofLabelSourceCollectionError`はmandatory R-026 guardに必ずscanされることが
@@ -461,7 +462,7 @@ implementation preflightで、上記frozen public
 ない。later implementationが変更できるのはOwnership節のexact Rust 3 files
 だけで、policy fileにはそこで指定したsole decisionだけを追加できる。
 
-current synchronized docs-only prerequisiteのexact total correction scopeは
+completed synchronized docs-only correctionのexact total correction scopeは
 31 design files、resolver 16、checker 8、`mizar-test` 6、global ledger 1。
 source、specification、fixture、sidecar、expectation、trace status/count、
 Cargo metadata、runtime/API contract、test intentは変更しない。
@@ -469,7 +470,34 @@ Cargo metadata、runtime/API contract、test intentは変更しない。
 specification、test/scope、source/documentation consistency reviewはすべて
 **NO FINDINGS**で、docs-only verification/count/hash gateはPASS。
 independent final read-only qualityも**NO FINDINGS**で、全9 hard gates
-PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。task-only
-staging/cached-diff review、commit、post-commit invariant/fresh-inventory
-gateだけがpendingで、そのseparate commit後のfresh inventoryをR-032B
-implementationより先に行う。
+PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。そのpre-commit
+record時点ではtask-only staging/cached-diff review、commit、post-commit
+invariant/fresh-inventory gateだけがpendingだった。これらはcorrection commit
+`f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
+
+### R-032B implementation status
+
+current implementationは上でfreezeしたexact public collector、collection
+accessor、non-exhaustive error declarationを提供する。`new`と`collect`で
+R-032A arenaをvalidateし、`'a`配下でAST/arena borrowだけをstoreし、
+namespace/contributionを所有してvalidated arena経由で全reference nodeを
+導出する。closed direct-edge traversalはmodule-global ordinal、proof scope、
+completion、origin、`proof-step-v1` contractを保持し、unsupported/semantic
+shapeをdefault-denyする。
+
+source/test/policy ownershipは上でfreezeしたexact Rust 3 files。
+Mediumの無関係なthird-child依存とunauthorized `Default` / `From`
+implementation findingsはfixed。initial High/Mediumとfresh 2件のMedium
+test-sufficiency gapもfixed。preimplementation specificationとfinal fresh
+test-sufficiency、implementation、source/documentation rereviewは
+**NO FINDINGS**。collector matrix `25/25`、complete labels matrix `35/35`、
+resolver tests `144 + 11 + 1`と全broader verification/count/hash/scope gateは
+PASS。independent final qualityは**NO FINDINGS**、全9 hard gates PASS、
+score capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。pendingは
+task-only restaging/cached-diff review、commit、post-commit
+invariant/fresh inventoryだけ。
+
+active fixture、expectation、sidecar、trace state、runner、public checker
+handoff、diagnostic code、Cargo metadata、proof semanticsを変更しない。future
+private B5C consumerとR-G007 deferralはfreezeどおりで、
+`spec_coverage_audit.md`はdeliberate no-opのまま。

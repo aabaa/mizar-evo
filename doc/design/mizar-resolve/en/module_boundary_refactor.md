@@ -124,10 +124,10 @@ R-032A used exactly `src/resolved_ast.rs`, its private
 existing `resolved_ast` public module remains the owner; no module split,
 ownership transfer, callback, parallel map, or syntax/checker/runner source
 change was introduced. At R-032A completion the R-032B stream remained in the
-existing `labels` owner as the next work; its current first logical task is
-the separate lint-policy docs correction below.
+existing `labels` owner as the next work; its separate lint-policy correction
+below is now committed.
 
-## R-032B lint-policy frozen-scope correction (current prerequisite)
+## R-032B lint-policy frozen-scope correction (completed prerequisite record)
 
 R-032B implementation inventory exercised the stop rule again: its frozen
 public `ProofLabelSourceCollectionError` is necessarily scanned by the R-026
@@ -138,7 +138,7 @@ exactly `src/labels.rs`, `src/labels/tests.rs`, and
 `ProofLabelSourceCollectionError` owning-spec decision with
 `spec_name: "labels.md"`. No module split or ownership transfer is authorized.
 
-The current synchronized docs-only prerequisite covers exactly 31 design
+The completed synchronized docs-only correction covers exactly 31 design
 files: 16 resolver, eight checker, six `mizar-test`, and one global ledger.
 It changes no source, specification, fixture, sidecar, expectation, trace
 status/count, Cargo metadata, semantic contract, or test intent.
@@ -147,6 +147,28 @@ specification, test/scope, and source/documentation consistency reviews
 report **NO FINDINGS**, and the docs-only verification/count/hash gates PASS.
 Independent final read-only quality also reports **NO FINDINGS**; all nine
 hard gates PASS with no cap at valid `100/100`
-(`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff review, commit,
-and post-commit invariant/fresh-inventory gates remain pending; fresh inventory
-after that separate commit gates the three-Rust-file R-032B implementation.
+(`20/20/15/15/10/10/5/5`). At that pre-commit record, only task-only
+staging/cached-diff review, commit, and post-commit invariant/fresh-inventory
+gates remained pending. They subsequently completed in correction commit
+`f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its fresh inventory.
+
+## R-032B implementation status
+
+R-032B remains entirely within the existing `labels` owner. The current
+source changes exactly `src/labels.rs`, its private `src/labels/tests.rs`, and
+the sole `tests/lint_policy.rs` decision authorized above. It adds no module
+split, ownership transfer, callback, unmapped side channel, fabricated id,
+syntax/checker/runner source, active artifact, or semantic owner.
+
+The collector consumes the R-032A arena and owns only label projection,
+reference candidate, scope/ordinal/completion, and resolver provenance
+derivation. The later private `mizar-test` B5C route is the sole production
+consumer; public checker unresolved-reference handoff remains excluded.
+The Medium third-child and unauthorized `Default` / `From` implementation
+findings and every test-sufficiency finding are fixed. Final fresh
+test-sufficiency, implementation, and source/documentation rereviews report
+**NO FINDINGS**, and all pre-quality verification gates PASS. Independent
+final quality also reports **NO FINDINGS**; all nine hard gates PASS with no
+score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only
+restaging/cached-diff review, commit, and post-commit invariant/fresh
+inventory remain pending.

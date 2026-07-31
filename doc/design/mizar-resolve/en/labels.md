@@ -10,8 +10,9 @@ qualified citation candidates, lowered grouped-item candidates, `LabelIndex`
 population, `LabelRefTable` outcomes, and crate-local/internal conflict
 diagnostics. R-023 added declaration-symbol corpus collection only; it did not
 add production `SurfaceAst` proof-label declaration/reference lowering. The
-bounded normal-source proof-step/simple-unqualified collector is planned as
-R-032 before Checker Task 258B5C active confinement coverage. Grouped
+bounded R-032B normal-source proof-step/simple-unqualified collector is now
+present while its test/review gates are completed; Checker Task 258B5C active
+confinement coverage remains next. Grouped
 shared-prefix container diagnostics and definition/registration label
 extraction remain outside R-032.
 
@@ -254,7 +255,7 @@ surfaces and must remain `#[non_exhaustive]`:
 - `LabelProjectionSource`
 - `LabelReferenceScope`
 - `LabelDiagnosticKind`
-- planned `ProofLabelSourceCollectionError`
+- `ProofLabelSourceCollectionError`
 
 No exhaustive public enum exceptions are owned by this module. Downstream
 consumers must keep wildcard or fallback arms; resolver-internal matches may
@@ -540,7 +541,7 @@ correction, R-032A implementation, R-032B lint-policy frozen-scope
 documentation correction, R-032B implementation, active B5C, with fresh
 inventory between commits.
 
-### R-032B lint-policy frozen-scope correction (current prerequisite)
+### R-032B lint-policy frozen-scope correction (completed prerequisite record)
 
 Implementation preflight found that the public
 `ProofLabelSourceCollectionError` frozen above is necessarily scanned by the
@@ -550,7 +551,7 @@ two-Rust-file wording is High `design_drift`, not a semantic `spec_gap`,
 the three Rust files listed under Ownership And Consumers, and the policy file
 may gain only the sole decision named there.
 
-This synchronized docs-only prerequisite has an exact total correction scope
+This completed synchronized docs-only correction has an exact total correction scope
 of 31 design files: 16 resolver, eight checker, six `mizar-test`, and one
 global ledger. It changes no source, specification, fixture, sidecar,
 expectation, trace status/count, Cargo metadata, runtime/API contract, or
@@ -559,6 +560,36 @@ The independent specification, test/scope, and source/documentation
 consistency reviews report **NO FINDINGS**, and the docs-only
 verification/count/hash gates PASS. Independent final read-only quality also
 reports **NO FINDINGS**; all nine hard gates PASS with no cap at valid
-`100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff
-review, commit, and post-commit invariant/fresh-inventory gates remain pending;
-fresh inventory after that separate commit must precede R-032B implementation.
+`100/100` (`20/20/15/15/10/10/5/5`). At that pre-commit record, only
+task-only staging/cached-diff review, commit, and post-commit
+invariant/fresh-inventory gates remained pending. They subsequently completed
+in correction commit `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its
+fresh inventory.
+
+### R-032B implementation status
+
+The current implementation provides the exact public collector, collection
+accessors, and non-exhaustive error declaration frozen above. It validates the
+R-032A arena in `new` and `collect`, stores only AST/arena borrows under `'a`,
+owns namespace/contribution, and derives every reference node through the
+validated arena. Its closed direct-edge traversal preserves the module-global
+ordinal, proof-scope, completion, origin, and `proof-step-v1` contracts while
+default-denying all unsupported or semantic shapes.
+
+Source/test/policy ownership is exactly the three Rust files frozen above.
+The Medium unrelated-third-child dependency and unauthorized `Default` /
+`From` implementation findings are fixed. The initial High/Medium and two
+fresh Medium test-sufficiency gaps are fixed. The preimplementation
+specification review and final fresh test-sufficiency, implementation, and
+source/documentation rereviews report **NO FINDINGS**. The collector matrix
+passes `25/25`, the complete labels matrix passes `35/35`, resolver tests pass
+`144 + 11 + 1`, and every broader verification/count/hash/scope gate passes.
+Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
+with no score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
+task-only restaging/cached-diff review, commit, and post-commit
+invariant/fresh inventory remain pending.
+
+No active fixture, expectation, sidecar, trace state, runner, public checker
+handoff, diagnostic code, Cargo metadata, or proof semantics changes. The
+future private B5C consumer and R-G007 deferral remain exactly as frozen, and
+`spec_coverage_audit.md` remains a deliberate no-op.

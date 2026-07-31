@@ -5958,15 +5958,24 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] current docs-only correctionをexactly 31 design files、すなわち
   eight paired resolver families、four paired checker families、three paired
   `mizar-test` families、global design TODOにfreeze。
-- [ ] separate R-032B lint-policy documentation correctionを
+- [x] separate R-032B lint-policy documentation correctionを
   findings-free review、full verification、dedicated commit、post-commit
   fresh inventoryまで完了してからR-032B implementationへ進む。
-- [ ] correction後に限りR-032Bをexactly
+- [x] correction後に限りR-032Bをexactly
   `crates/mizar-resolve/src/labels.rs`、
   `crates/mizar-resolve/src/labels/tests.rs`、
   `crates/mizar-resolve/tests/lint_policy.rs`でimplementし、最後のfileには
   R-026 `ProofLabelSourceCollectionError` / `labels.md` owning-spec
   decisionだけを追加。
+- [x] initial/fresh test gapと全implementation findingをfixし、final fresh
+  test-sufficiency、implementation、source/documentation rereviewを
+  **NO FINDINGS**で完了し、全focused/full/count/hash/scope verification gateを
+  PASSする。このlower taskではchecker consumerもB5C artifactも追加しない。
+- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
+  score capなし、valid `100/100`
+  （`20/20/15/15/10/10/5/5`）で完了する。
+- [ ] task-only restaging/cached-diff review、dedicated commit、post-commit
+  invariant/fresh inventoryを完了する。
 - [x] 全frozen checker consumer、B5C fixture/expectation/trace、public
   diagnostic code、semantics、`spec_coverage_audit.md`を維持し、mapping、
   owner、deferral、coverage creditを変更しない。

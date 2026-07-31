@@ -6,8 +6,8 @@
 状態: task R-028 audit complete; task R-029 and close-out scopes re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; R-032A implementation synchronization complete。R-032B
-lint-policy docs correctionがcurrent prerequisiteで、R-032B implementation /
-Checker Task 258B5Cは計画中。
+lint-policy correctionはcommit済みで、exact implementationがcurrent
+pre-commit task、active Checker Task 258B5Cが次。
 
 ## 範囲
 
@@ -100,7 +100,7 @@ rejected callback/unmapped contract は両言語に残さない。
 post-close-out の resolver update は、この監査を二言語同期状態の baseline として扱う。
 S-026 documentation/implementation、R-032A lint-policy docs correction、
 R-032A implementationは完了済み。current dependency sequenceはR-032B
-lint-policy docs correction、R-032B implementation、active B5Cで、
+implementationの完了とdedicated commit、active B5Cで、
 各commit後にfresh inventoryを挟む。将来 design fileを
 追加する場合は両言語 directory に同時に追加する。挙動 cleanup、public API
 change、新しいdiagnosticsは完了済み resolver milestone の範囲外であり、
@@ -110,7 +110,7 @@ S-026/R-032A dependency overlay は EN/JA 同期済み。両言語はhistoricall
 同じboundary defectを分類し、separate syntax commitまでR-032A sourceを
 deferした。それらのcommit、lint-policy correction、R-032A implementationは
 完了済み。resolver ownership、validation precedence、exclusionは同期したままで、
-R-032Bはpending。
+R-032B sourceは存在し、残るtest/review/verification gateを完了中。
 
 ## R-032A lint-policy scope correction
 
@@ -129,11 +129,12 @@ EN/JAはimplemented `SurfaceResolvedArena` API、exact three-field ownership、
 complete dense same-index lowering、fail-closed validation precedence、public
 non-exhaustive error surface、helper payload、equivalent-input determinism、
 sole R-026 decisionを同一に記録する。両言語は同じRust 3 ownerと
-label/runner/artifact/trace/semantic prohibited scopeを記録する。R-032Bは
-pending。active mapping、trace status/count、owner、deferral、coverage creditを
+label/runner/artifact/trace/semantic prohibited scopeを記録する。その
+prerequisite record時点ではR-032Bはpending。active mapping、trace
+status/count、owner、deferral、coverage creditを
 変更しないため`spec_coverage_audit.md`はdeliberate no-op。
 
-## R-032B lint-policy scope correction（current prerequisite）
+## R-032B lint-policy scope correction（completed prerequisite record）
 
 EN/JAはomitted mandatory R-026 enum-decision ownerを同じHigh
 `design_drift`として分類し、semantic `spec_gap`、`test_gap`、test-intent
@@ -144,7 +145,7 @@ changeはない。later R-032B implementationはexact
 `ProofLabelSourceCollectionError` owning-spec decision
 `spec_name: "labels.md"`だけを受けられる。
 
-current docs-only prerequisiteはexact 31 design files、resolver 16、checker 8、
+completed docs-only correctionはexact 31 design files、resolver 16、checker 8、
 `mizar-test` 6、global ledger 1。semantic/API/test contractを保存し、source、
 fixture、sidecar、expectation、trace status/count、Cargo metadataを変更しない。
 coverage ownership/statusを変更しないため`spec_coverage_audit.md`はdeliberate
@@ -152,6 +153,31 @@ no-op。independent specification、test/scope、source/documentation
 consistency reviewはすべて**NO FINDINGS**で、docs-only verification/count/hash
 gateはPASS。independent final read-only qualityも**NO FINDINGS**で、全9
 hard gates PASS、capなし、valid `100/100`
-（`20/20/15/15/10/10/5/5`）。task-only staging/cached-diff review、commit、
-post-commit invariant/fresh-inventory gateだけがpendingで、そのseparate
-commit後のfresh inventoryがR-032B implementationをgateする。
+（`20/20/15/15/10/10/5/5`）。そのpre-commit record時点ではtask-only
+staging/cached-diff review、commit、post-commit invariant/fresh-inventory
+gateだけがpendingだった。これらはcorrection commit
+`f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
+
+## R-032B implementation synchronization
+
+EN/JAは同じcurrent pre-commit implementationを記録する。すなわちexact
+three-Rust-file ownership、public collector、collection accessor、
+non-exhaustive error table、R-032A validation、AST/arena-only borrow、
+default-deny direct traversal、module-global ordinal、proof scope、completion
+boundary、simple citation、structural origin、`proof-step-v1` identityである。
+両言語ともfuture private B5C consumerを維持し、checker handoff、semantic
+phase、fixture、expectation、sidecar、trace state、public diagnostic、Cargo
+metadataを除外する。
+
+両言語はinitial High/Mediumとfresh 2件のMedium test gap、Medium third-child
+implementation defect、Mediumのunauthorized `Default` / `From` findingsを
+fixedとして記録する。preimplementation specification reviewとfinal fresh
+test-sufficiency、implementation、source/documentation rereviewはすべて
+**NO FINDINGS**。focused、crate、formatting、workspace Clippy/test、diff、
+CLI、test-list、production、exact 20-file scope gateはPASS。independent final
+qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
+`100/100`（`20/20/15/15/10/10/5/5`）。pendingはtask-only
+restaging/cached-diff review、commit、post-commit invariant/fresh inventory
+だけ。R-G007はopenで、active B5Cが次。
+`spec_coverage_audit.md`はactive mapping、trace status/count、owner、
+deferral、coverage creditが変わらないためdeliberate no-opのまま。

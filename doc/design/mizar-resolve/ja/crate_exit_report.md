@@ -263,8 +263,9 @@ checker `SourceStatementReferenceHandoff` は unresolved reference を拒否す�
 除外したままにする。
 
 historical resolver exit は closed のまま。S-026 は external syntax
-prerequisite、R-032A/R-032B は独自 commit/quality gate を持つ bounded post-exit
-follow-up で、historical score を再利用・変更しない。
+prerequisite、R-032Aはcomplete、R-032Bは独自のpending commit/quality gateを
+持つcurrent bounded post-exit follow-upであり、historical score を再利用・
+変更しない。
 
 ## R-032A bounded post-exit implementation result
 
@@ -274,14 +275,14 @@ matrix、sole R-026 owning-spec decision、同期live status recordを追加す�
 label collector、runner、fixture、sidecar、expectation、trace status/count、
 public diagnostic、Cargo metadata、checker/type/proof behaviorは変更しない。
 historical R-001〜R-029 exit / scoreはunchanged。R-032A完了時にR-032B streamが
-次となり、そのcurrent first post-exit taskはlint-policy docs correction。
-R-032B implementation、active B5C consumerが続く。
+次となり、そのlint-policy docs correctionは完了した。current exact R-032B
+implementationの後にactive B5C consumerが続く。
 
 R-032Aはactive `.miz` mapping、traceability backlink/status/count、owner
 crate、deferred status、coverage creditを変更しないため、
 `doc/design/spec_coverage_audit.md`はdeliberately unchanged。
 
-## R-032B lint-policy frozen-scope correction（current prerequisite）
+## R-032B lint-policy frozen-scope correction（completed prerequisite record）
 
 fresh inventoryはomitted R-026 decision ownerをHigh `design_drift`と分類し、
 semantic `spec_gap`、`test_gap`、test-intent changeはない。later R-032B
@@ -296,6 +297,35 @@ deliberate no-op。independent specification、test/scope、
 source/documentation consistency reviewはすべて**NO FINDINGS**で、docs-only
 verification/count/hash gateはPASS。independent final read-only qualityも
 **NO FINDINGS**で、全9 hard gates PASS、capなし、valid `100/100`
-（`20/20/15/15/10/10/5/5`）。task-only staging/cached-diff review、commit、
-post-commit invariant/fresh-inventory gateだけがpendingで、その後のfresh
-inventoryがseparate R-032B implementationをgateする。
+（`20/20/15/15/10/10/5/5`）。そのpre-commit record時点ではtask-only
+staging/cached-diff review、commit、post-commit invariant/fresh-inventory
+gateだけがpendingだった。これらはcorrection commit
+`f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
+
+## R-032B bounded post-exit implementation status
+
+exact R-032B source/APIはcurrent pre-commit logical taskとして存在する。
+`labels.rs`、`labels/tests.rs`、sole `tests/lint_policy.rs`
+`ProofLabelSourceCollectionError` / `labels.md` decisionと、同期live status
+recordだけを使う。R-032A mapをvalidateし、frozen default-deny traversal、
+scope、ordinal、completion、origin、`proof-step-v1` identityでexisting
+proof-step projectionとsimple-reference candidateだけをemitする。
+
+initial High/Mediumとfresh 2件のMedium test gap、Medium third-child
+implementation defect、Mediumのunauthorized `Default` / `From` findingsは
+fixed。preimplementation specificationとfinal fresh test-sufficiency、
+implementation、source/documentation reviewはすべて**NO FINDINGS**。
+focused collector `25/25`、labels `35/35`、resolver `144 + 11 + 1`、
+formatting、workspace Clippy/test、diff、CLI、count/hash、exact 20-file
+scope gateはPASS。independent final qualityは**NO FINDINGS**、全9 hard gates
+PASS、score capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。pendingは
+task-only restaging/cached-diff review、commit、post-commit
+invariant/fresh inventoryだけ。
+active artifact、fixture、expectation、sidecar、trace、runner、
+checker handoff、semantic behavior、public diagnostic、Cargo metadata、
+historical exit status、historical scoreは変更しない。R-G007はopenで、
+active B5Cが次。
+
+`doc/design/spec_coverage_audit.md`はactive `.miz` mapping、traceability
+backlink/status/count、owner crate、deferred status、coverage creditのいずれも
+変わらないためdeliberately unchanged。

@@ -644,6 +644,14 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       checker handoff and active artifacts remain excluded.
     - Deps: R-018/R-023, B5C docs, R-032A; authority Chapter 15 §15.10 and
       Chapter 16 §§16.4.2/16.5.1.
+    - In progress: the exact public collector/collection/error source and sole
+      R-026 decision are present. Every specification/test/implementation/
+      source-documentation finding is fixed, final fresh rereviews report
+      **NO FINDINGS**, and focused/full/count/hash/scope gates PASS. Only
+      task-only restaging/cached-diff review, commit, and post-commit/fresh
+      inventory remain pending; independent final quality reports **NO
+      FINDINGS**, all nine hard gates PASS, no cap, valid `100/100`
+      (`20/20/15/15/10/10/5/5`).
 
 ## Crate Close-Out
 
@@ -728,11 +736,19 @@ Check the task off here once tests pass.
 - [x] Complete independent final read-only quality with **NO FINDINGS**, all
   nine hard gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete task-only staging and commit.
-- [ ] After that separate commit, fresh-inventory R-032B and implement exactly
+- [x] Complete task-only staging, correction commit
+  `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`, post-commit invariants, and
+  fresh implementation inventory.
+- [x] Complete the current R-032B implementation in exactly
   `src/labels.rs`, `src/labels/tests.rs`, and the sole R-026
   `ProofLabelSourceCollectionError` / `labels.md` decision in
-  `tests/lint_policy.rs`.
+  `tests/lint_policy.rs`; fix every review finding, complete final fresh
+  no-findings rereviews, and pass focused/full/count/hash/scope verification.
+- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete task-only restaging/cached-diff review, the dedicated commit,
+  and post-commit invariant/fresh inventory.
 - [ ] Continue only afterward to the active B5C consumer. The effective order
   remains S-026 docs, S-026 implementation, R-032A lint docs, R-032A
   implementation, R-032B lint docs, R-032B implementation, active B5C, with

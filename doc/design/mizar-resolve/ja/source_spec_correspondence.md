@@ -6,8 +6,8 @@
 状態: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendumとR-031 implementationはcomplete。
-R-032Aは実装済み。R-032B lint-policy docs correctionがcurrent prerequisiteで、
-R-032B implementation / Checker Task 258B5C prerequisiteは計画中。
+R-032Aは実装済み。R-032B lint-policy correctionはcommit済みで、exact
+R-032B implementationがcurrent pre-commit task、Checker Task 258B5Cが次。
 
 ## 範囲
 
@@ -132,10 +132,10 @@ source loading は追加しない。
 | R-G002 | `test_gap` | lexical/parser の import/export syntax を超える semantic resolver corpus coverage が歴史的に不足していたこと。 | R-023 の active declaration-symbol smoke/fail fixture、post-task-20 R-G007 parser-backed signature-conflict active seed、exact SymbolEnv-derived pass payload assertion により部分的に解消済み。残る具体的な corpus assertion work は R-G007 が精緻化し、implemented behavior は unit tests が cover しているため R-027 には non-blocking。 |
 | R-G003 | R-024 で解消済み | canonical `ModuleSummary` artifact から dependency module を消費する経路。 | resolver-owned artifact schema、shim、writer、hash framing、source loading を追加せず、canonical な `mizar-artifact` summary consumption として完了済み。 |
 | R-G006 | `external_dependency_gap` | parser/syntax が owning source role を公開した後の module-level scheme/template declaration shell。 | represented source role については non-blocking。現 resolver は direct template role を owning signature payload に保持し、scheme/template module symbol を創作しない。 |
-| R-G007 | `test_gap` | active signature-conflict 後に残る label-reference corpus gap。B5C が次の bounded increment。 | R-032Aは完了済み。残るR-032B lower commit完了後、private `mizar-test` に spec-derived confinement case だけを追加する。 |
+| R-G007 | `test_gap` | active signature-conflict 後に残る label-reference corpus gap。B5C が次の bounded increment。 | R-032Aは完了済みで、exact R-032B implementationがcurrent pre-commit lower prerequisite。残るgateとdedicated commit後、private `mizar-test` に spec-derived confinement case だけを追加する。 |
 | R-G008 | R-031で解消 | Chapter 19 §19.1は同じsymbol kind、spelling、arity、argument signatureを持つordinary declarationがreturn signature一致時もconflictすることを要求する。pre-R-031 sourceはall-return-identical groupをskipし、exact seedはdeferredで、designにはdistinct same-return class/detail keyとmixed-group priorityがなかった。 | ordinary functor definitionをexact resolver-syntactic keyでgroup化する。appendした`SameSignatureDefinitionConflict` diagnostic/definition variantがall-return-identical groupをcoverし、mixed/different-return groupでは既存`SameSignatureReturnConflict`が優先する。exact unit/near-miss/order/recovery/snapshot testとactive declaration-symbol sidecarがnew keyをcoverし、first shell/range、全candidate identity/order、byte-identicalなdifferent-return sidecar、checker-owned semantic equality/selection boundaryを保存する。 |
 
-## 実装済み R-032A / 計画中 R-032B 対応
+## 実装済み R-032A / current R-032B 対応
 
 canonical Chapter 15 §15.10 と Chapter 16 §§16.4.2/16.5.1 は次の
 lower-only repair を authorize する。
@@ -149,10 +149,10 @@ lower-only repair を authorize する。
 | R-032B test | `labels/tests.rs` | upper/lower edge positive、missing/additional/wrong/relocated/wrapped upper negative、confinement/origin、other mutation、mixed-list/all-other | `.miz`/expect/trace/runner |
 | R-032B R-026 enum decision guard | `tests/lint_policy.rs` | exact one `ProofLabelSourceCollectionError` owning-spec decision、`spec_name: "labels.md"` | other lint decision/behavior/source owner |
 
-R-032Aはseparate lower-prerequisite logical taskとして実装済み。current
-R-032B lint-policy docs correction、separate R-032B implementation commit、
-active B5C consumerの順に進む。このbounded post-exit implementationは元の
-milestone scoreを変更しない。
+R-032Aはseparate lower-prerequisite logical taskとして実装済み。R-032B
+lint-policy correctionはcommit済みで、exact three-Rust-file R-032B
+implementationがactive B5C consumer前のcurrent pre-commit task。このbounded
+post-exit implementationは元のmilestone scoreを変更しない。
 
 R-032A implementation preflightは旧two-Rust-file scopeをHigh
 `design_drift`と分類した。new public enumはexisting R-026 guardに必ず
@@ -171,13 +171,38 @@ deferred status、coverage creditを変更しないため、auditはdeliberate n
 fresh R-032B inventoryはomitted mandatory decision ownerをHigh
 `design_drift`と分類し、semantic `spec_gap`、`test_gap`、test-intent changeは
 ない。later implementationは上記R-032B 3 rowsだけを所有する。current
-synchronized docs-only prerequisiteのexact total scopeは31 design files、
+completed synchronized docs-only correctionのexact total scopeは31 design files、
 resolver 16、checker 8、`mizar-test` 6、global ledger 1。source、fixture、
 sidecar、expectation、trace status/count、Cargo metadata、coverage stateは
 変更しないため、`spec_coverage_audit.md`はdeliberate no-op。independent
 specification、test/scope、source/documentation consistency
 reviewはすべて**NO FINDINGS**で、docs-only verification/count/hash gateはPASS。
 independent final read-only qualityも**NO FINDINGS**で、全9 hard gates
-PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。task-only
-staging/cached-diff review、commit、post-commit invariant/fresh-inventory
-gateだけがpendingで、その後のfresh inventoryがimplementationをgateする。
+PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。そのpre-commit
+record時点ではtask-only staging/cached-diff review、commit、post-commit
+invariant/fresh-inventory gateだけがpendingだった。これらはcorrection commit
+`f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a`とそのfresh inventoryで後に完了。
+
+## R-032B implementation correspondence status
+
+current sourceは`labels.rs`のfrozen public collector/collection/error
+contract、`labels/tests.rs`のfocused matrix、`tests/lint_policy.rs`の
+authorized `ProofLabelSourceCollectionError` R-026 decisionだけを提供する。
+collectorはvalidated R-032A arenaをconsumeし、closed Surface edge allowlistを
+保持してexisting `LabelProjection` / `LabelReferenceCandidate` inputをexact
+scope、ordinal、completion boundary、structural origin、`proof-step-v1`
+identity付きでemitする。new resolver outcomeやsemantic phaseは追加しない。
+
+Medium third-childとunauthorized `Default` / `From` implementation findings、
+initial High/Mediumとfresh 2件のMedium test gapはfixed。preimplementation
+specificationとfinal fresh test-sufficiency、implementation、
+source/documentation reviewは**NO FINDINGS**。focused/crate/workspaceと全
+count/hash/scope gateはPASS。exact consumerは現時点のunit testとlater
+private B5C routeで、checker unresolved-reference handoffは除外されたまま。
+fixture、expectation、sidecar、trace、active runner、public diagnostic、Cargo
+metadata、coverage statusを変更しない。R-G007はopenで、dedicated commit後の
+active B5Cが次。`spec_coverage_audit.md`はdeliberate no-opのまま。pendingは
+task-only restaging/cached-diff review、commit、post-commit
+invariant/fresh inventoryだけ。independent final qualityは**NO FINDINGS**、
+全9 hard gates PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。

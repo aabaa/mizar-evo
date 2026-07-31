@@ -274,8 +274,9 @@ with fresh inventory, the later private `mizar-test`
 references.
 
 The historical resolver exit remains closed. S-026 is an external syntax
-prerequisite and R-032A/R-032B remain bounded post-exit follow-ups with their
-own commits and quality gates; none reuses or changes the historical score.
+prerequisite, R-032A is complete, and R-032B is the current bounded post-exit
+follow-up with its own pending commit and quality gates; none reuses or
+changes the historical score.
 
 ## R-032A bounded post-exit implementation result
 
@@ -293,7 +294,7 @@ followed by R-032B implementation and the active B5C consumer.
 no active `.miz` mapping, traceability backlink/status/count, owner crate,
 deferred status, or coverage credit.
 
-## R-032B lint-policy frozen-scope correction (current prerequisite)
+## R-032B lint-policy frozen-scope correction (completed prerequisite record)
 
 Fresh inventory identifies the omitted R-026 decision owner as High
 `design_drift`, with no semantic `spec_gap`, `test_gap`, or test-intent
@@ -309,7 +310,37 @@ deliberate no-op. The independent specification, test/scope, and
 source/documentation consistency reviews report **NO FINDINGS**, and the
 docs-only verification/count/hash gates PASS. Independent final read-only
 quality also reports **NO FINDINGS**; all nine hard gates PASS with no cap at
-valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff
-review, commit, and post-commit invariant/fresh-inventory gates remain pending;
-fresh inventory afterward gates the separate R-032B
-implementation.
+valid `100/100` (`20/20/15/15/10/10/5/5`). At that pre-commit record, only
+task-only staging/cached-diff review, commit, and post-commit
+invariant/fresh-inventory gates remained pending. They subsequently completed
+in correction commit `f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its
+fresh inventory.
+
+## R-032B bounded post-exit implementation status
+
+The exact R-032B source/API is present as the current pre-commit logical task.
+It uses only `labels.rs`, `labels/tests.rs`, and the sole
+`tests/lint_policy.rs` `ProofLabelSourceCollectionError` / `labels.md`
+decision, plus synchronized live status records. It validates the R-032A map
+and emits only existing proof-step projections and simple-reference
+candidates with the frozen default-deny traversal, scopes, ordinals,
+completion, origins, and `proof-step-v1` identity.
+
+The initial High/Medium plus two fresh Medium test gaps, the Medium
+third-child implementation defect, and the two Medium unauthorized `Default`
+/ `From` findings are fixed. Preimplementation specification and final fresh
+test-sufficiency, implementation, and source/documentation reviews all report
+**NO FINDINGS**. Focused collector `25/25`, labels `35/35`, resolver
+`144 + 11 + 1`, formatting, workspace Clippy/test, diff, CLI, count/hash, and
+exact 20-file scope gates PASS. Independent final quality reports **NO
+FINDINGS**; all nine hard gates PASS with no score cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only task-only restaging/cached-diff review,
+commit, and post-commit invariant/fresh inventory remain pending. No active
+artifact, fixture, expectation, sidecar,
+trace, runner, checker handoff, semantic behavior, public diagnostic, Cargo
+metadata, historical exit status, or historical score changes. R-G007
+remains open and active B5C is next.
+
+`doc/design/spec_coverage_audit.md` is deliberately unchanged because no
+active `.miz` mapping, traceability backlink/status/count, owner crate,
+deferred status, or coverage credit changes.

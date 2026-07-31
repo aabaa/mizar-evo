@@ -14,10 +14,14 @@ use crate::recovery::suppress_dependent_diagnostic_for_recovered_origin;
 use crate::resolved_ast::{
     AmbiguousLabelRef, LabelCandidate, LabelExpectation, LabelKind, LabelOriginPath, LabelRef,
     LabelRefEntry, LabelRefId, LabelRefTable, LabelResolution, ModuleId, ReferenceSite,
-    SemanticOrigin, UnresolvedLabelRef,
+    SemanticOrigin, SurfaceResolvedArena, SurfaceResolvedArenaError, UnresolvedLabelRef,
 };
-use mizar_session::SourceRange;
+use mizar_session::{SourceAnchor, SourceRange};
+use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
+use std::error::Error;
+use std::fmt;
 
 /// Stable proof-label scope path.
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -391,6 +395,612 @@ impl LabelReferenceCandidate {
     pub const fn scope(&self) -> &LabelReferenceScope {
         &self.scope
     }
+}
+
+/// Normal-source proof-label projections and citation candidates.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofLabelSourceCollection {
+    projections: Vec<LabelProjection>,
+    references: Vec<LabelReferenceCandidate>,
+}
+
+impl ProofLabelSourceCollection {
+    /// Returns proof-step label projections in deterministic source order.
+    #[must_use]
+    pub fn projections(&self) -> &[LabelProjection] {
+        &self.projections
+    }
+
+    /// Returns simple citation candidates in deterministic source order.
+    #[must_use]
+    pub fn references(&self) -> &[LabelReferenceCandidate] {
+        &self.references
+    }
+}
+
+/// Failure while collecting proof-label source projections.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum ProofLabelSourceCollectionError {
+    /// The complete surface-to-resolved structural map is invalid.
+    SurfaceArena(SurfaceResolvedArenaError),
+    /// A proof-scope component cannot be represented by `u32`.
+    ScopeComponentOverflow {
+        /// Surface node whose scope component overflowed.
+        node: SurfaceNodeId,
+    },
+    /// A richer table-origin component cannot be represented by `u32`.
+    StructuralPathComponentOverflow {
+        /// Surface node whose structural-path component overflowed.
+        node: SurfaceNodeId,
+    },
+}
+
+impl fmt::Display for ProofLabelSourceCollectionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::SurfaceArena(error) => {
+                write!(formatter, "invalid proof-label surface arena: {error}")
+            }
+            Self::ScopeComponentOverflow { node } => write!(
+                formatter,
+                "proof-label scope component at surface node {} cannot be represented",
+                node.index()
+            ),
+            Self::StructuralPathComponentOverflow { node } => write!(
+                formatter,
+                "proof-label structural path component at surface node {} cannot be represented",
+                node.index()
+            ),
+        }
+    }
+}
+
+impl Error for ProofLabelSourceCollectionError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::SurfaceArena(error) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+/// Validated collector for represented normal proof-step labels and citations.
+pub struct ProofLabelSourceCollector<'a> {
+    ast: &'a SurfaceAst,
+    namespace: NamespacePath,
+    contribution: SourceContributionId,
+    resolved: &'a SurfaceResolvedArena,
+}
+
+impl<'a> ProofLabelSourceCollector<'a> {
+    /// Creates a collector after validating the complete structural map.
+    pub fn new(
+        ast: &'a SurfaceAst,
+        module: &ModuleId,
+        namespace: NamespacePath,
+        contribution: SourceContributionId,
+        resolved: &'a SurfaceResolvedArena,
+    ) -> Result<Self, ProofLabelSourceCollectionError> {
+        resolved
+            .validate_against(ast, module)
+            .map_err(ProofLabelSourceCollectionError::SurfaceArena)?;
+        Ok(Self {
+            ast,
+            namespace,
+            contribution,
+            resolved,
+        })
+    }
+
+    /// Collects supported proof-step declarations and simple citations.
+    ///
+    /// The structural arena is revalidated on every call so a collector never
+    /// relies on stale constructor validation.
+    pub fn collect(&self) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
+        self.resolved
+            .validate_against(self.ast, self.resolved.module())
+            .map_err(ProofLabelSourceCollectionError::SurfaceArena)?;
+
+        let Some(item_list) = exact_proof_label_item_list(self.ast) else {
+            return Ok(ProofLabelSourceCollection {
+                projections: Vec::new(),
+                references: Vec::new(),
+            });
+        };
+        let mut state = ProofLabelCollectionState::new(self);
+        for child in item_list.child_views() {
+            if child.is_recovered() || !matches!(child.kind(), SurfaceNodeKind::TheoremItem) {
+                continue;
+            }
+            let Some(owner) = exact_theorem_owner(child) else {
+                continue;
+            };
+            state.visit_theorem(child, owner)?;
+        }
+        Ok(state.finish())
+    }
+}
+
+#[derive(Clone, Copy)]
+struct TheoremOwner<'a> {
+    spelling: &'a str,
+    proof: SurfaceNodeView<'a>,
+}
+
+struct ProofLabelCollectionState<'a, 'collector> {
+    collector: &'collector ProofLabelSourceCollector<'a>,
+    projections: Vec<LabelProjection>,
+    references: Vec<LabelReferenceCandidate>,
+    ordinal: usize,
+    theorem_count: usize,
+    owner_occurrences: BTreeMap<String, usize>,
+    label_occurrences: BTreeMap<(Vec<u32>, String), usize>,
+}
+
+impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
+    fn new(collector: &'collector ProofLabelSourceCollector<'a>) -> Self {
+        Self {
+            collector,
+            projections: Vec::new(),
+            references: Vec::new(),
+            ordinal: 0,
+            theorem_count: 0,
+            owner_occurrences: BTreeMap::new(),
+            label_occurrences: BTreeMap::new(),
+        }
+    }
+
+    fn finish(self) -> ProofLabelSourceCollection {
+        ProofLabelSourceCollection {
+            projections: self.projections,
+            references: self.references,
+        }
+    }
+
+    fn visit_theorem(
+        &mut self,
+        theorem: SurfaceNodeView<'a>,
+        owner: TheoremOwner<'a>,
+    ) -> Result<(), ProofLabelSourceCollectionError> {
+        if !proof_block_boundary_is_supported(owner.proof) {
+            return Ok(());
+        }
+
+        let root_component = checked_scope_component(theorem.id(), self.theorem_count)?;
+        self.theorem_count += 1;
+        let owner_occurrence = self
+            .owner_occurrences
+            .entry(owner.spelling.to_owned())
+            .or_insert(0);
+        let current_owner_occurrence = *owner_occurrence;
+        *owner_occurrence += 1;
+
+        let scope = vec![root_component];
+        self.visit_proof(
+            theorem,
+            owner.spelling,
+            current_owner_occurrence,
+            owner.proof,
+            &scope,
+            &[],
+        )
+    }
+
+    fn visit_proof(
+        &mut self,
+        theorem: SurfaceNodeView<'a>,
+        owner_spelling: &str,
+        owner_occurrence: usize,
+        proof: SurfaceNodeView<'a>,
+        scope: &[u32],
+        relative_proof_path: &[u32],
+    ) -> Result<(), ProofLabelSourceCollectionError> {
+        if !proof_block_boundary_is_supported(proof) {
+            return Ok(());
+        }
+
+        let mut proof_child_index = 0_usize;
+        for statement in proof.child_views() {
+            if statement.is_recovered() {
+                continue;
+            }
+            match statement.kind() {
+                SurfaceNodeKind::CompactStatement | SurfaceNodeKind::ConclusionStatement => {
+                    self.visit_statement(
+                        theorem,
+                        owner_spelling,
+                        owner_occurrence,
+                        statement,
+                        scope,
+                        relative_proof_path,
+                        &mut proof_child_index,
+                    )?;
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    // Rationale: thread the frozen owner, scope, and sibling-allocation state explicitly.
+    #[allow(clippy::too_many_arguments)]
+    fn visit_statement(
+        &mut self,
+        theorem: SurfaceNodeView<'a>,
+        owner_spelling: &str,
+        owner_occurrence: usize,
+        statement: SurfaceNodeView<'a>,
+        scope: &[u32],
+        relative_proof_path: &[u32],
+        proof_child_index: &mut usize,
+    ) -> Result<(), ProofLabelSourceCollectionError> {
+        self.ordinal += 1;
+        let statement_ordinal = self.ordinal;
+
+        let label = matches!(statement.kind(), SurfaceNodeKind::CompactStatement)
+            .then(|| exact_compact_statement_label(statement))
+            .flatten();
+        let projection_index = if let Some(label) = label {
+            Some(self.push_projection(
+                theorem,
+                statement,
+                label,
+                owner_spelling,
+                owner_occurrence,
+                statement_ordinal,
+                scope,
+                relative_proof_path,
+            )?)
+        } else {
+            None
+        };
+
+        for child in statement.child_views() {
+            if child.is_recovered() {
+                continue;
+            }
+            match child.kind() {
+                SurfaceNodeKind::ProofBlock if proof_block_boundary_is_supported(child) => {
+                    let component = checked_scope_component(child.id(), *proof_child_index)?;
+                    *proof_child_index += 1;
+                    let mut child_scope = scope.to_vec();
+                    child_scope.push(component);
+                    let mut child_relative_path = relative_proof_path.to_vec();
+                    child_relative_path.push(component);
+                    self.visit_proof(
+                        theorem,
+                        owner_spelling,
+                        owner_occurrence,
+                        child,
+                        &child_scope,
+                        &child_relative_path,
+                    )?;
+                }
+                SurfaceNodeKind::JustificationClause => {
+                    self.visit_justification(theorem, statement, child, statement_ordinal, scope)?;
+                }
+                _ => {}
+            }
+        }
+
+        if let Some(index) = projection_index {
+            self.set_projection_visible_after(index, self.ordinal);
+        }
+        Ok(())
+    }
+
+    // Rationale: keep every frozen identity/provenance component explicit at this single seam.
+    #[allow(clippy::too_many_arguments)]
+    fn push_projection(
+        &mut self,
+        theorem: SurfaceNodeView<'a>,
+        statement: SurfaceNodeView<'a>,
+        label: SurfaceNodeView<'a>,
+        owner_spelling: &str,
+        owner_occurrence: usize,
+        visible_after: usize,
+        scope: &[u32],
+        relative_proof_path: &[u32],
+    ) -> Result<usize, ProofLabelSourceCollectionError> {
+        let Some(label_token) = label.as_token() else {
+            return Err(ProofLabelSourceCollectionError::SurfaceArena(
+                SurfaceResolvedArenaError::NodeKindMismatch { node: label.id() },
+            ));
+        };
+        let spelling = label_token.text.as_ref();
+        let occurrence_key = (scope.to_vec(), spelling.to_owned());
+        let label_occurrence = self.label_occurrences.entry(occurrence_key).or_insert(0);
+        let current_label_occurrence = *label_occurrence;
+        *label_occurrence += 1;
+
+        let structural_path = checked_structural_path(&[theorem.id(), statement.id(), label.id()])?;
+        let module = self.collector.resolved.module().clone();
+        let origin = SemanticOrigin::new(
+            self.collector.ast.source_id,
+            module.clone(),
+            SourceAnchor::Range(label.range()),
+            structural_path,
+        );
+        let origin_path = proof_label_origin_path(
+            &module,
+            self.collector.contribution,
+            owner_spelling,
+            owner_occurrence,
+            relative_proof_path,
+            spelling,
+            current_label_occurrence,
+        );
+        let projection = LabelProjection::proof_step(
+            LabelProjectionData {
+                origin_path,
+                module,
+                namespace: self.collector.namespace.clone(),
+                primary_spelling: spelling.to_owned(),
+                kind: LabelKind::ProofStep,
+                declaration_range: label.range(),
+                origin,
+                contribution: self.collector.contribution,
+            },
+            visible_after,
+            LabelScopePath::new(scope.to_vec()),
+        );
+        let index = self.projections.len();
+        self.projections.push(projection);
+        Ok(index)
+    }
+
+    fn set_projection_visible_after(&mut self, index: usize, ordinal: usize) {
+        if let LabelProjectionSource::CurrentModule {
+            visible_after_ordinal,
+            ..
+        } = &mut self.projections[index].source
+        {
+            *visible_after_ordinal = ordinal;
+        }
+    }
+
+    fn visit_justification(
+        &mut self,
+        theorem: SurfaceNodeView<'a>,
+        statement: SurfaceNodeView<'a>,
+        justification: SurfaceNodeView<'a>,
+        ordinal: usize,
+        scope: &[u32],
+    ) -> Result<(), ProofLabelSourceCollectionError> {
+        let children = justification.child_views().collect::<Vec<_>>();
+        if children.first().is_none_or(|first| {
+            first.is_recovered() || !token_is(first, SurfaceTokenKind::ReservedWord, "by")
+        }) {
+            return Ok(());
+        }
+        let lists = children
+            .iter()
+            .copied()
+            .filter(|child| matches!(child.kind(), SurfaceNodeKind::ReferenceList))
+            .collect::<Vec<_>>();
+        if lists.len() != 1 || lists[0].is_recovered() {
+            return Ok(());
+        }
+
+        for reference in lists[0].child_views() {
+            if reference.is_recovered() || !matches!(reference.kind(), SurfaceNodeKind::Reference) {
+                continue;
+            }
+            let Some(identifier) = exact_simple_reference_identifier(reference) else {
+                continue;
+            };
+            let Some(resolved_node) = self.collector.resolved.resolved_node_for(reference.id())
+            else {
+                return Err(ProofLabelSourceCollectionError::SurfaceArena(
+                    SurfaceResolvedArenaError::NodeCountMismatch,
+                ));
+            };
+            let structural_path =
+                checked_structural_path(&[theorem.id(), statement.id(), reference.id()])?;
+            let origin = SemanticOrigin::new(
+                self.collector.ast.source_id,
+                self.collector.resolved.module().clone(),
+                SourceAnchor::Range(reference.range()),
+                structural_path,
+            );
+            let Some(identifier_token) = identifier.as_token() else {
+                return Err(ProofLabelSourceCollectionError::SurfaceArena(
+                    SurfaceResolvedArenaError::NodeKindMismatch {
+                        node: identifier.id(),
+                    },
+                ));
+            };
+            self.references
+                .push(LabelReferenceCandidate::unqualified_citation(
+                    ReferenceSite::new(
+                        resolved_node,
+                        reference.range(),
+                        identifier_token.text.as_ref(),
+                    ),
+                    origin,
+                    ordinal,
+                    Some(LabelScopePath::new(scope.to_vec())),
+                ));
+        }
+        Ok(())
+    }
+}
+
+fn exact_proof_label_item_list(ast: &SurfaceAst) -> Option<SurfaceNodeView<'_>> {
+    let root = ast.root_view()?;
+    if root.is_recovered() || !matches!(root.kind(), SurfaceNodeKind::Root) {
+        return None;
+    }
+    let mut compilation_unit = None;
+    for child in root.child_views() {
+        match child.kind() {
+            SurfaceNodeKind::Token(_) => {}
+            SurfaceNodeKind::CompilationUnit
+                if compilation_unit.is_none() && !child.is_recovered() =>
+            {
+                compilation_unit = Some(child);
+            }
+            _ => return None,
+        }
+    }
+    let compilation_unit = compilation_unit?;
+    let children = compilation_unit.child_views().collect::<Vec<_>>();
+    if children.len() != 1
+        || children[0].is_recovered()
+        || !matches!(children[0].kind(), SurfaceNodeKind::ItemList)
+    {
+        return None;
+    }
+    Some(children[0])
+}
+
+fn exact_theorem_owner(theorem: SurfaceNodeView<'_>) -> Option<TheoremOwner<'_>> {
+    let children = theorem.child_views().collect::<Vec<_>>();
+    if children.len() < 4
+        || children[..3].iter().any(|child| child.is_recovered())
+        || !token_is(&children[0], SurfaceTokenKind::ReservedWord, "theorem")
+        || !token_has_kind(&children[1], SurfaceTokenKind::Identifier)
+        || !token_is(&children[2], SurfaceTokenKind::ReservedSymbol, ":")
+    {
+        return None;
+    }
+    let proofs = children
+        .iter()
+        .copied()
+        .filter(|child| matches!(child.kind(), SurfaceNodeKind::ProofBlock))
+        .collect::<Vec<_>>();
+    if proofs.len() != 1 || proofs[0].is_recovered() {
+        return None;
+    }
+    Some(TheoremOwner {
+        spelling: children[1].as_token()?.text.as_ref(),
+        proof: proofs[0],
+    })
+}
+
+fn proof_block_boundary_is_supported(proof: SurfaceNodeView<'_>) -> bool {
+    if proof.is_recovered() || !matches!(proof.kind(), SurfaceNodeKind::ProofBlock) {
+        return false;
+    }
+    let children = proof.child_views().collect::<Vec<_>>();
+    let (Some(first), Some(last)) = (children.first(), children.last()) else {
+        return false;
+    };
+    if children.len() < 2
+        || children.iter().any(|child| child.is_recovered())
+        || !token_is(first, SurfaceTokenKind::ReservedWord, "proof")
+        || !token_is(last, SurfaceTokenKind::ReservedWord, "end")
+    {
+        return false;
+    }
+    true
+}
+
+fn exact_compact_statement_label(statement: SurfaceNodeView<'_>) -> Option<SurfaceNodeView<'_>> {
+    let propositions = statement
+        .child_views()
+        .filter(|child| matches!(child.kind(), SurfaceNodeKind::Proposition))
+        .collect::<Vec<_>>();
+    if propositions.len() != 1 || propositions[0].is_recovered() {
+        return None;
+    }
+    let children = propositions[0].child_views().collect::<Vec<_>>();
+    if children.len() < 2
+        || children[0].is_recovered()
+        || children[1].is_recovered()
+        || !token_has_kind(&children[0], SurfaceTokenKind::Identifier)
+        || !token_is(&children[1], SurfaceTokenKind::ReservedSymbol, ":")
+    {
+        return None;
+    }
+    Some(children[0])
+}
+
+fn exact_simple_reference_identifier(
+    reference: SurfaceNodeView<'_>,
+) -> Option<SurfaceNodeView<'_>> {
+    let children = reference.child_views().collect::<Vec<_>>();
+    if children.len() != 1
+        || children[0].is_recovered()
+        || !token_has_kind(&children[0], SurfaceTokenKind::Identifier)
+    {
+        return None;
+    }
+    Some(children[0])
+}
+
+fn token_has_kind(node: &SurfaceNodeView<'_>, kind: SurfaceTokenKind) -> bool {
+    node.as_token().is_some_and(|token| token.kind == kind)
+}
+
+fn token_is(node: &SurfaceNodeView<'_>, kind: SurfaceTokenKind, text: &str) -> bool {
+    node.as_token()
+        .is_some_and(|token| token.kind == kind && token.text.as_ref() == text)
+}
+
+fn checked_scope_component(
+    node: SurfaceNodeId,
+    value: usize,
+) -> Result<u32, ProofLabelSourceCollectionError> {
+    u32::try_from(value)
+        .map_err(|_| ProofLabelSourceCollectionError::ScopeComponentOverflow { node })
+}
+
+fn checked_structural_component(
+    node: SurfaceNodeId,
+) -> Result<u32, ProofLabelSourceCollectionError> {
+    checked_structural_component_value(node, node.index())
+}
+
+fn checked_structural_component_value(
+    node: SurfaceNodeId,
+    value: usize,
+) -> Result<u32, ProofLabelSourceCollectionError> {
+    u32::try_from(value)
+        .map_err(|_| ProofLabelSourceCollectionError::StructuralPathComponentOverflow { node })
+}
+
+fn checked_structural_path(
+    nodes: &[SurfaceNodeId],
+) -> Result<Vec<u32>, ProofLabelSourceCollectionError> {
+    nodes
+        .iter()
+        .copied()
+        .map(checked_structural_component)
+        .collect()
+}
+
+fn proof_label_origin_path(
+    module: &ModuleId,
+    contribution: SourceContributionId,
+    owner: &str,
+    owner_occurrence: usize,
+    proof_path: &[u32],
+    label: &str,
+    label_occurrence: usize,
+) -> LabelOriginPath {
+    let components = proof_path
+        .iter()
+        .map(u32::to_string)
+        .collect::<Vec<_>>()
+        .join(",");
+    LabelOriginPath::new(format!(
+        "proof-step-v1|package={}:{}|module={}:{}|contribution={}|owner-kind=theorem|owner={}:{}|owner-occurrence={}|proof-path={}:{}|label={}:{}|label-occurrence={}",
+        module.package().as_str().len(),
+        module.package().as_str(),
+        module.path().as_str().len(),
+        module.path().as_str(),
+        contribution.index(),
+        owner.len(),
+        owner,
+        owner_occurrence,
+        proof_path.len(),
+        components,
+        label.len(),
+        label,
+        label_occurrence,
+    ))
 }
 
 /// Crate-local/internal label diagnostic kind.

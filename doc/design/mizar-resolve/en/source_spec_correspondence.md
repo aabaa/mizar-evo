@@ -6,9 +6,9 @@
 Status: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendum and R-031 implementation
-complete; R-032A implemented; the R-032B lint-policy docs correction is the
-current prerequisite, with R-032B implementation / Checker Task 258B5C still
-planned.
+complete; R-032A implemented; the R-032B lint-policy correction committed;
+the exact R-032B implementation is the current pre-commit task and Checker
+Task 258B5C remains next.
 
 ## Scope
 
@@ -136,10 +136,10 @@ after R-024 are:
 | R-G002 | `test_gap` | Historical lack of semantic resolver corpus coverage beyond lexical/parser import/export syntax. | Partially closed by R-023's active declaration-symbol smoke/fail fixtures, the post-task-20 R-G007 parser-backed signature-conflict active seed, and exact SymbolEnv-derived pass payload assertions. The remaining concrete corpus assertion work is refined by R-G007 and remains non-blocking for R-027 because unit tests cover the implemented behavior. |
 | R-G003 | resolved by R-024 | Consume dependency modules from canonical `ModuleSummary` artifacts. | Completed in resolver as canonical `mizar-artifact` summary consumption without resolver-owned artifact schemas, shims, writers, hash framing, or source loading. |
 | R-G006 | `external_dependency_gap` | Module-level scheme/template declaration shell once parser/syntax exposes an owning source role. | Non-blocking for represented source roles. Current resolver preserves direct template roles in owning signature payloads and does not fabricate scheme/template module symbols. |
-| R-G007 | `test_gap` | Concrete remainder of R-G002 after the active signature-conflict and pass-payload increments: broader active semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and label-reference facts from tasks R-009 to R-019. Checker Task 258B5C is the next bounded label-reference increment. | R-032A is complete. Complete R-032B as the remaining lower prerequisite, then add only spec-derived confinement cases through private `mizar-test`. Keep public codes empty and checker handoff narrow. |
+| R-G007 | `test_gap` | Concrete remainder of R-G002 after the active signature-conflict and pass-payload increments: broader active semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and label-reference facts from tasks R-009 to R-019. Checker Task 258B5C is the next bounded label-reference increment. | R-032A is complete and the exact R-032B implementation is the current pre-commit lower prerequisite. After its remaining gates and dedicated commit, add only spec-derived confinement cases through private `mizar-test`. Keep public codes empty and checker handoff narrow. |
 | R-G008 | resolved by R-031 | Chapter 19 §19.1 requires ordinary declarations with the same symbol kind, spelling, arity, and argument signature to conflict even when return signatures match. Pre-R-031 source skipped all-return-identical groups, the exact seed was deferred, and design lacked a distinct same-return class/detail key plus mixed-group priority. | Ordinary functor definitions are grouped by the exact resolver-syntactic key. Appended `SameSignatureDefinitionConflict` diagnostic/definition variants cover all-return-identical groups; existing `SameSignatureReturnConflict` wins for mixed/different-return groups. Exact unit/near-miss/order/recovery/snapshot tests and the active declaration-symbol sidecar cover the new key while preserving first shell/range, all candidate identities/order, the byte-identical different-return sidecar, and checker-owned semantic equality/selection boundaries. |
 
-## Implemented R-032A / Planned R-032B Correspondence
+## Implemented R-032A / Current R-032B Correspondence
 
 Canonical Chapter 15 §15.10 and Chapter 16 §§16.4.2/16.5.1 authorize the
 following lower-only repair:
@@ -153,10 +153,11 @@ following lower-only repair:
 | R-032B tests | `crates/mizar-resolve/src/labels/tests.rs` | positive per upper/lower edge; missing/additional/wrong/relocated/wrapped upper negatives; confinement/origin; other negative mutations; mixed-list and all-other matrices | `.miz`, expectations, trace status/counts, active runner |
 | R-032B R-026 enum decision guard | `crates/mizar-resolve/tests/lint_policy.rs` | exactly one `ProofLabelSourceCollectionError` owning-spec decision with `spec_name: "labels.md"` | every other lint decision, lint behavior, or source owner |
 
-R-032A is implemented as its separate lower-prerequisite logical task.
-The current R-032B lint-policy docs correction precedes the separate R-032B
-implementation commit, which precedes the active B5C consumer. This
-bounded post-exit implementation does not change the original milestone score.
+R-032A is implemented as its separate lower-prerequisite logical task. The
+R-032B lint-policy correction is committed, and the exact three-Rust-file
+R-032B implementation is the current pre-commit task before the active B5C
+consumer. This bounded post-exit implementation does not change the original
+milestone score.
 
 R-032A implementation preflight classified the earlier two-Rust-file scope as
 High `design_drift`: the new public enum is necessarily scanned by the
@@ -176,7 +177,7 @@ deliberate no-op.
 Fresh R-032B inventory classifies the omitted mandatory decision owner as High
 `design_drift`, with no semantic `spec_gap`, `test_gap`, or test-intent
 change. Later implementation owns exactly the three R-032B rows above. The
-current synchronized docs-only prerequisite has an exact total scope of 31
+completed synchronized docs-only correction has an exact total scope of 31
 design files: 16 resolver, eight checker, six `mizar-test`, and one global
 ledger. It changes no source, fixture, sidecar, expectation, trace
 status/count, Cargo metadata, or coverage state; therefore
@@ -185,6 +186,33 @@ specification, test/scope, and source/documentation consistency reviews
 report **NO FINDINGS**, and the docs-only verification/count/hash gates PASS.
 Independent final read-only quality also reports **NO FINDINGS**; all nine
 hard gates PASS with no cap at valid `100/100`
-(`20/20/15/15/10/10/5/5`). Only task-only staging/cached-diff review, commit,
-and post-commit invariant/fresh-inventory gates remain pending; fresh inventory
-afterward gates implementation.
+(`20/20/15/15/10/10/5/5`). At that pre-commit record, only task-only
+staging/cached-diff review, commit, and post-commit invariant/fresh-inventory
+gates remained pending. They subsequently completed in correction commit
+`f1cf0a5d15f2db51176e9e91a4f5a6447a88ad7a` and its fresh inventory.
+
+## R-032B implementation correspondence status
+
+Current source provides the frozen public collector/collection/error contract
+in `labels.rs`, the focused matrix in `labels/tests.rs`, and only the
+authorized `ProofLabelSourceCollectionError` R-026 decision in
+`tests/lint_policy.rs`. The collector consumes the validated R-032A arena,
+preserves the closed Surface edge allowlist, and emits existing
+`LabelProjection` / `LabelReferenceCandidate` inputs with exact scopes,
+ordinals, completion boundaries, structural origins, and `proof-step-v1`
+identity. No new resolver outcome or semantic phase is introduced.
+
+The Medium third-child and unauthorized `Default` / `From` implementation
+findings and the initial High/Medium plus two fresh Medium test gaps are
+fixed. Preimplementation specification and final fresh test-sufficiency,
+implementation, and source/documentation reviews report **NO FINDINGS**.
+Focused/crate/workspace and all count/hash/scope gates PASS. Exact consumers
+remain unit tests now and the later private B5C route; checker unresolved-reference
+handoff remains excluded. No fixture, expectation, sidecar, trace, active
+runner, public diagnostic, Cargo metadata, or coverage status changes.
+R-G007 stays open and active B5C is next after the dedicated commit.
+`spec_coverage_audit.md` remains a deliberate no-op. Independent final
+quality reports **NO FINDINGS**; all nine hard gates PASS with no score cap at
+valid `100/100` (`20/20/15/15/10/10/5/5`). Only task-only
+restaging/cached-diff review, commit, and post-commit invariant/fresh
+inventory remain pending.
