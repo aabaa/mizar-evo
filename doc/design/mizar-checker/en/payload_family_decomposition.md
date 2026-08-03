@@ -1636,3 +1636,12 @@ point to appended bare-set expression roots 2/3, producing combined
 `2/4/0/2`. Task 260 alone consumes return IDs 0/1. No binding, normalized type,
 semantic association, goal, fact, obligation, proof, or VC row crosses this
 lower boundary.
+
+## Task 249M Mode-RHS Lower Family
+
+Task 249M is a distinct standalone owner-link family in the existing source-
+type handoff. It appends bare-set expression root 2 and links mode-definition
+owner node 49 through `SourceTypeModeRhsId(0)`, producing `2/3/0/0/1` without
+a third binding application or a definition-return row. Task 262 is its sole
+consumer; request, evidence, expansion, acceptance, fact, proof, and VC rows
+do not cross this lower boundary.

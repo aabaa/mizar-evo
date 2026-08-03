@@ -1505,3 +1505,11 @@ consumer profile, unchanged runner/corpus metadata, and deferred Task-260
 activation. The implementation no-op closure synchronizes checker `439`,
 runner `512`, metadata `137`, and unchanged runner/CLI hashes. English is
 canonical and no synchronization exception exists.
+
+## Task 249M Synchronization Addendum
+
+Paired runner plans, harness, TODO, boundary audit, and trace ledger agree that
+Task 249M is checker-only: it freezes/implements `2/3/0/0/1` in the lower
+handoff, adds four checker tests, preserves runner `520` and all corpus/trace/
+CLI state, and returns to Task 262 only after a separate implementation commit.
+English remains canonical and no synchronization exception exists.

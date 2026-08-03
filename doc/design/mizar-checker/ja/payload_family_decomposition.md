@@ -1562,3 +1562,11 @@ familyで、functor-definition owner site 2件がappended bare-set expression ro
 2/3を指し、combined `2/4/0/2`となる。Task 260だけがreturn ID 0/1をconsume
 する。binding/normalized type/semantic association/goal/fact/obligation/proof/VC
 rowはこのlower boundaryを越えない。
+
+## Task 249M mode-RHS lower family
+
+Task 249Mはexisting source-type handoff内のdistinct standalone owner-link
+familyである。bare-set expression root 2をappendしmode-definition owner node 49を
+`SourceTypeModeRhsId(0)`でlinkして、third binding application/definition-return
+rowなしに`2/3/0/0/1`を作る。sole consumerはTask 262で、request/evidence/
+expansion/acceptance/fact/proof/VC rowはlower boundaryを越えない。

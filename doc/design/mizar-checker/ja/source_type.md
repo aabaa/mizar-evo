@@ -209,3 +209,194 @@ fresh executable inventoryはapplications/expressions/arguments/returns
 `source_type.rs`は`4407` lines、checker production manifestは`24/148143`で
 ある。metadata CLI 5本のoutput/hashは全て不変。Task 260がsole next consumerで
 あり、上記semantic deferralはすべて継続する。
+
+## Task 249M frozen standalone mode-RHS extension
+
+### selection、authority、classification
+
+fresh Task-262 preflightはexisting `SourceTypeApplicationInput`が各
+`BindingId`へone-to-one linkすることを再確認した。exact mode definitionは
+parameter binding 2個に対しwritten type expression 3個、すなわちparameter
+type root 0/1とindependently written mode RHS root 2を持つ。root 2をthird
+applicationとして扱うことはbinding fabricationで`boundary_violation`になる。
+missing independent RHS ownerは`source_drift`で、committed Task-262 upper
+contractが対応する`design_drift`をrepair済みである。Chapter 7 §§7.1--7.3/
+7.6--7.8がparameter tupleとmode RHS/expansionを区別し後者のinhabitationを
+要求するためblocking `spec_gap`はない。
+
+Checker Task 249MはTask 262のmandatory lower-stage prerequisiteである。
+authority/consumerはexact Chapter-7 RHSとfrozen 141-byte Task-262 source/
+54-row Surface oracleだけである。language semantics、canonical spec、existing
+`.miz`/sidecar/expectation/trace row/status/count、runner/resolver/parser、public
+diagnostic、Cargo metadataを変更しない。Task 262 production/corpus/trace
+activationはlater logical taskのままである。
+
+### exact additive public ABI
+
+Task 249Mはbinding-linked application tableを弱めずTask 249R return semanticsを
+reuseせず、immutable `SourceTypeApplicationHandoff`をextendする。exact new
+public typesは次のとおりである。
+
+```rust
+pub struct SourceTypeModeRhsId(usize);
+
+pub struct SourceTypeModeRhsExtensionInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub rhs: Vec<SourceTypeModeRhsInput>,
+}
+
+pub struct SourceTypeModeRhsInput {
+    pub definition_site: TypedSiteRef,
+    pub definition_range: SourceRange,
+    pub source_ordinal: usize,
+    pub expression: SourceTypeExpressionInput,
+}
+
+pub struct SourceTypeModeRhsTable { /* private entries */ }
+
+pub struct SourceTypeModeRhs {
+    /* private id, definition_site, definition_range, source_ordinal, root */
+}
+
+pub struct SourceTypeModeRhsProducer;
+```
+
+IDは`Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash`、input
+struct 2個/immutable rowは`Debug + Clone + PartialEq + Eq`、tableはそれらに
+`Default`を加えてderiveする。exact read-only method/constnessは次のとおり。
+
+```rust
+impl SourceTypeModeRhsId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+
+impl SourceTypeModeRhsTable {
+    pub fn get(&self, id: SourceTypeModeRhsId) -> Option<&SourceTypeModeRhs>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceTypeModeRhsId, &SourceTypeModeRhs)>;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+impl SourceTypeModeRhs {
+    pub const fn id(&self) -> SourceTypeModeRhsId;
+    pub const fn definition_site(&self) -> &TypedSiteRef;
+    pub const fn definition_range(&self) -> SourceRange;
+    pub const fn source_ordinal(&self) -> usize;
+    pub const fn root(&self) -> SourceTypeExpressionId;
+}
+
+impl SourceTypeApplicationHandoff {
+    pub const fn mode_rhs(&self) -> &SourceTypeModeRhsTable;
+}
+```
+
+producer surfaceはexactに次である。
+
+```rust
+impl SourceTypeModeRhsProducer {
+    pub fn extend(
+        base: &SourceTypeApplicationHandoff,
+        input: SourceTypeModeRhsExtensionInput,
+        arena: &TypedArena,
+    ) -> Result<SourceTypeApplicationHandoff, SourceTypeError>;
+}
+```
+
+`SourceTypeProducer::build`はdefinition-return/mode-RHS tableをempty initialize
+する。`extend`はone-shotでfailure時もborrowed baseを変更せず、success時にnew
+immutable handoffを返す。`SourceTypeError`はnon-exhaustive variant
+`EmptyModeRhs`、`ModeRhsCardinalityMismatch`、`ModeRhsAlreadyPresent`、
+`InvalidModeRhsBase`、`InvalidModeRhs { mode_rhs: SourceTypeModeRhsId }`、
+`InvalidModeRhsSite { mode_rhs: SourceTypeModeRhsId }`、
+`UnsupportedModeRhs { mode_rhs: SourceTypeModeRhsId }`を追加する。error
+precedenceはalready-present、empty、non-singleton cardinality、environment、
+base、row、owner/site、unsupported expressionである。
+
+### exact Task-262 lower profile と validation
+
+required baseはTask-262 Task-248/Profile-B Task-249 profileのapplications/
+expressions/arguments/definition-returns/mode-RHS `2/2/0/0/0`である。Task
+249MはRHS row/expression各1個をappendし`2/3/0/0/1`にする。
+
+| Row | Definition owner | RHS expression/head | Output root |
+| ---: | --- | --- | ---: |
+| 0 | node 49, `45..135`, ordinal 0 | nodes 44/43, `95..98`, `Bare`, builtin `set`, normal | 2 |
+
+exact base applicationは`(binding 0, ordinal 0, root 0)`と`(binding 1,
+ordinal 1, root 1)`である。base expression 0/1はexpression/head site 35/34、
+39/38、range `22..25`/`38..41`、`Bare`、builtin `set`、normal、両spelling
+`set`である。argument/definition return/mode RHSはempty。Task-249R handoffを
+含む他shapeは`InvalidModeRhsBase`を返す。
+
+normal/argument-free/bare builtin-`set` RHS exactly 1個だけをadmitする。
+source/module identityはbaseと一致し、dense row ID/source ordinalは0。
+definition rangeはsame-source arena node 49のexact rangeで、RHS expressionを
+containしnonemptyである。definition/expression/head siteはexact
+`TypedSiteRef::Node`でrole siteをrejectする。expression/head site/range/
+recoveryはactual arenaへrevalidateし、両syntax-free spellingはexact `set`。
+new siteはbase expression/head/definition siteとduplicateできない。new
+expression IDはprior expression lengthへroot 2としてappendする。
+
+extension前にbase全体をrevalidateし、installationはmode-RHS rowとexpression
+3個をrevalidateする。definition-return/mode-RHS extensionは両orderでmutually
+exclusive、malformed combined stateはfail closed。`TypedAst`がsole ownerで、
+`ResolvedTypedAst`は同handoffをclone-preserveするだけである。second field/
+installer/parts field/replaceable final inputは追加しない。
+
+mode-RHS table empty時はexisting debug prefixとlegacy/Task-249R byteをすべて
+維持する。Task 249M present時はdefinition-return row後、expression row前に
+次をrenderする。
+
+```text
+mode-rhs#<id> ordinal=<n> definition_range=<start>..<end> definition_site=node#<id> root=<expression-id>
+```
+
+active lower profileのcomplete suffixはrow 0とdense expression 0--2で、argument
+rowはexisting final positionを維持する。complete combined debug textがfuture
+Task-262 source-type fingerprintである。Task 262はrow 0を
+`SourceTypeModeRhsId`で参照し、`SourceTypeApplicationId`/
+`SourceTypeDefinitionReturnId`を使わない。
+
+### tests、exclusions、audit impact、exit
+
+implementationはchecker library test exact 4個を追加する。
+
+1. `task_249m_exact_mode_rhs_extension_and_legacy_debug`
+2. `task_249m_mode_rhs_corruption_fails_atomically`
+3. `task_249m_one_shot_base_and_arena_drift_fail_closed`
+4. `task_249m_typed_final_clone_replay_and_task_249r_isolation`
+
+各testはexact extension/API/debugとlegacy/Task-249R byte stability、empty/
+multiple/environment/owner/expression/site/spelling/recovery corruptionと
+borrowed-base atomicity、exact-base/one-shot/arena/installation drift、Typed-to-
+Resolved clone/replay/two-way Task-249R isolation/no semantic outputをownする。
+全field/error classをindependently mutateする。test 2と3はalready-present over
+empty、empty over non-singleton cardinality、cardinality over environment
+mismatch、environment mismatch over invalid base、invalid base over invalid
+row、invalid row over invalid owner/site、invalid owner/site over unsupported
+expressionという全adjacent precedence boundaryのcompound mutationもownする。
+
+checker baselineは`449 -> 453`、runner/resolver/syntaxは`520/144/59`。
+metadataはcases/requirements `424/392`、pass/fail `231/193`、active parse/
+declaration/type/proof `101/7/201/1`、type requirements `256/244`、warnings/
+errors `23/0`を維持する。Task 262がlater checker/runner `458/524`とsole
+corpus/trace deltaをownする。production/test-list/CLI/manifest hashは
+implementationでfresh-measureする。
+
+artificial `BindingId`/application row、definition-return rowのreuse/rename、
+generalized/attributed/argument-bearing/resolver-symbol/structure/recovered mode
+RHS、request/inhabitation response、expansion/normalization/acceptance、sethood
+goal/guard/proof/discharge/fact、public diagnostic、Core/CFG/VC、全Task-262
+checker/runner/corpus/trace changeは禁止/deferredである。
+
+本documentation prerequisiteはsynchronized design recordだけを変更し、repeated
+review-only **NO FINDINGS**、unchanged executable/count/hash gate、hard gate 9件、
+quality 90以上、dedicated docs commit、clean/stash-invariant fresh inventoryで
+exitする。separate implementation write scopeは
+`crates/mizar-checker/src/source_type.rs`とsynchronized design recordだけで、
+exact test 4件、`2/3/0/0/1` profile、full review/verification/gate、dedicated
+commit後にTask 262 implementationへautomatic fresh-inventory returnする。

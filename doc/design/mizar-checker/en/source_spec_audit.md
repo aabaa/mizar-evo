@@ -5443,3 +5443,13 @@ that prerequisite lands. No authority conflict, `source_undocumented_behavior`,
 or `test_expectation_drift` exists. The measured origin difference is report-
 only `repo_metadata_conflict` and the safe task-only commit target remains
 identifiable.
+
+## Task 249M Frozen Future Public-Surface Audit
+
+Task 249M will add `SourceTypeModeRhsId`, extension/input, immutable row/table,
+handoff getter, producer, and seven non-exhaustive `SourceTypeError` variants
+inside the existing public `source_type` module. The mode-RHS owner is absent
+today (`source_drift`); the exact tests are prospective, canonical-derived
+`test_gap`. No public enum class is added, no syntax boundary changes, and no
+current source behavior is credited. Implementation must synchronize the
+literal public inventory and existing enum/source-spec lint policies.

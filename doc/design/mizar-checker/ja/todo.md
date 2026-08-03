@@ -6249,8 +6249,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   count、audit impact、write scope、exit criteriaをfreezeする。
 - [x] docs prerequisiteでproduction、existing fixture/sidecar/expectation、
   trace count/status、CLI、list、manifest、hashを保つ。
-- [ ] specification reviewを**NO FINDINGS**まで反復し、全docs hard gateを
-  PASSし、本upper frozen-contract prerequisiteだけをcommitする。
-- [ ] Task 262 implementation前にTask 249Mをfresh-inventory/freeze/review/
-  implement/verifyしてseparate commitする。
+- [x] specification reviewを**NO FINDINGS**まで反復し、全docs hard gateを
+  score capなし`100/100`でPASSし、本upper frozen-contract prerequisiteだけを
+  `8c3fa20acef42477d38a66ddddec42dacced0863`としてcommitする。
+- [x] Task 249M exact standalone mode-RHS ABI、`2/3/0/0/1` profile、validation/
+  debug/test/exclusion/scopeをfresh-inventory/freezeする。
+- [ ] Task-249M findings-free review/unchanged docs gate/exact staging/dedicated
+  docs commit/clean post-commit inventoryを完了する。
+- [ ] Task 249Mをimplement/review/verifyしてseparate commitする。
 - [ ] Task 262だけへ戻ってimplementし、Task 263+へ継続する。

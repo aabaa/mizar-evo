@@ -1494,3 +1494,11 @@ mode-RHS row 1個、unresolved RHS-inhabitation request 1個、existing kind
 exclusion、upper-contract -> Task-249M docs -> Task-249M implementation ->
 Task-262 implementation sequenceを同期する。English canonicalで
 synchronization exceptionはない。
+
+## Task 249M synchronization addendum
+
+canonical EN/companion JAはexact standalone mode-RHS ABI、`2/2/0/0/0 ->
+2/3/0/0/1` profile、node/range oracle、one-shot/error/debug contract、two-way
+Task-249R isolation、test 4件、checker `449 -> 453`、unchanged runner/corpus/
+trace metadata、semantic exclusion、separate docs/implementation orderを同期する。
+synchronization exceptionはない。

@@ -663,3 +663,12 @@ Task 262 の完了条件は次である。
   whitespace verification が pass する。
 - Task-262 file だけを stage/commit し、clean HEAD/origin/stash inventory
   後に dependency-order Task 263 へ直接戻る。
+
+## Task 249M lower-contract link
+
+upper contractは`8c3fa20acef42477d38a66ddddec42dacced0863`としてcommit済み。
+exact lower ABI/error precedence/debug grammar/`2/3/0/0/1` profile/test 4件は
+[`source_type.md`](./source_type.md)の「Task 249M frozen standalone mode-RHS
+extension」にcanonical freezeした。separate docs prerequisite/implementationが
+commitされfresh inventoryがfingerprint seamを確認するまでTask-262
+implementation authorityを与えない。

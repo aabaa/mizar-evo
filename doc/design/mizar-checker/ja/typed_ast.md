@@ -1611,3 +1611,11 @@ Task 249Rは`TypedAstParts` field/install methodを追加しない。existing
 `validate_source_type`がdefinition ownerとappended return expressionをowned arenaへ
 再照合する。同じoptional `source_type` fieldだけがownerである。empty-return
 legacy debug byteは不変で、Task-260 profileはcombined `2/4/0/2` handoffを持つ。
+
+## Task 249M mode-RHS ownership addendum
+
+Task 249Mは`TypedAstParts` field/installerを追加せず、existing source-type
+handoffを`TypedAst::try_new`前にextendする。source-type validationはexact owner/
+appended expression/head、Task 249R mutual exclusion、arena identityをrecheckする。
+same optional fieldがsole ownerで、legacy/Task-249R debug byteは不変、Task-262
+lower profileはsemantic outputなしのcombined `2/3/0/0/1` handoffである。

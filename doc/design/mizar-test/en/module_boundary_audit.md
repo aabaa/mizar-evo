@@ -12846,3 +12846,10 @@ the mixed mode/structure gap route. It cannot answer the RHS request, execute
 the computation justification, or publish acceptance, expansion/sethood facts,
 proof, Core, CFG, or VC. This prerequisite creates no production/test inventory
 row or measured line count; implementation must fresh-measure them.
+
+## Checker Task 249M No-Runner Boundary
+
+Task 249M changes only checker `source_type.rs` and synchronized documents.
+The existing runner tree stays `33/65952` with its recorded hashes; no facade,
+leaf, selector, mutation, output, fixture, or trace consumer is authorized.
+Task 262 remains the sole owner of the later runner and corpus delta.

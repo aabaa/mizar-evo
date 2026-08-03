@@ -1683,3 +1683,12 @@ the existing `SourceTypeApplicationHandoff` before `TypedAst::try_new`;
 expressions against the owned arena. The same optional `source_type` field is
 the sole owner. Empty-return legacy debug bytes remain unchanged, while the
 Task-260 profile owns one combined `2/4/0/2` handoff.
+
+## Task 249M Mode-RHS Ownership Addendum
+
+Task 249M adds no `TypedAstParts` field or installer. It extends the existing
+source-type handoff before `TypedAst::try_new`; source-type validation rechecks
+the exact owner, appended expression/head, mutual exclusion from Task 249R,
+and arena identity. The same optional field is the sole owner, legacy and
+Task-249R debug bytes stay unchanged, and the Task-262 lower profile is one
+combined `2/3/0/0/1` handoff with no semantic output.

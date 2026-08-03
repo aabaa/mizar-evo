@@ -1600,3 +1600,10 @@ additional functor-kind rowをrejectします。
 definition-return table/rootをclone-preserveするだけである。final debugは同じ
 combined source-type fingerprintをexactly once含み、resolver payloadからreturn
 rowをreconstructしない。
+
+## Task 249M mode-RHS clone addendum
+
+`ResolvedTypedAst`はTask-249M input/field/getterを追加しない。single typed-owned
+source-type handoff内でrevalidated済みmode-RHS tableをclone-preserveするだけで、
+combined fingerprintはexactly once。resolver spellingからRHSをreconstructせず、
+inhabitation/expansion/sethood/acceptance/proof/fact semanticsを与えない。

@@ -5217,3 +5217,12 @@ freeze/implementするのに十分なためblocking `spec_gap`ではないが、
 implementationはprerequisite landまでblockedである。authority conflict、
 `source_undocumented_behavior`、`test_expectation_drift`はない。measured origin差は
 report-only `repo_metadata_conflict`でsafe task-only commit targetは識別可能である。
+
+## Task 249M frozen future public-surface audit
+
+Task 249Mはexisting public `source_type` moduleへ`SourceTypeModeRhsId`、extension/
+input、immutable row/table、handoff getter、producer、non-exhaustive
+`SourceTypeError` variant 7件をfuture追加する。mode-RHS owner不在は
+`source_drift`、exact tests不在はcanonical-derived prospective `test_gap`。
+public enum class/syntax boundary/current source creditは追加しない。
+implementationはliteral public inventoryとexisting enum/source-spec lintを同期する。

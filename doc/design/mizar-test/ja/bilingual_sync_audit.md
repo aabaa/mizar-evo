@@ -1452,3 +1452,10 @@ only prerequisite、corrected `2/4/0/2` consumer profile、unchanged runner/corp
 metadata、deferred Task-260 activationとして同期する。implementation no-op
 closureもchecker `439`、runner `512`、metadata `137`、unchanged runner/CLI
 hashを同期する。English canonicalでsync exceptionはない。
+
+## Task 249M synchronization addendum
+
+paired runner plan/harness/TODO/boundary audit/trace ledgerはTask 249Mがchecker-
+onlyで、lower handoff `2/3/0/0/1`、checker test 4件、runner `520`/全corpus/
+trace/CLI unchanged、separate implementation commit後だけTask 262へreturnする
+ことを同期する。English canonicalでsync exceptionはない。

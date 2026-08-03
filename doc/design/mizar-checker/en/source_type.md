@@ -321,3 +321,205 @@ The fresh executable inventory is applications/expressions/arguments/returns
 manifest is `24/148143`. All five metadata CLI outputs and hashes remain
 unchanged. Task 260 remains the sole next consumer; every semantic deferral
 above remains in force.
+
+## Task 249M Frozen Standalone Mode-RHS Extension
+
+### Selection, Authority, And Classification
+
+Fresh Task-262 preflight confirms that each existing
+`SourceTypeApplicationInput` is deliberately linked one-to-one to a
+`BindingId`. The exact mode definition has two parameter bindings but three
+written type expressions: parameter types at roots 0/1 and an independently
+written mode RHS at root 2. Treating root 2 as a third application would
+fabricate a binding and is a `boundary_violation`. The missing independent
+RHS owner is `source_drift`; the already committed Task-262 upper contract
+repairs the corresponding `design_drift`. There is no blocking `spec_gap`:
+Chapter 7 Sections 7.1--7.3 and 7.6--7.8 distinguish the parameter tuple from
+the mode RHS/expansion and require the latter to denote an inhabited type.
+
+Checker Task 249M is the mandatory lower-stage prerequisite for Task 262. Its
+authority and consumer are limited to that exact Chapter-7 RHS and the frozen
+141-byte Task-262 source/54-row Surface oracle. It changes no language
+semantics, canonical specification, existing `.miz`, sidecar, expectation,
+trace row/status/count, runner/resolver/parser code, public diagnostic, or
+Cargo metadata. Task 262 production and its corpus/trace activation remain a
+later logical task.
+
+### Exact Additive Public ABI
+
+Task 249M extends the immutable `SourceTypeApplicationHandoff` without
+weakening the binding-linked application table or reusing Task 249R return
+semantics. The exact new public types are:
+
+```rust
+pub struct SourceTypeModeRhsId(usize);
+
+pub struct SourceTypeModeRhsExtensionInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub rhs: Vec<SourceTypeModeRhsInput>,
+}
+
+pub struct SourceTypeModeRhsInput {
+    pub definition_site: TypedSiteRef,
+    pub definition_range: SourceRange,
+    pub source_ordinal: usize,
+    pub expression: SourceTypeExpressionInput,
+}
+
+pub struct SourceTypeModeRhsTable { /* private entries */ }
+
+pub struct SourceTypeModeRhs {
+    /* private id, definition_site, definition_range, source_ordinal, root */
+}
+
+pub struct SourceTypeModeRhsProducer;
+```
+
+The ID derives `Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord +
+Hash`; both input structs and the immutable row derive `Debug + Clone +
+PartialEq + Eq`; and the table derives those traits plus `Default`. The exact
+read-only methods and constness are:
+
+```rust
+impl SourceTypeModeRhsId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+
+impl SourceTypeModeRhsTable {
+    pub fn get(&self, id: SourceTypeModeRhsId) -> Option<&SourceTypeModeRhs>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceTypeModeRhsId, &SourceTypeModeRhs)>;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+impl SourceTypeModeRhs {
+    pub const fn id(&self) -> SourceTypeModeRhsId;
+    pub const fn definition_site(&self) -> &TypedSiteRef;
+    pub const fn definition_range(&self) -> SourceRange;
+    pub const fn source_ordinal(&self) -> usize;
+    pub const fn root(&self) -> SourceTypeExpressionId;
+}
+
+impl SourceTypeApplicationHandoff {
+    pub const fn mode_rhs(&self) -> &SourceTypeModeRhsTable;
+}
+```
+
+The producer surface is exactly:
+
+```rust
+impl SourceTypeModeRhsProducer {
+    pub fn extend(
+        base: &SourceTypeApplicationHandoff,
+        input: SourceTypeModeRhsExtensionInput,
+        arena: &TypedArena,
+    ) -> Result<SourceTypeApplicationHandoff, SourceTypeError>;
+}
+```
+
+`SourceTypeProducer::build` initializes empty definition-return and mode-RHS
+tables. `extend` is one-shot, leaves the borrowed base unchanged on every
+failure, and returns a new immutable handoff on success. `SourceTypeError`
+gains the non-exhaustive variants `EmptyModeRhs`,
+`ModeRhsCardinalityMismatch`, `ModeRhsAlreadyPresent`,
+`InvalidModeRhsBase`, `InvalidModeRhs { mode_rhs: SourceTypeModeRhsId }`,
+`InvalidModeRhsSite { mode_rhs: SourceTypeModeRhsId }`, and
+`UnsupportedModeRhs { mode_rhs: SourceTypeModeRhsId }`. Error precedence is
+already-present, empty, non-singleton cardinality, environment identity,
+base, row, owner/site, then unsupported expression.
+
+### Exact Task-262 Lower Profile And Validation
+
+The required base is the Task-262 Task-248/Profile-B Task-249 profile
+applications/expressions/arguments/definition-returns/mode-RHS
+`2/2/0/0/0`. Task 249M appends one RHS row and one expression, producing
+`2/3/0/0/1`:
+
+| Row | Definition owner | RHS expression/head | Output root |
+| ---: | --- | --- | ---: |
+| 0 | node 49, `45..135`, ordinal 0 | nodes 44/43, `95..98`, `Bare`, builtin `set`, normal | 2 |
+
+The exact base applications are `(binding 0, ordinal 0, root 0)` and
+`(binding 1, ordinal 1, root 1)`. Base expressions 0/1 use expression/head
+sites 35/34 and 39/38, ranges `22..25` and `38..41`, `Bare`, builtin `set`,
+normal recovery, and `set` for both spellings. Arguments, definition returns,
+and mode RHS rows are empty. Any other base shape, including a Task-249R
+handoff, returns `InvalidModeRhsBase`.
+
+Exactly one normal, argument-free, bare builtin-`set` RHS is admitted. Source
+and module identity must equal the base. The dense row ID and source ordinal
+are zero. The definition range is the exact same-source arena node-49 range,
+contains the RHS expression, and is nonempty. Definition, expression, and head
+sites are exact `TypedSiteRef::Node` identities; role sites are rejected. The
+expression and head sites, ranges, and recovery are revalidated against the
+actual arena. Both syntax-free spellings are exactly `set`. No new site may
+duplicate any base expression/head or definition site. The new expression ID
+appends at the prior expression length as root 2.
+
+The base is fully revalidated before extension. Installation revalidates the
+mode-RHS row and all three expressions. Definition-return and mode-RHS
+extensions are mutually exclusive in every order; malformed combined states
+fail closed. `TypedAst` remains the sole owner and `ResolvedTypedAst` only
+clone-preserves the same handoff. Neither owner gains another field,
+installer, parts field, or replaceable final input.
+
+The existing debug prefix and every legacy/Task-249R byte remain identical
+when the mode-RHS table is empty. With Task 249M present, mode-RHS rows render
+after definition-return rows and before expression rows:
+
+```text
+mode-rhs#<id> ordinal=<n> definition_range=<start>..<end> definition_site=node#<id> root=<expression-id>
+```
+
+For the active lower profile the complete suffix is row 0 followed by dense
+expressions 0--2; argument rows retain their existing final position. This
+complete combined debug text is the future Task-262 source-type fingerprint.
+Task 262 refers to row 0 through `SourceTypeModeRhsId`, never through
+`SourceTypeApplicationId` or `SourceTypeDefinitionReturnId`.
+
+### Tests, Exclusions, Audit Impact, And Exit
+
+Implementation adds exactly four checker library tests:
+
+1. `task_249m_exact_mode_rhs_extension_and_legacy_debug`;
+2. `task_249m_mode_rhs_corruption_fails_atomically`;
+3. `task_249m_one_shot_base_and_arena_drift_fail_closed`; and
+4. `task_249m_typed_final_clone_replay_and_task_249r_isolation`.
+
+They respectively own exact extension/API/debug plus legacy and Task-249R
+byte stability; empty/multiple/environment/owner/expression/site/spelling/
+recovery corruption and borrowed-base atomicity; exact-base, one-shot, arena,
+and installation drift; and Typed-to-Resolved clone/replay, two-way Task-249R
+isolation, and absence of semantic output. Every field and error class is
+mutated independently. Tests 2 and 3 also own compound mutations across every
+adjacent precedence boundary: already-present over empty, empty over
+non-singleton cardinality, cardinality over environment mismatch, environment
+mismatch over invalid base, invalid base over invalid row, invalid row over
+invalid owner/site, and invalid owner/site over unsupported expression.
+
+The checker baseline projects `449 -> 453`; runner/resolver/syntax remain
+`520/144/59`. Metadata remains cases/requirements `424/392`, pass/fail
+`231/193`, active parse/declaration/type/proof `101/7/201/1`, type
+requirements `256/244`, and warnings/errors `23/0`. Task 262 later projects
+checker/runner `458/524` and owns the sole corpus/trace delta. Production,
+test-list, CLI, and manifest hashes are fresh-measured in implementation.
+
+Forbidden and deferred are artificial `BindingId` or application rows;
+reuse/renaming of definition-return rows; generalized mode RHSs; attributed,
+argument-bearing, resolver-symbol, structure, or recovery intake; request or
+inhabitation response; expansion/normalization/acceptance; sethood goal/guard,
+proof/discharge/fact behavior; public diagnostics; Core/CFG/VC; and every
+Task-262 checker/runner/corpus/trace change.
+
+This documentation prerequisite changes only synchronized design records and
+exits after repeated review-only **NO FINDINGS**, unchanged executable/count/
+hash gates, all nine hard gates, quality at least 90, one dedicated docs
+commit, and clean/stash-invariant fresh inventory. The separate implementation
+write scope is `crates/mizar-checker/src/source_type.rs` plus synchronized
+design records only. It exits with exactly four tests, exact `2/3/0/0/1`
+profile, full reviews/verification/gates, one dedicated commit, and automatic
+fresh-inventory return to Task 262 implementation.

@@ -1554,3 +1554,11 @@ obligation, sibling isolation, projected counts, exclusions, and the upper-
 contract -> Task-249M docs -> Task-249M implementation -> Task-262
 implementation sequence. English remains canonical and no synchronization
 exception exists.
+
+## Task 249M Synchronization Addendum
+
+Canonical EN and companion JA synchronize the exact standalone mode-RHS ABI,
+`2/2/0/0/0 -> 2/3/0/0/1` profile, node/range oracle, one-shot/error/debug
+contract, two-way Task-249R isolation, four-test matrix, checker `449 -> 453`,
+unchanged runner/corpus/trace metadata, semantic exclusions, and separate
+docs/implementation order. No synchronization exception exists.

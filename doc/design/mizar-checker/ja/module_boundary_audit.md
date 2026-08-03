@@ -1363,3 +1363,12 @@ fact、ParamGuard/FOL composition、proof、discharge、Core、CFG、VCはownし
 public module/export/enum/source-spec allowlistとexact source/support line
 countはimplementation commitだけで変更する。本prerequisiteはproduction pathを
 追加せずchecker production `26/152184`とrecorded hash両方を保つ。
+
+## Task 249M frozen boundary
+
+Task 249Mはexisting syntax-free `src/source_type.rs` owner内に留まる。
+standalone mode-RHS row/table/producer 1件とprivate module test 4件を追加するが、
+new module/syntax dependency/runner hook/Typed-Resolved field/diagnostic/Cargo
+edgeは追加しない。docs prerequisiteはchecker production `26/152184`を保ち、
+implementationはsame 26-file boundaryをfresh-measureする。Task-262 productionは
+excludedのままである。

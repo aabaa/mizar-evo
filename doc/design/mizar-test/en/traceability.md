@@ -2247,3 +2247,11 @@ Task 249M lands first as a checker-only lower prerequisite. It adds no corpus
 case, sidecar, trace row, backlink, metadata count, or executable language
 credit; Task 262 remains the sole owner of the later one-case/one-requirement
 delta.
+
+## Checker Task 249M Frozen Traceability No-Op
+
+Task 249M changes representation coverage only. It adds no corpus source,
+sidecar, trace row, backlink, status, metadata count, stage credit, or runner
+route. Current metadata stays `424/392`, `231/193`, `101/7/201/1`, type
+`256/244`, warnings/errors `23/0`. Only later Task 262 may activate
+`source_mode_definition_payload` and its sole pass backlink.

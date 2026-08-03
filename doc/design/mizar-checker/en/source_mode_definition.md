@@ -666,3 +666,13 @@ Task 262 is complete only when:
   whitespace verification passes; and
 - only Task-262 files are staged and committed, then clean HEAD/origin/stash
   inventory returns directly to dependency-ordered Task 263.
+
+## Task 249M Lower-Contract Link
+
+The upper contract is committed as `8c3fa20acef42477d38a66ddddec42dacced0863`.
+The exact lower ABI, error precedence, debug grammar, `2/3/0/0/1` profile, and
+four-test matrix are now frozen canonically in
+[`source_type.md`](./source_type.md), section “Task 249M Frozen Standalone
+Mode-RHS Extension.” This document grants no Task-262 implementation authority
+until that separate docs prerequisite and implementation both commit and a
+fresh inventory confirms the fingerprint seam.

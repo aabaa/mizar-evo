@@ -6055,3 +6055,20 @@ case, sidecar, trace row, backlink, metadata count, or executable language
 credit. Only the later Task-262 implementation may add the frozen one-case/
 one-requirement delta after its independent hard gates pass; the mixed mode/
 structure gap remains unchanged for Task 263.
+
+## Checker Task 249M Frozen Representation-Coverage Intent
+
+Task 249M is a checker-only representation prerequisite derived from Chapter
+7 and the committed Task-262 upper contract. It changes follow-up ownership by
+assigning the standalone mode RHS to a dedicated row in the existing source-
+type handoff, rather than a fabricated binding application or Task-249R return.
+The frozen lower profile is `2/3/0/0/1`; Task 262 remains blocked until the
+separate implementation commits and fresh inventory passes.
+
+This docs prerequisite and its later implementation add no canonical spec,
+fixture, sidecar, expectation, trace row/status/backlink, corpus case, runner
+route, or executable language credit. Live metadata remains `424/392`,
+`231/193`, `101/7/201/1`, type `256 = 244 covered + 12 deferred`, and
+warnings/errors `23/0`. The audit changes because lower owner/follow-up
+traceability changes; Chapter-7 executable coverage remains partial until
+Task 262.

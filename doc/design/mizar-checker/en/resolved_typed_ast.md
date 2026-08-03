@@ -1667,3 +1667,11 @@ immutable handoff already revalidated by `TypedAst` installation and only
 clone-preserves its definition-return table and roots. The final debug
 contains the same combined source-type fingerprint exactly once; it never
 reconstructs return rows from resolver payloads.
+
+## Task 249M Mode-RHS Clone Addendum
+
+`ResolvedTypedAst` gains no Task-249M input, field, or getter. Final assembly
+only clone-preserves the mode-RHS table already revalidated inside the single
+typed-owned source-type handoff. The combined fingerprint occurs exactly once;
+final assembly neither reconstructs the RHS from resolver spelling nor grants
+inhabitation, expansion, sethood, acceptance, proof, or fact semantics.

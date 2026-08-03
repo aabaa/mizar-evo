@@ -5050,3 +5050,11 @@ third proves expectation non-selection, Task-259 and mixed-route isolation,
 and—together with metadata `137/137`—the sole reciprocal trace backlink. The
 fourth proves the computation subtrees and all proof/discharge/acceptance/
 fact/VC outputs remain absent and audits all six count consumers.
+
+## Task 249M No-Consumer Harness Boundary
+
+Task 249M adds no harness route or test. Its four checker-only tests freeze the
+standalone RHS lower handoff; the repository corpus, metadata test `137`, five
+CLI outputs, runner list `520`, fixture/sidecar/trace hashes, and mixed mode/
+structure gap remain byte-identical. The later Task-262 runner alone may build
+and fingerprint the `2/3/0/0/1` handoff from real source.

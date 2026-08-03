@@ -3389,8 +3389,11 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   tests, projected counts, hashes to remeasure, exclusions, and exit gates.
 - [x] Keep production, fixtures, sidecars, expectations, trace rows/status/
   counts, and Cargo metadata unchanged in this documentation prerequisite.
-- [ ] Complete findings-free reviews, all nine docs gates, exact staging,
-  prerequisite commit, and clean post-commit inventory.
-- [ ] After the upper-contract commit, fresh-inventory, freeze, review,
-  implement, verify, and separately commit mandatory checker Task 249M.
+- [x] Complete findings-free reviews, all nine docs gates at uncapped
+  `100/100`, exact staging, prerequisite commit
+  `8c3fa20acef42477d38a66ddddec42dacced0863`, and clean post-commit inventory.
+- [x] Fresh-inventory and freeze mandatory checker Task 249M with no runner or
+  corpus change.
+- [ ] Review and separately commit Task-249M documentation; then implement,
+  verify, and separately commit its four checker tests.
 - [ ] Return to and implement only Task 262, then continue to Task 263+.

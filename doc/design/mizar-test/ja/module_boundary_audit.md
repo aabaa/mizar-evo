@@ -11581,3 +11581,10 @@ supersedeしない。RHS requestへの回答、computation justification実行�
 acceptance/expansion/sethood fact/proof/Core/CFG/VC publishはできない。本
 prerequisiteはproduction/test inventory row/measured line countを作らず、
 implementationでfresh-measureする。
+
+## Checker Task 249M no-runner boundary
+
+Task 249Mはchecker `source_type.rs`とsynchronized docsだけを変更する。existing
+runner treeはrecorded hashと`33/65952`を保ち、facade/leaf/selector/mutation/
+output/fixture/trace consumerをauthorizeしない。later runner/corpus deltaは
+Task 262だけがownする。

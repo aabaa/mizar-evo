@@ -4772,3 +4772,10 @@ test 2は各source/AST/resolver/lower familyとexcluded descendantをmutateしow
 metadata `137/137`と合わせたsole reciprocal backlinkをproveします。test 4は
 computation subtree、proof/discharge/acceptance/fact/VC output absenceとsix count
 consumerをauditします。
+
+## Task 249M no-consumer harness boundary
+
+Task 249Mはharness route/testを追加しない。checker-only test 4件がstandalone RHS
+lower handoffをfreezeし、corpus、metadata test `137`、CLI 5本、runner list
+`520`、fixture/sidecar/trace hash、mixed mode/structure gapはbyte-identical。
+later Task-262 runnerだけがreal sourceから`2/3/0/0/1`をbuild/fingerprintできる。

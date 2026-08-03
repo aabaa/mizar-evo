@@ -1397,3 +1397,12 @@ CFG, or VC. Public module/export/enum/source-spec allowlists and exact source/
 support line counts change only in the implementation commit. This prerequisite
 adds no production path and preserves checker production `26/152184` and both
 recorded hashes.
+
+## Task 249M Frozen Boundary
+
+Task 249M remains inside the existing syntax-free `src/source_type.rs` owner.
+It adds one standalone mode-RHS row/table/producer and four private module
+tests without a new module, syntax dependency, runner hook, Typed/Resolved
+field, diagnostic, or Cargo edge. The docs prerequisite preserves current
+checker production `26/152184`; implementation must fresh-measure the same
+26-file boundary. Task-262 production remains excluded.

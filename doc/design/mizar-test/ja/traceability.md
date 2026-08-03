@@ -2146,3 +2146,11 @@ Core/CFG/VC creditは与えない。mixed mode/structure gapはTask-262 backlink
 Task 249Mはchecker-only lower prerequisiteとして先にlandする。corpus case、
 sidecar、trace row、backlink、metadata count、executable language creditを追加せず、
 後続one-case/one-requirement deltaはTask 262だけがownする。
+
+## Checker Task 249M frozen traceability no-op
+
+Task 249Mはrepresentation coverageだけを変更し、corpus source/sidecar/trace
+row/backlink/status/metadata count/stage credit/runner routeを追加しない。current
+metadataは`424/392`、`231/193`、`101/7/201/1`、type `256/244`、warnings/
+errors `23/0`。later Task 262だけが`source_mode_definition_payload`とsole pass
+backlinkをactivateできる。

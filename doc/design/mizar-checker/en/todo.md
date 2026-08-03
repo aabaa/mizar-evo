@@ -6550,8 +6550,12 @@ implementation commit does not satisfy a producer task.
   criteria.
 - [x] Preserve production, all existing fixtures/sidecars/expectations, trace
   count/status, CLIs, lists, manifests, and hashes in this docs prerequisite.
-- [ ] Repeat specification review to **NO FINDINGS**, pass all docs hard gates,
-  and commit only this upper frozen-contract prerequisite.
-- [ ] Fresh-inventory, freeze, review, implement, verify, and separately commit
-  Task 249M before Task 262 implementation.
+- [x] Repeat specification review to **NO FINDINGS**, pass all docs hard gates
+  at uncapped `100/100`, and commit only this upper frozen-contract
+  prerequisite as `8c3fa20acef42477d38a66ddddec42dacced0863`.
+- [x] Fresh-inventory and freeze the exact Task-249M standalone mode-RHS ABI,
+  `2/3/0/0/1` profile, validation/debug contract, tests, exclusions, and scope.
+- [ ] Complete Task-249M findings-free reviews, unchanged docs gates, exact
+  staging, dedicated documentation commit, and clean post-commit inventory.
+- [ ] Implement, review, verify, and separately commit Task 249M.
 - [ ] Return to and implement only Task 262, then continue to Task 263+.

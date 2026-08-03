@@ -3167,8 +3167,12 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   count、remeasure対象hash、exclusion、exit gateをfreezeする。
 - [x] documentation prerequisiteでproduction、fixture、sidecar、expectation、
   trace row/status/count、Cargo metadataをunchangedに保つ。
-- [ ] findings-free review、全9 docs gate、exact staging、prerequisite commit、
-  clean post-commit inventoryを完了する。
-- [ ] upper-contract commit後にfresh-inventoryし、mandatory checker Task 249Mを
-  freeze/review/implement/verifyして別commitにする。
+- [x] findings-free review、全9 docs gateをscore capなし`100/100`、exact
+  staging、prerequisite commit
+  `8c3fa20acef42477d38a66ddddec42dacced0863`、clean post-commit inventoryで
+  完了する。
+- [x] mandatory checker Task 249Mをrunner/corpus changeなしでfresh-inventory/
+  freezeする。
+- [ ] Task-249M docsをreview/separate commit後、checker test 4件をimplement/
+  verify/separate commitする。
 - [ ] Task 262だけへ戻ってimplementし、Task 263+へ継続する。
