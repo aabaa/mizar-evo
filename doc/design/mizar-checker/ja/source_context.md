@@ -436,3 +436,19 @@ gate、valid independent quality score 90/100以上、exact task-only staging、
 dedicated documentation commit、clean post-commit inventory、protected stash不変を
 要求する。fresh inventoryはTask 259ではなく、separate five-Rust-file Task-248
 implementationを選択する。
+
+## Task 261 Profile-B Attribute Consumer
+
+Task 261はimplemented Profile-B context contractのsecond exact consumerであり、
+Task 248 public API、table invariant、debug format、helper ownership、testを
+変更しない。private runnerはselected sourceのdirect
+`DefinitionParameter` row 27/31とenclosing real `DefinitionBlock` shell 41から
+handoffを構築する。checkerはordinary attribute definition用のtwo
+binding-linked parameter recordをconsumeし、missing、duplicate、reorder、
+cross-context、fingerprint-mismatched associationをすべてrejectする。
+
+attribute name、subject、definiens、source textからcontext rowをinferしない。
+raw AST/shell authenticationはrunner責務のままで、checkerはsyntax-free
+Profile-B handoffとexact site/range/context/spelling/fingerprintだけを見る。
+Task 261はnew source-context trace creditを追加せず、Task-248 count/hashを
+変更できない。

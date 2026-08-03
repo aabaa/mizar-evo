@@ -3350,4 +3350,21 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete source/documentation consistency with **NO FINDINGS** and pass
   the full shared verification matrix.
 - [x] Pass all nine final hard gates with quality `100/100` and no score cap.
-- [ ] Complete the shared Task-260 staging/commit/post-commit gates.
+- [x] Complete the shared Task-260 staging/commit/post-commit gates in
+  `c83e424a485a24dd0f00ddea687903a235d85850`.
+
+## Checker Task 261 Frozen Attribute-Definition Consumer
+
+- [x] Freeze the exact 116-byte source/hash, 45-row Surface oracle, resolver
+  provenance, lower Task-248/249/252/256 associations, and Task-259/260
+  isolation before any implementation edit.
+- [x] Freeze the private runner/public checker ownership split and checker
+  table cardinalities `1/2/1/1`, with no ordinary initial obligation.
+- [x] Freeze exactly one future pass pair/trace row, five checker tests, four
+  runner tests, projected counts, hashes to remeasure, exclusions, and exit
+  gates.
+- [x] Keep production, fixtures, sidecars, expectations, trace rows/status/
+  counts, and Cargo metadata byte-unchanged in this documentation prerequisite.
+- [ ] Complete findings-free reviews, all nine documentation gates, exact
+  staging, the dedicated prerequisite commit, and clean post-commit inventory.
+- [ ] Fresh-inventory and implement only Task 261, then return to Task 262+.

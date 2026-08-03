@@ -1313,3 +1313,19 @@ installer/final assemblerだけが本taskのmutual exclusionをenforceする。c
 productionは`25/150547`、path/content
 `0aad6b74904f456a462b0f481c84916a3234f5fecf302d9f048b380da8c3f846` /
 `8b1c66cb73086b01d23a7cf8f7db2bebd0bab13218113c436f3d892a79a436d6`。
+
+## Task 261 frozen boundary
+
+Task 261はdocumented syntax-free production module
+`src/source_attribute_definition.rs` 1件とnon-integration child support bodyを
+future追加する。production ownerはdense `1/2/1/1` table、resolver/lower
+authentication、deterministic rendering、typed/final validationだけをownする。
+raw syntax/resolver collectionはprivate `mizar-test` routeに残り、checker
+productionはsyntax dependencyを追加しない。
+
+future moduleはTask-248/249/252/256 handoffをmodifyせずconsumeし、obligation
+tableをpreserveする。attribute-use evidence、formula semantics、accepted
+attribute、fact/cluster/proof/IR/VCをownしない。public module/export/enum/
+source-spec allowlistとsource/support line countはimplementation commitだけで
+updateする。docs prerequisiteはproduction pathを追加せずcurrent `25/150547`
+manifest/hashをunchangedにする。

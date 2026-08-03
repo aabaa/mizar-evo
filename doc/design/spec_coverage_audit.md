@@ -5980,3 +5980,28 @@ composition, computation or justification proof, discharge, accepted
 definition, symbol activation, facts/axioms, overload/call/reduction
 semantics, CoreIr, ControlFlowIr, VC, or mixed predicate/functor credit. Those
 remain explicit follow-up ownership rather than inferred source behavior.
+
+## Checker Task 260 Post-Commit And Task 261 Frozen Coverage Intent
+
+Task 260 was committed as
+`c83e424a485a24dd0f00ddea687903a235d85850`; the active Chapter-10/16 result,
+counts, hashes, and semantic exclusions above are final for that task. Fresh
+inventory selected Task 261 as the next dependency-ready Chapter-6 producer.
+
+The synchronized Task-261 prerequisite freezes an exact ordinary attribute-
+definition transport contract from Chapter 6 and the Chapter-16 distinction
+between ordinary definitions and redefinition-only attribute coherence. The
+future slice owns one definition, two parameters, one subject, and one
+formula definiens with explicit resolver/lower provenance, but creates no
+initial-obligation row and grants no formula meaning, equivalence,
+correctness, acceptance, facts, proof, IR, or VC semantics. The historical
+one-parameter `thesis` gap remains unchanged.
+
+This docs-only prerequisite changes design mapping and follow-up ownership but
+does not activate Chapter-6 coverage. No fixture, sidecar, expectation,
+`tests/coverage/spec_trace.toml` row/status/backlink, active count, or
+production/test source is changed. The current executable metadata therefore
+remains `423/391`, `230/193`, `101/7/200/1`, type requirements
+`255 = 243 covered + 12 deferred`, and warnings/errors `23/0`. Task-261
+implementation alone may add the frozen one-case/one-requirement delta after
+its own hard gates pass.

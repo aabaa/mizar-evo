@@ -2184,3 +2184,26 @@ active type case, and one covered type requirement: `423/391`, `230/193`,
 `101/7/200/1`, and `255/243`. Credit is limited to the exact syntax-free
 transport and two pending obligations. No goal composition, proof,
 acceptance, fact, overload, IR, VC, or mixed-definition credit is granted.
+
+## Checker Task 261 Frozen Trace Intent
+
+The implementation will add exactly one required covered type-elaboration
+requirement,
+`spec.en.checker.type_elaboration.source_attribute_definition_payload`,
+sourced from `doc/design/mizar-checker/en/source_attribute_definition.md`.
+Its sole backlink will be
+`tests/miz/pass/types/pass_type_elaboration_attribute_definition_payload_001.expect.toml`,
+and that sidecar will reciprocally name only this requirement.
+
+Credit is limited to exact ordinary attribute-definition transport with table
+cardinalities `1/2/1/1`, explicit lower-owner provenance, and transactional
+typed/final ownership. It grants no initial-obligation, formula-meaning,
+equivalence, acceptance, facts, proof, Core, CFG, VC, or redefinition credit.
+The historical one-parameter `thesis` gap remains unchanged and receives no
+Task-261 backlink.
+
+This documentation prerequisite adds no source, fixture, sidecar, trace row,
+status, backlink, count, or coverage. Current metadata remains `423/391`,
+`230/193`, `101/7/200/1`, type requirements `255/243`, and warnings/errors
+`23/0`; implementation projects `424/392`, `231/193`, `101/7/201/1`, and
+`256/244`.

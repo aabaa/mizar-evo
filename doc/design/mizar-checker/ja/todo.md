@@ -6185,5 +6185,26 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   whitespaceを含むfull workspace verificationをPASSする。
 - [x] final hard gate 9件をすべて**NO FINDINGS**、quality `100/100`、score
   capなしでPASSする。
-- [ ] exact staging/commit/post-commit invariant、fresh Task 261+ inventoryを
-  完了する。
+- [x] exact staging、commit
+  `c83e424a485a24dd0f00ddea687903a235d85850`、clean/stash post-commit
+  invariant、fresh Task 261 selectionを完了する。
+
+## Checker Task 261 frozen-contract documentation prerequisite
+
+- [x] clean post-Task-260 inventoryからTask 261をselectし、origin差をreport-only
+  `repo_metadata_conflict`、missing contractを`design_drift`、implementationを
+  `source_drift`、consumerを`test_gap`と分類する。
+- [x] Chapter 6/16 authority、exact 116-byte/final-LF source、SHA-256
+  `ffd4954aad628d7946aaf7afb1b472a6bdfca7bce5ba0cf09f5b284c9dda07bf`、
+  45-row/root-44 Surface oracle、resolver profileをfreezeする。
+- [x] lower Tasks 248/249/252/256を`1/2/2/2/2/2/0`、`2/2/0`、`2/2/0`、
+  `1/0/0/0/0/0/0/2/2`にfreezeし、lower editなし、他family absentとする。
+- [x] syntax-free definition/parameter/subject/definiens `1/2/1/1`、resolver
+  provenance、fingerprint、unchanged obligation、one-shot Typed/final、Task-259/
+  260 isolation、debug/failure orderをfreezeする。
+- [x] spec-derived pass pair、future sole covered trace、checker 5/runner 4 tests、
+  projected count、write scope、audit impact、semantic deferral、exitをfreezeする。
+- [x] docs prerequisiteで`doc/spec`、existing `.miz`/expectation/sidecar、trace
+  count/status、production/test/CLI/hashをpreserveする。
+- [ ] spec reviewを**NO FINDINGS**までrepeatし、docs gate、separate commit、
+  post-commit invariantをPASSしてTask 261 implementationへautomatic returnする。

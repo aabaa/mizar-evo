@@ -6479,5 +6479,33 @@ implementation commit does not satisfy a producer task.
   metadata, all five CLIs, count/hash reproduction, and whitespace checks.
 - [x] Pass all nine final hard gates with **NO FINDINGS**, quality `100/100`,
   and no score cap.
-- [ ] Complete exact staging/commit, post-commit invariants, and
-  fresh-inventory Task 261+.
+- [x] Complete exact staging, commit
+  `c83e424a485a24dd0f00ddea687903a235d85850`, clean/stash post-commit
+  invariants, and fresh-inventory Task 261 selection.
+
+## Checker Task 261 Frozen-Contract Documentation Prerequisite
+
+- [x] Select Task 261 from clean post-Task-260 inventory; classify the origin
+  reference difference as report-only `repo_metadata_conflict`, the missing
+  contract as `design_drift`, implementation as `source_drift`, and consumer
+  as `test_gap`.
+- [x] Freeze Chapter 6/16 authority and the exact 116-byte/final-LF source,
+  SHA-256 `ffd4954aad628d7946aaf7afb1b472a6bdfca7bce5ba0cf09f5b284c9dda07bf`,
+  45-row/root-44 Surface oracle, and exact resolver profile.
+- [x] Freeze lower Tasks 248/249/252/256 at
+  `1/2/2/2/2/2/0`, `2/2/0`, `2/2/0`, and
+  `1/0/0/0/0/0/0/2/2`; require no lower-stage edit and keep every other
+  lower family absent.
+- [x] Freeze syntax-free definition/parameter/subject/definiens tables at
+  `1/2/1/1`, resolver provenance, all fingerprints, unchanged obligations,
+  one-shot Typed/final ownership, Task-259/260 isolation, debug, and failure
+  ordering.
+- [x] Freeze the spec-derived pass pair, sole future covered trace backlink,
+  five checker/four runner tests, projected count deltas, write scope, audit
+  impact, semantic deferrals, and exit criteria.
+- [x] Preserve `doc/spec`, all existing `.miz`/expectations/sidecars, trace
+  count/status, production, tests, CLIs, and recorded hashes in the docs
+  prerequisite.
+- [ ] Repeat specification review to **NO FINDINGS**, pass all docs gates,
+  commit the prerequisite separately, verify post-commit invariants, and
+  return automatically to Task 261 implementation.

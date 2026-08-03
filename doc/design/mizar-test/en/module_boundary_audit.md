@@ -12796,3 +12796,22 @@ Runner production is `32/64711` with path/content hashes
 The new leaf is cohesive because source/profile selection, mutation ownership,
 lower composition, and checker output validation share the same exact frozen
 oracle. Proof, acceptance, facts, IR, and VC remain outside this boundary.
+
+## Checker Task 261 Frozen Runner Boundary
+
+Task 261 will add exactly one private production leaf at
+`runner/type_elaboration/source_attribute_definition.rs` and one paired test
+leaf, plus bounded facade/root registration. The runner exclusively owns the
+exact 116-byte source check, 45-row Surface oracle, resolver environment/
+projection/symbol/definition/contribution authentication, raw-subtree
+exclusions, and composition of lower Tasks 248/249/252/256. It passes only
+syntax-free IDs, sites, ranges, contexts, spellings, and fingerprints to the
+checker producer.
+
+The future leaf is separate from the Task-259 predicate and Task-260 functor
+routes and cannot broaden their selectors or mutation matrices. It publishes
+one definition, two parameters, one subject, and one definiens, while leaving
+the initial-obligation table byte-identical. Formula meaning, equivalence,
+acceptance, facts, proof, Core, CFG, and VC remain outside this boundary. This
+docs prerequisite creates no production/test inventory row or measured line
+count; implementation must fresh-measure them.

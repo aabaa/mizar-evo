@@ -5119,3 +5119,31 @@ API/policyとstale prerequisite recordを本documentation correctionがrepairす
 `design_drift`にclassifyする。blocking `spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`はない。
+
+## Task 261 Frozen Future Public-Surface Audit
+
+`source_attribute_definition.md`はfuture public
+`source_attribute_definition` moduleをownする。four dense ID、five input
+aggregate、four immutable row/table family、typed handoff、producer、
+recovery/error enumをfreezeする。future public enumはすべて
+`#[non_exhaustive]`であり、implementationは同じlogical task内でmodule、
+export、public surface、enum policy、lint-policy inventoryへ追加しなければ
+ならない。
+
+future public rowはread-onlyのままである。callerはderived
+`SemanticOrigin`、four lower-stage debug fingerprint、allocated IDをsupply
+できない。Typed-AST installationはsole publication pathであり、resolved
+final assemblyはtyped-owned cloneだけを受ける。通常のChapter-6 attribute
+definitionはinitial-obligation rowを生成しない。producer/installerはobligation
+tableをreceive/inspect/compare/projectせず、installationはtableをstructurally
+unchangedにretainする。このboundaryはformula
+meaning、equivalence、acceptance、facts、proof、Core、CFG、VC semanticsを
+追加しない。
+
+fresh Task-261 inventoryはabsent moduleをexpected `source_drift`、absent exact
+executable consumerを`test_gap`、previously implicit contractをこの
+prerequisiteがrepairする`design_drift`にclassifyする。blocking `spec_gap`、
+authority conflict、unsafe lower-stage edit、`source_undocumented_behavior`、
+`test_expectation_drift`、`boundary_violation`はない。measured origin-reference差は
+report-only `repo_metadata_conflict`だが、本public surfaceを変更せずsafe task-only
+commit targetを曖昧にしない。

@@ -11533,3 +11533,21 @@ runner productionは`32/64711`、path/content
 source/profile selection、mutation ownership、lower composition、checker output
 validationが同じexact frozen oracleをshareするためnew leafはcohesiveである。
 proof/acceptance/fact/IR/VCはboundary外のままである。
+
+## Checker Task 261 Frozen Runner Boundary
+
+Task 261は`runner/type_elaboration/source_attribute_definition.rs`のprivate
+production leaf exactly 1件とpaired test leaf 1件、bounded facade/root
+registrationだけを追加する。runnerはexact 116-byte source check、45-row Surface
+oracle、resolver environment/projection/symbol/definition/contribution
+authentication、raw-subtree exclusion、lower Tasks 248/249/252/256
+compositionをexclusiveにownする。checker producerへはsyntax-free ID、site、
+range、context、spelling、fingerprintだけを渡す。
+
+future leafはTask-259 predicate routeおよびTask-260 functor routeとseparateで、
+それらのselector/mutation matrixをbroadenできない。one definition、two
+parameter、one subject、one definiensをpublishし、initial-obligation tableは
+byte-identicalに保つ。formula meaning、equivalence、acceptance、facts、proof、
+Core、CFG、VCはboundary外のままである。本docs prerequisiteはproduction/test
+inventory rowまたはmeasured line countを作らず、implementationでfresh-measure
+する。

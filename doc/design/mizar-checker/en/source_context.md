@@ -464,3 +464,20 @@ quality score of at least 90/100, exact task-only staging, one dedicated
 documentation commit, clean post-commit inventory, and unchanged protected
 stash. Fresh inventory then selects the separate five-Rust-file Task-248
 implementation, not Task 259.
+
+## Task 261 Profile-B Attribute Consumer
+
+Task 261 is a second exact consumer of the already implemented Profile-B
+context contract; it does not change Task 248's public API, table invariants,
+debug format, helper ownership, or tests. The private runner constructs the
+handoff from the selected source's two direct `DefinitionParameter` rows 27
+and 31 and the enclosing real `DefinitionBlock` shell 41. The checker consumes
+the resulting two binding-linked parameter records for the ordinary attribute
+definition and rejects every missing, duplicated, reordered, cross-context,
+or fingerprint-mismatched association.
+
+No context row is inferred from the attribute name, subject, definiens, or
+source text. The runner remains responsible for raw AST/shell authentication;
+the checker sees only the syntax-free Profile-B handoff and exact sites,
+ranges, contexts, spellings, and fingerprints. Task 261 adds no new source-
+context trace credit and cannot alter the Task-248 counts or hashes.

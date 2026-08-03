@@ -1344,3 +1344,20 @@ assembler enforce this task's mutual-exclusion contract. Checker production is
 `25/150547` with path/content hashes
 `0aad6b74904f456a462b0f481c84916a3234f5fecf302d9f048b380da8c3f846` /
 `8b1c66cb73086b01d23a7cf8f7db2bebd0bab13218113c436f3d892a79a436d6`.
+
+## Task 261 Frozen Boundary
+
+Task 261 will add one documented syntax-free production module
+`src/source_attribute_definition.rs` and one non-integration child support
+body. The production owner is limited to four dense `1/2/1/1` tables,
+resolver/lower authentication, deterministic rendering, and typed/final
+validation. Raw syntax and resolver collection remain in one private
+`mizar-test` route; checker production retains no syntax dependency.
+
+The future module consumes Task-248/249/252/256 handoffs without modifying
+them and preserves the obligation table. It owns no attribute-use evidence,
+formula semantics, accepted attribute, fact, cluster, proof, IR, or VC. Public
+module/export/enum/source-spec allowlists and exact source/support line counts
+are updated only in the implementation commit. The documentation prerequisite
+adds no production path and leaves the current `25/150547` manifest and hashes
+unchanged.

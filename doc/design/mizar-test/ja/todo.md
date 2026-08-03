@@ -3129,4 +3129,20 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] source/docs consistencyを**NO FINDINGS**で完了し、full shared
   verification matrixをPASSする。
 - [x] final hard gate 9件をquality `100/100`、score capなしでPASSする。
-- [ ] shared Task-260 staging/commit/post-commit gateを完了する。
+- [x] shared Task-260 staging/commit/post-commit gateを
+  `c83e424a485a24dd0f00ddea687903a235d85850`で完了する。
+
+## Checker Task 261 Frozen Attribute-Definition Consumer
+
+- [x] implementation edit前にexact 116-byte source/hash、45-row Surface
+  oracle、resolver provenance、lower Task-248/249/252/256 association、
+  Task-259/260 isolationをfreezeする。
+- [x] private runner/public checker ownership splitとchecker table cardinality
+  `1/2/1/1`をfreezeし、ordinary initial obligationを追加しない。
+- [x] future pass pair/trace row exactly 1件、checker test 5件、runner test 4件、
+  projected count、再計測するhash、exclusion、exit gateをfreezeする。
+- [x] 本documentation prerequisiteではproduction、fixture、sidecar、
+  expectation、trace row/status/count、Cargo metadataをbyte-unchangedに保つ。
+- [ ] findings-free review、全9 documentation gate、exact staging、dedicated
+  prerequisite commit、clean post-commit inventoryを完了する。
+- [ ] fresh-inventoryしてTask 261だけをimplementし、Task 262+へ戻る。

@@ -2087,3 +2087,25 @@ active deltaはcase/requirement/pass/active type/covered typeを各1件だけ増
 `423/391`、`230/193`、`101/7/200/1`、`255/243`となる。creditはexact
 syntax-free transportとPending obligation 2件だけで、goal composition、proof、
 acceptance、fact、overload、IR、VC、mixed-definition creditはない。
+
+## Checker Task 261 Frozen Trace Intent
+
+implementationはrequired/covered type-elaboration requirement
+`spec.en.checker.type_elaboration.source_attribute_definition_payload` exactly
+1件を追加し、そのsourceは
+`doc/design/mizar-checker/en/source_attribute_definition.md`とする。sole
+backlinkは
+`tests/miz/pass/types/pass_type_elaboration_attribute_definition_payload_001.expect.toml`
+で、sidecarもこのrequirementだけをreciprocalにnameする。
+
+creditはtable cardinality `1/2/1/1`、explicit lower-owner provenance、
+transactional typed/final ownershipを持つexact ordinary attribute-definition
+transportに限定する。initial obligation、formula meaning、equivalence、
+acceptance、facts、proof、Core、CFG、VC、redefinition creditはない。historical
+one-parameter `thesis` gapはunchangedで、Task-261 backlinkを受けない。
+
+本documentation prerequisiteはsource、fixture、sidecar、trace row、status、
+backlink、count、coverageを追加しない。current metadataは`423/391`、
+`230/193`、`101/7/200/1`、type requirements `255/243`、warnings/errors
+`23/0`のままで、implementationは`424/392`、`231/193`、`101/7/201/1`、
+`256/244`をprojectする。

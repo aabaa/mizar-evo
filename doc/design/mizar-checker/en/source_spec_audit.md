@@ -5340,3 +5340,31 @@ future API/policy and stale prerequisite records are `design_drift` repaired
 by this documentation correction. There is no blocking `spec_gap`,
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict`.
+
+## Task 261 Frozen Future Public-Surface Audit
+
+`source_attribute_definition.md` owns the future public
+`source_attribute_definition` module. It freezes four dense IDs, five input
+aggregates, four immutable row/table families, the typed handoff, the producer,
+and recovery/error enums. Every future public enum is `#[non_exhaustive]`; the
+implementation must add the module, exports, public surface, enum policy, and
+lint-policy inventories in the same logical task.
+
+The future public rows remain read-only. Callers cannot supply the derived
+`SemanticOrigin`, four lower-stage debug fingerprints, or allocated IDs.
+Typed-AST installation is the sole publication path; resolved final assembly
+receives only the typed-owned clone. The ordinary Chapter-6 attribute
+definition creates no initial-obligation row. Its producer and installer do
+not receive, inspect, compare, or project the obligation table, so installation
+structurally retains that table unchanged. This boundary does not add
+formula meaning, equivalence, acceptance, facts, proof, Core, CFG, or VC
+semantics.
+
+Fresh Task-261 inventory classifies the absent module as expected
+`source_drift`, the absent exact executable consumer as `test_gap`, and the
+previously implicit contract as `design_drift` repaired by this prerequisite.
+There is no blocking `spec_gap`, authority conflict, unsafe lower-stage edit,
+`source_undocumented_behavior`, `test_expectation_drift`,
+or `boundary_violation`. The measured origin-reference difference is a
+report-only `repo_metadata_conflict`; it neither changes this public surface
+nor obscures the safe task-only commit target.
