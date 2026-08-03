@@ -3537,6 +3537,13 @@ test aliasで既存name/valueを維持する。call site、name、config value�
 3-definition object chain、key、payload、ordering、fallback、fail-closed behaviorは
 変更しない。
 
+## Checker Task 249PI no-runner module boundary
+
+prerequisiteはchecker `source_type.rs`とsynchronized design recordだけを変更する。
+`mizar-test` leaf/facade import/selector/dispatch/test module/production line/Cargo dependencyは
+追加しない。runner library/productionはexact hash込み`528` / `35/67939`のまま。
+checker-only implementation/fresh inventory完了までfrozen Task264 routeはabsent。
+
 `support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
 `mode_chain_fixtures.rs`の既存direct test occurrence 50件（output/extractor reference
 43件、invalid-key reference 7件）がexact real three-expansion object-mode source chain、

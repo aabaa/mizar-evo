@@ -1685,3 +1685,12 @@ revalidateし、orphan/extra/mismatch、Task259 coexistenceを
 `InvalidSourcePropertyImplementation`でrejectする。Transportをcloneするだけで
 expr metadata/checked formula/fact/proof/diagnostic/acceptance/property value/IR/VCを
 追加しない。DocsおよびTask249PI段階ではfinal ownerを追加しない。
+
+## Task 249PI final ownership boundary
+
+Task 249PIは`ResolvedTypedAst` field/constructor input/getter/serializerを追加しない。
+existing `source_type` handoffをcomplete `source-type-application-debug-v1` fingerprintと
+exact `1/3/0/0/0/2` profileのまま1回clone-preserveする。final installationはexisting
+Typed source-type validationでlower driftをrejectする。property identity/return
+association/initial obligation/diagnostic/fact/proof/acceptance/Task259 dataはseparate owner
+までabsent。

@@ -5693,3 +5693,20 @@ five input/row/table families, style/target/correctness/recovery/error enums,
 immutable handoff, projection, producer, typed/final getters, and the two new
 obligation-kind serializer literals exactly as frozen in the canonical module
 design.
+
+## Task 249PI Frozen Source/Specification Audit
+
+Fresh inventory classifies the missing coexistence of one binding-linked
+`Task264Carrier` type and two independently owned structure-member return
+types as lower `source_drift` with paired `design_drift` and a four-test
+canonical-derived `test_gap`. Chapters 5 §§5.1--5.2 and 7
+§§7.4.1/7.8.2/7.10, the exact Task-264 parser/resolver profiles, and committed
+Task-248P/249/249S transports are sufficient; no blocking `spec_gap` exists.
+
+The frozen repair is append-only in `source_type.rs`: exact
+`1/3/0/0/0/2`, means sites 63/64, 56/55/54, 59/58/57, equals sites 45/46,
+38/37/36, 41/40/39, one extension method, three errors, exact global failure
+precedence, arena/installation replay, and unchanged legacy bytes. It grants
+no language-semantic or executable corpus coverage. Task 264 remains the owner
+of property provenance, return association, means/equals, definiens, `it`,
+initial obligations, runner evidence, and all semantic deferrals.

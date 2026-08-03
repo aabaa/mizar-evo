@@ -1686,3 +1686,13 @@ owner, Task-256 remains the means formula owner, and Task 264 only associates
 those immutable lower IDs. Coherence/overlap, proof, acceptance, fact, and VC
 families remain separate. Task 259 and Task 264 do not cross-fingerprint or
 co-install in this bounded task.
+
+## Task 249PI Lower Composition Family
+
+Task 249PI does not add a payload family. It composes existing Task-249
+application/expression ownership and Task-249S member/expression ownership in
+the exact `1/3/0/0/0/2` property-source profile. It neither classifies field
+versus property nor associates member row 1 with the property target; Task 264
+does that from resolver authority. Definition returns, mode RHS, predicates,
+functors, property semantics, obligations, facts, proof, acceptance, and IR
+families remain mutually isolated.

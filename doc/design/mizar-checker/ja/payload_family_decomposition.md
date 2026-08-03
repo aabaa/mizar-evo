@@ -1604,3 +1604,11 @@ new resolver definitionではない。MeansはTask256+two obligations、Equals�
 Task254+zero obligationsである。Grammarにad-hoc assumeがないためguard tableは
 存在しない。Task252/254/256 lower identityをassociationするだけで、coherence/
 proof/acceptance/fact/VC familyやTask259 fingerprintとcrossしない。
+
+## Task 249PI lower composition family
+
+Task 249PIはpayload familyを追加しない。existing Task-249 application/expression ownerと
+Task-249S member/expression ownerをexact property-source `1/3/0/0/0/2`でcomposeする。
+field/propertyをclassifyせず、member row 1とproperty targetをassociateしない。それは
+Task264がresolver authorityから行う。definition return、mode RHS、predicate、functor、
+property semantics、obligation、fact、proof、acceptance、IR familyはmutually isolated。

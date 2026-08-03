@@ -3471,6 +3471,17 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   prerequisite and select lower Task 249PI before any consumer implementation.
 - [x] Complete Task-264 docs reviews with **NO FINDINGS**, all nine gates PASS,
   and uncapped `100/100` without adding any runner path.
-- [ ] Commit only the exact synchronized docs and fresh-inventory Task 249PI.
+- [x] Commit only the exact synchronized docs as
+  `4c3f74b053d31cae45b8af3fc478498b4a112768` and fresh-inventory Task 249PI.
 - [ ] After Task-249PI commits, implement only the frozen two-profile route,
   pass review/gates/count/hash verification, and commit Task 264 separately.
+
+## Checker Task 249PI No-Runner Prerequisite
+
+- [x] Record exact checker-only `1/3/0/0/0/2`, four tests, checker
+  `469 -> 473`, and zero runner/corpus/trace/metadata/CLI impact.
+- [x] Preserve all current runner routes, fixtures, sidecars, expectations,
+  trace rows/statuses, counts, and hashes during docs and implementation.
+- [ ] Complete Task-249PI docs and implementation commits with no `mizar-test`
+  source or artifact delta.
+- [ ] Fresh-inventory and implement only the already frozen Task-264 route.

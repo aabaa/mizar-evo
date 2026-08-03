@@ -1706,3 +1706,11 @@ obligationsを照合し、Meansはproperty existence/uniqueness two rows、Equal
 をhandoffとatomic installする。Replacement/half publication/Task259 coexistenceを
 `InvalidSourcePropertyImplementation`でrejectする。TypedAstPartsへpublic fieldは
 追加せず、facts/coercions/diagnostics/types/proof/acceptance/IRは不変である。
+
+## Task 249PI typed ownership boundary
+
+Task 249PIは`TypedAstParts` field/installer/getter/serializerを追加しない。exact combined
+source-type handoffはexisting optional `source_type` owner/one-shot installationを使い、
+installationがprofile shapeとparameter/member/expression/head arena identityを再validate
+する。types/local context/facts/coercions/initial obligations/diagnostics/proof/acceptance/
+IRは不変。Task264がseparate frozen handoffからlower fingerprint/member ID 1をconsumeする。

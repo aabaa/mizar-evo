@@ -5146,3 +5146,13 @@ before the generic extraction gap but matches no Parser Task-48 fixture,
 inactive coherence seed, mixed definition gap, or other active case. It emits
 no public diagnostic, proof/discharge/acceptance/fact/IR/VC output. The docs
 prerequisite and Task 249PI leave current harness bytes unchanged.
+
+## Checker Task 249PI No-Consumer Harness Boundary
+
+Task 249PI has no harness selector, private route, fixture, sidecar,
+expectation, runner test, diagnostic mapping, or serialized output. Its four
+checker-local tests prove the lower `1/3/0/0/0/2` composition before any real
+case is admitted. Every current harness byte and hash remains frozen. Task 264
+alone may later select the two named property-implementation pass cases and
+consume the complete lower fingerprint; the runner may not reconstruct its
+rows or fingerprint text.

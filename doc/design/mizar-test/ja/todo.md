@@ -3246,5 +3246,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   Task249PIをselectする。
 - [x] Task264 docs reviewを**NO FINDINGS**、all nine gates PASS、score capなし
   `100/100`でcompleteし、runner pathを追加しない。
-- [ ] Exact synchronized docsだけをcommitし、Task249PIをfresh inventoryする。
+- [x] Exact synchronized docsだけを
+  `4c3f74b053d31cae45b8af3fc478498b4a112768`としてcommitし、Task249PIをfresh
+  inventoryする。
 - [ ] Task249PI後frozen routeだけをimplement/review/verify/commitする。
+
+## Checker Task 249PI no-runner prerequisite
+
+- [x] checker-only exact `1/3/0/0/0/2`、test 4件、checker `469 -> 473`、
+  runner/corpus/trace/metadata/CLI zero impactを記録する。
+- [x] docs/implementation中current runner route/fixture/sidecar/expectation/trace
+  row/status/count/hashを全てpreserveする。
+- [ ] `mizar-test` source/artifact deltaなしでTask249PI docs/implementationをcommitする。
+- [ ] fresh inventory後already-frozen Task264 routeだけをimplementする。

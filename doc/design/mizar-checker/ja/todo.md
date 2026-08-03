@@ -6366,5 +6366,23 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   classifyし、Task249PIをmandatory next prerequisiteとしてfreezeする。
 - [x] Specification/boundary/source-doc reviewをNO FINDINGSまでrepeatし、docs-only
   all nine gatesをscore capなし`100/100`でcompleteする。
-- [ ] Exact 32-document stage/commitとfresh Task249PI selectionをcompleteする。
+- [x] Exact 32-document targetを
+  `4c3f74b053d31cae45b8af3fc478498b4a112768`としてcommitし、fresh Task249PI
+  selectionをcompleteする。
 - [ ] Task249PI docs/implementation後Task264 implementationへ自動復帰する。
+
+## Checker Task 249PI property-type composition prerequisite
+
+- [x] committed Task264 docs、clean worktree、origin divergence、protected stash、exact
+  sources/AST、lower API、dependency readinessをfresh inventoryした。
+- [x] missing combined source-type handoffをlower `source_drift`/`design_drift`/
+  canonical-derived `test_gap`、blocking `spec_gap`なしと分類した。
+- [x] exact `1/3/0/0/0/2` profiles/sites/ranges、authenticated structure head、
+  additive API/errors/precedence、debug/Typed/final ownership、exclusion、test 4件、count/
+  exitをfreezeした。
+- [x] spec/boundary reviewを**NO FINDINGS**まで繰返し、docs hard gate 9件をvalid
+  uncapped `100/100`でPASSする。
+- [ ] exact synchronized Task249PI design recordだけをcommitする。
+- [ ] fresh inventory後`source_type.rs`だけへimplementationし、test/implementation/
+  source-doc/final reviewとfull gate後commitする。
+- [ ] Task249PIへproperty semantics/runner/corpus/adjacent lower workを混ぜずTask264へ戻る。

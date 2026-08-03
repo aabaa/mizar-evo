@@ -539,3 +539,139 @@ Task 263はstored structure-member rootをcorruptする`cfg(test)`-only crate-pr
 mutator 1件を追加し、later lower-relation categoryをmapping/coherence faultとpairにする。
 production Task-249S validation、public API、fingerprint grammar、accepted
 `0/4/0/0/0/4` behaviorは不変で、`source_type.rs`は6,253 linesである。
+
+## Task 249PI frozen property-implementation composition
+
+### selection、authority、one-task scope
+
+Task-264 documentation prerequisite後のfresh inventoryはchecker Task 249PIをsole
+dependency-ready taskとしてselectする。canonical Chapter 5 §§5.1--5.2は
+`carrier`とvirtual `marker`のwritten `set` returnを要求し、Chapter 7
+§§7.4.1、7.8.2、7.10はimplementation parameter `M: Task264Carrier`を要求する。
+exact Task-264 means/equals source、parser row、resolver local structure symbol、
+Task-248P binding 0、frozen Task-264 lower bundleから下記compositionを導出できる。
+blocking `spec_gap`はない。
+
+current Task 249はbinding-linked structure applicationをauthenticateでき、Task-249Sは
+structure-member return typeをindependentにownできるが、Task-249Sは意図的にTask-263
+standalone four-member profileだけをadmitする。同一immutable handoffで共存できない
+ことはlower `source_drift`とpaired `design_drift`であり、canonical-derived checker
+regression 4件が`test_gap`を閉じる。Task 264でmember returnをfabricateすること、
+member用parameter applicationをfabricateすること、definition-return/mode-RHS rowを
+reuseすることは`boundary_violation`である。
+
+Task 249PIがownするのはTask 264に必要なexact source-type compositionだけである。
+property identity/member kind、implementation target、`marker`からmember row 1への
+lookup、parameter/binding context、`equals`/`means`、definiens term/formula、`it`、
+correctness/initial obligation、coherence、goal/guard、proof/discharge/acceptance、
+fact/axiom、diagnostic、runner selection、Core/CFG/VC、Task-259 dataはownしない。
+
+### exact additive API / error
+
+new public input/row/table/ID/enum/handoff/owner/debug familyは追加しない。existing
+producerへcanonical ENのexact signatureで
+`SourceTypeStructureMemberProducer::extend_property_implementation(base, input,
+arena)`をappendする。already-authenticated Task-249 baseをborrowし、全base prerequisite
+PASS後だけcloneし、existing member row 2件とexpression rootをappendし、complete resultを
+validateしてnew immutable handoffを返す。input source/moduleはbaseと一致しなければならず、
+baseはsuccess時にもmutationしない。standalone `build(input, arena)`はexactly unchanged。
+
+existing non-exhaustive `SourceTypeError`へ
+`StructureMembersAlreadyPresent`、
+`StructureMemberExtensionCardinalityMismatch`、
+`InvalidStructureMemberBase`をexactly appendする。display textはcanonical EN記載どおり。
+existing row/site/shape errorのfield/textは不変。failure precedenceはalready-present、
+empty、non-two extension cardinality、source/module mismatch、invalid base、全row/
+environment/range identityのordinal order、全site/arena identityのordinal order、全
+expression shapeのordinal orderである。
+
+### frozen means / equals profile
+
+successful handoffはいずれもapplications/expressions/arguments/definition returns/
+mode RHS/structure members `1/3/0/0/0/2`。application 0はbinding 0、source ordinal
+0、root expression 0。argument/definition return/mode RHSはempty。member ID/source
+ordinalは0/1、rootはappended expression 1/2。全stored IDはvector orderと一致する。
+
+parameter rootはnormal/argument-free `Bare` symbol applicationで、source/head
+spelling exact `Task264Carrier`、source/head range `130..144`。`SourceTypeProducer`が
+`SourceTypeHead::Symbol`をresolverに対してcurrent-module local structure / local-source
+contribution 0として既にauthenticateしている。Task249PIはそのexact `SymbolId`/
+contributionをpreserveし、spellingからFQNをreconstructせず、resolver-generated FQNを
+simplified `<module>::Task264Carrier`へ置換しない。means expression/head nodeは63/64、
+equalsは45/46。
+
+appended rowはexactly次のとおり。
+
+| Profile | Member | owner node/range | expression/head node / range | Root |
+| --- | ---: | --- | --- | ---: |
+| means | 0 | 56 / `45..66` | 55/54 / `62..65` | 1 |
+| means | 1 | 59 / `71..94` | 58/57 / `90..93` | 2 |
+| equals | 0 | 38 / `45..66` | 37/36 / `62..65` | 1 |
+| equals | 1 | 41 / `71..94` | 40/39 / `90..93` | 2 |
+
+member expressionはnormal/argument-free `Bare` builtin `set`で、source/head spelling
+はexact `set`。member rangeはnonempty same-source exact normal owner-arena rangeで
+expressionをcontainする。parameter/member/expression/head siteは表のexact distinct
+`TypedSiteRef::Node`で、role/duplicate/missing/recovered/wrong-rangeをfail closedする。
+全expression/head rangeをarenaへ再照合する。
+
+complete validatorがrecognizeするstructure-member profileはmutually exclusiveな2種、
+legacy standalone Task-249S `0/4/0/0/0/4` byte-for-byte unchangedとTask-249PI
+`1/3/0/0/0/2`だけである。Task-249R returnやTask-249M RHSを含むそれ以外のmixed
+application/member shapeはfail closedする。empty-member legacy Task-249 application
+handoffはvalidかつbyte-identicalのまま。
+
+### debug fingerprint / ownership
+
+existing `source-type-application-debug-v1` grammar/orderは不変。Task-249PIはversion
+line、module line、application 0、member row 0/1、expression 0/1/2の順にemitする。
+canonical EN templateの`<module-path>`はexact `ModuleId.path`、`<resolver-fqn>`は
+already-authenticated resolver `SymbolId`にstoredされたcomplete FQN、各node placeholderは
+means/equals値を一貫して選ぶ。全placeholderのconcrete substitution、final expression
+line後exactly one LF、extra blank lineなしがcomplete fingerprintである。callerは
+fingerprint textを供給できない。
+
+`TypedAst`はexisting optional `source_type` fieldとone-shot installationでsole owner。
+installationはcomplete profile/arena identityを再validateする。`ResolvedTypedAst`はsame
+handoff/exact fingerprintをclone-preserveするだけ。Task 249PIはどちらにもfield/
+installerを追加しない。Task 264はcomplete fingerprintとmember ID 1をconsumeし、lower
+rowをinferしない。
+
+### test、count/hash impact、exit
+
+implementationは`crates/mizar-checker/src/source_type.rs`とsynchronized derived design
+recordだけを変更し、canonical ENで命名したchecker test exactly 4件を追加する。両exact
+profile/fingerprintとlegacy Task-249S byte、全base/row/range/site/shape/precedence/
+one-shot failure、arena/install drift、replay、Typed/final clone ownership、Task-249R/
+249M/249S/259 isolationをownする。checker libraryは`469 -> 473`、runner/resolver/
+syntaxは`528/148/59`。runner production、fixture、sidecar、expectation、trace row/
+backlink/status/count、metadata、diagnostic、CLI、executable coverage deltaはない。
+
+docs prerequisiteはEN/JA sync、repeated review-only **NO FINDINGS**、score capなしの
+hard gate 9件PASS / quality 90+、exact docs-only staging/commit、clean fresh inventory、
+report-only origin divergence、protected-stash invarianceでexitする。separate
+implementationはexact test 4件、review、focused/full verification、count/hash、one-file
+task-only staging、dedicated commit、clean fresh inventory後にTask 264へautomatic returnする。
+
+## Task 249PI documentation-prerequisite verification
+
+resolver-FQN/debug template修正とstale Task264 checklist closure後、repeated spec reviewと
+boundary/source-doc reviewは**NO FINDINGS**。independent final qualityも**NO FINDINGS**、
+hard gate 9件はscore capなしで全PASS、valid `100/100`
+(`20/20/15/15/10/10/5/5`)。deltaはexactly synchronized design 32 filesで、canonical
+spec/production/test/fixture/sidecar/expectation/trace/Cargo/metadata changeはzero。
+
+focused parser/resolver/Profile-C checkerは`1/2/2`、checker/runner lintは`15/14`、
+metadataは`137/137`、fmt、warnings-denied Clippy、full workspace test、Cargo metadata、
+all five CLI、`git diff --check`はPASS。CLIはcases/requirements `426/394`、pass/fail
+`233/193`、active `101/7/203/1`、type `258=246+12`、warnings/errors `23/0`を再現する。
+
+checker/runner/resolver/syntax listは`469/528/148/59`で、raw/normalized hashはcanonical
+EN sectionのexact 8値から不変。checker productionは`28/158478`、path/content
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
+`19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`、runnerは
+`35/67939`、`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
+`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`。
+traceは`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`、
+Task48/mixed-gap source/sidecar hashも不変。exact stage/commit/post-commit inventoryは
+parent-owned gateとして残る。

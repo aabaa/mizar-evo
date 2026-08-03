@@ -1492,3 +1492,12 @@ full revalidation後clone ownerで、TypedAstParts/ResolvedTypedAstInputsへpubl
 construction fieldを追加しない。Raw source/AST selectionはprivate runner、
 Task249PI lower constructionとproof/fact/IR/VCは別ownerである。Docs時点では
 Rust boundary change zeroである。
+
+## Task 249PI frozen module boundary
+
+Task 249PIはexisting syntax-free `src/source_type.rs`内だけに留まる。new module、Cargo
+edge、parser/syntax dependency、runner route、raw AST public exposure、Typed/final field、
+semantic-result ownerは追加しない。existing structure-member producerがauthenticated
+baseをborrowしexisting member row 2件だけをtransactional appendする。implementation
+write scopeはchecker source 1 fileとsynchronized derived docs。Task264がsole later
+runner/property-payload ownerのままである。

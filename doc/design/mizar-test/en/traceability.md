@@ -2317,6 +2317,16 @@ the sidecar reciprocally cites only that row. Requirements/cases are
 trace SHA-256 is
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
 
+## Checker Task 249PI Zero-Credit Trace Boundary
+
+Task 249PI is a checker-local lower transport repair. It adds no requirement,
+backlink, fixture, sidecar, expectation, status, diagnostic, or executable
+coverage credit. Cases/requirements remain `426/394`, type coverage remains
+`258 = 246 covered + 12 deferred`, and the trace hash remains
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+The future Task-264 pair and its one reciprocal covered row remain frozen but
+absent until after this prerequisite.
+
 ## Checker Task 264 Frozen Trace Intent
 
 Implementation will add exactly one required covered type-elaboration row:

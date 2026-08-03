@@ -1536,3 +1536,11 @@ EN/JAはtwo source hashes、sidecar names、single reciprocal requirement、85/5
 AST、resolver `5/3/3/1`、four runner tests、`528 -> 532`、active type
 `203 -> 205`、docs-time zero impact、inactive coherence/mixed gaps、Task249PI
 orderingで一致する。
+
+## Checker Task 249PI no-runner synchronization
+
+EN/JAはTask249PIがchecker lower source 1 file/test 4件だけを変更することで一致する。
+exact `1/3/0/0/0/2`、checker `469 -> 473`、runner/resolver/syntax
+`528/148/59`、runner/corpus/trace/metadata/CLI zero deltaを両方が記録する。new source/
+sidecar/covered row/runner route/property semanticsはTask264へdeferする。bilingual
+harness debtはない。

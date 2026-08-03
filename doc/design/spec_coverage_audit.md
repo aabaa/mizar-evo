@@ -6347,3 +6347,14 @@ multiple implementations, or IR/VC. Task 249PI is recorded as a lower
 transport prerequisite only and will add no corpus/trace credit. Task 264
 implementation must update this audit from frozen intent to implemented exact
 transport and retain all listed deferrals.
+
+## Checker Task 249PI Frozen Lower-Transport Coverage Boundary
+
+Task 249PI is derived from Chapter 5's written field/property return types and
+Chapter 7's one mode-parameter property implementation, but grants no new
+specification coverage. It freezes the missing lower composition as exact
+`1/3/0/0/0/2` and four checker-local tests only. Existing parser/resolver
+credit and every corpus/trace row remain unchanged. Chapter 7 stays partial;
+Task 264 still owns the two active sources, property provenance, declared
+return association, means/equals, definiens/`it`, pending initial obligations,
+runner evidence, and all proof/coherence/acceptance/fact/IR/VC deferrals.

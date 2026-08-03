@@ -4857,3 +4857,11 @@ producerをcallする。Meansはtwo pending obligations/two owned `it`、Equals�
 zeroをassertする。Parser fixtures、inactive coherence、mixed gapをmatchせず、
 proof/discharge/acceptance/fact/IR/VCをpublishしない。Docs/Task249PIではharness
 bytes unchangedである。
+
+## Checker Task 249PI no-consumer harness boundary
+
+Task249PIにはharness selector/private route/fixture/sidecar/expectation/runner test/
+diagnostic mapping/serialized outputがない。checker-local test 4件がreal case admission前に
+lower `1/3/0/0/0/2` compositionをproveする。current harness byte/hashは全てfrozen。
+Task264だけがlater named pass case 2件をselectしcomplete lower fingerprintをconsumeでき、
+runnerはrow/fingerprint textをreconstructしない。

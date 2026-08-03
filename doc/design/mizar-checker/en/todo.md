@@ -6679,7 +6679,26 @@ implementation commit does not satisfy a producer task.
   not mix its implementation into Task 264.
 - [x] Repeat Task-264 specification/boundary/source-doc reviews to **NO
   FINDINGS** and pass all nine docs-only hard gates at uncapped `100/100`.
-- [ ] Stage only the synchronized 32-document target, commit, and
-  fresh-inventory Task 249PI.
+- [x] Stage only the synchronized 32-document target, commit it as
+  `4c3f74b053d31cae45b8af3fc478498b4a112768`, and fresh-inventory Task 249PI.
 - [ ] After Task-249PI docs/implementation commits, return automatically to
   Task 264 implementation and complete its separate review/gate/commit loop.
+
+## Checker Task 249PI Property-Type Composition Prerequisite
+
+- [x] Fresh-inventory committed Task-264 docs, clean worktree, report-only
+  origin divergence, protected stash, exact sources/ASTs, lower APIs, and
+  dependency readiness.
+- [x] Classify the missing combined source-type handoff as lower
+  `source_drift`/`design_drift`/canonical-derived `test_gap`, with no blocking
+  `spec_gap`.
+- [x] Freeze exact `1/3/0/0/0/2` means/equals profiles, sites/ranges,
+  authenticated structure head, additive extension API/errors/precedence,
+  debug/Typed/final ownership, exclusions, four tests, count impact, and exit.
+- [x] Repeat specification/boundary reviews to **NO FINDINGS** and pass all
+  docs hard gates at valid uncapped `100/100`.
+- [ ] Commit only the exact synchronized Task-249PI design records.
+- [ ] Fresh-inventory, implement only Task 249PI in `source_type.rs`, repeat
+  test/implementation/source-doc/final reviews and full gates, then commit.
+- [ ] Return automatically to frozen Task 264 without adding property
+  semantics, runner/corpus changes, or adjacent lower work to Task 249PI.

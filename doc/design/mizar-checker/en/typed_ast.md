@@ -1337,6 +1337,16 @@ B3A/B3B installation orders fail without partial mutation and permit exact
 replay. The existing `InvalidSourceStatement` boundary and public API are
 unchanged.
 
+## Task 249PI Typed Ownership Boundary
+
+Task 249PI adds no `TypedAstParts` field, installer, getter, or serializer. Its
+exact combined source-type handoff uses the existing optional `source_type`
+owner and one-shot installation; installation revalidates both profile shape
+and all parameter/member/expression/head arena identities. Types, local
+contexts, facts, coercions, initial obligations, diagnostics, proof,
+acceptance, and IR remain unchanged. Task 264 later consumes the lower
+fingerprint and member ID 1 through its separately frozen handoff.
+
 ## Task 264 Frozen Typed Ownership
 
 Task 264 adds one private optional `SourcePropertyImplementationHandoff` to

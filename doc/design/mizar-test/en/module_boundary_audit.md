@@ -12958,3 +12958,12 @@ Task-249PI owns the missing lower type composition first. Task 264 may then add
 one route module plus facade/dispatch/count wiring, two fixture/sidecar pairs,
 and one trace row. It cannot change parser/resolver, Task-259 routes, proof
 runner ownership, or the inactive coherence case.
+
+## Checker Task 249PI No-Runner Module Boundary
+
+The prerequisite changes only checker `source_type.rs` and synchronized
+design records. `mizar-test` adds no leaf, facade import, selector, dispatch,
+test module, production line, or Cargo dependency. Runner library/production
+remain `528` and `35/67939` with their exact existing hashes. The frozen Task
+264 route remains absent until the checker-only implementation and fresh
+inventory complete.

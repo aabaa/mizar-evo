@@ -4101,7 +4101,21 @@ or semantic owner changed. B3M2B2B remains next before B4.
   `source_drift`; freeze Task 249PI as the mandatory next task.
 - [x] Complete findings-free Task-264 docs reviews and all nine hard gates at
   uncapped `100/100`.
-- [ ] Complete the exact docs-only commit and fresh Task-249PI inventory.
+- [x] Complete exact docs-only commit
+  `4c3f74b053d31cae45b8af3fc478498b4a112768` and fresh Task-249PI inventory.
 - [ ] Complete Task-249PI docs/implementation commits, return to Task 264,
   implement only the frozen two-profile consumer, review/verify/commit, and
   continue automatically to the next dependency-ready task.
+
+## Checker Task 249PI Property-Type Composition Prerequisite
+
+- [x] Confirm committed Task-264 documentation, clean fresh inventory,
+  report-only metadata conflict, protected stash, and dependency readiness.
+- [x] Freeze exact `1/3/0/0/0/2` means/equals profiles, additive one-file API,
+  errors/precedence, fingerprints, ownership, four tests, zero runner/trace
+  impact, semantic exclusions, and two-commit exit in synchronized EN/JA.
+- [x] Complete repeated docs reviews and all nine hard gates at valid uncapped
+  `100/100`.
+- [ ] Stage/commit only the exact Task-249PI design records.
+- [ ] Fresh-inventory, implement/review/verify only `source_type.rs`, pass all
+  gates/count/hash checks, commit, and return automatically to Task 264.

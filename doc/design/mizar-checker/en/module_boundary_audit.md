@@ -1542,3 +1542,13 @@ The private runner owns raw-source/Surface selection. The new checker family
 cannot own Task-249PI lower construction, proof/acceptance/fact/IR/VC modules,
 or Task-259 behavior. The docs prerequisite changes no Rust boundary. Task
 249PI is the mandatory next lower owner before this boundary becomes active.
+
+## Task 249PI Frozen Module Boundary
+
+Task 249PI remains entirely inside existing syntax-free
+`src/source_type.rs`. It adds no module, Cargo edge, parser/syntax dependency,
+runner route, public raw-AST exposure, Typed/final field, or semantic-result
+owner. The existing structure-member producer borrows an authenticated base
+and appends only two existing member rows transactionally. The implementation
+write scope is that one checker source file plus synchronized derived docs;
+Task 264 remains the sole later runner/property-payload owner.

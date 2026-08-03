@@ -773,3 +773,209 @@ structure-member root so its later lower-relation category can be paired with
 mapping and coherence faults. Production Task-249S validation, public API,
 fingerprint grammar, and accepted `0/4/0/0/0/4` behavior are unchanged;
 `source_type.rs` is now 6,253 lines.
+
+## Task 249PI Frozen Property-Implementation Composition
+
+### Selection, authority, and one-task scope
+
+Fresh inventory after the Task-264 documentation prerequisite selects checker
+Task 249PI as the only dependency-ready task. Canonical Chapter 5 §§5.1--5.2
+require the written `set` return of both `carrier` and virtual `marker`, while
+Chapter 7 §§7.4.1, 7.8.2, and 7.10 require the implementation parameter
+`M: Task264Carrier`. The exact Task-264 means/equals sources, parser rows,
+resolver local structure symbol, Task-248P binding 0, and the frozen Task-264
+lower-bundle contract derive the bounded composition below. There is no
+blocking `spec_gap`.
+
+Current Task 249 can authenticate the parameter's binding-linked structure
+application, and Task-249S can independently own structure-member return
+types, but Task-249S intentionally admits only the standalone four-member
+Task-263 profile. Their inability to coexist in one immutable handoff is a
+lower `source_drift` with paired `design_drift`; the four canonical-derived
+checker regressions below close the `test_gap`. Fabricating the member returns
+inside Task 264, fabricating parameter applications for members, or reusing
+definition-return/mode-RHS rows is a `boundary_violation`.
+
+Task 249PI owns only the exact source-type composition required by Task 264.
+It does not own property identity or member kind, the implementation target,
+the lookup from `marker` to member row 1, parameters or binding contexts,
+`equals`/`means`, definiens terms/formulas, `it`, correctness or initial
+obligations, coherence, goals or guards, proofs, discharge, acceptance,
+facts/axioms, diagnostics, runner selection, Core/CFG/VC, or Task-259 data.
+
+### Exact additive API and errors
+
+No new public input, row, table, ID, enum, handoff, owner, or debug family is
+added. Task 249PI appends this method to the existing producer:
+
+```rust
+impl SourceTypeStructureMemberProducer {
+    pub fn extend_property_implementation(
+        base: &SourceTypeApplicationHandoff,
+        input: SourceTypeStructureMemberHandoffInput,
+        arena: &TypedArena,
+    ) -> Result<SourceTypeApplicationHandoff, SourceTypeError>;
+}
+```
+
+The method borrows an already authenticated Task-249 base, clones it only
+after all base prerequisites pass, appends two existing structure-member rows
+and their expression roots, validates the complete result, and returns a new
+immutable handoff. The input source/module must equal the base. The base is
+never mutated, even on success. The existing standalone `build(input, arena)`
+signature and behavior remain exact.
+
+The existing non-exhaustive `SourceTypeError` appends exactly these variants:
+
+```rust
+StructureMembersAlreadyPresent,
+StructureMemberExtensionCardinalityMismatch,
+InvalidStructureMemberBase,
+```
+
+Their display strings are respectively `source type structure members are
+already installed`, `source type structure-member extension cardinality is
+not the frozen pair`, and `source type structure-member base is invalid`.
+Existing row/site/shape errors retain their exact fields and strings. Producer
+failure precedence is already-present, empty, non-two extension cardinality,
+source/module environment mismatch, invalid base, all row/environment/range
+identities in ordinal order, all site/arena identities in ordinal order, then
+all expression shapes in ordinal order. Thus a lower-priority earlier-row
+fault cannot hide a higher-priority later-row fault.
+
+### Frozen means and equals profiles
+
+Both successful handoffs have applications/expressions/arguments/definition
+returns/mode RHS/structure members `1/3/0/0/0/2`. Application 0 is exactly
+binding 0, source ordinal 0, root expression 0. Arguments, definition returns,
+and mode RHS remain empty. Member IDs and source ordinals are 0/1 and their
+roots are appended expressions 1/2. All stored IDs equal vector order.
+
+The parameter root is a normal, argument-free `Bare` symbol application whose
+source and head spellings are exactly `Task264Carrier` and whose source/head
+range is `130..144`. `SourceTypeProducer` has already authenticated its
+`SourceTypeHead::Symbol` against the resolver as the current-module local
+structure and local-source contribution 0. Task 249PI preserves that exact
+`SymbolId` and contribution. In particular, it neither reconstructs an FQN
+from the spelling nor replaces the resolver-generated FQN with a simplified
+`<module>::Task264Carrier` string. The means expression/head nodes are 63/64;
+the equals nodes are 45/46.
+
+The appended rows are exact:
+
+| Profile | Member | Owner node/range | Expression/head nodes and range | Root |
+| --- | ---: | --- | --- | ---: |
+| means | 0 | 56 / `45..66` | 55/54 / `62..65` | 1 |
+| means | 1 | 59 / `71..94` | 58/57 / `90..93` | 2 |
+| equals | 0 | 38 / `45..66` | 37/36 / `62..65` | 1 |
+| equals | 1 | 41 / `71..94` | 40/39 / `90..93` | 2 |
+
+Each member expression is normal, argument-free, `Bare`, builtin `set`, with
+source/head spellings exactly `set`. Each member range is nonempty,
+same-source, its exact normal owner-arena range, and contains its expression.
+Every parameter/member/expression/head site is the exact distinct
+`TypedSiteRef::Node` listed above; role, duplicate, missing, recovered, and
+wrong-range sites fail closed. Every expression and head range is revalidated
+against the supplied arena.
+
+The complete validator recognizes exactly two mutually exclusive
+structure-member profiles: legacy standalone Task-249S
+`0/4/0/0/0/4`, byte-for-byte unchanged, and Task-249PI
+`1/3/0/0/0/2`. Any mixed application/member shape outside these profiles,
+including a Task-249R return or Task-249M RHS, fails closed. Empty-member
+legacy Task-249 application handoffs remain valid and byte-identical.
+
+### Debug fingerprint and ownership
+
+The existing `source-type-application-debug-v1` grammar and ordering are
+unchanged. A Task-249PI fingerprint emits the version line, module line,
+application 0, member rows 0/1, then expressions 0/1/2. In the template below,
+`<module-path>` is the exact `ModuleId.path`, `<resolver-fqn>` is the complete
+FQN stored in the already authenticated resolver `SymbolId`, and each
+angle-bracketed node choice takes its means or equals value consistently. The
+concrete substitution of every placeholder is the complete fingerprint, with
+exactly one LF after its final expression line and no extra blank line:
+
+```text
+source-type-application-debug-v1
+module: <module-path>
+application#0 binding=0 ordinal=0 root=0
+structure-member#0 ordinal=0 member_range=45..66 member_site=node#<56-or-38> root=1
+structure-member#1 ordinal=1 member_range=71..94 member_site=node#<59-or-41> root=2
+expression#0 form=bare range=130..144 site=node:<63-or-45> head=symbol:<resolver-fqn>:contribution:0 head_range=130..144 head_site=node:<64-or-46> recovery=normal spelling="Task264Carrier" head_spelling="Task264Carrier"
+expression#1 form=bare range=62..65 site=node:<55-or-37> head=builtin:set head_range=62..65 head_site=node:<54-or-36> recovery=normal spelling="set" head_spelling="set"
+expression#2 form=bare range=90..93 site=node:<58-or-40> head=builtin:set head_range=90..93 head_site=node:<57-or-39> recovery=normal spelling="set" head_spelling="set"
+```
+
+`TypedAst` remains the sole owner through its existing optional `source_type`
+field and one-shot installation. Installation revalidates the complete
+profile and arena identities. `ResolvedTypedAst` only clone-preserves the same
+handoff and exact fingerprint. Task 249PI adds no field or installer to either
+type. Task 264 will consume the complete fingerprint and member ID 1; it may
+not supply fingerprint text or infer lower rows.
+
+### Tests, count/hash impact, and exit
+
+Implementation changes only `crates/mizar-checker/src/source_type.rs` plus
+synchronized derived design records and adds exactly four checker tests:
+
+1. `task_249pi_exact_means_and_equals_extensions_and_debug`;
+2. `task_249pi_base_and_member_corruption_fail_atomically`;
+3. `task_249pi_arena_and_installation_drift_fail_closed`; and
+4. `task_249pi_typed_final_replay_and_sibling_isolation`.
+
+They own both exact profiles/fingerprints and legacy Task-249S bytes; every
+base/row/range/site/shape/precedence and one-shot failure; arena plus
+installation drift; deterministic replay, Typed/final clone ownership, and
+Task-249R/249M/249S/259 isolation. Checker library count projects `469 ->
+473`; runner/resolver/syntax stay `528/148/59`. There is no runner production,
+fixture, sidecar, expectation, trace row/backlink/status/count, metadata,
+diagnostic, CLI, or executable coverage delta.
+
+The docs prerequisite exits after synchronized EN/JA records, repeated
+review-only **NO FINDINGS**, all nine hard gates PASS without score cap at
+90/100 or better, exact docs-only staging/commit, clean fresh inventory,
+report-only origin divergence, and protected-stash invariance. The separate
+implementation exits only after the exact four tests, reviews, focused/full
+verification and count/hash gates, one-file task-only staging, a dedicated
+commit, clean fresh inventory, and automatic return to Task 264.
+
+## Task 249PI Documentation-Prerequisite Verification
+
+Repeated specification and boundary/source-documentation reviews report **NO
+FINDINGS** after correcting the resolver-FQN/debug template and closing stale
+Task-264 checklist state. Independent final quality reports **NO FINDINGS**;
+all nine hard gates PASS with no score cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). The delta is exactly 32 synchronized design files
+and has zero canonical spec, production, test, fixture, sidecar, expectation,
+trace, Cargo, or metadata change.
+
+Focused parser/resolver/Profile-C checker tests pass `1/2/2`; checker/runner
+lint policies pass `15/14`; metadata passes `137/137`; `cargo fmt --all
+--check`, warnings-denied all-target/all-feature Clippy, full workspace tests,
+Cargo metadata, all five CLIs, and `git diff --check` pass. The CLIs reproduce
+cases/requirements `426/394`, pass/fail `233/193`, active
+parse/declaration/type/proof `101/7/203/1`, type coverage `258=246+12`, and
+warnings/errors `23/0`.
+
+Checker/runner/resolver/syntax lists remain `469/528/148/59`; their exact
+raw/normalized hashes remain respectively
+`3e7712bb86277f45d8883e949cf9f59d9b20176693c4f224751184728b92ddc7` /
+`2fdb8681cad17eeee4640433aaa0f54428fc83f9941cd62862652a9aebb859b4`,
+`b8128fc8f77a50aebba6dfb75488cb838ccc84c8a3f9bd71f046304cd607784e` /
+`5887a3aaf1818b44fba6d46d49b7275997928c4ce2587a6cc47343eee3a35456`,
+`c99d9d179cf14ab9ccd274b11d0404bdc47a64d23a2aa914c69ba674d01a3fee` /
+`1c76831124b1e680d708fd30ddfa7a96959aa82d20c840594dbb108dcd063490`,
+and `512775259a51121a0c12ab9fbf0d1083273d3d140362d889cdd9e22184215da6` /
+`c11a29c90fee3fe81d839f80f196dcd405cc43c7da86e83f37dc123042066540`.
+
+Checker production remains `28/158478`, path/content
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
+`19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`;
+runner production remains `35/67939`, path/content
+`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
+`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
+Trace remains
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`;
+all Task-48 and mixed-gap source/sidecar hashes remain the exact prior values.
+Exact staging, commit, and post-commit fresh inventory remain parent-owned.

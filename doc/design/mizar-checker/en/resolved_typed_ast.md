@@ -1763,3 +1763,13 @@ or mismatched fingerprint fail as
 Final assembly clone-preserves transport only. It adds no expression metadata,
 checked formula, fact, proof, diagnostic, acceptance, property value, or IR/VC
 row. The docs prerequisite and Task 249PI add no final Task-264 owner.
+
+## Task 249PI Final Ownership Boundary
+
+Task 249PI adds no `ResolvedTypedAst` field, constructor input, getter, or
+serializer. The existing `source_type` handoff is clone-preserved once, with
+its complete `source-type-application-debug-v1` fingerprint and exact
+`1/3/0/0/0/2` profile. Final installation rejects lower drift through the
+existing Typed source-type validation. Property identity, return association,
+initial obligations, diagnostics, facts, proof, acceptance, and Task-259 data
+remain absent until their separately frozen owners.

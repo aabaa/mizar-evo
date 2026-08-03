@@ -2223,6 +2223,14 @@ requirements/casesは`394/426`、type requirementsは`258 = 246 covered + 12 def
 trace SHA-256は
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`のまま。
 
+## Checker Task 249PI zero-credit trace boundary
+
+Task249PIはchecker-local lower transport repair。requirement/backlink/fixture/sidecar/
+expectation/status/diagnostic/executable coverage creditを追加しない。cases/requirementsは
+`426/394`、type coverageは`258 = 246 covered + 12 deferred`、trace hashは
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`。
+future Task264 pair/reciprocal covered rowはfrozenだがprerequisite後までabsent。
+
 ## Checker Task 264 frozen trace intent
 
 Implementation時だけrequired covered row
