@@ -7,8 +7,9 @@ Status: task R-027 audit complete; task R-029 refactor scope re-run complete;
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; Task 265 R-031 ownership addendum and R-031 implementation
 complete; R-032A implemented; R-032B committed at
-`b3a7e79a6b60db2974e911c69bb56ff5f4609064`; Checker Task 258B5C is the
-current pre-commit task.
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`; Checker Task 258B5C is a
+historical completed task committed as
+`33ac57e96f048dc40559565f54369cac854409a7`.
 
 ## Scope
 
@@ -65,7 +66,7 @@ or expectation sidecars to match implementation behavior.
   production normal-source `SurfaceAst` collection did not create proof-step
   `LabelProjection` and simple unqualified `LabelReferenceCandidate` inputs.
   The `LabelResolver` prefix behavior itself was correct, and committed
-  R-032A/R-032B own the lower repair. Current B5C closes its two confinement
+  R-032A/R-032B own the lower repair. Historical B5C closes its two confinement
   negatives; the rest of R-G007 and the Low deferred R-G001 public diagnostic
   adoption remain open.
 
@@ -137,7 +138,7 @@ after R-024 are:
 | R-G002 | `test_gap` | Historical lack of semantic resolver corpus coverage beyond lexical/parser import/export syntax. | Partially closed by R-023's active declaration-symbol smoke/fail fixtures, the post-task-20 R-G007 parser-backed signature-conflict active seed, and exact SymbolEnv-derived pass payload assertions. The remaining concrete corpus assertion work is refined by R-G007 and remains non-blocking for R-027 because unit tests cover the implemented behavior. |
 | R-G003 | resolved by R-024 | Consume dependency modules from canonical `ModuleSummary` artifacts. | Completed in resolver as canonical `mizar-artifact` summary consumption without resolver-owned artifact schemas, shims, writers, hash framing, or source loading. |
 | R-G006 | `external_dependency_gap` | Module-level scheme/template declaration shell once parser/syntax exposes an owning source role. | Non-blocking for represented source roles. Current resolver preserves direct template roles in owning signature payloads and does not fabricate scheme/template module symbols. |
-| R-G007 | `test_gap` | Concrete remainder of R-G002 after the active signature-conflict/pass-payload increments and B5C's two active confinement negatives: broader semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and other label-reference facts from tasks R-009 to R-019. | R-032A/R-032B are complete. Current B5C adds only the inner-to-outer and sibling confinement negatives through private `mizar-test`. Keep public codes empty and checker handoff narrow. |
+| R-G007 | `test_gap` | Concrete remainder of R-G002 after the active signature-conflict/pass-payload increments and B5C's two active confinement negatives: broader semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and other label-reference facts from tasks R-009 to R-019. | R-032A/R-032B are complete. Historical B5C adds only the inner-to-outer and sibling confinement negatives through private `mizar-test`. Keep public codes empty and checker handoff narrow. |
 | R-G008 | resolved by R-031 | Chapter 19 §19.1 requires ordinary declarations with the same symbol kind, spelling, arity, and argument signature to conflict even when return signatures match. Pre-R-031 source skipped all-return-identical groups, the exact seed was deferred, and design lacked a distinct same-return class/detail key plus mixed-group priority. | Ordinary functor definitions are grouped by the exact resolver-syntactic key. Appended `SameSignatureDefinitionConflict` diagnostic/definition variants cover all-return-identical groups; existing `SameSignatureReturnConflict` wins for mixed/different-return groups. Exact unit/near-miss/order/recovery/snapshot tests and the active declaration-symbol sidecar cover the new key while preserving first shell/range, all candidate identities/order, the byte-identical different-return sidecar, and checker-owned semantic equality/selection boundaries. |
 
 ## Implemented R-032A / R-032B Correspondence
@@ -156,7 +157,8 @@ following lower-only repair:
 
 R-032A is implemented as its separate lower-prerequisite logical task. The
 R-032B lint-policy correction and exact three-Rust-file implementation are
-committed; the active B5C consumer is the current pre-commit task. This
+committed; the historical B5C consumer subsequently committed as
+`33ac57e96f048dc40559565f54369cac854409a7`. This
 bounded post-exit implementation does not change the original
 milestone score.
 
@@ -208,7 +210,7 @@ findings and the initial High/Medium plus two fresh Medium test gaps are
 fixed. Preimplementation specification and final fresh test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Focused/crate/workspace and all count/hash/scope gates PASS. Exact consumers
-remain unit tests and the current private B5C route; checker unresolved-reference
+remain unit tests and the historical private B5C route; checker unresolved-reference
 handoff remains excluded. No fixture, expectation, sidecar, trace, active
 runner, public diagnostic, Cargo metadata, or coverage status changes.
 R-G007 stays open beyond the two active B5C confinement negatives.
@@ -221,7 +223,7 @@ invariant/fresh inventory are complete.
 
 ## Checker Task 258B5C source correspondence status
 
-The current B5C source privately consumes unchanged R-032A
+The historical B5C source privately consumed unchanged R-032A
 `SurfaceResolvedArena` and R-032B `ProofLabelSourceCollector` /
 `LabelResolver` APIs in `mizar-test`. The authority-derived corpus delta is
 exactly two fail fixtures, two expectation sidecars, and two covered trace
@@ -243,4 +245,25 @@ dot-chain, and other label-reference coverage remains open. Test,
 implementation, source/documentation reviews and all verification gates are
 complete. Independent final quality reports **NO FINDINGS**; all nine hard
 gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
-the dedicated B5C commit, and post-commit fresh inventory remain pending.
+dedicated B5C commit `33ac57e96f048dc40559565f54369cac854409a7`, and
+post-commit fresh inventory are complete at this historical checkpoint.
+
+## Checker Task 263R Source/Specification Correspondence
+
+Canonical Chapter 5 owns per-structure field/property identity. Its examples
+legitimately repeat `carrier` in different structure declarations and require
+inherited members to retain a root declaration plus a path/view. The exact
+320-byte Task-263 probe parses without diagnostics and produces 75 Surface
+nodes, ten shells, eight projections, and eight symbols, but current
+`symbols.rs` groups its four selectors by module namespace alone and emits two
+false duplicates. This is bounded `source_drift`; the matching design rule is
+`design_drift`, and the absent owner-sensitive regression is `test_gap`.
+
+The frozen repair derives only a nearest `StructureDefinition` owner for
+selector conflict classification. It does not resolve selector uses, validate
+inheritance, change public ids/signatures, or create checker/proof semantics.
+No existing fixture, sidecar, expectation, trace row/status/count, or active
+coverage changes in the documentation prerequisite or lower implementation.
+`spec_coverage_audit.md` records the corrected Chapter-5 lower owner but grants
+no corpus credit; Checker Task 263 remains the executable structure-intake
+owner after Task 263R commits.

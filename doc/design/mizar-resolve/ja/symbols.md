@@ -262,6 +262,29 @@ snapshot spellingはexact `same_signature_definition_conflict`である。
 alpha-equivalenceやsemantic type equivalenceではなく、overload rankingとwinner selectionは
 checker-ownedである。resolverはoverload candidateを選択、順位付け、書き換えしない。
 
+## Checker Task 263R frozen selector-owner conflict partition
+
+Chapter 5ではfield/propertyは特定structure内で宣言され、inherited memberはroot
+declarationとinheritance path/viewの両方を保持する。したがって異なるstructure
+declarationに属する同じselector spellingはmodule-level duplicateではない。同じ
+structure内ではfield/propertyがmember namespaceを共有するため同名は引き続き
+conflictする。
+
+Task 263Rはnon-overloadable `SymbolKind::Selector`のconflict partitionだけを変更する。
+keyは`(namespace, spelling, kind, nearest structure declaration owner)`であり、nearest
+ancestor shellの`StructureDefinition`をownerとする。そのancestorがないselectorは
+explicit missing-owner partitionを使い、従来の保守的name-level conflictを維持する。
+non-selector keyはexact `(namespace, spelling, kind)`のまま。redefinition、overload
+group、symbol id、definition、visibility、export、signature、contribution effect、
+diagnostic orderは変更しない。
+
+required evidenceはextractor-backed resolver 2 caseである。別structureがそれぞれ`field carrier`と
+`property marker`を宣言しても`DuplicateDeclaration`を出さない。同一structure内で
+field/propertyが同じspellingならexact canonical duplicate diagnostic 1件と両definition
+のconflict metadataを維持する。projection order mutationで結果は変わらない。本taskは
+type checking、inheritance validation、selector lookup、constructor generation、checker
+intake、proof semanticsを行わない。
+
 ## Visibility、Export、Summary、Lexical Contribution
 
 symbols phase は `DeclarationShellVisibility` が unspecified の場合、該当する言語仕様章の

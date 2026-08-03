@@ -614,7 +614,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       and the sole R-026 enum decision pass without changing labels, active
       artifacts, trace state, or coverage credit.
 
-32B. **Normal-source proof-label confinement projections.** [ ]
+32B. **Normal-source proof-label confinement projections.** [x]
     - After fresh inventory of R-032A, implement the exact
       `ProofLabelSourceCollector` / public non-exhaustive
       `ProofLabelSourceCollectionError` contract in `labels.md`.
@@ -644,14 +644,13 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       checker handoff and active artifacts remain excluded.
     - Deps: R-018/R-023, B5C docs, R-032A; authority Chapter 15 §15.10 and
       Chapter 16 §§16.4.2/16.5.1.
-    - In progress: the exact public collector/collection/error source and sole
+    - Completed: the exact public collector/collection/error source and sole
       R-026 decision are present. Every specification/test/implementation/
-      source-documentation finding is fixed, final fresh rereviews report
-      **NO FINDINGS**, and focused/full/count/hash/scope gates PASS. Only
-      task-only restaging/cached-diff review, commit, and post-commit/fresh
-      inventory remain pending; independent final quality reports **NO
-      FINDINGS**, all nine hard gates PASS, no cap, valid `100/100`
-      (`20/20/15/15/10/10/5/5`).
+      source-documentation review reports **NO FINDINGS**; focused/full/count/
+      hash/scope gates and all nine hard gates pass without a score cap at
+      valid `100/100` (`20/20/15/15/10/10/5/5`). Task-only staging, commit
+      `b3a7e79a6b60db2974e911c69bb56ff5f4609064`, and post-commit fresh
+      inventory are complete.
 
 ## Crate Close-Out
 
@@ -779,5 +778,29 @@ Check the task off here once tests pass.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete task-only cached-diff review, the dedicated B5C commit, and
-  post-commit fresh inventory.
+- [x] Complete task-only cached-diff review, dedicated B5C commit
+  `33ac57e96f048dc40559565f54369cac854409a7`, and post-commit fresh inventory.
+
+## Checker Task 263R Selector-Owner Prerequisite
+
+- [x] Fresh-inventory Task 263 authority, parser/resolver behavior, resolver
+  public/source boundaries, counts/hashes, origin delta, and protected stash.
+- [x] Classify cross-structure selector duplication as `source_drift`, the
+  name-level design rule as `design_drift`, missing regression coverage as
+  `test_gap`, and origin divergence as report-only `repo_metadata_conflict`.
+- [x] Freeze the exact 320-byte probe/hash and measured `75/10/8/8/2`
+  AST/shell/projection/symbol/diagnostic profile.
+- [x] Freeze selector-only nearest-structure ownership, conservative missing-
+  owner behavior, same-owner collisions, all non-selector exclusions, two
+  Rust owners/tests, unchanged public API, and exit criteria.
+- [x] Keep production/tests, fixtures, sidecars, expectations, trace status/
+  counts, CLIs, and Cargo metadata unchanged in this docs prerequisite.
+- [x] Complete repeated specification, test-sufficiency, and source/
+  documentation boundary reviews with **NO FINDINGS** and pass focused/full/
+  metadata/lint/format/Clippy/CLI/count/hash/scope gates.
+- [x] Complete findings-free final read-only quality with all nine hard gates
+  PASS, no score cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Complete exact staging and a dedicated docs commit with post-commit
+  fresh inventory.
+- [ ] Fresh-inventory and implement only Task 263R in a separate commit, then
+  return to Checker Task 263.

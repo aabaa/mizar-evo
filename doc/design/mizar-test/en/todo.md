@@ -3401,3 +3401,12 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete repeated reviews with **NO FINDINGS**, full verification, all
   nine hard gates at uncapped quality `100/100`, and exact Task-262 commit
   readiness; then fresh-inventory Task 263+ without broadening mixed semantics.
+
+## Checker Task 263 Preflight Resolver Gate
+
+- [x] Freeze the exact 320-byte future source as Chapter-5-derived test intent
+  without adding it to the corpus in the lower prerequisite.
+- [x] Preserve every runner route, fixture, sidecar, expectation, trace row/
+  status/count, active case, metadata assertion, and CLI hash in Task 263R.
+- [ ] After separate Task-263R docs/implementation commits, fresh-inventory and
+  freeze the Task-263 private consumer and corpus delta.

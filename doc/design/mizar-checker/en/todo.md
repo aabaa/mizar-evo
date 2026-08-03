@@ -6565,3 +6565,14 @@ implementation commit does not satisfy a producer task.
 - [x] Complete repeated final reviews with **NO FINDINGS**, all nine hard gates
   at uncapped quality `100/100`, and exact Task-262 commit readiness; then
   fresh-inventory Task 263+ without semantic spillover.
+
+## Checker Task 263 Preflight Lower Prerequisite
+
+- [x] Select the Chapter-5 structure/inheritance/constructor-definition intake
+  after fresh Task-262 post-commit inventory.
+- [x] Detect and classify false cross-structure selector duplicates as lower
+  resolver `source_drift`, with paired `design_drift` and `test_gap`.
+- [x] Freeze separate resolver Task 263R; change no checker source, corpus,
+  trace status/count, or structure semantics in its docs prerequisite.
+- [ ] Complete Task-263R docs and implementation as separate commits with
+  fresh inventory between them, then return to freeze Task 263.

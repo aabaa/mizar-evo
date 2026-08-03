@@ -346,9 +346,9 @@ metadata, historical exit status, or historical score changed in R-032B.
 active `.miz` mapping, traceability backlink/status/count, owner crate,
 deferred status, or coverage credit changes.
 
-## Checker Task 258B5C active post-exit status
+## Checker Task 258B5C historical active post-exit status
 
-The current B5C implementation privately consumes the unchanged R-032A
+The historical B5C implementation privately consumes the unchanged R-032A
 `SurfaceResolvedArena` and R-032B `ProofLabelSourceCollector` /
 `LabelResolver` APIs in `mizar-test`. It adds exactly two fail fixtures,
 two expectation sidecars, and two covered trace rows.
@@ -365,5 +365,5 @@ import, name, dot-chain, and other label-reference coverage. B5C test,
 implementation, source/documentation reviews and all verification gates are
 complete. Independent final quality reports **NO FINDINGS**; all nine hard
 gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
-the dedicated commit, and post-commit fresh inventory remain pending, so it
-is not recorded as committed here.
+dedicated commit `33ac57e96f048dc40559565f54369cac854409a7`, and post-commit
+fresh inventory are complete.

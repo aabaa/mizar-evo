@@ -7,8 +7,9 @@ Status: task R-028 audit complete; task R-029 and close-out scopes re-run
 complete; 2026-07-02 roadmap synchronization overlay complete; task R-024
 implementation overlay complete; R-032A implementation synchronization
 complete; the R-032B implementation is committed at
-`b3a7e79a6b60db2974e911c69bb56ff5f4609064`; active Checker Task 258B5C is
-the current pre-commit task.
+`b3a7e79a6b60db2974e911c69bb56ff5f4609064`; Checker Task 258B5C is a
+historical completed task committed as
+`33ac57e96f048dc40559565f54369cac854409a7`.
 
 ## Scope
 
@@ -107,9 +108,9 @@ rejected callback/unmapped contract.
 Post-close-out resolver updates should treat this audit as the baseline
 bilingual sync state. S-026 documentation and implementation are complete.
 The R-032A lint-policy docs correction and R-032A implementation are complete.
-The R-032B implementation and its dedicated commit are complete. The current
-dependency step is the active B5C consumer, with fresh inventory after its
-predecessor commit. Add future design files in both language
+The R-032B implementation and its dedicated commit are complete. Historical
+B5C also completed in `33ac57e96f048dc40559565f54369cac854409a7`; the current
+dependency step is Task 263R after fresh Task-263 preflight. Add future design files in both language
 directories in the same change. Behavior cleanup, public API changes, or new
 diagnostics remain outside the completed resolver milestone and require
 separate spec/test authority.
@@ -119,11 +120,12 @@ historically classified the same boundary defect and deferred R-032A source
 until the separate syntax commits. Those commits, the lint-policy correction,
 and R-032A implementation are now complete. Resolver ownership, validation
 precedence, and exclusions remain synchronized. R-032B source is committed.
-The current B5C consumer has completed its test, implementation,
+The historical B5C consumer completed its test, implementation,
 source/documentation reviews and all verification gates. Independent final
-quality reports **NO FINDINGS**; all nine hard gates PASS with no score cap at
-valid `100/100`. Task-only cached-diff review, the dedicated commit, and
-post-commit fresh inventory remain pending.
+quality reported **NO FINDINGS**; all nine hard gates passed with no score cap
+at valid `100/100`. Task-only cached-diff review, dedicated commit
+`33ac57e96f048dc40559565f54369cac854409a7`, and post-commit fresh inventory
+also completed.
 
 ## R-032A lint-policy scope correction
 
@@ -201,7 +203,8 @@ mapping, trace status/count, owner, deferral, or coverage credit changes.
 
 ## Checker Task 258B5C implementation synchronization
 
-EN and JA record the same current, not-yet-committed B5C implementation. It
+EN and JA record the same historical B5C implementation, committed as
+`33ac57e96f048dc40559565f54369cac854409a7`. It
 privately consumes the unchanged R-032A `SurfaceResolvedArena` and R-032B
 `ProofLabelSourceCollector` / `LabelResolver` APIs in `mizar-test`, adds
 exactly two fail fixtures with two sidecars and two covered trace rows, and
@@ -217,5 +220,17 @@ inner-to-outer and sibling confinement negatives; R-G007 remains open for
 import, name, dot-chain, and other label-reference coverage. Test,
 implementation, source/documentation reviews and all verification gates are
 complete. Independent final quality reports **NO FINDINGS**; all nine hard
-gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
-the dedicated B5C commit, and post-commit fresh inventory remain pending.
+gates PASS with no score cap at valid `100/100`. The task-only cached-diff
+review, dedicated B5C commit
+`33ac57e96f048dc40559565f54369cac854409a7`, and post-commit fresh inventory
+are complete at this historical checkpoint.
+
+## Checker Task 263R Frozen Synchronization
+
+EN and JA freeze the same Chapter-5 authority, 320-byte probe/hash,
+`75/10/8/8/2` measured profile, selector-only nearest-structure conflict key,
+missing-owner fallback, same-owner collision behavior, two-file implementation
+scope, two-test intent, semantic exclusions, unchanged executable counts, and
+two-commit docs/implementation sequence. Both classify the lower defect as
+`source_drift` plus `design_drift` and `test_gap`, and treat origin divergence
+as report-only `repo_metadata_conflict`.

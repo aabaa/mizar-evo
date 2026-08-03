@@ -575,7 +575,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       decision は、labels、active artifact、trace state、coverage credit を
       変更せず pass する。
 
-32B. **normal-source proof-label confinement projection。** [ ]
+32B. **normal-source proof-label confinement projection。** [x]
     - R-032A fresh inventory 後、`labels.md` の exact collector / public
       non-exhaustive error contract を実装する。
       exact `'a` impl とし AST/arena borrow だけを store、namespace/contribution
@@ -602,14 +602,13 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       commit。public checker handoff / active artifact は除外。
     - deps: R-018/R-023、B5C docs、R-032A。authority Chapter 15 §15.10 /
       Chapter 16 §§16.4.2/16.5.1。
-    - In progress: exact public collector/collection/error sourceとsole R-026
+    - 完了: exact public collector/collection/error sourceとsole R-026
       decisionは存在する。全specification/test/implementation/
-      source-documentation findingはfixed、final fresh rereviewは
-      **NO FINDINGS**、focused/full/count/hash/scope gateはPASS。pendingは
-      task-only restaging/cached-diff review、commit、post-commit/fresh
-      inventoryだけ。independent final qualityは**NO FINDINGS**、全9 hard
-      gates PASS、score capなし、valid `100/100`
-      （`20/20/15/15/10/10/5/5`）。
+      source-documentation reviewは**NO FINDINGS**、focused/full/count/hash/
+      scope gateと全9 hard gateはscore capなしvalid `100/100`
+      （`20/20/15/15/10/10/5/5`）でPASS。task-only staging、commit
+      `b3a7e79a6b60db2974e911c69bb56ff5f4609064`、post-commit fresh inventoryは
+      完了済み。
 
 ## crate close-out
 
@@ -735,5 +734,27 @@ cargo test -p mizar-vc
 - [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
   score capなし、valid `100/100`
   （`20/20/15/15/10/10/5/5`）で完了する。
-- [ ] task-only cached-diff review、dedicated B5C commit、post-commit
-  fresh inventoryを完了する。
+- [x] task-only cached-diff review、dedicated B5C commit
+  `33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryを完了。
+
+## Checker Task 263R selector-owner prerequisite
+
+- [x] Task 263 authority、parser/resolver behavior、resolver public/source
+  boundary、count/hash、origin delta、protected stashをfresh inventory。
+- [x] cross-structure selector duplicateを`source_drift`、name-level design
+  ruleを`design_drift`、missing regressionを`test_gap`、origin divergenceを
+  report-only `repo_metadata_conflict`と分類。
+- [x] exact 320-byte probe/hashと実測`75/10/8/8/2`
+  AST/shell/projection/symbol/diagnostic profileをfreeze。
+- [x] selector-only nearest-structure ownership、conservative missing-owner、
+  same-owner collision、全non-selector exclusion、two Rust owner/test、unchanged
+  public API、exit criteriaをfreeze。
+- [x] docs prerequisiteではproduction/test、fixture、sidecar、expectation、
+  trace status/count、CLI、Cargo metadataを不変にする。
+- [x] repeated specification、test-sufficiency、source/documentation boundary
+  reviewを**NO FINDINGS**とし、focused/full/metadata/lint/format/Clippy/CLI/
+  count/hash/scope gateをPASS。
+- [x] findings-free final read-only qualityを全9 hard gate PASS、score capなし、
+  valid `100/100`（`20/20/15/15/10/10/5/5`）で完了。
+- [ ] exact staging、dedicated docs commit、post-commit fresh inventoryを完了。
+- [ ] fresh inventory後Task 263Rだけを別commitで実装しChecker Task 263へ戻る。

@@ -3181,3 +3181,12 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   gateをscore capなしのquality `100/100`で通過してexact Task-262
   commit-readyとする。その後mixed-gap semanticsを広げずfresh-inventory
   Task 263+へ進む。
+
+## Checker Task 263 preflight resolver gate
+
+- [x] exact 320-byte future sourceをChapter-5-derived test intentとしてfreezeし、
+  lower prerequisiteではcorpusへ追加しない。
+- [x] Task 263Rで全runner route、fixture、sidecar、expectation、trace row/
+  status/count、active case、metadata assertion、CLI hashを不変にする。
+- [ ] separate Task-263R docs/implementation commit後、fresh inventoryして
+  Task-263 private consumer/corpus deltaをfreezeする。

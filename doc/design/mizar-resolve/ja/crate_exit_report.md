@@ -329,9 +329,9 @@ historical exit status、historical scoreはR-032Bで変更しなかった。
 backlink/status/count、owner crate、deferred status、coverage creditのいずれも
 変わらないためdeliberately unchanged。
 
-## Checker Task 258B5C active post-exit status
+## Checker Task 258B5C historical active post-exit status
 
-current B5C implementationはunchanged R-032A `SurfaceResolvedArena`とR-032B
+historical B5C implementationはunchanged R-032A `SurfaceResolvedArena`とR-032B
 `ProofLabelSourceCollector` / `LabelResolver` APIを`mizar-test`でprivateに
 consumeする。exact fail fixture 2件、expectation sidecar 2件、covered trace
 row 2件を追加し、`crates/mizar-test/tests/metadata.rs`のfrozen
@@ -346,6 +346,6 @@ inner-to-outer/sibling confinement negativeだけ。R-G007は
 import/name/dot-chain/other label-reference coverageについてopenのまま。
 B5Cのtest、implementation、source/documentation reviewと全verification
 gateは完了。independent final qualityは**NO FINDINGS**、全9 hard gates
-PASS、score capなし、valid `100/100`。task-only cached-diff review、
-dedicated commit、post-commit fresh inventoryがpendingのため、ここでは
-committedと記録しない。
+PASS、score capなし、valid `100/100`。task-only cached-diff review、dedicated
+commit `33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryは
+完了済み。

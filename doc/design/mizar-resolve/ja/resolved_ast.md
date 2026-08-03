@@ -492,9 +492,9 @@ correction commit、post-commit invariant、fresh-inventory gateは後にcomplet
 R-032B implementationは
 `b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済み。
 
-### Checker Task 258B5C consumer overlay
+### Checker Task 258B5C historical consumer overlay
 
-current B5Cはunchanged R-032A `SurfaceResolvedArena`とcommitted R-032B
+historical B5Cはunchanged R-032A `SurfaceResolvedArena`とcommitted R-032B
 `ProofLabelSourceCollector` / `LabelResolver` APIを`mizar-test`でprivateに
 consumeする。exact fail fixture 2件、sidecar 2件、covered trace row 2件を
 追加し、`crates/mizar-test/tests/metadata.rs`のfrozen active-count/CLI
@@ -509,5 +509,6 @@ negative 2件だけを閉じ、R-G007はimport/name/dot-chain/other
 label-reference coverageについてopenのまま。test、implementation、
 source/documentation reviewと全verification gateは完了し、independent
 final qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
-`100/100`。task-only cached-diff review、dedicated B5C commit、post-commit
-fresh inventoryがpending。
+`100/100`。task-only cached-diff review、dedicated B5C commit
+`33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryは
+完了済み。

@@ -12,7 +12,7 @@ collection だけで、production `SurfaceAst` proof-label declaration/reference
 lowering ではない。bounded R-032B normal-source
 proof-step/simple-unqualified collectorは
 `b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済み。Checker Task
-258B5C active confinement coverageがcurrent consumer。
+258B5C active confinement coverageはhistorical committed consumer。
 grouped shared-prefix container diagnostic と definition/registration label
 extraction は R-032 の外である。
 
@@ -504,9 +504,9 @@ handoff、diagnostic code、Cargo metadata、proof semanticsをR-032Bでは変�
 private B5C consumerとR-G007 deferralはfreezeどおりで、
 `spec_coverage_audit.md`はdeliberate no-opのまま。
 
-### Checker Task 258B5C active consumer status
+### Checker Task 258B5C historical active consumer status
 
-current B5C implementationはunchanged `SurfaceResolvedArena`、
+historical B5C implementationはunchanged `SurfaceResolvedArena`、
 `ProofLabelSourceCollector`、`LabelResolver` APIを`mizar-test`でprivateに
 consumeする。exact fail fixture 2件、sidecar 2件、covered trace row 2件を
 追加し、`crates/mizar-test/tests/metadata.rs`のfrozen active-count/CLI
@@ -521,5 +521,6 @@ inner-to-outer/sibling confinement negativeだけ。import/name/dot-chain/other
 label-reference coverageはopenのまま。B5Cのtest、implementation、
 source/documentation reviewと全verification gateは完了。independent final
 qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
-`100/100`。task-only cached-diff review、dedicated commit、post-commit
-fresh inventoryがpending。
+`100/100`。task-only cached-diff review、dedicated commit
+`33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryは
+完了済み。

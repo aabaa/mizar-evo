@@ -283,6 +283,34 @@ is not binder alpha-equivalence or semantic type equivalence, and overload
 ranking and winner selection remain checker-owned. The resolver does not
 select, rank, or rewrite overload candidates.
 
+## Checker Task 263R Frozen Selector-Owner Conflict Partition
+
+Chapter 5 declares fields and properties inside a particular structure and
+requires inherited members to retain both their root declaration and their
+inheritance path/view. Consequently, equal selector spellings in different
+structure declarations do not form a module-level duplicate. Equal spellings
+inside one structure still collide because fields and properties share that
+structure's member namespace.
+
+Task 263R changes only non-overloadable `SymbolKind::Selector` conflict
+partitioning. Its key is `(namespace, spelling, kind, nearest structure
+declaration owner)`. The nearest ancestor shell whose kind is
+`StructureDefinition` supplies the owner. A selector without such an ancestor
+uses an explicit missing-owner partition and retains the previous conservative
+name-level conflict behavior. All non-selector keys remain exactly
+`(namespace, spelling, kind)`; redefinitions, overload groups, symbol ids,
+definitions, visibility, exports, signatures, contribution effects, and
+diagnostic ordering are unchanged.
+
+The required evidence has two extractor-backed resolver cases. Separate structures may
+each declare `field carrier` and `property marker` without a
+`DuplicateDeclaration`. A field/property collision with the same spelling in
+one structure must still produce exactly one canonical duplicate diagnostic
+and conflict metadata on both definitions. Projection-order mutation must not
+change either result. This task performs no type checking, inheritance
+validation, selector lookup, constructor generation, checker intake, or proof
+semantics.
+
 ## Visibility, Exports, Summaries, And Lexical Contributions
 
 The symbols phase applies default visibility from the relevant language

@@ -12,7 +12,7 @@ diagnostics. R-023 added declaration-symbol corpus collection only; it did not
 add production `SurfaceAst` proof-label declaration/reference lowering. The
 bounded R-032B normal-source proof-step/simple-unqualified collector is
 committed at `b3a7e79a6b60db2974e911c69bb56ff5f4609064`; Checker Task
-258B5C active confinement coverage is the current consumer. Grouped
+258B5C active confinement coverage is a historical committed consumer. Grouped
 shared-prefix container diagnostics and definition/registration label
 extraction remain outside R-032.
 
@@ -596,9 +596,9 @@ handoff, diagnostic code, Cargo metadata, or proof semantics changed in
 R-032B. The private B5C consumer and R-G007 deferral remain exactly as frozen, and
 `spec_coverage_audit.md` remains a deliberate no-op.
 
-### Checker Task 258B5C active consumer status
+### Checker Task 258B5C historical active consumer status
 
-The current B5C implementation privately consumes the unchanged
+The historical B5C implementation privately consumes the unchanged
 `SurfaceResolvedArena`, `ProofLabelSourceCollector`, and `LabelResolver` APIs
 in `mizar-test`. It adds exactly two fail fixtures, their two sidecars, and
 two covered trace rows. `crates/mizar-test/tests/metadata.rs` updates four
@@ -613,5 +613,6 @@ and sibling confinement negatives close in R-G007; import, name, dot-chain,
 and other label-reference coverage remains open. B5C test, implementation,
 source/documentation reviews and all verification gates are complete.
 Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
-with no score cap at valid `100/100`. Task-only cached-diff review, the
-dedicated commit, and post-commit fresh inventory remain pending.
+with no score cap at valid `100/100`. Task-only cached-diff review, dedicated
+commit `33ac57e96f048dc40559565f54369cac854409a7`, and post-commit fresh
+inventory are complete.

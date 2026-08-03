@@ -7,7 +7,8 @@
 2026-07-02 roadmap synchronization overlay complete; task R-024 implementation
 overlay complete; R-032A implementation synchronization complete。R-032B
 implementationは`b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済みで、
-active Checker Task 258B5Cがcurrent pre-commit task。
+Checker Task 258B5Cも`33ac57e96f048dc40559565f54369cac854409a7`としてcommit済みの
+historical completed task。
 
 ## 範囲
 
@@ -99,9 +100,9 @@ rejected callback/unmapped contract は両言語に残さない。
 
 post-close-out の resolver update は、この監査を二言語同期状態の baseline として扱う。
 S-026 documentation/implementation、R-032A lint-policy docs correction、
-R-032A implementationとR-032B dedicated commitは完了済み。current
-dependency stepはactive B5Cで、predecessor commit後にfresh inventoryを
-挟んだ。将来 design fileを
+R-032A implementationとR-032B dedicated commitは完了済み。historical B5Cも
+`33ac57e96f048dc40559565f54369cac854409a7`で完了し、current dependency stepは
+fresh Task-263 preflight後のTask 263R。将来 design fileを
 追加する場合は両言語 directory に同時に追加する。挙動 cleanup、public API
 change、新しいdiagnosticsは完了済み resolver milestone の範囲外であり、
 独立した spec/test authority を要求する。
@@ -110,11 +111,11 @@ S-026/R-032A dependency overlay は EN/JA 同期済み。両言語はhistoricall
 同じboundary defectを分類し、separate syntax commitまでR-032A sourceを
 deferした。それらのcommit、lint-policy correction、R-032A implementationは
 完了済み。resolver ownership、validation precedence、exclusionは同期したままで、
-R-032B sourceはcommitted。current B5C consumerのtest、implementation、
+R-032B sourceはcommitted。historical B5C consumerのtest、implementation、
 source/documentation reviewと全verification gateは完了。independent final
 qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
-`100/100`。task-only cached-diff review、dedicated commit、post-commit
-fresh inventoryがpending。
+`100/100`。task-only cached-diff review、dedicated commit
+`33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryも完了。
 
 ## R-032A lint-policy scope correction
 
@@ -189,7 +190,8 @@ deferral、coverage creditが変わらないためdeliberate no-opのまま。
 
 ## Checker Task 258B5C implementation synchronization
 
-EN/JAは同じcurrent、未commitのB5C implementationを記録する。unchanged R-032A
+EN/JAは`33ac57e96f048dc40559565f54369cac854409a7`としてcommit済みの同じ
+historical B5C implementationを記録する。unchanged R-032A
 `SurfaceResolvedArena`とR-032B `ProofLabelSourceCollector` /
 `LabelResolver` APIを`mizar-test`でprivateにconsumeし、exact fail fixture
 2件、sidecar 2件、covered trace row 2件を追加する。
@@ -205,5 +207,15 @@ inner-to-outer/sibling confinement negativeだけで、R-G007は
 import/name/dot-chain/other label-reference coverageについてopenのまま。
 test、implementation、source/documentation reviewと全verification gateは
 完了。independent final qualityは**NO FINDINGS**、全9 hard gates PASS、
-score capなし、valid `100/100`。task-only cached-diff review、dedicated
-B5C commit、post-commit fresh inventoryがpending。
+score capなし、valid `100/100`。task-only cached-diff review、dedicated B5C
+commit `33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryは
+このhistorical checkpointで完了済み。
+
+## Checker Task 263R frozen synchronization
+
+EN/JAは同じChapter-5 authority、320-byte probe/hash、実測`75/10/8/8/2` profile、
+selector-only nearest-structure conflict key、missing-owner fallback、same-owner
+collision、two-file implementation scope、two-test intent、semantic exclusion、
+unchanged executable count、docs/implementation two-commit sequenceをfreezeする。
+両言語はlower defectを`source_drift` + `design_drift` + `test_gap`と分類し、origin
+divergenceをreport-only `repo_metadata_conflict`として扱う。

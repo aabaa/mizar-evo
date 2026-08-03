@@ -154,7 +154,7 @@ active artifact、semantic ownerを追加しない。
 
 collectorはR-032A arenaをconsumeし、label projection、reference candidate、
 scope/ordinal/completion、resolver provenance derivationだけを所有する。
-private `mizar-test` B5C routeがcurrent production consumerで、public
+historical private `mizar-test` B5C routeがproduction consumerで、public
 checker unresolved-reference handoffは除外されたまま。Medium third-childと
 unauthorized `Default` / `From` implementation findings、および全
 test-sufficiency findingはfixed。final fresh test-sufficiency、
@@ -166,7 +166,7 @@ commit、post-commit invariant/fresh inventoryはcomplete。
 
 ## Checker Task 258B5C boundary status
 
-current B5C source/test deltaはprivate `mizar-test` consumer、exact fail
+historical B5C source/test deltaはprivate `mizar-test` consumer、exact fail
 fixture 2件、sidecar 2件、covered trace row 2件、および
 `crates/mizar-test/tests/metadata.rs`のfrozen active-count/CLI assertion 4件
 （declaration stage `5`から`7`）だけ。unchanged
@@ -181,5 +181,16 @@ public codeは空のままで、private key
 import/name/dot-chain/other label-reference workはopenのまま。B5Cのtest、
 implementation、source/documentation reviewと全verification gateは完了し、
 independent final qualityは**NO FINDINGS**、全9 hard gates PASS、score
-capなし、valid `100/100`。task-only cached-diff review、dedicated commit、
-post-commit fresh inventoryがpending。
+capなし、valid `100/100`。task-only cached-diff review、dedicated commit
+`33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryは
+このhistorical checkpointで完了済み。
+
+## Checker Task 263R frozen boundary
+
+prerequisiteとlater repairはexisting `symbols` owner内に留まる。implementationが
+edit可能なのは`src/symbols.rs`とprivate `src/symbols/tests.rs`だけ。owner
+discriminatorはduplicate classificationだけが使うinternal declaration-shell identityで、
+`SymbolId`、`DefinitionShell`、`SignatureShell`、`SymbolEnv`、module summary、
+public APIへ追加しない。module split、dependency edge、resolver/checker ownership
+transfer、lint-policy decision、fixture、runner、Cargo変更は禁止。Task 263はdedicated
+lower commitとfresh inventory後だけcorrected resolver resultをconsumeする。

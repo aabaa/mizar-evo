@@ -6101,3 +6101,32 @@ decision, goal/guard/FOL composition, computation/proof/discharge, acceptance,
 facts/axioms, use-site application/redefinition, registration, IR, VC, mixed
 definition-family semantics, and Task-263 structure definitions remain
 deferred. No canonical specification or existing corpus artifact changed.
+
+## Checker Task 263R Frozen Resolver Prerequisite
+
+Fresh Task-263 preflight found a lower resolver defect before any checker or
+runner intake. The exact 320-byte Chapter-5-derived source has SHA-256
+`078eaee4b17341c9d8ebeb8a1f631ca984873bd07eb4e5d9c1a9486b39ac6671`.
+It parses with zero diagnostics and produces 75 Surface nodes, ten declaration
+shells, eight signature projections, and eight symbols, but the current
+module-level selector conflict partition emits two false
+`DuplicateDeclaration` diagnostics for the `carrier` and `marker` names
+repeated in distinct structures.
+
+Task 263R assigns this bounded lower correction to `mizar-resolve::symbols`.
+Only selector duplicate classification gains the nearest enclosing
+`StructureDefinition` shell identity; missing-owner selectors retain the
+conservative name-level partition, and all non-selector policy remains
+unchanged. This documentation prerequisite closes the recorded `design_drift`
+only; classified `source_drift` and the canonical-derived resolver `test_gap`
+remain open until the separate implementation commit. It invents no
+inheritance, constructor, checker, proof, discharge, fact, or VC semantics.
+
+The docs prerequisite and later lower implementation change no canonical
+specification, existing `.miz`, fixture, sidecar, expectation, trace row or
+status, active case, runner route, checker source, or executable coverage
+credit. Active metadata therefore remains `425/393`, `232/193`,
+`101/7/202/1`, type `257 = 245 covered + 12 deferred`, and warnings/errors
+`23/0`. Chapter 5 remains partial, and Checker Task 263 retains ownership of
+the future structure-definition consumer after Task 263R completes in its own
+documentation and implementation commits.

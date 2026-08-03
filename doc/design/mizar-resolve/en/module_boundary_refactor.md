@@ -163,7 +163,7 @@ syntax/checker/runner source, active artifact, or semantic owner.
 
 The collector consumes the R-032A arena and owns only label projection,
 reference candidate, scope/ordinal/completion, and resolver provenance
-derivation. The private `mizar-test` B5C route is its current production
+derivation. The historical private `mizar-test` B5C route was its production
 consumer; public checker unresolved-reference handoff remains excluded.
 The Medium third-child and unauthorized `Default` / `From` implementation
 findings and every test-sufficiency finding are fixed. Final fresh
@@ -176,7 +176,7 @@ inventory are complete.
 
 ## Checker Task 258B5C boundary status
 
-The current B5C source/test delta is limited to the private `mizar-test`
+The historical B5C source/test delta is limited to the private `mizar-test`
 consumer, exactly two fail fixtures, two sidecars, two covered trace rows,
 and four frozen active-count/CLI assertions in
 `crates/mizar-test/tests/metadata.rs` from declaration stage `5` to `7`. It
@@ -194,4 +194,17 @@ dot-chain, and other label-reference work remains open. B5C test,
 implementation, source/documentation reviews and all verification gates are
 complete. Independent final quality reports **NO FINDINGS**; all nine hard
 gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
-the dedicated commit, and post-commit fresh inventory remain pending.
+dedicated commit `33ac57e96f048dc40559565f54369cac854409a7`, and post-commit fresh inventory
+are complete at this historical checkpoint.
+
+## Checker Task 263R Frozen Boundary
+
+The prerequisite and later repair remain inside the existing `symbols` owner.
+Implementation may edit only `src/symbols.rs` and its private
+`src/symbols/tests.rs`. The owner discriminator is an internal declaration-
+shell identity used only by duplicate classification; it is not added to
+`SymbolId`, `DefinitionShell`, `SignatureShell`, `SymbolEnv`, module summaries,
+or public APIs. No module split, dependency edge, resolver/checker ownership
+transfer, lint-policy decision, fixture, runner, or Cargo change is authorized.
+Task 263 consumes the corrected resolver result only after a dedicated lower
+commit and fresh inventory.

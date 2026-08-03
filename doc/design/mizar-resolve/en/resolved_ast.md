@@ -512,9 +512,9 @@ post-commit invariant, and fresh-inventory gates subsequently completed.
 R-032B implementation is committed at
 `b3a7e79a6b60db2974e911c69bb56ff5f4609064`.
 
-### Checker Task 258B5C consumer overlay
+### Checker Task 258B5C historical consumer overlay
 
-Current B5C privately consumes the unchanged R-032A
+Historical B5C privately consumes the unchanged R-032A
 `SurfaceResolvedArena` and committed R-032B
 `ProofLabelSourceCollector` / `LabelResolver` APIs in `mizar-test`. It adds
 exactly two fail fixtures, two sidecars, two covered trace rows, and updates
@@ -530,5 +530,6 @@ confinement negatives; R-G007 stays open for import, name, dot-chain, and
 other label-reference coverage. Test, implementation, source/documentation
 reviews and all verification gates are complete; the independent
 final quality reports **NO FINDINGS**; all nine hard gates PASS with no score
-cap at valid `100/100`. Task-only cached-diff review, the dedicated B5C
-commit, and post-commit fresh inventory remain pending.
+cap at valid `100/100`. Task-only cached-diff review, dedicated B5C commit
+`33ac57e96f048dc40559565f54369cac854409a7`, and post-commit fresh inventory
+are complete.

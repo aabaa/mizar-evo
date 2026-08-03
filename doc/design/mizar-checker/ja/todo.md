@@ -6264,3 +6264,14 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] repeated final reviewを**NO FINDINGS**で完了し、全9 hard gateをscore cap
   なしのquality `100/100`で通過してexact Task-262 commit-readyとする。その後、
   semantic spilloverなしにfresh-inventory Task 263+へ進む。
+
+## Checker Task 263 preflight lower prerequisite
+
+- [x] fresh Task-262 post-commit inventory後、Chapter-5 structure/inheritance/
+  constructor-definition intakeを選択。
+- [x] false cross-structure selector duplicateをlower resolver
+  `source_drift`、paired `design_drift`/`test_gap`と分類。
+- [x] separate resolver Task 263Rをfreezeし、そのdocs prerequisiteではchecker
+  source、corpus、trace status/count、structure semanticsを変更しない。
+- [ ] Task-263R docs/implementationをfresh inventory付きseparate commitで完了し、
+  Task 263 freezeへ戻る。

@@ -8,7 +8,8 @@
 overlay complete; Task 265 R-031 ownership addendumとR-031 implementationはcomplete。
 R-032Aは実装済み。R-032Bは
 `b3a7e79a6b60db2974e911c69bb56ff5f4609064`でcommit済みで、Checker Task
-258B5Cがcurrent pre-commit task。
+258B5Cも`33ac57e96f048dc40559565f54369cac854409a7`としてcommit済みの
+historical completed task。
 
 ## 範囲
 
@@ -63,7 +64,7 @@ source loading は追加しない。
   pre-R-032B production normal-source `SurfaceAst` collector は proof-step
   `LabelProjection` / simple unqualified `LabelReferenceCandidate` input を
   生成しなかった。`LabelResolver` prefix behavior 自体は正しく、committed
-  R-032A/R-032Bがlower repairを所有する。current B5Cはconfinement negative
+  R-032A/R-032Bがlower repairを所有する。historical B5Cはconfinement negative
   2件を閉じ、R-G007の残りとLow deferred R-G001 public diagnostic adoptionは
   openのまま。
 
@@ -134,7 +135,7 @@ source loading は追加しない。
 | R-G002 | `test_gap` | lexical/parser の import/export syntax を超える semantic resolver corpus coverage が歴史的に不足していたこと。 | R-023 の active declaration-symbol smoke/fail fixture、post-task-20 R-G007 parser-backed signature-conflict active seed、exact SymbolEnv-derived pass payload assertion により部分的に解消済み。残る具体的な corpus assertion work は R-G007 が精緻化し、implemented behavior は unit tests が cover しているため R-027 には non-blocking。 |
 | R-G003 | R-024 で解消済み | canonical `ModuleSummary` artifact から dependency module を消費する経路。 | resolver-owned artifact schema、shim、writer、hash framing、source loading を追加せず、canonical な `mizar-artifact` summary consumption として完了済み。 |
 | R-G006 | `external_dependency_gap` | parser/syntax が owning source role を公開した後の module-level scheme/template declaration shell。 | represented source role については non-blocking。現 resolver は direct template role を owning signature payload に保持し、scheme/template module symbol を創作しない。 |
-| R-G007 | `test_gap` | active signature-conflict/pass-payload incrementとB5C confinement negative 2件の後に残るimport graph、namespace/name、dot-chain、other label-reference corpus gap。 | R-032A/R-032Bはcomplete。current B5Cはprivate `mizar-test`にinner-to-outer/sibling confinement negativeだけを追加し、public codeは空のまま。 |
+| R-G007 | `test_gap` | active signature-conflict/pass-payload incrementとB5C confinement negative 2件の後に残るimport graph、namespace/name、dot-chain、other label-reference corpus gap。 | R-032A/R-032Bはcomplete。historical B5Cはprivate `mizar-test`にinner-to-outer/sibling confinement negativeだけを追加し、public codeは空のまま。 |
 | R-G008 | R-031で解消 | Chapter 19 §19.1は同じsymbol kind、spelling、arity、argument signatureを持つordinary declarationがreturn signature一致時もconflictすることを要求する。pre-R-031 sourceはall-return-identical groupをskipし、exact seedはdeferredで、designにはdistinct same-return class/detail keyとmixed-group priorityがなかった。 | ordinary functor definitionをexact resolver-syntactic keyでgroup化する。appendした`SameSignatureDefinitionConflict` diagnostic/definition variantがall-return-identical groupをcoverし、mixed/different-return groupでは既存`SameSignatureReturnConflict`が優先する。exact unit/near-miss/order/recovery/snapshot testとactive declaration-symbol sidecarがnew keyをcoverし、first shell/range、全candidate identity/order、byte-identicalなdifferent-return sidecar、checker-owned semantic equality/selection boundaryを保存する。 |
 
 ## 実装済み R-032A / R-032B 対応
@@ -153,7 +154,8 @@ lower-only repair を authorize する。
 
 R-032Aはseparate lower-prerequisite logical taskとして実装済み。R-032B
 lint-policy correctionとexact three-Rust-file implementationはcommit済みで、
-active B5C consumerがcurrent pre-commit task。このbounded post-exit
+historical B5C consumerは後に`33ac57e96f048dc40559565f54369cac854409a7`として
+commitされた。このbounded post-exit
 implementationは元のmilestone scoreを変更しない。
 
 R-032A implementation preflightは旧two-Rust-file scopeをHigh
@@ -213,7 +215,7 @@ invariant/fresh inventoryはcomplete。independent final qualityは**NO FINDINGS
 
 ## Checker Task 258B5C source correspondence status
 
-current B5C sourceはunchanged R-032A `SurfaceResolvedArena`とR-032B
+historical B5C sourceはunchanged R-032A `SurfaceResolvedArena`とR-032B
 `ProofLabelSourceCollector` / `LabelResolver` APIを`mizar-test`でprivateに
 consumeする。authority-derived corpus deltaはexact fail fixture 2件、
 expectation sidecar 2件、covered trace row 2件。exact source/test consumerは
@@ -232,5 +234,24 @@ inner-to-outer/sibling confinement negativeだけ。import/name/dot-chain/other
 label-reference coverageはopenのまま。test、implementation、
 source/documentation reviewと全verification gateは完了し、independent
 final qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
-`100/100`。task-only cached-diff review、dedicated B5C commit、post-commit
-fresh inventoryがpending。
+`100/100`。task-only cached-diff review、dedicated B5C commit
+`33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryは
+このhistorical checkpointで完了済み。
+
+## Checker Task 263R source/specification correspondence
+
+canonical Chapter 5はper-structure field/property identityを所有する。exampleは
+異なるstructure declarationで`carrier`を正当に繰り返し、inherited memberへroot
+declarationとpath/viewの保持を要求する。exact 320-byte Task-263 probeはdiagnostic
+なしでparseし、Surface node 75、shell 10、projection 8、symbol 8を生成するが、
+current `symbols.rs`はselector 4件をmodule namespaceだけでgroup化してfalse
+duplicate 2件を出す。これはbounded `source_drift`、対応design ruleは
+`design_drift`、owner-sensitive regression欠落は`test_gap`。
+
+frozen repairはselector conflict classification用nearest `StructureDefinition`
+ownerだけを導出する。selector use resolution、inheritance validation、public id/
+signature変更、checker/proof semantics生成はしない。docs prerequisite/lower
+implementationのいずれも既存fixture、sidecar、expectation、trace row/status/count、
+active coverageを変更しない。`spec_coverage_audit.md`はcorrected Chapter-5 lower
+ownerを記録するがcorpus creditを与えず、Task 263R commit後のexecutable
+structure-intake ownerはChecker Task 263のまま。
