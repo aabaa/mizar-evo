@@ -5058,3 +5058,10 @@ standalone RHS lower handoff; the repository corpus, metadata test `137`, five
 CLI outputs, runner list `520`, fixture/sidecar/trace hashes, and mixed mode/
 structure gap remain byte-identical. The later Task-262 runner alone may build
 and fingerprint the `2/3/0/0/1` handoff from real source.
+
+## Checker Task 249M Active Harness No-Op
+
+The lower checker producer and four tests are implemented. This harness still
+adds no route or test: runner `520`, metadata test `137`, all corpus/sidecar/
+expectation/trace hashes, and all five CLI outputs remain at the frozen Task-
+261 baseline. Only Task 262 may add the real consumer.

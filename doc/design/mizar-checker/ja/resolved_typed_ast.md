@@ -1607,3 +1607,10 @@ rowをreconstructしない。
 source-type handoff内でrevalidated済みmode-RHS tableをclone-preserveするだけで、
 combined fingerprintはexactly once。resolver spellingからRHSをreconstructせず、
 inhabitation/expansion/sethood/acceptance/proof/fact semanticsを与えない。
+
+## Task 249M active clone boundary
+
+implemented mode-RHS tableはexisting typed-owned source-type handoff内に保持する。
+`ResolvedTypedAst`はfield/inputを追加せずvalidated `2/3/0/0/1`
+fingerprintをexactly once clone-preserveする。test 4件はfinal semantic result
+tableがemptyであることを確認する。

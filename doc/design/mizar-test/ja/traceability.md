@@ -2154,3 +2154,11 @@ row/backlink/status/metadata count/stage credit/runner routeを追加しない�
 metadataは`424/392`、`231/193`、`101/7/201/1`、type `256/244`、warnings/
 errors `23/0`。later Task 262だけが`source_mode_definition_payload`とsole pass
 backlinkをactivateできる。
+
+## Checker Task 249M active representation coverage
+
+lower representation seam/source-local checker test 4件はactiveとなり、record済み
+lower `source_drift`/`test_gap`をcloseした。executable language/corpus creditは
+付与せず、metadataは`424/392`、`231/193`、`101/7/201/1`、type
+`256/244`、warnings/errors `23/0`でtrace row/status不変。future pass backlinkは
+Task 262だけがownする。

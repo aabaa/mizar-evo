@@ -41,6 +41,7 @@ dense_id!(SourceTypeApplicationId);
 dense_id!(SourceTypeExpressionId);
 dense_id!(SourceTypeArgumentId);
 dense_id!(SourceTypeDefinitionReturnId);
+dense_id!(SourceTypeModeRhsId);
 
 /// Syntax-free inputs for one complete source type-expression transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,6 +65,23 @@ pub struct SourceTypeDefinitionReturnExtensionInput {
 /// One definition owner linked to its independently written return type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceTypeDefinitionReturnInput {
+    pub definition_site: TypedSiteRef,
+    pub definition_range: SourceRange,
+    pub source_ordinal: usize,
+    pub expression: SourceTypeExpressionInput,
+}
+
+/// Syntax-free extension input for one independently written mode RHS.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeModeRhsExtensionInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub rhs: Vec<SourceTypeModeRhsInput>,
+}
+
+/// One mode-definition owner linked to its independently written RHS type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeModeRhsInput {
     pub definition_site: TypedSiteRef,
     pub definition_range: SourceRange,
     pub source_ordinal: usize,
@@ -158,6 +176,7 @@ pub struct SourceTypeApplicationHandoff {
     expressions: SourceTypeExpressionTable,
     arguments: SourceTypeArgumentTable,
     definition_returns: SourceTypeDefinitionReturnTable,
+    mode_rhs: SourceTypeModeRhsTable,
 }
 
 impl SourceTypeApplicationHandoff {
@@ -183,6 +202,10 @@ impl SourceTypeApplicationHandoff {
 
     pub const fn definition_returns(&self) -> &SourceTypeDefinitionReturnTable {
         &self.definition_returns
+    }
+
+    pub const fn mode_rhs(&self) -> &SourceTypeModeRhsTable {
+        &self.mode_rhs
     }
 
     pub fn debug_text(&self) -> String {
@@ -211,6 +234,18 @@ impl SourceTypeApplicationHandoff {
             );
             write_definition_site(&mut output, &definition_return.definition_site);
             let _ = writeln!(output, " root={}", definition_return.root.index());
+        }
+        for (id, mode_rhs) in self.mode_rhs.iter() {
+            let _ = write!(
+                output,
+                "mode-rhs#{} ordinal={} definition_range={}..{} definition_site=",
+                id.index(),
+                mode_rhs.source_ordinal,
+                mode_rhs.definition_range.start,
+                mode_rhs.definition_range.end,
+            );
+            write_definition_site(&mut output, &mode_rhs.definition_site);
+            let _ = writeln!(output, " root={}", mode_rhs.root.index());
         }
         for (id, expression) in self.expressions.iter() {
             let _ = write!(
@@ -263,6 +298,7 @@ impl SourceTypeApplicationHandoff {
             return Err(SourceTypeError::EnvironmentMismatch);
         }
         validate_definition_return_extension(self, arena)?;
+        validate_mode_rhs_extension(self, arena)?;
         for (id, expression) in self.expressions.iter() {
             validate_arena_site(
                 id,
@@ -385,6 +421,60 @@ pub struct SourceTypeDefinitionReturn {
 
 impl SourceTypeDefinitionReturn {
     pub const fn id(&self) -> SourceTypeDefinitionReturnId {
+        self.id
+    }
+
+    pub const fn definition_site(&self) -> &TypedSiteRef {
+        &self.definition_site
+    }
+
+    pub const fn definition_range(&self) -> SourceRange {
+        self.definition_range
+    }
+
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+
+    pub const fn root(&self) -> SourceTypeExpressionId {
+        self.root
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SourceTypeModeRhsTable {
+    entries: Vec<SourceTypeModeRhs>,
+}
+
+impl SourceTypeModeRhsTable {
+    pub fn get(&self, id: SourceTypeModeRhsId) -> Option<&SourceTypeModeRhs> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (SourceTypeModeRhsId, &SourceTypeModeRhs)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeModeRhs {
+    id: SourceTypeModeRhsId,
+    definition_site: TypedSiteRef,
+    definition_range: SourceRange,
+    source_ordinal: usize,
+    root: SourceTypeExpressionId,
+}
+
+impl SourceTypeModeRhs {
+    pub const fn id(&self) -> SourceTypeModeRhsId {
         self.id
     }
 
@@ -605,7 +695,61 @@ impl SourceTypeProducer {
                     .collect(),
             },
             definition_returns: SourceTypeDefinitionReturnTable::default(),
+            mode_rhs: SourceTypeModeRhsTable::default(),
         })
+    }
+}
+
+/// Extends one exact Task-262 lower base with its standalone mode RHS without
+/// fabricating a binding-linked application.
+pub struct SourceTypeModeRhsProducer;
+
+impl SourceTypeModeRhsProducer {
+    pub fn extend(
+        base: &SourceTypeApplicationHandoff,
+        input: SourceTypeModeRhsExtensionInput,
+        arena: &TypedArena,
+    ) -> Result<SourceTypeApplicationHandoff, SourceTypeError> {
+        if !base.mode_rhs.is_empty() {
+            return Err(SourceTypeError::ModeRhsAlreadyPresent);
+        }
+        if input.rhs.is_empty() {
+            return Err(SourceTypeError::EmptyModeRhs);
+        }
+        if input.rhs.len() != 1 {
+            return Err(SourceTypeError::ModeRhsCardinalityMismatch);
+        }
+        if input.source_id != base.source_id || input.module_id != base.module_id {
+            return Err(SourceTypeError::EnvironmentMismatch);
+        }
+        validate_mode_rhs_base(base, arena)?;
+
+        let mut handoff = base.clone();
+        let input = input.rhs.into_iter().next().expect("cardinality checked");
+        let root = SourceTypeExpressionId::new(handoff.expressions.entries.len());
+        handoff.mode_rhs.entries.push(SourceTypeModeRhs {
+            id: SourceTypeModeRhsId::new(0),
+            definition_site: input.definition_site,
+            definition_range: input.definition_range,
+            source_ordinal: input.source_ordinal,
+            root,
+        });
+        handoff.expressions.entries.push(SourceTypeExpression {
+            id: root,
+            source_id: input.expression.source_id,
+            module_id: input.expression.module_id,
+            site: input.expression.site,
+            source_range: input.expression.source_range,
+            spelling: input.expression.spelling,
+            head_site: input.expression.head_site,
+            head_range: input.expression.head_range,
+            head_spelling: input.expression.head_spelling,
+            form: input.expression.form,
+            head: input.expression.head,
+            recovery: input.expression.recovery,
+        });
+        validate_mode_rhs_extension(&handoff, arena)?;
+        Ok(handoff)
     }
 }
 
@@ -756,6 +900,19 @@ pub enum SourceTypeError {
     },
     OverlappingDefinitionReturns {
         definition_return: SourceTypeDefinitionReturnId,
+    },
+    EmptyModeRhs,
+    ModeRhsCardinalityMismatch,
+    ModeRhsAlreadyPresent,
+    InvalidModeRhsBase,
+    InvalidModeRhs {
+        mode_rhs: SourceTypeModeRhsId,
+    },
+    InvalidModeRhsSite {
+        mode_rhs: SourceTypeModeRhsId,
+    },
+    UnsupportedModeRhs {
+        mode_rhs: SourceTypeModeRhsId,
     },
 }
 
@@ -911,6 +1068,29 @@ impl fmt::Display for SourceTypeError {
                 "source type definition return {} overlaps its predecessor",
                 definition_return.index()
             ),
+            Self::EmptyModeRhs => formatter.write_str("source type mode RHS input is empty"),
+            Self::ModeRhsCardinalityMismatch => {
+                formatter.write_str("source type mode RHS cardinality is not the frozen singleton")
+            }
+            Self::ModeRhsAlreadyPresent => {
+                formatter.write_str("source type mode RHS is already installed")
+            }
+            Self::InvalidModeRhsBase => formatter.write_str("source type mode RHS base is invalid"),
+            Self::InvalidModeRhs { mode_rhs } => write!(
+                formatter,
+                "source type mode RHS {} is invalid",
+                mode_rhs.index()
+            ),
+            Self::InvalidModeRhsSite { mode_rhs } => write!(
+                formatter,
+                "source type mode RHS {} has an invalid typed site",
+                mode_rhs.index()
+            ),
+            Self::UnsupportedModeRhs { mode_rhs } => write!(
+                formatter,
+                "source type mode RHS {} has an unsupported expression",
+                mode_rhs.index()
+            ),
         }
     }
 }
@@ -921,12 +1101,17 @@ const TASK_249R_BASE_EXPRESSIONS: [(usize, usize, usize, usize); 2] =
     [(63, 62, 22, 25), (67, 66, 38, 41)];
 const TASK_249R_DEFINITION_RETURNS: [(usize, usize, usize, usize, usize, usize); 2] =
     [(84, 61, 118, 80, 79, 105), (95, 121, 179, 87, 86, 163)];
+const TASK_249M_BASE_EXPRESSIONS: [(usize, usize, usize, usize); 2] =
+    [(35, 34, 22, 25), (39, 38, 38, 41)];
+const TASK_249M_MODE_RHS: (usize, usize, usize, usize, usize, usize, usize) =
+    (49, 45, 135, 44, 43, 95, 98);
 
 fn validate_definition_return_base(
     base: &SourceTypeApplicationHandoff,
     arena: &TypedArena,
 ) -> Result<(), SourceTypeError> {
     if !base.definition_returns.is_empty()
+        || !base.mode_rhs.is_empty()
         || base.expressions.len() != 2
         || !task_249r_base_shape_matches(base)
         || base
@@ -985,6 +1170,9 @@ fn validate_definition_return_extension(
 ) -> Result<(), SourceTypeError> {
     if handoff.definition_returns.is_empty() {
         return Ok(());
+    }
+    if !handoff.mode_rhs.is_empty() {
+        return Err(SourceTypeError::InvalidDefinitionReturnBase);
     }
     if handoff.definition_returns.len() != 2 || handoff.expressions.len() != 4 {
         return Err(SourceTypeError::DefinitionReturnCardinalityMismatch);
@@ -1137,6 +1325,183 @@ fn is_node_site(site: &TypedSiteRef, expected: usize) -> bool {
 }
 
 fn task_249r_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
+    SourceRange {
+        source_id,
+        start,
+        end,
+    }
+}
+
+fn validate_mode_rhs_base(
+    base: &SourceTypeApplicationHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceTypeError> {
+    if !base.mode_rhs.is_empty()
+        || !base.definition_returns.is_empty()
+        || base.expressions.len() != 2
+        || !task_249m_base_shape_matches(base)
+        || base
+            .validate_installation(base.source_id, &base.module_id, arena)
+            .is_err()
+    {
+        return Err(SourceTypeError::InvalidModeRhsBase);
+    }
+    Ok(())
+}
+
+fn task_249m_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool {
+    if handoff.applications.len() != 2
+        || handoff.expressions.len() < 2
+        || !handoff.arguments.is_empty()
+        || !handoff.definition_returns.is_empty()
+    {
+        return false;
+    }
+    for (index, (site, head_site, start, end)) in TASK_249M_BASE_EXPRESSIONS.into_iter().enumerate()
+    {
+        let Some(application) = handoff
+            .applications
+            .get(SourceTypeApplicationId::new(index))
+        else {
+            return false;
+        };
+        let Some(expression) = handoff.expressions.get(SourceTypeExpressionId::new(index)) else {
+            return false;
+        };
+        if application.id != SourceTypeApplicationId::new(index)
+            || application.binding != BindingId::new(index)
+            || application.source_ordinal != index
+            || application.root != SourceTypeExpressionId::new(index)
+            || expression.id != SourceTypeExpressionId::new(index)
+            || expression.source_id != handoff.source_id
+            || expression.module_id != handoff.module_id
+            || expression.source_range != task_249m_range(handoff.source_id, start, end)
+            || !is_node_site(&expression.site, site)
+            || expression.spelling != "set"
+            || !is_node_site(&expression.head_site, head_site)
+            || expression.head_range != task_249m_range(handoff.source_id, start, end)
+            || expression.head_spelling != "set"
+            || expression.form != SourceTypeApplicationForm::Bare
+            || !matches!(expression.head, SourceTypeHead::BuiltinSet)
+            || expression.recovery != NodeRecoveryState::Normal
+        {
+            return false;
+        }
+    }
+    true
+}
+
+fn validate_mode_rhs_extension(
+    handoff: &SourceTypeApplicationHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceTypeError> {
+    if handoff.mode_rhs.is_empty() {
+        return Ok(());
+    }
+    if handoff.mode_rhs.len() != 1 || handoff.expressions.len() != 3 {
+        return Err(SourceTypeError::ModeRhsCardinalityMismatch);
+    }
+    if !handoff.definition_returns.is_empty() || !task_249m_base_shape_matches(handoff) {
+        return Err(SourceTypeError::InvalidModeRhsBase);
+    }
+
+    let id = SourceTypeModeRhsId::new(0);
+    let Some(mode_rhs) = handoff.mode_rhs.get(id) else {
+        return Err(SourceTypeError::InvalidModeRhs { mode_rhs: id });
+    };
+    let expected_root = SourceTypeExpressionId::new(2);
+    let Some(expression) = handoff.expressions.get(expected_root) else {
+        return Err(SourceTypeError::InvalidModeRhs { mode_rhs: id });
+    };
+    let (definition_node, definition_start, definition_end, site, head_site, start, end) =
+        TASK_249M_MODE_RHS;
+    if mode_rhs.id != id
+        || mode_rhs.source_ordinal != 0
+        || mode_rhs.root != expected_root
+        || mode_rhs.definition_range
+            != task_249m_range(handoff.source_id, definition_start, definition_end)
+        || !valid_range(handoff.source_id, mode_rhs.definition_range)
+        || !range_contains(mode_rhs.definition_range, expression.source_range)
+        || expression.id != expected_root
+        || expression.source_id != handoff.source_id
+        || expression.module_id != handoff.module_id
+        || expression.source_range != task_249m_range(handoff.source_id, start, end)
+        || expression.head_range != task_249m_range(handoff.source_id, start, end)
+    {
+        return Err(SourceTypeError::InvalidModeRhs { mode_rhs: id });
+    }
+
+    let mut sites = BTreeSet::new();
+    for index in 0..2 {
+        let base = handoff
+            .expressions
+            .get(SourceTypeExpressionId::new(index))
+            .expect("Task 249M base shape checked");
+        sites.insert(base.site.clone());
+        sites.insert(base.head_site.clone());
+    }
+    if !is_node_site(&mode_rhs.definition_site, definition_node)
+        || !sites.insert(mode_rhs.definition_site.clone())
+        || !is_node_site(&expression.site, site)
+        || !is_node_site(&expression.head_site, head_site)
+        || !sites.insert(expression.site.clone())
+        || !sites.insert(expression.head_site.clone())
+    {
+        return Err(SourceTypeError::InvalidModeRhsSite { mode_rhs: id });
+    }
+    validate_mode_rhs_owner_site(
+        id,
+        &mode_rhs.definition_site,
+        mode_rhs.definition_range,
+        arena,
+    )?;
+    validate_arena_site(
+        expected_root,
+        &expression.site,
+        expression.source_range,
+        NodeRecoveryState::Normal,
+        arena,
+    )
+    .map_err(|_| SourceTypeError::InvalidModeRhsSite { mode_rhs: id })?;
+    validate_arena_site(
+        expected_root,
+        &expression.head_site,
+        expression.head_range,
+        NodeRecoveryState::Normal,
+        arena,
+    )
+    .map_err(|_| SourceTypeError::InvalidModeRhsSite { mode_rhs: id })?;
+
+    if expression.form != SourceTypeApplicationForm::Bare
+        || !matches!(expression.head, SourceTypeHead::BuiltinSet)
+        || expression.spelling != "set"
+        || expression.head_spelling != "set"
+        || expression.recovery != NodeRecoveryState::Normal
+    {
+        return Err(SourceTypeError::UnsupportedModeRhs { mode_rhs: id });
+    }
+    Ok(())
+}
+
+fn validate_mode_rhs_owner_site(
+    mode_rhs: SourceTypeModeRhsId,
+    site: &TypedSiteRef,
+    range: SourceRange,
+    arena: &TypedArena,
+) -> Result<(), SourceTypeError> {
+    let TypedSiteRef::Node(node_id) = site else {
+        return Err(SourceTypeError::InvalidModeRhsSite { mode_rhs });
+    };
+    let Some(node) = arena.node(*node_id) else {
+        return Err(SourceTypeError::InvalidModeRhsSite { mode_rhs });
+    };
+    if node.recovery != NodeRecoveryState::Normal || source_range(&node.anchor) != Some(range) {
+        return Err(SourceTypeError::InvalidModeRhsSite { mode_rhs });
+    }
+    Ok(())
+}
+
+fn task_249m_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,
         start,
@@ -1946,6 +2311,15 @@ mod tests {
         extension: SourceTypeDefinitionReturnExtensionInput,
     }
 
+    #[derive(Clone)]
+    struct Task249MFixture {
+        source: SourceId,
+        module: ModuleId,
+        base: SourceTypeApplicationHandoff,
+        arena: TypedArena,
+        extension: SourceTypeModeRhsExtensionInput,
+    }
+
     fn source_id() -> SourceId {
         source_id_for("a7")
     }
@@ -2321,6 +2695,58 @@ mod tests {
         }
     }
 
+    fn task_249m_fixture() -> Task249MFixture {
+        let source = source_id_for("d0");
+        let module = module("task249m.mode_definition");
+        let input = SourceTypeHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            applications: vec![
+                SourceTypeApplicationInput {
+                    binding: BindingId::new(0),
+                    source_ordinal: 0,
+                    root: SourceTypeExpressionId::new(0),
+                },
+                SourceTypeApplicationInput {
+                    binding: BindingId::new(1),
+                    source_ordinal: 1,
+                    root: SourceTypeExpressionId::new(1),
+                },
+            ],
+            expressions: vec![
+                task_249r_expression(source, &module, 35, 34, 22, 25),
+                task_249r_expression(source, &module, 39, 38, 38, 41),
+            ],
+            arguments: Vec::new(),
+        };
+        let arena = task_249m_arena(source, None);
+        let bindings = binding_env(
+            source,
+            &module,
+            &[range(source, 22, 25), range(source, 38, 41)],
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let base = SourceTypeProducer::build(input, &bindings, &symbols, &arena)
+            .expect("exact Task 249M base");
+        let extension = SourceTypeModeRhsExtensionInput {
+            source_id: source,
+            module_id: module.clone(),
+            rhs: vec![SourceTypeModeRhsInput {
+                definition_site: node_site(49),
+                definition_range: range(source, 45, 135),
+                source_ordinal: 0,
+                expression: task_249r_expression(source, &module, 44, 43, 95, 98),
+            }],
+        };
+        Task249MFixture {
+            source,
+            module,
+            base,
+            arena,
+            extension,
+        }
+    }
+
     fn task_249r_expression(
         source: SourceId,
         module: &ModuleId,
@@ -2375,6 +2801,33 @@ mod tests {
             })
             .collect();
         TypedArena::try_new(None, nodes).expect("Task 249R arena")
+    }
+
+    fn task_249m_arena(
+        source: SourceId,
+        mutation: Option<(usize, SourceRange, NodeRecoveryState)>,
+    ) -> TypedArena {
+        let nodes = (0..=49)
+            .map(|index| {
+                let source_range = match index {
+                    34 | 35 => range(source, 22, 25),
+                    38 | 39 => range(source, 38, 41),
+                    43 | 44 => range(source, 95, 98),
+                    49 => range(source, 45, 135),
+                    _ => range(source, 0, 1),
+                };
+                let (source_range, recovery) = mutation
+                    .filter(|(node, _, _)| *node == index)
+                    .map(|(_, range, recovery)| (range, recovery))
+                    .unwrap_or((source_range, NodeRecoveryState::Normal));
+                TypedNode::new(
+                    format!("task249m-source-node-{index}"),
+                    SourceAnchor::Range(source_range),
+                )
+                .with_recovery(recovery)
+            })
+            .collect();
+        TypedArena::try_new(None, nodes).expect("Task 249M arena")
     }
 
     fn assemble_empty_resolved(typed: &TypedAst) -> ResolvedTypedAst {
@@ -2444,6 +2897,21 @@ mod tests {
         );
         assert_eq!(fixture.base, baseline);
         assert!(fixture.base.definition_returns().is_empty());
+    }
+
+    fn assert_task_249m_extension_error(
+        fixture: &Task249MFixture,
+        input: SourceTypeModeRhsExtensionInput,
+        arena: &TypedArena,
+        expected: SourceTypeError,
+    ) {
+        let baseline = fixture.base.clone();
+        assert_eq!(
+            SourceTypeModeRhsProducer::extend(&fixture.base, input, arena),
+            Err(expected)
+        );
+        assert_eq!(fixture.base, baseline);
+        assert!(fixture.base.mode_rhs().is_empty());
     }
 
     #[derive(Clone, Copy, Debug)]
@@ -4385,6 +4853,470 @@ mod tests {
         assert!(resolved.checked_proofs().is_empty());
         let resolved_debug = resolved.debug_text();
         assert_eq!(resolved_debug.matches(fingerprint.as_str()).count(), 1);
+    }
+
+    #[test]
+    fn task_249m_exact_mode_rhs_extension_and_legacy_debug() {
+        let fixture = task_249m_fixture();
+        let legacy = fixture.base.debug_text();
+        let extended = SourceTypeModeRhsProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("exact mode RHS extension");
+
+        assert!(fixture.base.definition_returns().is_empty());
+        assert!(fixture.base.mode_rhs().is_empty());
+        assert_eq!(fixture.base.debug_text(), legacy);
+        assert_eq!(extended.applications().len(), 2);
+        assert_eq!(extended.expressions().len(), 3);
+        assert!(extended.arguments().is_empty());
+        assert!(extended.definition_returns().is_empty());
+        assert_eq!(extended.mode_rhs().len(), 1);
+        assert_eq!(
+            extended
+                .mode_rhs()
+                .iter()
+                .map(|(id, row)| (
+                    id.index(),
+                    row.id().index(),
+                    row.source_ordinal(),
+                    row.root().index(),
+                ))
+                .collect::<Vec<_>>(),
+            vec![(0, 0, 0, 2)]
+        );
+        let row = extended
+            .mode_rhs()
+            .get(SourceTypeModeRhsId::new(0))
+            .expect("mode RHS row");
+        assert_eq!(row.definition_site(), &node_site(49));
+        assert_eq!(row.definition_range(), range(fixture.source, 45, 135));
+        assert!(
+            extended
+                .mode_rhs()
+                .get(SourceTypeModeRhsId::new(1))
+                .is_none()
+        );
+        assert_eq!(
+            extended.debug_text(),
+            concat!(
+                "source-type-application-debug-v1\n",
+                "module: task249m.mode_definition\n",
+                "application#0 binding=0 ordinal=0 root=0\n",
+                "application#1 binding=1 ordinal=1 root=1\n",
+                "mode-rhs#0 ordinal=0 definition_range=45..135 definition_site=node#49 root=2\n",
+                "expression#0 form=bare range=22..25 site=node:35 head=builtin:set head_range=22..25 head_site=node:34 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+                "expression#1 form=bare range=38..41 site=node:39 head=builtin:set head_range=38..41 head_site=node:38 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+                "expression#2 form=bare range=95..98 site=node:44 head=builtin:set head_range=95..98 head_site=node:43 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+            )
+        );
+
+        let task_249r = task_249r_fixture();
+        let task_249r_extended = SourceTypeDefinitionReturnProducer::extend(
+            &task_249r.base,
+            task_249r.extension,
+            &task_249r.arena,
+        )
+        .expect("Task 249R remains accepted");
+        assert!(task_249r_extended.mode_rhs().is_empty());
+        assert!(!task_249r_extended.debug_text().contains("mode-rhs#"));
+    }
+
+    #[test]
+    fn task_249m_mode_rhs_corruption_fails_atomically() {
+        let fixture = task_249m_fixture();
+        let mode_rhs = SourceTypeModeRhsId::new(0);
+
+        let mut empty = fixture.extension.clone();
+        empty.rhs.clear();
+        assert_task_249m_extension_error(
+            &fixture,
+            empty.clone(),
+            &fixture.arena,
+            SourceTypeError::EmptyModeRhs,
+        );
+
+        let mut multiple = fixture.extension.clone();
+        multiple.rhs.push(multiple.rhs[0].clone());
+        assert_task_249m_extension_error(
+            &fixture,
+            multiple,
+            &fixture.arena,
+            SourceTypeError::ModeRhsCardinalityMismatch,
+        );
+
+        for wrong_environment in [
+            {
+                let mut input = fixture.extension.clone();
+                input.source_id = other_source_id();
+                input
+            },
+            {
+                let mut input = fixture.extension.clone();
+                input.module_id = module("task249m.other");
+                input
+            },
+        ] {
+            assert_task_249m_extension_error(
+                &fixture,
+                wrong_environment,
+                &fixture.arena,
+                SourceTypeError::EnvironmentMismatch,
+            );
+        }
+
+        let invalid_rows: [fn(&mut SourceTypeModeRhsExtensionInput); 8] = [
+            |input| input.rhs[0].source_ordinal = 1,
+            |input| input.rhs[0].definition_range.start = 44,
+            |input| input.rhs[0].definition_range.end = 134,
+            |input| input.rhs[0].expression.source_id = other_source_id(),
+            |input| input.rhs[0].expression.module_id = module("task249m.other"),
+            |input| input.rhs[0].expression.source_range.start = 94,
+            |input| input.rhs[0].expression.head_range.start = 94,
+            |input| input.rhs[0].expression.source_range.source_id = other_source_id(),
+        ];
+        for mutate in invalid_rows {
+            let mut invalid = fixture.extension.clone();
+            mutate(&mut invalid);
+            assert_task_249m_extension_error(
+                &fixture,
+                invalid,
+                &fixture.arena,
+                SourceTypeError::InvalidModeRhs { mode_rhs },
+            );
+        }
+
+        let invalid_sites: [fn(&mut SourceTypeModeRhsExtensionInput); 5] = [
+            |input| input.rhs[0].definition_site = role(49, "mode-owner"),
+            |input| input.rhs[0].definition_site = node_site(48),
+            |input| input.rhs[0].expression.site = role(44, "mode-rhs"),
+            |input| input.rhs[0].expression.head_site = role(43, "mode-rhs-head"),
+            |input| input.rhs[0].expression.site = node_site(49),
+        ];
+        for mutate in invalid_sites {
+            let mut invalid = fixture.extension.clone();
+            mutate(&mut invalid);
+            assert_task_249m_extension_error(
+                &fixture,
+                invalid,
+                &fixture.arena,
+                SourceTypeError::InvalidModeRhsSite { mode_rhs },
+            );
+        }
+
+        let unsupported: [fn(&mut SourceTypeModeRhsExtensionInput); 5] = [
+            |input| input.rhs[0].expression.form = SourceTypeApplicationForm::Of,
+            |input| input.rhs[0].expression.head = SourceTypeHead::BuiltinObject,
+            |input| input.rhs[0].expression.spelling = "Set".to_owned(),
+            |input| input.rhs[0].expression.head_spelling = "Set".to_owned(),
+            |input| input.rhs[0].expression.recovery = NodeRecoveryState::Recovered,
+        ];
+        for mutate in unsupported {
+            let mut invalid = fixture.extension.clone();
+            mutate(&mut invalid);
+            assert_task_249m_extension_error(
+                &fixture,
+                invalid,
+                &fixture.arena,
+                SourceTypeError::UnsupportedModeRhs { mode_rhs },
+            );
+        }
+
+        let extended = SourceTypeModeRhsProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("mode RHS");
+        assert_eq!(
+            SourceTypeModeRhsProducer::extend(&extended, empty, &fixture.arena),
+            Err(SourceTypeError::ModeRhsAlreadyPresent)
+        );
+
+        let mut cardinality_over_environment = fixture.extension.clone();
+        cardinality_over_environment
+            .rhs
+            .push(cardinality_over_environment.rhs[0].clone());
+        cardinality_over_environment.source_id = other_source_id();
+        assert_task_249m_extension_error(
+            &fixture,
+            cardinality_over_environment,
+            &fixture.arena,
+            SourceTypeError::ModeRhsCardinalityMismatch,
+        );
+
+        let mut invalid_base = fixture.base.clone();
+        invalid_base.applications.entries[0].source_ordinal = 1;
+        let mut environment_over_base = fixture.extension.clone();
+        environment_over_base.source_id = other_source_id();
+        assert_eq!(
+            SourceTypeModeRhsProducer::extend(&invalid_base, environment_over_base, &fixture.arena,),
+            Err(SourceTypeError::EnvironmentMismatch)
+        );
+
+        let mut base_over_row = fixture.extension.clone();
+        base_over_row.rhs[0].source_ordinal = 1;
+        assert_eq!(
+            SourceTypeModeRhsProducer::extend(&invalid_base, base_over_row, &fixture.arena),
+            Err(SourceTypeError::InvalidModeRhsBase)
+        );
+
+        let mut row_over_site = fixture.extension.clone();
+        row_over_site.rhs[0].source_ordinal = 1;
+        row_over_site.rhs[0].definition_site = role(49, "mode-owner");
+        assert_task_249m_extension_error(
+            &fixture,
+            row_over_site,
+            &fixture.arena,
+            SourceTypeError::InvalidModeRhs { mode_rhs },
+        );
+
+        let mut site_over_unsupported = fixture.extension.clone();
+        site_over_unsupported.rhs[0].definition_site = role(49, "mode-owner");
+        site_over_unsupported.rhs[0].expression.form = SourceTypeApplicationForm::Of;
+        assert_task_249m_extension_error(
+            &fixture,
+            site_over_unsupported,
+            &fixture.arena,
+            SourceTypeError::InvalidModeRhsSite { mode_rhs },
+        );
+        assert_eq!(fixture.base.mode_rhs().len(), 0);
+    }
+
+    #[test]
+    fn task_249m_one_shot_base_and_arena_drift_fail_closed() {
+        let fixture = task_249m_fixture();
+        let baseline = fixture.base.clone();
+        let extended = SourceTypeModeRhsProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("first extension");
+        assert_eq!(
+            SourceTypeModeRhsProducer::extend(&extended, fixture.extension.clone(), &fixture.arena,),
+            Err(SourceTypeError::ModeRhsAlreadyPresent)
+        );
+
+        let base_mutations: [fn(&mut SourceTypeApplicationHandoff); 18] = [
+            |base| base.applications.entries[0].id = SourceTypeApplicationId::new(1),
+            |base| base.applications.entries[0].binding = BindingId::new(1),
+            |base| base.applications.entries[0].source_ordinal = 1,
+            |base| base.applications.entries[0].root = SourceTypeExpressionId::new(1),
+            |base| base.expressions.entries[0].id = SourceTypeExpressionId::new(1),
+            |base| base.expressions.entries[0].source_id = other_source_id(),
+            |base| base.expressions.entries[0].module_id = module("task249m.other"),
+            |base| base.expressions.entries[0].source_range.start = 21,
+            |base| base.expressions.entries[0].site = node_site(36),
+            |base| base.expressions.entries[0].spelling = "Set".to_owned(),
+            |base| base.expressions.entries[0].head_site = node_site(33),
+            |base| base.expressions.entries[0].head_range.start = 21,
+            |base| base.expressions.entries[0].head_spelling = "Set".to_owned(),
+            |base| base.expressions.entries[0].form = SourceTypeApplicationForm::Of,
+            |base| base.expressions.entries[0].head = SourceTypeHead::BuiltinObject,
+            |base| base.expressions.entries[0].recovery = NodeRecoveryState::Recovered,
+            |base| {
+                base.expressions
+                    .entries
+                    .push(base.expressions.entries[0].clone())
+            },
+            |base| {
+                base.arguments.entries.push(SourceTypeArgumentRow {
+                    id: SourceTypeArgumentId::new(0),
+                    parent: SourceTypeExpressionId::new(0),
+                    ordinal: 0,
+                    argument: SourceTypeArgument::TypeSite {
+                        expression: SourceTypeExpressionId::new(1),
+                    },
+                });
+            },
+        ];
+        for mutate in base_mutations {
+            let mut invalid = fixture.base.clone();
+            mutate(&mut invalid);
+            assert_eq!(
+                SourceTypeModeRhsProducer::extend(
+                    &invalid,
+                    fixture.extension.clone(),
+                    &fixture.arena,
+                ),
+                Err(SourceTypeError::InvalidModeRhsBase)
+            );
+        }
+
+        let empty_arena = TypedArena::try_new(None, Vec::new()).expect("empty arena");
+        assert_task_249m_extension_error(
+            &fixture,
+            fixture.extension.clone(),
+            &empty_arena,
+            SourceTypeError::InvalidModeRhsBase,
+        );
+        let base_drift = task_249m_arena(
+            fixture.source,
+            Some((
+                35,
+                range(fixture.source, 22, 25),
+                NodeRecoveryState::Recovered,
+            )),
+        );
+        assert_task_249m_extension_error(
+            &fixture,
+            fixture.extension.clone(),
+            &base_drift,
+            SourceTypeError::InvalidModeRhsBase,
+        );
+
+        for (node, source_range, recovery) in [
+            (
+                49,
+                range(fixture.source, 45, 134),
+                NodeRecoveryState::Normal,
+            ),
+            (
+                44,
+                range(fixture.source, 95, 98),
+                NodeRecoveryState::Recovered,
+            ),
+            (
+                43,
+                range(fixture.source, 95, 98),
+                NodeRecoveryState::Recovered,
+            ),
+        ] {
+            let drifted = task_249m_arena(fixture.source, Some((node, source_range, recovery)));
+            assert_task_249m_extension_error(
+                &fixture,
+                fixture.extension.clone(),
+                &drifted,
+                SourceTypeError::InvalidModeRhsSite {
+                    mode_rhs: SourceTypeModeRhsId::new(0),
+                },
+            );
+            assert_eq!(
+                task_249r_typed_ast(
+                    fixture.source,
+                    fixture.module.clone(),
+                    extended.clone(),
+                    drifted,
+                ),
+                Err(TypedAstError::InvalidSourceType)
+            );
+        }
+
+        for mutate in [
+            |handoff: &mut SourceTypeApplicationHandoff| {
+                handoff.mode_rhs.entries[0].id = SourceTypeModeRhsId::new(1);
+            },
+            |handoff: &mut SourceTypeApplicationHandoff| {
+                handoff.mode_rhs.entries[0].root = SourceTypeExpressionId::new(1);
+            },
+            |handoff: &mut SourceTypeApplicationHandoff| {
+                handoff.expressions.entries[2].id = SourceTypeExpressionId::new(1);
+            },
+        ] {
+            let mut corrupt = extended.clone();
+            mutate(&mut corrupt);
+            assert_eq!(
+                task_249r_typed_ast(
+                    fixture.source,
+                    fixture.module.clone(),
+                    corrupt,
+                    fixture.arena.clone(),
+                ),
+                Err(TypedAstError::InvalidSourceType)
+            );
+        }
+        assert_eq!(fixture.base, baseline);
+        assert_eq!(extended.mode_rhs().len(), 1);
+    }
+
+    #[test]
+    fn task_249m_typed_final_clone_replay_and_task_249r_isolation() {
+        let fixture = task_249m_fixture();
+        let baseline = fixture.base.clone();
+        let handoff = SourceTypeModeRhsProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("mode RHS");
+        let fingerprint = handoff.debug_text();
+        let replay = SourceTypeModeRhsProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("clean-base mode RHS replay");
+        assert_eq!(replay, handoff);
+        assert_eq!(replay.debug_text(), fingerprint);
+        assert_eq!(fixture.base, baseline);
+        let typed = task_249r_typed_ast(
+            fixture.source,
+            fixture.module.clone(),
+            handoff.clone(),
+            fixture.arena.clone(),
+        )
+        .expect("typed Task 249M installation");
+        assert_eq!(typed.source_type(), Some(&handoff));
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        assert_eq!(typed.debug_text().matches(fingerprint.as_str()).count(), 1);
+
+        let resolved = assemble_empty_resolved(&typed);
+        assert_eq!(resolved.source_type(), Some(&handoff));
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert_eq!(
+            resolved.debug_text().matches(fingerprint.as_str()).count(),
+            1
+        );
+        assert_eq!(
+            SourceTypeModeRhsProducer::extend(
+                &handoff.clone(),
+                fixture.extension.clone(),
+                &fixture.arena,
+            ),
+            Err(SourceTypeError::ModeRhsAlreadyPresent)
+        );
+
+        let task_249r = task_249r_fixture();
+        let task_249r_handoff = SourceTypeDefinitionReturnProducer::extend(
+            &task_249r.base,
+            task_249r.extension.clone(),
+            &task_249r.arena,
+        )
+        .expect("Task 249R extension");
+        assert!(task_249r_handoff.mode_rhs().is_empty());
+
+        let mut return_after_mode = task_249r.extension.clone();
+        return_after_mode.source_id = fixture.source;
+        return_after_mode.module_id = fixture.module.clone();
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(&handoff, return_after_mode, &fixture.arena,),
+            Err(SourceTypeError::InvalidDefinitionReturnBase)
+        );
+
+        let mut mode_after_return = fixture.extension.clone();
+        mode_after_return.source_id = task_249r.source;
+        mode_after_return.module_id = task_249r.module.clone();
+        assert_eq!(
+            SourceTypeModeRhsProducer::extend(
+                &task_249r_handoff,
+                mode_after_return,
+                &task_249r.arena,
+            ),
+            Err(SourceTypeError::InvalidModeRhsBase)
+        );
     }
 
     #[test]

@@ -1459,3 +1459,9 @@ paired runner plan/harness/TODO/boundary audit/trace ledgerはTask 249Mがchecke
 onlyで、lower handoff `2/3/0/0/1`、checker test 4件、runner `520`/全corpus/
 trace/CLI unchanged、separate implementation commit後だけTask 262へreturnする
 ことを同期する。English canonicalでsync exceptionはない。
+
+## Checker Task 249M active-implementation synchronization
+
+paired runner recordはchecker seam/test 4件がchecker `453`でactive、runner `520`と
+全corpus/trace/CLI artifactがunchangedであることを同期する。Task 262は
+separate next consumerで、bilingual synchronization exceptionはない。

@@ -523,3 +523,26 @@ write scope is `crates/mizar-checker/src/source_type.rs` plus synchronized
 design records only. It exits with exactly four tests, exact `2/3/0/0/1`
 profile, full reviews/verification/gates, one dedicated commit, and automatic
 fresh-inventory return to Task 262 implementation.
+
+## Task 249M Active Implementation Result
+
+The preceding future/prerequisite wording is historical. The frozen API is now
+implemented in `crates/mizar-checker/src/source_type.rs`: one dense mode-RHS
+ID, extension input and row input, immutable row/table, borrowed handoff
+getter, unit producer, seven errors with the frozen precedence, exact base and
+arena revalidation, one-shot atomic extension, installation validation,
+deterministic debug ordering, and bidirectional Task-249R exclusion.
+
+The exact four named tests are active and independently cover all fields and
+error classes, every adjacent compound-precedence boundary, legacy/Task-249R
+bytes, arena and installation drift, Typed/Resolved clone/replay, and empty
+semantic outputs. The lower oracle is exactly `2/3/0/0/1`. Checker library is
+`453`; raw/normalized test-list hashes are
+`34f63b3b9fb1ae2f3b43d769184be2b0c23cc3ada13b5a8b45a933aed629fe25` /
+`ee25ffd88d06e34491ced5c0499acc4198c1e8690ed40c3fb79fb276e3852db4`.
+Production is `26/153116`, with path/content hashes
+`e290d082e428124d3fd21919e76b88458daabfa44b7009a8cb1b3d8c430fec53` /
+`3c85673ebb527cb33bb4b042b1b1194bda34a5348b4b6b20142617db47bde2f2`.
+Runner/resolver/syntax and all corpus/trace/CLI/metadata values remain at the
+frozen baselines. Task 262 remains the sole next consumer and a separate
+logical task.

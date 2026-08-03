@@ -12853,3 +12853,11 @@ Task 249M changes only checker `source_type.rs` and synchronized documents.
 The existing runner tree stays `33/65952` with its recorded hashes; no facade,
 leaf, selector, mutation, output, fixture, or trace consumer is authorized.
 Task 262 remains the sole owner of the later runner and corpus delta.
+
+## Checker Task 249M Active Boundary No-Op
+
+Implementation changed only checker `source_type.rs` plus synchronized design
+records. Runner production remains `33/65952` with path/content hashes
+`f24ae3f53e283dd81fbc61961c57dcb3456473390073e25955c37840e374fcd1` /
+`c4ceb938ae7cc1bfcbf87e95ec654f3a275eff6351eba80a354eeea4a6dafd74`.
+No runner API, file, test, fixture, or trace row was added.

@@ -44,7 +44,7 @@ remain aligned with their owning specifications.
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | Cohesive Task-255/255C1 seven-table association, condition-subtree exclusion, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
 | `src/source_statement.rs` | 50732 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B3M2B2B3E/258B4A/258B4B/258B4C/258B5A/258B5B statement and witness transactions, resolver/binding/lower/application/structure/set/formula/import provenance, zero-edge/qua/comprehension/composite-root ownership, subtree validation, rendering, paired typed/final installation, and corruption matrices; no split required. |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | Cohesive Task-254 term/wrapper/root/member/field-update/edge/request tables, written-partition and cross-family dependency/provenance validation, deterministic rendering, and corruption tests; no split required. |
-| `src/source_type.rs` | 4407 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables plus Task-249R independent definition-return extension, environment/arena/form/graph/provenance validation, deterministic rendering, and exhaustive corruption tests; no split required. |
+| `src/source_type.rs` | 5339 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables plus Task-249R independent definition-return and Task-249M standalone mode-RHS extensions, environment/arena/form/graph/provenance validation, deterministic rendering, and exhaustive corruption tests; no split required. |
 | `src/type_checker.rs` | 13238 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | Largest file but still within the phase-6 spec boundary; normalization, reserve and authenticated exact theorem-owner handoff validation, declaration checking, inference, coercions, fact queries, diagnostics, rendering, tests, and Task-259/260 obligation-kind serializers remain behavior-coupled. |
 | `src/registration_resolution.rs` | 5891 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer, gate logic, and Task-259/260 obligation-kind serializers; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
@@ -1406,3 +1406,13 @@ tests without a new module, syntax dependency, runner hook, Typed/Resolved
 field, diagnostic, or Cargo edge. The docs prerequisite preserves current
 checker production `26/152184`; implementation must fresh-measure the same
 26-file boundary. Task-262 production remains excluded.
+
+## Task 249M Implemented Module Boundary
+
+The existing `source_type` module now owns the standalone row/table/producer
+and four tests. No module or dependency edge was added. Checker production is
+`26/153116`; the sorted path hash remains
+`e290d082e428124d3fd21919e76b88458daabfa44b7009a8cb1b3d8c430fec53` and the
+ordered per-file content hash is
+`3c85673ebb527cb33bb4b042b1b1194bda34a5348b4b6b20142617db47bde2f2`.
+Task 262 remains a separate consumer task.

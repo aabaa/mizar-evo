@@ -6555,7 +6555,8 @@ implementation commit does not satisfy a producer task.
   prerequisite as `8c3fa20acef42477d38a66ddddec42dacced0863`.
 - [x] Fresh-inventory and freeze the exact Task-249M standalone mode-RHS ABI,
   `2/3/0/0/1` profile, validation/debug contract, tests, exclusions, and scope.
-- [ ] Complete Task-249M findings-free reviews, unchanged docs gates, exact
+- [x] Complete Task-249M findings-free reviews, unchanged docs gates, exact
   staging, dedicated documentation commit, and clean post-commit inventory.
-- [ ] Implement, review, verify, and separately commit Task 249M.
+- [x] Implement the frozen Task-249M API and four tests; complete its reviews,
+  verification, exact staging, and separate commit before Task 262.
 - [ ] Return to and implement only Task 262, then continue to Task 263+.

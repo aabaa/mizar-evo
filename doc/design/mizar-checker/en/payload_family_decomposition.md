@@ -1645,3 +1645,10 @@ owner node 49 through `SourceTypeModeRhsId(0)`, producing `2/3/0/0/1` without
 a third binding application or a definition-return row. Task 262 is its sole
 consumer; request, evidence, expansion, acceptance, fact, proof, and VC rows
 do not cross this lower boundary.
+
+## Task 249M Active Family Inventory
+
+The distinct standalone owner-link family is now implemented exactly as
+frozen. The active handoff has one `SourceTypeModeRhsId(0)` row and root 2,
+remains mutually exclusive with the Task-249R definition-return family, and
+still publishes no request, evidence, semantic, fact, proof, IR, or VC row.

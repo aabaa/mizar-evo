@@ -3980,6 +3980,6 @@ or semantic owner changed. B3M2B2B remains next before B4.
   inventory.
 - [x] Fresh-inventory and freeze mandatory checker Task 249M with exact
   `2/3/0/0/1` lower profile and no runner/corpus/trace change.
-- [ ] Complete Task-249M findings-free docs reviews/gates/staging/commit, then
-  implement/review/verify/commit its four checker tests separately.
+- [x] Complete Task-249M findings-free docs reviews/gates/staging/commit, then
+  implement its four checker tests and complete review/verification/commit.
 - [ ] Return to and implement only Task 262, then continue to Task 263+.

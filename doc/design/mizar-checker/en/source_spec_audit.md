@@ -328,21 +328,25 @@ unchanged and separate.
 Generated public newtypes:
 
 - `SourceTypeApplicationId`, `SourceTypeExpressionId`,
-  `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`
+  `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`,
+  `SourceTypeModeRhsId`
 
 Literal top-level public items:
 
 - `SourceTypeHandoffInput`, `SourceTypeApplicationInput`,
   `SourceTypeDefinitionReturnExtensionInput`,
   `SourceTypeDefinitionReturnInput`,
+  `SourceTypeModeRhsExtensionInput`, `SourceTypeModeRhsInput`,
   `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
   `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
   `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
   `SourceTypeApplication`, `SourceTypeExpressionTable`,
   `SourceTypeDefinitionReturnTable`, `SourceTypeDefinitionReturn`,
+  `SourceTypeModeRhsTable`, `SourceTypeModeRhs`,
   `SourceTypeExpression`, `SourceTypeArgumentTable`,
   `SourceTypeArgumentRow`, `SourceTypeProducer`,
-  `SourceTypeDefinitionReturnProducer`, `SourceTypeError`
+  `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
+  `SourceTypeError`
 
 Correspondence:
 
@@ -352,11 +356,12 @@ Correspondence:
 | Binding and real `DeclarationShell` ownership, symbol/contribution import closure/visibility, and arena site/range/recovery are authenticated before publication. | `SourceTypeProducer::build` and installation validation. | Producer corruption matrix plus real local/imported heads and import-target mismatch. | Implemented transactionally. |
 | Graph order, ownership, containment, non-overlap, and deterministic provenance are fail-closed. | `SourceTypeError`, iterative graph/range/provenance validation and deterministic debug rendering. | Dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance and deep-chain tests. | Implemented without sorting, recursion, or repair. |
 | Independent definition return types extend the exact two-binding base without fabricating binding applications. | `SourceTypeDefinitionReturnProducer`, two immutable owner rows, appended roots 2/3, one-shot and installation validation. | Four exact Task-249R extension/corruption/arena/Typed-final tests. | Implemented for Task 249R; combined profile is `2/4/0/2`. |
+| A standalone mode RHS extends its exact two-binding base without fabricating a third application or reusing definition-return semantics. | `SourceTypeModeRhsProducer`, one immutable owner row, appended root 2, frozen precedence, one-shot and installation validation. | Four exact Task-249M extension/corruption/arena/Typed-final tests. | Implemented for Task 249M; combined profile is `2/3/0/0/1`. |
 | `TypedAst` owns the result and `ResolvedTypedAst` only clones it. | Optional `SourceTypeApplicationHandoff` field and borrowed getters. | Immutable final-preservation and repeated-run assertions. | Implemented; empty legacy debug bytes remain conditional. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
-Bounded gaps: Tasks 249/249R publish source-type inputs and definition-return
-owner links only. Expansion,
+Bounded gaps: Tasks 249/249R/249M publish source-type inputs, definition-return
+owner links, and one standalone mode-RHS owner link only. Expansion,
 normalization, evidence, term/`qua` selection, accepted facts/declarations/
 proofs, and downstream IR remain with their explicit later owners.
 
@@ -5453,3 +5458,12 @@ today (`source_drift`); the exact tests are prospective, canonical-derived
 `test_gap`. No public enum class is added, no syntax boundary changes, and no
 current source behavior is credited. Implementation must synchronize the
 literal public inventory and existing enum/source-spec lint policies.
+
+## Task 249M Active Source Audit
+
+The previously classified standalone-owner `source_drift` and four-test
+`test_gap` are closed by the public syntax-free `SourceTypeModeRhs*` API,
+seven non-exhaustive `SourceTypeError` variants, exact transactional producer,
+installation validation, and four source-local tests in `source_type.rs`.
+Task-249R isolation and the absence of new syntax, diagnostics, semantics,
+runner, corpus, or trace credit remain explicit boundaries.

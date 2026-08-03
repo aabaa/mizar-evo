@@ -3394,6 +3394,6 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   `8c3fa20acef42477d38a66ddddec42dacced0863`, and clean post-commit inventory.
 - [x] Fresh-inventory and freeze mandatory checker Task 249M with no runner or
   corpus change.
-- [ ] Review and separately commit Task-249M documentation; then implement,
-  verify, and separately commit its four checker tests.
+- [x] Review and separately commit Task-249M documentation; then implement its
+  four checker tests and complete checker review/verification/separate commit.
 - [ ] Return to and implement only Task 262, then continue to Task 263+.

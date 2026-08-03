@@ -6254,7 +6254,8 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `8c3fa20acef42477d38a66ddddec42dacced0863`としてcommitする。
 - [x] Task 249M exact standalone mode-RHS ABI、`2/3/0/0/1` profile、validation/
   debug/test/exclusion/scopeをfresh-inventory/freezeする。
-- [ ] Task-249M findings-free review/unchanged docs gate/exact staging/dedicated
+- [x] Task-249M findings-free review/unchanged docs gate/exact staging/dedicated
   docs commit/clean post-commit inventoryを完了する。
-- [ ] Task 249Mをimplement/review/verifyしてseparate commitする。
+- [x] frozen Task 249M API/test 4件をimplementする。review/verification/
+  exact staging/separate commitをTask 262前に完了する。
 - [ ] Task 262だけへ戻ってimplementし、Task 263+へ継続する。

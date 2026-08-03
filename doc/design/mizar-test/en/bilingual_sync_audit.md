@@ -1513,3 +1513,10 @@ Task 249M is checker-only: it freezes/implements `2/3/0/0/1` in the lower
 handoff, adds four checker tests, preserves runner `520` and all corpus/trace/
 CLI state, and returns to Task 262 only after a separate implementation commit.
 English remains canonical and no synchronization exception exists.
+
+## Checker Task 249M Active-Implementation Synchronization
+
+Paired runner records now agree that the checker seam and four tests are
+active at checker `453`, while runner `520` and every corpus/trace/CLI artifact
+remain unchanged. Task 262 is still a separate next consumer. No bilingual
+synchronization exception exists.

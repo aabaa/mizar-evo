@@ -6072,3 +6072,13 @@ route, or executable language credit. Live metadata remains `424/392`,
 warnings/errors `23/0`. The audit changes because lower owner/follow-up
 traceability changes; Chapter-7 executable coverage remains partial until
 Task 262.
+
+## Checker Task 249M Active Lower Coverage
+
+The public standalone mode-RHS representation seam and four checker-local
+tests are now implemented, closing the lower owner `source_drift` and its
+canonical-derived `test_gap`. Chapter-7 representation coverage improves, but
+executable language coverage remains partial: no corpus, backlink, trace
+status, runner route, or metadata count changes before Task 262. Live metadata
+remains `424/392`, `231/193`, `101/7/201/1`, type `256 = 244 covered + 12
+deferred`, and warnings/errors `23/0`.

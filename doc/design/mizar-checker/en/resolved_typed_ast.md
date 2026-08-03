@@ -1675,3 +1675,10 @@ only clone-preserves the mode-RHS table already revalidated inside the single
 typed-owned source-type handoff. The combined fingerprint occurs exactly once;
 final assembly neither reconstructs the RHS from resolver spelling nor grants
 inhabitation, expansion, sethood, acceptance, proof, or fact semantics.
+
+## Task 249M Active Clone Boundary
+
+The implemented mode-RHS table remains inside the existing typed-owned
+source-type handoff. `ResolvedTypedAst` adds no field or input and clone-
+preserves the validated `2/3/0/0/1` fingerprint exactly once; the four Task-
+249M tests confirm that all final semantic result tables remain empty.

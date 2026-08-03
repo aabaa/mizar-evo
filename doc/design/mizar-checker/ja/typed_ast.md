@@ -1619,3 +1619,10 @@ handoffを`TypedAst::try_new`前にextendする。source-type validationはexact
 appended expression/head、Task 249R mutual exclusion、arena identityをrecheckする。
 same optional fieldがsole ownerで、legacy/Task-249R debug byteは不変、Task-262
 lower profileはsemantic outputなしのcombined `2/3/0/0/1` handoffである。
+
+## Task 249M active typed ownership
+
+standalone mode-RHS extensionはinstallation前に実装済みである。
+`TypedAst::try_new`はexisting optional handoffでrowとsource-type expression 3件を
+revalidateし、new field/installerを追加しない。exact testはtype/fact/
+coercion/obligation/diagnostic tableをemptyに保つ。

@@ -11588,3 +11588,11 @@ Task 249Mはchecker `source_type.rs`とsynchronized docsだけを変更する。
 runner treeはrecorded hashと`33/65952`を保ち、facade/leaf/selector/mutation/
 output/fixture/trace consumerをauthorizeしない。later runner/corpus deltaは
 Task 262だけがownする。
+
+## Checker Task 249M active boundary no-op
+
+implementationはchecker `source_type.rs`とsynchronized design recordだけを変更した。
+runner productionは`33/65952`、path/content hashは
+`f24ae3f53e283dd81fbc61961c57dcb3456473390073e25955c37840e374fcd1` /
+`c4ceb938ae7cc1bfcbf87e95ec654f3a275eff6351eba80a354eeea4a6dafd74`。
+runner API/file/test/fixture/trace rowは追加しない。

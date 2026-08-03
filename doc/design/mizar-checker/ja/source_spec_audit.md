@@ -304,21 +304,25 @@ ownerに残る。legacy `type_checker::AttributeInput`は変更せず別のま�
 生成 public newtype:
 
 - `SourceTypeApplicationId`, `SourceTypeExpressionId`,
-  `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`
+  `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`,
+  `SourceTypeModeRhsId`
 
 literal top-level public item:
 
 - `SourceTypeHandoffInput`, `SourceTypeApplicationInput`,
   `SourceTypeDefinitionReturnExtensionInput`,
   `SourceTypeDefinitionReturnInput`,
+  `SourceTypeModeRhsExtensionInput`, `SourceTypeModeRhsInput`,
   `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
   `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
   `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
   `SourceTypeApplication`, `SourceTypeExpressionTable`,
   `SourceTypeDefinitionReturnTable`, `SourceTypeDefinitionReturn`,
+  `SourceTypeModeRhsTable`, `SourceTypeModeRhs`,
   `SourceTypeExpression`, `SourceTypeArgumentTable`,
   `SourceTypeArgumentRow`, `SourceTypeProducer`,
-  `SourceTypeDefinitionReturnProducer`, `SourceTypeError`
+  `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
+  `SourceTypeError`
 
 対応:
 
@@ -328,11 +332,12 @@ literal top-level public item:
 | bindingとreal `DeclarationShell` ownership、symbol/contribution import closure/visibility、arena site/range/recoveryをpublish前にauthenticateする。 | `SourceTypeProducer::build`とinstallation validation。 | producer corruption matrix、real local/imported head、import-target mismatch。 | transactionalに実装済み。 |
 | graph order/ownership/containment/non-overlapとdeterministic provenanceをfail closedにする。 | `SourceTypeError`、iterative graph/range/provenance validation、deterministic debug。 | dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance/deep-chain test。 | sort/recursion/repairなしで実装済み。 |
 | independent definition return typeをbinding applicationを捏造せずexact two-binding baseへextendする。 | `SourceTypeDefinitionReturnProducer`、immutable owner row 2件、appended root 2/3、one-shot/install validation。 | exact Task-249R extension/corruption/arena/Typed-final test 4件。 | Task 249Rで実装済み。combined profileは`2/4/0/2`。 |
+| standalone mode RHSをthird applicationの捻造やdefinition-return semanticsのreuseなしにexact two-binding baseへextendする。 | `SourceTypeModeRhsProducer`、immutable owner row 1件、appended root 2、frozen precedence、one-shot/install validation。 | exact Task-249M extension/corruption/arena/Typed-final test 4件。 | Task 249Mで実装済み。combined profileは`2/3/0/0/1`。 |
 | `TypedAst`がresultを所有し、`ResolvedTypedAst`はcloneだけする。 | optional `SourceTypeApplicationHandoff` fieldとborrowed getter。 | immutable final preservation/repeated-run assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
 | public enumはforward-compatible。 | public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
-bounded gap: Tasks 249/249Rがpublishするのはsource-type inputとdefinition-return
-owner linkだけである。expansion、
+bounded gap: Tasks 249/249R/249Mがpublishするのはsource-type input、definition-
+return owner link、standalone mode-RHS owner link 1件だけである。expansion、
 normalization、evidence、term/`qua` selection、accepted fact/declaration/proof、
 downstream IRはexplicit later ownerに残る。
 
@@ -5226,3 +5231,11 @@ input、immutable row/table、handoff getter、producer、non-exhaustive
 `source_drift`、exact tests不在はcanonical-derived prospective `test_gap`。
 public enum class/syntax boundary/current source creditは追加しない。
 implementationはliteral public inventoryとexisting enum/source-spec lintを同期する。
+
+## Task 249M active source audit
+
+既存のstandlone-owner `source_drift`とtest 4件の`test_gap`は、public
+syntax-free `SourceTypeModeRhs*` API、non-exhaustive `SourceTypeError` variant
+7件、exact transactional producer/installation validation、source-local test 4件で
+closeした。Task-249R isolationとnew syntax/diagnostic/semantics/runner/corpus/
+trace creditの非存在はboundaryのままである。

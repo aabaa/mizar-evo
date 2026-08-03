@@ -3173,6 +3173,6 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   完了する。
 - [x] mandatory checker Task 249Mをrunner/corpus changeなしでfresh-inventory/
   freezeする。
-- [ ] Task-249M docsをreview/separate commit後、checker test 4件をimplement/
-  verify/separate commitする。
+- [x] Task-249M docsをreview/separate commit後、checker test 4件をimplementし、
+  checker review/verification/separate commitを完了する。
 - [ ] Task 262だけへ戻ってimplementし、Task 263+へ継続する。

@@ -4779,3 +4779,9 @@ Task 249Mはharness route/testを追加しない。checker-only test 4件がstan
 lower handoffをfreezeし、corpus、metadata test `137`、CLI 5本、runner list
 `520`、fixture/sidecar/trace hash、mixed mode/structure gapはbyte-identical。
 later Task-262 runnerだけがreal sourceから`2/3/0/0/1`をbuild/fingerprintできる。
+
+## Checker Task 249M active harness no-op
+
+lower checker producer/test 4件は実装済み。本harnessはroute/testを追加せず、
+runner `520`、metadata test `137`、corpus/sidecar/expectation/trace hash、CLI
+5本はTask-261 frozen baseline不変。real consumerはTask 262だけが追加できる。

@@ -672,3 +672,10 @@ exact lower ABI/error precedence/debug grammar/`2/3/0/0/1` profile/test 4件は
 extension」にcanonical freezeした。separate docs prerequisite/implementationが
 commitされfresh inventoryがfingerprint seamを確認するまでTask-262
 implementation authorityを与えない。
+
+## Task 249M implemented lower-contract link
+
+lower standalone mode-RHS ABIとexact fingerprintは実装されchecker test済みである。
+Task 262はfresh inventory後に`mode_rhs().get(0)`とexpression root 2だけを
+consumeできる。goal/guard composition、discharge、acceptance、fact、proof、
+IR、VC behaviorを発明するauthorityは与えない。

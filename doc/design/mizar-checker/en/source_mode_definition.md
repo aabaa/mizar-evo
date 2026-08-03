@@ -676,3 +676,10 @@ four-test matrix are now frozen canonically in
 Mode-RHS Extension.” This document grants no Task-262 implementation authority
 until that separate docs prerequisite and implementation both commit and a
 fresh inventory confirms the fingerprint seam.
+
+## Task 249M Implemented Lower-Contract Link
+
+The lower standalone mode-RHS ABI and exact fingerprint are now implemented
+and checker-tested. Task 262 may consume only `mode_rhs().get(0)` and expression
+root 2 after fresh inventory; this completion grants no authority to invent
+goal/guard composition, discharge, acceptance, fact, proof, IR, or VC behavior.

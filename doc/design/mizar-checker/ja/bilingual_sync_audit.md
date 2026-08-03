@@ -1101,6 +1101,12 @@ checker/runner libraries `414/476`、production `23/139828` /
 separate test/implementation reviews **NO FINDINGS**を記録する。
 synchronization exceptionはない。
 
+## Task 249M active-implementation synchronization
+
+canonical EN/companion JAはimplemented public mode-RHS ABI、exact test 4件/
+checker `453`、checker production `26/153116`、unchanged runner/corpus/trace
+state、Task-262 semantic deferralを同期する。synchronization exceptionはない。
+
 final source/documentation consistencyはLow `design_drift` 3件のcorrection
 後に**NO FINDINGS**である。complete verificationはPASSし、independent
 final qualityも両言語で**NO FINDINGS**、全9 hard gates PASS、capなし、

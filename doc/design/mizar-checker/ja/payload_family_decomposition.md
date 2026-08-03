@@ -1570,3 +1570,10 @@ familyである。bare-set expression root 2をappendしmode-definition owner no
 `SourceTypeModeRhsId(0)`でlinkして、third binding application/definition-return
 rowなしに`2/3/0/0/1`を作る。sole consumerはTask 262で、request/evidence/
 expansion/acceptance/fact/proof/VC rowはlower boundaryを越えない。
+
+## Task 249M active family inventory
+
+distinct standalone owner-link familyはfrozen contractどおり実装済みである。
+active handoffは`SourceTypeModeRhsId(0)` row 1件/root 2を持ち、Task-249R
+definition-return familyとmutually exclusiveで、request/evidence/semantic/fact/
+proof/IR/VC rowをpublishしない。

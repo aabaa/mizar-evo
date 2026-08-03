@@ -1562,3 +1562,10 @@ Canonical EN and companion JA synchronize the exact standalone mode-RHS ABI,
 contract, two-way Task-249R isolation, four-test matrix, checker `449 -> 453`,
 unchanged runner/corpus/trace metadata, semantic exclusions, and separate
 docs/implementation order. No synchronization exception exists.
+
+## Task 249M Active-Implementation Synchronization
+
+Canonical EN and companion JA now synchronize the implemented public mode-RHS
+ABI, exact four-test/453-checker inventory, `26/153116` checker production
+manifest, unchanged runner/corpus/trace state, and continued Task-262 semantic
+deferral. No synchronization exception exists.

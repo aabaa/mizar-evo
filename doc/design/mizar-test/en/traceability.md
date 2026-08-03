@@ -2255,3 +2255,11 @@ sidecar, trace row, backlink, status, metadata count, stage credit, or runner
 route. Current metadata stays `424/392`, `231/193`, `101/7/201/1`, type
 `256/244`, warnings/errors `23/0`. Only later Task 262 may activate
 `source_mode_definition_payload` and its sole pass backlink.
+
+## Checker Task 249M Active Representation Coverage
+
+The lower representation seam and its four source-local checker tests are now
+active, closing the recorded lower `source_drift`/`test_gap`. This still grants
+no executable language/corpus credit: metadata remains `424/392`, `231/193`,
+`101/7/201/1`, type `256/244`, warnings/errors `23/0`, with no trace row or
+status change. Task 262 alone owns the future pass backlink.
