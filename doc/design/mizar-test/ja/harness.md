@@ -4834,3 +4834,10 @@ private routeはexact sourceをgeneric mixed gapより先にselectし、75 Surfa
 exclusion、empty obligationをauthenticateしてpublic payloadなしのpass resultを返す。
 frozen test 4件はPASSし、existing selector/diagnostic key/proof/fact/IR/VC/semantic
 resultは変更しない。
+
+## Checker Task 248P no-harness boundary
+
+Task 248Pはroute/helper/selector/assertion/result fieldを追加しない。Parser Task 48
+pass/recovery fixtureはread-only preflight oracleだけで、type-elaboration stageへ
+activateしない。Task 264がexact consumerをfreezeするまでrunnerはProfile Cをselectせず、
+property payloadをderiveしない。

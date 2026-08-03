@@ -2231,3 +2231,11 @@ implementationはrow/backlink/status/fixture/expectation/runner route/executable
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`で
 byte-identicalのまま。既存Parser Task 48 requirement row 1件とpass/fail backlinks
 2件は従来creditだけを保持する。
+
+## Checker Task 248P traceability no-op
+
+Task 248Pはrequirement row/test backlink/status/owner/fixture/sidecar/expectation/
+active outcome/runner route/coverage creditを追加しない。trace manifestはSHA-256
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`
+でbyte-identical。Parser Task 48はexisting parse coverageだけを保持し、future active
+consumerのtrace decisionはTask 264がseparateに行う。

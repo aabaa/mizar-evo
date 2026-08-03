@@ -11658,3 +11658,11 @@ no-runnerとし、後続bounded consumerはChecker Task 264のみが追加でき
 exact implementation diffに`mizar-test`、fixture、sidecar、expectation、trace pathはない。
 lint/metadata `14/137`、full workspace testはPASSし、plan/parse/declaration/type/proof hashは
 frozen値を保存する。runner ownership/module layout変更はない。
+
+## Checker Task 248P frozen no-runner boundary
+
+frozen implementation scopeに`mizar-test` pathはない。runner productionは35 paths /
+67,939 lines、path/content hash
+`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
+`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`、
+library/lint/metadataは`528/14/137`のまま。later bounded module changeはTask 264がownする。

@@ -1516,3 +1516,10 @@ EN/JAはrunner/corpus artifact/sidecar/expectation/trace row・status・count/me
 CLI変更なしで一致する。両言語ともtrace hash
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`と
 frozen 5 CLI hashを保存する。
+
+## Checker Task 248P frozen no-runner synchronization
+
+EN/JAはTask 248Pにrunner source/test、fixture、sidecar、expectation、trace、metadata、
+CLI deltaがないことで一致する。runner `528`、production `35/67939`、trace hash
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`
+を保存し、real-source selection/consumer ownershipをTask 264へdeferする。

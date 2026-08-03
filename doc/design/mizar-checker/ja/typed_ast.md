@@ -1682,3 +1682,11 @@ debug serializationはない。
 current/final obligation tableのbyte equalityを要求し、全frozen dependency/rowを
 revalidateし、Task-259--262 definition-family ownerを両installation orderでrejectする。
 failureはoriginal typed valueを変更しない。
+
+## Task 248P property context typed ownership
+
+Task 248Pはtyped owner field/installation methodを追加しない。complete Profile C
+handoffはexisting one-shot source-context installationを使い、source/module/root、
+local-context、item/declaration site、context-linkをrevalidateする。recovered incomplete
+branchはinstall不能のまま。property payload/type result/fact/obligation/diagnostic tableを
+作らず、Profile A/B debug/installation byteは不変である。

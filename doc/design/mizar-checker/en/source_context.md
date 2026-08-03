@@ -10,6 +10,9 @@ in [`00.crate_plan.md`](./00.crate_plan.md). Profile A's authority is limited
 to Chapters 04 §4.3 and §4.6, 11 §11.2, 12 §12.3 and §12.7, and 15 §15.10.
 Profile B additionally uses Chapters 04 §§4.2/4.6, 09
 §§9.1/9.3--9.5/9.9.3--9.9.5, and 18 §§18.2.1/18.2.6/18.6 plus Appendix A.
+Profile C uses Chapters 04 §§4.2/4.6 and 07 §§7.4.1/7.8.2/7.10; Chapter 16
+§§16.6/16.7 supplies the negative boundary for deferred correctness,
+obligation, and proof semantics.
 The module preserves source-item order, resolver shell provenance, distinct
 reserve and definition-parameter identities, local shadowing, and checker
 context links.
@@ -17,16 +20,21 @@ context links.
 ## Boundary
 
 The module accepts syntax-free projections. Opaque `DeclarationShellId` values
-must come from the resolver's real `DeclarationShellSet`; the checker neither
-constructs shell identities nor imports `mizar-syntax`. `mizar-test` owns the
+must come from the resolver's real `DeclarationShellSet`; checker production
+neither constructs shell identities nor imports `mizar-syntax`. Checker-only
+tests may use the existing `mizar-syntax` dev-dependency and resolver collector
+to obtain opaque real shell ids. `mizar-test` owns the
 bounded `SurfaceAst` walk and supplies source ranges, typed sites, lexical
 scope, source order, and resolver-shaped `LocalTermBinding` provenance.
 
-Task 248 admits only the two named real-consumer profiles frozen in this
-document. Profile A is the implemented module-level `reserve x for set;`
+Task 248 admits only the two named real-consumer profiles and the dormant
+Task-248P Profile C frozen in this document. Profile A is the implemented
+module-level `reserve x for set;`
 followed by one `definition` block with one local `set` parameter named `x`.
 Profile B is the separately frozen one-normal-definition-block/two-parameter
-extension below. The Vec-based input and table shapes preserve order, but no
+extension below. Profile C is one property-implementation shell with one
+normal parameter or the zero-binding recovered-incomplete branch; it has no
+runner consumer before Task 264. The Vec-based input and table shapes preserve order, but no
 other cardinality or role combination is accepted. Additional reserve items,
 including canonical distinct-name multiple-reserve input, are valid language
 shapes but are rejected as `UnsupportedTaskShape` because they are outside
@@ -69,10 +77,12 @@ context and one deterministic internal diagnostic. A recovered shell with a
 binding is rejected. Incomplete or inconsistent data never installs any
 source-context table in `TypedAst` or `ResolvedTypedAst`.
 
-This recovery rule belongs only to Profile A. Profile B is normal-only: one
+This recovery rule belongs to Profile A and the separately frozen Profile C.
+Profile B is normal-only: one
 recovered definition item, either recovered parameter, or any partial
 two-parameter payload is rejected and never publishes an incomplete
-Profile-B handoff.
+Profile-B handoff. Profile C accepts only one recovered property shell with
+zero bindings and never fabricates its parameter.
 
 ## Determinism And Coverage
 
@@ -495,3 +505,151 @@ Pattern occurrences do not allocate bindings or term rows. Context is not
 inferred from opaque resolver spelling, the mode label, RHS, request, property,
 or source text. Task 262 changes no Task-248 API, helper, table, debug output,
 test, trace credit, count, or hash.
+
+## Task 248P Property-Implementation Context Profile
+
+Task 248P is the checker-owned binding/context prerequisite for Task 264. Its
+canonical authority is Chapter 4 §§4.2 and 4.6 together with Chapter 7
+§§7.4.1, 7.8.2, and 7.10. Chapter 16 §§16.6 and 16.7 fixes the correctness,
+coherence, obligation, and proof semantics that remain excluded. Parser Task
+48 supplies the read-only pass/recovery
+oracles, and resolver Task 264R supplies the implemented context-only
+`DeclarationShellKind::PropertyImplementation` shell. The disagreement is a
+bounded `source_drift` plus `design_drift` and a canonical-derived `test_gap`;
+there is no blocking `spec_gap`.
+
+The public ABI changes only by appending
+`SourceItemRole::PropertyImplementation` to the existing non-exhaustive enum.
+No binding role is added: the single source `DefinitionParameter` is already
+represented by `SourceBindingSiteRole::DefinitionParameter { local }` and
+retains `BindingKind::DefinitionParameter`, resolver-shaped
+`LocalTermBinding`, and declaration-shell ownership. Profile A and Profile B
+inputs, validation precedence, table bytes, error text, and debug text remain
+unchanged.
+
+### Closed Profile C
+
+Profile C admits exactly one selected top-level property-implementation shell
+per transaction. It is deliberately not a four-item projection of the Parser
+Task 48 pass fixture; Task 264 will select and authenticate a concrete real
+consumer. The item must have:
+
+- role `PropertyImplementation`, no parent, `Unspecified` visibility, one
+  nonempty local scope, one unique typed site, and source/module/range identity
+  matching the transaction;
+- the real resolver shell ordinal, authenticated as
+  `shell.index() == shell_ordinal`. Unlike the legacy profiles this ordinal may
+  be nonzero because earlier resolver shells remain outside the selected
+  transaction; Reserve/DefinitionBlock roles retain the existing
+  `shell_ordinal == input index` rule exactly;
+- normal recovery with exactly one normal `DefinitionParameter` binding, or
+  recovered state with exactly zero binding rows.
+
+The normal binding is owned by the same shell, has transaction ordinal zero,
+nonempty spelling, distinct item/binding typed sites, contained declaration
+and written-type ranges, and a `LocalTermBinding` whose spelling, declaration
+range, visible-after ordinal, and lexical scope are byte-equal to the input.
+The written-type range/site provenance is retained, but Profile C neither
+transports nor interprets the semantic defining-mode payload.
+No reserve binding, shadow predecessor, second parameter, sibling item,
+nested parent, explicit visibility, recovered binding, or alternative binding
+role is admitted. Normal omission is `PartialItem`; every other cardinality or
+role combination is `UnsupportedTaskShape` or the existing earlier
+category-specific error.
+
+Normal Profile C produces exact item/declaration/binding/binding-context/
+local-context/context-link/diagnostic cardinalities `1/1/1/2/2/2/0`. Context
+zero remains the empty module context. Context one is owned by the property
+shell, is a normal declaration layer whose parent is context zero, carries the
+exact local scope and one active definition-parameter binding, and links to
+local context one. The local context has the item typed site as owner, no
+assumptions, no visible facts, and one binding type-site reference. The
+declaration has no shadow or predecessor; the item has no predecessor.
+
+A recovered Profile C shell with zero bindings reuses the existing atomic
+incomplete boundary: it creates module plus recovered declaration binding
+contexts, zero bindings, and one
+`checker.binding.source_context.recovered` diagnostic, then returns
+`SourceBindingContextBuild::Incomplete`. It publishes no item/declaration/
+local-context/context-link handoff and cannot be installed into `TypedAst`.
+A recovered shell claiming a binding fails as `RecoveredItemClaimsBinding`.
+No parameter is fabricated from spelling, range, AST position, or property
+body material.
+
+### Ownership, Tests, And Deferrals
+
+The complete handoff follows the existing one-shot `TypedAst` installation
+and clone-only `ResolvedTypedAst` preservation rules. Stable debug uses the
+existing `source-binding-context-debug-v1` grammar with the sole new literal
+item role `property-implementation`; all other line ordering and escaping are
+unchanged. Exactly two new checker-local tests are frozen:
+
+1. `property_implementation_profile_builds_exact_context` builds a canonical
+   synthetic `SurfaceAst`: a `DefinitionBlockItem` shell at `0..20` contains
+   a `ModeDefinition` shell at `2..10`, followed by a top-level normal
+   `PropertyImplementation` shell at `20..80`. The resolver collector must
+   yield definition/mode/property shell ordinals `0/1/2`; Profile C uses module
+   `task248p.property_context`, local scope `[2]`, item site node 1, parameter
+   spelling `M`, declaration range/site node 2 at `24..25`, written-type range
+   `29..35`, and binding ordinal zero. It asserts all
+   `1/1/1/2/2/2/0` rows, typed installation/replay, and this exact debug block:
+
+   ```text
+   source-binding-context-debug-v1
+   module: task248p.property_context
+   item#0 shell=2 ordinal=2 role=property-implementation range=20..80 parent=none context=1 local_context=1 predecessor=none
+   declaration#0 item=0 binding=0 ordinal=0 role=definition-parameter range=24..25 type_range=29..35 context=1 local_context=1 shadowed=none predecessor=none
+   context-link#0 binding_context=0 local_context=0 item=module
+   context-link#1 binding_context=1 local_context=1 item=0
+   ```
+
+   Existing generic source-context final-clone tests remain the unchanged
+   evidence for `ResolvedTypedAst`; this task adds no final assembler branch.
+2. `property_implementation_profile_recovery_and_corruption_fail_closed`
+   derives all inputs from the same opaque shell. It freezes these outcomes:
+   property ordinal `1` -> `StaleShellOrdinal { index: 0 }`; reusing shell/id
+   ordinal `2` as legacy `DefinitionBlock` -> the same legacy stale-ordinal
+   error; normal zero bindings -> `PartialItem { index: 0 }`; two otherwise
+   valid normal bindings -> `UnsupportedTaskShape`; recovered shell plus one
+   binding -> `RecoveredItemClaimsBinding { index: 0 }`; module-owned
+   definition parameter or shell-owned reserve binding ->
+   `RoleMismatch { index: 0 }`; stale local scope ->
+   `StaleLocalIdentity { index: 0 }`; matching empty item/local scopes ->
+   `InvalidItemContext { index: 0 }`; parented property item ->
+   `InvalidParent { index: 0 }`. The recovered zero-binding input returns
+   `Incomplete` with binding contexts/bindings/diagnostics `2/0/1`, recovered
+   shell/context `2/1`, and `into_complete()` returns `IncompleteRecovery`.
+
+The existing
+`production_boundary_stays_syntax_free_and_does_not_claim_later_payloads`
+test remains one test and is adapted to scan only the production prefix before
+`#[cfg(test)]`. This permits the test-only syntax builder/collector while
+retaining the production-layer `mizar_syntax` prohibition and the projected
+`467 -> 469` count.
+
+The exact implementation write scope is one Rust file:
+`crates/mizar-checker/src/source_context.rs`. There is no runner helper or
+consumer, no parser/resolver edit, and no fixture, sidecar, expectation, trace,
+metadata, Cargo, or public diagnostic change. Checker tests project
+`467 -> 469`; runner/resolver/syntax remain `528/148/59`. Checker production
+remains 28 paths and its final line/content hash is remeasured after
+implementation; runner production remains byte-identical at `35/67939`.
+
+Task 248P does not inspect or transport the property name, defining-mode type,
+`means`/`equals` form, definiens, referenced property's return type, `it`,
+coherence material, or correctness blocks. It creates no initial obligation,
+goal, guard, proof/discharge/acceptance status, fact, Core, CFG, or VC payload.
+Task 264 exclusively owns those authority-bounded decisions, the exact
+Surface/resolver/lower fingerprints, Task-259 separation, and the private
+runner consumer.
+
+The documentation prerequisite changes only synchronized design records.
+Current executable baselines stay `467/528/148/59`, checker production
+`28/157908`, runner production `35/67939`, metadata `426/394`, active stages
+`101/7/203/1`, and trace hash
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+Exit requires findings-free specification review, docs-only hard gates and
+quality at least 90/100, exact task-only staging/commit, clean fresh inventory,
+and unchanged protected stash. Fresh inventory then selects the separate
+Task-248P implementation, followed by Task 264 rather than a broader context
+profile.

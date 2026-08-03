@@ -93,7 +93,7 @@ is its task 1). "Next work" points into the
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] historical milestone plus parser Tasks 48/46 increments and S-026 dense views complete | S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
-| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation readiness | Commit Task 264R, then fresh-inventory Checker Task 248P | [todo](./mizar-resolve/en/todo.md) |
+| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, Checker consumers through Task 263, and Task-264 lower no-runner boundary are recorded | Preserve all runner/corpus/trace artifacts through Task 264R and Task 248P | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers through Task 263 complete; Task 264R is implemented and Task 264 remains gated by checker Task 248P | Complete Task 248P, then freeze Task 264 property payload only | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
@@ -4062,5 +4062,19 @@ or semantic owner changed. B3M2B2B remains next before B4.
   `b1ed8ea19f8845d8c54f795a7375d4add4af237d` and clean post-commit inventory.
 - [x] Implement/review/verify Task 264R with test, implementation, and
   source/docs reviews at **NO FINDINGS** and all focused/full gates PASS.
-- [ ] Complete final quality, exact commit, fresh inventory, and select Checker
-  Task 248P; do not mix Task 264 property semantics.
+- [x] Complete final quality, exact implementation commit
+  `db8c39e31678d6b8a1f0900a5368c3b95c7162b5`, clean fresh inventory, and
+  select Checker Task 248P without mixing Task 264 property semantics.
+
+## Checker Task 248P Property Binding-Context Prerequisite
+
+- [x] Confirm the Task-264R shell, clean fresh inventory, safe task-only target,
+  report-only `repo_metadata_conflict`, and unchanged protected stash.
+- [x] Freeze Chapters 4/7 authority, Chapter-16 semantic exclusions, closed
+  Profile C, exact `1/1/1/2/2/2/0` normal/recovered boundary, append-only API,
+  one-file/two-test scope, count/hash impact, and Task-264 ownership.
+- [x] Repeat specification/boundary reviews to **NO FINDINGS** and pass all
+  docs-only hard gates at uncapped `100/100`.
+- [ ] Commit the exact synchronized 32-document prerequisite.
+- [ ] Fresh-inventory and implement/review/verify/commit exact Task 248P, then
+  return automatically to Task 264.

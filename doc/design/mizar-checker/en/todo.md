@@ -6653,10 +6653,14 @@ implementation commit does not satisfy a producer task.
   exact four-file/two-test scope and no checker/corpus/trace impact.
 - [x] Complete Task 264R documentation commit
   `b1ed8ea19f8845d8c54f795a7375d4add4af237d`, fresh inventory, and the exact
-  lower implementation; its dedicated implementation commit remains the
-  parent-owned final gate.
-- [ ] Fresh-inventory and freeze separate checker Task 248P binding-context
-  admission; complete its docs and implementation commits without property
-  semantics or runner credit.
+  lower implementation commit
+  `db8c39e31678d6b8a1f0900a5368c3b95c7162b5`; clean fresh inventory and
+  protected-stash invariance are confirmed.
+- [x] Fresh-inventory and freeze separate checker Task 248P binding-context
+  admission as closed Profile C without property semantics or runner credit.
+- [x] Complete findings-free Task 248P docs reviews and all nine hard gates at
+  uncapped `100/100`; preserve the exact 32-document staging target.
+- [ ] Complete exact docs commit, fresh inventory, and the separate
+  one-file/two-test implementation.
 - [ ] Only then freeze Task 264's exact property payload contract and preserve
   Task 259 separation plus all authority-limited semantic deferrals.

@@ -10,21 +10,28 @@ Task 248 source/binding-context producer を実装する。Profile Aのlanguage
 authorityはChapters 04 §4.3/§4.6、11 §11.2、12 §12.3/§12.7、15 §15.10に
 限定する。Profile BはさらにChapters 04 §§4.2/4.6、09
 §§9.1/9.3--9.5/9.9.3--9.9.5、18 §§18.2.1/18.2.6/18.6、Appendix Aを使う。
+Profile CはChapters 04 §§4.2/4.6、07 §§7.4.1/7.8.2/7.10を使い、Chapter 16
+§§16.6/16.7をdeferred correctness/obligation/proof semanticsのnegative boundaryとする。
 moduleはsource-item order、resolver shell provenance、reserve/definition
 parameterのdistinct identity、local shadow、checker context linkを保持する。
 
 ## Boundary
 
 module は syntax-free projection のみ受け取る。opaque `DeclarationShellId` は
-resolver の実 `DeclarationShellSet` から来なければならず、checker は shell
-identity を生成せず `mizar-syntax` を import しない。`mizar-test` が bounded
+resolver の実 `DeclarationShellSet` から来なければならず、checker productionはshell
+identityを生成せず`mizar-syntax`をimportしない。checker-only testはexisting
+`mizar-syntax` dev-dependencyとresolver collectorでopaque real shell idを取得できる。
+`mizar-test` が bounded
 `SurfaceAst` walk を所有し、source range、typed site、lexical scope、source
 order、resolver-shaped `LocalTermBinding` provenance を供給する。
 
-Task 248 が受理するのは本書で凍結した2つの named real-consumer profileだけで
-ある。Profile A は実装済みの module-level `reserve x for set;` と、それに続く
+Task 248 が受理するのは本書で凍結した2つの named real-consumer profileとdormant
+Task-248P Profile Cだけである。Profile A は実装済みの module-level
+`reserve x for set;` と、それに続く
 `x` という `set` local parameter 1件を持つ `definition` blockである。Profile B
 は下記で別途凍結するone-normal-definition-block/two-parameter extensionである。
+Profile Cはproperty-implementation shell 1件 + normal parameter 1件、または
+zero-binding recovered-incomplete branchであり、Task 264前にrunner consumerはない。
 Vec-based input/table shapeはorderを保持するが、他のcardinality/role combination
 は受理しない。canonicalなdistinct-name multiple-reserve inputを含むadditional
 reserve itemはvalid language shapeだが、このexact profile外なので
@@ -65,9 +72,11 @@ recovered definition shell は binding をclaimしない場合だけ supported �
 拒否する。incomplete/inconsistent data は `TypedAst` / `ResolvedTypedAst` に table
 を一切 install しない。
 
-このrecovery ruleはProfile Aだけに属する。Profile Bはnormal-onlyであり、
+このrecovery ruleはProfile Aとseparately frozen Profile Cに属する。Profile Bは
+normal-onlyであり、
 recovered definition item、いずれかのrecovered parameter、partial
-two-parameter payloadは拒否され、incomplete Profile-B handoffを公開しない。
+two-parameter payloadは拒否され、incomplete Profile-B handoffを公開しない。Profile Cは
+recovered property shell 1件 + binding 0だけをacceptし、parameterをfabricateしない。
 
 ## Determinism と coverage
 
@@ -464,3 +473,131 @@ stale-site/fingerprint-mismatched linkはfail closedする。
 pattern occurrenceはbinding/term rowをallocateしない。opaque resolver
 spelling、mode label、RHS、request、property、source textからcontextをinferしない。
 Task 262はTask-248 API/helper/table/debug/test/trace credit/count/hashを変更しない。
+
+## Task 248P property-implementation context profile
+
+Task 248PはTask 264のchecker-owned binding/context prerequisiteである。canonical
+authorityはChapter 4 §§4.2/4.6とChapter 7 §§7.4.1/7.8.2/7.10、Chapter 16
+§§16.6/16.7はexcluded correctness/coherence/obligation/proof semanticsを固定し、
+read-only oracleはParser Task 48 pass/recovery fixture、lower ownerはimplemented resolver
+Task 264Rのcontext-only `DeclarationShellKind::PropertyImplementation` shellである。
+disagreementはbounded `source_drift`、`design_drift`、canonical-derived
+`test_gap`であり、blocking `spec_gap`はない。
+
+public ABI changeはexisting non-exhaustive enumへの
+`SourceItemRole::PropertyImplementation` appendだけである。binding roleは追加せず、
+single source `DefinitionParameter`はexisting
+`SourceBindingSiteRole::DefinitionParameter { local }`、
+`BindingKind::DefinitionParameter`、resolver-shaped `LocalTermBinding`、
+declaration-shell ownershipをreuseする。Profile A/Bのinput、validation precedence、
+table byte、error text、debug textは不変である。
+
+### Closed Profile C
+
+Profile Cはtransactionごとにselected top-level property-implementation shell
+exactly 1件だけをadmitする。Parser Task 48 pass fixtureのfour-item projectionではなく、
+concrete real consumerのselection/authenticationはTask 264に残す。item要件は次である。
+
+- role `PropertyImplementation`、parentなし、`Unspecified` visibility、nonempty
+  local scope 1件、unique typed site、transactionと一致するsource/module/range。
+- real resolver shell ordinalを`shell.index() == shell_ordinal`でauthenticateする。
+  earlier resolver shellがselected transaction外に残るためnonzeroを許すが、legacy
+  Reserve/DefinitionBlock roleはexisting `shell_ordinal == input index` ruleをexactly
+  維持する。
+- normal recoveryならnormal `DefinitionParameter` binding exactly 1件、recovered
+  stateならbinding row exactly 0件。
+
+normal bindingはsame shell owner、transaction ordinal zero、nonempty spelling、
+distinct item/binding typed site、contained declaration/written-type rangeを持ち、
+`LocalTermBinding`のspelling/declaration range/visible-after ordinal/lexical scopeが
+inputとbyte-equalである。written-type range/site provenanceだけを保持し、semantic
+defining-mode payloadはtransport/interpretしない。reserve binding、shadow predecessor、
+second parameter、sibling item、nested parent、explicit visibility、recovered binding、
+alternative roleはadmitしない。normal omissionは`PartialItem`、その他のcardinality/role shapeは
+`UnsupportedTaskShape`またはexisting earlier category-specific errorである。
+
+normal Profile Cのitem/declaration/binding/binding-context/local-context/
+context-link/diagnostic cardinalityはexact `1/1/1/2/2/2/0`。context zeroはempty
+module context、context oneはproperty shell-owned normal declaration layerでparentは
+context zero、exact local scopeとactive definition-parameter binding 1件を持ち、local
+context oneへlinkする。local context ownerはitem typed siteで、assumption/factは0、
+binding type-site referenceは1件。declarationにはshadow/predecessorがなく、itemにも
+predecessorはない。
+
+recovered Profile C shell + zero bindingはexisting atomic incomplete boundaryをreuseし、
+module/recovered declaration binding context、binding 0、
+`checker.binding.source_context.recovered` diagnostic 1件を作り、
+`SourceBindingContextBuild::Incomplete`を返す。item/declaration/local-context/
+context-link handoffはpublishせず、`TypedAst`へinstallできない。bindingをclaimする
+recovered shellは`RecoveredItemClaimsBinding`でfailする。spelling/range/AST position/
+property bodyからparameterをfabricateしない。
+
+### Ownership、tests、deferral
+
+complete handoffはexisting one-shot `TypedAst` installationとclone-only
+`ResolvedTypedAst` preservationに従う。stable debugはexisting
+`source-binding-context-debug-v1` grammarにitem role literal
+`property-implementation`だけを追加し、他のline order/escapingは不変。new
+checker-local testsはexact 2件である。
+
+1. `property_implementation_profile_builds_exact_context`はcanonical synthetic
+   `SurfaceAst`、すなわちrange `0..20`の`DefinitionBlockItem` shell内に`2..10`の
+   `ModeDefinition` shellを持ち、その後`20..80`のtop-level normal
+   `PropertyImplementation` shellを持つ形を作る。resolver collectorはdefinition/
+   mode/property shell ordinal `0/1/2`を返す。module `task248p.property_context`、local scope `[2]`、
+   item site node 1、parameter spelling `M`、declaration range/site node 2 `24..25`、
+   written-type range `29..35`、binding ordinal zeroを使い、全`1/1/1/2/2/2/0` row、
+   typed installation/replayと次のexact debug blockをassertする。
+
+   ```text
+   source-binding-context-debug-v1
+   module: task248p.property_context
+   item#0 shell=2 ordinal=2 role=property-implementation range=20..80 parent=none context=1 local_context=1 predecessor=none
+   declaration#0 item=0 binding=0 ordinal=0 role=definition-parameter range=24..25 type_range=29..35 context=1 local_context=1 shadowed=none predecessor=none
+   context-link#0 binding_context=0 local_context=0 item=module
+   context-link#1 binding_context=1 local_context=1 item=0
+   ```
+
+   existing generic source-context final-clone testsを`ResolvedTypedAst` evidenceとして
+   そのまま使い、本taskはfinal assembler branchを追加しない。
+2. `property_implementation_profile_recovery_and_corruption_fail_closed`は同じopaque
+   shellから全inputをderiveし、property ordinal `1` ->
+   `StaleShellOrdinal { index: 0 }`、shell/id ordinal `2`をlegacy
+   `DefinitionBlock`として使う -> 同じlegacy stale-ordinal、normal binding 0 ->
+   `PartialItem { index: 0 }`、otherwise-valid normal binding 2 ->
+   `UnsupportedTaskShape`、recovered + binding 1 ->
+   `RecoveredItemClaimsBinding { index: 0 }`、module-owned definition parameterまたは
+   shell-owned reserve binding -> `RoleMismatch { index: 0 }`、stale local scope ->
+   `StaleLocalIdentity { index: 0 }`、matching empty item/local scope ->
+   `InvalidItemContext { index: 0 }`、parented property ->
+   `InvalidParent { index: 0 }`をfreezeする。recovered zero-binding inputは
+   binding contexts/bindings/diagnostics `2/0/1`、recovered shell/context `2/1`の
+   `Incomplete`を返し、`into_complete()`は`IncompleteRecovery`を返す。
+
+existing `production_boundary_stays_syntax_free_and_does_not_claim_later_payloads`は
+test 1件のまま、`#[cfg(test)]`前のproduction prefixだけをscanするようadaptする。
+これによりtest-only syntax builder/collectorを許しつつproduction-layer
+`mizar_syntax` prohibitionとprojected `467 -> 469`を維持する。
+
+exact implementation write scopeはRust file 1件、
+`crates/mizar-checker/src/source_context.rs`だけである。runner helper/consumer、
+parser/resolver edit、fixture/sidecar/expectation/trace/metadata/Cargo/public diagnostic
+changeはない。checker testは`467 -> 469`、runner/resolver/syntaxは`528/148/59`
+不変。checker production pathは28のままfinal line/content hashをimplementation後に
+remeasureし、runner productionは`35/67939`でbyte-identicalである。
+
+Task 248Pはproperty name、defining-mode type、`means`/`equals` form、definiens、
+referenced property return type、`it`、coherence material、correctness blockをinspect/
+transportしない。initial obligation、goal、guard、proof/discharge/acceptance status、
+fact、Core、CFG、VC payloadを作らない。これらのauthority-bounded decision、exact
+Surface/resolver/lower fingerprint、Task-259 separation、private runner consumerは
+Task 264だけがownする。
+
+documentation prerequisiteはsynchronized design recordだけを変更する。current
+baselineは`467/528/148/59`、checker production `28/157908`、runner production
+`35/67939`、metadata `426/394`、active stages `101/7/203/1`、trace hash
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`
+のまま。exitにはfindings-free specification review、docs-only hard gates、quality
+90/100以上、exact task-only staging/commit、clean fresh inventory、protected stash
+不変を要求する。fresh inventoryはseparate Task-248P implementationを選び、その後
+broader context profileではなくTask 264へ進む。

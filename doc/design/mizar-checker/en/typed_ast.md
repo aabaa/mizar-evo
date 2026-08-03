@@ -1337,6 +1337,15 @@ B3A/B3B installation orders fail without partial mutation and permit exact
 replay. The existing `InvalidSourceStatement` boundary and public API are
 unchanged.
 
+## Task 248P Property Context Typed Ownership
+
+Task 248P adds no typed owner field or installation method. A complete Profile
+C handoff uses the existing one-shot source-context installation, including
+source/module/root, local-context, item/declaration site, and context-link
+revalidation. The recovered incomplete branch remains un-installable. No
+property payload, type result, fact, obligation, or diagnostic table is
+created, and Profile A/B debug/installation bytes remain unchanged.
+
 Post-auth injection and stage-prefix/non-generic-guard assertions preserve
 atomic failure and replay. All test-sufficiency repeats and the final
 implementation repeat report **NO FINDINGS**.

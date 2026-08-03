@@ -1634,3 +1634,13 @@ EN/JA agree that the resolver context-shell prerequisite is implemented with
 two resolver tests and no checker source/API, runner, corpus, trace, Cargo, or
 coverage delta. Both keep Task 248P next and defer every Task 264 semantic
 payload, initial obligation, proof, acceptance, fact, and VC decision.
+
+## Task 248P Frozen Profile-C Synchronization
+
+EN/JA agree on Chapters 4/7 authority, closed one-shell/one-parameter normal
+Profile C, zero-binding recovered incomplete behavior, exact
+`1/1/1/2/2/2/0` output, append-only item role, reused binding role, nonzero
+real-shell ordinal authentication, unchanged Profile A/B behavior, one-file/
+two-test checker scope, `467 -> 469`, and no runner/corpus/trace change. Both
+languages defer every property payload, initial-obligation, proof, acceptance,
+fact, and VC decision to Task 264.

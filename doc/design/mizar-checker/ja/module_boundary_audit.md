@@ -1462,3 +1462,13 @@ property payload ownershipはさらにseparate Task 264とする。checker produ
 completed lower implementationはfrozen `mizar-resolve` 4 filesだけを変更する。
 `mizar-checker` module/public API/dependency/lint inventory/production count/hash/line-count
 decisionは不変。checker consumerはTask 248P/264だけへdeferする。
+
+## Task 248P frozen one-file checker boundary
+
+Task 248Pは`src/source_context.rs` exactly 1件だけを変更し、public non-exhaustive
+item role 1件をappend、closed Profile Cをadmit、existing binding role/context tableを
+reuseし、inline tests 2件を追加する。module/dependency/Cargo/runner/parser/resolver/
+corpus/trace/diagnostic-code/lint-policy pathは追加しない。docsではchecker production
+`28/157908`とcurrent path/content hashを保存し、implementationはpath 28のままchecker
+library `467 -> 469`をprojectしてline/contentをremeasureする。runnerは
+`35/67939`でbyte-identical。property payload ownerはseparate Task 264のまま。

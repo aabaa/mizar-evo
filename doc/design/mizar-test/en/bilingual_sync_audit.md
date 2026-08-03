@@ -1576,3 +1576,11 @@ sidecar, expectation, trace row/status/count, metadata assertion, or CLI.
 Both keep the trace hash
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`
 and all five frozen CLI hashes unchanged.
+
+## Checker Task 248P Frozen No-Runner Synchronization
+
+EN/JA agree that Task 248P has no runner source/test, fixture, sidecar,
+expectation, trace, metadata, or CLI delta. Both retain runner `528`, production
+`35/67939`, trace hash
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`,
+and defer real-source selection/consumer ownership to Task 264.

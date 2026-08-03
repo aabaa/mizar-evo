@@ -12929,3 +12929,12 @@ The exact implementation diff contains no `mizar-test`, fixture, sidecar,
 expectation, or trace path. Lint/metadata pass `14/137`, full workspace tests
 pass, and plan/parse/declaration/type/proof hashes remain frozen. There is no
 runner ownership or module-layout change.
+
+## Checker Task 248P Frozen No-Runner Boundary
+
+The frozen implementation scope contains no `mizar-test` path. Runner
+production stays 35 paths / 67,939 lines with path/content hashes
+`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
+`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`;
+library/lint/metadata remain `528/14/137`. Task 264 owns any later bounded
+module change.

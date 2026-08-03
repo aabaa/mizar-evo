@@ -5117,3 +5117,10 @@ Task-249S handoff, checker output, subtree exclusions, and empty obligations,
 then returns a pass result with no public payload. Four frozen tests pass; no
 existing selector, diagnostic key, proof, fact, IR, VC, or semantic result is
 changed.
+
+## Checker Task 248P No-Harness Boundary
+
+Task 248P adds no route, helper, selector, assertion, or result field. Parser
+Task 48 pass/recovery fixtures are read-only preflight oracles only; neither is
+activated at the type-elaboration stage. The runner cannot select Profile C or
+derive a property payload before Task 264 freezes its exact consumer.

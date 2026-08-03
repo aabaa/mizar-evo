@@ -743,3 +743,15 @@ Same-scope duplicates, recovery, a reserve hybrid, extra items/bindings, and
 stale scope/ordinal/range/site provenance remain fail-closed. Profile A's
 reserve/local shadow and recovered-empty branch are unchanged. Task 259 may
 only consume this handoff and may not reconstruct it.
+
+## Task 248P Property Context Binding Reuse
+
+Profile C adds no `BindingEnv` enum or constructor. One normal property
+parameter reuses `BindingKind::DefinitionParameter`, resolver-local identity,
+active status, source written-type site, empty capture/diagnostic lists, and a
+property-shell-owned declaration context whose parent is the empty module
+context. Its visible/binding lists both contain only binding zero and it has no
+shadow. The recovered zero-binding branch reuses the existing recovered
+context plus one recovery diagnostic. Profile A/B rows and error precedence
+remain byte-identical; Task 264 may consume this context but cannot reconstruct
+or add property semantics inside `BindingEnv`.

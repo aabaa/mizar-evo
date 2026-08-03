@@ -1663,3 +1663,10 @@ final assemblyはTask-263 handoff、complete unchanged obligation table、privat
 baseline snapshot、lower fingerprint、全row、zero-coherence profile、arena ownershipを
 clone-preserve/revalidateする。mixed Tasks 259--263をrejectし、immutable source
 transport以外のsemantic resultをpublishしない。
+
+## Task 248P property context final ownership
+
+Task 248Pはfinal input/assembler branchを追加しない。`ResolvedTypedAst`は`TypedAst`へ
+install済みのProfile C handoffだけをclone-preserveし、existing source-context
+validation/debug positionをreuseする。callerはhandoffをreplaceできず、recovered inputを
+promoteできない。property payload/provenanceと全semantic resultはTask 264までabsent。

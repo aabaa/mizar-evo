@@ -6345,8 +6345,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   file 4/test 2 scopeとchecker/corpus/trace無影響をfreeze。
 - [x] Task 264R docs commit
   `b1ed8ea19f8845d8c54f795a7375d4add4af237d`、fresh inventory、exact lower
-  implementationを完了。dedicated implementation commitはparent-owned final gateとして残る。
-- [ ] separate checker Task 248P binding-context admissionをfresh inventory/freezeし、property
-  semantics/runner creditなしでdocs/implementation commitを完了。
+  implementation commit `db8c39e31678d6b8a1f0900a5368c3b95c7162b5`を完了。
+  clean fresh inventory/protected-stash invarianceを確認済み。
+- [x] separate checker Task 248P binding-context admissionをfresh inventoryし、property
+  semantics/runner creditなしのclosed Profile Cとしてfreeze。
+- [x] Task 248P docs reviewと全9 hard gateをfindings-free、score capなし`100/100`で
+  完了し、exact 32-document staging targetを保存。
+- [ ] exact docs commit、fresh inventory、separate one-file/two-test implementationを完了。
 - [ ] その後だけTask 264 exact property payload contractをfreezeし、Task 259分離と
   authority-limited semantic deferralを保存。

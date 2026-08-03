@@ -2337,3 +2337,12 @@ SHA-256
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`;
 the existing Parser Task 48 requirement row and its two pass/fail backlinks
 retain their prior credit only.
+
+## Checker Task 248P Traceability No-Op
+
+Task 248P adds no requirement row, test backlink, status, owner, fixture,
+sidecar, expectation, active outcome, runner route, or coverage credit. The
+trace manifest remains byte-identical at SHA-256
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+Parser Task 48 keeps only its existing parse coverage; Task 264 must make a
+separate trace decision for any future active consumer.

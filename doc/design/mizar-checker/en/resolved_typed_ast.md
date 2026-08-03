@@ -1734,3 +1734,11 @@ complete unchanged obligation table, private baseline snapshot, lower
 fingerprint, rows, zero-coherence profile, and arena ownership. It rejects
 mixed Tasks 259--263 and publishes no semantic result beyond immutable source
 transport.
+
+## Task 248P Property Context Final Ownership
+
+Task 248P adds no final input or assembler branch. `ResolvedTypedAst` only
+clone-preserves the Profile C handoff installed in `TypedAst` and reuses the
+existing source-context validation/debug position. A caller cannot replace the
+handoff or promote recovered input. Property payload/provenance and every
+semantic result remain absent until Task 264.

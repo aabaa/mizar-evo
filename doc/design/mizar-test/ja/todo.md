@@ -3229,4 +3229,12 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] Parser Task 48 fixture 2件をread-only lower probeとし、inactive coherence seedを
   byte-identical/inactiveに保存。
 - [x] docs/lower implementationを通じpost-Task-263 count/hashを再確認し、Checker Task 264前に
-  runner consumerを追加しない。dedicated lower commit/post-commit inventoryはparent-owned gate。
+  runner consumerを追加しない。dedicated implementation commit
+  `db8c39e31678d6b8a1f0900a5368c3b95c7162b5`とclean post-commit inventoryは完了。
+
+## Checker Task 248P no-runner prerequisite
+
+- [x] runner/corpus/sidecar/expectation/trace/metadata/CLI impact zeroをfreezeし、runner
+  `528`、production `35/67939`、全hashを保存。
+- [ ] Profile-C runner helperを追加せずchecker-only docs/implementation commitを完了し、
+  Task 264 consumerをfresh-inventoryする。

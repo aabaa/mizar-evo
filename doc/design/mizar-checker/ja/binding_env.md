@@ -718,3 +718,14 @@ same-scope duplicate、recovery、reserve hybrid、extra item/binding、stale
 scope/ordinal/range/site provenanceはfail-closedのまま。Profile Aのreserve/local
 shadowとrecovered-empty branchは不変。Task 259はこのhandoffをconsumeするだけで
 reconstructできない。
+
+## Task 248P property context binding reuse
+
+Profile Cは`BindingEnv` enum/constructorを追加しない。normal property parameter 1件は
+`BindingKind::DefinitionParameter`、resolver-local identity、active status、source
+written-type site、empty capture/diagnostic listをreuseし、empty module contextをparentと
+するproperty-shell-owned declaration contextに属する。visible/binding listはいずれも
+binding zeroだけでshadowはない。recovered zero-binding branchはexisting recovered
+context + recovery diagnostic 1件をreuseする。Profile A/B row/error precedenceは
+byte-identicalで、Task 264はcontextをconsumeできるが`BindingEnv`内でreconstructしたり
+property semanticsを追加できない。

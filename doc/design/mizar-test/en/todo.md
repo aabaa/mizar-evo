@@ -3451,4 +3451,13 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   keep the inactive coherence seed byte-identical and inactive.
 - [x] Reconfirm all post-Task-263 counts and hashes through the docs and lower
   implementation; add no runner consumer before Checker Task 264. Dedicated
-  lower commit and post-commit inventory remain parent-owned gates.
+  lower implementation commit
+  `db8c39e31678d6b8a1f0900a5368c3b95c7162b5` and clean post-commit inventory
+  are complete.
+
+## Checker Task 248P No-Runner Prerequisite
+
+- [x] Freeze zero runner/corpus/sidecar/expectation/trace/metadata/CLI impact
+  and preserve runner `528`, production `35/67939`, and all hashes.
+- [ ] Complete the checker-only docs and implementation commits without adding
+  a Profile-C runner helper; then fresh-inventory Task 264's consumer.

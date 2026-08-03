@@ -6294,3 +6294,26 @@ resolver regressions pass. This closes the classified lower `source_drift`,
 Parser Task 48 coverage remains unchanged. Chapter 7 stays partial and the
 same Task 248P/264 property payload, initial-obligation, Typed/Resolved,
 runner, proof, acceptance, fact, and VC deferrals remain open.
+
+## Checker Task 248P Frozen Binding-Context Coverage Boundary
+
+Fresh inventory after resolver Task 264R confirms a checker `source_drift`:
+the context-only property shell exists, but Task-248 source-context roles and
+closed profiles cannot admit its one lexical parameter. Chapters 4 §§4.2/4.6
+and 7 §§7.4.1/7.8.2/7.10 authorize only the binding/context slice; Chapter 16
+§§16.6/16.7 fixes correctness, obligation, and proof behavior outside the
+task. Task 248P freezes append-only Profile C with exact normal context output
+`1/1/1/2/2/2/0` and a zero-binding recovered-incomplete branch. It changes no
+binding kind and preserves Profiles A/B.
+
+This documentation prerequisite changes no fixture, sidecar, expectation,
+trace row/backlink/status/count, active outcome, metadata, runner, CLI, or
+coverage credit. Trace hash remains
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+The later checker-only implementation may add exactly two checker unit tests
+and change checker library `467 -> 469`, but still adds no executable corpus
+credit. Chapter 7 remains partial. Task 264 separately owns exact real-source
+selection, property identity/provenance, defining-mode and return-type payload,
+`means`/`equals`, definiens and means-only `it`, initial obligations and
+coherence, Typed/final producer ownership, a private runner consumer, and all
+authority-bounded proof/acceptance/fact/VC deferrals.
