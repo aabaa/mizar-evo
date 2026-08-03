@@ -12861,3 +12861,16 @@ records. Runner production remains `33/65952` with path/content hashes
 `f24ae3f53e283dd81fbc61961c57dcb3456473390073e25955c37840e374fcd1` /
 `c4ceb938ae7cc1bfcbf87e95ec654f3a275eff6351eba80a354eeea4a6dafd74`.
 No runner API, file, test, fixture, or trace row was added.
+
+## Checker Task 262 Active Runner Boundary
+
+The new private production leaf
+`runner/type_elaboration/source_mode_definition.rs` has `1118` lines and its
+paired test leaf has `1242` lines. Bounded facade/root registration gives the
+exact source route precedence without broadening any generic or sibling
+selector. Runner production is `34/67087`; path/content hashes are
+`72481975abab5250f3577a7643af4b5aa64f7c941be1aed4a2e1cbc726d1e55a` /
+`18e9921fd68c2401869334223de100549ed92ed0a806e37cd0da5f7110c015bf`.
+Raw syntax/resolver objects remain wholly private; only syntax-free inputs
+cross into the checker. No proof, acceptance, fact, IR, VC, or Task-263
+structure owner moved.

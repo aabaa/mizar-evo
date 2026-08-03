@@ -706,6 +706,7 @@ use type_elaboration::{
     source_local_object_mode_reserved_variable_inequality_detail_keys,
     source_local_object_mode_reserved_variable_membership_detail_keys,
     source_local_object_mode_reserved_variable_type_assertion_detail_keys,
+    source_mode_definition_transport_detail_keys,
     source_multiple_object_reserve_declaration_equality_detail_keys,
     source_multiple_object_reserve_declaration_inequality_detail_keys,
     source_multiple_reserve_declaration_equality_detail_keys,
@@ -1691,6 +1692,15 @@ fn type_elaboration_detail_keys(
         augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env)
     };
     if let Some(keys) = source_attribute_definition_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &symbols,
+        &source_text,
+    ) {
+        return keys;
+    }
+    if let Some(keys) = source_mode_definition_transport_detail_keys(
         &ast,
         resolver.module.clone(),
         &resolver.shells,

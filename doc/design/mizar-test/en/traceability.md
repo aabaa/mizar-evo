@@ -2263,3 +2263,16 @@ active, closing the recorded lower `source_drift`/`test_gap`. This still grants
 no executable language/corpus credit: metadata remains `424/392`, `231/193`,
 `101/7/201/1`, type `256/244`, warnings/errors `23/0`, with no trace row or
 status change. Task 262 alone owns the future pass backlink.
+
+## Checker Task 262 Active Trace Result
+
+`spec.en.checker.type_elaboration.source_mode_definition_payload` is now one
+required covered row backed solely by
+`pass_type_elaboration_mode_definition_payload_001.expect.toml`; the sidecar
+reciprocally names only that requirement. Source/sidecar/trace hashes are
+`3271f243670bd781c7167ff0d3bf463263a318abbe261aabdde1842c532a725e`,
+`046b5a686600f78e1598c515c05f8124ec19edef56a14385a2d05bced527601e`,
+and `3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`.
+Active metadata is `425/393`, `232/193`, `101/7/202/1`, type `257/245`, and
+warnings/errors `23/0`. Credit remains exact transport and pending-obligation
+ownership only; the mixed structure gap and all semantic deferrals are intact.

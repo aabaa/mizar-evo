@@ -2162,3 +2162,16 @@ lower `source_drift`/`test_gap`をcloseした。executable language/corpus credi
 付与せず、metadataは`424/392`、`231/193`、`101/7/201/1`、type
 `256/244`、warnings/errors `23/0`でtrace row/status不変。future pass backlinkは
 Task 262だけがownする。
+
+## Checker Task 262 active trace result
+
+`spec.en.checker.type_elaboration.source_mode_definition_payload`はrequired/
+covered row 1件となり、sole backlinkは
+`pass_type_elaboration_mode_definition_payload_001.expect.toml`である。sidecarは
+reciprocalに同requirementだけをnameする。source/sidecar/trace hashは
+`3271f243670bd781c7167ff0d3bf463263a318abbe261aabdde1842c532a725e`、
+`046b5a686600f78e1598c515c05f8124ec19edef56a14385a2d05bced527601e`、
+`3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`。
+active metadataは`425/393`、`232/193`、`101/7/202/1`、type `257/245`、
+warnings/errors `23/0`である。creditはexact transport/Pending obligation owner
+だけで、mixed structure gapと全semantic deferralは不変である。

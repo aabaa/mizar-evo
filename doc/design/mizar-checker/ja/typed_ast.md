@@ -1626,3 +1626,18 @@ standalone mode-RHS extensionはinstallation前に実装済みである。
 `TypedAst::try_new`はexisting optional handoffでrowとsource-type expression 3件を
 revalidateし、new field/installerを追加しない。exact testはtype/fact/
 coercion/obligation/diagnostic tableをemptyに保つ。
+
+## Task 262 active mode-definition transaction
+
+`TypedAst`は`with_source_mode_definition`だけからinstallされるoptional
+`SourceModeDefinitionHandoff` 1件をownする。installerはcommitted Task-248 source
+contextとcombined Task-249/249M source-type handoffをrequireし、producerがretain
+したbaselineをcurrent obligation tableと比較して、six-table handoffとexact
+one-row `Sethood` suffixをatomicにpublishする。`TypedAstParts`はunchangedで、
+alternate install pathではない。
+
+transactionはprior Task-259/260/261/262 owner、sibling-only obligation kind、
+stale lower fingerprint、`source.definition.mode` domainのorphan goal/provenance
+をrejectする。unrelated baseline `Sethood` rowはbyte-preserveする。pending rowと
+unresolved RHS-inhabitation requestはgoal/guard composition、proof、discharge、
+acceptance、fact、IR、VC semanticsを与えない。

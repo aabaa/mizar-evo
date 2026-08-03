@@ -1569,3 +1569,11 @@ Canonical EN and companion JA now synchronize the implemented public mode-RHS
 ABI, exact four-test/453-checker inventory, `26/153116` checker production
 manifest, unchanged runner/corpus/trace state, and continued Task-262 semantic
 deferral. No synchronization exception exists.
+
+## Task 262 Active-Implementation Synchronization
+
+Canonical EN and companion JA synchronize the active six-table mode-definition
+ABI, exact source/resolver/lower fingerprints, unresolved RHS request, linked
+Pending `Sethood` suffix, Typed/final isolation, nine-test matrix, active
+`458/524` libraries and `425/393` metadata, manifest/test-list/CLI hashes, and
+all unchanged semantic deferrals. No synchronization exception exists.

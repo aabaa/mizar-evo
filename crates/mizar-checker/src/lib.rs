@@ -34,6 +34,7 @@ pub mod source_context;
 pub mod source_evidence;
 pub mod source_formula_composition;
 pub mod source_functor_definition;
+pub mod source_mode_definition;
 pub mod source_predicate_definition;
 pub mod source_set_term;
 pub mod source_statement;

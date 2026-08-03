@@ -411,7 +411,7 @@ a unit struct.
 | `SourceModeDefinitionRecovery` | `#[non_exhaustive]`; callers tolerate later recovery classes. |
 | `SourceModeDefinitionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
 
-No exhaustive public-enum exception is owned by this module.
+No exhaustive public enum exceptions are owned by this module.
 
 ## Exact Active Rows And Cardinalities
 
@@ -683,3 +683,20 @@ The lower standalone mode-RHS ABI and exact fingerprint are now implemented
 and checker-tested. Task 262 may consume only `mode_rhs().get(0)` and expression
 root 2 after fresh inventory; this completion grants no authority to invent
 goal/guard composition, discharge, acceptance, fact, proof, IR, or VC behavior.
+
+## Task 262 Active Implementation Result
+
+The frozen six-table producer is active at `1/2/1/1/1/1`. It authenticates
+the exact source/resolver identity and Task-248/249/249M handoffs, retains
+their fingerprints, leaves the RHS request unresolved, and appends exactly
+one Pending `Sethood` obligation to the authenticated baseline. Typed and
+resolved owners publish only immutable clones and reject mixed Tasks
+259--262, stale dependencies, invalid links, and orphan mode-domain rows.
+
+The exact pass pair and sole reciprocal covered trace row are active. The five
+checker and four runner tests preserve the frozen corruption, transactional,
+final-assembly, isolation, and non-publication matrix. Active counts are
+checker/runner/resolver/syntax `458/524/144/59`, metadata `425/393`, pass/fail
+`232/193`, active stages `101/7/202/1`, type coverage `257/245`, and
+warnings/errors `23/0`. All semantic deferrals above remain unchanged; Task
+263 is selected only after the dedicated commit and fresh inventory.

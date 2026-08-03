@@ -1508,3 +1508,11 @@ canonical EN/companion JAはexact standalone mode-RHS ABI、`2/2/0/0/0 ->
 Task-249R isolation、test 4件、checker `449 -> 453`、unchanged runner/corpus/
 trace metadata、semantic exclusion、separate docs/implementation orderを同期する。
 synchronization exceptionはない。
+
+## Task 262 active-implementation synchronization
+
+canonical ENとcompanion JAはactive six-table mode-definition ABI、exact source/
+resolver/lower fingerprint、unresolved RHS request、linked Pending `Sethood`
+suffix、Typed/final isolation、test 9件、active `458/524` libraryと`425/393`
+metadata、manifest/test-list/CLI hash、全てのunchanged semantic deferralを同期する。
+synchronization exceptionはない。

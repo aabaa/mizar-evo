@@ -4556,7 +4556,7 @@ unchecked row below is one future nonempty logical task and one commit.
 - [x] **Task 259:** predicate-definition and initial-obligation intake producer.
 - [x] **Task 260:** functor-definition and initial-obligation intake producer.
 - [x] **Task 261:** attribute-definition producer.
-- [ ] **Task 262:** mode-definition producer.
+- [x] **Task 262:** mode-definition producer.
 - [ ] **Task 263:** structure/inheritance/constructor-definition producer.
 - [ ] **Task 264:** property-implementation producer; depends on parser Task 48.
 - [ ] **Task 269:** proof-local declaration/binding producer.
@@ -6559,4 +6559,9 @@ implementation commit does not satisfy a producer task.
   staging, dedicated documentation commit, and clean post-commit inventory.
 - [x] Implement the frozen Task-249M API and four tests; complete its reviews,
   verification, exact staging, and separate commit before Task 262.
-- [ ] Return to and implement only Task 262, then continue to Task 263+.
+- [x] Return to and implement only Task 262: exact six-table producer, pending
+  `Sethood` suffix, Typed/final transaction, private runner, pass pair, trace,
+  audits, focused tests, and projected counts are complete.
+- [x] Complete repeated final reviews with **NO FINDINGS**, all nine hard gates
+  at uncapped quality `100/100`, and exact Task-262 commit readiness; then
+  fresh-inventory Task 263+ without semantic spillover.

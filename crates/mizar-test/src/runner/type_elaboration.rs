@@ -16,6 +16,7 @@ mod source_evidence;
 mod source_formula;
 mod source_formula_composition;
 mod source_functor_definition;
+mod source_mode_definition;
 mod source_predicate_definition;
 mod source_reserve;
 mod source_set_term;
@@ -421,6 +422,12 @@ pub(super) use source_functor_definition::source_functor_definition_transport_de
 pub(super) use source_functor_definition::{
     SOURCE_FUNCTOR_DEFINITION_TEXT, SourceFunctorDefinitionRouteMutation,
     source_functor_definition_output, source_functor_definition_output_with_mutation,
+};
+pub(super) use source_mode_definition::source_mode_definition_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_mode_definition::{
+    SOURCE_MODE_DEFINITION_TEXT, SourceModeDefinitionRouteMutation, source_mode_definition_output,
+    source_mode_definition_output_with_mutation,
 };
 pub(super) use source_predicate_definition::source_predicate_definition_transport_detail_keys;
 #[cfg(test)]

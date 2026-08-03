@@ -11596,3 +11596,15 @@ runner productionは`33/65952`、path/content hashは
 `f24ae3f53e283dd81fbc61961c57dcb3456473390073e25955c37840e374fcd1` /
 `c4ceb938ae7cc1bfcbf87e95ec654f3a275eff6351eba80a354eeea4a6dafd74`。
 runner API/file/test/fixture/trace rowは追加しない。
+
+## Checker Task 262 active runner boundary
+
+new private production leaf
+`runner/type_elaboration/source_mode_definition.rs`は`1118`行、paired test leafは
+`1242`行である。bounded facade/root registrationはgeneric/sibling selectorを
+広げずexact source routeへpriorityを与える。runner productionは`34/67087`、
+path/content hashは
+`72481975abab5250f3577a7643af4b5aa64f7c941be1aed4a2e1cbc726d1e55a` /
+`18e9921fd68c2401869334223de100549ed92ed0a806e37cd0da5f7110c015bf`。
+raw syntax/resolver objectはprivateのままで、syntax-free inputだけがcheckerを
+crossする。proof/acceptance/fact/IR/VC/Task-263 structure ownerは移動しない。

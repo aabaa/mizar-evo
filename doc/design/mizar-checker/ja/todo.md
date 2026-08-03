@@ -4327,7 +4327,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
 - [x] **Task 259:** predicate-definition/initial-obligation intake producer。
 - [x] **Task 260:** functor-definition/initial-obligation intake producer。
 - [x] **Task 261:** attribute-definition producer。
-- [ ] **Task 262:** mode-definition producer。
+- [x] **Task 262:** mode-definition producer。
 - [ ] **Task 263:** structure/inheritance/constructor-definition producer。
 - [ ] **Task 264:** property-implementation producer。parser Task 48に依存。
 - [ ] **Task 269:** proof-local declaration/binding producer。
@@ -6258,4 +6258,9 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   docs commit/clean post-commit inventoryを完了する。
 - [x] frozen Task 249M API/test 4件をimplementする。review/verification/
   exact staging/separate commitをTask 262前に完了する。
-- [ ] Task 262だけへ戻ってimplementし、Task 263+へ継続する。
+- [x] Task 262だけへ戻り、exact six-table producer、Pending `Sethood` suffix、
+  Typed/final transaction、private runner、pass pair、trace、audit、focused test、
+  projected countをimplementした。
+- [x] repeated final reviewを**NO FINDINGS**で完了し、全9 hard gateをscore cap
+  なしのquality `100/100`で通過してexact Task-262 commit-readyとする。その後、
+  semantic spilloverなしにfresh-inventory Task 263+へ進む。

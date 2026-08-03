@@ -1520,3 +1520,11 @@ Paired runner records now agree that the checker seam and four tests are
 active at checker `453`, while runner `520` and every corpus/trace/CLI artifact
 remain unchanged. Task 262 is still a separate next consumer. No bilingual
 synchronization exception exists.
+
+## Checker Task 262 Active-Consumer Synchronization
+
+Paired EN/JA runner records synchronize the exact source/AST/resolver/lower
+consumer, four-test matrix, sole pass backlink, `524` runner library,
+`425/393` metadata, production/test-list/CLI and corpus hashes, and unchanged
+mixed-gap and semantic deferrals. No bilingual synchronization exception
+exists.

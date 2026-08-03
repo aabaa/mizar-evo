@@ -3396,4 +3396,8 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   corpus change.
 - [x] Review and separately commit Task-249M documentation; then implement its
   four checker tests and complete checker review/verification/separate commit.
-- [ ] Return to and implement only Task 262, then continue to Task 263+.
+- [x] Return to and implement only Task 262: exact consumer, four tests, pass
+  pair, reciprocal trace row, active counts, and measured hashes are present.
+- [x] Complete repeated reviews with **NO FINDINGS**, full verification, all
+  nine hard gates at uncapped quality `100/100`, and exact Task-262 commit
+  readiness; then fresh-inventory Task 263+ without broadening mixed semantics.

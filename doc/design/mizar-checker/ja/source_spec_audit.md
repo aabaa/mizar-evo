@@ -141,6 +141,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_composite_formula`
 - `source_formula_composition`
 - `source_functor_definition`
+- `source_mode_definition`
 - `source_predicate_definition`
 - `source_context`
 - `source_attribute`
@@ -566,6 +567,43 @@ bounded gap: parameter/guard/return-type goal composition、FOL correctness、
 proof/justification verification、discharge、definition acceptance、activation、
 fact/axiom、call/overload、conditional definiens、mixed predicate/functor
 acceptance、Core/CFG/VCは本module外である。
+
+### `source_mode_definition`
+
+generated public newtype:
+
+- `SourceModeDefinitionId`、`SourceModeParameterId`、
+  `SourceModeApplicationId`、`SourceModeExpansionId`、
+  `SourceModeInhabitationRequestId`、`SourceModePropertyId`
+
+literal top-level public item:
+
+- `SourceModeDefinitionHandoffInput`、`SourceModeDefinitionInput`、
+  `SourceModeParameterInput`、`SourceModeApplicationInput`、
+  `SourceModeExpansionInput`、`SourceModeInhabitationRequestInput`、
+  `SourceModePropertyInput`
+- `SourceModeInhabitationRequestKind`、`SourceModePropertyKind`、
+  `SourceModeDefinitionRecovery`
+- `SourceModeDefinition`、`SourceModeParameter`、`SourceModeApplication`、
+  `SourceModeExpansion`、`SourceModeInhabitationRequest`、`SourceModeProperty`
+- `SourceModeDefinitionTable`、`SourceModeParameterTable`、
+  `SourceModeApplicationTable`、`SourceModeExpansionTable`、
+  `SourceModeInhabitationRequestTable`、`SourceModePropertyTable`
+- `SourceModeDefinitionHandoff`、`SourceModeDefinitionProjection`、
+  `SourceModeDefinitionError`、`SourceModeDefinitionProducer`
+
+対応:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| immutable syntax-free table 6件がordinary mode definition 1件、parameter 2件、bracket application 1件、RHS expansion 1件、unresolved inhabitation request 1件、explicit sethood property 1件を保持する。 | `src/source_mode_definition.rs`のpublic input/row/dense id/table/getter。 | checker test 5件とsole exact runner consumer。 | exact `1/2/1/1/1/1`でimplemented。 |
+| resolver identityとexact Task-248/249/249M lower fingerprintをauthenticateし、retained baselineへPending Sethood row 1件をappendする。 | `SourceModeDefinitionProducer::build`、projection、installation validation。 | independent source/resolver/lower/link/cardinality/obligation corruption matrix。 | evidence responseなしでtransactional/fail-closed。 |
+| Typed/final ownerはhandoffとcomplete obligation tableをatomicにpublish/clone-preserveしmixed Tasks 259--262をrejectする。 | `TypedAst::with_source_mode_definition`と`ResolvedTypedAst::source_mode_definition`。 | both-order sibling isolation、rollback、final corruption、clone/debug test。 | mutually exclusive Task-262 ownershipとしてimplemented。 |
+| public surface/enumはdocumented/forward-compatibleである。 | 上記6 ID、7 input aggregate、3 data enum、6 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | syntax-dependency exceptionなしでguard。 |
+
+bounded gap: RHS evidence result、goal/guard/FOL composition、proof、discharge、
+acceptance、fact/axiom、use-site application/redefinition、registration、
+Core/CFG/VC、mixed definition semantics、structure definitionは本module外である。
 
 ### `source_predicate_definition`
 
@@ -5239,3 +5277,13 @@ syntax-free `SourceTypeModeRhs*` API、non-exhaustive `SourceTypeError` variant
 7件、exact transactional producer/installation validation、source-local test 4件で
 closeした。Task-249R isolationとnew syntax/diagnostic/semantics/runner/corpus/
 trace creditの非存在はboundaryのままである。
+
+## Task 262 active source audit
+
+public syntax-free `source_mode_definition` moduleがfrozen upper
+`source_drift`をcloseし、checker test 5件とexact private consumerがcanonical由来の
+`test_gap`をcloseする。non-empty dense table 6件、resolver/lower fingerprint、
+unresolved inhabitation request 1件、linked Pending `Sethood` row 1件がactiveで
+ある。public enum/source-spec/documentation/syntax-boundary lint inventoryはmoduleを
+含む。syntax dependency、evidence result、proof、acceptance、fact、IR、VC、
+structure-definition creditは導入しない。

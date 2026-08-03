@@ -163,6 +163,7 @@ rejection.
 - `source_composite_formula`
 - `source_formula_composition`
 - `source_functor_definition`
+- `source_mode_definition`
 - `source_predicate_definition`
 - `source_context`
 - `source_attribute`
@@ -594,6 +595,44 @@ Bounded gaps: parameter/guard/return-type goal composition, FOL correctness,
 proof or justification verification, discharge, definition acceptance,
 activation, facts/axioms, calls/overloads, conditional definientia, mixed
 predicate/functor acceptance, and Core/CFG/VC remain outside this module.
+
+### `source_mode_definition`
+
+Generated public newtypes:
+
+- `SourceModeDefinitionId`, `SourceModeParameterId`,
+  `SourceModeApplicationId`, `SourceModeExpansionId`,
+  `SourceModeInhabitationRequestId`, `SourceModePropertyId`
+
+Literal top-level public items:
+
+- `SourceModeDefinitionHandoffInput`, `SourceModeDefinitionInput`,
+  `SourceModeParameterInput`, `SourceModeApplicationInput`,
+  `SourceModeExpansionInput`, `SourceModeInhabitationRequestInput`,
+  `SourceModePropertyInput`
+- `SourceModeInhabitationRequestKind`, `SourceModePropertyKind`,
+  `SourceModeDefinitionRecovery`
+- `SourceModeDefinition`, `SourceModeParameter`, `SourceModeApplication`,
+  `SourceModeExpansion`, `SourceModeInhabitationRequest`, `SourceModeProperty`
+- `SourceModeDefinitionTable`, `SourceModeParameterTable`,
+  `SourceModeApplicationTable`, `SourceModeExpansionTable`,
+  `SourceModeInhabitationRequestTable`, `SourceModePropertyTable`
+- `SourceModeDefinitionHandoff`, `SourceModeDefinitionProjection`,
+  `SourceModeDefinitionError`, `SourceModeDefinitionProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Six immutable syntax-free tables retain one ordinary mode definition, two parameters, one bracket application, one RHS expansion, one unresolved inhabitation request, and one explicit sethood property. | Public inputs, rows, dense ids, tables, and getters in `src/source_mode_definition.rs`. | Five checker tests and the sole exact runner consumer. | Implemented as exact `1/2/1/1/1/1`. |
+| Resolver identity and exact Task-248/249/249M lower fingerprints are authenticated while one Pending Sethood row is appended to the retained baseline. | `SourceModeDefinitionProducer::build`, projection, and installation validation. | Independent source/resolver/lower/link/cardinality/obligation corruption matrices. | Transactional and fail closed without an evidence response. |
+| Typed/final owners publish and clone-preserve the handoff plus complete obligation table atomically and reject mixed Tasks 259--262. | `TypedAst::with_source_mode_definition` and `ResolvedTypedAst::source_mode_definition`. | Both-order sibling isolation, rollback, final corruption, clone, and debug tests. | Implemented as mutually exclusive Task-262 ownership. |
+| Public surface and enums remain documented and forward-compatible. | Six ids, seven input aggregates, three data enums, six rows/tables, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no syntax-dependency exception. |
+
+Bounded gaps: RHS evidence result, goal/guard/FOL composition, proof,
+discharge, acceptance, facts/axioms, use-site application/redefinition,
+registration, Core/CFG/VC, mixed definition semantics, and structure
+definitions remain outside this module.
 
 ### `source_predicate_definition`
 
@@ -5467,3 +5506,14 @@ seven non-exhaustive `SourceTypeError` variants, exact transactional producer,
 installation validation, and four source-local tests in `source_type.rs`.
 Task-249R isolation and the absence of new syntax, diagnostics, semantics,
 runner, corpus, or trace credit remain explicit boundaries.
+
+## Task 262 Active Source Audit
+
+The public syntax-free `source_mode_definition` module now closes the frozen
+upper `source_drift`, while its five checker tests and exact private consumer
+close the canonical-derived `test_gap`. Six non-empty dense tables, resolver
+and lower fingerprints, one unresolved inhabitation request, and one linked
+Pending `Sethood` row are active. Public enum, source-spec, documentation, and
+syntax-boundary lint inventories include the module. No syntax dependency,
+evidence result, proof, acceptance, fact, IR, VC, or structure-definition
+credit is introduced.

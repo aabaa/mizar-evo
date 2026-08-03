@@ -1682,3 +1682,18 @@ The implemented mode-RHS table remains inside the existing typed-owned
 source-type handoff. `ResolvedTypedAst` adds no field or input and clone-
 preserves the validated `2/3/0/0/1` fingerprint exactly once; the four Task-
 249M tests confirm that all final semantic result tables remain empty.
+
+## Task 262 Active Final Mode-Definition Ownership
+
+Final assembly clone-preserves the optional Task-262 handoff only from its
+typed owner and revalidates the exact Task-248/249/249M fingerprints, all six
+dense tables, baseline count, property-to-obligation link, and single pending
+`Sethood` suffix. `ResolvedTypedAstInputs` gains no replaceable Task-262 field;
+the only new public projection is the read-only getter.
+
+Every mixed Task-259/260/261/262 state is rejected, including reverse install
+orders that older sibling installers cannot detect. Without the handoff, a
+goal or provenance in the `source.definition.mode` domain is an orphan and is
+rejected, while unrelated existing-kind `Sethood` rows remain permitted. Final
+assembly does not answer the inhabitation request or publish acceptance,
+expansion/sethood facts, proof, Core, control flow, or VC output.

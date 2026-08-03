@@ -111,6 +111,14 @@ impl Fixture {
     }
 }
 
+pub(crate) fn actual_attribute_definition_typed_ast_for_task262() -> TypedAst {
+    let fixture = fixture();
+    fixture
+        .typed_ast(InitialObligationTable::new())
+        .with_source_attribute_definition(fixture.handoff())
+        .expect("actual Task 261 attribute installation for Task 262 isolation")
+}
+
 #[test]
 fn source_attribute_definition_builds_exact_handoff_and_preserves_obligations() {
     let fixture = fixture();

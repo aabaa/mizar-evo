@@ -6056,14 +6056,15 @@ credit. Only the later Task-262 implementation may add the frozen one-case/
 one-requirement delta after its independent hard gates pass; the mixed mode/
 structure gap remains unchanged for Task 263.
 
-## Checker Task 249M Frozen Representation-Coverage Intent
+## Checker Task 249M Historical Frozen Representation-Coverage Intent
 
 Task 249M is a checker-only representation prerequisite derived from Chapter
 7 and the committed Task-262 upper contract. It changes follow-up ownership by
 assigning the standalone mode RHS to a dedicated row in the existing source-
 type handoff, rather than a fabricated binding application or Task-249R return.
-The frozen lower profile is `2/3/0/0/1`; Task 262 remains blocked until the
-separate implementation commits and fresh inventory passes.
+The frozen lower profile is `2/3/0/0/1`; at this historical checkpoint,
+Task 262 remained blocked until the separate Task-249M implementation commit
+and its fresh inventory passed.
 
 This docs prerequisite and its later implementation add no canonical spec,
 fixture, sidecar, expectation, trace row/status/backlink, corpus case, runner
@@ -6082,3 +6083,21 @@ executable language coverage remains partial: no corpus, backlink, trace
 status, runner route, or metadata count changes before Task 262. Live metadata
 remains `424/392`, `231/193`, `101/7/201/1`, type `256 = 244 covered + 12
 deferred`, and warnings/errors `23/0`.
+
+## Checker Task 262 Active Coverage Result
+
+Task 262 activates exactly one Chapter-7 ordinary mode-definition transport
+row and its sole pass backlink. Active metadata is cases/requirements
+`425/393`, pass/fail `232/193`, parse/declaration/type/proof `101/7/202/1`,
+type requirements `257 = 245 covered + 12 deferred`, and warnings/errors
+`23/0`. The source/sidecar/trace hashes are
+`3271f243670bd781c7167ff0d3bf463263a318abbe261aabdde1842c532a725e` /
+`046b5a686600f78e1598c515c05f8124ec19edef56a14385a2d05bced527601e` /
+`3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`.
+
+This closes only the exact transport `source_drift` and canonical-derived
+`test_gap`. Chapter 7 remains partial: RHS evidence response, base-shape
+decision, goal/guard/FOL composition, computation/proof/discharge, acceptance,
+facts/axioms, use-site application/redefinition, registration, IR, VC, mixed
+definition-family semantics, and Task-263 structure definitions remain
+deferred. No canonical specification or existing corpus artifact changed.

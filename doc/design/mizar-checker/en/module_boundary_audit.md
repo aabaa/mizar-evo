@@ -27,8 +27,8 @@ remain aligned with their owning specifications.
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
-| `src/lib.rs` | 47 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it exports the documented syntax-free formula-composition and predicate/functor/attribute-definition source modules. |
-| `src/typed_ast.rs` | 5235 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including mutually isolated Task-259/260/261 definition transactions; monitor ergonomics after downstream use. |
+| `src/lib.rs` | 48 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it exports the documented syntax-free formula-composition and predicate/functor/attribute/mode-definition source modules. |
+| `src/typed_ast.rs` | 5300 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including mutually isolated Task-259/260/261/262 definition transactions; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3156 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula, Task-258B1 statement-context identity, and the unchanged context contract reused by Task-258B2; no behavior-neutral split required. |
 | `src/source_context.rs` | 1157 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only dependency corruption seams; no split required. |
@@ -40,6 +40,7 @@ remain aligned with their owning specifications.
 | `src/source_term.rs` | 2218 | syntax-free source primary-term producer | `source_term.md` | no | no | Cohesive Task-252 term/reference/request tables, binding and parent validation, deterministic rendering, and corruption tests including Task-258A dependency revalidation; no split required. |
 | `src/source_application.rs` | 4001 | syntax-free source functor-application producer | `source_application.md` | no | no | Cohesive Task-253 application/wrapper/candidate/argument/request tables, dependency and provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_functor_definition.rs` | 2237 | syntax-free source functor-definition producer | `source_functor_definition.md` | no | no | Cohesive Task-260 five-table handoff, baseline-preserving two-obligation projection, resolver/lower provenance validation, deterministic rendering, and typed/final Task-259 isolation checks; production remains syntax-free. |
+| `src/source_mode_definition.rs` | 1877 | syntax-free source mode-definition producer | `source_mode_definition.md` | no | no | Cohesive Task-262 six-table handoff, standalone-RHS fingerprint, unresolved inhabitation request, linked pending Sethood projection, deterministic rendering, and typed/final Tasks-259--261 isolation; production remains syntax-free. |
 | `src/source_predicate_definition.rs` | 1794 | syntax-free source predicate-definition producer | `source_predicate_definition.md` | no | no | Cohesive Task-259 five-table handoff, baseline-preserving pending-obligation projection, resolver/lower provenance validation, deterministic rendering, and typed/final installation checks; production source remains syntax-free. |
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | Cohesive Task-255/255C1 seven-table association, condition-subtree exclusion, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
 | `src/source_statement.rs` | 50732 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B3M2B2B3E/258B4A/258B4B/258B4C/258B5A/258B5B statement and witness transactions, resolver/binding/lower/application/structure/set/formula/import provenance, zero-edge/qua/comprehension/composite-root ownership, subtree validation, rendering, paired typed/final installation, and corruption matrices; no split required. |
@@ -49,11 +50,12 @@ remain aligned with their owning specifications.
 | `src/registration_resolution.rs` | 5891 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer, gate logic, and Task-259/260 obligation-kind serializers; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
-| `src/resolved_typed_ast.rs` | 7540 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including clone-preserving Task-259/260/261 handoffs and mutual-exclusion guards; no behavior-neutral split required. |
+| `src/resolved_typed_ast.rs` | 7595 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including clone-preserving Task-259/260/261/262 handoffs and mutual-exclusion guards; no behavior-neutral split required. |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
-| `tests/lint_policy.rs` | 1907 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Centralized policy guardrails include Task-259/260/261 module/spec/public-enum coverage and the unchanged production syntax boundary. |
-| `tests/support/source_attribute_definition_unit.rs` | 1062 | test-only Task-261 unit-test support | `source_attribute_definition.md` and this audit | no | no | Non-integration child support for the exact producer, obligation preservation, corruption, ownership, and replay matrix. |
+| `tests/lint_policy.rs` | 1911 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Centralized policy guardrails include Task-259/260/261/262 module/spec/public-enum coverage and the unchanged production syntax boundary. |
+| `tests/support/source_attribute_definition_unit.rs` | 1070 | test-only Task-261 unit-test support | `source_attribute_definition.md` and this audit | no | no | Non-integration child support for the exact producer, obligation preservation, corruption, ownership, replay, and cfg(test)-only Task-262 reverse-isolation fixture. |
 | `tests/support/source_functor_definition_unit.rs` | 3793 | test-only Task-260 unit-test support | `source_functor_definition.md` and this audit | no | no | Non-integration child support; the cfg(test)-only Task-261 isolation helper reuses actual Task-259/260 public producers without changing production ownership. |
+| `tests/support/source_mode_definition_unit.rs` | 1227 | test-only Task-262 unit-test support | `source_mode_definition.md` and this audit | no | no | Non-integration child support for exact rows, link/cardinality corruption, obligation suffixes, Typed/final replay, and all sibling-family installation orders. |
 | `tests/support/source_predicate_definition_unit.rs` | 1974 | test-only Task-259 unit-test support | `source_predicate_definition.md` and this audit | no | no | Keep as a non-integration child-module body. It uses the existing test-only `mizar-syntax` dependency only to construct opaque resolver shell ids; no production import, lint exception, public resolver API, or semantic owner is added. |
 
 ## Task 34 Classification
@@ -1416,3 +1418,17 @@ and four tests. No module or dependency edge was added. Checker production is
 ordered per-file content hash is
 `3c85673ebb527cb33bb4b042b1b1194bda34a5348b4b6b20142617db47bde2f2`.
 Task 262 remains a separate consumer task.
+
+## Task 262 Active Module Boundary
+
+Task 262 adds one syntax-free production owner,
+`src/source_mode_definition.rs` (`1877` lines), and one external test-support
+body (`1227` lines). Raw Surface and
+resolver projection remain private to the runner. The checker manifest is
+`27/155114`, with sorted path hash
+`180b090a167912f0b04f014180ec6755aa5bde54eecd49f0990cc87fb566667f` and
+ordered content hash
+`4de970d1f6e4b05b6b9004856de61e68574588163317193d973cc5a5410f6022`.
+The cfg(test)-only Task-261 fixture export exists solely to prove reverse
+mixed-family rejection and adds no release API or dependency edge. All proof,
+acceptance, fact, IR, VC, and Task-263 structure ownership stays outside.

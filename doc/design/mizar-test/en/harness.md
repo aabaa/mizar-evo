@@ -5065,3 +5065,13 @@ The lower checker producer and four tests are implemented. This harness still
 adds no route or test: runner `520`, metadata test `137`, all corpus/sidecar/
 expectation/trace hashes, and all five CLI outputs remain at the frozen Task-
 261 baseline. Only Task 262 may add the real consumer.
+
+## Checker Task 262 Active Harness Consumer
+
+The dedicated exact-source route is active and returns only the checker-owned
+mode-definition payload plus the linked pending obligation. It rejects
+expectation selection, every source/Surface/resolver/lower/payload corruption,
+all Tasks-259--261 sibling routes, and justification/semantic descendants.
+Exactly four runner tests are added, moving the library from `520` to `524`;
+metadata tests remain `137`. The five metadata-mode CLIs pass at
+`425/393`, `232/193`, `101/7/202/1`, type `257/245`, warnings/errors `23/0`.

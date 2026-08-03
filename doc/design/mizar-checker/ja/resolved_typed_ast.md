@@ -1614,3 +1614,18 @@ implemented mode-RHS tableはexisting typed-owned source-type handoff内に保�
 `ResolvedTypedAst`はfield/inputを追加せずvalidated `2/3/0/0/1`
 fingerprintをexactly once clone-preserveする。test 4件はfinal semantic result
 tableがemptyであることを確認する。
+
+## Task 262 active final mode-definition ownership
+
+final assemblyはoptional Task-262 handoffをtyped ownerだけからclone-preserveし、
+exact Task-248/249/249M fingerprint、dense table 6件、baseline count、property-to-
+obligation link、single pending `Sethood` suffixをrevalidateする。
+`ResolvedTypedAstInputs`はreplaceable Task-262 fieldを追加せず、新規public
+projectionはread-only getterだけである。
+
+older sibling installerが検出できないreverse install orderを含む全mixed
+Task-259/260/261/262 stateをrejectする。handoffなしでは
+`source.definition.mode` domainのgoal/provenanceをorphanとしてrejectし、unrelated
+existing-kind `Sethood` rowは許可する。final assemblyはinhabitation requestへ
+answerせず、acceptance、expansion/sethood fact、proof、Core、control flow、VCを
+publishしない。

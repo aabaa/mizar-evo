@@ -28,6 +28,9 @@ use crate::{
         SourcePredicateChainCompositionHandoff,
     },
     source_functor_definition::SourceFunctorDefinitionHandoff,
+    source_mode_definition::{
+        SourceModeDefinitionHandoff, validate_source_mode_definition_absence,
+    },
     source_predicate_definition::SourcePredicateDefinitionHandoff,
     source_set_term::SourceSetTermHandoff,
     source_statement::{
@@ -129,6 +132,7 @@ pub struct ResolvedTypedAst {
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
     source_attribute_definition: Option<SourceAttributeDefinitionHandoff>,
     source_functor_definition: Option<SourceFunctorDefinitionHandoff>,
+    source_mode_definition: Option<SourceModeDefinitionHandoff>,
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
@@ -216,6 +220,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_functor_definition(&self) -> Option<&SourceFunctorDefinitionHandoff> {
         self.source_functor_definition.as_ref()
+    }
+
+    pub const fn source_mode_definition(&self) -> Option<&SourceModeDefinitionHandoff> {
+        self.source_mode_definition.as_ref()
     }
 
     pub const fn source_composite_formula(&self) -> Option<&SourceCompositeFormulaHandoff> {
@@ -338,6 +346,13 @@ impl ResolvedTypedAst {
         debug_assert!(
             self.source_attribute_definition.is_none()
                 || (self.source_functor_definition.is_none()
+                    && self.source_predicate_definition.is_none()
+                    && self.source_mode_definition.is_none())
+        );
+        debug_assert!(
+            self.source_mode_definition.is_none()
+                || (self.source_attribute_definition.is_none()
+                    && self.source_functor_definition.is_none()
                     && self.source_predicate_definition.is_none())
         );
         let mut output = String::from("resolved-typed-ast-debug-v1\n");
@@ -382,6 +397,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_functor_definition) = &self.source_functor_definition {
             output.push_str(&source_functor_definition.debug_text());
+        }
+        if let Some(source_mode_definition) = &self.source_mode_definition {
+            output.push_str(&source_mode_definition.debug_text());
         }
         if let Some(source_composite_formula) = &self.source_composite_formula {
             output.push_str(&source_composite_formula.debug_text());
@@ -1357,6 +1375,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceAtomicFormula,
     InvalidSourceAttributeDefinition,
     InvalidSourceFunctorDefinition,
+    InvalidSourceModeDefinition,
     InvalidSourcePredicateDefinition,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
@@ -1455,6 +1474,8 @@ impl fmt::Display for ResolvedTypedAstError {
             ),
             Self::InvalidSourceFunctorDefinition => formatter
                 .write_str("resolved typed AST source functor-definition handoff is inconsistent"),
+            Self::InvalidSourceModeDefinition => formatter
+                .write_str("resolved typed AST source mode-definition handoff is inconsistent"),
             Self::InvalidSourcePredicateDefinition => formatter
                 .write_str("resolved typed AST source predicate-definition handoff is inconsistent"),
             Self::InvalidSourceCompositeFormula => formatter
@@ -1763,13 +1784,21 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         let source_functor_definition = self.inputs.typed_ast.source_functor_definition().cloned();
         let source_predicate_definition =
             self.inputs.typed_ast.source_predicate_definition().cloned();
+        let source_mode_definition = self.inputs.typed_ast.source_mode_definition().cloned();
         if source_attribute_definition.is_some()
-            && (source_functor_definition.is_some() || source_predicate_definition.is_some())
+            && (source_functor_definition.is_some()
+                || source_predicate_definition.is_some()
+                || source_mode_definition.is_some())
         {
             return Err(ResolvedTypedAstError::InvalidSourceAttributeDefinition);
         }
-        if source_functor_definition.is_some() && source_predicate_definition.is_some() {
+        if source_functor_definition.is_some()
+            && (source_predicate_definition.is_some() || source_mode_definition.is_some())
+        {
             return Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition);
+        }
+        if source_predicate_definition.is_some() && source_mode_definition.is_some() {
+            return Err(ResolvedTypedAstError::InvalidSourcePredicateDefinition);
         }
         if let Some(source_attribute_definition) = &source_attribute_definition {
             let source_context = self
@@ -1877,6 +1906,31 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             .any(|(_, row)| row.kind == InitialObligationKind::PredicatePropertyCorrectness)
         {
             return Err(ResolvedTypedAstError::InvalidSourcePredicateDefinition);
+        }
+        if let Some(source_mode_definition) = &source_mode_definition {
+            let source_context = self
+                .inputs
+                .typed_ast
+                .source_context()
+                .ok_or(ResolvedTypedAstError::InvalidSourceModeDefinition)?;
+            let source_type = self
+                .inputs
+                .typed_ast
+                .source_type()
+                .ok_or(ResolvedTypedAstError::InvalidSourceModeDefinition)?;
+            source_mode_definition
+                .validate_installation(
+                    source_id,
+                    &module_id,
+                    source_context,
+                    source_type,
+                    &initial_obligations,
+                    self.inputs.typed_ast.nodes(),
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceModeDefinition)?;
+        } else {
+            validate_source_mode_definition_absence(&initial_obligations)
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceModeDefinition)?;
         }
         let source_composite_formula = self.inputs.typed_ast.source_composite_formula().cloned();
         if let Some(source_composite_formula) = &source_composite_formula {
@@ -2203,6 +2257,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_atomic_formula,
             source_attribute_definition,
             source_functor_definition,
+            source_mode_definition,
             source_predicate_definition,
             source_composite_formula,
             source_formula_composition,

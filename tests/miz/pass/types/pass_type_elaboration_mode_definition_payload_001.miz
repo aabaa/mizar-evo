@@ -1,0 +1,6 @@
+definition
+  let x be set;
+  let y be set;
+  mode Task262ModeDefinition: Task262Mode [x, y] is set;
+  sethood by computation(steps: 1);
+end;

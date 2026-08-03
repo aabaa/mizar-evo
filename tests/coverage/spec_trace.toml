@@ -5163,6 +5163,19 @@ tests = [
 notes = "Checker Task 260 covers only immutable syntax-free source transport for the exact two-functor-definition consumer and appends one Pending FunctorExistence plus one Pending FunctorUniqueness obligation. The route authenticates the complete source/Surface/resolver profile and the Task-248/249+249R/252/256 lower bundle, while preserving parameters, guard, return types, equals/means definientia, correctness ownership, justification anchors, and resolver provenance as separate rows. This row grants no composed goal, proof or justification verification, discharge, acceptance or activation, fact or axiom, overload/call semantics, CoreIr, ControlFlowIr, VC, mixed predicate/functor acceptance, or broader functor-definition credit."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_mode_definition_payload"
+source = "doc/design/mizar-checker/en/source_mode_definition.md"
+section = "Dedicated Runner Consumer And Trace Intent"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_mode_definition_payload_001.expect.toml",
+]
+notes = "Checker Task 262 covers only immutable syntax-free source transport for the exact ordinary mode-definition consumer. The route authenticates the complete 141-byte source, 54-row Surface tree, resolver provenance, and Task-248/249+249M lower bundle, publishes definition/parameter/application/expansion/inhabitation-request/property tables `1/2/1/1/1/1`, and appends one Pending Sethood obligation with an empty representation-only assumption vector. This row grants no goal or guard composition, RHS witness or inhabitation result, proof or computation execution, discharge, acceptance, facts or axioms, mode application or redefinition semantics, CoreIr, ControlFlowIr, VC, mixed definition-family acceptance, structure-definition credit, or broader mode-definition credit."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_nested_quantifier_payload"
 source = "doc/design/mizar-checker/en/source_formula_composition.md"
 section = "Task 257B3 Frozen Nested-Quantifier Composition"

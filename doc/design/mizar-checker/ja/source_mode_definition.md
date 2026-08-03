@@ -405,7 +405,7 @@ output row/table/handoff/projection/errorは`Debug + Clone + PartialEq + Eq`、
 errorは`Display`/`std::error::Error`をimplementし`Default`/blanket conversionを
 持たない。producerはunit structである。
 
-## public enum policy
+## Public Enum Policy
 
 | public enum | compatibility policy |
 | --- | --- |
@@ -414,7 +414,7 @@ errorは`Display`/`std::error::Error`をimplementし`Default`/blanket conversion
 | `SourceModeDefinitionRecovery` | `#[non_exhaustive]`; callerはlater recovery classをtolerateする |
 | `SourceModeDefinitionError` | `#[non_exhaustive]`; callerはvalidation failureをexhaustive matchしない |
 
-exhaustive public-enum exceptionはない。
+この module が所有する exhaustive public enum exception はない。
 
 ## exact active row と cardinality
 
@@ -679,3 +679,20 @@ lower standalone mode-RHS ABIとexact fingerprintは実装されchecker test済�
 Task 262はfresh inventory後に`mode_rhs().get(0)`とexpression root 2だけを
 consumeできる。goal/guard composition、discharge、acceptance、fact、proof、
 IR、VC behaviorを発明するauthorityは与えない。
+
+## Task 262 active implementation result
+
+frozen six-table producerは`1/2/1/1/1/1`でactiveである。exact source/resolver
+identityとTask-248/249/249M handoffをauthenticateし、そのfingerprintを保持し、
+RHS requestをunresolvedのままにしてauthenticated baselineへPending `Sethood`
+obligationをexact 1件appendする。Typed/final ownerはimmutable cloneだけをpublishし、
+mixed Tasks 259--262、stale dependency、invalid link、orphan mode-domain rowを
+rejectする。
+
+exact pass pairとsole reciprocal covered trace rowはactiveである。checker 5件と
+runner 4件のtestがfrozen corruption/transaction/final-assembly/isolation/
+non-publication matrixを保護する。active countはchecker/runner/resolver/syntax
+`458/524/144/59`、metadata `425/393`、pass/fail `232/193`、active stages
+`101/7/202/1`、type coverage `257/245`、warnings/errors `23/0`である。上記の
+semantic deferralは全て不変であり、Task 263はdedicated commit後のfresh
+inventoryでのみselectする。

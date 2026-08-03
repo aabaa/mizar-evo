@@ -1699,3 +1699,19 @@ The standalone mode-RHS extension is now implemented before installation.
 `TypedAst::try_new` revalidates the row and all three source-type expressions
 through the existing optional handoff, with no new field or installer. Exact
 tests keep type, fact, coercion, obligation, and diagnostic tables empty.
+
+## Task 262 Active Mode-Definition Transaction
+
+`TypedAst` owns one optional `SourceModeDefinitionHandoff` installed only by
+`with_source_mode_definition`. The installer requires the committed Task-248
+source context and combined Task-249/249M source-type handoff, compares the
+producer's retained baseline with the current obligation table, and publishes
+the six-table handoff plus its exact one-row `Sethood` suffix atomically.
+`TypedAstParts` remains unchanged and is not an alternate installation path.
+
+The transaction rejects prior Task-259/260/261/262 ownership, sibling-only
+obligation kinds, stale lower fingerprints, and an orphan goal/provenance in
+the `source.definition.mode` domain. Unrelated baseline `Sethood` rows remain
+valid and byte-preserved. The pending row and unresolved RHS-inhabitation
+request grant no goal/guard composition, proof, discharge, acceptance, fact,
+IR, or VC semantics.

@@ -1465,3 +1465,10 @@ trace/CLI unchanged、separate implementation commit後だけTask 262へreturn�
 paired runner recordはchecker seam/test 4件がchecker `453`でactive、runner `520`と
 全corpus/trace/CLI artifactがunchangedであることを同期する。Task 262は
 separate next consumerで、bilingual synchronization exceptionはない。
+
+## Checker Task 262 active-consumer synchronization
+
+paired EN/JA runner recordはexact source/AST/resolver/lower consumer、test 4件、
+sole pass backlink、runner library `524`、metadata `425/393`、production/
+test-list/CLI/corpus hash、unchanged mixed-gap/semantic deferralを同期する。
+bilingual synchronization exceptionはない。

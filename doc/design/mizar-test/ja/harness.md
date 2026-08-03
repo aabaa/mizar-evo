@@ -4785,3 +4785,13 @@ later Task-262 runnerだけがreal sourceから`2/3/0/0/1`をbuild/fingerprint�
 lower checker producer/test 4件は実装済み。本harnessはroute/testを追加せず、
 runner `520`、metadata test `137`、corpus/sidecar/expectation/trace hash、CLI
 5本はTask-261 frozen baseline不変。real consumerはTask 262だけが追加できる。
+
+## Checker Task 262 active harness consumer
+
+dedicated exact-source routeはactiveで、checker-owned mode-definition payloadと
+linked Pending obligationだけを返す。expectation selection、全source/Surface/
+resolver/lower/payload corruption、Tasks-259--261 sibling route、justification/
+semantic descendantをrejectする。runner testはexact 4件追加されlibraryは
+`520 -> 524`、metadata testは`137`のままである。metadata-mode CLI 5本は
+`425/393`、`232/193`、`101/7/202/1`、type `257/245`、warnings/errors
+`23/0`でpassする。
