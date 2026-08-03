@@ -6202,3 +6202,37 @@ Metadata remains `425/393`, pass/fail `232/193`, active stages
 `23/0`. MC-G017/MC-G018 and Chapter 5 remain partial. Task 263 still owns
 structure/member association, inheritance and coherence intent, the private
 runner consumer, and the sole future pass/sidecar/covered trace row.
+
+## Checker Task 263 Frozen Coverage Intent
+
+Clean fresh inventory after committed Task 263R and Task 249S confirms the
+exact Chapter-5 structure source is dependency-ready. The missing upper
+checker producer is `source_drift`; the absent contract is `design_drift`; and
+the exact canonical-derived pass consumer is a `test_gap`. There is no
+blocking `spec_gap`, `test_expectation_drift`, or `boundary_violation` in the
+selected contract. Origin divergence remains report-only
+`repo_metadata_conflict` and does not obscure the task-only commit target.
+
+Task 263 freezes representation coverage for exactly two zero-parameter
+structure declarations, four typed field/property selectors, one direct
+inheritance edge, two exact root/path/view mappings, fields-only constructor
+order, and zero coherence requests for identical bare-`set` mapped types. The
+initial-obligation baseline remains byte-identical. This does not credit
+definition acceptance, property implementation, parameterized/multiple-edge
+inheritance, nonidentical-type coherence goals, constructor/selector use,
+facts, proofs, Core, CFG, or VC.
+
+The documentation prerequisite changes no trace row, status, backlink,
+fixture, sidecar, expectation, active case, or coverage count. Trace hash
+remains
+`3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`;
+metadata remains `425/393`, pass/fail `232/193`, active stages
+`101/7/202/1`, type `257 = 245 covered + 12 deferred`, and warnings/errors
+`23/0`. The later implementation may add exactly one covered transport row and
+one new pass sidecar, projecting `426/394`, `233/193`, `101/7/203/1`, and
+`258 = 246 + 12`; Chapter 5 and MC-G017/MC-G018 remain partial.
+
+The frozen private baseline snapshot closes the count-only replay design gap:
+same-length row mutation fails without a new public obligation serialization
+or coverage claim. Exact stable-debug grammar and compound error-precedence
+tests are implementation contract, not additional semantic credit.

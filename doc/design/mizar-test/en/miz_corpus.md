@@ -98,3 +98,18 @@ Key scenarios:
 - `.miz` corpus files are long-lived compatibility inputs.
 - Fail tests are not loosened to match current compiler behavior.
 - A soundness regression case is never deleted without architecture-level review.
+
+## Checker Task 263 Frozen Corpus Increment
+
+After the separate documentation prerequisite, Task 263 may add exactly one
+canonical-derived pass source/sidecar pair named
+`pass_type_elaboration_structure_definition_payload_001`. Its source is the
+frozen 320-byte/final-LF text with SHA-256
+`078eaee4b17341c9d8ebeb8a1f631ca984873bd07eb4e5d9c1a9486b39ac6671`.
+The sidecar is pass/type_elaboration/type_check with empty public diagnostics
+and payloads and one new Task-263 trace reference.
+
+The existing mixed mode/structure-definition failure pair and every parser/
+resolver structure fixture remain byte-identical. The docs prerequisite adds
+no corpus file; implementation projects cases `425 -> 426` and pass cases
+`232 -> 233` only after fresh inventory.

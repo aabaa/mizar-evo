@@ -3205,3 +3205,17 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   4件をfreezeし、runner/corpus/trace/metadata/CLI artifactを変更しない。
 - [x] separate implementationのno-op boundaryを保ち、その後Task 263
   だけがexact private consumer/pass+trace pairを追加する。
+
+## Checker Task 263 frozen runner consumer
+
+- [x] exact source/hash、75 Surface rows、resolver `10/8/8/8/0`、lower
+  `0/4/0/0/0/4` fingerprint、subtree exclusionsをfreezeする。
+- [x] private pre-gap route 1件、exact runner tests 4件、canonical-derived pass
+  pair 1件、reciprocal covered trace row 1件をassignする。
+- [x] transport-only credit、existing mixed-gap byte stability、projected runner/
+  metadata/coverage counts、hash remeasurement、scope、semantic non-publicationを
+  freezeする。
+- [x] docs-only commit readinessまでno-op boundaryを保つ。repeated reviewsは
+  **NO FINDINGS**、all nine hard gatesはuncapped `100/100`でPASS。
+- [ ] fresh inventory後、exact route/tests/pass/traceだけを実装し、全review/
+  verification後Checker Task 263と同じlogical implementation commitに入れる。

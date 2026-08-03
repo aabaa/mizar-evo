@@ -1643,3 +1643,16 @@ repeated final assemblyはexact immutable source-type handoffとdeterministic
 debug fingerprintをvalue equalityで維持する。final field/installer、
 semantic projection、diagnostic、obligation、fact、proof、acceptance outputは
 追加しない。
+
+## Task 263 frozen final ownership
+
+final assemblyはfuture structure-definition handoffを`TypedAst`からcloneする場合だけ
+取得する。complete source-type fingerprint、`2/4/1/2/0` graph、zero coherence、
+unchanged obligationをrevalidateしてgetter 1件を公開する。
+`ResolvedTypedAstInputs`にreplacement fieldはなく、new failureは
+`ResolvedTypedAstError::InvalidSourceStructureDefinition`だけである。reverse mixed
+Tasks-259--262 stateはfail-closedで、semantic table/accepted resultを生成しない。
+
+final validationはcurrent complete obligation tableをfrozen countだけでなくprivate
+byte-equal snapshotと比較するため、same-length changed rowもfailする。snapshot bytesは
+stable `debug_text()`に入らず、replaceable final inputで迂回できない。

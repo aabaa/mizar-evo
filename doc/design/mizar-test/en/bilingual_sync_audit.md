@@ -1539,3 +1539,15 @@ metadata/CLI artifact. Task 263 retains the future executable and trace work.
 EN/JA synchronize the measured unchanged runner `34/67087`, `524` tests,
 corpus/metadata counts, trace hash, and five CLI fingerprints. Only checker
 lower representation changed; Task 263 retains all executable and trace work.
+
+## Checker Task 263 Frozen Consumer Synchronization
+
+EN/JA synchronize the exact private route, 75/10/8/8/0 source-resolver oracle,
+Task-249S lower fingerprint, four test owners, one pass/trace pair, pre-gap
+selection, transport-only credit, unchanged mixed gap, projected
+`528/426/394/203/246+12` counts, hash remeasurement, and semantic exclusions.
+Both companions preserve the docs-only no-op boundary.
+
+Both also synchronize the exact empty runner obligation baseline, stable-debug
+profile/grammar assertion, and checker-local ownership of nonempty/same-length
+baseline mutations.

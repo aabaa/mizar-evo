@@ -4808,3 +4808,20 @@ Task-249S test 4件は`mizar-checker::source_type`内だけで実行する。dis
 selector、stage、loaded-source extractor、runner assertion、snapshot pathは
 追加しない。harness `524` testsと5 CLI outputはbyte-stableで、最初のreal
 consumerはTask 263が所有する。
+
+## Checker Task 263 frozen harness route
+
+future routeはgeneric mixed mode/structure-definition gapより先にselectするprivate
+exact-source branchである。source/Surface/resolver/lower source-type/semantic subtree
+exclusionを全認証し、syntax-free checker inputだけを構築して`2/4/1/2/0` final
+cloneをvalidateする。runner tests 4件はsource/resolver exactness、corruption、
+route/trace/family isolation、deferred semantic non-publicationを所有する。
+
+docs prerequisiteはdiscovery/selector/route/test/output/CLIを変更しない。
+implementationはrunner test `524 -> 528`とactive pass 1件だけをprojectし、hashは
+code存在後にfresh measureする。
+
+exact routeはempty initial-obligation baselineを渡し、checker handoff/final tableも
+emptyであることをassertする。runner replayはfrozen stable-debug profile/grammarも
+確認する。nonempty baseline/same-length mutation coverageはcorpusにsibling ownerが
+ないためchecker-localである。

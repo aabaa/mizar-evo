@@ -1415,3 +1415,23 @@ implementationはexisting syntax-free `src/source_type.rs` ownerと同期文書
 `37a7bb07a441086ee2915f601dedbca002f9a356b53a32050c29d467eb56b9f1`。
 new member tableはexisting source-type transaction/install validatorと
 behavior-coupledであり、split不要である。
+
+## Task 263 frozen module boundary
+
+Task 263はdedicated syntax-free production owner
+`src/source_structure_definition.rs`とnon-integration checker support body 1件を
+追加する。resolver identity、committed Task-249S handoff、immutable obligation
+baseline、typed arena sitesをconsumeする。raw source/Surface、shell association、
+exact-source authentication、route selectionはprivate `mizar-test`に残り、parser/
+resolver productionは移動しない。
+
+checker moduleは`2/4/1/2/0` declaration/member/edge/mapping/request tables、exact
+coverage/fields-only constructor validation、resolver/lower authentication、unchanged
+obligation projection、deterministic debug、Typed/final one-shot validationだけを
+所有する。Task 259はisolated sibling transaction、Tasks 260--262もexcludedである。
+acceptance/diagnostic/fact/proof/Core/CFG/VC ownerは移動しない。docs prerequisiteは
+checker `27/156019`、runner `34/67087` productionを不変に保つ。
+
+private obligation snapshotは同transactionとbehavior-coupledで、second owner/public
+serializerではない。stable debugはbytesでなくcountをrenderする。exact grammarと
+compound precedence testsはsame module/support owner内に残りboundaryを増やさない。

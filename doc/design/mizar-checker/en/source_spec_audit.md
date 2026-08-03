@@ -26,7 +26,9 @@ Module specifications audited:
 - [source_atomic_formula.md](./source_atomic_formula.md)
 - [source_attribute_definition.md](./source_attribute_definition.md)
 - [source_functor_definition.md](./source_functor_definition.md)
+- [source_mode_definition.md](./source_mode_definition.md)
 - [source_predicate_definition.md](./source_predicate_definition.md)
+- [source_structure_definition.md](./source_structure_definition.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
@@ -5548,3 +5550,32 @@ item. Exact row/range/site/arena/shape validation is globally precedence
 ordered, and sibling Task-249/249R/249M profiles reject mixed ownership. The
 source is `6244` lines; checker tests are `462`. No undocumented semantic
 surface was added.
+
+## Task 263 Frozen Source/API Audit
+
+Fresh inventory finds no existing `source_structure_definition` production
+owner. The exact source is parser/resolver clean only after committed Task
+263R, and its four written member types are represented only after committed
+Task 249S. This is an upper checker `source_drift`, paired `design_drift`, and
+canonical-derived runner `test_gap`, not a `spec_gap`.
+
+The new canonical design freezes the entire future public surface before any
+Rust edit: five dense IDs; four caller input row families; three
+non-exhaustive enums; five immutable tables including a derived coherence-
+request table; projection, error, and producer; Typed/final getters and one
+transactional installer. The exact active profile is `2/4/1/2/0`; parameters
+and context are absent, property selectors are excluded from constructor
+vectors, both mappings have authenticated identical bare-`set` types, and the
+arbitrary obligation baseline is unchanged. No goal, guard, obligation kind,
+diagnostic, acceptance, proof, fact, Core, CFG, or VC surface is authorized.
+
+This documentation prerequisite adds no source/API item and preserves checker
+production `27/156019` and tests `462`. Implementation inventory may be added
+only after the separate docs commit and fresh dependency preflight.
+
+The future handoff has one private immutable baseline-obligation snapshot with
+no getter or stable-debug serialization; Typed/final equality uses it to reject
+same-length mutation. Public `debug_text()` is nevertheless fully specified by
+an exact line grammar, profile line, escaping/list rules, empty-coherence
+representation, and final LF. Existing checker tests 2/3 own compound adjacent
+category and cross-row precedence, not only single-fault mutations.

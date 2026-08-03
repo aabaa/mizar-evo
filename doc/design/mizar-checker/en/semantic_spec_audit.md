@@ -620,3 +620,17 @@ members of the 24-fixture Task-49 reconciliation set. Their Task-247 owners may 
 spec-derived test-first coverage, but Task 49 must not grant them implicit or
 duplicate credit. Task 247 changes ownership notes only; all fixtures,
 expectations, trace status, and coverage credit remain unchanged.
+
+## Task 263 Frozen Semantic Boundary
+
+Chapter 5 authorizes explicit field/property kinds, fields-only constructor
+arguments, exact inherited-member coverage, root/path/view identity, and a
+type-inclusion requirement only when mapped types differ. The frozen source's
+two mapped pairs are independently written but identical bare builtin `set`;
+therefore Task 263 derives zero coherence requests and preserves every initial
+obligation unchanged. This is transport intent, not acceptance.
+
+No guard, quantified goal, proof/discharge, fact, axiom, chosen upcast,
+constructor/selector execution, extensionality, or Core/CFG/VC behavior is
+derived from source behavior. Parameterized, renamed, narrowed, multiple-edge,
+diamond, cyclic, and property-implementation semantics remain deferred.

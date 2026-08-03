@@ -1452,3 +1452,27 @@ path/content hashes are
 `37a7bb07a441086ee2915f601dedbca002f9a356b53a32050c29d467eb56b9f1`.
 The new member table is behavior-coupled to the existing source-type
 transaction and installation validator, so no split is warranted.
+
+## Task 263 Frozen Module Boundary
+
+Task 263 will add one dedicated syntax-free production owner,
+`src/source_structure_definition.rs`, and one non-integration checker support
+body. It consumes resolver identities, the committed Task-249S handoff, an
+immutable obligation baseline, and typed arena sites. Raw source/Surface
+selection, shell association, exact-source authentication, and consumer route
+selection remain private to `mizar-test`; parser and resolver production do not
+move.
+
+The checker module owns only `2/4/1/2/0` immutable declaration/member/edge/
+mapping/request tables, exact coverage and fields-only constructor validation,
+resolver/lower authentication, unchanged-obligation projection,
+deterministic debug, and Typed/final one-shot validation. Task 259 remains an
+isolated sibling transaction; Tasks 260--262 are likewise excluded. No
+definition acceptance, diagnostic, fact, proof, Core, CFG, or VC owner moves.
+The docs prerequisite leaves checker `27/156019` and runner `34/67087`
+production unchanged.
+
+The private obligation snapshot remains behavior-coupled to this transaction;
+it is not a second owner or public serializer. Stable debug renders its count,
+not bytes. Exact grammar and compound precedence tests remain inside the same
+module/support owners and create no extra boundary.

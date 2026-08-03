@@ -6306,5 +6306,29 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `origin/main...HEAD = 0/8`とprotected stash不変を確認済み。
 - [x] fresh inventory後exact `0/4/0/0/0/4` handoffとchecker test 4件を
   実装し、test-sufficiency/implementation reviewを**NO FINDINGS**でcloseする。
-- [ ] source/documentation/final quality gate、exact stage、dedicated
+- [x] source/documentation/final quality gate、exact stage、dedicated
   implementation commit、clean fresh inventoryを完了し、Task 263へ戻る。
+  implementation commitは
+  `93d64c33eb4234793f7e6f9d95516a366464dd9b`、9 gatesはuncapped
+  `100/100`、fresh inventoryは`origin/main...HEAD = 0/9`、protected stash不変。
+
+## Checker Task 263 structure-definition intake
+
+- [x] canonical plan/TODO/audits、Chapter 5とbounded Chapters 13/16/19、exact
+  parser/resolver source、active mixed gap、Task-249S lower/public API、counts/
+  CLI/hashをfresh inventoryする。
+- [x] Task-263R/249S committedとexact source dependency-ready、frontend/resolver
+  `75/10/8/8/0`、source type `0/4/0/0/0/4`を確認する。
+- [x] exact source/hash、parameter/context absence、`2/4/1/2/0` rows、constructor/
+  selector、root/path/view coverage、resolver provenance、lower fingerprint、
+  identical-type zero coherenceをfreezeする。
+- [x] arbitrary baseline obligations unchanged、new kind/goal/guardなし、Typed/final
+  ownership、Task-259--262 isolation、private runner、subtree exclusions、tests、
+  count/hash、deferrals、scope、exitをEN/JA同期する。
+- [x] review-only specificationとsource/documentation auditを**NO FINDINGS**
+  まで反復し、docs hard gatesをuncapped `100/100`でpassする。parent-ownedの
+  staging/commit用exact docs-only targetを保つ。
+- [ ] docs commit後fresh inventoryし、frozen Task-263 producer/ownership/private
+  runner/pass pair/trace/auditsだけを実装する。
+- [ ] test/implementation/source-doc/final reviewsを**NO FINDINGS**、9 gates
+  PASS/no cap/90+まで反復し、verification/staging/commit後Task 264+へ自動継続する。

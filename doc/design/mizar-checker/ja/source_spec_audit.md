@@ -24,7 +24,9 @@ public method は、module spec が table、builder、output API として記述
 - [source_atomic_formula.md](./source_atomic_formula.md)
 - [source_attribute_definition.md](./source_attribute_definition.md)
 - [source_functor_definition.md](./source_functor_definition.md)
+- [source_mode_definition.md](./source_mode_definition.md)
 - [source_predicate_definition.md](./source_predicate_definition.md)
+- [source_structure_definition.md](./source_structure_definition.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
@@ -5315,3 +5317,29 @@ public inventory/correspondenceは全new itemを含む。exact row/range/site/ar
 shape validationはglobal precedence orderであり、sibling Task-249/249R/249M
 profileとのmixed ownershipを拒否する。sourceは`6244` lines、checker testは
 `462`。undocumented semantic surfaceは追加していない。
+
+## Task 263 frozen source/API audit
+
+fresh inventoryにexisting `source_structure_definition` production ownerはない。
+exact sourceはcommitted Task 263R後にparser/resolver cleanとなり、4 written member
+typesはcommitted Task 249S後だけrepresentableである。これはupper checker
+`source_drift`、paired `design_drift`、canonical由来runner `test_gap`で、
+`spec_gap`ではない。
+
+new canonical designはRust edit前にfuture public surface全体をfreezeする。dense ID
+5種、caller input row 4 families、non-exhaustive enum 3種、derived coherence tableを
+含むimmutable table 5種、projection/error/producer、Typed/final getterとone
+transactional installerである。active profileは`2/4/1/2/0`、parameter/context
+absent、propertyはconstructor vector外、両mappingはauthenticated identical bare
+`set`、arbitrary obligation baseline unchangedである。goal/guard/obligation kind/
+diagnostic/acceptance/proof/fact/Core/CFG/VC surfaceはauthorizeしない。
+
+docs prerequisiteはsource/APIを追加せず、checker production `27/156019`、tests
+`462`を保つ。implementation inventoryはseparate docs commitとfresh dependency
+preflight後だけ追加できる。
+
+future handoffはgetter/stable-debug serializationなしのprivate immutable baseline-
+obligation snapshotを持ち、Typed/final equalityでsame-length mutationを拒否する。
+public `debug_text()`はexact line grammar/profile/escaping/list/empty-coherence/final
+LFまでfreezeする。checker tests 2/3はsingle-faultだけでなくcompound adjacent-
+category/cross-row precedenceを所有する。

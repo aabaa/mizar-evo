@@ -6608,6 +6608,35 @@ implementation commit does not satisfy a producer task.
 - [x] Fresh-inventory and implement the exact `0/4/0/0/0/4` handoff and four
   checker tests; close
   test-sufficiency and implementation reviews with **NO FINDINGS**.
-- [ ] Complete source/documentation and final quality gates, exact staging,
+- [x] Complete source/documentation and final quality gates, exact staging,
   dedicated implementation commit, and clean fresh inventory; then resume
-  Task 263.
+  Task 263. Implementation commit
+  `93d64c33eb4234793f7e6f9d95516a366464dd9b`; all nine gates passed at
+  uncapped `100/100`, fresh inventory reported `origin/main...HEAD = 0/9`,
+  and the protected stash remained invariant.
+
+## Checker Task 263 Structure-Definition Intake
+
+- [x] Fresh-inventory the canonical plan/TODO/audits, Chapter 5 and bounded
+  Chapters 13/16/19 authority, exact parser/resolver source, active mixed gap,
+  Task-249S lower handoff, public APIs, counts, CLIs, and hashes.
+- [x] Confirm Task-263R and Task-249S are committed and the exact source is
+  dependency-ready with `75/10/8/8/0` frontend/resolver and
+  `0/4/0/0/0/4` source-type profiles.
+- [x] Freeze exact source/hash, parameter/context absence, `2/4/1/2/0` rows,
+  constructor/selector ownership, root/path/view coverage, resolver
+  provenance, lower fingerprint, and identical-type zero-coherence result.
+- [x] Freeze the unchanged arbitrary obligation baseline, no new kind or
+  goal/guard, Typed/final one-shot ownership, Task-259--262 isolation, private
+  runner, subtree exclusions, tests, count/hash impact, deferrals, scope, and
+  exit criteria in synchronized EN/JA documents.
+- [x] Repeat review-only specification and source/documentation audits to **NO
+  FINDINGS** and pass all docs hard gates at uncapped `100/100`; preserve the
+  exact docs-only commit target for parent-owned staging and commit.
+- [ ] Fresh-inventory after the docs commit; implement only the frozen Task-263
+  producer/ownership/private runner/pass pair/trace row and synchronized
+  implementation audits.
+- [ ] Repeat test-sufficiency, implementation, source/documentation, and final
+  quality reviews to **NO FINDINGS** with all nine gates PASS/no cap/90+; run
+  all verification, exact-stage, commit, then continue automatically to Task
+  264+.

@@ -1483,3 +1483,14 @@ future executable/trace workはTask 263に残る。
 EN/JAはrunner `34/67087`、test `524`、corpus/metadata count、trace hash、
 5 CLI fingerprintが実測不変であることを同期する。変更はchecker lower
 representationだけで、executable/trace workはTask 263に残る。
+
+## Checker Task 263 frozen consumer synchronization
+
+EN/JAはexact private route、source-resolver `75/10/8/8/0` oracle、Task-249S
+fingerprint、test owner 4件、pass/trace 1 pair、pre-gap selection、transport-only
+credit、mixed gap不変、projected `528/426/394/203/246+12` counts、hash
+remeasurement、semantic exclusionsを同期する。両companionはdocs-only no-op
+boundaryを保つ。
+
+両languageはexact empty runner obligation baseline、stable-debug profile/grammar
+assertion、nonempty/same-length baseline mutationのchecker-local ownershipも同期する。

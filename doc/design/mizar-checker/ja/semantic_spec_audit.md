@@ -575,3 +575,17 @@ reconciliation set外。
 Task-247 ownerは後続spec-derived test-first coverageを追加できるが、Task 49は
 implicit/duplicate creditを与えない。Task 247はownership noteだけを変更し、
 全fixture/expectation/trace status/coverage creditは不変。
+
+## Task 263 frozen semantic boundary
+
+Chapter 5はexplicit field/property kind、fields-only constructor argument、exact
+inherited-member coverage、root/path/view identity、mapped typeが異なる場合だけの
+type-inclusion requirementをauthorizeする。frozen sourceの2 pairはindependently
+writtenだがidentical bare builtin `set`なので、Task 263はzero coherence requestを
+deriveし、全initial obligationをunchangedに保つ。これはtransport intentであり
+acceptanceではない。
+
+guard/quantified goal/proof/discharge/fact/axiom/chosen upcast、constructor/selector
+execution、extensionality、Core/CFG/VCをsource behaviorから導出しない。
+parameterized/renamed/narrowed/multiple-edge/diamond/cycle/property implementationは
+deferredである。

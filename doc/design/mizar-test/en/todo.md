@@ -3425,3 +3425,18 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   tests without changing runner, corpus, trace, metadata, or CLI artifacts.
 - [x] Keep the no-op boundary through the separate implementation, then
   let Task 263 alone add its exact private consumer and pass/trace pair.
+
+## Checker Task 263 Frozen Runner Consumer
+
+- [x] Freeze exact source/hash, 75-row Surface oracle, `10/8/8/8/0` resolver
+  oracle, `0/4/0/0/0/4` lower fingerprint, and subtree exclusions.
+- [x] Assign one private pre-gap route, four exact runner tests, one new
+  canonical-derived pass pair, and one reciprocal covered trace row.
+- [x] Freeze transport-only credit, existing mixed-gap byte stability,
+  projected runner/metadata/coverage counts, hash remeasurement, scope, and
+  semantic non-publication.
+- [x] Preserve the no-op boundary through docs-only commit readiness; repeated
+  reviews are **NO FINDINGS** and all nine hard gates pass at uncapped
+  `100/100`.
+- [ ] After fresh inventory, implement the exact route/tests/pass/trace only,
+  pass all reviews and verification, then commit with Checker Task 263.

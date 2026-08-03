@@ -45,6 +45,7 @@ after this task.
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_attribute_definition.md` | `../ja/source_attribute_definition.md` | `../en/source_attribute_definition.md` | Task-261 authority/boundary, exact source/AST/resolver/lower profile, four-table public ABI, unchanged initial obligations, TypedAst/ResolvedTypedAst ownership, Task-259/260 isolation, exact consumer, tests/counts, exclusions, public enum policy | none |
 | `source_mode_definition.md` | `../ja/source_mode_definition.md` | `../en/source_mode_definition.md` | Task-262 Chapter-7/16 authority, exact source/54-row AST/resolver/lower profile, six-table public ABI, RHS inhabitation request, pending sethood obligation, TypedAst/ResolvedTypedAst ownership, Task-259--261 isolation, exact consumer, tests/counts, exclusions, public enum policy | none |
+| `source_structure_definition.md` | `../ja/source_structure_definition.md` | `../en/source_structure_definition.md` | Task-263 Chapter-5/bounded-13/16/19 authority, exact 320-byte source/75-row AST/10-shell resolver/Task-249S lower profile, `2/4/1/2/0` ABI, zero parameter/context/coherence and unchanged obligations, Typed/final ownership, Task-259--262 isolation, exact consumer/tests/counts/exclusions/public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary, five-table application/wrapper/candidate/argument/request transport, Task-252 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 and Task-257C2/256C1 lower-compatibility authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, condition-container gate, exclusions, public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary, seven-table composite-formula/binder/type/edge/request transport, source-derived binding extension, exact consumer, exclusions, public enum policy | none |
@@ -1593,3 +1594,18 @@ Canonical EN and JA now synchronize the implemented public names, exact
 `6244`-line source inventory, four-test `462` checker inventory, measured
 production/test-list hashes, and unchanged runner/corpus/trace boundary. No
 semantic deferral moved from Task 263.
+
+## Task 263 Frozen-Contract Synchronization
+
+Canonical EN and the JA companion synchronize the 320-byte source/hash,
+parameter/context absence, 75 Surface rows, `10/8/8/8/0` resolver profile,
+Task-249S `0/4/0/0/0/4` lower profile, public `2/4/1/2/0` ABI, fields-only
+constructor rule, root/path/view mappings, zero coherence and unchanged
+obligation rules, Typed/final isolation, private runner/pass/trace intent,
+tests, projected counts, exclusions, and exit gates. Both languages state that
+this prerequisite changes no executable artifact or recorded count/hash.
+
+Both languages also synchronize the private non-rendered baseline snapshot,
+same-length final replay check, exact stable-debug grammar/profile/escaping,
+explicit member spellings, and compound 12-category/cross-row precedence test
+matrix.

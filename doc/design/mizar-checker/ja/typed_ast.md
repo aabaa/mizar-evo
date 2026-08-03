@@ -1656,3 +1656,22 @@ existing optional `source_type` fieldとone-shot installation pathがsole
 ownerである。install時にexact member/expression table、source/module identity、
 arena site 12件、sibling profileとのmutual exclusionをrevalidateする。
 semantic tableとTask-263 upper fieldは全てempty/absentのままである。
+
+## Task 263 frozen Typed ownership
+
+future `with_source_structure_definition`はone-shot compare-and-swap transactionで
+ある。exact Task-249S source-type fingerprint、unchanged baseline/final obligation
+pair、valid `2/4/1/2/0` rows、empty derived coherence tableを認証してからoptional
+handoffをpublishする。同名getterと
+`TypedAstError::InvalidSourceStructureDefinition`だけを追加し、`TypedAstParts`に
+replacement pathはない。
+
+installはTasks 259--262 definition-family occupancyを両observable orderで拒否し、
+types/facts/coercions/diagnostics/obligation rowを変更しない。Task 259 correctness
+transactionとmixed predicate/functor boundaryはindependentのままである。
+
+handoffはcomplete baseline tableをprivate clone-retainする。installはcurrent ==
+projection baseline == private snapshot == projection finalを要求する。exact runner
+baselineはempty、checker testsはnonempty unrelated baselineもpreserveする。
+same-length snapshot corruptionはtransactional failureで、snapshot getter/stable-
+debug serializationはない。

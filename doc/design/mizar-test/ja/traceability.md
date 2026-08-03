@@ -2190,3 +2190,17 @@ checker-local `test_gap`だけである。`tests/coverage/spec_trace.toml`は
 `3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`
 でbyte-identical。source/sidecar/expectation/backlink/row/status/countを追加
 せず、Chapter 5はTask 263までpartialのままである。
+
+## Checker Task 263 frozen trace intent
+
+docs prerequisiteはrow/backlink/sidecar/status/coverage creditを追加せず、
+`spec_trace.toml`をrecorded hashでbyte-identicalに保つ。later implementationは
+required covered requirement
+`spec.en.checker.type_elaboration.source_structure_definition_payload`をexactly
+1件追加でき、sole backlinkはnew exact pass sidecarである。このrowはsyntax-free
+transportだけをcreditする。
+
+active mixed mode/structure gapとexisting Chapter-5 rowsはbyte-identical/current
+creditのまま。parameterized/multiple-edge/coherence acceptance、constructor/selector
+use semantics、facts/proofs/property implementationはdeferredなので、Task 263後も
+Chapter 5とMC-G017/MC-G018はpartialである。

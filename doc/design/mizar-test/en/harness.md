@@ -5088,3 +5088,21 @@ The four Task-249S tests execute only inside `mizar-checker::source_type`.
 No discovery, selector, stage, loaded-source extractor, runner assertion, or
 snapshot path was added. The `524`-test harness inventory and all five CLI
 outputs remain byte-stable; Task 263 owns the first real consumer.
+
+## Checker Task 263 Frozen Harness Route
+
+The future route is a private exact-source branch selected before the generic
+mixed mode/structure-definition gap. It authenticates all source, Surface,
+resolver, lower source-type, and semantic-subtree exclusions, constructs only
+syntax-free checker input, and validates the `2/4/1/2/0` final clone. Four
+runner tests own source/resolver exactness, corruption failure, route/trace and
+family isolation, and non-publication of deferred semantics.
+
+The docs prerequisite adds no discovery, selector, route, test, output, or CLI
+change. Implementation projects only `524 -> 528` runner tests and the one new
+active pass case; all hashes are remeasured after code exists.
+
+The exact route supplies an empty initial-obligation baseline and asserts the
+checker handoff/final tables stay empty. Runner replay also checks the frozen
+stable-debug profile/grammar; nonempty baseline and same-length mutation
+coverage remain checker-local because the corpus source has no sibling owner.

@@ -1711,3 +1711,18 @@ Repeated final assembly preserves the exact immutable source-type handoff and
 deterministic debug fingerprint by value equality. It adds no final field,
 installer, semantic projection, diagnostic, obligation, fact, proof, or
 acceptance output.
+
+## Task 263 Frozen Final Ownership
+
+Final assembly may obtain the future structure-definition handoff only by
+cloning `TypedAst`. It revalidates the complete source-type fingerprint,
+`2/4/1/2/0` graph, zero coherence requests, and unchanged obligation table,
+then exposes one getter. `ResolvedTypedAstInputs` has no replacement field and
+`ResolvedTypedAstError::InvalidSourceStructureDefinition` is the only new
+failure variant. Reverse mixed Tasks-259--262 states fail closed; no semantic
+table or accepted result is synthesized.
+
+Final validation compares the current complete obligation table with the
+private byte-equal snapshot as well as its frozen count. A changed row with an
+unchanged length therefore fails. Snapshot bytes do not enter stable
+`debug_text()` and no replaceable final input can bypass equality.

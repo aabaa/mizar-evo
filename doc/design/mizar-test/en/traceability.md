@@ -2292,3 +2292,18 @@ byte-identical at
 `3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`;
 there is no new source, sidecar, expectation, backlink, row, status, or count.
 Chapter 5 remains partial until Task 263.
+
+## Checker Task 263 Frozen Trace Intent
+
+The docs prerequisite adds no row, backlink, sidecar, status, or coverage
+credit; `spec_trace.toml` stays byte-identical at the recorded hash. The later
+implementation may add exactly one required covered requirement,
+`spec.en.checker.type_elaboration.source_structure_definition_payload`, whose
+sole test backlink is the new exact pass sidecar. That row credits syntax-free
+transport only.
+
+The active mixed mode/structure definition gap and every existing Chapter-5
+row stay byte-identical and retain their current credit. Chapter 5 and
+MC-G017/MC-G018 remain partial after Task 263 because parameterized/multiple-
+edge/coherence acceptance, constructor/selector use semantics, facts, proofs,
+and property implementation remain deferred.

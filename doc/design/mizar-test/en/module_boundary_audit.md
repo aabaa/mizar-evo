@@ -12888,3 +12888,16 @@ Fresh measurement confirms no runner path or line change: production remains
 `72481975abab5250f3577a7643af4b5aa64f7c941be1aed4a2e1cbc726d1e55a` /
 `18e9921fd68c2401869334223de100549ed92ed0a806e37cd0da5f7110c015bf`.
 No runner module boundary moved.
+
+## Checker Task 263 Frozen Runner Boundary
+
+One future private `type_elaboration/source_structure_definition.rs` leaf owns
+exact-source selection, Surface/shell/resolver authentication, Task-249S input
+construction, checker call, and private test hooks. The phase facade owns only
+bounded registration and pre-gap dispatch. Raw syntax never crosses into
+checker production; checker semantic validation never moves into the runner.
+
+One private test leaf owns the four frozen runner tests. Existing definition
+leaves and the generic gap remain siblings and are not edited except bounded
+facade registration. The docs prerequisite leaves runner production
+`34/67087` and its path/content hashes unchanged.

@@ -11622,3 +11622,15 @@ fresh measurementでrunner path/line不変を確認した。productionは
 `72481975abab5250f3577a7643af4b5aa64f7c941be1aed4a2e1cbc726d1e55a` /
 `18e9921fd68c2401869334223de100549ed92ed0a806e37cd0da5f7110c015bf`
 のままで、runner module boundaryは移動しない。
+
+## Checker Task 263 frozen runner boundary
+
+future private `type_elaboration/source_structure_definition.rs` leaf 1件が
+exact-source selection、Surface/shell/resolver authentication、Task-249S input、
+checker call、private test hooksを所有する。phase facadeはbounded registrationと
+pre-gap dispatchだけを所有する。raw syntaxはchecker productionへ渡らず、checker
+semantic validationはrunnerへ移らない。
+
+private test leaf 1件がfrozen runner tests 4件を所有する。existing definition
+leaves/generic gapはsiblingsのままで、bounded facade registration以外は編集しない。
+docs prerequisiteはrunner production `34/67087`とpath/content hashを不変に保つ。

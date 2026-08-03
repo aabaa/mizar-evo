@@ -1731,3 +1731,23 @@ the sole owner. Installation revalidates the exact member table, expression
 table, source/module identity, all twelve arena sites, and mutual exclusion
 with sibling profiles. All semantic tables and Task-263 upper fields remain
 empty or absent.
+
+## Task 263 Frozen Typed Ownership
+
+The future `with_source_structure_definition` is a one-shot compare-and-swap
+transaction. It requires the exact Task-249S source-type fingerprint, an
+unchanged baseline/final obligation pair, valid `2/4/1/2/0` rows, and an empty
+derived coherence table before publishing one optional handoff. It adds only
+the same-named getter and `TypedAstError::InvalidSourceStructureDefinition`;
+`TypedAstParts` has no replacement path.
+
+Install rejects prior Tasks 259--262 definition-family occupancy in either
+observable order and changes no types, facts, coercions, diagnostics, or
+obligation row. In particular Task 259's correctness transaction and mixed
+predicate/functor boundary remain independent.
+
+The handoff privately clone-retains the complete baseline table. Installation
+requires current == projection baseline == private snapshot == projection
+final, while exact-runner baseline is empty and checker tests also preserve a
+nonempty unrelated baseline. Same-length snapshot corruption is transactional
+failure; the snapshot has no getter or stable-debug serialization.

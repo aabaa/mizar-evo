@@ -98,3 +98,16 @@ key scenarios:
 - `.miz` corpus files は long-lived compatibility inputs である。
 - Fail tests は current compiler behavior に合わせて loosen してはならない。
 - soundness regression case は architecture-level review なしに削除しない。
+
+## Checker Task 263 frozen corpus increment
+
+separate docs prerequisite後、Task 263はcanonical-derived pass source/sidecar pair
+`pass_type_elaboration_structure_definition_payload_001`をexactly 1件追加できる。
+sourceはfrozen 320-byte/final-LF text、SHA-256
+`078eaee4b17341c9d8ebeb8a1f631ca984873bd07eb4e5d9c1a9486b39ac6671`である。
+sidecarはpass/type_elaboration/type_check、public diagnostics/payloads empty、new
+Task-263 trace ref 1件である。
+
+existing mixed mode/structure-definition failure pairと全parser/resolver structure
+fixtureはbyte-identicalに保つ。docs prerequisiteはcorpus fileを追加せず、fresh
+inventory後のimplementationだけがcases `425 -> 426`、pass `232 -> 233`をprojectする。
