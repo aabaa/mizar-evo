@@ -675,3 +675,24 @@ EN sectionのexact 8値から不変。checker productionは`28/158478`、path/co
 traceは`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`、
 Task48/mixed-gap source/sidecar hashも不変。exact stage/commit/post-commit inventoryは
 parent-owned gateとして残る。
+
+## Task 249PI implementation verification
+
+frozen method、error 3件、exact profile 2件、debug byte、one-shot Typed/final ownership、
+semantic exclusionは`source_type.rs`だけへ実装した。named test 4件はPASSし、checkerは
+`473`、raw/normalized hashは
+`5481b3b20fb75e4d2bab93ce575660f0941aaef01210b06544c9910ecace97cd` /
+`db822929f96290beda1209837b0f517ee555f6e01e38b3f13a59918423bb327d`。
+ownerは`7423`行、SHA-256
+`ef6ec1978ab1b25d01f9ee6fb78538f4a1fb6c97c3a32ba3af618c981d0f4c86`、checker
+productionは`28/159648`、path/contentは
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
+`7d38e5c9fbc3ee2cb09d0d5d1187c4d29d1086c56f0b2dcd7f07cd0b60be283c`。
+
+test reviewがadjacent precedence/member-1 corruption gapを、implementation reviewが
+orphan-member installation shapeを検出したが、双方を修正し再reviewは**NO FINDINGS**。
+Task-249 siblings、runner `528`、resolver `148`、syntax `59`、runner production
+`35/67939`、corpus/metadata/CLI、fixture/expectation/trace hashはexact不変。fmt、
+warnings-denied workspace Clippy、full workspace test、CLI 5件、`git diff --check`はPASS。
+source-doc consistencyも**NO FINDINGS**、independent qualityはscore capなしでhard gate
+9件をPASSし`100/100`。stage/commit/fresh Task264 inventoryがfinal parent-owned gateである。

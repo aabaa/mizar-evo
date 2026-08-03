@@ -3482,6 +3482,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   `469 -> 473`, and zero runner/corpus/trace/metadata/CLI impact.
 - [x] Preserve all current runner routes, fixtures, sidecars, expectations,
   trace rows/statuses, counts, and hashes during docs and implementation.
-- [ ] Complete Task-249PI docs and implementation commits with no `mizar-test`
-  source or artifact delta.
+- [x] Commit Task-249PI docs as `7e194bb3d7dd01454958b8d319b8c48cf478896a`
+  and verify the implementation has no `mizar-test` source or artifact delta.
+- [ ] Commit the reviewed checker-only Task-249PI implementation.
 - [ ] Fresh-inventory and implement only the already frozen Task-264 route.

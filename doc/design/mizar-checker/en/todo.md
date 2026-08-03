@@ -6697,8 +6697,12 @@ implementation commit does not satisfy a producer task.
   debug/Typed/final ownership, exclusions, four tests, count impact, and exit.
 - [x] Repeat specification/boundary reviews to **NO FINDINGS** and pass all
   docs hard gates at valid uncapped `100/100`.
-- [ ] Commit only the exact synchronized Task-249PI design records.
-- [ ] Fresh-inventory, implement only Task 249PI in `source_type.rs`, repeat
-  test/implementation/source-doc/final reviews and full gates, then commit.
+- [x] Commit the exact synchronized Task-249PI design records as
+  `7e194bb3d7dd01454958b8d319b8c48cf478896a`.
+- [x] Fresh-inventory and implement only Task 249PI in `source_type.rs`; test
+  sufficiency and implementation reviews are **NO FINDINGS**, and full
+  verification passes after synchronizing the measured module inventory.
+- [x] Complete source/documentation review with **NO FINDINGS** and final
+  quality with all nine hard gates PASS, no score cap, and `100/100`.
 - [ ] Return automatically to frozen Task 264 without adding property
   semantics, runner/corpus changes, or adjacent lower work to Task 249PI.

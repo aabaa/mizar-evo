@@ -4865,3 +4865,8 @@ diagnostic mapping/serialized outputがない。checker-local test 4件がreal c
 lower `1/3/0/0/0/2` compositionをproveする。current harness byte/hashは全てfrozen。
 Task264だけがlater named pass case 2件をselectしcomplete lower fingerprintをconsumeでき、
 runnerはrow/fingerprint textをreconstructしない。
+
+## Checker Task 249PI implemented harness no-op
+
+implementationはharness source/selector/route/test/fixture/sidecar/expectation/
+diagnostic/output byteを追加しない。runnerは`528`、CLI 5件はfrozen count/hashを再現する。

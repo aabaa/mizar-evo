@@ -1600,3 +1600,9 @@ canonical `source_type.md`とJA companionはChapter-5/7 authority、lower
 extension method、error 3件/precedence、unchanged debug grammar、Typed/final ownership、
 checker test 4件、`469 -> 473`、runner/corpus/trace zero impact、semantic exclusion、
 two-commit exitで一致する。bilingual normative debtはない。
+
+## Task 249PI implementation synchronization
+
+EN/JAはimplemented one-file API、test 4件、checker `473`、production
+`28/159648`、runner/corpus/trace不変、review finding修正、Task264復帰で一致する。
+implementation-time bilingual debtはない。

@@ -1608,3 +1608,8 @@ checker tests only. Both record exact `1/3/0/0/0/2`, checker `469 -> 473`,
 runner/resolver/syntax `528/148/59`, and zero runner/corpus/trace/metadata/CLI
 delta. Both defer the two new sources, sidecars, covered trace row, runner
 route, and property semantics to Task 264. No bilingual harness debt remains.
+
+## Checker Task 249PI Implemented No-Runner Synchronization
+
+EN/JA agree that checker is `473` and every runner, corpus, metadata, CLI, and
+trace byte remains unchanged. No implementation-time bilingual debt exists.

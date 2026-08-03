@@ -12967,3 +12967,10 @@ test module, production line, or Cargo dependency. Runner library/production
 remain `528` and `35/67939` with their exact existing hashes. The frozen Task
 264 route remains absent until the checker-only implementation and fresh
 inventory complete.
+
+## Checker Task 249PI Implemented No-Runner Boundary
+
+The implementation changes no `mizar-test` file or module. Runner production
+remains `35/67939`, with path/content hashes
+`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
+`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.

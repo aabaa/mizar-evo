@@ -4116,6 +4116,11 @@ or semantic owner changed. B3M2B2B remains next before B4.
   impact, semantic exclusions, and two-commit exit in synchronized EN/JA.
 - [x] Complete repeated docs reviews and all nine hard gates at valid uncapped
   `100/100`.
-- [ ] Stage/commit only the exact Task-249PI design records.
-- [ ] Fresh-inventory, implement/review/verify only `source_type.rs`, pass all
-  gates/count/hash checks, commit, and return automatically to Task 264.
+- [x] Stage/commit only the exact Task-249PI design records as
+  `7e194bb3d7dd01454958b8d319b8c48cf478896a`.
+- [x] Fresh-inventory and implement/review/verify only `source_type.rs`; the
+  test and implementation reviews are **NO FINDINGS**, all executable gates
+  pass, and checker rebaselines exactly to `473` and `28/159648`.
+- [x] Complete source-doc review with **NO FINDINGS** and final quality with all
+  nine hard gates PASS, no score cap, and `100/100`.
+- [ ] Commit the implementation and return automatically to Task 264.

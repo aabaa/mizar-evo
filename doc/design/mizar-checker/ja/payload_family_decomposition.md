@@ -1612,3 +1612,9 @@ Task-249S member/expression ownerをexact property-source `1/3/0/0/0/2`でcompos
 field/propertyをclassifyせず、member row 1とproperty targetをassociateしない。それは
 Task264がresolver authorityから行う。definition return、mode RHS、predicate、functor、
 property semantics、obligation、fact、proof、acceptance、IR familyはmutually isolated。
+
+## Task 249PI implemented composition boundary
+
+exact application/member compositionはexisting source-type family内だけで実行可能に
+なった。family/semantic payload/obligation/cross-family ownershipは追加せず、Task264が
+最初のproperty consumerである。

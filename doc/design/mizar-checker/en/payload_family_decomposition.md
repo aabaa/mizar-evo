@@ -1696,3 +1696,9 @@ versus property nor associates member row 1 with the property target; Task 264
 does that from resolver authority. Definition returns, mode RHS, predicates,
 functors, property semantics, obligations, facts, proof, acceptance, and IR
 families remain mutually isolated.
+
+## Task 249PI Implemented Composition Boundary
+
+The exact application/member composition is now executable in the existing
+source-type family only. It adds no family, semantic payload, obligation, or
+cross-family ownership; Task 264 remains the first property consumer.

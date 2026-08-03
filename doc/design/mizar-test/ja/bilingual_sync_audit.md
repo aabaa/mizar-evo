@@ -1544,3 +1544,8 @@ exact `1/3/0/0/0/2`、checker `469 -> 473`、runner/resolver/syntax
 `528/148/59`、runner/corpus/trace/metadata/CLI zero deltaを両方が記録する。new source/
 sidecar/covered row/runner route/property semanticsはTask264へdeferする。bilingual
 harness debtはない。
+
+## Checker Task 249PI implemented no-runner synchronization
+
+EN/JAはchecker `473`とrunner/corpus/metadata/CLI/trace byte全不変で一致する。
+implementation-time bilingual debtはない。

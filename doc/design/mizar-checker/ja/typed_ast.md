@@ -1714,3 +1714,9 @@ source-type handoffはexisting optional `source_type` owner/one-shot installatio
 installationがprofile shapeとparameter/member/expression/head arena identityを再validate
 する。types/local context/facts/coercions/initial obligations/diagnostics/proof/acceptance/
 IRは不変。Task264がseparate frozen handoffからlower fingerprint/member ID 1をconsumeする。
+
+## Task 249PI implemented typed ownership
+
+existing one-shot source-type installationがexact combined handoffをown/revalidateし、
+orphan-memberをfail closedでrejectする。typed field/installer/getter/fact/obligation/
+diagnostic/semantic resultは追加しない。

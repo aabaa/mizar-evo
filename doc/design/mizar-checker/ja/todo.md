@@ -6382,7 +6382,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   exitをfreezeした。
 - [x] spec/boundary reviewを**NO FINDINGS**まで繰返し、docs hard gate 9件をvalid
   uncapped `100/100`でPASSする。
-- [ ] exact synchronized Task249PI design recordだけをcommitする。
-- [ ] fresh inventory後`source_type.rs`だけへimplementationし、test/implementation/
-  source-doc/final reviewとfull gate後commitする。
+- [x] exact synchronized Task249PI design recordを
+  `7e194bb3d7dd01454958b8d319b8c48cf478896a`としてcommitした。
+- [x] fresh inventory後`source_type.rs`だけへimplementationし、test sufficiency/
+  implementation reviewは**NO FINDINGS**、measured module inventory同期後full
+  verificationはPASSした。
+- [x] source/doc reviewは**NO FINDINGS**、final qualityはhard gate 9件PASS、score
+  capなし`100/100`。
 - [ ] Task249PIへproperty semantics/runner/corpus/adjacent lower workを混ぜずTask264へ戻る。

@@ -2317,6 +2317,13 @@ the sidecar reciprocally cites only that row. Requirements/cases are
 trace SHA-256 is
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
 
+## Checker Task 249PI Implementation Traceability No-Op
+
+The four checker-local tests add no requirement row, backlink, fixture,
+sidecar, status, or coverage credit. The trace manifest remains byte-identical
+at SHA-256
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+
 ## Checker Task 249PI Zero-Credit Trace Boundary
 
 Task 249PI is a checker-local lower transport repair. It adds no requirement,

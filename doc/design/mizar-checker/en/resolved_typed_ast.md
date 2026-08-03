@@ -1773,3 +1773,9 @@ its complete `source-type-application-debug-v1` fingerprint and exact
 existing Typed source-type validation. Property identity, return association,
 initial obligations, diagnostics, facts, proof, acceptance, and Task-259 data
 remain absent until their separately frozen owners.
+
+## Task 249PI Implemented Final Ownership
+
+Final assembly clone-preserves the exact combined source-type handoff and
+rejects the repaired orphan-member installation shape. No final field, getter,
+semantic result, or Task-259/264 ownership was added.

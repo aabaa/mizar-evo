@@ -6358,3 +6358,10 @@ credit and every corpus/trace row remain unchanged. Chapter 7 stays partial;
 Task 264 still owns the two active sources, property provenance, declared
 return association, means/equals, definiens/`it`, pending initial obligations,
 runner evidence, and all proof/coherence/acceptance/fact/IR/VC deferrals.
+
+## Checker Task 249PI Implemented Coverage Result
+
+The exact lower composition and four checker-local tests now close the
+classified transport drift, but add no executable corpus or trace credit.
+Chapter 7 remains partial and every Task-264 semantic responsibility and
+proof/coherence/acceptance/fact/IR/VC deferral remains unchanged.

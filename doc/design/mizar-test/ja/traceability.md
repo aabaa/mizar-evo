@@ -2223,6 +2223,12 @@ requirements/casesは`394/426`、type requirementsは`258 = 246 covered + 12 def
 trace SHA-256は
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`のまま。
 
+## Checker Task 249PI implementation traceability no-op
+
+checker-local test 4件はrequirement row/backlink/fixture/sidecar/status/coverage creditを
+追加しない。trace manifestはSHA-256
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`でbyte-identical。
+
 ## Checker Task 249PI zero-credit trace boundary
 
 Task249PIはchecker-local lower transport repair。requirement/backlink/fixture/sidecar/

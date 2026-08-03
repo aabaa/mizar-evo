@@ -45,7 +45,7 @@ note として記録する。
 | `src/source_statement.rs` | 50732 | syntax-free source statement producer | `source_statement.md` | no | no | cohesiveなTask-258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B3M2B2B3E/258B4A/258B4B/258B4C/258B5A/258B5B statement/witness transaction、resolver/binding/lower/application/structure/set/formula/import provenance、zero-edge/qua/comprehension/composite-root ownership、subtree validation、rendering、paired typed/final install、corruption matrix。split不要。 |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | cohesiveなTask-254 term/wrapper/root/member/field-update/edge/request table、written-partition/cross-family dependency/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | cohesiveなTask-263 definition/member/inheritance/mapping/coherence table、private resolver/baseline snapshot、exact contribution-effect/own-domain obligation validation、deterministic rendering、compound precedence test。productionはsyntax-free。 |
-| `src/source_type.rs` | 6253 | syntax-free source-type application producer | `source_type.md` | no | no | cohesiveなTask-249 flat table、Task-249R definition-return、Task-249M mode-RHS、Task-249S standalone structure-member type family、environment/arena/form/graph/provenance validation、deterministic rendering、exhaustive corruption test、cfg(test)-only Task-263 lower-corruption seam。split不要。 |
+| `src/source_type.rs` | 7423 | syntax-free source-type application producer | `source_type.md` | no | no | cohesiveなTask-249 flat table、Task-249R definition-return、Task-249M mode-RHS、Task-249S standalone structure-member type family、Task-249PI property-implementation composition、environment/arena/form/graph/provenance validation、deterministic rendering、exhaustive corruption test、cfg(test)-only Task-263 lower-corruption seam。split不要。 |
 | `src/type_checker.rs` | 13238 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | 最大の file だが phase-6 spec boundary 内にある。normalization、reserve/authenticated exact theorem-owner handoff validation、declaration checking、inference、coercion、fact query、diagnostic、rendering、test、Task-259/260 obligation-kind serializerはbehavior-coupled。 |
 | `src/registration_resolution.rs` | 5891 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesiveなregistration data layer、gate logic、Task-259/260 obligation-kind serializer。behavior-neutral splitは不要。 |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
@@ -1501,3 +1501,11 @@ semantic-result ownerは追加しない。existing structure-member producerがa
 baseをborrowしexisting member row 2件だけをtransactional appendする。implementation
 write scopeはchecker source 1 fileとsynchronized derived docs。Task264がsole later
 runner/property-payload ownerのままである。
+
+## Task 249PI implemented module boundary
+
+implementationはexisting `src/source_type.rs`だけを変更し、7,423行。production
+manifestは28 path/159,648行、path hash
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd`、content
+`7d38e5c9fbc3ee2cb09d0d5d1187c4d29d1086c56f0b2dcd7f07cd0b60be283c`。
+module/dependency/runner/semantic owner/public raw-syntax boundaryは変わらない。

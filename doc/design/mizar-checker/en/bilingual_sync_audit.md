@@ -1673,3 +1673,9 @@ authority, lower `source_drift` classification, exact
 three errors and precedence, unchanged debug grammar, Typed/final ownership,
 four checker tests, `469 -> 473` count, zero runner/corpus/trace impact,
 semantic exclusions, and two-commit exit. No bilingual normative debt remains.
+
+## Task 249PI Implementation Synchronization
+
+EN/JA now agree on the implemented one-file API, four tests, checker `473`,
+production `28/159648`, unchanged runner/corpus/trace state, repaired review
+findings, and return to Task 264. No implementation-time bilingual debt remains.

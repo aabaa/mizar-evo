@@ -979,3 +979,28 @@ Trace remains
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`;
 all Task-48 and mixed-gap source/sidecar hashes remain the exact prior values.
 Exact staging, commit, and post-commit fresh inventory remain parent-owned.
+
+## Task 249PI Implementation Verification
+
+The frozen method, three errors, both exact profiles, debug bytes, one-shot
+Typed/final ownership, and all semantic exclusions are implemented only in
+`source_type.rs`. The four named tests pass; checker is `473` with
+raw/normalized hashes
+`5481b3b20fb75e4d2bab93ce575660f0941aaef01210b06544c9910ecace97cd` /
+`db822929f96290beda1209837b0f517ee555f6e01e38b3f13a59918423bb327d`.
+The source owner is `7423` lines with SHA-256
+`ef6ec1978ab1b25d01f9ee6fb78538f4a1fb6c97c3a32ba3af618c981d0f4c86`;
+checker production is `28/159648`, path/content
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
+`7d38e5c9fbc3ee2cb09d0d5d1187c4d29d1086c56f0b2dcd7f07cd0b60be283c`.
+
+Test review first found missing adjacent precedence and member-1 corruption
+coverage; implementation review then found an orphan-member installation
+shape. Both classified gaps were repaired and both repeated reviews end **NO
+FINDINGS**. Task-249 siblings, runner `528`, resolver `148`, syntax `59`,
+runner production `35/67939`, corpus/metadata/CLI outputs, fixtures,
+expectations, and trace hash remain exact. Formatting, warnings-denied
+workspace Clippy, full workspace tests, five CLIs, and `git diff --check`
+pass. Source/documentation consistency also ends **NO FINDINGS**; independent
+quality passes all nine hard gates without score cap at `100/100`. Staging,
+commit, and fresh Task-264 inventory remain the final parent-owned gates.

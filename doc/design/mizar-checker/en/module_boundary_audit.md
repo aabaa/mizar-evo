@@ -46,7 +46,7 @@ remain aligned with their owning specifications.
 | `src/source_statement.rs` | 50732 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B3M2B2B3E/258B4A/258B4B/258B4C/258B5A/258B5B statement and witness transactions, resolver/binding/lower/application/structure/set/formula/import provenance, zero-edge/qua/comprehension/composite-root ownership, subtree validation, rendering, paired typed/final installation, and corruption matrices; no split required. |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | Cohesive Task-254 term/wrapper/root/member/field-update/edge/request tables, written-partition and cross-family dependency/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | Cohesive Task-263 definition/member/inheritance/mapping/coherence tables, private resolver/baseline snapshots, exact contribution-effect and own-domain obligation validation, deterministic rendering, and compound precedence tests; production remains syntax-free. |
-| `src/source_type.rs` | 6253 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables plus Task-249R definition-return, Task-249M mode-RHS, and Task-249S standalone structure-member type families, environment/arena/form/graph/provenance validation, deterministic rendering, exhaustive corruption tests, and one cfg(test)-only Task-263 lower-corruption seam; no split required. |
+| `src/source_type.rs` | 7423 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables plus Task-249R definition-return, Task-249M mode-RHS, Task-249S standalone structure-member types, and Task-249PI property-implementation composition, environment/arena/form/graph/provenance validation, deterministic rendering, exhaustive corruption tests, and one cfg(test)-only Task-263 lower-corruption seam; no split required. |
 | `src/type_checker.rs` | 13238 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | Largest file but still within the phase-6 spec boundary; normalization, reserve and authenticated exact theorem-owner handoff validation, declaration checking, inference, coercions, fact queries, diagnostics, rendering, tests, and Task-259/260 obligation-kind serializers remain behavior-coupled. |
 | `src/registration_resolution.rs` | 5891 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer, gate logic, and Task-259/260 obligation-kind serializers; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
@@ -1552,3 +1552,13 @@ owner. The existing structure-member producer borrows an authenticated base
 and appends only two existing member rows transactionally. The implementation
 write scope is that one checker source file plus synchronized derived docs;
 Task 264 remains the sole later runner/property-payload owner.
+
+## Task 249PI Implemented Module Boundary
+
+The implementation changes only existing `src/source_type.rs`, now 7,423
+lines. The production manifest remains 28 paths and is 159,648 lines with
+unchanged path hash
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd`
+and content hash
+`7d38e5c9fbc3ee2cb09d0d5d1187c4d29d1086c56f0b2dcd7f07cd0b60be283c`.
+No module, dependency, runner, semantic owner, or public raw-syntax boundary changed.

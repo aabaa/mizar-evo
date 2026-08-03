@@ -1337,6 +1337,12 @@ B3A/B3B installation orders fail without partial mutation and permit exact
 replay. The existing `InvalidSourceStatement` boundary and public API are
 unchanged.
 
+## Task 249PI Implemented Typed Ownership
+
+The existing one-shot source-type installation owns and revalidates the exact
+combined handoff, including fail-closed orphan-member rejection. No typed
+field, installer, getter, fact, obligation, diagnostic, or semantic result was added.
+
 ## Task 249PI Typed Ownership Boundary
 
 Task 249PI adds no `TypedAstParts` field, installer, getter, or serializer. Its

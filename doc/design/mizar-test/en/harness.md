@@ -5156,3 +5156,9 @@ case is admitted. Every current harness byte and hash remains frozen. Task 264
 alone may later select the two named property-implementation pass cases and
 consume the complete lower fingerprint; the runner may not reconstruct its
 rows or fingerprint text.
+
+## Checker Task 249PI Implemented Harness No-Op
+
+Implementation adds no harness source, selector, route, test, fixture,
+sidecar, expectation, diagnostic, or output byte. Runner remains `528`; the
+five CLIs reproduce their frozen counts and hashes exactly.

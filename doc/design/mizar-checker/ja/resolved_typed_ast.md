@@ -1694,3 +1694,9 @@ exact `1/3/0/0/0/2` profileのまま1回clone-preserveする。final installatio
 Typed source-type validationでlower driftをrejectする。property identity/return
 association/initial obligation/diagnostic/fact/proof/acceptance/Task259 dataはseparate owner
 までabsent。
+
+## Task 249PI implemented final ownership
+
+final assemblyはexact combined source-type handoffをclone-preserveし、修正した
+orphan-member installation shapeをrejectする。final field/getter/semantic result/
+Task259/264 ownershipは追加しない。

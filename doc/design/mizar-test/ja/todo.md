@@ -3257,5 +3257,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   runner/corpus/trace/metadata/CLI zero impactを記録する。
 - [x] docs/implementation中current runner route/fixture/sidecar/expectation/trace
   row/status/count/hashを全てpreserveする。
-- [ ] `mizar-test` source/artifact deltaなしでTask249PI docs/implementationをcommitする。
+- [x] Task249PI docsを`7e194bb3d7dd01454958b8d319b8c48cf478896a`としてcommitし、
+  implementationに`mizar-test` source/artifact deltaがないことをverifyした。
+- [ ] reviewed checker-only Task249PI implementationをcommitする。
 - [ ] fresh inventory後already-frozen Task264 routeだけをimplementする。
