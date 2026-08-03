@@ -258,3 +258,11 @@ semantic-sibling and `LocalSource` anchor stability, exact fixture hashes and
 profiles, four implementation files, two future tests, `146 -> 148`, and zero
 corpus/checker/runner/trace/Cargo credit. Any change to one language requires
 the matching logical update before review can pass.
+
+## Checker Task 264R Implementation Synchronization
+
+EN and JA record the same exact four-file context-shell implementation, two
+tests, `148` resolver tests, `15/18906` production inventory, stable
+`0..28` code/key table, exact pass/recovery profiles, no semantic identity or
+property-owned effect, and zero checker/runner/corpus/trace/Cargo/coverage
+delta. Both preserve Task 248P and Task 264 as separate later consumers.

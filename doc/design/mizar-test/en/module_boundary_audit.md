@@ -12922,3 +12922,10 @@ unit-test-only delta does not cross the runner facade or any private route.
 Runner production remains `35/67939` with the hashes above; metadata and lint
 inventories remain `137` and `14`. Task 248P is also no-runner unless separately
 frozen otherwise; Checker Task 264 alone may later add a bounded consumer.
+
+## Checker Task 264R Implemented No-Runner Boundary
+
+The exact implementation diff contains no `mizar-test`, fixture, sidecar,
+expectation, or trace path. Lint/metadata pass `14/137`, full workspace tests
+pass, and plan/parse/declaration/type/proof hashes remain frozen. There is no
+runner ownership or module-layout change.

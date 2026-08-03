@@ -1627,3 +1627,10 @@ lower fingerprints, and two resolver tests; it changes no checker source or
 counts. Both languages defer the exact property payload while pinning canonical
 no-`assume`, referenced-property return-type lookup, means-only/no-equals `it`,
 Task-259 separation, and no invented proof/acceptance/fact/VC behavior.
+
+## Task 264R Implementation Synchronization
+
+EN/JA agree that the resolver context-shell prerequisite is implemented with
+two resolver tests and no checker source/API, runner, corpus, trace, Cargo, or
+coverage delta. Both keep Task 248P next and defer every Task 264 semantic
+payload, initial obligation, proof, acceptance, fact, and VC decision.

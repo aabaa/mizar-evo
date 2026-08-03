@@ -462,7 +462,8 @@ impl<'a> SignatureProjectionExtractor<'a> {
             | DeclarationShellKind::RegistrationBlock
             | DeclarationShellKind::ClaimBlock
             | DeclarationShellKind::InheritanceDefinition
-            | DeclarationShellKind::VisibilityWrapper => None,
+            | DeclarationShellKind::VisibilityWrapper
+            | DeclarationShellKind::PropertyImplementation => None,
         }
     }
 
@@ -860,7 +861,8 @@ impl<'a> SymbolCollector<'a> {
     fn contribution_anchor(&self) -> SourceAnchor {
         self.shells
             .declarations()
-            .first()
+            .iter()
+            .find(|shell| shell.kind() != DeclarationShellKind::PropertyImplementation)
             .map(|shell| SourceAnchor::Range(shell.range()))
             .unwrap_or(SourceAnchor::Point {
                 source_id: self.source_id,
@@ -1846,6 +1848,7 @@ fn sibling_ordinal(shells: &DeclarationShellSet, shell: &DeclarationShell) -> us
         .declarations()
         .iter()
         .filter(|candidate| candidate.parent() == shell.parent())
+        .filter(|candidate| candidate.kind() != DeclarationShellKind::PropertyImplementation)
         .filter(|candidate| candidate.ordinal() <= shell.ordinal())
         .count()
         .saturating_sub(1)
@@ -2043,6 +2046,7 @@ const fn declaration_shell_kind_code(kind: DeclarationShellKind) -> u32 {
         DeclarationShellKind::FunctorialRegistration => 25,
         DeclarationShellKind::ReductionRegistration => 26,
         DeclarationShellKind::VisibilityWrapper => 27,
+        DeclarationShellKind::PropertyImplementation => 28,
     }
 }
 
@@ -2076,6 +2080,7 @@ fn declaration_shell_kind_key(kind: DeclarationShellKind) -> &'static str {
         DeclarationShellKind::FunctorialRegistration => "functorial-registration",
         DeclarationShellKind::ReductionRegistration => "reduction-registration",
         DeclarationShellKind::VisibilityWrapper => "visibility-wrapper",
+        DeclarationShellKind::PropertyImplementation => "property-implementation",
     }
 }
 

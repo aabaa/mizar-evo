@@ -187,3 +187,11 @@ definientia, five correctness conditions, one mode definition, two projections,
 two symbols, two definitions, zero resolver diagnostics, and the following
 theorem shell. The inactive overlap/coherence seed remains byte-identical and
 receives no executable credit.
+
+## Checker Task 264R Implemented Declaration Intake
+
+`DeclarationShellCollector` now retains every represented top-level
+`PropertyImplementation` as the frozen parentless source-ordered shell with
+exact range, Surface-node/syntax provenance, and recovery. Descendants remain
+transparent and no property semantics are interpreted. The pass/recovery
+oracles produce exactly six shells with all other frozen profiles unchanged.

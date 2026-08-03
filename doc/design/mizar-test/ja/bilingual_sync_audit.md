@@ -1509,3 +1509,10 @@ reuseし、inactive coherence seedをbyte-identicalに保つことで一致す�
 corpus artifact、expectation、trace row/status/backlink、metadata assertion、diagnostic
 key/code、CLI outputは追加しない。post-Task-263 count/hashは全て同期し、future
 runner consumerはTask 264R/Task 248P後のChecker Task 264だけがownする。
+
+## Checker Task 264R implementation no-runner synchronization
+
+EN/JAはrunner/corpus artifact/sidecar/expectation/trace row・status・count/metadata assertion/
+CLI変更なしで一致する。両言語ともtrace hash
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`と
+frozen 5 CLI hashを保存する。

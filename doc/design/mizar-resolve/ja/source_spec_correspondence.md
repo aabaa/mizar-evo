@@ -290,3 +290,11 @@ sidecar、expectation、trace metadata、checker/runner source、coverage status
 `spec_coverage_audit.md`はfuture lower ownerを記録するだけで、Chapter-7 semantic/
 executable gapをopenに保つ。Checker Task 264がproperty payload producerをfreeze/
 implementする前に、Checker Task 248Pがnew shellをsource binding contextへ別途admitする。
+
+## Checker Task 264R implemented correspondence
+
+lower `source_drift`とauthority由来`test_gap`をcloseした。parser-represented property
+implementationはcontext-only resolver shellとしてすべて残り、exact fixture profileと
+following theorem identity/effectsはstableである。docs prerequisiteが対応する
+`design_drift`をcloseした。canonical spec、corpus、expectation、trace metadata、semantic
+coverage、deferred Checker Task 248P/264 intentは変更しない。

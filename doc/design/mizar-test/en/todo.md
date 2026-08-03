@@ -3449,5 +3449,6 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Freeze zero runner/corpus/sidecar/expectation/trace/metadata/CLI impact.
 - [x] Treat the two existing Parser Task 48 fixtures as read-only lower probes;
   keep the inactive coherence seed byte-identical and inactive.
-- [ ] Reconfirm all post-Task-263 counts and hashes through the docs and lower
-  implementation commits; add no runner consumer before Checker Task 264.
+- [x] Reconfirm all post-Task-263 counts and hashes through the docs and lower
+  implementation; add no runner consumer before Checker Task 264. Dedicated
+  lower commit and post-commit inventory remain parent-owned gates.

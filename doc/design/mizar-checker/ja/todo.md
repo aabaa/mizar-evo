@@ -6343,7 +6343,9 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   identity fabricationを`boundary_violation`と分類し、blocking `spec_gap`なしを確認。
 - [x] resolver Task 264Rをdocs-first/context-only shell intakeとして、exact
   file 4/test 2 scopeとchecker/corpus/trace無影響をfreeze。
-- [ ] Task 264R docs/implementationをcommitし、各commit後fresh inventory。
+- [x] Task 264R docs commit
+  `b1ed8ea19f8845d8c54f795a7375d4add4af237d`、fresh inventory、exact lower
+  implementationを完了。dedicated implementation commitはparent-owned final gateとして残る。
 - [ ] separate checker Task 248P binding-context admissionをfresh inventory/freezeし、property
   semantics/runner creditなしでdocs/implementation commitを完了。
 - [ ] その後だけTask 264 exact property payload contractをfreezeし、Task 259分離と

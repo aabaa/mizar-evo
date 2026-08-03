@@ -5640,3 +5640,11 @@ reusing selector/property-clause/redefinition/registration identity is a
 frozen correction preserves existing semantic sibling paths, contribution
 anchor/effects, and all checker/corpus/trace state. Task 248P and Task 264 remain
 open, so there is no undocumented checker semantic surface or coverage credit.
+
+## Task 264R Implemented Source/Specification Status
+
+The lower resolver `source_drift`, `design_drift`, and canonical-derived
+`test_gap` are closed without changing checker source or language behavior.
+Chapter 7 property payload/provenance, means/equals, means-only `it`, referenced
+return type, definiens, initial obligations, and all semantic deferrals remain
+open under Tasks 248P/264; no checker or executable coverage credit is added.

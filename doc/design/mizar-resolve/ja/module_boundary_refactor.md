@@ -215,3 +215,9 @@ fingerprint、append-only code/key、symbol testは`symbols.rs` / `symbols/tests
 new module/dependency/Cargo target/public semantic identity/diagnostic classは追加しない。
 public ABI deltaはnon-exhaustive append-only shell variantだけ。Checker Task 248P/264は
 separate consumerのままで、module split/line-count threshold decisionを変えない。
+
+## Checker Task 264R implemented boundary
+
+implementationは既存`declarations`/`symbols` ownerとprivate test moduleのexact 4 Rust
+files内に留まり、新規module/dependencyはなく、public deltaはfrozen append-only shell
+variantだけである。checker/runner/corpus/trace/Cargo/lint inventory/module-split policyは不変。

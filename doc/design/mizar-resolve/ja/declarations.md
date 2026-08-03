@@ -177,3 +177,10 @@ frontend diagnostic 13、parameter 3、formula/term definiens `1/2`、correctnes
 mode definition 1、projection/symbol/definition `2/2/2`、resolver diagnostic 0、後続theorem
 shellを保存し、shellだけ`3 -> 6`にする。inactive overlap/coherence seedは
 byte-identicalのままでexecutable creditを与えない。
+
+## Checker Task 264R implemented declaration intake
+
+`DeclarationShellCollector`はrepresented top-level `PropertyImplementation`をすべて、
+frozen parentless/source-ordered shellとしてexact range、Surface-node/syntax provenance、
+recovery付きで保持する。descendantはtransparentのままでproperty semanticsをinterpretしない。
+pass/recovery oracleは他profileを変えずexact 6 shellsを生成する。

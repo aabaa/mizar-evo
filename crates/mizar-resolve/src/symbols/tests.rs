@@ -1516,6 +1516,290 @@ fn context_only_shells_do_not_fabricate_symbol_identities() {
 }
 
 #[test]
+fn property_implementation_shells_preserve_symbol_fingerprints_and_context_guards() {
+    let source_id = source_id();
+    let ast = task264_property_recovery_ast(source_id);
+    let module = module_id();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let namespace = NamespacePath::new("main");
+    let projections = SignatureProjectionExtractor::new(&ast, &shells, namespace.clone()).extract();
+
+    assert_eq!(shells.declarations().len(), 6);
+    assert_eq!(projections.len(), 2);
+    let property_shells = shells
+        .declarations()
+        .iter()
+        .filter(|shell| shell.kind() == DeclarationShellKind::PropertyImplementation)
+        .collect::<Vec<_>>();
+    assert_eq!(property_shells.len(), 3);
+    assert!(projections.iter().all(|projection| {
+        property_shells
+            .iter()
+            .all(|shell| shell.id() != projection.shell())
+    }));
+
+    let result = collect(source_id, &shells, &projections);
+    assert!(result.diagnostics().is_empty());
+    assert_eq!(result.env().symbols().len(), 2);
+    assert_eq!(result.env().definitions().len(), 2);
+    assert!(result.env().registrations().is_empty());
+    assert!(result.env().overloads().is_empty());
+    assert!(result.env().lexical_summaries().is_empty());
+    assert!(result.env().declaration_dependencies().is_empty());
+    let theorem = result
+        .env()
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "AfterRecovery")
+        .expect("following theorem symbol");
+    assert!(
+        theorem
+            .symbol()
+            .local()
+            .as_str()
+            .contains("owner=theorem#1")
+    );
+    assert_eq!(
+        theorem.origin().anchor(),
+        &SourceAnchor::Range(range(source_id, 304, 334))
+    );
+    assert_eq!(theorem.origin().structural_path(), &[2, 1]);
+    let theorem_definition = result
+        .env()
+        .definitions()
+        .iter()
+        .find(|entry| entry.kind() == DefinitionKind::Theorem)
+        .expect("following theorem definition");
+    assert_eq!(theorem_definition.id().index(), 1);
+    assert_eq!(theorem_definition.symbol(), theorem.symbol());
+
+    assert_eq!(result.env().contributions().iter().count(), 1);
+    let contribution = result.env().contributions().iter().next().unwrap();
+    assert_eq!(contribution.id().index(), 0);
+    assert_eq!(
+        contribution.anchor(),
+        &SourceAnchor::Range(range(source_id, 20, 70))
+    );
+    let expected_symbols = result
+        .env()
+        .symbols()
+        .iter()
+        .map(|entry| {
+            assert_eq!(entry.contribution().index(), 0);
+            entry.symbol().clone()
+        })
+        .collect::<Vec<_>>();
+    let expected_definitions = result
+        .env()
+        .definitions()
+        .iter()
+        .map(|entry| {
+            assert_eq!(entry.contribution().index(), 0);
+            entry.id()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(contribution.effects().symbols(), expected_symbols);
+    assert_eq!(contribution.effects().definitions(), expected_definitions);
+    assert!(contribution.effects().overload_groups().is_empty());
+    assert!(contribution.effects().registrations().is_empty());
+    assert!(contribution.effects().lexical_summaries().is_empty());
+    assert!(contribution.effects().labels().is_empty());
+    assert!(contribution.effects().namespace_edges().is_empty());
+    assert!(contribution.effects().declaration_dependencies().is_empty());
+    assert!(contribution.effects().imports().is_empty());
+    assert!(contribution.effects().exports().is_empty());
+    assert!(contribution.effects().diagnostics().is_empty());
+
+    let mut fabricated = projections.clone();
+    fabricated.push(projection(
+        property_shells[0].id(),
+        namespace,
+        "FabricatedProperty",
+        SymbolKind::Selector,
+        DefinitionKind::Selector,
+    ));
+    let rejected = collect(source_id, &shells, &fabricated);
+    assert_eq!(rejected.env().symbols().len(), 2);
+    assert_eq!(rejected.env().definitions().len(), 2);
+    assert_eq!(rejected.diagnostics().len(), 1);
+    assert_eq!(
+        rejected.diagnostics()[0].class(),
+        SymbolDiagnosticClass::ContextOnlyShell
+    );
+
+    let mut property_only_builder = SurfaceAstBuilder::new(source_id);
+    let property = node(
+        &mut property_only_builder,
+        SurfaceNodeKind::PropertyImplementation,
+        source_id,
+        0,
+        10,
+        Vec::new(),
+    );
+    let root = finish_module(&mut property_only_builder, source_id, vec![property]);
+    let property_only_ast = property_only_builder.finish(Some(root), None);
+    let property_only_shells =
+        DeclarationShellCollector::new(&property_only_ast, &module).collect();
+    let property_only = collect(source_id, &property_only_shells, &[]);
+    assert!(property_only.diagnostics().is_empty());
+    assert!(property_only.env().symbols().is_empty());
+    assert!(property_only.env().definitions().is_empty());
+    assert!(property_only.env().registrations().is_empty());
+    assert!(property_only.env().overloads().is_empty());
+    assert!(property_only.env().lexical_summaries().is_empty());
+    assert!(property_only.env().declaration_dependencies().is_empty());
+    assert_eq!(property_only.env().contributions().iter().count(), 1);
+    let property_only_contribution = property_only.env().contributions().iter().next().unwrap();
+    assert_eq!(property_only_contribution.id().index(), 0);
+    assert_eq!(
+        property_only_contribution.anchor(),
+        &SourceAnchor::Point {
+            source_id,
+            offset: 0
+        }
+    );
+    assert!(property_only_contribution.effects().symbols().is_empty());
+    assert!(
+        property_only_contribution
+            .effects()
+            .definitions()
+            .is_empty()
+    );
+    assert!(
+        property_only_contribution
+            .effects()
+            .overload_groups()
+            .is_empty()
+    );
+    assert!(
+        property_only_contribution
+            .effects()
+            .registrations()
+            .is_empty()
+    );
+    assert!(
+        property_only_contribution
+            .effects()
+            .lexical_summaries()
+            .is_empty()
+    );
+    assert!(property_only_contribution.effects().labels().is_empty());
+    assert!(
+        property_only_contribution
+            .effects()
+            .namespace_edges()
+            .is_empty()
+    );
+    assert!(
+        property_only_contribution
+            .effects()
+            .declaration_dependencies()
+            .is_empty()
+    );
+    assert!(property_only_contribution.effects().imports().is_empty());
+    assert!(property_only_contribution.effects().exports().is_empty());
+    assert!(
+        property_only_contribution
+            .effects()
+            .diagnostics()
+            .is_empty()
+    );
+
+    let stable_shell_kinds = [
+        (DeclarationShellKind::Placeholder, "placeholder"),
+        (DeclarationShellKind::Reserve, "reserve"),
+        (DeclarationShellKind::Theorem, "theorem"),
+        (DeclarationShellKind::Lemma, "lemma"),
+        (DeclarationShellKind::DefinitionBlock, "definition-block"),
+        (
+            DeclarationShellKind::RegistrationBlock,
+            "registration-block",
+        ),
+        (DeclarationShellKind::ClaimBlock, "claim-block"),
+        (
+            DeclarationShellKind::AttributeDefinition,
+            "attribute-definition",
+        ),
+        (
+            DeclarationShellKind::PredicateDefinition,
+            "predicate-definition",
+        ),
+        (
+            DeclarationShellKind::FunctorDefinition,
+            "functor-definition",
+        ),
+        (DeclarationShellKind::ModeDefinition, "mode-definition"),
+        (
+            DeclarationShellKind::StructureDefinition,
+            "structure-definition",
+        ),
+        (
+            DeclarationShellKind::AlgorithmDefinition,
+            "algorithm-definition",
+        ),
+        (
+            DeclarationShellKind::AttributeRedefinition,
+            "attribute-redefinition",
+        ),
+        (
+            DeclarationShellKind::PredicateRedefinition,
+            "predicate-redefinition",
+        ),
+        (
+            DeclarationShellKind::FunctorRedefinition,
+            "functor-redefinition",
+        ),
+        (DeclarationShellKind::NotationAlias, "notation-alias"),
+        (DeclarationShellKind::PropertyClause, "property-clause"),
+        (DeclarationShellKind::StructureField, "structure-field"),
+        (
+            DeclarationShellKind::StructureProperty,
+            "structure-property",
+        ),
+        (
+            DeclarationShellKind::InheritanceDefinition,
+            "inheritance-definition",
+        ),
+        (
+            DeclarationShellKind::FieldRedefinition,
+            "field-redefinition",
+        ),
+        (
+            DeclarationShellKind::PropertyRedefinition,
+            "property-redefinition",
+        ),
+        (
+            DeclarationShellKind::ExistentialRegistration,
+            "existential-registration",
+        ),
+        (
+            DeclarationShellKind::ConditionalRegistration,
+            "conditional-registration",
+        ),
+        (
+            DeclarationShellKind::FunctorialRegistration,
+            "functorial-registration",
+        ),
+        (
+            DeclarationShellKind::ReductionRegistration,
+            "reduction-registration",
+        ),
+        (
+            DeclarationShellKind::VisibilityWrapper,
+            "visibility-wrapper",
+        ),
+        (
+            DeclarationShellKind::PropertyImplementation,
+            "property-implementation",
+        ),
+    ];
+    for (expected_code, (kind, expected_key)) in stable_shell_kinds.into_iter().enumerate() {
+        assert_eq!(declaration_shell_kind_code(kind), expected_code as u32);
+        assert_eq!(declaration_shell_kind_key(kind), expected_key);
+    }
+}
+
+#[test]
 fn parser_backed_extractor_projects_represented_signature_families() {
     let source_id = source_id();
     let ast = parser_backed_signature_ast(source_id);
@@ -2497,6 +2781,93 @@ fn task263_same_structure_collision_ast(source_id: SourceId) -> mizar_syntax::Su
         vec![structure],
     );
     let root = finish_module(&mut builder, source_id, vec![definition]);
+    builder.finish(Some(root), None)
+}
+
+fn task264_property_recovery_ast(source_id: SourceId) -> mizar_syntax::SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let first_property = node(
+        &mut builder,
+        SurfaceNodeKind::PropertyImplementation,
+        source_id,
+        0,
+        10,
+        Vec::new(),
+    );
+    let mode = pattern_item(
+        &mut builder,
+        source_id,
+        33,
+        SurfaceNodeKind::ModeDefinition,
+        SurfaceNodeKind::ModePattern,
+        &[(SurfaceTokenKind::Identifier, "Domain")],
+    );
+    let definition = node(
+        &mut builder,
+        SurfaceNodeKind::DefinitionBlockItem,
+        source_id,
+        20,
+        70,
+        vec![mode],
+    );
+    let recovery = builder.add_recovery(
+        SyntaxRecoveryKind::MissingTerm,
+        range(source_id, 170, 171),
+        Vec::new(),
+    );
+    let recovered_property = node(
+        &mut builder,
+        SurfaceNodeKind::PropertyImplementation,
+        source_id,
+        140,
+        200,
+        vec![recovery],
+    );
+    let final_property = node(
+        &mut builder,
+        SurfaceNodeKind::PropertyImplementation,
+        source_id,
+        220,
+        300,
+        Vec::new(),
+    );
+    let theorem_label = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "AfterRecovery",
+        range(source_id, 312, 325),
+    );
+    let theorem_colon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ":",
+        range(source_id, 325, 326),
+    );
+    let theorem_formula = node(
+        &mut builder,
+        SurfaceNodeKind::FormulaExpression,
+        source_id,
+        328,
+        334,
+        Vec::new(),
+    );
+    let theorem = node(
+        &mut builder,
+        SurfaceNodeKind::TheoremItem,
+        source_id,
+        304,
+        334,
+        vec![theorem_label, theorem_colon, theorem_formula],
+    );
+    let root = finish_module(
+        &mut builder,
+        source_id,
+        vec![
+            first_property,
+            definition,
+            recovered_property,
+            final_property,
+            theorem,
+        ],
+    );
     builder.finish(Some(root), None)
 }
 

@@ -6284,3 +6284,13 @@ Chapter 13's means-only/no-equals `it` restriction, referenced-property
 return-type lookup, definiens transport, initial-obligation
 interaction, Typed/Resolved ownership, runner coverage, and all authority-
 bounded semantic deferrals. No proof, acceptance, fact, or VC credit is granted.
+
+## Checker Task 264R Implemented Lower Representation Coverage
+
+The frozen lower owner is now implemented: `mizar-resolve` retains represented
+property implementations as context-only shells and the two canonical-derived
+resolver regressions pass. This closes the classified lower `source_drift`,
+`design_drift`, and `test_gap`, but adds no corpus or trace credit. Existing
+Parser Task 48 coverage remains unchanged. Chapter 7 stays partial and the
+same Task 248P/264 property payload, initial-obligation, Typed/Resolved,
+runner, proof, acceptance, fact, and VC deferrals remain open.

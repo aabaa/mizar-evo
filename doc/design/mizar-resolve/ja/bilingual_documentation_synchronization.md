@@ -240,3 +240,10 @@ referenced-property return-type lookupのlater ownership、append-only enum/code
 sibling/`LocalSource` anchor stability、exact fixture hash/profile、implementation file 4件、
 future test 2件、`146 -> 148`、corpus/checker/runner/trace/Cargo creditゼロを同期する。
 一方の変更はreview PASS前に同じlogical updateをもう一方へ必要とする。
+
+## Checker Task 264R implementation synchronization
+
+EN/JAはexact 4-file context-shell implementation、2 tests、resolver tests `148`、
+production `15/18906`、stable `0..28` code/key table、exact pass/recovery profile、
+semantic identity/property-owned effectなし、checker/runner/corpus/trace/Cargo/
+coverage deltaなしで一致する。Task 248PとTask 264はseparate later consumerのままである。

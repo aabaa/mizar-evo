@@ -5400,3 +5400,10 @@ regression 2件は`test_gap`、selector/property-clause/redefinition/registratio
 `boundary_violation`。Chapter 16はnew lower proof semanticsを与えない。frozen correctionは
 existing semantic sibling path、contribution anchor/effect、checker/corpus/trace stateを保存する。
 Task 248P/264はopenのままで、undocumented checker semantic surface/coverage creditはない。
+
+## Task 264R implemented source/specification status
+
+lower resolver `source_drift`、`design_drift`、canonical由来`test_gap`をchecker source/
+language behavior変更なしでcloseした。Chapter 7 property payload/provenance、means/equals、
+means-only `it`、referenced return type、definiens、initial obligation、全semantic deferralは
+Tasks 248P/264でopenのままで、checker/executable coverage creditを追加しない。

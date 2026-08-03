@@ -237,6 +237,88 @@ fn recovered_subtrees_are_retained_and_marked_recovered() {
 }
 
 #[test]
+fn property_implementation_shells_preserve_source_order_and_recovery() {
+    let source_id = source_id();
+    let pass_source = include_str!(
+        "../../../../tests/miz/pass/parser/pass_parser_property_implementations_001.miz"
+    );
+    assert_eq!(pass_source.len(), 566);
+    assert_eq!(pass_source.lines().count(), 28);
+    let pass_property_ranges = [(52, 155), (157, 351), (353, 455), (457, 565)];
+    let pass = property_implementation_fixture_ast(source_id, &pass_property_ranges, &[], false);
+    let pass_shells = DeclarationShellCollector::new(&pass, &module_id()).collect();
+
+    assert_eq!(
+        declaration_kinds(&pass_shells),
+        vec![
+            DeclarationShellKind::DefinitionBlock,
+            DeclarationShellKind::ModeDefinition,
+            DeclarationShellKind::PropertyImplementation,
+            DeclarationShellKind::PropertyImplementation,
+            DeclarationShellKind::PropertyImplementation,
+            DeclarationShellKind::PropertyImplementation,
+        ]
+    );
+    assert_eq!(
+        pass_shells.declarations()[1].parent(),
+        Some(pass_shells.declarations()[0].id())
+    );
+    assert_property_shell_provenance(
+        &pass,
+        &pass_shells.declarations()[2..],
+        &pass_property_ranges,
+        &[false; 4],
+        2,
+    );
+
+    let recovery_source = include_str!(
+        "../../../../tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.miz"
+    );
+    assert_eq!(recovery_source.len(), 335);
+    assert_eq!(recovery_source.lines().count(), 24);
+    let recovery_property_ranges = [(52, 149), (151, 226), (228, 302)];
+    let recovery =
+        property_implementation_fixture_ast(source_id, &recovery_property_ranges, &[0, 1, 2], true);
+    let recovery_shells = DeclarationShellCollector::new(&recovery, &module_id()).collect();
+
+    assert_eq!(
+        declaration_kinds(&recovery_shells),
+        vec![
+            DeclarationShellKind::DefinitionBlock,
+            DeclarationShellKind::ModeDefinition,
+            DeclarationShellKind::PropertyImplementation,
+            DeclarationShellKind::PropertyImplementation,
+            DeclarationShellKind::PropertyImplementation,
+            DeclarationShellKind::Theorem,
+        ]
+    );
+    assert_property_shell_provenance(
+        &recovery,
+        &recovery_shells.declarations()[2..5],
+        &recovery_property_ranges,
+        &[true; 3],
+        2,
+    );
+    let theorem = &recovery_shells.declarations()[5];
+    assert_eq!(theorem.ordinal(), 5);
+    assert_eq!(theorem.range(), range(source_id, 304, 334));
+    assert_eq!(
+        recovery.node(theorem.node_id()).unwrap().kind,
+        SurfaceNodeKind::TheoremItem
+    );
+    assert_eq!(
+        theorem.syntax_kind(),
+        SurfaceNodeKind::TheoremItem.syntax_kind()
+    );
+    assert!(!theorem.recovered());
+    assert!(
+        recovery_shells.declarations()[2..]
+            .iter()
+            .all(|shell| shell.parent().is_none())
+    );
+}
+
+#[test]
 fn annotation_wrappers_are_transparent_for_shell_collection() {
     let source_id = source_id();
     let mut builder = SurfaceAstBuilder::new(source_id);
@@ -532,6 +614,97 @@ fn declaration_kinds(shells: &DeclarationShellSet) -> Vec<DeclarationShellKind> 
         .iter()
         .map(DeclarationShell::kind)
         .collect()
+}
+
+fn property_implementation_fixture_ast(
+    source_id: SourceId,
+    property_ranges: &[(usize, usize)],
+    recovered_properties: &[usize],
+    include_theorem: bool,
+) -> mizar_syntax::SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let mode = node(
+        &mut builder,
+        SurfaceNodeKind::ModeDefinition,
+        source_id,
+        10,
+        40,
+        Vec::new(),
+    );
+    let definition = node(
+        &mut builder,
+        SurfaceNodeKind::DefinitionBlockItem,
+        source_id,
+        0,
+        50,
+        vec![mode],
+    );
+    let mut items = vec![definition];
+    for (index, &(start, end)) in property_ranges.iter().enumerate() {
+        let children = if recovered_properties.contains(&index) {
+            vec![builder.add_recovery(
+                SyntaxRecoveryKind::MissingTerm,
+                range(source_id, start + 5, start + 6),
+                Vec::new(),
+            )]
+        } else {
+            Vec::new()
+        };
+        items.push(node(
+            &mut builder,
+            SurfaceNodeKind::PropertyImplementation,
+            source_id,
+            start,
+            end,
+            children,
+        ));
+    }
+    if include_theorem {
+        items.push(node(
+            &mut builder,
+            SurfaceNodeKind::TheoremItem,
+            source_id,
+            304,
+            334,
+            Vec::new(),
+        ));
+    }
+    let root = finish_module(&mut builder, source_id, items);
+    builder.finish(Some(root), None)
+}
+
+fn assert_property_shell_provenance(
+    ast: &mizar_syntax::SurfaceAst,
+    shells: &[DeclarationShell],
+    expected_ranges: &[(usize, usize)],
+    expected_recovery: &[bool],
+    first_ordinal: usize,
+) {
+    assert_eq!(shells.len(), expected_ranges.len());
+    assert_eq!(shells.len(), expected_recovery.len());
+    for (index, shell) in shells.iter().enumerate() {
+        assert_eq!(shell.ordinal(), first_ordinal + index);
+        assert_eq!(
+            shell.range(),
+            range(
+                ast.source_id,
+                expected_ranges[index].0,
+                expected_ranges[index].1
+            )
+        );
+        assert!(shell.parent().is_none());
+        assert_eq!(shell.recovered(), expected_recovery[index]);
+        let source_node = ast.node(shell.node_id()).expect("property source node");
+        assert_eq!(source_node.kind, SurfaceNodeKind::PropertyImplementation);
+        assert_eq!(source_node.range, shell.range());
+        assert_eq!(
+            shell.syntax_kind(),
+            SurfaceNodeKind::PropertyImplementation.syntax_kind()
+        );
+        if index > 0 {
+            assert_ne!(shell.node_id(), shells[index - 1].node_id());
+        }
+    }
 }
 
 fn block_with_children(

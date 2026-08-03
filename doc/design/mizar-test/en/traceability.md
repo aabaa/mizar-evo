@@ -2328,3 +2328,12 @@ cases stay `394/426`, type requirements stay `258 = 246 covered + 12 deferred`,
 and trace SHA-256 remains
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
 The later Task 264 trace decision is not pre-authorized here.
+
+## Checker Task 264R Implementation Traceability No-Op
+
+Implementation adds no row, backlink, status, fixture, expectation, runner
+route, or executable coverage. The trace manifest remains byte-identical at
+SHA-256
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`;
+the existing Parser Task 48 requirement row and its two pass/fail backlinks
+retain their prior credit only.

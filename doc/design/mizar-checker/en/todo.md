@@ -6651,8 +6651,10 @@ implementation commit does not satisfy a producer task.
   `boundary_violation`; confirm no blocking `spec_gap`.
 - [x] Freeze resolver Task 264R as a docs-first, context-only shell intake with
   exact four-file/two-test scope and no checker/corpus/trace impact.
-- [ ] Complete and commit Task 264R docs and implementation, with fresh
-  inventory after each commit.
+- [x] Complete Task 264R documentation commit
+  `b1ed8ea19f8845d8c54f795a7375d4add4af237d`, fresh inventory, and the exact
+  lower implementation; its dedicated implementation commit remains the
+  parent-owned final gate.
 - [ ] Fresh-inventory and freeze separate checker Task 248P binding-context
   admission; complete its docs and implementation commits without property
   semantics or runner credit.

@@ -306,3 +306,13 @@ source, or coverage status. `spec_coverage_audit.md` records the future lower
 owner and keeps the Chapter-7 semantic and executable gaps open. Checker Task
 248P must separately admit the new shell to source binding context before
 Checker Task 264 may freeze and implement its property payload producer.
+
+## Checker Task 264R Implemented Correspondence
+
+The lower `source_drift` and authority-derived `test_gap` are closed: all
+parser-represented property implementations now survive as context-only
+resolver shells, while exact fixture profiles and the following theorem's
+identity/effects remain stable. The documentation prerequisite closed the
+matching `design_drift`. No canonical specification, corpus, expectation,
+trace metadata, semantic coverage, or deferred Checker Task 248P/264 intent
+changes.

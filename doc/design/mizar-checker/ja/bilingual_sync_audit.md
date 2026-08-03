@@ -1560,3 +1560,10 @@ EN/JA checker recordはTask 264がresolver Task 264R、次にchecker Task 248P�
 2件だけをownし、checker source/countを変えない。両languageはexact property payloadを
 deferしつつ、canonical no-`assume`、referenced-property return-type lookup、means-only/
 no-equals `it`、Task-259分離、proof/acceptance/fact/VCを発明しないことを同期する。
+
+## Task 264R implementation synchronization
+
+EN/JAはresolver context-shell prerequisiteがresolver tests 2件だけを追加し、checker
+source/API、runner、corpus、trace、Cargo、coverage deltaなしでimplementedとなったことに
+一致する。両言語ともTask 248Pをnextとし、Task 264 semantic payload、initial obligation、
+proof/acceptance/fact/VC decisionをすべてdeferする。

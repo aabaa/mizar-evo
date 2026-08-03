@@ -784,9 +784,11 @@ cargo test -p mizar-vc
   impact、禁止範囲、exit criteriaをEN/JA同期文書にfreeze。
 - [x] review-only specification/boundary auditを**NO FINDINGS**まで反復し、docs-only
   verificationと全9 final-quality gateをuncapped `100/100`でPASS。
-- [ ] 同期文書のみstage/commitし、clean inventoryとprotected stash不変を確認。
-- [ ] fresh inventory後exact resolver file 4件だけをimplementし、exact test 2件と
+- [x] 同期文書のみ`b1ed8ea19f8845d8c54f795a7375d4add4af237d`としてstage/commitし、
+  clean inventoryとprotected stash不変を確認。
+- [x] fresh inventory後exact resolver file 4件だけをimplementし、exact test 2件と
   resolver library count `146 -> 148`だけを追加。corpus/checker/runner/trace/Cargoは不変。
-- [ ] test-sufficiency/implementation/source-docs/final qualityを全てfindings-freeとし、
-  full verification、exact staging、implementation commit、clean fresh inventory後Checker
-  Task 248Pを選択。
+- [x] test-sufficiency/implementation/source-docs reviewをfindings-freeとし、全focused/full
+  verificationとcount/hash gateをPASS。
+- [ ] findings-free final quality、exact staging、implementation commit、clean fresh
+  inventory後Checker Task 248Pを選択。

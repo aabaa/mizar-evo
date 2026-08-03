@@ -1456,3 +1456,9 @@ Task 264Rはchecker module/public APIを変更しない。owner fileはfrozen re
 test 4件。`binding_env.rs`は不変で、separate Task 248Pまでnew shellをadmitせず、
 property payload ownershipはさらにseparate Task 264とする。checker productionは
 `28/157908`と上記hashを保存し、module split/dependency/lint inventory/size decisionを変えない。
+
+## Task 264R implemented no-checker-source boundary
+
+completed lower implementationはfrozen `mizar-resolve` 4 filesだけを変更する。
+`mizar-checker` module/public API/dependency/lint inventory/production count/hash/line-count
+decisionは不変。checker consumerはTask 248P/264だけへdeferする。

@@ -153,6 +153,8 @@ pub enum DeclarationShellKind {
     ReductionRegistration,
     /// Recovered visibility wrapper without a represented target.
     VisibilityWrapper,
+    /// Top-level property implementation retained as a context-only shell.
+    PropertyImplementation,
 }
 
 /// Source-shaped visibility attached to a declaration shell.
@@ -611,6 +613,9 @@ fn declaration_shell_kind(kind: &SurfaceNodeKind) -> Option<DeclarationShellKind
             Some(DeclarationShellKind::FunctorialRegistration)
         }
         SurfaceNodeKind::ReductionRegistration => Some(DeclarationShellKind::ReductionRegistration),
+        SurfaceNodeKind::PropertyImplementation => {
+            Some(DeclarationShellKind::PropertyImplementation)
+        }
         _ => None,
     }
 }

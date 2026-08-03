@@ -1500,3 +1500,10 @@ cannot admit the new shell until separate Task 248P; property payload ownership
 then remains separate Task 264. Checker production stays `28/157908` with the
 hashes above, and no module split, dependency, lint inventory, or size decision
 changes in this documentation prerequisite.
+
+## Task 264R Implemented No-Checker-Source Boundary
+
+The completed lower implementation changes only the four frozen
+`mizar-resolve` files. No `mizar-checker` module, public API, dependency, lint
+inventory, production count/hash, or line-count decision changes. The checker
+consumer remains exclusively deferred to Task 248P and Task 264.

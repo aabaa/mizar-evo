@@ -834,11 +834,13 @@ Check the task off here once tests pass.
 - [x] Repeat review-only specification and boundary audits to **NO FINDINGS**;
   pass docs-only verification and all nine final-quality gates at uncapped
   `100/100`.
-- [ ] Stage and commit only the synchronized documentation prerequisite;
-  confirm clean inventory and protected-stash invariance.
-- [ ] Fresh-inventory and implement exactly the four frozen resolver files,
+- [x] Stage and commit only the synchronized documentation prerequisite as
+  `b1ed8ea19f8845d8c54f795a7375d4add4af237d`; confirm clean inventory and
+  protected-stash invariance.
+- [x] Fresh-inventory and implement exactly the four frozen resolver files,
   adding exactly two tests and changing the resolver library count `146 ->
   148` with no corpus/checker/runner/trace/Cargo delta.
-- [ ] Complete findings-free test-sufficiency, implementation, source/docs,
-  and final quality reviews, full verification, exact staging, implementation
+- [x] Complete findings-free test-sufficiency, implementation, and source/docs
+  reviews plus all focused/full verification and count/hash gates.
+- [ ] Complete findings-free final quality, exact staging, implementation
   commit, and clean fresh inventory; then select Checker Task 248P.

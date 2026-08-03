@@ -1568,3 +1568,11 @@ byte-identical. It adds no runner route, corpus artifact, expectation, trace
 row/status/backlink, metadata assertion, diagnostic key/code, or CLI output.
 All post-Task-263 counts and hashes remain synchronized; a future runner
 consumer belongs only to Checker Task 264 after Task 264R and Task 248P.
+
+## Checker Task 264R Implementation No-Runner Synchronization
+
+EN/JA agree that the implementation changes no runner, corpus artifact,
+sidecar, expectation, trace row/status/count, metadata assertion, or CLI.
+Both keep the trace hash
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`
+and all five frozen CLI hashes unchanged.

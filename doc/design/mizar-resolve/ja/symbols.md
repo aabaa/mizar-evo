@@ -438,3 +438,12 @@ projectionはidentityを受けず、既存`ContextOnlyShell` guard/diagnosticを
 `RegistrationKind::Property`として表現しない。既存siblingのidentity/orderは
 exactに保存する。property reference/provenance、implementation domain、return type、
 definiens payloadはresolver symbol tableではなく後続checker source producerがownする。
+
+## Checker Task 264R implemented symbol boundary
+
+property-implementation shellはprojectionをextractせず、symbol/definition/registration/
+overload/dependency/lexical summary/diagnostic/property-owned contribution effectを作らない。
+anchorはleading property shellをskipし、property-only sourceでは`Point(0)`。semantic
+sibling ordinalから除外し、recovery theoremの`theorem#1`、`[2, 1]`、`304..334`、
+`DefinitionId(1)`、contribution zeroを保存する。fabricated projectionは引き続き
+`ContextOnlyShell`でrejectされる。

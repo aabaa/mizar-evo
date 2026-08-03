@@ -231,3 +231,11 @@ stable sibling/anchor fingerprints, append-only code/key, and symbol tests in
 public semantic identity, or diagnostic class. The only public ABI delta is the
 non-exhaustive append-only shell variant. Checker Task 248P and Task 264 remain
 separate consumers; no module split or line-count threshold decision changes.
+
+## Checker Task 264R Implemented Boundary
+
+The implementation stays in the existing `declarations` and `symbols` owners
+and their private test modules: exactly four Rust files, no new module or
+dependency, and only the frozen append-only public shell variant. Checker,
+runner, corpus, trace, Cargo, lint inventory, and module-split policy are
+unchanged.

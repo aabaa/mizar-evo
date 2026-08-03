@@ -479,3 +479,13 @@ an identity. It must not be represented as `Selector`, `PropertyClause`,
 their exact identities and order. The later checker source producer, not the
 resolver symbol table, owns property reference/provenance, implementation
 domain, return-type and definiens payloads.
+
+## Checker Task 264R Implemented Symbol Boundary
+
+Property-implementation shells now extract no projection and create no symbol,
+definition, registration, overload, dependency, lexical summary, diagnostic,
+or property-owned contribution effect. Anchoring skips leading property shells
+and falls back to `Point(0)` for property-only sources. Semantic sibling
+ordinals exclude them, preserving the recovery theorem's `theorem#1`,
+`[2, 1]`, `304..334`, `DefinitionId(1)`, and contribution-zero fingerprints.
+A fabricated projection still fails with `ContextOnlyShell`.
