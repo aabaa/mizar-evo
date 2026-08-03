@@ -3423,5 +3423,5 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 
 - [x] Freeze exact checker-only `0/4/0/0/0/4` member-type intake and four local
   tests without changing runner, corpus, trace, metadata, or CLI artifacts.
-- [ ] Keep the no-op boundary through the separate implementation commit, then
+- [x] Keep the no-op boundary through the separate implementation, then
   let Task 263 alone add its exact private consumer and pass/trace pair.

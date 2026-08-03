@@ -42,6 +42,7 @@ dense_id!(SourceTypeExpressionId);
 dense_id!(SourceTypeArgumentId);
 dense_id!(SourceTypeDefinitionReturnId);
 dense_id!(SourceTypeModeRhsId);
+dense_id!(SourceTypeStructureMemberId);
 
 /// Syntax-free inputs for one complete source type-expression transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,6 +85,24 @@ pub struct SourceTypeModeRhsExtensionInput {
 pub struct SourceTypeModeRhsInput {
     pub definition_site: TypedSiteRef,
     pub definition_range: SourceRange,
+    pub source_ordinal: usize,
+    pub expression: SourceTypeExpressionInput,
+}
+
+/// Syntax-free standalone input for independently written structure-member
+/// types.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeStructureMemberHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub members: Vec<SourceTypeStructureMemberInput>,
+}
+
+/// One structure-member owner linked to its independently written type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeStructureMemberInput {
+    pub member_site: TypedSiteRef,
+    pub member_range: SourceRange,
     pub source_ordinal: usize,
     pub expression: SourceTypeExpressionInput,
 }
@@ -177,6 +196,7 @@ pub struct SourceTypeApplicationHandoff {
     arguments: SourceTypeArgumentTable,
     definition_returns: SourceTypeDefinitionReturnTable,
     mode_rhs: SourceTypeModeRhsTable,
+    structure_members: SourceTypeStructureMemberTable,
 }
 
 impl SourceTypeApplicationHandoff {
@@ -206,6 +226,10 @@ impl SourceTypeApplicationHandoff {
 
     pub const fn mode_rhs(&self) -> &SourceTypeModeRhsTable {
         &self.mode_rhs
+    }
+
+    pub const fn structure_members(&self) -> &SourceTypeStructureMemberTable {
+        &self.structure_members
     }
 
     pub fn debug_text(&self) -> String {
@@ -246,6 +270,18 @@ impl SourceTypeApplicationHandoff {
             );
             write_definition_site(&mut output, &mode_rhs.definition_site);
             let _ = writeln!(output, " root={}", mode_rhs.root.index());
+        }
+        for (id, member) in self.structure_members.iter() {
+            let _ = write!(
+                output,
+                "structure-member#{} ordinal={} member_range={}..{} member_site=",
+                id.index(),
+                member.source_ordinal,
+                member.member_range.start,
+                member.member_range.end,
+            );
+            write_definition_site(&mut output, &member.member_site);
+            let _ = writeln!(output, " root={}", member.root.index());
         }
         for (id, expression) in self.expressions.iter() {
             let _ = write!(
@@ -297,6 +333,7 @@ impl SourceTypeApplicationHandoff {
         if self.source_id != source_id || &self.module_id != module_id {
             return Err(SourceTypeError::EnvironmentMismatch);
         }
+        validate_structure_member_handoff(self, arena)?;
         validate_definition_return_extension(self, arena)?;
         validate_mode_rhs_extension(self, arena)?;
         for (id, expression) in self.expressions.iter() {
@@ -484,6 +521,62 @@ impl SourceTypeModeRhs {
 
     pub const fn definition_range(&self) -> SourceRange {
         self.definition_range
+    }
+
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+
+    pub const fn root(&self) -> SourceTypeExpressionId {
+        self.root
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SourceTypeStructureMemberTable {
+    entries: Vec<SourceTypeStructureMember>,
+}
+
+impl SourceTypeStructureMemberTable {
+    pub fn get(&self, id: SourceTypeStructureMemberId) -> Option<&SourceTypeStructureMember> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceTypeStructureMemberId, &SourceTypeStructureMember)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeStructureMember {
+    id: SourceTypeStructureMemberId,
+    member_site: TypedSiteRef,
+    member_range: SourceRange,
+    source_ordinal: usize,
+    root: SourceTypeExpressionId,
+}
+
+impl SourceTypeStructureMember {
+    pub const fn id(&self) -> SourceTypeStructureMemberId {
+        self.id
+    }
+
+    pub const fn member_site(&self) -> &TypedSiteRef {
+        &self.member_site
+    }
+
+    pub const fn member_range(&self) -> SourceRange {
+        self.member_range
     }
 
     pub const fn source_ordinal(&self) -> usize {
@@ -696,7 +789,68 @@ impl SourceTypeProducer {
             },
             definition_returns: SourceTypeDefinitionReturnTable::default(),
             mode_rhs: SourceTypeModeRhsTable::default(),
+            structure_members: SourceTypeStructureMemberTable::default(),
         })
+    }
+}
+
+/// Builds the exact standalone Task-263 structure-member type handoff without
+/// fabricating binding-linked applications.
+pub struct SourceTypeStructureMemberProducer;
+
+impl SourceTypeStructureMemberProducer {
+    pub fn build(
+        input: SourceTypeStructureMemberHandoffInput,
+        arena: &TypedArena,
+    ) -> Result<SourceTypeApplicationHandoff, SourceTypeError> {
+        if input.members.is_empty() {
+            return Err(SourceTypeError::EmptyStructureMembers);
+        }
+        if input.members.len() != 4 {
+            return Err(SourceTypeError::StructureMemberCardinalityMismatch);
+        }
+
+        let mut expressions = Vec::with_capacity(input.members.len());
+        let mut members = Vec::with_capacity(input.members.len());
+        for (index, member) in input.members.into_iter().enumerate() {
+            let root = SourceTypeExpressionId::new(index);
+            members.push(SourceTypeStructureMember {
+                id: SourceTypeStructureMemberId::new(index),
+                member_site: member.member_site,
+                member_range: member.member_range,
+                source_ordinal: member.source_ordinal,
+                root,
+            });
+            expressions.push(SourceTypeExpression {
+                id: root,
+                source_id: member.expression.source_id,
+                module_id: member.expression.module_id,
+                site: member.expression.site,
+                source_range: member.expression.source_range,
+                spelling: member.expression.spelling,
+                head_site: member.expression.head_site,
+                head_range: member.expression.head_range,
+                head_spelling: member.expression.head_spelling,
+                form: member.expression.form,
+                head: member.expression.head,
+                recovery: member.expression.recovery,
+            });
+        }
+
+        let handoff = SourceTypeApplicationHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            applications: SourceTypeApplicationTable::default(),
+            expressions: SourceTypeExpressionTable {
+                entries: expressions,
+            },
+            arguments: SourceTypeArgumentTable::default(),
+            definition_returns: SourceTypeDefinitionReturnTable::default(),
+            mode_rhs: SourceTypeModeRhsTable::default(),
+            structure_members: SourceTypeStructureMemberTable { entries: members },
+        };
+        validate_structure_member_handoff(&handoff, arena)?;
+        Ok(handoff)
     }
 }
 
@@ -914,6 +1068,17 @@ pub enum SourceTypeError {
     UnsupportedModeRhs {
         mode_rhs: SourceTypeModeRhsId,
     },
+    EmptyStructureMembers,
+    StructureMemberCardinalityMismatch,
+    InvalidStructureMember {
+        structure_member: SourceTypeStructureMemberId,
+    },
+    InvalidStructureMemberSite {
+        structure_member: SourceTypeStructureMemberId,
+    },
+    UnsupportedStructureMember {
+        structure_member: SourceTypeStructureMemberId,
+    },
 }
 
 impl fmt::Display for SourceTypeError {
@@ -1091,6 +1256,27 @@ impl fmt::Display for SourceTypeError {
                 "source type mode RHS {} has an unsupported expression",
                 mode_rhs.index()
             ),
+            Self::EmptyStructureMembers => {
+                formatter.write_str("source type structure-member input is empty")
+            }
+            Self::StructureMemberCardinalityMismatch => formatter.write_str(
+                "source type structure-member cardinality is not the frozen four-row profile",
+            ),
+            Self::InvalidStructureMember { structure_member } => write!(
+                formatter,
+                "source type structure member {} is invalid",
+                structure_member.index()
+            ),
+            Self::InvalidStructureMemberSite { structure_member } => write!(
+                formatter,
+                "source type structure member {} has an invalid typed site",
+                structure_member.index()
+            ),
+            Self::UnsupportedStructureMember { structure_member } => write!(
+                formatter,
+                "source type structure member {} has an unsupported expression",
+                structure_member.index()
+            ),
         }
     }
 }
@@ -1105,6 +1291,12 @@ const TASK_249M_BASE_EXPRESSIONS: [(usize, usize, usize, usize); 2] =
     [(35, 34, 22, 25), (39, 38, 38, 41)];
 const TASK_249M_MODE_RHS: (usize, usize, usize, usize, usize, usize, usize) =
     (49, 45, 135, 44, 43, 95, 98);
+const TASK_249S_STRUCTURE_MEMBERS: [(usize, usize, usize, usize, usize, usize, usize); 4] = [
+    (53, 42, 63, 52, 51, 59, 62),
+    (56, 68, 91, 55, 54, 87, 90),
+    (61, 134, 155, 60, 59, 151, 154),
+    (64, 160, 183, 63, 62, 179, 182),
+];
 
 fn validate_definition_return_base(
     base: &SourceTypeApplicationHandoff,
@@ -1112,6 +1304,7 @@ fn validate_definition_return_base(
 ) -> Result<(), SourceTypeError> {
     if !base.definition_returns.is_empty()
         || !base.mode_rhs.is_empty()
+        || !base.structure_members.is_empty()
         || base.expressions.len() != 2
         || !task_249r_base_shape_matches(base)
         || base
@@ -1127,6 +1320,7 @@ fn task_249r_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool 
     if handoff.applications.len() != 2
         || handoff.expressions.len() < 2
         || !handoff.arguments.is_empty()
+        || !handoff.structure_members.is_empty()
     {
         return false;
     }
@@ -1171,7 +1365,7 @@ fn validate_definition_return_extension(
     if handoff.definition_returns.is_empty() {
         return Ok(());
     }
-    if !handoff.mode_rhs.is_empty() {
+    if !handoff.mode_rhs.is_empty() || !handoff.structure_members.is_empty() {
         return Err(SourceTypeError::InvalidDefinitionReturnBase);
     }
     if handoff.definition_returns.len() != 2 || handoff.expressions.len() != 4 {
@@ -1338,6 +1532,7 @@ fn validate_mode_rhs_base(
 ) -> Result<(), SourceTypeError> {
     if !base.mode_rhs.is_empty()
         || !base.definition_returns.is_empty()
+        || !base.structure_members.is_empty()
         || base.expressions.len() != 2
         || !task_249m_base_shape_matches(base)
         || base
@@ -1354,6 +1549,7 @@ fn task_249m_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool 
         || handoff.expressions.len() < 2
         || !handoff.arguments.is_empty()
         || !handoff.definition_returns.is_empty()
+        || !handoff.structure_members.is_empty()
     {
         return false;
     }
@@ -1401,7 +1597,10 @@ fn validate_mode_rhs_extension(
     if handoff.mode_rhs.len() != 1 || handoff.expressions.len() != 3 {
         return Err(SourceTypeError::ModeRhsCardinalityMismatch);
     }
-    if !handoff.definition_returns.is_empty() || !task_249m_base_shape_matches(handoff) {
+    if !handoff.definition_returns.is_empty()
+        || !handoff.structure_members.is_empty()
+        || !task_249m_base_shape_matches(handoff)
+    {
         return Err(SourceTypeError::InvalidModeRhsBase);
     }
 
@@ -1502,6 +1701,160 @@ fn validate_mode_rhs_owner_site(
 }
 
 fn task_249m_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
+    SourceRange {
+        source_id,
+        start,
+        end,
+    }
+}
+
+fn validate_structure_member_handoff(
+    handoff: &SourceTypeApplicationHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceTypeError> {
+    if handoff.structure_members.is_empty() {
+        if handoff.applications.is_empty() && !handoff.expressions.is_empty() {
+            return Err(SourceTypeError::StructureMemberCardinalityMismatch);
+        }
+        return Ok(());
+    }
+    if handoff.structure_members.len() != 4 || handoff.expressions.len() != 4 {
+        return Err(SourceTypeError::StructureMemberCardinalityMismatch);
+    }
+    if !handoff.applications.is_empty()
+        || !handoff.arguments.is_empty()
+        || !handoff.definition_returns.is_empty()
+        || !handoff.mode_rhs.is_empty()
+    {
+        return Err(SourceTypeError::InvalidStructureMember {
+            structure_member: SourceTypeStructureMemberId::new(0),
+        });
+    }
+
+    for (index, (_, member_start, member_end, _, _, start, end)) in
+        TASK_249S_STRUCTURE_MEMBERS.into_iter().enumerate()
+    {
+        let id = SourceTypeStructureMemberId::new(index);
+        let root = SourceTypeExpressionId::new(index);
+        let Some(member) = handoff.structure_members.get(id) else {
+            return Err(SourceTypeError::InvalidStructureMember {
+                structure_member: id,
+            });
+        };
+        let Some(expression) = handoff.expressions.get(root) else {
+            return Err(SourceTypeError::InvalidStructureMember {
+                structure_member: id,
+            });
+        };
+        if member.id != id
+            || member.source_ordinal != index
+            || member.root != root
+            || member.member_range != task_249s_range(handoff.source_id, member_start, member_end)
+            || !valid_range(handoff.source_id, member.member_range)
+            || !range_contains(member.member_range, expression.source_range)
+            || expression.id != root
+            || expression.source_id != handoff.source_id
+            || expression.module_id != handoff.module_id
+            || expression.source_range != task_249s_range(handoff.source_id, start, end)
+            || expression.head_range != task_249s_range(handoff.source_id, start, end)
+        {
+            return Err(SourceTypeError::InvalidStructureMember {
+                structure_member: id,
+            });
+        }
+    }
+
+    let mut sites = BTreeSet::new();
+    for (index, (member_node, _, _, expression_node, head_node, _, _)) in
+        TASK_249S_STRUCTURE_MEMBERS.into_iter().enumerate()
+    {
+        let id = SourceTypeStructureMemberId::new(index);
+        let root = SourceTypeExpressionId::new(index);
+        let Some(member) = handoff.structure_members.get(id) else {
+            return Err(SourceTypeError::InvalidStructureMember {
+                structure_member: id,
+            });
+        };
+        let Some(expression) = handoff.expressions.get(root) else {
+            return Err(SourceTypeError::InvalidStructureMember {
+                structure_member: id,
+            });
+        };
+        if !is_node_site(&member.member_site, member_node)
+            || !is_node_site(&expression.site, expression_node)
+            || !is_node_site(&expression.head_site, head_node)
+            || !sites.insert(member.member_site.clone())
+            || !sites.insert(expression.site.clone())
+            || !sites.insert(expression.head_site.clone())
+        {
+            return Err(SourceTypeError::InvalidStructureMemberSite {
+                structure_member: id,
+            });
+        }
+        validate_structure_member_owner_site(id, &member.member_site, member.member_range, arena)?;
+        validate_arena_site(
+            root,
+            &expression.site,
+            expression.source_range,
+            NodeRecoveryState::Normal,
+            arena,
+        )
+        .map_err(|_| SourceTypeError::InvalidStructureMemberSite {
+            structure_member: id,
+        })?;
+        validate_arena_site(
+            root,
+            &expression.head_site,
+            expression.head_range,
+            NodeRecoveryState::Normal,
+            arena,
+        )
+        .map_err(|_| SourceTypeError::InvalidStructureMemberSite {
+            structure_member: id,
+        })?;
+    }
+
+    for index in 0..TASK_249S_STRUCTURE_MEMBERS.len() {
+        let id = SourceTypeStructureMemberId::new(index);
+        let root = SourceTypeExpressionId::new(index);
+        let Some(expression) = handoff.expressions.get(root) else {
+            return Err(SourceTypeError::InvalidStructureMember {
+                structure_member: id,
+            });
+        };
+        if expression.form != SourceTypeApplicationForm::Bare
+            || !matches!(expression.head, SourceTypeHead::BuiltinSet)
+            || expression.spelling != "set"
+            || expression.head_spelling != "set"
+            || expression.recovery != NodeRecoveryState::Normal
+        {
+            return Err(SourceTypeError::UnsupportedStructureMember {
+                structure_member: id,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_structure_member_owner_site(
+    structure_member: SourceTypeStructureMemberId,
+    site: &TypedSiteRef,
+    range: SourceRange,
+    arena: &TypedArena,
+) -> Result<(), SourceTypeError> {
+    let TypedSiteRef::Node(node_id) = site else {
+        return Err(SourceTypeError::InvalidStructureMemberSite { structure_member });
+    };
+    let Some(node) = arena.node(*node_id) else {
+        return Err(SourceTypeError::InvalidStructureMemberSite { structure_member });
+    };
+    if node.recovery != NodeRecoveryState::Normal || source_range(&node.anchor) != Some(range) {
+        return Err(SourceTypeError::InvalidStructureMemberSite { structure_member });
+    }
+    Ok(())
+}
+
+fn task_249s_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,
         start,
@@ -2320,6 +2673,14 @@ mod tests {
         extension: SourceTypeModeRhsExtensionInput,
     }
 
+    #[derive(Clone)]
+    struct Task249SFixture {
+        source: SourceId,
+        module: ModuleId,
+        input: SourceTypeStructureMemberHandoffInput,
+        arena: TypedArena,
+    }
+
     fn source_id() -> SourceId {
         source_id_for("a7")
     }
@@ -2747,6 +3108,43 @@ mod tests {
         }
     }
 
+    fn task_249s_fixture() -> Task249SFixture {
+        let source = source_id_for("e1");
+        let module = module("task249s.structure_definition");
+        let members = TASK_249S_STRUCTURE_MEMBERS
+            .into_iter()
+            .enumerate()
+            .map(
+                |(
+                    source_ordinal,
+                    (member_node, member_start, member_end, expression_node, head_node, start, end),
+                )| SourceTypeStructureMemberInput {
+                    member_site: node_site(member_node),
+                    member_range: range(source, member_start, member_end),
+                    source_ordinal,
+                    expression: task_249r_expression(
+                        source,
+                        &module,
+                        expression_node,
+                        head_node,
+                        start,
+                        end,
+                    ),
+                },
+            )
+            .collect();
+        Task249SFixture {
+            source,
+            module: module.clone(),
+            input: SourceTypeStructureMemberHandoffInput {
+                source_id: source,
+                module_id: module,
+                members,
+            },
+            arena: task_249s_arena(source, None),
+        }
+    }
+
     fn task_249r_expression(
         source: SourceId,
         module: &ModuleId,
@@ -2828,6 +3226,37 @@ mod tests {
             })
             .collect();
         TypedArena::try_new(None, nodes).expect("Task 249M arena")
+    }
+
+    fn task_249s_arena(
+        source: SourceId,
+        mutation: Option<(usize, SourceRange, NodeRecoveryState)>,
+    ) -> TypedArena {
+        let nodes = (0..=64)
+            .map(|index| {
+                let source_range = match index {
+                    51 | 52 => range(source, 59, 62),
+                    53 => range(source, 42, 63),
+                    54 | 55 => range(source, 87, 90),
+                    56 => range(source, 68, 91),
+                    59 | 60 => range(source, 151, 154),
+                    61 => range(source, 134, 155),
+                    62 | 63 => range(source, 179, 182),
+                    64 => range(source, 160, 183),
+                    _ => range(source, 0, 1),
+                };
+                let (source_range, recovery) = mutation
+                    .filter(|(node, _, _)| *node == index)
+                    .map(|(_, range, recovery)| (range, recovery))
+                    .unwrap_or((source_range, NodeRecoveryState::Normal));
+                TypedNode::new(
+                    format!("task249s-source-node-{index}"),
+                    SourceAnchor::Range(source_range),
+                )
+                .with_recovery(recovery)
+            })
+            .collect();
+        TypedArena::try_new(None, nodes).expect("Task 249S arena")
     }
 
     fn assemble_empty_resolved(typed: &TypedAst) -> ResolvedTypedAst {
@@ -2912,6 +3341,19 @@ mod tests {
         );
         assert_eq!(fixture.base, baseline);
         assert!(fixture.base.mode_rhs().is_empty());
+    }
+
+    fn assert_task_249s_build_error(
+        input: &SourceTypeStructureMemberHandoffInput,
+        arena: &TypedArena,
+        expected: SourceTypeError,
+    ) {
+        let baseline = input.clone();
+        assert_eq!(
+            SourceTypeStructureMemberProducer::build(input.clone(), arena),
+            Err(expected)
+        );
+        assert_eq!(input, &baseline);
     }
 
     #[derive(Clone, Copy, Debug)]
@@ -5315,6 +5757,469 @@ mod tests {
                 mode_after_return,
                 &task_249r.arena,
             ),
+            Err(SourceTypeError::InvalidModeRhsBase)
+        );
+    }
+
+    #[test]
+    fn task_249s_exact_structure_member_build_and_legacy_debug() {
+        let task_fixture = task_249s_fixture();
+        let handoff = SourceTypeStructureMemberProducer::build(
+            task_fixture.input.clone(),
+            &task_fixture.arena,
+        )
+        .expect("exact structure-member handoff");
+
+        assert!(handoff.applications().is_empty());
+        assert_eq!(handoff.expressions().len(), 4);
+        assert!(handoff.arguments().is_empty());
+        assert!(handoff.definition_returns().is_empty());
+        assert!(handoff.mode_rhs().is_empty());
+        assert_eq!(handoff.structure_members().len(), 4);
+        assert_eq!(
+            handoff
+                .structure_members()
+                .iter()
+                .map(|(id, row)| (
+                    id.index(),
+                    row.id().index(),
+                    row.source_ordinal(),
+                    row.root().index(),
+                    row.member_site().clone(),
+                    row.member_range(),
+                ))
+                .collect::<Vec<_>>(),
+            vec![
+                (
+                    0,
+                    0,
+                    0,
+                    0,
+                    node_site(53),
+                    range(task_fixture.source, 42, 63)
+                ),
+                (
+                    1,
+                    1,
+                    1,
+                    1,
+                    node_site(56),
+                    range(task_fixture.source, 68, 91)
+                ),
+                (
+                    2,
+                    2,
+                    2,
+                    2,
+                    node_site(61),
+                    range(task_fixture.source, 134, 155),
+                ),
+                (
+                    3,
+                    3,
+                    3,
+                    3,
+                    node_site(64),
+                    range(task_fixture.source, 160, 183),
+                ),
+            ]
+        );
+        assert!(
+            handoff
+                .structure_members()
+                .get(SourceTypeStructureMemberId::new(4))
+                .is_none()
+        );
+        assert_eq!(
+            handoff.debug_text(),
+            concat!(
+                "source-type-application-debug-v1\n",
+                "module: task249s.structure_definition\n",
+                "structure-member#0 ordinal=0 member_range=42..63 member_site=node#53 root=0\n",
+                "structure-member#1 ordinal=1 member_range=68..91 member_site=node#56 root=1\n",
+                "structure-member#2 ordinal=2 member_range=134..155 member_site=node#61 root=2\n",
+                "structure-member#3 ordinal=3 member_range=160..183 member_site=node#64 root=3\n",
+                "expression#0 form=bare range=59..62 site=node:52 head=builtin:set head_range=59..62 head_site=node:51 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+                "expression#1 form=bare range=87..90 site=node:55 head=builtin:set head_range=87..90 head_site=node:54 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+                "expression#2 form=bare range=151..154 site=node:60 head=builtin:set head_range=151..154 head_site=node:59 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+                "expression#3 form=bare range=179..182 site=node:63 head=builtin:set head_range=179..182 head_site=node:62 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+            )
+        );
+
+        let legacy_fixture = fixture();
+        let legacy = build(&legacy_fixture).expect("legacy source type");
+        assert!(legacy.structure_members().is_empty());
+        assert!(!legacy.debug_text().contains("structure-member#"));
+    }
+
+    #[test]
+    fn task_249s_member_corruption_fails_atomically() {
+        let fixture = task_249s_fixture();
+
+        let mut empty = fixture.input.clone();
+        empty.members.clear();
+        assert_task_249s_build_error(
+            &empty,
+            &fixture.arena,
+            SourceTypeError::EmptyStructureMembers,
+        );
+
+        for cardinality in [3, 5] {
+            let mut invalid = fixture.input.clone();
+            if cardinality == 3 {
+                invalid.members.pop();
+            } else {
+                invalid.members.push(invalid.members[0].clone());
+            }
+            assert_task_249s_build_error(
+                &invalid,
+                &fixture.arena,
+                SourceTypeError::StructureMemberCardinalityMismatch,
+            );
+        }
+
+        let invalid_rows: [fn(&mut SourceTypeStructureMemberHandoffInput); 10] = [
+            |input| input.source_id = other_source_id(),
+            |input| input.module_id = module("task249s.other"),
+            |input| input.members[0].source_ordinal = 1,
+            |input| input.members[0].member_range.start = 41,
+            |input| input.members[0].member_range.end = 62,
+            |input| input.members[0].member_range.source_id = other_source_id(),
+            |input| input.members[0].expression.source_id = other_source_id(),
+            |input| input.members[0].expression.module_id = module("task249s.other"),
+            |input| input.members[0].expression.source_range.start = 58,
+            |input| input.members[0].expression.head_range.start = 58,
+        ];
+        for mutate in invalid_rows {
+            let mut invalid = fixture.input.clone();
+            mutate(&mut invalid);
+            assert_task_249s_build_error(
+                &invalid,
+                &fixture.arena,
+                SourceTypeError::InvalidStructureMember {
+                    structure_member: SourceTypeStructureMemberId::new(0),
+                },
+            );
+        }
+
+        let invalid_sites: [fn(&mut SourceTypeStructureMemberHandoffInput); 5] = [
+            |input| input.members[0].member_site = role(53, "member"),
+            |input| input.members[0].member_site = node_site(52),
+            |input| input.members[0].expression.site = role(52, "expression"),
+            |input| input.members[0].expression.head_site = role(51, "head"),
+            |input| input.members[0].expression.site = node_site(53),
+        ];
+        for mutate in invalid_sites {
+            let mut invalid = fixture.input.clone();
+            mutate(&mut invalid);
+            assert_task_249s_build_error(
+                &invalid,
+                &fixture.arena,
+                SourceTypeError::InvalidStructureMemberSite {
+                    structure_member: SourceTypeStructureMemberId::new(0),
+                },
+            );
+        }
+        let mut duplicate_across_rows = fixture.input.clone();
+        duplicate_across_rows.members[1].member_site =
+            duplicate_across_rows.members[0].member_site.clone();
+        assert_task_249s_build_error(
+            &duplicate_across_rows,
+            &fixture.arena,
+            SourceTypeError::InvalidStructureMemberSite {
+                structure_member: SourceTypeStructureMemberId::new(1),
+            },
+        );
+        let mut swapped_expression_and_head = fixture.input.clone();
+        let expression_site = swapped_expression_and_head.members[0]
+            .expression
+            .site
+            .clone();
+        swapped_expression_and_head.members[0].expression.site = swapped_expression_and_head
+            .members[0]
+            .expression
+            .head_site
+            .clone();
+        swapped_expression_and_head.members[0].expression.head_site = expression_site;
+        assert_task_249s_build_error(
+            &swapped_expression_and_head,
+            &fixture.arena,
+            SourceTypeError::InvalidStructureMemberSite {
+                structure_member: SourceTypeStructureMemberId::new(0),
+            },
+        );
+
+        let unsupported: [fn(&mut SourceTypeStructureMemberHandoffInput); 5] = [
+            |input| input.members[0].expression.form = SourceTypeApplicationForm::Of,
+            |input| input.members[0].expression.head = SourceTypeHead::BuiltinObject,
+            |input| input.members[0].expression.spelling = "Set".to_owned(),
+            |input| input.members[0].expression.head_spelling = "Set".to_owned(),
+            |input| input.members[0].expression.recovery = NodeRecoveryState::Recovered,
+        ];
+        for mutate in unsupported {
+            let mut invalid = fixture.input.clone();
+            mutate(&mut invalid);
+            assert_task_249s_build_error(
+                &invalid,
+                &fixture.arena,
+                SourceTypeError::UnsupportedStructureMember {
+                    structure_member: SourceTypeStructureMemberId::new(0),
+                },
+            );
+        }
+
+        let mut cardinality_over_row = fixture.input.clone();
+        cardinality_over_row.members.pop();
+        cardinality_over_row.members[0].source_ordinal = 1;
+        assert_task_249s_build_error(
+            &cardinality_over_row,
+            &fixture.arena,
+            SourceTypeError::StructureMemberCardinalityMismatch,
+        );
+        let mut row_over_site = fixture.input.clone();
+        row_over_site.members[0].source_ordinal = 1;
+        row_over_site.members[0].member_site = role(53, "member");
+        assert_task_249s_build_error(
+            &row_over_site,
+            &fixture.arena,
+            SourceTypeError::InvalidStructureMember {
+                structure_member: SourceTypeStructureMemberId::new(0),
+            },
+        );
+        let mut site_over_shape = fixture.input.clone();
+        site_over_shape.members[0].member_site = role(53, "member");
+        site_over_shape.members[0].expression.form = SourceTypeApplicationForm::Of;
+        assert_task_249s_build_error(
+            &site_over_shape,
+            &fixture.arena,
+            SourceTypeError::InvalidStructureMemberSite {
+                structure_member: SourceTypeStructureMemberId::new(0),
+            },
+        );
+        let mut later_row_over_earlier_site = fixture.input.clone();
+        later_row_over_earlier_site.members[0].member_site = role(53, "member");
+        later_row_over_earlier_site.members[1].source_ordinal = 2;
+        assert_task_249s_build_error(
+            &later_row_over_earlier_site,
+            &fixture.arena,
+            SourceTypeError::InvalidStructureMember {
+                structure_member: SourceTypeStructureMemberId::new(1),
+            },
+        );
+        let mut later_row_over_earlier_shape = fixture.input.clone();
+        later_row_over_earlier_shape.members[0].expression.form = SourceTypeApplicationForm::Of;
+        later_row_over_earlier_shape.members[1].source_ordinal = 2;
+        assert_task_249s_build_error(
+            &later_row_over_earlier_shape,
+            &fixture.arena,
+            SourceTypeError::InvalidStructureMember {
+                structure_member: SourceTypeStructureMemberId::new(1),
+            },
+        );
+        let mut later_site_over_earlier_shape = fixture.input.clone();
+        later_site_over_earlier_shape.members[0].expression.form = SourceTypeApplicationForm::Of;
+        later_site_over_earlier_shape.members[1].member_site = role(56, "member");
+        assert_task_249s_build_error(
+            &later_site_over_earlier_shape,
+            &fixture.arena,
+            SourceTypeError::InvalidStructureMemberSite {
+                structure_member: SourceTypeStructureMemberId::new(1),
+            },
+        );
+        assert_eq!(fixture.input.members.len(), 4);
+    }
+
+    #[test]
+    fn task_249s_arena_and_installation_drift_fail_closed() {
+        let fixture = task_249s_fixture();
+        let handoff =
+            SourceTypeStructureMemberProducer::build(fixture.input.clone(), &fixture.arena)
+                .expect("structure members");
+
+        let empty_arena = TypedArena::try_new(None, Vec::new()).expect("empty arena");
+        assert_task_249s_build_error(
+            &fixture.input,
+            &empty_arena,
+            SourceTypeError::InvalidStructureMemberSite {
+                structure_member: SourceTypeStructureMemberId::new(0),
+            },
+        );
+
+        for (index, (member, _, _, expression, head, start, end)) in
+            TASK_249S_STRUCTURE_MEMBERS.into_iter().enumerate()
+        {
+            for node in [member, expression, head] {
+                let exact_range = if node == member {
+                    fixture.input.members[index].member_range
+                } else {
+                    range(fixture.source, start, end)
+                };
+                for (source_range, recovery) in [
+                    (exact_range, NodeRecoveryState::Recovered),
+                    (range(fixture.source, 0, 1), NodeRecoveryState::Normal),
+                ] {
+                    let drifted =
+                        task_249s_arena(fixture.source, Some((node, source_range, recovery)));
+                    assert_task_249s_build_error(
+                        &fixture.input,
+                        &drifted,
+                        SourceTypeError::InvalidStructureMemberSite {
+                            structure_member: SourceTypeStructureMemberId::new(index),
+                        },
+                    );
+                    assert_eq!(
+                        task_249r_typed_ast(
+                            fixture.source,
+                            fixture.module.clone(),
+                            handoff.clone(),
+                            drifted,
+                        ),
+                        Err(TypedAstError::InvalidSourceType)
+                    );
+                }
+            }
+        }
+
+        let corruptions: [fn(&mut SourceTypeApplicationHandoff); 9] = [
+            |value| value.structure_members.entries.clear(),
+            |value| value.structure_members.entries[0].id = SourceTypeStructureMemberId::new(1),
+            |value| value.structure_members.entries[0].root = SourceTypeExpressionId::new(1),
+            |value| value.expressions.entries[0].id = SourceTypeExpressionId::new(1),
+            |value| value.expressions.entries.pop().map(|_| ()).unwrap_or(()),
+            |value| {
+                value.applications.entries.push(SourceTypeApplication {
+                    id: SourceTypeApplicationId::new(0),
+                    binding: BindingId::new(0),
+                    source_ordinal: 0,
+                    root: SourceTypeExpressionId::new(0),
+                });
+            },
+            |value| {
+                value.arguments.entries.push(SourceTypeArgumentRow {
+                    id: SourceTypeArgumentId::new(0),
+                    parent: SourceTypeExpressionId::new(0),
+                    ordinal: 0,
+                    argument: SourceTypeArgument::TypeSite {
+                        expression: SourceTypeExpressionId::new(1),
+                    },
+                });
+            },
+            |value| {
+                value
+                    .definition_returns
+                    .entries
+                    .push(SourceTypeDefinitionReturn {
+                        id: SourceTypeDefinitionReturnId::new(0),
+                        definition_site: node_site(53),
+                        definition_range: range(value.source_id, 42, 63),
+                        source_ordinal: 0,
+                        root: SourceTypeExpressionId::new(0),
+                    });
+            },
+            |value| {
+                value.mode_rhs.entries.push(SourceTypeModeRhs {
+                    id: SourceTypeModeRhsId::new(0),
+                    definition_site: node_site(53),
+                    definition_range: range(value.source_id, 42, 63),
+                    source_ordinal: 0,
+                    root: SourceTypeExpressionId::new(0),
+                });
+            },
+        ];
+        for corrupt in corruptions {
+            let mut invalid = handoff.clone();
+            corrupt(&mut invalid);
+            assert_eq!(
+                task_249r_typed_ast(
+                    fixture.source,
+                    fixture.module.clone(),
+                    invalid,
+                    fixture.arena.clone(),
+                ),
+                Err(TypedAstError::InvalidSourceType)
+            );
+        }
+        assert_eq!(handoff.structure_members().len(), 4);
+    }
+
+    #[test]
+    fn task_249s_typed_final_replay_and_sibling_isolation() {
+        let fixture = task_249s_fixture();
+        let handoff =
+            SourceTypeStructureMemberProducer::build(fixture.input.clone(), &fixture.arena)
+                .expect("structure members");
+        let fingerprint = handoff.debug_text();
+        let replay =
+            SourceTypeStructureMemberProducer::build(fixture.input.clone(), &fixture.arena)
+                .expect("structure-member replay");
+        assert_eq!(replay, handoff);
+        assert_eq!(replay.debug_text(), fingerprint);
+
+        let typed = task_249r_typed_ast(
+            fixture.source,
+            fixture.module.clone(),
+            handoff.clone(),
+            fixture.arena.clone(),
+        )
+        .expect("typed Task 249S installation");
+        assert_eq!(typed.source_type(), Some(&handoff));
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        assert_eq!(typed.debug_text().matches(fingerprint.as_str()).count(), 1);
+
+        let resolved = assemble_empty_resolved(&typed);
+        let resolved_replay = assemble_empty_resolved(&typed);
+        assert_eq!(resolved_replay, resolved);
+        assert_eq!(resolved_replay.debug_text(), resolved.debug_text());
+        assert_eq!(resolved.source_type(), Some(&handoff));
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert_eq!(
+            resolved.debug_text().matches(fingerprint.as_str()).count(),
+            1
+        );
+
+        let task_249r = task_249r_fixture();
+        let task_249r_handoff = SourceTypeDefinitionReturnProducer::extend(
+            &task_249r.base,
+            task_249r.extension.clone(),
+            &task_249r.arena,
+        )
+        .expect("Task 249R");
+        assert!(task_249r_handoff.structure_members().is_empty());
+        let mut return_after_members = task_249r.extension;
+        return_after_members.source_id = fixture.source;
+        return_after_members.module_id = fixture.module.clone();
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(
+                &handoff,
+                return_after_members,
+                &fixture.arena,
+            ),
+            Err(SourceTypeError::InvalidDefinitionReturnBase)
+        );
+
+        let task_249m = task_249m_fixture();
+        let task_249m_handoff = SourceTypeModeRhsProducer::extend(
+            &task_249m.base,
+            task_249m.extension.clone(),
+            &task_249m.arena,
+        )
+        .expect("Task 249M");
+        assert!(task_249m_handoff.structure_members().is_empty());
+        let mut mode_after_members = task_249m.extension;
+        mode_after_members.source_id = fixture.source;
+        mode_after_members.module_id = fixture.module;
+        assert_eq!(
+            SourceTypeModeRhsProducer::extend(&handoff, mode_after_members, &fixture.arena),
             Err(SourceTypeError::InvalidModeRhsBase)
         );
     }

@@ -44,7 +44,7 @@ note として記録する。
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | cohesiveなTask-255/255C1 seven-table association、condition-subtree exclusion、cross-family ownership/fingerprint validation、deterministic rendering、install check、corruption test。split不要。 |
 | `src/source_statement.rs` | 50732 | syntax-free source statement producer | `source_statement.md` | no | no | cohesiveなTask-258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B3M2B2B3E/258B4A/258B4B/258B4C/258B5A/258B5B statement/witness transaction、resolver/binding/lower/application/structure/set/formula/import provenance、zero-edge/qua/comprehension/composite-root ownership、subtree validation、rendering、paired typed/final install、corruption matrix。split不要。 |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | cohesiveなTask-254 term/wrapper/root/member/field-update/edge/request table、written-partition/cross-family dependency/provenance validation、deterministic rendering、corruption test。split不要。 |
-| `src/source_type.rs` | 5339 | syntax-free source-type application producer | `source_type.md` | no | no | cohesiveなTask-249 flat table、Task-249R independent definition-return、Task-249M standalone mode-RHS extension、environment/arena/form/graph/provenance validation、deterministic rendering、exhaustive corruption test。split不要。 |
+| `src/source_type.rs` | 6244 | syntax-free source-type application producer | `source_type.md` | no | no | cohesiveなTask-249 flat table、Task-249R definition-return、Task-249M mode-RHS、Task-249S standalone structure-member type family、environment/arena/form/graph/provenance validation、deterministic rendering、exhaustive corruption test。split不要。 |
 | `src/type_checker.rs` | 13238 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | 最大の file だが phase-6 spec boundary 内にある。normalization、reserve/authenticated exact theorem-owner handoff validation、declaration checking、inference、coercion、fact query、diagnostic、rendering、test、Task-259/260 obligation-kind serializerはbehavior-coupled。 |
 | `src/registration_resolution.rs` | 5891 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesiveなregistration data layer、gate logic、Task-259/260 obligation-kind serializer。behavior-neutral splitは不要。 |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
@@ -1405,3 +1405,13 @@ binding-owned producerを弱めずTask-249R/249Mをreuseしない。future Task-
 producerはnew dedicated moduleに属し、このprerequisiteの範囲外。runner/parser/
 resolver/Cargo/corpus fileのmove/splitはない。separate implementation commit前の
 `source_type.rs`は5,339 linesのままである。
+
+## Task 249S active module boundary
+
+implementationはexisting syntax-free `src/source_type.rs` ownerと同期文書
+だけに限定する。moduleは`6244` lines、checker production manifestは
+`27/156019`、path/content hashは
+`180b090a167912f0b04f014180ec6755aa5bde54eecd49f0990cc87fb566667f` /
+`37a7bb07a441086ee2915f601dedbca002f9a356b53a32050c29d467eb56b9f1`。
+new member tableはexisting source-type transaction/install validatorと
+behavior-coupledであり、split不要である。

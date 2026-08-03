@@ -514,3 +514,21 @@ FINDINGS**、all nine gates、uncapped quality 90+、dedicated docs commit、cle
 inventory、origin classification/stash invarianceでexitする。separate
 implementationはexact four tests、`0/4/0/0/0/4`、full reviews/verification、
 dedicated commit後にTask 263へ自動復帰する。
+
+## Task 249S active implementation result
+
+frozen APIとstandalone `0/4/0/0/0/4` profileをcontract変更なしで実装した。
+validationはfrozen orderでglobal passを行う: cardinality、全row/environment/
+range identity、全site/arena identity、全expression shape。これによりearlier
+rowのsite/shape faultがlater rowの高優先度faultをmaskしない。application、
+argument、definition-return、mode-RHSとのmixed tableはsibling validatorより
+前にfail closedする。
+
+exact test 4件は全てPASSし、全owner/expression/head arena nodeのrecovered/
+normal-wrong-range drift、mixed-table 4種、cross-row compound precedence、
+deterministic replay、Typed/final ownershipをcoverする。legacy empty-member
+debug byteは不変。`source_type.rs`は`6244` lines、checkerは`462` tests、
+raw/normalized hashは
+`5f18c633183db679ecacb2781c9133dad5b4c48fdb00e33435dd4c1329105fd2` /
+`e0da07dbaf28c659f9e3ac682ae5cf694e7ddd5cdb987abe5d2598ebbfc68d7d`。
+Task 263と全semantic deferralは分離されたままである。

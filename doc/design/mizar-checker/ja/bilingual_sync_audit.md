@@ -1523,3 +1523,10 @@ canonical ENとJA companionはTask-263R closure、Task-249S classification、exa
 4件、error variant 5件、debug order、Typed/final ownership、test 4件、count impact、
 exclusion、two-commit exitを同期する。Englishがauthority。docs prerequisiteで
 executable/corpus artifactは変更しない。
+
+## Task 249S active-result synchronization
+
+canonical EN/JAはimplemented public name、exact `0/4/0/0/0/4` profile、
+owner/root 4 row、global failure precedence、`6244`-line source inventory、
+checker `462`/4-test inventory、measured production/test-list hash、
+runner/corpus/trace不変を同期する。Task 263のsemantic deferralは移動しない。

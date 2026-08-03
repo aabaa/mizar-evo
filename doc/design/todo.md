@@ -4019,6 +4019,10 @@ or semantic owner changed. B3M2B2B remains next before B4.
   verification.
 - [x] Complete final read-only quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`.
-- [ ] Complete exact staging, dedicated docs commit, and clean inventory.
-- [ ] Implement and separately commit the four-test checker-only prerequisite,
-  then fresh-inventory and resume Checker Task 263.
+- [x] Complete exact staging, dedicated docs commit, and clean inventory.
+  Commit `274917ab21cf436411d7b7d308bd676f4b444a67`; fresh inventory reported
+  `origin/main...HEAD = 0/8` and protected-stash invariance.
+- [x] Implement the exact four-test checker-only prerequisite and close
+  test-sufficiency and implementation reviews with **NO FINDINGS**.
+- [ ] Complete consistency/final gates, exact staging, dedicated implementation
+  commit, and clean inventory; then fresh-inventory and resume Checker Task 263.

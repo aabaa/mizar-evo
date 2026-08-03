@@ -6181,7 +6181,24 @@ MC-G017/MC-G018 and Chapter 5 remain partial. Task 263 retains structure and
 member identity, field/property classification, parents, root/path/view,
 inheritance mapping and exact coverage, constructor/selector declarations,
 coherence requests, consumer activation, and the sole future pass/trace pair.
-The current docs-only prerequisite preserves corpus `425/393`, pass/fail
+The documentation prerequisite preserved corpus `425/393`, pass/fail
 `232/193`, type `257/245+12`, active stages `101/7/202/1`, warnings/errors
-`23/0`, and the trace file hash. Implementation first closes only this lower
-representation gap and projects checker `458 -> 462`.
+`23/0`, and the trace file hash. The implementation now closes only this lower
+representation gap and moves checker tests `458 -> 462`.
+
+## Checker Task 249S Active Lower-Representation Coverage
+
+The frozen four-row standalone member-type handoff is implemented with exact
+`0/4/0/0/0/4` ownership, arena provenance, global failure precedence,
+deterministic fingerprints, and Typed/final clone preservation. This closes
+the classified checker `source_drift` and checker-local `test_gap`; it adds no
+language-semantic or executable corpus credit. The docs prerequisite is
+committed as `274917ab21cf436411d7b7d308bd676f4b444a67`.
+
+`tests/coverage/spec_trace.toml` remains byte-identical at
+`3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`.
+Metadata remains `425/393`, pass/fail `232/193`, active stages
+`101/7/202/1`, type `257 = 245 covered + 12 deferred`, and warnings/errors
+`23/0`. MC-G017/MC-G018 and Chapter 5 remain partial. Task 263 still owns
+structure/member association, inheritance and coherence intent, the private
+runner consumer, and the sole future pass/sidecar/covered trace row.

@@ -1585,3 +1585,11 @@ handoff, four row/site/range/root oracles, five error variants, debug order,
 Typed/final ownership, four tests, count impact, exclusions, and two-commit
 exit. English remains authoritative. No executable or corpus artifact changes
 in this documentation prerequisite.
+
+## Task 249S Active-Result Synchronization
+
+Canonical EN and JA now synchronize the implemented public names, exact
+`0/4/0/0/0/4` profile, four owner/root rows, global failure precedence,
+`6244`-line source inventory, four-test `462` checker inventory, measured
+production/test-list hashes, and unchanged runner/corpus/trace boundary. No
+semantic deferral moved from Task 263.

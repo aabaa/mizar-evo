@@ -746,3 +746,22 @@ clean post-commit inventory, unchanged origin classification, and protected
 stash invariance. The separate implementation exits only after the exact four
 tests, `0/4/0/0/0/4` profile, full reviews and verification, a dedicated
 commit, and automatic return to Task 263.
+
+## Task 249S Active Implementation Result
+
+The frozen API and standalone `0/4/0/0/0/4` profile are implemented without
+contract change. Validation performs global passes in the frozen order:
+cardinality, all row/environment/range identities, all site/arena identities,
+then all expression shapes. This prevents an earlier-row site or shape fault
+from masking a later-row higher-priority fault. Mixed applications, arguments,
+definition returns, or mode RHS rows fail closed before sibling validators.
+
+All four exact tests pass, including every owner/expression/head arena node
+under recovered and normal-wrong-range drift, all four mixed-table
+corruptions, cross-row compound precedence, deterministic replay, and
+Typed/final ownership. Legacy empty-member debug bytes remain unchanged.
+`source_type.rs` is `6244` lines; checker inventory is `462` and its
+raw/normalized list hashes are
+`5f18c633183db679ecacb2781c9133dad5b4c48fdb00e33435dd4c1329105fd2` /
+`e0da07dbaf28c659f9e3ac682ae5cf694e7ddd5cdb987abe5d2598ebbfc68d7d`.
+Task 263 and every frozen semantic deferral remain separate.

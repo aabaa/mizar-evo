@@ -12880,3 +12880,11 @@ The prerequisite changes only checker `source_type.rs` in its later
 implementation commit plus synchronized design documents. No `mizar-test`
 production file, Cargo target, route, or fixture moves. Task-263 implementation
 will separately own its private exact consumer and corpus pair.
+
+## Checker Task 249S Active No-Runner Boundary
+
+Fresh measurement confirms no runner path or line change: production remains
+`34/67087` with path/content hashes
+`72481975abab5250f3577a7643af4b5aa64f7c941be1aed4a2e1cbc726d1e55a` /
+`18e9921fd68c2401869334223de100549ed92ed0a806e37cd0da5f7110c015bf`.
+No runner module boundary moved.

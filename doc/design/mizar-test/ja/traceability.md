@@ -2182,3 +2182,11 @@ expectation、`spec_trace.toml` row/status/countは追加しない。existing mi
 structure/mode gapはactive/unchanged。Chapter-5 structure-definition coverageは
 Task 263がdistinct spec-derived pass pair 1件、sole covered backlink、metadata
 case、real consumerを追加するまでpartialのまま。
+
+## Checker Task 249S active traceability no-op result
+
+implementationが閉じるのはchecker lower representation `source_drift`と
+checker-local `test_gap`だけである。`tests/coverage/spec_trace.toml`は
+`3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`
+でbyte-identical。source/sidecar/expectation/backlink/row/status/countを追加
+せず、Chapter 5はTask 263までpartialのままである。

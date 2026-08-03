@@ -1661,3 +1661,12 @@ definition-return row, or mode-RHS row. Task 263 is its sole consumer. Member
 kind and identity, structure parent/root/path/view, inheritance coverage,
 constructor/selector declarations, coherence, requests, evidence, semantics,
 facts, proofs, IR, and VC rows do not cross this lower boundary.
+
+## Task 249S Active Lower-Family Result
+
+The frozen standalone member-type family is now active exactly as
+applications/expressions/arguments/definition-returns/mode-RHS/members
+`0/4/0/0/0/4`. It owns only four declaration-member-to-type-root links.
+Task 263 still owns structure/member identity association, classification,
+inheritance, coverage, constructors/selectors, coherence requests, and the
+runner/corpus consumer; no semantic family crossed this boundary.

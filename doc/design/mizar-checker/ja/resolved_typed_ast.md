@@ -1636,3 +1636,10 @@ Task 249Sはfinal field/semantic routeを追加しない。`ResolvedTypedAst`は
 だけである。final assemblyはlower owner row 4件からexpression metadata、
 candidate、coercion、fact、diagnostic、formula、statement、proof、obligation、
 acceptance、Task-263 structure resultを生成しない。
+
+## Task 249S active clone-preservation result
+
+repeated final assemblyはexact immutable source-type handoffとdeterministic
+debug fingerprintをvalue equalityで維持する。final field/installer、
+semantic projection、diagnostic、obligation、fact、proof、acceptance outputは
+追加しない。

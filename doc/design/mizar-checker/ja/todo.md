@@ -6300,6 +6300,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   PASSする。
 - [x] final read-only qualityを**NO FINDINGS**、全9 hard gates PASS、score cap
   なし、valid `100/100`で完了する。
-- [ ] 同期文書だけをstage/commitし、clean post-commit inventoryを確認する。
-- [ ] fresh inventory後Task 249Sとchecker test 4件だけを実装し、reviews/hard
-  gatesをclose、別commit後Task 263へ戻る。
+- [x] 同期文書だけをstage/commitし、clean post-commit inventoryを確認する。
+  documentation commitは
+  `274917ab21cf436411d7b7d308bd676f4b444a67`。clean inventoryで
+  `origin/main...HEAD = 0/8`とprotected stash不変を確認済み。
+- [x] fresh inventory後exact `0/4/0/0/0/4` handoffとchecker test 4件を
+  実装し、test-sufficiency/implementation reviewを**NO FINDINGS**でcloseする。
+- [ ] source/documentation/final quality gate、exact stage、dedicated
+  implementation commit、clean fresh inventoryを完了し、Task 263へ戻る。

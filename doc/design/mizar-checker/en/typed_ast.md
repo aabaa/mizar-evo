@@ -1723,3 +1723,11 @@ standalone `0/4/0/0/0/4` value. Installation revalidates all four member owner,
 expression, and head sites against `TypedArena`; missing or corrupt values fail
 as `InvalidSourceType`. Types, facts, coercions, initial obligations,
 diagnostics, context, and every Task-263 upper field remain empty/absent.
+
+## Task 249S Active Typed Ownership Result
+
+The existing optional `source_type` field and one-shot installation path are
+the sole owner. Installation revalidates the exact member table, expression
+table, source/module identity, all twelve arena sites, and mutual exclusion
+with sibling profiles. All semantic tables and Task-263 upper fields remain
+empty or absent.

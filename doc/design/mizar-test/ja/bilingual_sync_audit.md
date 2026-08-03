@@ -1477,3 +1477,9 @@ bilingual synchronization exceptionはない。
 EN/JAはTask 249Sがchecker-only、exact lower profile `0/4/0/0/0/4`、checker
 test 4件、runner/corpus/trace/metadata/CLI artifact変更なしであることを同期する。
 future executable/trace workはTask 263に残る。
+
+## Checker Task 249S active no-op synchronization
+
+EN/JAはrunner `34/67087`、test `524`、corpus/metadata count、trace hash、
+5 CLI fingerprintが実測不変であることを同期する。変更はchecker lower
+representationだけで、executable/trace workはTask 263に残る。

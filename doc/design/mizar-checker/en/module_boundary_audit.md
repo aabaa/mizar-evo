@@ -45,7 +45,7 @@ remain aligned with their owning specifications.
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | Cohesive Task-255/255C1 seven-table association, condition-subtree exclusion, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
 | `src/source_statement.rs` | 50732 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B3M2B2B3E/258B4A/258B4B/258B4C/258B5A/258B5B statement and witness transactions, resolver/binding/lower/application/structure/set/formula/import provenance, zero-edge/qua/comprehension/composite-root ownership, subtree validation, rendering, paired typed/final installation, and corruption matrices; no split required. |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | Cohesive Task-254 term/wrapper/root/member/field-update/edge/request tables, written-partition and cross-family dependency/provenance validation, deterministic rendering, and corruption tests; no split required. |
-| `src/source_type.rs` | 5339 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables plus Task-249R independent definition-return and Task-249M standalone mode-RHS extensions, environment/arena/form/graph/provenance validation, deterministic rendering, and exhaustive corruption tests; no split required. |
+| `src/source_type.rs` | 6244 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables plus Task-249R definition-return, Task-249M mode-RHS, and Task-249S standalone structure-member type families, environment/arena/form/graph/provenance validation, deterministic rendering, and exhaustive corruption tests; no split required. |
 | `src/type_checker.rs` | 13238 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | Largest file but still within the phase-6 spec boundary; normalization, reserve and authenticated exact theorem-owner handoff validation, declaration checking, inference, coercions, fact queries, diagnostics, rendering, tests, and Task-259/260 obligation-kind serializers remain behavior-coupled. |
 | `src/registration_resolution.rs` | 5891 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer, gate logic, and Task-259/260 obligation-kind serializers; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
@@ -1441,3 +1441,14 @@ The future Task-263 upper producer belongs in a new dedicated module and is
 explicitly out of this prerequisite. No runner, parser, resolver, Cargo, or
 corpus file moves or splits here. Current `source_type.rs` remains 5,339 lines
 until the separate implementation commit.
+
+## Task 249S Active Module Boundary
+
+The implementation remains confined to the existing syntax-free
+`src/source_type.rs` owner plus synchronized documents. The module is
+`6244` lines and the checker production manifest is `27/156019`; its
+path/content hashes are
+`180b090a167912f0b04f014180ec6755aa5bde54eecd49f0990cc87fb566667f` /
+`37a7bb07a441086ee2915f601dedbca002f9a356b53a32050c29d467eb56b9f1`.
+The new member table is behavior-coupled to the existing source-type
+transaction and installation validator, so no split is warranted.

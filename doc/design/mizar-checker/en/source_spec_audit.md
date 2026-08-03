@@ -330,7 +330,7 @@ Generated public newtypes:
 
 - `SourceTypeApplicationId`, `SourceTypeExpressionId`,
   `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`,
-  `SourceTypeModeRhsId`
+  `SourceTypeModeRhsId`, `SourceTypeStructureMemberId`
 
 Literal top-level public items:
 
@@ -338,15 +338,19 @@ Literal top-level public items:
   `SourceTypeDefinitionReturnExtensionInput`,
   `SourceTypeDefinitionReturnInput`,
   `SourceTypeModeRhsExtensionInput`, `SourceTypeModeRhsInput`,
+  `SourceTypeStructureMemberHandoffInput`,
+  `SourceTypeStructureMemberInput`,
   `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
   `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
   `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
   `SourceTypeApplication`, `SourceTypeExpressionTable`,
   `SourceTypeDefinitionReturnTable`, `SourceTypeDefinitionReturn`,
   `SourceTypeModeRhsTable`, `SourceTypeModeRhs`,
+  `SourceTypeStructureMemberTable`, `SourceTypeStructureMember`,
   `SourceTypeExpression`, `SourceTypeArgumentTable`,
   `SourceTypeArgumentRow`, `SourceTypeProducer`,
   `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
+  `SourceTypeStructureMemberProducer`,
   `SourceTypeError`
 
 Correspondence:
@@ -358,11 +362,13 @@ Correspondence:
 | Graph order, ownership, containment, non-overlap, and deterministic provenance are fail-closed. | `SourceTypeError`, iterative graph/range/provenance validation and deterministic debug rendering. | Dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance and deep-chain tests. | Implemented without sorting, recursion, or repair. |
 | Independent definition return types extend the exact two-binding base without fabricating binding applications. | `SourceTypeDefinitionReturnProducer`, two immutable owner rows, appended roots 2/3, one-shot and installation validation. | Four exact Task-249R extension/corruption/arena/Typed-final tests. | Implemented for Task 249R; combined profile is `2/4/0/2`. |
 | A standalone mode RHS extends its exact two-binding base without fabricating a third application or reusing definition-return semantics. | `SourceTypeModeRhsProducer`, one immutable owner row, appended root 2, frozen precedence, one-shot and installation validation. | Four exact Task-249M extension/corruption/arena/Typed-final tests. | Implemented for Task 249M; combined profile is `2/3/0/0/1`. |
+| Standalone structure-member types build without fabricated binding applications or reuse of the return/RHS families. | `SourceTypeStructureMemberProducer`, four immutable owner rows/roots, exact precedence, arena and installation validation. | Four exact Task-249S profile/corruption/arena/Typed-final tests. | Implemented for Task 249S; standalone profile is `0/4/0/0/0/4`. |
 | `TypedAst` owns the result and `ResolvedTypedAst` only clones it. | Optional `SourceTypeApplicationHandoff` field and borrowed getters. | Immutable final-preservation and repeated-run assertions. | Implemented; empty legacy debug bytes remain conditional. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
-Bounded gaps: Tasks 249/249R/249M publish source-type inputs, definition-return
-owner links, and one standalone mode-RHS owner link only. Expansion,
+Bounded gaps: Tasks 249/249R/249M/249S publish source-type inputs,
+definition-return owner links, one standalone mode-RHS owner link, and four
+standalone structure-member type owner links only. Expansion,
 normalization, evidence, term/`qua` selection, accepted facts/declarations/
 proofs, and downstream IR remain with their explicit later owners.
 
@@ -5532,3 +5538,13 @@ syntax dependency, normalized type, diagnostic, obligation, semantic result,
 runner, corpus, or trace credit is added; five variants append to the existing
 non-exhaustive public `SourceTypeError`. The literal public/source-spec lint
 inventories must be synchronized when implementation lands.
+
+## Task 249S Active Source/Public-Surface Result
+
+The frozen dense ID, two inputs, row/table, producer, getter, and five appended
+non-exhaustive error variants are implemented in `source_type.rs`. The
+literal public inventory and correspondence table above include every new
+item. Exact row/range/site/arena/shape validation is globally precedence
+ordered, and sibling Task-249/249R/249M profiles reject mixed ownership. The
+source is `6244` lines; checker tests are `462`. No undocumented semantic
+surface was added.

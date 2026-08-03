@@ -306,7 +306,7 @@ ownerに残る。legacy `type_checker::AttributeInput`は変更せず別のま�
 
 - `SourceTypeApplicationId`, `SourceTypeExpressionId`,
   `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`,
-  `SourceTypeModeRhsId`
+  `SourceTypeModeRhsId`, `SourceTypeStructureMemberId`
 
 literal top-level public item:
 
@@ -314,15 +314,19 @@ literal top-level public item:
   `SourceTypeDefinitionReturnExtensionInput`,
   `SourceTypeDefinitionReturnInput`,
   `SourceTypeModeRhsExtensionInput`, `SourceTypeModeRhsInput`,
+  `SourceTypeStructureMemberHandoffInput`,
+  `SourceTypeStructureMemberInput`,
   `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
   `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
   `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
   `SourceTypeApplication`, `SourceTypeExpressionTable`,
   `SourceTypeDefinitionReturnTable`, `SourceTypeDefinitionReturn`,
   `SourceTypeModeRhsTable`, `SourceTypeModeRhs`,
+  `SourceTypeStructureMemberTable`, `SourceTypeStructureMember`,
   `SourceTypeExpression`, `SourceTypeArgumentTable`,
   `SourceTypeArgumentRow`, `SourceTypeProducer`,
   `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
+  `SourceTypeStructureMemberProducer`,
   `SourceTypeError`
 
 対応:
@@ -334,11 +338,13 @@ literal top-level public item:
 | graph order/ownership/containment/non-overlapとdeterministic provenanceをfail closedにする。 | `SourceTypeError`、iterative graph/range/provenance validation、deterministic debug。 | dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance/deep-chain test。 | sort/recursion/repairなしで実装済み。 |
 | independent definition return typeをbinding applicationを捏造せずexact two-binding baseへextendする。 | `SourceTypeDefinitionReturnProducer`、immutable owner row 2件、appended root 2/3、one-shot/install validation。 | exact Task-249R extension/corruption/arena/Typed-final test 4件。 | Task 249Rで実装済み。combined profileは`2/4/0/2`。 |
 | standalone mode RHSをthird applicationの捻造やdefinition-return semanticsのreuseなしにexact two-binding baseへextendする。 | `SourceTypeModeRhsProducer`、immutable owner row 1件、appended root 2、frozen precedence、one-shot/install validation。 | exact Task-249M extension/corruption/arena/Typed-final test 4件。 | Task 249Mで実装済み。combined profileは`2/3/0/0/1`。 |
+| standalone structure-member typeをfabricated binding applicationやreturn/RHS family reuseなしにbuildする。 | `SourceTypeStructureMemberProducer`、immutable owner row/root 4件、exact precedence、arena/install validation。 | exact Task-249S profile/corruption/arena/Typed-final test 4件。 | Task 249Sで実装済み。standalone profileは`0/4/0/0/0/4`。 |
 | `TypedAst`がresultを所有し、`ResolvedTypedAst`はcloneだけする。 | optional `SourceTypeApplicationHandoff` fieldとborrowed getter。 | immutable final preservation/repeated-run assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
 | public enumはforward-compatible。 | public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
-bounded gap: Tasks 249/249R/249Mがpublishするのはsource-type input、definition-
-return owner link、standalone mode-RHS owner link 1件だけである。expansion、
+bounded gap: Tasks 249/249R/249M/249Sがpublishするのはsource-type input、
+definition-return owner link、standalone mode-RHS owner link 1件、standalone
+structure-member type owner link 4件だけである。expansion、
 normalization、evidence、term/`qua` selection、accepted fact/declaration/proof、
 downstream IRはexplicit later ownerに残る。
 
@@ -5300,3 +5306,12 @@ profileは`0/4/0/0/0/4`。new public enum type、syntax dependency、normalized 
 diagnostic、obligation、semantic result、runner、corpus、trace creditは追加せず、
 existing non-exhaustive public `SourceTypeError`へvariant 5件をappendする。
 implementation時にliteral public/source-spec lint inventoryを同期する。
+
+## Task 249S active source/public-surface result
+
+frozen dense ID、input 2件、row/table、producer、getter、existing
+non-exhaustive errorへのvariant 5件を`source_type.rs`に実装した。上のliteral
+public inventory/correspondenceは全new itemを含む。exact row/range/site/arena/
+shape validationはglobal precedence orderであり、sibling Task-249/249R/249M
+profileとのmixed ownershipを拒否する。sourceは`6244` lines、checker testは
+`462`。undocumented semantic surfaceは追加していない。

@@ -3203,5 +3203,5 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 
 - [x] exact checker-only `0/4/0/0/0/4` member-type intake/checker local test
   4件をfreezeし、runner/corpus/trace/metadata/CLI artifactを変更しない。
-- [ ] separate implementation commitまでno-op boundaryを保ち、その後Task 263
+- [x] separate implementationのno-op boundaryを保ち、その後Task 263
   だけがexact private consumer/pass+trace pairを追加する。

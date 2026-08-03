@@ -1649,3 +1649,10 @@ Task 249Sは`TypedAstParts` field/install pathを追加しない。existing opti
 4件を`TypedArena`へ再照合し、欠落/corruptionは`InvalidSourceType`でfailする。
 type/fact/coercion/initial obligation/diagnostic/contextと全Task-263 upper fieldは
 empty/absentのまま。
+
+## Task 249S active Typed ownership result
+
+existing optional `source_type` fieldとone-shot installation pathがsole
+ownerである。install時にexact member/expression table、source/module identity、
+arena site 12件、sibling profileとのmutual exclusionをrevalidateする。
+semantic tableとTask-263 upper fieldは全てempty/absentのままである。

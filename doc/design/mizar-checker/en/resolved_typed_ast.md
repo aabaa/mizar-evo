@@ -1704,3 +1704,10 @@ preserves the already validated `SourceTypeApplicationHandoff` through its
 existing `source_type` field. Final assembly creates no expression metadata,
 candidate, coercion, fact, diagnostic, formula, statement, proof, obligation,
 acceptance, or Task-263 structure result from the four lower owner rows.
+
+## Task 249S Active Clone-Preservation Result
+
+Repeated final assembly preserves the exact immutable source-type handoff and
+deterministic debug fingerprint by value equality. It adds no final field,
+installer, semantic projection, diagnostic, obligation, fact, proof, or
+acceptance output.

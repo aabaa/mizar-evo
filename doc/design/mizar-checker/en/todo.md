@@ -6601,7 +6601,13 @@ implementation commit does not satisfy a producer task.
   whitespace verification.
 - [x] Complete final read-only quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`.
-- [ ] Stage only synchronized documents, commit, and verify clean post-commit
-  inventory.
-- [ ] Fresh-inventory, implement exactly Task 249S and its four checker tests,
-  close all reviews/hard gates, commit separately, then resume Task 263.
+- [x] Stage only synchronized documents, commit, and verify clean post-commit
+  inventory. Documentation commit
+  `274917ab21cf436411d7b7d308bd676f4b444a67`; clean inventory reported
+  `origin/main...HEAD = 0/8` and protected-stash invariance.
+- [x] Fresh-inventory and implement the exact `0/4/0/0/0/4` handoff and four
+  checker tests; close
+  test-sufficiency and implementation reviews with **NO FINDINGS**.
+- [ ] Complete source/documentation and final quality gates, exact staging,
+  dedicated implementation commit, and clean fresh inventory; then resume
+  Task 263.
