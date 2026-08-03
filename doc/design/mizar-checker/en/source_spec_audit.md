@@ -24,6 +24,7 @@ Module specifications audited:
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
 - [source_atomic_formula.md](./source_atomic_formula.md)
+- [source_functor_definition.md](./source_functor_definition.md)
 - [source_predicate_definition.md](./source_predicate_definition.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
@@ -159,6 +160,7 @@ rejection.
 - `source_atomic_formula`
 - `source_composite_formula`
 - `source_formula_composition`
+- `source_functor_definition`
 - `source_predicate_definition`
 - `source_context`
 - `source_attribute`
@@ -515,6 +517,43 @@ Bounded gaps: predicate-chain and formula-operator ownership stays with Task
 and truth, formula facts/results, theorem acceptance, proofs, and downstream
 IR remain outside this module.
 
+### `source_functor_definition`
+
+Generated public newtypes:
+
+- `SourceFunctorDefinitionId`, `SourceFunctorParameterId`,
+  `SourceFunctorGuardId`, `SourceFunctorDefiniensId`,
+  `SourceFunctorCorrectnessId`
+
+Literal top-level public items:
+
+- `SourceFunctorDefinitionHandoffInput`, `SourceFunctorDefinitionInput`,
+  `SourceFunctorParameterInput`, `SourceFunctorGuardInput`,
+  `SourceFunctorDefiniensInput`, `SourceFunctorCorrectnessInput`
+- `SourceFunctorDefinitionStyle`, `SourceFunctorDefiniensTarget`,
+  `SourceFunctorCorrectnessKind`, `SourceFunctorDefinitionRecovery`
+- `SourceFunctorDefinition`, `SourceFunctorParameter`, `SourceFunctorGuard`,
+  `SourceFunctorDefiniens`, `SourceFunctorCorrectness`
+- `SourceFunctorDefinitionTable`, `SourceFunctorParameterTable`,
+  `SourceFunctorGuardTable`, `SourceFunctorDefiniensTable`,
+  `SourceFunctorCorrectnessTable`
+- `SourceFunctorDefinitionHandoff`, `SourceFunctorDefinitionProjection`,
+  `SourceFunctorDefinitionError`, `SourceFunctorDefinitionProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Five immutable syntax-free tables retain two functor definitions, two shared parameters, one guard, two differently owned definientia, and two explicit correctness clauses. | Public inputs, rows, dense ids, tables, and getters in `src/source_functor_definition.rs`. | `task_260_exact_functor_definition_payload_and_pending_obligations` plus independent row/field corruption coverage. | Implemented as exact `2/2/1/2/2`. |
+| The producer authenticates resolver identity and exact Task-248/249+249R/252/256 fingerprints while appending one existence and one uniqueness obligation to a retained baseline. | `SourceFunctorDefinitionProducer::build`, projection, and fail-closed error categories. | Dependency, optional-lower, arena, and every-obligation-field corruption matrix. | Implemented without sorting, repair, or semantic goal composition. |
+| Typed/final owners publish and clone-preserve the handoff plus complete obligation table atomically and isolate Task 259. | `TypedAst::with_source_functor_definition` and `ResolvedTypedAst::source_functor_definition`. | Transactional installation and final clone/debug/predicate-isolation tests. | Implemented as a mutually exclusive Task-260 transaction. |
+| Public surface and enums remain documented and forward-compatible. | Five ids, six input aggregates, four data enums, five rows/tables, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no syntax-dependency exception. |
+
+Bounded gaps: parameter/guard/return-type goal composition, FOL correctness,
+proof or justification verification, discharge, definition acceptance,
+activation, facts/axioms, calls/overloads, conditional definientia, mixed
+predicate/functor acceptance, and Core/CFG/VC remain outside this module.
+
 ### `source_predicate_definition`
 
 Generated public newtypes:
@@ -550,8 +589,9 @@ Correspondence:
 | The public surface and enums remain documented and forward-compatible. | Five dense ids, six input aggregates, two data enums, five rows/tables, handoff, projection, error, and producer above; all public enums are non-exhaustive. | `checker_public_enums_are_forward_compatible_and_documented`, `checker_source_spec_audit_covers_public_surface_and_gaps`. | Guarded with no Task-259 lint exception. |
 
 Bounded gaps: guard-to-symmetry FOL construction, justification proof,
-discharge, facts/axioms, accepted definitions, VC/IR, and the mixed Task-260
-functor-definition route remain outside this module.
+discharge, facts/axioms, accepted definitions, VC/IR, and mixed
+predicate/functor acceptance remain outside this module. Task 260's separate
+functor-only transaction does not extend this module.
 
 ### `source_composite_formula`
 
@@ -3169,6 +3209,24 @@ the required binding categories, `it` role, numerals, and transparent
 parentheses; no blocking `spec_gap` was found. There is no current
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict`.
+
+## Task 260 Active Public-Surface Audit
+
+`source_functor_definition` is now a documented exported module. Its five
+dense ID/table families, immutable row getters, handoff fingerprints,
+projection, producer, target/style/correctness/recovery enums, and typed/final
+accessors match `source_functor_definition.md`. Both new
+`InitialObligationKind` variants are rendered exhaustively by all three
+checker serializers. Lint policy authenticates the module spec, crate export,
+public semantic surface, non-exhaustive enum policy, syntax-free boundary,
+allow rationale, and the current `2237`-line inventory.
+
+Five checker tests cover every public field/getter and actual producer/final
+validation path. No public method constructs a composed logical goal,
+discharges an obligation, accepts a definition, activates a symbol, publishes
+a fact, or creates IR/VC output. The implemented surface therefore closes only
+the frozen Task-260 `source_drift`; all semantic deferrals remain owned by
+later tasks.
 
 ## Task 249R Definition-Return Audit Addendum
 

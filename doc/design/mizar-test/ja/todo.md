@@ -3108,5 +3108,25 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] Task 249Rをchecker-onlyとしてrecordし、runner source/library count、
   fixture/sidecar/trace、corpus/metadata/CLI countを不変に保ち、impossible lower
   `4/4/0`を`2/4/0/2`へcorrectする。
-- [ ] separate Task-249R documentation/implementation commitがgateをpassした後だけ
-  frozen Task-260 consumerをresumeする。
+- [x] separate Task-249R documentation/implementation commitがgateをpassした後に
+  frozen Task-260 consumerをresumeする。implementation commitは
+  `c233bfdff8317a1f4ffdd5750e62a29ee6e69b2f`。
+
+## Checker Task 260 active consumer
+
+- [x] private exact-source/resolver/lower routeを追加し、raw syntax/resolver
+  mutation ownershipを`mizar-test`内部に保つ。
+- [x] literal 108-row Surface oracleとindependent environment/projection/symbol/
+  definition/contribution plus every-lower-association corruptionを含むfrozen
+  runner test exactly 4件を追加する。
+- [x] pass pair 1組/sole covered trace backlinkを追加し、six mechanical active-type
+  assertionを`200`へ更新し、existing expectationをpreserveする。
+- [x] runner `516`、metadata `137`、`423/391`、`230/193`、
+  `101/7/200/1`、type `255/243`、warnings/errors `23/0`、exact CLI/
+  test-list/production hashを再現する。
+- [x] proof/fact/acceptance/VC payloadをpublishせずrepeated test-sufficiency/full
+  implementation reviewを**NO FINDINGS**で終了する。
+- [x] source/docs consistencyを**NO FINDINGS**で完了し、full shared
+  verification matrixをPASSする。
+- [x] final hard gate 9件をquality `100/100`、score capなしでPASSする。
+- [ ] shared Task-260 staging/commit/post-commit gateを完了する。

@@ -668,6 +668,7 @@ use type_elaboration::{
     source_four_edge_local_object_mode_reserved_variable_type_assertion_detail_keys,
     source_four_edge_local_object_mode_three_hop_asserted_head_detail_keys,
     source_four_edge_local_object_mode_two_hop_asserted_head_detail_keys,
+    source_functor_definition_transport_detail_keys,
     source_heterogeneous_reserve_membership_detail_keys,
     source_imported_attribute_assertion_formula_detail_keys,
     source_imported_non_empty_attribute_assertion_formula_detail_keys,
@@ -1688,6 +1689,15 @@ fn type_elaboration_detail_keys(
     } else {
         augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env)
     };
+    if let Some(keys) = source_functor_definition_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &symbols,
+        &source_text,
+    ) {
+        return keys;
+    }
     if let Some(keys) = source_predicate_definition_transport_detail_keys(
         &ast,
         resolver.module.clone(),

@@ -120,6 +120,13 @@ The exact source consumes the committed lower transports in this order:
 | Task 256 | `2/0/0/0/0/0/0/4/4` | guard equality and means equality |
 | Task 259 | absent and independent | no predicate-definition input or fingerprint |
 
+Task 260 constructs its exact Task-248 Profile-B input locally in the new
+private runner route from authenticated rows 65/69 and definition-block shell
+104. It does not reuse, modify, or generalize the existing Task-259-private
+`0..164` source-context helper; that helper remains the exact Task-259
+consumer. This is runner-private input assembly only, not a Task-248 public
+API or lower-producer change.
+
 Task-252 source order is guard `x`, guard `x`, equals body `x`, means body
 `x`, means body `y`. Task-256 formula 0 is the guard, and formula 1 is the
 means definiens. Pattern-locus identifiers, definition labels, return-type
@@ -535,9 +542,9 @@ mixed-definition owner would need its own canonical authority, frozen
 obligation ordering, compatibility edit, tests, and commit.
 
 The existing mixed predicate-plus-functor fail fixture, sidecar, expectation,
-and trace rows remain byte-unchanged in the documentation prerequisite. The
-future implementation may use it only for isolation/authentication tests; it
-does not rebaseline that existing expectation or claim mixed acceptance.
+and trace rows remain byte-unchanged. The active implementation uses it only
+for isolation/authentication tests; it does not rebaseline that existing
+expectation or claim mixed acceptance.
 
 ## Dedicated Consumer And Trace Intent
 
@@ -547,7 +554,7 @@ Implementation adds exactly one new active pass pair:
 - `tests/miz/pass/types/pass_type_elaboration_functor_definition_payload_001.expect.toml`.
 
 The sidecar is `pass` / `type_elaboration` / `type_check`, has empty public
-diagnostics and payloads, and cites only future requirement
+diagnostics and payloads, and cites only requirement
 `spec.en.checker.type_elaboration.source_functor_definition_payload`. Passing
 credits successful source transport and pending-obligation intake only, not
 definition correctness or acceptance. One covered trace row backlinks only
@@ -560,7 +567,17 @@ other active case. Existing parser fixtures, mixed predicate/functor gap,
 Task-253/255 functor-definiens gap cases, their sidecars, and their trace
 intent remain unchanged.
 
-## Frozen Tests And Write Scope
+The active Task-260 result implements this pair and trace relationship exactly:
+the requirement is covered, the sidecar is its sole reciprocal backlink, and
+the fixture/sidecar/trace hashes are recorded in the crate plan and coverage
+audit. No deferred semantic credit is promoted.
+
+## Frozen Tests And Write Scope (Prerequisite History)
+
+The prospective wording below is retained as the reviewed documentation-
+prerequisite history. The active result above and the synchronized ledgers
+record completion; these frozen assertions continue to constrain the
+implementation and later reviews.
 
 Five checker tests are frozen:
 
@@ -635,7 +652,9 @@ serializers in `type_checker.rs` and `registration_resolution.rs`, and lint
 policy; the new private runner route,
 parent facades, test include/leaf, six mechanical active-type count
 assertions; the new fixture/sidecar/trace row; and synchronized derived EN/JA
-records. Parser, resolver, Cargo metadata, canonical specifications, existing
+records. The new route may locally assemble the already-public Task-248
+Profile-B input, but may not modify the existing Task-259 source-context
+helper. Parser, resolver, Cargo metadata, canonical specifications, existing
 `.miz`, existing expectations/sidecars, and unrelated lower producers are
 forbidden.
 

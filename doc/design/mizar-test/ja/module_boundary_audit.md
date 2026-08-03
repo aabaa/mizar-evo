@@ -11517,3 +11517,19 @@ fixture/sidecar/trace backlink/test/count assertion/production byteを追加し�
 frozen Task-260 routeは後でchecker-produced combined `2/4/0/2` handoffをconsumeし、
 return-type bindingをinventせずrejectする。両Task-249R commitでrunner inventory/
 hashは不変である。
+
+## Checker Task 260 active runner boundary
+
+Task 260はprivate production leaf
+`runner/type_elaboration/source_functor_definition.rs` (`1446` lines) 1件と
+paired test leaf (`1674` lines) 1件、bounded facade/root registrationだけを追加する。
+leafはraw SurfaceAstとresolver environment/projection/symbol/definition/contribution
+authenticationをprivateに保ち、syntax-free lower ID/site/range/context/spelling/
+fingerprintだけをcheckerへ渡す。Task-259 helperのgeneralize/modifyはない。
+
+runner productionは`32/64711`、path/content
+`17c6979703afa2b6a7e98209741d655ac5f3d3355479221cc97bea88bff7e78a` /
+`5e3d216f76df2d97d776fb1dc702dccdcb26349b6d9a6297b6bc534e85c12792`。
+source/profile selection、mutation ownership、lower composition、checker output
+validationが同じexact frozen oracleをshareするためnew leafはcohesiveである。
+proof/acceptance/fact/IR/VCはboundary外のままである。

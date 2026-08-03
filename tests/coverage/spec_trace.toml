@@ -5137,6 +5137,19 @@ tests = [
 notes = "Task 253 covers only syntax-free source-application shape, transparent application wrappers, ordered Task-252-owned actual edges, individual resolver functor-reference provenance, and unresolved signature/result requests for the exact imported `1 ++ 2` and module-local second-definiens `task253_local_source(x)` routes. Applicability, candidate completeness/viability/ranking/winner selection, application typing, definition acceptance, inline semantics, template transport, formula/truth, CoreIr/ControlFlowIr/VC, and proof semantics remain uncredited."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_functor_definition_payload"
+source = "doc/design/mizar-checker/en/source_functor_definition.md"
+section = "Dedicated Consumer And Trace Intent"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_functor_definition_payload_001.expect.toml",
+]
+notes = "Checker Task 260 covers only immutable syntax-free source transport for the exact two-functor-definition consumer and appends one Pending FunctorExistence plus one Pending FunctorUniqueness obligation. The route authenticates the complete source/Surface/resolver profile and the Task-248/249+249R/252/256 lower bundle, while preserving parameters, guard, return types, equals/means definientia, correctness ownership, justification anchors, and resolver provenance as separate rows. This row grants no composed goal, proof or justification verification, discharge, acceptance or activation, fact or axiom, overload/call semantics, CoreIr, ControlFlowIr, VC, mixed predicate/functor acceptance, or broader functor-definition credit."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_nested_quantifier_payload"
 source = "doc/design/mizar-checker/en/source_formula_composition.md"
 section = "Task 257B3 Frozen Nested-Quantifier Composition"

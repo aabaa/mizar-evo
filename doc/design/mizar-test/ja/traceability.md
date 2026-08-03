@@ -2073,3 +2073,17 @@ backlink/status/creditを追加しない。countは`422/390`、`229/193`、
 backlinkはfrozen/inactiveである。fresh Task-249R implementation verificationは
 `tests/coverage/spec_trace.toml`およびexecutable trace row/status/creditを
 変更せずexact countとCLI 5本のhashを再現し、activationはTask 260まで待つ。
+
+## Checker Task 260 active trace result
+
+`spec.en.checker.type_elaboration.source_functor_definition_payload`はrequired/
+covered type-elaboration requirement 1件となり、backlinkはexactly
+`tests/miz/pass/types/pass_type_elaboration_functor_definition_payload_001.expect.toml`
+だけである。sidecarもそのrequirementだけをreciprocalにnameする。262-byte source
+hashは`9bbf50016c72faf8b86342a9a65f8d59bf7747b85b43b6c5bc3c624c7212416a`、sidecar
+hashは`0d67ade4d069adaa1437dc74f39a75974626567529ac46d33d7f4edb9dec6108`。
+
+active deltaはcase/requirement/pass/active type/covered typeを各1件だけ増やし、
+`423/391`、`230/193`、`101/7/200/1`、`255/243`となる。creditはexact
+syntax-free transportとPending obligation 2件だけで、goal composition、proof、
+acceptance、fact、overload、IR、VC、mixed-definition creditはない。

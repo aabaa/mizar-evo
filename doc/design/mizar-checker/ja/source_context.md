@@ -161,9 +161,9 @@ missing private extractorをbounded `source_drift`、focused Rust matrix欠落�
 はseparate Task-248 documentation taskと後続separate Task-248 implementation
 taskに分離する。
 
-### Exact real consumer
+### Exact Task-259 consumer
 
-唯一のnew consumerは
+original Profile-B consumerは
 [`source_predicate_definition.md`](./source_predicate_definition.md)で凍結した
 165-byte/final-LF future Task-259 sourceであり、SHA-256は
 `91bdb5f51c0ea5f07bdd831700cb9803f2aa57e005921c7e4e1798ecbbf2bd9f`。
@@ -188,6 +188,17 @@ recovery、no parent、unspecified visibilityを供給する。resolverにはpar
 scope `[0]`、source ordinal `0/1`、declaration rangeだけから
 `LocalTermBinding`をderiveする。resolver predicate projectionがparameterを
 供給したとはclaimしない。
+
+Task 260はsecond exact Profile-B consumerである。262-byte/final-LF source、
+108-row/root-107 Surface profile、node/range `104/0..261`のdefinition-block
+shell 0は[`source_functor_definition.md`](./source_functor_definition.md)で
+freezeする。同じpublic Task-248 producer contractとparameter slice
+`65/13..26`、`69/29..42`をreuseするが、private Task-259 runner helperはgeneral
+Profile-B factoryではなく165-byte Task-259 sourceと`0..164` ownerを
+authenticateする。従ってnew Task-260 routeはauthenticated Task-260 Surface rowと
+resolver shellから独自のexact `SourceBindingContextInput`をconstruct/validateする。
+Task 260はexisting Task-259 helperをmodify/generalizeせず、このaddendumはTask-248
+public ABI/debug byte/checker test/source-context test countを変更しない。
 
 ### Profile preservation と closed admission
 

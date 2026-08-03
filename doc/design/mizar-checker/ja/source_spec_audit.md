@@ -22,6 +22,7 @@ public method は、module spec が table、builder、output API として記述
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
 - [source_atomic_formula.md](./source_atomic_formula.md)
+- [source_functor_definition.md](./source_functor_definition.md)
 - [source_predicate_definition.md](./source_predicate_definition.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
@@ -137,6 +138,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_atomic_formula`
 - `source_composite_formula`
 - `source_formula_composition`
+- `source_functor_definition`
 - `source_predicate_definition`
 - `source_context`
 - `source_attribute`
@@ -488,6 +490,43 @@ bounded gap: predicate-chain/formula-operator ownershipはTask 257、overload
 selection、asserted-type reachability、attribute admissibility/truth、formula
 fact/result、theorem acceptance、proof、downstream IRは本module外である。
 
+### `source_functor_definition`
+
+generated public newtype:
+
+- `SourceFunctorDefinitionId`、`SourceFunctorParameterId`、
+  `SourceFunctorGuardId`、`SourceFunctorDefiniensId`、
+  `SourceFunctorCorrectnessId`
+
+literal top-level public item:
+
+- `SourceFunctorDefinitionHandoffInput`、`SourceFunctorDefinitionInput`、
+  `SourceFunctorParameterInput`、`SourceFunctorGuardInput`、
+  `SourceFunctorDefiniensInput`、`SourceFunctorCorrectnessInput`
+- `SourceFunctorDefinitionStyle`、`SourceFunctorDefiniensTarget`、
+  `SourceFunctorCorrectnessKind`、`SourceFunctorDefinitionRecovery`
+- `SourceFunctorDefinition`、`SourceFunctorParameter`、`SourceFunctorGuard`、
+  `SourceFunctorDefiniens`、`SourceFunctorCorrectness`
+- `SourceFunctorDefinitionTable`、`SourceFunctorParameterTable`、
+  `SourceFunctorGuardTable`、`SourceFunctorDefiniensTable`、
+  `SourceFunctorCorrectnessTable`
+- `SourceFunctorDefinitionHandoff`、`SourceFunctorDefinitionProjection`、
+  `SourceFunctorDefinitionError`、`SourceFunctorDefinitionProducer`
+
+対応:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| immutable syntax-free table 5個がfunctor definition 2件、shared parameter 2件、guard 1件、different ownerのdefiniens 2件、explicit correctness clause 2件を保持する。 | `src/source_functor_definition.rs`のpublic input/row/dense id/table/getter。 | `task_260_exact_functor_definition_payload_and_pending_obligations`とindependent row/field corruption coverage。 | exact `2/2/1/2/2`としてimplemented。 |
+| producerはresolver identityとexact Task-248/249+249R/252/256 fingerprintをauthenticateし、retained baselineへexistence/uniqueness obligationを各1件appendする。 | `SourceFunctorDefinitionProducer::build`、projection、fail-closed error category。 | dependency/optional lower/arena/every obligation field corruption matrix。 | sorting/repair/semantic goal compositionなしでimplemented。 |
+| Typed/final ownerはhandoffとcomplete obligation tableをatomicにpublish/clone-preserveしTask 259をisolateする。 | `TypedAst::with_source_functor_definition`と`ResolvedTypedAst::source_functor_definition`。 | transactional installation、final clone/debug/predicate-isolation test。 | mutually exclusive Task-260 transactionとしてimplemented。 |
+| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、6 input aggregate、4 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | syntax-dependency exceptionなしでguard。 |
+
+bounded gap: parameter/guard/return-type goal composition、FOL correctness、
+proof/justification verification、discharge、definition acceptance、activation、
+fact/axiom、call/overload、conditional definiens、mixed predicate/functor
+acceptance、Core/CFG/VCは本module外である。
+
 ### `source_predicate_definition`
 
 generated public newtype:
@@ -523,8 +562,9 @@ literal top-level public item:
 | public surfaceとenumはdocumented/forward-compatibleである。 | 上記5 dense id、6 input aggregate、2 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | `checker_public_enums_are_forward_compatible_and_documented`、`checker_source_spec_audit_covers_public_surface_and_gaps`。 | Task-259 lint exceptionなしでguard。 |
 
 bounded gap: guard-to-symmetry FOL construction、justification proof、
-discharge、fact/axiom、accepted definition、VC/IR、mixed Task-260
-functor-definition routeは本module外である。
+discharge、fact/axiom、accepted definition、VC/IR、mixed predicate/functor
+acceptanceは本module外である。Task 260のseparate functor-only transactionは
+本moduleをextendしない。
 
 ### `source_composite_formula`
 
@@ -2992,6 +3032,21 @@ declarationの`source_drift`、recursive public-input graphの
 `boundary_violation`を検出しrepairした。未解消の`spec_gap`、
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`はない。
+
+## Task 260 active public-surface audit
+
+`source_functor_definition`はdocumented exported moduleとしてimplementedである。
+five dense ID/table family、immutable row getter、handoff fingerprint、projection、
+producer、target/style/correctness/recovery enum、typed/final accessorは
+`source_functor_definition.md`と一致する。new `InitialObligationKind` 2 variantは
+checker serializer 3件すべてでexhaustiveにrenderされる。lint policyはmodule
+spec、crate export、public semantic surface、non-exhaustive enum policy、syntax-free
+boundary、allow rationale、current `2237`-line inventoryをauthenticateする。
+
+checker test 5件は全public field/getterとactual producer/final validation pathを
+coverする。public methodはcomposed logical goal、discharge、accepted definition、
+symbol activation、fact、IR/VCを作らない。implemented surfaceがcloseするのはfrozen
+Task-260 `source_drift`だけで、semantic deferralはlater task ownerに残る。
 
 ## Task 249R definition-return audit addendum
 

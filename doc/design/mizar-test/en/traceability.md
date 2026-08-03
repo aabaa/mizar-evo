@@ -2168,3 +2168,19 @@ Task-260 row and pass backlink remain frozen and inactive. Fresh Task-249R
 implementation verification reproduces these exact counts and all five CLI
 hashes without editing `tests/coverage/spec_trace.toml` or any executable trace
 row, status, or credit; activation still waits for Task 260.
+
+## Checker Task 260 Active Trace Result
+
+`spec.en.checker.type_elaboration.source_functor_definition_payload` is now one
+required covered type-elaboration requirement with exactly one backlink,
+`tests/miz/pass/types/pass_type_elaboration_functor_definition_payload_001.expect.toml`.
+The sidecar reciprocally names only that requirement. Its 262-byte source hash
+is `9bbf50016c72faf8b86342a9a65f8d59bf7747b85b43b6c5bc3c624c7212416a`;
+the sidecar hash is
+`0d67ade4d069adaa1437dc74f39a75974626567529ac46d33d7f4edb9dec6108`.
+
+The active delta is exactly one case, one requirement, one pass case, one
+active type case, and one covered type requirement: `423/391`, `230/193`,
+`101/7/200/1`, and `255/243`. Credit is limited to the exact syntax-free
+transport and two pending obligations. No goal composition, proof,
+acceptance, fact, overload, IR, VC, or mixed-definition credit is granted.

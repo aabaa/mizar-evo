@@ -1,0 +1,9 @@
+definition
+  let x be set;
+  let y be set;
+  assume x = x;
+  func Task260EqualsDef: task260_equals(x) -> set equals x;
+  func Task260MeansDef: task260_means(y) -> set means x = y;
+  existence by computation(steps: 1);
+  uniqueness by computation(steps: 1);
+end;

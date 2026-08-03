@@ -11,6 +11,9 @@ use crate::{
         SourceConditionFormulaCompositionHandoff, SourceFormulaCompositionHandoff,
         SourcePredicateChainCompositionHandoff,
     },
+    source_functor_definition::{
+        SourceFunctorDefinitionHandoff, SourceFunctorDefinitionProjection,
+    },
     source_predicate_definition::{
         SourcePredicateDefinitionHandoff, SourcePredicateDefinitionProjection,
     },
@@ -110,6 +113,7 @@ pub struct TypedAst {
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
+    source_functor_definition: Option<SourceFunctorDefinitionHandoff>,
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
@@ -154,6 +158,7 @@ impl TypedAst {
             source_structure: None,
             source_set_term: None,
             source_atomic_formula: None,
+            source_functor_definition: None,
             source_predicate_definition: None,
             source_composite_formula: None,
             source_formula_composition: None,
@@ -224,6 +229,10 @@ impl TypedAst {
         self.source_predicate_definition.as_ref()
     }
 
+    pub const fn source_functor_definition(&self) -> Option<&SourceFunctorDefinitionHandoff> {
+        self.source_functor_definition.as_ref()
+    }
+
     pub const fn source_composite_formula(&self) -> Option<&SourceCompositeFormulaHandoff> {
         self.source_composite_formula.as_ref()
     }
@@ -287,6 +296,30 @@ impl TypedAst {
     #[cfg(test)]
     pub(crate) fn inject_source_statement_for_test(&mut self, statement: SourceStatementHandoff) {
         self.source_statement = Some(statement);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_functor_definition_for_test(
+        &mut self,
+        handoff: SourceFunctorDefinitionHandoff,
+    ) {
+        self.source_functor_definition = Some(handoff);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_predicate_definition_for_test(
+        &mut self,
+        handoff: SourcePredicateDefinitionHandoff,
+    ) {
+        self.source_predicate_definition = Some(handoff);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn replace_initial_obligations_for_test(
+        &mut self,
+        initial_obligations: InitialObligationTable,
+    ) {
+        self.initial_obligations = initial_obligations;
     }
 
     #[cfg(test)]
@@ -718,6 +751,49 @@ impl TypedAst {
             )
             .map_err(|_| TypedAstError::InvalidSourcePredicateDefinition)?;
         self.source_predicate_definition = Some(handoff);
+        self.initial_obligations = initial_obligations;
+        Ok(self)
+    }
+
+    pub fn with_source_functor_definition(
+        mut self,
+        projection: SourceFunctorDefinitionProjection,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_functor_definition.is_some() || self.source_predicate_definition.is_some() {
+            return Err(TypedAstError::InvalidSourceFunctorDefinition);
+        }
+        let source_context = self
+            .source_context
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceFunctorDefinition)?;
+        let source_type = self
+            .source_type
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceFunctorDefinition)?;
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceFunctorDefinition)?;
+        let (base_initial_obligations, handoff, initial_obligations) = projection.into_parts();
+        if self.initial_obligations != base_initial_obligations {
+            return Err(TypedAstError::InvalidSourceFunctorDefinition);
+        }
+        handoff
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_context,
+                source_type,
+                source_term,
+                self.source_application.as_ref(),
+                self.source_structure.as_ref(),
+                self.source_set_term.as_ref(),
+                self.source_atomic_formula.as_ref(),
+                &initial_obligations,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceFunctorDefinition)?;
+        self.source_functor_definition = Some(handoff);
         self.initial_obligations = initial_obligations;
         Ok(self)
     }
@@ -1444,6 +1520,9 @@ impl TypedAst {
         }
         if let Some(source_predicate_definition) = &self.source_predicate_definition {
             output.push_str(&source_predicate_definition.debug_text());
+        }
+        if let Some(source_functor_definition) = &self.source_functor_definition {
+            output.push_str(&source_functor_definition.debug_text());
         }
         if let Some(source_composite_formula) = &self.source_composite_formula {
             output.push_str(&source_composite_formula.debug_text());
@@ -2193,6 +2272,8 @@ pub enum InitialObligationKind {
     Narrowing,
     RegistrationCorrectness,
     PredicatePropertyCorrectness,
+    FunctorExistence,
+    FunctorUniqueness,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -2352,6 +2433,7 @@ pub enum TypedAstError {
     InvalidSourceStructure,
     InvalidSourceSetTerm,
     InvalidSourceAtomicFormula,
+    InvalidSourceFunctorDefinition,
     InvalidSourcePredicateDefinition,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
@@ -2491,6 +2573,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceAtomicFormula => {
                 formatter.write_str("typed AST source atomic-formula handoff is inconsistent")
+            }
+            Self::InvalidSourceFunctorDefinition => {
+                formatter.write_str("typed AST source functor-definition handoff is inconsistent")
             }
             Self::InvalidSourcePredicateDefinition => {
                 formatter.write_str("typed AST source predicate-definition handoff is inconsistent")
@@ -2712,6 +2797,14 @@ fn validate_typed_ast(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     validate_facts(parts)?;
     validate_coercions(parts)?;
     validate_initial_obligations(parts)?;
+    if parts.initial_obligations.iter().any(|(_, row)| {
+        matches!(
+            row.kind,
+            InitialObligationKind::FunctorExistence | InitialObligationKind::FunctorUniqueness
+        )
+    }) {
+        return Err(TypedAstError::InvalidSourceFunctorDefinition);
+    }
     if parts
         .initial_obligations
         .iter()
@@ -3842,6 +3935,8 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::Narrowing => "narrowing",
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
         InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
+        InitialObligationKind::FunctorExistence => "functor_existence",
+        InitialObligationKind::FunctorUniqueness => "functor_uniqueness",
     }
 }
 

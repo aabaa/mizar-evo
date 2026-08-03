@@ -14,6 +14,7 @@ mod source_context;
 mod source_evidence;
 mod source_formula;
 mod source_formula_composition;
+mod source_functor_definition;
 mod source_predicate_definition;
 mod source_reserve;
 mod source_set_term;
@@ -407,6 +408,12 @@ pub(super) use source_formula_composition::{
     source_formula_composition_output_with_source_and_mutation,
     source_predicate_chain_composition_output_with_source,
     source_predicate_chain_composition_output_with_source_and_mutation,
+};
+pub(super) use source_functor_definition::source_functor_definition_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_functor_definition::{
+    SOURCE_FUNCTOR_DEFINITION_TEXT, SourceFunctorDefinitionRouteMutation,
+    source_functor_definition_output, source_functor_definition_output_with_mutation,
 };
 pub(super) use source_predicate_definition::source_predicate_definition_transport_detail_keys;
 #[cfg(test)]

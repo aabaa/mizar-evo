@@ -26,8 +26,8 @@ note として記録する。
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
-| `src/lib.rs` | 45 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | documented syntax-free formula-composition/predicate-definition/source-statement moduleをexportするcrate rootとして維持。 |
-| `src/typed_ast.rs` | 5077 | typed AST data model | `typed_ast.md` | no | no | Task-253/254/255/256/257 install、Task-259 atomic handoff/obligation transaction、mutually exclusive Task-248/258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B4A/258B4B/258B4C/258B5A/258B5B ownershipを含むcohesive owner。 |
+| `src/lib.rs` | 46 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | documented syntax-free formula-composition/predicate-definition/functor-definition/source-statement moduleをexportするcrate rootとして維持。 |
+| `src/typed_ast.rs` | 5172 | typed AST data model | `typed_ast.md` | no | no | Task-253/254/255/256/257 install、mutually isolated Task-259/260 atomic handoff/obligation transaction、mutually exclusive Task-248/258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B3M2B2B3E/258B4A/258B4B/258B4C/258B5A/258B5B ownershipを含むcohesive owner。 |
 | `src/binding_env.rs` | 3156 | binding environment and resolver shell boundary | `binding_env.md` | no | no | source-formula、Task-258B1 statement-context identity、Task-258B2がreuseするunchanged context contractを含むcohesiveなbinding/context data layer。behavior-neutral splitは不要。 |
 | `src/source_context.rs` | 1157 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only dependency corruption seam。split不要。 |
@@ -37,18 +37,20 @@ note として記録する。
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | cohesiveなTask-251 request/response table、upstream association、catalog/payload validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_term.rs` | 2218 | syntax-free source primary-term producer | `source_term.md` | no | no | cohesiveなTask-252 term/reference/request table、binding/parent validation、deterministic rendering、Task-258A dependency revalidationを含むcorruption test。split不要。 |
 | `src/source_application.rs` | 4001 | syntax-free source functor-application producer | `source_application.md` | no | no | cohesiveなTask-253 application/wrapper/candidate/argument/request table、dependency/provenance validation、deterministic rendering、corruption test。split不要。 |
+| `src/source_functor_definition.rs` | 2237 | syntax-free source functor-definition producer | `source_functor_definition.md` | no | no | cohesiveなTask-260 five-table handoff、baseline-preserving two-obligation projection、resolver/lower provenance validation、deterministic rendering、typed/final Task-259 isolation check。productionはsyntax-free。 |
 | `src/source_predicate_definition.rs` | 1794 | syntax-free source predicate-definition producer | `source_predicate_definition.md` | no | no | cohesiveなTask-259 five-table handoff、baseline-preserving pending-obligation projection、resolver/lower provenance validation、deterministic rendering、typed/final installation checkを所有し、production sourceはsyntax-freeのまま。 |
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | cohesiveなTask-255/255C1 seven-table association、condition-subtree exclusion、cross-family ownership/fingerprint validation、deterministic rendering、install check、corruption test。split不要。 |
 | `src/source_statement.rs` | 50732 | syntax-free source statement producer | `source_statement.md` | no | no | cohesiveなTask-258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2A/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B3M2B2B3E/258B4A/258B4B/258B4C/258B5A/258B5B statement/witness transaction、resolver/binding/lower/application/structure/set/formula/import provenance、zero-edge/qua/comprehension/composite-root ownership、subtree validation、rendering、paired typed/final install、corruption matrix。split不要。 |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | cohesiveなTask-254 term/wrapper/root/member/field-update/edge/request table、written-partition/cross-family dependency/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_type.rs` | 4407 | syntax-free source-type application producer | `source_type.md` | no | no | cohesiveなTask-249 flat tableおよびTask-249R independent definition-return extension、environment/arena/form/graph/provenance validation、deterministic rendering、exhaustive corruption test。split不要。 |
-| `src/type_checker.rs` | 13236 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | 最大の file だが phase-6 spec boundary 内にある。normalization、reserve/authenticated exact theorem-owner handoff validation、declaration checking、inference、coercion、fact query、diagnostic、rendering、test、Task-259 obligation-kind serializerはbehavior-coupled。 |
-| `src/registration_resolution.rs` | 5889 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesiveなregistration data layer、gate logic、Task-259 obligation-kind serializer。behavior-neutral splitは不要。 |
+| `src/type_checker.rs` | 13238 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | 最大の file だが phase-6 spec boundary 内にある。normalization、reserve/authenticated exact theorem-owner handoff validation、declaration checking、inference、coercion、fact query、diagnostic、rendering、test、Task-259/260 obligation-kind serializerはbehavior-coupled。 |
+| `src/registration_resolution.rs` | 5891 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesiveなregistration data layer、gate logic、Task-259/260 obligation-kind serializer。behavior-neutral splitは不要。 |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | overload collection、template expansion、viability、specificity、selection、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
-| `src/resolved_typed_ast.rs` | 7416 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Task-251/252/253/254/255/256/257/258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B4A/258B4B/258B4C/258B5A/258B5BとTask-259 clone-preserving handoff/semantic coexistence guardを含むcohesive final projection module。 |
+| `src/resolved_typed_ast.rs` | 7483 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Task-251/252/253/254/255/256/257/258A/258B1/258B2/258B3/258B3N/258B3M1/258B3M2A/258B3M2B1/258B3M2B2B1A/258B3M2B2B1B1/258B3M2B2B2A/258B3M2B2B2B/258B3M2B2B2C/258B3M2B2B3A/258B3M2B2B3B/258B3M2B2B3C/258B3M2B2B3D/258B4A/258B4B/258B4C/258B5A/258B5BとTask-259/260 clone-preserving handoff/coexistence guardを含むcohesive final projection module。 |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
-| `tests/lint_policy.rs` | 1887 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Task-259 module/spec/public-enum coverageとunchanged production syntax boundaryを含むrepository-policy guardrailを意図的に集約。task 34のsplit不要。 |
+| `tests/lint_policy.rs` | 1897 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Task-259/260 module/spec/public-enum coverageとunchanged production syntax boundaryを含むrepository-policy guardrailを意図的に集約。task 34のsplit不要。 |
+| `tests/support/source_functor_definition_unit.rs` | 3782 | test-only Task-260 unit-test support | `source_functor_definition.md` and this audit | no | no | exact lower handoff/opaque resolver identityを構築するnon-integration child-module body。production syntax import、lint exception、public resolver API、semantic ownerを追加しない。 |
 | `tests/support/source_predicate_definition_unit.rs` | 1974 | test-only Task-259 unit-test support | `source_predicate_definition.md` and this audit | no | no | non-integration child-module bodyとして維持する。opaque resolver shell id構築のため既存test-only `mizar-syntax` dependencyだけを使い、production import、lint exception、public resolver API、semantic ownerを追加しない。 |
 
 ## Task 34 Classification
@@ -1294,3 +1296,20 @@ diagnostic、lint exception、second Typed/Resolved field、Cargo changeはautho
 しない。Task 260はseparate Task-249R implementation commit後だけnew return IDを
 consumeできる。fabricated `BindingId` rowとTask-260 producer workはexplicit
 boundary violationである。
+
+## Task 260 active boundary result
+
+implemented checker boundaryはdocumented syntax-free production module 1件
+（`2237` lines）とnon-integration child test body（`3782` lines）を追加した。
+Task-260 field/accessor/transaction/`cfg(test)` malformed-final-state injector後の
+`typed_ast.rs`は`5172` linesである。public module/export/enum/source-spec/allow
+inventoryはsyncしlint policy `15/15`をPASSする。checker productionにsyntax
+dependencyはない。
+
+actual producerはoptional Task-253/254/255 targetをfrozen semantic deferralより前に
+authenticateし、invalid ID/arena ownerがblanket rejectionに隠れないようにするが、
+optional targetをpublishしない。Task 259 installerはunchangedで、Task-260
+installer/final assemblerだけが本taskのmutual exclusionをenforceする。checker
+productionは`25/150547`、path/content
+`0aad6b74904f456a462b0f481c84916a3234f5fecf302d9f048b380da8c3f846` /
+`8b1c66cb73086b01d23a7cf8f7db2bebd0bab13218113c436f3d892a79a436d6`。

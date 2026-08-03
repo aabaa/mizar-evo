@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 258B5C complete; Task-248 Profile B and Task-259 consumer committed; Task-260 frozen consumer prerequisite committed; checker-only Task-249R docs committed and implementation verified with no runner change | Commit Task-249R implementation, implement the frozen Task-260 runner consumer, then continue future `MT10-FS`/`MT10-AS` and Core-32 consumers in dependency order | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, source producers through Task 258B5C and Task-248 Profile B complete; Task-259/Task-260 frozen docs and Task-249R docs committed; Task-249R implementation passes all reviews and nine gates at 100/100, awaiting commit | Commit Task 249R, return to Task 260 implementation, then select Tasks 261-264/269-279 in dependency order; task 49 remains dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 258B5C complete; Task-248 Profile B, Task-259, Task-249R, and the active Task-260 runner consumer are implemented | Finish Task-260 staging/commit/post-commit gates, then continue future `MT10-FS`/`MT10-AS` and Core-32 consumers in dependency order | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, source producers through Task 258B5C and Task-248 Profile B complete; Task-259, Task-249R, and Task-260 implementation reviews have no findings; Task-260 final quality is 100/100 with all gates passing | Finish Task-260 staging/commit/post-commit gates, then select Tasks 261-264/269-279 in dependency order; task 49 remains dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -3889,7 +3889,7 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Verify the documentation-only prerequisite, stage only its synchronized
   design files, commit it as `b587038f12f84a77720f6441a000ddb84c7b996f`,
   and pass fresh post-commit repository/origin/protected-stash gates.
-- [ ] Without stopping, fresh-inventory and implement only Task 260, then
+- [x] Without stopping, fresh-inventory and implement only Task 260, then
   return to the dependency-ready queue for Task 261 and later work.
 
 ## Checker Task 249R Lower-Stage Prerequisite
@@ -3914,5 +3914,22 @@ or semantic owner changed. B3M2B2B remains next before B4.
   source/documentation review to no findings.
 - [x] Pass the final independent quality review with all nine hard gates, no
   score cap, and `100/100`.
-- [ ] Commit Task 249R, then return directly to Task 260 implementation without
-  selecting Task 261+.
+- [x] Commit Task 249R as
+  `c233bfdff8317a1f4ffdd5750e62a29ee6e69b2f`, verify clean/stash
+  post-commit invariants, and return directly to Task 260 without selecting
+  Task 261+.
+
+## Checker Task 260 Active Functor-Definition Transport
+
+- [x] Implement the frozen exact source/resolver/lower consumer and checker
+  `2/2/1/2/2` handoff with two pending obligations.
+- [x] Add one sole-backlinked pass case and close the frozen five checker/four
+  runner test matrix to test-sufficiency and implementation **NO FINDINGS**.
+- [x] Reproduce `444/516/144/59`, metadata `137`, `423/391`, `230/193`,
+  `101/7/200/1`, type `255/243`, warnings/errors `23/0`, and exact manifests.
+- [x] Complete source/documentation consistency with **NO FINDINGS** and pass
+  full verification, including exact count/hash reproduction.
+- [x] Pass all nine final hard gates with **NO FINDINGS**, quality `100/100`,
+  and no score cap.
+- [ ] Commit Task 260, verify post-commit inventory, and select the next
+  dependency-ready Task 261+.

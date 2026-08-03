@@ -4554,7 +4554,7 @@ unchecked row below is one future nonempty logical task and one commit.
       broader imported/outer/inner visibility profiles. Do not absorb Tasks
       269-272 semantics.
 - [x] **Task 259:** predicate-definition and initial-obligation intake producer.
-- [ ] **Task 260:** functor-definition and initial-obligation intake producer.
+- [x] **Task 260:** functor-definition and initial-obligation intake producer.
 - [ ] **Task 261:** attribute-definition producer.
 - [ ] **Task 262:** mode-definition producer.
 - [ ] **Task 263:** structure/inheritance/constructor-definition producer.
@@ -6451,5 +6451,33 @@ implementation commit does not satisfy a producer task.
 - [x] Complete final read-only quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete exact staging, the dedicated implementation commit, clean/stash
-  post-commit inventory, and automatic return to Task 260.
+- [x] Complete exact staging, dedicated implementation commit
+  `c233bfdff8317a1f4ffdd5750e62a29ee6e69b2f`, clean/stash post-commit
+  inventory, and automatic return to Task 260.
+
+## Checker Task 260 Active Implementation
+
+- [x] Implement the syntax-free five-table `2/2/1/2/2` producer, exact lower
+  fingerprints, resolver provenance, two pending functor obligations, and
+  one-shot Typed/final ownership without changing Task-259 behavior.
+- [x] Implement the private exact-source runner, one new pass sidecar, one
+  reciprocal covered trace row, and all six `199 -> 200` active-count
+  consumers without rebaselining an existing artifact.
+- [x] Keep optional application/structure/set targets validation-only and
+  semantically deferred; publish no goal composition, proof/discharge,
+  acceptance, facts/axioms, overload semantics, IR, or VC.
+- [x] Expand the frozen five checker/four runner tests until repeated
+  test-sufficiency review reports **NO FINDINGS**; complete full implementation
+  review with **NO FINDINGS**.
+- [x] Reproduce focused `5/5` and `4/4`, libraries `444/516/144/59`, checker
+  lint `15/15`, metadata `137`, CLIs `423/391`, `230/193`,
+  `101/7/200/1`, type `255/243`, and warnings/errors `23/0`.
+- [x] Measure checker `25/150547` and runner `32/64711` production plus the
+  `444/516/144/59` raw/normalized test-list hashes and all five CLI hashes.
+- [x] Finish source/documentation consistency with **NO FINDINGS** and pass
+  full workspace verification, including fmt, warnings-deny Clippy, tests,
+  metadata, all five CLIs, count/hash reproduction, and whitespace checks.
+- [x] Pass all nine final hard gates with **NO FINDINGS**, quality `100/100`,
+  and no score cap.
+- [ ] Complete exact staging/commit, post-commit invariants, and
+  fresh-inventory Task 261+.

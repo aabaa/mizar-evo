@@ -71,6 +71,12 @@ exact sourceはTask 248 Profile B `1/2/2/2/2/2/0`、Task 249 + 249R
 label、return token、correctness keyword、computation descendantをlower direct
 discoveryからexcludeします。
 
+Task 260はauthenticated row 65/69とdefinition-block shell 104からnew private
+runner route内でexact Task-248 Profile-B inputをlocal constructします。existing
+Task-259-private `0..164` source-context helperはreuse/modify/generalizeせず、
+exact Task-259 consumerのまま維持します。これはrunner-private input assemblyで
+あり、Task-248 public API/lower producer changeではありません。
+
 Task-260 definiens targetはcommitted lower roots、すなわちTask-252 Primary、
 Task-253 Application、Task-254 Structure、Task-255 SetTerm、Task-256
 AtomicFormulaだけを表します。active sourceはPrimary(2)/AtomicFormula(1)です。
@@ -175,18 +181,27 @@ projectionはhandoff、unchanged baseline obligation、baseline-plus-twoを返�
 Task 259/260は本taskではmutually exclusiveです。Task 260はTask-259 handoffまたは
 `PredicatePropertyCorrectness` baselineをrejectし、finalも両handoff coexistenceを
 rejectします。cross-family install-order promiseやTask-259 compatibility editは
-ありません。existing
-mixed fixture/sidecar/expectation/traceはdocs prerequisiteでbyte-unchanged、later
-implementationでもrebaselineせずisolationだけに使えます。
+ありません。existing mixed fixture/sidecar/expectation/traceはbyte-unchangedで、
+active implementationでもrebaselineせずisolation/authenticationだけに使います。
 
 ## Dedicated Consumer And Trace Intent
 
-future active pairは
+active pairは
 `pass_type_elaboration_functor_definition_payload_001.miz` / `.expect.toml`です。
-sidecarはpass/type_elaboration/type_check、empty diagnostics/payloadでfuture
+sidecarはpass/type_elaboration/type_check、empty diagnostics/payloadで
 `spec.en.checker.type_elaboration.source_functor_definition_payload`だけをciteします。
 pass creditはtransport/pending-obligation intakeだけです。one covered trace rowは
 このsidecarだけをbacklinkします。
+
+active Task-260 resultはこのpair/trace関係をexactに実装しました。requirementは
+coveredで、sidecarはsole reciprocal backlinkです。fixture/sidecar/trace hashは
+crate plan/coverage auditに記録し、deferred semantic creditをpromoteしません。
+
+## Frozen Tests And Write Scope（prerequisite history）
+
+以下のprospective wordingはreview済みdocumentation-prerequisite historyとして
+保持します。active resultと同期ledgerがcompletionを記録し、これらのfrozen
+assertionはimplementation/later reviewを引き続き拘束します。
 
 checker test 5件とrunner test 4件のexact names/write scopeはcanonical ENを
 authorityとし、次のassertion allocationも同期します。
@@ -212,6 +227,8 @@ future implementationはnew producer/support、lib/typed/final
 （`typed_ast.rs` serializerを含む）、`type_checker.rs` /
 `registration_resolution.rs`のexternal serializer 2件、lint policy、private runner route/facade/test、six mechanical
 active-count assertions、新規fixture/sidecar/trace、derived EN/JAだけを変更できます。
+new routeはalready-public Task-248 Profile-B inputをlocal assembleできますが、
+existing Task-259 source-context helperを変更してはいけません。
 parser/resolver/Cargo/canonical spec/existing `.miz`/existing expectation/lower ownerは
 forbiddenです。
 

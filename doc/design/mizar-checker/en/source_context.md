@@ -172,9 +172,9 @@ blocking `spec_gap`, `source_undocumented_behavior`,
 extension is a separate Task-248 documentation task and a later separate
 Task-248 implementation task.
 
-### Exact Real Consumer
+### Exact Task-259 Consumer
 
-The only new consumer is the 165-byte, final-LF future Task-259 source frozen
+The original Profile-B consumer is the 165-byte, final-LF Task-259 source frozen
 in [`source_predicate_definition.md`](./source_predicate_definition.md), with
 SHA-256
 `91bdb5f51c0ea5f07bdd831700cb9803f2aa57e005921c7e4e1798ecbbf2bd9f`.
@@ -200,6 +200,19 @@ collections and no syntactic arity. The private runner therefore derives
 shell-derived scope `[0]`, source ordinals `0/1`, and declaration ranges. It
 does not claim that the resolver predicate projection supplied either
 parameter.
+
+Task 260 is the second exact Profile-B consumer. Its 262-byte/final-LF source,
+108-row/root-107 Surface profile, and definition-block shell 0 at node/range
+`104/0..261` are frozen in
+[`source_functor_definition.md`](./source_functor_definition.md). It reuses the
+same public Task-248 producer contract and exact parameter slices
+`65/13..26` and `69/29..42`, but the private Task-259 runner helper is not a
+general Profile-B factory: it authenticates the 165-byte Task-259 source and
+`0..164` owner. The new Task-260 route therefore constructs and validates its
+own exact `SourceBindingContextInput` from the authenticated Task-260 Surface
+rows and resolver shell. Task 260 does not modify or generalize the existing
+Task-259 helper, and this addendum changes no Task-248 public ABI, debug bytes,
+checker tests, or source-context test count.
 
 ### Profile Preservation And Closed Admission
 

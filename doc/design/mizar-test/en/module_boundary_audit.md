@@ -12779,3 +12779,20 @@ fixture, sidecar, trace backlink, test, count assertion, or production byte in
 combined `2/4/0/2` handoff and must reject rather than invent a return-type
 binding. All runner inventories and hashes remain unchanged in both Task-249R
 commits.
+
+## Checker Task 260 Active Runner Boundary
+
+Task 260 adds exactly one private production leaf at
+`runner/type_elaboration/source_functor_definition.rs` (`1446` lines) and one
+paired test leaf (`1674` lines), plus bounded facade/root registration. The
+leaf keeps raw SurfaceAst and resolver environment/projection/symbol/
+definition/contribution authentication private and passes only syntax-free
+lower IDs, sites, ranges, contexts, spellings, and fingerprints to the
+checker. The route does not generalize or modify the Task-259 helper.
+
+Runner production is `32/64711` with path/content hashes
+`17c6979703afa2b6a7e98209741d655ac5f3d3355479221cc97bea88bff7e78a` /
+`5e3d216f76df2d97d776fb1dc702dccdcb26349b6d9a6297b6bc534e85c12792`.
+The new leaf is cohesive because source/profile selection, mutation ownership,
+lower composition, and checker output validation share the same exact frozen
+oracle. Proof, acceptance, facts, IR, and VC remain outside this boundary.

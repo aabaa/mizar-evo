@@ -4325,7 +4325,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       imported/outer/inner visibility profileをseparately freezeし、Tasks
       269-272 semanticsを吸収しない。
 - [x] **Task 259:** predicate-definition/initial-obligation intake producer。
-- [ ] **Task 260:** functor-definition/initial-obligation intake producer。
+- [x] **Task 260:** functor-definition/initial-obligation intake producer。
 - [ ] **Task 261:** attribute-definition producer。
 - [ ] **Task 262:** mode-definition producer。
 - [ ] **Task 263:** structure/inheritance/constructor-definition producer。
@@ -6158,5 +6158,32 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   consistency reviewを**NO FINDINGS**までrepeatする。
 - [x] final read-only qualityを**NO FINDINGS**、全9 hard gate PASS、score cap
   なし、`100/100` (`20/20/15/15/10/10/5/5`)でcompleteする。
-- [ ] exact staging、dedicated implementation commit、clean/stash post-commit
+- [x] exact staging、dedicated implementation commit
+  `c233bfdff8317a1f4ffdd5750e62a29ee6e69b2f`、clean/stash post-commit
   inventory、Task 260への自動復帰をcompleteする。
+
+## Checker Task 260 active implementation
+
+- [x] syntax-free five-table `2/2/1/2/2` producer、exact lower fingerprint、
+  resolver provenance、Pending functor obligation 2件、one-shot Typed/final
+  ownershipをTask-259 behavior unchangedで実装する。
+- [x] private exact-source runner、new pass sidecar 1組、reciprocal covered trace
+  row 1件、six active-count `199 -> 200` consumerをexisting artifact rebaseline
+  なしで実装する。
+- [x] optional application/structure/set targetをvalidation-only/semantic
+  deferredのまま保ち、goal composition、proof/discharge、acceptance、fact/axiom、
+  overload semantics、IR、VCをpublishしない。
+- [x] frozen checker 5/runner 4 testsをexpandし、repeated test-sufficiency reviewと
+  full implementation reviewを**NO FINDINGS**で終了する。
+- [x] focused `5/5` / `4/4`、library `444/516/144/59`、checker lint `15/15`、
+  metadata `137`、CLI `423/391`、`230/193`、`101/7/200/1`、type
+  `255/243`、warnings/errors `23/0`を再現する。
+- [x] checker `25/150547`、runner `32/64711` production、library test-list/
+  CLI hashをfresh measureする。
+- [x] source/docs consistencyを**NO FINDINGS**で完了し、fmt、warnings-deny
+  Clippy、workspace test、metadata、CLI 5本、count/hash reproduction、
+  whitespaceを含むfull workspace verificationをPASSする。
+- [x] final hard gate 9件をすべて**NO FINDINGS**、quality `100/100`、score
+  capなしでPASSする。
+- [ ] exact staging/commit/post-commit invariant、fresh Task 261+ inventoryを
+  完了する。

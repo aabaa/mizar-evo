@@ -3329,5 +3329,25 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Record Task 249R as checker-only: no runner source/library-count,
   fixture/sidecar/trace, or corpus/metadata/CLI-count change, and replace the
   impossible lower `4/4/0` profile with `2/4/0/2`.
-- [ ] Resume the frozen Task-260 consumer only after the separate Task-249R
-  documentation and implementation commits pass their gates.
+- [x] Resume the frozen Task-260 consumer after the separate Task-249R
+  documentation and implementation commits pass their gates; implementation
+  commit is `c233bfdff8317a1f4ffdd5750e62a29ee6e69b2f`.
+
+## Checker Task 260 Active Consumer
+
+- [x] Add the private exact-source/resolver/lower route and keep all raw
+  syntax/resolver mutation ownership inside `mizar-test`.
+- [x] Add exactly four frozen runner tests, including a literal 108-row
+  Surface oracle and independent environment/projection/symbol/definition/
+  contribution plus every-lower-association corruption.
+- [x] Add one pass pair and sole covered trace backlink, update six mechanical
+  active-type assertions to `200`, and preserve all existing expectations.
+- [x] Reproduce runner `516`, metadata `137`, `423/391`, `230/193`,
+  `101/7/200/1`, type `255/243`, warnings/errors `23/0`, and exact CLI/
+  test-list/production hashes.
+- [x] End repeated test-sufficiency and full implementation reviews with
+  **NO FINDINGS** while publishing no proof/fact/acceptance/VC payload.
+- [x] Complete source/documentation consistency with **NO FINDINGS** and pass
+  the full shared verification matrix.
+- [x] Pass all nine final hard gates with quality `100/100` and no score cap.
+- [ ] Complete the shared Task-260 staging/commit/post-commit gates.
