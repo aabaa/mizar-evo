@@ -63,7 +63,8 @@ return type、definiens、correctness associationをそこからinferしませ�
 
 ## Frozen Lower Bundle
 
-exact sourceはTask 248 Profile B `1/2/2/2/2/2/0`、Task 249 `4/4/0`、Task
+exact sourceはTask 248 Profile B `1/2/2/2/2/2/0`、Task 249 + 249R
+`2/4/0/2`（binding-linked parameter type 2、independent definition-return 2）、Task
 252 `5/5/0`、Task 256 `2/0/0/0/0/0/0/4/4`をconsumeします。Tasks 253--255と
 259はabsentです。Task-252 orderはguard `x/x`、equals body `x`、means body
 `x/y`。Task-256 formula 0はguard、formula 1はmeans bodyです。pattern locus、
@@ -79,7 +80,8 @@ conditional/case/otherwise/composite formula/nested unsupported rootはadmitし�
 
 new `source_functor_definition.rs`はdefinition/parameter/guard/definiens/
 correctnessのfive dense ID/tableを公開します。definition rowはresolver identity、
-site/range/ordinal/context/recovery/spelling、Equals/Means style、return-type ID、
+site/range/ordinal/context/recovery/spelling、Equals/Means style、
+`SourceTypeDefinitionReturnId` return-type ID、
 definiens ID。parameter rowはbinding/written type/site/ranges/context。guard rowは
 atomic formula/site/range/context。definiens rowはowner/target/site/range/context。
 correctness rowはowner、Existence/Uniqueness、site/range/justification anchor、
@@ -223,7 +225,8 @@ syntax-dependency scanはunchangedでexceptionを追加しません。
 exactly `FunctorExistence => "functor_existence"`、
 `FunctorUniqueness => "functor_uniqueness"`を追加します。
 
-test count projectionはchecker `435 -> 440`、runner `512 -> 516`、resolver/syntax
+Task 249Rがchecker baselineを`435 -> 439`へ移し、その後Task 260はchecker
+`439 -> 444`、runner `512 -> 516`、resolver/syntax
 `144/59` unchanged。corpus/requirements `422/390 -> 423/391`、pass/fail
 `229/193 -> 230/193`、active `101/7/199/1 -> 101/7/200/1`、type coverage
 `254/242 -> 255/243`、warnings/errors `23/0`です。

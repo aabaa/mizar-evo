@@ -1626,3 +1626,13 @@ explicit means correctness clauses. It stores no semantic goal composition,
 proof, acceptance, fact, or VC. Task 259 and Task 260 do not cross-fingerprint
 or reinterpret one another and are mutually exclusive in Task 260; mixed
 coexistence remains a separate deferred owner.
+
+## Task 249R Definition-Return Lower Family
+
+Task 249 remains a binding-owned application/expression/argument family with
+profile `2/2/0` for the Task-260 source. Task 249R is a distinct owner-link
+family inside the same immutable handoff: two functor-definition owner sites
+point to appended bare-set expression roots 2/3, producing combined
+`2/4/0/2`. Task 260 alone consumes return IDs 0/1. No binding, normalized type,
+semantic association, goal, fact, obligation, proof, or VC row crosses this
+lower boundary.

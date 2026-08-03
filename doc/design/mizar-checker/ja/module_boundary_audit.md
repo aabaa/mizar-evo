@@ -1285,3 +1285,12 @@ enum extension boundaryは3箇所すべてのexhaustive
 2件だけを追加します。Task 260はTask-259 validationを変更せず、Task-259 handoff/
 predicate-property baselineをrejectし、mixed coexistenceをseparate authorized
 ownerに残します。
+
+## Task 249R boundary addendum
+
+executable ownerは`source_type.rs`だけで、test 4件は同moduleのexisting private
+test regionに置く。syntax dependency、runner hook、resolver edit、public
+diagnostic、lint exception、second Typed/Resolved field、Cargo changeはauthorize
+しない。Task 260はseparate Task-249R implementation commit後だけnew return IDを
+consumeできる。fabricated `BindingId` rowとTask-260 producer workはexplicit
+boundary violationである。

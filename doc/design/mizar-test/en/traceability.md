@@ -2158,3 +2158,11 @@ status, or active credit. Current metadata stays cases/requirements
 `101/7/199/1`, type requirements `254/242`, and warnings/errors `23/0`.
 Implementation projects `423/391`, `230/193`, `101/7/200/1`, and type
 `255/243`, with warnings/errors unchanged.
+
+## Checker Task 249R Traceability No-Op
+
+Task 249R changes representation coverage only and creates no corpus artifact,
+requirement row, backlink, status, or credit. Counts remain `422/390`,
+`229/193`, `101/7/199/1`, type `254/242`, warnings/errors `23/0`. The future
+Task-260 row and pass backlink remain frozen but inactive until Task 249R is
+committed and Task 260 is implemented.

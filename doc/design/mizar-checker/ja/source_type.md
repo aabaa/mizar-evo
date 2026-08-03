@@ -97,3 +97,98 @@ application ordinalのままである。resolver-authenticated mode/structure he
 unattributed request kind 2件をselectし、builtin headはrequestをemitしない。
 Task 251はsource-type tableを変更せず、expansion/inhabitation/normalization/
 acceptanceをinferしない。
+
+## Task 249R frozen definition-return extension
+
+### Selection / authority / classification
+
+Task-260 implementationのfresh preflightで、completed Task-249 producerは
+authenticated `BindingId`ごとにexactly one `SourceTypeApplicationId`を要求する
+ことを確認した。Task 248 Profile Bのbindingは2件なので、parameter type 2件と
+functor return type 2件をTask-260 `4/4/0`として表すにはbinding 2件を捏造する
+必要があり、これは`boundary_violation`である。frozen Task-260 docsは
+nonblocking `design_drift`、independent return transportの欠落は`source_drift`
+である。blocking `spec_gap`はない。Chapter 10 §10.1は各`func`の`->`後に
+independent written typeを要求し、§10.5はinput-dependent return typeを許可する。
+
+Checker Task 249RはTask 260のdependency-ready lower prerequisiteである。
+authorityはChapter 10 §§10.1/10.5とfrozen Task-260 exact source/Surface profile、
+consumerはTask 260だけである。language semantics、canonical spec、existing
+`.miz`/sidecar/expectation/trace、runner/resolver/Cargo metadataは変更しない。
+
+### Exact additive public ABI
+
+Task 249Rはexisting immutable `SourceTypeApplicationHandoff`をextendし、
+binding-linked application tableを緩和・overloadしない。exact public typesは
+canonical ENの`SourceTypeDefinitionReturnId`、
+`SourceTypeDefinitionReturnExtensionInput`、
+`SourceTypeDefinitionReturnInput`、`SourceTypeDefinitionReturnTable`、
+`SourceTypeDefinitionReturn`、`SourceTypeDefinitionReturnProducer`であり、field
+names/order/typesもEN code blockどおりである。
+
+dense ID/table/row/handoff getterのfull signature、return type、iterator item
+shape、constnessとderiveはcanonical EN code blockどおりである。producerは
+borrowed base、extension input、`TypedArena`を取りnew handoffまたは
+`SourceTypeError`を返すexact `extend` signatureを持つ。
+
+base producerはempty return tableを初期化し、extensionはone-shot、failure時に
+borrowed baseを変更しない。error追加は`EmptyDefinitionReturns`、
+`DefinitionReturnCardinalityMismatch`、`DefinitionReturnsAlreadyPresent`、
+`InvalidDefinitionReturnBase`、
+`InvalidDefinitionReturn`、
+`InvalidDefinitionReturnSite`、`UnsupportedDefinitionReturn`、
+`OverlappingDefinitionReturns`で、ID fieldはcanonical ENどおりである。
+
+### Exact Task-260 profile / validation
+
+base applications/expressions/argumentsはTask-248 Profile Bの`2/2/0`。return
+row/expressionを2件追加してapplications/expressions/arguments/definition
+returnsは`2/4/0/2`となる。row 0はdefinition node 84/range `61..118`/ordinal 0、
+expression/head nodes 80/79/range `105..108`/root 2。row 1はnode 95/
+`121..179`/ordinal 1、nodes 87/86/`163..166`/root 3。exactly two rowsだけを
+admitし、両方ともnormal、argument-free、`Bare` builtin `set`である。
+
+exact base applicationは`(binding 0, ordinal 0, root 0)` / `(binding 1,
+ordinal 1, root 1)`。base expression 0/1はnode/head 63/62と67/66、range
+`22..25`/`38..41`、`Bare` builtin `set`、normal、spelling/head spelling `set`、
+argument/definition-return emptyである。他のbase shapeは
+`InvalidDefinitionReturnBase`となる。
+
+source/moduleはbaseと一致し、return ordinal/IDはvector order。definition owner
+rangeはactual same-source arena nodeのexact rangeで、ordered/nonempty/
+nonoverlappingかつreturn expressionをcontainする。expression/head site/range/
+recoveryをactual arenaへ再照合し、syntax-free input spelling/head spellingは
+それぞれ`set`と一致しなければならない。definition/expression/head siteはexact
+`TypedSiteRef::Node`だけでrole siteをrejectする。uniqueness scopeはcombined
+source-type handoff内、すなわちbase expression/head siteとnew definition/
+expression/head triple 2件だけで、cross-family arena-site reuseは不変である。
+new expression IDはprevious expression lengthからappendする。baseは
+extension前に再validateし、`TypedAst` installationがreturn rowとall four
+expressionを再validateする。`TypedAst`がsole ownerで、final assemblyはalready
+validated immutable valueをtrustし、`ResolvedTypedAst`は同じhandoffをcloneする
+だけである。second field/install pathは追加しない。
+
+return table empty時のdebug byteは完全に不変。present時はapplication row後、
+expression row前にcanonical ENの`definition-return#...` lineをemitする。
+combined debug全体がTask 260 required source-type fingerprintで、Task 260は
+return row 0/1を`SourceTypeDefinitionReturnId`で参照し、
+`SourceTypeApplicationId`を使わない。
+
+### Tests / exclusions / audit / exit
+
+implementationはcanonical ENで命名したchecker test exactly 4件を追加する。
+それぞれexact API/debug/legacy stability、independent corruption/atomic failure、
+one-shot/base/environment/arena fail-closed、TypedAst/ResolvedTypedAst clone/
+replay/no semantic outputを所有する。
+checker `435 -> 439`、runner/resolver/syntax `512/144/59` unchanged。Task 260は
+その後checker `439 -> 444`、runner `512 -> 516`。両Task-249R commitでcorpus/
+metadata/CLI/fixture/sidecar/expectation/trace count/hashは不変である。
+
+artificial `BindingId`、general composite/attributed/dependent return graph、exact
+owner rowを越えるassociation、expansion/normalization/inhabitation/subtype/
+evidence、goal/guard composition、proof/discharge/acceptance/fact/axiom/Core/CFG/
+VC、public diagnostic、Task-260 producer/runner workはforbidden/deferred。
+docs prerequisiteはEN/JA sync、review-only **NO FINDINGS**、unchanged executable/
+count/hash、all nine gates、quality 90+、dedicated docs commit、clean/stash
+invariantでexitする。separate implementationはfour tests、exact `2/4/0/2`、
+full verification/reviews/gates、dedicated commit後、Task 260へ自動復帰する。

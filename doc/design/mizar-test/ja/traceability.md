@@ -2064,3 +2064,10 @@ creditを追加しない。current metadataはcases/requirements `422/390`、pas
 `254/242`、warnings/errors `23/0`のままである。implementationは
 `423/391`、`230/193`、`101/7/200/1`、type `255/243`をprojectし、
 warnings/errorsは不変である。
+
+## Checker Task 249R traceability no-op
+
+Task 249Rはrepresentation coverageだけを変更し、corpus artifact/requirement row/
+backlink/status/creditを追加しない。countは`422/390`、`229/193`、
+`101/7/199/1`、type `254/242`、warnings/errors `23/0`。future Task-260 row/pass
+backlinkはfrozenだが、Task 249R commit後にTask 260をimplementするまでinactive。

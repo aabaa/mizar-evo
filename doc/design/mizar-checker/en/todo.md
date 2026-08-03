@@ -6414,5 +6414,20 @@ implementation commit does not satisfy a producer task.
 - [x] Repeat review-only specification audit to **NO FINDINGS**.
 - [x] Complete docs-only verification and pass all nine hard gates with no
   score cap and final read-only quality `100/100`.
-- [ ] Complete exact staging, the dedicated documentation commit, and fresh
+- [x] Complete exact staging and dedicated documentation commit
+  `b587038f12f84a77720f6441a000ddb84c7b996f`, then run fresh
   implementation preflight.
+
+## Checker Task 249R Definition-Return Documentation Prerequisite
+
+- [x] Classify the impossible Task-260 `4/4/0` binding-linked profile as
+  nonblocking `design_drift` plus lower `source_drift`, and forbid fabricated
+  bindings as a `boundary_violation`.
+- [x] Freeze Chapter 10 §§10.1/10.5 authority, Task 260 as sole consumer,
+  exact additive ABI/debug grammar, `2/4/0/2` oracle, typed/final ownership,
+  four tests, exclusions, semantic deferrals, audit impact, and exit criteria.
+- [x] Repeat review-only specification audit to **NO FINDINGS** and complete
+  docs-only verification with executable/count/hash invariants and all nine
+  hard gates.
+- [ ] Commit only the synchronized Task-249R documents, fresh-inventory the
+  separate implementation, then return automatically to Task 260.

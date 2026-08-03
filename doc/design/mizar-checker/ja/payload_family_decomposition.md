@@ -1553,3 +1553,12 @@ explicit means clauseだけから`FunctorExistence`/`FunctorUniqueness`をappend
 semantic goal/proof/acceptance/fact/VCを保存しません。Task 259/260は
 cross-fingerprint/reinterpretせずTask 260ではmutually exclusiveです。mixed
 coexistenceはseparate deferred ownerに残します。
+
+## Task 249R definition-return lower family
+
+Task 249はTask-260 sourceでbinding-owned application/expression/argument
+`2/2/0`のままである。Task 249Rはsame immutable handoff内のdistinct owner-link
+familyで、functor-definition owner site 2件がappended bare-set expression root
+2/3を指し、combined `2/4/0/2`となる。Task 260だけがreturn ID 0/1をconsume
+する。binding/normalized type/semantic association/goal/fact/obligation/proof/VC
+rowはこのlower boundaryを越えない。

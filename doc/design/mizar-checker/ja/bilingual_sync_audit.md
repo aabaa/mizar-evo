@@ -1468,3 +1468,10 @@ Pending obligation kind 2件、exact API/debug/opaque key、serializer 3件、Ta
 259とmutually exclusiveなTyped/Resolved ownership、runner consumer、exact
 test/write scope/count projection/semantic deferral/exit
 gateを同期します。synchronization exceptionはありません。
+
+## Task 249R synchronization addendum
+
+EN/JA `source_type.md`、crate plan、todo、source audit、ownership、payload、
+boundary、runner consumer、central todo、coverage auditはindependent return-row
+ABI、`2/4/0/2` oracle、count correction、exclusion、two-commit prerequisite
+sequenceを同期する。English canonicalでsync exceptionはない。

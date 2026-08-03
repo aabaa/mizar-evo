@@ -4743,7 +4743,8 @@ explicit correctness clause 2件、指定されたexcluded descendantをauthenti
 できない。
 
 selection後にone shared surface-indexed `TypedArena`を作成し、existing lower
-ownerだけをTask 248 Profile B `1/2/2/2/2/2/0`、Task 249 `4/4/0`、Task 252
+ownerだけをTask 248 Profile B `1/2/2/2/2/2/0`、Task 249 + 249R
+`2/4/0/2`、Task 252
 `5/5/0`、Task 256 `2/0/0/0/0/0/0/4/4`の順にcallする。frozen sourceでは
 Task 253-255はabsentのままである。Task 260はtable `2/2/1/2/2`をpublishし、
 input obligation baselineをpreserveして、`means` definitionだけにpending
@@ -4758,6 +4759,11 @@ future runner test 4件は
 countを`512 -> 516`とprojectする。exact implementationはmechanical active-type
 consumer 6箇所も`199 -> 200`へ更新するが、goal composition、proof、discharge、
 acceptance、fact/axiom、VC/IR、Task-259 predicate payloadをpublishしない。
+
+Task 249Rはchecker-onlyでrunner route/testを追加しない。runnerはfresh
+inventoryでcombined source-type handoffがbinding application 2、expression 4、
+argument 0、definition-return row 2であることを確認した後だけTask 260を開始し、
+complete handoffをfingerprintしてreturn-type bindingを捏造しない。
 
 test 1は全source byte/final LF/hash、108 Surface row/ordered child、root/sibling/
 subtree partition、resolver profile、lower bundle、final outputをassertします。

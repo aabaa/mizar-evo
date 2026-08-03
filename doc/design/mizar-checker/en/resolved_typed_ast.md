@@ -1659,3 +1659,11 @@ When Task 260 is absent, any `FunctorExistence` or `FunctorUniqueness` row is
 an orphan and final assembly rejects it. When Task 260 is present, final
 assembly requires exactly the two final rows linked by its correctness table
 and rejects any additional row of either functor kind.
+
+## Task 249R Definition-Return Clone Addendum
+
+`ResolvedTypedAst` gains no Task-249R input or field. Final assembly trusts the
+immutable handoff already revalidated by `TypedAst` installation and only
+clone-preserves its definition-return table and roots. The final debug
+contains the same combined source-type fingerprint exactly once; it never
+reconstructs return rows from resolver payloads.

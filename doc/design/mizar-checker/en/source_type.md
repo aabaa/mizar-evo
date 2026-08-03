@@ -102,3 +102,204 @@ remains the Task-249 application ordinal. Resolver-authenticated mode and
 structure heads select the two unattributed request kinds, while builtin heads
 emit none. Task 251 does not alter source-type tables or infer expansion,
 inhabitation, normalization, or acceptance.
+
+## Task 249R Frozen Definition-Return Extension
+
+### Selection, Authority, And Classification
+
+Fresh Task-260 implementation preflight found that the completed Task-249
+producer deliberately requires one `SourceTypeApplicationId` per authenticated
+`BindingId`. Task 248 Profile B has two definition-parameter bindings, so a
+claimed Task-260 `4/4/0` source-type profile cannot represent two parameter
+types plus two functor return types without inventing two bindings. Such
+fabrication would be a `boundary_violation`. The frozen Task-260 documentation
+therefore had nonblocking `design_drift`, while the missing independent
+return-type transport is `source_drift`. There is no blocking `spec_gap`:
+Chapter 10 §10.1 requires every `func` definition to carry the independently
+written type expression after `->`, and §10.5 permits that type to depend on
+input values.
+
+Checker Task 249R is the dependency-ready lower-stage prerequisite for Task
+260. Its authority is limited to Chapter 10 §§10.1 and 10.5 and the already
+frozen Task-260 exact source/Surface profile. Its consumer is Task 260 only.
+It changes no language semantics, canonical specification, existing `.miz`,
+sidecar, expectation, trace row/status/count, runner code, resolver code, or
+Cargo metadata.
+
+### Exact Additive Public ABI
+
+Task 249R extends the existing immutable `SourceTypeApplicationHandoff`; it
+does not weaken or overload the binding-linked application table. The exact
+new public types are:
+
+```rust
+pub struct SourceTypeDefinitionReturnId(usize);
+
+pub struct SourceTypeDefinitionReturnExtensionInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub returns: Vec<SourceTypeDefinitionReturnInput>,
+}
+
+pub struct SourceTypeDefinitionReturnInput {
+    pub definition_site: TypedSiteRef,
+    pub definition_range: SourceRange,
+    pub source_ordinal: usize,
+    pub expression: SourceTypeExpressionInput,
+}
+
+pub struct SourceTypeDefinitionReturnTable { /* private entries */ }
+
+pub struct SourceTypeDefinitionReturn {
+    /* private id, definition_site, definition_range, source_ordinal, root */
+}
+
+pub struct SourceTypeDefinitionReturnProducer;
+```
+
+The ID derives `Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord +
+Hash`; both input structs and the immutable row derive `Debug + Clone +
+PartialEq + Eq`; and the table derives those traits plus `Default`.
+The exact read-only methods and constness are:
+
+```rust
+impl SourceTypeDefinitionReturnId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+
+impl SourceTypeDefinitionReturnTable {
+    pub fn get(
+        &self,
+        id: SourceTypeDefinitionReturnId,
+    ) -> Option<&SourceTypeDefinitionReturn>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (SourceTypeDefinitionReturnId, &SourceTypeDefinitionReturn),
+    >;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+impl SourceTypeDefinitionReturn {
+    pub const fn id(&self) -> SourceTypeDefinitionReturnId;
+    pub const fn definition_site(&self) -> &TypedSiteRef;
+    pub const fn definition_range(&self) -> SourceRange;
+    pub const fn source_ordinal(&self) -> usize;
+    pub const fn root(&self) -> SourceTypeExpressionId;
+}
+
+impl SourceTypeApplicationHandoff {
+    pub const fn definition_returns(
+        &self,
+    ) -> &SourceTypeDefinitionReturnTable;
+}
+```
+
+The producer surface is exactly:
+
+```rust
+impl SourceTypeDefinitionReturnProducer {
+    pub fn extend(
+        base: &SourceTypeApplicationHandoff,
+        input: SourceTypeDefinitionReturnExtensionInput,
+        arena: &TypedArena,
+    ) -> Result<SourceTypeApplicationHandoff, SourceTypeError>;
+}
+```
+
+`SourceTypeProducer::build` always initializes an empty definition-return
+table. `extend` is one-shot, leaves the borrowed base unchanged on failure,
+and returns a new immutable handoff on success. `SourceTypeError` gains the
+non-exhaustive variants `EmptyDefinitionReturns`,
+`DefinitionReturnCardinalityMismatch`, `DefinitionReturnsAlreadyPresent`,
+`InvalidDefinitionReturnBase`,
+`InvalidDefinitionReturn {
+definition_return: SourceTypeDefinitionReturnId }`,
+`InvalidDefinitionReturnSite { definition_return:
+SourceTypeDefinitionReturnId }`, `UnsupportedDefinitionReturn {
+definition_return: SourceTypeDefinitionReturnId }`, and
+`OverlappingDefinitionReturns { definition_return:
+SourceTypeDefinitionReturnId }`.
+
+### Exact Task-260 Profile And Validation
+
+The required base remains Task 248 Profile B's Task-249
+applications/expressions/arguments `2/2/0`. Task 249R adds two return rows and
+two expressions, yielding applications/expressions/arguments/definition
+returns `2/4/0/2`:
+
+| Return | Definition owner | Return expression/head | Output root |
+| ---: | --- | --- | ---: |
+| 0 | node 84, `61..118`, ordinal 0 | nodes 80/79, `105..108`, `Bare`, builtin `set`, normal | 2 |
+| 1 | node 95, `121..179`, ordinal 1 | nodes 87/86, `163..166`, `Bare`, builtin `set`, normal | 3 |
+
+The exact base applications are `(binding 0, ordinal 0, root 0)` and
+`(binding 1, ordinal 1, root 1)`. Base expressions 0/1 use node/head sites
+63/62 and 67/66, ranges `22..25` and `38..41`, `Bare`, builtin `set`, normal,
+and spellings/head spellings `set`; the argument and definition-return tables
+are empty. Any other base shape returns `InvalidDefinitionReturnBase`.
+
+Exactly two rows of this normal, argument-free, bare builtin-`set`
+return-expression shape are admitted. Source/module identity must equal the
+base; return ordinals and
+dense IDs are vector order; definition owner ranges are exact same-source
+arena node ranges, ordered, nonempty, nonoverlapping, and contain their return
+expression. All definition, expression, and head sites are exact
+`TypedSiteRef::Node` identities; role sites are rejected. The expression and
+head sites, ranges, and recovery are revalidated against the actual arena;
+the syntax-free input spellings and head spellings must each equal `set`.
+No definition, expression, or head site may duplicate another site within the
+combined source-type handoff: the base expression/head sites plus the two new
+definition/expression/head triples. Cross-family arena-site reuse remains
+unchanged. New expression IDs append at the prior expression length.
+The base is revalidated before extension, and `TypedAst` installation
+revalidates both the return rows and all four expressions. `TypedAst` remains
+the sole owner; final assembly trusts that already validated immutable value,
+and `ResolvedTypedAst` only clone-preserves the same handoff. Neither owner
+gains a second field or installation path.
+
+The existing debug prefix and all legacy bytes remain identical when the
+return table is empty. With Task 249R rows present, return rows appear after
+all application rows and before all expression rows:
+
+```text
+definition-return#<id> ordinal=<n> definition_range=<start>..<end> definition_site=node#<id> root=<expression-id>
+```
+
+Expression rows then remain dense `0..3`; argument rows retain their existing
+position. The complete combined debug text is Task 260's required source-type
+fingerprint. Task 260 refers to return rows 0/1 through
+`SourceTypeDefinitionReturnId`, never through `SourceTypeApplicationId`.
+
+### Tests, Exclusions, Audit Impact, And Exit
+
+Implementation adds exactly four checker library tests:
+
+1. `task_249r_exact_definition_return_extension_and_legacy_debug`;
+2. `task_249r_independent_return_corruption_fails_atomically`;
+3. `task_249r_one_shot_base_environment_and_arena_drift_fail_closed`; and
+4. `task_249r_typed_final_clone_replay_has_no_semantic_output`.
+
+They respectively own exact extension/API/debug and empty-table byte stability;
+independent return/owner/expression corruption with atomic failure; one-shot/
+base/environment/arena fail-closed behavior; and TypedAst-to-ResolvedTypedAst
+clone/replay with no semantic output. The checker baseline projects `435 ->
+439`; runner/resolver/syntax
+remain `512/144/59`. Task 260 then projects checker `439 -> 444` and runner
+`512 -> 516`. All corpus, metadata, CLI, fixture, sidecar, expectation, and
+trace counts/hashes remain unchanged during both Task-249R commits.
+
+Forbidden and deferred are artificial `BindingId` rows; generalized
+composite, attributed, or dependent-return graph intake; parameter/return
+association beyond the exact owner row; expansion, normalization,
+inhabitation, subtype/evidence decisions; goal/guard composition; proof,
+discharge, acceptance, facts/axioms, Core/CFG/VC; public diagnostics; and all
+Task-260 producer or runner work. The documentation prerequisite exits only
+after synchronized EN/JA, repeated review-only **NO FINDINGS**, unchanged
+executable/count/hash gates, all nine hard gates, quality at least 90, one
+dedicated docs commit, and clean/stash-invariant fresh inventory. The separate
+implementation exits with the four tests, exact `2/4/0/2` profile, full
+verification/reviews/gates, one dedicated commit, and automatic return to Task
+260 implementation.

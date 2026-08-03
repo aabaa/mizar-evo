@@ -1444,3 +1444,10 @@ production、fixture、sidecar、expectation、trace row、active metadataは
 `422/390`、`229/193`、`101/7/199/1`、type `254/242`、warnings/errors
 `23/0`のまま不変である。future implementationがnew pass artifactとsole trace
 backlinkをownする。synchronization exceptionはない。
+
+## Task 249R synchronization addendum
+
+paired runner plan/harness/todo/boundary audit/trace ledgerはTask 249Rをchecker-
+only prerequisite、corrected `2/4/0/2` consumer profile、unchanged runner/corpus
+metadata、deferred Task-260 activationとして同期する。English canonicalでsync
+exceptionはない。

@@ -1603,3 +1603,11 @@ fact/type/coercion/diagnostic/proof/acceptanceを作りません。
 producer/installerはpre-existing `FunctorExistence` / `FunctorUniqueness`
 baselineもrejectします。handoffありではlinked final row 2件だけを許可し、
 handoffなしではどちらのkindもorphanとしてfinal assemblyがrejectします。
+
+## Task 249R definition-return ownership addendum
+
+Task 249Rは`TypedAstParts` field/install methodを追加しない。existing
+`SourceTypeApplicationHandoff`を`TypedAst::try_new`前にextendし、
+`validate_source_type`がdefinition ownerとappended return expressionをowned arenaへ
+再照合する。同じoptional `source_type` fieldだけがownerである。empty-return
+legacy debug byteは不変で、Task-260 profileはcombined `2/4/0/2` handoffを持つ。

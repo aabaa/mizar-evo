@@ -3164,6 +3164,20 @@ parentheses; no blocking `spec_gap` was found. There is no current
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict`.
 
+## Task 249R Definition-Return Audit Addendum
+
+Task-260 preflight proves that the existing Task-249 binding/application
+cardinality is correct and must remain unchanged. Encoding return types as two
+extra applications would fabricate bindings and is forbidden. Task 249R adds
+only `SourceTypeDefinitionReturnId`, its extension input/row/table/producer,
+the `definition_returns` handoff getter, eight non-exhaustive error variants,
+and the frozen debug row documented in `source_type.md`. Its exact active
+profile is applications/expressions/arguments/definition returns `2/4/0/2`.
+This documentation closes bounded `design_drift`; the missing executable
+transport remains `source_drift`, and the four implementation tests remain a
+`test_gap`, until the separate source commit. No trace credit or language-
+semantic coverage changes in the prerequisite.
+
 ## Task 260 Pre-Implementation Classification
 
 Chapter 10 Sections 10.1--10.6 and Chapter 16 Sections 16.6.1/16.7.2 provide

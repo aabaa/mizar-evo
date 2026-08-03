@@ -1592,3 +1592,11 @@ clone/debug orderはdeterministicで、failureはrepair/renumber/partial publish
 Task 260 absent時の`FunctorExistence` / `FunctorUniqueness`はorphanとして
 rejectします。present時はcorrectness tableがlinkするfinal row 2件だけをrequireし、
 additional functor-kind rowをrejectします。
+
+## Task 249R definition-return clone addendum
+
+`ResolvedTypedAst`はTask-249R input/fieldを追加しない。final assemblyは
+`TypedAst` installationでalready revalidatedされたimmutable handoffをtrustし、
+definition-return table/rootをclone-preserveするだけである。final debugは同じ
+combined source-type fingerprintをexactly once含み、resolver payloadからreturn
+rowをreconstructしない。

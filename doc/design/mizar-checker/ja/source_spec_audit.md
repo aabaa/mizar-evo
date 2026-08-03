@@ -2987,6 +2987,19 @@ declarationの`source_drift`、recursive public-input graphの
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`はない。
 
+## Task 249R definition-return audit addendum
+
+Task-260 preflightはexisting Task-249 binding/application cardinalityが正しく、
+不変であることを示す。return typeをextra application 2件としてencodeすると
+binding捏造になるため禁止する。Task 249Rが追加するのは
+`SourceTypeDefinitionReturnId`、extension input/row/table/producer、handoffの
+`definition_returns` getter、non-exhaustive error variant 8件、`source_type.md`
+のfrozen debug rowだけである。active profileはapplications/expressions/
+arguments/definition returns `2/4/0/2`。docsはbounded `design_drift`だけをclose
+し、missing executable transportは`source_drift`、implementation test 4件は
+`test_gap`としてseparate source commitまで残る。prerequisiteでtrace credit/
+language-semantic coverageは変更しない。
+
 ## Task 260 Pre-Implementation Classification
 
 Chapter 10 §§10.1--10.6とChapter 16 §§16.6.1/16.7.2はequals/means intakeと

@@ -6124,5 +6124,19 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] review-only specification auditを**NO FINDINGS**までrepeatする。
 - [x] docs-only verificationをcompleteし、all nine gates PASS、score capなし、
   final read-only quality `100/100`を得る。
-- [ ] exact staging、dedicated docs commit、fresh implementation preflightを
-  completeする。
+- [x] exact stagingとdedicated docs commit
+  `b587038f12f84a77720f6441a000ddb84c7b996f`をcompleteし、fresh
+  implementation preflightを実行する。
+
+## Checker Task 249R definition-return documentation prerequisite
+
+- [x] impossible Task-260 `4/4/0` binding-linked profileをnonblocking
+  `design_drift` plus lower `source_drift`にclassifyし、fabricated bindingを
+  `boundary_violation`として禁止する。
+- [x] Chapter 10 §§10.1/10.5 authority、Task 260 sole consumer、exact additive
+  ABI/debug、`2/4/0/2` oracle、typed/final ownership、test 4件、exclusion、
+  semantic deferral、audit impact、exit criteriaをfreezeする。
+- [x] review-only specification auditを**NO FINDINGS**までrepeatし、executable/
+  count/hash invariantとall nine hard gateを含むdocs-only verificationを行う。
+- [ ] synchronized Task-249R docsだけをcommitし、separate implementationを
+  fresh-inventoryしてからTask 260へ自動復帰する。

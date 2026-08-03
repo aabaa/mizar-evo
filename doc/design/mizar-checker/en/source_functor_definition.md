@@ -112,7 +112,7 @@ The exact source consumes the committed lower transports in this order:
 | Owner | Exact active profile | Ownership |
 | --- | --- | --- |
 | Task 248 | Profile B `1/2/2/2/2/2/0` | definition-block context and two ordered bindings |
-| Task 249 | `4/4/0` | two parameter types and two return types |
+| Task 249 + 249R | `2/4/0/2` | two binding-linked parameter types plus two independent definition-return rows |
 | Task 252 | `5/5/0` | guard operands, equals body, and means operands |
 | Task 253 | absent | no application-root definiens |
 | Task 254 | absent | no structure-root definiens |
@@ -172,7 +172,7 @@ pub struct SourceFunctorDefinitionInput {
     pub recovery: SourceFunctorDefinitionRecovery,
     pub spelling: String,
     pub style: SourceFunctorDefinitionStyle,
-    pub return_type: SourceTypeApplicationId,
+    pub return_type: SourceTypeDefinitionReturnId,
     pub definiens: SourceFunctorDefiniensId,
 }
 
@@ -412,7 +412,8 @@ admitted. Definition origins are exact resolver ranges/paths
   ordinals 0/1, context 1, spellings
   `func Task260EqualsDef: task260_equals(x) -> set equals x;` and
   `func Task260MeansDef: task260_means(y) -> set means x = y;`, styles
-  Equals/Means, return-type applications 2/3, and definientia 0/1;
+  Equals/Means, definition-return rows 0/1 whose expression roots are 2/3,
+  and definientia 0/1;
 - shared parameters 0/1 use bindings 0/1, type applications 0/1, sites 65/69,
   ranges `13..26`/`29..42`, declaration ranges `17..18`/`33..34`, context 1,
   ordinals 0/1, and spellings `let x be set;` / `let y be set;`;
@@ -652,7 +653,8 @@ FunctorExistence => "functor_existence"
 FunctorUniqueness => "functor_uniqueness"
 ```
 
-Checker library count projects `435 -> 440`; runner `512 -> 516`; resolver
+Task 249R first moves the checker library baseline `435 -> 439`. Task 260 then
+projects checker `439 -> 444`; runner `512 -> 516`; resolver
 and syntax stay `144/59`. Corpus/requirements project `422/390 -> 423/391`,
 pass/fail `229/193 -> 230/193`, active parse/declaration/type/proof
 `101/7/199/1 -> 101/7/200/1`, and type requirements `254/242 -> 255/243`.

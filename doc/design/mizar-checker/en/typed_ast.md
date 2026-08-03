@@ -1674,3 +1674,12 @@ The producer and installer also reject a baseline already containing
 `FunctorExistence` or `FunctorUniqueness`. With the handoff installed, exactly
 the two final linked functor rows exist; without it, either functor kind is an
 orphan rejected by final assembly.
+
+## Task 249R Definition-Return Ownership Addendum
+
+Task 249R adds no `TypedAstParts` field and no installation method. It extends
+the existing `SourceTypeApplicationHandoff` before `TypedAst::try_new`;
+`validate_source_type` rechecks both definition owners and appended return
+expressions against the owned arena. The same optional `source_type` field is
+the sole owner. Empty-return legacy debug bytes remain unchanged, while the
+Task-260 profile owns one combined `2/4/0/2` handoff.

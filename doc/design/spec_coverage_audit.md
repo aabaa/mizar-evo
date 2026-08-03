@@ -5901,3 +5901,38 @@ Chapter 10/16 executable coverage. The final independent read-only review
 reports no findings, all nine hard gates PASS, no score cap, and `100/100`.
 Exact staging, the dedicated documentation commit, and fresh implementation
 inventory remain pending.
+
+## Checker Task 249R Definition-Return Prerequisite Addendum
+
+Fresh Task-260 implementation preflight classified the documented Task-249
+`4/4/0` dependency as `design_drift`: Task 249 intentionally authenticates
+one application per Task-248 binding, and only two bindings exist. Adding two
+return applications would be a `boundary_violation`. Chapter 10 §§10.1 and
+10.5 provide sufficient canonical authority for a separate written return-
+type owner, so the missing lower transport is bounded `source_drift`, not a
+blocking `spec_gap`.
+
+Task 249R freezes an additive definition-return table inside the existing
+source-type handoff. Task 260's corrected lower oracle is applications/
+expressions/arguments/definition returns `2/4/0/2`; return IDs 0/1 own bare
+builtin-`set` expression roots 2/3 and exact definition sites/ranges. TypedAst
+remains sole owner and ResolvedTypedAst clone-preserves it. No canonical spec,
+fixture, sidecar, expectation, trace row/status/count, production source,
+runner/resolver source, Cargo metadata, or current coverage credit changes in
+this documentation prerequisite.
+
+The separate implementation will add exactly four checker tests, moving the
+checker baseline `435 -> 439` while runner/resolver/syntax remain
+`512/144/59`; all CLI/corpus totals remain unchanged. Task 260 subsequently
+projects checker `439 -> 444`, runner `512 -> 516`, and the already frozen
+one-case/one-requirement metadata increments. Composite/dependent return
+semantics, normalization, goal/guard composition, proof/discharge/acceptance,
+facts/axioms, and VC/IR remain deferred and receive no Task-249R coverage.
+
+The documentation-only verification preserves every canonical specification,
+fixture, sidecar, expectation, trace row/status/count, executable source, and
+Cargo artifact. Repeated final read-only quality reviews, after correcting one
+central-dashboard `design_drift`, report no findings, all nine hard gates
+PASS, no score cap, and `100/100`. This prerequisite still grants no current
+coverage credit; exact staging, its dedicated commit, and fresh implementation
+inventory remain pending.

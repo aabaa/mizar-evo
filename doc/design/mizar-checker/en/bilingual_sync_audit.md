@@ -1526,3 +1526,11 @@ exact API/debug/opaque keys, all three serializers, Typed/Resolved mutual
 exclusion from Task 259, runner consumer, exact tests, write scope, count
 projections, semantic deferrals, and exit gates. No
 synchronization exception is recorded.
+
+## Task 249R Synchronization Addendum
+
+The EN/JA `source_type.md`, crate plan, todo, source audit, ownership, payload,
+boundary, runner-consumer, central todo, and coverage-audit records synchronize
+the independent return-row ABI, `2/4/0/2` oracle, count correction, exclusions,
+and two-commit prerequisite sequence. English remains canonical and no
+synchronization exception is recorded.

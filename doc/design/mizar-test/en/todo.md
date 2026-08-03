@@ -3324,5 +3324,10 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   production source, and Cargo metadata byte-unchanged in this prerequisite.
 - [x] Repeat all four reviews to no findings and complete docs-only
   verification with all nine gates PASS and uncapped quality `100/100`.
-- [ ] Complete exact staging, the dedicated documentation commit, and
-  post-commit gates.
+- [x] Complete exact staging, documentation commit
+  `b587038f12f84a77720f6441a000ddb84c7b996f`, and post-commit gates.
+- [x] Record Task 249R as checker-only: no runner source/library-count,
+  fixture/sidecar/trace, or corpus/metadata/CLI-count change, and replace the
+  impossible lower `4/4/0` profile with `2/4/0/2`.
+- [ ] Resume the frozen Task-260 consumer only after the separate Task-249R
+  documentation and implementation commits pass their gates.

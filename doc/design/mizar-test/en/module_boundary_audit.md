@@ -12770,3 +12770,12 @@ and runner `31/63248` with hashes
 `0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
 `a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`.
 This documentation prerequisite changes none of those values.
+
+## Checker Task 249R No-Runner Boundary
+
+Task 249R is wholly checker-owned. It adds no private route, facade, selector,
+fixture, sidecar, trace backlink, test, count assertion, or production byte in
+`mizar-test`. The frozen Task-260 route later consumes the checker-produced
+combined `2/4/0/2` handoff and must reject rather than invent a return-type
+binding. All runner inventories and hashes remain unchanged in both Task-249R
+commits.

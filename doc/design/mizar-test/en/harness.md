@@ -5019,7 +5019,7 @@ expectation data cannot select the route.
 
 After selection the route creates one shared surface-indexed `TypedArena` and
 calls only existing lower owners in order: Task 248 Profile B
-`1/2/2/2/2/2/0`, Task 249 `4/4/0`, Task 252 `5/5/0`, and Task 256
+`1/2/2/2/2/2/0`, Task 249 + 249R `2/4/0/2`, Task 252 `5/5/0`, and Task 256
 `2/0/0/0/0/0/0/4/4`; Task 253 through 255 remain absent for the frozen
 source. Task 260 then publishes tables `2/2/1/2/2`, preserves the input
 obligation baseline, and appends pending `FunctorExistence` and
@@ -5035,6 +5035,12 @@ runner library count from `512` to `516`. The exact implementation also
 updates the six mechanical active-type consumers from `199` to `200`; it does
 not publish goal composition, proof, discharge, acceptance, facts/axioms,
 VC/IR, or Task-259 predicate payload.
+
+Task 249R is checker-only and adds no runner route or test. The runner begins
+Task 260 only after fresh inventory confirms the combined source-type handoff
+has two binding applications, four expressions, zero arguments, and two
+definition-return rows; it fingerprints that complete handoff and never
+fabricates a return-type binding.
 
 The first test asserts every source byte/final LF/hash, all 108 Surface rows
 and ordered children, the root/sibling/subtree partition, resolver profile,

@@ -1315,3 +1315,12 @@ The enum-extension boundary names all three exhaustive
 debug names. Task 260 does not edit Task-259 validation; instead it rejects a
 Task-259 handoff or predicate-property baseline and leaves mixed coexistence
 for a separately authorized owner.
+
+## Task 249R Boundary Addendum
+
+The only executable owner is `source_type.rs`; its four tests remain in that
+module's existing private test region. No syntax dependency, runner hook,
+resolver edit, public diagnostic, lint exception, second Typed/Resolved field,
+or Cargo change is authorized. Task 260 may consume the new return IDs only
+after the separate Task-249R implementation commit. Fabricated `BindingId`
+rows and Task-260 producer work are explicit boundary violations.

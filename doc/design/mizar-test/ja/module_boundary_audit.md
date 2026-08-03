@@ -11509,3 +11509,11 @@ runner `31/63248`、hash
 `0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
 `a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`
 のままである。このdocumentation prerequisiteはどの値も変更しない。
+
+## Checker Task 249R no-runner boundary
+
+Task 249Rはchecker-ownedである。`mizar-test`にprivate route/facade/selector/
+fixture/sidecar/trace backlink/test/count assertion/production byteを追加しない。
+frozen Task-260 routeは後でchecker-produced combined `2/4/0/2` handoffをconsumeし、
+return-type bindingをinventせずrejectする。両Task-249R commitでrunner inventory/
+hashは不変である。

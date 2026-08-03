@@ -1496,3 +1496,10 @@ all production, fixtures, sidecars, expectations, trace rows, and active
 metadata unchanged at `422/390`, `229/193`, `101/7/199/1`, type `254/242`,
 and warnings/errors `23/0`. The future implementation owns the new pass
 artifact and sole trace backlink; no synchronization exception exists.
+
+## Task 249R Synchronization Addendum
+
+Paired runner plans, harnesses, todos, boundary audits, and trace ledgers
+record Task 249R as a checker-only prerequisite, the corrected `2/4/0/2`
+consumer profile, unchanged runner/corpus metadata, and deferred Task-260
+activation. English is canonical and no synchronization exception exists.

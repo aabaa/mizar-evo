@@ -3103,4 +3103,10 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   production/Cargoをbyte-unchangedに保つ。
 - [x] all four reviewをno findingsまでrepeatし、docs-only verificationを
   all nine gates PASS、score capなしquality `100/100`でcompleteする。
-- [ ] exact staging、dedicated docs commit、post-commit gateをcompleteする。
+- [x] exact staging、documentation commit
+  `b587038f12f84a77720f6441a000ddb84c7b996f`、post-commit gateをcompleteする。
+- [x] Task 249Rをchecker-onlyとしてrecordし、runner source/library count、
+  fixture/sidecar/trace、corpus/metadata/CLI countを不変に保ち、impossible lower
+  `4/4/0`を`2/4/0/2`へcorrectする。
+- [ ] separate Task-249R documentation/implementation commitがgateをpassした後だけ
+  frozen Task-260 consumerをresumeする。
