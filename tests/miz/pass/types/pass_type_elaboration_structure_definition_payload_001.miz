@@ -1,0 +1,16 @@
+definition
+  struct Task263Base where
+    field carrier -> set;
+    property marker -> set;
+  end;
+
+  struct Task263Derived where
+    field carrier -> set;
+    property marker -> set;
+  end;
+
+  inherit Task263Derived extends Task263Base where
+    field carrier from carrier;
+    property marker from marker;
+  end;
+end;

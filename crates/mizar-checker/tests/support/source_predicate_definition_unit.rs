@@ -111,6 +111,11 @@ impl Fixture {
     }
 }
 
+pub(crate) fn actual_predicate_definition_projection_for_task263()
+-> SourcePredicateDefinitionProjection {
+    fixture().build(&InitialObligationTable::new())
+}
+
 #[test]
 fn task_259_exact_predicate_definition_payload_and_pending_obligation() {
     let fixture = fixture();

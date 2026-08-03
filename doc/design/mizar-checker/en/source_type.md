@@ -765,3 +765,11 @@ raw/normalized list hashes are
 `5f18c633183db679ecacb2781c9133dad5b4c48fdb00e33435dd4c1329105fd2` /
 `e0da07dbaf28c659f9e3ac682ae5cf694e7ddd5cdb987abe5d2598ebbfc68d7d`.
 Task 263 and every frozen semantic deferral remain separate.
+
+## Task 263 Test-Only Lower Replay Seam
+
+Task 263 adds one `cfg(test)`-only crate-private mutator that corrupts a stored
+structure-member root so its later lower-relation category can be paired with
+mapping and coherence faults. Production Task-249S validation, public API,
+fingerprint grammar, and accepted `0/4/0/0/0/4` behavior are unchanged;
+`source_type.rs` is now 6,253 lines.

@@ -4328,7 +4328,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
 - [x] **Task 260:** functor-definition/initial-obligation intake producer。
 - [x] **Task 261:** attribute-definition producer。
 - [x] **Task 262:** mode-definition producer。
-- [ ] **Task 263:** structure/inheritance/constructor-definition producer。
+- [x] **Task 263:** structure/inheritance/constructor-definition producer。
 - [ ] **Task 264:** property-implementation producer。parser Task 48に依存。
 - [ ] **Task 269:** proof-local declaration/binding producer。
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer。
@@ -6328,7 +6328,10 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] review-only specificationとsource/documentation auditを**NO FINDINGS**
   まで反復し、docs hard gatesをuncapped `100/100`でpassする。parent-ownedの
   staging/commit用exact docs-only targetを保つ。
-- [ ] docs commit後fresh inventoryし、frozen Task-263 producer/ownership/private
+- [x] docs commit `1fe0b156f312628f0997261ef6a8c8de251a15c8`後fresh inventoryし、
+  frozen Task-263 producer/ownership/private
   runner/pass pair/trace/auditsだけを実装する。
-- [ ] test/implementation/source-doc/final reviewsを**NO FINDINGS**、9 gates
-  PASS/no cap/90+まで反復し、verification/staging/commit後Task 264+へ自動継続する。
+- [x] test/implementation/source-doc/final reviewsを**NO FINDINGS**で完了し、
+  全9 gatesをscore capなしの`100/100`でPASSし、全verificationもPASSする。
+  parent-owned staging用exact Task-263 commit readinessを保ち、その後Task 264+
+  へ自動継続する。

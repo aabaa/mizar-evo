@@ -1544,3 +1544,11 @@ executable artifactとrecorded count/hashを変更しないと明記する。
 両languageはprivate non-rendered baseline snapshot、same-length final replay、exact
 stable-debug grammar/profile/escaping、explicit member spellings、compound
 12-category/cross-row precedence test matrixも同期する。
+
+## Task 263 active synchronization result
+
+EN/JAはimplemented `2/4/1/2/0` public surface、one-shot Typed/final
+transaction、private baseline snapshot、exact consumer、sole pass/trace pair、
+unchanged semantic deferralを同期する。checker/runner tests `467/528`、metadata
+`426/394`、active type `203`、production `28/157908`と`35/67939`、同じ
+path/content・test-list・CLI・trace hashを記録し、bilingual driftはない。

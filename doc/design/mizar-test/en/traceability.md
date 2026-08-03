@@ -2307,3 +2307,13 @@ row stay byte-identical and retain their current credit. Chapter 5 and
 MC-G017/MC-G018 remain partial after Task 263 because parameterized/multiple-
 edge/coherence acceptance, constructor/selector use semantics, facts, proofs,
 and property implementation remain deferred.
+
+## Checker Task 263 Active Trace Result
+
+`spec.en.checker.type_elaboration.source_structure_definition_payload` is now
+required/covered/pass and has exactly one backlink to the new pass sidecar;
+the sidecar reciprocally cites only that row. Requirements/cases are
+`394/426`, type requirements are `258 = 246 covered + 12 deferred`, and the
+trace SHA-256 is
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+No neighboring trace status, owner, or deferred rationale changed.

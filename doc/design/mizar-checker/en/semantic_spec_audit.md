@@ -634,3 +634,12 @@ No guard, quantified goal, proof/discharge, fact, axiom, chosen upcast,
 constructor/selector execution, extensionality, or Core/CFG/VC behavior is
 derived from source behavior. Parameterized, renamed, narrowed, multiple-edge,
 diamond, cyclic, and property-implementation semantics remain deferred.
+
+## Task 263 Active Semantic Boundary
+
+The implemented route closes only the classified structure-definition
+`source_drift` and canonical-derived `test_gap`. Exact identical bare-`set`
+mappings derive zero request rows and preserve obligations unchanged. Chapter
+5 and MC-G017/MC-G018 remain partial; every acceptance, proof, fact,
+constructor/selector/update, property, nonidentical-coherence, and downstream
+IR meaning remains deferred.

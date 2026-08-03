@@ -11632,5 +11632,16 @@ pre-gap dispatchだけを所有する。raw syntaxはchecker productionへ渡ら
 semantic validationはrunnerへ移らない。
 
 private test leaf 1件がfrozen runner tests 4件を所有する。existing definition
-leaves/generic gapはsiblingsのままで、bounded facade registration以外は編集しない。
+production leaves/generic gapはsibling routeのままで、later implementationは新規active
+case 1件に伴うshared repository-count assertionだけを更新できる。
 docs prerequisiteはrunner production `34/67087`とpath/content hashを不変に保つ。
+
+## Checker Task 263 active runner boundary
+
+new private production leafは836 lines、paired test leafは218 lines。bounded facade/root
+registrationはraw syntaxをrunner内に保ち、checkerへsyntax-free inputだけを渡す。
+既存definition/statement test leaves 4件はshared global count oracleだけを変更し、route
+behaviorは不変である。runner productionは`35/67939`、path/content hashは
+`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
+`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`。
+generic mixed gap/sibling production routeは不変である。

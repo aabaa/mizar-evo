@@ -1675,3 +1675,10 @@ projection baseline == private snapshot == projection finalを要求する。exa
 baselineはempty、checker testsはnonempty unrelated baselineもpreserveする。
 same-length snapshot corruptionはtransactional failureで、snapshot getter/stable-
 debug serializationはない。
+
+## Task 263 active typed ownership
+
+`TypedAst::with_source_structure_definition`はprojectionをone-shot installし、baseline/
+current/final obligation tableのbyte equalityを要求し、全frozen dependency/rowを
+revalidateし、Task-259--262 definition-family ownerを両installation orderでrejectする。
+failureはoriginal typed valueを変更しない。

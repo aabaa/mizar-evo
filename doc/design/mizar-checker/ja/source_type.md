@@ -532,3 +532,10 @@ raw/normalized hashは
 `5f18c633183db679ecacb2781c9133dad5b4c48fdb00e33435dd4c1329105fd2` /
 `e0da07dbaf28c659f9e3ac682ae5cf694e7ddd5cdb987abe5d2598ebbfc68d7d`。
 Task 263と全semantic deferralは分離されたままである。
+
+## Task 263 test-only lower replay seam
+
+Task 263はstored structure-member rootをcorruptする`cfg(test)`-only crate-private
+mutator 1件を追加し、later lower-relation categoryをmapping/coherence faultとpairにする。
+production Task-249S validation、public API、fingerprint grammar、accepted
+`0/4/0/0/0/4` behaviorは不変で、`source_type.rs`は6,253 linesである。

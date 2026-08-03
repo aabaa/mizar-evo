@@ -5103,6 +5103,17 @@ change. Implementation projects only `524 -> 528` runner tests and the one new
 active pass case; all hashes are remeasured after code exists.
 
 The exact route supplies an empty initial-obligation baseline and asserts the
-checker handoff/final tables stay empty. Runner replay also checks the frozen
-stable-debug profile/grammar; nonempty baseline and same-length mutation
-coverage remain checker-local because the corpus source has no sibling owner.
+checker handoff/final tables stay empty. Checker-local replay owns the complete
+exact stable-debug byte/grammar oracle; runner replay owns the active profile
+and deferred-semantic non-publication checks. Nonempty baseline and same-length
+mutation coverage remain checker-local because the corpus source has no sibling
+owner.
+
+## Checker Task 263 Active Harness Route
+
+The private route now selects the exact source before the generic mixed gap,
+authenticates all 75 Surface rows, ten shells, eight resolver identities, the
+Task-249S handoff, checker output, subtree exclusions, and empty obligations,
+then returns a pass result with no public payload. Four frozen tests pass; no
+existing selector, diagnostic key, proof, fact, IR, VC, or semantic result is
+changed.

@@ -589,3 +589,11 @@ guard/quantified goal/proof/discharge/fact/axiom/chosen upcast、constructor/sel
 execution、extensionality、Core/CFG/VCをsource behaviorから導出しない。
 parameterized/renamed/narrowed/multiple-edge/diamond/cycle/property implementationは
 deferredである。
+
+## Task 263 active semantic boundary
+
+implemented routeはclassified structure-definition `source_drift`とcanonical由来
+`test_gap`だけをcloseする。exact identical bare-`set` mappingはrequest 0件をderiveし、
+obligationをunchangedに保つ。Chapter 5/MC-G017/MC-G018はpartialのままで、acceptance、
+proof、fact、constructor/selector/update、property、nonidentical coherence、downstream
+IR meaningはすべてdeferredである。

@@ -1751,3 +1751,11 @@ requires current == projection baseline == private snapshot == projection
 final, while exact-runner baseline is empty and checker tests also preserve a
 nonempty unrelated baseline. Same-length snapshot corruption is transactional
 failure; the snapshot has no getter or stable-debug serialization.
+
+## Task 263 Active Typed Ownership
+
+`TypedAst::with_source_structure_definition` now installs the projection once,
+requires byte-equal baseline/current/final obligation tables, revalidates every
+frozen dependency and row, and rejects all Task-259--262 definition-family
+owners in both installation orders. Failure leaves the original typed value
+unchanged.

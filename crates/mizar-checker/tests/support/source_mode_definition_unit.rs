@@ -99,6 +99,16 @@ impl Fixture {
     }
 }
 
+pub(crate) fn actual_mode_definition_for_task263() -> (TypedAst, SourceModeDefinitionProjection) {
+    let fixture = fixture();
+    let projection = fixture.projection(&InitialObligationTable::new());
+    let typed = fixture
+        .typed(InitialObligationTable::new())
+        .with_source_mode_definition(projection.clone())
+        .expect("actual Task 262 mode installation for Task 263 isolation");
+    (typed, projection)
+}
+
 #[test]
 fn task_262_mode_definition_exact_payload_and_obligations_are_deterministic() {
     let fixture = fixture();

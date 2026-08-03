@@ -1656,3 +1656,10 @@ Tasks-259--262 stateはfail-closedで、semantic table/accepted resultを生成�
 final validationはcurrent complete obligation tableをfrozen countだけでなくprivate
 byte-equal snapshotと比較するため、same-length changed rowもfailする。snapshot bytesは
 stable `debug_text()`に入らず、replaceable final inputで迂回できない。
+
+## Task 263 active final ownership
+
+final assemblyはTask-263 handoff、complete unchanged obligation table、private
+baseline snapshot、lower fingerprint、全row、zero-coherence profile、arena ownershipを
+clone-preserve/revalidateする。mixed Tasks 259--263をrejectし、immutable source
+transport以外のsemantic resultをpublishしない。

@@ -39,6 +39,7 @@ pub mod source_predicate_definition;
 pub mod source_set_term;
 pub mod source_statement;
 pub mod source_structure;
+pub mod source_structure_definition;
 pub mod source_term;
 pub mod source_type;
 pub mod type_checker;

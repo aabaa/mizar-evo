@@ -3217,5 +3217,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   freezeする。
 - [x] docs-only commit readinessまでno-op boundaryを保つ。repeated reviewsは
   **NO FINDINGS**、all nine hard gatesはuncapped `100/100`でPASS。
-- [ ] fresh inventory後、exact route/tests/pass/traceだけを実装し、全review/
-  verification後Checker Task 263と同じlogical implementation commitに入れる。
+- [x] docs commit後のfresh inventoryからexact route/tests/pass/traceだけを実装し、
+  active audit/count/hashを同期する。
+- [x] 全review/verificationを**NO FINDINGS**、全9 hard gatesをscore capなしの
+  `100/100`でPASSし、parent-owned staging用にChecker Task 263と同じexact
+  logical implementation commit targetを保つ。

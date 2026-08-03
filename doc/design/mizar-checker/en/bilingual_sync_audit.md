@@ -1609,3 +1609,12 @@ Both languages also synchronize the private non-rendered baseline snapshot,
 same-length final replay check, exact stable-debug grammar/profile/escaping,
 explicit member spellings, and compound 12-category/cross-row precedence test
 matrix.
+
+## Task 263 Active Synchronization Result
+
+English and Japanese documents now describe the implemented `2/4/1/2/0`
+public surface, one-shot Typed/final transaction, private baseline snapshot,
+exact consumer, sole pass/trace pair, and unchanged semantic deferrals. Both
+record checker/runner tests `467/528`, metadata `426/394`, active type `203`,
+production `28/157908` and `35/67939`, and the same path/content, test-list,
+CLI, and trace hashes. No bilingual ownership or count drift remains.

@@ -1548,6 +1548,14 @@ selection, transport-only credit, unchanged mixed gap, projected
 `528/426/394/203/246+12` counts, hash remeasurement, and semantic exclusions.
 Both companions preserve the docs-only no-op boundary.
 
-Both also synchronize the exact empty runner obligation baseline, stable-debug
-profile/grammar assertion, and checker-local ownership of nonempty/same-length
-baseline mutations.
+Both also synchronize the exact empty runner obligation baseline,
+checker-local exact stable-debug grammar assertion, and checker-local ownership
+of nonempty/same-length baseline mutations.
+
+## Checker Task 263 Active Consumer Synchronization
+
+Both languages now record the active 320-byte consumer, `75/10/8/8/0` source/resolver
+profile, checker `2/4/1/2/0`, four runner tests, sole pass/trace pair, and all
+semantic exclusions. They agree on runner `528`, production `35/67939`,
+metadata `426/394`, active type `203`, warnings/errors `23/0`, and all measured
+production, test-list, CLI, corpus, sidecar, and trace hashes.

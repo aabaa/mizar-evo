@@ -2204,3 +2204,12 @@ active mixed mode/structure gapとexisting Chapter-5 rowsはbyte-identical/curre
 creditのまま。parameterized/multiple-edge/coherence acceptance、constructor/selector
 use semantics、facts/proofs/property implementationはdeferredなので、Task 263後も
 Chapter 5とMC-G017/MC-G018はpartialである。
+
+## Checker Task 263 active trace result
+
+`spec.en.checker.type_elaboration.source_structure_definition_payload`はrequired/
+covered/passとなり、new pass sidecarへのbacklinkをexactly 1件持つ。sidecarもこのrow
+だけをreciprocal citeする。requirements/casesは`394/426`、type requirementsは
+`258 = 246 covered + 12 deferred`、trace SHA-256は
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`。
+neighbor trace status/owner/deferred rationaleは変更しない。

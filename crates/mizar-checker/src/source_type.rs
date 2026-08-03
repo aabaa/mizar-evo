@@ -371,6 +371,15 @@ impl SourceTypeApplicationHandoff {
         }
         Ok(())
     }
+
+    #[cfg(test)]
+    pub(crate) fn set_structure_member_root_for_test(
+        &mut self,
+        index: usize,
+        root: SourceTypeExpressionId,
+    ) {
+        self.structure_members.entries[index].root = root;
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

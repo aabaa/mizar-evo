@@ -113,3 +113,14 @@ The existing mixed mode/structure-definition failure pair and every parser/
 resolver structure fixture remain byte-identical. The docs prerequisite adds
 no corpus file; implementation projects cases `425 -> 426` and pass cases
 `232 -> 233` only after fresh inventory.
+
+## Checker Task 263 Active Corpus Increment
+
+The sole new pair is
+`pass_type_elaboration_structure_definition_payload_001.miz` and its matching
+sidecar. The source is exactly 320 bytes/16 lines with SHA-256
+`078eaee4b17341c9d8ebeb8a1f631ca984873bd07eb4e5d9c1a9486b39ac6671`;
+the sidecar hash is
+`d82c8d3102ea34fdb4a32792167c4b109b96b9c05265d3f04e6310278178e8ac`.
+All existing `.miz` and expectations remain byte-identical. Cases are
+`426`, pass/fail is `233/193`, and active type cases are `203`.

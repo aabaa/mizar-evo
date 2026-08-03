@@ -5268,6 +5268,19 @@ tests = [
 notes = "Task 255 covers only syntax-free set-enumeration, condition-free independent-comprehension, choice, and qua source shapes; transparent set-term wrappers; written generator and bare builtin target-type sites; ordered Task-252/253/254/255 child edges; and unresolved result, sethood, nonemptiness, and widening request intent for the exact four-definiens local route. Generator binding/capture, conditioned-comprehension formulas, sethood, choice witness/stability, qua reachability/widening, result typing, definition acceptance, facts, CoreIr/ControlFlowIr/VC, and proof semantics remain uncredited."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_structure_definition_payload"
+source = "doc/design/mizar-checker/en/source_structure_definition.md"
+section = "Dedicated Runner Consumer And Trace Intent"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_structure_definition_payload_001.expect.toml",
+]
+notes = "Checker Task 263 covers only immutable syntax-free source transport for the exact two-structure/direct-inheritance consumer. The route authenticates the complete 320-byte source, 75-row Surface tree, Task-263R resolver provenance, and Task-249S `0/4/0/0/0/4` lower bundle; publishes definition/member/inheritance/mapping/coherence-request tables `2/4/1/2/0`; preserves fields-only constructor order and exact root/path/view associations; and leaves the initial-obligation table byte-identical. This row grants no parameterized, multiple-parent, diamond, cycle, rename, narrowing, nonidentical coherence goal, proof/discharge/acceptance, fact or axiom, constructor/selector/update evaluation, chosen upcast, property implementation, CoreIr, ControlFlowIr, VC, mixed definition-family acceptance, or broader structure semantics."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_structure_term_payload"
 source = "doc/design/mizar-checker/en/00.crate_plan.md"
 section = "Task 254 Frozen Structure-Term Producer Contract"

@@ -113,6 +113,11 @@ pub(crate) fn actual_definition_family_typed_asts_for_task261() -> (TypedAst, Ty
     (predicate, functor)
 }
 
+pub(crate) fn actual_functor_definition_projection_for_task263() -> SourceFunctorDefinitionProjection
+{
+    fixture().exact_projection(&InitialObligationTable::new())
+}
+
 impl Fixture {
     fn build(
         &self,

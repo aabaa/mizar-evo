@@ -4822,6 +4822,15 @@ implementationはrunner test `524 -> 528`とactive pass 1件だけをprojectし�
 code存在後にfresh measureする。
 
 exact routeはempty initial-obligation baselineを渡し、checker handoff/final tableも
-emptyであることをassertする。runner replayはfrozen stable-debug profile/grammarも
-確認する。nonempty baseline/same-length mutation coverageはcorpusにsibling ownerが
-ないためchecker-localである。
+emptyであることをassertする。complete exact stable-debug byte/grammar oracleは
+checker-local replayが所有し、runner replayはactive profileとdeferred-semantic
+non-publicationを所有する。nonempty baseline/same-length mutation coverageはcorpusに
+sibling ownerがないためchecker-localである。
+
+## Checker Task 263 active harness route
+
+private routeはexact sourceをgeneric mixed gapより先にselectし、75 Surface rows、
+10 shells、8 resolver identities、Task-249S handoff、checker output、subtree
+exclusion、empty obligationをauthenticateしてpublic payloadなしのpass resultを返す。
+frozen test 4件はPASSし、existing selector/diagnostic key/proof/fact/IR/VC/semantic
+resultは変更しない。

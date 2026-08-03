@@ -396,6 +396,17 @@ Output rows/tables/handoff/projection/error derive `Debug + Clone + PartialEq
 `InitialObligationKind`, public diagnostic, public exhaustive-enum exception,
 mutable getter, setter, row constructor, or replacement API is authorized.
 
+## Public Enum Policy
+
+| Public enum | Compatibility policy |
+| --- | --- |
+| `SourceStructureMemberKind` | `#[non_exhaustive]`; later member classes require separate canonical authority and tests. |
+| `SourceStructureCoherenceRequestKind` | `#[non_exhaustive]`; later coherence-request classes require a separately frozen semantic owner. |
+| `SourceStructureDefinitionRecovery` | `#[non_exhaustive]`; callers tolerate later recovery classes. |
+| `SourceStructureDefinitionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Exact Active Rows And Associations
 
 The immutable profile is exactly `2/4/1/2/0`:
@@ -533,6 +544,15 @@ debug bytes. Derived `Debug`/`Eq` remain implementation diagnostics; the
 canonical stable fingerprint is `debug_text()` plus the separately validated
 private snapshot.
 
+The handoff likewise retains one private ordered snapshot of the eight
+resolver `(symbol, definition, contribution)` identities authenticated during
+build. Typed/final replay compares every definition/member/mapping row with
+that immutable snapshot before structural validation, so a same-module symbol
+substitution cannot survive after the resolver environment is no longer in
+scope. This snapshot has no getter and is intentionally absent from
+`debug_text()`; the complete public row identities remain rendered by the
+frozen grammar above.
+
 ## Typed And Final Ownership
 
 `TypedAst` is the sole mutable transaction owner and adds exactly:
@@ -567,7 +587,9 @@ and adds the same getter plus
 `ResolvedTypedAstError::InvalidSourceStructureDefinition`. Inputs gain no
 replacement path. Reverse mixed-family states also fail. Task 263 does not
 change `types`, `facts`, `coercions`, diagnostics, Task-259/260 obligations,
-or any existing definition-family installer.
+or existing definition-family semantic outputs. Its only bounded changes to
+the four existing installers are the frozen reverse-order guards that reject a
+preinstalled Task-263 handoff.
 
 ## Dedicated Runner Consumer And Trace Intent
 
@@ -642,14 +664,18 @@ requirements `258 = 246 covered + 12 deferred`; resolver/syntax remain
 `146/59`. All production manifests, test-list hashes, five CLI hashes, corpus
 and trace hashes are fresh-measured, never predicted as exit evidence.
 
-The later implementation scope is limited to the new checker module and five
-tests; public export, Typed/final one-shot ownership, source-spec and lint
-inventories; one private runner route/test leaf plus bounded registration;
-the one new pass source/sidecar and reciprocal trace row; and synchronized
-EN/JA plan/TODO/ledger/module/source/trace/spec-coverage audits. No `doc/spec`,
+The implementation scope is limited to the new checker module and five tests;
+public export, Typed/final one-shot ownership, source-spec and lint inventories;
+cfg(test)-only predicate/functor/mode projection fixtures and predicate/mode
+test-module visibility for the frozen bidirectional isolation matrix; one
+private runner route/test leaf plus bounded registration and count-oracle-only
+updates in four sibling test leaves; the one new pass source/sidecar and
+reciprocal trace row; and synchronized EN/JA
+plan/TODO/ledger/module/source/trace/spec-coverage audits. No `doc/spec`,
 existing `.miz`, existing sidecar/expectation, parser/resolver production,
-Task-249S lower behavior, Task-259--262 behavior, public diagnostic, fact,
-proof, Core, CFG, VC, Cargo dependency, or unrelated metadata may change.
+Task-249S lower behavior, Task-259--262 semantics or outputs beyond the frozen
+Task-263 mutual-exclusion guards, public diagnostic, fact, proof, Core, CFG,
+VC, Cargo dependency, or unrelated metadata may change.
 
 ## Explicit Semantic Deferrals And Exit Criteria
 
@@ -680,3 +706,14 @@ Task 263 exits only when:
   whitespace verification passes; and
 - only Task-263 files are staged and committed, then clean HEAD/origin/stash
   inventory returns automatically to dependency-ordered Task 264+.
+
+## Active Implementation Result
+
+The exact API and consumer above are implemented without semantic expansion.
+Five checker and four runner tests pass; all eleven adjacent pairs in the
+12-category precedence order are exercised within the frozen test names.
+Libraries/counts are `467/528/146/59`, metadata is `426/394`, active type is
+`203`, and the sole new trace row is covered by the sole new pass sidecar.
+Independent reviews report **NO FINDINGS**, all nine hard gates PASS without a
+score cap at `100/100`, and full verification passes. Exact staging, commit,
+and clean post-commit inventory remain pending.

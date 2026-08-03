@@ -27,6 +27,9 @@ use crate::{
         SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
     },
     source_structure::SourceStructureHandoff,
+    source_structure_definition::{
+        SourceStructureDefinitionHandoff, SourceStructureDefinitionProjection,
+    },
     source_term::SourcePrimaryTermHandoff,
     source_type::SourceTypeApplicationHandoff,
 };
@@ -121,6 +124,7 @@ pub struct TypedAst {
     source_attribute_definition: Option<SourceAttributeDefinitionHandoff>,
     source_functor_definition: Option<SourceFunctorDefinitionHandoff>,
     source_mode_definition: Option<SourceModeDefinitionHandoff>,
+    source_structure_definition: Option<SourceStructureDefinitionHandoff>,
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
@@ -168,6 +172,7 @@ impl TypedAst {
             source_attribute_definition: None,
             source_functor_definition: None,
             source_mode_definition: None,
+            source_structure_definition: None,
             source_predicate_definition: None,
             source_composite_formula: None,
             source_formula_composition: None,
@@ -248,6 +253,10 @@ impl TypedAst {
 
     pub const fn source_mode_definition(&self) -> Option<&SourceModeDefinitionHandoff> {
         self.source_mode_definition.as_ref()
+    }
+
+    pub const fn source_structure_definition(&self) -> Option<&SourceStructureDefinitionHandoff> {
+        self.source_structure_definition.as_ref()
     }
 
     pub const fn source_composite_formula(&self) -> Option<&SourceCompositeFormulaHandoff> {
@@ -345,6 +354,14 @@ impl TypedAst {
         handoff: SourceModeDefinitionHandoff,
     ) {
         self.source_mode_definition = Some(handoff);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_structure_definition_for_test(
+        &mut self,
+        handoff: SourceStructureDefinitionHandoff,
+    ) {
+        self.source_structure_definition = Some(handoff);
     }
 
     #[cfg(test)]
@@ -748,7 +765,8 @@ impl TypedAst {
         mut self,
         projection: SourcePredicateDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_predicate_definition.is_some() {
+        if self.source_predicate_definition.is_some() || self.source_structure_definition.is_some()
+        {
             return Err(TypedAstError::InvalidSourcePredicateDefinition);
         }
         let source_context = self
@@ -795,6 +813,7 @@ impl TypedAst {
         if self.source_attribute_definition.is_some()
             || self.source_functor_definition.is_some()
             || self.source_predicate_definition.is_some()
+            || self.source_structure_definition.is_some()
         {
             return Err(TypedAstError::InvalidSourceAttributeDefinition);
         }
@@ -833,7 +852,10 @@ impl TypedAst {
         mut self,
         projection: SourceFunctorDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_functor_definition.is_some() || self.source_predicate_definition.is_some() {
+        if self.source_functor_definition.is_some()
+            || self.source_predicate_definition.is_some()
+            || self.source_structure_definition.is_some()
+        {
             return Err(TypedAstError::InvalidSourceFunctorDefinition);
         }
         let source_context = self
@@ -880,6 +902,7 @@ impl TypedAst {
             || self.source_attribute_definition.is_some()
             || self.source_functor_definition.is_some()
             || self.source_predicate_definition.is_some()
+            || self.source_structure_definition.is_some()
         {
             return Err(TypedAstError::InvalidSourceModeDefinition);
         }
@@ -906,6 +929,42 @@ impl TypedAst {
             )
             .map_err(|_| TypedAstError::InvalidSourceModeDefinition)?;
         self.source_mode_definition = Some(handoff);
+        self.initial_obligations = initial_obligations;
+        Ok(self)
+    }
+
+    pub fn with_source_structure_definition(
+        mut self,
+        projection: SourceStructureDefinitionProjection,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_structure_definition.is_some()
+            || self.source_predicate_definition.is_some()
+            || self.source_functor_definition.is_some()
+            || self.source_attribute_definition.is_some()
+            || self.source_mode_definition.is_some()
+        {
+            return Err(TypedAstError::InvalidSourceStructureDefinition);
+        }
+        let source_type = self
+            .source_type
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceStructureDefinition)?;
+        let (base_initial_obligations, handoff, initial_obligations) = projection.into_parts();
+        if self.initial_obligations != base_initial_obligations
+            || base_initial_obligations != initial_obligations
+        {
+            return Err(TypedAstError::InvalidSourceStructureDefinition);
+        }
+        handoff
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_type,
+                &initial_obligations,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceStructureDefinition)?;
+        self.source_structure_definition = Some(handoff);
         self.initial_obligations = initial_obligations;
         Ok(self)
     }
@@ -1641,6 +1700,9 @@ impl TypedAst {
         }
         if let Some(source_mode_definition) = &self.source_mode_definition {
             output.push_str(&source_mode_definition.debug_text());
+        }
+        if let Some(source_structure_definition) = &self.source_structure_definition {
+            output.push_str(&source_structure_definition.debug_text());
         }
         if let Some(source_composite_formula) = &self.source_composite_formula {
             output.push_str(&source_composite_formula.debug_text());
@@ -2554,6 +2616,7 @@ pub enum TypedAstError {
     InvalidSourceAttributeDefinition,
     InvalidSourceFunctorDefinition,
     InvalidSourceModeDefinition,
+    InvalidSourceStructureDefinition,
     InvalidSourcePredicateDefinition,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
@@ -2702,6 +2765,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceModeDefinition => {
                 formatter.write_str("typed AST source mode-definition handoff is inconsistent")
+            }
+            Self::InvalidSourceStructureDefinition => {
+                formatter.write_str("typed AST source structure-definition handoff is inconsistent")
             }
             Self::InvalidSourcePredicateDefinition => {
                 formatter.write_str("typed AST source predicate-definition handoff is inconsistent")

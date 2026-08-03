@@ -12898,6 +12898,19 @@ bounded registration and pre-gap dispatch. Raw syntax never crosses into
 checker production; checker semantic validation never moves into the runner.
 
 One private test leaf owns the four frozen runner tests. Existing definition
-leaves and the generic gap remain siblings and are not edited except bounded
-facade registration. The docs prerequisite leaves runner production
+production leaves and the generic gap remain sibling routes; the later
+implementation may update only their shared repository-count assertions for
+the one new active case. The docs prerequisite leaves runner production
 `34/67087` and its path/content hashes unchanged.
+
+## Checker Task 263 Active Runner Boundary
+
+The new private production leaf has 836 lines and the paired test leaf has 218
+lines. Bounded facade/root registration preserves raw syntax inside the runner
+and passes only syntax-free inputs to the checker. The four pre-existing
+definition/statement test leaves change only shared global count oracles;
+their route behavior is unchanged. Runner production is `35/67939` with
+path/content hashes
+`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
+`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
+The generic mixed gap and sibling production routes are unchanged.

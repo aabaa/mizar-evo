@@ -4557,7 +4557,7 @@ unchecked row below is one future nonempty logical task and one commit.
 - [x] **Task 260:** functor-definition and initial-obligation intake producer.
 - [x] **Task 261:** attribute-definition producer.
 - [x] **Task 262:** mode-definition producer.
-- [ ] **Task 263:** structure/inheritance/constructor-definition producer.
+- [x] **Task 263:** structure/inheritance/constructor-definition producer.
 - [ ] **Task 264:** property-implementation producer; depends on parser Task 48.
 - [ ] **Task 269:** proof-local declaration/binding producer.
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer.
@@ -6633,10 +6633,11 @@ implementation commit does not satisfy a producer task.
 - [x] Repeat review-only specification and source/documentation audits to **NO
   FINDINGS** and pass all docs hard gates at uncapped `100/100`; preserve the
   exact docs-only commit target for parent-owned staging and commit.
-- [ ] Fresh-inventory after the docs commit; implement only the frozen Task-263
+- [x] Fresh-inventory after docs commit
+  `1fe0b156f312628f0997261ef6a8c8de251a15c8`; implement only the frozen Task-263
   producer/ownership/private runner/pass pair/trace row and synchronized
   implementation audits.
-- [ ] Repeat test-sufficiency, implementation, source/documentation, and final
-  quality reviews to **NO FINDINGS** with all nine gates PASS/no cap/90+; run
-  all verification, exact-stage, commit, then continue automatically to Task
-  264+.
+- [x] Complete test-sufficiency, implementation, source/documentation, and final
+  quality reviews with **NO FINDINGS**; all nine gates PASS with no score cap
+  at `100/100`, and all verification passes. Preserve exact Task-263 commit
+  readiness for parent-owned staging, then continue automatically to Task 264+.

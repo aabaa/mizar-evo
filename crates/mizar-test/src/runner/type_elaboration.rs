@@ -22,6 +22,7 @@ mod source_reserve;
 mod source_set_term;
 mod source_statement;
 mod source_structure;
+mod source_structure_definition;
 mod source_term;
 mod source_type;
 mod type_assertion_routes;
@@ -621,6 +622,12 @@ pub(super) use source_structure::{
     source_structure_output, source_structure_output_with_mutation,
     synthetic_source_structure_output, synthetic_source_structure_output_with_mutation,
     synthetic_source_structure_output_with_validation_symbols,
+};
+pub(super) use source_structure_definition::source_structure_definition_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_structure_definition::{
+    SOURCE_STRUCTURE_DEFINITION_TEXT, SourceStructureDefinitionRouteMutation,
+    source_structure_definition_output, source_structure_definition_output_with_mutation,
 };
 pub(super) use source_term::source_term_transport_error_detail_keys;
 #[cfg(test)]

@@ -1492,5 +1492,12 @@ credit、mixed gap不変、projected `528/426/394/203/246+12` counts、hash
 remeasurement、semantic exclusionsを同期する。両companionはdocs-only no-op
 boundaryを保つ。
 
-両languageはexact empty runner obligation baseline、stable-debug profile/grammar
-assertion、nonempty/same-length baseline mutationのchecker-local ownershipも同期する。
+両languageはexact empty runner obligation baseline、checker-local exact stable-debug
+grammar assertion、nonempty/same-length baseline mutationのchecker-local ownershipも同期する。
+
+## Checker Task 263 active consumer synchronization
+
+両languageはactive 320-byte consumer、`75/10/8/8/0` source/resolver profile、checker
+`2/4/1/2/0`、runner test 4件、sole pass/trace pair、全semantic exclusionを同期する。
+runner `528`、production `35/67939`、metadata `426/394`、active type `203`、
+warnings/errors `23/0`、全production/test-list/CLI/corpus/sidecar/trace hashが一致する。

@@ -174,6 +174,7 @@ rejection.
 - `source_set_term`
 - `source_statement`
 - `source_structure`
+- `source_structure_definition`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -641,6 +642,45 @@ Bounded gaps: RHS evidence result, goal/guard/FOL composition, proof,
 discharge, acceptance, facts/axioms, use-site application/redefinition,
 registration, Core/CFG/VC, mixed definition semantics, and structure
 definitions remain outside this module.
+
+### `source_structure_definition`
+
+Generated public newtypes:
+
+- `SourceStructureDefinitionId`, `SourceStructureMemberId`,
+  `SourceStructureInheritanceId`, `SourceStructureMappingId`,
+  `SourceStructureCoherenceRequestId`
+
+Literal top-level public items:
+
+- `SourceStructureDefinitionHandoffInput`, `SourceStructureDefinitionInput`,
+  `SourceStructureMemberInput`, `SourceStructureInheritanceInput`,
+  `SourceStructureMappingInput`
+- `SourceStructureMemberKind`, `SourceStructureCoherenceRequestKind`,
+  `SourceStructureDefinitionRecovery`
+- `SourceStructureDefinition`, `SourceStructureMember`,
+  `SourceStructureInheritance`, `SourceStructureMapping`,
+  `SourceStructureCoherenceRequest`
+- `SourceStructureDefinitionTable`, `SourceStructureMemberTable`,
+  `SourceStructureInheritanceTable`, `SourceStructureMappingTable`,
+  `SourceStructureCoherenceRequestTable`
+- `SourceStructureDefinitionHandoff`, `SourceStructureDefinitionProjection`,
+  `SourceStructureDefinitionError`, `SourceStructureDefinitionProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Five immutable syntax-free tables retain two zero-parameter structures, four field/property members, one direct inheritance, two root/path/view mappings, and zero derived coherence requests. | Public inputs, rows, dense ids, tables, and getters in `src/source_structure_definition.rs`. | Five checker tests and the sole exact runner consumer. | Implemented as exact `2/4/1/2/0`. |
+| Resolver identity and the exact Task-249S lower fingerprint are authenticated while the arbitrary initial-obligation baseline remains byte-identical. | `SourceStructureDefinitionProducer::build`, private baseline snapshot, projection, and installation validation. | Resolver/origin/lower/coverage/coherence/obligation/arena corruption and compound precedence matrices. | Transactional and fail closed without inventing a goal or obligation. |
+| Typed/final owners publish and clone-preserve the handoff atomically and reject mixed Tasks 259--263. | `TypedAst::with_source_structure_definition` and `ResolvedTypedAst::source_structure_definition`. | One-shot, reverse-order sibling isolation, rollback, final corruption, clone, and debug tests. | Implemented as mutually exclusive Task-263 ownership. |
+| Public surface and enums remain documented and forward-compatible. | Five ids, five input aggregates, three data enums, five rows/tables, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no syntax-dependency exception. |
+
+Bounded gaps: parameters/defaults; multiple parents, diamonds, and cycles;
+renaming or narrowing; nonidentical coherence goals/obligations; use-site path
+choice; constructor/selector/update semantics; Task-264 property
+implementation; acceptance, facts, proofs, Core/CFG/VC, and mixed-definition
+semantics remain outside this module.
 
 ### `source_predicate_definition`
 
@@ -5579,3 +5619,12 @@ same-length mutation. Public `debug_text()` is nevertheless fully specified by
 an exact line grammar, profile line, escaping/list rules, empty-coherence
 representation, and final LF. Existing checker tests 2/3 own compound adjacent
 category and cross-row precedence, not only single-fault mutations.
+
+## Task 263 Active Source/API Result
+
+The public syntax-free `source_structure_definition` module, literal inventory
+above, five checker tests, and exact private consumer close the frozen
+`source_drift` and `test_gap`. All four public enums are non-exhaustive; the
+module export, source/spec, module-layout, syntax-boundary, and allow-rationale
+lint inventories are active. The profile is exactly `2/4/1/2/0`, with no
+undocumented semantic or diagnostic surface.

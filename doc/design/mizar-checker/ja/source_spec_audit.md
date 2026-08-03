@@ -152,6 +152,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_set_term`
 - `source_statement`
 - `source_structure`
+- `source_structure_definition`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -612,6 +613,44 @@ literal top-level public item:
 bounded gap: RHS evidence result、goal/guard/FOL composition、proof、discharge、
 acceptance、fact/axiom、use-site application/redefinition、registration、
 Core/CFG/VC、mixed definition semantics、structure definitionは本module外である。
+
+### `source_structure_definition`
+
+generated public newtype:
+
+- `SourceStructureDefinitionId`、`SourceStructureMemberId`、
+  `SourceStructureInheritanceId`、`SourceStructureMappingId`、
+  `SourceStructureCoherenceRequestId`
+
+literal top-level public item:
+
+- `SourceStructureDefinitionHandoffInput`、`SourceStructureDefinitionInput`、
+  `SourceStructureMemberInput`、`SourceStructureInheritanceInput`、
+  `SourceStructureMappingInput`
+- `SourceStructureMemberKind`、`SourceStructureCoherenceRequestKind`、
+  `SourceStructureDefinitionRecovery`
+- `SourceStructureDefinition`、`SourceStructureMember`、
+  `SourceStructureInheritance`、`SourceStructureMapping`、
+  `SourceStructureCoherenceRequest`
+- `SourceStructureDefinitionTable`、`SourceStructureMemberTable`、
+  `SourceStructureInheritanceTable`、`SourceStructureMappingTable`、
+  `SourceStructureCoherenceRequestTable`
+- `SourceStructureDefinitionHandoff`、`SourceStructureDefinitionProjection`、
+  `SourceStructureDefinitionError`、`SourceStructureDefinitionProducer`
+
+対応:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| immutable syntax-free table 5件がzero-parameter structure 2件、field/property member 4件、direct inheritance 1件、root/path/view mapping 2件、derived coherence request 0件を保持する。 | `src/source_structure_definition.rs`のpublic input/row/dense id/table/getter。 | checker test 5件とsole exact runner consumer。 | exact `2/4/1/2/0`でimplemented。 |
+| resolver identityとexact Task-249S lower fingerprintをauthenticateし、arbitrary initial-obligation baselineをbyte-identicalに保つ。 | `SourceStructureDefinitionProducer::build`、private baseline snapshot、projection、installation validation。 | resolver/origin/lower/coverage/coherence/obligation/arena corruptionとcompound precedence matrix。 | goal/obligationを発明せずtransactional/fail-closed。 |
+| Typed/final ownerはhandoffをatomicにpublish/clone-preserveしmixed Tasks 259--263をrejectする。 | `TypedAst::with_source_structure_definition`と`ResolvedTypedAst::source_structure_definition`。 | one-shot/reverse-order sibling isolation/rollback/final corruption/clone/debug test。 | mutually exclusive Task-263 ownershipとしてimplemented。 |
+| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、5 input aggregate、3 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | syntax-dependency exceptionなしでguard。 |
+
+bounded gap: parameter/default、multiple parent/diamond/cycle、rename/narrow、
+nonidentical coherence goal/obligation、use-site path choice、constructor/selector/
+update semantics、Task-264 property implementation、acceptance/fact/proof/Core/
+CFG/VC、mixed-definition semanticsは本module外である。
 
 ### `source_predicate_definition`
 
@@ -5343,3 +5382,11 @@ obligation snapshotを持ち、Typed/final equalityでsame-length mutationを拒
 public `debug_text()`はexact line grammar/profile/escaping/list/empty-coherence/final
 LFまでfreezeする。checker tests 2/3はsingle-faultだけでなくcompound adjacent-
 category/cross-row precedenceを所有する。
+
+## Task 263 active source/API result
+
+public syntax-free `source_structure_definition` module、上記literal inventory、
+checker test 5件、exact private consumerがfrozen `source_drift`/`test_gap`をcloseする。
+public enum 4件はnon-exhaustiveで、module export/source-spec/module-layout/syntax-
+boundary/allow-rationale lint inventoryはactive。profileはexact `2/4/1/2/0`で、
+undocumented semantic/diagnostic surfaceはない。

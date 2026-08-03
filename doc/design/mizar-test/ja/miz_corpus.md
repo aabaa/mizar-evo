@@ -111,3 +111,12 @@ Task-263 trace ref 1件である。
 existing mixed mode/structure-definition failure pairと全parser/resolver structure
 fixtureはbyte-identicalに保つ。docs prerequisiteはcorpus fileを追加せず、fresh
 inventory後のimplementationだけがcases `425 -> 426`、pass `232 -> 233`をprojectする。
+
+## Checker Task 263 active corpus increment
+
+sole new pairは`pass_type_elaboration_structure_definition_payload_001.miz`とmatching
+sidecarである。sourceはexact 320 bytes/16 lines、SHA-256は
+`078eaee4b17341c9d8ebeb8a1f631ca984873bd07eb4e5d9c1a9486b39ac6671`、sidecar hashは
+`d82c8d3102ea34fdb4a32792167c4b109b96b9c05265d3f04e6310278178e8ac`。
+existing `.miz`/expectationはbyte-identicalで、cases `426`、pass/fail `233/193`、
+active type `203`である。

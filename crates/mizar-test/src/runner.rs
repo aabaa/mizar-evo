@@ -728,8 +728,8 @@ use type_elaboration::{
     source_reserved_variable_type_assertion_detail_keys,
     source_right_parenthesized_reserved_variable_membership_detail_keys,
     source_set_enumeration_formula_detail_keys, source_set_term_transport_detail_keys,
-    source_statement_transport_detail_keys, source_structure_transport_detail_keys,
-    source_term_transport_error_detail_keys,
+    source_statement_transport_detail_keys, source_structure_definition_transport_detail_keys,
+    source_structure_transport_detail_keys, source_term_transport_error_detail_keys,
     source_three_edge_local_mode_asserted_head_detail_keys,
     source_three_edge_local_mode_radix_asserted_head_detail_keys,
     source_three_edge_local_mode_reserved_variable_equality_detail_keys,
@@ -1701,6 +1701,15 @@ fn type_elaboration_detail_keys(
         return keys;
     }
     if let Some(keys) = source_mode_definition_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &symbols,
+        &source_text,
+    ) {
+        return keys;
+    }
+    if let Some(keys) = source_structure_definition_transport_detail_keys(
         &ast,
         resolver.module.clone(),
         &resolver.shells,

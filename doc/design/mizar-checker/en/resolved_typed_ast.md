@@ -1726,3 +1726,11 @@ Final validation compares the current complete obligation table with the
 private byte-equal snapshot as well as its frozen count. A changed row with an
 unchanged length therefore fails. Snapshot bytes do not enter stable
 `debug_text()` and no replaceable final input can bypass equality.
+
+## Task 263 Active Final Ownership
+
+Final assembly now clone-preserves and revalidates the Task-263 handoff,
+complete unchanged obligation table, private baseline snapshot, lower
+fingerprint, rows, zero-coherence profile, and arena ownership. It rejects
+mixed Tasks 259--263 and publishes no semantic result beyond immutable source
+transport.

@@ -186,6 +186,17 @@ projectionはbaseline clone、handoff、final obligation cloneを持つ。error 
 obligation、arena、unsupported shapeをcanonical EN名でfreezeする。new
 `InitialObligationKind`、public diagnostic、mutable/replacement APIは追加しない。
 
+## Public Enum Policy
+
+| public enum | compatibility policy |
+| --- | --- |
+| `SourceStructureMemberKind` | `#[non_exhaustive]`; later member classにはseparate canonical authority/testが必要 |
+| `SourceStructureCoherenceRequestKind` | `#[non_exhaustive]`; later coherence-request classにはseparately frozen semantic ownerが必要 |
+| `SourceStructureDefinitionRecovery` | `#[non_exhaustive]`; callerはlater recovery classをtolerateする |
+| `SourceStructureDefinitionError` | `#[non_exhaustive]`; callerはvalidation failureをexhaustive matchしない |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## Exact rows、constructor、root/path/view
 
 active profileは`2/4/1/2/0`である。
@@ -266,6 +277,13 @@ private obligation snapshotは`debug_text()`にrenderしない。Task 263はequa
 authenticationだけを所有しnew public obligation serializationを追加しない。countだけを
 renderし、same-length corruptionはprivate equalityで検出する。
 
+handoffはbuild時に認証したresolver `(symbol, definition, contribution)` identity 8件の
+ordered snapshotもprivateに保持する。Typed/final replayはresolver envがscope外になった
+後もdefinition/member/mapping各rowをこのimmutable snapshotと比較してからstructural
+validationへ進むため、same-module symbol substitutionは通過しない。getterはなく、
+`debug_text()`にはrenderしないが、public row identityは上記frozen grammarで完全に
+renderする。
+
 `TypedAst`だけが`with_source_structure_definition` transactionとgetter、
 `TypedAstError::InvalidSourceStructureDefinition`を所有する。exact Task-249S lowerと
 current/projection/private snapshot/final obligation equalityを認証し、Tasks 259 predicate、260 functor、
@@ -274,8 +292,9 @@ correctness、facts、mixed predicate/functor boundaryを変更しない。
 
 `ResolvedTypedAst::assemble`はtyped ownerからcloneしてfinal lower/obligationを
 再認証し、同じgetterと`ResolvedTypedAstError::InvalidSourceStructureDefinition`だけを
-追加する。replaceable inputはなく、types/facts/coercions/diagnosticsと既存installerを
-変更しない。
+追加する。replaceable inputはなく、types/facts/coercions/diagnosticsと既存definition
+familyのsemantic outputを変更しない。既存installer 4件へのbounded changeは、
+preinstalled Task-263 handoffを拒否するfrozen reverse-order guardだけである。
 
 ## Runner、tests、trace intent
 
@@ -313,8 +332,11 @@ pass/fail `233/193`、active `101/7/203/1`、type `258 = 246 + 12`で、resolver
 `146/59`である。manifest/list/CLI/corpus/trace hashはfresh measureする。
 
 implementation scopeはnew checker module/tests/export/Typed/final/source-spec/lint、
-private runner leaf/tests/register、new pass pair/trace row、同期EN/JA auditsだけである。
-`doc/spec`、existing artifacts、parser/resolver、Task-249S、Tasks 259--262、public
+frozen bidirectional isolation matrix用cfg(test)-only predicate/functor/mode projection
+fixtureとpredicate/mode test-module visibility、private runner leaf/tests/registerと既存
+sibling test leaves 4件のcount-oracle-only update、new pass pair/trace row、同期EN/JA
+auditsだけである。`doc/spec`、existing artifacts、parser/resolver、Task-249S、
+frozen Task-263 mutual-exclusion guard以外のTasks 259--262 semantics/output、public
 diagnostic、fact/proof/Core/CFG/VC/Cargo/unrelated metadataは変更禁止である。
 
 parameterized/default/multiple-parent/diamond/cycle/rename/narrow、nonidentical coherence
@@ -326,3 +348,12 @@ Task 263はdocs-only commit、fresh dependency inventory、exact implementation�
 NO FINDINGS review、9 hard gates PASS/no cap/90+、全verification、task-only staging/
 implementation commit、clean HEAD/origin/stash確認をすべて満たした後だけ完了し、
 停止せずdependency-ordered Task 264+へ戻る。
+
+## Active implementation result
+
+上記exact API/consumerをsemantic expansionなしに実装した。checker 5件、runner 4件は
+PASSし、12-category precedence orderのadjacent pair 11件をfrozen test names内で
+exerciseする。library/countは`467/528/146/59`、metadata `426/394`、active type
+`203`、sole new trace rowはsole new pass sidecarでcovered。independent reviewは
+**NO FINDINGS**、全9 hard gatesはscore capなしの`100/100`、全verificationは
+PASSである。exact staging/commit/clean post-commit inventoryのみpendingである。
