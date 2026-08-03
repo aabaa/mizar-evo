@@ -4,6 +4,7 @@ use crate::{
     source_application::SourceFunctorApplicationHandoff,
     source_atomic_formula::SourceAtomicFormulaHandoff,
     source_attribute::SourceAttributeHandoff,
+    source_attribute_definition::SourceAttributeDefinitionHandoff,
     source_composite_formula::SourceCompositeFormulaHandoff,
     source_context::SourceBindingContextHandoff,
     source_evidence::SourceEvidenceHandoff,
@@ -113,6 +114,7 @@ pub struct TypedAst {
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
+    source_attribute_definition: Option<SourceAttributeDefinitionHandoff>,
     source_functor_definition: Option<SourceFunctorDefinitionHandoff>,
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
@@ -158,6 +160,7 @@ impl TypedAst {
             source_structure: None,
             source_set_term: None,
             source_atomic_formula: None,
+            source_attribute_definition: None,
             source_functor_definition: None,
             source_predicate_definition: None,
             source_composite_formula: None,
@@ -223,6 +226,10 @@ impl TypedAst {
 
     pub const fn source_atomic_formula(&self) -> Option<&SourceAtomicFormulaHandoff> {
         self.source_atomic_formula.as_ref()
+    }
+
+    pub const fn source_attribute_definition(&self) -> Option<&SourceAttributeDefinitionHandoff> {
+        self.source_attribute_definition.as_ref()
     }
 
     pub const fn source_predicate_definition(&self) -> Option<&SourcePredicateDefinitionHandoff> {
@@ -304,6 +311,14 @@ impl TypedAst {
         handoff: SourceFunctorDefinitionHandoff,
     ) {
         self.source_functor_definition = Some(handoff);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_attribute_definition_for_test(
+        &mut self,
+        handoff: SourceAttributeDefinitionHandoff,
+    ) {
+        self.source_attribute_definition = Some(handoff);
     }
 
     #[cfg(test)]
@@ -752,6 +767,47 @@ impl TypedAst {
             .map_err(|_| TypedAstError::InvalidSourcePredicateDefinition)?;
         self.source_predicate_definition = Some(handoff);
         self.initial_obligations = initial_obligations;
+        Ok(self)
+    }
+
+    pub fn with_source_attribute_definition(
+        mut self,
+        handoff: SourceAttributeDefinitionHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_attribute_definition.is_some()
+            || self.source_functor_definition.is_some()
+            || self.source_predicate_definition.is_some()
+        {
+            return Err(TypedAstError::InvalidSourceAttributeDefinition);
+        }
+        let source_context = self
+            .source_context
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceAttributeDefinition)?;
+        let source_type = self
+            .source_type
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceAttributeDefinition)?;
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceAttributeDefinition)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceAttributeDefinition)?;
+        handoff
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_context,
+                source_type,
+                source_term,
+                source_atomic_formula,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceAttributeDefinition)?;
+        self.source_attribute_definition = Some(handoff);
         Ok(self)
     }
 
@@ -1517,6 +1573,9 @@ impl TypedAst {
         }
         if let Some(source_atomic_formula) = &self.source_atomic_formula {
             output.push_str(&source_atomic_formula.debug_text());
+        }
+        if let Some(source_attribute_definition) = &self.source_attribute_definition {
+            output.push_str(&source_attribute_definition.debug_text());
         }
         if let Some(source_predicate_definition) = &self.source_predicate_definition {
             output.push_str(&source_predicate_definition.debug_text());
@@ -2433,6 +2492,7 @@ pub enum TypedAstError {
     InvalidSourceStructure,
     InvalidSourceSetTerm,
     InvalidSourceAtomicFormula,
+    InvalidSourceAttributeDefinition,
     InvalidSourceFunctorDefinition,
     InvalidSourcePredicateDefinition,
     InvalidSourceCompositeFormula,
@@ -2573,6 +2633,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceAtomicFormula => {
                 formatter.write_str("typed AST source atomic-formula handoff is inconsistent")
+            }
+            Self::InvalidSourceAttributeDefinition => {
+                formatter.write_str("typed AST source attribute-definition handoff is inconsistent")
             }
             Self::InvalidSourceFunctorDefinition => {
                 formatter.write_str("typed AST source functor-definition handoff is inconsistent")

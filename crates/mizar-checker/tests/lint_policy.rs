@@ -229,6 +229,10 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
         ("src/source_context.rs", "source_context.md"),
         ("src/source_type.rs", "source_type.md"),
         ("src/source_attribute.rs", "source_attribute.md"),
+        (
+            "src/source_attribute_definition.rs",
+            "source_attribute_definition.md",
+        ),
         ("src/source_evidence.rs", "source_evidence.md"),
         ("src/source_term.rs", "source_term.md"),
         ("src/source_application.rs", "source_application.md"),
@@ -378,6 +382,10 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
         ("src/source_context.rs", "source_context"),
         ("src/source_type.rs", "source_type"),
         ("src/source_attribute.rs", "source_attribute"),
+        (
+            "src/source_attribute_definition.rs",
+            "source_attribute_definition",
+        ),
         ("src/source_application.rs", "source_application"),
         ("src/source_atomic_formula.rs", "source_atomic_formula"),
         (
@@ -887,6 +895,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_context.rs")
             || path == Path::new("src/source_type.rs")
             || path == Path::new("src/source_attribute.rs")
+            || path == Path::new("src/source_attribute_definition.rs")
             || path == Path::new("src/source_evidence.rs")
             || path == Path::new("src/source_term.rs")
             || path == Path::new("src/source_application.rs")
@@ -914,6 +923,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_context;"
                 | "pub mod source_type;"
                 | "pub mod source_attribute;"
+                | "pub mod source_attribute_definition;"
                 | "pub mod source_evidence;"
                 | "pub mod source_term;"
                 | "pub mod source_application;"

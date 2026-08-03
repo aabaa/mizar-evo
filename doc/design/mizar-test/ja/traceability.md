@@ -2109,3 +2109,14 @@ backlink、count、coverageを追加しない。current metadataは`423/391`、
 `230/193`、`101/7/200/1`、type requirements `255/243`、warnings/errors
 `23/0`のままで、implementationは`424/392`、`231/193`、`101/7/201/1`、
 `256/244`をprojectする。
+
+## Checker Task 261 Active Trace Result
+
+`spec.en.checker.type_elaboration.source_attribute_definition_payload`はrequired/
+coveredとなり、`pass_type_elaboration_attribute_definition_payload_001.expect.toml`
+だけをbacklinkに持つ。sidecarもそのrowだけをciteする。source/sidecar/trace hashは
+`ffd4954aad628d7946aaf7afb1b472a6bdfca7bce5ba0cf09f5b284c9dda07bf`、
+`ed8bc242f86206a56d178ef1d665faaa36c24d4943e7ca70e53af3decbecf4d8`、
+`77bbf19d0bb1d5c32af55ec7c98db85883fbc7cca0ce812058a1c212c1c31631`。
+active metadataは`424/392`、`231/193`、`101/7/201/1`、type requirement
+`256/244`、warnings/errors `23/0`。creditはexact transportだけである。

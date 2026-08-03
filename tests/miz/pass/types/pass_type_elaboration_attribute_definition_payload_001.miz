@@ -1,0 +1,5 @@
+definition
+  let x be set;
+  let y be set;
+  attr Task261AttributeDefinition: x is task261_marked means x = y;
+end;

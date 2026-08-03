@@ -2234,4 +2234,4 @@ fn write_anchor_range(output: &mut String, anchor: &SourceAnchor) {
 
 #[cfg(test)]
 #[path = "../tests/support/source_functor_definition_unit.rs"]
-mod tests;
+pub(crate) mod tests;

@@ -3365,6 +3365,15 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   gates.
 - [x] Keep production, fixtures, sidecars, expectations, trace rows/status/
   counts, and Cargo metadata byte-unchanged in this documentation prerequisite.
-- [ ] Complete findings-free reviews, all nine documentation gates, exact
-  staging, the dedicated prerequisite commit, and clean post-commit inventory.
-- [ ] Fresh-inventory and implement only Task 261, then return to Task 262+.
+- [x] Complete findings-free reviews, all nine documentation gates, exact
+  staging, prerequisite commit `209c32fc2ec547ceedd32f1052345ae2fc5b0451`,
+  and clean post-commit inventory.
+- [x] Fresh-inventory and implement only the frozen Task 261 source/runner/
+  fixture/trace/count scope; focused and repeated test/implementation reviews
+  end with **NO FINDINGS**.
+- [x] Complete source/documentation consistency with **NO FINDINGS** and pass
+  full verification, including exact count/hash reproduction.
+- [x] Pass all nine final hard gates with **NO FINDINGS**, no score cap, and
+  quality `100/100`.
+- [ ] Complete exact staging/commit/post-commit, then return automatically to
+  Task 262+.

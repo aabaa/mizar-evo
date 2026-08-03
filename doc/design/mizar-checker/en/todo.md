@@ -6506,6 +6506,22 @@ implementation commit does not satisfy a producer task.
 - [x] Preserve `doc/spec`, all existing `.miz`/expectations/sidecars, trace
   count/status, production, tests, CLIs, and recorded hashes in the docs
   prerequisite.
-- [ ] Repeat specification review to **NO FINDINGS**, pass all docs gates,
-  commit the prerequisite separately, verify post-commit invariants, and
-  return automatically to Task 261 implementation.
+- [x] Repeat specification review to **NO FINDINGS**, pass all docs gates,
+  commit prerequisite `209c32fc2ec547ceedd32f1052345ae2fc5b0451`, verify
+  post-commit invariants, and return to Task 261 implementation.
+
+## Checker Task 261 Implementation
+
+- [x] Add the exact four-table producer, one-shot Typed/final ownership,
+  strict obligation preservation, and Task-259/260 isolation.
+- [x] Add the sole pass pair/covered trace row and private exact runner with
+  shell-41 and valid-but-stale context-site authentication.
+- [x] Close checker `5/5`, runner `4/4`, test-sufficiency, and full
+  implementation re-reviews with **NO FINDINGS**.
+- [x] Reproduce `449/520/144/59`, metadata `137`, `424/392`, `231/193`,
+  `101/7/201/1`, type `256/244`, warnings/errors `23/0`, and all hashes.
+- [x] Complete source/docs consistency with **NO FINDINGS** and pass the full
+  shared verification matrix, including exact count/hash reproduction.
+- [x] Pass all nine final hard gates with **NO FINDINGS**, no score cap, and
+  quality `100/100`.
+- [ ] Complete exact staging/commit/post-commit and fresh Task 262+ selection.

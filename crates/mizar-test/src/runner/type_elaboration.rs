@@ -9,6 +9,7 @@ mod source_application;
 mod source_ast;
 mod source_atomic_formula;
 mod source_attribute;
+mod source_attribute_definition;
 mod source_composite_formula;
 mod source_context;
 mod source_evidence;
@@ -354,6 +355,12 @@ pub(super) use source_atomic_formula::{
 pub(super) use source_attribute::source_attribute_detail_keys;
 #[cfg(test)]
 pub(super) use source_attribute::{source_attribute_output, synthetic_source_attribute_output};
+pub(super) use source_attribute_definition::source_attribute_definition_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_attribute_definition::{
+    SOURCE_ATTRIBUTE_DEFINITION_TEXT, SourceAttributeDefinitionRouteMutation,
+    source_attribute_definition_output, source_attribute_definition_output_with_mutation,
+};
 pub(super) use source_composite_formula::source_composite_formula_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_composite_formula::{

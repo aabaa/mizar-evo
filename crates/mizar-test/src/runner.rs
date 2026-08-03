@@ -626,8 +626,9 @@ use type_elaboration::{
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
     is_active_type_elaboration, source_application_transport_detail_keys,
-    source_atomic_formula_transport_detail_keys, source_attribute_detail_keys,
-    source_binding_context_detail_keys, source_builtin_binary_term_formula_detail_keys,
+    source_atomic_formula_transport_detail_keys, source_attribute_definition_transport_detail_keys,
+    source_attribute_detail_keys, source_binding_context_detail_keys,
+    source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
@@ -1689,6 +1690,15 @@ fn type_elaboration_detail_keys(
     } else {
         augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env)
     };
+    if let Some(keys) = source_attribute_definition_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &symbols,
+        &source_text,
+    ) {
+        return keys;
+    }
     if let Some(keys) = source_functor_definition_transport_detail_keys(
         &ast,
         resolver.module.clone(),

@@ -3,8 +3,8 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_attribute_definition.md](../ja/source_attribute_definition.md).
 
-Status: frozen Checker Task 261 documentation prerequisite. No executable
-artifact or coverage status changes in this prerequisite.
+Status: implemented Checker Task 261 source-transport boundary. The frozen
+contract is active for exactly one pass consumer and one covered trace row.
 
 ## Authority, Classification, And Scope
 
@@ -40,9 +40,9 @@ parameter-prefix attribute, attribute use-site application, redefinition,
 coherence, a case/otherwise definiens, formula truth, proof, acceptance,
 cluster activation, fact/axiom publication, overload selection, IR, or VC.
 
-## Frozen Exact Future Source
+## Frozen Exact Source
 
-The dedicated future pass source is exactly these 116 UTF-8 bytes, including
+The dedicated pass source is exactly these 116 UTF-8 bytes, including
 the final LF:
 
 ```mizar
@@ -310,14 +310,18 @@ handoff derive `Debug + Clone + PartialEq + Eq`; the producer is a unit struct.
 The definition's `SemanticOrigin` and all dense IDs are derived and cannot be
 caller supplied.
 
-## Public Enum Policy And Debug Grammar
+## Public Enum Policy
 
 | Public enum | Compatibility policy |
 | --- | --- |
 | `SourceAttributeDefinitionRecovery` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen recovery classes. |
 | `SourceAttributeDefinitionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
 
-There are no exhaustive public-enum exceptions. Stable row-family keys are
+No exhaustive public enum exceptions are owned by this module.
+
+### Debug Grammar
+
+Stable row-family keys are
 `source.definition.attribute`, `source.definition.attribute.parameter`,
 `source.definition.attribute.subject`, and
 `source.definition.attribute.definiens`.
@@ -450,7 +454,7 @@ Implementation adds exactly one new active pass pair:
 - `tests/miz/pass/types/pass_type_elaboration_attribute_definition_payload_001.expect.toml`.
 
 The sidecar is `pass` / `type_elaboration` / `type_check`, has empty public
-diagnostics and payloads, and cites only future requirement
+diagnostics and payloads, and cites only requirement
 `spec.en.checker.type_elaboration.source_attribute_definition_payload`. One
 covered trace row backlinks only this sidecar. Passing credits exact source,
 resolver, lower, and four-table transport only.
@@ -461,12 +465,11 @@ stage, tags, diagnostics, payload, or filename cannot select it. The existing
 one-parameter `thesis` gap, parser pass/recovery cases, Task-259/260 routes,
 mixed-definition gap, and all other cases remain unchanged.
 
-Implementation projects checker/runner library counts `444 -> 449` and
+Implementation moved checker/runner library counts `444 -> 449` and
 `516 -> 520`; active type cases `200 -> 201`; plan cases/requirements
 `423/391 -> 424/392`; pass/fail `230/193 -> 231/193`; and type requirement
 coverage `255/243 -> 256/244`. Declaration, parse, and proof active counts stay
-`7/101/1`; warnings/errors stay `23/0`. These are projections, not changes in
-the documentation prerequisite.
+`7/101/1`; warnings/errors stay `23/0`.
 
 ## Frozen Tests
 
@@ -497,9 +500,9 @@ resolver environment/projection/symbol/definition/contribution, and every
 lower association. Selection and non-publication tests cover the sole trace
 backlink, exact count consumers, old-gap isolation, and all semantic absences.
 
-## Write Scope, Audit Impact, And Exit Criteria
+## Implemented Scope, Audit Impact, And Exit Criteria
 
-The future implementation may change only the new checker producer/support;
+The implementation changed only the new checker producer/support;
 checker `lib.rs`, typed/final owners and serializers, lint policy; one private
 runner production/test leaf plus bounded facades; the one new fixture/sidecar/
 trace row and mechanical active-count assertions; and synchronized derived
@@ -507,19 +510,15 @@ EN/JA plan/todo/audit records.
 
 Parser, resolver, Cargo metadata, canonical `doc/spec`, every existing `.miz`,
 every existing expectation/sidecar, Tasks 248/249/252/256 producers, Tasks
-259/260 behavior, and unrelated semantics are forbidden. The documentation
-prerequisite changes none of production, fixture, sidecar, expectation, trace
-count/status, test count, CLI output, or recorded hashes.
+259/260 behavior, and unrelated semantics remain unchanged.
 
 `source_spec_audit.md`, module-boundary audits, mizar-test traceability, and
-`spec_coverage_audit.md` record this frozen contract now and active partial
-coverage only after implementation. Chapter 6 remains partial after Task 261;
+`spec_coverage_audit.md` record the active partial coverage. Chapter 6 remains partial after Task 261;
 the task credits one exact ordinary-definition transport, not general
 attribute semantics.
 
-The documentation prerequisite exits only after synchronized EN/JA, repeated
-review-only **NO FINDINGS**, unchanged executable counts/hashes, all nine hard
-gates PASS, quality at least 90/100 with no applicable cap, exact task-only
-staging, one documentation commit, clean post-commit inventory, and automatic
-return to Task 261 implementation. The implementation has the same gates and
-one separate logical-task commit.
+The implementation exits only after synchronized EN/JA, repeated review-only
+**NO FINDINGS**, exact executable counts/hashes, all nine hard gates PASS,
+quality at least 90/100 with no applicable cap, exact task-only staging, one
+logical-task commit, clean post-commit inventory, and automatic return to
+Task 262+.

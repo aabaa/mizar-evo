@@ -12815,3 +12815,14 @@ the initial-obligation table byte-identical. Formula meaning, equivalence,
 acceptance, facts, proof, Core, CFG, and VC remain outside this boundary. This
 docs prerequisite creates no production/test inventory row or measured line
 count; implementation must fresh-measure them.
+
+## Checker Task 261 Active Runner Boundary
+
+The implemented private producer/test leaves are `1224/1113` lines. The
+producer alone owns literal source/Surface/resolver selection and lower
+composition; the checker receives syntax-free inputs only. A separate
+valid-but-stale node-42 context mutation reaches the checker consumer, while
+the node-44 mutation remains a Task-248 preflight failure. Runner production
+is `33/65952` with hashes recorded in the crate plan. The pass sidecar and
+trace row activate exact transport credit only; all semantic exclusions above
+remain unchanged.

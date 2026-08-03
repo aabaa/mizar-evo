@@ -6005,3 +6005,24 @@ remains `423/391`, `230/193`, `101/7/200/1`, type requirements
 `255 = 243 covered + 12 deferred`, and warnings/errors `23/0`. Task-261
 implementation alone may add the frozen one-case/one-requirement delta after
 its own hard gates pass.
+
+## Checker Task 261 Active Coverage Result
+
+Task 261 activates exactly the frozen Chapter-6 ordinary attribute-definition
+transport row and its sole pass backlink. Active metadata is now
+cases/requirements `424/392`, pass/fail `231/193`, active
+parse/declaration/type/proof `101/7/201/1`, type requirements
+`256 = 244 covered + 12 deferred`, and warnings/errors `23/0`. Checker/runner/
+resolver/syntax libraries are `449/520/144/59`. The trace blob is
+`77bbf19d0bb1d5c32af55ec7c98db85883fbc7cca0ce812058a1c212c1c31631`;
+the source/sidecar hashes are
+`ffd4954aad628d7946aaf7afb1b472a6bdfca7bce5ba0cf09f5b284c9dda07bf` /
+`ed8bc242f86206a56d178ef1d665faaa36c24d4943e7ca70e53af3decbecf4d8`.
+
+This closes only the classified exact `test_gap` and source-transport
+`source_drift`. Chapter 6 remains partial. Formula meaning/equivalence,
+definition correctness, acceptance, facts/axioms, attribute application,
+redefinition/coherence, proof, CoreIr, ControlFlowIr, VC, mixed definition-
+family acceptance, and broader attribute-definition shapes remain explicitly
+deferred. No canonical `doc/spec`, existing `.miz`, or existing expectation
+was changed.

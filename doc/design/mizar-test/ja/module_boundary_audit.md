@@ -11551,3 +11551,12 @@ byte-identicalに保つ。formula meaning、equivalence、acceptance、facts、p
 Core、CFG、VCはboundary外のままである。本docs prerequisiteはproduction/test
 inventory rowまたはmeasured line countを作らず、implementationでfresh-measure
 する。
+
+## Checker Task 261 Active Runner Boundary
+
+implemented private producer/test leafは`1224/1113` linesである。producerだけが
+literal source/Surface/resolver selectionとlower compositionをownし、checkerは
+syntax-free inputだけをreceiveする。valid-but-stale node-42 context mutationは
+checker consumerまで到達し、node-44 mutationはTask-248 preflight failureのまま。
+runner productionは`33/65952`、hashはcrate planにrecordする。pass sidecar/trace
+rowはexact transport creditだけをactivateし、semantic exclusionはunchanged。

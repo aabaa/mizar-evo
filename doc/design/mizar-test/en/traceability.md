@@ -2207,3 +2207,16 @@ status, backlink, count, or coverage. Current metadata remains `423/391`,
 `230/193`, `101/7/200/1`, type requirements `255/243`, and warnings/errors
 `23/0`; implementation projects `424/392`, `231/193`, `101/7/201/1`, and
 `256/244`.
+
+## Checker Task 261 Active Trace Result
+
+Requirement
+`spec.en.checker.type_elaboration.source_attribute_definition_payload` is now
+required, covered, and backed only by
+`pass_type_elaboration_attribute_definition_payload_001.expect.toml`; the
+sidecar reciprocally cites only that row. The final source/sidecar/trace hashes
+are `ffd4954aad628d7946aaf7afb1b472a6bdfca7bce5ba0cf09f5b284c9dda07bf`,
+`ed8bc242f86206a56d178ef1d665faaa36c24d4943e7ca70e53af3decbecf4d8`,
+and `77bbf19d0bb1d5c32af55ec7c98db85883fbc7cca0ce812058a1c212c1c31631`.
+Active metadata is `424/392`, `231/193`, `101/7/201/1`, type requirements
+`256/244`, and warnings/errors `23/0`. Credit remains exact transport only.

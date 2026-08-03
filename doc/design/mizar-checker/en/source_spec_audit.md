@@ -24,6 +24,7 @@ Module specifications audited:
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
 - [source_atomic_formula.md](./source_atomic_formula.md)
+- [source_attribute_definition.md](./source_attribute_definition.md)
 - [source_functor_definition.md](./source_functor_definition.md)
 - [source_predicate_definition.md](./source_predicate_definition.md)
 - [source_attribute.md](./source_attribute.md)
@@ -158,6 +159,7 @@ rejection.
 - `registration_resolution`
 - `resolved_typed_ast`
 - `source_atomic_formula`
+- `source_attribute_definition`
 - `source_composite_formula`
 - `source_formula_composition`
 - `source_functor_definition`
@@ -516,6 +518,40 @@ Bounded gaps: predicate-chain and formula-operator ownership stays with Task
 257; overload selection, asserted-type reachability, attribute admissibility
 and truth, formula facts/results, theorem acceptance, proofs, and downstream
 IR remain outside this module.
+
+### `source_attribute_definition`
+
+Generated public newtypes:
+
+- `SourceAttributeDefinitionId`, `SourceAttributeParameterId`,
+  `SourceAttributeSubjectId`, `SourceAttributeDefiniensId`
+
+Literal top-level public items:
+
+- `SourceAttributeDefinitionHandoffInput`, `SourceAttributeDefinitionInput`,
+  `SourceAttributeParameterInput`, `SourceAttributeSubjectInput`,
+  `SourceAttributeDefiniensInput`
+- `SourceAttributeDefinitionRecovery`
+- `SourceAttributeDefinition`, `SourceAttributeParameter`,
+  `SourceAttributeSubject`, `SourceAttributeDefiniens`
+- `SourceAttributeDefinitionTable`, `SourceAttributeParameterTable`,
+  `SourceAttributeSubjectTable`, `SourceAttributeDefiniensTable`
+- `SourceAttributeDefinitionHandoff`, `SourceAttributeDefinitionError`,
+  `SourceAttributeDefinitionProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Four immutable syntax-free tables retain one ordinary attribute definition, two ordered parameters, one subject binding, and one atomic-formula definiens. | Public inputs, rows, dense ids, tables, and getters in `src/source_attribute_definition.rs`. | Five exact checker tests and the active runner consumer. | Implemented as exact `1/2/1/1`. |
+| Resolver identity and exact Task-248/249/252/256 ownership are authenticated, including shell-41 context ownership and four complete debug fingerprints. | `SourceAttributeDefinitionProducer::build` and installation revalidation. | Resolver/lower/fingerprint plus preflight-invalid and valid-but-stale context-site corruption. | Implemented transactionally and fail closed. |
+| Typed/final ownership is one-shot, preserves the complete obligation table without reading or writing it, and rejects Task-259/260 mixtures. | `TypedAst::with_source_attribute_definition` and `ResolvedTypedAst::source_attribute_definition`. | Non-empty baseline, rollback, both-family installer/final isolation, clone, and replay tests. | Implemented without an obligation projection. |
+| Public surface and enums remain documented and forward-compatible. | Four ids, five input aggregates, recovery, four rows/tables, handoff, error, and producer above; both public enums are non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no syntax-dependency exception. |
+
+Bounded gaps: formula meaning/equivalence, definition correctness,
+acceptance, fact/axiom publication, attribute application, redefinition and
+coherence, proof, Core/CFG/VC, mixed definition-family acceptance, and broader
+attribute-definition shapes remain outside this module.
 
 ### `source_functor_definition`
 
@@ -5368,3 +5404,13 @@ There is no blocking `spec_gap`, authority conflict, unsafe lower-stage edit,
 or `boundary_violation`. The measured origin-reference difference is a
 report-only `repo_metadata_conflict`; it neither changes this public surface
 nor obscures the safe task-only commit target.
+
+## Task 261 Active Public-Surface Result
+
+`source_attribute_definition` is now exported and the public inventory above
+enumerates all four generated ids and every literal public declaration. Both
+public enums are non-exhaustive. The exact producer, typed/final owners, and
+private runner close the frozen `source_drift` and `test_gap` without adding
+an obligation row or semantic result. Source/spec, public-enum, module-layout,
+syntax-boundary, and adjacent-allow-rationale lint policies guard the active
+surface. The prior `repo_metadata_conflict` remains report-only.

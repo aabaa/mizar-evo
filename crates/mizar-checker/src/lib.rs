@@ -28,6 +28,7 @@ pub mod resolved_typed_ast;
 pub mod source_application;
 pub mod source_atomic_formula;
 pub mod source_attribute;
+pub mod source_attribute_definition;
 pub mod source_composite_formula;
 pub mod source_context;
 pub mod source_evidence;

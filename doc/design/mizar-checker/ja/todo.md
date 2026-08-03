@@ -6206,5 +6206,22 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   projected count、write scope、audit impact、semantic deferral、exitをfreezeする。
 - [x] docs prerequisiteで`doc/spec`、existing `.miz`/expectation/sidecar、trace
   count/status、production/test/CLI/hashをpreserveする。
-- [ ] spec reviewを**NO FINDINGS**までrepeatし、docs gate、separate commit、
-  post-commit invariantをPASSしてTask 261 implementationへautomatic returnする。
+- [x] spec reviewを**NO FINDINGS**までrepeatし、docs gate、prerequisite
+  `209c32fc2ec547ceedd32f1052345ae2fc5b0451`、post-commit invariantを
+  PASSしてTask 261 implementationへreturnした。
+
+## Checker Task 261 implementation
+
+- [x] exact four-table producer、one-shot Typed/final ownership、strict
+  obligation preservation、Task-259/260 isolationを追加する。
+- [x] sole pass pair/covered trace row、shell-41/valid-but-stale context-site
+  認証を持つprivate exact runnerを追加する。
+- [x] checker `5/5`、runner `4/4`、test-sufficiency/full implementation
+  re-reviewを**NO FINDINGS**で閉じる。
+- [x] `449/520/144/59`、metadata `137`、`424/392`、`231/193`、
+  `101/7/201/1`、type `256/244`、warnings/errors `23/0`、全hashを再現する。
+- [x] source/docs consistencyを**NO FINDINGS**で完了し、exact count/hash
+  reproductionを含むfull shared verification matrixをPASSする。
+- [x] final hard gate 9件を**NO FINDINGS**、score capなし、quality
+  `100/100`でPASSする。
+- [ ] exact stage/commit/post-commitとfresh Task 262+ selectionを完了する。

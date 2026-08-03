@@ -3143,6 +3143,14 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   projected count、再計測するhash、exclusion、exit gateをfreezeする。
 - [x] 本documentation prerequisiteではproduction、fixture、sidecar、
   expectation、trace row/status/count、Cargo metadataをbyte-unchangedに保つ。
-- [ ] findings-free review、全9 documentation gate、exact staging、dedicated
-  prerequisite commit、clean post-commit inventoryを完了する。
-- [ ] fresh-inventoryしてTask 261だけをimplementし、Task 262+へ戻る。
+- [x] findings-free review、全9 documentation gate、exact staging、
+  prerequisite `209c32fc2ec547ceedd32f1052345ae2fc5b0451`、clean
+  post-commit inventoryを完了する。
+- [x] fresh-inventoryしてfrozen Task 261 source/runner/fixture/trace/count
+  scopeだけをimplementし、focused/repeated test/implementation reviewを
+  **NO FINDINGS**で閉じる。
+- [x] source/documentation consistencyを**NO FINDINGS**で完了し、exact
+  count/hash reproductionを含むfull verificationをPASSする。
+- [x] final hard gate 9件を**NO FINDINGS**、score capなし、quality
+  `100/100`でPASSする。
+- [ ] exact stage/commit/post-commit後、Task 262+へ自動的に戻る。

@@ -102,6 +102,17 @@ struct OptionalLowerFixture {
     set_term: SourceSetTermHandoff,
 }
 
+pub(crate) fn actual_definition_family_typed_asts_for_task261() -> (TypedAst, TypedAst) {
+    let predicate = task259_actual::typed();
+    let fixture = fixture();
+    let projection = fixture.exact_projection(&InitialObligationTable::new());
+    let functor = fixture
+        .typed_ast(InitialObligationTable::new())
+        .with_source_functor_definition(projection)
+        .expect("actual Task 260 functor installation for Task 261 isolation");
+    (predicate, functor)
+}
+
 impl Fixture {
     fn build(
         &self,

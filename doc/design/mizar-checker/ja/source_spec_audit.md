@@ -22,6 +22,7 @@ public method は、module spec が table、builder、output API として記述
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
 - [source_atomic_formula.md](./source_atomic_formula.md)
+- [source_attribute_definition.md](./source_attribute_definition.md)
 - [source_functor_definition.md](./source_functor_definition.md)
 - [source_predicate_definition.md](./source_predicate_definition.md)
 - [source_attribute.md](./source_attribute.md)
@@ -136,6 +137,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `registration_resolution`
 - `resolved_typed_ast`
 - `source_atomic_formula`
+- `source_attribute_definition`
 - `source_composite_formula`
 - `source_formula_composition`
 - `source_functor_definition`
@@ -489,6 +491,39 @@ literal top-level public item:
 bounded gap: predicate-chain/formula-operator ownershipはTask 257、overload
 selection、asserted-type reachability、attribute admissibility/truth、formula
 fact/result、theorem acceptance、proof、downstream IRは本module外である。
+
+### `source_attribute_definition`
+
+generated public newtype:
+
+- `SourceAttributeDefinitionId`、`SourceAttributeParameterId`、
+  `SourceAttributeSubjectId`、`SourceAttributeDefiniensId`
+
+literal top-level public item:
+
+- `SourceAttributeDefinitionHandoffInput`、`SourceAttributeDefinitionInput`、
+  `SourceAttributeParameterInput`、`SourceAttributeSubjectInput`、
+  `SourceAttributeDefiniensInput`
+- `SourceAttributeDefinitionRecovery`
+- `SourceAttributeDefinition`、`SourceAttributeParameter`、
+  `SourceAttributeSubject`、`SourceAttributeDefiniens`
+- `SourceAttributeDefinitionTable`、`SourceAttributeParameterTable`、
+  `SourceAttributeSubjectTable`、`SourceAttributeDefiniensTable`
+- `SourceAttributeDefinitionHandoff`、`SourceAttributeDefinitionError`、
+  `SourceAttributeDefinitionProducer`
+
+対応:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| immutable syntax-free table 4件がordinary attribute definition 1件、ordered parameter 2件、subject binding 1件、atomic-formula definiens 1件を保持する。 | `src/source_attribute_definition.rs`のpublic input/row/dense id/table/getter。 | exact checker 5 testsとactive runner consumer。 | exact `1/2/1/1`としてimplemented。 |
+| resolver identityとexact Task-248/249/252/256 ownershipをshell-41 context ownership/fingerprint込みでauthenticateする。 | `SourceAttributeDefinitionProducer::build`とinstallation revalidation。 | resolver/lower/fingerprint、preflight-invalid/valid-but-stale context-site corruption。 | transactional/fail-closedにimplemented。 |
+| Typed/final ownershipはone-shotで、obligation tableをread/writeせずcompleteにpreserveし、Task-259/260 mixをrejectする。 | `TypedAst::with_source_attribute_definition`と`ResolvedTypedAst::source_attribute_definition`。 | non-empty baseline、rollback、both-family installer/final isolation、clone/replay。 | obligation projectionなしでimplemented。 |
+| public surface/enumはdocumented/forward-compatibleである。 | 上記4 id、5 input aggregate、recovery、4 row/table、handoff、error、producer。public enum 2件はnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | syntax-dependency exceptionなしでguard。 |
+
+bounded gap: formula meaning/equivalence、definition correctness、acceptance、
+fact/axiom publication、attribute application、redefinition/coherence、proof、
+Core/CFG/VC、mixed definition-family acceptance、broader shapeは本module外である。
 
 ### `source_functor_definition`
 
@@ -5147,3 +5182,12 @@ authority conflict、unsafe lower-stage edit、`source_undocumented_behavior`、
 `test_expectation_drift`、`boundary_violation`はない。measured origin-reference差は
 report-only `repo_metadata_conflict`だが、本public surfaceを変更せずsafe task-only
 commit targetを曖昧にしない。
+
+## Task 261 Active Public-Surface Result
+
+`source_attribute_definition`はexport済みで、上記inventoryが4 generated idと
+全literal public declarationを列挙する。public enum 2件はnon-exhaustiveである。
+exact producer、typed/final owner、private runnerがfrozen `source_drift`/`test_gap`
+を閉じ、obligation row/semantic resultは追加しない。source/spec、public-enum、
+module-layout、syntax-boundary、adjacent allow-rationale lintがactive surfaceをguard
+する。prior `repo_metadata_conflict`はreport-onlyのままである。

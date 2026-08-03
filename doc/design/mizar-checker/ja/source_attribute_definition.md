@@ -3,8 +3,8 @@
 > canonical languageはEnglishです。canonical companion:
 > [../../en/source_attribute_definition.md](../../en/source_attribute_definition.md)。
 
-Status: Checker Task 261 frozen documentation prerequisite。本prerequisiteは
-executable artifact/coverage statusを変更しません。
+Status: Checker Task 261 implemented source-transport boundary。frozen contractは
+exactly one pass consumer/one covered trace rowとしてactiveです。
 
 ## Authority、classification、scope
 
@@ -30,9 +30,9 @@ already-produced equality formula definiens、resolver/lower provenanceだけを
 transportします。prefix parameter、attribute application、redefinition/coherence、
 case/otherwise、truth/proof/acceptance/cluster/fact/axiom/overload/IR/VCはownしません。
 
-## Frozen exact future source
+## Frozen exact source
 
-future pass sourceはfinal LF込みexact 116 UTF-8 bytesです。
+pass sourceはfinal LF込みexact 116 UTF-8 bytesです。
 
 ```mizar
 definition
@@ -218,8 +218,18 @@ impl SourceAttributeDefinitionProducer {
 
 errorは`Display + Error`、`Default`/blanket conversionなしです。row/table/
 handoffは`Debug + Clone + PartialEq + Eq`、producerはunit structです。
-`SourceAttributeDefinitionRecovery`と`SourceAttributeDefinitionError`は
-`#[non_exhaustive]`で、exhaustive exceptionはありません。stable family keyは
+## Public Enum Policy
+
+| Public enum | compatibility policy |
+| --- | --- |
+| `SourceAttributeDefinitionRecovery` | `#[non_exhaustive]`。callerはlater explicitly-frozen recovery classを許容する。 |
+| `SourceAttributeDefinitionError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+
+この module が所有する exhaustive public enum exception はない。
+
+### Debug grammar
+
+stable family keyは
 `source.definition.attribute`、`.parameter`、`.subject`、`.definiens`です。
 
 debugは`source-attribute-definition-debug-v1`、module、source-context/type/term/
@@ -292,7 +302,7 @@ obligation orderingをseparately freezeします。
 
 implementationはnew pass pair
 `pass_type_elaboration_attribute_definition_payload_001.miz` / `.expect.toml`と
-future sole requirement
+sole requirement
 `spec.en.checker.type_elaboration.source_attribute_definition_payload` 1件だけを
 追加します。sidecarはpass/type_elaboration/type_check、empty diagnostics/payload、
 one covered reciprocal backlinkです。creditはexact transportだけです。
@@ -302,11 +312,10 @@ attribute gapより先にselectします。outcome/stage/tag/diagnostic/payload/
 selectorではありません。existing one-parameter gap、parser cases、Task-259/260、
 mixed gapはunchangedです。
 
-implementation projectionはchecker/runner `444 -> 449` / `516 -> 520`、active type
+implementation resultはchecker/runner `444 -> 449` / `516 -> 520`、active type
 `200 -> 201`、plan case/requirement `423/391 -> 424/392`、pass/fail
 `230/193 -> 231/193`、type requirement `255/243 -> 256/244`です。parse/
-declaration/proofは`101/7/1`、warnings/errorsは`23/0`。docs prerequisiteでは
-どれも変更しません。
+declaration/proofは`101/7/1`、warnings/errorsは`23/0`です。
 
 ## Frozen tests、write scope、exit
 
@@ -319,18 +328,14 @@ runner focused test exactly 4件はexact transport、literal 45-row plus source/
 lower corruption、source-only selection+reciprocal trace、no semantic publicationを
 coverします。excluded label/pattern subtreeと全mechanical count consumerもtestします。
 
-future implementation scopeはnew checker producer/support、checker lib/typed/final/
+implemented scopeはnew checker producer/support、checker lib/typed/final/
 serializer/lint、private runner leaf/facade/test、new fixture/sidecar/trace、mechanical
 count、derived EN/JAだけです。parser/resolver/Cargo/doc/spec/existing `.miz`/existing
-expectation/sidecar/lower producer/Task-259/260 behavior/unrelated semanticsはforbiddenです。
-docs prerequisiteはproduction/fixture/sidecar/expectation/trace count/status/test count/
-CLI/hashを変更しません。
+expectation/sidecar/lower producer/Task-259/260 behavior/unrelated semanticsはunchangedです。
 
-module/source audit、mizar-test traceability、spec coverage auditはfrozen contractを
-recordし、implementation後だけactive partial creditへ更新します。Chapter 6はTask
-261後もpartialです。
+module/source audit、mizar-test traceability、spec coverage auditはactive partial
+creditをrecordします。Chapter 6はTask 261後もpartialです。
 
-docs prerequisite exitはEN/JA sync、repeated review-only **NO FINDINGS**、executable
-count/hash unchanged、hard gate 9件PASS、valid quality 90+、task-only stage、docs
-commit、clean post-commit、Task 261 implementationへのautomatic returnです。
-implementationも同じgateとseparate one logical-task commitを要求します。
+implementation exitはEN/JA sync、repeated review-only **NO FINDINGS**、exact
+count/hash、hard gate 9件PASS、valid quality 90+、task-only stage、one logical-task
+commit、clean post-commit、Task 262+へのautomatic returnです。
