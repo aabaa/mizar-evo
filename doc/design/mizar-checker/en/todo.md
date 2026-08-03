@@ -6660,7 +6660,12 @@ implementation commit does not satisfy a producer task.
   admission as closed Profile C without property semantics or runner credit.
 - [x] Complete findings-free Task 248P docs reviews and all nine hard gates at
   uncapped `100/100`; preserve the exact 32-document staging target.
-- [ ] Complete exact docs commit, fresh inventory, and the separate
-  one-file/two-test implementation.
-- [ ] Only then freeze Task 264's exact property payload contract and preserve
+- [x] Complete exact docs commit
+  `1e3fa789ce335b900fca4ac6ef5ad56b40cb5f24`, fresh inventory, and the
+  separate one-file/two-test implementation with findings-free test and
+  implementation reviews.
+- [x] Complete source/documentation and final quality reviews with **NO
+  FINDINGS**, all nine gates PASS at uncapped `100/100`, and all required
+  verification/count/hash gates PASS.
+- [ ] Freeze Task 264's exact property payload contract and preserve
   Task 259 separation plus all authority-limited semantic deferrals.

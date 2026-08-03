@@ -5124,3 +5124,9 @@ Task 248P adds no route, helper, selector, assertion, or result field. Parser
 Task 48 pass/recovery fixtures are read-only preflight oracles only; neither is
 activated at the type-elaboration stage. The runner cannot select Profile C or
 derive a property payload before Task 264 freezes its exact consumer.
+
+## Checker Task 248P Implemented No-Harness Result
+
+The implementation adds no route, helper, selector, assertion, result field,
+or runner test. Neither Parser Task-48 property fixture is activated; all
+runner behavior remains byte-identical pending Task 264.

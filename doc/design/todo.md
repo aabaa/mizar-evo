@@ -4075,6 +4075,13 @@ or semantic owner changed. B3M2B2B remains next before B4.
   one-file/two-test scope, count/hash impact, and Task-264 ownership.
 - [x] Repeat specification/boundary reviews to **NO FINDINGS** and pass all
   docs-only hard gates at uncapped `100/100`.
-- [ ] Commit the exact synchronized 32-document prerequisite.
-- [ ] Fresh-inventory and implement/review/verify/commit exact Task 248P, then
+- [x] Commit the exact synchronized 32-document prerequisite as
+  `1e3fa789ce335b900fca4ac6ef5ad56b40cb5f24` and confirm clean fresh
+  inventory.
+- [x] Implement exact Task 248P in the sole frozen checker file with exactly two
+  tests; test-sufficiency and implementation reviews are **NO FINDINGS**.
+- [x] Complete source/docs and final quality reviews with **NO FINDINGS**, all
+  nine hard gates PASS at uncapped `100/100`, and full verification/count/hash
+  gates PASS.
+- [ ] Complete exact implementation commit and clean fresh inventory; then
   return automatically to Task 264.

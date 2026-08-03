@@ -1670,3 +1670,9 @@ Task 248Pはfinal input/assembler branchを追加しない。`ResolvedTypedAst`�
 install済みのProfile C handoffだけをclone-preserveし、existing source-context
 validation/debug positionをreuseする。callerはhandoffをreplaceできず、recovered inputを
 promoteできない。property payload/provenanceと全semantic resultはTask 264までabsent。
+
+## Task 248P active final ownership boundary
+
+implemented source-context handoffはexisting `TypedAst` clone pathだけでownedされる。
+final input/assembler branch/getter/replacement path/debug field/semantic resultは追加せず、
+recovered Profile Cはfinal assemblyへ到達不能のままである。

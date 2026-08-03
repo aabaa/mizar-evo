@@ -1576,3 +1576,10 @@ append-only item role、reused binding role、nonzero real-shell ordinal authent
 Profile A/B behavior不変、one-file/two-test checker scope、`467 -> 469`、runner/
 corpus/trace changeなしで一致する。両言語とも全property payload、initial-obligation、
 proof、acceptance、fact、VC decisionをTask 264へdeferする。
+
+## Task 248P implementation synchronization
+
+EN/JAはProfile Cがfrozen checker file 1件、exact tests 2件で実装済みで一致する。
+checker `469`、production `28/158478`、同じtest-list/path/content hash、Profile A/B
+behavior不変、runner/corpus/trace/metadata/CLI/coverage delta zeroを記録する。全property
+payload/semantic ownershipはTask 264へdeferしたままである。

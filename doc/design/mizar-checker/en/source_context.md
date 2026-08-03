@@ -27,7 +27,7 @@ to obtain opaque real shell ids. `mizar-test` owns the
 bounded `SurfaceAst` walk and supplies source ranges, typed sites, lexical
 scope, source order, and resolver-shaped `LocalTermBinding` provenance.
 
-Task 248 admits only the two named real-consumer profiles and the dormant
+Task 248 admits only the two named real-consumer profiles and the implemented
 Task-248P Profile C frozen in this document. Profile A is the implemented
 module-level `reserve x for set;`
 followed by one `definition` block with one local `set` parameter named `x`.
@@ -653,3 +653,16 @@ quality at least 90/100, exact task-only staging/commit, clean fresh inventory,
 and unchanged protected stash. Fresh inventory then selects the separate
 Task-248P implementation, followed by Task 264 rather than a broader context
 profile.
+
+## Task 248P Active Profile C
+
+Profile C is implemented exactly as frozen. Property inputs authenticate the
+real nonzero resolver shell ordinal without changing the legacy Profile A/B
+ordinal rule. Normal input produces `1/1/1/2/2/2/0`; recovered zero-binding
+input remains incomplete, and every frozen corruption fails with its specified
+existing error. The exact two tests pass, checker count is `469`, and production
+is `28/158478` with path/content hashes
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
+`19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`.
+There is still no runner consumer or Task-264 payload, obligation, proof, fact,
+acceptance, IR, or VC output.

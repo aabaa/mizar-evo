@@ -77,6 +77,7 @@ pub struct SourceItemInput {
 pub enum SourceItemRole {
     Reserve,
     DefinitionBlock,
+    PropertyImplementation,
 }
 
 /// Source-shaped visibility. Task 248 admits only `Unspecified`.
@@ -435,7 +436,13 @@ fn validate_input(input: &SourceBindingContextInput) -> Result<ValidatedInput, S
     let mut previous_start = None;
 
     for (index, item) in input.items.iter().enumerate() {
-        if item.shell_ordinal != index {
+        let has_stale_ordinal = match item.role {
+            SourceItemRole::PropertyImplementation => item.shell.index() != item.shell_ordinal,
+            SourceItemRole::Reserve | SourceItemRole::DefinitionBlock => {
+                item.shell_ordinal != index
+            }
+        };
+        if has_stale_ordinal {
             return Err(SourceContextError::StaleShellOrdinal { index });
         }
         if item.module_id != input.module_id {
@@ -476,10 +483,27 @@ fn validate_input(input: &SourceBindingContextInput) -> Result<ValidatedInput, S
                 local_context_ids.push(LocalTypeContextId::new(next_context));
                 next_context += 1;
             }
+            SourceItemRole::PropertyImplementation => {
+                if item.parent.is_some() {
+                    return Err(SourceContextError::InvalidParent { index });
+                }
+                if item
+                    .local_scope
+                    .as_ref()
+                    .is_none_or(|scope| scope.path().is_empty())
+                {
+                    return Err(SourceContextError::InvalidItemContext { index });
+                }
+                context_ids.push(BindingContextId::new(next_context));
+                local_context_ids.push(LocalTypeContextId::new(next_context));
+                next_context += 1;
+            }
         }
         if item.recovery == SourceItemRecovery::Recovered
-            && (item.role != SourceItemRole::DefinitionBlock
-                || recovered_item.replace(index).is_some())
+            && (!matches!(
+                item.role,
+                SourceItemRole::DefinitionBlock | SourceItemRole::PropertyImplementation
+            ) || recovered_item.replace(index).is_some())
         {
             return Err(SourceContextError::UnsupportedRecovery { index });
         }
@@ -548,7 +572,7 @@ fn validate_input(input: &SourceBindingContextInput) -> Result<ValidatedInput, S
                 SourceBindingSiteRole::ReserveDefault,
             ) => {}
             (
-                SourceItemRole::DefinitionBlock,
+                SourceItemRole::DefinitionBlock | SourceItemRole::PropertyImplementation,
                 SourceBindingContextOwner::Shell(owner),
                 SourceBindingSiteRole::DefinitionParameter { local },
             ) if owner == &item.shell => {
@@ -587,7 +611,10 @@ fn validate_input(input: &SourceBindingContextInput) -> Result<ValidatedInput, S
         && counts[0] == 2
         && input.bindings[0].declaration_range != input.bindings[1].declaration_range
         && input.bindings[0].written_type_range != input.bindings[1].written_type_range;
-    if !is_profile_a && !is_profile_b {
+    let is_profile_c = input.items.len() == 1
+        && input.items[0].role == SourceItemRole::PropertyImplementation
+        && (input.items[0].recovery == SourceItemRecovery::Recovered || counts[0] == 1);
+    if !is_profile_a && !is_profile_b && !is_profile_c {
         return Err(SourceContextError::UnsupportedTaskShape);
     }
     if is_profile_a
@@ -717,7 +744,10 @@ fn build_projection(
     let mut recovered_result = None;
 
     for (item_index, item) in input.items.iter().enumerate() {
-        if item.role != SourceItemRole::DefinitionBlock {
+        if !matches!(
+            item.role,
+            SourceItemRole::DefinitionBlock | SourceItemRole::PropertyImplementation
+        ) {
             continue;
         }
         let binding_context = validated.context_ids[item_index];
@@ -887,6 +917,7 @@ fn item_role_key(role: SourceItemRole) -> &'static str {
     match role {
         SourceItemRole::Reserve => "reserve",
         SourceItemRole::DefinitionBlock => "definition-block",
+        SourceItemRole::PropertyImplementation => "property-implementation",
     }
 }
 
@@ -1026,6 +1057,542 @@ pub(crate) mod tests {
         CoercionTable, InitialObligationTable, TypeDiagnosticTable, TypeFactTable, TypeTable,
         TypedArena, TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks,
     };
+    use mizar_resolve::declarations::{DeclarationShellCollector, DeclarationShellKind};
+    use mizar_syntax as syntax;
+
+    #[derive(Debug, Clone)]
+    struct Task248PFixture {
+        source: SourceId,
+        module: ModuleId,
+        shell: DeclarationShellId,
+        input: SourceBindingContextInput,
+    }
+
+    fn task_248p_range(source: SourceId, start: usize, end: usize) -> SourceRange {
+        SourceRange {
+            source_id: source,
+            start,
+            end,
+        }
+    }
+
+    fn task_248p_fixture() -> Task248PFixture {
+        use mizar_session::SessionIdAllocator as _;
+
+        let snapshot = mizar_session::BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "44".repeat(32)
+        ))
+        .expect("Task 248P snapshot");
+        let source = mizar_session::InMemorySessionIdAllocator::new()
+            .next_source_id(snapshot)
+            .expect("Task 248P source id");
+        let module = ModuleId::new(
+            mizar_session::PackageId::new("pkg"),
+            mizar_session::ModulePath::new("task248p.property_context"),
+        );
+
+        let mut builder = syntax::SurfaceAstBuilder::new(source);
+        let mode = builder.add_node(
+            syntax::SurfaceNodeKind::ModeDefinition,
+            task_248p_range(source, 2, 10),
+            Vec::new(),
+        );
+        let definition = builder.add_node(
+            syntax::SurfaceNodeKind::DefinitionBlockItem,
+            task_248p_range(source, 0, 20),
+            vec![mode],
+        );
+        let parameter = builder.add_node(
+            syntax::SurfaceNodeKind::DefinitionParameter,
+            task_248p_range(source, 22, 36),
+            Vec::new(),
+        );
+        let property = builder.add_node(
+            syntax::SurfaceNodeKind::PropertyImplementation,
+            task_248p_range(source, 20, 80),
+            vec![parameter],
+        );
+        let root = builder.add_node(
+            syntax::SurfaceNodeKind::Root,
+            task_248p_range(source, 0, 80),
+            vec![definition, property],
+        );
+        let ast = builder.finish(Some(root), None);
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        assert_eq!(
+            shells
+                .declarations()
+                .iter()
+                .map(|shell| shell.kind())
+                .collect::<Vec<_>>(),
+            vec![
+                DeclarationShellKind::DefinitionBlock,
+                DeclarationShellKind::ModeDefinition,
+                DeclarationShellKind::PropertyImplementation,
+            ]
+        );
+        let shell = shells.declarations()[2].id();
+        assert_eq!(shell.index(), 2);
+        assert_eq!(shells.declarations()[2].ordinal(), 2);
+        assert_eq!(
+            shells.declarations()[2].range(),
+            task_248p_range(source, 20, 80)
+        );
+        assert_eq!(shells.declarations()[2].parent(), None);
+
+        let scope = LocalTermScope::new(vec![2]);
+        let declaration_range = task_248p_range(source, 24, 25);
+        let input = SourceBindingContextInput {
+            source_id: source,
+            module_id: module.clone(),
+            module_site: TypedSiteRef::Node(TypedNodeId::new(0)),
+            items: vec![SourceItemInput {
+                shell,
+                shell_ordinal: 2,
+                role: SourceItemRole::PropertyImplementation,
+                module_id: module.clone(),
+                source_range: task_248p_range(source, 20, 80),
+                parent: None,
+                visibility: SourceItemVisibility::Unspecified,
+                site: TypedSiteRef::Node(TypedNodeId::new(1)),
+                local_scope: Some(scope.clone()),
+                recovery: SourceItemRecovery::Normal,
+            }],
+            bindings: vec![SourceBindingSiteInput {
+                shell,
+                context_owner: SourceBindingContextOwner::Shell(shell),
+                source_ordinal: 0,
+                spelling: "M".to_owned(),
+                declaration_range,
+                written_type_range: task_248p_range(source, 29, 35),
+                site: TypedSiteRef::Node(TypedNodeId::new(2)),
+                role: SourceBindingSiteRole::DefinitionParameter {
+                    local: LocalTermBinding::new("M", scope, declaration_range, 0),
+                },
+                recovery: BindingRecoveryState::Normal,
+            }],
+        };
+        Task248PFixture {
+            source,
+            module,
+            shell,
+            input,
+        }
+    }
+
+    fn task_248p_typed_parts(
+        fixture: &Task248PFixture,
+        handoff: SourceBindingContextHandoff,
+    ) -> TypedAstParts {
+        let nodes = TypedArena::try_new(
+            Some(TypedNodeId::new(0)),
+            vec![
+                TypedNode::new(
+                    "source.module",
+                    mizar_session::SourceAnchor::Range(task_248p_range(fixture.source, 0, 80)),
+                )
+                .with_children(vec![TypedNodeId::new(1)])
+                .with_links(TypedNodeLinks {
+                    context: Some(LocalTypeContextId::new(0)),
+                    ..TypedNodeLinks::default()
+                }),
+                TypedNode::new(
+                    "source.property-implementation",
+                    mizar_session::SourceAnchor::Range(task_248p_range(fixture.source, 20, 80)),
+                )
+                .with_children(vec![TypedNodeId::new(2)])
+                .with_links(TypedNodeLinks {
+                    context: Some(LocalTypeContextId::new(1)),
+                    ..TypedNodeLinks::default()
+                }),
+                TypedNode::new(
+                    "source.definition-parameter",
+                    mizar_session::SourceAnchor::Range(task_248p_range(fixture.source, 24, 25)),
+                )
+                .with_links(TypedNodeLinks {
+                    context: Some(LocalTypeContextId::new(1)),
+                    ..TypedNodeLinks::default()
+                }),
+            ],
+        )
+        .expect("Task 248P typed arena");
+        TypedAstParts {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            resolved_root: None,
+            source_context: Some(handoff.clone()),
+            source_type: None,
+            source_attribute: None,
+            nodes,
+            contexts: handoff.local_contexts().clone(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        }
+    }
+
+    #[test]
+    fn property_implementation_profile_builds_exact_context() {
+        let fixture = task_248p_fixture();
+        let projection = SourceBindingContextProducer::build(fixture.input.clone())
+            .expect("Task 248P context build")
+            .into_complete()
+            .expect("Task 248P complete context");
+        let handoff = projection.handoff();
+        assert_eq!(handoff.items().len(), 1);
+        assert_eq!(handoff.declarations().len(), 1);
+        assert_eq!(handoff.binding_env().bindings().len(), 1);
+        assert_eq!(handoff.binding_env().contexts().len(), 2);
+        assert_eq!(handoff.local_contexts().len(), 2);
+        assert_eq!(handoff.context_links().len(), 2);
+        assert_eq!(handoff.binding_env().diagnostics().len(), 0);
+
+        let item = handoff.items().get(SourceItemId::new(0)).expect("item 0");
+        assert_eq!(item.id, SourceItemId::new(0));
+        assert_eq!(item.shell, fixture.shell);
+        assert_eq!(item.shell_ordinal, 2);
+        assert_eq!(item.role, SourceItemRole::PropertyImplementation);
+        assert_eq!(item.source_range, task_248p_range(fixture.source, 20, 80));
+        assert_eq!(item.parent, None);
+        assert_eq!(item.visibility, SourceItemVisibility::Unspecified);
+        assert_eq!(item.site, TypedSiteRef::Node(TypedNodeId::new(1)));
+        assert_eq!(item.local_scope, Some(LocalTermScope::new(vec![2])));
+        assert_eq!(item.recovery, SourceItemRecovery::Normal);
+        assert_eq!(item.binding_context, BindingContextId::new(1));
+        assert_eq!(item.local_context, LocalTypeContextId::new(1));
+        assert_eq!(item.predecessor, None);
+
+        let declaration = handoff
+            .declarations()
+            .get(SourceDeclarationId::new(0))
+            .expect("declaration 0");
+        assert_eq!(declaration.id, SourceDeclarationId::new(0));
+        assert_eq!(declaration.item, SourceItemId::new(0));
+        assert_eq!(declaration.binding, BindingId::new(0));
+        assert_eq!(declaration.source_ordinal, 0);
+        assert_eq!(declaration.spelling, "M");
+        assert_eq!(
+            declaration.declaration_range,
+            task_248p_range(fixture.source, 24, 25)
+        );
+        assert_eq!(
+            declaration.written_type_range,
+            task_248p_range(fixture.source, 29, 35)
+        );
+        assert_eq!(declaration.site, TypedSiteRef::Node(TypedNodeId::new(2)));
+        assert_eq!(
+            declaration.role,
+            SourceBindingSiteRole::DefinitionParameter {
+                local: LocalTermBinding::new(
+                    "M",
+                    LocalTermScope::new(vec![2]),
+                    task_248p_range(fixture.source, 24, 25),
+                    0,
+                ),
+            }
+        );
+        assert_eq!(declaration.binding_context, BindingContextId::new(1));
+        assert_eq!(declaration.local_context, LocalTypeContextId::new(1));
+        assert_eq!(declaration.shadowed_binding, None);
+        assert_eq!(declaration.predecessor, None);
+        let binding = handoff
+            .binding_env()
+            .bindings()
+            .get(declaration.binding)
+            .expect("binding 0");
+        assert_eq!(binding.id, BindingId::new(0));
+        assert_eq!(binding.spelling, "M");
+        assert_eq!(binding.kind, BindingKind::DefinitionParameter);
+        assert_eq!(
+            binding.identity,
+            BinderIdentity::ResolverLocal {
+                scope: LocalTermScope::new(vec![2]),
+                ordinal: 0,
+                declaration_range: task_248p_range(fixture.source, 24, 25),
+            }
+        );
+        assert_eq!(binding.owner_context, BindingContextId::new(1));
+        assert_eq!(
+            binding.declaration_range,
+            task_248p_range(fixture.source, 24, 25)
+        );
+        assert_eq!(binding.visible_after_ordinal, 0);
+        assert_eq!(
+            binding.type_site,
+            BindingTypeSite::Source(task_248p_range(fixture.source, 29, 35))
+        );
+        assert_eq!(binding.status, BindingStatus::Active);
+        assert!(binding.captured.identities().is_empty());
+        assert!(binding.diagnostics.is_empty());
+        assert_eq!(binding.recovery, BindingRecoveryState::Normal);
+
+        let module_context = handoff
+            .binding_env()
+            .contexts()
+            .get(BindingContextId::new(0))
+            .expect("binding context 0");
+        assert_eq!(module_context.id, BindingContextId::new(0));
+        assert_eq!(module_context.owner, BindingContextOwner::Module);
+        assert_eq!(module_context.parent, None);
+        assert_eq!(module_context.layer, BindingContextLayer::Module);
+        assert_eq!(module_context.lexical_scope, None);
+        assert!(module_context.bindings.is_empty());
+        assert!(module_context.visible_bindings.is_empty());
+        assert_eq!(module_context.recovery, BindingContextRecovery::Normal);
+
+        let context = handoff
+            .binding_env()
+            .contexts()
+            .get(BindingContextId::new(1))
+            .expect("binding context 1");
+        assert_eq!(context.id, BindingContextId::new(1));
+        assert_eq!(
+            context.owner,
+            BindingContextOwner::DeclarationShell(fixture.shell)
+        );
+        assert_eq!(context.parent, Some(BindingContextId::new(0)));
+        assert_eq!(context.layer, BindingContextLayer::Declaration);
+        assert_eq!(context.lexical_scope, Some(LocalTermScope::new(vec![2])));
+        assert_eq!(context.bindings, vec![declaration.binding]);
+        assert_eq!(context.visible_bindings, vec![declaration.binding]);
+        assert_eq!(context.recovery, BindingContextRecovery::Normal);
+
+        let module_local_context = handoff
+            .local_contexts()
+            .get(LocalTypeContextId::new(0))
+            .expect("local context 0");
+        assert_eq!(module_local_context.id, LocalTypeContextId::new(0));
+        assert_eq!(
+            module_local_context.owner,
+            TypedSiteRef::Node(TypedNodeId::new(0))
+        );
+        assert_eq!(module_local_context.parent, None);
+        assert_eq!(module_local_context.layer, TypeContextLayer::Module);
+        assert!(module_local_context.bindings.is_empty());
+        assert!(module_local_context.introduced_assumptions.is_empty());
+        assert!(module_local_context.visible_facts.is_empty());
+        assert_eq!(module_local_context.recovery, ContextRecoveryState::Normal);
+
+        let local_context = handoff
+            .local_contexts()
+            .get(LocalTypeContextId::new(1))
+            .expect("local context 1");
+        assert_eq!(local_context.id, LocalTypeContextId::new(1));
+        assert_eq!(local_context.owner, TypedSiteRef::Node(TypedNodeId::new(1)));
+        assert_eq!(local_context.parent, Some(LocalTypeContextId::new(0)));
+        assert_eq!(local_context.layer, TypeContextLayer::Declaration);
+        assert_eq!(
+            local_context.bindings,
+            vec![BindingTypeRef::Site(TypedSiteRef::Node(TypedNodeId::new(
+                2
+            )))]
+        );
+        assert!(local_context.introduced_assumptions.is_empty());
+        assert!(local_context.visible_facts.is_empty());
+        assert_eq!(local_context.recovery, ContextRecoveryState::Normal);
+
+        let module_link = handoff
+            .context_links()
+            .get(BindingContextId::new(0))
+            .expect("context link 0");
+        assert_eq!(module_link.binding_context, BindingContextId::new(0));
+        assert_eq!(module_link.local_context, LocalTypeContextId::new(0));
+        assert_eq!(module_link.item, None);
+        let property_link = handoff
+            .context_links()
+            .get(BindingContextId::new(1))
+            .expect("context link 1");
+        assert_eq!(property_link.binding_context, BindingContextId::new(1));
+        assert_eq!(property_link.local_context, LocalTypeContextId::new(1));
+        assert_eq!(property_link.item, Some(SourceItemId::new(0)));
+
+        let expected_debug = concat!(
+            "source-binding-context-debug-v1\n",
+            "module: task248p.property_context\n",
+            "item#0 shell=2 ordinal=2 role=property-implementation range=20..80 parent=none context=1 local_context=1 predecessor=none\n",
+            "declaration#0 item=0 binding=0 ordinal=0 role=definition-parameter range=24..25 type_range=29..35 context=1 local_context=1 shadowed=none predecessor=none\n",
+            "context-link#0 binding_context=0 local_context=0 item=module\n",
+            "context-link#1 binding_context=1 local_context=1 item=0\n",
+        );
+        assert_eq!(handoff.debug_text(), expected_debug);
+
+        let typed_parts = task_248p_typed_parts(&fixture, handoff.clone());
+        let typed = TypedAst::try_new(typed_parts.clone()).expect("Task 248P typed install");
+        let replay = TypedAst::try_new(typed_parts).expect("Task 248P typed replay");
+        assert_eq!(typed.source_context(), Some(handoff));
+        assert_eq!(typed.debug_text(), replay.debug_text());
+        assert_eq!(typed.debug_text().matches(expected_debug).count(), 1);
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(typed.diagnostics().is_empty());
+    }
+
+    #[test]
+    fn property_implementation_profile_recovery_and_corruption_fail_closed() {
+        let fixture = task_248p_fixture();
+
+        let mut input = fixture.input.clone();
+        input.items[0].shell_ordinal = 1;
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::StaleShellOrdinal { index: 0 })
+        );
+
+        let mut input = fixture.input.clone();
+        input.items[0].role = SourceItemRole::DefinitionBlock;
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::StaleShellOrdinal { index: 0 })
+        );
+
+        let mut input = fixture.input.clone();
+        input.bindings.clear();
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::PartialItem { index: 0 })
+        );
+
+        let mut input = fixture.input.clone();
+        let second_range = task_248p_range(fixture.source, 40, 41);
+        input.bindings.push(SourceBindingSiteInput {
+            shell: fixture.shell,
+            context_owner: SourceBindingContextOwner::Shell(fixture.shell),
+            source_ordinal: 1,
+            spelling: "N".to_owned(),
+            declaration_range: second_range,
+            written_type_range: task_248p_range(fixture.source, 45, 50),
+            site: TypedSiteRef::Node(TypedNodeId::new(3)),
+            role: SourceBindingSiteRole::DefinitionParameter {
+                local: LocalTermBinding::new("N", LocalTermScope::new(vec![2]), second_range, 1),
+            },
+            recovery: BindingRecoveryState::Normal,
+        });
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::UnsupportedTaskShape)
+        );
+
+        let mut input = fixture.input.clone();
+        input.items[0].recovery = SourceItemRecovery::Recovered;
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::RecoveredItemClaimsBinding { index: 0 })
+        );
+
+        let mut input = fixture.input.clone();
+        input.bindings[0].context_owner = SourceBindingContextOwner::Module;
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::RoleMismatch { index: 0 })
+        );
+
+        let mut input = fixture.input.clone();
+        input.bindings[0].role = SourceBindingSiteRole::ReserveDefault;
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::RoleMismatch { index: 0 })
+        );
+
+        let mut input = fixture.input.clone();
+        input.bindings[0].role = SourceBindingSiteRole::DefinitionParameter {
+            local: LocalTermBinding::new(
+                "M",
+                LocalTermScope::new(vec![9]),
+                task_248p_range(fixture.source, 24, 25),
+                0,
+            ),
+        };
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::StaleLocalIdentity { index: 0 })
+        );
+
+        let mut input = fixture.input.clone();
+        input.items[0].local_scope = Some(LocalTermScope::default());
+        input.bindings[0].role = SourceBindingSiteRole::DefinitionParameter {
+            local: LocalTermBinding::new(
+                "M",
+                LocalTermScope::default(),
+                task_248p_range(fixture.source, 24, 25),
+                0,
+            ),
+        };
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::InvalidItemContext { index: 0 })
+        );
+
+        let mut input = fixture.input.clone();
+        input.items[0].parent = Some(fixture.shell);
+        assert_eq!(
+            SourceBindingContextProducer::build(input),
+            Err(SourceContextError::InvalidParent { index: 0 })
+        );
+
+        let mut recovered = fixture.input.clone();
+        recovered.items[0].recovery = SourceItemRecovery::Recovered;
+        recovered.bindings.clear();
+        let incomplete =
+            SourceBindingContextProducer::build(recovered).expect("Task 248P recovered context");
+        let SourceBindingContextBuild::Incomplete(recovered) = &incomplete else {
+            panic!("Task 248P recovered context must remain incomplete");
+        };
+        assert_eq!(recovered.recovered_shell(), fixture.shell);
+        assert_eq!(recovered.recovered_context(), BindingContextId::new(1));
+        assert_eq!(recovered.binding_env().contexts().len(), 2);
+        assert_eq!(recovered.binding_env().bindings().len(), 0);
+        assert_eq!(recovered.binding_env().diagnostics().len(), 1);
+        let recovered_context = recovered
+            .binding_env()
+            .contexts()
+            .get(BindingContextId::new(1))
+            .expect("recovered binding context 1");
+        assert_eq!(recovered_context.id, BindingContextId::new(1));
+        assert_eq!(
+            recovered_context.owner,
+            BindingContextOwner::DeclarationShell(fixture.shell)
+        );
+        assert_eq!(recovered_context.parent, Some(BindingContextId::new(0)));
+        assert_eq!(recovered_context.layer, BindingContextLayer::Declaration);
+        assert_eq!(
+            recovered_context.lexical_scope,
+            Some(LocalTermScope::new(vec![2]))
+        );
+        assert!(recovered_context.bindings.is_empty());
+        assert!(recovered_context.visible_bindings.is_empty());
+        assert_eq!(
+            recovered_context.recovery,
+            BindingContextRecovery::Recovered
+        );
+        let diagnostic = recovered
+            .binding_env()
+            .diagnostics()
+            .get(recovered.diagnostic())
+            .expect("recovered diagnostic");
+        assert_eq!(diagnostic.id, recovered.diagnostic());
+        assert_eq!(
+            diagnostic.source_range,
+            Some(task_248p_range(fixture.source, 20, 80))
+        );
+        assert_eq!(
+            diagnostic.class,
+            BindingDiagnosticClass::RecoveredContextBoundary
+        );
+        assert_eq!(diagnostic.severity, BindingDiagnosticSeverity::Error);
+        assert_eq!(
+            diagnostic.message_key,
+            "checker.binding.source_context.recovered"
+        );
+        assert_eq!(diagnostic.recovery, BindingDiagnosticRecovery::Recovery);
+        assert_eq!(
+            incomplete.into_complete(),
+            Err(SourceContextError::IncompleteRecovery)
+        );
+    }
 
     pub(crate) fn task_248_occupied_typed_ast(source: SourceId, module: ModuleId) -> TypedAst {
         let root = TypedNodeId::new(0);
@@ -1141,6 +1708,9 @@ pub(crate) mod tests {
     #[test]
     fn production_boundary_stays_syntax_free_and_does_not_claim_later_payloads() {
         let source = include_str!("source_context.rs");
+        let production = source
+            .split_once("#[cfg(test)]")
+            .map_or(source, |(production, _)| production);
         for forbidden in [
             concat!("mizar", "_syntax"),
             concat!("Surface", "NodeId"),
@@ -1149,7 +1719,7 @@ pub(crate) mod tests {
             concat!("Accepted", "Fact"),
         ] {
             assert!(
-                !source.contains(forbidden),
+                !production.contains(forbidden),
                 "source context exposes {forbidden}"
             );
         }

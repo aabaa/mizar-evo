@@ -1523,3 +1523,9 @@ EN/JAはTask 248Pにrunner source/test、fixture、sidecar、expectation、trace
 CLI deltaがないことで一致する。runner `528`、production `35/67939`、trace hash
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`
 を保存し、real-source selection/consumer ownershipをTask 264へdeferする。
+
+## Checker Task 248P implementation no-runner synchronization
+
+EN/JAはcompleted checker implementationにrunner/corpus/sidecar/expectation/trace/
+metadata/CLI deltaがないことで一致する。runner `528`、production `35/67939`、frozen
+trace/CLI hashを保存し、唯一のbounded consumerをTask 264へdeferする。

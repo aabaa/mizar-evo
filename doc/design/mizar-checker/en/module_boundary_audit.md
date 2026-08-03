@@ -30,7 +30,7 @@ remain aligned with their owning specifications.
 | `src/lib.rs` | 49 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it exports the documented syntax-free formula-composition and predicate/functor/attribute/mode/structure-definition source modules. |
 | `src/typed_ast.rs` | 5366 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including Task-263 isolation from the pre-existing Task-259--262 definition transactions; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3156 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula, Task-258B1 statement-context identity, and the unchanged context contract reused by Task-258B2; no behavior-neutral split required. |
-| `src/source_context.rs` | 1157 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
+| `src/source_context.rs` | 1727 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only dependency corruption seams; no split required. |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
 | `src/source_formula_composition.rs` | 5366 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations plus separate Task-257C2 condition-to-atomic and Task-257C3 predicate-chain transactions, dependency fingerprints, deterministic rendering, installation, and corruption tests; no split required. |
@@ -1518,3 +1518,12 @@ added. Documentation preserves checker production `28/157908` and its current
 path/content hashes; implementation keeps 28 paths, projects checker library
 `467 -> 469`, and must remeasure lines/content. Runner remains byte-identical
 at `35/67939`. Property payload ownership stays in separate Task 264.
+
+## Task 248P Implemented One-File Checker Boundary
+
+The implementation diff changes only `src/source_context.rs`. Checker
+production remains 28 paths and is now 158,478 lines with path/content hashes
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
+`19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`.
+No module, dependency, Cargo, lint-policy, runner, corpus, trace, diagnostic, or
+Task-264 semantic boundary changed.

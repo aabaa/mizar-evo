@@ -6351,6 +6351,10 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   semantics/runner creditなしのclosed Profile Cとしてfreeze。
 - [x] Task 248P docs reviewと全9 hard gateをfindings-free、score capなし`100/100`で
   完了し、exact 32-document staging targetを保存。
-- [ ] exact docs commit、fresh inventory、separate one-file/two-test implementationを完了。
-- [ ] その後だけTask 264 exact property payload contractをfreezeし、Task 259分離と
+- [x] exact docs commit
+  `1e3fa789ce335b900fca4ac6ef5ad56b40cb5f24`、fresh inventory、findings-free
+  test/implementation review付きseparate one-file/two-test implementationを完了。
+- [x] source/documentation/final quality reviewを**NO FINDINGS**、全9 gateをscore cap
+  なし`100/100`、全required verification/count/hash gateをPASS。
+- [ ] Task 264 exact property payload contractをfreezeし、Task 259分離と
   authority-limited semantic deferralを保存。

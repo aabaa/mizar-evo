@@ -1337,6 +1337,14 @@ B3A/B3B installation orders fail without partial mutation and permit exact
 replay. The existing `InvalidSourceStatement` boundary and public API are
 unchanged.
 
+## Task 248P Active Typed Ownership
+
+Complete Profile C now installs through the existing one-shot source-context
+field and replays deterministically. Exact item, declaration, binding,
+binding-context, local-context, context-link, and provenance rows are
+revalidated; every type, fact, diagnostic, and initial-obligation table stays
+empty in the frozen test. No typed owner field or installation API was added.
+
 ## Task 248P Property Context Typed Ownership
 
 Task 248P adds no typed owner field or installation method. A complete Profile

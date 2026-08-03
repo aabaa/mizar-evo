@@ -1584,3 +1584,10 @@ expectation, trace, metadata, or CLI delta. Both retain runner `528`, production
 `35/67939`, trace hash
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`,
 and defer real-source selection/consumer ownership to Task 264.
+
+## Checker Task 248P Implementation No-Runner Synchronization
+
+EN/JA agree that the completed checker implementation has zero runner, corpus,
+sidecar, expectation, trace, metadata, or CLI delta. Both preserve runner
+`528`, production `35/67939`, the frozen trace and CLI hashes, and defer the
+only bounded consumer to Task 264.

@@ -2239,3 +2239,9 @@ active outcome/runner route/coverage creditを追加しない。trace manifest�
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`
 でbyte-identical。Parser Task 48はexisting parse coverageだけを保持し、future active
 consumerのtrace decisionはTask 264がseparateに行う。
+
+## Checker Task 248P implementation traceability no-op
+
+implementationはchecker-local unit tests 2件だけを追加する。requirement row/backlink/
+status/fixture/expectation/active runner outcome/coverage credit deltaはなく、trace SHA-256は
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`のまま。

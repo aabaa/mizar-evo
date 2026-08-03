@@ -3236,5 +3236,6 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 
 - [x] runner/corpus/sidecar/expectation/trace/metadata/CLI impact zeroをfreezeし、runner
   `528`、production `35/67939`、全hashを保存。
-- [ ] Profile-C runner helperを追加せずchecker-only docs/implementation commitを完了し、
-  Task 264 consumerをfresh-inventoryする。
+- [x] Profile-C runner helperを追加せずchecker-only docs commit
+  `1e3fa789ce335b900fca4ac6ef5ad56b40cb5f24`とimplementationを完了。
+- [ ] Task 264 bounded consumerだけをfresh-inventory/freezeする。

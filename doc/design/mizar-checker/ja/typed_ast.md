@@ -1690,3 +1690,10 @@ handoffはexisting one-shot source-context installationを使い、source/module
 local-context、item/declaration site、context-linkをrevalidateする。recovered incomplete
 branchはinstall不能のまま。property payload/type result/fact/obligation/diagnostic tableを
 作らず、Profile A/B debug/installation byteは不変である。
+
+## Task 248P active typed ownership
+
+complete Profile Cはexisting one-shot source-context fieldへinstallされ、deterministicに
+replayする。exact item/declaration/binding/binding-context/local-context/context-link/
+provenance rowをrevalidateし、frozen testでは全type/fact/diagnostic/initial-obligation table
+がemptyである。typed owner field/installation APIは追加しない。

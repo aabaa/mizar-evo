@@ -2346,3 +2346,10 @@ trace manifest remains byte-identical at SHA-256
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
 Parser Task 48 keeps only its existing parse coverage; Task 264 must make a
 separate trace decision for any future active consumer.
+
+## Checker Task 248P Implementation Traceability No-Op
+
+Implementation adds only two checker-local unit tests. There is no requirement
+row, backlink, status, fixture, expectation, active runner outcome, or coverage
+credit delta; trace SHA-256 remains
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.

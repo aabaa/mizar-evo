@@ -729,3 +729,10 @@ binding zeroだけでshadowはない。recovered zero-binding branchはexisting 
 context + recovery diagnostic 1件をreuseする。Profile A/B row/error precedenceは
 byte-identicalで、Task 264はcontextをconsumeできるが`BindingEnv`内でreconstructしたり
 property semanticsを追加できない。
+
+## Task 248P active property context binding
+
+implemented Profile Cはfrozen active definition-parameter binding/declaration context、
+またはrecovered empty context + recovery diagnostic 1件だけをpublishする。
+`BindingEnv` type/constructor/lookup/semantic payloadは変更せず、Profile A/Bのprior byteと
+validation precedenceを保存する。

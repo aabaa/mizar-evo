@@ -29,7 +29,7 @@ note として記録する。
 | `src/lib.rs` | 49 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | documented syntax-free formula-compositionとpredicate/functor/attribute/mode/structure-definition source moduleをexportするcrate root。 |
 | `src/typed_ast.rs` | 5366 | typed AST data model | `typed_ast.md` | no | no | Task-263を既存Task-259--262 definition transactionから分離するcohesive typed-AST table/validation/rendering/one-shot handoff。 |
 | `src/binding_env.rs` | 3156 | binding environment and resolver shell boundary | `binding_env.md` | no | no | source-formula、Task-258B1 statement-context identity、Task-258B2がreuseするunchanged context contractを含むcohesiveなbinding/context data layer。behavior-neutral splitは不要。 |
-| `src/source_context.rs` | 1157 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
+| `src/source_context.rs` | 1727 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only dependency corruption seam。split不要。 |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2/B3 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
 | `src/source_formula_composition.rs` | 5366 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3 atomic-edge/bound-use associationとseparate Task-257C2 condition-to-atomic / Task-257C3 predicate-chain transaction、dependency fingerprint、rendering/install/corruption testsを持つcohesive owner。 |
@@ -1472,3 +1472,12 @@ corpus/trace/diagnostic-code/lint-policy pathは追加しない。docsではchec
 `28/157908`とcurrent path/content hashを保存し、implementationはpath 28のままchecker
 library `467 -> 469`をprojectしてline/contentをremeasureする。runnerは
 `35/67939`でbyte-identical。property payload ownerはseparate Task 264のまま。
+
+## Task 248P implemented one-file checker boundary
+
+implementation diffは`src/source_context.rs`だけを変更する。checker productionは28 paths、
+158,478 lines、path/content hashは
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
+`19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`。
+module/dependency/Cargo/lint-policy/runner/corpus/trace/diagnostic/Task-264 semantic
+boundaryは変更しない。

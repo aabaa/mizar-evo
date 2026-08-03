@@ -1644,3 +1644,11 @@ real-shell ordinal authentication, unchanged Profile A/B behavior, one-file/
 two-test checker scope, `467 -> 469`, and no runner/corpus/trace change. Both
 languages defer every property payload, initial-obligation, proof, acceptance,
 fact, and VC decision to Task 264.
+
+## Task 248P Implementation Synchronization
+
+EN/JA agree that Profile C is implemented in the sole frozen checker file with
+exactly two tests. Both record checker `469`, production `28/158478`, matching
+test-list/path/content hashes, unchanged Profile A/B behavior, and zero runner,
+corpus, trace, metadata, CLI, or coverage delta. All property payload and
+semantic ownership remains deferred to Task 264.

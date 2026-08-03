@@ -1742,3 +1742,10 @@ clone-preserves the Profile C handoff installed in `TypedAst` and reuses the
 existing source-context validation/debug position. A caller cannot replace the
 handoff or promote recovered input. Property payload/provenance and every
 semantic result remain absent until Task 264.
+
+## Task 248P Active Final Ownership Boundary
+
+The implemented source-context handoff remains owned through the existing
+`TypedAst` clone path. No final input, assembler branch, getter, replacement
+path, debug field, or semantic result was added; recovered Profile C still
+cannot reach final assembly.

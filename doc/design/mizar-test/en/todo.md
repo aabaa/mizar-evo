@@ -3459,5 +3459,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 
 - [x] Freeze zero runner/corpus/sidecar/expectation/trace/metadata/CLI impact
   and preserve runner `528`, production `35/67939`, and all hashes.
-- [ ] Complete the checker-only docs and implementation commits without adding
-  a Profile-C runner helper; then fresh-inventory Task 264's consumer.
+- [x] Complete checker-only docs commit
+  `1e3fa789ce335b900fca4ac6ef5ad56b40cb5f24` and the implementation without
+  adding a Profile-C runner helper.
+- [ ] Fresh-inventory and freeze only Task 264's bounded consumer.

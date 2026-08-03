@@ -25,7 +25,7 @@ identityを生成せず`mizar-syntax`をimportしない。checker-only testはex
 `SurfaceAst` walk を所有し、source range、typed site、lexical scope、source
 order、resolver-shaped `LocalTermBinding` provenance を供給する。
 
-Task 248 が受理するのは本書で凍結した2つの named real-consumer profileとdormant
+Task 248 が受理するのは本書で凍結した2つの named real-consumer profileと実装済み
 Task-248P Profile Cだけである。Profile A は実装済みの module-level
 `reserve x for set;` と、それに続く
 `x` という `set` local parameter 1件を持つ `definition` blockである。Profile B
@@ -601,3 +601,14 @@ baselineは`467/528/148/59`、checker production `28/157908`、runner production
 90/100以上、exact task-only staging/commit、clean fresh inventory、protected stash
 不変を要求する。fresh inventoryはseparate Task-248P implementationを選び、その後
 broader context profileではなくTask 264へ進む。
+
+## Task 248P active Profile C
+
+Profile Cはfrozen contractどおり実装済み。property inputはreal nonzero resolver shell
+ordinalをauthenticateし、legacy Profile A/B ordinal ruleを変更しない。normal inputは
+`1/1/1/2/2/2/0`を生成し、recovered zero-binding inputはincompleteのまま、全frozen
+corruptionはspecified existing errorでfailする。exact tests 2件はPASSし、checker count
+は`469`、productionは`28/158478`、path/content hashは
+`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
+`19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`。
+runner consumer、Task-264 payload/obligation/proof/fact/acceptance/IR/VC outputはない。

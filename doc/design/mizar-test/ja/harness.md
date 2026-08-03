@@ -4841,3 +4841,9 @@ Task 248Pはroute/helper/selector/assertion/result fieldを追加しない。Par
 pass/recovery fixtureはread-only preflight oracleだけで、type-elaboration stageへ
 activateしない。Task 264がexact consumerをfreezeするまでrunnerはProfile Cをselectせず、
 property payloadをderiveしない。
+
+## Checker Task 248P implemented no-harness result
+
+implementationはroute/helper/selector/assertion/result field/runner testを追加しない。
+Parser Task-48 property fixtureはいずれもactivateせず、全runner behaviorはTask 264まで
+byte-identicalである。

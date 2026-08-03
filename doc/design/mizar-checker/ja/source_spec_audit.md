@@ -5411,10 +5411,19 @@ Tasks 248P/264でopenのままで、checker/executable coverage creditを追加�
 ## Task 248P frozen source/specification status
 
 Chapters 4 §§4.2/4.6、7 §§7.4.1/7.8.2/7.10はlexical property parameter 1件と
-declaration scopeをauthorizeする。resolver Task 264Rはshellを供給済みだが、checker
-sourceは`SourceItemRole`/closed profile setがproperty implementationをomitするため
-rejectする。Task 248Pはこれを`source_drift`、missing contractを`design_drift`、
+declaration scopeをauthorizeする。resolver Task 264Rはshellを供給済みで、docs
+prerequisite時点のchecker sourceは`SourceItemRole`/closed profile setがproperty
+implementationをomitするためrejectしていた。Task 248Pはこれを`source_drift`、missing
+contractを`design_drift`、
 checker regression欠落を`test_gap`と分類し、blocking `spec_gap`、expectation drift、
 safe targetのmetadata conflictはない。property identity/payload/return type/definiens/
 obligation/proof/acceptance/fact/runner consumerのfabricationは`boundary_violation`で
 Task 264へ残す。本prerequisiteはexecutable coverage credit/trace changeを追加しない。
+
+## Task 248P implemented source/specification status
+
+classified checker `source_drift`、`design_drift`、canonical-derived `test_gap`はexact
+Profile-C implementation/tests 2件でcloseした。specification/expectation/repository-
+metadata repairやexecutable coverage creditは追加しない。property identity/payload、
+return type、definiens、initial obligation、proof/acceptance/fact、real runner consumerは
+Task 264でexplicitly openのままである。

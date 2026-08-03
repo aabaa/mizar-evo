@@ -755,3 +755,11 @@ shadow. The recovered zero-binding branch reuses the existing recovered
 context plus one recovery diagnostic. Profile A/B rows and error precedence
 remain byte-identical; Task 264 may consume this context but cannot reconstruct
 or add property semantics inside `BindingEnv`.
+
+## Task 248P Active Property Context Binding
+
+The implemented Profile C now publishes exactly the frozen active
+definition-parameter binding and declaration context, or the recovered empty
+context plus one recovery diagnostic. No `BindingEnv` type, constructor,
+lookup, or semantic payload changed, and Profiles A/B retain their prior bytes
+and validation precedence.

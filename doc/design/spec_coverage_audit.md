@@ -6317,3 +6317,15 @@ selection, property identity/provenance, defining-mode and return-type payload,
 `means`/`equals`, definiens and means-only `it`, initial obligations and
 coherence, Typed/final producer ownership, a private runner consumer, and all
 authority-bounded proof/acceptance/fact/VC deferrals.
+
+## Checker Task 248P Implemented Binding-Context Coverage Boundary
+
+The checker-only implementation closes the classified source/design/test gaps
+for the property binding-context slice with exact Profile-C normal, recovered,
+and corruption unit coverage. Checker library changes `467 -> 469`, but no
+fixture, sidecar, expectation, trace row/backlink/status, active outcome,
+runner route, metadata, CLI, or executable coverage credit changes. Chapter 7
+therefore remains partial. Task 264 still exclusively owns property payload,
+return type, means/equals, definiens/`it`, initial obligations/coherence,
+Typed/final semantic ownership, the bounded runner consumer, and all proof,
+acceptance, fact, IR, and VC deferrals.

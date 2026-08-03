@@ -5652,12 +5652,22 @@ open under Tasks 248P/264; no checker or executable coverage credit is added.
 ## Task 248P Frozen Source/Specification Status
 
 Chapters 4 §§4.2/4.6 and 7 §§7.4.1/7.8.2/7.10 authorize one lexical property
-parameter and its declaration scope. Resolver Task 264R supplies the shell;
-checker source still rejects it because `SourceItemRole` and the closed profile
-set omit property implementations. Task 248P classifies that as `source_drift`,
+parameter and its declaration scope. Resolver Task 264R supplies the shell; at
+documentation-prerequisite time checker source rejected it because
+`SourceItemRole` and the closed profile set omitted property implementations.
+Task 248P classifies that as `source_drift`,
 the absent contract as `design_drift`, and missing checker regressions as
 `test_gap`; no blocking `spec_gap`, expectation drift, or metadata conflict in
 the safe target exists. Fabricating property identity, payload, return type,
 definiens, obligations, proof/acceptance/facts, or a runner consumer is a
 `boundary_violation` and remains Task 264. This prerequisite adds no executable
 coverage credit or trace change.
+
+## Task 248P Implemented Source/Specification Status
+
+The classified checker `source_drift`, `design_drift`, and canonical-derived
+`test_gap` are closed by the exact Profile-C implementation and two tests.
+There is no specification, expectation, or repository-metadata repair and no
+new executable coverage credit. Property identity/payload, return type,
+definiens, initial obligations, proof/acceptance/facts, and the real runner
+consumer remain explicitly open under Task 264.
